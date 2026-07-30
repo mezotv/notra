@@ -16,12 +16,10 @@
     "node": "24.x"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1009.0",
     "@ai-sdk/devtools": "1.0.1",
     "@notra/ai": "workspace:*",
     "@notra/db": "workspace:*",
-    "@notra/eve-tools": "workspace:*",
-    "@vercel/oidc": "^3.8.0",
+    "@notra/tools": "workspace:*",
     "ai": "^7.0.0",
     "drizzle-orm": "^0.45.2",
     "effect": "4.0.0-beta.93",

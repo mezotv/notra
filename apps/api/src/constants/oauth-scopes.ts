@@ -31,7 +31,7 @@ export const PUBLIC_API_SCOPE_RESOURCES = [
   },
   {
     id: "chats",
-    paths: ["/chats"],
+    paths: ["/chats", "/agent-chats", "/eve"],
     readScope: "chats.read",
     writeScope: "chats.write",
   },

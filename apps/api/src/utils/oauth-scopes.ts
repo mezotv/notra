@@ -1,7 +1,7 @@
 import { PUBLIC_API_SCOPE_RESOURCES } from "../constants/oauth-scopes";
 
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
-const VERSION_PREFIX_REGEX = /^\/v1(?=\/|$)/;
+const VERSION_PREFIX_REGEX = /^\/v[12](?=\/|$)/;
 const LEGACY_ORGANIZATION_POSTS_REGEX = /^\/[^/]+\/posts(?:\/|$)/;
 const LEGACY_ORGANIZATION_SCHEDULES_REGEX = /^\/[^/]+\/schedules(?:\/|$)/;
 const LEGACY_ORGANIZATION_EVENT_TRIGGERS_REGEX =

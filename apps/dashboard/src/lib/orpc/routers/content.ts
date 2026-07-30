@@ -9,7 +9,6 @@ import {
   getDecryptedLinearToken,
   getLinearIntegrationsByOrganization,
 } from "@notra/ai/integrations/linear";
-import { triggerOnDemandContent } from "@notra/ai/qstash/triggers";
 import { type ContentType, contentTypeSchema } from "@notra/ai/schemas/content";
 import { supportsPostSlug } from "@notra/ai/schemas/post";
 import { createLinearClient } from "@notra/ai/utils/linear";
@@ -38,6 +37,7 @@ import {
   getCompletedGenerations,
 } from "@/lib/generations/tracking";
 import { baseProcedure } from "@/lib/orpc/base";
+import { startOnDemandRun } from "@/lib/workflows/start";
 import { contentListQuerySchema } from "@/schemas/api-params";
 import type { ContentResponse, PostsResponse } from "@/schemas/content";
 import {
@@ -1456,7 +1456,7 @@ export const contentRouter = {
           .map((integration) => integration.id);
       }
 
-      await triggerOnDemandContent({
+      await startOnDemandRun({
         organizationId: input.organizationId,
         userId: auth.user.id,
         collectionId: input.collectionId,

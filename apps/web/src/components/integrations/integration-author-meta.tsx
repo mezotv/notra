@@ -1,5 +1,6 @@
 import { cn } from "@notra/ui/lib/utils";
 import type { IntegrationAuthorMetaProps } from "@/types/integrations";
+import { getIntegrationReferralUrl } from "@/utils/integration-referral-url";
 
 export function IntegrationAuthorMeta({
   integration,
@@ -18,7 +19,7 @@ export function IntegrationAuthorMeta({
       {websiteUrl ? (
         <a
           className="underline-offset-2 transition-colors hover:text-[#1E1E1E] hover:underline dark:hover:text-white"
-          href={websiteUrl}
+          href={getIntegrationReferralUrl(websiteUrl)}
           rel="noopener noreferrer"
           target="_blank"
         >

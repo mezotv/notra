@@ -1129,7 +1129,24 @@ export async function getGitHubCloneToken(
     integrationId,
     userId
   );
+  return resolveCloneToken(integration);
+}
 
+export async function getGitHubCloneTokenForOrganization(
+  integrationId: string,
+  organizationId: string
+) {
+  const integration = await getGitHubIntegrationById(integrationId);
+  if (!integration || integration.organizationId !== organizationId) {
+    throw new Error("Integration not found for this organization");
+  }
+  return resolveCloneToken(integration);
+}
+
+function resolveCloneToken(integration: {
+  githubAppInstallationId: string | null;
+  encryptedToken: string | null;
+}) {
   if (integration.githubAppInstallationId) {
     return createGitHubAppInstallationTokenForRecord(
       integration.githubAppInstallationId

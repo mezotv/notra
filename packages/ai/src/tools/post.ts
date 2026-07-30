@@ -1,4 +1,3 @@
-import { maybeGenerateCollectionTitle } from "@notra/ai/jobs/collection-title";
 import { contentTypeSchema } from "@notra/ai/schemas/content";
 import {
   POST_SLUG_MAX_LENGTH,
@@ -12,20 +11,19 @@ import type {
 import type { PostToolConfig } from "@notra/ai/types/posts";
 import { toolDescription } from "@notra/ai/utils/description";
 import {
+  createPostRecord,
+  updatePostRecord,
+} from "@notra/ai/utils/post-service";
+import {
   serializeAvailablePost,
   serializePostDetail,
 } from "@notra/ai/utils/posts";
-import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
-import { postCollections, posts } from "@notra/db/schema";
+import { posts } from "@notra/db/schema";
 import { type Tool, tool } from "ai";
-import { and, eq, or, sql } from "drizzle-orm";
-import { marked } from "marked";
-import { customAlphabet } from "nanoid";
+import { and, eq, or } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
-
-const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
 const CREATE_POST_TOOL_NAMES = {
   changelog: "createChangelog",
@@ -54,105 +52,79 @@ const postSlugSchema = z
     "Slug must contain lowercase letters, numbers, and hyphens only"
   );
 
+const createPostBaseInputShape = {
+  title: z
+    .string()
+    .max(120)
+    .describe("The post title, plain text without markdown"),
+  markdown: z
+    .string()
+    .describe(
+      "The full post content body as markdown/MDX, without the title heading"
+    ),
+  recommendations: z
+    .string()
+    .nullable()
+    .optional()
+    .describe(
+      "Optional actionable publishing recommendations as markdown — best time to post, audience targeting, distribution channels, or cross-posting ideas"
+    ),
+};
+
+const createPostSlugInputShape = {
+  ...createPostBaseInputShape,
+  slug: postSlugSchema
+    .nullable()
+    .optional()
+    .default(null)
+    .describe(
+      "Optional URL slug for blog posts and changelogs. Use lowercase letters, numbers, and hyphens."
+    ),
+};
+
 export function createCreatePostTool(
   config: PostToolsConfig,
   result: PostToolsResult
 ): Tool {
   const contentType = contentTypeSchema.parse(config.contentType);
   const toolName = getCreatePostToolName(contentType);
+  const withSlug = supportsPostSlug(contentType);
 
-  if (supportsPostSlug(contentType)) {
-    return tool({
-      description: toolDescription({
-        toolName,
-        intro:
-          "Creates a new post in the database with the generated content. The post type and source repositories are set automatically.",
-        whenToUse:
-          "After you have finished writing a post and are ready to save it.",
-        usageNotes:
-          "Requires a title (plain text, max 120 chars) and markdown content body. You may call this multiple times only when there are multiple meaningfully distinct posts to save.",
-      }),
-      needsApproval: config.needsApproval ?? false,
-      inputSchema: z.object({
-        title: z
-          .string()
-          .max(120)
-          .describe("The post title, plain text without markdown"),
-        slug: postSlugSchema
-          .nullable()
-          .optional()
-          .default(null)
-          .describe(
-            "Optional URL slug for blog posts and changelogs. Use lowercase letters, numbers, and hyphens."
-          ),
-        markdown: z
-          .string()
-          .describe(
-            "The full post content body as markdown/MDX, without the title heading"
-          ),
-        recommendations: z
-          .string()
-          .nullable()
-          .optional()
-          .describe(
-            "Optional actionable publishing recommendations as markdown — best time to post, audience targeting, distribution channels, or cross-posting ideas"
-          ),
-      }),
-      execute: async ({ title, slug, markdown, recommendations }) => {
-        if (!config.collectionId) {
-          throw new Error("Post collection is required to create a post.");
-        }
+  const execute = async (input: {
+    title: string;
+    slug?: string | null;
+    markdown: string;
+    recommendations?: string | null;
+  }) => {
+    if (!config.collectionId) {
+      throw new Error("Post collection is required to create a post.");
+    }
 
-        const collectionId = config.collectionId;
-        const id = nanoid();
-        const content = sanitizeMarkdownHtml(await marked.parse(markdown));
-        await db.transaction(async (tx) => {
-          await tx.insert(posts).values({
-            id,
-            organizationId: config.organizationId,
-            collectionId,
-            title,
-            slug,
-            content,
-            markdown,
-            recommendations: recommendations ?? null,
-            contentType,
-            status: config.autoPublish ? "published" : "draft",
-            sourceMetadata: config.sourceMetadata ?? null,
-          });
-          await tx
-            .update(postCollections)
-            .set({
-              completedPostCount: sql`${postCollections.completedPostCount} + 1`,
-              updatedAt: new Date(),
-            })
-            .where(
-              and(
-                eq(postCollections.id, collectionId),
-                eq(postCollections.organizationId, config.organizationId)
-              )
-            );
-        });
-        await maybeGenerateCollectionTitle({
-          collectionId,
-          organizationId: config.organizationId,
-        });
-        result.posts ??= [];
-        result.posts.push({
-          postId: id,
-          title,
-          recommendations: recommendations ?? null,
-        });
-        result.postId ??= id;
-        result.title ??= title;
-        return {
-          postId: id,
-          status: "created",
-          totalCreated: result.posts.length,
-        };
-      },
+    const { postId } = await createPostRecord({
+      organizationId: config.organizationId,
+      collectionId: config.collectionId,
+      contentType,
+      title: input.title,
+      slug: withSlug ? (input.slug ?? null) : null,
+      markdown: input.markdown,
+      recommendations: input.recommendations ?? null,
+      autoPublish: config.autoPublish,
+      sourceMetadata: config.sourceMetadata ?? null,
     });
-  }
+    result.posts ??= [];
+    result.posts.push({
+      postId,
+      title: input.title,
+      recommendations: input.recommendations ?? null,
+    });
+    result.postId ??= postId;
+    result.title ??= input.title;
+    return {
+      postId,
+      status: "created",
+      totalCreated: result.posts.length,
+    };
+  };
 
   return tool({
     description: toolDescription({
@@ -165,77 +137,10 @@ export function createCreatePostTool(
         "Requires a title (plain text, max 120 chars) and markdown content body. You may call this multiple times only when there are multiple meaningfully distinct posts to save.",
     }),
     needsApproval: config.needsApproval ?? false,
-    inputSchema: z.object({
-      title: z
-        .string()
-        .max(120)
-        .describe("The post title, plain text without markdown"),
-      markdown: z
-        .string()
-        .describe(
-          "The full post content body as markdown/MDX, without the title heading"
-        ),
-      recommendations: z
-        .string()
-        .nullable()
-        .optional()
-        .describe(
-          "Optional actionable publishing recommendations as markdown — best time to post, audience targeting, distribution channels, or cross-posting ideas"
-        ),
-    }),
-    execute: async ({ title, markdown, recommendations }) => {
-      if (!config.collectionId) {
-        throw new Error("Post collection is required to create a post.");
-      }
-
-      const collectionId = config.collectionId;
-      const id = nanoid();
-      const content = sanitizeMarkdownHtml(await marked.parse(markdown));
-      await db.transaction(async (tx) => {
-        await tx.insert(posts).values({
-          id,
-          organizationId: config.organizationId,
-          collectionId,
-          title,
-          slug: null,
-          content,
-          markdown,
-          recommendations: recommendations ?? null,
-          contentType,
-          status: config.autoPublish ? "published" : "draft",
-          sourceMetadata: config.sourceMetadata ?? null,
-        });
-        await tx
-          .update(postCollections)
-          .set({
-            completedPostCount: sql`${postCollections.completedPostCount} + 1`,
-            updatedAt: new Date(),
-          })
-          .where(
-            and(
-              eq(postCollections.id, collectionId),
-              eq(postCollections.organizationId, config.organizationId)
-            )
-          );
-      });
-      await maybeGenerateCollectionTitle({
-        collectionId,
-        organizationId: config.organizationId,
-      });
-      result.posts ??= [];
-      result.posts.push({
-        postId: id,
-        title,
-        recommendations: recommendations ?? null,
-      });
-      result.postId ??= id;
-      result.title ??= title;
-      return {
-        postId: id,
-        status: "created",
-        totalCreated: result.posts.length,
-      };
-    },
+    inputSchema: z.object(
+      withSlug ? createPostSlugInputShape : createPostBaseInputShape
+    ),
+    execute,
   });
 }
 
@@ -243,102 +148,82 @@ export function createUpdatePostTool(
   config: PostToolsConfig,
   result: PostToolsResult
 ): Tool {
-  if (supportsPostSlug(config.contentType)) {
-    return tool({
-      description: toolDescription({
-        toolName: "updatePost",
-        intro: "Updates an existing post's title and/or content.",
-        whenToUse:
-          "When you need to revise a post that was already created via one of the create post tools.",
-        usageNotes:
-          "Requires the postId returned from a create post tool. Provide only the fields you want to change.",
-      }),
-      inputSchema: z.object({
-        postId: z.string().describe("The ID of the post to update"),
-        title: z
-          .string()
-          .max(120)
-          .optional()
-          .describe("Updated title, plain text without markdown"),
-        slug: postSlugSchema
-          .nullable()
-          .optional()
-          .describe(
-            "Updated optional URL slug for blog posts and changelogs. Pass null to clear it."
-          ),
-        markdown: z
-          .string()
-          .optional()
-          .describe("Updated content body as markdown/MDX"),
-        recommendations: z
-          .string()
-          .nullable()
-          .optional()
-          .describe(
-            "Updated optional recommendations as markdown. Pass null to clear them."
-          ),
-      }),
-      execute: async ({ postId, title, slug, markdown, recommendations }) => {
-        const updates: Record<string, string | null> = {};
-        if (title !== undefined) {
-          updates.title = title;
-        }
-        if (slug !== undefined) {
-          updates.slug = slug;
-        }
-        if (markdown !== undefined) {
-          updates.content = sanitizeMarkdownHtml(await marked.parse(markdown));
-          updates.markdown = markdown;
-        }
-        if (recommendations !== undefined) {
-          updates.recommendations = recommendations;
-        }
+  const withSlug = supportsPostSlug(config.contentType);
 
-        if (Object.keys(updates).length === 0) {
-          return { postId, status: "no_changes" };
-        }
+  const updatePostBaseInputShape = {
+    postId: z.string().describe("The ID of the post to update"),
+    title: z
+      .string()
+      .max(120)
+      .optional()
+      .describe("Updated title, plain text without markdown"),
+    markdown: z
+      .string()
+      .optional()
+      .describe("Updated content body as markdown/MDX"),
+    recommendations: z
+      .string()
+      .nullable()
+      .optional()
+      .describe(
+        "Updated optional recommendations as markdown. Pass null to clear them."
+      ),
+  };
 
-        const rows = await db
-          .update(posts)
-          .set(updates)
-          .where(
-            and(
-              eq(posts.id, postId),
-              eq(posts.organizationId, config.organizationId)
-            )
-          )
-          .returning({ id: posts.id });
+  const updatePostSlugInputShape = {
+    ...updatePostBaseInputShape,
+    slug: postSlugSchema
+      .nullable()
+      .optional()
+      .describe(
+        "Updated optional URL slug for blog posts and changelogs. Pass null to clear it."
+      ),
+  };
 
-        if (rows.length === 0) {
-          return { postId, status: "not_found" };
-        }
-
-        if (title !== undefined) {
-          const existingPost = result.posts?.find(
-            (entry) => entry.postId === postId
-          );
-          if (existingPost) {
-            existingPost.title = title;
-          }
-
-          if (result.postId === postId) {
-            result.title = title;
-          }
-        }
-
-        if (recommendations !== undefined) {
-          const existingPost = result.posts?.find(
-            (entry) => entry.postId === postId
-          );
-          if (existingPost) {
-            existingPost.recommendations = recommendations;
-          }
-        }
-
-        return { postId, status: "updated" };
-      },
+  const execute = async (input: {
+    postId: string;
+    title?: string;
+    slug?: string | null;
+    markdown?: string;
+    recommendations?: string | null;
+  }) => {
+    const { status } = await updatePostRecord({
+      organizationId: config.organizationId,
+      postId: input.postId,
+      title: input.title,
+      ...(withSlug && input.slug !== undefined ? { slug: input.slug } : {}),
+      markdown: input.markdown,
+      recommendations: input.recommendations,
     });
-  }
+
+    if (status !== "updated") {
+      return { postId: input.postId, status };
+    }
+
+    if (input.title !== undefined) {
+      const existingPost = result.posts?.find(
+        (entry) => entry.postId === input.postId
+      );
+      if (existingPost) {
+        existingPost.title = input.title;
+      }
+
+      if (result.postId === input.postId) {
+        result.title = input.title;
+      }
+    }
+
+    if (input.recommendations !== undefined) {
+      const existingPost = result.posts?.find(
+        (entry) => entry.postId === input.postId
+      );
+      if (existingPost) {
+        existingPost.recommendations = input.recommendations;
+      }
+    }
+
+    return { postId: input.postId, status };
+  };
 
   return tool({
     description: toolDescription({
@@ -349,80 +234,10 @@ export function createUpdatePostTool(
       usageNotes:
         "Requires the postId returned from a create post tool. Provide only the fields you want to change.",
     }),
-    inputSchema: z.object({
-      postId: z.string().describe("The ID of the post to update"),
-      title: z
-        .string()
-        .max(120)
-        .optional()
-        .describe("Updated title, plain text without markdown"),
-      markdown: z
-        .string()
-        .optional()
-        .describe("Updated content body as markdown/MDX"),
-      recommendations: z
-        .string()
-        .nullable()
-        .optional()
-        .describe(
-          "Updated optional recommendations as markdown. Pass null to clear them."
-        ),
-    }),
-    execute: async ({ postId, title, markdown, recommendations }) => {
-      const updates: Record<string, string | null> = {};
-      if (title !== undefined) {
-        updates.title = title;
-      }
-      if (markdown !== undefined) {
-        updates.content = sanitizeMarkdownHtml(await marked.parse(markdown));
-        updates.markdown = markdown;
-      }
-      if (recommendations !== undefined) {
-        updates.recommendations = recommendations;
-      }
-      if (Object.keys(updates).length === 0) {
-        return { postId, status: "no_changes" };
-      }
-
-      const rows = await db
-        .update(posts)
-        .set(updates)
-        .where(
-          and(
-            eq(posts.id, postId),
-            eq(posts.organizationId, config.organizationId)
-          )
-        )
-        .returning({ id: posts.id });
-
-      if (rows.length === 0) {
-        return { postId, status: "not_found" };
-      }
-
-      if (title !== undefined) {
-        const existingPost = result.posts?.find(
-          (entry) => entry.postId === postId
-        );
-        if (existingPost) {
-          existingPost.title = title;
-        }
-
-        if (result.postId === postId) {
-          result.title = title;
-        }
-      }
-
-      if (recommendations !== undefined) {
-        const existingPost = result.posts?.find(
-          (entry) => entry.postId === postId
-        );
-        if (existingPost) {
-          existingPost.recommendations = recommendations;
-        }
-      }
-
-      return { postId, status: "updated" };
-    },
+    inputSchema: z.object(
+      withSlug ? updatePostSlugInputShape : updatePostBaseInputShape
+    ),
+    execute,
   });
 }
 

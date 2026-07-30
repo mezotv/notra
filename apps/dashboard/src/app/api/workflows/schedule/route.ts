@@ -3,7 +3,7 @@ import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integrations/github";
 import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
-import { getBaseUrl, triggerScheduleNow } from "@notra/ai/qstash/triggers";
+import { getBaseUrl } from "@notra/ai/qstash/triggers";
 import { getValidToneProfile } from "@notra/ai/schemas/tone";
 import { db } from "@notra/db/drizzle";
 import type { PostSourceMetadata } from "@notra/db/schema";
@@ -24,7 +24,11 @@ import { WorkflowAbort } from "@upstash/workflow";
 import { serve } from "@upstash/workflow/nextjs";
 import { and, eq, inArray } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
-import { GITHUB_RATE_LIMIT_RETRY_DELAY } from "@/constants/workflows";
+import {
+  GITHUB_RATE_LIMIT_RETRY_DELAY,
+  GITHUB_RATE_LIMIT_RETRY_DELAY_SECONDS,
+} from "@/constants/workflows";
+import { isAgentContentGenerationEnabled } from "@/lib/agent/flag";
 import { checkWorkflowAiCredits } from "@/lib/billing/workflow-ai-credits";
 import {
   trackScheduledContentCreated,
@@ -38,6 +42,7 @@ import {
 } from "@/lib/generations/tracking";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import { buildDataPointRestrictionInstructions } from "@/lib/workflows/on-demand/helpers";
+import { verifyQstashSignature } from "@/lib/workflows/qstash-verify";
 import { generateScheduledContent } from "@/lib/workflows/schedule/handlers";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
 import { sendAiCreditsDepletedEmails } from "@/lib/workflows/shared/ai-credit-notifications";
@@ -51,6 +56,7 @@ import {
   parseTriggerOutputConfig,
   parseTriggerTargets,
 } from "@/lib/workflows/shared/parsing";
+import { startScheduleRun } from "@/lib/workflows/start";
 import type { LookbackWindow } from "@/schemas/integrations";
 import {
   type ScheduleWorkflowPayload,
@@ -78,7 +84,7 @@ async function deleteEmptyPostCollection(params: {
     );
 }
 
-export const { POST } = serve<ScheduleWorkflowPayload>(
+const { POST: legacyWorkflowContinuation } = serve<ScheduleWorkflowPayload>(
   async (context: WorkflowContext<ScheduleWorkflowPayload>) => {
     const parseResult = scheduleWorkflowPayloadSchema.safeParse(
       context.requestPayload
@@ -526,10 +532,14 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
 
         const delayedWorkflowRunId = await context.run<string>(
           "reschedule-after-github-rate-limit",
-          async () =>
-            triggerScheduleNow(triggerId, {
-              delay: GITHUB_RATE_LIMIT_RETRY_DELAY,
-            })
+          async () => {
+            const { runId: delayedRunId } = await startScheduleRun({
+              triggerId,
+              delaySeconds: GITHUB_RATE_LIMIT_RETRY_DELAY_SECONDS,
+              executionId: `schedule-retry-${runId}`,
+            });
+            return delayedRunId;
+          }
         );
 
         console.warn(
@@ -1205,7 +1215,11 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
             },
           });
         });
-      } else if (aiCreditReservation.reserved && autumnClientSuccess) {
+      } else if (
+        !isAgentContentGenerationEnabled() &&
+        aiCreditReservation.reserved &&
+        autumnClientSuccess
+      ) {
         await context.run("track-ai-credit-fallback", async () => {
           await autumnClientSuccess.track({
             customerId: trigger.organizationId,
@@ -1314,3 +1328,49 @@ export const { POST } = serve<ScheduleWorkflowPayload>(
     },
   }
 );
+
+export async function POST(request: Request) {
+  if (request.headers.get("upstash-workflow-runid")) {
+    return legacyWorkflowContinuation(request);
+  }
+
+  const messageId = request.headers.get("upstash-message-id");
+  if (!messageId) {
+    return new Response("Missing message id", { status: 400 });
+  }
+
+  const rawBody = await request.text();
+  const verified = await verifyQstashSignature({
+    request,
+    rawBody,
+    url: `${getBaseUrl()}/api/workflows/schedule`,
+  });
+  if (!verified) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = JSON.parse(rawBody);
+  } catch {
+    return new Response("Invalid JSON body", { status: 400 });
+  }
+
+  const parsed = scheduleWorkflowPayloadSchema.safeParse(body);
+  if (!parsed.success) {
+    console.error(
+      "[Schedule] Invalid cron delivery payload:",
+      parsed.error.flatten()
+    );
+    return new Response("Invalid payload", { status: 400 });
+  }
+
+  const { runId } = await startScheduleRun({
+    ...parsed.data,
+    executionId:
+      parsed.data.executionId ??
+      `schedule-${parsed.data.triggerId}-${messageId}`,
+  });
+
+  return Response.json({ runId }, { status: 202 });
+}

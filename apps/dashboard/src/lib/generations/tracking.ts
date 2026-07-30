@@ -67,8 +67,12 @@ export async function getActiveGenerations(
     return [];
   }
 
-  return Object.values(data).map((value) =>
+  const generations: ActiveGeneration[] = Object.values(data).map((value) =>
     typeof value === "string" ? JSON.parse(value) : (value as ActiveGeneration)
+  );
+  return generations.sort(
+    (a, b) =>
+      a.startedAt.localeCompare(b.startedAt) || a.runId.localeCompare(b.runId)
   );
 }
 

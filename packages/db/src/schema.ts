@@ -94,6 +94,37 @@ export const chatSessions = pgTable(
   ]
 );
 
+export const agentSessions = pgTable(
+  "agent_sessions",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    userId: text("user_id"),
+    chatId: text("chat_id").references(() => chatSessions.id, {
+      onDelete: "cascade",
+    }),
+    surface: text("surface").notNull(),
+    contentId: text("content_id"),
+    collectionId: text("collection_id"),
+    eveSessionId: text("eve_session_id").notNull(),
+    continuationToken: text("continuation_token").notNull(),
+    streamIndex: integer("stream_index").notNull().default(0),
+    status: text("status").notNull().default("active"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("agentSessions_eveSessionId_uidx").on(table.eveSessionId),
+    index("agentSessions_organizationId_idx").on(table.organizationId),
+    index("agentSessions_chatId_idx").on(table.chatId),
+  ]
+);
+
 export const chatAttachments = pgTable(
   "chat_attachments",
   {

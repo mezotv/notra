@@ -1,3 +1,3 @@
-import { createDisabledTool } from "@notra/eve-tools/disabled";
+import { createDisabledTool } from "@notra/tools/disabled";
 
 export default createDisabledTool();

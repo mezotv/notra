@@ -4,12 +4,7 @@ import {
   autumn,
 } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
-import { getWorkflowClient } from "@notra/ai/qstash/client";
-import {
-  deleteQstashSchedule,
-  getAppUrl,
-  triggerBrandGuidelines,
-} from "@notra/ai/qstash/triggers";
+import { deleteQstashSchedule, getAppUrl } from "@notra/ai/qstash/triggers";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import {
@@ -38,6 +33,10 @@ import {
   startBrandGuidelineGeneration,
 } from "@/lib/brand-guidelines";
 import { baseProcedure } from "@/lib/orpc/base";
+import {
+  startBrandAnalysisRun,
+  startBrandGuidelinesRun,
+} from "@/lib/workflows/start";
 import {
   createReferenceSchema,
   fetchTweetSchema,
@@ -603,13 +602,10 @@ export const brandRouter = {
         });
         await assertActiveSubscription(input.organizationId);
 
-        await getWorkflowClient().trigger({
-          url: `${getAppUrl()}/api/workflows/brand-analysis`,
-          body: {
-            organizationId: input.organizationId,
-            url: input.url,
-            voiceId: input.voiceId || undefined,
-          },
+        await startBrandAnalysisRun({
+          organizationId: input.organizationId,
+          url: input.url,
+          voiceId: input.voiceId || undefined,
         });
 
         return {
@@ -652,7 +648,7 @@ export const brandRouter = {
         await startBrandGuidelineGeneration(input.voiceId);
 
         try {
-          await triggerBrandGuidelines({
+          await startBrandGuidelinesRun({
             brandSettingsId: input.voiceId,
             organizationId: input.organizationId,
             sourceUrl: voice.websiteUrl,

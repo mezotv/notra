@@ -1,5 +1,5 @@
+import { SHA256_HEX_REGEX } from "@notra/tools/constants/reference-snapshot";
 import { z } from "zod";
-import { SHA256_HEX_REGEX } from "../constants/reference-snapshot";
 
 export const researchBriefSchema = z.object({
   summary: z.string().min(1),

@@ -1,0 +1,48 @@
+{
+  "name": "@notra/agent",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "build": "eve build",
+    "dev": "dotenv -e ../../.env -- eve dev --port 3200",
+    "agent:dev": "dotenv -e ../../.env -- eve dev",
+    "agent:build": "eve build",
+    "agent:start": "eve start",
+    "check-types": "tsc --noEmit",
+    "agent:dev:devtools": "AI_SDK_DEVTOOLS=true dotenv -e ../../.env -- eve dev",
+    "devtools": "bun x @ai-sdk/devtools"
+  },
+  "engines": {
+    "node": "24.x"
+  },
+  "dependencies": {
+    "@ai-sdk/devtools": "1.0.1",
+    "@ai-sdk/gateway": "3.0.132",
+    "@aws-sdk/client-s3": "^3.1009.0",
+    "@linear/sdk": "^80.0.0",
+    "@notra/ai": "workspace:*",
+    "@notra/db": "workspace:*",
+    "@notra/tools": "workspace:*",
+    "@octokit/core": "^7.0.6",
+    "@resvg/resvg-js": "^2.6.2",
+    "@upstash/box": "^0.5.0",
+    "@upstash/redis": "^1.35.7",
+    "@vercel/oidc": "^3.8.0",
+    "ai": "^7.0.0",
+    "drizzle-orm": "^0.45.2",
+    "eve": "0.19.0",
+    "marked": "^17.0.1",
+    "pg": "^8.20.0",
+    "sanitize-html": "^2.17.1",
+    "satori": "^0.26.0",
+    "satori-html": "^0.3.2",
+    "zod": "^4.3.4"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
+    "@types/node": "^24.0.0",
+    "dotenv-cli": "^11.0.0",
+    "microsandbox": "^0.6.1",
+    "typescript": "5.9.2"
+  }
+}

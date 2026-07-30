@@ -1,3 +1,6 @@
+import { AGENT_CONTENT_TASK_TYPES } from "@/constants/agent-content";
+import { generateContentViaAgentTask } from "@/lib/agent/content-task";
+import { isAgentContentGenerationEnabled } from "@/lib/agent/flag";
 import type { ScheduleOutputType } from "@/schemas/integrations";
 import type {
   ContentGenerationContext,
@@ -22,6 +25,28 @@ export async function generateScheduledContent(
   outputType: string,
   ctx: ContentGenerationContext
 ): Promise<ContentGenerationResult> {
+  if (isAgentContentGenerationEnabled() && isScheduleOutputType(outputType)) {
+    const taskType = AGENT_CONTENT_TASK_TYPES[outputType];
+    if (taskType) {
+      return generateContentViaAgentTask({
+        organizationId: ctx.organizationId,
+        collectionId: ctx.collectionId,
+        contentType: taskType.contentType,
+        contentLabel: taskType.contentLabel,
+        brandAgentType: taskType.brandAgentType,
+        repositories: ctx.repositories,
+        linearIntegrations: ctx.linearIntegrations,
+        promptInput: ctx.promptInput,
+        sourceMetadata: ctx.sourceMetadata,
+        dataPointSettings: ctx.dataPointSettings,
+        selectionFilters: ctx.selectionFilters,
+        commitWindow: ctx.commitWindow,
+        autoPublish: ctx.autoPublish,
+        voiceId: ctx.voiceId,
+      });
+    }
+  }
+
   const handler = isScheduleOutputType(outputType)
     ? handlers[outputType]
     : null;

@@ -249,6 +249,27 @@ const clearAutomatedWorkflowFailures = Effect.fn(
   });
 });
 
+export async function recordAutomatedWorkflowPauseSafe(
+  params: RecordAutomatedWorkflowPauseParams
+) {
+  try {
+    const pauseResult = await Effect.runPromise(
+      recordAutomatedWorkflowFailure(params)
+    );
+
+    if (pauseResult.paused) {
+      console.warn(
+        `[${params.logPrefix}] Paused trigger ${params.triggerId} after ${pauseResult.failureCount} automated ${params.reason} events`
+      );
+    }
+  } catch (error) {
+    console.warn(
+      `[${params.logPrefix}] Failed to record automated workflow pause state`,
+      { triggerId: params.triggerId, reason: params.reason, error }
+    );
+  }
+}
+
 export async function recordAutomatedWorkflowPauseStep<TPayload>(
   context: WorkflowContext<TPayload>,
   { manual, stepName, ...params }: RecordAutomatedWorkflowPauseStepParams
@@ -258,28 +279,25 @@ export async function recordAutomatedWorkflowPauseStep<TPayload>(
   }
 
   try {
-    await context.run(stepName, async () => {
-      try {
-        const pauseResult = await Effect.runPromise(
-          recordAutomatedWorkflowFailure(params)
-        );
-
-        if (pauseResult.paused) {
-          console.warn(
-            `[${params.logPrefix}] Paused trigger ${params.triggerId} after ${pauseResult.failureCount} automated ${params.reason} events`
-          );
-        }
-      } catch (error) {
-        console.warn(
-          `[${params.logPrefix}] Failed to record automated workflow pause state`,
-          { triggerId: params.triggerId, reason: params.reason, error }
-        );
-      }
-    });
+    await context.run(stepName, () => recordAutomatedWorkflowPauseSafe(params));
   } catch (error) {
     console.warn(
       `[${params.logPrefix}] Failed to run automated workflow pause step`,
       { triggerId: params.triggerId, reason: params.reason, error }
+    );
+  }
+}
+
+export async function clearAutomatedWorkflowPauseSafe({
+  triggerId,
+  logPrefix,
+}: ClearAutomatedWorkflowPauseStateParams & { logPrefix: string }) {
+  try {
+    await Effect.runPromise(clearAutomatedWorkflowFailures({ triggerId }));
+  } catch (error) {
+    console.warn(
+      `[${logPrefix}] Failed to clear automated workflow pause state`,
+      { triggerId, error }
     );
   }
 }
@@ -298,16 +316,9 @@ export async function clearAutomatedWorkflowPauseStateStep<TPayload>(
   }
 
   try {
-    await context.run(stepName, async () => {
-      try {
-        await Effect.runPromise(clearAutomatedWorkflowFailures({ triggerId }));
-      } catch (error) {
-        console.warn(
-          `[${logPrefix}] Failed to clear automated workflow pause state`,
-          { triggerId, error }
-        );
-      }
-    });
+    await context.run(stepName, () =>
+      clearAutomatedWorkflowPauseSafe({ triggerId, logPrefix })
+    );
   } catch (error) {
     console.warn(
       `[${logPrefix}] Failed to run automated workflow pause clear step`,

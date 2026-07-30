@@ -9,6 +9,7 @@ import {
   buildDetailStats,
 } from "@/lib/integrations/helpers";
 import type { IntegrationDetailViewProps } from "@/types/integrations";
+import { getIntegrationReferralUrl } from "@/utils/integration-referral-url";
 import { IntegrationAuthorMeta } from "./integration-author-meta";
 import { IntegrationBanner } from "./integration-banner";
 import { IntegrationConnectButton } from "./integration-connect-button";
@@ -56,7 +57,7 @@ export function IntegrationDetailView({
               {integration.websiteUrl ? (
                 <a
                   className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white px-5.5 py-2.75 font-medium font-sans text-[#1E1E1E] text-[0.875rem] leading-[1.29] transition-colors [box-shadow:#ECECEC_0_0_0_0.0625rem,#28282814_0_0.0625rem_0.125rem] hover:bg-[#FAFAFA] dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/[0.12] dark:[box-shadow:#FFFFFF1F_0_0_0_0.0625rem]"
-                  href={integration.websiteUrl}
+                  href={getIntegrationReferralUrl(integration.websiteUrl)}
                   rel="noopener"
                   target="_blank"
                 >

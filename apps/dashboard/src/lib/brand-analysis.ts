@@ -5,12 +5,11 @@ import {
   updateBrandAnalysisJob,
 } from "@notra/ai/jobs/brand-analysis";
 import { redis } from "@notra/ai/utils/redis";
-import { getConfiguredWorkflowUrl } from "@notra/ai/utils/url";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
-import { Client as WorkflowClient } from "@upstash/workflow";
 import { eq } from "drizzle-orm";
 import { after } from "next/server";
+import { startBrandAnalysisRun } from "@/lib/workflows/start";
 import type {
   DispatchBrandAnalysisInput,
   InsertBrandIdentityInput,
@@ -67,10 +66,7 @@ async function dispatchBrandAnalysisWorkflow({
   brandIdentityId,
   jobId,
 }: DispatchBrandAnalysisInput) {
-  const token = process.env.QSTASH_TOKEN;
-  const workflowBaseUrl = getConfiguredWorkflowUrl();
-
-  if (!(redis && token && workflowBaseUrl)) {
+  if (!redis) {
     return;
   }
 
@@ -92,19 +88,15 @@ async function dispatchBrandAnalysisWorkflow({
       completedAt: null,
     });
 
-    const client = new WorkflowClient({ token });
-    const result = await client.trigger({
-      url: `${workflowBaseUrl}/api/workflows/brand-analysis`,
-      body: {
-        organizationId,
-        url: websiteUrl,
-        voiceId: brandIdentityId,
-        jobId,
-      },
+    const result = await startBrandAnalysisRun({
+      organizationId,
+      url: websiteUrl,
+      voiceId: brandIdentityId,
+      jobId,
     });
 
     await updateBrandAnalysisJob(redis, jobId, {
-      workflowRunId: result.workflowRunId,
+      workflowRunId: result.runId,
     });
   } catch (error) {
     const message =
@@ -133,10 +125,7 @@ export async function queueBrandAnalysisForOnboarding({
   websiteUrl,
   name,
 }: QueueBrandAnalysisInput): Promise<QueueBrandAnalysisResult | null> {
-  const token = process.env.QSTASH_TOKEN;
-  const workflowBaseUrl = getConfiguredWorkflowUrl();
-
-  if (!(redis && token && workflowBaseUrl)) {
+  if (!redis) {
     return null;
   }
 

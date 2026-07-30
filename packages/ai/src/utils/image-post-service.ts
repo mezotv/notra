@@ -1,0 +1,260 @@
+import {
+  deleteRepoImageSnapshot,
+  type generateRepoImage,
+  RepoImageError,
+} from "@notra/ai/agents/repo-image";
+import { calculateAiCreditCostCents } from "@notra/ai/billing/ai-credit-cost";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
+import { IMAGE_GEN_MODEL_ID } from "@notra/ai/constants/repo-image";
+import { maybeGenerateCollectionTitle } from "@notra/ai/jobs/collection-title";
+import {
+  uploadGeneratedHtmlAsset,
+  uploadGeneratedImageAsset,
+} from "@notra/ai/utils/image-assets";
+import { db } from "@notra/db/drizzle";
+import { postCollections, posts } from "@notra/db/schema";
+import { buildPostCollectionName } from "@notra/db/utils/post-collections";
+import { and, eq, isNotNull, sql } from "drizzle-orm";
+import { nanoid } from "nanoid";
+
+export async function buildRevisionSourceMetadata(params: {
+  organizationId: string;
+  postId: string;
+  integrationId: string;
+  branch: string;
+  prompt: string;
+  result: Awaited<ReturnType<typeof generateRepoImage>>;
+}) {
+  const post = await db.query.posts.findFirst({
+    where: and(
+      eq(posts.id, params.postId),
+      eq(posts.organizationId, params.organizationId)
+    ),
+  });
+  const existing =
+    post?.sourceMetadata &&
+    typeof post.sourceMetadata === "object" &&
+    !Array.isArray(post.sourceMetadata)
+      ? post.sourceMetadata
+      : {};
+
+  return {
+    ...existing,
+    type: "generated_image",
+    integrationId: params.integrationId,
+    branch: params.branch,
+    brandIdentityId:
+      params.result.brandIdentityId ?? getStoredBrandIdentityId(existing),
+    mode: "prompt",
+    prompt: params.prompt,
+    sourcePostId: params.postId,
+    sandbox: params.result.sandbox,
+    usage: params.result.usage ?? null,
+  };
+}
+
+export async function trackImageGenerationUsage(params: {
+  organizationId: string;
+  postId: string;
+  usage: Awaited<ReturnType<typeof generateRepoImage>>["usage"];
+  useMarkup?: boolean;
+}) {
+  if (!autumn || allowUnmeteredAiInDevelopment || !params.usage) {
+    return;
+  }
+
+  const cost = calculateAiCreditCostCents(
+    params.usage,
+    params.usage.modelId ?? IMAGE_GEN_MODEL_ID,
+    params.useMarkup ?? false
+  );
+
+  console.info("[Autumn] Marketing asset usage cost comparison", {
+    organizationId: params.organizationId,
+    postId: params.postId,
+    model: params.usage.modelId ?? IMAGE_GEN_MODEL_ID,
+    billingBasis: cost.billingBasis,
+    computedCostCents: cost.costCents,
+    reportedCostCents: cost.reportedCostCents,
+    tokenCostCents: cost.tokenCostCents,
+    reportedTotalUsd: params.usage.totalUsd,
+    inputTokens: params.usage.inputTokens,
+    outputTokens: params.usage.outputTokens,
+    cacheReadTokens: params.usage.cacheReadTokens,
+    cacheWriteTokens: params.usage.cacheWriteTokens,
+    totalTokens: params.usage.totalTokens,
+    markupApplied: params.useMarkup ?? false,
+  });
+
+  try {
+    await autumn.track({
+      customerId: params.organizationId,
+      featureId: FEATURES.AI_CREDITS,
+      value: cost.costCents,
+      properties: {
+        source: "marketing_assets",
+        post_id: params.postId,
+        model: params.usage.modelId ?? IMAGE_GEN_MODEL_ID,
+        billing_basis: cost.billingBasis,
+        input_tokens: params.usage.inputTokens,
+        output_tokens: params.usage.outputTokens,
+        cache_read_tokens: params.usage.cacheReadTokens,
+        cache_write_tokens: params.usage.cacheWriteTokens,
+        total_tokens: params.usage.totalTokens,
+        sandbox_total_usd: params.usage.totalUsd,
+        markup_applied: params.useMarkup ?? false,
+        cost_cents: cost.costCents,
+        reported_cost_cents: cost.reportedCostCents,
+        token_cost_cents: cost.tokenCostCents,
+      },
+    });
+  } catch (error) {
+    console.error("[Autumn] Track error after marketing asset generation:", {
+      customerId: params.organizationId,
+      postId: params.postId,
+      error,
+    });
+  }
+}
+
+export async function getImageSnapshot(organizationId: string, postId: string) {
+  const post = await db.query.posts.findFirst({
+    where: and(eq(posts.id, postId), eq(posts.organizationId, organizationId)),
+  });
+
+  if (!post) {
+    throw new RepoImageError("not_found", "Source image post not found");
+  }
+
+  const metadata = post.sourceMetadata;
+  if (
+    !metadata ||
+    typeof metadata !== "object" ||
+    !("sandbox" in metadata) ||
+    typeof metadata.sandbox !== "object" ||
+    metadata.sandbox === null ||
+    !("snapshotId" in metadata.sandbox) ||
+    typeof metadata.sandbox.snapshotId !== "string"
+  ) {
+    throw new RepoImageError(
+      "invalid_source",
+      "Source image post does not have a sandbox snapshot"
+    );
+  }
+
+  const boxId =
+    "boxId" in metadata.sandbox && typeof metadata.sandbox.boxId === "string"
+      ? metadata.sandbox.boxId
+      : undefined;
+  const brandIdentityId = getStoredBrandIdentityId(metadata) ?? undefined;
+
+  return { boxId, snapshotId: metadata.sandbox.snapshotId, brandIdentityId };
+}
+
+export function getStoredBrandIdentityId(metadata: object) {
+  if (
+    "brandIdentityId" in metadata &&
+    typeof metadata.brandIdentityId === "string"
+  ) {
+    return metadata.brandIdentityId;
+  }
+
+  if ("brandVoiceId" in metadata && typeof metadata.brandVoiceId === "string") {
+    return metadata.brandVoiceId;
+  }
+
+  return null;
+}
+
+export async function saveGeneratedImagePost(params: {
+  chatId?: string;
+  organizationId: string;
+  title: string;
+  postId?: string;
+  pngBase64: string;
+  html: string;
+  sourceMetadata: Record<string, unknown>;
+}) {
+  const postId = params.postId ?? nanoid();
+  const [imageUrl, htmlUrl] = await Promise.all([
+    uploadGeneratedImageAsset({
+      organizationId: params.organizationId,
+      pngBase64: params.pngBase64,
+      postId,
+    }),
+    uploadGeneratedHtmlAsset({
+      organizationId: params.organizationId,
+      html: params.html,
+      postId,
+    }),
+  ]);
+  const collectionId = nanoid();
+  const now = new Date();
+  const contentTypesJson = JSON.stringify(["image"]);
+
+  const [collection] = await db
+    .insert(postCollections)
+    .values({
+      id: collectionId,
+      organizationId: params.organizationId,
+      source: "chat",
+      sourceId: params.chatId ?? null,
+      name: buildPostCollectionName(["image"], now),
+      nameSource: "generated",
+      contentTypes: ["image"],
+      expectedPostCount: null,
+      completedPostCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    })
+    .onConflictDoUpdate({
+      target: [
+        postCollections.organizationId,
+        postCollections.source,
+        postCollections.sourceId,
+      ],
+      targetWhere: and(
+        eq(postCollections.source, "chat"),
+        isNotNull(postCollections.sourceId)
+      ),
+      set: {
+        contentTypes: sql`CASE
+          WHEN ${postCollections.contentTypes} @> ${contentTypesJson}::jsonb
+            THEN ${postCollections.contentTypes}
+          ELSE ${postCollections.contentTypes} || ${contentTypesJson}::jsonb
+        END`,
+        updatedAt: now,
+      },
+    })
+    .returning({ id: postCollections.id });
+
+  if (!collection) {
+    throw new Error("Failed to create image content collection");
+  }
+
+  await db.insert(posts).values({
+    id: postId,
+    organizationId: params.organizationId,
+    collectionId: collection.id,
+    title: params.title,
+    slug: null,
+    content: imageUrl,
+    htmlUrl,
+    markdown: null,
+    recommendations: null,
+    contentType: "image",
+    status: "draft",
+    sourceMetadata: params.sourceMetadata,
+  });
+
+  await maybeGenerateCollectionTitle({
+    collectionId: collection.id,
+    organizationId: params.organizationId,
+  });
+
+  return { imageUrl, postId };
+}

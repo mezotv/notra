@@ -90,11 +90,9 @@ export function GuidelinesPanel({
             size="sm"
           >
             {isRefreshBusy ? (
-              <Loader2Icon className="mr-2 size-4 animate-spin" />
+              <Loader2Icon className="size-4 animate-spin" />
             ) : (
-              <span className="mr-2">
-                <HugeiconsIcon className="size-4" icon={SparklesIcon} />
-              </span>
+              <HugeiconsIcon className="size-4" icon={SparklesIcon} />
             )}
             {isRefreshBusy ? "Generating…" : "Generate Guidelines"}
           </Button>
@@ -184,11 +182,9 @@ export function GuidelinesPanel({
               size="sm"
             >
               {isRefreshBusy ? (
-                <Loader2Icon className="mr-2 size-4 animate-spin" />
+                <Loader2Icon className="size-4 animate-spin" />
               ) : (
-                <span className="mr-2">
-                  <HugeiconsIcon className="size-4" icon={RefreshIcon} />
-                </span>
+                <HugeiconsIcon className="size-4" icon={RefreshIcon} />
               )}
               {isRefreshBusy ? "Refreshing…" : "Refresh Guidelines"}
             </Button>
