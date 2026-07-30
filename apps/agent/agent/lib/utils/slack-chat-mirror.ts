@@ -66,6 +66,7 @@ function toSlackInboundUiMessage(message: SlackMessage) {
 function getSlackChatTitle(message: SlackMessage) {
   const text = getSlackMessageText(message)
     .replace(/<@[A-Z0-9]+>/gu, "")
+    .replace(/@U[A-Z0-9]{8,}/gu, "")
     .replace(/\s+/gu, " ")
     .trim();
   const preview = text.length > 52 ? `${text.slice(0, 49).trimEnd()}...` : text;
@@ -175,7 +176,7 @@ export function mirrorPublicSlackThread(
 }
 
 export async function resolveSlackMirrorChatId(ctx: HookContext) {
-  if (ctx.channel.kind !== "slack") {
+  if (ctx.channel.kind !== "channel:slack") {
     return null;
   }
 
