@@ -81,11 +81,6 @@ export const beginSocialConnect = Effect.fn("beginSocialConnect")(function* (
       }),
   });
 
-  const linkedInConnectionType =
-    process.env.SOCIAL_CONNECT_LINKEDIN_ORGANIZATIONS === "true"
-      ? ("organization" as const)
-      : ("personal" as const);
-
   const result = yield* Effect.tryPromise({
     try: () =>
       getSocialConnectClient(params.platform).socialAccounts.createAuthURL({
@@ -94,7 +89,7 @@ export const beginSocialConnect = Effect.fn("beginSocialConnect")(function* (
         ...(params.platform === "linkedin"
           ? {
               platform_data: {
-                linkedin: { connection_type: linkedInConnectionType },
+                linkedin: { connection_type: "organization" as const },
               },
             }
           : {}),
