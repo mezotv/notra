@@ -97,90 +97,107 @@ export async function POST(
   const collectionId = nanoid();
   const now = new Date();
   const contentTypesJson = JSON.stringify([contentType]);
-  const result = await db.transaction(async (tx) => {
-    const [collection] = await tx
-      .insert(postCollections)
-      .values({
-        id: collectionId,
-        organizationId,
-        source: "chat",
-        sourceId: chatId,
-        name: buildPostCollectionName([contentType], now),
-        nameSource: "generated",
-        contentTypes: [contentType],
-        expectedPostCount: null,
-        completedPostCount: 0,
-        createdAt: now,
-        updatedAt: now,
-      })
-      .onConflictDoUpdate({
-        target: [
-          postCollections.organizationId,
-          postCollections.source,
-          postCollections.sourceId,
-        ],
-        targetWhere: and(
-          eq(postCollections.source, "chat"),
-          isNotNull(postCollections.sourceId)
-        ),
-        set: {
-          contentTypes: sql`CASE
+
+  let result: { postId: string; collectionId: string } | null = null;
+  try {
+    result = await db.transaction(async (tx) => {
+      const [collection] = await tx
+        .insert(postCollections)
+        .values({
+          id: collectionId,
+          organizationId,
+          source: "chat",
+          sourceId: chatId,
+          name: buildPostCollectionName([contentType], now),
+          nameSource: "generated",
+          contentTypes: [contentType],
+          expectedPostCount: null,
+          completedPostCount: 0,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .onConflictDoUpdate({
+          target: [
+            postCollections.organizationId,
+            postCollections.source,
+            postCollections.sourceId,
+          ],
+          targetWhere: and(
+            eq(postCollections.source, "chat"),
+            isNotNull(postCollections.sourceId)
+          ),
+          set: {
+            contentTypes: sql`CASE
             WHEN ${postCollections.contentTypes} @> ${contentTypesJson}::jsonb
               THEN ${postCollections.contentTypes}
             ELSE ${postCollections.contentTypes} || ${contentTypesJson}::jsonb
           END`,
-          updatedAt: now,
-        },
-      })
-      .returning({
-        id: postCollections.id,
-        contentTypes: postCollections.contentTypes,
-        createdAt: postCollections.createdAt,
-        name: postCollections.name,
-        nameSource: postCollections.nameSource,
+            updatedAt: now,
+          },
+        })
+        .returning({
+          id: postCollections.id,
+          contentTypes: postCollections.contentTypes,
+          createdAt: postCollections.createdAt,
+          name: postCollections.name,
+          nameSource: postCollections.nameSource,
+        });
+
+      if (!collection) {
+        return null;
+      }
+
+      if (
+        collection.nameSource === "generated" &&
+        isLegacyPostCollectionName(collection.name)
+      ) {
+        await tx
+          .update(postCollections)
+          .set({
+            name: buildPostCollectionName(
+              Array.isArray(collection.contentTypes)
+                ? collection.contentTypes
+                : [contentType],
+              collection.createdAt
+            ),
+            updatedAt: now,
+          })
+          .where(eq(postCollections.id, collection.id));
+      }
+
+      await tx.insert(posts).values({
+        id,
+        organizationId,
+        collectionId: collection.id,
+        title,
+        slug,
+        content,
+        markdown,
+        contentType,
+        status,
+        createdBy: auth.context.user.id,
+        ...(status === "published"
+          ? { publishedAt: now, publishedBy: auth.context.user.id }
+          : {}),
+        sourceMetadata: null,
       });
 
-    if (!collection) {
-      return null;
-    }
-
-    if (
-      collection.nameSource === "generated" &&
-      isLegacyPostCollectionName(collection.name)
-    ) {
-      await tx
-        .update(postCollections)
-        .set({
-          name: buildPostCollectionName(
-            Array.isArray(collection.contentTypes)
-              ? collection.contentTypes
-              : [contentType],
-            collection.createdAt
-          ),
-          updatedAt: now,
-        })
-        .where(eq(postCollections.id, collection.id));
-    }
-
-    await tx.insert(posts).values({
-      id,
-      organizationId,
-      collectionId: collection.id,
-      title,
-      slug,
-      content,
-      markdown,
-      contentType,
-      status,
-      createdBy: auth.context.user.id,
-      ...(status === "published"
-        ? { publishedAt: now, publishedBy: auth.context.user.id }
-        : {}),
-      sourceMetadata: null,
+      return { postId: id, collectionId: collection.id };
     });
-
-    return { postId: id, collectionId: collection.id };
-  });
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "23505"
+    ) {
+      return NextResponse.json(
+        { error: "A post with this slug already exists" },
+        { status: 409 }
+      );
+    }
+    throw error;
+  }
 
   if (!result) {
     return NextResponse.json(

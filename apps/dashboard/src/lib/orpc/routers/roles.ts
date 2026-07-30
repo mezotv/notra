@@ -292,7 +292,7 @@ export const rolesRouter = {
   assign: authorizedProcedure
     .input(assignRoleInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationScopes({
+      const access = await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
@@ -313,7 +313,18 @@ export const rolesRouter = {
         throw notFound("Member not found");
       }
 
-      await findRole(input.organizationId, input.roleId);
+      const role = await findRole(input.organizationId, input.roleId);
+
+      const callerScopes = new Set(access.scopes);
+      const escalatedScopes = filterOrganizationScopes(role.scopes).filter(
+        (scope) => !callerScopes.has(scope)
+      );
+
+      if (escalatedScopes.length > 0) {
+        throw forbidden(
+          `You cannot assign a role with permissions you do not have: ${escalatedScopes.join(", ")}`
+        );
+      }
 
       await db
         .insert(memberRoleAssignments)
