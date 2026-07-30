@@ -7,6 +7,7 @@ import {
   members,
   organizationRoles,
 } from "@notra/db/schema";
+import type { OrganizationScope } from "@notra/db/types/roles";
 import { filterOrganizationScopes } from "@notra/db/utils/permissions";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -29,6 +30,22 @@ function isUniqueViolation(error: unknown): boolean {
     "code" in error &&
     error.code === "23505"
   );
+}
+
+function assertNoScopeEscalation(
+  callerScopes: OrganizationScope[],
+  roleScopes: string[]
+) {
+  const held = new Set(callerScopes);
+  const escalated = filterOrganizationScopes(roleScopes).filter(
+    (scope) => !held.has(scope)
+  );
+
+  if (escalated.length > 0) {
+    throw forbidden(
+      `You cannot grant permissions you do not have: ${escalated.join(", ")}`
+    );
+  }
 }
 
 async function findRole(organizationId: string, roleId: string) {
@@ -161,12 +178,14 @@ export const rolesRouter = {
   create: authorizedProcedure
     .input(createRoleInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationScopes({
+      const access = await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
         scopes: ["roles:manage"],
       });
+
+      assertNoScopeEscalation(access.scopes, input.scopes);
 
       const id = nanoid();
 
@@ -192,12 +211,16 @@ export const rolesRouter = {
   update: authorizedProcedure
     .input(updateRoleInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationScopes({
+      const access = await assertOrganizationScopes({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
         scopes: ["roles:manage"],
       });
+
+      if (input.scopes !== undefined) {
+        assertNoScopeEscalation(access.scopes, input.scopes);
+      }
 
       const role = await findRole(input.organizationId, input.roleId);
 
@@ -315,16 +338,7 @@ export const rolesRouter = {
 
       const role = await findRole(input.organizationId, input.roleId);
 
-      const callerScopes = new Set(access.scopes);
-      const escalatedScopes = filterOrganizationScopes(role.scopes).filter(
-        (scope) => !callerScopes.has(scope)
-      );
-
-      if (escalatedScopes.length > 0) {
-        throw forbidden(
-          `You cannot assign a role with permissions you do not have: ${escalatedScopes.join(", ")}`
-        );
-      }
+      assertNoScopeEscalation(access.scopes, role.scopes);
 
       await db
         .insert(memberRoleAssignments)
