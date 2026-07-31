@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowDown01Icon,
   Cancel01Icon,
   Clapping02Icon,
   Comment01Icon,
@@ -29,34 +30,11 @@ import Image from "next/image";
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/button";
+import { SocialAccountSelector } from "@/components/content/social-account-selector";
 import { LINKEDIN_TRUNCATION_LIMIT } from "@/constants/linkedin";
 import { cn } from "@/lib/utils";
 import type { TextSelection } from "@/schemas/content";
-
-interface LinkedInPostProps extends React.ComponentProps<"div"> {
-  author: {
-    name: string;
-    avatar?: string;
-    fallback?: string;
-    headline?: string;
-  };
-  content?: string;
-  onContentChange?: (value: string) => void;
-  onSelectionChange?: (selection: TextSelection | null) => void;
-  image?: { src: string; alt: string };
-  reactions?: { count: number; types?: Array<"like" | "love" | "celebrate"> };
-  comments?: number;
-  reposts?: number;
-  timestamp?: string;
-  onLike?: () => void;
-  onComment?: () => void;
-  onRepost?: () => void;
-  onSend?: () => void;
-  onClose?: () => void;
-  truncate?: boolean;
-  truncationLimit?: number;
-  defaultExpanded?: boolean;
-}
+import type { LinkedInPostProps } from "@/types/content/linkedin-post";
 
 const reactionColors: Record<string, string> = {
   like: "#378FE9",
@@ -106,6 +84,21 @@ function generateMockLinkedInUrl(originalUrl: string): string {
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
 const HASHTAG_REGEX = /(#\w+)/g;
 const COMBINED_REGEX = /(https?:\/\/[^\s]+|#\w+)/g;
+
+const LINKEDIN_EDITOR_TEXT_STYLE: React.CSSProperties = {
+  fontSize: "0.875rem",
+  lineHeight: "1.25rem",
+  letterSpacing: "normal",
+  fontFamily: "inherit",
+  whiteSpace: "pre-wrap",
+  overflowWrap: "anywhere",
+  wordBreak: "normal",
+};
+
+const LINKEDIN_EDITOR_OVERLAY_STYLE: React.CSSProperties = {
+  ...LINKEDIN_EDITOR_TEXT_STYLE,
+  color: "transparent",
+};
 
 function formatContentWithHashtagsAndLinks(text: string): React.ReactNode[] {
   const parts = text.split(COMBINED_REGEX);
@@ -241,6 +234,7 @@ function PostContent({
 
 function LinkedInPost({
   author,
+  accountSelector,
   content,
   onContentChange,
   onSelectionChange,
@@ -264,8 +258,26 @@ function LinkedInPost({
   const hasEngagement =
     (reactions?.count ?? 0) > 0 || (comments ?? 0) > 0 || (reposts ?? 0) > 0;
   const isEditable = Boolean(onContentChange);
+  const hasAccountSelector =
+    accountSelector !== undefined && accountSelector.accounts.length > 1;
 
   const [localValue, setLocalValue] = useState(() => content ?? "");
+
+  const authorName = (
+    <span className="truncate font-semibold text-sm leading-tight">
+      {author.name}
+    </span>
+  );
+
+  const readOnlyContent = content ? (
+    <PostContent
+      content={content}
+      defaultExpanded={defaultExpanded}
+      onSelectionChange={onSelectionChange}
+      truncate={truncate}
+      truncationLimit={truncationLimit}
+    />
+  ) : null;
 
   if ((content ?? "") !== localValue) {
     setLocalValue(content ?? "");
@@ -281,7 +293,24 @@ function LinkedInPost({
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <p className="font-semibold text-sm leading-tight">{author.name}</p>
+          {hasAccountSelector ? (
+            <SocialAccountSelector
+              accounts={accountSelector.accounts}
+              className="-mx-1 max-w-full px-1"
+              onSelect={accountSelector.onSelect}
+              trigger={
+                <>
+                  {authorName}
+                  <HugeiconsIcon
+                    className="size-3.5 shrink-0 text-muted-foreground"
+                    icon={ArrowDown01Icon}
+                  />
+                </>
+              }
+            />
+          ) : (
+            <p className="font-semibold text-sm leading-tight">{author.name}</p>
+          )}
           {author.headline && (
             <p className="truncate text-muted-foreground text-xs leading-tight">
               {author.headline}
@@ -314,25 +343,31 @@ function LinkedInPost({
 
       <div className="px-4 pb-2">
         {isEditable ? (
-          <Textarea
-            className="min-h-[6.5rem] resize-none rounded-none border-none bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 dark:bg-transparent"
-            onChange={(e) => {
-              const value = e.target.value;
-              setLocalValue(value);
-              onContentChange?.(value);
-            }}
-            placeholder="What do you want to talk about?"
-            value={localValue}
-          />
-        ) : content ? (
-          <PostContent
-            content={content}
-            defaultExpanded={defaultExpanded}
-            onSelectionChange={onSelectionChange}
-            truncate={truncate}
-            truncationLimit={truncationLimit}
-          />
-        ) : null}
+          <div className="grid w-full grid-cols-1">
+            <div
+              aria-hidden
+              className="pointer-events-none col-start-1 row-start-1 min-h-[6.5rem] min-w-0"
+              style={LINKEDIN_EDITOR_TEXT_STYLE}
+            >
+              {formatContentWithHashtagsAndLinks(localValue)}
+              {"\u200b"}
+            </div>
+            <Textarea
+              className="field-sizing-content col-start-1 row-start-1 min-h-[6.5rem] min-w-0 resize-none overflow-hidden rounded-none border-none bg-transparent p-0 caret-foreground shadow-none focus-visible:ring-0 dark:bg-transparent"
+              onChange={(e) => {
+                const value = e.target.value;
+                setLocalValue(value);
+                onContentChange?.(value);
+              }}
+              placeholder="What do you want to talk about?"
+              spellCheck={false}
+              style={LINKEDIN_EDITOR_OVERLAY_STYLE}
+              value={localValue}
+            />
+          </div>
+        ) : (
+          readOnlyContent
+        )}
       </div>
 
       {image && (
@@ -420,4 +455,4 @@ function LinkedInPost({
   );
 }
 
-export { LinkedInPost, type LinkedInPostProps };
+export { LinkedInPost };

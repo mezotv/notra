@@ -13,6 +13,12 @@
       "skillPath": "c15t/SKILL.md",
       "computedHash": "031b918ecb7f15c96e690412c79e2ebb8f4a2bcea5c5fac3d87d9752d4153660"
     },
+    "code-organization": {
+      "source": "mezotv/skills",
+      "sourceType": "github",
+      "skillPath": "skills/code-organization/SKILL.md",
+      "computedHash": "9d48ef5f26fc218cb82554eac0b205ff38de6c6d57a905281957f95d94b9c90d"
+    },
     "eve": {
       "source": "vercel/eve",
       "sourceType": "github",

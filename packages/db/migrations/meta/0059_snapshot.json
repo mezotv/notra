@@ -1,5 +1,5 @@
 {
-  "id": "0d39f537-04ce-45c6-afa7-247826f2f97b",
+  "id": "a4af1188-f2c2-42ec-b5a4-526ffbb058f8",
   "prevId": "ecfe054a-a7f9-4e0a-bb2e-ce7c53a7748b",
   "version": "7",
   "dialect": "postgresql",
@@ -2168,27 +2168,9 @@
           "notNull": true,
           "default": false
         },
-        "access_token": {
-          "name": "access_token",
+        "verified_type": {
+          "name": "verified_type",
           "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "refresh_token": {
-          "name": "refresh_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "scope": {
-          "name": "scope",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "token_expires_at": {
-          "name": "token_expires_at",
-          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         },
@@ -6580,173 +6562,6 @@
           "tableTo": "organizations",
           "columnsFrom": [
             "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.slack_integrations": {
-      "name": "slack_integrations",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "text",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "organization_id": {
-          "name": "organization_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_by_user_id": {
-          "name": "created_by_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "display_name": {
-          "name": "display_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "encrypted_bot_token": {
-          "name": "encrypted_bot_token",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "slack_team_id": {
-          "name": "slack_team_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "slack_team_name": {
-          "name": "slack_team_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "slack_bot_user_id": {
-          "name": "slack_bot_user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "allowed_channel_ids": {
-          "name": "allowed_channel_ids",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "notification_channel_id": {
-          "name": "notification_channel_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "enabled": {
-          "name": "enabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "slackIntegrations_organizationId_idx": {
-          "name": "slackIntegrations_organizationId_idx",
-          "columns": [
-            {
-              "expression": "organization_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "slackIntegrations_createdByUserId_idx": {
-          "name": "slackIntegrations_createdByUserId_idx",
-          "columns": [
-            {
-              "expression": "created_by_user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "slackIntegrations_teamId_uidx": {
-          "name": "slackIntegrations_teamId_uidx",
-          "columns": [
-            {
-              "expression": "slack_team_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "slack_integrations_organization_id_organizations_id_fk": {
-          "name": "slack_integrations_organization_id_organizations_id_fk",
-          "tableFrom": "slack_integrations",
-          "tableTo": "organizations",
-          "columnsFrom": [
-            "organization_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "slack_integrations_created_by_user_id_users_id_fk": {
-          "name": "slack_integrations_created_by_user_id_users_id_fk",
-          "tableFrom": "slack_integrations",
-          "tableTo": "users",
-          "columnsFrom": [
-            "created_by_user_id"
           ],
           "columnsTo": [
             "id"

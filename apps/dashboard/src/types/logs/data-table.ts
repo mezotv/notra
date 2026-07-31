@@ -10,6 +10,7 @@ export interface DataTableEmptyState {
 export interface DataTableProps<TData> {
   // biome-ignore lint/suspicious/noExplicitAny: TanStack Table columns have varying value types
   columns: ColumnDef<TData, any>[];
+  contentKey: string;
   data: TData[];
   page: number;
   totalPages: number;

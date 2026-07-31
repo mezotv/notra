@@ -11,6 +11,8 @@ import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useRef } from "react";
 import { DiffView } from "@/components/content/diff-view";
 import { LinkedInPost } from "@/components/linkedin-post";
+import { useSelectedSocialAccount } from "@/lib/hooks/use-selected-social-account";
+import { linkedInAuthorFromAccount } from "@/utils/linkedin";
 import type { ContentEditorProps } from "./types";
 
 const VIEW_OPTIONS = ["preview", "raw", "diff"] as const;
@@ -27,6 +29,7 @@ export function LinkedInEditor({
   state,
   actions,
   organization,
+  organizationId,
 }: ContentEditorProps) {
   const [view, setView] = useQueryState(
     "view",
@@ -34,6 +37,17 @@ export function LinkedInEditor({
   );
 
   const titleInputRef = useRef<HTMLInputElement>(null);
+
+  const { accounts, selectedAccount, selectAccount } = useSelectedSocialAccount(
+    organizationId ?? "",
+    "linkedin"
+  );
+  const author = selectedAccount
+    ? linkedInAuthorFromAccount(selectedAccount)
+    : {
+        name: organization?.name ?? "Your Name",
+        avatar: organization?.logo ?? undefined,
+      };
 
   const currentMarkdown = state.editedMarkdown ?? content.markdown ?? "";
   const title = state.editingTitle ?? state.serverTitle;
@@ -89,10 +103,11 @@ export function LinkedInEditor({
       >
         <TabsContent className="mt-0 flex justify-center py-4" value="preview">
           <LinkedInPost
-            author={{
-              name: organization?.name ?? "Your Name",
-              avatar: organization?.logo ?? undefined,
+            accountSelector={{
+              accounts,
+              onSelect: selectAccount,
             }}
+            author={author}
             className="w-full max-w-lg"
             content={currentMarkdown}
             defaultExpanded

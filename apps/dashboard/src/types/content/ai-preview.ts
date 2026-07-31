@@ -1,3 +1,5 @@
+import type { PublishedSocialPost } from "@/types/content/post-social";
+
 export type PreviewIncomingState = "draft" | "finished";
 export type PreviewEffectiveState = "draft" | "loading" | "finished";
 
@@ -50,3 +52,29 @@ export type BlogChangelogPreviewAction =
   | { type: "regenerateOpenToggled" }
   | { type: "regenerateInstructionsChanged"; instructions: string }
   | { type: "openChanged"; open: boolean };
+
+export interface SocialPreviewCallbacks {
+  onApprove?: () => void;
+  onPublished?: (published: PublishedSocialPost) => void;
+  onDeny?: () => void;
+  onPersist?: (
+    status: "draft" | "published",
+    payload: { title: string; markdown: string }
+  ) => Promise<void>;
+  onRegenerate?: (
+    instructions: string,
+    payload: { title: string; markdown: string }
+  ) => void;
+}
+
+export interface SocialPreviewProps extends SocialPreviewCallbacks {
+  state: PreviewIncomingState;
+  title: string;
+  markdown: string;
+  organizationId?: string;
+  organization?: {
+    name: string;
+    logo?: string | null;
+  };
+  persistedStatus?: "draft" | "published";
+}

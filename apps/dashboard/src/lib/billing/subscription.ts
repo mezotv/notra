@@ -1,4 +1,7 @@
-import { autumn } from "@notra/ai/billing/autumn";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
 import { FEATURES, PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import { ORPCError } from "@orpc/server";
 import { internalServerError, paymentRequired } from "@/lib/orpc/utils/errors";
@@ -33,7 +36,14 @@ async function hasAiCreditsGrant(organizationId: string): Promise<boolean> {
 export async function assertActiveSubscription(
   organizationId: string
 ): Promise<void> {
+  if (allowUnmeteredAiInDevelopment) {
+    return;
+  }
+
   if (!autumn) {
+    if (process.env.NODE_ENV === "production") {
+      throw internalServerError("Billing is not configured");
+    }
     return;
   }
 

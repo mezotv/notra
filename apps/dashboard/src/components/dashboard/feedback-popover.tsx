@@ -96,7 +96,7 @@ export function FeedbackForm({
         />
       </div>
 
-      <div className="flex items-center justify-between gap-2 border-border border-t border-dashed p-2.5">
+      <div className="flex items-center justify-between gap-2 p-2.5">
         <div className="flex items-center gap-0.5">
           {FEEDBACK_SENTIMENT_OPTIONS.map((option) => {
             const isActive = sentiment === option.value;

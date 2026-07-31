@@ -1,57 +1,35 @@
-import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
+import { Effect } from "effect";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
-import { organizationIdSchema } from "@/schemas/auth/organization";
+import { runSocialConnect } from "@/lib/orpc/utils/social-connect";
 import {
-  badRequest,
-  internalServerError,
-  notFound,
-  serviceUnavailable,
-} from "../utils/errors";
-
-const organizationScopedInputSchema = z.object({
-  organizationId: organizationIdSchema,
-});
-
-const disconnectSocialAccountInputSchema = organizationScopedInputSchema.extend(
-  {
-    accountId: z.string().min(1),
-  }
-);
-
-const beginTwitterAuthInputSchema = organizationScopedInputSchema.extend({
-  callbackPath: z.string().default("/"),
-});
-
-function generateCodeVerifier(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return base64UrlEncode(array);
-}
-
-async function generateCodeChallenge(verifier: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(verifier);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return base64UrlEncode(new Uint8Array(digest));
-}
-
-function base64UrlEncode(buffer: Uint8Array): string {
-  let binary = "";
-  for (const byte of buffer) {
-    binary += String.fromCharCode(byte);
-  }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
-}
+  beginSocialConnect,
+  disconnectProviderAccount,
+} from "@/lib/social-connect/connect";
+import {
+  completeLinkedInSelection,
+  getLinkedInSelection,
+} from "@/lib/social-connect/linkedin-selection";
+import { publishSocialPost } from "@/lib/social-connect/publish";
+import { refreshConnectedAccounts } from "@/lib/social-connect/refresh";
+import {
+  beginConnectInputSchema,
+  disconnectSocialAccountInputSchema,
+  linkedinSelectionCompleteInputSchema,
+  linkedinSelectionGetInputSchema,
+  publishSocialPostInputSchema,
+  refreshSocialAccountsInputSchema,
+  socialAccountsOrganizationInputSchema,
+  socialConnectPlatformSchema,
+} from "@/schemas/social-accounts";
+import { notFound } from "../utils/errors";
 
 export const socialAccountsRouter = {
   list: authorizedProcedure
-    .input(organizationScopedInputSchema)
+    .input(socialAccountsOrganizationInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -69,6 +47,7 @@ export const socialAccountsRouter = {
           providerAccountId: true,
           username: true,
           verified: true,
+          verifiedType: true,
         },
         where: eq(connectedSocialAccounts.organizationId, input.organizationId),
       });
@@ -90,7 +69,7 @@ export const socialAccountsRouter = {
       });
 
       const existing = await db.query.connectedSocialAccounts.findFirst({
-        columns: { id: true },
+        columns: { id: true, providerAccountId: true, provider: true },
         where: and(
           eq(connectedSocialAccounts.id, input.accountId),
           eq(connectedSocialAccounts.organizationId, input.organizationId)
@@ -101,65 +80,135 @@ export const socialAccountsRouter = {
         throw notFound("Account not found");
       }
 
+      const parsedPlatform = socialConnectPlatformSchema.safeParse(
+        existing.provider
+      );
+      if (parsedPlatform.success) {
+        await runSocialConnect(
+          disconnectProviderAccount(
+            existing.providerAccountId,
+            parsedPlatform.data
+          ).pipe(Effect.map(() => undefined)),
+          { logLabel: "Failed to disconnect account" }
+        );
+      }
+
       await db
         .delete(connectedSocialAccounts)
         .where(eq(connectedSocialAccounts.id, input.accountId));
 
       return { success: true };
     }),
-  twitter: {
-    beginAuth: authorizedProcedure
-      .input(beginTwitterAuthInputSchema)
-      .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
-          headers: context.headers,
+  refresh: authorizedProcedure
+    .input(refreshSocialAccountsInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const result = await runSocialConnect(
+        refreshConnectedAccounts(input.organizationId, input.accountId),
+        { logLabel: "Failed to refresh connected accounts" }
+      );
+
+      return { accounts: result.accounts };
+    }),
+  publish: authorizedProcedure
+    .input(publishSocialPostInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const result = await runSocialConnect(
+        publishSocialPost({
           organizationId: input.organizationId,
-          user: context.user,
-        });
+          accountId: input.accountId,
+          content: input.content,
+        }),
+        { logLabel: "Failed to publish post", reconnectHint: true }
+      );
 
-        const clientId = process.env.TWITTER_CLIENT_ID;
-        if (!clientId) {
-          throw internalServerError("Twitter OAuth is not configured");
-        }
+      return {
+        postId: result.postId,
+        platformPostId: result.platformPostId,
+        postUrl: result.postUrl,
+        username: result.username,
+      };
+    }),
+  linkedinSelectionGet: authorizedProcedure
+    .input(linkedinSelectionGetInputSchema)
+    .handler(async ({ context, input }) => {
+      const stash = await runSocialConnect(getLinkedInSelection(input.token), {
+        logLabel: "Failed to load LinkedIn selection",
+      });
 
-        if (!redis) {
-          throw serviceUnavailable("Redis is not configured");
-        }
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: stash.organizationId,
+        user: context.user,
+      });
 
-        const baseUrl =
-          process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
-        if (!baseUrl) {
-          throw badRequest("Application base URL is not configured");
-        }
+      if (stash.userId !== context.user.id) {
+        throw notFound("Connection attempt not found");
+      }
 
-        const state = crypto.randomUUID();
-        const codeVerifier = generateCodeVerifier();
-        const codeChallenge = await generateCodeChallenge(codeVerifier);
-        const redirectUri = `${baseUrl}/api/social-accounts/twitter/callback`;
+      return {
+        accounts: stash.accounts,
+        organizationId: stash.organizationId,
+        callbackPath: stash.callbackPath,
+      };
+    }),
+  linkedinSelectionComplete: authorizedProcedure
+    .input(linkedinSelectionCompleteInputSchema)
+    .handler(async ({ context, input }) => {
+      const stash = await runSocialConnect(getLinkedInSelection(input.token), {
+        logLabel: "Failed to load LinkedIn selection",
+      });
 
-        await redis.set(
-          `twitter_oauth:${state}`,
-          JSON.stringify({
-            callbackPath: input.callbackPath,
-            codeVerifier,
-            organizationId: input.organizationId,
-          }),
-          { ex: 600 }
-        );
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: stash.organizationId,
+        user: context.user,
+      });
 
-        const authUrl = new URL("https://x.com/i/oauth2/authorize");
-        authUrl.searchParams.set("response_type", "code");
-        authUrl.searchParams.set("client_id", clientId);
-        authUrl.searchParams.set("redirect_uri", redirectUri);
-        authUrl.searchParams.set(
-          "scope",
-          "tweet.read tweet.write users.read offline.access"
-        );
-        authUrl.searchParams.set("state", state);
-        authUrl.searchParams.set("code_challenge", codeChallenge);
-        authUrl.searchParams.set("code_challenge_method", "S256");
+      if (stash.userId !== context.user.id) {
+        throw notFound("Connection attempt not found");
+      }
 
-        return { url: authUrl.toString() };
-      }),
-  },
+      const result = await runSocialConnect(
+        completeLinkedInSelection({
+          token: input.token,
+          accountIds: input.accountIds,
+        }),
+        { logLabel: "Failed to complete LinkedIn selection" }
+      );
+
+      return { callbackPath: result.callbackPath };
+    }),
+  beginConnect: authorizedProcedure
+    .input(beginConnectInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const result = await runSocialConnect(
+        beginSocialConnect({
+          organizationId: input.organizationId,
+          userId: context.user.id,
+          platform: input.platform,
+          callbackPath: input.callbackPath,
+        }),
+        { logLabel: "Failed to create account connect link" }
+      );
+
+      return { url: result.url };
+    }),
 };

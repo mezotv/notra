@@ -17,6 +17,33 @@ export function useReferences(organizationId: string, voiceId: string) {
   );
 }
 
+export function useCreateReferenceForVoice(organizationId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      voiceId,
+      data,
+    }: {
+      voiceId: string;
+      data: CreateReferenceInput;
+    }) => {
+      return dashboardOrpc.brand.references.create.call({
+        organizationId,
+        voiceId,
+        ...data,
+      });
+    },
+    onSuccess: (_result, { voiceId }) => {
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.brand.references.list.queryKey({
+          input: { organizationId, voiceId },
+        }),
+      });
+    },
+  });
+}
+
 export function useCreateReference(organizationId: string, voiceId: string) {
   const queryClient = useQueryClient();
 

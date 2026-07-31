@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowDown01Icon,
   Bookmark02Icon,
   Comment01Icon,
   FavouriteIcon,
@@ -25,31 +26,43 @@ import { Textarea } from "@notra/ui/components/ui/textarea";
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/button";
-import { TWITTER_CHAR_LIMIT } from "@/constants/twitter";
+import { SocialAccountSelector } from "@/components/content/social-account-selector";
+import { XVerificationBadge } from "@/components/icons/x-verification-badge";
+import {
+  TWEET_COUNTER_RING_CIRCUMFERENCE,
+  TWEET_COUNTER_RING_RADIUS,
+  TWEET_COUNTER_RING_SIZE,
+  TWEET_COUNTER_RING_STROKE,
+  TWEET_COUNTER_WARNING_RATIO,
+  TWEET_COUNTER_WARNING_REMAINING,
+} from "@/constants/twitter";
 import { cn } from "@/lib/utils";
 import type { TextSelection } from "@/schemas/content";
+import type {
+  TwitterPostMenuItem,
+  TwitterPostProps,
+} from "@/types/content/twitter-post";
 import { formatTweetContent } from "@/utils/format-tweet-content";
+import {
+  getTwitterCharLimit,
+  getWeightedTweetLength,
+  isSquareTwitterAvatar,
+} from "@/utils/twitter";
 
-interface TwitterPostMenuItem {
-  label: string;
-  icon?: React.ReactNode;
-  onClick: () => void;
-  variant?: "destructive";
-}
+const TWEET_EDITOR_TEXT_STYLE: React.CSSProperties = {
+  fontSize: "0.9375rem",
+  lineHeight: "1.375",
+  letterSpacing: "normal",
+  fontFamily: "inherit",
+  whiteSpace: "pre-wrap",
+  overflowWrap: "anywhere",
+  wordBreak: "normal",
+};
 
-interface TwitterPostProps extends React.ComponentProps<"div"> {
-  author: {
-    name: string;
-    avatar?: string;
-    fallback?: string;
-    handle?: string;
-  };
-  content?: string;
-  onContentChange?: (value: string) => void;
-  onSelectionChange?: (selection: TextSelection | null) => void;
-  timestamp?: string;
-  menuItems?: TwitterPostMenuItem[];
-}
+const TWEET_EDITOR_OVERLAY_STYLE: React.CSSProperties = {
+  ...TWEET_EDITOR_TEXT_STYLE,
+  color: "transparent",
+};
 
 function TweetContent({
   content,
@@ -129,27 +142,66 @@ function TweetContent({
   );
 }
 
-function CharacterCounter({ count }: { count: number }) {
-  const remaining = TWITTER_CHAR_LIMIT - count;
+function CharacterCounter({ count, limit }: { count: number; limit: number }) {
+  const remaining = limit - count;
   const isOver = remaining < 0;
-  const isWarning = remaining <= 20 && remaining >= 0;
+  const warningThreshold = Math.max(
+    TWEET_COUNTER_WARNING_REMAINING,
+    Math.round(limit * TWEET_COUNTER_WARNING_RATIO)
+  );
+  const isWarning = remaining >= 0 && remaining <= warningThreshold;
+  const progress = Math.min(count / limit, 1);
 
   return (
-    <span
-      className={cn(
-        "text-xs tabular-nums",
-        isOver && "font-medium text-destructive",
-        isWarning && "text-amber-500",
-        !isOver && !isWarning && "text-muted-foreground"
+    <span className="flex items-center gap-1.5">
+      {(isWarning || isOver) && (
+        <span
+          className={cn(
+            "text-xs tabular-nums",
+            isOver ? "font-medium text-destructive" : "text-amber-500"
+          )}
+        >
+          {remaining}
+        </span>
       )}
-    >
-      {remaining}
+      <svg
+        aria-label={`${count} of ${limit} characters used`}
+        className="-rotate-90"
+        height={TWEET_COUNTER_RING_SIZE}
+        role="img"
+        width={TWEET_COUNTER_RING_SIZE}
+      >
+        <circle
+          className="stroke-muted"
+          cx={TWEET_COUNTER_RING_SIZE / 2}
+          cy={TWEET_COUNTER_RING_SIZE / 2}
+          fill="none"
+          r={TWEET_COUNTER_RING_RADIUS}
+          strokeWidth={TWEET_COUNTER_RING_STROKE}
+        />
+        <circle
+          className={cn(
+            isOver && "stroke-destructive",
+            isWarning && "stroke-amber-500",
+            !(isOver || isWarning) && "stroke-primary"
+          )}
+          cx={TWEET_COUNTER_RING_SIZE / 2}
+          cy={TWEET_COUNTER_RING_SIZE / 2}
+          fill="none"
+          r={TWEET_COUNTER_RING_RADIUS}
+          strokeDasharray={TWEET_COUNTER_RING_CIRCUMFERENCE}
+          strokeDashoffset={TWEET_COUNTER_RING_CIRCUMFERENCE * (1 - progress)}
+          strokeLinecap="round"
+          strokeWidth={TWEET_COUNTER_RING_STROKE}
+        />
+      </svg>
     </span>
   );
 }
 
 function TwitterPost({
   author,
+  accountSelector,
   content,
   onContentChange,
   onSelectionChange,
@@ -159,7 +211,32 @@ function TwitterPost({
   ...props
 }: TwitterPostProps) {
   const isEditable = Boolean(onContentChange);
+  const hasSquareAvatar = isSquareTwitterAvatar(author.verifiedType);
+  const hasAccountSelector =
+    accountSelector !== undefined && accountSelector.accounts.length > 1;
   const [localValue, setLocalValue] = useState(() => content ?? "");
+
+  const readOnlyContent = content ? (
+    <TweetContent content={content} onSelectionChange={onSelectionChange} />
+  ) : null;
+
+  const authorIdentity = (
+    <>
+      <span className="truncate font-bold text-[0.9375rem] leading-tight">
+        {author.name}
+      </span>
+      <XVerificationBadge
+        className="size-4 shrink-0"
+        verified={author.verified ?? false}
+        verifiedType={author.verifiedType ?? null}
+      />
+      {author.handle && (
+        <span className="truncate text-[0.9375rem] text-muted-foreground">
+          @{author.handle}
+        </span>
+      )}
+    </>
+  );
 
   if ((content ?? "") !== localValue) {
     setLocalValue(content ?? "");
@@ -171,7 +248,7 @@ function TwitterPost({
       {...props}
     >
       <div className="flex flex-1 gap-3 px-4 pt-3">
-        <Avatar className="size-10">
+        <Avatar className={cn("size-10", hasSquareAvatar && "rounded-md")}>
           {author.avatar && <AvatarImage src={author.avatar} />}
           <AvatarFallback>
             {author.fallback ?? author.name.slice(0, 2).toUpperCase()}
@@ -180,13 +257,23 @@ function TwitterPost({
 
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-center gap-1">
-            <span className="truncate font-bold text-[0.9375rem] leading-tight">
-              {author.name}
-            </span>
-            {author.handle && (
-              <span className="truncate text-[0.9375rem] text-muted-foreground">
-                @{author.handle}
-              </span>
+            {hasAccountSelector ? (
+              <SocialAccountSelector
+                accounts={accountSelector.accounts}
+                className="-mx-1 px-1"
+                onSelect={accountSelector.onSelect}
+                trigger={
+                  <>
+                    {authorIdentity}
+                    <HugeiconsIcon
+                      className="size-3.5 shrink-0 text-muted-foreground"
+                      icon={ArrowDown01Icon}
+                    />
+                  </>
+                }
+              />
+            ) : (
+              authorIdentity
             )}
             {timestamp && (
               <>
@@ -228,26 +315,38 @@ function TwitterPost({
           <div className="flex flex-1 flex-col pb-3">
             {isEditable ? (
               <div className="space-y-1">
-                <Textarea
-                  className="min-h-[4rem] resize-none rounded-none border-none bg-transparent p-0 text-[0.9375rem] leading-snug shadow-none focus-visible:ring-0 dark:bg-transparent"
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setLocalValue(value);
-                    onContentChange?.(value);
-                  }}
-                  placeholder="What is happening?!"
-                  value={localValue}
-                />
+                <div className="grid w-full grid-cols-1">
+                  <div
+                    aria-hidden
+                    className="pointer-events-none col-start-1 row-start-1 min-h-[4rem] min-w-0"
+                    style={TWEET_EDITOR_TEXT_STYLE}
+                  >
+                    {formatTweetContent(localValue)}
+                    {"\u200b"}
+                  </div>
+                  <Textarea
+                    className="field-sizing-content col-start-1 row-start-1 min-h-[4rem] min-w-0 resize-none overflow-hidden rounded-none border-none bg-transparent p-0 caret-foreground shadow-none focus-visible:ring-0 dark:bg-transparent"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setLocalValue(value);
+                      onContentChange?.(value);
+                    }}
+                    placeholder="What is happening?!"
+                    spellCheck={false}
+                    style={TWEET_EDITOR_OVERLAY_STYLE}
+                    value={localValue}
+                  />
+                </div>
                 <div className="flex justify-end">
-                  <CharacterCounter count={localValue.length} />
+                  <CharacterCounter
+                    count={getWeightedTweetLength(localValue)}
+                    limit={getTwitterCharLimit(author.verifiedType)}
+                  />
                 </div>
               </div>
-            ) : content ? (
-              <TweetContent
-                content={content}
-                onSelectionChange={onSelectionChange}
-              />
-            ) : null}
+            ) : (
+              readOnlyContent
+            )}
 
             <div className="mt-auto flex items-center justify-between pt-2">
               <Button
@@ -295,4 +394,4 @@ function TwitterPost({
   );
 }
 
-export { TwitterPost, type TwitterPostProps, type TwitterPostMenuItem };
+export { TwitterPost };

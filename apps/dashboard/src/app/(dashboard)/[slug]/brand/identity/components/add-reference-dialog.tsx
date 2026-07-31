@@ -39,15 +39,15 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import {
-  type ConnectedAccount,
   useConnectedAccounts,
   useDisconnectAccount,
-  useHandleConnectTwitter,
+  useHandleConnectSocialAccount,
 } from "@/lib/hooks/use-connected-accounts";
 import type {
   AddReferenceDialogProps,
   ApplicablePlatform,
 } from "@/types/hooks/brand-references";
+import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
 import {
   useCreateReference,
   useFetchTweet,
@@ -372,7 +372,7 @@ function ImportXStep({
 }) {
   const { data, isLoading } = useConnectedAccounts(organizationId);
   const { handleConnect, isPending: isConnecting } =
-    useHandleConnectTwitter(organizationId);
+    useHandleConnectSocialAccount(organizationId, "twitter");
   const disconnectAccount = useDisconnectAccount(organizationId);
   const importTweets = useImportTweets(organizationId, voiceId);
   const [selectedAccount, setSelectedAccount] =

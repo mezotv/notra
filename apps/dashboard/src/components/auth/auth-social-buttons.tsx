@@ -44,7 +44,13 @@ export function AuthSocialButtons({
             {authMethod === provider ? (
               <Loader2Icon className="size-4 animate-spin" />
             ) : (
-              <Icon className="size-4" />
+              <Icon
+                className={
+                  provider === "github"
+                    ? "size-4 dark:[&_path]:fill-[#1e1e1e]"
+                    : "size-4"
+                }
+              />
             )}
             {label}
           </CtaButton>

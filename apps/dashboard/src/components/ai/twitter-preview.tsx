@@ -20,55 +20,36 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { Effect } from "effect";
 import { Loader2Icon } from "lucide-react";
-import { useCallback, useEffect, useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { toast } from "sonner";
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
+import { PostSocialButton } from "@/components/content/post-social-button";
 import { TwitterPost } from "@/components/twitter-post";
-import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
+import { useSelectedSocialAccount } from "@/lib/hooks/use-selected-social-account";
 import type {
   PreviewEffectiveState,
-  PreviewIncomingState,
+  SocialPreviewProps,
 } from "@/types/content/ai-preview";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
 import { socialPreviewReducer } from "@/utils/social-preview-reducer";
-import { createTwitterPostUrl } from "@/utils/twitter";
-
-interface TwitterPreviewProps {
-  state: PreviewIncomingState;
-  title: string;
-  markdown: string;
-  organization?: {
-    name: string;
-    logo?: string | null;
-  };
-  persistedStatus?: "draft" | "published";
-  readOnly?: boolean;
-  onApprove?: () => void;
-  onDeny?: () => void;
-  onPersist?: (
-    status: "draft" | "published",
-    payload: { title: string; markdown: string }
-  ) => Promise<void>;
-  onRegenerate?: (
-    instructions: string,
-    payload: { title: string; markdown: string }
-  ) => void;
-}
+import { twitterAuthorFromAccount } from "@/utils/twitter";
 
 export function TwitterPreview({
   state: incomingState,
   title,
   markdown,
+  organizationId,
   organization,
   persistedStatus = "draft",
-  readOnly = false,
   onApprove,
   onDeny,
   onPersist,
+  onPublished,
   onRegenerate,
-}: TwitterPreviewProps) {
+}: SocialPreviewProps) {
   const [
     {
       userAction,
@@ -90,15 +71,26 @@ export function TwitterPreview({
     dispatch({ type: "draftMarkdownChanged", draftMarkdown: markdown });
   }, [markdown]);
 
+  const { accounts, selectedAccount, selectAccount } = useSelectedSocialAccount(
+    organizationId ?? "",
+    "twitter"
+  );
+  const author = selectedAccount
+    ? twitterAuthorFromAccount(selectedAccount)
+    : {
+        name: organization?.name ?? "Your Name",
+        avatar: organization?.logo ?? undefined,
+        handle: (organization?.name ?? "yourname")
+          .toLowerCase()
+          .replace(/\s+/g, ""),
+      };
+
   const effectiveState: PreviewEffectiveState = (() => {
     if (incomingState === "finished") {
       return "finished";
     }
     if (userAction === "saving" || userAction === "generating") {
       return "loading";
-    }
-    if (userAction === "save-failed") {
-      return "finished";
     }
     return "draft";
   })();
@@ -113,33 +105,49 @@ export function TwitterPreview({
     return () => window.clearTimeout(timer);
   }, [userAction]);
 
-  const handleApprove = useCallback(async () => {
+  const handleApprove = () => {
     dispatch({ type: "userActionChanged", userAction: "saving" });
     dispatch({ type: "openChanged", open: false });
     const toastId = toast.loading("Saving draft...");
-    try {
-      if (onPersist) {
-        await onPersist("draft", {
-          title,
-          markdown: draftMarkdown,
-        });
-      } else if (onApprove) {
-        onApprove();
-      }
-      dispatch({ type: "userActionChanged", userAction: "none" });
-      toast.success("Saved as draft", { id: toastId });
-    } catch {
-      dispatch({ type: "userActionChanged", userAction: "save-failed" });
-      toast.error("Failed to save draft", { id: toastId });
-    }
-  }, [draftMarkdown, onApprove, onPersist, title]);
+    const save = Effect.tryPromise({
+      try: async () => {
+        if (onPersist) {
+          await onPersist("draft", {
+            title,
+            markdown: draftMarkdown,
+          });
+          return;
+        }
+        onApprove?.();
+      },
+      catch: (cause) =>
+        cause instanceof Error ? cause : new Error("Failed to save draft"),
+    });
+    Effect.runFork(
+      save.pipe(
+        Effect.match({
+          onSuccess: () => {
+            dispatch({ type: "userActionChanged", userAction: "none" });
+            toast.success("Saved as draft", { id: toastId });
+          },
+          onFailure: (error) => {
+            dispatch({ type: "userActionChanged", userAction: "save-failed" });
+            dispatch({ type: "openChanged", open: true });
+            toast.error(error.message || "Failed to save draft", {
+              id: toastId,
+            });
+          },
+        })
+      )
+    );
+  };
 
-  const handleDeny = useCallback(() => {
+  const handleDeny = () => {
     onDeny?.();
     toast("Canceled");
-  }, [onDeny]);
+  };
 
-  const handleRegenerate = useCallback(() => {
+  const handleRegenerate = () => {
     const instructions = regenerateInstructions.trim();
     if (!instructions) {
       dispatch({ type: "regenerateOpenChanged", open: true });
@@ -151,7 +159,7 @@ export function TwitterPreview({
       title,
       markdown: draftMarkdown,
     });
-  }, [draftMarkdown, onRegenerate, regenerateInstructions, title]);
+  };
 
   const isFinished = effectiveState === "finished";
   const showStatusBadge = isFinished && userAction !== "save-failed";
@@ -191,17 +199,15 @@ export function TwitterPreview({
             <div className="mx-2 mb-2 space-y-2">
               <div className="flex justify-center py-4">
                 <TwitterPost
-                  author={{
-                    name: organization?.name ?? "Your Name",
-                    avatar: organization?.logo ?? undefined,
-                    handle: (organization?.name ?? "yourname")
-                      .toLowerCase()
-                      .replace(/\s+/g, ""),
+                  accountSelector={{
+                    accounts,
+                    onSelect: selectAccount,
                   }}
+                  author={author}
                   className="w-full max-w-lg"
                   content={draftMarkdown}
                   onContentChange={
-                    isFinished || readOnly
+                    isFinished
                       ? undefined
                       : (value) =>
                           dispatch({
@@ -212,7 +218,7 @@ export function TwitterPreview({
                   timestamp="Just now"
                 />
               </div>
-              {regenerateOpen && !(isFinished || readOnly) && (
+              {regenerateOpen && !isFinished && (
                 <input
                   autoFocus
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -234,7 +240,7 @@ export function TwitterPreview({
             </div>
           </CollapsibleContent>
 
-          {!isFinished && !readOnly && isOpen && (
+          {!isFinished && isOpen && (
             <div className="flex flex-wrap items-center gap-2 px-3 pb-2">
               {userAction === "generating" && (
                 <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">
@@ -291,21 +297,21 @@ export function TwitterPreview({
                     </>
                   )}
                 </Button>
-                <Button
-                  className="max-w-full text-white hover:opacity-90"
-                  nativeButton={false}
-                  render={
-                    <a
-                      href={createTwitterPostUrl(draftMarkdown)}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      <XTwitter className="size-4" />
-                      Post to X
-                    </a>
+                <PostSocialButton
+                  className="max-w-full"
+                  content={draftMarkdown}
+                  onContentChange={
+                    isFinished
+                      ? undefined
+                      : (value) =>
+                          dispatch({
+                            type: "draftMarkdownChanged",
+                            draftMarkdown: value,
+                          })
                   }
-                  size="sm"
-                  style={{ backgroundColor: TWITTER_BRAND_COLOR }}
+                  onPublished={onPublished}
+                  organizationId={organizationId ?? ""}
+                  platform="twitter"
                 />
               </div>
             </div>

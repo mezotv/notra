@@ -321,6 +321,12 @@
   }
 }
 
+@keyframes logs-table-content-fade {
+  from {
+    opacity: 0.72;
+  }
+}
+
 @keyframes thinking-letter {
   0%,
   100% {

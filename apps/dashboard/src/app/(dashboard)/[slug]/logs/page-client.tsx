@@ -21,7 +21,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useCustomer } from "autumn-js/react";
 import {
   parseAsInteger,
@@ -30,7 +30,6 @@ import {
   useQueryState,
 } from "nuqs";
 import { useState } from "react";
-import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
@@ -119,7 +118,22 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       },
     }),
     enabled: !!organizationId,
+    placeholderData: keepPreviousData,
   });
+
+  const logs = data?.logs ?? [];
+  const contentKey = JSON.stringify(
+    logs.map((log) => [
+      log.id,
+      log.title,
+      log.integrationType,
+      log.status,
+      log.statusCode,
+      log.errorMessage,
+      log.createdAt,
+      log.referenceId,
+    ])
+  );
 
   const filtersActive =
     source !== "all" || status !== "all" || search.length > 0;
@@ -167,15 +181,34 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             />
             <Input
               aria-label="Search logs"
-              className="pl-8"
+              autoComplete="off"
+              className="pr-8 pl-8"
+              name="log-search"
               onChange={(e) => {
                 setSearchInput(e.target.value);
                 commitSearch(e.target.value);
               }}
               placeholder="Search by title or error message"
-              type="search"
+              type="text"
               value={searchInput}
             />
+            {searchInput.length > 0 && (
+              <button
+                aria-label="Clear search"
+                className="-translate-y-1/2 absolute top-1/2 right-1 flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => {
+                  setSearchInput("");
+                  commitSearch("");
+                }}
+                type="button"
+              >
+                <HugeiconsIcon
+                  aria-hidden="true"
+                  className="size-3.5"
+                  icon={Cancel01Icon}
+                />
+              </button>
+            )}
           </div>
           <Select
             onValueChange={(value) => {
@@ -217,19 +250,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               ))}
             </SelectContent>
           </Select>
-          {filtersActive && (
-            <Button
-              aria-label="Clear all filters"
-              className="h-8 shrink-0 gap-1.5 px-2.5 font-normal text-muted-foreground text-xs hover:bg-transparent hover:text-foreground"
-              onClick={resetFilters}
-              size="sm"
-              type="button"
-              variant="ghost"
-            >
-              <HugeiconsIcon className="size-3.5" icon={Cancel01Icon} />
-              Reset
-            </Button>
-          )}
         </div>
 
         {organizationId && isPending ? (
@@ -237,7 +257,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         ) : (
           <DataTable
             columns={columns}
-            data={data?.logs ?? []}
+            contentKey={contentKey}
+            data={logs}
             emptyState={
               filtersActive
                 ? {

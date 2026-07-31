@@ -86,6 +86,7 @@
     "next": "^16.2.11",
     "next-themes": "^0.4.6",
     "nuqs": "^2.8.6",
+    "post-for-me": "^2.7.0",
     "posthog-js": "^1.399.2",
     "postprocessing": "^6.36.0",
     "react": "^19.2.6",

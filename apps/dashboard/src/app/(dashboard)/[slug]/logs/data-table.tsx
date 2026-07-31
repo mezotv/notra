@@ -21,6 +21,7 @@ import type { DataTableProps } from "@/types/logs/data-table";
 
 export function DataTable<TData>({
   columns,
+  contentKey,
   data,
   page,
   totalPages,
@@ -45,7 +46,14 @@ export function DataTable<TData>({
   return (
     <div>
       <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
-        <Table>
+        <Table aria-busy={isLoading} className="table-fixed">
+          <colgroup>
+            <col className="w-[40%]" />
+            <col className="w-[24%]" />
+            <col className="w-[16%]" />
+            <col className="w-[17%]" />
+            <col className="w-[3%]" />
+          </colgroup>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -62,7 +70,10 @@ export function DataTable<TData>({
               </TableRow>
             ))}
           </TableHeader>
-          <TableBody>
+          <TableBody
+            className="animate-[logs-table-content-fade_100ms_ease-out] motion-reduce:animate-none"
+            key={contentKey}
+          >
             {isLoading && (
               <TableRow>
                 <TableCell

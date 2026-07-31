@@ -1,6 +1,17 @@
 import { toast } from "sonner";
+import type { LinkedInPostAuthor } from "@/types/content/linkedin-post";
+import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
 
 const LINKEDIN_FEED_URL = "https://www.linkedin.com/feed/";
+
+export function linkedInAuthorFromAccount(
+  account: ConnectedAccount
+): LinkedInPostAuthor {
+  return {
+    name: account.displayName,
+    avatar: account.profileImageUrl ?? undefined,
+  };
+}
 
 export function createLinkedInPostUrl(text?: string): string {
   const url = new URL(LINKEDIN_FEED_URL);

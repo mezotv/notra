@@ -27,7 +27,6 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { useSidebar } from "@notra/ui/components/ui/sidebar";
-import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import {
   Tooltip,
@@ -47,6 +46,7 @@ import { ContentChatActivityPanel } from "@/components/content/content-chat-acti
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
 import { ContentEditorSwitch } from "@/components/content/editors";
 import { ImageExportTargetIcon } from "@/components/content/image-export-target-icon";
+import { PostSocialButton } from "@/components/content/post-social-button";
 import { RecommendationsSection } from "@/components/content/recommendations-section";
 import { RightPanelPortal } from "@/components/dashboard/right-panel-portal";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -55,7 +55,6 @@ import {
   SAVE_BAR_SELECTOR,
 } from "@/constants/content-detail";
 import { IMAGE_EXPORT_TARGETS } from "@/constants/image-export";
-import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { localStorageKeys } from "@/constants/storage";
 import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
 import { emitAutumnRefresh } from "@/lib/billing/autumn-refresh";
@@ -77,9 +76,8 @@ import {
   getImageExportTargetLabel,
   isImageExportTarget,
 } from "@/utils/image-export";
-import { createLinkedInPostUrl } from "@/utils/linkedin";
+
 import { shakeElements } from "@/utils/shake-element";
-import { createTwitterPostUrl } from "@/utils/twitter";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
@@ -231,7 +229,7 @@ export default function PageClient({
     editedMarkdown !== null && editedMarkdown !== originalMarkdown;
   const hasChanges = hasMarkdownChanges || hasTitleChanges || hasSlugChanges;
 
-  const [, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!hasChanges) {
@@ -299,6 +297,8 @@ export default function PageClient({
     } catch (error) {
       if (error instanceof Error && error.message.includes("already exists")) {
         toast.error("A post with this slug already exists");
+      } else if (error instanceof Error && error.message) {
+        toast.error(error.message);
       } else {
         toast.error("Failed to save content");
       }
@@ -379,7 +379,7 @@ export default function PageClient({
         saveToastIdRef.current = null;
       }
 
-      if (hasChanges && !isWide && !saveToastIdRef.current) {
+      if (hasChanges && !isSaving && !isWide && !saveToastIdRef.current) {
         saveToastIdRef.current = toast.custom(
           (t) => (
             <div
@@ -392,8 +392,9 @@ export default function PageClient({
                 </span>
                 <Button
                   onClick={() => {
-                    handleDiscardRef.current?.();
                     toast.dismiss(t);
+                    saveToastIdRef.current = null;
+                    handleDiscardRef.current?.();
                   }}
                   size="sm"
                   variant="ghost"
@@ -402,8 +403,9 @@ export default function PageClient({
                 </Button>
                 <Button
                   onClick={() => {
-                    handleSaveRef.current?.();
                     toast.dismiss(t);
+                    saveToastIdRef.current = null;
+                    handleSaveRef.current?.();
                   }}
                   size="sm"
                 >
@@ -423,7 +425,7 @@ export default function PageClient({
     return () => {
       mediaQuery.removeEventListener("change", syncSaveToast);
     };
-  }, [hasChanges, isActivityPanelOpen]);
+  }, [hasChanges, isSaving, isActivityPanelOpen]);
 
   useEffect(() => {
     return () => {
@@ -1020,39 +1022,19 @@ export default function PageClient({
                 </Button>
               )}
               {content.contentType === "linkedin_post" && (
-                <Button
-                  className="text-white hover:opacity-90"
-                  nativeButton={false}
-                  render={
-                    <a
-                      href={createLinkedInPostUrl(currentMarkdown)}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      <Linkedin className="size-4" />
-                      Post to LinkedIn
-                    </a>
-                  }
-                  size="sm"
-                  style={{ backgroundColor: LINKEDIN_BRAND_PRIMARY }}
+                <PostSocialButton
+                  content={currentMarkdown}
+                  onContentChange={setEditedMarkdown}
+                  organizationId={organizationId}
+                  platform="linkedin"
                 />
               )}
               {content.contentType === "twitter_post" && (
-                <Button
-                  className="text-white hover:opacity-90"
-                  nativeButton={false}
-                  render={
-                    <a
-                      href={createTwitterPostUrl(currentMarkdown)}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      <XTwitter className="size-4" />
-                      Post to X
-                    </a>
-                  }
-                  size="sm"
-                  style={{ backgroundColor: TWITTER_BRAND_COLOR }}
+                <PostSocialButton
+                  content={currentMarkdown}
+                  onContentChange={setEditedMarkdown}
+                  organizationId={organizationId}
+                  platform="twitter"
                 />
               )}
               {content.contentType === "image" && (
@@ -1166,6 +1148,7 @@ export default function PageClient({
               name: activeOrganization?.name ?? "Your Organization",
               logo: activeOrganization?.logo ?? null,
             }}
+            organizationId={organizationId}
             state={{
               editedMarkdown,
               originalMarkdown,

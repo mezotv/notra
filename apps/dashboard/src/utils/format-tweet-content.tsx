@@ -8,10 +8,25 @@ import {
 
 const URL_PROTOCOL_REGEX = /^https?:\/\//i;
 
+function toSafeExternalUrl(url: string): string | undefined {
+  let candidate: string;
+  try {
+    candidate = new URL(url).href;
+  } catch {
+    return undefined;
+  }
+  if (candidate.startsWith("https://") || candidate.startsWith("http://")) {
+    return candidate;
+  }
+  return undefined;
+}
+
 function getTweetTokenUrl(token: string): string | undefined {
   if (TWEET_URL_REGEX.test(token)) {
     TWEET_URL_REGEX.lastIndex = 0;
-    return URL_PROTOCOL_REGEX.test(token) ? token : `https://${token}`;
+    return toSafeExternalUrl(
+      URL_PROTOCOL_REGEX.test(token) ? token : `https://${token}`
+    );
   }
   if (TWEET_MENTION_REGEX.test(token)) {
     TWEET_MENTION_REGEX.lastIndex = 0;
@@ -36,6 +51,13 @@ export function formatTweetContent(content: string): ReactNode[] {
     if (TWEET_TOKEN_REGEX.test(part)) {
       TWEET_TOKEN_REGEX.lastIndex = 0;
       const href = getTweetTokenUrl(part);
+      if (!(href?.startsWith("https://") || href?.startsWith("http://"))) {
+        return (
+          <span className="text-sky-500" key={`${i}-${part}`}>
+            {part}
+          </span>
+        );
+      }
       return (
         <a
           className="cursor-pointer text-sky-500 hover:underline"

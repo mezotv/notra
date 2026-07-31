@@ -1,6 +1,18 @@
 export const TWITTER_CHAR_LIMIT = 280;
+export const TWITTER_PREMIUM_CHAR_LIMIT = 25_000;
+export const TWEET_URL_WEIGHT = 23;
+export const TWEET_LIGHT_CODE_POINT_RANGES: ReadonlyArray<
+  readonly [number, number]
+> = [
+  [0x00_00, 0x10_ff],
+  [0x20_00, 0x20_0d],
+  [0x20_10, 0x20_1f],
+  [0x20_32, 0x20_37],
+];
 export const MAX_IMPORT_POSTS = 20;
 export const TWITTER_BRAND_COLOR = "#000000";
+export const TWITTER_DUPLICATE_POST_DOCS_URL =
+  "https://developer.x.com/en/support/x-api/error-troubleshooting";
 
 export const TWEET_MENTION_REGEX = /(?<![\w.])@(\w{1,15})/g;
 export const TWEET_HASHTAG_REGEX = /#(\w+)/g;
@@ -17,3 +29,12 @@ const TWITTER_PROFILE_IMAGE_SIZE_REGEX =
 export function normalizeTwitterProfileImageUrl(url: string): string {
   return url.replace(TWITTER_PROFILE_IMAGE_SIZE_REGEX, ".");
 }
+
+export const TWEET_COUNTER_RING_SIZE = 20;
+export const TWEET_COUNTER_RING_STROKE = 2;
+export const TWEET_COUNTER_RING_RADIUS =
+  (TWEET_COUNTER_RING_SIZE - TWEET_COUNTER_RING_STROKE) / 2;
+export const TWEET_COUNTER_RING_CIRCUMFERENCE =
+  2 * Math.PI * TWEET_COUNTER_RING_RADIUS;
+export const TWEET_COUNTER_WARNING_REMAINING = 20;
+export const TWEET_COUNTER_WARNING_RATIO = 0.02;

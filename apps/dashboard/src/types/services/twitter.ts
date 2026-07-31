@@ -23,3 +23,32 @@ export interface TwitterTimelineResponse {
   includes?: { users?: TwitterUser[] };
   meta?: { next_token?: string };
 }
+
+export interface TwitterUserLookupResponse {
+  data?: { id: string; pinned_tweet_id?: string };
+  includes?: { tweets?: TwitterTweet[] };
+}
+
+export interface TwitterUserLookup {
+  userId: string;
+  pinnedTweet: TwitterTweet | null;
+}
+
+export type TwitterVerifiedType = "blue" | "business" | "government" | "none";
+
+export interface TwitterVerificationResponse {
+  data?: {
+    id: string;
+    name?: string;
+    profile_image_url?: string;
+    verified?: boolean;
+    verified_type?: TwitterVerifiedType;
+  };
+}
+
+export interface TwitterVerification {
+  name: string | null;
+  profileImageUrl: string | null;
+  verified: boolean;
+  verifiedType: TwitterVerifiedType;
+}

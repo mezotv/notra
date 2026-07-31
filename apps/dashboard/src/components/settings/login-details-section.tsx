@@ -91,7 +91,7 @@ export function LoginDetailsSection({
         <div className="space-y-2">
           <Label>Email</Label>
           <div className="flex items-center gap-2">
-            <div className="flex-1 truncate rounded-md border bg-muted/50 px-3 py-2 text-sm">
+            <div className="flex-1 truncate rounded-lg border bg-muted/50 px-3 py-2 text-sm">
               {email}
             </div>
             <HugeiconsIcon

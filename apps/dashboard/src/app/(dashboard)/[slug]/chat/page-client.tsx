@@ -95,6 +95,7 @@ import type {
   CreateToolContentType,
   StandaloneChatPageClientProps,
 } from "@/types/components/chat-page";
+import type { PublishedSocialPost } from "@/types/content/post-social";
 import { handleStandaloneChatError } from "@/utils/chat-error";
 import {
   CHAT_PREFERENCES_STORAGE_KEY,
@@ -112,6 +113,7 @@ import {
   parseReferenceValue,
 } from "@/utils/integration-reference";
 import { getOutputTypeLabel } from "@/utils/output-types";
+import { buildPublishedChatMessage } from "@/utils/social-publish";
 
 const BlogChangelogPreview = dynamic(
   () =>
@@ -1862,6 +1864,10 @@ function StandaloneChatPageClient({
             }
           : undefined;
 
+        const handlePublished = (published: PublishedSocialPost) => {
+          sendMessage({ text: buildPublishedChatMessage(published) });
+        };
+
         if (contentType === "twitter_post") {
           return (
             <CompletedToolTimer
@@ -1873,11 +1879,13 @@ function StandaloneChatPageClient({
                 onApprove={handleApprove}
                 onDeny={handleDeny}
                 onPersist={handlePersist}
+                onPublished={handlePublished}
                 onRegenerate={handleRegenerate}
                 organization={{
                   name: organization?.name ?? "Your Name",
                   logo: organization?.logo ?? null,
                 }}
+                organizationId={organizationId}
                 persistedStatus={persistedStatus}
                 state={previewState}
                 title={title}
@@ -1897,11 +1905,13 @@ function StandaloneChatPageClient({
                 onApprove={handleApprove}
                 onDeny={handleDeny}
                 onPersist={handlePersist}
+                onPublished={handlePublished}
                 onRegenerate={handleRegenerate}
                 organization={{
                   name: organization?.name ?? "Your Name",
                   logo: organization?.logo ?? null,
                 }}
+                organizationId={organizationId}
                 persistedStatus={persistedStatus}
                 state={previewState}
                 title={title}

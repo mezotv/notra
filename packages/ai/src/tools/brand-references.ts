@@ -1,9 +1,17 @@
+import { randomUUID } from "node:crypto";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
+import { FEATURES } from "@notra/ai/billing/features";
 import type { BrandReferencesConfig } from "@notra/ai/types/brand-references";
 import { serializeBrandReference } from "@notra/ai/utils/brand-references";
 import { toolDescription } from "@notra/ai/utils/description";
 import { db } from "@notra/db/drizzle";
 import { brandReferences, brandSettings } from "@notra/db/schema";
 import {
+  buildBrandReferenceMemoryPayload,
+  createBrandReferenceMemory,
   getBrandReferenceIdFromSearchResult,
   searchBrandReferenceMemories,
 } from "@notra/db/utils/supermemory";
@@ -203,6 +211,172 @@ export function createSearchBrandReferencesTool(
       },
     }
   );
+}
+
+const REFERENCE_PLATFORMS: Record<
+  "twitter_post" | "linkedin_post" | "custom",
+  Array<"all" | "twitter" | "linkedin">
+> = {
+  twitter_post: ["twitter"],
+  linkedin_post: ["linkedin"],
+  custom: ["all"],
+};
+
+export function createAddBrandReferenceTool(config: {
+  organizationId: string;
+}): Tool {
+  return tool({
+    description: toolDescription({
+      toolName: "addBrandReference",
+      intro:
+        "Saves a post or writing sample as a brand voice reference so future content can learn from its style.",
+      whenToUse:
+        "Use when the user confirms they want to save a post as a brand reference. This is especially useful right after the user publishes a post and shares its URL: offer to save it as a reference, and call this tool only once they agree.",
+      usageNotes:
+        "Pass the exact post content, the reference type (twitter_post, linkedin_post, or custom), and the public URL when available. Optionally pass brandIdentityId to target a specific brand identity; omit it to use the default one.",
+    }),
+    inputSchema: z.object({
+      content: z
+        .string()
+        .min(1)
+        .max(10_000)
+        .describe("The exact text of the post or writing sample."),
+      type: z
+        .enum(["twitter_post", "linkedin_post", "custom"])
+        .describe("The kind of reference being saved."),
+      sourceUrl: z
+        .url()
+        .optional()
+        .describe("Public URL of the published post, if available."),
+      brandIdentityId: z
+        .string()
+        .optional()
+        .describe(
+          "Optional brand identity id. Defaults to the default brand identity."
+        ),
+      note: z
+        .string()
+        .max(4000)
+        .optional()
+        .describe("Optional note on when to use this reference."),
+    }),
+    execute: async ({ content, type, sourceUrl, brandIdentityId, note }) => {
+      const settingsId = await resolveSettingsId({
+        organizationId: config.organizationId,
+        voiceId: brandIdentityId,
+      });
+
+      if (!settingsId) {
+        return {
+          success: false,
+          error:
+            "No brand identity found. Ask the user to create one in brand settings first.",
+        };
+      }
+
+      if (!autumn && process.env.NODE_ENV === "production") {
+        return {
+          success: false,
+          error: "Billing is not configured. The reference was not saved.",
+        };
+      }
+
+      if (autumn && !allowUnmeteredAiInDevelopment) {
+        let allowed = false;
+
+        try {
+          const check = await autumn.check({
+            customerId: config.organizationId,
+            featureId: FEATURES.REFERENCES,
+            requiredBalance: 1,
+            sendEvent: true,
+          });
+          allowed = check?.allowed === true;
+        } catch {
+          allowed = false;
+        }
+
+        if (!allowed) {
+          return {
+            success: false,
+            error:
+              "Reference limit reached. Ask the user to upgrade their plan to add more references.",
+          };
+        }
+      }
+
+      if (sourceUrl) {
+        const existing = await db.query.brandReferences.findFirst({
+          where: and(
+            eq(brandReferences.brandSettingsId, settingsId),
+            eq(brandReferences.sourceUrl, sourceUrl)
+          ),
+          columns: { id: true },
+        });
+
+        if (existing) {
+          return {
+            success: false,
+            error: "This post is already saved as a reference.",
+          };
+        }
+      }
+
+      const inserted = await db
+        .insert(brandReferences)
+        .values({
+          id: randomUUID(),
+          brandSettingsId: settingsId,
+          type,
+          content,
+          metadata: sourceUrl ? { url: sourceUrl } : null,
+          note: note ?? null,
+          sourceUrl: sourceUrl ?? null,
+          sourceCapturedAt: sourceUrl ? new Date() : null,
+          applicableTo: REFERENCE_PLATFORMS[type],
+        })
+        .returning();
+
+      const reference = inserted[0];
+
+      if (!reference) {
+        return { success: false, error: "Failed to save the reference." };
+      }
+
+      try {
+        const link = await createBrandReferenceMemory(
+          buildBrandReferenceMemoryPayload({
+            organizationId: config.organizationId,
+            voiceId: settingsId,
+            reference,
+          })
+        );
+        await db
+          .update(brandReferences)
+          .set({
+            supermemoryDocumentId: link.documentId,
+            supermemoryMemoryId: link.memoryId,
+            supermemorySyncedAt: new Date(),
+            supermemoryLastSyncError: null,
+          })
+          .where(eq(brandReferences.id, reference.id));
+      } catch (error) {
+        await db
+          .update(brandReferences)
+          .set({
+            supermemoryLastSyncError:
+              error instanceof Error ? error.message : "Failed to sync memory",
+          })
+          .where(eq(brandReferences.id, reference.id));
+      }
+
+      return {
+        success: true,
+        referenceId: reference.id,
+        brandIdentityId: settingsId,
+      };
+    },
+  });
 }
 
 export function createGetAvailableBrandReferencesTool(config: {
