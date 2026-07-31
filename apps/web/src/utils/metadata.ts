@@ -70,6 +70,12 @@ export const PAGE_SOCIAL_IMAGES = {
     height: SOCIAL_IMAGE_HEIGHT,
     alt: "Notra integrations marketplace social preview image",
   },
+  slack: {
+    url: "/og/slack.png",
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    alt: "Notra Slack integration social preview image",
+  },
 } as const;
 
 export const TWITTER_HANDLE = "@usenotra";
