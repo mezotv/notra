@@ -4,7 +4,10 @@ import { redis } from "./utils/redis";
 
 const schema = {
   ai: { chunk: z.any() as z.ZodType<unknown> },
-  mirror: { message: z.any() as z.ZodType<unknown> },
+  mirror: {
+    message: z.any() as z.ZodType<unknown>,
+    status: z.any() as z.ZodType<unknown>,
+  },
 };
 
 export const realtime = redis

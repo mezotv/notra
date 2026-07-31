@@ -16,6 +16,7 @@ import type {
   ChatUIMessage,
   ContextItem,
   ExternalChannelId,
+  MirrorChatStatus,
 } from "@notra/ai/types/chat";
 import {
   Message,
@@ -31,7 +32,7 @@ import {
   MessageScrollerViewport,
 } from "@notra/ui/components/ui/message-scroller";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   DefaultChatTransport,
   type DynamicToolUIPart,
@@ -58,7 +59,6 @@ import {
 import { ChatReasoningBlock } from "@/components/ai/chat-reasoning-block";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
 import { getMcpToolServerId } from "@/components/ai/chat-tool-block/mcp/utils";
-import { SlackMirrorComposer } from "@/components/ai/slack-mirror-composer";
 import { BrailleLoader } from "@/components/braille-loader";
 import { AssistantMetadataHover } from "@/components/chat/assistant-metadata-hover";
 import { AttachmentPreviewDialog } from "@/components/chat/attachment-preview";
@@ -69,6 +69,7 @@ import {
 import { ChatQueue, type QueuedMessage } from "@/components/chat/chat-queue";
 import { ChatSuggestions } from "@/components/chat/chat-suggestions";
 import { renderTextWithIntegrationReferences } from "@/components/chat/integration-reference";
+import { SlackRelayFooterNotice } from "@/components/chat/slack-relay-footer-notice";
 import {
   UserMessageActions,
   UserMessageEditor,
@@ -76,9 +77,14 @@ import {
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { TOOL_TIMER_THRESHOLD_SECONDS } from "@/constants/chat-tool-timer";
 import { INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX } from "@/constants/integration-reference";
+import { MIRROR_WORKING_TIMEOUT_MS } from "@/constants/slack-mirror";
 import { localStorageKeys } from "@/constants/storage";
 import { authClient } from "@/lib/auth/client";
 import { emitAutumnRefresh } from "@/lib/billing/autumn-refresh";
+import {
+  relaySlackApproval,
+  relaySlackMirrorMessage,
+} from "@/lib/chat/slack-relay";
 import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
 import { useSlackMirrorStream } from "@/lib/hooks/use-slack-mirror-stream";
 import { getMcpIconUrls } from "@/lib/integrations/mcp";
@@ -658,6 +664,7 @@ function StandaloneChatPageClient({
     lastResponseStopped: boolean;
     activeStreamId: string | null;
     externalChannelId: ExternalChannelId | null;
+    slackThreadUrl: string | null;
   } | null>({
     queryKey: ["chat-history", organizationId, initialChatId],
     queryFn: async () => {
@@ -682,6 +689,8 @@ function StandaloneChatPageClient({
         externalChannelId: externalChannelId.success
           ? externalChannelId.data
           : null,
+        slackThreadUrl:
+          typeof data?.slackThreadUrl === "string" ? data.slackThreadUrl : null,
       };
     },
     enabled: Boolean(initialChatId) && Boolean(organizationId),
@@ -697,17 +706,98 @@ function StandaloneChatPageClient({
         return;
       }
       setMessages((prev) =>
-        prev.some((item) => item.id === message.id) ? prev : [...prev, message]
+        prev.some((item) => item.id === message.id)
+          ? prev.map((item) => (item.id === message.id ? message : item))
+          : [...prev, message]
       );
     },
     [setMessages]
   );
 
+  const [isMirrorWorking, setIsMirrorWorking] = useState(false);
+
+  const handleMirrorStatus = useCallback((status: MirrorChatStatus) => {
+    setIsMirrorWorking(status === "working");
+  }, []);
+
   useSlackMirrorStream(
     organizationId,
     initialChatId ?? null,
     isSlackMirrored,
-    appendMirroredMessage
+    appendMirroredMessage,
+    handleMirrorStatus
+  );
+
+  useEffect(() => {
+    if (!isMirrorWorking) {
+      return;
+    }
+    const timeout = setTimeout(() => {
+      setIsMirrorWorking(false);
+    }, MIRROR_WORKING_TIMEOUT_MS);
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [isMirrorWorking]);
+
+  const relayApprovalMutation = useMutation({
+    mutationFn: (input: { requestId: string; approved: boolean }) => {
+      if (!initialChatId) {
+        return Promise.resolve();
+      }
+      return relaySlackApproval(
+        organizationId,
+        initialChatId,
+        input.requestId,
+        input.approved
+      );
+    },
+  });
+  const relayMessageMutation = useMutation({
+    mutationFn: (input: { text: string; tempId: string }) => {
+      if (!initialChatId) {
+        return Promise.resolve(null);
+      }
+      return relaySlackMirrorMessage(organizationId, initialChatId, input.text);
+    },
+    onSuccess: (message, input) => {
+      setMessages((prev) => {
+        const withoutTemp = prev.filter((item) => item.id !== input.tempId);
+        if (!message || withoutTemp.some((item) => item.id === message.id)) {
+          return withoutTemp;
+        }
+        return [...withoutTemp, message];
+      });
+    },
+    onError: (_error, input) => {
+      setMessages((prev) => prev.filter((item) => item.id !== input.tempId));
+      setIsMirrorWorking(false);
+      setChatError("Sending to Slack failed. Try again.");
+    },
+  });
+  const relayMessage = useCallback(
+    async (text: string) => {
+      const tempId = `relay-pending-${nanoid(10)}`;
+      setMessages((prev) => [
+        ...prev,
+        { id: tempId, role: "user", parts: [{ type: "text", text }] },
+      ]);
+      setIsMirrorWorking(true);
+      try {
+        await relayMessageMutation.mutateAsync({ text, tempId });
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [relayMessageMutation, setMessages]
+  );
+
+  const relayApproval = useCallback(
+    (requestId: string, approved: boolean) => {
+      relayApprovalMutation.mutate({ requestId, approved });
+    },
+    [relayApprovalMutation]
   );
 
   useLayoutEffect(() => {
@@ -1213,6 +1303,7 @@ function StandaloneChatPageClient({
             lastResponseStopped: wasStoppedByUserRef.current,
             activeStreamId: null,
             externalChannelId: null,
+            slackThreadUrl: null,
           }
         );
         router.replace(`/${organizationSlug}/chat/${stableChatId}`, {
@@ -1240,6 +1331,10 @@ function StandaloneChatPageClient({
   const handleSend = useCallback(
     async (text: string, attachments: ChatAttachment[] = []) => {
       if (isSlackMirrored) {
+        const trimmed = text.trim();
+        if (trimmed.length > 0) {
+          relayMessage(trimmed);
+        }
         return;
       }
       if (isLoading) {
@@ -1251,7 +1346,7 @@ function StandaloneChatPageClient({
       }
       await dispatchMessage(text, attachments);
     },
-    [dispatchMessage, isLoading, isSlackMirrored]
+    [dispatchMessage, isLoading, isSlackMirrored, relayMessage]
   );
 
   const autoSubmittedQueryRef = useRef<string | null>(null);
@@ -1675,75 +1770,94 @@ function StandaloneChatPageClient({
             ? "published"
             : "draft";
 
-        const approvalId = isSlackMirrored ? undefined : toolPart.approval?.id;
+        const approvalId =
+          toolPart.state === "approval-requested"
+            ? toolPart.approval.id
+            : undefined;
         const handleApprove = approvalId
           ? () =>
-              addToolApprovalResponse({
-                id: approvalId,
-                approved: true,
-              })
+              isSlackMirrored
+                ? relayApproval(approvalId, true)
+                : addToolApprovalResponse({
+                    id: approvalId,
+                    approved: true,
+                  })
           : undefined;
         const handleDeny = approvalId
           ? () =>
-              addToolApprovalResponse({
-                id: approvalId,
-                approved: false,
-                reason: "discard",
-              })
+              isSlackMirrored
+                ? relayApproval(approvalId, false)
+                : addToolApprovalResponse({
+                    id: approvalId,
+                    approved: false,
+                    reason: "discard",
+                  })
           : undefined;
-        const handlePersist = approvalId
-          ? async (
-              status: "draft" | "published",
-              payload: { title: string; markdown: string }
-            ) => {
-              const response = await fetch(
-                `/api/organizations/${organizationId}/chat/posts`,
-                {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    ...payload,
-                    chatId: stableChatId,
-                    contentType,
-                    status,
-                  }),
-                }
-              );
-              if (!response.ok) {
-                throw new Error("Failed to save post");
-              }
-              try {
-                await addToolApprovalResponse({
-                  id: approvalId,
-                  approved: false,
-                  reason:
-                    status === "published"
-                      ? "manual-published"
-                      : "manual-draft",
-                });
-              } catch (error) {
-                console.error(
-                  "[Chat] Failed to mark persisted post approval:",
-                  error
+        const handlePersist =
+          approvalId && !isSlackMirrored
+            ? async (
+                status: "draft" | "published",
+                payload: { title: string; markdown: string }
+              ) => {
+                const response = await fetch(
+                  `/api/organizations/${organizationId}/chat/posts`,
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      ...payload,
+                      chatId: stableChatId,
+                      contentType,
+                      status,
+                    }),
+                  }
                 );
+                if (!response.ok) {
+                  throw new Error("Failed to save post");
+                }
+                try {
+                  await addToolApprovalResponse({
+                    id: approvalId,
+                    approved: false,
+                    reason:
+                      status === "published"
+                        ? "manual-published"
+                        : "manual-draft",
+                  });
+                } catch (error) {
+                  console.error(
+                    "[Chat] Failed to mark persisted post approval:",
+                    error
+                  );
+                }
+                queryClient.invalidateQueries({
+                  queryKey: ["chat-sessions", organizationId],
+                });
               }
-              queryClient.invalidateQueries({
-                queryKey: ["chat-sessions", organizationId],
-              });
-            }
-          : undefined;
+            : undefined;
         const handleRegenerate = approvalId
           ? async (
               instructions: string,
               payload: { title: string; markdown: string }
             ) => {
+              const regeneratePrompt = `Regenerate the ${getOutputTypeLabel(contentType)} with these changes: ${instructions}\n\nCurrent title: ${payload.title}\n\nCurrent draft:\n${payload.markdown}`;
+              if (isSlackMirrored) {
+                const sent = await relayMessage(regeneratePrompt);
+                if (sent) {
+                  await relayApprovalMutation.mutateAsync({
+                    requestId: approvalId,
+                    approved: false,
+                  });
+                }
+                return;
+              }
               await addToolApprovalResponse({
                 id: approvalId,
                 approved: false,
                 reason: "discard",
               });
               sendMessage({
-                text: `Regenerate the ${getOutputTypeLabel(contentType)} with these changes: ${instructions}\n\nCurrent title: ${payload.title}\n\nCurrent draft:\n${payload.markdown}`,
+                text: regeneratePrompt,
               });
             }
           : undefined;
@@ -1765,7 +1879,6 @@ function StandaloneChatPageClient({
                   logo: organization?.logo ?? null,
                 }}
                 persistedStatus={persistedStatus}
-                readOnly={isSlackMirrored}
                 state={previewState}
                 title={title}
               />
@@ -1790,7 +1903,6 @@ function StandaloneChatPageClient({
                   logo: organization?.logo ?? null,
                 }}
                 persistedStatus={persistedStatus}
-                readOnly={isSlackMirrored}
                 state={previewState}
                 title={title}
               />
@@ -1811,7 +1923,6 @@ function StandaloneChatPageClient({
               onPersist={handlePersist}
               onRegenerate={handleRegenerate}
               persistedStatus={persistedStatus}
-              readOnly={isSlackMirrored}
               state={previewState}
               title={title}
             />
@@ -1827,22 +1938,26 @@ function StandaloneChatPageClient({
         toolPart.state === "output-error"
       ) {
         const approvalId =
-          !isSlackMirrored && toolPart.state === "approval-requested"
+          toolPart.state === "approval-requested"
             ? toolPart.approval.id
             : undefined;
         const handleApprove = approvalId
           ? () =>
-              addToolApprovalResponse({
-                id: approvalId,
-                approved: true,
-              })
+              isSlackMirrored
+                ? relayApproval(approvalId, true)
+                : addToolApprovalResponse({
+                    id: approvalId,
+                    approved: true,
+                  })
           : undefined;
         const handleDeny = approvalId
           ? () =>
-              addToolApprovalResponse({
-                id: approvalId,
-                approved: false,
-              })
+              isSlackMirrored
+                ? relayApproval(approvalId, false)
+                : addToolApprovalResponse({
+                    id: approvalId,
+                    approved: false,
+                  })
           : undefined;
         const output =
           toolPart.state === "output-error"
@@ -2000,7 +2115,7 @@ function StandaloneChatPageClient({
         (isTerminalToolState(lastPart.state) ||
           lastPart.state === "approval-responded")));
   const showThinkingIndicator =
-    isLoading &&
+    (isLoading || isMirrorWorking) &&
     lastMessage != null &&
     (lastMessage.role === "user" ||
       lastAssistantHasNoVisibleContent ||
@@ -2179,59 +2294,50 @@ function StandaloneChatPageClient({
               <MessageScrollerButton />
             </MessageScroller>
           </MessageScrollerProvider>
-          {isSlackMirrored ? (
-            <div className="z-10 bg-background px-4 pb-4">
-              <div className="mx-auto w-full max-w-2xl">
-                {initialChatId ? (
-                  <SlackMirrorComposer
-                    chatId={initialChatId}
-                    onSent={appendMirroredMessage}
-                    organizationId={organizationId}
+          <div
+            className={cn(
+              "z-10 bg-background px-4 pb-4",
+              isFirstMessageTransition && "chat-input-slide-down"
+            )}
+          >
+            <div className="mx-auto w-full max-w-2xl">
+              <ChatQueue
+                messages={queuedMessages}
+                onEdit={handleEditQueued}
+                onRemove={handleRemoveQueued}
+              />
+              {isSlackMirrored && (
+                <div className="mb-2 flex justify-center">
+                  <SlackRelayFooterNotice
+                    threadUrl={chatHistoryData?.slackThreadUrl ?? null}
                   />
-                ) : (
-                  <SlackMirrorNotice />
-                )}
-              </div>
-            </div>
-          ) : (
-            <div
-              className={cn(
-                "z-10 bg-background px-4 pb-4",
-                isFirstMessageTransition && "chat-input-slide-down"
+                </div>
               )}
-            >
-              <div className="mx-auto w-full max-w-2xl">
-                <ChatQueue
-                  messages={queuedMessages}
-                  onEdit={handleEditQueued}
-                  onRemove={handleRemoveQueued}
-                />
-                <ChatInputAdvanced
-                  connectedTop={queuedMessages.length > 0}
-                  context={context}
-                  draftStorageKey={draftStorageKey}
-                  error={null}
-                  initialValue={initialQuery ?? undefined}
-                  isLoading={isLoading}
-                  isStopping={isStopping}
-                  model={selectedModel}
-                  onAddContext={handleAddContext}
-                  onClearError={handleClearError}
-                  onModelChange={handleModelChange}
-                  onRemoveContext={handleRemoveContext}
-                  onSend={handleSend}
-                  onStop={handleStop}
-                  onThinkingLevelChange={handleThinkingLevelChange}
-                  onUpdateQueued={handleUpdateQueued}
-                  organizationId={organizationId}
-                  organizationSlug={organizationSlug}
-                  queuedMessages={queuedMessages}
-                  ref={chatInputRef}
-                  thinkingLevel={thinkingLevel}
-                />
-              </div>
+              <ChatInputAdvanced
+                connectedTop={queuedMessages.length > 0}
+                context={context}
+                draftStorageKey={draftStorageKey}
+                error={null}
+                initialValue={initialQuery ?? undefined}
+                isLoading={isLoading}
+                isStopping={isStopping}
+                model={selectedModel}
+                onAddContext={handleAddContext}
+                onClearError={handleClearError}
+                onModelChange={handleModelChange}
+                onRemoveContext={handleRemoveContext}
+                onSend={handleSend}
+                onStop={handleStop}
+                onThinkingLevelChange={handleThinkingLevelChange}
+                onUpdateQueued={handleUpdateQueued}
+                organizationId={organizationId}
+                organizationSlug={organizationSlug}
+                queuedMessages={queuedMessages}
+                ref={chatInputRef}
+                thinkingLevel={thinkingLevel}
+              />
             </div>
-          )}
+          </div>
         </div>
       </LazyMotion>
       <AttachmentPreviewDialog

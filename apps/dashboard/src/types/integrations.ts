@@ -33,6 +33,23 @@ export interface GitHubIntegration {
   repositories: GitHubRepository[];
 }
 
+export interface SlackIntegration {
+  id: string;
+  displayName: string;
+  enabled: boolean;
+  createdAt: string;
+  slackTeamId: string;
+  slackTeamName?: string | null;
+  allowedChannelIds: string[] | null;
+  notificationChannelId: string | null;
+  createdByUser?: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+  };
+}
+
 export interface LinearIntegration {
   id: string;
   displayName: string;

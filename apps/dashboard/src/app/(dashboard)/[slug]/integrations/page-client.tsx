@@ -18,6 +18,7 @@ import { memo, useState } from "react";
 import { Button } from "@/components/button";
 import { AddGranolaIntegrationDialog } from "@/components/integrations/add-granola-integration-dialog";
 import { AddLinearIntegrationDialog } from "@/components/integrations/add-linear-integration-dialog";
+import { AddSlackIntegrationDialog } from "@/components/integrations/add-slack-integration-dialog";
 import {
   IntegrationCardDither,
   useIntegrationCardDither,
@@ -27,6 +28,7 @@ import { StoreIntegrationsSection } from "@/components/integrations/store-integr
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useLinearConnectionToast } from "@/lib/hooks/use-linear-connection-toast";
+import { useSlackConnectionToast } from "@/lib/hooks/use-slack-connection-toast";
 import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
 import {
   INTEGRATION_CATEGORY_TABS,
@@ -76,6 +78,7 @@ const IntegrationCard = memo(function IntegrationCard({
   const showLinearDialog = integration.available && integration.id === "linear";
   const showGranolaDialog =
     integration.available && integration.id === "granola";
+  const showSlackDialog = integration.available && integration.id === "slack";
   const dither = useIntegrationCardDither(integration.available);
 
   if (!(organizationId && organizationSlug)) {
@@ -98,7 +101,12 @@ const IntegrationCard = memo(function IntegrationCard({
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (showGitHubDialog || showLinearDialog || showGranolaDialog) {
+                if (
+                  showGitHubDialog ||
+                  showLinearDialog ||
+                  showGranolaDialog ||
+                  showSlackDialog
+                ) {
                   setDialogOpen(true);
                 } else {
                   router.push(
@@ -172,6 +180,13 @@ const IntegrationCard = memo(function IntegrationCard({
           organizationId={organizationId}
         />
       ) : null}
+      {showSlackDialog ? (
+        <AddSlackIntegrationDialog
+          authorizeUrl={`/api/integrations/slack/authorize?organizationId=${organizationId}&callbackPath=${encodeURIComponent(pathname)}`}
+          onOpenChange={setDialogOpen}
+          open={dialogOpen}
+        />
+      ) : null}
     </>
   );
 });
@@ -185,6 +200,7 @@ export default function PageClient({
   const organizationId = organization?.id;
 
   useLinearConnectionToast();
+  useSlackConnectionToast();
 
   const [activeTab, setActiveTab] = useQueryState(
     "tab",

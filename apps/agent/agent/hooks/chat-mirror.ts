@@ -1,11 +1,12 @@
 import { getSessionAttribute } from "@notra/tools/utils/session";
 import { Effect } from "effect";
 import { defineHook } from "eve/hooks";
-import { SlackChatMirrorError } from "../lib/schemas/slack";
+import { MIRROR_ASSISTANT_METADATA } from "../lib/constants/chat-mirror";
+import { ChatMirrorError } from "../lib/schemas/chat-mirror";
 import {
   appendAndPublishMirrorMessage,
-  resolveSlackMirrorChatId,
-} from "../lib/utils/slack-chat-mirror";
+  resolveMirrorChatId,
+} from "../lib/utils/chat-mirror";
 
 export default defineHook({
   events: {
@@ -19,9 +20,9 @@ export default defineHook({
         Effect.gen(function* () {
           const organizationId = getSessionAttribute(ctx, "organizationId");
           const chatId = yield* Effect.tryPromise({
-            try: () => resolveSlackMirrorChatId(ctx),
+            try: () => resolveMirrorChatId(ctx),
             catch: (cause) =>
-              new SlackChatMirrorError({
+              new ChatMirrorError({
                 cause,
                 operation: "resolve-mirror-chat-id",
               }),
@@ -34,10 +35,11 @@ export default defineHook({
             id: `eve:${ctx.session.id}:${event.data.turnId}:${event.data.stepIndex}`,
             role: "assistant",
             parts: [{ type: "text", text: messageText }],
+            metadata: MIRROR_ASSISTANT_METADATA,
           });
         }).pipe(
           Effect.catch((error) =>
-            Effect.logWarning("[agent] Slack chat mirror failed", error)
+            Effect.logWarning("[agent] chat mirror failed", error)
           )
         )
       );

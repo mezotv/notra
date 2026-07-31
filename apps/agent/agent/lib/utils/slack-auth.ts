@@ -3,32 +3,13 @@ import {
   type SlackContext,
   type SlackMessage,
 } from "eve/channels/slack";
+import type { ResolvedSlackInstallation } from "../types/slack";
 
-export function isAllowedSlackChannel(channelId: string): boolean {
-  const configuredChannelIds =
-    process.env.SLACK_AGENT_ALLOWED_CHANNEL_IDS?.split(",")
-      .map((value) => value.trim())
-      .filter(Boolean) ?? [];
-
-  return (
-    configuredChannelIds.length === 0 ||
-    configuredChannelIds.includes(channelId)
-  );
-}
-
-export function createNotraSlackAuth(ctx: SlackContext, message: SlackMessage) {
-  const organizationId = process.env.SLACK_AGENT_ORGANIZATION_ID?.trim();
-  const teamId = process.env.SLACK_AGENT_TEAM_ID?.trim();
-
-  if (
-    !organizationId ||
-    !teamId ||
-    message.teamId !== teamId ||
-    !isAllowedSlackChannel(message.channelId)
-  ) {
-    return null;
-  }
-
+export function buildNotraSlackAuth(
+  ctx: SlackContext,
+  message: SlackMessage,
+  installation: ResolvedSlackInstallation
+) {
   const auth = defaultSlackAuth(message, ctx);
   if (!auth) {
     return null;
@@ -38,7 +19,7 @@ export function createNotraSlackAuth(ctx: SlackContext, message: SlackMessage) {
     ...auth,
     attributes: {
       ...auth.attributes,
-      organizationId,
+      organizationId: installation.organizationId,
       surface: "standalone-chat",
     },
   };

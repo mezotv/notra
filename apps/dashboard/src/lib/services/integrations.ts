@@ -1,6 +1,7 @@
 import { getGitHubIntegrationsByOrganization } from "@notra/ai/integrations/github";
 import { getGranolaIntegrationsByOrganization } from "@notra/ai/integrations/granola";
 import { getLinearIntegrationsByOrganization } from "@notra/ai/integrations/linear";
+import { getSlackIntegrationsByOrganization } from "@notra/ai/integrations/slack-workspace";
 import type { IntegrationType } from "@/schemas/integrations";
 import type {
   IntegrationFetcher,
@@ -42,6 +43,19 @@ const integrationFetchers: Partial<
         })),
       };
     });
+  },
+  slack: async (organizationId) => {
+    const integrations =
+      await getSlackIntegrationsByOrganization(organizationId);
+
+    return integrations.map((integration) => ({
+      id: integration.id,
+      displayName: integration.displayName,
+      type: "slack" as const,
+      enabled: integration.enabled,
+      createdAt: integration.createdAt,
+      repositories: [],
+    }));
   },
   linear: async (organizationId) => {
     const integrations =

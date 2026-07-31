@@ -24,3 +24,22 @@ export async function relaySlackMirrorMessage(
   }
   return data.message;
 }
+
+export async function relaySlackApproval(
+  organizationId: string,
+  chatId: string,
+  requestId: string,
+  approved: boolean
+): Promise<void> {
+  const res = await fetch(
+    `/api/organizations/${organizationId}/chat/${encodeURIComponent(chatId)}/relay-approval`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ requestId, approved }),
+    }
+  );
+  if (!res.ok) {
+    throw new Error("Failed to send the approval to Slack");
+  }
+}

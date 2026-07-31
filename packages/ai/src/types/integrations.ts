@@ -61,6 +61,25 @@ export interface CreateLinearIntegrationParams {
   linearTeamName?: string;
 }
 
+export interface CreateSlackIntegrationParams {
+  organizationId: string;
+  userId: string;
+  displayName: string;
+  botToken: string;
+  slackTeamId: string;
+  slackTeamName?: string;
+  slackBotUserId?: string;
+}
+
+export interface UpdateSlackIntegrationParams {
+  organizationId: string;
+  integrationId: string;
+  displayName?: string;
+  allowedChannelIds?: string[] | null;
+  notificationChannelId?: string | null;
+  enabled?: boolean;
+}
+
 export interface CreateGranolaIntegrationParams {
   organizationId: string;
   userId: string;

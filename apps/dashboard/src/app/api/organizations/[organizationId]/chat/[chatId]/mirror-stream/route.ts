@@ -93,14 +93,18 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         const history = await channel.history();
         for (const item of history) {
           if (item.event === "mirror.message") {
-            emit(item.data);
+            emit({ event: "message", data: item.data });
           }
         }
 
         unsubscribe = await channel.subscribe({
-          events: ["mirror.message"],
-          onData: ({ data }) => {
-            emit(data);
+          events: ["mirror.message", "mirror.status"],
+          onData: ({ event, data }) => {
+            emit(
+              event === "mirror.status"
+                ? { event: "status", data }
+                : { event: "message", data }
+            );
           },
         });
 

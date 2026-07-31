@@ -1,21 +1,16 @@
-import {
-  appendChatMessageIfMissing,
-  claimChatSessionForExternalChannel,
-  generateChatId,
-  renameChatSession,
-} from "@notra/ai/chat/history";
-import { publishChatMirrorMessage } from "@notra/ai/chat/mirror";
-import { getSessionAttribute } from "@notra/tools/utils/session";
 import { Effect } from "effect";
 import type {
   SlackInboundMessageContext,
   SlackMessage,
   SlackThreadMessage,
 } from "eve/channels/slack";
-import type { HookContext } from "eve/hooks";
-import { SlackChatMirrorError } from "../schemas/slack";
-import type { MirrorUiMessage } from "../types/slack";
+import type { MirrorUiMessage } from "../types/chat-mirror";
+import { claimMirroredChatSession } from "./chat-mirror";
 import { isPublicSlackChannel } from "./slack-public-channel";
+
+const SLACK_MENTION_REGEX = /<@[A-Z0-9]+>/gu;
+const RENDERED_MENTION_REGEX = /@U[A-Z0-9]{8,}/gu;
+const WHITESPACE_REGEX = /\s+/gu;
 
 function getSlackExternalChannelId(
   teamId: string | undefined,
@@ -35,7 +30,7 @@ function getSlackMessageText(message: {
 function toSlackThreadUiMessage(
   channelId: string,
   message: SlackThreadMessage
-) {
+): MirrorUiMessage | null {
   if (message.botId && !message.isMe) {
     return null;
   }
@@ -47,12 +42,14 @@ function toSlackThreadUiMessage(
 
   return {
     id: `slack:${channelId}:${message.ts}`,
-    role: message.isMe ? ("assistant" as const) : ("user" as const),
-    parts: [{ type: "text" as const, text }],
+    role: message.isMe ? "assistant" : "user",
+    parts: [{ type: "text", text }],
   };
 }
 
-function toSlackInboundUiMessage(message: SlackMessage) {
+function toSlackInboundUiMessage(
+  message: SlackMessage
+): MirrorUiMessage | null {
   const text = getSlackMessageText(message);
   if (!text) {
     return null;
@@ -60,120 +57,19 @@ function toSlackInboundUiMessage(message: SlackMessage) {
 
   return {
     id: `slack:${message.channelId}:${message.ts}`,
-    role: "user" as const,
-    parts: [{ type: "text" as const, text }],
+    role: "user",
+    parts: [{ type: "text", text }],
   };
 }
 
 function getSlackChatTitle(message: SlackMessage) {
   const text = getSlackMessageText(message)
-    .replace(/<@[A-Z0-9]+>/gu, "")
-    .replace(/@U[A-Z0-9]{8,}/gu, "")
-    .replace(/\s+/gu, " ")
+    .replace(SLACK_MENTION_REGEX, "")
+    .replace(RENDERED_MENTION_REGEX, "")
+    .replace(WHITESPACE_REGEX, " ")
     .trim();
   const preview = text.length > 52 ? `${text.slice(0, 49).trimEnd()}...` : text;
   return preview ? `Slack: ${preview}` : "Slack conversation";
-}
-
-function mirrorStep<T>(
-  operation: string,
-  run: () => Promise<T>
-): Effect.Effect<T, SlackChatMirrorError> {
-  return Effect.tryPromise({
-    try: run,
-    catch: (cause) => new SlackChatMirrorError({ cause, operation }),
-  });
-}
-
-export function appendAndPublishMirrorMessage(
-  organizationId: string,
-  chatId: string,
-  message: MirrorUiMessage
-): Effect.Effect<boolean, SlackChatMirrorError> {
-  return Effect.gen(function* () {
-    const appended = yield* mirrorStep("append-mirror-message", () =>
-      appendChatMessageIfMissing(organizationId, chatId, message)
-    );
-    if (!appended) {
-      return false;
-    }
-    yield* mirrorStep("publish-mirror-message", () =>
-      publishChatMirrorMessage(organizationId, chatId, message)
-    ).pipe(
-      Effect.catch((error) =>
-        Effect.logWarning("[agent] Slack mirror publish failed", error)
-      )
-    );
-    return true;
-  });
-}
-
-function mirrorSlackInboundMessage(
-  ctx: SlackInboundMessageContext,
-  message: SlackMessage,
-  organizationId: string
-): Effect.Effect<string, SlackChatMirrorError> {
-  return Effect.gen(function* () {
-    const externalChannelId = getSlackExternalChannelId(
-      message.teamId,
-      message.channelId,
-      message.threadTs
-    );
-    const claim = yield* mirrorStep("claim-chat-session", () =>
-      claimChatSessionForExternalChannel(
-        organizationId,
-        "slack",
-        externalChannelId,
-        generateChatId()
-      )
-    );
-    const inboundMessage = toSlackInboundUiMessage(message);
-
-    if (!claim.created) {
-      if (inboundMessage) {
-        yield* appendAndPublishMirrorMessage(
-          organizationId,
-          claim.chatId,
-          inboundMessage
-        );
-      }
-      return claim.chatId;
-    }
-
-    yield* mirrorStep("refresh-thread", () => ctx.thread.refresh());
-    const mirroredMessages = ctx.thread.recentMessages.flatMap(
-      (threadMessage) => {
-        const uiMessage = toSlackThreadUiMessage(
-          message.channelId,
-          threadMessage
-        );
-        return uiMessage ? [uiMessage] : [];
-      }
-    );
-    if (
-      inboundMessage &&
-      !mirroredMessages.some((item) => item.id === inboundMessage.id)
-    ) {
-      mirroredMessages.push(inboundMessage);
-    }
-
-    for (const mirroredMessage of mirroredMessages) {
-      yield* appendAndPublishMirrorMessage(
-        organizationId,
-        claim.chatId,
-        mirroredMessage
-      );
-    }
-    yield* mirrorStep("rename-chat-session", () =>
-      renameChatSession(
-        organizationId,
-        claim.chatId,
-        getSlackChatTitle(message)
-      )
-    );
-
-    return claim.chatId;
-  });
 }
 
 export function mirrorPublicSlackThread(
@@ -186,7 +82,28 @@ export function mirrorPublicSlackThread(
     if (!isPublic) {
       return null;
     }
-    return yield* mirrorSlackInboundMessage(ctx, message, organizationId);
+
+    return yield* claimMirroredChatSession({
+      organizationId,
+      source: "slack",
+      externalChannelId: getSlackExternalChannelId(
+        message.teamId,
+        message.channelId,
+        message.threadTs
+      ),
+      title: getSlackChatTitle(message),
+      inboundMessage: toSlackInboundUiMessage(message),
+      loadHistory: async () => {
+        await ctx.thread.refresh();
+        return ctx.thread.recentMessages.flatMap((threadMessage) => {
+          const uiMessage = toSlackThreadUiMessage(
+            message.channelId,
+            threadMessage
+          );
+          return uiMessage ? [uiMessage] : [];
+        });
+      },
+    });
   }).pipe(
     Effect.catch((error) =>
       Effect.logWarning("[agent] Slack inbound chat mirror failed", error).pipe(
@@ -194,12 +111,4 @@ export function mirrorPublicSlackThread(
       )
     )
   );
-}
-
-export async function resolveSlackMirrorChatId(ctx: HookContext) {
-  if (ctx.channel.kind !== "channel:slack") {
-    return null;
-  }
-
-  return getSessionAttribute(ctx, "chatId");
 }

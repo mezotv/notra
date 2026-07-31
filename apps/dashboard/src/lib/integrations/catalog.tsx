@@ -5,6 +5,7 @@ import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Granola } from "@notra/ui/components/ui/svgs/granola";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Raycast } from "@notra/ui/components/ui/svgs/raycast";
+import { Slack } from "@notra/ui/components/ui/svgs/slack";
 import type { IntegrationConfig } from "@/types/integrations/catalog";
 
 const INPUT_SOURCES: readonly IntegrationConfig[] = [
@@ -26,6 +27,17 @@ const INPUT_SOURCES: readonly IntegrationConfig[] = [
     icon: <Linear />,
     accentColor: "#5E6AD2",
     href: "linear",
+    available: true,
+    category: "input",
+  },
+  {
+    id: "slack",
+    name: "Slack",
+    description:
+      "Chat with your Notra agent in Slack threads, mirrored live into the dashboard",
+    icon: <Slack />,
+    accentColor: "#611F69",
+    href: "slack",
     available: true,
     category: "input",
   },

@@ -1,4 +1,5 @@
 import type { SlackChannelCredentials } from "eve/channels/slack";
+import { resolveSlackOutboundBotToken } from "./slack-installation";
 
 function requireEnv(name: string, purpose: string): string {
   const value = process.env[name]?.trim();
@@ -12,7 +13,7 @@ function requireEnv(name: string, purpose: string): string {
 
 export function createSlackAgentCredentials(): SlackChannelCredentials {
   return {
-    botToken: () => requireEnv("SLACK_AGENT_BOT_TOKEN", "Slack delivery"),
+    botToken: () => resolveSlackOutboundBotToken(),
     get signingSecret(): string {
       return requireEnv(
         "SLACK_AGENT_SIGNING_SECRET",

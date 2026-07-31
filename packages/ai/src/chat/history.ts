@@ -10,6 +10,7 @@ import {
 } from "../constants/chat";
 import { gateway } from "../gateway";
 import { withGatewayAutomaticCaching } from "../provider-options";
+import { uiMessageSchema } from "../schemas/chat";
 import type {
   ChatSessionSummary,
   ExternalChannelId,
@@ -240,6 +241,75 @@ export async function appendChatMessageIfMissing(
         eq(chatSessions.organizationId, organizationId),
         isNull(chatSessions.deletedAt),
         sql`NOT (${chatSessions.messages} @> ${serializedMessageId}::jsonb)`
+      )
+    )
+    .returning({ id: chatSessions.id });
+
+  return updated.length > 0;
+}
+
+export async function getChatMessageById(
+  organizationId: string,
+  chatId: string,
+  messageId: string
+): Promise<UIMessage | null> {
+  const rows = await db
+    .select({ messages: chatSessions.messages })
+    .from(chatSessions)
+    .where(
+      and(
+        eq(chatSessions.id, chatId),
+        eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.deletedAt)
+      )
+    )
+    .limit(1);
+
+  const messages = rows[0]?.messages;
+  if (!Array.isArray(messages)) {
+    return null;
+  }
+  for (const message of messages) {
+    const parsed = uiMessageSchema.safeParse(message);
+    if (parsed.success && parsed.data.id === messageId) {
+      return parsed.data;
+    }
+  }
+  return null;
+}
+
+export async function upsertChatMessageById(
+  organizationId: string,
+  chatId: string,
+  message: UIMessage
+): Promise<boolean> {
+  const serializedMessage = JSON.stringify(message);
+  const serializedMessageArray = JSON.stringify([message]);
+  const serializedMessageId = JSON.stringify([{ id: message.id }]);
+  const updated = await db
+    .update(chatSessions)
+    .set({
+      messages: sql`CASE
+        WHEN ${chatSessions.messages} @> ${serializedMessageId}::jsonb THEN (
+          SELECT COALESCE(
+            jsonb_agg(
+              CASE
+                WHEN elem->>'id' = ${message.id} THEN ${serializedMessage}::jsonb
+                ELSE elem
+              END
+            ),
+            '[]'::jsonb
+          )
+          FROM jsonb_array_elements(${chatSessions.messages}) AS elem
+        )
+        ELSE ${chatSessions.messages} || ${serializedMessageArray}::jsonb
+      END`,
+    })
+    .where(
+      and(
+        eq(chatSessions.id, chatId),
+        eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.deletedAt)
       )
     )
     .returning({ id: chatSessions.id });

@@ -2,7 +2,10 @@ import { SLACK_RELAY_EVENT_TYPE } from "@notra/ai/constants/chat";
 import { slackRelayMetadataSchema } from "@notra/ai/schemas/chat";
 import type { SlackEvent, SlackEventEnvelope } from "eve/channels/slack";
 import type { SlackDashboardRelay } from "../types/slack";
-import { isAllowedSlackChannel } from "./slack-auth";
+import {
+  isChannelAllowed,
+  resolveSlackInstallation,
+} from "./slack-installation";
 
 function getRelayEventPayload(event: SlackEvent): unknown {
   const metadata = event.metadata;
@@ -18,10 +21,10 @@ function getRelayEventPayload(event: SlackEvent): unknown {
   return metadata.event_payload;
 }
 
-export function parseSlackDashboardRelay(
+export async function parseSlackDashboardRelay(
   envelope: SlackEventEnvelope,
   event: SlackEvent
-): SlackDashboardRelay | null {
+): Promise<SlackDashboardRelay | null> {
   if (event.type !== "message") {
     return null;
   }
@@ -42,17 +45,19 @@ export function parseSlackDashboardRelay(
     return null;
   }
 
-  const teamId = process.env.SLACK_AGENT_TEAM_ID?.trim();
-  const organizationId = process.env.SLACK_AGENT_ORGANIZATION_ID?.trim();
+  const teamId = envelope.team_id;
+  if (!teamId) {
+    return null;
+  }
+  const installation = await resolveSlackInstallation(teamId);
   if (
-    !teamId ||
-    !organizationId ||
-    envelope.team_id !== teamId ||
-    payload.data.organization_id !== organizationId ||
-    !isAllowedSlackChannel(channelId)
+    !installation ||
+    payload.data.organization_id !== installation.organizationId ||
+    !isChannelAllowed(installation, channelId)
   ) {
     return null;
   }
+  const organizationId = installation.organizationId;
 
   return {
     channelId,

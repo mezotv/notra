@@ -64,6 +64,8 @@ export interface ChatInputHandle {
   focus: () => void;
 }
 
+export type MirrorChatStatus = "working" | "idle";
+
 export interface ChatAttachment {
   url: string;
   key: string;

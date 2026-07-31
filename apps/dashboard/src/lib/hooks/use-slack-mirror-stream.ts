@@ -1,17 +1,20 @@
 "use client";
 
 import { uiMessageSchema } from "@notra/ai/schemas/chat";
-import type { ChatUIMessage } from "@notra/ai/types/chat";
+import type { ChatUIMessage, MirrorChatStatus } from "@notra/ai/types/chat";
 import { useEffect, useRef } from "react";
 
 export function useSlackMirrorStream(
   organizationId: string,
   chatId: string | null,
   enabled: boolean,
-  onMessage: (message: ChatUIMessage) => void
+  onMessage: (message: ChatUIMessage) => void,
+  onStatus: (status: MirrorChatStatus) => void
 ) {
   const onMessageRef = useRef(onMessage);
   onMessageRef.current = onMessage;
+  const onStatusRef = useRef(onStatus);
+  onStatusRef.current = onStatus;
 
   useEffect(() => {
     if (!(enabled && chatId && organizationId)) {
@@ -24,9 +27,19 @@ export function useSlackMirrorStream(
 
     source.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
-        if (uiMessageSchema.safeParse(data).success) {
-          onMessageRef.current(data);
+        const envelope = JSON.parse(event.data);
+        if (envelope?.event === "status") {
+          const status = envelope?.data?.status;
+          if (status === "working" || status === "idle") {
+            onStatusRef.current(status);
+          }
+          return;
+        }
+        if (
+          envelope?.event === "message" &&
+          uiMessageSchema.safeParse(envelope.data).success
+        ) {
+          onMessageRef.current(envelope.data);
         }
       } catch {
         return;

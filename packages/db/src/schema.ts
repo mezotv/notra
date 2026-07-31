@@ -518,6 +518,37 @@ export const linearIntegrations = pgTable(
   ]
 );
 
+export const slackIntegrations = pgTable(
+  "slack_integrations",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdByUserId: text("created_by_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    displayName: text("display_name").notNull(),
+    encryptedBotToken: text("encrypted_bot_token").notNull(),
+    slackTeamId: text("slack_team_id").notNull(),
+    slackTeamName: text("slack_team_name"),
+    slackBotUserId: text("slack_bot_user_id"),
+    allowedChannelIds: jsonb("allowed_channel_ids").$type<string[] | null>(),
+    notificationChannelId: text("notification_channel_id"),
+    enabled: boolean("enabled").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("slackIntegrations_organizationId_idx").on(table.organizationId),
+    index("slackIntegrations_createdByUserId_idx").on(table.createdByUserId),
+    uniqueIndex("slackIntegrations_teamId_uidx").on(table.slackTeamId),
+  ]
+);
+
 export const granolaIntegrations = pgTable(
   "granola_integrations",
   {
@@ -1568,6 +1599,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   githubIntegrations: many(githubIntegrations),
   githubAppInstallations: many(githubAppInstallations),
   linearIntegrations: many(linearIntegrations),
+  slackIntegrations: many(slackIntegrations),
   granolaIntegrations: many(granolaIntegrations),
   mcpServerIntegrations: many(mcpServerIntegrations),
   chatAttachments: many(chatAttachments),
@@ -1616,6 +1648,7 @@ export const organizationsRelations = relations(
     githubIntegrations: many(githubIntegrations),
     githubAppInstallations: many(githubAppInstallations),
     linearIntegrations: many(linearIntegrations),
+    slackIntegrations: many(slackIntegrations),
     granolaIntegrations: many(granolaIntegrations),
     mcpServerIntegrations: many(mcpServerIntegrations),
     mcpToolIndex: many(mcpToolIndex),
@@ -1702,6 +1735,20 @@ export const linearIntegrationsRelations = relations(
     }),
     createdByUser: one(users, {
       fields: [linearIntegrations.createdByUserId],
+      references: [users.id],
+    }),
+  })
+);
+
+export const slackIntegrationsRelations = relations(
+  slackIntegrations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [slackIntegrations.organizationId],
+      references: [organizations.id],
+    }),
+    createdByUser: one(users, {
+      fields: [slackIntegrations.createdByUserId],
       references: [users.id],
     }),
   })

@@ -56,6 +56,13 @@ import {
 } from "@notra/ai/integrations/mcp-store";
 import { McpStoreListingUnavailableError } from "@notra/ai/integrations/mcp-store-errors";
 import { refreshMcpToolIndexForIntegration } from "@notra/ai/integrations/mcp-tool-index";
+import {
+  deleteSlackIntegration,
+  getSlackIntegrationBotToken,
+  getSlackIntegrationById,
+  getSlackIntegrationsByOrganization,
+  updateSlackIntegration,
+} from "@notra/ai/integrations/slack-workspace";
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
@@ -66,6 +73,10 @@ import { Effect } from "effect";
 import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
+import {
+  getCachedSlackChannels,
+  setCachedSlackChannels,
+} from "@/lib/integrations/slack/channel-cache";
 import { baseProcedure } from "@/lib/orpc/base";
 import { getIntegrationsByOrganization } from "@/lib/services/integrations";
 import {
@@ -92,12 +103,18 @@ import {
   updateRepositoryBodySchema,
 } from "@/schemas/integrations";
 import { updateLinearIntegrationBodySchema } from "@/schemas/linear";
+import {
+  slackChannelListResponseSchema,
+  slackListChannelsOptionsSchema,
+  updateSlackIntegrationBodySchema,
+} from "@/schemas/slack-integration";
 import type {
   GitHubIntegration,
   GitHubRepository,
   RepositoryOutput,
 } from "@/types/integrations";
 import type { GitHubConnectionMethod } from "@/types/services/integrations";
+import type { SlackChannelOption } from "@/types/slack-integration";
 import { ratelimit } from "@/utils/ratelimit";
 import {
   badRequest,
@@ -940,6 +957,136 @@ export const integrationsRouter = {
         await deleteLinearIntegration(input.integrationId);
 
         await invalidateStandaloneChatIntegrations(input.organizationId);
+
+        return { success: true };
+      }),
+  },
+  slack: {
+    list: baseProcedure
+      .input(organizationIdInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const integrations = await getSlackIntegrationsByOrganization(
+          input.organizationId
+        );
+
+        return {
+          integrations: integrations.map((integration) => ({
+            id: integration.id,
+            displayName: integration.displayName,
+            enabled: integration.enabled,
+            createdAt: integration.createdAt.toISOString(),
+            slackTeamId: integration.slackTeamId,
+            slackTeamName: integration.slackTeamName,
+            allowedChannelIds: integration.allowedChannelIds ?? null,
+            notificationChannelId: integration.notificationChannelId ?? null,
+            createdByUser: integration.createdByUser
+              ? {
+                  id: integration.createdByUser.id,
+                  name: integration.createdByUser.name,
+                  email: integration.createdByUser.email,
+                  image: integration.createdByUser.image,
+                }
+              : undefined,
+          })),
+        };
+      }),
+    listChannels: baseProcedure
+      .input(integrationInputSchema.and(slackListChannelsOptionsSchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const integration = await getSlackIntegrationById(
+          input.organizationId,
+          input.integrationId
+        );
+        if (!integration) {
+          throw notFound("Slack integration not found");
+        }
+
+        if (!input.refresh) {
+          const cached = await getCachedSlackChannels(input.integrationId);
+          if (cached) {
+            return { channels: cached };
+          }
+        }
+
+        const token = getSlackIntegrationBotToken(integration);
+        const response = await fetch(
+          "https://slack.com/api/conversations.list?types=public_channel&exclude_archived=true&limit=200",
+          { headers: { authorization: `Bearer ${token}` } }
+        );
+        const parsed = slackChannelListResponseSchema.safeParse(
+          await response.json()
+        );
+        if (!(parsed.success && parsed.data.ok)) {
+          throw internalServerError("Failed to load Slack channels");
+        }
+
+        const channels: SlackChannelOption[] = (parsed.data.channels ?? [])
+          .filter((channel) => !channel.is_archived)
+          .map((channel) => ({
+            id: channel.id,
+            name: channel.name ?? channel.id,
+            isPrivate: channel.is_private ?? false,
+            memberCount: channel.num_members ?? null,
+          }));
+
+        await setCachedSlackChannels(input.integrationId, channels);
+
+        return { channels };
+      }),
+    update: baseProcedure
+      .input(integrationInputSchema.and(updateSlackIntegrationBodySchema))
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+        await assertActiveSubscription(input.organizationId);
+
+        const updated = await updateSlackIntegration({
+          organizationId: input.organizationId,
+          integrationId: input.integrationId,
+          enabled: input.enabled,
+          displayName: input.displayName,
+          allowedChannelIds: input.allowedChannelIds,
+          notificationChannelId: input.notificationChannelId,
+        });
+        if (!updated) {
+          throw notFound("Slack integration not found");
+        }
+
+        return {
+          id: updated.id,
+          displayName: updated.displayName,
+          enabled: updated.enabled,
+          allowedChannelIds: updated.allowedChannelIds ?? null,
+          notificationChannelId: updated.notificationChannelId ?? null,
+        };
+      }),
+    delete: baseProcedure
+      .input(integrationInputSchema)
+      .handler(async ({ context, input }) => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+        });
+
+        const deleted = await deleteSlackIntegration(
+          input.organizationId,
+          input.integrationId
+        );
+        if (!deleted) {
+          throw notFound("Slack integration not found");
+        }
 
         return { success: true };
       }),

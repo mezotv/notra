@@ -1,7 +1,17 @@
-import type { appendChatMessageIfMissing } from "@notra/ai/chat/history";
 import type { VerifiedSessionAuth } from "./auth";
 
-export type MirrorUiMessage = Parameters<typeof appendChatMessageIfMissing>[2];
+export interface ResolvedSlackInstallation {
+  organizationId: string;
+  organizationSlug: string | null;
+  teamId: string;
+  botToken: string;
+  allowedChannelIds: string[] | null;
+}
+
+export interface InstallationCacheEntry {
+  expiresAt: number;
+  installation: ResolvedSlackInstallation | null;
+}
 
 export interface SlackDashboardRelay {
   channelId: string;

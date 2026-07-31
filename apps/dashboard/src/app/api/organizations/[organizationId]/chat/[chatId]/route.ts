@@ -12,6 +12,10 @@ import { updateChatSessionSchema } from "@notra/ai/schemas/chat";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
+import {
+  getSlackThreadPermalink,
+  parseSlackExternalChannelKey,
+} from "@/lib/slack/relay";
 
 interface RouteContext {
   params: Promise<{ organizationId: string; chatId: string }>;
@@ -36,12 +40,22 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       getActiveChatStream(organizationId, chatId),
       getChatSession(organizationId, chatId),
     ]);
+  const externalChannelId = chatSession?.externalChannelId ?? null;
+  let slackThreadUrl: string | null = null;
+  if (externalChannelId?.source === "slack" && externalChannelId.id) {
+    const target = parseSlackExternalChannelKey(externalChannelId.id);
+    if (target) {
+      slackThreadUrl = await getSlackThreadPermalink(target);
+    }
+  }
+
   return NextResponse.json({
     chatId,
     messages,
     lastResponseStopped,
     activeStreamId,
-    externalChannelId: chatSession?.externalChannelId ?? null,
+    externalChannelId,
+    slackThreadUrl,
   });
 }
 
