@@ -124,6 +124,14 @@ export async function GET(request: NextRequest) {
       }),
     });
 
+    if (!tokenRes.ok) {
+      console.error(
+        "Slack token exchange failed with status:",
+        tokenRes.status
+      );
+      await restoreOAuthState();
+      return NextResponse.redirect(`${baseUrl}/?error=token_exchange_failed`);
+    }
     const tokenParse = slackOAuthAccessResponseSchema.safeParse(
       await tokenRes.json()
     );

@@ -1024,6 +1024,9 @@ export const integrationsRouter = {
           "https://slack.com/api/conversations.list?types=public_channel&exclude_archived=true&limit=200",
           { headers: { authorization: `Bearer ${token}` } }
         );
+        if (!response.ok) {
+          throw internalServerError("Failed to load Slack channels");
+        }
         const parsed = slackChannelListResponseSchema.safeParse(
           await response.json()
         );
@@ -1031,14 +1034,20 @@ export const integrationsRouter = {
           throw internalServerError("Failed to load Slack channels");
         }
 
-        const channels: SlackChannelOption[] = (parsed.data.channels ?? [])
-          .filter((channel) => !channel.is_archived)
-          .map((channel) => ({
-            id: channel.id,
-            name: channel.name ?? channel.id,
-            isPrivate: channel.is_private ?? false,
-            memberCount: channel.num_members ?? null,
-          }));
+        const channels: SlackChannelOption[] = (
+          parsed.data.channels ?? []
+        ).flatMap((channel) =>
+          channel.is_archived
+            ? []
+            : [
+                {
+                  id: channel.id,
+                  name: channel.name ?? channel.id,
+                  isPrivate: channel.is_private ?? false,
+                  memberCount: channel.num_members ?? null,
+                },
+              ]
+        );
 
         await setCachedSlackChannels(input.integrationId, channels);
 

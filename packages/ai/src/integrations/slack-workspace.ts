@@ -166,6 +166,9 @@ export async function postSlackNotification(
         text,
       }),
     });
+    if (!response.ok) {
+      continue;
+    }
     const result = await response.json();
     if (
       typeof result === "object" &&

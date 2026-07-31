@@ -12,9 +12,12 @@ export function useSlackMirrorStream(
   onStatus: (status: MirrorChatStatus) => void
 ) {
   const onMessageRef = useRef(onMessage);
-  onMessageRef.current = onMessage;
   const onStatusRef = useRef(onStatus);
-  onStatusRef.current = onStatus;
+
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+    onStatusRef.current = onStatus;
+  }, [onMessage, onStatus]);
 
   useEffect(() => {
     if (!(enabled && chatId && organizationId)) {

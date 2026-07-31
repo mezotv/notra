@@ -35,7 +35,7 @@ import {
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
@@ -262,15 +262,10 @@ function SlackChannelAccessEditor({
   });
 
   const channels = channelData?.channels ?? [];
-  const filteredChannels = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) {
-      return channels;
-    }
-    return channels.filter((channel) =>
-      channel.name.toLowerCase().includes(query)
-    );
-  }, [channels, search]);
+  const query = search.trim().toLowerCase();
+  const filteredChannels = query
+    ? channels.filter((channel) => channel.name.toLowerCase().includes(query))
+    : channels;
 
   const allFilteredSelected =
     filteredChannels.length > 0 &&

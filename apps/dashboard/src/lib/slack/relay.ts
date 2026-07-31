@@ -72,6 +72,9 @@ export async function postSlackRelayMessage(input: {
     }),
   });
 
+  if (!response.ok) {
+    throw new Error(`Slack relay post failed with status ${response.status}`);
+  }
   const parsed = slackPostMessageResponseSchema.safeParse(
     await response.json()
   );
@@ -105,6 +108,9 @@ export async function getSlackThreadPermalink(
       `https://slack.com/api/chat.getPermalink?channel=${encodeURIComponent(target.channelId)}&message_ts=${encodeURIComponent(target.threadTs)}`,
       { headers: { authorization: `Bearer ${token}` } }
     );
+    if (!response.ok) {
+      return null;
+    }
     const parsed = slackPermalinkResponseSchema.safeParse(
       await response.json()
     );
@@ -141,6 +147,11 @@ async function findApprovalCard(input: {
     `https://slack.com/api/conversations.replies?channel=${encodeURIComponent(input.target.channelId)}&ts=${encodeURIComponent(input.target.threadTs)}&limit=50`,
     { headers: { authorization: `Bearer ${input.token}` } }
   );
+  if (!response.ok) {
+    throw new Error(
+      `Slack approval relay could not load the thread (${response.status})`
+    );
+  }
   const parsed = slackRepliesResponseSchema.safeParse(await response.json());
   if (!(parsed.success && parsed.data.ok)) {
     throw new Error("Slack approval relay could not load the thread");
