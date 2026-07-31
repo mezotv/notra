@@ -3,6 +3,10 @@ import { Effect } from "effect";
 import { type SlackChannelConfig, slackChannel } from "eve/channels/slack";
 import { CREATE_POST_TOOL_NAMES } from "../lib/constants/slack";
 import {
+  POST_TO_X_CANCEL_ACTION_PREFIX,
+  POST_TO_X_CONFIRM_ACTION_PREFIX,
+} from "../lib/constants/slack-post-x";
+import {
   mirrorAssistantDelta,
   mirrorSessionStatus,
   mirrorToolApprovals,
@@ -22,6 +26,13 @@ import {
   getChannelNotEnabledMessage,
   notifySlackDraftCreated,
 } from "../lib/utils/slack-notifications";
+import {
+  buildPostToXConfirmCard,
+  dismissPostToXConfirmCard,
+  getPostToXCompletionMessage,
+  parsePostToXConfirmValue,
+  publishPendingPostToX,
+} from "../lib/utils/slack-post-x";
 import { parseSlackDashboardRelay } from "../lib/utils/slack-relay";
 import { getNotraSlackState } from "../lib/utils/slack-state";
 import { isPostToXRejection } from "../lib/utils/slack-tool-results";
@@ -86,6 +97,32 @@ const onSlackThreadReply: NonNullable<SlackChannelConfig["onMessage"]> = async (
   return onSlackMessage(ctx, message);
 };
 
+const onSlackInteraction: NonNullable<
+  SlackChannelConfig["onInteraction"]
+> = async (action, ctx) => {
+  if (action.actionId.startsWith(POST_TO_X_CONFIRM_ACTION_PREFIX)) {
+    const parsed = parsePostToXConfirmValue(action.value);
+    if (!parsed) {
+      return;
+    }
+    await runWithSlackTeam(ctx.slack.teamId, () =>
+      ctx.thread.post(
+        buildPostToXConfirmCard({
+          requestId: parsed.requestId,
+          username: parsed.username,
+        })
+      )
+    );
+    return;
+  }
+
+  if (action.actionId.startsWith(POST_TO_X_CANCEL_ACTION_PREFIX)) {
+    await runWithSlackTeam(ctx.slack.teamId, () =>
+      dismissPostToXConfirmCard(ctx, action.messageTs)
+    );
+  }
+};
+
 const onSlackEvent: NonNullable<SlackChannelConfig["onEvent"]> = async (
   ctx,
   event
@@ -127,6 +164,10 @@ export default slackChannel({
         isPostToXRejection(result.output)
       ) {
         state.notraPostToXTurnId = data.turnId;
+        state.notraPostToXOutcome = await runWithSlackTeam(
+          channel.state.teamId,
+          () => publishPendingPostToX(result.callId, data.turnId)
+        );
         return;
       }
 
@@ -184,8 +225,9 @@ export default slackChannel({
 
         if (postToXTurnId === data.turnId) {
           await channel.thread.post(
-            "Nice, glad that worked. Want me to save this as a reference?"
+            getPostToXCompletionMessage(state.notraPostToXOutcome, data.turnId)
           );
+          state.notraPostToXOutcome = undefined;
           return;
         }
 
@@ -222,6 +264,7 @@ export default slackChannel({
   onAppMention: onSlackMessage,
   onDirectMessage: onSlackMessage,
   onEvent: onSlackEvent,
+  onInteraction: onSlackInteraction,
   onMessage: onSlackThreadReply,
   threadContext: { since: "last-agent-reply" },
 });

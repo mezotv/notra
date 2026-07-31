@@ -1,4 +1,8 @@
 import {
+  getLinkedTwitterAccount,
+  isTwitterPublishConfigured,
+} from "@notra/tools/utils/social-accounts";
+import {
   Actions,
   Button,
   Card,
@@ -16,6 +20,9 @@ import type {
   InputRequest,
   InputRequestedStreamEvent,
 } from "eve/client";
+import { POST_TO_X_CONFIRM_ACTION_PREFIX } from "../constants/slack-post-x";
+import { resolveSlackInstallation } from "./slack-installation";
+import { savePendingPostToX } from "./slack-post-x";
 
 function getDraftLabel(toolName: string): string | null {
   switch (toolName) {
@@ -56,9 +63,10 @@ function responseButton(requestId: string, option: InputOption, index: number) {
   });
 }
 
-function createTwitterDraftApprovalPost(
-  request: InputRequest
-): SlackPostInput | null {
+async function createTwitterDraftApprovalPost(
+  request: InputRequest,
+  channel: SlackEventContext
+): Promise<SlackPostInput | null> {
   if (request.action.toolName !== "create_twitter_post") {
     return null;
   }
@@ -70,6 +78,12 @@ function createTwitterDraftApprovalPost(
     return null;
   }
 
+  const linkedAccount = await resolveLinkedTwitterAccount(
+    channel,
+    markdown,
+    request
+  );
+
   const actionId = (index: number) =>
     `eve_input:${request.requestId}:button:${index}`;
   const text = (value: string) => ({
@@ -77,6 +91,24 @@ function createTwitterDraftApprovalPost(
     text: value,
     emoji: true,
   });
+
+  const postToXButton = linkedAccount
+    ? {
+        type: "button",
+        action_id: `${POST_TO_X_CONFIRM_ACTION_PREFIX}:${request.requestId}`,
+        text: text(`Post to @${linkedAccount.username}`),
+        value: JSON.stringify({
+          requestId: request.requestId,
+          username: linkedAccount.username,
+        }),
+      }
+    : {
+        type: "button",
+        action_id: actionId(2),
+        text: text("Post to X"),
+        url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(markdown)}`,
+        value: "post_to_x",
+      };
 
   return {
     text: `Tweet draft\n${markdown}`,
@@ -96,13 +128,7 @@ function createTwitterDraftApprovalPost(
             style: "primary",
             value: approve.id,
           },
-          {
-            type: "button",
-            action_id: actionId(2),
-            text: text("Post to X"),
-            url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(markdown)}`,
-            value: "post_to_x",
-          },
+          postToXButton,
           {
             type: "button",
             action_id: actionId(1),
@@ -113,6 +139,40 @@ function createTwitterDraftApprovalPost(
       },
     ],
   };
+}
+
+async function resolveLinkedTwitterAccount(
+  channel: SlackEventContext,
+  markdown: string,
+  request: InputRequest
+) {
+  if (!isTwitterPublishConfigured()) {
+    return null;
+  }
+  const teamId = channel.state.teamId;
+  if (!teamId) {
+    return null;
+  }
+  try {
+    const installation = await resolveSlackInstallation(teamId);
+    if (!installation) {
+      return null;
+    }
+    const account = await getLinkedTwitterAccount(installation.organizationId);
+    if (!account) {
+      return null;
+    }
+    const stored = await savePendingPostToX(request.action.callId, {
+      organizationId: installation.organizationId,
+      accountId: account.id,
+      username: account.username,
+      text: markdown,
+    });
+    return stored ? account : null;
+  } catch (error) {
+    console.error("[agent] Failed to resolve linked X account", error);
+    return null;
+  }
 }
 
 function createDraftApprovalCard(request: InputRequest): CardElement | null {
@@ -215,7 +275,7 @@ export async function handleSlackInputRequested(
 ) {
   for (const request of data.requests) {
     await channel.thread.post(
-      createTwitterDraftApprovalPost(request) ??
+      (await createTwitterDraftApprovalPost(request, channel)) ??
         createDraftApprovalCard(request) ??
         createDefaultInputCard(request)
     );

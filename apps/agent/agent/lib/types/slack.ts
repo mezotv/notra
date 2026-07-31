@@ -25,8 +25,22 @@ export interface DraftCompletionState {
   turnId: string;
 }
 
+export interface PendingPostToX {
+  organizationId: string;
+  accountId: string;
+  username: string;
+  text: string;
+}
+
+export interface PostToXOutcome {
+  turnId: string;
+  postUrl: string | null;
+  failed: boolean;
+}
+
 export interface NotraSlackStateExtras {
   notraDraftCompletion?: DraftCompletionState;
   notraPostToXTurnId?: string;
+  notraPostToXOutcome?: PostToXOutcome;
   notraReferenceCompletionTurnId?: string;
 }
