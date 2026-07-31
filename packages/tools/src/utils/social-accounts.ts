@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import type { LinkedTwitterAccount } from "../types/social";
 
 export function isTwitterPublishConfigured(): boolean {
@@ -9,10 +9,10 @@ export function isTwitterPublishConfigured(): boolean {
   );
 }
 
-export async function getLinkedTwitterAccount(
+export async function getLinkedTwitterAccounts(
   organizationId: string
-): Promise<LinkedTwitterAccount | null> {
-  const account = await db.query.connectedSocialAccounts.findFirst({
+): Promise<LinkedTwitterAccount[]> {
+  return db.query.connectedSocialAccounts.findMany({
     columns: {
       id: true,
       providerAccountId: true,
@@ -23,7 +23,6 @@ export async function getLinkedTwitterAccount(
       eq(connectedSocialAccounts.organizationId, organizationId),
       eq(connectedSocialAccounts.provider, "twitter")
     ),
+    orderBy: asc(connectedSocialAccounts.createdAt),
   });
-
-  return account ?? null;
 }

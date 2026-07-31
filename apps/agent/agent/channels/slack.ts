@@ -1,8 +1,10 @@
 import { disableSlackIntegrationByTeamId } from "@notra/ai/integrations/slack-workspace";
+import { getLinkedTwitterAccounts } from "@notra/tools/utils/social-accounts";
 import { Effect } from "effect";
 import { type SlackChannelConfig, slackChannel } from "eve/channels/slack";
 import { CREATE_POST_TOOL_NAMES } from "../lib/constants/slack";
 import {
+  POST_TO_X_ACCOUNT_ACTION_PREFIX,
   POST_TO_X_CANCEL_ACTION_PREFIX,
   POST_TO_X_CONFIRM_ACTION_PREFIX,
 } from "../lib/constants/slack-post-x";
@@ -33,6 +35,7 @@ import {
   getPostToXCompletionMessage,
   parsePostToXConfirmValue,
   publishPendingPostToX,
+  switchPendingPostToXAccount,
 } from "../lib/utils/slack-post-x";
 import { parseSlackDashboardRelay } from "../lib/utils/slack-relay";
 import { getNotraSlackState } from "../lib/utils/slack-state";
@@ -103,17 +106,32 @@ const onSlackInteraction: NonNullable<
 > = async (action, ctx) => {
   if (action.actionId.startsWith(POST_TO_X_CONFIRM_ACTION_PREFIX)) {
     const parsed = parsePostToXConfirmValue(action.value);
-    if (!parsed) {
+    const teamId = ctx.slack.teamId;
+    if (!(parsed && teamId)) {
       return;
     }
-    await runWithSlackTeam(ctx.slack.teamId, () =>
+    const installation = await resolveSlackInstallation(teamId);
+    if (!installation) {
+      return;
+    }
+    const accounts = await getLinkedTwitterAccounts(
+      installation.organizationId
+    );
+    await runWithSlackInstallation(installation, () =>
       ctx.thread.post(
         buildPostToXConfirmCard({
           requestId: parsed.requestId,
+          callId: parsed.callId,
           username: parsed.username,
+          accounts,
         })
       )
     );
+    return;
+  }
+
+  if (action.actionId.startsWith(POST_TO_X_ACCOUNT_ACTION_PREFIX)) {
+    await switchPendingPostToXAccount(action.selectedOptionValue);
     return;
   }
 

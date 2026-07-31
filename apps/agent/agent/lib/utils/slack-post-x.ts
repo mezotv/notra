@@ -1,4 +1,5 @@
 import { redis } from "@notra/ai/utils/redis";
+import type { LinkedTwitterAccount } from "@notra/tools/types/social";
 import { publishTwitterPost } from "@notra/tools/utils/social-publish";
 import { Effect } from "effect";
 import type {
@@ -6,8 +7,8 @@ import type {
   SlackPostInput,
 } from "eve/channels/slack";
 import {
+  POST_TO_X_ACCOUNT_ACTION_PREFIX,
   POST_TO_X_CANCEL_ACTION_PREFIX,
-  POST_TO_X_CONFIRM_ACTION_PREFIX,
   POST_TO_X_PENDING_TTL_SECONDS,
 } from "../constants/slack-post-x";
 import type { PendingPostToX, PostToXOutcome } from "../types/slack";
@@ -44,7 +45,9 @@ export async function readPendingPostToX(
 
 export function buildPostToXConfirmCard(input: {
   requestId: string;
+  callId: string;
   username: string;
+  accounts: readonly LinkedTwitterAccount[];
 }): SlackPostInput {
   const plainText = (value: string) => ({
     type: "plain_text" as const,
@@ -52,16 +55,48 @@ export function buildPostToXConfirmCard(input: {
     emoji: true,
   });
 
+  const accountOption = (account: LinkedTwitterAccount) => ({
+    text: plainText(`@${account.username}`),
+    value: JSON.stringify({
+      callId: input.callId,
+      accountId: account.id,
+      username: account.username,
+    }),
+  });
+
+  const defaultAccount =
+    input.accounts.find((account) => account.username === input.username) ??
+    input.accounts.at(0);
+
+  const accountSelector =
+    input.accounts.length > 1 && defaultAccount
+      ? [
+          {
+            type: "section",
+            text: { type: "mrkdwn", text: "Post as" },
+            accessory: {
+              type: "static_select",
+              action_id: `${POST_TO_X_ACCOUNT_ACTION_PREFIX}:${input.callId}`,
+              initial_option: accountOption(defaultAccount),
+              options: input.accounts.slice(0, 25).map(accountOption),
+            },
+          },
+        ]
+      : [];
+
+  const promptText =
+    input.accounts.length > 1
+      ? "Post this tweet to X? It publishes immediately to the selected account."
+      : `Post this tweet to X as *@${input.username}*? It publishes immediately.`;
+
   return {
     text: `Post this tweet to X as @${input.username}?`,
     blocks: [
       {
         type: "section",
-        text: {
-          type: "mrkdwn",
-          text: `Post this tweet to X as *@${input.username}*? It publishes immediately.`,
-        },
+        text: { type: "mrkdwn", text: promptText },
       },
+      ...accountSelector,
       {
         type: "actions",
         elements: [
@@ -84,6 +119,44 @@ export function buildPostToXConfirmCard(input: {
   };
 }
 
+export async function switchPendingPostToXAccount(
+  selectedValue: string | undefined
+): Promise<void> {
+  if (!selectedValue) {
+    return;
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(selectedValue);
+  } catch {
+    return;
+  }
+  if (
+    !(
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "callId" in parsed &&
+      typeof parsed.callId === "string" &&
+      "accountId" in parsed &&
+      typeof parsed.accountId === "string" &&
+      "username" in parsed &&
+      typeof parsed.username === "string"
+    )
+  ) {
+    return;
+  }
+
+  const pending = await readPendingPostToX(parsed.callId);
+  if (!pending) {
+    return;
+  }
+  await savePendingPostToX(parsed.callId, {
+    ...pending,
+    accountId: parsed.accountId,
+    username: parsed.username,
+  });
+}
+
 export async function dismissPostToXConfirmCard(
   ctx: SlackInteractionContext,
   messageTs: string | undefined
@@ -101,7 +174,7 @@ export async function dismissPostToXConfirmCard(
 
 export function parsePostToXConfirmValue(
   value: string | undefined
-): { requestId: string; username: string } | null {
+): { requestId: string; callId: string; username: string } | null {
   if (!value) {
     return null;
   }
@@ -112,10 +185,16 @@ export function parsePostToXConfirmValue(
       parsed !== null &&
       "requestId" in parsed &&
       typeof parsed.requestId === "string" &&
+      "callId" in parsed &&
+      typeof parsed.callId === "string" &&
       "username" in parsed &&
       typeof parsed.username === "string"
     ) {
-      return { requestId: parsed.requestId, username: parsed.username };
+      return {
+        requestId: parsed.requestId,
+        callId: parsed.callId,
+        username: parsed.username,
+      };
     }
     return null;
   } catch {

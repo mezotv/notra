@@ -1,5 +1,5 @@
 import {
-  getLinkedTwitterAccount,
+  getLinkedTwitterAccounts,
   isTwitterPublishConfigured,
 } from "@notra/tools/utils/social-accounts";
 import {
@@ -99,6 +99,7 @@ async function createTwitterDraftApprovalPost(
         text: text(`Post to @${linkedAccount.username}`),
         value: JSON.stringify({
           requestId: request.requestId,
+          callId: request.action.callId,
           username: linkedAccount.username,
         }),
       }
@@ -158,7 +159,10 @@ async function resolveLinkedTwitterAccount(
     if (!installation) {
       return null;
     }
-    const account = await getLinkedTwitterAccount(installation.organizationId);
+    const accounts = await getLinkedTwitterAccounts(
+      installation.organizationId
+    );
+    const account = accounts.at(0);
     if (!account) {
       return null;
     }
