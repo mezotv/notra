@@ -36,6 +36,7 @@ export interface PostToXOutcome {
   turnId: string;
   postUrl: string | null;
   failed: boolean;
+  confirmed: boolean;
 }
 
 export interface NotraSlackStateExtras {

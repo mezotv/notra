@@ -230,7 +230,10 @@ export async function mirrorAssistantDelta(
     return;
   }
   if (deltaThrottle.size >= MIRROR_DELTA_THROTTLE_MAX_ENTRIES) {
-    deltaThrottle.clear();
+    const oldestKey = deltaThrottle.keys().next().value;
+    if (oldestKey !== undefined) {
+      deltaThrottle.delete(oldestKey);
+    }
   }
   deltaThrottle.set(messageId, now);
 

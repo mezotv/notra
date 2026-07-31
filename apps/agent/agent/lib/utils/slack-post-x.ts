@@ -143,11 +143,17 @@ export async function publishPendingPostToX(
           turnId,
           postUrl: result.postUrl,
           failed: false,
+          confirmed: result.confirmed,
         })
       ),
       Effect.catch((error) =>
         Effect.logWarning("[agent] Post to X failed", error).pipe(
-          Effect.as<PostToXOutcome>({ turnId, postUrl: null, failed: true })
+          Effect.as<PostToXOutcome>({
+            turnId,
+            postUrl: null,
+            failed: true,
+            confirmed: false,
+          })
         )
       )
     )
@@ -163,6 +169,9 @@ export function getPostToXCompletionMessage(
   }
   if (outcome.failed) {
     return "Posting to X failed. The draft card above is still active, so you can try again or save it as a draft.";
+  }
+  if (!outcome.confirmed) {
+    return "The post was sent to X, but confirmation timed out. Check the account before retrying to avoid a duplicate.";
   }
   if (outcome.postUrl) {
     return `Posted to X: <${outcome.postUrl}|view the post>. Want me to save it as a reference?`;

@@ -17,6 +17,7 @@ import { mirrorPublicSlackThread } from "../lib/utils/slack-chat-mirror";
 import { createSlackAgentCredentials } from "../lib/utils/slack-credentials";
 import { handleSlackInputRequested } from "../lib/utils/slack-input-request";
 import {
+  evictSlackInstallation,
   isChannelAllowed,
   resolveSlackInstallation,
   runWithSlackInstallation,
@@ -132,6 +133,7 @@ const onSlackEvent: NonNullable<SlackChannelConfig["onEvent"]> = async (
     ctx.envelope.team_id
   ) {
     await disableSlackIntegrationByTeamId(ctx.envelope.team_id);
+    evictSlackInstallation(ctx.envelope.team_id);
     return;
   }
 

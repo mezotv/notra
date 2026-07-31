@@ -134,6 +134,10 @@ export function publishTwitterPost(
         ? `https://x.com/${account.username}/status/${platformPostId}`
         : null);
 
-    return { postUrl, username: account.username };
+    return {
+      postUrl,
+      username: account.username,
+      confirmed: postResult !== null,
+    };
   });
 }

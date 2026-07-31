@@ -34,6 +34,14 @@ export async function parseSlackDashboardRelay(
     return null;
   }
 
+  const authoredByThisApp =
+    typeof event.app_id === "string" &&
+    typeof envelope.api_app_id === "string" &&
+    event.app_id === envelope.api_app_id;
+  if (!authoredByThisApp) {
+    return null;
+  }
+
   const payload = slackRelayMetadataSchema.safeParse(payloadInput);
   const channelId = typeof event.channel === "string" ? event.channel : null;
   const ts = typeof event.ts === "string" ? event.ts : null;

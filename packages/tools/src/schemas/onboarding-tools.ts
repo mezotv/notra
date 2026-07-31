@@ -13,7 +13,7 @@ import { MEMORY_SEARCH_DEFAULT_LIMIT } from "../constants/supermemory";
 export const referenceInputSchema = z
   .object({
     type: z.enum(referenceTypeEnum.enumValues),
-    content: z.string().min(1),
+    content: z.string().min(1).max(10_000),
     note: z.string().min(1).optional(),
     applicableTo: z
       .array(z.enum(applicablePlatformEnum.enumValues))

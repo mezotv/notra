@@ -3,7 +3,13 @@ import * as z from "zod";
 
 export const slackAuthorizeQuerySchema = z.object({
   organizationId: z.string().min(1, "Organization ID is required"),
-  callbackPath: z.string().min(1).default("/"),
+  callbackPath: z
+    .string()
+    .min(1)
+    .refine((path) => path.startsWith("/") && !path.startsWith("//"), {
+      message: "callbackPath must be a same-origin path",
+    })
+    .default("/"),
 });
 export type SlackAuthorizeQuery = z.infer<typeof slackAuthorizeQuerySchema>;
 

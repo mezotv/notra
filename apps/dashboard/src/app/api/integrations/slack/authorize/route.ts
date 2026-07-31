@@ -8,6 +8,7 @@ import {
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { slackOAuthErrorParam } from "@/lib/integrations/slack/oauth-errors";
 import { slackAuthorizeQuerySchema } from "@/schemas/slack-integration";
+import { ratelimit } from "@/utils/ratelimit";
 
 export async function GET(request: NextRequest) {
   const baseUrl =
@@ -46,6 +47,13 @@ export async function GET(request: NextRequest) {
         );
       }
       throw error;
+    }
+
+    const { success: withinLimit } = await ratelimit.slackOAuth.limit(userId);
+    if (!withinLimit) {
+      return NextResponse.redirect(
+        `${baseUrl}${callbackPath}?error=rate_limited`
+      );
     }
 
     const clientId = process.env.SLACK_AGENT_CLIENT_ID;

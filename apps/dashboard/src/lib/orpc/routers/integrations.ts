@@ -74,6 +74,7 @@ import * as z from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import {
+  clearCachedSlackChannels,
   getCachedSlackChannels,
   setCachedSlackChannels,
 } from "@/lib/integrations/slack/channel-cache";
@@ -1087,6 +1088,8 @@ export const integrationsRouter = {
         if (!deleted) {
           throw notFound("Slack integration not found");
         }
+
+        await clearCachedSlackChannels(input.integrationId);
 
         return { success: true };
       }),

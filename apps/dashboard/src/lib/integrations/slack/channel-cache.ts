@@ -29,3 +29,12 @@ export async function setCachedSlackChannels(
     ex: SLACK_CHANNEL_CACHE_TTL_SECONDS,
   });
 }
+
+export async function clearCachedSlackChannels(
+  integrationId: string
+): Promise<void> {
+  if (!redis) {
+    return;
+  }
+  await redis.del(channelCacheKey(integrationId));
+}

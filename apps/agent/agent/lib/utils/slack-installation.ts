@@ -95,13 +95,20 @@ export async function resolveSlackInstallation(
 
   const installation = await loadInstallation(teamId);
   if (installationCache.size >= INSTALLATION_CACHE_MAX_ENTRIES) {
-    installationCache.clear();
+    const oldestKey = installationCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      installationCache.delete(oldestKey);
+    }
   }
   installationCache.set(teamId, {
     expiresAt: now + INSTALLATION_CACHE_TTL_MS,
     installation,
   });
   return installation;
+}
+
+export function evictSlackInstallation(teamId: string): void {
+  installationCache.delete(teamId);
 }
 
 export function isChannelAllowed(

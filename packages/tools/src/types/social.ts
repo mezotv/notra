@@ -14,4 +14,5 @@ export interface PublishTwitterPostParams {
 export interface PublishTwitterPostResult {
   postUrl: string | null;
   username: string;
+  confirmed: boolean;
 }

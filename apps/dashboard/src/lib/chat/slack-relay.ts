@@ -1,4 +1,7 @@
-import { uiMessageSchema } from "@notra/ai/schemas/chat";
+import {
+  chatMessageMetadataSchema,
+  uiMessageSchema,
+} from "@notra/ai/schemas/chat";
 import type { ChatUIMessage } from "@notra/ai/types/chat";
 
 export async function relaySlackMirrorMessage(
@@ -22,7 +25,11 @@ export async function relaySlackMirrorMessage(
   if (!parsed.success) {
     return null;
   }
-  return data.message;
+  const metadata = chatMessageMetadataSchema.safeParse(parsed.data.metadata);
+  return {
+    ...parsed.data,
+    metadata: metadata.success ? metadata.data : undefined,
+  };
 }
 
 export async function relaySlackApproval(

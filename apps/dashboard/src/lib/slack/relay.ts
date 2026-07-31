@@ -4,6 +4,7 @@ import {
   getSlackIntegrationBotToken,
   getSlackIntegrationByTeamId,
 } from "@notra/ai/integrations/slack-workspace";
+import { redis } from "@notra/ai/utils/redis";
 import {
   slackExternalChannelKeySchema,
   slackPermalinkResponseSchema,
@@ -83,10 +84,22 @@ export async function postSlackRelayMessage(input: {
   return { ts: parsed.data.ts };
 }
 
+const PERMALINK_CACHE_TTL_SECONDS = 60 * 60 * 24;
+
+function permalinkCacheKey(target: SlackRelayTarget) {
+  return `slack:permalink:${target.teamId}:${target.channelId}:${target.threadTs}`;
+}
+
 export async function getSlackThreadPermalink(
   target: SlackRelayTarget
 ): Promise<string | null> {
   try {
+    if (redis) {
+      const cached = await redis.get<string>(permalinkCacheKey(target));
+      if (typeof cached === "string" && cached.length > 0) {
+        return cached;
+      }
+    }
     const token = await resolveRelayBotToken(target.teamId);
     const response = await fetch(
       `https://slack.com/api/chat.getPermalink?channel=${encodeURIComponent(target.channelId)}&message_ts=${encodeURIComponent(target.threadTs)}`,
@@ -95,9 +108,16 @@ export async function getSlackThreadPermalink(
     const parsed = slackPermalinkResponseSchema.safeParse(
       await response.json()
     );
-    return parsed.success && parsed.data.ok && parsed.data.permalink
-      ? parsed.data.permalink
-      : null;
+    const permalink =
+      parsed.success && parsed.data.ok && parsed.data.permalink
+        ? parsed.data.permalink
+        : null;
+    if (permalink && redis) {
+      await redis.set(permalinkCacheKey(target), permalink, {
+        ex: PERMALINK_CACHE_TTL_SECONDS,
+      });
+    }
+    return permalink;
   } catch {
     return null;
   }
