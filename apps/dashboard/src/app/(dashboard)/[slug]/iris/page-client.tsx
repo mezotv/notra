@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { IrisPauseDialog } from "@/components/iris/iris-pause-dialog";
 import { IrisRunningState } from "@/components/iris/iris-running-state";
 import { IrisStartState } from "@/components/iris/iris-start-state";
+import { IrisUnavailableState } from "@/components/iris/iris-unavailable-state";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
@@ -163,6 +164,10 @@ export default function PageClient({ organizationSlug }: IrisPageClientProps) {
   const content = (() => {
     if (!(isReady && overview)) {
       return <IrisPageSkeleton />;
+    }
+
+    if (!overview.enabled) {
+      return <IrisUnavailableState />;
     }
 
     if (!mandate) {

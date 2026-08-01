@@ -25,3 +25,10 @@ export class IrisRunStoreError extends Data.TaggedError("IrisRunStoreError")<{
   readonly message: string;
   readonly cause: unknown;
 }> {}
+
+export class IrisFlagEvaluationError extends Data.TaggedError(
+  "IrisFlagEvaluationError"
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}

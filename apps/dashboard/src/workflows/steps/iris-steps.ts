@@ -61,6 +61,7 @@ import type {
 import { buildControllerLeaseName } from "@notra/ai/utils/autonomy-lease-name";
 import { trackIrisRunUsage } from "@notra/ai/utils/iris-billing";
 import { Effect } from "effect";
+import { resolveIrisFlagState } from "@/lib/iris/flag";
 import {
   failOpenRun,
   isRepeatedGateBlock,
@@ -72,6 +73,7 @@ import {
 } from "@/lib/iris/mandate";
 import type {
   IrisCoalesceResult,
+  IrisFlagState,
   IrisGatherResult,
   IrisMandateContext,
   IrisPlannedTask,
@@ -170,6 +172,23 @@ export async function loadIrisMandate(
 ): Promise<IrisMandateContext> {
   "use step";
   return await Effect.runPromise(loadIrisMandateContext(organizationId));
+}
+
+export async function resolveIrisFlagForRun(
+  organizationId: string
+): Promise<IrisFlagState> {
+  "use step";
+  return await Effect.runPromise(
+    resolveIrisFlagState(organizationId).pipe(
+      Effect.tap((state) =>
+        state === "disabled"
+          ? Effect.annotateLogs(Effect.logInfo("iris.flag.disabled"), {
+              organizationId,
+            })
+          : Effect.void
+      )
+    )
+  );
 }
 
 export async function gatherIrisContext(

@@ -19,6 +19,8 @@ import {
 } from "@/constants/iris";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
+import { assertIrisEnabled } from "@/lib/iris/access";
+import { isIrisEnabledForOrganization } from "@/lib/iris/flag";
 import { hasOpenRun } from "@/lib/iris/history";
 import { buildIrisObjective } from "@/lib/iris/objective";
 import {
@@ -131,6 +133,7 @@ export const irisRouter = {
       const since = new Date(Date.now() - IRIS_STATS_WINDOW_MS);
 
       const [
+        enabled,
         mandateRow,
         slackRows,
         runCountRows,
@@ -138,6 +141,7 @@ export const irisRouter = {
         pendingSignalRows,
         lastRunRows,
       ] = await Promise.all([
+        isIrisEnabledForOrganization(input.organizationId),
         loadMandateRow(input.organizationId),
         db
           .select({
@@ -191,6 +195,7 @@ export const irisRouter = {
       const slack = slackRows.at(0) ?? null;
 
       return {
+        enabled,
         mandate: mandateRow ? toIrisMandateView(mandateRow) : null,
         slackReady: slack !== null,
         slackChannelName: slack?.notificationChannelId ?? null,
@@ -211,6 +216,7 @@ export const irisRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertIrisEnabled(input.organizationId);
       await assertActiveSubscription(input.organizationId);
 
       const organization = await db.query.organizations.findFirst({
@@ -311,6 +317,7 @@ export const irisRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertIrisEnabled(input.organizationId);
       await assertActiveSubscription(input.organizationId);
 
       const mandate = await loadMandateRow(
@@ -339,6 +346,7 @@ export const irisRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertIrisEnabled(input.organizationId);
       await assertActiveSubscription(input.organizationId);
 
       const busy = await Effect.runPromise(hasOpenRun(input.organizationId));

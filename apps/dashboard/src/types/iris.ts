@@ -87,6 +87,7 @@ export type IrisControllerStatus =
   | "duplicate_execution"
   | "controller_busy"
   | "no_active_mandate"
+  | "flag_disabled"
   | "gate_blocked"
   | "plan_rejected"
   | "no_op"
@@ -123,7 +124,10 @@ export interface IrisStats {
   lastRunAt: string | null;
 }
 
+export type IrisFlagState = "enabled" | "disabled" | "unavailable";
+
 export interface IrisOverview {
+  enabled: boolean;
   mandate: IrisMandateView | null;
   slackReady: boolean;
   slackChannelName: string | null;

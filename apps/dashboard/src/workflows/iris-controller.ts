@@ -39,6 +39,7 @@ import {
   recordIrisNoOpRun,
   releaseIrisLease,
   renewIrisLease,
+  resolveIrisFlagForRun,
   restoreIrisSignals,
   runIrisTask,
   sweepIrisOutbox,
@@ -126,6 +127,12 @@ async function runIrisMission(input: {
   if (!mandate) {
     await releaseIrisLease({ organizationId, ownerToken: leaseToken });
     return { status: "no_active_mandate", runId: null, reason: null };
+  }
+
+  const flagState = await resolveIrisFlagForRun(organizationId);
+  if (flagState === "disabled") {
+    await releaseIrisLease({ organizationId, ownerToken: leaseToken });
+    return { status: "flag_disabled", runId: null, reason: null };
   }
 
   if (trigger === "wake" || trigger === "manual") {

@@ -1,4 +1,5 @@
 "use client";
+import { useFlag } from "@databuddy/sdk/react";
 import {
   AnalyticsUpIcon,
   Calendar03Icon,
@@ -28,7 +29,9 @@ import { usePathname } from "next/navigation";
 import { Fragment, memo } from "react";
 import { useCommandPalette } from "@/components/command-palette/command-palette-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { IRIS_FLAG_KEY, IRIS_NAV_LINK } from "@/constants/iris";
 import type { NavMainCategory, NavMainItem } from "@/types/components/nav";
+import { filterIrisNavItems, isIrisVisibleInNav } from "@/utils/iris-flag";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
 import { NavBrandIdentity } from "./nav-brand-identity";
 
@@ -65,7 +68,7 @@ const navMainItems: NavMainItem[] = [
     category: "workspace",
   },
   {
-    link: "/iris",
+    link: IRIS_NAV_LINK,
     icon: RainbowIcon,
     label: "Iris",
     category: "automation",
@@ -184,6 +187,8 @@ export function NavMain() {
   const pathname = usePathname();
   const { setOpen: setCommandPaletteOpen } = useCommandPalette();
   const isApplePlatform = useIsApplePlatform();
+  const irisFlag = useFlag(IRIS_FLAG_KEY);
+  const irisVisible = isIrisVisibleInNav(irisFlag.on);
 
   if (!activeOrganization?.slug) {
     return null;
@@ -219,7 +224,7 @@ export function NavMain() {
       {categories.map((category) => (
         <Fragment key={category}>
           <NavGroup
-            items={itemsByCategory[category]}
+            items={filterIrisNavItems(itemsByCategory[category], irisVisible)}
             label={categoryLabels[category]}
             pathname={pathname}
             slug={slug}

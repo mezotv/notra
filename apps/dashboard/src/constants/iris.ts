@@ -24,6 +24,15 @@ export const IRIS_DEFAULT_POLICY: MandatePolicy = {
 
 export const IRIS_MANDATE_INITIAL_VERSION = 1;
 
+export const IRIS_FLAG_KEY = "iris";
+export const IRIS_NAV_LINK = "/iris";
+export const IRIS_FLAG_CACHE_TTL_MS = 60_000;
+export const IRIS_FLAG_STALE_TIME_MS = 30_000;
+export const IRIS_FLAG_ERROR_REASON = "ERROR";
+export const IRIS_UNAVAILABLE_TITLE = "Iris is not available yet";
+export const IRIS_UNAVAILABLE_DESCRIPTION =
+  "Iris is not available for this workspace yet.";
+
 export const IRIS_WAKE_ROUTE_PATH = "/api/workflows/iris";
 export const IRIS_WAKE_BUCKET_MINUTES = 30;
 export const IRIS_WAKE_BUCKET_MS = IRIS_WAKE_BUCKET_MINUTES * 60 * 1000;
