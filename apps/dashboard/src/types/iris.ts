@@ -281,6 +281,7 @@ export interface IrisPauseDialogProps {
 
 export interface IrisRunsListState {
   isPending: boolean;
+  isError: boolean;
   hasMore: boolean;
   isLoadingMore: boolean;
 }

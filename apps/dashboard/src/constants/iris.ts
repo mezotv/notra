@@ -34,8 +34,6 @@ export const IRIS_UNAVAILABLE_DESCRIPTION =
   "Iris is not available for this workspace yet.";
 
 export const IRIS_WAKE_ROUTE_PATH = "/api/workflows/iris";
-export const IRIS_WAKE_BUCKET_MINUTES = 30;
-export const IRIS_WAKE_BUCKET_MS = IRIS_WAKE_BUCKET_MINUTES * 60 * 1000;
 
 export const IRIS_SIGNAL_COMMIT_SUBJECT_LIMIT = 3;
 export const IRIS_SIGNAL_COMMIT_SUBJECT_MAX_LENGTH = 80;
@@ -110,6 +108,11 @@ export const IRIS_SLACK_TERMINAL_ERRORS = [
   "channel_not_found",
   "not_in_channel",
   "token_revoked",
+  "is_archived",
+  "missing_scope",
+  "invalid_auth",
+  "not_authed",
+  "account_inactive",
 ];
 
 export const IRIS_START_CLAIM_SCOPE = "iris-start";

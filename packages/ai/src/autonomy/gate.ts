@@ -14,7 +14,12 @@ import { autonomyActions, autonomyRuns } from "@notra/db/schema";
 import { and, count, eq, gte, inArray, isNull, or, sum } from "drizzle-orm";
 import { Effect } from "effect";
 
-const BUDGETED_ACTION_STATUSES = ["succeeded", "executing", "unknown"] as const;
+const BUDGETED_ACTION_STATUSES = [
+  "succeeded",
+  "executing",
+  "unknown",
+  "failed",
+] as const;
 
 export const evaluateGate = Effect.fn("iris.gate.evaluate")(function* (
   input: GateEvaluationInput

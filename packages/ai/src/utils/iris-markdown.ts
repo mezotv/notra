@@ -2,7 +2,7 @@ const HEADING_PATTERN = /^#{1,6}\s+(.+)$/m;
 const MARKDOWN_NOISE_PATTERN = /[#>*_`~[\]()!]/g;
 const WHITESPACE_PATTERN = /\s+/g;
 const CODE_FENCE_PATTERN = /```[\s\S]*?```/g;
-const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\((https?:\/\/[^\s)]+)\)/;
+const MARKDOWN_IMAGE_PATTERN = /!\[[^\]]*\]\(<?(https?:\/\/[^\s)>]+)>?\)/;
 
 export const IRIS_TITLE_MAX_LENGTH = 120;
 export const IRIS_EXCERPT_MAX_LENGTH = 200;

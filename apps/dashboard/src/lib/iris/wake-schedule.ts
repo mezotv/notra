@@ -153,5 +153,5 @@ export const deleteIrisWakeSchedule = Effect.fn("iris.wake.delete")(
 
 export const buildIrisWakeExecutionId = (
   organizationId: string,
-  bucket: number
-): string => `iris-wake-${organizationId}-${bucket}`;
+  messageId: string
+): string => `iris-wake-${organizationId}-${messageId}`;

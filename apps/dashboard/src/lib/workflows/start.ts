@@ -1,4 +1,4 @@
-import { acquireClaim } from "@notra/ai/autonomy/claims";
+import { acquireClaim, releaseClaim } from "@notra/ai/autonomy/claims";
 import type { BrandGuidelinesWorkflowPayload } from "@notra/ai/types/brand-guidelines";
 import type { OnboardingAgentWorkflowPayload } from "@notra/ai/types/onboarding-agent";
 import { contentGenerationWorkflowPayloadSchema } from "@notra/content-generation/schemas";
@@ -57,18 +57,28 @@ export async function startIrisRun(
   payload: IrisWorkflowPayload
 ): Promise<{ runId: string | null }> {
   const parsed = irisWorkflowPayloadSchema.parse(payload);
+  const dispatchToken = crypto.randomUUID();
   const dispatch = await acquireClaim({
     scope: IRIS_START_CLAIM_SCOPE,
     claimKey: parsed.executionId,
-    ownerToken: crypto.randomUUID(),
+    ownerToken: dispatchToken,
     ttlSeconds: IRIS_START_CLAIM_TTL_SECONDS,
     organizationId: parsed.organizationId,
   });
   if (!dispatch.claimed) {
     return { runId: null };
   }
-  const run = await start(irisControllerRun, [parsed]);
-  return { runId: run.runId };
+  try {
+    const run = await start(irisControllerRun, [parsed]);
+    return { runId: run.runId };
+  } catch (error) {
+    await releaseClaim({
+      scope: IRIS_START_CLAIM_SCOPE,
+      claimKey: parsed.executionId,
+      ownerToken: dispatchToken,
+    });
+    throw error;
+  }
 }
 
 export async function startScheduleRun(payload: {

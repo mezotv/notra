@@ -157,7 +157,6 @@ export default function PageClient({ organizationSlug }: IrisPageClientProps) {
   const readiness = buildIrisReadiness({
     organizationSlug,
     slackReady: overview?.slackReady ?? false,
-    slackChannelName: overview?.slackChannelName ?? null,
     githubConnected,
   });
 
@@ -199,6 +198,7 @@ export default function PageClient({ organizationSlug }: IrisPageClientProps) {
         runs={runs}
         runsState={{
           isPending: runsQuery.isPending,
+          isError: runsQuery.isError,
           hasMore: runsQuery.hasNextPage,
           isLoadingMore: runsQuery.isFetchingNextPage,
         }}

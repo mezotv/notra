@@ -1,6 +1,6 @@
 import { getAppUrl } from "@notra/ai/qstash/triggers";
 import { flattenError } from "zod";
-import { IRIS_WAKE_BUCKET_MS, IRIS_WAKE_ROUTE_PATH } from "@/constants/iris";
+import { IRIS_WAKE_ROUTE_PATH } from "@/constants/iris";
 import { buildIrisWakeExecutionId } from "@/lib/iris/wake-schedule";
 import { verifyQstashSignature } from "@/lib/workflows/qstash-verify";
 import { startIrisRun } from "@/lib/workflows/start";
@@ -38,12 +38,13 @@ export async function POST(request: Request) {
     return new Response("Invalid payload", { status: 400 });
   }
 
-  const bucket = Math.floor(Date.now() / IRIS_WAKE_BUCKET_MS);
-
   const { runId } = await startIrisRun({
     organizationId: parsed.data.organizationId,
     trigger: parsed.data.trigger,
-    executionId: buildIrisWakeExecutionId(parsed.data.organizationId, bucket),
+    executionId: buildIrisWakeExecutionId(
+      parsed.data.organizationId,
+      messageId
+    ),
   });
 
   return Response.json({ runId }, { status: 202 });

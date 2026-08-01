@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { autonomyOutbox, organizations } from "@notra/db/schema";
-import { and, asc, eq, gte, isNull, lt, lte, or } from "drizzle-orm";
+import { and, asc, eq, gte, isNull, lt, lte, or, sql } from "drizzle-orm";
 import { Duration, Effect, Schedule } from "effect";
 import {
   SLACK_DELIVERY_ATTEMPT_TIMEOUT_SECONDS,
@@ -295,29 +295,38 @@ export const deliverOutboxMessage = Effect.fn("iris.outbox.deliver")(function* (
 
   if (deliveryResult._tag === "Success") {
     const delivered = deliveryResult.success;
-    yield* updateOutboxRow({
-      outboxId: row.id,
-      operation: "markDelivered",
-      values: {
-        status: "delivered",
-        attempts,
-        lastError: null,
-        nextAttemptAt: null,
-        deliveredAt: new Date(),
-        payload: {
-          ...payload,
-          organizationSlug: payload.organizationSlug ?? organizationSlug,
-          delivery:
-            delivered.ts.length > 0
-              ? {
-                  channel: delivered.channel,
-                  ts: delivered.ts,
-                  teamId: delivered.teamId,
-                  deliveredAt: new Date().toISOString(),
-                }
-              : null,
-        },
-      },
+    const payloadPatch = JSON.stringify({
+      organizationSlug: payload.organizationSlug ?? organizationSlug,
+      delivery:
+        delivered.ts.length > 0
+          ? {
+              channel: delivered.channel,
+              ts: delivered.ts,
+              teamId: delivered.teamId,
+              deliveredAt: new Date().toISOString(),
+            }
+          : null,
+    });
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(autonomyOutbox)
+          .set({
+            status: "delivered",
+            attempts,
+            lastError: null,
+            nextAttemptAt: null,
+            deliveredAt: new Date(),
+            payload: sql`${autonomyOutbox.payload} || ${payloadPatch}::jsonb`,
+            updatedAt: new Date(),
+          })
+          .where(eq(autonomyOutbox.id, row.id)),
+      catch: (cause) =>
+        new IrisOutboxPersistenceError({
+          outboxId: row.id,
+          operation: "markDelivered",
+          cause,
+        }),
     });
 
     const outcome: IrisDeliveryOutcome = {

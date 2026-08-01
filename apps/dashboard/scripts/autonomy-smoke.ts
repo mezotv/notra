@@ -2,18 +2,20 @@ import { acquireClaim, releaseClaim } from "@notra/ai/autonomy/claims";
 import { validatePlannerOutputAgainstMandate } from "@notra/ai/autonomy/validate-plan";
 import { mandateSchema } from "@notra/ai/schemas/autonomy/mandate";
 import { plannerOutputSchema } from "@notra/ai/schemas/autonomy/planner";
-import { topologicallySortNodes } from "@notra/ai/utils/autonomy-topo";
 import { db } from "@notra/db/drizzle";
 import { autonomyClaims, members, users } from "@notra/db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 
 const SMOKE_SCOPE = "smoke-test";
-const SMOKE_USER_EMAIL = process.env.SMOKE_USER_EMAIL ?? "dominik@rivo.gg";
+const SMOKE_USER_EMAIL = process.env.SMOKE_USER_EMAIL;
 const SMOKE_KEY = `demo-${crypto.randomUUID().slice(0, 8)}`;
 const SHORT_TTL_SECONDS = 2;
 const EXPIRY_WAIT_MS = 2500;
 
 async function findOrganizationId(): Promise<string> {
+  if (!SMOKE_USER_EMAIL) {
+    throw new Error("Set SMOKE_USER_EMAIL to run the autonomy smoke script");
+  }
   const [row] = await db
     .select({ organizationId: members.organizationId })
     .from(members)
@@ -106,10 +108,7 @@ function demoContracts(organizationId: string) {
   });
   console.log(`cyclic plan rejected: ${!cyclePlan.success}`);
   if (cyclePlan.success) {
-    const sorted = topologicallySortNodes(cyclePlan.data.tasks);
-    if (!sorted.cycleDetected) {
-      throw new Error("expected the cyclic plan to be rejected");
-    }
+    throw new Error("expected the planner schema to reject the cyclic plan");
   }
 
   const violations = validatePlannerOutputAgainstMandate(
@@ -198,7 +197,12 @@ async function demoClaims(organizationId: string) {
   const rows = await db
     .select({ scope: autonomyClaims.scope })
     .from(autonomyClaims)
-    .where(eq(autonomyClaims.scope, SMOKE_SCOPE));
+    .where(
+      and(
+        eq(autonomyClaims.scope, SMOKE_SCOPE),
+        eq(autonomyClaims.claimKey, SMOKE_KEY)
+      )
+    );
   console.log(`leftover smoke claims: ${rows.length}`);
   if (rows.length > 0) {
     throw new Error("expected no leftover smoke claims");

@@ -105,7 +105,9 @@ export function IrisRunningState({
 
       <IrisStatsRow stats={overview.stats} />
 
-      {overview.slackReady ? null : <IrisReadinessList items={readiness} />}
+      {readiness.every((item) => item.ready) ? null : (
+        <IrisReadinessList items={readiness} />
+      )}
 
       <Tabs defaultValue="activity">
         <TabsList variant="line">
@@ -125,7 +127,14 @@ export function IrisRunningState({
             </div>
           ) : null}
 
-          {!runsState.isPending && runs.length === 0 ? (
+          {!runsState.isPending && runsState.isError && runs.length === 0 ? (
+            <EmptyState
+              description="The activity feed could not be loaded. Refresh the page to try again."
+              title="Activity is unavailable"
+            />
+          ) : null}
+
+          {!(runsState.isPending || runsState.isError) && runs.length === 0 ? (
             <EmptyState
               description="Iris is watching your sources. The first report shows up here as soon as something is worth announcing."
               title="No runs yet"

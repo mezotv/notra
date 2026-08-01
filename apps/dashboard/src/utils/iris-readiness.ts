@@ -3,14 +3,12 @@ import type { IrisReadinessItem } from "@/types/iris";
 interface IrisReadinessInput {
   organizationSlug: string;
   slackReady: boolean;
-  slackChannelName: string | null;
   githubConnected: boolean;
 }
 
 export function buildIrisReadiness({
   organizationSlug,
   slackReady,
-  slackChannelName,
   githubConnected,
 }: IrisReadinessInput): IrisReadinessItem[] {
   return [
@@ -28,7 +26,7 @@ export function buildIrisReadiness({
       key: "slack",
       label: "Slack channel connected",
       description: slackReady
-        ? `Iris reports to ${slackChannelName ? `channel ${slackChannelName}` : "your notification channel"}.`
+        ? "Iris reports to your Slack notification channel."
         : "Connect a Slack notification channel so Iris can report to you.",
       ready: slackReady,
       href: `/${organizationSlug}/integrations/slack`,
