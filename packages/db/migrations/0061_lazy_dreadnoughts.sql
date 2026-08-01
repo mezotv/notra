@@ -175,7 +175,7 @@ ALTER TABLE "autonomy_tasks" ADD CONSTRAINT "autonomy_tasks_goal_id_autonomy_goa
 ALTER TABLE "autonomy_tasks" ADD CONSTRAINT "autonomy_tasks_run_id_autonomy_runs_id_fk" FOREIGN KEY ("run_id") REFERENCES "public"."autonomy_runs"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "autonomyActions_organizationId_idx" ON "autonomy_actions" USING btree ("organization_id");--> statement-breakpoint
 CREATE INDEX "autonomyActions_runId_idx" ON "autonomy_actions" USING btree ("run_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "autonomyActions_capabilityName_idempotencyKey_uidx" ON "autonomy_actions" USING btree ("capability_name","idempotency_key");--> statement-breakpoint
+CREATE UNIQUE INDEX "autonomyActions_org_capability_idempotency_uidx" ON "autonomy_actions" USING btree ("organization_id","capability_name","idempotency_key");--> statement-breakpoint
 CREATE INDEX "autonomyActions_organizationId_status_idx" ON "autonomy_actions" USING btree ("organization_id","status");--> statement-breakpoint
 CREATE INDEX "autonomyCheckpoints_organizationId_idx" ON "autonomy_checkpoints" USING btree ("organization_id");--> statement-breakpoint
 CREATE INDEX "autonomyCheckpoints_runId_idx" ON "autonomy_checkpoints" USING btree ("run_id");--> statement-breakpoint
@@ -188,7 +188,7 @@ CREATE INDEX "autonomyGoals_organizationId_status_idx" ON "autonomy_goals" USING
 CREATE INDEX "autonomyMandates_organizationId_idx" ON "autonomy_mandates" USING btree ("organization_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "autonomyMandates_organizationId_name_uidx" ON "autonomy_mandates" USING btree ("organization_id","name");--> statement-breakpoint
 CREATE INDEX "autonomyOutbox_organizationId_idx" ON "autonomy_outbox" USING btree ("organization_id");--> statement-breakpoint
-CREATE UNIQUE INDEX "autonomyOutbox_destination_dedupeKey_uidx" ON "autonomy_outbox" USING btree ("destination","dedupe_key");--> statement-breakpoint
+CREATE UNIQUE INDEX "autonomyOutbox_org_destination_dedupeKey_uidx" ON "autonomy_outbox" USING btree ("organization_id","destination","dedupe_key");--> statement-breakpoint
 CREATE INDEX "autonomyOutbox_status_nextAttemptAt_idx" ON "autonomy_outbox" USING btree ("status","next_attempt_at");--> statement-breakpoint
 CREATE INDEX "autonomyRuns_organizationId_idx" ON "autonomy_runs" USING btree ("organization_id");--> statement-breakpoint
 CREATE INDEX "autonomyRuns_mandateId_idx" ON "autonomy_runs" USING btree ("mandate_id");--> statement-breakpoint

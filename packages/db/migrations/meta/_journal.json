@@ -432,15 +432,8 @@
     {
       "idx": 61,
       "version": "7",
-      "when": 1785536259890,
-      "tag": "0061_remarkable_sinister_six",
-      "breakpoints": true
-    },
-    {
-      "idx": 62,
-      "version": "7",
-      "when": 1785579564653,
-      "tag": "0062_striped_ares",
+      "when": 1785580721087,
+      "tag": "0061_lazy_dreadnoughts",
       "breakpoints": true
     }
   ]

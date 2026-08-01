@@ -1,5 +1,5 @@
 {
-  "id": "46c4820d-9575-44b9-b925-a808ab88c063",
+  "id": "2014e8d0-299d-40d4-8e34-286db1c901d8",
   "prevId": "17a151de-a354-4907-9898-e73e611e006b",
   "version": "7",
   "dialect": "postgresql",
@@ -418,9 +418,15 @@
           "method": "btree",
           "with": {}
         },
-        "autonomyActions_capabilityName_idempotencyKey_uidx": {
-          "name": "autonomyActions_capabilityName_idempotencyKey_uidx",
+        "autonomyActions_org_capability_idempotency_uidx": {
+          "name": "autonomyActions_org_capability_idempotency_uidx",
           "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
             {
               "expression": "capability_name",
               "isExpression": false,
@@ -1259,9 +1265,15 @@
           "method": "btree",
           "with": {}
         },
-        "autonomyOutbox_destination_dedupeKey_uidx": {
-          "name": "autonomyOutbox_destination_dedupeKey_uidx",
+        "autonomyOutbox_org_destination_dedupeKey_uidx": {
+          "name": "autonomyOutbox_org_destination_dedupeKey_uidx",
           "columns": [
+            {
+              "expression": "organization_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
             {
               "expression": "destination",
               "isExpression": false,
