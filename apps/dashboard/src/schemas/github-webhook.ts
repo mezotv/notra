@@ -48,6 +48,26 @@ const headCommitSchema = z.object({
   message: z.string(),
 });
 
+const pullRequestUserSchema = z.object({
+  login: z.string(),
+});
+
+const pullRequestBaseSchema = z.object({
+  ref: z.string(),
+});
+
+const pullRequestSchema = z.object({
+  number: z.number(),
+  title: z.string(),
+  body: z.string().nullable().optional(),
+  html_url: z.string(),
+  merged: z.boolean().optional(),
+  merged_at: z.string().nullable().optional(),
+  merge_commit_sha: z.string().nullable().optional(),
+  user: pullRequestUserSchema.optional(),
+  base: pullRequestBaseSchema.optional(),
+});
+
 export const githubWebhookPayloadSchema = z.object({
   action: z.string().optional(),
   ref: z.string().optional(),
@@ -56,6 +76,7 @@ export const githubWebhookPayloadSchema = z.object({
   star_count: z.number().optional(),
   sender: senderSchema.optional(),
   release: releaseSchema.optional(),
+  pull_request: pullRequestSchema.optional(),
   commits: z.array(commitSchema).optional(),
   head_commit: headCommitSchema.nullable().optional(),
   starred_at: z.string().optional(),
@@ -63,7 +84,12 @@ export const githubWebhookPayloadSchema = z.object({
 
 export type GitHubWebhookPayload = z.infer<typeof githubWebhookPayloadSchema>;
 
-export const GITHUB_EVENT_TYPES = ["release", "push", "ping"] as const;
+export const GITHUB_EVENT_TYPES = [
+  "release",
+  "push",
+  "pull_request",
+  "ping",
+] as const;
 export type GitHubEventType = (typeof GITHUB_EVENT_TYPES)[number];
 
 export function isGitHubEventType(event: string): event is GitHubEventType {

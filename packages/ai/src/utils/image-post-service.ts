@@ -175,6 +175,7 @@ export async function saveGeneratedImagePost(params: {
   organizationId: string;
   title: string;
   postId?: string;
+  collectionId?: string;
   pngBase64: string;
   html: string;
   sourceMetadata: Record<string, unknown>;
@@ -192,6 +193,21 @@ export async function saveGeneratedImagePost(params: {
       postId,
     }),
   ]);
+
+  if (params.collectionId) {
+    await insertGeneratedImagePost({
+      collectionId: params.collectionId,
+      htmlUrl,
+      imageUrl,
+      incrementCollectionCount: true,
+      organizationId: params.organizationId,
+      postId,
+      sourceMetadata: params.sourceMetadata,
+      title: params.title,
+    });
+    return { imageUrl, postId };
+  }
+
   const collectionId = nanoid();
   const now = new Date();
   const contentTypesJson = JSON.stringify(["image"]);
@@ -236,19 +252,14 @@ export async function saveGeneratedImagePost(params: {
     throw new Error("Failed to create image content collection");
   }
 
-  await db.insert(posts).values({
-    id: postId,
-    organizationId: params.organizationId,
+  await insertGeneratedImagePost({
     collectionId: collection.id,
-    title: params.title,
-    slug: null,
-    content: imageUrl,
     htmlUrl,
-    markdown: null,
-    recommendations: null,
-    contentType: "image",
-    status: "draft",
+    imageUrl,
+    organizationId: params.organizationId,
+    postId,
     sourceMetadata: params.sourceMetadata,
+    title: params.title,
   });
 
   await maybeGenerateCollectionTitle({
@@ -257,4 +268,51 @@ export async function saveGeneratedImagePost(params: {
   });
 
   return { imageUrl, postId };
+}
+
+async function insertGeneratedImagePost(params: {
+  collectionId: string;
+  htmlUrl: string;
+  imageUrl: string;
+  organizationId: string;
+  postId: string;
+  sourceMetadata: Record<string, unknown>;
+  title: string;
+  incrementCollectionCount?: boolean;
+}) {
+  const inserted = await db
+    .insert(posts)
+    .values({
+      id: params.postId,
+      organizationId: params.organizationId,
+      collectionId: params.collectionId,
+      title: params.title,
+      slug: null,
+      content: params.imageUrl,
+      htmlUrl: params.htmlUrl,
+      markdown: null,
+      recommendations: null,
+      contentType: "image",
+      status: "draft",
+      sourceMetadata: params.sourceMetadata,
+    })
+    .onConflictDoNothing({ target: posts.id })
+    .returning({ id: posts.id });
+
+  if (inserted.length === 0 || !params.incrementCollectionCount) {
+    return;
+  }
+
+  await db
+    .update(postCollections)
+    .set({
+      completedPostCount: sql`${postCollections.completedPostCount} + 1`,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(postCollections.id, params.collectionId),
+        eq(postCollections.organizationId, params.organizationId)
+      )
+    );
 }

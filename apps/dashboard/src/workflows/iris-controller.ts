@@ -1,0 +1,398 @@
+import type { IrisOutboxArtifact } from "@notra/ai/schemas/autonomy/outbox";
+import { flattenError } from "zod";
+import {
+  type IrisWorkflowPayload,
+  irisWorkflowPayloadSchema,
+} from "@/schemas/workflows/iris";
+import type { IrisControllerResult } from "@/types/iris";
+import {
+  buildIrisHeadline,
+  buildIrisNoOpHeadline,
+} from "@/utils/iris-signal-summary";
+import { collectDependentTaskIds } from "@/utils/iris-task-graph";
+import {
+  acquireIrisLease,
+  cancelIrisTasks,
+  claimIrisExecution,
+  closeOpenIrisRun,
+  coalesceIrisSignals,
+  createIrisRun,
+  ensureIrisRunCollection,
+  evaluateIrisGate,
+  finalizeIrisRun,
+  gatherIrisContext,
+  isIrisMandateActive,
+  isRepeatedIrisGateBlock,
+  loadIrisMandate,
+  markIrisSignalsProcessed,
+  persistIrisPlan,
+  planIrisRun,
+  pollIrisSourcesStep,
+  publishIrisOutbox,
+  reapIrisExpiredClaims,
+  recordIrisNoOpRun,
+  releaseIrisLease,
+  renewIrisLease,
+  runIrisTask,
+} from "./steps/iris-steps";
+
+const LOG_PREFIX = "Iris";
+
+export async function irisControllerRun(
+  payload: IrisWorkflowPayload
+): Promise<IrisControllerResult> {
+  "use workflow";
+
+  const parseResult = irisWorkflowPayloadSchema.safeParse(payload);
+  if (!parseResult.success) {
+    console.error(
+      `[${LOG_PREFIX}] Invalid payload:`,
+      flattenError(parseResult.error)
+    );
+    return { status: "invalid_payload", runId: null, reason: null };
+  }
+
+  const { organizationId, trigger, executionId } = parseResult.data;
+  const claimToken = `iris-claim-${executionId}`;
+  const leaseToken = `iris-lease-${executionId}`;
+
+  const claim = await claimIrisExecution({
+    organizationId,
+    executionId,
+    claimToken,
+  });
+  if (!claim.claimed) {
+    console.warn(
+      `[${LOG_PREFIX}] Duplicate execution ${executionId} for org ${organizationId}, skipping`
+    );
+    return { status: "duplicate_execution", runId: null, reason: null };
+  }
+
+  const lease = await acquireIrisLease({
+    organizationId,
+    ownerToken: leaseToken,
+  });
+  if (!lease.acquired) {
+    console.warn(
+      `[${LOG_PREFIX}] Another controller holds the lease for org ${organizationId}, skipping`
+    );
+    return { status: "controller_busy", runId: null, reason: null };
+  }
+
+  const context = await loadIrisMandate(organizationId);
+  const mandate = context.mandate;
+  if (!mandate) {
+    await releaseIrisLease({ organizationId, ownerToken: leaseToken });
+    return { status: "no_active_mandate", runId: null, reason: null };
+  }
+
+  if (trigger === "wake" || trigger === "manual") {
+    await pollIrisSourcesStep({ organizationId });
+  }
+
+  const gathered = await gatherIrisContext(organizationId);
+  const gate = await evaluateIrisGate({
+    mandate,
+    pendingSignalCount: gathered.pendingSignalCount,
+    actionsInLast24h: gathered.actionsInLast24h,
+    costCentsInLast24h: gathered.costCentsInLast24h,
+  });
+
+  if (!gate.proceed) {
+    let noOpRunId: string | null = null;
+    const isManualTrigger = trigger === "manual";
+    const repeatedGateBlock =
+      isManualTrigger || gathered.pendingSignalCount === 0
+        ? false
+        : await isRepeatedIrisGateBlock({
+            organizationId,
+            reason: gate.reason,
+          });
+
+    if (
+      isManualTrigger ||
+      (gathered.pendingSignalCount > 0 && !repeatedGateBlock)
+    ) {
+      const created = await createIrisRun({
+        organizationId,
+        mandateId: mandate.id,
+        mandateVersion: mandate.version,
+        trigger,
+      });
+      noOpRunId = created.runId;
+
+      await recordIrisNoOpRun({
+        runId: noOpRunId,
+        mandate,
+        reason: gate.reason,
+        consumedSignalIds: gathered.pendingSignalIds,
+      });
+
+      if (isManualTrigger) {
+        await publishIrisOutbox({
+          organizationId,
+          runId: noOpRunId,
+          payload: {
+            kind: "no_op",
+            runId: noOpRunId,
+            headline: buildIrisNoOpHeadline(
+              gathered.pendingSignalCount,
+              gate.reason
+            ),
+            signalCount: gathered.pendingSignalCount,
+            artifacts: [],
+            trigger,
+            organizationSlug: context.organizationSlug,
+          },
+        });
+      }
+    }
+
+    await releaseIrisLease({ organizationId, ownerToken: leaseToken });
+    await reapIrisExpiredClaims();
+    return { status: "gate_blocked", runId: noOpRunId, reason: gate.reason };
+  }
+
+  const created = await createIrisRun({
+    organizationId,
+    mandateId: mandate.id,
+    mandateVersion: mandate.version,
+    trigger,
+  });
+  const runId = created.runId;
+
+  try {
+    const coalesced = await coalesceIrisSignals({
+      organizationId,
+      signalIds: gathered.pendingSignalIds,
+    });
+
+    const plan = await planIrisRun({
+      runId,
+      mandate,
+      signalSummaries: coalesced.summaries,
+      recentActionSummaries: gathered.recentActionSummaries,
+    });
+
+    const output = plan.output;
+
+    if (plan.status === "rejected" || output === null) {
+      await finalizeIrisRun({
+        organizationId,
+        runId,
+        status: "failed",
+        costCents: plan.costCents,
+        goalId: null,
+        goalStatus: null,
+      });
+      await markIrisSignalsProcessed({
+        organizationId,
+        signalIds: coalesced.signalIds,
+      });
+      await releaseIrisLease({ organizationId, ownerToken: leaseToken });
+      return {
+        status: "plan_rejected",
+        runId,
+        reason: plan.violations.join("; ") || "The plan was rejected",
+      };
+    }
+
+    if (output.decision === "no_op") {
+      await finalizeIrisRun({
+        organizationId,
+        runId,
+        status: "completed",
+        costCents: plan.costCents,
+        goalId: null,
+        goalStatus: null,
+      });
+      await markIrisSignalsProcessed({
+        organizationId,
+        signalIds: coalesced.signalIds,
+      });
+      await releaseIrisLease({ organizationId, ownerToken: leaseToken });
+      return { status: "no_op", runId, reason: output.reason };
+    }
+
+    if (output.decision === "escalate") {
+      await finalizeIrisRun({
+        organizationId,
+        runId,
+        status: "completed",
+        costCents: plan.costCents,
+        goalId: null,
+        goalStatus: null,
+      });
+      await publishIrisOutbox({
+        organizationId,
+        runId,
+        payload: {
+          kind: "no_op",
+          runId,
+          headline: `Iris needs a decision from you: ${output.reason}`,
+          signalCount: coalesced.signalIds.length,
+          artifacts: [],
+          trigger,
+          organizationSlug: context.organizationSlug,
+        },
+      });
+      await markIrisSignalsProcessed({
+        organizationId,
+        signalIds: coalesced.signalIds,
+      });
+      await releaseIrisLease({ organizationId, ownerToken: leaseToken });
+      return { status: "escalated", runId, reason: output.reason };
+    }
+
+    const goal = output.goal;
+    if (!goal) {
+      await finalizeIrisRun({
+        organizationId,
+        runId,
+        status: "failed",
+        costCents: plan.costCents,
+        goalId: null,
+        goalStatus: null,
+      });
+      await markIrisSignalsProcessed({
+        organizationId,
+        signalIds: coalesced.signalIds,
+      });
+      await releaseIrisLease({ organizationId, ownerToken: leaseToken });
+      return {
+        status: "plan_rejected",
+        runId,
+        reason: "The plan did not include a goal",
+      };
+    }
+
+    const persisted = await persistIrisPlan({
+      organizationId,
+      mandateId: mandate.id,
+      runId,
+      goal,
+      tasks: output.tasks,
+      originSignalIds: coalesced.signalIds,
+    });
+
+    const collection = await ensureIrisRunCollection({
+      organizationId,
+      runId,
+    });
+
+    const canceledTaskIds = new Set<string>();
+    const artifacts: IrisOutboxArtifact[] = [];
+    let succeededCount = 0;
+    let costCents = plan.costCents;
+
+    let mandateRevoked = false;
+
+    for (const task of persisted.tasks) {
+      if (canceledTaskIds.has(task.taskId)) {
+        continue;
+      }
+
+      await renewIrisLease({ organizationId, ownerToken: leaseToken });
+
+      const stillActive = await isIrisMandateActive(organizationId);
+      if (!stillActive) {
+        mandateRevoked = true;
+        const remaining = persisted.tasks
+          .map((pending) => pending.taskId)
+          .filter(
+            (taskId) => !canceledTaskIds.has(taskId) && taskId !== task.taskId
+          );
+        await cancelIrisTasks({
+          taskIds: [task.taskId, ...remaining],
+          reason: "Iris was paused",
+        });
+        break;
+      }
+
+      const outcome = await runIrisTask({
+        organizationId,
+        runId,
+        mandate,
+        collectionId: collection.collectionId,
+        task,
+        signalContext: {
+          primarySignal: coalesced.primarySignal,
+          summaries: coalesced.summaries,
+        },
+      });
+
+      costCents += outcome.costCents;
+
+      if (outcome.status === "succeeded") {
+        succeededCount += 1;
+        artifacts.push(...outcome.artifacts);
+        continue;
+      }
+
+      const blocked = collectDependentTaskIds(
+        persisted.tasks,
+        task.taskId
+      ).filter((taskId) => !canceledTaskIds.has(taskId));
+
+      for (const taskId of blocked) {
+        canceledTaskIds.add(taskId);
+      }
+
+      await cancelIrisTasks({
+        taskIds: blocked,
+        reason: `Blocked by failed task ${task.localId}`,
+      });
+    }
+
+    const runStatus = succeededCount > 0 ? "completed" : "failed";
+
+    await finalizeIrisRun({
+      organizationId,
+      runId,
+      status: runStatus,
+      costCents,
+      goalId: persisted.goalId,
+      goalStatus: succeededCount > 0 ? "completed" : "abandoned",
+    });
+
+    if (mandateRevoked) {
+      await markIrisSignalsProcessed({
+        organizationId,
+        signalIds: coalesced.signalIds,
+      });
+      await releaseIrisLease({ organizationId, ownerToken: leaseToken });
+      return { status: runStatus, runId, reason: "Iris was paused" };
+    }
+
+    await publishIrisOutbox({
+      organizationId,
+      runId,
+      payload: {
+        kind: "run_summary",
+        runId,
+        headline: buildIrisHeadline(
+          artifacts.length,
+          coalesced.signalIds.length
+        ),
+        signalCount: coalesced.signalIds.length,
+        artifacts,
+        trigger,
+        organizationSlug: context.organizationSlug,
+      },
+    });
+
+    await markIrisSignalsProcessed({
+      organizationId,
+      signalIds: coalesced.signalIds,
+    });
+
+    await releaseIrisLease({ organizationId, ownerToken: leaseToken });
+    await reapIrisExpiredClaims();
+
+    return { status: runStatus, runId, reason: null };
+  } catch (error) {
+    await closeOpenIrisRun({ organizationId, runId });
+    await releaseIrisLease({ organizationId, ownerToken: leaseToken });
+    throw error;
+  }
+}

@@ -1554,6 +1554,408 @@ export const onboardingSuggestions = pgTable(
   ]
 );
 
+export const autonomyMandateStatusEnum = pgEnum("autonomy_mandate_status", [
+  "active",
+  "paused",
+  "revoked",
+]);
+
+export const autonomyMandates = pgTable(
+  "autonomy_mandates",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    objective: text("objective").notNull(),
+    policy: jsonb("policy").notNull(),
+    status: autonomyMandateStatusEnum("status").default("active").notNull(),
+    version: integer("version").default(1).notNull(),
+    qstashScheduleId: text("qstash_schedule_id"),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    pausedAt: timestamp("paused_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("autonomyMandates_organizationId_idx").on(table.organizationId),
+    uniqueIndex("autonomyMandates_organizationId_name_uidx").on(
+      table.organizationId,
+      table.name
+    ),
+  ]
+);
+
+export const autonomySignalStatusEnum = pgEnum("autonomy_signal_status", [
+  "pending",
+  "coalesced",
+  "processed",
+  "discarded",
+]);
+
+export const autonomySignals = pgTable(
+  "autonomy_signals",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    source: text("source").notNull(),
+    sourceEventId: text("source_event_id"),
+    kind: text("kind").notNull(),
+    payload: jsonb("payload").notNull(),
+    dedupeHash: text("dedupe_hash").notNull(),
+    status: autonomySignalStatusEnum("status").default("pending").notNull(),
+    coalescedIntoSignalId: text("coalesced_into_signal_id"),
+    occurredAt: timestamp("occurred_at").notNull(),
+    processedAt: timestamp("processed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("autonomySignals_organizationId_idx").on(table.organizationId),
+    uniqueIndex("autonomySignals_organizationId_dedupeHash_uidx").on(
+      table.organizationId,
+      table.dedupeHash
+    ),
+    index("autonomySignals_organizationId_status_occurredAt_idx").on(
+      table.organizationId,
+      table.status,
+      table.occurredAt
+    ),
+    foreignKey({
+      columns: [table.coalescedIntoSignalId],
+      foreignColumns: [table.id],
+      name: "autonomySignals_coalescedIntoSignalId_fk",
+    }).onDelete("set null"),
+  ]
+);
+
+export const autonomyGoalStatusEnum = pgEnum("autonomy_goal_status", [
+  "open",
+  "in_progress",
+  "blocked",
+  "completed",
+  "abandoned",
+]);
+
+export const autonomyGoals = pgTable(
+  "autonomy_goals",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    mandateId: text("mandate_id")
+      .notNull()
+      .references(() => autonomyMandates.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    summary: text("summary"),
+    status: autonomyGoalStatusEnum("status").default("open").notNull(),
+    priority: integer("priority").default(0).notNull(),
+    originSignalIds: jsonb("origin_signal_ids")
+      .default(sql`'[]'::jsonb`)
+      .notNull(),
+    completedAt: timestamp("completed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("autonomyGoals_organizationId_idx").on(table.organizationId),
+    index("autonomyGoals_mandateId_idx").on(table.mandateId),
+    index("autonomyGoals_organizationId_status_idx").on(
+      table.organizationId,
+      table.status
+    ),
+  ]
+);
+
+export const autonomyRunTriggerEnum = pgEnum("autonomy_run_trigger", [
+  "signal",
+  "wake",
+  "manual",
+  "repair",
+]);
+
+export const autonomyRunStatusEnum = pgEnum("autonomy_run_status", [
+  "planning",
+  "executing",
+  "completed",
+  "failed",
+  "canceled",
+]);
+
+export const autonomyRuns = pgTable(
+  "autonomy_runs",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    mandateId: text("mandate_id")
+      .notNull()
+      .references(() => autonomyMandates.id, { onDelete: "cascade" }),
+    mandateVersion: integer("mandate_version").notNull(),
+    goalId: text("goal_id").references(() => autonomyGoals.id, {
+      onDelete: "set null",
+    }),
+    trigger: autonomyRunTriggerEnum("trigger").notNull(),
+    plannerInputHash: text("planner_input_hash"),
+    plannerOutput: jsonb("planner_output"),
+    status: autonomyRunStatusEnum("status").default("planning").notNull(),
+    costCents: integer("cost_cents").default(0).notNull(),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    completedAt: timestamp("completed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("autonomyRuns_organizationId_idx").on(table.organizationId),
+    index("autonomyRuns_mandateId_idx").on(table.mandateId),
+    index("autonomyRuns_goalId_idx").on(table.goalId),
+    index("autonomyRuns_organizationId_status_idx").on(
+      table.organizationId,
+      table.status
+    ),
+  ]
+);
+
+export const autonomyTaskStatusEnum = pgEnum("autonomy_task_status", [
+  "pending",
+  "ready",
+  "running",
+  "waiting",
+  "completed",
+  "failed",
+  "canceled",
+]);
+
+export const autonomyTasks = pgTable(
+  "autonomy_tasks",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    goalId: text("goal_id")
+      .notNull()
+      .references(() => autonomyGoals.id, { onDelete: "cascade" }),
+    runId: text("run_id").references(() => autonomyRuns.id, {
+      onDelete: "set null",
+    }),
+    capabilityName: text("capability_name").notNull(),
+    capabilityVersion: integer("capability_version").default(1).notNull(),
+    params: jsonb("params").notNull(),
+    dependsOnTaskIds: jsonb("depends_on_task_ids")
+      .default(sql`'[]'::jsonb`)
+      .notNull(),
+    status: autonomyTaskStatusEnum("status").default("pending").notNull(),
+    attempt: integer("attempt").default(0).notNull(),
+    waitUntil: timestamp("wait_until"),
+    result: jsonb("result"),
+    errorMessage: text("error_message"),
+    completedAt: timestamp("completed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("autonomyTasks_organizationId_idx").on(table.organizationId),
+    index("autonomyTasks_goalId_idx").on(table.goalId),
+    index("autonomyTasks_runId_idx").on(table.runId),
+    index("autonomyTasks_organizationId_status_waitUntil_idx").on(
+      table.organizationId,
+      table.status,
+      table.waitUntil
+    ),
+  ]
+);
+
+export const autonomyActionStatusEnum = pgEnum("autonomy_action_status", [
+  "pending",
+  "executing",
+  "succeeded",
+  "failed",
+  "unknown",
+  "compensated",
+  "canceled",
+]);
+
+export const autonomyActions = pgTable(
+  "autonomy_actions",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    runId: text("run_id")
+      .notNull()
+      .references(() => autonomyRuns.id, { onDelete: "cascade" }),
+    taskId: text("task_id").references(() => autonomyTasks.id, {
+      onDelete: "set null",
+    }),
+    capabilityName: text("capability_name").notNull(),
+    capabilityVersion: integer("capability_version").notNull(),
+    idempotencyKey: text("idempotency_key").notNull(),
+    status: autonomyActionStatusEnum("status").default("pending").notNull(),
+    externalRef: jsonb("external_ref"),
+    error: jsonb("error"),
+    startedAt: timestamp("started_at"),
+    finishedAt: timestamp("finished_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("autonomyActions_organizationId_idx").on(table.organizationId),
+    index("autonomyActions_runId_idx").on(table.runId),
+    uniqueIndex("autonomyActions_capabilityName_idempotencyKey_uidx").on(
+      table.capabilityName,
+      table.idempotencyKey
+    ),
+    index("autonomyActions_organizationId_status_idx").on(
+      table.organizationId,
+      table.status
+    ),
+  ]
+);
+
+export const autonomyCheckpoints = pgTable(
+  "autonomy_checkpoints",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    runId: text("run_id")
+      .notNull()
+      .references(() => autonomyRuns.id, { onDelete: "cascade" }),
+    taskId: text("task_id").references(() => autonomyTasks.id, {
+      onDelete: "set null",
+    }),
+    kind: text("kind").notNull(),
+    state: jsonb("state").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("autonomyCheckpoints_organizationId_idx").on(table.organizationId),
+    index("autonomyCheckpoints_runId_idx").on(table.runId),
+  ]
+);
+
+export const autonomyOutboxStatusEnum = pgEnum("autonomy_outbox_status", [
+  "pending",
+  "attempting",
+  "delivered",
+  "failed",
+  "canceled",
+]);
+
+export const autonomyOutbox = pgTable(
+  "autonomy_outbox",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    runId: text("run_id").references(() => autonomyRuns.id, {
+      onDelete: "set null",
+    }),
+    destination: text("destination").notNull(),
+    dedupeKey: text("dedupe_key").notNull(),
+    payload: jsonb("payload").notNull(),
+    status: autonomyOutboxStatusEnum("status").default("pending").notNull(),
+    attempts: integer("attempts").default(0).notNull(),
+    nextAttemptAt: timestamp("next_attempt_at"),
+    lastError: text("last_error"),
+    deliveredAt: timestamp("delivered_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("autonomyOutbox_organizationId_idx").on(table.organizationId),
+    uniqueIndex("autonomyOutbox_destination_dedupeKey_uidx").on(
+      table.destination,
+      table.dedupeKey
+    ),
+    index("autonomyOutbox_status_nextAttemptAt_idx").on(
+      table.status,
+      table.nextAttemptAt
+    ),
+  ]
+);
+
+export const autonomyClaims = pgTable(
+  "autonomy_claims",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id").references(() => organizations.id, {
+      onDelete: "cascade",
+    }),
+    scope: text("scope").notNull(),
+    claimKey: text("claim_key").notNull(),
+    ownerToken: text("owner_token").notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("autonomyClaims_scope_claimKey_uidx").on(
+      table.scope,
+      table.claimKey
+    ),
+    index("autonomyClaims_expiresAt_idx").on(table.expiresAt),
+  ]
+);
+
+export const autonomyControllerLeases = pgTable(
+  "autonomy_controller_leases",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    ownerToken: text("owner_token").notNull(),
+    fencingToken: integer("fencing_token").default(0).notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("autonomyControllerLeases_organizationId_idx").on(
+      table.organizationId
+    ),
+  ]
+);
+
 export interface PostSourceMetadata {
   triggerId?: string;
   triggerSourceType?: string;
@@ -1659,6 +2061,16 @@ export const organizationsRelations = relations(
     chatSessions: many(chatSessions),
     chatAttachments: many(chatAttachments),
     onboardingSuggestions: many(onboardingSuggestions),
+    autonomyMandates: many(autonomyMandates),
+    autonomySignals: many(autonomySignals),
+    autonomyGoals: many(autonomyGoals),
+    autonomyRuns: many(autonomyRuns),
+    autonomyTasks: many(autonomyTasks),
+    autonomyActions: many(autonomyActions),
+    autonomyCheckpoints: many(autonomyCheckpoints),
+    autonomyOutbox: many(autonomyOutbox),
+    autonomyClaims: many(autonomyClaims),
+    autonomyControllerLeases: many(autonomyControllerLeases),
   })
 );
 
@@ -2040,3 +2452,159 @@ export const skillsRelations = relations(skills, ({ one }) => ({
     references: [organizations.id],
   }),
 }));
+
+export const autonomyMandatesRelations = relations(
+  autonomyMandates,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [autonomyMandates.organizationId],
+      references: [organizations.id],
+    }),
+    createdByUser: one(users, {
+      fields: [autonomyMandates.createdByUserId],
+      references: [users.id],
+    }),
+    goals: many(autonomyGoals),
+    runs: many(autonomyRuns),
+  })
+);
+
+export const autonomySignalsRelations = relations(
+  autonomySignals,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [autonomySignals.organizationId],
+      references: [organizations.id],
+    }),
+    coalescedIntoSignal: one(autonomySignals, {
+      fields: [autonomySignals.coalescedIntoSignalId],
+      references: [autonomySignals.id],
+      relationName: "autonomySignalCoalescing",
+    }),
+    coalescedSignals: many(autonomySignals, {
+      relationName: "autonomySignalCoalescing",
+    }),
+  })
+);
+
+export const autonomyGoalsRelations = relations(
+  autonomyGoals,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [autonomyGoals.organizationId],
+      references: [organizations.id],
+    }),
+    mandate: one(autonomyMandates, {
+      fields: [autonomyGoals.mandateId],
+      references: [autonomyMandates.id],
+    }),
+    runs: many(autonomyRuns),
+    tasks: many(autonomyTasks),
+  })
+);
+
+export const autonomyRunsRelations = relations(
+  autonomyRuns,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [autonomyRuns.organizationId],
+      references: [organizations.id],
+    }),
+    mandate: one(autonomyMandates, {
+      fields: [autonomyRuns.mandateId],
+      references: [autonomyMandates.id],
+    }),
+    goal: one(autonomyGoals, {
+      fields: [autonomyRuns.goalId],
+      references: [autonomyGoals.id],
+    }),
+    tasks: many(autonomyTasks),
+    actions: many(autonomyActions),
+    checkpoints: many(autonomyCheckpoints),
+    outboxMessages: many(autonomyOutbox),
+  })
+);
+
+export const autonomyTasksRelations = relations(
+  autonomyTasks,
+  ({ one, many }) => ({
+    organization: one(organizations, {
+      fields: [autonomyTasks.organizationId],
+      references: [organizations.id],
+    }),
+    goal: one(autonomyGoals, {
+      fields: [autonomyTasks.goalId],
+      references: [autonomyGoals.id],
+    }),
+    run: one(autonomyRuns, {
+      fields: [autonomyTasks.runId],
+      references: [autonomyRuns.id],
+    }),
+    actions: many(autonomyActions),
+    checkpoints: many(autonomyCheckpoints),
+  })
+);
+
+export const autonomyActionsRelations = relations(
+  autonomyActions,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [autonomyActions.organizationId],
+      references: [organizations.id],
+    }),
+    run: one(autonomyRuns, {
+      fields: [autonomyActions.runId],
+      references: [autonomyRuns.id],
+    }),
+    task: one(autonomyTasks, {
+      fields: [autonomyActions.taskId],
+      references: [autonomyTasks.id],
+    }),
+  })
+);
+
+export const autonomyCheckpointsRelations = relations(
+  autonomyCheckpoints,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [autonomyCheckpoints.organizationId],
+      references: [organizations.id],
+    }),
+    run: one(autonomyRuns, {
+      fields: [autonomyCheckpoints.runId],
+      references: [autonomyRuns.id],
+    }),
+    task: one(autonomyTasks, {
+      fields: [autonomyCheckpoints.taskId],
+      references: [autonomyTasks.id],
+    }),
+  })
+);
+
+export const autonomyOutboxRelations = relations(autonomyOutbox, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [autonomyOutbox.organizationId],
+    references: [organizations.id],
+  }),
+  run: one(autonomyRuns, {
+    fields: [autonomyOutbox.runId],
+    references: [autonomyRuns.id],
+  }),
+}));
+
+export const autonomyClaimsRelations = relations(autonomyClaims, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [autonomyClaims.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export const autonomyControllerLeasesRelations = relations(
+  autonomyControllerLeases,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [autonomyControllerLeases.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);

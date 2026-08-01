@@ -1,0 +1,178 @@
+"use client";
+
+import { PauseIcon, PlayIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@notra/ui/components/ui/tabs";
+import { Loader2Icon } from "lucide-react";
+import { useId } from "react";
+import { Button } from "@/components/button";
+import { EmptyState } from "@/components/empty-state";
+import { IrisReadinessList } from "@/components/iris/iris-readiness-list";
+import { IrisRunCard } from "@/components/iris/iris-run-card";
+import { IrisSignalsList } from "@/components/iris/iris-signals-list";
+import { IrisStatsRow } from "@/components/iris/iris-stats";
+import { cn } from "@/lib/utils";
+import type { IrisRunningStateProps } from "@/types/iris";
+
+export function IrisRunningState({
+  organizationSlug,
+  overview,
+  mandate,
+  readiness,
+  runs,
+  signals,
+  isRunsPending,
+  isSignalsPending,
+  isBusy,
+  hasMoreRuns,
+  isLoadingMoreRuns,
+  isRunNowPending,
+  isStatusPending,
+  onLoadMoreRuns,
+  onRunNow,
+  onPause,
+  onResume,
+}: IrisRunningStateProps) {
+  const skeletonId = useId();
+  const isPaused = mandate.status !== "active";
+  const statusLabel = (() => {
+    if (isPaused) {
+      return "Iris is paused";
+    }
+    return isBusy ? "Iris is working" : "Iris is on duty";
+  })();
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="font-bold text-3xl tracking-tight">Iris</h1>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+            <span className="relative flex size-2">
+              {isPaused ? null : (
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/60" />
+              )}
+              <span
+                className={cn(
+                  "relative inline-flex size-2 rounded-full",
+                  isPaused ? "bg-muted-foreground/50" : "bg-emerald-500"
+                )}
+              />
+            </span>
+            {statusLabel}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            disabled={isRunNowPending || isBusy || isPaused}
+            onClick={onRunNow}
+            variant="outline"
+          >
+            {isRunNowPending ? (
+              <>
+                <Loader2Icon className="size-4 animate-spin" />
+                Starting
+              </>
+            ) : (
+              "Run now"
+            )}
+          </Button>
+          <Button
+            disabled={isStatusPending}
+            onClick={isPaused ? onResume : onPause}
+            variant={isPaused ? "default" : "outline"}
+          >
+            {isStatusPending ? (
+              <Loader2Icon className="size-4 animate-spin" />
+            ) : (
+              <HugeiconsIcon
+                className="size-4"
+                icon={isPaused ? PlayIcon : PauseIcon}
+              />
+            )}
+            {isPaused ? "Resume" : "Pause"}
+          </Button>
+        </div>
+      </div>
+
+      <IrisStatsRow stats={overview.stats} />
+
+      {overview.slackReady ? null : <IrisReadinessList items={readiness} />}
+
+      <Tabs defaultValue="activity">
+        <TabsList variant="line">
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="signals">Recent signals</TabsTrigger>
+        </TabsList>
+
+        <TabsContent className="mt-4 space-y-3" value="activity">
+          {isRunsPending ? (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton
+                  className="h-36 w-full rounded-xl"
+                  key={`${skeletonId}-run-${index + 1}`}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {!isRunsPending && runs.length === 0 ? (
+            <EmptyState
+              description="Iris is watching your sources. The first report shows up here as soon as something is worth announcing."
+              title="No runs yet"
+            />
+          ) : null}
+
+          {runs.map((run) => (
+            <IrisRunCard
+              key={run.id}
+              organizationSlug={organizationSlug}
+              run={run}
+            />
+          ))}
+
+          {hasMoreRuns ? (
+            <div className="flex justify-center pt-1">
+              <Button
+                disabled={isLoadingMoreRuns}
+                onClick={onLoadMoreRuns}
+                variant="outline"
+              >
+                {isLoadingMoreRuns ? (
+                  <>
+                    <Loader2Icon className="size-4 animate-spin" />
+                    Loading
+                  </>
+                ) : (
+                  "Load more"
+                )}
+              </Button>
+            </div>
+          ) : null}
+        </TabsContent>
+
+        <TabsContent className="mt-4" value="signals">
+          {isSignalsPending ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Skeleton
+                  className="h-12 w-full rounded-xl"
+                  key={`${skeletonId}-signal-${index + 1}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <IrisSignalsList signals={signals} />
+          )}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

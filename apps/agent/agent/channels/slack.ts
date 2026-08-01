@@ -14,6 +14,10 @@ import {
   mirrorToolApprovals,
   mirrorToolResult,
 } from "../lib/utils/chat-mirror";
+import {
+  handleIrisInteraction,
+  isIrisInteraction,
+} from "../lib/utils/iris-interaction";
 import { buildNotraSlackAuth } from "../lib/utils/slack-auth";
 import { mirrorPublicSlackThread } from "../lib/utils/slack-chat-mirror";
 import { createSlackAgentCredentials } from "../lib/utils/slack-credentials";
@@ -104,6 +108,11 @@ const onSlackThreadReply: NonNullable<SlackChannelConfig["onMessage"]> = async (
 const onSlackInteraction: NonNullable<
   SlackChannelConfig["onInteraction"]
 > = async (action, ctx) => {
+  if (isIrisInteraction(action.actionId)) {
+    await handleIrisInteraction(action, ctx);
+    return;
+  }
+
   if (action.actionId.startsWith(POST_TO_X_CONFIRM_ACTION_PREFIX)) {
     const parsed = parsePostToXConfirmValue(action.value);
     const teamId = ctx.slack.teamId;

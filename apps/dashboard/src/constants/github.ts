@@ -6,6 +6,8 @@ export const GITHUB_URL_PATTERNS = [
 
 export const GITHUB_INSTALL_STATE_TTL_SECONDS = 1800;
 
+export const GITHUB_PULL_REQUEST_CLOSED_ACTION = "closed";
+
 export const GITHUB_OAUTH_SCOPES = [
   "read:user",
   "user:email",

@@ -1,10 +1,16 @@
 import crypto from "node:crypto";
+import {
+  GITHUB_PULL_REQUEST_EVENT_TYPE,
+  GITHUB_PULL_REQUEST_MERGED_ACTION,
+} from "@notra/ai/constants/autonomy-signals";
 import { getWebhookSecretByRepositoryId } from "@notra/ai/integrations/github";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
 import { and, eq, sql } from "drizzle-orm";
+import { GITHUB_PULL_REQUEST_CLOSED_ACTION } from "@/constants/github";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
+import { dispatchIrisGithubSignal } from "@/lib/iris/record-github-signal";
 import { dispatchEventTriggers } from "@/lib/webhooks/dispatch-event-triggers";
 import { appendWebhookLog } from "@/lib/webhooks/logging";
 import {
@@ -177,6 +183,35 @@ function processPushEvent(
             message: payload.head_commit.message,
           }
         : null,
+    },
+  };
+}
+
+function processPullRequestEvent(
+  action: string,
+  payload: GitHubWebhookPayload
+): GithubProcessedEvent | null {
+  if (action !== GITHUB_PULL_REQUEST_CLOSED_ACTION) {
+    return null;
+  }
+
+  const pullRequest = payload.pull_request;
+  if (!pullRequest?.merged) {
+    return null;
+  }
+
+  return {
+    type: GITHUB_PULL_REQUEST_EVENT_TYPE,
+    action: GITHUB_PULL_REQUEST_MERGED_ACTION,
+    data: {
+      number: pullRequest.number,
+      title: pullRequest.title,
+      body: pullRequest.body ?? null,
+      url: pullRequest.html_url,
+      mergedAt: pullRequest.merged_at ?? null,
+      mergeCommitSha: pullRequest.merge_commit_sha ?? null,
+      author: pullRequest.user?.login ?? null,
+      baseBranch: pullRequest.base?.ref ?? null,
     },
   };
 }
@@ -371,6 +406,9 @@ export async function handleGitHubWebhook(
     case "push":
       processedEvent = processPushEvent(payload);
       break;
+    case "pull_request":
+      processedEvent = processPullRequestEvent(action, payload);
+      break;
     default:
       await appendWebhookLog({
         organizationId,
@@ -444,6 +482,33 @@ export async function handleGitHubWebhook(
     },
     retentionDays: logRetentionDays,
   });
+
+  await dispatchIrisGithubSignal({
+    organizationId,
+    repositoryId,
+    repositoryName,
+    eventType: processedEvent.type,
+    eventAction: processedEvent.action,
+    eventData: processedEvent.data,
+    deliveryId: delivery,
+  });
+
+  if (processedEvent.type === GITHUB_PULL_REQUEST_EVENT_TYPE) {
+    if (SHOULD_DEDUPE_DELIVERIES && delivery) {
+      await markDeliveryProcessed(delivery);
+    }
+
+    return Response.json({
+      message: `Processed ${processedEvent.type} event (${processedEvent.action})`,
+      event,
+      delivery,
+      processed: processedEvent,
+      repository: {
+        id: payload.repository?.id,
+        fullName: payload.repository?.full_name,
+      },
+    });
+  }
 
   const matchingTriggers = await db
     .select({

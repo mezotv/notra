@@ -7,6 +7,10 @@ import {
   eventWorkflowPayloadSchema,
   scheduleWorkflowPayloadSchema,
 } from "@/schemas/workflows";
+import {
+  type IrisWorkflowPayload,
+  irisWorkflowPayloadSchema,
+} from "@/schemas/workflows/iris";
 import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/workflows/onboarding-agent-payload";
 import type { BrandAnalysisPayload } from "@/types/brand-analysis";
 import {
@@ -15,6 +19,7 @@ import {
 } from "@/workflows/brand-analysis";
 import { brandGuidelinesWorkflow } from "@/workflows/brand-guidelines";
 import { eventContentWorkflow } from "@/workflows/event-content";
+import { irisControllerRun } from "@/workflows/iris-controller";
 import { onDemandContentWorkflow } from "@/workflows/on-demand-content";
 import { onboardingAgentWorkflow } from "@/workflows/onboarding-agent";
 import { scheduleContentWorkflow } from "@/workflows/schedule-content";
@@ -40,6 +45,14 @@ export async function startOnboardingAgentRun(
 ): Promise<{ runId: string }> {
   const parsed = onboardingAgentWorkflowPayloadSchema.parse(payload);
   const run = await start(onboardingAgentWorkflow, [parsed]);
+  return { runId: run.runId };
+}
+
+export async function startIrisRun(
+  payload: IrisWorkflowPayload
+): Promise<{ runId: string }> {
+  const parsed = irisWorkflowPayloadSchema.parse(payload);
+  const run = await start(irisControllerRun, [parsed]);
   return { runId: run.runId };
 }
 

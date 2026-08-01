@@ -9,6 +9,7 @@ import {
   NoteIcon,
   Notification03Icon,
   PlugIcon,
+  RainbowIcon,
   SearchIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -62,6 +63,12 @@ const navMainItems: NavMainItem[] = [
     icon: MagicWand01Icon,
     label: "Skills",
     category: "workspace",
+  },
+  {
+    link: "/iris",
+    icon: RainbowIcon,
+    label: "Iris",
+    category: "automation",
   },
   {
     link: "/automation/schedules",

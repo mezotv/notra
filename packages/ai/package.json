@@ -13,6 +13,7 @@
     "./evlog": "./src/evlog.ts",
     "./realtime": "./src/realtime.ts",
     "./agents/*": "./src/agents/*.ts",
+    "./autonomy/*": "./src/autonomy/*.ts",
     "./orchestration/*": "./src/orchestration/*.ts",
     "./tools/*": "./src/tools/*.ts",
     "./jobs/*": "./src/jobs/*.ts",

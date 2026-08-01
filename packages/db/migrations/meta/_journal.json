@@ -428,6 +428,13 @@
       "when": 1785519823345,
       "tag": "0060_complete_nightcrawler",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "7",
+      "when": 1785536259890,
+      "tag": "0061_remarkable_sinister_six",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,115 @@
+import { IRIS_WAKE_CRON } from "@notra/ai/constants/autonomy";
+import { getAppUrl } from "@notra/ai/qstash/triggers";
+import { db } from "@notra/db/drizzle";
+import { autonomyMandates } from "@notra/db/schema";
+import { Client as QStashClient } from "@upstash/qstash";
+import { eq } from "drizzle-orm";
+import { Effect } from "effect";
+import { IRIS_WAKE_ROUTE_PATH } from "@/constants/iris";
+import { IrisWakeScheduleError } from "@/lib/iris/errors";
+
+const getQstashClient = () => {
+  const token = process.env.QSTASH_TOKEN;
+  if (!token) {
+    throw new Error("QSTASH_TOKEN is not configured");
+  }
+  return new QStashClient({ token });
+};
+
+const persistScheduleId = Effect.fn("iris.wake.persistScheduleId")(
+  function* (input: { mandateId: string; qstashScheduleId: string | null }) {
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(autonomyMandates)
+          .set({
+            qstashScheduleId: input.qstashScheduleId,
+            updatedAt: new Date(),
+          })
+          .where(eq(autonomyMandates.id, input.mandateId)),
+      catch: (cause) =>
+        new IrisWakeScheduleError({
+          message: "Failed to store the wake schedule",
+          cause,
+        }),
+    });
+  }
+);
+
+export const createIrisWakeSchedule = Effect.fn("iris.wake.create")(function* (
+  organizationId: string,
+  mandateId: string
+) {
+  const scheduleId = yield* Effect.tryPromise({
+    try: async () => {
+      const client = getQstashClient();
+      const result = await client.schedules.create({
+        destination: `${getAppUrl()}${IRIS_WAKE_ROUTE_PATH}`,
+        cron: IRIS_WAKE_CRON,
+        body: JSON.stringify({ organizationId, trigger: "wake" }),
+        headers: { "Content-Type": "application/json" },
+      });
+      return result.scheduleId;
+    },
+    catch: (cause) =>
+      new IrisWakeScheduleError({
+        message: "Failed to create the wake schedule",
+        cause,
+      }),
+  });
+
+  if (!scheduleId) {
+    return yield* Effect.fail(
+      new IrisWakeScheduleError({
+        message: "The wake schedule was created without an id",
+        cause: null,
+      })
+    );
+  }
+
+  yield* persistScheduleId({ mandateId, qstashScheduleId: scheduleId });
+
+  yield* Effect.annotateLogs(Effect.logInfo("iris.wake.created"), {
+    organizationId,
+    mandateId,
+    scheduleId,
+  });
+
+  return scheduleId;
+});
+
+export const deleteIrisWakeSchedule = Effect.fn("iris.wake.delete")(
+  function* (mandate: { id: string; qstashScheduleId: string | null }) {
+    if (mandate.qstashScheduleId) {
+      yield* Effect.tryPromise({
+        try: async () => {
+          const client = getQstashClient();
+          await client.schedules.delete(mandate.qstashScheduleId ?? "");
+        },
+        catch: (cause) =>
+          new IrisWakeScheduleError({
+            message: "Failed to delete the wake schedule",
+            cause,
+          }),
+      }).pipe(
+        Effect.catch((error) =>
+          Effect.annotateLogs(Effect.logWarning("iris.wake.deleteFailed"), {
+            mandateId: mandate.id,
+            error: String(error.cause),
+          })
+        )
+      );
+    }
+
+    yield* persistScheduleId({ mandateId: mandate.id, qstashScheduleId: null });
+
+    yield* Effect.annotateLogs(Effect.logInfo("iris.wake.deleted"), {
+      mandateId: mandate.id,
+    });
+  }
+);
+
+export const buildIrisWakeExecutionId = (
+  organizationId: string,
+  bucket: number
+): string => `iris-wake-${organizationId}-${bucket}`;
