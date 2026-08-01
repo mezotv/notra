@@ -209,7 +209,7 @@ function buildRunCard(
   decisions: readonly IrisArtifactDecision[]
 ): SlackMessageContent {
   return {
-    text: `Iris: ${truncate(input.headline, IRIS_HEADLINE_MAX_LENGTH)}`,
+    text: `Iris: ${safeText(input.headline, IRIS_HEADLINE_MAX_LENGTH)}`,
     blocks: [
       headerBlock(),
       headlineBlock(input.headline),
@@ -235,7 +235,7 @@ export function buildIrisNoOpBlocks(
   input: IrisNoOpBlocksInput
 ): SlackMessageContent {
   return {
-    text: `Iris: ${truncate(input.headline, IRIS_HEADLINE_MAX_LENGTH)}`,
+    text: `Iris: ${safeText(input.headline, IRIS_HEADLINE_MAX_LENGTH)}`,
     blocks: [
       headlineBlock(input.headline),
       contextBlock(input.signalCount, input.trigger),
