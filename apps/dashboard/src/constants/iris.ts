@@ -28,6 +28,9 @@ export const IRIS_WAKE_ROUTE_PATH = "/api/workflows/iris";
 export const IRIS_WAKE_BUCKET_MINUTES = 30;
 export const IRIS_WAKE_BUCKET_MS = IRIS_WAKE_BUCKET_MINUTES * 60 * 1000;
 
+export const IRIS_SIGNAL_COMMIT_SUBJECT_LIMIT = 3;
+export const IRIS_SIGNAL_COMMIT_SUBJECT_MAX_LENGTH = 80;
+
 export const IRIS_RECENT_ACTION_LIMIT = 20;
 export const IRIS_RUNS_PAGE_SIZE = 20;
 export const IRIS_SIGNALS_PAGE_SIZE = 50;

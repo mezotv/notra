@@ -58,6 +58,11 @@ export interface IrisCoalesceResult {
   summaries: string[];
 }
 
+export interface IrisControllerProgress {
+  runId: string | null;
+  coalescedSignalIds: string[];
+}
+
 export interface IrisPlanResult {
   status: "planned" | "rejected";
   output: PlannerOutput | null;

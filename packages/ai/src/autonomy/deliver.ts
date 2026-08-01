@@ -3,6 +3,7 @@ import { autonomyOutbox, organizations } from "@notra/db/schema";
 import { and, asc, eq, isNull, lt, lte, or } from "drizzle-orm";
 import { Duration, Effect, Schedule } from "effect";
 import {
+  SLACK_DELIVERY_ATTEMPT_TIMEOUT_SECONDS,
   SLACK_DELIVERY_BACKOFF_FACTOR,
   SLACK_DELIVERY_BASE_BACKOFF_SECONDS,
   SLACK_DELIVERY_BATCH_SIZE,
@@ -204,16 +205,72 @@ const markRetrying = Effect.fn("iris.outbox.markRetrying")(function* (input: {
   return outcome;
 });
 
+const deliverableStatusFilter = (now: Date) =>
+  or(
+    eq(autonomyOutbox.status, "pending"),
+    and(
+      eq(autonomyOutbox.status, "attempting"),
+      lt(
+        autonomyOutbox.updatedAt,
+        new Date(
+          now.getTime() -
+            SLACK_DELIVERY_ATTEMPT_TIMEOUT_SECONDS * MILLISECONDS_PER_SECOND
+        )
+      )
+    )
+  );
+
+const claimOutboxRow = Effect.fn("iris.outbox.claim")(function* (input: {
+  outboxId: string;
+  attempts: number;
+}) {
+  const now = new Date();
+
+  const rows = yield* Effect.tryPromise({
+    try: () =>
+      db
+        .update(autonomyOutbox)
+        .set({ status: "attempting", attempts: input.attempts, updatedAt: now })
+        .where(
+          and(
+            eq(autonomyOutbox.id, input.outboxId),
+            deliverableStatusFilter(now)
+          )
+        )
+        .returning({ id: autonomyOutbox.id }),
+    catch: (cause) =>
+      new IrisOutboxPersistenceError({
+        outboxId: input.outboxId,
+        operation: "markAttempting",
+        cause,
+      }),
+  });
+
+  return rows.length > 0;
+});
+
 export const deliverOutboxMessage = Effect.fn("iris.outbox.deliver")(function* (
   row: IrisOutboxRow
 ) {
   const attempts = row.attempts + 1;
 
-  yield* updateOutboxRow({
-    outboxId: row.id,
-    operation: "markAttempting",
-    values: { status: "attempting", attempts },
-  });
+  const claimed = yield* claimOutboxRow({ outboxId: row.id, attempts });
+  if (!claimed) {
+    yield* Effect.logInfo("Iris outbox row was no longer deliverable").pipe(
+      Effect.annotateLogs({
+        outboxId: row.id,
+        organizationId: row.organizationId,
+      })
+    );
+
+    const skipped: IrisDeliveryOutcome = {
+      outboxId: row.id,
+      status: "skipped",
+      lastError: null,
+      nextAttemptAt: null,
+    };
+    return skipped;
+  }
 
   const payloadResult = yield* Effect.result(parsePayload(row));
   if (payloadResult._tag === "Failure") {
@@ -304,7 +361,7 @@ const loadDeliverableRows = Effect.fn("iris.outbox.loadDeliverable")(function* (
   const now = new Date();
   const filters = [
     eq(autonomyOutbox.destination, SLACK_DESTINATION),
-    eq(autonomyOutbox.status, "pending"),
+    deliverableStatusFilter(now),
     lt(autonomyOutbox.attempts, SLACK_DELIVERY_MAX_ATTEMPTS),
     or(
       isNull(autonomyOutbox.nextAttemptAt),
@@ -347,6 +404,7 @@ export const deliverPendingOutbox = Effect.fn("iris.outbox.deliverPending")(
       delivered: 0,
       retrying: 0,
       failed: 0,
+      skipped: 0,
     };
 
     for (const row of rows) {
@@ -372,6 +430,10 @@ export const deliverPendingOutbox = Effect.fn("iris.outbox.deliverPending")(
       }
       if (outcome.success.status === "pending") {
         summary.retrying += 1;
+        continue;
+      }
+      if (outcome.success.status === "skipped") {
+        summary.skipped += 1;
         continue;
       }
       summary.failed += 1;

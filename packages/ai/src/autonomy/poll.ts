@@ -1,9 +1,15 @@
+import type { IrisPollError } from "@notra/ai/autonomy/errors";
 import { recordSignal } from "@notra/ai/autonomy/signals";
 import {
   IRIS_POLL_LOOKBACK_HOURS,
   IRIS_POLL_SOURCE_CONCURRENCY,
   MILLISECONDS_PER_HOUR,
 } from "@notra/ai/constants/autonomy-poll";
+import {
+  SIGNAL_SOURCE_GITHUB,
+  SIGNAL_SOURCE_GRANOLA,
+  SIGNAL_SOURCE_LINEAR,
+} from "@notra/ai/constants/autonomy-signals";
 import type {
   IrisPollSourceSummary,
   IrisSourcePollResult,
@@ -51,6 +57,25 @@ const recordSourceItems = Effect.fn("iris.poll.record")(function* (
   } satisfies IrisPollSourceSummary;
 });
 
+const isolateSourceFailure = (
+  source: string,
+  effect: Effect.Effect<IrisSourcePollResult, IrisPollError>
+): Effect.Effect<IrisSourcePollResult> =>
+  effect.pipe(
+    Effect.catch((error) =>
+      Effect.annotateLogs(Effect.logWarning("iris.poll.sourceFailed"), {
+        source,
+        message: error.message,
+      }).pipe(
+        Effect.as({
+          source,
+          items: [],
+          skippedReason: `Polling ${source} failed: ${error.message}`,
+        } satisfies IrisSourcePollResult)
+      )
+    )
+  );
+
 export const pollIrisSources = Effect.fn("iris.poll.sources")(function* (
   input: PollIrisSourcesInput
 ) {
@@ -63,9 +88,9 @@ export const pollIrisSources = Effect.fn("iris.poll.sources")(function* (
 
   const sources = yield* Effect.all(
     [
-      pollGithubSource(window),
-      pollLinearSource(window),
-      pollGranolaSource(window),
+      isolateSourceFailure(SIGNAL_SOURCE_GITHUB, pollGithubSource(window)),
+      isolateSourceFailure(SIGNAL_SOURCE_LINEAR, pollLinearSource(window)),
+      isolateSourceFailure(SIGNAL_SOURCE_GRANOLA, pollGranolaSource(window)),
     ],
     { concurrency: IRIS_POLL_SOURCE_CONCURRENCY }
   );

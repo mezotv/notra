@@ -67,7 +67,27 @@ export const createIrisWakeSchedule = Effect.fn("iris.wake.create")(function* (
     );
   }
 
-  yield* persistScheduleId({ mandateId, qstashScheduleId: scheduleId });
+  const persisted = yield* Effect.result(
+    persistScheduleId({ mandateId, qstashScheduleId: scheduleId })
+  );
+
+  if (persisted._tag === "Failure") {
+    yield* Effect.result(
+      Effect.tryPromise({
+        try: async () => {
+          const client = getQstashClient();
+          await client.schedules.delete(scheduleId);
+        },
+        catch: (cause) =>
+          new IrisWakeScheduleError({
+            message: "Failed to roll back the orphaned wake schedule",
+            cause,
+          }),
+      })
+    );
+
+    return yield* Effect.fail(persisted.failure);
+  }
 
   yield* Effect.annotateLogs(Effect.logInfo("iris.wake.created"), {
     organizationId,

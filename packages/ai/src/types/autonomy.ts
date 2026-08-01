@@ -150,6 +150,7 @@ export interface RecordPlannerOutputInput {
   runId: string;
   plannerOutput: PlannerOutput;
   plannerInputHash: string;
+  costCents?: number;
 }
 
 export interface CreateGoalWithTasksInput {

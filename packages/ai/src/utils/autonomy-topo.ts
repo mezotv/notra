@@ -18,7 +18,7 @@ export const topologicallySortNodes = <NodeType extends TopologicalNode>(
 
   for (const node of nodes) {
     for (const dependency of node.dependsOn) {
-      if (!byId.has(dependency) || dependency === node.localId) {
+      if (!byId.has(dependency)) {
         continue;
       }
       inDegree.set(node.localId, (inDegree.get(node.localId) ?? 0) + 1);

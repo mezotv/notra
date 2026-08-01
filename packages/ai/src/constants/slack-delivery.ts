@@ -40,6 +40,7 @@ export const SLACK_DELIVERY_MAX_BACKOFF_SECONDS = 3600;
 export const SLACK_DELIVERY_INLINE_RETRY_ATTEMPTS = 1;
 export const SLACK_DELIVERY_INLINE_RETRY_BASE_SECONDS = 2;
 export const SLACK_DELIVERY_BATCH_SIZE = 25;
+export const SLACK_DELIVERY_ATTEMPT_TIMEOUT_SECONDS = 300;
 
 export const IRIS_SHIP_ACTION_ID = "iris_ship_post";
 export const IRIS_SKIP_ACTION_ID = "iris_skip_post";

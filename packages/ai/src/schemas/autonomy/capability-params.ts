@@ -73,3 +73,8 @@ export const irisSignalEnvelopeSchema = z.looseObject({
   payload: z.unknown().optional(),
 });
 export type IrisSignalEnvelope = z.infer<typeof irisSignalEnvelopeSchema>;
+
+export const irisSignalRepositoryRefSchema = z.looseObject({
+  repositoryId: z.string().optional(),
+  repositoryName: z.string().optional(),
+});

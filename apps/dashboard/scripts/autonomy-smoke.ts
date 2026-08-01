@@ -2,11 +2,13 @@ import { acquireClaim, releaseClaim } from "@notra/ai/autonomy/claims";
 import { validatePlannerOutputAgainstMandate } from "@notra/ai/autonomy/validate-plan";
 import { mandateSchema } from "@notra/ai/schemas/autonomy/mandate";
 import { plannerOutputSchema } from "@notra/ai/schemas/autonomy/planner";
+import { topologicallySortNodes } from "@notra/ai/utils/autonomy-topo";
 import { db } from "@notra/db/drizzle";
 import { autonomyClaims, members, users } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 
 const SMOKE_SCOPE = "smoke-test";
+const SMOKE_USER_EMAIL = process.env.SMOKE_USER_EMAIL ?? "dominik@rivo.gg";
 const SMOKE_KEY = `demo-${crypto.randomUUID().slice(0, 8)}`;
 const SHORT_TTL_SECONDS = 2;
 const EXPIRY_WAIT_MS = 2500;
@@ -16,10 +18,10 @@ async function findOrganizationId(): Promise<string> {
     .select({ organizationId: members.organizationId })
     .from(members)
     .innerJoin(users, eq(members.userId, users.id))
-    .where(eq(users.email, "dominik@rivo.gg"))
+    .where(eq(users.email, SMOKE_USER_EMAIL))
     .limit(1);
   if (!row) {
-    throw new Error("No organization found for dominik@rivo.gg");
+    throw new Error(`No organization found for ${SMOKE_USER_EMAIL}`);
   }
   return row.organizationId;
 }
@@ -103,6 +105,12 @@ function demoContracts(organizationId: string) {
     ],
   });
   console.log(`cyclic plan rejected: ${!cyclePlan.success}`);
+  if (cyclePlan.success) {
+    const sorted = topologicallySortNodes(cyclePlan.data.tasks);
+    if (!sorted.cycleDetected) {
+      throw new Error("expected the cyclic plan to be rejected");
+    }
+  }
 
   const violations = validatePlannerOutputAgainstMandate(
     {
@@ -134,6 +142,9 @@ async function demoClaims(organizationId: string) {
     organizationId,
   });
   console.log(`owner A acquires: ${first.claimed}`);
+  if (!first.claimed) {
+    throw new Error("expected owner A to acquire the claim");
+  }
 
   const contender = await acquireClaim({
     scope: SMOKE_SCOPE,
@@ -143,6 +154,9 @@ async function demoClaims(organizationId: string) {
     organizationId,
   });
   console.log(`owner B contends while A holds: ${contender.claimed}`);
+  if (contender.claimed) {
+    throw new Error("expected owner B to be denied while owner A holds");
+  }
 
   await releaseClaim({
     scope: SMOKE_SCOPE,
@@ -157,6 +171,9 @@ async function demoClaims(organizationId: string) {
     organizationId,
   });
   console.log(`owner B acquires after release: ${afterRelease.claimed}`);
+  if (!afterRelease.claimed) {
+    throw new Error("expected owner B to acquire after release");
+  }
 
   await new Promise((resolve) => setTimeout(resolve, EXPIRY_WAIT_MS));
   const takeover = await acquireClaim({
@@ -167,6 +184,9 @@ async function demoClaims(organizationId: string) {
     organizationId,
   });
   console.log(`owner A takes over expired claim: ${takeover.claimed}`);
+  if (!takeover.claimed) {
+    throw new Error("expected owner A to take over the expired claim");
+  }
 
   await releaseClaim({
     scope: SMOKE_SCOPE,
@@ -180,6 +200,9 @@ async function demoClaims(organizationId: string) {
     .from(autonomyClaims)
     .where(eq(autonomyClaims.scope, SMOKE_SCOPE));
   console.log(`leftover smoke claims: ${rows.length}`);
+  if (rows.length > 0) {
+    throw new Error("expected no leftover smoke claims");
+  }
 }
 
 async function main() {

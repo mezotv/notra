@@ -81,7 +81,7 @@ const pollIntegration = Effect.fn("iris.poll.linear.integration")(function* (
         dedupeHash: computeSignalDedupeHash(
           SIGNAL_SOURCE_LINEAR,
           SIGNAL_KIND_LINEAR_ISSUE_COMPLETED,
-          issue.id
+          `${issue.id}:${issue.completedAt?.toISOString() ?? ""}`
         ),
         sourceEventId: issue.id,
         occurredAt: issue.completedAt ?? new Date(),

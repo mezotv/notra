@@ -83,6 +83,9 @@ export const recordPlannerOutput = Effect.fn("iris.run.recordPlannerOutput")(
           .set({
             plannerOutput: input.plannerOutput,
             plannerInputHash: input.plannerInputHash,
+            ...(input.costCents === undefined
+              ? {}
+              : { costCents: input.costCents }),
             updatedAt: now,
           })
           .where(eq(autonomyRuns.id, input.runId)),

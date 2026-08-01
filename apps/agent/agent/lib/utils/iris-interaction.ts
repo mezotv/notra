@@ -55,12 +55,14 @@ function resolveActorName(action: SlackInteractionAction): string | null {
 const updateDecisionCard = Effect.fn("agent.iris.updateCard")(
   function* (input: {
     organizationId: string;
+    teamId: string | null;
     channel: string;
     ts: string;
     content: SlackMessageContent;
   }) {
     yield* updateSlackMessage({
       organizationId: input.organizationId,
+      teamId: input.teamId,
       channel: input.channel,
       ts: input.ts,
       text: input.content.text,
@@ -207,6 +209,19 @@ const runIrisInteraction = Effect.fn("agent.iris.interaction")(
           existingAction: approval.existingAction ?? "none",
         })
       );
+
+      if (approval.existingAction === null) {
+        yield* Effect.logWarning(
+          "Iris decision could not be recorded, the card was left unchanged"
+        ).pipe(
+          Effect.annotateLogs({
+            organizationId: parsed.organizationId,
+            outboxId: parsed.outboxId,
+            postId: parsed.postId,
+          })
+        );
+        return;
+      }
     }
 
     const shouldPublish =
@@ -243,6 +258,7 @@ const runIrisInteraction = Effect.fn("agent.iris.interaction")(
 
     yield* updateDecisionCard({
       organizationId: parsed.organizationId,
+      teamId,
       channel: input.channelId,
       ts: input.messageTs,
       content,

@@ -98,7 +98,11 @@ const fetchRecentReleases = Effect.fn("iris.poll.github.releases")(function* (
   const items: IrisPollItem[] = [];
 
   for (const release of response.data) {
-    if (release.draft || !isWithinWindow(release.published_at ?? null, since)) {
+    if (
+      release.draft ||
+      release.prerelease ||
+      !isWithinWindow(release.published_at ?? null, since)
+    ) {
       continue;
     }
 
@@ -164,7 +168,8 @@ const fetchRecentPush = Effect.fn("iris.poll.github.commits")(function* (
     id: commit.sha,
     message: commit.commit.message,
     author: commit.author?.login ?? commit.commit.author?.name ?? "unknown",
-    timestamp: commit.commit.author?.date ?? null,
+    timestamp:
+      commit.commit.committer?.date ?? commit.commit.author?.date ?? null,
     url: commit.html_url,
   }));
 
@@ -173,7 +178,9 @@ const fetchRecentPush = Effect.fn("iris.poll.github.commits")(function* (
     kind: SIGNAL_KIND_GITHUB_PUSH,
     dedupeHash: buildGithubPushSignalHash(repository.id, head.sha),
     sourceEventId: null,
-    occurredAt: new Date(head.commit.author?.date ?? Date.now()),
+    occurredAt: new Date(
+      head.commit.committer?.date ?? head.commit.author?.date ?? Date.now()
+    ),
     title: `${commits.length} commits on ${branch} in ${repositoryName}`,
     url: head.html_url,
     payload: {
@@ -240,7 +247,19 @@ export const pollGithubSource = Effect.fn("iris.poll.github")(function* (
   }
 
   const results = yield* Effect.all(
-    repositories.map((repository) => pollRepository(repository, window.since)),
+    repositories.map((repository) =>
+      pollRepository(repository, window.since).pipe(
+        Effect.catch((error) =>
+          Effect.annotateLogs(
+            Effect.logWarning("iris.poll.github.repositoryFailed"),
+            {
+              repositoryId: repository.id,
+              message: error.message,
+            }
+          ).pipe(Effect.as<IrisPollItem[]>([]))
+        )
+      )
+    ),
     { concurrency: IRIS_POLL_REPOSITORY_CONCURRENCY }
   );
 

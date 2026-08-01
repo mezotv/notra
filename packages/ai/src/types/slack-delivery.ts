@@ -33,6 +33,7 @@ export interface PostSlackMessageResult {
 
 export interface UpdateSlackMessageInput {
   organizationId: string;
+  teamId?: string | null;
   channel: string;
   ts: string;
   text: string;

@@ -38,8 +38,12 @@ export function IrisRunningState({
   onResume,
 }: IrisRunningStateProps) {
   const skeletonId = useId();
+  const isRevoked = mandate.status === "revoked";
   const isPaused = mandate.status !== "active";
   const statusLabel = (() => {
+    if (isRevoked) {
+      return "Iris is retired";
+    }
     if (isPaused) {
       return "Iris is paused";
     }
@@ -82,7 +86,7 @@ export function IrisRunningState({
             )}
           </Button>
           <Button
-            disabled={isStatusPending}
+            disabled={isStatusPending || isRevoked}
             onClick={isPaused ? onResume : onPause}
             variant={isPaused ? "default" : "outline"}
           >

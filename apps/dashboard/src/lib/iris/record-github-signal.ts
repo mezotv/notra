@@ -75,15 +75,16 @@ const recordIrisGithubSignal = Effect.fn("iris.signals.github")(function* (
 
 export function dispatchIrisGithubSignal(
   input: IrisGithubSignalInput
-): Promise<void> {
+): Promise<boolean> {
   return Effect.runPromise(
     recordIrisGithubSignal(input).pipe(
+      Effect.as(true),
       Effect.catch((error) =>
         Effect.annotateLogs(Effect.logError("iris.signal.failed"), {
           organizationId: input.organizationId,
           eventType: input.eventType,
           error: describeIrisError(error),
-        })
+        }).pipe(Effect.as(false))
       )
     )
   );

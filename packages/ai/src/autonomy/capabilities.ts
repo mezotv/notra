@@ -39,6 +39,7 @@ import {
   irisContentTaskParamsSchema,
   irisImageReviewSchema,
   irisSignalEnvelopeSchema,
+  irisSignalRepositoryRefSchema,
   irisSocialPostTaskParamsSchema,
   irisSourceReadTaskParamsSchema,
 } from "@notra/ai/schemas/autonomy/capability-params";
@@ -55,10 +56,7 @@ import type {
   IrisTaskExecutionResult,
 } from "@notra/ai/types/autonomy-capabilities";
 import { computeNamespacedId } from "@notra/ai/utils/autonomy-hash";
-import {
-  saveGeneratedImagePost,
-  trackImageGenerationUsage,
-} from "@notra/ai/utils/image-post-service";
+import { saveGeneratedImagePost } from "@notra/ai/utils/image-post-service";
 import {
   applyIrisImageResolutions,
   buildIrisImageMarkdown,
@@ -364,6 +362,14 @@ const resolveIrisRepository = Effect.fn("iris.capabilities.resolveRepository")(
         }),
     });
 
+    const signalRepository = irisSignalRepositoryRefSchema.safeParse(
+      input.signalContext.primarySignal
+    );
+    const signalRepositoryId = signalRepository.success
+      ? (signalRepository.data.repositoryId ?? null)
+      : null;
+
+    const candidates: IrisRepositoryTarget[] = [];
     for (const integration of integrations) {
       const repository = integration.repositories.at(0);
       if (
@@ -374,15 +380,36 @@ const resolveIrisRepository = Effect.fn("iris.capabilities.resolveRepository")(
         continue;
       }
 
-      return {
+      candidates.push({
         integrationId: integration.id,
         owner: repository.owner,
         repo: repository.repo,
         branch: repository.defaultBranch ?? IRIS_IMAGE_DEFAULT_BRANCH,
-      } satisfies IrisRepositoryTarget;
+      });
     }
 
-    return null;
+    if (signalRepositoryId !== null) {
+      const matched = candidates.find(
+        (candidate) => candidate.integrationId === signalRepositoryId
+      );
+      if (matched) {
+        return matched;
+      }
+    }
+
+    if (candidates.length > 1) {
+      yield* Effect.annotateLogs(
+        Effect.logWarning("iris.capabilities.ambiguousRepository"),
+        {
+          organizationId: input.organizationId,
+          taskId: input.task.id,
+          candidateCount: candidates.length,
+        }
+      );
+      return null;
+    }
+
+    return candidates.at(0) ?? null;
   }
 );
 
@@ -515,8 +542,8 @@ const generateIrisIllustration = Effect.fn("iris.capabilities.illustration")(
         articleTitle: params.articleTitle,
       })
     );
-    let accept = true;
-    let reason = "Quality check could not run, image kept as generated";
+    let accept = false;
+    let reason = "Quality check could not run, image was rejected";
     let revisionRounds = 0;
 
     if (reviewOutcome._tag === "Success") {
@@ -564,8 +591,8 @@ const generateIrisIllustration = Effect.fn("iris.capabilities.illustration")(
           accept = reviewOutcome.success.review.accept;
           reason = reviewOutcome.success.review.reason;
         } else {
-          accept = true;
-          reason = "Quality check could not run, image kept as generated";
+          accept = false;
+          reason = "Quality check could not run, image was rejected";
         }
       }
     }
@@ -642,18 +669,6 @@ const generateIrisIllustration = Effect.fn("iris.capabilities.illustration")(
         costCents,
       } satisfies IrisImageOutcome;
     }
-
-    yield* Effect.result(
-      Effect.tryPromise({
-        try: () =>
-          trackImageGenerationUsage({
-            organizationId: params.input.organizationId,
-            postId: saved.success.postId,
-            usage: current.usage,
-          }),
-        catch: (cause) => cause,
-      })
-    );
 
     yield* Effect.annotateLogs(Effect.logInfo("iris.image.accepted"), {
       runId: params.input.runId,

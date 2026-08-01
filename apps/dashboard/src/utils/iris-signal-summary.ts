@@ -1,7 +1,39 @@
 import type { SignalSummary } from "@notra/ai/types/autonomy";
+import {
+  IRIS_SIGNAL_COMMIT_SUBJECT_LIMIT,
+  IRIS_SIGNAL_COMMIT_SUBJECT_MAX_LENGTH,
+} from "@/constants/iris";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
+
+const toCommitSubject = (commit: unknown): string | null => {
+  if (!isRecord(commit) || typeof commit.message !== "string") {
+    return null;
+  }
+
+  const subject = commit.message.split("\n")[0]?.trim() ?? "";
+  if (subject.length === 0) {
+    return null;
+  }
+
+  return subject.length <= IRIS_SIGNAL_COMMIT_SUBJECT_MAX_LENGTH
+    ? subject
+    : `${subject.slice(0, IRIS_SIGNAL_COMMIT_SUBJECT_MAX_LENGTH - 1).trim()}…`;
+};
+
+const describeCommits = (commits: readonly unknown[]): string => {
+  const subjects = commits
+    .slice(-IRIS_SIGNAL_COMMIT_SUBJECT_LIMIT)
+    .map(toCommitSubject)
+    .filter((subject) => subject !== null);
+
+  if (subjects.length === 0) {
+    return `${commits.length} commits`;
+  }
+
+  return `${commits.length} commits (${subjects.join("; ")})`;
+};
 
 const describeSignalPayload = (payload: unknown): string | null => {
   if (!isRecord(payload)) {
@@ -22,7 +54,7 @@ const describeSignalPayload = (payload: unknown): string | null => {
     parts.push(data.name);
   }
   if (Array.isArray(data.commits)) {
-    parts.push(`${data.commits.length} commits`);
+    parts.push(describeCommits(data.commits));
   }
   if (typeof payload.repositoryName === "string") {
     parts.push(payload.repositoryName);

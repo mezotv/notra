@@ -11,7 +11,7 @@ export interface IrisOutboxRow {
   payload: unknown;
 }
 
-export type IrisDeliveryStatus = "delivered" | "pending" | "failed";
+export type IrisDeliveryStatus = "delivered" | "pending" | "failed" | "skipped";
 
 export interface IrisDeliveryOutcome {
   outboxId: string;
@@ -25,6 +25,7 @@ export interface IrisDeliverySummary {
   delivered: number;
   retrying: number;
   failed: number;
+  skipped: number;
 }
 
 export interface RecordIrisApprovalInput {

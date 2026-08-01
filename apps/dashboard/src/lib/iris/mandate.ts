@@ -1,3 +1,4 @@
+import { IRIS_MANDATE_NAME } from "@notra/ai/constants/autonomy";
 import { mandateSchema } from "@notra/ai/schemas/autonomy/mandate";
 import { db } from "@notra/db/drizzle";
 import { autonomyMandates, organizations } from "@notra/db/schema";
@@ -16,6 +17,7 @@ export const loadActiveMandateRow = Effect.fn("iris.mandate.loadActive")(
           .where(
             and(
               eq(autonomyMandates.organizationId, organizationId),
+              eq(autonomyMandates.name, IRIS_MANDATE_NAME),
               eq(autonomyMandates.status, "active")
             )
           )

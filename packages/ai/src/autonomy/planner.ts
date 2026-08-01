@@ -66,6 +66,7 @@ const generatePlannerDraft = Effect.fn("iris.planner.generate")(function* (
       new IrisPlannerError({
         message: "The planner model call failed",
         violations: [],
+        costCents: 0,
         cause,
       }),
   });
@@ -112,6 +113,36 @@ const collectTaskParamErrors = (output: PlannerOutput): string[] => {
   return errors;
 };
 
+const collectCapabilityCatalogErrors = (
+  output: PlannerOutput,
+  input: IrisPlannerInput
+): string[] => {
+  const supportedVersions = new Map(
+    input.capabilityCatalog.map((capability) => [
+      capability.name,
+      capability.version,
+    ])
+  );
+
+  const errors: string[] = [];
+  for (const task of output.tasks) {
+    const supportedVersion = supportedVersions.get(task.capabilityName);
+    if (supportedVersion === undefined) {
+      errors.push(
+        `tasks.${task.localId}: capability "${task.capabilityName}" is not in the catalog`
+      );
+      continue;
+    }
+    if (supportedVersion !== task.capabilityVersion) {
+      errors.push(
+        `tasks.${task.localId}: capability "${task.capabilityName}" version ${task.capabilityVersion} is not implemented, the catalog provides version ${supportedVersion}`
+      );
+    }
+  }
+
+  return errors;
+};
+
 const validatePlannerDraft = (
   draft: unknown,
   input: IrisPlannerInput
@@ -127,6 +158,7 @@ const validatePlannerDraft = (
 
   const errors = [
     ...validatePlannerOutputAgainstMandate(parsed.data, input.mandate),
+    ...collectCapabilityCatalogErrors(parsed.data, input),
     ...collectTaskParamErrors(parsed.data),
   ];
   if (errors.length > 0) {
@@ -158,7 +190,19 @@ export const invokeIrisPlanner = Effect.fn("iris.planner.invoke")(function* (
   };
 
   for (let attempt = 0; attempt <= PLANNER_REPAIR_ATTEMPTS; attempt++) {
-    const generated = yield* generatePlannerDraft(prompt);
+    const attemptCostCents = costCents;
+    const generated = yield* generatePlannerDraft(prompt).pipe(
+      Effect.catch((error) =>
+        Effect.fail(
+          new IrisPlannerError({
+            message: error.message,
+            violations: error.violations,
+            costCents: attemptCostCents + error.costCents,
+            cause: error.cause,
+          })
+        )
+      )
+    );
     costCents += generated.costCents;
     validation = validatePlannerDraft(generated.draft, input);
 
@@ -192,6 +236,7 @@ export const invokeIrisPlanner = Effect.fn("iris.planner.invoke")(function* (
       new IrisPlannerError({
         message: "Planner output failed validation after the repair attempt",
         violations: validation.errors,
+        costCents,
         cause: validation.cause,
       })
     );

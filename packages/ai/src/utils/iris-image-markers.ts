@@ -4,8 +4,10 @@ import type {
 } from "@notra/ai/types/autonomy-capabilities";
 
 const IRIS_IMAGE_MARKER_PATTERN =
-  /^[^\S\r\n]*\[iris-image:([^\]]*)\][^\S\r\n]*$/gm;
+  /^[^\S\r\n]*\[iris-image:([^\]\r\n]*)\][^\S\r\n]*$/gm;
 const COLLAPSE_BLANK_LINES_PATTERN = /\n{3,}/g;
+const MARKDOWN_ALT_TEXT_ESCAPE_PATTERN = /([\\[\]])/g;
+const MARKDOWN_URL_UNSAFE_PATTERN = /[\s()]/;
 
 export const IRIS_IMAGE_MARKER_PREFIX = "[iris-image:";
 
@@ -69,4 +71,14 @@ export const stripIrisImageMarkers = (markdown: string): string =>
 export const buildIrisImageMarkdown = (params: {
   altText: string;
   imageUrl: string;
-}): string => `![${params.altText}](${params.imageUrl})`;
+}): string => {
+  const altText = params.altText.replace(
+    MARKDOWN_ALT_TEXT_ESCAPE_PATTERN,
+    "\\$1"
+  );
+  const imageUrl = MARKDOWN_URL_UNSAFE_PATTERN.test(params.imageUrl)
+    ? `<${params.imageUrl}>`
+    : params.imageUrl;
+
+  return `![${altText}](${imageUrl})`;
+};

@@ -34,7 +34,7 @@ import type {
 import { getSlackIntegrationBotToken } from "./slack-workspace";
 
 const resolveNotificationTarget = Effect.fn("iris.slack.resolveTarget")(
-  function* (organizationId: string) {
+  function* (organizationId: string, teamId?: string | null) {
     const integrations = yield* Effect.tryPromise({
       try: () =>
         db.query.slackIntegrations.findMany({
@@ -53,9 +53,13 @@ const resolveNotificationTarget = Effect.fn("iris.slack.resolveTarget")(
         }),
     });
 
-    const integration = integrations.find(
+    const withChannel = integrations.filter(
       (candidate) => candidate.notificationChannelId !== null
     );
+
+    const integration = teamId
+      ? withChannel.find((candidate) => candidate.slackTeamId === teamId)
+      : withChannel.at(0);
 
     if (!integration?.notificationChannelId) {
       return yield* Effect.fail(
@@ -224,7 +228,10 @@ export const postSlackMessage = Effect.fn("iris.slack.postMessage")(function* (
 
 export const updateSlackMessage = Effect.fn("iris.slack.updateMessage")(
   function* (input: UpdateSlackMessageInput) {
-    const target = yield* resolveNotificationTarget(input.organizationId);
+    const target = yield* resolveNotificationTarget(
+      input.organizationId,
+      input.teamId
+    );
 
     const result = yield* callSlackApi({
       organizationId: input.organizationId,

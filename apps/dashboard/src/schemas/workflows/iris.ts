@@ -13,6 +13,6 @@ export type IrisWorkflowPayload = z.infer<typeof irisWorkflowPayloadSchema>;
 
 export const irisWakeDeliverySchema = z.object({
   organizationId: z.string().trim().min(1),
-  trigger: irisTriggerSchema.default("wake"),
+  trigger: z.literal("wake").default("wake"),
 });
 export type IrisWakeDelivery = z.infer<typeof irisWakeDeliverySchema>;

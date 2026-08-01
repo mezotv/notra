@@ -30,6 +30,7 @@ export class GateError extends Data.TaggedError("GateError")<{
 export class IrisPlannerError extends Data.TaggedError("IrisPlannerError")<{
   readonly message: string;
   readonly violations: readonly string[];
+  readonly costCents: number;
   readonly cause: unknown;
 }> {}
 

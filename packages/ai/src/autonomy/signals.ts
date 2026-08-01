@@ -214,6 +214,44 @@ export const coalesceSignals = Effect.fn("iris.signals.coalesce")(function* (
   } satisfies CoalesceSignalsResult;
 });
 
+export const restoreSignalsToPending = Effect.fn("iris.signals.restorePending")(
+  function* (organizationId: string, signalIds: readonly string[]) {
+    if (signalIds.length === 0) {
+      return;
+    }
+
+    const now = new Date();
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(autonomySignals)
+          .set({
+            status: "pending",
+            coalescedIntoSignalId: null,
+            updatedAt: now,
+          })
+          .where(
+            and(
+              eq(autonomySignals.organizationId, organizationId),
+              eq(autonomySignals.status, "coalesced"),
+              inArray(autonomySignals.id, [...signalIds])
+            )
+          )
+          .returning({ id: autonomySignals.id }),
+      catch: (cause) =>
+        new SignalIngestError({
+          message: "Failed to restore signals to pending",
+          cause,
+        }),
+    });
+
+    yield* Effect.annotateLogs(Effect.logWarning("iris.signals.restored"), {
+      organizationId,
+      signalCount: rows.length,
+    });
+  }
+);
+
 export const markSignalsProcessed = Effect.fn("iris.signals.markProcessed")(
   function* (organizationId: string, signalIds: readonly string[]) {
     if (signalIds.length === 0) {

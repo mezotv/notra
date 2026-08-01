@@ -26,11 +26,12 @@ export const extractMarkdownTitle = (
     .map((line) => line.trim())
     .find((line) => line.length > 0);
 
-  if (firstLine) {
-    return truncate(
-      firstLine.replace(MARKDOWN_NOISE_PATTERN, "").trim(),
-      IRIS_TITLE_MAX_LENGTH
-    );
+  const sanitizedFirstLine = firstLine
+    ? firstLine.replace(MARKDOWN_NOISE_PATTERN, "").trim()
+    : "";
+
+  if (sanitizedFirstLine.length > 0) {
+    return truncate(sanitizedFirstLine, IRIS_TITLE_MAX_LENGTH);
   }
 
   return truncate(fallback, IRIS_TITLE_MAX_LENGTH);

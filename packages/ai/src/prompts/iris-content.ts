@@ -45,9 +45,9 @@ const buildContextBlock = (params: {
   audience?: string;
   signalSummaries: readonly string[];
 }): string => dedent`
-  <topic>${params.topic}</topic>
-  <angle>${params.angle ?? "Choose the angle that best fits the source context."}</angle>
-  <audience>${params.audience ?? "Developers and technical founders following the product."}</audience>
+  <topic>${sanitizeUntrustedText(params.topic)}</topic>
+  <angle>${sanitizeUntrustedText(params.angle ?? "Choose the angle that best fits the source context.")}</angle>
+  <audience>${sanitizeUntrustedText(params.audience ?? "Developers and technical founders following the product.")}</audience>
 
   <source-context>
   ${SIGNAL_DELIMITER_OPEN}

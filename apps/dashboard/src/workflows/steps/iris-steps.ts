@@ -32,6 +32,7 @@ import {
   coalesceSignals,
   listPendingSignals,
   markSignalsProcessed,
+  restoreSignalsToPending,
 } from "@notra/ai/autonomy/signals";
 import { validatePlannerOutputAgainstMandate } from "@notra/ai/autonomy/validate-plan";
 import {
@@ -345,17 +346,43 @@ export async function planIrisRun(input: {
   "use step";
   return await Effect.runPromise(
     Effect.gen(function* () {
-      const planned = yield* invokeIrisPlanner({
-        mandate: input.mandate,
-        signalSummaries: input.signalSummaries,
-        recentActionSummaries: input.recentActionSummaries,
-        capabilityCatalog: IRIS_CAPABILITY_CATALOG,
-      });
+      const invoked = yield* Effect.result(
+        invokeIrisPlanner({
+          mandate: input.mandate,
+          signalSummaries: input.signalSummaries,
+          recentActionSummaries: input.recentActionSummaries,
+          capabilityCatalog: IRIS_CAPABILITY_CATALOG,
+        })
+      );
+
+      if (invoked._tag === "Failure") {
+        const failure = invoked.failure;
+        const violations =
+          failure.violations.length > 0
+            ? [...failure.violations]
+            : [failure.message];
+
+        yield* Effect.annotateLogs(Effect.logWarning("iris.plan.failed"), {
+          runId: input.runId,
+          costCents: failure.costCents,
+          violations: violations.join("; "),
+        });
+
+        return {
+          status: "rejected",
+          output: null,
+          violations,
+          costCents: failure.costCents,
+        } satisfies IrisPlanResult;
+      }
+
+      const planned = invoked.success;
 
       yield* recordPlannerOutput({
         runId: input.runId,
         plannerOutput: planned.output,
         plannerInputHash: planned.inputHash,
+        costCents: planned.costCents,
       });
 
       const violations = validatePlannerOutputAgainstMandate(
@@ -462,6 +489,37 @@ export async function runIrisTask(input: {
           artifacts,
           costCents: 0,
           errorMessage: null,
+        } satisfies IrisTaskOutcome;
+      }
+
+      if (started.alreadyExisted && started.action.status === "executing") {
+        const errorMessage =
+          "A previous attempt of this action is still recorded as executing, so it was not run again";
+        yield* finishAction({
+          actionId: started.action.id,
+          status: "unknown",
+          error: { message: errorMessage },
+        });
+        yield* markTask({
+          taskId: input.task.taskId,
+          status: "failed",
+          errorMessage,
+        });
+        yield* appendCheckpoint({
+          organizationId: input.organizationId,
+          runId: input.runId,
+          taskId: input.task.taskId,
+          kind: "task.unknown",
+          state: { localId: input.task.localId, errorMessage },
+        });
+        return {
+          taskId: input.task.taskId,
+          localId: input.task.localId,
+          status: "failed",
+          reused: false,
+          artifacts: [],
+          costCents: 0,
+          errorMessage,
         } satisfies IrisTaskOutcome;
       }
 
@@ -608,11 +666,38 @@ export async function finalizeIrisRun(input: {
 export async function publishIrisOutbox(input: {
   organizationId: string;
   runId: string;
+  allowedDestinations: string[];
   payload: IrisOutboxPayload;
 }): Promise<void> {
   "use step";
   await Effect.runPromise(
     Effect.gen(function* () {
+      if (!input.allowedDestinations.includes(OUTBOX_DESTINATION_SLACK)) {
+        yield* Effect.annotateLogs(
+          Effect.logInfo("iris.outbox.destinationNotAllowed"),
+          {
+            organizationId: input.organizationId,
+            runId: input.runId,
+            destination: OUTBOX_DESTINATION_SLACK,
+          }
+        );
+        return;
+      }
+
+      const mandate = yield* Effect.result(
+        loadActiveMandateRow(input.organizationId)
+      );
+      if (mandate._tag === "Success" && mandate.success === null) {
+        yield* Effect.annotateLogs(
+          Effect.logInfo("iris.outbox.skippedForPausedMission"),
+          {
+            organizationId: input.organizationId,
+            runId: input.runId,
+          }
+        );
+        return;
+      }
+
       yield* enqueueOutboxMessage({
         organizationId: input.organizationId,
         runId: input.runId,
@@ -625,6 +710,23 @@ export async function publishIrisOutbox(input: {
   );
 }
 
+export async function sweepIrisOutbox(input: {
+  organizationId: string;
+}): Promise<void> {
+  "use step";
+  await Effect.runPromise(
+    deliverPendingOutbox(input.organizationId).pipe(
+      Effect.asVoid,
+      Effect.catch((error) =>
+        Effect.annotateLogs(Effect.logWarning("iris.outbox.sweepFailed"), {
+          organizationId: input.organizationId,
+          error: describeIrisError(error),
+        })
+      )
+    )
+  );
+}
+
 export async function markIrisSignalsProcessed(input: {
   organizationId: string;
   signalIds: string[];
@@ -632,6 +734,23 @@ export async function markIrisSignalsProcessed(input: {
   "use step";
   await Effect.runPromise(
     markSignalsProcessed(input.organizationId, input.signalIds)
+  );
+}
+
+export async function restoreIrisSignals(input: {
+  organizationId: string;
+  signalIds: string[];
+}): Promise<void> {
+  "use step";
+  await Effect.runPromise(
+    restoreSignalsToPending(input.organizationId, input.signalIds).pipe(
+      Effect.catch((error) =>
+        Effect.annotateLogs(Effect.logError("iris.signals.restoreFailed"), {
+          organizationId: input.organizationId,
+          error: describeIrisError(error),
+        })
+      )
+    )
   );
 }
 

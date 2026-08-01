@@ -50,6 +50,19 @@ function getRepositoryName(payload: GitHubWebhookPayload) {
   return payload.repository?.full_name ?? "unknown";
 }
 
+const IRIS_SIGNAL_RETRY_STATUS = 500;
+
+function buildIrisSignalRetryResponse(event: string, delivery: string | null) {
+  return Response.json(
+    {
+      message: "Failed to record the Iris signal for this delivery",
+      event,
+      delivery,
+    },
+    { status: IRIS_SIGNAL_RETRY_STATUS }
+  );
+}
+
 async function createMemoryEntry({
   organizationId,
   eventType,
@@ -483,7 +496,7 @@ export async function handleGitHubWebhook(
     retentionDays: logRetentionDays,
   });
 
-  await dispatchIrisGithubSignal({
+  const irisSignalRecorded = await dispatchIrisGithubSignal({
     organizationId,
     repositoryId,
     repositoryName,
@@ -494,6 +507,10 @@ export async function handleGitHubWebhook(
   });
 
   if (processedEvent.type === GITHUB_PULL_REQUEST_EVENT_TYPE) {
+    if (!irisSignalRecorded) {
+      return buildIrisSignalRetryResponse(event, delivery);
+    }
+
     if (SHOULD_DEDUPE_DELIVERIES && delivery) {
       await markDeliveryProcessed(delivery);
     }
@@ -531,6 +548,10 @@ export async function handleGitHubWebhook(
     repositoryId,
     deliveryId: delivery ?? undefined,
   });
+
+  if (!irisSignalRecorded) {
+    return buildIrisSignalRetryResponse(event, delivery);
+  }
 
   if (SHOULD_DEDUPE_DELIVERIES && delivery) {
     await markDeliveryProcessed(delivery);

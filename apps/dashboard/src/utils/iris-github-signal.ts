@@ -76,10 +76,32 @@ export const resolveIrisGithubSignalHash = (input: {
   return null;
 };
 
+const resolveHeadCommitTimestamp = (
+  eventData: Record<string, unknown>
+): string | null => {
+  const headCommit = eventData.headCommit;
+  if (isRecord(headCommit) && typeof headCommit.timestamp === "string") {
+    return headCommit.timestamp;
+  }
+
+  const commits = eventData.commits;
+  if (Array.isArray(commits)) {
+    const latest = commits.at(-1);
+    if (isRecord(latest) && typeof latest.timestamp === "string") {
+      return latest.timestamp;
+    }
+  }
+
+  return null;
+};
+
 export const resolveIrisGithubOccurredAt = (
   eventData: Record<string, unknown>
 ): Date => {
-  const timestamp = eventData.publishedAt ?? eventData.mergedAt;
+  const timestamp =
+    eventData.publishedAt ??
+    eventData.mergedAt ??
+    resolveHeadCommitTimestamp(eventData);
   if (typeof timestamp === "string") {
     const parsed = new Date(timestamp);
     if (!Number.isNaN(parsed.getTime())) {
