@@ -18,8 +18,7 @@ export const toIrisTokenUsage = (
   return {
     inputTokens,
     outputTokens,
-    totalTokens:
-      usage?.totalTokens ?? rawInputTokens + outputTokens + cacheWriteTokens,
+    totalTokens: usage?.totalTokens ?? rawInputTokens + outputTokens,
     cacheReadTokens,
     cacheWriteTokens,
     modelId,
