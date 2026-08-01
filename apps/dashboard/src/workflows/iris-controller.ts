@@ -9,7 +9,10 @@ import {
   buildIrisHeadline,
   buildIrisNoOpHeadline,
 } from "@/utils/iris-signal-summary";
-import { collectDependentTaskIds } from "@/utils/iris-task-graph";
+import {
+  collectDependentTaskIds,
+  collectRemainingTaskIds,
+} from "@/utils/iris-task-graph";
 import {
   acquireIrisLease,
   cancelIrisTasks,
@@ -37,6 +40,7 @@ import {
 } from "./steps/iris-steps";
 
 const LOG_PREFIX = "Iris";
+const LEASE_LOST_REASON = "controller lease lost";
 
 export async function irisControllerRun(
   payload: IrisWorkflowPayload
@@ -286,24 +290,39 @@ export async function irisControllerRun(
     let costCents = plan.costCents;
 
     let mandateRevoked = false;
+    let leaseLost = false;
 
     for (const task of persisted.tasks) {
       if (canceledTaskIds.has(task.taskId)) {
         continue;
       }
 
-      await renewIrisLease({ organizationId, ownerToken: leaseToken });
+      const leaseHeld = await renewIrisLease({
+        organizationId,
+        ownerToken: leaseToken,
+      });
+      if (!leaseHeld) {
+        leaseLost = true;
+        await cancelIrisTasks({
+          taskIds: collectRemainingTaskIds(
+            persisted.tasks,
+            canceledTaskIds,
+            task.taskId
+          ),
+          reason: "The controller lease was lost",
+        });
+        break;
+      }
 
       const stillActive = await isIrisMandateActive(organizationId);
       if (!stillActive) {
         mandateRevoked = true;
-        const remaining = persisted.tasks
-          .map((pending) => pending.taskId)
-          .filter(
-            (taskId) => !canceledTaskIds.has(taskId) && taskId !== task.taskId
-          );
         await cancelIrisTasks({
-          taskIds: [task.taskId, ...remaining],
+          taskIds: collectRemainingTaskIds(
+            persisted.tasks,
+            canceledTaskIds,
+            task.taskId
+          ),
           reason: "Iris was paused",
         });
         break;
@@ -342,6 +361,21 @@ export async function irisControllerRun(
         taskIds: blocked,
         reason: `Blocked by failed task ${task.localId}`,
       });
+    }
+
+    if (leaseLost) {
+      await finalizeIrisRun({
+        organizationId,
+        runId,
+        status: "failed",
+        costCents,
+        goalId: persisted.goalId,
+        goalStatus: "abandoned",
+      });
+      console.warn(
+        `[${LOG_PREFIX}] Lost the controller lease for org ${organizationId}, stopping run ${runId}`
+      );
+      return { status: "failed", runId, reason: LEASE_LOST_REASON };
     }
 
     const runStatus = succeededCount > 0 ? "completed" : "failed";

@@ -168,6 +168,9 @@ function artifactBlocks(
   decisions: readonly IrisArtifactDecision[]
 ): readonly SlackBlock[] {
   const blocks: SlackBlock[] = [];
+  const decisionByPostId = new Map(
+    decisions.map((decision) => [decision.postId, decision])
+  );
 
   for (const artifact of input.artifacts.slice(0, IRIS_MAX_CARD_ARTIFACTS)) {
     blocks.push({ type: "divider" });
@@ -179,9 +182,7 @@ function artifactBlocks(
     );
     blocks.push(...artifactImageBlock(artifact));
 
-    const decision = decisions.find(
-      (candidate) => candidate.postId === artifact.postId
-    );
+    const decision = decisionByPostId.get(artifact.postId);
     if (decision) {
       const verb = decision.outcome === "shipped" ? "Shipped" : "Skipped";
       blocks.push(

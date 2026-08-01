@@ -270,6 +270,12 @@ export interface IrisPauseDialogProps {
   onConfirm: () => void;
 }
 
+export interface IrisRunsListState {
+  isPending: boolean;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+}
+
 export interface IrisRunningStateProps {
   organizationSlug: string;
   overview: IrisOverview;
@@ -277,11 +283,9 @@ export interface IrisRunningStateProps {
   readiness: IrisReadinessItem[];
   runs: IrisRunView[];
   signals: IrisSignalView[];
-  isRunsPending: boolean;
+  runsState: IrisRunsListState;
   isSignalsPending: boolean;
   isBusy: boolean;
-  hasMoreRuns: boolean;
-  isLoadingMoreRuns: boolean;
   isRunNowPending: boolean;
   isStatusPending: boolean;
   onLoadMoreRuns: () => void;

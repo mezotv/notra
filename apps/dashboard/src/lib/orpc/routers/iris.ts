@@ -273,7 +273,15 @@ export const irisRouter = {
         .where(eq(autonomyMandates.id, mandate.id));
 
       try {
-        await Effect.runPromise(deleteIrisWakeSchedule(mandate));
+        const removed = await Effect.runPromise(
+          deleteIrisWakeSchedule(mandate)
+        );
+        if (!removed) {
+          console.warn("[Iris] The wake schedule was kept for a later retry", {
+            mandateId: mandate.id,
+            scheduleId: mandate.qstashScheduleId,
+          });
+        }
       } catch (error) {
         console.error("[Iris] Failed to delete the wake schedule", {
           mandateId: mandate.id,
@@ -318,7 +326,7 @@ export const irisRouter = {
         .set({ status: "active", pausedAt: null, updatedAt: new Date() })
         .where(eq(autonomyMandates.id, mandate.id));
 
-      await ensureWakeSchedule({ ...mandate, qstashScheduleId: null });
+      await ensureWakeSchedule(mandate);
 
       return await reloadMandateView(input.organizationId, mandate.id);
     }),

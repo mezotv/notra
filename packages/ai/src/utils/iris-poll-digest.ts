@@ -29,7 +29,7 @@ const buildSourceSection = (source: IrisSourcePollResult): string => {
     return lines.join("\n");
   }
 
-  const ordered = [...source.items].sort(
+  const ordered = Array.from(source.items).sort(
     (left, right) => right.occurredAt.getTime() - left.occurredAt.getTime()
   );
 

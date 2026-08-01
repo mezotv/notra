@@ -78,27 +78,47 @@ export const createIrisWakeSchedule = Effect.fn("iris.wake.create")(function* (
   return scheduleId;
 });
 
+const SCHEDULE_NOT_FOUND_STATUS = 404;
+
+const isScheduleAlreadyGone = (cause: unknown): boolean =>
+  typeof cause === "object" &&
+  cause !== null &&
+  "status" in cause &&
+  cause.status === SCHEDULE_NOT_FOUND_STATUS;
+
 export const deleteIrisWakeSchedule = Effect.fn("iris.wake.delete")(
   function* (mandate: { id: string; qstashScheduleId: string | null }) {
-    if (mandate.qstashScheduleId) {
-      yield* Effect.tryPromise({
-        try: async () => {
-          const client = getQstashClient();
-          await client.schedules.delete(mandate.qstashScheduleId ?? "");
-        },
-        catch: (cause) =>
-          new IrisWakeScheduleError({
-            message: "Failed to delete the wake schedule",
-            cause,
-          }),
-      }).pipe(
-        Effect.catch((error) =>
-          Effect.annotateLogs(Effect.logWarning("iris.wake.deleteFailed"), {
-            mandateId: mandate.id,
-            error: String(error.cause),
-          })
-        )
+    const scheduleId = mandate.qstashScheduleId;
+
+    if (scheduleId) {
+      const deletion = yield* Effect.result(
+        Effect.tryPromise({
+          try: async () => {
+            const client = getQstashClient();
+            await client.schedules.delete(scheduleId);
+          },
+          catch: (cause) =>
+            new IrisWakeScheduleError({
+              message: "Failed to delete the wake schedule",
+              cause,
+            }),
+        })
       );
+
+      if (
+        deletion._tag === "Failure" &&
+        !isScheduleAlreadyGone(deletion.failure.cause)
+      ) {
+        yield* Effect.annotateLogs(
+          Effect.logWarning("iris.wake.deleteFailed"),
+          {
+            mandateId: mandate.id,
+            scheduleId,
+            error: String(deletion.failure.cause),
+          }
+        );
+        return false;
+      }
     }
 
     yield* persistScheduleId({ mandateId: mandate.id, qstashScheduleId: null });
@@ -106,6 +126,8 @@ export const deleteIrisWakeSchedule = Effect.fn("iris.wake.delete")(
     yield* Effect.annotateLogs(Effect.logInfo("iris.wake.deleted"), {
       mandateId: mandate.id,
     });
+
+    return true;
   }
 );
 

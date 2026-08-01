@@ -27,11 +27,9 @@ export function IrisRunningState({
   readiness,
   runs,
   signals,
-  isRunsPending,
+  runsState,
   isSignalsPending,
   isBusy,
-  hasMoreRuns,
-  isLoadingMoreRuns,
   isRunNowPending,
   isStatusPending,
   onLoadMoreRuns,
@@ -112,7 +110,7 @@ export function IrisRunningState({
         </TabsList>
 
         <TabsContent className="mt-4 space-y-3" value="activity">
-          {isRunsPending ? (
+          {runsState.isPending ? (
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, index) => (
                 <Skeleton
@@ -123,7 +121,7 @@ export function IrisRunningState({
             </div>
           ) : null}
 
-          {!isRunsPending && runs.length === 0 ? (
+          {!runsState.isPending && runs.length === 0 ? (
             <EmptyState
               description="Iris is watching your sources. The first report shows up here as soon as something is worth announcing."
               title="No runs yet"
@@ -138,14 +136,14 @@ export function IrisRunningState({
             />
           ))}
 
-          {hasMoreRuns ? (
+          {runsState.hasMore ? (
             <div className="flex justify-center pt-1">
               <Button
-                disabled={isLoadingMoreRuns}
+                disabled={runsState.isLoadingMore}
                 onClick={onLoadMoreRuns}
                 variant="outline"
               >
-                {isLoadingMoreRuns ? (
+                {runsState.isLoadingMore ? (
                   <>
                     <Loader2Icon className="size-4 animate-spin" />
                     Loading

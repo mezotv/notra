@@ -179,11 +179,8 @@ export default function PageClient({ organizationSlug }: IrisPageClientProps) {
 
     return (
       <IrisRunningState
-        hasMoreRuns={runsQuery.hasNextPage}
         isBusy={isBusy}
-        isLoadingMoreRuns={runsQuery.isFetchingNextPage}
         isRunNowPending={runNowMutation.isPending}
-        isRunsPending={runsQuery.isPending}
         isSignalsPending={signalsQuery.isPending}
         isStatusPending={pauseMutation.isPending || resumeMutation.isPending}
         mandate={mandate}
@@ -195,6 +192,11 @@ export default function PageClient({ organizationSlug }: IrisPageClientProps) {
         overview={overview}
         readiness={readiness}
         runs={runs}
+        runsState={{
+          isPending: runsQuery.isPending,
+          hasMore: runsQuery.hasNextPage,
+          isLoadingMore: runsQuery.isFetchingNextPage,
+        }}
         signals={signalsQuery.data ?? []}
       />
     );

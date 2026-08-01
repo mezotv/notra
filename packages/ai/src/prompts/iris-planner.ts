@@ -109,17 +109,23 @@ export const buildIrisPlannerSystemPrompt = (): string => dedent`
 
 const describeCapabilities = (input: IrisPlannerInput): string => {
   const allowed = new Set(input.mandate.policy.allowedCapabilities);
-  return input.capabilityCatalog
-    .filter((capability) => allowed.has(capability.name))
-    .map((capability) =>
+  const described: string[] = [];
+
+  for (const capability of input.capabilityCatalog) {
+    if (!allowed.has(capability.name)) {
+      continue;
+    }
+    described.push(
       [
         `- name: ${capability.name}`,
         `  version: ${capability.version}`,
         `  sideEffect: ${capability.sideEffect}`,
         `  description: ${capability.description}`,
       ].join("\n")
-    )
-    .join("\n");
+    );
+  }
+
+  return described.join("\n");
 };
 
 const describeParameterContracts = (): string => dedent`

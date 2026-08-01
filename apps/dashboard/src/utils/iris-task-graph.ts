@@ -1,5 +1,22 @@
 import type { IrisPlannedTask } from "@/types/iris";
 
+export const collectRemainingTaskIds = (
+  tasks: readonly IrisPlannedTask[],
+  canceledTaskIds: ReadonlySet<string>,
+  currentTaskId: string
+): string[] => {
+  const remaining = [currentTaskId];
+
+  for (const task of tasks) {
+    if (task.taskId === currentTaskId || canceledTaskIds.has(task.taskId)) {
+      continue;
+    }
+    remaining.push(task.taskId);
+  }
+
+  return remaining;
+};
+
 export const collectDependentTaskIds = (
   tasks: readonly IrisPlannedTask[],
   failedTaskId: string

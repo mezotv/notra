@@ -95,41 +95,41 @@ const fetchRecentReleases = Effect.fn("iris.poll.github.releases")(function* (
 
   const repositoryName = toRepositoryName(repository);
 
-  return response.data
-    .filter(
-      (release) =>
-        !release.draft && isWithinWindow(release.published_at ?? null, since)
-    )
-    .map(
-      (release): IrisPollItem => ({
-        source: SIGNAL_SOURCE_GITHUB,
-        kind: SIGNAL_KIND_GITHUB_RELEASE_PUBLISHED,
-        dedupeHash: buildGithubReleaseSignalHash(
-          repository.id,
-          release.tag_name
-        ),
-        sourceEventId: null,
-        occurredAt: new Date(release.published_at ?? Date.now()),
-        title: `Release ${release.tag_name}${release.name ? ` (${release.name})` : ""} in ${repositoryName}`,
-        url: release.html_url,
-        payload: {
-          type: GITHUB_RELEASE_EVENT_TYPE,
-          action: GITHUB_RELEASE_PUBLISHED_ACTION,
-          data: {
-            tagName: release.tag_name,
-            name: release.name,
-            body: release.body ?? null,
-            prerelease: release.prerelease,
-            draft: release.draft,
-            publishedAt: release.published_at,
-            url: release.html_url,
-          },
-          repositoryId: repository.id,
-          repositoryName,
-          discoveredBy: "poll",
+  const items: IrisPollItem[] = [];
+
+  for (const release of response.data) {
+    if (release.draft || !isWithinWindow(release.published_at ?? null, since)) {
+      continue;
+    }
+
+    items.push({
+      source: SIGNAL_SOURCE_GITHUB,
+      kind: SIGNAL_KIND_GITHUB_RELEASE_PUBLISHED,
+      dedupeHash: buildGithubReleaseSignalHash(repository.id, release.tag_name),
+      sourceEventId: null,
+      occurredAt: new Date(release.published_at ?? Date.now()),
+      title: `Release ${release.tag_name}${release.name ? ` (${release.name})` : ""} in ${repositoryName}`,
+      url: release.html_url,
+      payload: {
+        type: GITHUB_RELEASE_EVENT_TYPE,
+        action: GITHUB_RELEASE_PUBLISHED_ACTION,
+        data: {
+          tagName: release.tag_name,
+          name: release.name,
+          body: release.body ?? null,
+          prerelease: release.prerelease,
+          draft: release.draft,
+          publishedAt: release.published_at,
+          url: release.html_url,
         },
-      })
-    );
+        repositoryId: repository.id,
+        repositoryName,
+        discoveredBy: "poll",
+      },
+    });
+  }
+
+  return items;
 });
 
 const fetchRecentPush = Effect.fn("iris.poll.github.commits")(function* (

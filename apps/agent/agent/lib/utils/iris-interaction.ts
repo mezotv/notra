@@ -209,7 +209,11 @@ const runIrisInteraction = Effect.fn("agent.iris.interaction")(
       );
     }
 
-    if (approval.recorded && outcome === "shipped") {
+    const shouldPublish =
+      outcome === "shipped" &&
+      (approval.recorded || approval.existingAction === "shipped");
+
+    if (shouldPublish) {
       const result = yield* shipIrisPost({
         organizationId: parsed.organizationId,
         postId: parsed.postId,
