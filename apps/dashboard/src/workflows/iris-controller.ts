@@ -321,19 +321,20 @@ async function runIrisMission(input: {
     };
   }
 
-  const persisted = await persistIrisPlan({
-    organizationId,
-    mandateId: mandate.id,
-    runId,
-    goal,
-    tasks: output.tasks,
-    originSignalIds: coalesced.signalIds,
-  });
-
-  const collection = await ensureIrisRunCollection({
-    organizationId,
-    runId,
-  });
+  const [persisted, collection] = await Promise.all([
+    persistIrisPlan({
+      organizationId,
+      mandateId: mandate.id,
+      runId,
+      goal,
+      tasks: output.tasks,
+      originSignalIds: coalesced.signalIds,
+    }),
+    ensureIrisRunCollection({
+      organizationId,
+      runId,
+    }),
+  ]);
 
   const canceledTaskIds = new Set<string>();
   const artifacts: IrisOutboxArtifact[] = [];

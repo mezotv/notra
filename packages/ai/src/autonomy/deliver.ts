@@ -479,15 +479,16 @@ export const deliverPendingOutbox = Effect.fn("iris.outbox.deliverPending")(
         continue;
       }
 
-      if (outcome.success.status === "delivered") {
+      const outcomeStatus = outcome.success.status;
+      if (outcomeStatus === "delivered") {
         summary.delivered += 1;
         continue;
       }
-      if (outcome.success.status === "pending") {
+      if (outcomeStatus === "pending") {
         summary.retrying += 1;
         continue;
       }
-      if (outcome.success.status === "skipped") {
+      if (outcomeStatus === "skipped") {
         summary.skipped += 1;
         continue;
       }

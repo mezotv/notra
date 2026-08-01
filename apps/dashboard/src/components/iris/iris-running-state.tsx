@@ -28,7 +28,7 @@ export function IrisRunningState({
   runs,
   signals,
   runsState,
-  isSignalsPending,
+  signalsState,
   isBusy,
   isRunNowPending,
   isStatusPending,
@@ -170,7 +170,7 @@ export function IrisRunningState({
         </TabsContent>
 
         <TabsContent className="mt-4" value="signals">
-          {isSignalsPending ? (
+          {signalsState.isPending ? (
             <div className="space-y-2">
               {Array.from({ length: 5 }).map((_, index) => (
                 <Skeleton
@@ -179,7 +179,14 @@ export function IrisRunningState({
                 />
               ))}
             </div>
-          ) : (
+          ) : null}
+          {!signalsState.isPending && signalsState.isError ? (
+            <EmptyState
+              description="Recent signals could not be loaded. Refresh the page to try again."
+              title="Signals are unavailable"
+            />
+          ) : null}
+          {signalsState.isPending || signalsState.isError ? null : (
             <IrisSignalsList signals={signals} />
           )}
         </TabsContent>

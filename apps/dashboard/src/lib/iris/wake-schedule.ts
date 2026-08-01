@@ -72,7 +72,7 @@ export const createIrisWakeSchedule = Effect.fn("iris.wake.create")(function* (
   );
 
   if (persisted._tag === "Failure") {
-    yield* Effect.result(
+    const rollback = yield* Effect.result(
       Effect.tryPromise({
         try: async () => {
           const client = getQstashClient();
@@ -85,6 +85,12 @@ export const createIrisWakeSchedule = Effect.fn("iris.wake.create")(function* (
           }),
       })
     );
+    if (rollback._tag === "Failure") {
+      yield* Effect.annotateLogs(
+        Effect.logWarning("iris.wake.rollbackFailed"),
+        { organizationId, mandateId, scheduleId }
+      );
+    }
 
     return yield* Effect.fail(persisted.failure);
   }
