@@ -8,7 +8,7 @@ const stableValue = (value: unknown): unknown => {
     const entries = Object.entries(value)
       .filter(([, entryValue]) => entryValue !== undefined)
       .sort(([left], [right]) => (left < right ? -1 : 1));
-    const normalized: Record<string, unknown> = {};
+    const normalized: Record<string, unknown> = Object.create(null);
     for (const [key, entryValue] of entries) {
       normalized[key] = stableValue(entryValue);
     }
@@ -29,7 +29,7 @@ export const computeNamespacedId = (
   length: number
 ): string =>
   createHash("sha256")
-    .update(`${namespace}:${parts.join(":")}`)
+    .update(JSON.stringify([namespace, ...parts]))
     .digest("hex")
     .slice(0, length);
 
@@ -39,5 +39,5 @@ export const computeSignalDedupeHash = (
   discriminator: string
 ): string =>
   createHash("sha256")
-    .update(`${source}:${kind}:${discriminator}`)
+    .update(JSON.stringify([source, kind, discriminator]))
     .digest("hex");

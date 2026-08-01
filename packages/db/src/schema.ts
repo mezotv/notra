@@ -1828,7 +1828,8 @@ export const autonomyActions = pgTable(
   (table) => [
     index("autonomyActions_organizationId_idx").on(table.organizationId),
     index("autonomyActions_runId_idx").on(table.runId),
-    uniqueIndex("autonomyActions_capabilityName_idempotencyKey_uidx").on(
+    uniqueIndex("autonomyActions_org_capability_idempotency_uidx").on(
+      table.organizationId,
       table.capabilityName,
       table.idempotencyKey
     ),
@@ -1896,7 +1897,8 @@ export const autonomyOutbox = pgTable(
   },
   (table) => [
     index("autonomyOutbox_organizationId_idx").on(table.organizationId),
-    uniqueIndex("autonomyOutbox_destination_dedupeKey_uidx").on(
+    uniqueIndex("autonomyOutbox_org_destination_dedupeKey_uidx").on(
+      table.organizationId,
       table.destination,
       table.dedupeKey
     ),

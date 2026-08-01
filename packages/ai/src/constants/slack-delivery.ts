@@ -49,4 +49,4 @@ export const IRIS_REVIEW_ACTION_ID = "iris_review_post";
 export const IRIS_EXCERPT_MAX_LENGTH = 200;
 export const IRIS_TITLE_MAX_LENGTH = 140;
 export const IRIS_HEADLINE_MAX_LENGTH = 240;
-export const IRIS_MAX_CARD_ARTIFACTS = 5;
+export const IRIS_MAX_CARD_ARTIFACTS = 10;

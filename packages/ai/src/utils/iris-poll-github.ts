@@ -70,7 +70,16 @@ const listPollableRepositories = Effect.fn("iris.poll.github.repositories")(
           .orderBy(desc(githubIntegrations.updatedAt))
           .limit(IRIS_POLL_MAX_REPOSITORIES),
       catch: toGithubPollError("Failed to load GitHub repositories to poll"),
-    });
+    }).pipe(
+      Effect.tap((repositories) =>
+        repositories.length === IRIS_POLL_MAX_REPOSITORIES
+          ? Effect.annotateLogs(
+              Effect.logWarning("iris.poll.github.repositoryCapReached"),
+              { organizationId, cap: IRIS_POLL_MAX_REPOSITORIES }
+            )
+          : Effect.void
+      )
+    );
   }
 );
 

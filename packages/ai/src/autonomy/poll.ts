@@ -7,7 +7,6 @@ import {
 } from "@notra/ai/constants/autonomy-poll";
 import {
   SIGNAL_SOURCE_GITHUB,
-  SIGNAL_SOURCE_GRANOLA,
   SIGNAL_SOURCE_LINEAR,
 } from "@notra/ai/constants/autonomy-signals";
 import type {
@@ -18,7 +17,6 @@ import type {
 } from "@notra/ai/types/autonomy-poll";
 import { buildIrisPollDigest } from "@notra/ai/utils/iris-poll-digest";
 import { pollGithubSource } from "@notra/ai/utils/iris-poll-github";
-import { pollGranolaSource } from "@notra/ai/utils/iris-poll-granola";
 import { pollLinearSource } from "@notra/ai/utils/iris-poll-linear";
 import { Effect } from "effect";
 
@@ -90,7 +88,6 @@ export const pollIrisSources = Effect.fn("iris.poll.sources")(function* (
     [
       isolateSourceFailure(SIGNAL_SOURCE_GITHUB, pollGithubSource(window)),
       isolateSourceFailure(SIGNAL_SOURCE_LINEAR, pollLinearSource(window)),
-      isolateSourceFailure(SIGNAL_SOURCE_GRANOLA, pollGranolaSource(window)),
     ],
     { concurrency: IRIS_POLL_SOURCE_CONCURRENCY }
   );

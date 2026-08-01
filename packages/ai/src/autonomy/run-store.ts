@@ -215,6 +215,7 @@ export const startAction = Effect.fn("iris.action.start")(function* (
         })
         .onConflictDoNothing({
           target: [
+            autonomyActions.organizationId,
             autonomyActions.capabilityName,
             autonomyActions.idempotencyKey,
           ],
@@ -242,6 +243,7 @@ export const startAction = Effect.fn("iris.action.start")(function* (
         .from(autonomyActions)
         .where(
           and(
+            eq(autonomyActions.organizationId, input.organizationId),
             eq(autonomyActions.capabilityName, input.capabilityName),
             eq(autonomyActions.idempotencyKey, input.idempotencyKey)
           )
@@ -357,6 +359,32 @@ export const updateGoalStatus = Effect.fn("iris.goal.updateStatus")(function* (
       }),
   });
 });
+
+export const updateRunCost = Effect.fn("iris.run.updateCost")(
+  function* (input: {
+    runId: string;
+    organizationId: string;
+    costCents: number;
+  }) {
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(autonomyRuns)
+          .set({ costCents: input.costCents, updatedAt: new Date() })
+          .where(
+            and(
+              eq(autonomyRuns.id, input.runId),
+              eq(autonomyRuns.organizationId, input.organizationId)
+            )
+          ),
+      catch: (cause) =>
+        new RunPersistenceError({
+          message: "Failed to update run cost",
+          cause,
+        }),
+    });
+  }
+);
 
 export const completeRun = Effect.fn("iris.run.complete")(function* (
   input: CompleteRunInput

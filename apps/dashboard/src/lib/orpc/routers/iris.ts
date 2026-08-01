@@ -359,6 +359,9 @@ export const irisRouter = {
         trigger: "manual",
         executionId: `iris-manual-${crypto.randomUUID()}`,
       });
+      if (!runId) {
+        throw conflict("Iris is already working on a run");
+      }
 
       return { runId };
     }),

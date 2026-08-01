@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { autonomyOutbox, organizations } from "@notra/db/schema";
-import { and, asc, eq, isNull, lt, lte, or } from "drizzle-orm";
+import { and, asc, eq, gte, isNull, lt, lte, or } from "drizzle-orm";
 import { Duration, Effect, Schedule } from "effect";
 import {
   SLACK_DELIVERY_ATTEMPT_TIMEOUT_SECONDS,
@@ -396,8 +396,54 @@ const loadDeliverableRows = Effect.fn("iris.outbox.loadDeliverable")(function* (
   });
 });
 
+const failStrandedOutboxRows = Effect.fn("iris.outbox.failStranded")(function* (
+  organizationId?: string
+) {
+  const now = new Date();
+  const staleBefore = new Date(
+    now.getTime() -
+      SLACK_DELIVERY_ATTEMPT_TIMEOUT_SECONDS * MILLISECONDS_PER_SECOND
+  );
+  const filters = [
+    eq(autonomyOutbox.destination, SLACK_DESTINATION),
+    eq(autonomyOutbox.status, "attempting"),
+    lt(autonomyOutbox.updatedAt, staleBefore),
+    gte(autonomyOutbox.attempts, SLACK_DELIVERY_MAX_ATTEMPTS),
+  ];
+
+  const stranded = yield* Effect.tryPromise({
+    try: () =>
+      db
+        .update(autonomyOutbox)
+        .set({
+          status: "failed",
+          lastError: "delivery_timeout",
+          updatedAt: now,
+        })
+        .where(
+          organizationId
+            ? and(...filters, eq(autonomyOutbox.organizationId, organizationId))
+            : and(...filters)
+        )
+        .returning({ id: autonomyOutbox.id }),
+    catch: (cause) =>
+      new IrisOutboxPersistenceError({
+        outboxId: "",
+        operation: "failStranded",
+        cause,
+      }),
+  });
+
+  if (stranded.length > 0) {
+    yield* Effect.annotateLogs(Effect.logWarning("iris.outbox.stranded"), {
+      count: stranded.length,
+    });
+  }
+});
+
 export const deliverPendingOutbox = Effect.fn("iris.outbox.deliverPending")(
   function* (organizationId?: string) {
+    yield* failStrandedOutboxRows(organizationId);
     const rows = yield* loadDeliverableRows(organizationId);
     const summary: IrisDeliverySummary = {
       processed: 0,

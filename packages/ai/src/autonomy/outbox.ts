@@ -9,7 +9,7 @@ import { autonomyOutbox } from "@notra/db/schema";
 import { and, asc, eq, inArray, isNull, lt, lte, or } from "drizzle-orm";
 import { Effect } from "effect";
 
-const CANCELABLE_OUTBOX_STATUSES = ["pending", "failed"] as const;
+const CANCELABLE_OUTBOX_STATUSES = ["pending", "attempting", "failed"] as const;
 
 export const enqueueOutboxMessage = Effect.fn("iris.outbox.enqueue")(function* (
   input: EnqueueOutboxMessageInput
@@ -35,7 +35,11 @@ export const enqueueOutboxMessage = Effect.fn("iris.outbox.enqueue")(function* (
           updatedAt: now,
         })
         .onConflictDoNothing({
-          target: [autonomyOutbox.destination, autonomyOutbox.dedupeKey],
+          target: [
+            autonomyOutbox.organizationId,
+            autonomyOutbox.destination,
+            autonomyOutbox.dedupeKey,
+          ],
         })
         .returning({ id: autonomyOutbox.id }),
     catch: (cause) =>
@@ -66,6 +70,7 @@ export const enqueueOutboxMessage = Effect.fn("iris.outbox.enqueue")(function* (
         .from(autonomyOutbox)
         .where(
           and(
+            eq(autonomyOutbox.organizationId, input.organizationId),
             eq(autonomyOutbox.destination, input.destination),
             eq(autonomyOutbox.dedupeKey, input.dedupeKey)
           )

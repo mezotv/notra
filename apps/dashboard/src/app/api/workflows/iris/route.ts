@@ -1,4 +1,4 @@
-import { getBaseUrl } from "@notra/ai/qstash/triggers";
+import { getAppUrl } from "@notra/ai/qstash/triggers";
 import { flattenError } from "zod";
 import { IRIS_WAKE_BUCKET_MS, IRIS_WAKE_ROUTE_PATH } from "@/constants/iris";
 import { buildIrisWakeExecutionId } from "@/lib/iris/wake-schedule";
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const verified = await verifyQstashSignature({
     request,
     rawBody,
-    url: `${getBaseUrl()}${IRIS_WAKE_ROUTE_PATH}`,
+    url: `${getAppUrl()}${IRIS_WAKE_ROUTE_PATH}`,
   });
   if (!verified) {
     return new Response("Unauthorized", { status: 401 });

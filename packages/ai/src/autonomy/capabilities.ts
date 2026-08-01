@@ -362,12 +362,24 @@ const resolveIrisRepository = Effect.fn("iris.capabilities.resolveRepository")(
         }),
     });
 
-    const signalRepository = irisSignalRepositoryRefSchema.safeParse(
+    const signalEnvelope = irisSignalEnvelopeSchema.safeParse(
       input.signalContext.primarySignal
     );
-    const signalRepositoryId = signalRepository.success
-      ? (signalRepository.data.repositoryId ?? null)
-      : null;
+    const signalRepository = irisSignalRepositoryRefSchema.safeParse(
+      signalEnvelope.success && signalEnvelope.data.payload !== undefined
+        ? signalEnvelope.data.payload
+        : input.signalContext.primarySignal
+    );
+    const rootRepository = irisSignalRepositoryRefSchema.safeParse(
+      input.signalContext.primarySignal
+    );
+    const signalRepositoryId =
+      (signalRepository.success
+        ? (signalRepository.data.repositoryId ?? null)
+        : null) ??
+      (rootRepository.success
+        ? (rootRepository.data.repositoryId ?? null)
+        : null);
 
     const candidates: IrisRepositoryTarget[] = [];
     for (const integration of integrations) {

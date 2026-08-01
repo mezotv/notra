@@ -108,6 +108,22 @@ export function describeIrisDecision(run: IrisRunView): IrisDecisionCopy {
   }
 
   if (run.decision === "plan") {
+    if (run.status === "failed") {
+      return {
+        headline: run.goal?.title
+          ? `Plan did not finish: ${run.goal.title}`
+          : "The plan did not finish",
+        detail: run.reason ?? run.goal?.summary ?? null,
+      };
+    }
+    if (run.status === "canceled") {
+      return {
+        headline: run.goal?.title
+          ? `Run canceled: ${run.goal.title}`
+          : "Run canceled",
+        detail: run.reason ?? null,
+      };
+    }
     return {
       headline: run.goal?.title ?? "Iris put a plan together",
       detail: run.reason ?? run.goal?.summary ?? null,

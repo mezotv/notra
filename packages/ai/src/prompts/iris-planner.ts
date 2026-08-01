@@ -161,7 +161,7 @@ export const buildIrisPlannerUserPrompt = (input: IrisPlannerInput): string => {
     version: ${mandate.version}
     name: ${mandate.name}
     status: ${mandate.status}
-    objective: ${mandate.objective}
+    objective: ${sanitizeUntrustedText(mandate.objective)}
     </mandate>
 
     <policy>
@@ -204,7 +204,7 @@ export const buildIrisPlannerRepairPrompt = (params: {
   ${params.errors.map((error) => `- ${error}`).join("\n")}
 
   It was:
-  ${JSON.stringify(params.previousOutput)}
+  ${sanitizeUntrustedText(JSON.stringify(params.previousOutput) ?? "null")}
   </previous-attempt>
 
   Fix exactly those problems. Keep every part that was already valid, including your decision unless the errors say the decision itself was wrong.

@@ -195,6 +195,16 @@ export async function saveGeneratedImagePost(params: {
   ]);
 
   if (params.collectionId) {
+    const ownedCollection = await db.query.postCollections.findFirst({
+      columns: { id: true },
+      where: and(
+        eq(postCollections.id, params.collectionId),
+        eq(postCollections.organizationId, params.organizationId)
+      ),
+    });
+    if (!ownedCollection) {
+      throw new Error("The collection does not belong to this organization");
+    }
     await insertGeneratedImagePost({
       collectionId: params.collectionId,
       htmlUrl,

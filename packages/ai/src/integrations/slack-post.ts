@@ -42,6 +42,7 @@ const resolveNotificationTarget = Effect.fn("iris.slack.resolveTarget")(
             eq(slackIntegrations.organizationId, organizationId),
             eq(slackIntegrations.enabled, true)
           ),
+          orderBy: (integration, { asc }) => [asc(integration.createdAt)],
         }),
       catch: (cause) =>
         new SlackDeliveryRetryableError({
@@ -241,7 +242,7 @@ export const updateSlackMessage = Effect.fn("iris.slack.updateMessage")(
         channel: input.channel,
         ts: input.ts,
         text: input.text,
-        blocks: input.blocks ?? [],
+        ...(input.blocks ? { blocks: input.blocks } : {}),
       },
     });
 

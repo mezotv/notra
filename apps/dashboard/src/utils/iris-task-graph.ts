@@ -5,10 +5,14 @@ export const collectRemainingTaskIds = (
   canceledTaskIds: ReadonlySet<string>,
   currentTaskId: string
 ): string[] => {
-  const remaining = [currentTaskId];
+  const remaining: string[] = [];
+  let reachedCurrent = false;
 
   for (const task of tasks) {
-    if (task.taskId === currentTaskId || canceledTaskIds.has(task.taskId)) {
+    if (task.taskId === currentTaskId) {
+      reachedCurrent = true;
+    }
+    if (!reachedCurrent || canceledTaskIds.has(task.taskId)) {
       continue;
     }
     remaining.push(task.taskId);

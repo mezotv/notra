@@ -4,6 +4,9 @@ import {
 } from "@notra/ai/constants/autonomy";
 import type { IrisSocialPlatform } from "@notra/ai/schemas/autonomy/capability-params";
 import { sanitizeUntrustedText } from "@notra/ai/utils/iris-untrusted";
+
+const ALT_TEXT_UNSAFE_PATTERN = /[[\]\\]/gu;
+
 import dedent from "dedent";
 import { prohibitedLanguage } from "./_shared";
 
@@ -26,7 +29,7 @@ export const buildIrisContentSystemPrompt = (params: {
   You turn verified engineering activity into publishable content that reads like a thoughtful builder wrote it.
 
   <mission-objective>
-  ${params.objective}
+  ${sanitizeUntrustedText(params.objective)}
   </mission-objective>
 
   <rules>
@@ -152,8 +155,8 @@ export const buildIrisImageReviewPrompt = (params: {
 }): string => dedent`
   You are reviewing a rendered 1200x630 marketing image before it is embedded in a published article.
 
-  <requested-illustration>${params.description}</requested-illustration>
-  <article-title>${params.articleTitle}</article-title>
+  <requested-illustration>${sanitizeUntrustedText(params.description)}</requested-illustration>
+  <article-title>${sanitizeUntrustedText(params.articleTitle)}</article-title>
 
   Reject the image if any of the following is true:
   - It does not depict what the requested illustration asked for.
@@ -169,4 +172,7 @@ export const buildIrisImageReviewPrompt = (params: {
 `;
 
 export const buildIrisImageAltText = (description: string): string =>
-  description.replace(WHITESPACE_PATTERN, " ").trim();
+  description
+    .replace(WHITESPACE_PATTERN, " ")
+    .replace(ALT_TEXT_UNSAFE_PATTERN, "")
+    .trim();

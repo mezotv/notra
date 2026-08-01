@@ -48,9 +48,28 @@ export const recordIrisApproval = Effect.fn("iris.approval.record")(function* (
         }
 
         const parsed = irisOutboxPayloadSchema.safeParse(row.payload);
-        const approvals: readonly IrisApproval[] = parsed.success
-          ? (parsed.data.approvals ?? [])
-          : [];
+        if (!parsed.success) {
+          const invalid: RecordIrisApprovalResult = {
+            recorded: false,
+            existingAction: null,
+            approvals: [],
+          };
+          return invalid;
+        }
+
+        const knownPostIds = new Set(
+          parsed.data.artifacts.map((artifact) => artifact.postId)
+        );
+        if (!knownPostIds.has(input.postId)) {
+          const unknownArtifact: RecordIrisApprovalResult = {
+            recorded: false,
+            existingAction: null,
+            approvals: parsed.data.approvals ?? [],
+          };
+          return unknownArtifact;
+        }
+
+        const approvals: readonly IrisApproval[] = parsed.data.approvals ?? [];
 
         const existing = approvals.find(
           (approval) => approval.postId === input.postId

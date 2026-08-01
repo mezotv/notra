@@ -57,11 +57,28 @@ export const irisTaskParamSchemas: Record<string, z.ZodType> = {
   [IRIS_CAPABILITY_SOCIAL_POST_CREATE]: irisSocialPostTaskParamsSchema,
 };
 
-export const irisImageReviewSchema = z.object({
-  accept: z.boolean(),
-  reason: z.string().min(1),
-  revisionPrompt: z.string().nullable(),
-});
+export const irisImageReviewSchema = z
+  .object({
+    accept: z.boolean(),
+    reason: z.string().min(1),
+    revisionPrompt: z.string().max(400).nullable(),
+  })
+  .superRefine((review, ctx) => {
+    if (!review.accept && (review.revisionPrompt ?? "").trim().length === 0) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["revisionPrompt"],
+        message: "A rejection needs a concrete revision instruction",
+      });
+    }
+    if (review.accept && review.revisionPrompt !== null) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["revisionPrompt"],
+        message: "An accepted image must not carry a revision instruction",
+      });
+    }
+  });
 export type IrisImageReview = z.infer<typeof irisImageReviewSchema>;
 
 export const irisSignalEnvelopeSchema = z.looseObject({

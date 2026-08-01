@@ -435,6 +435,13 @@
       "when": 1785536259890,
       "tag": "0061_remarkable_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1785579564653,
+      "tag": "0062_striped_ares",
+      "breakpoints": true
     }
   ]
 }

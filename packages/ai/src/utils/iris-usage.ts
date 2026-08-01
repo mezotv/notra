@@ -6,17 +6,20 @@ export const toIrisTokenUsage = (
   usage: LanguageModelUsage | undefined,
   modelId: string
 ): AgentTokenUsage => {
-  const inputTokens = usage?.inputTokens ?? 0;
+  const rawInputTokens = usage?.inputTokens ?? 0;
   const outputTokens = usage?.outputTokens ?? 0;
   const cacheReadTokens = usage?.inputTokenDetails?.cacheReadTokens ?? 0;
   const cacheWriteTokens = usage?.inputTokenDetails?.cacheWriteTokens ?? 0;
+  const inputTokens = Math.max(
+    0,
+    rawInputTokens - cacheReadTokens - cacheWriteTokens
+  );
 
   return {
     inputTokens,
     outputTokens,
     totalTokens:
-      usage?.totalTokens ??
-      inputTokens + outputTokens + cacheReadTokens + cacheWriteTokens,
+      usage?.totalTokens ?? rawInputTokens + outputTokens + cacheWriteTokens,
     cacheReadTokens,
     cacheWriteTokens,
     modelId,

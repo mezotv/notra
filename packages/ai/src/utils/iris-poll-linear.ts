@@ -125,6 +125,13 @@ export const pollLinearSource = Effect.fn("iris.poll.linear")(function* (
       pollIntegration(
         { id: integration.id, linearTeamId: integration.linearTeamId },
         window.since
+      ).pipe(
+        Effect.catch((error) =>
+          Effect.annotateLogs(
+            Effect.logWarning("iris.poll.linear.integrationFailed"),
+            { integrationId: integration.id, error: String(error) }
+          ).pipe(Effect.as([]))
+        )
       )
     ),
     { concurrency: 2 }

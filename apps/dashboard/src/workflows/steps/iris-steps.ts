@@ -27,6 +27,7 @@ import {
   recordPlannerOutput,
   startAction,
   updateGoalStatus,
+  updateRunCost,
 } from "@notra/ai/autonomy/run-store";
 import {
   coalesceSignals,
@@ -140,9 +141,24 @@ export async function isIrisMandateActive(
 ): Promise<boolean> {
   "use step";
   return await Effect.runPromise(
-    loadActiveMandateRow(organizationId).pipe(
-      Effect.map((row) => row !== null),
-      Effect.catch(() => Effect.succeed(false))
+    loadActiveMandateRow(organizationId).pipe(Effect.map((row) => row !== null))
+  );
+}
+
+export async function persistIrisRunCost(input: {
+  organizationId: string;
+  runId: string;
+  costCents: number;
+}): Promise<void> {
+  "use step";
+  await Effect.runPromise(
+    updateRunCost(input).pipe(
+      Effect.catch((error) =>
+        Effect.annotateLogs(Effect.logWarning("iris.run.costPersistFailed"), {
+          runId: input.runId,
+          error: describeIrisError(error),
+        })
+      )
     )
   );
 }
@@ -706,12 +722,13 @@ export async function publishIrisOutbox(input: {
       const mandate = yield* Effect.result(
         loadActiveMandateRow(input.organizationId)
       );
-      if (mandate._tag === "Success" && mandate.success === null) {
+      if (mandate._tag !== "Success" || mandate.success === null) {
         yield* Effect.annotateLogs(
-          Effect.logInfo("iris.outbox.skippedForPausedMission"),
+          Effect.logWarning("iris.outbox.skippedWithoutActiveMission"),
           {
             organizationId: input.organizationId,
             runId: input.runId,
+            lookupFailed: mandate._tag !== "Success",
           }
         );
         return;

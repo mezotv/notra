@@ -111,3 +111,6 @@ export const IRIS_SLACK_TERMINAL_ERRORS = [
   "not_in_channel",
   "token_revoked",
 ];
+
+export const IRIS_START_CLAIM_SCOPE = "iris-start";
+export const IRIS_START_CLAIM_TTL_SECONDS = 2100;

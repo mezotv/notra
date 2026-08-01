@@ -32,6 +32,7 @@ import {
   loadIrisMandate,
   markIrisSignalsProcessed,
   persistIrisPlan,
+  persistIrisRunCost,
   planIrisRun,
   pollIrisSourcesStep,
   publishIrisOutbox,
@@ -337,6 +338,7 @@ async function runIrisMission(input: {
   const canceledTaskIds = new Set<string>();
   const artifacts: IrisOutboxArtifact[] = [];
   let succeededCount = 0;
+  let tasksAttempted = 0;
   let costCents = plan.costCents;
 
   let mandateRevoked = false;
@@ -345,6 +347,23 @@ async function runIrisMission(input: {
   for (const task of persisted.tasks) {
     if (canceledTaskIds.has(task.taskId)) {
       continue;
+    }
+
+    const projectedActions = gathered.actionsInLast24h + tasksAttempted;
+    const projectedCostCents = gathered.costCentsInLast24h + costCents;
+    if (
+      projectedActions >= mandate.policy.maxActionsPerDay ||
+      projectedCostCents >= mandate.policy.maxCostCentsPerDay
+    ) {
+      await cancelIrisTasks({
+        taskIds: collectRemainingTaskIds(
+          persisted.tasks,
+          canceledTaskIds,
+          task.taskId
+        ),
+        reason: "The daily action or spend budget was reached",
+      });
+      break;
     }
 
     const leaseHeld = await renewIrisLease({
@@ -390,7 +409,9 @@ async function runIrisMission(input: {
       },
     });
 
+    tasksAttempted += 1;
     costCents += outcome.costCents;
+    await persistIrisRunCost({ organizationId, runId, costCents });
 
     if (outcome.status === "succeeded") {
       succeededCount += 1;
@@ -414,6 +435,10 @@ async function runIrisMission(input: {
   }
 
   if (leaseLost) {
+    await restoreIrisSignals({
+      organizationId,
+      signalIds: coalesced.signalIds,
+    });
     await finalizeIrisRun({
       organizationId,
       runId,

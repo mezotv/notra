@@ -124,7 +124,10 @@ export const sumRunCostCentsInLast24h = Effect.fn("iris.gate.sumCost")(
           .where(
             and(
               eq(autonomyRuns.organizationId, organizationId),
-              gte(autonomyRuns.startedAt, since)
+              or(
+                gte(autonomyRuns.startedAt, since),
+                gte(autonomyRuns.completedAt, since)
+              )
             )
           ),
       catch: (cause) =>
