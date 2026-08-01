@@ -14,13 +14,6 @@ import type { IrisFlagState } from "@/types/iris";
 
 const clientId = process.env.NEXT_PUBLIC_DATABUDDY_DASHBOARD_WEBSITE_ID ?? "";
 
-const allowlistedOrganizationIds = new Set(
-  (process.env.NOTRA_IRIS_ORG_IDS ?? "")
-    .split(",")
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0)
-);
-
 let cachedManager: ServerFlagsManager | null = null;
 
 function getFlagsManager(): ServerFlagsManager | null {
@@ -46,10 +39,6 @@ export function resolveIrisFlagState(
 ): Effect.Effect<IrisFlagState> {
   return Effect.gen(function* () {
     if (process.env.NODE_ENV === "development") {
-      return "enabled";
-    }
-
-    if (allowlistedOrganizationIds.has(organizationId)) {
       return "enabled";
     }
 
