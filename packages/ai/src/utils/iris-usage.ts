@@ -39,9 +39,17 @@ export const irisSandboxCostCents = (
   if (!usage) {
     return 0;
   }
-  return calculateAiCreditCostCents(
-    usage,
+  const normalized: AgentTokenUsage = {
+    ...usage,
+    inputTokens: Math.max(
+      0,
+      usage.inputTokens - usage.cacheReadTokens - usage.cacheWriteTokens
+    ),
+  };
+  const result = calculateAiCreditCostCents(
+    normalized,
     usage.modelId ?? fallbackModelId,
     false
-  ).costCents;
+  );
+  return Math.max(result.costCents, result.tokenCostCents);
 };
