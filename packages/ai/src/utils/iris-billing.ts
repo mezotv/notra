@@ -1,3 +1,4 @@
+import { acquireClaim, releaseClaim } from "@notra/ai/autonomy/claims";
 import {
   allowUnmeteredAiInDevelopment,
   autumn,
@@ -11,6 +12,8 @@ import type { TrackIrisRunUsageInput } from "@notra/ai/types/autonomy";
 import { Effect } from "effect";
 
 const IRIS_USAGE_SOURCE = "iris";
+const IRIS_BILLING_CLAIM_SCOPE = "iris-billing";
+const IRIS_BILLING_CLAIM_TTL_SECONDS = 60 * 60 * 24 * 30;
 const MARKUP_MULTIPLIER = 1 + MARKUP_PERCENT / 100;
 
 const resolveIrisBilledCents = Effect.fn("iris.billing.resolveMarkup")(
@@ -19,18 +22,28 @@ const resolveIrisBilledCents = Effect.fn("iris.billing.resolveMarkup")(
       return costCents;
     }
     const client = autumn;
-    const balance = yield* Effect.tryPromise({
-      try: async () => {
-        const data = await client.check({
-          customerId: organizationId,
-          featureId: FEATURES.AI_CREDITS,
-        });
-        return data.balance ?? null;
-      },
-      catch: (cause) => cause,
-    }).pipe(Effect.catch(() => Effect.succeed(null)));
+    const balanceResult = yield* Effect.result(
+      Effect.tryPromise({
+        try: async () => {
+          const data = await client.check({
+            customerId: organizationId,
+            featureId: FEATURES.AI_CREDITS,
+          });
+          return data.balance ?? null;
+        },
+        catch: (cause) => cause,
+      })
+    );
 
-    return shouldApplyMarkup(balance)
+    if (balanceResult._tag === "Failure") {
+      yield* Effect.annotateLogs(
+        Effect.logWarning("iris.billing.markupCheckFailed"),
+        { organizationId }
+      );
+      return Math.ceil(costCents * MARKUP_MULTIPLIER);
+    }
+
+    return shouldApplyMarkup(balanceResult.success)
       ? Math.ceil(costCents * MARKUP_MULTIPLIER)
       : costCents;
   }
@@ -41,6 +54,27 @@ export const trackIrisRunUsage = Effect.fn("iris.billing.track")(function* (
 ) {
   const client = autumn;
   if (!client || allowUnmeteredAiInDevelopment || input.costCents <= 0) {
+    return;
+  }
+
+  const claimToken = crypto.randomUUID();
+  const claim = yield* Effect.tryPromise({
+    try: () =>
+      acquireClaim({
+        scope: IRIS_BILLING_CLAIM_SCOPE,
+        claimKey: input.runId,
+        ownerToken: claimToken,
+        ttlSeconds: IRIS_BILLING_CLAIM_TTL_SECONDS,
+        organizationId: input.organizationId,
+      }),
+    catch: (cause) => cause,
+  }).pipe(Effect.catch(() => Effect.succeed({ claimed: false })));
+
+  if (!claim.claimed) {
+    yield* Effect.annotateLogs(Effect.logInfo("iris.billing.alreadyTracked"), {
+      organizationId: input.organizationId,
+      runId: input.runId,
+    });
     return;
   }
 
@@ -62,12 +96,21 @@ export const trackIrisRunUsage = Effect.fn("iris.billing.track")(function* (
             cost_cents: billedCents,
             raw_cost_cents: input.costCents,
           },
-        }),
+        }, { headers: { "Idempotency-Key": `iris-run-${input.runId}` } }),
       catch: (cause) => cause,
     })
   );
 
   if (tracked._tag === "Failure") {
+    yield* Effect.tryPromise({
+      try: () =>
+        releaseClaim({
+          scope: IRIS_BILLING_CLAIM_SCOPE,
+          claimKey: input.runId,
+          ownerToken: claimToken,
+        }),
+      catch: (cause) => cause,
+    }).pipe(Effect.catch(() => Effect.void));
     yield* Effect.annotateLogs(Effect.logError("iris.billing.trackFailed"), {
       organizationId: input.organizationId,
       runId: input.runId,
@@ -79,6 +122,6 @@ export const trackIrisRunUsage = Effect.fn("iris.billing.track")(function* (
   yield* Effect.annotateLogs(Effect.logInfo("iris.billing.tracked"), {
     organizationId: input.organizationId,
     runId: input.runId,
-    costCents: input.costCents,
+    costCents: billedCents,
   });
 });
