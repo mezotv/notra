@@ -1,8 +1,9 @@
 "use client";
 
 import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context";
+import { useReducedMotion } from "motion/react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AccountFilter } from "@/components/analytics/account-filter";
 import { AccountSeriesChartCard } from "@/components/analytics/account-series-chart-card";
 import { ConnectAccountsButtons } from "@/components/analytics/connect-accounts-buttons";
@@ -13,8 +14,9 @@ import { PostingPerformanceCard } from "@/components/analytics/posting-performan
 import { SummaryStats } from "@/components/analytics/summary-stats";
 import { TopPostsCard } from "@/components/analytics/top-posts-card";
 import { EmptyState } from "@/components/empty-state";
+import { InstrumentGrid } from "@/components/instrument/instrument-grid";
+import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { PageContainer } from "@/components/layout/container";
-import { SectionHeader } from "@/components/layout/section-header";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   ACCOUNT_SERIES_COLORS,
@@ -28,6 +30,7 @@ import {
   useSocialOverview,
   useTopPosts,
 } from "@/lib/hooks/use-social-analytics";
+import { cn } from "@/lib/utils";
 import type { TimelineMarker } from "@/types/analytics";
 import {
   accountSeriesKey,
@@ -36,7 +39,32 @@ import {
   buildTimelineDays,
   markerIndexForDate,
 } from "@/utils/analytics-charts";
+import { formatSyncClock } from "@/utils/instrument";
 import { AnalyticsPageSkeleton } from "./skeleton";
+
+/* ─────────────────────────────────────────────────────────
+ * ANIMATION STORYBOARD — Analytics instrument panel
+ *
+ * Read top-to-bottom. Each `at` value is ms after data mount.
+ *
+ *    0ms   header + account switches render statically
+ *   60ms   master readout rail powers on,
+ *          sync dot starts pulsing
+ *  150ms   modules materialize over the grid substrate
+ *          (staggered 45ms in reading order)
+ *
+ * Reduced motion: everything appears at once, no offsets.
+ * ───────────────────────────────────────────────────────── */
+
+const TIMING = {
+  readoutRail: 60, // master readout rail powers on
+  modules: 150, // grid modules start staggering in
+};
+
+const STAGE = {
+  rail: 1, // readout rail visible
+  modules: 2, // grid modules visible
+};
 
 interface PageClientProps {
   organizationSlug: string;
@@ -51,8 +79,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       : orgFromList;
   const organizationId = organization?.id ?? "";
 
-  const { data: overview, isPending: isOverviewPending } =
-    useSocialOverview(organizationId);
+  const {
+    data: overview,
+    isPending: isOverviewPending,
+    dataUpdatedAt,
+  } = useSocialOverview(organizationId);
   const { data: engagement } = useEngagementTimeseries(organizationId);
   const { data: followerGrowth } = useFollowerGrowth(organizationId);
   const { data: topPosts } = useTopPosts(organizationId);
@@ -61,6 +92,29 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
+
+  const reduceMotion = useReducedMotion();
+  const [stage, setStage] = useState(0);
+  const ready = !isOverviewPending;
+
+  useEffect(() => {
+    if (!ready) {
+      setStage(0);
+      return;
+    }
+    if (reduceMotion) {
+      setStage(STAGE.modules);
+      return;
+    }
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    timers.push(setTimeout(() => setStage(STAGE.rail), TIMING.readoutRail));
+    timers.push(setTimeout(() => setStage(STAGE.modules), TIMING.modules));
+    return () => {
+      for (const timer of timers) {
+        clearTimeout(timer);
+      }
+    };
+  }, [ready, reduceMotion]);
 
   const accounts = useMemo(
     () => overview?.accounts ?? [],
@@ -178,10 +232,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full space-y-6 px-4 lg:px-6">
           <header className="space-y-1">
-            <h1 className="font-semibold text-2xl">Analytics</h1>
-            <p className="text-muted-foreground text-sm">
-              Performance of your connected X and LinkedIn accounts
+            <p className="font-mono text-muted-foreground text-xs uppercase tracking-wider">
+              X + LinkedIn instrument panel
             </p>
+            <h1 className="font-semibold text-xl tracking-tight">
+              Nothing to report yet.
+            </h1>
           </header>
           <EmptyState
             action={
@@ -202,15 +258,28 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="w-full space-y-6 px-4 lg:px-6">
+      <div className="w-full space-y-4 px-4 lg:px-6">
         <header className="space-y-3">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div className="space-y-1">
-              <h1 className="font-semibold text-2xl">Analytics</h1>
-              <p className="text-muted-foreground text-sm">
-                {accounts.length}{" "}
-                {accounts.length === 1 ? "account" : "accounts"} connected on X
-                and LinkedIn
+              <h1 className="font-semibold text-xl tracking-tight">
+                Analytics
+              </h1>
+              <p className="flex flex-wrap items-center gap-x-1.5 font-mono text-[0.6875rem] text-muted-foreground uppercase tracking-wider">
+                <span>
+                  {accounts.length}{" "}
+                  {accounts.length === 1 ? "account" : "accounts"} · X +
+                  LinkedIn · {ANALYTICS_TIMESERIES_DAYS}D window · Sync{" "}
+                  {formatSyncClock(dataUpdatedAt || null)}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className={cn(
+                    "size-1.5 rounded-full bg-emerald-500",
+                    stage >= STAGE.rail &&
+                      "animate-pulse motion-reduce:animate-none"
+                  )}
+                />
               </p>
             </div>
             <ConnectAccountsButtons organizationId={organizationId} />
@@ -223,54 +292,75 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         </header>
 
         {overview?.configured === false && (
-          <p className="rounded-md border bg-muted/40 px-3 py-2 text-muted-foreground text-sm">
+          <p className="rounded-md border border-border px-3 py-2 font-mono text-[0.6875rem] text-muted-foreground">
             Analytics ingestion is not configured yet. Connected accounts are
             shown, but stats will appear once the analytics backend is set up.
           </p>
         )}
 
-        <SummaryStats accounts={accounts} points={engagement?.points ?? []} />
+        <InstrumentReveal active={stage >= STAGE.rail}>
+          <SummaryStats accounts={accounts} points={engagement?.points ?? []} />
+        </InstrumentReveal>
 
-        <section className="space-y-3">
-          <SectionHeader
-            description="Every account you post from or track, ranked by interactions"
-            title="Accounts"
-          />
-          <div className="grid gap-3 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <LeaderboardCard
-                accountDetails={accounts}
-                organizationId={organizationId}
-              />
-            </div>
-            <ImpressionsShareCard organizationId={organizationId} />
-          </div>
-        </section>
-
-        <section className="space-y-3">
-          <SectionHeader
-            description="Hover any chart to compare the same day everywhere"
-            title="Trends"
-          />
-          <div className="grid gap-3 lg:grid-cols-2">
+        <InstrumentGrid className="grid-cols-1 lg:grid-cols-12">
+          <InstrumentReveal
+            active={stage >= STAGE.modules}
+            className="lg:col-span-8"
+            order={0}
+          >
             <AccountSeriesChartCard
               allKeys={allKeys}
               config={accountConfig}
-              description="Likes, replies, and reposts by publish date"
               emptyMessage="No engagement data yet"
+              hero
               hiddenKeys={hiddenKeys}
               hoverIndex={hoverIndex}
               kind="area"
               markers={markers}
               onHoverChange={setHoverIndex}
               onToggleSeries={toggleAccount}
+              readout={`${ANALYTICS_TIMESERIES_DAYS}D`}
               rows={engagementRows}
               title="Engagement"
             />
+          </InstrumentReveal>
+          <InstrumentReveal
+            active={stage >= STAGE.modules}
+            className="lg:col-span-4"
+            order={1}
+          >
+            <FollowersCard
+              accounts={accounts}
+              colorForKey={(key) => accountConfig[key]?.color ?? "blue"}
+              hiddenKeys={hiddenKeys}
+              points={followerGrowth?.points ?? []}
+            />
+          </InstrumentReveal>
+          <InstrumentReveal
+            active={stage >= STAGE.modules}
+            className="lg:col-span-8"
+            order={2}
+          >
+            <LeaderboardCard
+              accountDetails={accounts}
+              organizationId={organizationId}
+            />
+          </InstrumentReveal>
+          <InstrumentReveal
+            active={stage >= STAGE.modules}
+            className="lg:col-span-4"
+            order={3}
+          >
+            <ImpressionsShareCard organizationId={organizationId} />
+          </InstrumentReveal>
+          <InstrumentReveal
+            active={stage >= STAGE.modules}
+            className="lg:col-span-6"
+            order={4}
+          >
             <AccountSeriesChartCard
               allKeys={allKeys}
               config={accountConfig}
-              description="Impressions by publish date"
               emptyMessage="No impression data yet"
               hiddenKeys={hiddenKeys}
               hoverIndex={hoverIndex}
@@ -278,13 +368,19 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               markers={markers}
               onHoverChange={setHoverIndex}
               onToggleSeries={toggleAccount}
+              readout={`${ANALYTICS_TIMESERIES_DAYS}D`}
               rows={impressionRows}
               title="Impressions"
             />
+          </InstrumentReveal>
+          <InstrumentReveal
+            active={stage >= STAGE.modules}
+            className="lg:col-span-6"
+            order={5}
+          >
             <AccountSeriesChartCard
               allKeys={allKeys}
               config={accountConfig}
-              description="Posts published per day"
               emptyMessage="No posts tracked yet"
               hiddenKeys={hiddenKeys}
               hoverIndex={hoverIndex}
@@ -292,28 +388,26 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               markers={markers}
               onHoverChange={setHoverIndex}
               onToggleSeries={toggleAccount}
+              readout={`${ANALYTICS_TIMESERIES_DAYS}D`}
               rows={postRows}
               title="Publishing volume"
             />
-            <FollowersCard
-              accounts={accounts}
-              colorForKey={(key) => accountConfig[key]?.color ?? "blue"}
-              hiddenKeys={hiddenKeys}
-              points={followerGrowth?.points ?? []}
-            />
-          </div>
-        </section>
-
-        <section className="space-y-3">
-          <SectionHeader
-            description="When to post and which posts carry the numbers"
-            title="What works"
-          />
-          <div className="grid gap-3 lg:grid-cols-2">
+          </InstrumentReveal>
+          <InstrumentReveal
+            active={stage >= STAGE.modules}
+            className="lg:col-span-6"
+            order={6}
+          >
             <PostingPerformanceCard rows={performanceRows} />
+          </InstrumentReveal>
+          <InstrumentReveal
+            active={stage >= STAGE.modules}
+            className="lg:col-span-6"
+            order={7}
+          >
             <TopPostsCard posts={topPosts?.posts ?? []} />
-          </div>
-        </section>
+          </InstrumentReveal>
+        </InstrumentGrid>
       </div>
     </PageContainer>
   );
