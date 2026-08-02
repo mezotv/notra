@@ -174,7 +174,7 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
                     <TableHead>Method</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                <TableBody className="[&_tr:first-child>td:first-child]:rounded-tl-none [&_tr:first-child>td:last-child]:rounded-tr-none">
                   {log.map((entry) => (
                     <LogRow
                       entry={entry}
