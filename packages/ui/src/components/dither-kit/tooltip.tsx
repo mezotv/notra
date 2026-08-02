@@ -32,8 +32,7 @@ export function Tooltip({
    * series registration order ("none"). */
   sortItems?: "desc" | "asc" | "none"
   /** Single-series categorical charts: drop the separate heading line and use
-   * the heading value as each row's label ("Monday.com  16" instead of a muted
-   * heading plus a redundant series label). */
+   * the heading value as each row's label. */
   inlineHeading?: boolean
 }) {
   const chart = useCommonChart()
