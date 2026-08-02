@@ -125,8 +125,15 @@ function LeaderboardRow({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-medium text-sm">
-              {entry.displayName ?? entry.username}
+            <p className="flex items-center gap-1 font-medium text-sm">
+              <span className="truncate">
+                {entry.displayName ?? entry.username}
+              </span>
+              <XVerificationBadge
+                className="size-3.5 shrink-0"
+                verified={entry.verified}
+                verifiedType={entry.verifiedType}
+              />
             </p>
             <p className="truncate text-muted-foreground text-xs">
               @{entry.username}
@@ -228,7 +235,7 @@ export function LeaderboardCard({
           value={String(days)}
         >
           <SelectTrigger className="w-28">
-            <SelectValue />
+            <SelectValue>{`Last ${days}d`}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {LEADERBOARD_WINDOWS.map((window) => (
