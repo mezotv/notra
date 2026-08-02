@@ -63,7 +63,7 @@ export function PostingPerformanceCard({ rows }: PostingPerformanceCardProps) {
             {visibleKeys.map((key) => (
               <Bar dataKey={key} key={key} />
             ))}
-            <Tooltip />
+            <Tooltip labelKey="day" />
           </BarChart>
         ) : (
           <p className="flex h-56 items-center justify-center text-muted-foreground text-sm">
