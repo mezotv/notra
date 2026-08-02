@@ -160,3 +160,5 @@ export const GEO_PRESENCE_DOT_CLASSES: Record<string, string> = {
   "retrieval-only": "bg-amber-500",
   invisible: "bg-muted-foreground/50",
 };
+
+export const GEO_TREND_MIN_DAYS = 5;

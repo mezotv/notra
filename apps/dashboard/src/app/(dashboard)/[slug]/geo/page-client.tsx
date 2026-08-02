@@ -9,10 +9,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { AiTrafficCard } from "@/components/geo/ai-traffic-card";
+import { AiTrafficLogCard } from "@/components/geo/ai-traffic-log-card";
 import { EngineRadarCard } from "@/components/geo/engine-radar-card";
 import { GeoSettingsDialog } from "@/components/geo/geo-settings-dialog";
 import { GeoSummaryStats } from "@/components/geo/geo-summary-stats";
 import { MentionRateCard } from "@/components/geo/mention-rate-card";
+import { MentionTrendCard } from "@/components/geo/mention-trend-card";
 import { ModelUsageCard } from "@/components/geo/model-usage-card";
 import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
 import { ShareOfVoiceDonut } from "@/components/geo/share-of-voice-donut";
@@ -210,26 +212,29 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         <InstrumentGrid className="grid-cols-1 lg:grid-cols-12">
           <InstrumentReveal
             active={stage >= STAGE.modules}
-            className="lg:col-span-5"
+            className="lg:col-span-8"
             order={0}
           >
-            <MentionRateCard
-              engines={overview?.engines ?? []}
-              hero
-              points={timeseries?.points ?? []}
-            />
+            <MentionTrendCard hero points={timeseries?.points ?? []} />
           </InstrumentReveal>
           <InstrumentReveal
             active={stage >= STAGE.modules}
-            className="lg:col-span-3"
+            className="lg:col-span-4"
             order={1}
           >
             <EngineRadarCard engines={overview?.engines ?? []} />
           </InstrumentReveal>
           <InstrumentReveal
             active={stage >= STAGE.modules}
-            className="lg:col-span-4"
+            className="lg:col-span-8"
             order={2}
+          >
+            <MentionRateCard engines={overview?.engines ?? []} />
+          </InstrumentReveal>
+          <InstrumentReveal
+            active={stage >= STAGE.modules}
+            className="lg:col-span-4"
+            order={3}
           >
             <ShareOfVoiceDonut
               action={
@@ -246,7 +251,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           <InstrumentReveal
             active={stage >= STAGE.modules}
             className="lg:col-span-12"
-            order={3}
+            order={4}
           >
             <PromptResultsPreview
               action={
@@ -263,17 +268,26 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           <InstrumentReveal
             active={stage >= STAGE.modules}
             className="lg:col-span-4"
-            order={4}
+            order={5}
           >
             <ModelUsageCard usage={modelUsage} />
           </InstrumentReveal>
           <InstrumentReveal
             active={stage >= STAGE.modules}
             className="lg:col-span-8"
-            order={5}
+            order={6}
           >
             <AiTrafficCard setup={beaconSetup} traffic={aiTraffic} />
           </InstrumentReveal>
+          {(aiTraffic?.log.length ?? 0) > 0 && (
+            <InstrumentReveal
+              active={stage >= STAGE.modules}
+              className="lg:col-span-12"
+              order={7}
+            >
+              <AiTrafficLogCard log={aiTraffic?.log ?? []} />
+            </InstrumentReveal>
+          )}
         </InstrumentGrid>
 
         <GeoSettingsDialog

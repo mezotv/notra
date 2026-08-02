@@ -287,7 +287,14 @@ export interface GeoStatTile {
 }
 
 export interface MentionRateCardProps {
-  hero?: boolean;
   engines: GeoOverviewEngine[];
+}
+
+export interface MentionTrendCardProps {
+  hero?: boolean;
   points: GeoTimeseriesPoint[];
+}
+
+export interface AiTrafficLogCardProps {
+  log: AiTrafficLogEntry[];
 }

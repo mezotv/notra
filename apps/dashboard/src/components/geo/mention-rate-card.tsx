@@ -1,22 +1,14 @@
 "use client";
 
-import { Line } from "@notra/ui/components/dither-kit/area";
-import { LineChart } from "@notra/ui/components/dither-kit/area-chart";
-import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context";
-import { Grid } from "@notra/ui/components/dither-kit/grid";
-import { Tooltip } from "@notra/ui/components/dither-kit/tooltip";
-import { XAxis } from "@notra/ui/components/dither-kit/x-axis";
-import { YAxis } from "@notra/ui/components/dither-kit/y-axis";
 import { useMemo } from "react";
 import {
   InstrumentEmpty,
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
-import { ACCOUNT_SERIES_COLORS } from "@/constants/analytics";
 import { GEO_ENGINE_LABELS } from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { GeoOverviewEngine, MentionRateCardProps } from "@/types/geo";
-import { buildMentionRateRows, formatMentionRate } from "@/utils/geo-charts";
+import { formatMentionRate } from "@/utils/geo-charts";
 
 interface EngineFamily {
   family: string;
@@ -27,7 +19,6 @@ interface EngineFamily {
 
 const GROUNDED_SUFFIX = /(-direct)?-grounded$/;
 const WEB_LABEL_SUFFIX = /\s*\(web\)$/;
-const TREND_MIN_DAYS = 5;
 
 function isGrounded(engine: string): boolean {
   return GROUNDED_SUFFIX.test(engine) || engine === "perplexity-sonar";
@@ -107,30 +98,8 @@ function RateBar({
   );
 }
 
-export function MentionRateCard({
-  hero = false,
-  engines,
-  points,
-}: MentionRateCardProps) {
+export function MentionRateCard({ engines }: MentionRateCardProps) {
   const families = useMemo(() => groupEngines(engines), [engines]);
-  const { rows, engines: trendEngines } = useMemo(
-    () => buildMentionRateRows(points),
-    [points]
-  );
-  const distinctDays = rows.length;
-
-  const trendConfig = useMemo(() => {
-    const config: ChartConfig = {};
-    trendEngines.forEach((engine, index) => {
-      config[engine] = {
-        label: GEO_ENGINE_LABELS[engine] ?? engine,
-        color:
-          ACCOUNT_SERIES_COLORS[index % ACCOUNT_SERIES_COLORS.length] ??
-          "purple",
-      };
-    });
-    return config;
-  }, [trendEngines]);
 
   return (
     <InstrumentModule eyebrow="Mention rate" readout="30D">
@@ -141,7 +110,7 @@ export function MentionRateCard({
           seed="Mention rate"
         />
       ) : (
-        <div className="space-y-3.5">
+        <div className="grid content-start gap-x-8 gap-y-3.5 sm:grid-cols-2">
           {families.map((family) => (
             <div className="space-y-1.5" key={family.family}>
               <div className="flex items-baseline justify-between">
@@ -157,24 +126,6 @@ export function MentionRateCard({
               <RateBar engine={family.raw} variant="raw" />
             </div>
           ))}
-        </div>
-      )}
-      {distinctDays >= TREND_MIN_DAYS && (
-        <div className="mt-4 border-border border-t pt-3">
-          <LineChart
-            bloom={hero ? "low" : "off"}
-            className="h-48 w-full"
-            config={trendConfig}
-            data={rows}
-          >
-            <Grid />
-            <XAxis dataKey="day" />
-            <YAxis />
-            {trendEngines.map((engine) => (
-              <Line dataKey={engine} key={engine} />
-            ))}
-            <Tooltip labelKey="day" valueFormatter={(value) => `${value}%`} />
-          </LineChart>
         </div>
       )}
     </InstrumentModule>

@@ -90,7 +90,7 @@ export function CompetitorManager({
               {competitor}
               <button
                 aria-label={`Remove ${competitor}`}
-                className="rounded-full p-0.5 hover:bg-muted"
+                className="cursor-pointer rounded-full p-0.5 hover:bg-muted"
                 onClick={() =>
                   save(
                     settings.competitors.filter((name) => name !== competitor)
