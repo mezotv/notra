@@ -1,5 +1,6 @@
 "use client";
 
+import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -14,7 +15,9 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useId, useState } from "react";
+import { GEO_LANGUAGE_FLAGS, GEO_MAX_LANGUAGES } from "@/constants/geo";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
+import { cn } from "@/lib/utils";
 import type { GeoSettings } from "@/types/geo";
 
 interface GeoSettingsDialogProps {
@@ -41,6 +44,7 @@ export function GeoSettingsDialog({
   const [companyName, setCompanyName] = useState("");
   const [aliases, setAliases] = useState("");
   const [competitors, setCompetitors] = useState("");
+  const [languages, setLanguages] = useState<string[]>([]);
   const [enabled, setEnabled] = useState(true);
   const upsert = useGeoSettingsUpsert(organizationId);
 
@@ -49,6 +53,7 @@ export function GeoSettingsDialog({
       setCompanyName(settings?.companyName ?? "");
       setAliases(settings?.aliases.join(", ") ?? "");
       setCompetitors(settings?.competitors.join(", ") ?? "");
+      setLanguages(settings?.languages ?? []);
       setEnabled(settings?.enabled ?? true);
     }
   }, [open, settings]);
@@ -60,6 +65,7 @@ export function GeoSettingsDialog({
         companyName: companyName.trim(),
         aliases: parseList(aliases),
         competitors: parseList(competitors),
+        languages,
         enabled,
       },
       { onSuccess: () => onOpenChange(false) }
@@ -103,6 +109,49 @@ export function GeoSettingsDialog({
               placeholder="Buffer, Hypefury (comma separated)"
               value={competitors}
             />
+          </div>
+          <div className="space-y-2">
+            <Label>Also scan in (up to {GEO_MAX_LANGUAGES})</Label>
+            <div className="flex flex-wrap gap-1.5">
+              {SUPPORTED_LANGUAGES.filter(
+                (language) => language !== "English"
+              ).map((language) => {
+                const selected = languages.includes(language);
+                const atLimit =
+                  !selected && languages.length >= GEO_MAX_LANGUAGES;
+                return (
+                  <button
+                    aria-pressed={selected}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-1 rounded-sm border px-2 py-1 text-xs transition-colors",
+                      selected
+                        ? "border-border bg-muted/60"
+                        : "border-transparent bg-muted/20 text-muted-foreground hover:bg-muted/40",
+                      atLimit && "cursor-not-allowed opacity-40"
+                    )}
+                    disabled={atLimit}
+                    key={language}
+                    onClick={() =>
+                      setLanguages((previous) =>
+                        previous.includes(language)
+                          ? previous.filter((item) => item !== language)
+                          : [...previous, language]
+                      )
+                    }
+                    type="button"
+                  >
+                    <span aria-hidden="true">
+                      {GEO_LANGUAGE_FLAGS[language]}
+                    </span>
+                    {language}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Each scan also asks the engines in these languages so you can see
+              how you perform beyond English.
+            </p>
           </div>
           <div className="flex items-center justify-between">
             <Label htmlFor={`${id}-enabled`}>Scans enabled</Label>

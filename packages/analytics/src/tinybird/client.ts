@@ -36,10 +36,12 @@ import {
   type FollowerGrowthRow,
   followerGrowth,
   type GeoCompetitorShareRow,
+  type GeoLanguageShareRow,
   type GeoOverviewRow,
   type GeoPromptResultsRow,
   type GeoTimeseriesRow,
   geoCompetitorShare,
+  geoLanguageShare,
   geoOverview,
   geoPromptResults,
   geoTimeseries,
@@ -95,6 +97,7 @@ function createTinybirdClient() {
       geoTimeseries,
       geoPromptResults,
       geoCompetitorShare,
+      geoLanguageShare,
       accountLeaderboard,
       modelUsageLatest,
       modelUsageTrend,
@@ -363,6 +366,19 @@ export function queryGeoCompetitorShare(params: {
     params,
     params.organization_id,
     (client) => client.geoCompetitorShare.query(params)
+  );
+}
+
+export function queryGeoLanguageShare(params: {
+  organization_id: string;
+  days?: number;
+}): Promise<QueryResult<GeoLanguageShareRow> | null> {
+  return cachedPipeQuery(
+    "geo",
+    "geo_language_share",
+    params,
+    params.organization_id,
+    (client) => client.geoLanguageShare.query(params)
   );
 }
 

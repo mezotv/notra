@@ -578,6 +578,7 @@ export const geoOverview = defineEndpoint("geo_overview", {
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
           AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+          AND language IN ('', 'English')
         GROUP BY engine
         ORDER BY mention_rate DESC
       `,
@@ -611,6 +612,7 @@ export const geoTimeseries = defineEndpoint("geo_timeseries", {
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
           AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+          AND language IN ('', 'English')
         GROUP BY day, engine
         ORDER BY day ASC
       `,
@@ -644,6 +646,7 @@ export const geoPromptResults = defineEndpoint("geo_prompt_results", {
           max(captured_at) AS last_checked_at
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
+          AND language IN ('', 'English')
         GROUP BY prompt_id, engine
         ORDER BY prompt_id ASC, engine ASC
       `,
@@ -687,6 +690,42 @@ export const geoCompetitorShare = defineEndpoint("geo_competitor_share", {
   output: {
     brand: t.string(),
     mentions: t.uint64(),
+  },
+});
+
+export const geoLanguageShare = defineEndpoint("geo_language_share", {
+  description:
+    "Mention rate per answer language over the trailing window; legacy rows without a language count as English",
+  params: {
+    organization_id: p.string().describe("Organization id"),
+    days: p.int32().optional(30).describe("Number of trailing days"),
+  },
+  nodes: [
+    node({
+      name: "per_language",
+      sql: `
+        SELECT
+          if(language = '', 'English', language) AS language_name,
+          count() AS checks,
+          countIf(mentioned) AS mentions,
+          round(countIf(mentioned) / count(), 3) AS mention_rate,
+          round(avgIf(position, mentioned AND position IS NOT NULL), 1) AS avg_position,
+          max(captured_at) AS last_checked_at
+        FROM geo_mention_checks
+        WHERE organization_id = {{String(organization_id)}}
+          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+        GROUP BY language_name
+        ORDER BY mention_rate DESC
+      `,
+    }),
+  ],
+  output: {
+    language_name: t.string(),
+    checks: t.uint64(),
+    mentions: t.uint64(),
+    mention_rate: t.float64(),
+    avg_position: t.float64().nullable(),
+    last_checked_at: t.dateTime(),
   },
 });
 
@@ -786,6 +825,7 @@ export type GeoOverviewRow = InferOutputRow<typeof geoOverview>;
 export type GeoTimeseriesRow = InferOutputRow<typeof geoTimeseries>;
 export type GeoPromptResultsRow = InferOutputRow<typeof geoPromptResults>;
 export type GeoCompetitorShareRow = InferOutputRow<typeof geoCompetitorShare>;
+export type GeoLanguageShareRow = InferOutputRow<typeof geoLanguageShare>;
 
 export const postMetricsLookup = defineEndpoint("post_metrics_lookup", {
   description: "Latest metric snapshot for specific posts by platform post id",

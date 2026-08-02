@@ -4,6 +4,7 @@ import {
   queryAiTrafficOverview,
   queryAiTrafficTimeseries,
   queryGeoCompetitorShare,
+  queryGeoLanguageShare,
   queryGeoOverview,
   queryGeoPromptResults,
   queryGeoTimeseries,
@@ -47,6 +48,7 @@ import type {
   BeaconSetupResponse,
   GeoCompetitorShareResponse,
   GeoGenerateFromWebsiteResult,
+  GeoLanguageShareResponse,
   GeoModelUsageResponse,
   GeoModelUsageRow,
   GeoOverviewResponse,
@@ -65,6 +67,7 @@ interface GeoSettingsRow {
   companyName: string;
   aliases: string[];
   competitors: string[];
+  languages: string[] | null;
   enabled: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -77,6 +80,7 @@ function toGeoSettings(row: GeoSettingsRow): GeoSettings {
     companyName: row.companyName,
     aliases: row.aliases,
     competitors: row.competitors,
+    languages: row.languages ?? [],
     enabled: row.enabled,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -174,6 +178,7 @@ export const geoRouter = {
           companyName: input.companyName,
           aliases: input.aliases,
           competitors: input.competitors,
+          languages: input.languages,
           enabled: input.enabled,
         })
         .onConflictDoUpdate({
@@ -182,6 +187,7 @@ export const geoRouter = {
             companyName: input.companyName,
             aliases: input.aliases,
             competitors: input.competitors,
+            languages: input.languages,
             enabled: input.enabled,
           },
         })
@@ -190,6 +196,34 @@ export const geoRouter = {
       return {
         configured: isTinybirdConfigured(),
         settings: row ? toGeoSettings(row) : null,
+      };
+    }),
+  languageShare: authorizedProcedure
+    .input(geoTimeseriesInputSchema)
+    .handler(async ({ context, input }): Promise<GeoLanguageShareResponse> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const result = await queryGeoLanguageShare({
+        organization_id: input.organizationId,
+        days: input.days,
+      }).catch((error) => {
+        console.error("[GEO] language share query failed:", error);
+        return null;
+      });
+
+      return {
+        configured: isTinybirdConfigured(),
+        points: (result?.data ?? []).map((row) => ({
+          language: row.language_name,
+          checks: Number(row.checks),
+          mentions: Number(row.mentions),
+          mentionRate: Number(row.mention_rate),
+          avgPosition: toNullableNumber(row.avg_position),
+        })),
       };
     }),
   overview: authorizedProcedure

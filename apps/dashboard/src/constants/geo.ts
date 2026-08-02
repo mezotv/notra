@@ -1,3 +1,4 @@
+import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
 import type { GeoGroundedEngine } from "@/types/geo";
 
 export const GEO_ENGINES = [
@@ -162,3 +163,10 @@ export const GEO_PRESENCE_DOT_CLASSES: Record<string, string> = {
 };
 
 export const GEO_TREND_MIN_DAYS = 5;
+
+export const GEO_MAX_LANGUAGES = 3;
+export const GEO_LANGUAGE_MAX_PROMPTS = 5;
+export const GEO_LANGUAGE_GROUNDED_MAX_PROMPTS = 3;
+export const GEO_TRANSLATION_MAX_TOKENS = 2000;
+
+export const GEO_LANGUAGE_FLAGS: Record<string, string> = LANGUAGE_FLAGS;

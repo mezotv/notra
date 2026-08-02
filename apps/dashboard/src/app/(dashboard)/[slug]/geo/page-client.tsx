@@ -13,6 +13,7 @@ import { AiTrafficLogCard } from "@/components/geo/ai-traffic-log-card";
 import { EngineRadarCard } from "@/components/geo/engine-radar-card";
 import { GeoSettingsDialog } from "@/components/geo/geo-settings-dialog";
 import { GeoSummaryStats } from "@/components/geo/geo-summary-stats";
+import { LanguagePerformanceCard } from "@/components/geo/language-performance-card";
 import { MentionRateCard } from "@/components/geo/mention-rate-card";
 import { MentionTrendCard } from "@/components/geo/mention-trend-card";
 import { ModelUsageCard } from "@/components/geo/model-usage-card";
@@ -27,6 +28,7 @@ import {
   useAiTraffic,
   useBeaconSetup,
   useGeoCompetitorShare,
+  useGeoLanguageShare,
   useGeoOverview,
   useGeoPromptResults,
   useGeoPrompts,
@@ -85,6 +87,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { data: prompts } = useGeoPrompts(organizationId);
   const { data: promptResults } = useGeoPromptResults(organizationId);
   const { data: competitorShare } = useGeoCompetitorShare(organizationId);
+  const { data: languageShare } = useGeoLanguageShare(organizationId);
   const { data: modelUsage } = useModelUsage(organizationId);
   const { data: aiTraffic } = useAiTraffic(organizationId);
   const { data: beaconSetup } = useBeaconSetup(organizationId);
@@ -250,7 +253,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </InstrumentReveal>
           <InstrumentReveal
             active={stage >= STAGE.modules}
-            className="lg:col-span-12"
+            className="lg:col-span-8"
             order={4}
           >
             <PromptResultsPreview
@@ -262,6 +265,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                   All prompts
                 </Link>
               }
+              languages={settings.languages}
               results={promptResults?.results ?? []}
             />
           </InstrumentReveal>
@@ -270,12 +274,22 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             className="lg:col-span-4"
             order={5}
           >
+            <LanguagePerformanceCard
+              configuredLanguages={settings.languages}
+              points={languageShare?.points ?? []}
+            />
+          </InstrumentReveal>
+          <InstrumentReveal
+            active={stage >= STAGE.modules}
+            className="lg:col-span-4"
+            order={6}
+          >
             <ModelUsageCard usage={modelUsage} />
           </InstrumentReveal>
           <InstrumentReveal
             active={stage >= STAGE.modules}
             className="lg:col-span-8"
-            order={6}
+            order={7}
           >
             <AiTrafficCard setup={beaconSetup} traffic={aiTraffic} />
           </InstrumentReveal>
@@ -283,7 +297,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             <InstrumentReveal
               active={stage >= STAGE.modules}
               className="lg:col-span-12"
-              order={7}
+              order={8}
             >
               <AiTrafficLogCard log={aiTraffic?.log ?? []} />
             </InstrumentReveal>

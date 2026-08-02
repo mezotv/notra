@@ -16,8 +16,12 @@ import {
   GEO_GROUNDED_MAX_PROMPTS,
   GEO_JUDGE_MAX_TOKENS,
   GEO_JUDGE_MODEL,
+  GEO_LANGUAGE_GROUNDED_MAX_PROMPTS,
+  GEO_LANGUAGE_MAX_PROMPTS,
+  GEO_MAX_LANGUAGES,
   GEO_MAX_PROMPTS,
   GEO_SCAN_CONCURRENCY,
+  GEO_TRANSLATION_MAX_TOKENS,
 } from "@/constants/geo";
 import {
   buildGroundedInvocation,
@@ -26,7 +30,10 @@ import {
 import { GeoScanError } from "@/lib/geo/errors";
 import { captureModelUsageShare } from "@/lib/geo/model-usage";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
-import { geoJudgeResultSchema } from "@/schemas/geo";
+import {
+  geoJudgeResultSchema,
+  geoTranslationResultSchema,
+} from "@/schemas/geo";
 import type {
   GeoGroundedEngine,
   GeoJudgeResult,
@@ -42,6 +49,7 @@ interface GeoCheckTask {
   engine: string;
   grounded: GeoGroundedEngine | null;
   prompt: GeoPromptDefinition;
+  language: string;
 }
 
 interface GeoCheckContext {
@@ -85,7 +93,9 @@ Analyze the answer and report:
 - position: the 1-based rank of the company among the recommended brands if the answer contains an ordered or bulleted list of brands, otherwise null.
 - sentiment: the sentiment expressed toward the company ("positive", "neutral" or "negative"), or null if it is not mentioned.
 - competitors: up to ${MAX_JUDGE_COMPETITORS} other brand or product names mentioned in the answer, excluding the company and its aliases.
-- excerpt: at most ${GEO_EXCERPT_MAX_LENGTH} characters of the answer around the mention, or the first 200 characters of the answer if the company is not mentioned.`;
+- excerpt: at most ${GEO_EXCERPT_MAX_LENGTH} characters of the answer around the mention, or the first 200 characters of the answer if the company is not mentioned.
+
+The answer may be written in any language or script; count mentions of the company or its aliases regardless of language.`;
 }
 
 const askEngine = Effect.fn("geo.askEngine")(function* (
@@ -156,6 +166,40 @@ const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
   return judged;
 });
 
+const translatePrompts = Effect.fn("geo.translatePrompts")(function* (
+  language: string,
+  prompts: GeoPromptDefinition[]
+) {
+  const result = yield* Effect.tryPromise({
+    try: () =>
+      generateText({
+        model: gateway(GEO_JUDGE_MODEL),
+        output: Output.object({ schema: geoTranslationResultSchema }),
+        prompt: `Translate each prompt into ${language}. Keep brand and product names unchanged. Return the translations in the same order.\n\n${JSON.stringify(prompts.map((prompt) => prompt.text))}`,
+        system:
+          "You translate user prompts faithfully, preserving intent and named entities. Respond only with the requested structured data.",
+        maxOutputTokens: GEO_TRANSLATION_MAX_TOKENS,
+      }),
+    catch: (cause) =>
+      new GeoScanError({
+        message: `Translation to ${language} failed`,
+        cause,
+      }),
+  });
+  const translations = result.output.translations;
+  if (translations.length !== prompts.length) {
+    return yield* Effect.fail(
+      new GeoScanError({
+        message: `Translation to ${language} returned ${translations.length} prompts, expected ${prompts.length}`,
+      })
+    );
+  }
+  return prompts.map((prompt, index) => ({
+    id: prompt.id,
+    text: translations[index] ?? prompt.text,
+  }));
+});
+
 const runGeoCheck = Effect.fn("geo.runCheck")(function* (
   context: GeoCheckContext,
   task: GeoCheckTask
@@ -177,6 +221,7 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
     sentiment: judged.sentiment,
     competitors: judged.competitors.slice(0, MAX_JUDGE_COMPETITORS),
     excerpt: judged.excerpt.slice(0, GEO_EXCERPT_MAX_LENGTH),
+    language: task.language,
   };
 
   return row;
@@ -205,6 +250,7 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
     companyName: settingsRow.companyName,
     aliases: settingsRow.aliases,
     competitors: settingsRow.competitors,
+    languages: settingsRow.languages ?? [],
     enabled: settingsRow.enabled,
     createdAt: settingsRow.createdAt.toISOString(),
     updatedAt: settingsRow.updatedAt.toISOString(),
@@ -266,7 +312,7 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
   const tasks: GeoCheckTask[] = [];
   for (const engine of GEO_ENGINES) {
     for (const prompt of prompts) {
-      tasks.push({ engine, grounded: null, prompt });
+      tasks.push({ engine, grounded: null, prompt, language: "English" });
     }
   }
 
@@ -274,7 +320,44 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
   const groundedPrompts = prompts.slice(0, GEO_GROUNDED_MAX_PROMPTS);
   for (const grounded of groundedEngines) {
     for (const prompt of groundedPrompts) {
-      tasks.push({ engine: grounded.key, grounded, prompt });
+      tasks.push({
+        engine: grounded.key,
+        grounded,
+        prompt,
+        language: "English",
+      });
+    }
+  }
+
+  const extraLanguages = settings.languages
+    .filter((language) => language !== "English")
+    .slice(0, GEO_MAX_LANGUAGES);
+  for (const language of extraLanguages) {
+    const localized = yield* translatePrompts(
+      language,
+      prompts.slice(0, GEO_LANGUAGE_MAX_PROMPTS)
+    ).pipe(
+      Effect.catch((error: GeoScanError) => {
+        console.error(`[GEO] skipping language ${language}:`, error);
+        return Effect.succeed(null);
+      })
+    );
+    if (!localized) {
+      continue;
+    }
+    for (const engine of GEO_ENGINES) {
+      for (const prompt of localized) {
+        tasks.push({ engine, grounded: null, prompt, language });
+      }
+    }
+    const localizedGrounded = localized.slice(
+      0,
+      GEO_LANGUAGE_GROUNDED_MAX_PROMPTS
+    );
+    for (const grounded of groundedEngines) {
+      for (const prompt of localizedGrounded) {
+        tasks.push({ engine: grounded.key, grounded, prompt, language });
+      }
     }
   }
 

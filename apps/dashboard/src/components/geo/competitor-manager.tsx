@@ -35,6 +35,7 @@ export function CompetitorManager({
       companyName: settings.companyName,
       aliases: settings.aliases,
       competitors,
+      languages: settings.languages,
       enabled: settings.enabled,
     });
   };

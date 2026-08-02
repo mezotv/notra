@@ -8,6 +8,7 @@ import {
   InstrumentEmpty,
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
+import { GEO_LANGUAGE_FLAGS } from "@/constants/geo";
 import type { GeoPresenceStatus, GeoPromptResult } from "@/types/geo";
 import { classifyPromptPresence } from "@/utils/geo-presence";
 
@@ -15,6 +16,7 @@ interface PromptResultsPreviewProps {
   results: GeoPromptResult[];
   limit?: number;
   action?: ReactNode;
+  languages?: string[];
 }
 
 interface PromptSummary {
@@ -67,6 +69,7 @@ export function PromptResultsPreview({
   results,
   limit = DEFAULT_LIMIT,
   action,
+  languages = [],
 }: PromptResultsPreviewProps) {
   const summaries = useMemo(() => summarize(results), [results]);
 
@@ -92,6 +95,15 @@ export function PromptResultsPreview({
               <p className="min-w-0 flex-1 truncate text-sm">
                 {summary.prompt}
               </p>
+              {languages.length > 0 && (
+                <span className="flex shrink-0 items-center gap-0.5 text-xs">
+                  {languages.map((language) => (
+                    <span key={language} title={`Also scanned in ${language}`}>
+                      {GEO_LANGUAGE_FLAGS[language]}
+                    </span>
+                  ))}
+                </span>
+              )}
               <PresenceBadge status={summary.presence} />
               {summary.bestPosition !== null && (
                 <Badge

@@ -7,6 +7,7 @@ import type {
   BeaconSetupResponse,
   GeoCompetitorShareResponse,
   GeoGenerateFromWebsiteInput,
+  GeoLanguageShareResponse,
   GeoModelUsageResponse,
   GeoOverviewResponse,
   GeoPromptCreateInput,
@@ -91,6 +92,16 @@ export function useGeoCompetitorShare(organizationId: string, days?: number) {
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load competitor share" },
+  });
+}
+
+export function useGeoLanguageShare(organizationId: string, days?: number) {
+  return useQuery<GeoLanguageShareResponse>({
+    ...dashboardOrpc.geo.languageShare.queryOptions({
+      input: { organizationId, days: days ?? DEFAULT_GEO_DAYS },
+    }),
+    enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load language performance" },
   });
 }
 

@@ -216,6 +216,7 @@ export const geoMentionChecks = defineDatasource("geo_mention_checks", {
     sentiment: t.string().lowCardinality().nullable(),
     competitors: t.array(t.string()).jsonPath("$.competitors[:]"),
     excerpt: t.string(),
+    language: t.string().lowCardinality(),
   },
   engine: engine.mergeTree({
     sortingKey: ["organization_id", "engine", "prompt_id", "captured_at"],

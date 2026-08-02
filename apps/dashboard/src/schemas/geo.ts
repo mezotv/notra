@@ -1,3 +1,4 @@
+import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
 import { array, boolean, enum as enumType, number, object, string } from "zod";
 import {
   GEO_DISCOVERY_MAX_ALIASES,
@@ -5,11 +6,13 @@ import {
   GEO_DISCOVERY_MAX_PROMPTS,
   GEO_DISCOVERY_MIN_COMPETITORS,
   GEO_DISCOVERY_MIN_PROMPTS,
+  GEO_MAX_LANGUAGES,
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
 } from "@/constants/geo";
 import { publicWebsiteUrlSchema } from "@/schemas/url";
 
+const GEO_SUPPORTED_LANGUAGE_SET = new Set<string>(SUPPORTED_LANGUAGES);
 const MAX_ALIASES = 10;
 const MAX_COMPETITORS = 10;
 const MAX_JUDGE_COMPETITORS = 15;
@@ -27,7 +30,20 @@ export const geoSettingsUpsertInputSchema = object({
   companyName: string().min(1),
   aliases: array(string().min(1)).max(MAX_ALIASES),
   competitors: array(string().min(1)).max(MAX_COMPETITORS),
+  languages: array(string().min(1))
+    .max(GEO_MAX_LANGUAGES)
+    .refine(
+      (values) =>
+        values.every((value) => GEO_SUPPORTED_LANGUAGE_SET.has(value)),
+      {
+        message: "Unsupported language",
+      }
+    ),
   enabled: boolean(),
+});
+
+export const geoTranslationResultSchema = object({
+  translations: array(string().min(1)),
 });
 
 export const geoOrganizationInputSchema = object({

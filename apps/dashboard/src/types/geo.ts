@@ -4,6 +4,7 @@ export interface GeoSettings {
   companyName: string;
   aliases: string[];
   competitors: string[];
+  languages: string[];
   enabled: boolean;
   createdAt: string;
   updatedAt: string;
@@ -71,6 +72,7 @@ export interface GeoSettingsUpsertInput {
   companyName: string;
   aliases: string[];
   competitors: string[];
+  languages: string[];
   enabled: boolean;
 }
 
@@ -284,6 +286,24 @@ export interface GeoStatTile {
   label: string;
   value: string;
   hint: string;
+}
+
+export interface GeoLanguageSharePoint {
+  language: string;
+  checks: number;
+  mentions: number;
+  mentionRate: number;
+  avgPosition: number | null;
+}
+
+export interface GeoLanguageShareResponse {
+  configured: boolean;
+  points: GeoLanguageSharePoint[];
+}
+
+export interface LanguagePerformanceCardProps {
+  points: GeoLanguageSharePoint[];
+  configuredLanguages: string[];
 }
 
 export interface MentionRateCardProps {
