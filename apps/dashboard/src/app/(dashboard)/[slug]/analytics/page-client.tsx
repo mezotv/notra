@@ -7,6 +7,7 @@ import { AccountFilter } from "@/components/analytics/account-filter";
 import { AccountSeriesChartCard } from "@/components/analytics/account-series-chart-card";
 import { ConnectAccountsButtons } from "@/components/analytics/connect-accounts-buttons";
 import { FollowersCard } from "@/components/analytics/followers-card";
+import { ImpressionsShareCard } from "@/components/analytics/impressions-share-card";
 import { LeaderboardCard } from "@/components/analytics/leaderboard-card";
 import { PostingPerformanceCard } from "@/components/analytics/posting-performance-card";
 import { SummaryStats } from "@/components/analytics/summary-stats";
@@ -235,10 +236,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             description="Every account you post from or track, ranked by interactions"
             title="Accounts"
           />
-          <LeaderboardCard
-            accountDetails={accounts}
-            organizationId={organizationId}
-          />
+          <div className="grid gap-3 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <LeaderboardCard
+                accountDetails={accounts}
+                organizationId={organizationId}
+              />
+            </div>
+            <ImpressionsShareCard organizationId={organizationId} />
+          </div>
         </section>
 
         <section className="space-y-3">
