@@ -1,4 +1,6 @@
 import { type IngestResult, type QueryResult, Tinybird } from "@tinybirdco/sdk";
+import { bumpAnalyticsVersions, cachedQuery } from "../cache/query-cache";
+import type { AnalyticsCacheScope } from "../types/cache";
 import {
   type SocialAccountRow,
   type SocialAccountStatsRow,
@@ -76,6 +78,8 @@ function getTinybirdClient() {
 
 async function ingestRows<TRow>(
   rows: TRow[],
+  scope: AnalyticsCacheScope,
+  organizationIds: ReadonlyArray<string | null>,
   ingest: (
     client: NonNullable<ReturnType<typeof getTinybirdClient>>,
     batch: TRow[]
@@ -85,115 +89,168 @@ async function ingestRows<TRow>(
   if (!client || rows.length === 0) {
     return null;
   }
-  return await ingest(client, rows);
+  const result = await ingest(client, rows);
+  await bumpAnalyticsVersions(scope, organizationIds);
+  return result;
+}
+
+function cachedPipeQuery<TParams extends Record<string, unknown>, TRow>(
+  scope: AnalyticsCacheScope,
+  pipe: string,
+  params: TParams,
+  organizationId: string | null,
+  query: (
+    client: NonNullable<ReturnType<typeof getTinybirdClient>>
+  ) => Promise<QueryResult<TRow>>
+): Promise<QueryResult<TRow> | null> {
+  const client = getTinybirdClient();
+  if (!client) {
+    return Promise.resolve(null);
+  }
+  return cachedQuery({
+    scope,
+    pipe,
+    organizationId,
+    params,
+    fetch: () => query(client),
+  });
 }
 
 export function ingestSocialAccounts(
   rows: SocialAccountRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.socialAccounts.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "social",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.socialAccounts.ingestBatch(batch)
   );
 }
 
 export function ingestSocialAccountStats(
   rows: SocialAccountStatsRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.socialAccountStats.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "social",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.socialAccountStats.ingestBatch(batch)
   );
 }
 
 export function ingestSocialPosts(
   rows: SocialPostRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.socialPosts.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "social",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.socialPosts.ingestBatch(batch)
   );
 }
 
 export function ingestSocialPostStats(
   rows: SocialPostStatsRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.socialPostStats.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "social",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.socialPostStats.ingestBatch(batch)
   );
 }
 
 export function ingestSocialPostSources(
   rows: SocialPostSourceRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.socialPostSources.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "social",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.socialPostSources.ingestBatch(batch)
   );
 }
 
-export async function querySocialOverview(
+export function querySocialOverview(
   params: SocialOverviewParams
 ): Promise<QueryResult<SocialOverviewRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.socialOverview.query(params);
+  return cachedPipeQuery(
+    "social",
+    "social_overview",
+    params,
+    params.organization_id,
+    (client) => client.socialOverview.query(params)
+  );
 }
 
-export async function queryEngagementTimeseries(
+export function queryEngagementTimeseries(
   params: EngagementTimeseriesParams
 ): Promise<QueryResult<EngagementTimeseriesRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.engagementTimeseries.query(params);
+  return cachedPipeQuery(
+    "social",
+    "engagement_timeseries",
+    params,
+    params.organization_id,
+    (client) => client.engagementTimeseries.query(params)
+  );
 }
 
-export async function queryTopPosts(
+export function queryTopPosts(
   params: TopPostsParams
 ): Promise<QueryResult<TopPostsRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.topPosts.query(params);
+  return cachedPipeQuery(
+    "social",
+    "top_posts",
+    params,
+    params.organization_id,
+    (client) => client.topPosts.query(params)
+  );
 }
 
-export async function queryFollowerGrowth(
+export function queryFollowerGrowth(
   params: FollowerGrowthParams
 ): Promise<QueryResult<FollowerGrowthRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.followerGrowth.query(params);
+  return cachedPipeQuery(
+    "social",
+    "follower_growth",
+    params,
+    params.organization_id,
+    (client) => client.followerGrowth.query(params)
+  );
 }
 
-export async function queryPostingPerformance(
+export function queryPostingPerformance(
   params: PostingPerformanceParams
 ): Promise<QueryResult<PostingPerformanceRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.postingPerformance.query(params);
+  return cachedPipeQuery(
+    "social",
+    "posting_performance",
+    params,
+    params.organization_id,
+    (client) => client.postingPerformance.query(params)
+  );
 }
 
-export async function queryNotraAdoption(params: {
+export function queryNotraAdoption(params: {
   organization_id: string;
 }): Promise<QueryResult<NotraAdoptionRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.notraAdoption.query(params);
+  return cachedPipeQuery(
+    "social",
+    "notra_adoption",
+    params,
+    params.organization_id,
+    (client) => client.notraAdoption.query(params)
+  );
 }
 
-export async function queryAccountLeaderboard(
+export function queryAccountLeaderboard(
   params: AccountLeaderboardParams
 ): Promise<QueryResult<AccountLeaderboardRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.accountLeaderboard.query(params);
+  return cachedPipeQuery(
+    "social",
+    "account_leaderboard",
+    params,
+    params.organization_id,
+    (client) => client.accountLeaderboard.query(params)
+  );
 }
