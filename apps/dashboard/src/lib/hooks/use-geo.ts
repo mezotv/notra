@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import type {
   GeoCompetitorShareResponse,
   GeoGenerateFromWebsiteInput,
+  GeoModelUsageResponse,
   GeoOverviewResponse,
   GeoPromptCreateInput,
   GeoPromptDeleteInput,
@@ -88,6 +89,16 @@ export function useGeoCompetitorShare(organizationId: string, days?: number) {
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load competitor share" },
+  });
+}
+
+export function useModelUsage(organizationId: string, days?: number) {
+  return useQuery<GeoModelUsageResponse>({
+    ...dashboardOrpc.geo.modelUsage.queryOptions({
+      input: { organizationId, days: days ?? DEFAULT_GEO_DAYS },
+    }),
+    enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load model usage share" },
   });
 }
 

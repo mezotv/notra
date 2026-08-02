@@ -170,6 +170,36 @@ export interface GeoGenerateFromWebsiteInput {
   url: string;
 }
 
+export interface GeoModelUsageRow {
+  model: string;
+  label: string;
+  rank: number;
+  share: number;
+  rawTokens: number | null;
+  scanned: boolean;
+  mentionRate: number | null;
+  checks: number;
+}
+
+export interface GeoModelUsageResponse {
+  configured: boolean;
+  source: string;
+  attribution: string;
+  capturedAt: string | null;
+  models: GeoModelUsageRow[];
+}
+
+export interface GeoModelUsageInput {
+  days?: number;
+  limit?: number;
+}
+
+export interface GeoModelUsageSnapshot {
+  status: "captured" | "skipped";
+  models?: number;
+  capturedAt?: string;
+}
+
 export interface GeoJudgeResult {
   mentioned: boolean;
   position: number | null;

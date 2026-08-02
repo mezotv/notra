@@ -4,6 +4,9 @@ export const GEO_ENGINES = [
   "openai/gpt-5.4",
   "anthropic/claude-sonnet-4.6",
   "google/gemini-3-flash",
+  "anthropic/claude-opus-5",
+  "anthropic/claude-haiku-4.5",
+  "openai/gpt-5.4-mini",
 ] as const;
 
 export const GEO_JUDGE_MODEL = "openai/gpt-5.4-nano";
@@ -76,8 +79,26 @@ export const GEO_ENGINE_LABELS: Record<string, string> = {
   "openai/gpt-5.4": "ChatGPT",
   "anthropic/claude-sonnet-4.6": "Claude",
   "google/gemini-3-flash": "Gemini",
+  "anthropic/claude-opus-5": "Claude Opus",
+  "anthropic/claude-haiku-4.5": "Claude Haiku",
+  "openai/gpt-5.4-mini": "GPT-5.4 mini",
   ...groundedEngineLabels,
 };
+
+export const GEO_MODEL_USAGE_SOURCE = "openrouter";
+export const GEO_MODEL_USAGE_ATTRIBUTION =
+  "Source: OpenRouter (openrouter.ai/rankings)";
+export const GEO_MODEL_USAGE_API_KEY_ENV = "OPENROUTER_API_KEY";
+export const GEO_MODEL_USAGE_ENDPOINT =
+  "https://openrouter.ai/api/v1/datasets/rankings-daily";
+export const GEO_MODEL_USAGE_PERIOD = "week";
+export const GEO_MODEL_USAGE_OTHER_KEY = "other";
+export const GEO_MODEL_USAGE_MODELS_ENDPOINT =
+  "https://openrouter.ai/api/v1/models";
+export const GEO_MODEL_USAGE_INGEST_LIMIT = 40;
+export const GEO_MODEL_USAGE_FETCH_TIMEOUT_MS = 20_000;
+export const GEO_MODEL_USAGE_DEFAULT_LIMIT = 12;
+export const GEO_MODEL_USAGE_DEFAULT_WEEKS = 8;
 
 export const GEO_MAX_PROMPTS = 8;
 export const GEO_GROUNDED_MAX_PROMPTS = 6;

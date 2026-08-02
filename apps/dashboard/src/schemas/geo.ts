@@ -15,6 +15,7 @@ const MAX_COMPETITORS = 10;
 const MAX_JUDGE_COMPETITORS = 15;
 const MAX_EXCERPT_LENGTH = 300;
 const MAX_DAYS = 365;
+const MAX_MODEL_USAGE_LIMIT = 50;
 const MIN_PROMPT_LENGTH = GEO_PROMPT_MIN_LENGTH;
 const MAX_PROMPT_LENGTH = GEO_PROMPT_MAX_LENGTH;
 
@@ -69,6 +70,36 @@ export const geoWebsiteDiscoverySchema = object({
   prompts: array(string().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH))
     .min(GEO_DISCOVERY_MIN_PROMPTS)
     .max(GEO_DISCOVERY_MAX_PROMPTS),
+});
+
+export const geoModelUsageInputSchema = object({
+  organizationId: string().min(1),
+  days: number().int().min(1).max(MAX_DAYS).optional(),
+  limit: number().int().min(1).max(MAX_MODEL_USAGE_LIMIT).optional(),
+});
+
+export const openRouterRankingsResponseSchema = object({
+  meta: object({
+    as_of: string().min(1),
+    start_date: string().min(1),
+    end_date: string().min(1),
+  }),
+  data: array(
+    object({
+      date: string().min(1),
+      model_permaslug: string().min(1),
+      total_tokens: string().min(1),
+    })
+  ),
+});
+
+export const openRouterModelsResponseSchema = object({
+  data: array(
+    object({
+      id: string().min(1),
+      canonical_slug: string().min(1).nullable().optional(),
+    })
+  ),
 });
 
 export const geoJudgeResultSchema = object({

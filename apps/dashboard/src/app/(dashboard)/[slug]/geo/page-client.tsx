@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/empty-state";
 import { GeoSettingsDialog } from "@/components/geo/geo-settings-dialog";
 import { GeoSummaryStats } from "@/components/geo/geo-summary-stats";
 import { MentionRateCard } from "@/components/geo/mention-rate-card";
+import { ModelUsageCard } from "@/components/geo/model-usage-card";
 import { WebsiteGenerateCard } from "@/components/geo/website-generate-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -18,6 +19,7 @@ import {
   useGeoSettings,
   useGeoStartScan,
   useGeoTimeseries,
+  useModelUsage,
 } from "@/lib/hooks/use-geo";
 import { GeoPageSkeleton } from "./skeleton";
 
@@ -41,6 +43,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { data: overview } = useGeoOverview(organizationId);
   const { data: timeseries } = useGeoTimeseries(organizationId);
   const { data: prompts } = useGeoPrompts(organizationId);
+  const { data: modelUsage } = useModelUsage(organizationId);
   const startScan = useGeoStartScan(organizationId);
 
   if (isSettingsPending) {
@@ -122,6 +125,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           engines={overview?.engines ?? []}
           points={timeseries?.points ?? []}
         />
+
+        <ModelUsageCard usage={modelUsage} />
 
         <GeoSettingsDialog
           onOpenChange={setSettingsOpen}

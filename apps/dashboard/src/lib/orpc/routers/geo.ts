@@ -4,20 +4,29 @@ import {
   queryGeoOverview,
   queryGeoPromptResults,
   queryGeoTimeseries,
+  queryModelUsageLatest,
 } from "@notra/analytics/tinybird/client";
 import { db } from "@notra/db/drizzle";
 import { brandSettings, geoPrompts, geoSettings } from "@notra/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { Effect } from "effect";
+import {
+  GEO_ENGINE_LABELS,
+  GEO_MODEL_USAGE_ATTRIBUTION,
+  GEO_MODEL_USAGE_DEFAULT_LIMIT,
+  GEO_MODEL_USAGE_SOURCE,
+} from "@/constants/geo";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { generateGeoFromWebsite } from "@/lib/geo/discover";
 import type { GeoDiscoveryError } from "@/lib/geo/errors";
+import { normalizeModelId } from "@/lib/geo/model-usage";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { badRequest, notFound } from "@/lib/orpc/utils/errors";
 import { startGeoScanRun } from "@/lib/workflows/start";
 import {
   geoGenerateFromWebsiteInputSchema,
+  geoModelUsageInputSchema,
   geoOrganizationInputSchema,
   geoPromptCreateInputSchema,
   geoPromptDeleteInputSchema,
@@ -28,6 +37,8 @@ import {
 import type {
   GeoCompetitorShareResponse,
   GeoGenerateFromWebsiteResult,
+  GeoModelUsageResponse,
+  GeoModelUsageRow,
   GeoOverviewResponse,
   GeoPromptResultsResponse,
   GeoPromptRow,
@@ -79,6 +90,44 @@ function toNullableNumber(value: number | bigint | null): number | null {
   return Number(value);
 }
 
+interface EngineCoverage {
+  mentions: number;
+  checks: number;
+}
+
+function buildCoverageByModel(
+  rows: { engine: string; mentions: number | bigint; checks: number | bigint }[]
+): Map<string, EngineCoverage> {
+  const coverage = new Map<string, EngineCoverage>();
+  for (const row of rows) {
+    const model = normalizeModelId(row.engine);
+    const entry = coverage.get(model) ?? { mentions: 0, checks: 0 };
+    entry.mentions += Number(row.mentions);
+    entry.checks += Number(row.checks);
+    coverage.set(model, entry);
+  }
+  return coverage;
+}
+
+function toModelUsageRow(
+  model: string,
+  rank: number | bigint,
+  share: number,
+  rawTokens: number | bigint | null,
+  coverage: EngineCoverage | undefined
+): GeoModelUsageRow {
+  const checks = coverage?.checks ?? 0;
+  return {
+    model,
+    label: GEO_ENGINE_LABELS[model] ?? model,
+    rank: Number(rank),
+    share,
+    rawTokens: rawTokens === null ? null : Number(rawTokens),
+    scanned: checks > 0,
+    mentionRate: checks > 0 ? (coverage?.mentions ?? 0) / checks : null,
+    checks,
+  };
+}
 export const geoRouter = {
   settings: authorizedProcedure
     .input(geoOrganizationInputSchema)
@@ -246,6 +295,51 @@ export const geoRouter = {
         };
       }
     ),
+  modelUsage: authorizedProcedure
+    .input(geoModelUsageInputSchema)
+    .handler(async ({ context, input }): Promise<GeoModelUsageResponse> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const [usage, overview] = await Promise.all([
+        queryModelUsageLatest({
+          source: GEO_MODEL_USAGE_SOURCE,
+          limit: input.limit ?? GEO_MODEL_USAGE_DEFAULT_LIMIT,
+        }).catch((error) => {
+          console.error("[GEO] model usage query failed:", error);
+          return null;
+        }),
+        queryGeoOverview({
+          organization_id: input.organizationId,
+          days: input.days,
+        }).catch((error) => {
+          console.error("[GEO] overview query failed:", error);
+          return null;
+        }),
+      ]);
+
+      const coverage = buildCoverageByModel(overview?.data ?? []);
+      const rows = usage?.data ?? [];
+
+      return {
+        configured: isTinybirdConfigured(),
+        source: GEO_MODEL_USAGE_SOURCE,
+        attribution: GEO_MODEL_USAGE_ATTRIBUTION,
+        capturedAt: rows[0]?.captured_at ?? null,
+        models: rows.map((row) =>
+          toModelUsageRow(
+            row.model,
+            row.rank,
+            Number(row.share),
+            row.raw_tokens,
+            coverage.get(row.model)
+          )
+        ),
+      };
+    }),
   promptsList: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async ({ context, input }): Promise<GeoTrackedPromptsResponse> => {

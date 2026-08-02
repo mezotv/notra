@@ -24,6 +24,7 @@ import {
   resolveGroundedEngines,
 } from "@/lib/geo/engines";
 import { GeoScanError } from "@/lib/geo/errors";
+import { captureModelUsageShare } from "@/lib/geo/model-usage";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
 import { geoJudgeResultSchema } from "@/schemas/geo";
 import type {
@@ -304,6 +305,13 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
     catch: (cause) =>
       new GeoScanError({ message: "Failed to ingest GEO checks", cause }),
   });
+
+  yield* captureModelUsageShare().pipe(
+    Effect.catch((error: GeoScanError) => {
+      console.error("[GEO] model usage snapshot failed:", error);
+      return Effect.succeed(null);
+    })
+  );
 
   const completed: GeoScanResult = {
     status: "completed",

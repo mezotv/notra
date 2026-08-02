@@ -2,6 +2,8 @@ import { type IngestResult, type QueryResult, Tinybird } from "@tinybirdco/sdk";
 import {
   type GeoMentionCheckRow,
   geoMentionChecks,
+  type ModelUsageShareRow,
+  modelUsageShare,
   type SocialAccountRow,
   type SocialAccountStatsRow,
   type SocialPostRow,
@@ -31,6 +33,12 @@ import {
   geoOverview,
   geoPromptResults,
   geoTimeseries,
+  type ModelUsageLatestParams,
+  type ModelUsageLatestRow,
+  type ModelUsageTrendParams,
+  type ModelUsageTrendRow,
+  modelUsageLatest,
+  modelUsageTrend,
   type NotraAdoptionRow,
   notraAdoption,
   type PostingPerformanceParams,
@@ -62,6 +70,7 @@ function createTinybirdClient() {
       socialPostStats,
       socialPostSources,
       geoMentionChecks,
+      modelUsageShare,
     },
     pipes: {
       socialOverview,
@@ -76,6 +85,8 @@ function createTinybirdClient() {
       geoPromptResults,
       geoCompetitorShare,
       accountLeaderboard,
+      modelUsageLatest,
+      modelUsageTrend,
     },
   });
 }
@@ -151,6 +162,14 @@ export function ingestGeoMentionChecks(
 ): Promise<IngestResult | null> {
   return ingestRows(rows, (client, batch) =>
     client.geoMentionChecks.ingestBatch(batch)
+  );
+}
+
+export function ingestModelUsageShare(
+  rows: ModelUsageShareRow[]
+): Promise<IngestResult | null> {
+  return ingestRows(rows, (client, batch) =>
+    client.modelUsageShare.ingestBatch(batch)
   );
 }
 
@@ -277,4 +296,24 @@ export async function queryPostMetricsLookup(params: {
     return null;
   }
   return await client.postMetricsLookup.query(params);
+}
+
+export async function queryModelUsageLatest(
+  params: ModelUsageLatestParams
+): Promise<QueryResult<ModelUsageLatestRow> | null> {
+  const client = getTinybirdClient();
+  if (!client) {
+    return null;
+  }
+  return await client.modelUsageLatest.query(params);
+}
+
+export async function queryModelUsageTrend(
+  params: ModelUsageTrendParams
+): Promise<QueryResult<ModelUsageTrendRow> | null> {
+  const client = getTinybirdClient();
+  if (!client) {
+    return null;
+  }
+  return await client.modelUsageTrend.query(params);
 }

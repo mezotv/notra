@@ -132,9 +132,27 @@ export const geoMentionChecks = defineDatasource("geo_mention_checks", {
   }),
 });
 
+export const modelUsageShare = defineDatasource("model_usage_share", {
+  description:
+    "Industry-wide AI model usage snapshots. Intentionally has no organization_id: model usage share is global market data, identical for every organization",
+  schema: {
+    captured_at: t.dateTime(),
+    source: t.string().lowCardinality(),
+    model: t.string(),
+    rank: t.uint64(),
+    share: t.float64(),
+    raw_tokens: t.uint64().nullable(),
+  },
+  engine: engine.mergeTree({
+    sortingKey: ["source", "captured_at", "model"],
+    partitionKey: "toYYYYMM(captured_at)",
+  }),
+});
+
 export type SocialAccountRow = InferRow<typeof socialAccounts>;
 export type SocialAccountStatsRow = InferRow<typeof socialAccountStats>;
 export type SocialPostRow = InferRow<typeof socialPosts>;
 export type SocialPostStatsRow = InferRow<typeof socialPostStats>;
 export type SocialPostSourceRow = InferRow<typeof socialPostSources>;
 export type GeoMentionCheckRow = InferRow<typeof geoMentionChecks>;
+export type ModelUsageShareRow = InferRow<typeof modelUsageShare>;
