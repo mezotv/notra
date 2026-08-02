@@ -12,6 +12,7 @@ import {
   querySocialOverview,
   queryTopPosts,
 } from "@notra/analytics/tinybird/client";
+import { purgeSocialAccountData } from "@notra/analytics/tinybird/purge";
 import { db } from "@notra/db/drizzle";
 import {
   connectedSocialAccounts,
@@ -179,7 +180,7 @@ export const analyticsRouter = {
         user: context.user,
       });
 
-      const [result, accounts] = await Promise.all([
+      const [result, accounts, tracked] = await Promise.all([
         queryTopPosts({
           organization_id: input.organizationId,
           limit: input.limit,
@@ -199,10 +200,19 @@ export const analyticsRouter = {
             input.organizationId
           ),
         }),
+        db.query.trackedSocialAccounts.findMany({
+          columns: {
+            provider: true,
+            providerAccountId: true,
+            username: true,
+            profileImageUrl: true,
+          },
+          where: eq(trackedSocialAccounts.organizationId, input.organizationId),
+        }),
       ]);
 
       const accountsByKey = new Map(
-        accounts.map((account) => [
+        [...accounts, ...tracked].map((account) => [
           `${account.provider}:${account.providerAccountId}`,
           account,
         ])
@@ -210,27 +220,31 @@ export const analyticsRouter = {
 
       return {
         configured: isTinybirdConfigured(),
-        posts: (result?.data ?? []).map((row) => {
-          const account = accountsByKey.get(
-            `${row.provider}:${row.provider_account_id}`
-          );
-          return {
-            provider: row.provider,
-            platformPostId: row.platform_post_id,
-            providerAccountId: row.provider_account_id,
-            username: account?.username ?? null,
-            profileImageUrl: account?.profileImageUrl ?? null,
-            content: row.content,
-            url: row.url,
-            postedAt: row.posted_at,
-            impressions: toNullableNumber(row.impressions),
-            likes: toNullableNumber(row.likes),
-            replies: toNullableNumber(row.replies),
-            reposts: toNullableNumber(row.reposts),
-            bookmarks: toNullableNumber(row.bookmarks),
-            engagement: Number(row.engagement),
-          };
-        }),
+        posts: (result?.data ?? [])
+          .filter((row) =>
+            accountsByKey.has(`${row.provider}:${row.provider_account_id}`)
+          )
+          .map((row) => {
+            const account = accountsByKey.get(
+              `${row.provider}:${row.provider_account_id}`
+            );
+            return {
+              provider: row.provider,
+              platformPostId: row.platform_post_id,
+              providerAccountId: row.provider_account_id,
+              username: account?.username ?? null,
+              profileImageUrl: account?.profileImageUrl ?? null,
+              content: row.content,
+              url: row.url,
+              postedAt: row.posted_at,
+              impressions: toNullableNumber(row.impressions),
+              likes: toNullableNumber(row.likes),
+              replies: toNullableNumber(row.replies),
+              reposts: toNullableNumber(row.reposts),
+              bookmarks: toNullableNumber(row.bookmarks),
+              engagement: Number(row.engagement),
+            };
+          }),
       };
     }),
   adoption: authorizedProcedure
@@ -530,11 +544,24 @@ export const analyticsRouter = {
             eq(trackedSocialAccounts.organizationId, input.organizationId)
           )
         )
-        .returning({ id: trackedSocialAccounts.id });
+        .returning({
+          id: trackedSocialAccounts.id,
+          provider: trackedSocialAccounts.provider,
+          providerAccountId: trackedSocialAccounts.providerAccountId,
+        });
 
-      if (deleted.length === 0) {
+      const removed = deleted.at(0);
+      if (!removed) {
         throw notFound("Tracked account not found");
       }
+
+      await purgeSocialAccountData({
+        organizationId: input.organizationId,
+        provider: removed.provider,
+        providerAccountId: removed.providerAccountId,
+      }).catch((error) => {
+        console.error("[Analytics] account purge failed:", error);
+      });
 
       return { trackedAccountId: input.trackedAccountId };
     }),
