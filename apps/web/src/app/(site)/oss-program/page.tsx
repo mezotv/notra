@@ -2,7 +2,6 @@ import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Metadata } from "next";
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
-import { OssApplicationForm } from "@/components/oss-program/oss-application-form";
 import { PAGE_SOCIAL_IMAGES, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 
@@ -169,14 +168,14 @@ export default function OssProgramPage() {
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
           <div className="flex flex-col gap-2">
             <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em] md:text-3xl">
-              Apply
+              Applications are closed
             </h2>
             <p className="font-normal font-sans text-muted-foreground text-sm leading-6">
-              Spots are limited. Tell us about your project and we'll be in
-              touch by email.
+              We're not accepting new applications at this time. Check back
+              soon, we'll reopen the program once we have room for more
+              projects.
             </p>
           </div>
-          <OssApplicationForm />
         </div>
       </section>
     </div>
