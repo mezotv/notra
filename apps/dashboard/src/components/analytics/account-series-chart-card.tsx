@@ -103,7 +103,7 @@ export function AccountSeriesChartCard({
                 label={marker.label}
               />
             ))}
-            <Tooltip />
+            <Tooltip labelKey="day" />
           </Chart>
         ) : (
           <p className="flex h-56 items-center justify-center text-muted-foreground text-sm">
