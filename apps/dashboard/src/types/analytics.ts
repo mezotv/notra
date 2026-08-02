@@ -1,3 +1,5 @@
+import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context";
+
 export interface SocialAnalyticsSyncPayload {
   organizationId?: string;
 }
@@ -263,4 +265,40 @@ export interface TimelineMarker {
 
 export interface TrackAccountPreviewResponse {
   account: ResolvedTwitterAccount | null;
+}
+
+export interface AnalyticsHeroSummary {
+  followers: number | null;
+  impressions: number;
+  interactions: number;
+  posts: number;
+  engagementRate: number | null;
+}
+
+export interface SummaryStatsProps {
+  accounts: SocialOverviewAccount[];
+  points: EngagementTimeseriesPoint[];
+}
+
+export interface AnalyticsStatTile {
+  label: string;
+  value: string;
+  hint: string;
+  accent: boolean;
+}
+
+export interface AccountSeriesChartCardProps {
+  hero?: boolean;
+  title: string;
+  readout: string;
+  kind: "area" | "line" | "bar";
+  rows: AccountSeriesRow[];
+  config: ChartConfig;
+  allKeys: string[];
+  hiddenKeys: ReadonlySet<string>;
+  onToggleSeries: (key: string) => void;
+  hoverIndex: number | null;
+  onHoverChange: (index: number | null) => void;
+  markers: TimelineMarker[];
+  emptyMessage: string;
 }

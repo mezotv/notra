@@ -7,15 +7,12 @@ import { Grid } from "@notra/ui/components/dither-kit/grid";
 import { Tooltip } from "@notra/ui/components/dither-kit/tooltip";
 import { XAxis } from "@notra/ui/components/dither-kit/x-axis";
 import { YAxis } from "@notra/ui/components/dither-kit/y-axis";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@notra/ui/components/ui/card";
 import { useState } from "react";
 import { ChartSeriesLegend } from "@/components/analytics/chart-legend";
+import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@/components/instrument/instrument-module";
 import type { PostingPerformanceChartRow } from "@/types/analytics";
 
 interface PostingPerformanceCardProps {
@@ -47,36 +44,30 @@ export function PostingPerformanceCard({ rows }: PostingPerformanceCardProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Best days to post</CardTitle>
-        <CardDescription>
-          Average engagement per post and post volume by weekday, last 90 days
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {hasData && visibleKeys.length > 0 ? (
-          <BarChart className="h-56 w-full" config={chartConfig} data={rows}>
-            <Grid />
-            <XAxis dataKey="day" />
-            <YAxis />
-            {visibleKeys.map((key) => (
-              <Bar dataKey={key} key={key} />
-            ))}
-            <Tooltip labelKey="day" />
-          </BarChart>
-        ) : (
-          <p className="flex h-56 items-center justify-center text-muted-foreground text-sm">
-            No posting data yet
-          </p>
-        )}
-        <ChartSeriesLegend
-          config={chartConfig}
-          hiddenKeys={hiddenKeys}
-          onToggle={toggle}
-          orderedKeys={seriesKeys}
+    <InstrumentModule eyebrow="Best days to post" readout="90D">
+      {hasData && visibleKeys.length > 0 ? (
+        <BarChart className="h-56 w-full" config={chartConfig} data={rows}>
+          <Grid />
+          <XAxis dataKey="day" />
+          <YAxis />
+          {visibleKeys.map((key) => (
+            <Bar dataKey={key} key={key} />
+          ))}
+          <Tooltip labelKey="day" />
+        </BarChart>
+      ) : (
+        <InstrumentEmpty
+          className="h-56"
+          message="No posting data yet"
+          seed="Best days to post"
         />
-      </CardContent>
-    </Card>
+      )}
+      <ChartSeriesLegend
+        config={chartConfig}
+        hiddenKeys={hiddenKeys}
+        onToggle={toggle}
+        orderedKeys={seriesKeys}
+      />
+    </InstrumentModule>
   );
 }

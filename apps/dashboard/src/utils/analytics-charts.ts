@@ -1,5 +1,6 @@
 import type {
   AccountSeriesRow,
+  AnalyticsHeroSummary,
   EngagementTimeseriesPoint,
   FollowerGrowthPoint,
   PostingPerformanceChartRow,
@@ -122,4 +123,25 @@ export function buildPostingPerformanceRows(
       posts: point?.posts ?? 0,
     };
   });
+}
+
+const PERCENT = 100;
+
+export function buildAnalyticsHeroSummary(
+  accounts: SocialOverviewAccount[],
+  points: EngagementTimeseriesPoint[]
+): AnalyticsHeroSummary {
+  const followers = sumMetric(accounts, (account) => account.followersCount);
+  let impressions = 0;
+  let interactions = 0;
+  let posts = 0;
+  for (const point of points) {
+    impressions += point.impressions ?? 0;
+    interactions +=
+      (point.likes ?? 0) + (point.replies ?? 0) + (point.reposts ?? 0);
+    posts += point.posts;
+  }
+  const engagementRate =
+    impressions > 0 ? (interactions / impressions) * PERCENT : null;
+  return { followers, impressions, interactions, posts, engagementRate };
 }
