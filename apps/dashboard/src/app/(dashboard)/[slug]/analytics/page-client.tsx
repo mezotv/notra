@@ -4,6 +4,7 @@ import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context"
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AccountFilter } from "@/components/analytics/account-filter";
+import { ConnectAccountsButtons } from "@/components/analytics/connect-accounts-buttons";
 import { AccountSeriesChartCard } from "@/components/analytics/account-series-chart-card";
 import { FollowersCard } from "@/components/analytics/followers-card";
 import { LeaderboardCard } from "@/components/analytics/leaderboard-card";
@@ -202,12 +203,16 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
         <header className="space-y-3">
-          <div className="space-y-1">
-            <h1 className="font-semibold text-2xl">Analytics</h1>
-            <p className="text-muted-foreground text-sm">
-              {accounts.length} {accounts.length === 1 ? "account" : "accounts"}{" "}
-              connected · hover any chart to compare the same day everywhere
-            </p>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="space-y-1">
+              <h1 className="font-semibold text-2xl">Analytics</h1>
+              <p className="text-muted-foreground text-sm">
+                {accounts.length}{" "}
+                {accounts.length === 1 ? "account" : "accounts"} connected on X
+                and LinkedIn
+              </p>
+            </div>
+            <ConnectAccountsButtons organizationId={organizationId} />
           </div>
           <AccountFilter
             accounts={accounts}
