@@ -16,6 +16,7 @@ import { Effect } from "effect";
 import {
   AI_TRAFFIC_DEFAULT_DAYS,
   AI_TRAFFIC_DEFAULT_LOG_LIMIT,
+  GEO_DEFAULT_LANGUAGE,
   GEO_ENGINE_LABELS,
   GEO_MODEL_USAGE_ATTRIBUTION,
   GEO_MODEL_USAGE_DEFAULT_LIMIT,
@@ -38,6 +39,7 @@ import {
   geoOrganizationInputSchema,
   geoPromptCreateInputSchema,
   geoPromptDeleteInputSchema,
+  geoPromptLanguagesUpdateInputSchema,
   geoPromptToggleInputSchema,
   geoSettingsUpsertInputSchema,
   geoTimeseriesInputSchema,
@@ -87,6 +89,7 @@ function toTrackedPrompt(row: GeoPromptRow): GeoTrackedPrompt {
   return {
     id: row.id,
     prompt: row.prompt,
+    languages: row.languages,
     enabled: row.enabled,
     source: "custom",
     createdAt: row.createdAt.toISOString(),
@@ -269,6 +272,7 @@ export const geoRouter = {
         results: (result?.data ?? []).map((row) => ({
           promptId: row.prompt_id,
           engine: row.engine,
+          language: row.language || GEO_DEFAULT_LANGUAGE,
           prompt: row.prompt,
           mentioned: row.mentioned,
           position: toNullableNumber(row.position),
@@ -476,6 +480,7 @@ export const geoRouter = {
         prompts.push({
           id: autoPrompt.id,
           prompt: autoPrompt.text,
+          languages: [],
           enabled: true,
           source: "auto",
           createdAt: null,
@@ -499,6 +504,7 @@ export const geoRouter = {
           id: crypto.randomUUID(),
           organizationId: input.organizationId,
           prompt: input.prompt,
+          languages: input.languages ?? [],
         })
         .returning();
 
@@ -532,6 +538,32 @@ export const geoRouter = {
       }
 
       return { success: true };
+    }),
+  promptsLanguagesUpdate: authorizedProcedure
+    .input(geoPromptLanguagesUpdateInputSchema)
+    .handler(async ({ context, input }): Promise<GeoTrackedPrompt> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const [row] = await db
+        .update(geoPrompts)
+        .set({ languages: input.languages })
+        .where(
+          and(
+            eq(geoPrompts.id, input.promptId),
+            eq(geoPrompts.organizationId, input.organizationId)
+          )
+        )
+        .returning();
+
+      if (!row) {
+        throw notFound("Prompt not found");
+      }
+
+      return toTrackedPrompt(row);
     }),
   promptsToggle: authorizedProcedure
     .input(geoPromptToggleInputSchema)

@@ -10,14 +10,17 @@ import { Effect } from "effect";
 import {
   GEO_ANSWER_MAX_TOKENS,
   GEO_ANSWER_SYSTEM_PROMPT,
+  GEO_DEFAULT_LANGUAGE,
   GEO_ENGINES,
   GEO_EXCERPT_MAX_LENGTH,
   GEO_GROUNDED_ANSWER_MAX_TOKENS,
   GEO_GROUNDED_MAX_PROMPTS,
   GEO_JUDGE_MAX_TOKENS,
   GEO_JUDGE_MODEL,
+  GEO_LANGUAGE_LABELS,
   GEO_MAX_PROMPTS,
   GEO_SCAN_CONCURRENCY,
+  GEO_TRANSLATION_MAX_TOKENS,
 } from "@/constants/geo";
 import {
   buildGroundedInvocation,
@@ -80,6 +83,8 @@ The assistant answered:
 ${answer}
 """
 
+The question and answer may be written in any language. Detect mentions of the company regardless of language, script, or transliteration.
+
 Analyze the answer and report:
 - mentioned: true if the company or any alias appears in the answer.
 - position: the 1-based rank of the company among the recommended brands if the answer contains an ordered or bulleted list of brands, otherwise null.
@@ -87,6 +92,37 @@ Analyze the answer and report:
 - competitors: up to ${MAX_JUDGE_COMPETITORS} other brand or product names mentioned in the answer, excluding the company and its aliases.
 - excerpt: at most ${GEO_EXCERPT_MAX_LENGTH} characters of the answer around the mention, or the first 200 characters of the answer if the company is not mentioned.`;
 }
+
+const translatePrompt = Effect.fn("geo.translatePrompt")(function* (
+  promptText: string,
+  language: string
+) {
+  const label = GEO_LANGUAGE_LABELS[language] ?? language;
+  const result = yield* Effect.tryPromise({
+    try: () =>
+      generateText({
+        model: gateway(GEO_JUDGE_MODEL),
+        prompt: `Translate the following question into ${label}, the way a native speaker would naturally ask an AI assistant. Return only the translated question, nothing else.
+
+"""
+${promptText}
+"""`,
+        maxOutputTokens: GEO_TRANSLATION_MAX_TOKENS,
+      }),
+    catch: (cause) =>
+      new GeoScanError({
+        message: `Failed to translate prompt into ${label}`,
+        cause,
+      }),
+  });
+  const translated = result.text.trim();
+  if (translated.length === 0) {
+    return yield* Effect.fail(
+      new GeoScanError({ message: `Empty translation for ${label}` })
+    );
+  }
+  return translated;
+});
 
 const askEngine = Effect.fn("geo.askEngine")(function* (
   engine: string,
@@ -171,6 +207,7 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
     engine: task.engine,
     prompt_id: task.prompt.id,
     prompt: task.prompt.text,
+    language: task.prompt.language,
     captured_at: context.capturedAt,
     mentioned: judged.mentioned,
     position: normalizePosition(judged.position),
@@ -226,7 +263,7 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
   const customRows = yield* Effect.tryPromise({
     try: () =>
       db.query.geoPrompts.findMany({
-        columns: { id: true, prompt: true },
+        columns: { id: true, prompt: true, languages: true },
         where: and(
           eq(geoPrompts.organizationId, organizationId),
           eq(geoPrompts.enabled, true)
@@ -247,13 +284,46 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
       : null
   ).slice(0, GEO_MAX_PROMPTS);
 
-  const prompts: GeoPromptDefinition[] = [
-    ...autoPrompts,
-    ...customRows.map((row) => ({
-      id: `custom-${row.id}`,
-      text: row.prompt,
-    })),
-  ];
+  const customPrompts: GeoPromptDefinition[] = customRows.map((row) => ({
+    id: `custom-${row.id}`,
+    text: row.prompt,
+    language: GEO_DEFAULT_LANGUAGE,
+  }));
+
+  const translationTargets = customRows.flatMap((row) =>
+    [...new Set(row.languages)]
+      .filter((language) => language !== GEO_DEFAULT_LANGUAGE)
+      .map((language) => ({ row, language }))
+  );
+
+  const translatedPrompts = yield* Effect.forEach(
+    translationTargets,
+    (target) =>
+      translatePrompt(target.row.prompt, target.language).pipe(
+        Effect.map(
+          (text): GeoPromptDefinition => ({
+            id: `custom-${target.row.id}`,
+            text,
+            language: target.language,
+          })
+        ),
+        Effect.catch((error: GeoScanError) => {
+          console.error(
+            `[GEO] translation failed for ${target.row.id}/${target.language}:`,
+            error
+          );
+          return Effect.succeed(null);
+        })
+      ),
+    { concurrency: GEO_SCAN_CONCURRENCY }
+  );
+
+  const prompts: GeoPromptDefinition[] = [...autoPrompts, ...customPrompts];
+  for (const translated of translatedPrompts) {
+    if (translated) {
+      prompts.push(translated);
+    }
+  }
 
   const context: GeoCheckContext = {
     organizationId,
@@ -284,7 +354,7 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
       runGeoCheck(context, task).pipe(
         Effect.catch((error: GeoScanError) => {
           console.error(
-            `[GEO] check failed for ${task.engine}/${task.prompt.id}:`,
+            `[GEO] check failed for ${task.engine}/${task.prompt.id}/${task.prompt.language}:`,
             error
           );
           return Effect.succeed(null);

@@ -5,6 +5,8 @@ import {
   GEO_DISCOVERY_MAX_PROMPTS,
   GEO_DISCOVERY_MIN_COMPETITORS,
   GEO_DISCOVERY_MIN_PROMPTS,
+  GEO_LANGUAGE_CODES,
+  GEO_MAX_PROMPT_LANGUAGES,
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
 } from "@/constants/geo";
@@ -39,9 +41,20 @@ export const geoTimeseriesInputSchema = object({
   days: number().int().min(1).max(MAX_DAYS).optional(),
 });
 
+export const geoPromptLanguagesSchema = array(enumType(GEO_LANGUAGE_CODES))
+  .max(GEO_MAX_PROMPT_LANGUAGES)
+  .transform((languages) => [...new Set(languages)]);
+
 export const geoPromptCreateInputSchema = object({
   organizationId: string().min(1),
   prompt: string().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH),
+  languages: geoPromptLanguagesSchema.optional(),
+});
+
+export const geoPromptLanguagesUpdateInputSchema = object({
+  organizationId: string().min(1),
+  promptId: string().min(1),
+  languages: geoPromptLanguagesSchema,
 });
 
 export const geoPromptDeleteInputSchema = object({

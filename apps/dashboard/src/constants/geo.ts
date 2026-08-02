@@ -100,6 +100,34 @@ export const GEO_MODEL_USAGE_FETCH_TIMEOUT_MS = 20_000;
 export const GEO_MODEL_USAGE_DEFAULT_LIMIT = 12;
 export const GEO_MODEL_USAGE_DEFAULT_WEEKS = 8;
 
+export const GEO_LANGUAGE_CODES = [
+  "zh",
+  "es",
+  "de",
+  "fr",
+  "ja",
+  "pt",
+  "ko",
+  "hi",
+] as const;
+
+export const GEO_DEFAULT_LANGUAGE = "en";
+
+export const GEO_LANGUAGE_LABELS: Record<string, string> = {
+  en: "English",
+  zh: "Chinese",
+  es: "Spanish",
+  de: "German",
+  fr: "French",
+  ja: "Japanese",
+  pt: "Portuguese",
+  ko: "Korean",
+  hi: "Hindi",
+};
+
+export const GEO_MAX_PROMPT_LANGUAGES = 3;
+export const GEO_TRANSLATION_MAX_TOKENS = 400;
+
 export const GEO_MAX_PROMPTS = 8;
 export const GEO_GROUNDED_MAX_PROMPTS = 6;
 export const GEO_GROUNDED_MAX_SEARCHES = 3;

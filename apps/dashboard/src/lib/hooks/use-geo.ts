@@ -11,6 +11,7 @@ import type {
   GeoOverviewResponse,
   GeoPromptCreateInput,
   GeoPromptDeleteInput,
+  GeoPromptLanguagesUpdateInput,
   GeoPromptResultsResponse,
   GeoPromptToggleInput,
   GeoSettingsResponse,
@@ -148,6 +149,27 @@ export function useGeoPromptDelete(organizationId: string) {
     },
     onError: (error) => {
       toast.error(toErrorMessage(error, "Failed to remove prompt"));
+    },
+  });
+}
+
+export function useGeoPromptLanguagesUpdate(organizationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: GeoPromptLanguagesUpdateInput) =>
+      dashboardOrpc.geo.promptsLanguagesUpdate.call({
+        ...input,
+        organizationId,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.promptsList.queryKey({
+          input: { organizationId },
+        }),
+      });
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to update languages"));
     },
   });
 }

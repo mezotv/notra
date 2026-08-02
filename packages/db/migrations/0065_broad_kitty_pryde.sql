@@ -1,0 +1,1 @@
+ALTER TABLE "geo_prompts" ADD COLUMN "languages" text[] DEFAULT ARRAY[]::text[] NOT NULL;

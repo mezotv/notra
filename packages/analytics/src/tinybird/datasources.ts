@@ -210,6 +210,7 @@ export const geoMentionChecks = defineDatasource("geo_mention_checks", {
     engine: t.string().lowCardinality(),
     prompt_id: t.string().lowCardinality(),
     prompt: t.string(),
+    language: t.string().lowCardinality(),
     captured_at: t.dateTime(),
     mentioned: t.bool(),
     position: t.uint64().nullable(),

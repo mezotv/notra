@@ -1,3 +1,7 @@
+import type { GEO_LANGUAGE_CODES } from "@/constants/geo";
+
+export type GeoLanguageCode = (typeof GEO_LANGUAGE_CODES)[number];
+
 export interface GeoSettings {
   id: string;
   organizationId: string;
@@ -43,6 +47,7 @@ export interface GeoTimeseriesResponse {
 export interface GeoPromptResult {
   promptId: string;
   engine: string;
+  language: string;
   prompt: string;
   mentioned: boolean;
   position: number | null;
@@ -77,6 +82,7 @@ export interface GeoSettingsUpsertInput {
 export interface GeoTrackedPrompt {
   id: string;
   prompt: string;
+  languages: string[];
   enabled: boolean;
   source: "custom" | "auto";
   createdAt: string | null;
@@ -84,6 +90,12 @@ export interface GeoTrackedPrompt {
 
 export interface GeoPromptCreateInput {
   prompt: string;
+  languages?: GeoLanguageCode[];
+}
+
+export interface GeoPromptLanguagesUpdateInput {
+  promptId: string;
+  languages: GeoLanguageCode[];
 }
 
 export interface GeoPromptDeleteInput {
@@ -99,6 +111,7 @@ export interface GeoPromptRow {
   id: string;
   organizationId: string;
   prompt: string;
+  languages: string[];
   enabled: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -122,6 +135,31 @@ export interface GeoScanResult {
 export interface GeoPromptDefinition {
   id: string;
   text: string;
+  language: string;
+}
+
+export interface GeoLanguagePerformance {
+  language: string;
+  checks: number;
+  mentions: number;
+  mentionRate: number;
+}
+
+export interface GeoPromptLanguageSelectProps {
+  value: GeoLanguageCode[];
+  onChange: (languages: GeoLanguageCode[]) => void;
+  disabled?: boolean;
+}
+
+export interface GeoLanguagePerformanceCardProps {
+  results: GeoPromptResult[];
+}
+
+export interface GeoPromptResultGroup {
+  promptId: string;
+  language: string;
+  prompt: string;
+  results: GeoPromptResult[];
 }
 
 export interface GeoBrandContext {

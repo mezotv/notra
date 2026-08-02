@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { LanguagePerformanceCard } from "@/components/geo/language-performance-card";
 import { PromptManager } from "@/components/geo/prompt-manager";
 import { PromptResultsCard } from "@/components/geo/prompt-results-card";
 import { WebsiteGenerateCard } from "@/components/geo/website-generate-card";
@@ -68,6 +69,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         </header>
         <PromptManager organizationId={organizationId} />
         <WebsiteGenerateCard compact organizationId={organizationId} />
+        <LanguagePerformanceCard results={promptResults?.results ?? []} />
         <PromptResultsCard results={promptResults?.results ?? []} />
       </div>
     </PageContainer>

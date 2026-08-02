@@ -636,6 +636,7 @@ export const geoPromptResults = defineEndpoint("geo_prompt_results", {
         SELECT
           prompt_id,
           engine,
+          language,
           argMax(prompt, captured_at) AS prompt,
           argMax(mentioned, captured_at) AS mentioned,
           argMax(position, captured_at) AS position,
@@ -644,14 +645,15 @@ export const geoPromptResults = defineEndpoint("geo_prompt_results", {
           max(captured_at) AS last_checked_at
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
-        GROUP BY prompt_id, engine
-        ORDER BY prompt_id ASC, engine ASC
+        GROUP BY prompt_id, engine, language
+        ORDER BY prompt_id ASC, language ASC, engine ASC
       `,
     }),
   ],
   output: {
     prompt_id: t.string(),
     engine: t.string(),
+    language: t.string(),
     prompt: t.string(),
     mentioned: t.bool(),
     position: t.uint64().nullable(),

@@ -1485,6 +1485,10 @@ export const geoPrompts = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     prompt: text("prompt").notNull(),
+    languages: text("languages")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     enabled: boolean("enabled").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")

@@ -10,30 +10,27 @@ import {
 } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
 import { PresenceBadge } from "@/components/geo/presence-badge";
-import { GEO_ENGINE_LABELS } from "@/constants/geo";
-import type { GeoPromptResult } from "@/types/geo";
+import { GEO_DEFAULT_LANGUAGE, GEO_ENGINE_LABELS } from "@/constants/geo";
+import type { GeoPromptResult, GeoPromptResultGroup } from "@/types/geo";
+import { geoLanguageLabel } from "@/utils/geo-languages";
 import { classifyPromptPresence } from "@/utils/geo-presence";
 
 interface PromptResultsCardProps {
   results: GeoPromptResult[];
 }
 
-interface PromptGroup {
-  promptId: string;
-  prompt: string;
-  results: GeoPromptResult[];
-}
-
-function groupByPrompt(results: GeoPromptResult[]): PromptGroup[] {
-  const groups = new Map<string, PromptGroup>();
+function groupByPrompt(results: GeoPromptResult[]): GeoPromptResultGroup[] {
+  const groups = new Map<string, GeoPromptResultGroup>();
   for (const result of results) {
-    const group = groups.get(result.promptId) ?? {
+    const key = `${result.promptId}:${result.language}`;
+    const group = groups.get(key) ?? {
       promptId: result.promptId,
+      language: result.language,
       prompt: result.prompt,
       results: [],
     };
     group.results.push(result);
-    groups.set(result.promptId, group);
+    groups.set(key, group);
   }
   return [...groups.values()];
 }
@@ -80,9 +77,21 @@ export function PromptResultsCard({ results }: PromptResultsCardProps) {
                 (result) => result.mentioned && result.excerpt
               );
               return (
-                <div className="space-y-2 py-3" key={group.promptId}>
+                <div
+                  className="space-y-2 py-3"
+                  key={`${group.promptId}:${group.language}`}
+                >
                   <div className="flex items-center justify-between gap-3">
-                    <p className="font-medium text-sm">{group.prompt}</p>
+                    <div className="flex min-w-0 items-center gap-2">
+                      <p className="min-w-0 font-medium text-sm">
+                        {group.prompt}
+                      </p>
+                      {group.language !== GEO_DEFAULT_LANGUAGE && (
+                        <Badge className="shrink-0" variant="outline">
+                          {geoLanguageLabel(group.language)}
+                        </Badge>
+                      )}
+                    </div>
                     <PresenceBadge
                       status={classifyPromptPresence(group.results)}
                     />
@@ -90,7 +99,7 @@ export function PromptResultsCard({ results }: PromptResultsCardProps) {
                   <div className="flex flex-wrap gap-1.5">
                     {group.results.map((result) => (
                       <ResultBadge
-                        key={`${group.promptId}:${result.engine}`}
+                        key={`${group.promptId}:${group.language}:${result.engine}`}
                         result={result}
                       />
                     ))}

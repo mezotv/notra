@@ -15,13 +15,16 @@ import { Input } from "@notra/ui/components/ui/input";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
+import { PromptLanguageSelect } from "@/components/geo/prompt-language-select";
 import {
   useGeoPromptCreate,
   useGeoPromptDelete,
+  useGeoPromptLanguagesUpdate,
   useGeoPrompts,
   useGeoPromptToggle,
 } from "@/lib/hooks/use-geo";
-import type { GeoTrackedPrompt } from "@/types/geo";
+import type { GeoLanguageCode, GeoTrackedPrompt } from "@/types/geo";
+import { toGeoLanguageCodes } from "@/utils/geo-languages";
 
 interface PromptManagerProps {
   organizationId: string;
@@ -38,6 +41,7 @@ function PromptRow({
 }) {
   const toggle = useGeoPromptToggle(organizationId);
   const remove = useGeoPromptDelete(organizationId);
+  const updateLanguages = useGeoPromptLanguagesUpdate(organizationId);
 
   return (
     <div className="flex items-center gap-3 py-2.5">
@@ -48,6 +52,13 @@ function PromptRow({
         </Badge>
       ) : (
         <div className="flex shrink-0 items-center gap-2">
+          <PromptLanguageSelect
+            disabled={updateLanguages.isPending}
+            onChange={(languages) =>
+              updateLanguages.mutate({ promptId: prompt.id, languages })
+            }
+            value={toGeoLanguageCodes(prompt.languages)}
+          />
           <Switch
             checked={prompt.enabled}
             disabled={toggle.isPending}
@@ -72,6 +83,7 @@ function PromptRow({
 
 export function PromptManager({ organizationId }: PromptManagerProps) {
   const [draft, setDraft] = useState("");
+  const [draftLanguages, setDraftLanguages] = useState<GeoLanguageCode[]>([]);
   const { data } = useGeoPrompts(organizationId);
   const create = useGeoPromptCreate(organizationId);
 
@@ -84,7 +96,15 @@ export function PromptManager({ organizationId }: PromptManagerProps) {
     if (prompt.length < MIN_PROMPT_LENGTH) {
       return;
     }
-    create.mutate({ prompt }, { onSuccess: () => setDraft("") });
+    create.mutate(
+      { prompt, languages: draftLanguages },
+      {
+        onSuccess: () => {
+          setDraft("");
+          setDraftLanguages([]);
+        },
+      }
+    );
   };
 
   return (
@@ -107,6 +127,10 @@ export function PromptManager({ organizationId }: PromptManagerProps) {
             }}
             placeholder="What's the best tool for automating changelogs?"
             value={draft}
+          />
+          <PromptLanguageSelect
+            onChange={setDraftLanguages}
+            value={draftLanguages}
           />
           <Button
             disabled={

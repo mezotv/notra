@@ -1,4 +1,4 @@
-import { GEO_MAX_PROMPTS } from "@/constants/geo";
+import { GEO_DEFAULT_LANGUAGE, GEO_MAX_PROMPTS } from "@/constants/geo";
 import type {
   GeoBrandContext,
   GeoPromptDefinition,
@@ -58,7 +58,7 @@ export function buildGeoPrompts(
   const category = deriveCategory(brand?.companyDescription ?? null);
   const audience = deriveAudience(brand?.audience ?? null);
 
-  const prompts: GeoPromptDefinition[] = [
+  const prompts: { id: string; text: string }[] = [
     { id: "best-tools", text: `What are the best tools for ${category}?` },
     {
       id: "alternatives",
@@ -90,5 +90,8 @@ export function buildGeoPrompts(
     });
   }
 
-  return prompts.slice(0, GEO_MAX_PROMPTS);
+  return prompts.slice(0, GEO_MAX_PROMPTS).map((prompt) => ({
+    ...prompt,
+    language: GEO_DEFAULT_LANGUAGE,
+  }));
 }
