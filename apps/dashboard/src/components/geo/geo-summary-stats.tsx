@@ -1,48 +1,26 @@
 "use client";
 
-import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
+import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { GEO_ENGINE_LABELS } from "@/constants/geo";
-import type { GeoOverviewEngine, GeoSettings } from "@/types/geo";
-import { formatMentionRate } from "@/utils/geo-charts";
-
-interface GeoSummaryStatsProps {
-  engines: GeoOverviewEngine[];
-  settings: GeoSettings;
-  promptCount: number;
-}
-
-interface StatTile {
-  label: string;
-  value: string;
-  hint: string;
-}
-
-const GROUNDED_PATTERN = /-grounded$|^perplexity-sonar$/;
+import { cn } from "@/lib/utils";
+import type { GeoStatTile, GeoSummaryStatsProps } from "@/types/geo";
+import {
+  buildGeoHeroSummary,
+  formatMentionRate,
+  gapInsight,
+} from "@/utils/geo-charts";
 
 export function GeoSummaryStats({
   engines,
   settings,
   promptCount,
 }: GeoSummaryStatsProps) {
-  const tiles = useMemo<StatTile[]>(() => {
-    const grounded = engines.filter((engine) =>
-      GROUNDED_PATTERN.test(engine.engine)
-    );
-    const pool = grounded.length > 0 ? grounded : engines;
-    const checks = pool.reduce((total, engine) => total + engine.checks, 0);
-    const mentions = pool.reduce((total, engine) => total + engine.mentions, 0);
-    const best = [...engines].sort((a, b) => b.mentionRate - a.mentionRate)[0];
+  const { visibility, visibilityHint, tiles } = useMemo(() => {
+    const summary = buildGeoHeroSummary(engines);
+    const best = summary.bestEngine;
 
-    return [
-      {
-        label: "AI visibility",
-        value: checks > 0 ? formatMentionRate(mentions / checks) : "N/A",
-        hint:
-          grounded.length > 0
-            ? "web-grounded answers mentioning you"
-            : "answers mentioning you",
-      },
+    const sideTiles: GeoStatTile[] = [
       {
         label: "Best engine",
         value: best ? (GEO_ENGINE_LABELS[best.engine] ?? best.engine) : "N/A",
@@ -61,19 +39,47 @@ export function GeoSummaryStats({
         hint: "named rivals in scans",
       },
     ];
+
+    return {
+      visibility:
+        summary.visibilityRate === null
+          ? "N/A"
+          : formatMentionRate(summary.visibilityRate),
+      visibilityHint: gapInsight(summary.gapPoints),
+      tiles: sideTiles,
+    };
   }, [engines, settings.competitors.length, promptCount]);
 
   return (
-    <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-      {tiles.map((tile) => (
-        <Card className="py-4" key={tile.label}>
-          <CardContent className="space-y-0.5 px-4">
-            <p className="text-muted-foreground text-xs">{tile.label}</p>
-            <p className="truncate font-semibold text-2xl">{tile.value}</p>
-            <p className="text-muted-foreground text-xs">{tile.hint}</p>
-          </CardContent>
-        </Card>
+    <InstrumentGrid className="grid-cols-2 lg:grid-cols-5">
+      <div className="col-span-2 flex flex-col justify-center gap-1 bg-card px-4 py-3">
+        <p className="font-mono text-[0.625rem] text-muted-foreground uppercase tracking-[0.14em]">
+          AI visibility
+        </p>
+        <p className="font-mono text-[2.5rem] text-primary tabular-nums leading-none tracking-tight">
+          {visibility}
+        </p>
+        <p className="line-clamp-2 text-[0.6875rem] text-muted-foreground">
+          {visibilityHint}
+        </p>
+      </div>
+      {tiles.map((tile, index) => (
+        <div
+          className={cn(
+            "space-y-1 bg-card px-3 py-2.5",
+            index === tiles.length - 1 && "col-span-2 lg:col-span-1"
+          )}
+          key={tile.label}
+        >
+          <p className="font-mono text-[0.625rem] text-muted-foreground uppercase tracking-[0.14em]">
+            {tile.label}
+          </p>
+          <p className="truncate font-mono text-[1.375rem] leading-none tracking-tight">
+            {tile.value}
+          </p>
+          <p className="text-[0.6875rem] text-muted-foreground">{tile.hint}</p>
+        </div>
       ))}
-    </section>
+    </InstrumentGrid>
   );
 }

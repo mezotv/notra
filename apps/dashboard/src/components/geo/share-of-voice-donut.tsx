@@ -5,20 +5,18 @@ import { PALETTE, rgb } from "@notra/ui/components/dither-kit/palette";
 import { Pie } from "@notra/ui/components/dither-kit/pie";
 import { PieChart } from "@notra/ui/components/dither-kit/pie-chart";
 import { Tooltip } from "@notra/ui/components/dither-kit/tooltip";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@notra/ui/components/ui/card";
+import type { ReactNode } from "react";
 import { useMemo } from "react";
+import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@/components/instrument/instrument-module";
 import { ACCOUNT_SERIES_COLORS } from "@/constants/analytics";
 import type { GeoCompetitorSharePoint } from "@/types/geo";
 
 interface ShareOfVoiceDonutProps {
   points: GeoCompetitorSharePoint[];
-  companyName: string | null;
+  action?: ReactNode;
 }
 
 interface SliceRow {
@@ -27,13 +25,11 @@ interface SliceRow {
 }
 
 const TOP_SLICES = 5;
+const PERCENT = 100;
 const DONUT_INNER_RADIUS = 0.55;
 
-export function ShareOfVoiceDonut({
-  points,
-  companyName,
-}: ShareOfVoiceDonutProps) {
-  const { rows, config, total } = useMemo(() => {
+export function ShareOfVoiceDonut({ points, action }: ShareOfVoiceDonutProps) {
+  const { rows, config, total, caption } = useMemo(() => {
     const top = points.slice(0, TOP_SLICES);
     const rest = points.slice(TOP_SLICES);
     const sliceRows: SliceRow[] = top.map((point) => ({
@@ -55,29 +51,36 @@ export function ShareOfVoiceDonut({
               "blue"),
       };
     });
+    const sliceTotal = sliceRows.reduce((sum, row) => sum + row.mentions, 0);
+    const topSlice = sliceRows.reduce<SliceRow | null>(
+      (best, row) =>
+        row.brand !== "Other" && (best === null || row.mentions > best.mentions)
+          ? row
+          : best,
+      null
+    );
     return {
       rows: sliceRows,
       config: sliceConfig,
-      total: sliceRows.reduce((sum, row) => sum + row.mentions, 0),
+      total: sliceTotal,
+      caption:
+        topSlice && sliceTotal > 0
+          ? `${topSlice.brand} · ${Math.round((topSlice.mentions / sliceTotal) * PERCENT)}% of mentions`
+          : null,
     };
   }, [points]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Share of voice</CardTitle>
-        <CardDescription>
-          Brands AI engines bring up
-          {companyName ? ` alongside ${companyName}` : ""}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {rows.length === 0 ? (
-          <p className="flex h-56 items-center justify-center text-muted-foreground text-sm">
-            No competitor data yet
-          </p>
-        ) : (
-          <div className="flex items-center gap-4">
+    <InstrumentModule action={action} eyebrow="Share of voice">
+      {rows.length === 0 ? (
+        <InstrumentEmpty
+          className="h-56"
+          message="No competitor data yet"
+          seed="Share of voice"
+        />
+      ) : (
+        <div className="flex h-full flex-col">
+          <div className="flex flex-1 items-center gap-4">
             <PieChart
               className="h-56 w-1/2 min-w-0"
               config={config}
@@ -92,7 +95,7 @@ export function ShareOfVoiceDonut({
             <div className="min-w-0 flex-1 space-y-1.5">
               {rows.map((row) => (
                 <div
-                  className="flex items-center gap-1.5 text-sm"
+                  className="flex items-center gap-1.5 font-mono text-xs"
                   key={row.brand}
                 >
                   <span
@@ -108,15 +111,20 @@ export function ShareOfVoiceDonut({
                   </span>
                   <span className="shrink-0 tabular-nums">
                     {total > 0
-                      ? `${Math.round((row.mentions / total) * 100)}%`
+                      ? `${Math.round((row.mentions / total) * PERCENT)}%`
                       : "0%"}
                   </span>
                 </div>
               ))}
             </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          {caption && (
+            <p className="mt-2 truncate text-[0.6875rem] text-muted-foreground">
+              {caption}
+            </p>
+          )}
+        </div>
+      )}
+    </InstrumentModule>
   );
 }

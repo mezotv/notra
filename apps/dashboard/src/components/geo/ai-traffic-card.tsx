@@ -6,13 +6,6 @@ import { PieChart } from "@notra/ui/components/dither-kit/pie-chart";
 import { Tooltip as DitherTooltip } from "@notra/ui/components/dither-kit/tooltip";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@notra/ui/components/ui/card";
-import {
   Table,
   TableBody,
   TableCell,
@@ -21,6 +14,7 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import { useMemo } from "react";
+import { InstrumentModule } from "@/components/instrument/instrument-module";
 import {
   AI_TRAFFIC_PURPOSE_DESCRIPTIONS,
   AI_TRAFFIC_PURPOSE_LABELS,
@@ -42,6 +36,7 @@ interface AiTrafficCardProps {
 function PurposeBadge({ category }: { category: string }) {
   return (
     <Badge
+      className="rounded-sm font-mono text-[0.625rem] uppercase tracking-wide"
       title={AI_TRAFFIC_PURPOSE_DESCRIPTIONS[category] ?? category}
       variant="secondary"
     >
@@ -58,7 +53,7 @@ function AgentRow({
   maxHits: number;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-3">
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate font-medium text-foreground text-sm">
@@ -66,18 +61,18 @@ function AgentRow({
           </span>
           <PurposeBadge category={agent.category} />
         </span>
-        <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
+        <span className="shrink-0 font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
           last seen {formatAiTrafficTimestamp(agent.lastSeenAt)}
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+        <div className="h-2 flex-1 overflow-hidden bg-muted">
           <div
-            className="h-full rounded-full bg-foreground/80"
+            className="h-full bg-foreground/80"
             style={{ width: `${hitBarWidth(agent.hits, maxHits)}%` }}
           />
         </div>
-        <span className="w-16 shrink-0 text-right text-muted-foreground text-xs tabular-nums">
+        <span className="w-16 shrink-0 text-right font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
           {agent.hits} hits
         </span>
       </div>
@@ -88,7 +83,7 @@ function AgentRow({
 function LogRow({ entry }: { entry: AiTrafficLogEntry }) {
   return (
     <TableRow>
-      <TableCell className="whitespace-nowrap text-muted-foreground text-xs tabular-nums">
+      <TableCell className="whitespace-nowrap font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
         {formatAiTrafficTimestamp(entry.capturedAt)}
       </TableCell>
       <TableCell className="font-medium text-sm">{entry.agent}</TableCell>
@@ -101,7 +96,7 @@ function LogRow({ entry }: { entry: AiTrafficLogEntry }) {
       <TableCell>
         <PurposeBadge category={entry.category} />
       </TableCell>
-      <TableCell className="text-muted-foreground text-xs">
+      <TableCell className="font-mono text-[0.6875rem] text-muted-foreground">
         {entry.method}
       </TableCell>
     </TableRow>
@@ -115,7 +110,7 @@ function BeaconSetup({ setup }: { setup: BeaconSetupResponse | undefined }) {
         No AI agent has been seen on your site yet. Install the beacon to start
         recording hits.
       </p>
-      <pre className="overflow-x-auto rounded-md border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
+      <pre className="overflow-x-auto rounded-sm border border-border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
         <code>
           {setup?.snippet ??
             "Set BEACON_INGEST_SECRET to generate your install snippet"}
@@ -156,7 +151,9 @@ function PurposeDonut({ agents }: { agents: AiTrafficAgent[] }) {
 
   return (
     <div className="space-y-2">
-      <p className="text-muted-foreground text-xs">Requests by purpose</p>
+      <p className="font-mono text-[0.625rem] text-muted-foreground uppercase tracking-[0.14em]">
+        Requests by purpose
+      </p>
       <PieChart
         className="h-40 w-full"
         config={PURPOSE_DONUT_CONFIG}
@@ -185,56 +182,56 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>AI traffic to your site</CardTitle>
-        <CardDescription>
-          {agents.length > 0
-            ? `${totalHits} requests from ${agents.length} AI agents in the last 30 days`
-            : "Which AI crawlers and assistants fetch your pages, and what they came for"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className={cn(agents.length > 0 && "space-y-6")}>
-        {agents.length === 0 ? (
-          <BeaconSetup setup={setup} />
-        ) : (
-          <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
-            <div className="space-y-4">
-              {agents.map((agent) => (
-                <AgentRow agent={agent} key={agent.agent} maxHits={maxHits} />
-              ))}
-            </div>
-            <PurposeDonut agents={agents} />
+    <InstrumentModule
+      bodyClassName={cn("p-3", agents.length > 0 && "space-y-5")}
+      eyebrow="AI traffic to your site"
+      readout={
+        agents.length > 0
+          ? `${totalHits} requests · ${agents.length} agents · 30D`
+          : "crawlers and assistants fetching your pages"
+      }
+    >
+      {agents.length === 0 ? (
+        <BeaconSetup setup={setup} />
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-[1fr_16rem]">
+          <div className="space-y-3">
+            {agents.map((agent) => (
+              <AgentRow agent={agent} key={agent.agent} maxHits={maxHits} />
+            ))}
           </div>
-        )}
+          <PurposeDonut agents={agents} />
+        </div>
+      )}
 
-        {log.length > 0 && (
-          <div className="space-y-2">
-            <p className="font-medium text-sm">Recent requests</p>
-            <div className="overflow-x-auto rounded-lg border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>When</TableHead>
-                    <TableHead>Provider</TableHead>
-                    <TableHead>Path</TableHead>
-                    <TableHead>Purpose</TableHead>
-                    <TableHead>Method</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="[&_tr:first-child>td:first-child]:rounded-tl-none [&_tr:first-child>td:last-child]:rounded-tr-none">
-                  {log.map((entry) => (
-                    <LogRow
-                      entry={entry}
-                      key={`${entry.capturedAt}-${entry.agent}-${entry.path}`}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+      {log.length > 0 && (
+        <div className="space-y-2">
+          <p className="font-mono text-[0.625rem] text-muted-foreground uppercase tracking-[0.14em]">
+            Recent requests
+          </p>
+          <div className="overflow-x-auto rounded-sm border border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>When</TableHead>
+                  <TableHead>Provider</TableHead>
+                  <TableHead>Path</TableHead>
+                  <TableHead>Purpose</TableHead>
+                  <TableHead>Method</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody className="[&_tr:first-child>td:first-child]:rounded-tl-none [&_tr:first-child>td:last-child]:rounded-tr-none">
+                {log.map((entry) => (
+                  <LogRow
+                    entry={entry}
+                    key={`${entry.capturedAt}-${entry.agent}-${entry.path}`}
+                  />
+                ))}
+              </TableBody>
+            </Table>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </div>
+      )}
+    </InstrumentModule>
   );
 }

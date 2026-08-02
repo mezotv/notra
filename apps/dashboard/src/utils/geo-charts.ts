@@ -1,5 +1,6 @@
 import type {
   GeoEngineFamily,
+  GeoHeroSummary,
   GeoOverviewEngine,
   GeoTimeseriesPoint,
   MentionRateRow,
@@ -58,6 +59,50 @@ export function buildMentionRateRows(points: GeoTimeseriesPoint[]): {
   });
 
   return { rows, engines };
+}
+
+function poolRate(pool: GeoOverviewEngine[]): number | null {
+  const checks = pool.reduce((total, engine) => total + engine.checks, 0);
+  if (checks === 0) {
+    return null;
+  }
+  const mentions = pool.reduce((total, engine) => total + engine.mentions, 0);
+  return mentions / checks;
+}
+
+export function buildGeoHeroSummary(
+  engines: GeoOverviewEngine[]
+): GeoHeroSummary {
+  const grounded = engines.filter((engine) => isGroundedEngine(engine.engine));
+  const raw = engines.filter((engine) => !isGroundedEngine(engine.engine));
+  const groundedRate = poolRate(grounded);
+  const rawRate = poolRate(raw);
+  const visibilityRate = groundedRate ?? poolRate(engines);
+  const gapPoints =
+    groundedRate !== null && rawRate !== null
+      ? Math.round((groundedRate - rawRate) * PERCENT)
+      : null;
+  const bestEngine =
+    [...engines].sort((a, b) => b.mentionRate - a.mentionRate)[0] ?? null;
+  return {
+    visibilityRate,
+    grounded: groundedRate !== null,
+    gapPoints,
+    bestEngine,
+  };
+}
+
+export function gapInsight(gapPoints: number | null): string {
+  if (gapPoints === null) {
+    return "Run scans with and without web search to measure your grounding gap.";
+  }
+  if (gapPoints > 0) {
+    return `Engines mention you ${gapPoints} points more often with web search than from memory alone: your visibility lives in retrieval, not training data.`;
+  }
+  if (gapPoints < 0) {
+    return `Engines mention you ${Math.abs(gapPoints)} points more often from memory than with web search: you are already part of the training data.`;
+  }
+  return "Engines mention you as often from memory as with web search: your visibility is evenly grounded.";
 }
 
 const GROUNDED_SUFFIX_PATTERN = /(-direct)?-grounded$/;

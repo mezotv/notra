@@ -266,3 +266,28 @@ export interface GeoEngineFamily {
   web: GeoOverviewEngine | null;
   raw: GeoOverviewEngine | null;
 }
+
+export interface GeoHeroSummary {
+  visibilityRate: number | null;
+  grounded: boolean;
+  gapPoints: number | null;
+  bestEngine: GeoOverviewEngine | null;
+}
+
+export interface GeoSummaryStatsProps {
+  engines: GeoOverviewEngine[];
+  settings: GeoSettings;
+  promptCount: number;
+}
+
+export interface GeoStatTile {
+  label: string;
+  value: string;
+  hint: string;
+}
+
+export interface MentionRateCardProps {
+  hero?: boolean;
+  engines: GeoOverviewEngine[];
+  points: GeoTimeseriesPoint[];
+}

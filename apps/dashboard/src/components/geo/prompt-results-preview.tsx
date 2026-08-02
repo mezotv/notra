@@ -1,15 +1,20 @@
 "use client";
 
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Card, CardContent } from "@notra/ui/components/ui/card";
+import type { ReactNode } from "react";
 import { useMemo } from "react";
 import { PresenceBadge } from "@/components/geo/presence-badge";
+import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@/components/instrument/instrument-module";
 import type { GeoPresenceStatus, GeoPromptResult } from "@/types/geo";
 import { classifyPromptPresence } from "@/utils/geo-presence";
 
 interface PromptResultsPreviewProps {
   results: GeoPromptResult[];
   limit?: number;
+  action?: ReactNode;
 }
 
 interface PromptSummary {
@@ -61,40 +66,48 @@ function summarize(results: GeoPromptResult[]): PromptSummary[] {
 export function PromptResultsPreview({
   results,
   limit = DEFAULT_LIMIT,
+  action,
 }: PromptResultsPreviewProps) {
   const summaries = useMemo(() => summarize(results), [results]);
 
-  if (summaries.length === 0) {
-    return (
-      <Card>
-        <CardContent className="py-6">
-          <p className="text-center text-muted-foreground text-sm">
-            Run a scan to see which prompts surface you
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card>
-      <CardContent className="divide-y py-2">
-        {summaries.slice(0, limit).map((summary) => (
-          <div
-            className="flex items-center gap-3 py-2.5"
-            key={summary.promptId}
-          >
-            <p className="min-w-0 flex-1 truncate text-sm">{summary.prompt}</p>
-            <PresenceBadge status={summary.presence} />
-            {summary.bestPosition !== null && (
-              <Badge variant="outline">#{summary.bestPosition}</Badge>
-            )}
-            <span className="shrink-0 text-muted-foreground text-sm tabular-nums">
-              {summary.mentioned}/{summary.total} engines
-            </span>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+    <InstrumentModule
+      action={action}
+      eyebrow="Winning prompts"
+      readout="best surfacing first"
+    >
+      {summaries.length === 0 ? (
+        <InstrumentEmpty
+          className="h-24"
+          message="Run a scan to see which prompts surface you"
+          seed="Winning prompts"
+        />
+      ) : (
+        <div className="divide-y divide-border">
+          {summaries.slice(0, limit).map((summary) => (
+            <div
+              className="flex items-center gap-3 py-2.5"
+              key={summary.promptId}
+            >
+              <p className="min-w-0 flex-1 truncate text-sm">
+                {summary.prompt}
+              </p>
+              <PresenceBadge status={summary.presence} />
+              {summary.bestPosition !== null && (
+                <Badge
+                  className="rounded-sm font-mono tabular-nums"
+                  variant="outline"
+                >
+                  #{summary.bestPosition}
+                </Badge>
+              )}
+              <span className="shrink-0 font-mono text-muted-foreground text-xs tabular-nums">
+                {summary.mentioned}/{summary.total} engines
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </InstrumentModule>
   );
 }

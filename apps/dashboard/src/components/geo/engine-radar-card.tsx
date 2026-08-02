@@ -4,15 +4,12 @@ import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context"
 import { Radar } from "@notra/ui/components/dither-kit/radar";
 import { RadarChart } from "@notra/ui/components/dither-kit/radar-chart";
 import { Tooltip } from "@notra/ui/components/dither-kit/tooltip";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@notra/ui/components/ui/card";
 import { useMemo, useState } from "react";
 import { ChartSeriesLegend } from "@/components/analytics/chart-legend";
+import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@/components/instrument/instrument-module";
 import { GEO_ENGINE_LABELS } from "@/constants/geo";
 import type { GeoOverviewEngine } from "@/types/geo";
 import { groupEngineFamilies } from "@/utils/geo-charts";
@@ -73,38 +70,32 @@ export function EngineRadarCard({ engines }: EngineRadarCardProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>The grounding gap</CardTitle>
-        <CardDescription>
-          Mention rate per engine, with and without web access
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {rows.length < MIN_AXES || visibleKeys.length === 0 ? (
-          <p className="flex h-56 items-center justify-center text-muted-foreground text-sm">
-            Needs scans across at least three engines
-          </p>
-        ) : (
-          <RadarChart
-            className="h-56 w-full"
-            config={chartConfig}
-            data={rows}
-            nameKey="engine"
-          >
-            {visibleKeys.map((key) => (
-              <Radar dataKey={key} key={key} />
-            ))}
-            <Tooltip valueFormatter={(value) => `${value}%`} />
-          </RadarChart>
-        )}
-        <ChartSeriesLegend
-          config={chartConfig}
-          hiddenKeys={hiddenKeys}
-          onToggle={toggle}
-          orderedKeys={seriesKeys}
+    <InstrumentModule eyebrow="The grounding gap" readout="30D">
+      {rows.length < MIN_AXES || visibleKeys.length === 0 ? (
+        <InstrumentEmpty
+          className="h-56"
+          message="Needs scans across 3+ engines"
+          seed="The grounding gap"
         />
-      </CardContent>
-    </Card>
+      ) : (
+        <RadarChart
+          className="h-56 w-full"
+          config={chartConfig}
+          data={rows}
+          nameKey="engine"
+        >
+          {visibleKeys.map((key) => (
+            <Radar dataKey={key} key={key} />
+          ))}
+          <Tooltip valueFormatter={(value) => `${value}%`} />
+        </RadarChart>
+      )}
+      <ChartSeriesLegend
+        config={chartConfig}
+        hiddenKeys={hiddenKeys}
+        onToggle={toggle}
+        orderedKeys={seriesKeys}
+      />
+    </InstrumentModule>
   );
 }

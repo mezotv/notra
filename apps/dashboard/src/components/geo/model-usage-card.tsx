@@ -1,13 +1,10 @@
 "use client";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
+import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@/components/instrument/instrument-module";
 import { cn } from "@/lib/utils";
 import type { GeoModelUsageResponse, GeoModelUsageRow } from "@/types/geo";
 import {
@@ -28,7 +25,7 @@ function UsageRow({
   maxShare: number;
 }) {
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1">
       <div className="flex items-baseline justify-between gap-3">
         <span
           className={cn(
@@ -38,9 +35,9 @@ function UsageRow({
         >
           {model.label}
         </span>
-        <span className="shrink-0 text-right text-xs tabular-nums">
+        <span className="shrink-0 text-right font-mono text-[0.6875rem] tabular-nums">
           {model.scanned && model.mentionRate !== null ? (
-            <span className="font-semibold text-foreground">
+            <span className="text-foreground">
               {formatMentionRate(model.mentionRate)} mention rate
             </span>
           ) : (
@@ -49,16 +46,16 @@ function UsageRow({
         </span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-muted">
+        <div className="h-2 flex-1 overflow-hidden bg-muted">
           <div
             className={cn(
-              "h-full rounded-full",
+              "h-full",
               model.scanned ? "bg-foreground/80" : "bg-foreground/25"
             )}
             style={{ width: `${usageBarWidth(model.share, maxShare)}%` }}
           />
         </div>
-        <span className="w-14 shrink-0 text-right text-muted-foreground text-xs tabular-nums">
+        <span className="w-14 shrink-0 text-right font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
           {formatUsageShare(model.share)}
         </span>
       </div>
@@ -78,28 +75,27 @@ export function ModelUsageCard({ usage }: ModelUsageCardProps) {
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Where AI usage actually happens</CardTitle>
-        <CardDescription>
-          {models.length > 0
-            ? `Share of industry token volume per model. We scan ${scannedCount} of the top ${models.length}. ${usage?.attribution ?? ""}`
-            : "Share of industry token volume per model, matched against the engines we scan"}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {models.length === 0 ? (
-          <p className="flex h-40 items-center justify-center text-center text-muted-foreground text-sm">
-            Run a scan to capture model usage share
-          </p>
-        ) : (
-          <div className="space-y-4">
-            {models.map((model) => (
-              <UsageRow key={model.model} maxShare={maxShare} model={model} />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <InstrumentModule
+      eyebrow="Where AI usage actually happens"
+      readout={
+        models.length > 0
+          ? `we scan ${scannedCount} of the top ${models.length} · ${usage?.attribution ?? ""}`
+          : "industry token share per model"
+      }
+    >
+      {models.length === 0 ? (
+        <InstrumentEmpty
+          className="h-40"
+          message="Run a scan to capture model usage share"
+          seed="Where AI usage actually happens"
+        />
+      ) : (
+        <div className="space-y-3">
+          {models.map((model) => (
+            <UsageRow key={model.model} maxShare={maxShare} model={model} />
+          ))}
+        </div>
+      )}
+    </InstrumentModule>
   );
 }
