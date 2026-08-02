@@ -50,3 +50,26 @@ export const repoQuerySchema = z.object({
   owner: ownerSlug,
   repo: repoSlug,
 });
+
+const REPO_PAIR = /^[\w.-]+\/[\w.-]+$/;
+const MAX_REPO_PAIR_LENGTH = 201;
+
+export const githubReturnRepoSchema = z
+  .string()
+  .trim()
+  .max(MAX_REPO_PAIR_LENGTH)
+  .regex(REPO_PAIR);
+
+export const githubOAuthStateSchema = z.object({
+  state: z.string().min(1),
+  repo: githubReturnRepoSchema.optional(),
+});
+
+export const githubCallbackQuerySchema = z.object({
+  code: z.string().min(1),
+  state: z.string().min(1),
+});
+
+export const githubAccessTokenSchema = z.object({
+  access_token: z.string().min(1),
+});

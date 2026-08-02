@@ -5,6 +5,7 @@ import {
   getCachedRepoStarData,
   setCachedRepoStarData,
 } from "@/lib/star-video/cache";
+import { readGithubToken } from "@/lib/star-video/github-oauth";
 import { loadRepoStarData } from "@/lib/star-video/load-repo";
 import { enforceStarVideoRateLimit } from "@/lib/star-video/ratelimit";
 import { repoQuerySchema } from "@/schemas/star-video";
@@ -39,13 +40,21 @@ export async function GET(request: NextRequest) {
 
   const { owner, repo } = parsed.data;
   const id = `${owner}/${repo}`.toLowerCase();
+  const githubToken = readGithubToken(request);
 
-  const cached = await Effect.runPromise(getCachedRepoStarData(id));
-  if (cached) {
-    return NextResponse.json(cached);
+  if (!githubToken) {
+    const cached = await Effect.runPromise(getCachedRepoStarData(id));
+    if (cached) {
+      return NextResponse.json(cached);
+    }
   }
 
-  const result = await loadRepoStarData(owner, repo, id);
+  const result = await loadRepoStarData(
+    owner,
+    repo,
+    id,
+    githubToken ?? undefined
+  );
   if (!result.ok) {
     if (result.kind === "unavailable") {
       return NextResponse.json(

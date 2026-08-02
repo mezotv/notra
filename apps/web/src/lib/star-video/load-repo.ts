@@ -11,15 +11,17 @@ const inflight = new Map<string, Promise<LoadRepoResult>>();
 export function loadRepoStarData(
   owner: string,
   repo: string,
-  id: string
+  id: string,
+  token?: string
 ): Promise<LoadRepoResult> {
-  const existing = inflight.get(id);
+  const inflightKey = token ? `${id}:user` : id;
+  const existing = inflight.get(inflightKey);
   if (existing) {
     return existing;
   }
 
   const promise = Effect.runPromise(
-    fetchRepoStarData(owner, repo).pipe(
+    fetchRepoStarData(owner, repo, token).pipe(
       Effect.match({
         onSuccess: (data): LoadRepoResult => ({ ok: true, data }),
         onFailure: (error): LoadRepoResult => ({
@@ -30,9 +32,9 @@ export function loadRepoStarData(
     )
   );
 
-  inflight.set(id, promise);
+  inflight.set(inflightKey, promise);
   promise.finally(() => {
-    inflight.delete(id);
+    inflight.delete(inflightKey);
   });
   return promise;
 }

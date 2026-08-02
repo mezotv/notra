@@ -15,24 +15,32 @@ class RepoUnavailable extends Data.TaggedError("RepoUnavailable")<{
   readonly repo: string;
 }> {}
 
-function buildHeaders(): Record<string, string> {
+function buildHeaders(token?: string): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
     "User-Agent": "notra-star-video",
   };
-  if (process.env.GITHUB_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  const auth = token ?? process.env.GITHUB_TOKEN;
+  if (auth) {
+    headers.Authorization = `Bearer ${auth}`;
   }
   return headers;
 }
 
-async function fetchJson<T>(url: string): Promise<T | null> {
+function buildFetchOptions(token?: string): RequestInit {
+  if (token) {
+    return { headers: buildHeaders(token), cache: "no-store" };
+  }
+  return {
+    headers: buildHeaders(),
+    next: { revalidate: REVALIDATE_SECONDS },
+  };
+}
+
+async function fetchJson<T>(url: string, token?: string): Promise<T | null> {
   try {
-    const res = await fetch(url, {
-      headers: buildHeaders(),
-      next: { revalidate: REVALIDATE_SECONDS },
-    });
+    const res = await fetch(url, buildFetchOptions(token));
     if (!res.ok) {
       return null;
     }
@@ -45,13 +53,11 @@ async function fetchJson<T>(url: string): Promise<T | null> {
 const HTTP_NOT_FOUND = 404;
 
 async function fetchRepoMeta(
-  base: string
+  base: string,
+  token?: string
 ): Promise<{ status: number; data: GitHubRepo | null }> {
   try {
-    const res = await fetch(base, {
-      headers: buildHeaders(),
-      next: { revalidate: REVALIDATE_SECONDS },
-    });
+    const res = await fetch(base, buildFetchOptions(token));
     if (!res.ok) {
       return { status: res.status, data: null };
     }
@@ -81,10 +87,11 @@ function toAvatarUrls(users: GitHubUser[] | null): string[] {
   return urls;
 }
 
-async function fetchAvatars(base: string): Promise<string[]> {
-  if (process.env.GITHUB_TOKEN) {
+async function fetchAvatars(base: string, token?: string): Promise<string[]> {
+  if (token || process.env.GITHUB_TOKEN) {
     const stargazers = await fetchJson<GitHubUser[]>(
-      `${base}/stargazers?per_page=100`
+      `${base}/stargazers?per_page=100`,
+      token
     );
     const fromStars = toAvatarUrls(stargazers);
     if (fromStars.length > 0) {
@@ -93,7 +100,8 @@ async function fetchAvatars(base: string): Promise<string[]> {
   }
 
   const contributors = await fetchJson<GitHubUser[]>(
-    `${base}/contributors?per_page=100`
+    `${base}/contributors?per_page=100`,
+    token
   );
   const fromContributors = toAvatarUrls(contributors);
   if (fromContributors.length > 0) {
@@ -101,7 +109,8 @@ async function fetchAvatars(base: string): Promise<string[]> {
   }
 
   const commits = await fetchJson<Array<{ author: GitHubUser | null }>>(
-    `${base}/commits?per_page=100`
+    `${base}/commits?per_page=100`,
+    token
   );
   return toAvatarUrls(
     (commits ?? [])
@@ -112,11 +121,12 @@ async function fetchAvatars(base: string): Promise<string[]> {
 
 export const fetchRepoStarData = Effect.fn("fetchRepoStarData")(function* (
   owner: string,
-  repo: string
+  repo: string,
+  token?: string
 ) {
   const base = `https://api.github.com/repos/${owner}/${repo}`;
 
-  const meta = yield* Effect.promise(() => fetchRepoMeta(base));
+  const meta = yield* Effect.promise(() => fetchRepoMeta(base, token));
 
   if (meta.status === HTTP_NOT_FOUND) {
     return yield* Effect.fail(new RepoNotFound({ owner, repo }));
@@ -132,7 +142,7 @@ export const fetchRepoStarData = Effect.fn("fetchRepoStarData")(function* (
     return yield* Effect.fail(new RepoNotFound({ owner, repo }));
   }
 
-  const avatars = yield* Effect.promise(() => fetchAvatars(base));
+  const avatars = yield* Effect.promise(() => fetchAvatars(base, token));
   const resolvedOwner = repoData.full_name.split("/")[0] ?? owner;
 
   return {

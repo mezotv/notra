@@ -6,6 +6,11 @@ export type StarVideoInputProps = {
   backgroundColor: string;
 };
 
+export interface GithubOAuthConfig {
+  clientId: string;
+  clientSecret: string;
+}
+
 export interface RepoStarData {
   id: string;
   owner: string;
