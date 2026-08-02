@@ -86,17 +86,20 @@ export const trackIrisRunUsage = Effect.fn("iris.billing.track")(function* (
   const tracked = yield* Effect.result(
     Effect.tryPromise({
       try: () =>
-        client.track({
-          customerId: input.organizationId,
-          featureId: FEATURES.AI_CREDITS,
-          value: billedCents,
-          properties: {
-            source: IRIS_USAGE_SOURCE,
-            run_id: input.runId,
-            cost_cents: billedCents,
-            raw_cost_cents: input.costCents,
+        client.track(
+          {
+            customerId: input.organizationId,
+            featureId: FEATURES.AI_CREDITS,
+            value: billedCents,
+            properties: {
+              source: IRIS_USAGE_SOURCE,
+              run_id: input.runId,
+              cost_cents: billedCents,
+              raw_cost_cents: input.costCents,
+            },
           },
-        }, { headers: { "Idempotency-Key": `iris-run-${input.runId}` } }),
+          { headers: { "Idempotency-Key": `iris-run-${input.runId}` } }
+        ),
       catch: (cause) => cause,
     })
   );
