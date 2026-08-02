@@ -178,7 +178,7 @@ export function MentionRateCard({ engines, points }: MentionRateCardProps) {
               {trendEngines.map((engine) => (
                 <Line dataKey={engine} key={engine} />
               ))}
-              <Tooltip valueFormatter={(value) => `${value}%`} />
+              <Tooltip labelKey="day" valueFormatter={(value) => `${value}%`} />
             </LineChart>
           </div>
         )}
