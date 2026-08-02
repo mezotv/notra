@@ -5,16 +5,22 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
+import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { AiTrafficCard } from "@/components/geo/ai-traffic-card";
+import { CompetitorShareCard } from "@/components/geo/competitor-share-card";
 import { GeoSettingsDialog } from "@/components/geo/geo-settings-dialog";
 import { GeoSummaryStats } from "@/components/geo/geo-summary-stats";
 import { MentionRateCard } from "@/components/geo/mention-rate-card";
 import { ModelUsageCard } from "@/components/geo/model-usage-card";
+import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
 import { WebsiteGenerateCard } from "@/components/geo/website-generate-card";
 import { PageContainer } from "@/components/layout/container";
+import { SectionHeader } from "@/components/layout/section-header";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
+  useGeoPromptResults,
+  useGeoCompetitorShare,
   useAiTraffic,
   useBeaconSetup,
   useGeoOverview,
@@ -46,6 +52,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { data: overview } = useGeoOverview(organizationId);
   const { data: timeseries } = useGeoTimeseries(organizationId);
   const { data: prompts } = useGeoPrompts(organizationId);
+  const { data: promptResults } = useGeoPromptResults(organizationId);
+  const { data: competitorShare } = useGeoCompetitorShare(organizationId);
   const { data: modelUsage } = useModelUsage(organizationId);
   const { data: aiTraffic } = useAiTraffic(organizationId);
   const { data: beaconSetup } = useBeaconSetup(organizationId);
@@ -126,14 +134,55 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           settings={settings}
         />
 
-        <MentionRateCard
-          engines={overview?.engines ?? []}
-          points={timeseries?.points ?? []}
-        />
+        <section className="space-y-3">
+          <SectionHeader
+            action={
+              <Link
+                className="text-muted-foreground text-sm underline-offset-4 hover:underline"
+                href={`/${organizationSlug}/geo/competitors`}
+              >
+                All competitors
+              </Link>
+            }
+            description="How often engines mention you, and who they name instead"
+            title="Visibility"
+          />
+          <div className="grid gap-3 lg:grid-cols-2">
+            <MentionRateCard
+              engines={overview?.engines ?? []}
+              points={timeseries?.points ?? []}
+            />
+            <CompetitorShareCard
+              companyName={settings.companyName}
+              points={competitorShare?.points ?? []}
+            />
+          </div>
+        </section>
 
-        <ModelUsageCard usage={modelUsage} />
+        <section className="space-y-3">
+          <SectionHeader
+            action={
+              <Link
+                className="text-muted-foreground text-sm underline-offset-4 hover:underline"
+                href={`/${organizationSlug}/geo/prompts`}
+              >
+                All prompts
+              </Link>
+            }
+            description="The buyer questions where you surface most"
+            title="Winning prompts"
+          />
+          <PromptResultsPreview results={promptResults?.results ?? []} />
+        </section>
 
-        <AiTrafficCard setup={beaconSetup} traffic={aiTraffic} />
+        <section className="space-y-3">
+          <SectionHeader
+            description="Where AI usage happens, and which AI agents visit your site"
+            title="Reach"
+          />
+          <ModelUsageCard usage={modelUsage} />
+          <AiTrafficCard setup={beaconSetup} traffic={aiTraffic} />
+        </section>
 
         <GeoSettingsDialog
           onOpenChange={setSettingsOpen}

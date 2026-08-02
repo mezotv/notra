@@ -54,7 +54,7 @@ export function CompetitorShareCard({
             <XAxis dataKey="brand" />
             <YAxis />
             <Bar dataKey="mentions" />
-            <Tooltip labelKey="brand" />
+            <Tooltip inlineHeading labelKey="brand" />
           </BarChart>
         )}
       </CardContent>

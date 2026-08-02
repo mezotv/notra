@@ -23,6 +23,7 @@ export function Tooltip({
   valueFormatter,
   variant = "default",
   sortItems = "desc",
+  inlineHeading = false,
 }: {
   labelKey?: string
   valueFormatter?: (value: number, name: string) => string
@@ -30,6 +31,10 @@ export function Tooltip({
   /** Row ordering: highest value first ("desc"), lowest first ("asc"), or
    * series registration order ("none"). */
   sortItems?: "desc" | "asc" | "none"
+  /** Single-series categorical charts: drop the separate heading line and use
+   * the heading value as each row's label ("Monday.com  16" instead of a muted
+   * heading plus a redundant series label). */
+  inlineHeading?: boolean
 }) {
   const chart = useCommonChart()
   const show = chart.ready && chart.hoverIndex != null
@@ -82,7 +87,7 @@ export function Tooltip({
             VARIANT[variant]
           )}
         >
-          {heading && (
+          {heading && !inlineHeading && (
             <div className="mb-0.5 font-mono text-[10px] text-muted-foreground">
               {heading}
             </div>
@@ -98,7 +103,9 @@ export function Tooltip({
                   className="size-2 rounded-[1px]"
                   style={{ backgroundColor: rgb(item.seed.fill) }}
                 />
-                <span className="text-muted-foreground">{item.label}</span>
+                <span className="text-muted-foreground">
+                  {inlineHeading && heading ? heading : item.label}
+                </span>
                 <span className="ml-auto pl-2 text-foreground">
                   {valueFormatter
                     ? valueFormatter(item.value, item.name)
