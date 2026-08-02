@@ -30,6 +30,7 @@ import {
   useUntrackAccount,
 } from "@/lib/hooks/use-social-analytics";
 import { cn } from "@/lib/utils";
+import { isSquareTwitterAvatar } from "@/utils/twitter";
 import type {
   LeaderboardEntry,
   LeaderboardWindow,
@@ -113,10 +114,18 @@ function LeaderboardRow({
           <span className="w-8 shrink-0 text-center">
             <RankChange entry={entry} />
           </span>
-          <Avatar className="size-9 shrink-0">
+          <Avatar
+            className={cn(
+              "size-9 shrink-0",
+              isSquareTwitterAvatar(entry.verifiedType) && "rounded-md"
+            )}
+          >
             {entry.profileImageUrl && (
               <AvatarImage
                 alt={entry.displayName ?? entry.username}
+                className={cn(
+                  isSquareTwitterAvatar(entry.verifiedType) && "rounded-md"
+                )}
                 src={entry.profileImageUrl}
               />
             )}
