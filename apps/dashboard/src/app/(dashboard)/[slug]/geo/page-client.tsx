@@ -4,8 +4,8 @@ import { Settings01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
 import Link from "next/link";
+import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { AiTrafficCard } from "@/components/geo/ai-traffic-card";
 import { CompetitorShareCard } from "@/components/geo/competitor-share-card";
@@ -19,11 +19,11 @@ import { PageContainer } from "@/components/layout/container";
 import { SectionHeader } from "@/components/layout/section-header";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
-  useGeoPromptResults,
-  useGeoCompetitorShare,
   useAiTraffic,
   useBeaconSetup,
+  useGeoCompetitorShare,
   useGeoOverview,
+  useGeoPromptResults,
   useGeoPrompts,
   useGeoSettings,
   useGeoStartScan,

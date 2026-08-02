@@ -163,7 +163,7 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
         {log.length > 0 && (
           <div className="space-y-2">
             <p className="font-medium text-sm">Recent requests</p>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-lg border">
               <Table>
                 <TableHeader>
                   <TableRow>
