@@ -60,6 +60,7 @@ export interface ResolvedTwitterAccount {
   profileImageUrl: string | null;
   verified: boolean;
   verifiedType: string | null;
+  followersCount: number | null;
 }
 
 export interface TwitterTimelineTweet {
@@ -258,4 +259,8 @@ export interface LeaderboardResponse {
 export interface TimelineMarker {
   index: number | null;
   label: string;
+}
+
+export interface TrackAccountPreviewResponse {
+  account: ResolvedTwitterAccount | null;
 }

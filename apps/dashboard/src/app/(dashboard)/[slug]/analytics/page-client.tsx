@@ -4,8 +4,8 @@ import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context"
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { AccountFilter } from "@/components/analytics/account-filter";
-import { ConnectAccountsButtons } from "@/components/analytics/connect-accounts-buttons";
 import { AccountSeriesChartCard } from "@/components/analytics/account-series-chart-card";
+import { ConnectAccountsButtons } from "@/components/analytics/connect-accounts-buttons";
 import { FollowersCard } from "@/components/analytics/followers-card";
 import { LeaderboardCard } from "@/components/analytics/leaderboard-card";
 import { PostingPerformanceCard } from "@/components/analytics/posting-performance-card";

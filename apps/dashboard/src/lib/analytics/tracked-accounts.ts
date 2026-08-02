@@ -43,5 +43,6 @@ export async function resolveTwitterAccount(
       : null,
     verified: user.verified === true || verifiedType !== "none",
     verifiedType,
+    followersCount: user.public_metrics?.followers_count ?? null,
   };
 }
