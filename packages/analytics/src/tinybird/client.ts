@@ -209,5 +209,8 @@ export async function queryPostMetricsLookup(params: {
   if (!client) {
     return null;
   }
-  return await client.postMetricsLookup.query(params);
+  return await client.postMetricsLookup.query({
+    organization_id: params.organization_id,
+    post_ids: [params.post_ids.join(",")],
+  });
 }
