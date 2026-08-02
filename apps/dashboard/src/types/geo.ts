@@ -255,3 +255,8 @@ export interface BeaconSetupResponse {
   token: string;
   snippet: string;
 }
+
+export type GeoPresenceStatus =
+  | "training-data"
+  | "retrieval-only"
+  | "invisible";

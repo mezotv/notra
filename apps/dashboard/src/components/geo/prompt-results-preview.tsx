@@ -3,7 +3,9 @@
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
-import type { GeoPromptResult } from "@/types/geo";
+import { PresenceBadge } from "@/components/geo/presence-badge";
+import type { GeoPresenceStatus, GeoPromptResult } from "@/types/geo";
+import { classifyPromptPresence } from "@/utils/geo-presence";
 
 interface PromptResultsPreviewProps {
   results: GeoPromptResult[];
@@ -16,6 +18,8 @@ interface PromptSummary {
   mentioned: number;
   total: number;
   bestPosition: number | null;
+  presence: GeoPresenceStatus | null;
+  results: GeoPromptResult[];
 }
 
 const DEFAULT_LIMIT = 3;
@@ -29,7 +33,10 @@ function summarize(results: GeoPromptResult[]): PromptSummary[] {
       mentioned: 0,
       total: 0,
       bestPosition: null,
+      presence: null,
+      results: [],
     };
+    group.results.push(result);
     group.total += 1;
     if (result.mentioned) {
       group.mentioned += 1;
@@ -42,7 +49,11 @@ function summarize(results: GeoPromptResult[]): PromptSummary[] {
     }
     groups.set(result.promptId, group);
   }
-  return [...groups.values()].sort(
+  const summaries = [...groups.values()].map((group) => ({
+    ...group,
+    presence: classifyPromptPresence(group.results),
+  }));
+  return summaries.sort(
     (a, b) => b.mentioned / b.total - a.mentioned / a.total
   );
 }
@@ -74,6 +85,7 @@ export function PromptResultsPreview({
             key={summary.promptId}
           >
             <p className="min-w-0 flex-1 truncate text-sm">{summary.prompt}</p>
+            <PresenceBadge status={summary.presence} />
             {summary.bestPosition !== null && (
               <Badge variant="outline">#{summary.bestPosition}</Badge>
             )}

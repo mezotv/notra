@@ -9,8 +9,10 @@ import {
   CardTitle,
 } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
+import { PresenceBadge } from "@/components/geo/presence-badge";
 import { GEO_ENGINE_LABELS } from "@/constants/geo";
 import type { GeoPromptResult } from "@/types/geo";
+import { classifyPromptPresence } from "@/utils/geo-presence";
 
 interface PromptResultsCardProps {
   results: GeoPromptResult[];
@@ -79,7 +81,12 @@ export function PromptResultsCard({ results }: PromptResultsCardProps) {
               );
               return (
                 <div className="space-y-2 py-3" key={group.promptId}>
-                  <p className="font-medium text-sm">{group.prompt}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="font-medium text-sm">{group.prompt}</p>
+                    <PresenceBadge
+                      status={classifyPromptPresence(group.results)}
+                    />
+                  </div>
                   <div className="flex flex-wrap gap-1.5">
                     {group.results.map((result) => (
                       <ResultBadge

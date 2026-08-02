@@ -148,3 +148,15 @@ export const AI_TRAFFIC_CONFIDENCE_LABELS: Record<string, string> = {
   reported: "Reported",
   heuristic: "Heuristic",
 };
+
+export const GEO_PRESENCE_LABELS: Record<string, string> = {
+  "training-data": "Training data",
+  "retrieval-only": "Retrieval only",
+  invisible: "Invisible",
+};
+
+export const GEO_PRESENCE_DOT_CLASSES: Record<string, string> = {
+  "training-data": "bg-emerald-500",
+  "retrieval-only": "bg-amber-500",
+  invisible: "bg-muted-foreground/50",
+};
