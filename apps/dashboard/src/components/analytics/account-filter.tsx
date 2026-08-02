@@ -34,7 +34,7 @@ export function AccountFilter({
           <button
             aria-pressed={selected}
             className={cn(
-              "flex items-center gap-2 rounded-sm border py-1 pr-2.5 pl-1 font-mono text-xs transition-colors",
+              "flex cursor-pointer items-center gap-2 rounded-sm border py-1 pr-2.5 pl-1 font-mono text-xs transition-colors",
               selected
                 ? "border-border bg-muted/60"
                 : "border-transparent bg-muted/20 opacity-50 hover:opacity-80"

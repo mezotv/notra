@@ -22,7 +22,7 @@ export function ConnectAccountsButtons({
       </span>
       <button
         aria-label="Connect X account"
-        className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm transition-colors hover:bg-muted"
+        className="flex cursor-pointer items-center gap-1.5 px-2.5 py-1.5 text-sm transition-colors hover:bg-muted"
         disabled={twitter.isPending}
         onClick={twitter.handleConnect}
         type="button"
@@ -36,7 +36,7 @@ export function ConnectAccountsButtons({
       </button>
       <button
         aria-label="Connect LinkedIn account"
-        className="flex items-center gap-1.5 border-l px-2.5 py-1.5 text-sm transition-colors hover:bg-muted"
+        className="flex cursor-pointer items-center gap-1.5 border-l px-2.5 py-1.5 text-sm transition-colors hover:bg-muted"
         disabled={linkedin.isPending}
         onClick={linkedin.handleConnect}
         type="button"
