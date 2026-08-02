@@ -50,8 +50,8 @@ const generatePlannerDraft = Effect.fn("iris.planner.generate")(function* (
   prompt: string
 ) {
   const generated = yield* Effect.tryPromise({
-    try: () =>
-      generateText({
+    try: async () => {
+      const result = await generateText({
         model: gateway(IRIS_PLANNER_MODEL_ID),
         output: Output.object({ schema: plannerDraftOutputSchema }),
         system: buildIrisPlannerSystemPrompt(),
@@ -61,7 +61,9 @@ const generatePlannerDraft = Effect.fn("iris.planner.generate")(function* (
         providerOptions: withGatewayDefaults(undefined, {
           modelId: IRIS_PLANNER_MODEL_ID,
         }),
-      }),
+      });
+      return { output: result.output, usage: result.usage };
+    },
     catch: (cause) =>
       new IrisPlannerError({
         message: "The planner model call failed",

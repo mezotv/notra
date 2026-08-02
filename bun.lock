@@ -351,6 +351,7 @@
         "@linear/sdk": "^80.0.0",
         "@modelcontextprotocol/sdk": "^1.29.0",
         "@noble/hashes": "2.2.0",
+        "@notra/analytics": "workspace:*",
         "@notra/db": "workspace:*",
         "@notra/utils": "workspace:*",
         "@octokit/core": "^7.0.6",
@@ -463,6 +464,7 @@
       "dependencies": {
         "@aws-sdk/client-s3": "^3.1009.0",
         "@notra/ai": "workspace:*",
+        "@notra/analytics": "workspace:*",
         "@notra/db": "workspace:*",
         "drizzle-orm": "^0.45.2",
         "effect": "4.0.0-beta.93",
@@ -5255,7 +5257,7 @@
 
     "@supermemory/tools/@ai-sdk/openai": ["@ai-sdk/openai@2.0.108", "", { "dependencies": { "@ai-sdk/provider": "2.0.3", "@ai-sdk/provider-utils": "3.0.27" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-apM/hmw4ZinxPK/0vfuuiZ6MwoJmyoBjwTErgTqKVOyFhJxoYP9+SD4jV6yrFIzhuTv4X6Cx5jmv62baQefAlQ=="],
 
-    "@supermemory/tools/@ai-sdk/provider": ["@ai-sdk/provider@3.0.10", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-Q3BZ27qfpYqnCYGvE3vt+Qi6LGOF9R5Nmzn+9JoM1lCRsD9mYaIhfJLkSunN48nfGXJ6n+XNV0J/XVpqGQl7Dw=="],
+    "@supermemory/tools/@ai-sdk/provider": ["@ai-sdk/provider@3.0.14", "", { "dependencies": { "json-schema": "^0.4.0" } }, "sha512-5X1k57JBJ4H7H1QjX7CnJYAB1I19r/trVZTMcSms7/kLNZ8RaU4Nt2agcwZzv82Hfx6Q7/TOLU7agAKeFfc8cA=="],
 
     "@supermemory/tools/ai": ["ai@5.0.204", "", { "dependencies": { "@ai-sdk/gateway": "2.0.103", "@ai-sdk/provider": "2.0.3", "@ai-sdk/provider-utils": "3.0.27", "@opentelemetry/api": "1.9.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-vr4bPUe9v5oJpv/fzcLCupSQODqSerP1oHXDq95oLJYw2vidZUtvRP4pLYD26WzQO/PlIxMHcuVKmjPC3dd6PA=="],
 
