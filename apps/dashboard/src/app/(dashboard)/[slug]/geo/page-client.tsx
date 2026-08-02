@@ -8,12 +8,13 @@ import Link from "next/link";
 import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { AiTrafficCard } from "@/components/geo/ai-traffic-card";
-import { CompetitorShareCard } from "@/components/geo/competitor-share-card";
+import { EngineRadarCard } from "@/components/geo/engine-radar-card";
 import { GeoSettingsDialog } from "@/components/geo/geo-settings-dialog";
 import { GeoSummaryStats } from "@/components/geo/geo-summary-stats";
 import { MentionRateCard } from "@/components/geo/mention-rate-card";
 import { ModelUsageCard } from "@/components/geo/model-usage-card";
 import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
+import { ShareOfVoiceDonut } from "@/components/geo/share-of-voice-donut";
 import { WebsiteGenerateCard } from "@/components/geo/website-generate-card";
 import { PageContainer } from "@/components/layout/container";
 import { SectionHeader } from "@/components/layout/section-header";
@@ -147,12 +148,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             description="How often engines mention you, and who they name instead"
             title="Visibility"
           />
-          <div className="grid gap-3 lg:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
             <MentionRateCard
               engines={overview?.engines ?? []}
               points={timeseries?.points ?? []}
             />
-            <CompetitorShareCard
+            <EngineRadarCard engines={overview?.engines ?? []} />
+            <ShareOfVoiceDonut
               companyName={settings.companyName}
               points={competitorShare?.points ?? []}
             />

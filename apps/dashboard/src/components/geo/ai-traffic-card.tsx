@@ -1,5 +1,9 @@
 "use client";
 
+import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context";
+import { Pie } from "@notra/ui/components/dither-kit/pie";
+import { PieChart } from "@notra/ui/components/dither-kit/pie-chart";
+import { Tooltip as DitherTooltip } from "@notra/ui/components/dither-kit/tooltip";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   Card,
@@ -127,6 +131,47 @@ function BeaconSetup({ setup }: { setup: BeaconSetupResponse | undefined }) {
   );
 }
 
+const PURPOSE_DONUT_CONFIG: ChartConfig = {
+  "Training data": { label: "Training data", color: "green" },
+  "Search index": { label: "Search index", color: "blue" },
+  "Used in answer": { label: "Used in answer", color: "purple" },
+};
+
+function PurposeDonut({ agents }: { agents: AiTrafficAgent[] }) {
+  const rows = useMemo(() => {
+    const byPurpose = new Map<string, number>();
+    for (const agent of agents) {
+      const label = AI_TRAFFIC_PURPOSE_LABELS[agent.category] ?? agent.category;
+      byPurpose.set(label, (byPurpose.get(label) ?? 0) + agent.hits);
+    }
+    return [...byPurpose.entries()].map(([purpose, hits]) => ({
+      purpose,
+      hits,
+    }));
+  }, [agents]);
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-muted-foreground text-xs">Requests by purpose</p>
+      <PieChart
+        className="h-40 w-full"
+        config={PURPOSE_DONUT_CONFIG}
+        data={rows}
+        dataKey="hits"
+        innerRadius={0.55}
+        nameKey="purpose"
+      >
+        <Pie />
+        <DitherTooltip inlineHeading />
+      </PieChart>
+    </div>
+  );
+}
+
 export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
   const agents = traffic?.agents ?? [];
   const log = traffic?.log ?? [];
@@ -153,10 +198,13 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
         {agents.length === 0 ? (
           <BeaconSetup setup={setup} />
         ) : (
-          <div className="space-y-4">
-            {agents.map((agent) => (
-              <AgentRow agent={agent} key={agent.agent} maxHits={maxHits} />
-            ))}
+          <div className="grid gap-6 lg:grid-cols-[1fr_16rem]">
+            <div className="space-y-4">
+              {agents.map((agent) => (
+                <AgentRow agent={agent} key={agent.agent} maxHits={maxHits} />
+              ))}
+            </div>
+            <PurposeDonut agents={agents} />
           </div>
         )}
 

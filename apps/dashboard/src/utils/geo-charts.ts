@@ -1,5 +1,11 @@
-import type { GeoTimeseriesPoint, MentionRateRow } from "@/types/geo";
+import type {
+  GeoEngineFamily,
+  GeoOverviewEngine,
+  GeoTimeseriesPoint,
+  MentionRateRow,
+} from "@/types/geo";
 import { formatDayLabel } from "@/utils/analytics-charts";
+import { isGroundedEngine } from "@/utils/geo-presence";
 
 const PERCENT = 100;
 
@@ -52,4 +58,35 @@ export function buildMentionRateRows(points: GeoTimeseriesPoint[]): {
   });
 
   return { rows, engines };
+}
+
+const GROUNDED_SUFFIX_PATTERN = /(-direct)?-grounded$/;
+
+export function engineFamilyOf(engine: string): string {
+  return engine.replace(GROUNDED_SUFFIX_PATTERN, "");
+}
+
+export function groupEngineFamilies(
+  engines: GeoOverviewEngine[]
+): GeoEngineFamily[] {
+  const families = new Map<string, GeoEngineFamily>();
+  for (const engine of engines) {
+    const family = engineFamilyOf(engine.engine);
+    const entry = families.get(family) ?? {
+      family,
+      web: null,
+      raw: null,
+    };
+    if (isGroundedEngine(engine.engine)) {
+      entry.web = engine;
+    } else {
+      entry.raw = engine;
+    }
+    families.set(family, entry);
+  }
+  return [...families.values()].sort(
+    (a, b) =>
+      Math.max(b.web?.mentionRate ?? 0, b.raw?.mentionRate ?? 0) -
+      Math.max(a.web?.mentionRate ?? 0, a.raw?.mentionRate ?? 0)
+  );
 }

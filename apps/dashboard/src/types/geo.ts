@@ -260,3 +260,9 @@ export type GeoPresenceStatus =
   | "training-data"
   | "retrieval-only"
   | "invisible";
+
+export interface GeoEngineFamily {
+  family: string;
+  web: GeoOverviewEngine | null;
+  raw: GeoOverviewEngine | null;
+}
