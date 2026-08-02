@@ -1,11 +1,93 @@
 import {
+  defineCopyPipe,
   defineEndpoint,
+  defineMaterializedView,
   type InferOutputRow,
   type InferParams,
   node,
   p,
   t,
 } from "@tinybirdco/sdk";
+import { socialAccountStatsLatest, socialPostStatsLatest } from "./datasources";
+
+const POST_STATS_LATEST_SQL = `
+  SELECT
+    organization_id,
+    provider,
+    provider_account_id,
+    platform_post_id,
+    argMaxState(impressions, captured_at) AS impressions_state,
+    argMaxState(likes, captured_at) AS likes_state,
+    argMaxState(replies, captured_at) AS replies_state,
+    argMaxState(reposts, captured_at) AS reposts_state,
+    argMaxState(quotes, captured_at) AS quotes_state,
+    argMaxState(bookmarks, captured_at) AS bookmarks_state,
+    maxState(captured_at) AS last_captured_at_state
+  FROM social_post_stats
+  GROUP BY organization_id, provider, provider_account_id, platform_post_id
+`;
+
+const ACCOUNT_STATS_LATEST_SQL = `
+  SELECT
+    organization_id,
+    provider,
+    provider_account_id,
+    argMaxState(account_id, captured_at) AS account_id_state,
+    argMaxState(followers_count, captured_at) AS followers_count_state,
+    argMaxState(following_count, captured_at) AS following_count_state,
+    argMaxState(posts_count, captured_at) AS posts_count_state,
+    argMaxState(listed_count, captured_at) AS listed_count_state,
+    maxState(captured_at) AS last_captured_at_state
+  FROM social_account_stats
+  GROUP BY organization_id, provider, provider_account_id
+`;
+
+export const socialPostStatsLatestMv = defineMaterializedView(
+  "social_post_stats_latest_mv",
+  {
+    description: "Keeps social_post_stats_latest current on every ingest batch",
+    datasource: socialPostStatsLatest,
+    nodes: [node({ name: "post_stats_latest", sql: POST_STATS_LATEST_SQL })],
+  }
+);
+
+export const socialAccountStatsLatestMv = defineMaterializedView(
+  "social_account_stats_latest_mv",
+  {
+    description:
+      "Keeps social_account_stats_latest current on every ingest batch",
+    datasource: socialAccountStatsLatest,
+    nodes: [
+      node({ name: "account_stats_latest", sql: ACCOUNT_STATS_LATEST_SQL }),
+    ],
+  }
+);
+
+export const socialPostStatsLatestBackfill = defineCopyPipe(
+  "social_post_stats_latest_backfill",
+  {
+    description:
+      "One-off backfill of social_post_stats_latest from history predating the materialized view; argMax states are idempotent so reruns are safe",
+    datasource: socialPostStatsLatest,
+    copy_mode: "append",
+    copy_schedule: "@on-demand",
+    nodes: [node({ name: "post_stats_backfill", sql: POST_STATS_LATEST_SQL })],
+  }
+);
+
+export const socialAccountStatsLatestBackfill = defineCopyPipe(
+  "social_account_stats_latest_backfill",
+  {
+    description:
+      "One-off backfill of social_account_stats_latest from history predating the materialized view; argMax states are idempotent so reruns are safe",
+    datasource: socialAccountStatsLatest,
+    copy_mode: "append",
+    copy_schedule: "@on-demand",
+    nodes: [
+      node({ name: "account_stats_backfill", sql: ACCOUNT_STATS_LATEST_SQL }),
+    ],
+  }
+);
 
 export const socialOverview = defineEndpoint("social_overview", {
   description:
@@ -20,12 +102,12 @@ export const socialOverview = defineEndpoint("social_overview", {
         SELECT
           provider,
           provider_account_id,
-          argMax(account_id, captured_at) AS account_id,
-          argMax(followers_count, captured_at) AS followers_count,
-          argMax(following_count, captured_at) AS following_count,
-          argMax(posts_count, captured_at) AS posts_count,
-          max(captured_at) AS stats_captured_at
-        FROM social_account_stats
+          argMaxMerge(account_id_state) AS account_id,
+          argMaxMerge(followers_count_state) AS followers_count,
+          argMaxMerge(following_count_state) AS following_count,
+          argMaxMerge(posts_count_state) AS posts_count,
+          maxMerge(last_captured_at_state) AS stats_captured_at
+        FROM social_account_stats_latest
         WHERE organization_id = {{String(organization_id)}}
         GROUP BY provider, provider_account_id
       `,
@@ -48,13 +130,13 @@ export const socialOverview = defineEndpoint("social_overview", {
             provider,
             provider_account_id,
             platform_post_id,
-            argMax(impressions, captured_at) AS impressions,
-            argMax(likes, captured_at) AS likes,
-            argMax(replies, captured_at) AS replies,
-            argMax(reposts, captured_at) AS reposts,
-            argMax(quotes, captured_at) AS quotes,
-            argMax(bookmarks, captured_at) AS bookmarks
-          FROM social_post_stats
+            argMaxMerge(impressions_state) AS impressions,
+            argMaxMerge(likes_state) AS likes,
+            argMaxMerge(replies_state) AS replies,
+            argMaxMerge(reposts_state) AS reposts,
+            argMaxMerge(quotes_state) AS quotes,
+            argMaxMerge(bookmarks_state) AS bookmarks
+          FROM social_post_stats_latest
           WHERE organization_id = {{String(organization_id)}}
           GROUP BY provider, provider_account_id, platform_post_id
         )
@@ -127,21 +209,6 @@ export const engagementTimeseries = defineEndpoint("engagement_timeseries", {
   },
   nodes: [
     node({
-      name: "latest_post_metrics",
-      sql: `
-        SELECT
-          provider,
-          platform_post_id,
-          argMax(impressions, captured_at) AS impressions,
-          argMax(likes, captured_at) AS likes,
-          argMax(replies, captured_at) AS replies,
-          argMax(reposts, captured_at) AS reposts
-        FROM social_post_stats
-        WHERE organization_id = {{String(organization_id)}}
-        GROUP BY provider, platform_post_id
-      `,
-    }),
-    node({
       name: "post_days",
       sql: `
         SELECT
@@ -151,7 +218,22 @@ export const engagementTimeseries = defineEndpoint("engagement_timeseries", {
           min(posted_at) AS first_posted_at
         FROM social_posts
         WHERE organization_id = {{String(organization_id)}}
-          AND posted_at >= now() - INTERVAL {{Int32(days, 30)}} DAY
+          AND posted_at >= now() - toIntervalDay({{Int32(days, 30)}})
+        GROUP BY provider, platform_post_id
+      `,
+    }),
+    node({
+      name: "latest_post_metrics",
+      sql: `
+        SELECT
+          provider,
+          platform_post_id,
+          argMaxMerge(impressions_state) AS impressions,
+          argMaxMerge(likes_state) AS likes,
+          argMaxMerge(replies_state) AS replies,
+          argMaxMerge(reposts_state) AS reposts
+        FROM social_post_stats_latest
+        WHERE organization_id = {{String(organization_id)}}
         GROUP BY provider, platform_post_id
       `,
     }),
@@ -197,21 +279,6 @@ export const accountLeaderboard = defineEndpoint("account_leaderboard", {
   },
   nodes: [
     node({
-      name: "leaderboard_post_metrics",
-      sql: `
-        SELECT
-          provider,
-          platform_post_id,
-          argMax(impressions, captured_at) AS impressions,
-          argMax(likes, captured_at) AS likes,
-          argMax(replies, captured_at) AS replies,
-          argMax(reposts, captured_at) AS reposts
-        FROM social_post_stats
-        WHERE organization_id = {{String(organization_id)}}
-        GROUP BY provider, platform_post_id
-      `,
-    }),
-    node({
       name: "leaderboard_window_posts",
       sql: `
         SELECT
@@ -223,6 +290,21 @@ export const accountLeaderboard = defineEndpoint("account_leaderboard", {
         WHERE organization_id = {{String(organization_id)}}
           AND posted_at >= now() - toIntervalDay({{Int32(days, 7)}} * 2)
           AND posted_at <= now()
+        GROUP BY provider, platform_post_id
+      `,
+    }),
+    node({
+      name: "leaderboard_post_metrics",
+      sql: `
+        SELECT
+          provider,
+          platform_post_id,
+          argMaxMerge(impressions_state) AS impressions,
+          argMaxMerge(likes_state) AS likes,
+          argMaxMerge(replies_state) AS replies,
+          argMaxMerge(reposts_state) AS reposts
+        FROM social_post_stats_latest
+        WHERE organization_id = {{String(organization_id)}}
         GROUP BY provider, platform_post_id
       `,
     }),
@@ -287,12 +369,12 @@ export const topPosts = defineEndpoint("top_posts", {
         SELECT
           provider,
           platform_post_id,
-          argMax(impressions, captured_at) AS impressions,
-          argMax(likes, captured_at) AS likes,
-          argMax(replies, captured_at) AS replies,
-          argMax(reposts, captured_at) AS reposts,
-          argMax(bookmarks, captured_at) AS bookmarks
-        FROM social_post_stats
+          argMaxMerge(impressions_state) AS impressions,
+          argMaxMerge(likes_state) AS likes,
+          argMaxMerge(replies_state) AS replies,
+          argMaxMerge(reposts_state) AS reposts,
+          argMaxMerge(bookmarks_state) AS bookmarks
+        FROM social_post_stats_latest
         WHERE organization_id = {{String(organization_id)}}
         GROUP BY provider, platform_post_id
       `,
@@ -351,21 +433,6 @@ export const postingPerformance = defineEndpoint("posting_performance", {
   },
   nodes: [
     node({
-      name: "post_metrics",
-      sql: `
-        SELECT
-          provider,
-          platform_post_id,
-          argMax(likes, captured_at) AS likes,
-          argMax(replies, captured_at) AS replies,
-          argMax(reposts, captured_at) AS reposts,
-          argMax(impressions, captured_at) AS impressions
-        FROM social_post_stats
-        WHERE organization_id = {{String(organization_id)}}
-        GROUP BY provider, platform_post_id
-      `,
-    }),
-    node({
       name: "post_weekdays",
       sql: `
         SELECT
@@ -374,7 +441,22 @@ export const postingPerformance = defineEndpoint("posting_performance", {
           toDayOfWeek(min(posted_at)) AS weekday
         FROM social_posts
         WHERE organization_id = {{String(organization_id)}}
-          AND posted_at >= now() - INTERVAL {{Int32(days, 90)}} DAY
+          AND posted_at >= now() - toIntervalDay({{Int32(days, 90)}})
+        GROUP BY provider, platform_post_id
+      `,
+    }),
+    node({
+      name: "post_metrics",
+      sql: `
+        SELECT
+          provider,
+          platform_post_id,
+          argMaxMerge(likes_state) AS likes,
+          argMaxMerge(replies_state) AS replies,
+          argMaxMerge(reposts_state) AS reposts,
+          argMaxMerge(impressions_state) AS impressions
+        FROM social_post_stats_latest
+        WHERE organization_id = {{String(organization_id)}}
         GROUP BY provider, platform_post_id
       `,
     }),
@@ -425,7 +507,7 @@ export const followerGrowth = defineEndpoint("follower_growth", {
           argMax(followers_count, captured_at) AS followers_count
         FROM social_account_stats
         WHERE organization_id = {{String(organization_id)}}
-          AND captured_at >= now() - INTERVAL {{Int32(days, 30)}} DAY
+          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
         GROUP BY day, provider, provider_account_id
         ORDER BY day ASC
       `,
@@ -495,7 +577,7 @@ export const geoOverview = defineEndpoint("geo_overview", {
           max(captured_at) AS last_checked_at
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
-          AND captured_at >= now() - INTERVAL {{Int32(days, 30)}} DAY
+          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
         GROUP BY engine
         ORDER BY mention_rate DESC
       `,
@@ -528,7 +610,7 @@ export const geoTimeseries = defineEndpoint("geo_timeseries", {
           countIf(mentioned) AS mentions
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
-          AND captured_at >= now() - INTERVAL {{Int32(days, 30)}} DAY
+          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
         GROUP BY day, engine
         ORDER BY day ASC
       `,
@@ -595,7 +677,7 @@ export const geoCompetitorShare = defineEndpoint("geo_competitor_share", {
           count() AS mentions
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
-          AND captured_at >= now() - INTERVAL {{Int32(days, 30)}} DAY
+          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
         GROUP BY brand
         ORDER BY mentions DESC
         LIMIT {{Int32(limit, 10)}}
@@ -718,13 +800,13 @@ export const postMetricsLookup = defineEndpoint("post_metrics_lookup", {
         SELECT
           provider,
           platform_post_id,
-          argMax(impressions, captured_at) AS impressions,
-          argMax(likes, captured_at) AS likes,
-          argMax(replies, captured_at) AS replies,
-          argMax(reposts, captured_at) AS reposts,
-          argMax(bookmarks, captured_at) AS bookmarks,
-          max(captured_at) AS last_captured_at
-        FROM social_post_stats
+          argMaxMerge(impressions_state) AS impressions,
+          argMaxMerge(likes_state) AS likes,
+          argMaxMerge(replies_state) AS replies,
+          argMaxMerge(reposts_state) AS reposts,
+          argMaxMerge(bookmarks_state) AS bookmarks,
+          maxMerge(last_captured_at_state) AS last_captured_at
+        FROM social_post_stats_latest
         WHERE organization_id = {{String(organization_id)}}
           AND platform_post_id IN {{Array(post_ids, 'String')}}
         GROUP BY provider, platform_post_id

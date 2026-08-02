@@ -94,6 +94,97 @@ export const socialPostStats = defineDatasource("social_post_stats", {
   }),
 });
 
+export const socialPostStatsLatest = defineDatasource(
+  "social_post_stats_latest",
+  {
+    description:
+      "Materialized latest-per-post metric states; read with argMaxMerge/maxMerge instead of scanning social_post_stats",
+    schema: {
+      organization_id: t.string(),
+      provider: t.string().lowCardinality(),
+      provider_account_id: t.string(),
+      platform_post_id: t.string(),
+      impressions_state: t.aggregateFunction(
+        "argMax",
+        t.uint64().nullable(),
+        t.dateTime()
+      ),
+      likes_state: t.aggregateFunction(
+        "argMax",
+        t.uint64().nullable(),
+        t.dateTime()
+      ),
+      replies_state: t.aggregateFunction(
+        "argMax",
+        t.uint64().nullable(),
+        t.dateTime()
+      ),
+      reposts_state: t.aggregateFunction(
+        "argMax",
+        t.uint64().nullable(),
+        t.dateTime()
+      ),
+      quotes_state: t.aggregateFunction(
+        "argMax",
+        t.uint64().nullable(),
+        t.dateTime()
+      ),
+      bookmarks_state: t.aggregateFunction(
+        "argMax",
+        t.uint64().nullable(),
+        t.dateTime()
+      ),
+      last_captured_at_state: t.aggregateFunction("max", t.dateTime()),
+    },
+    engine: engine.aggregatingMergeTree({
+      sortingKey: [
+        "organization_id",
+        "provider",
+        "platform_post_id",
+        "provider_account_id",
+      ],
+    }),
+  }
+);
+
+export const socialAccountStatsLatest = defineDatasource(
+  "social_account_stats_latest",
+  {
+    description:
+      "Materialized latest-per-account stat states; read with argMaxMerge/maxMerge instead of scanning social_account_stats",
+    schema: {
+      organization_id: t.string(),
+      provider: t.string().lowCardinality(),
+      provider_account_id: t.string(),
+      account_id_state: t.aggregateFunction("argMax", t.string(), t.dateTime()),
+      followers_count_state: t.aggregateFunction(
+        "argMax",
+        t.uint64().nullable(),
+        t.dateTime()
+      ),
+      following_count_state: t.aggregateFunction(
+        "argMax",
+        t.uint64().nullable(),
+        t.dateTime()
+      ),
+      posts_count_state: t.aggregateFunction(
+        "argMax",
+        t.uint64().nullable(),
+        t.dateTime()
+      ),
+      listed_count_state: t.aggregateFunction(
+        "argMax",
+        t.uint64().nullable(),
+        t.dateTime()
+      ),
+      last_captured_at_state: t.aggregateFunction("max", t.dateTime()),
+    },
+    engine: engine.aggregatingMergeTree({
+      sortingKey: ["organization_id", "provider", "provider_account_id"],
+    }),
+  }
+);
+
 export const socialPostSources = defineDatasource("social_post_sources", {
   description:
     "Append-only ledger marking posts that were published through Notra",

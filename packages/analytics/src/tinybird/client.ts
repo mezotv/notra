@@ -295,7 +295,13 @@ export async function queryPostMetricsLookup(params: {
   if (!client) {
     return null;
   }
-  return await client.postMetricsLookup.query(params);
+  // The SDK serializes arrays as repeated query keys (post_ids=a&post_ids=b),
+  // but Tinybird's Array() template reads a single comma-separated value, so
+  // repeated keys silently collapse to one id. Send one pre-joined value.
+  return await client.postMetricsLookup.query({
+    organization_id: params.organization_id,
+    post_ids: [params.post_ids.join(",")],
+  });
 }
 
 export async function queryModelUsageLatest(
