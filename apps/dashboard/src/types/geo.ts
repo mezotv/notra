@@ -207,3 +207,51 @@ export interface GeoJudgeResult {
   competitors: string[];
   excerpt: string;
 }
+
+export type AiTrafficCategory =
+  | "training-crawler"
+  | "search-index"
+  | "assistant-browse";
+
+export interface AiTrafficAgent {
+  agent: string;
+  category: string;
+  confidence: string;
+  hits: number;
+  paths: number;
+  lastSeenAt: string;
+}
+
+export interface AiTrafficPoint {
+  day: string;
+  category: string;
+  hits: number;
+}
+
+export interface AiTrafficLogEntry {
+  capturedAt: string;
+  agent: string;
+  category: string;
+  confidence: string;
+  path: string;
+  method: string;
+  referer: string | null;
+}
+
+export interface AiTrafficResponse {
+  configured: boolean;
+  agents: AiTrafficAgent[];
+  points: AiTrafficPoint[];
+  log: AiTrafficLogEntry[];
+}
+
+export interface AiTrafficInput {
+  days?: number;
+  limit?: number;
+}
+
+export interface BeaconSetupResponse {
+  ingestUrl: string;
+  token: string;
+  snippet: string;
+}

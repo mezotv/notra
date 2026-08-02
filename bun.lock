@@ -291,6 +291,7 @@
         "@hugeicons/core-free-icons": "^4.1.1",
         "@hugeicons/react": "^1.1.5",
         "@neoconfetti/react": "^1.0.0",
+        "@notra/beacon": "workspace:*",
         "@notra/email": "workspace:*",
         "@notra/kiwi": "workspace:*",
         "@notra/ui": "workspace:*",
@@ -395,6 +396,14 @@
       "devDependencies": {
         "@notra/typescript-config": "workspace:*",
         "@types/node": "^24.0.0",
+        "typescript": "5.9.2",
+      },
+    },
+    "packages/beacon": {
+      "name": "@notra/beacon",
+      "version": "0.0.1",
+      "devDependencies": {
+        "@notra/typescript-config": "workspace:*",
         "typescript": "5.9.2",
       },
     },
@@ -1270,6 +1279,8 @@
     "@notra/ai": ["@notra/ai@workspace:packages/ai"],
 
     "@notra/analytics": ["@notra/analytics@workspace:packages/analytics"],
+
+    "@notra/beacon": ["@notra/beacon@workspace:packages/beacon"],
 
     "@notra/content-generation": ["@notra/content-generation@workspace:packages/content-generation"],
 

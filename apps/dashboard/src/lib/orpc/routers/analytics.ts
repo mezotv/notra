@@ -36,7 +36,6 @@ import {
 } from "@/schemas/analytics";
 import type {
   EngagementTimeseriesResponse,
-  TrackAccountPreviewResponse,
   FollowerGrowthResponse,
   LeaderboardAccount,
   LeaderboardResponse,
@@ -46,6 +45,7 @@ import type {
   SocialOverviewResponse,
   SyncableSocialAccount,
   TopPostsResponse,
+  TrackAccountPreviewResponse,
 } from "@/types/analytics";
 import { badRequest, notFound } from "../utils/errors";
 
@@ -417,21 +417,23 @@ export const analyticsRouter = {
     }),
   previewTrackAccount: authorizedProcedure
     .input(trackAccountInputSchema)
-    .handler(async ({ context, input }): Promise<TrackAccountPreviewResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
+    .handler(
+      async ({ context, input }): Promise<TrackAccountPreviewResponse> => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+          user: context.user,
+        });
 
-      const account = await resolveTwitterAccount(input.username).catch(
-        (error) => {
-          console.error("[Analytics] account preview failed:", error);
-          return null;
-        }
-      );
-      return { account };
-    }),
+        const account = await resolveTwitterAccount(input.username).catch(
+          (error) => {
+            console.error("[Analytics] account preview failed:", error);
+            return null;
+          }
+        );
+        return { account };
+      }
+    ),
   trackAccount: authorizedProcedure
     .input(trackAccountInputSchema)
     .handler(async ({ context, input }) => {

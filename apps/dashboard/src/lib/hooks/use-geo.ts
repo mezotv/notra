@@ -3,6 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type {
+  AiTrafficResponse,
+  BeaconSetupResponse,
   GeoCompetitorShareResponse,
   GeoGenerateFromWebsiteInput,
   GeoModelUsageResponse,
@@ -205,5 +207,25 @@ export function useGeoStartScan(organizationId: string) {
     onError: (error) => {
       toast.error(toErrorMessage(error, "Failed to start scan"));
     },
+  });
+}
+
+export function useAiTraffic(organizationId: string, days?: number) {
+  return useQuery<AiTrafficResponse>({
+    ...dashboardOrpc.geo.aiTraffic.queryOptions({
+      input: { organizationId, days: days ?? DEFAULT_GEO_DAYS },
+    }),
+    enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load AI traffic" },
+  });
+}
+
+export function useBeaconSetup(organizationId: string) {
+  return useQuery<BeaconSetupResponse>({
+    ...dashboardOrpc.geo.beaconSetup.queryOptions({
+      input: { organizationId },
+    }),
+    enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load beacon setup" },
   });
 }

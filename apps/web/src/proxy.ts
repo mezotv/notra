@@ -1,7 +1,20 @@
 import { Tracker } from "@bydefault/vercel";
 import { createDualmarkMiddleware } from "@dualmark/nextjs";
+import { createBeaconMiddleware } from "@notra/beacon/middleware";
 import { after, type NextRequest, NextResponse } from "next/server";
 import { HOMEPAGE_LINK_HEADER, SITE_URL } from "@/utils/urls";
+
+const beaconIngestUrl = process.env.BEACON_INGEST_URL;
+const beaconToken = process.env.BEACON_ORG_TOKEN;
+const beaconOrganizationId = process.env.BEACON_ORG_ID;
+const beacon =
+  beaconIngestUrl && beaconToken && beaconOrganizationId
+    ? createBeaconMiddleware({
+        ingestUrl: beaconIngestUrl,
+        token: beaconToken,
+        organizationId: beaconOrganizationId,
+      })
+    : null;
 
 const bydefaultToken = process.env.BYDEFAULT_TOKEN;
 const tracker = bydefaultToken
@@ -41,12 +54,31 @@ const dualmarkProxy = createDualmarkMiddleware({
   },
 });
 
+function trackAiTraffic(request: NextRequest) {
+  if (!beacon) {
+    return;
+  }
+
+  const pending: Promise<unknown>[] = [];
+  beacon(request, {
+    waitUntil: (promise) => {
+      pending.push(promise);
+    },
+  });
+
+  if (pending.length > 0) {
+    after(Promise.all(pending));
+  }
+}
+
 function appendLinkHeader(headers: Headers, value: string) {
   const existing = headers.get("Link");
   headers.set("Link", existing ? `${existing}, ${value}` : value);
 }
 
 export async function proxy(request: NextRequest) {
+  trackAiTraffic(request);
+
   if (
     request.nextUrl.pathname === "/" &&
     request.nextUrl.searchParams.get("mode") === "agent"

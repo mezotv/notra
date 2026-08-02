@@ -16,6 +16,9 @@ const MAX_JUDGE_COMPETITORS = 15;
 const MAX_EXCERPT_LENGTH = 300;
 const MAX_DAYS = 365;
 const MAX_MODEL_USAGE_LIMIT = 50;
+const MAX_AI_TRAFFIC_LOG_LIMIT = 200;
+const MAX_BEACON_FIELD_LENGTH = 512;
+const MAX_BEACON_METHOD_LENGTH = 16;
 const MIN_PROMPT_LENGTH = GEO_PROMPT_MIN_LENGTH;
 const MAX_PROMPT_LENGTH = GEO_PROMPT_MAX_LENGTH;
 
@@ -108,4 +111,24 @@ export const geoJudgeResultSchema = object({
   sentiment: enumType(["positive", "neutral", "negative"]).nullable(),
   competitors: array(string()).max(MAX_JUDGE_COMPETITORS),
   excerpt: string().max(MAX_EXCERPT_LENGTH),
+});
+
+export const aiTrafficInputSchema = object({
+  organizationId: string().min(1),
+  days: number().int().min(1).max(MAX_DAYS).optional(),
+  limit: number().int().min(1).max(MAX_AI_TRAFFIC_LOG_LIMIT).optional(),
+});
+
+export const beaconEventSchema = object({
+  token: string().min(1).max(MAX_BEACON_FIELD_LENGTH),
+  organizationId: string().min(1).max(MAX_BEACON_FIELD_LENGTH),
+  agent: string().min(1).max(MAX_BEACON_FIELD_LENGTH),
+  category: enumType(["training-crawler", "search-index", "assistant-browse"]),
+  confidence: enumType(["verified", "reported", "heuristic"]),
+  path: string().min(1).max(MAX_BEACON_FIELD_LENGTH),
+  host: string().min(1).max(MAX_BEACON_FIELD_LENGTH),
+  method: string().min(1).max(MAX_BEACON_METHOD_LENGTH),
+  referer: string().max(MAX_BEACON_FIELD_LENGTH).nullable(),
+  ua: string().max(MAX_BEACON_FIELD_LENGTH),
+  ts: string().min(1).max(MAX_BEACON_FIELD_LENGTH),
 });

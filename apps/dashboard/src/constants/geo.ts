@@ -124,3 +124,27 @@ export const GEO_DISCOVERY_SYSTEM_PROMPT =
   "You are a search visibility analyst. You read a company's website and derive the brand identity and the buyer questions that decide whether an AI assistant recommends this company. Respond only with the requested structured data.";
 export const GEO_ANSWER_SYSTEM_PROMPT =
   "You are a helpful AI assistant. Answer the user's question directly and concretely, naming specific products or companies where relevant.";
+
+export const AI_TRAFFIC_DEFAULT_DAYS = 30;
+export const AI_TRAFFIC_DEFAULT_LOG_LIMIT = 50;
+export const BEACON_INGEST_PATH = "/api/beacon";
+export const BEACON_INGEST_SECRET_ENV = "BEACON_INGEST_SECRET";
+
+export const AI_TRAFFIC_PURPOSE_LABELS: Record<string, string> = {
+  "training-crawler": "Training data",
+  "search-index": "Search index",
+  "assistant-browse": "Used in answer",
+};
+
+export const AI_TRAFFIC_PURPOSE_DESCRIPTIONS: Record<string, string> = {
+  "training-crawler": "Collects pages for model training corpora",
+  "search-index": "Builds the index an AI answer engine searches",
+  "assistant-browse":
+    "Fetched while an assistant was answering someone. A fetch is not proof of a citation",
+};
+
+export const AI_TRAFFIC_CONFIDENCE_LABELS: Record<string, string> = {
+  verified: "Verified",
+  reported: "Reported",
+  heuristic: "Heuristic",
+};

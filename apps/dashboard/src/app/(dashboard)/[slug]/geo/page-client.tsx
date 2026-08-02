@@ -6,6 +6,7 @@ import { Button } from "@notra/ui/components/ui/button";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
+import { AiTrafficCard } from "@/components/geo/ai-traffic-card";
 import { GeoSettingsDialog } from "@/components/geo/geo-settings-dialog";
 import { GeoSummaryStats } from "@/components/geo/geo-summary-stats";
 import { MentionRateCard } from "@/components/geo/mention-rate-card";
@@ -14,6 +15,8 @@ import { WebsiteGenerateCard } from "@/components/geo/website-generate-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
+  useAiTraffic,
+  useBeaconSetup,
   useGeoOverview,
   useGeoPrompts,
   useGeoSettings,
@@ -44,6 +47,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { data: timeseries } = useGeoTimeseries(organizationId);
   const { data: prompts } = useGeoPrompts(organizationId);
   const { data: modelUsage } = useModelUsage(organizationId);
+  const { data: aiTraffic } = useAiTraffic(organizationId);
+  const { data: beaconSetup } = useBeaconSetup(organizationId);
   const startScan = useGeoStartScan(organizationId);
 
   if (isSettingsPending) {
@@ -127,6 +132,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         />
 
         <ModelUsageCard usage={modelUsage} />
+
+        <AiTrafficCard setup={beaconSetup} traffic={aiTraffic} />
 
         <GeoSettingsDialog
           onOpenChange={setSettingsOpen}

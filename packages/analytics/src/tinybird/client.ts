@@ -1,5 +1,7 @@
 import { type IngestResult, type QueryResult, Tinybird } from "@tinybirdco/sdk";
 import {
+  type AiTrafficEventRow,
+  aiTrafficEvents,
   type GeoMentionCheckRow,
   geoMentionChecks,
   type ModelUsageShareRow,
@@ -18,7 +20,13 @@ import {
 import {
   type AccountLeaderboardParams,
   type AccountLeaderboardRow,
+  type AiTrafficLogRow,
+  type AiTrafficOverviewRow,
+  type AiTrafficTimeseriesRow,
   accountLeaderboard,
+  aiTrafficLog,
+  aiTrafficOverview,
+  aiTrafficTimeseries,
   type EngagementTimeseriesParams,
   type EngagementTimeseriesRow,
   engagementTimeseries,
@@ -71,6 +79,7 @@ function createTinybirdClient() {
       socialPostSources,
       geoMentionChecks,
       modelUsageShare,
+      aiTrafficEvents,
     },
     pipes: {
       socialOverview,
@@ -87,6 +96,9 @@ function createTinybirdClient() {
       accountLeaderboard,
       modelUsageLatest,
       modelUsageTrend,
+      aiTrafficOverview,
+      aiTrafficTimeseries,
+      aiTrafficLog,
     },
   });
 }
@@ -322,4 +334,45 @@ export async function queryModelUsageTrend(
     return null;
   }
   return await client.modelUsageTrend.query(params);
+}
+
+export function ingestAiTrafficEvents(
+  rows: AiTrafficEventRow[]
+): Promise<IngestResult | null> {
+  return ingestRows(rows, (client, batch) =>
+    client.aiTrafficEvents.ingestBatch(batch)
+  );
+}
+
+export async function queryAiTrafficOverview(params: {
+  organization_id: string;
+  days?: number;
+}): Promise<QueryResult<AiTrafficOverviewRow> | null> {
+  const client = getTinybirdClient();
+  if (!client) {
+    return null;
+  }
+  return await client.aiTrafficOverview.query(params);
+}
+
+export async function queryAiTrafficTimeseries(params: {
+  organization_id: string;
+  days?: number;
+}): Promise<QueryResult<AiTrafficTimeseriesRow> | null> {
+  const client = getTinybirdClient();
+  if (!client) {
+    return null;
+  }
+  return await client.aiTrafficTimeseries.query(params);
+}
+
+export async function queryAiTrafficLog(params: {
+  organization_id: string;
+  limit?: number;
+}): Promise<QueryResult<AiTrafficLogRow> | null> {
+  const client = getTinybirdClient();
+  if (!client) {
+    return null;
+  }
+  return await client.aiTrafficLog.query(params);
 }

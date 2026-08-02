@@ -1,5 +1,8 @@
 import {
   isTinybirdConfigured,
+  queryAiTrafficLog,
+  queryAiTrafficOverview,
+  queryAiTrafficTimeseries,
   queryGeoCompetitorShare,
   queryGeoOverview,
   queryGeoPromptResults,
@@ -11,12 +14,16 @@ import { brandSettings, geoPrompts, geoSettings } from "@notra/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import {
+  AI_TRAFFIC_DEFAULT_DAYS,
+  AI_TRAFFIC_DEFAULT_LOG_LIMIT,
   GEO_ENGINE_LABELS,
   GEO_MODEL_USAGE_ATTRIBUTION,
   GEO_MODEL_USAGE_DEFAULT_LIMIT,
   GEO_MODEL_USAGE_SOURCE,
 } from "@/constants/geo";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { buildBeaconIngestUrl, buildBeaconSnippet } from "@/lib/beacon/snippet";
+import { deriveBeaconToken } from "@/lib/beacon/token";
 import { generateGeoFromWebsite } from "@/lib/geo/discover";
 import type { GeoDiscoveryError } from "@/lib/geo/errors";
 import { normalizeModelId } from "@/lib/geo/model-usage";
@@ -25,6 +32,7 @@ import { authorizedProcedure } from "@/lib/orpc/base";
 import { badRequest, notFound } from "@/lib/orpc/utils/errors";
 import { startGeoScanRun } from "@/lib/workflows/start";
 import {
+  aiTrafficInputSchema,
   geoGenerateFromWebsiteInputSchema,
   geoModelUsageInputSchema,
   geoOrganizationInputSchema,
@@ -35,6 +43,8 @@ import {
   geoTimeseriesInputSchema,
 } from "@/schemas/geo";
 import type {
+  AiTrafficResponse,
+  BeaconSetupResponse,
   GeoCompetitorShareResponse,
   GeoGenerateFromWebsiteResult,
   GeoModelUsageResponse,
@@ -338,6 +348,85 @@ export const geoRouter = {
             coverage.get(row.model)
           )
         ),
+      };
+    }),
+  aiTraffic: authorizedProcedure
+    .input(aiTrafficInputSchema)
+    .handler(async ({ context, input }): Promise<AiTrafficResponse> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const days = input.days ?? AI_TRAFFIC_DEFAULT_DAYS;
+      const limit = input.limit ?? AI_TRAFFIC_DEFAULT_LOG_LIMIT;
+
+      const [overview, timeseries, log] = await Promise.all([
+        queryAiTrafficOverview({
+          organization_id: input.organizationId,
+          days,
+        }).catch((error) => {
+          console.error("[BEACON] ai traffic overview query failed:", error);
+          return null;
+        }),
+        queryAiTrafficTimeseries({
+          organization_id: input.organizationId,
+          days,
+        }).catch((error) => {
+          console.error("[BEACON] ai traffic timeseries query failed:", error);
+          return null;
+        }),
+        queryAiTrafficLog({
+          organization_id: input.organizationId,
+          limit,
+        }).catch((error) => {
+          console.error("[BEACON] ai traffic log query failed:", error);
+          return null;
+        }),
+      ]);
+
+      return {
+        configured: isTinybirdConfigured(),
+        agents: (overview?.data ?? []).map((row) => ({
+          agent: row.agent,
+          category: row.category,
+          confidence: row.confidence,
+          hits: Number(row.hits),
+          paths: Number(row.paths),
+          lastSeenAt: row.last_seen_at,
+        })),
+        points: (timeseries?.data ?? []).map((row) => ({
+          day: row.day,
+          category: row.category,
+          hits: Number(row.hits),
+        })),
+        log: (log?.data ?? []).map((row) => ({
+          capturedAt: row.captured_at,
+          agent: row.agent,
+          category: row.category,
+          confidence: row.confidence,
+          path: row.path,
+          method: row.method,
+          referer: row.referer,
+        })),
+      };
+    }),
+  beaconSetup: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async ({ context, input }): Promise<BeaconSetupResponse> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const ingestUrl = buildBeaconIngestUrl();
+
+      return {
+        ingestUrl,
+        token: deriveBeaconToken(input.organizationId) ?? "",
+        snippet: buildBeaconSnippet(ingestUrl, input.organizationId),
       };
     }),
   promptsList: authorizedProcedure

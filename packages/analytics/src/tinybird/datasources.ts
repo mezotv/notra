@@ -240,6 +240,26 @@ export const modelUsageShare = defineDatasource("model_usage_share", {
   }),
 });
 
+export const aiTrafficEvents = defineDatasource("ai_traffic_events", {
+  description:
+    "Append-only log of AI agent requests to an organization's site, one row per detected hit",
+  schema: {
+    organization_id: t.string(),
+    agent: t.string().lowCardinality(),
+    category: t.string().lowCardinality(),
+    confidence: t.string().lowCardinality(),
+    path: t.string(),
+    host: t.string(),
+    method: t.string().lowCardinality(),
+    referer: t.string().nullable(),
+    captured_at: t.dateTime(),
+  },
+  engine: engine.mergeTree({
+    sortingKey: ["organization_id", "captured_at"],
+    partitionKey: "toYYYYMM(captured_at)",
+  }),
+});
+
 export type SocialAccountRow = InferRow<typeof socialAccounts>;
 export type SocialAccountStatsRow = InferRow<typeof socialAccountStats>;
 export type SocialPostRow = InferRow<typeof socialPosts>;
@@ -247,3 +267,4 @@ export type SocialPostStatsRow = InferRow<typeof socialPostStats>;
 export type SocialPostSourceRow = InferRow<typeof socialPostSources>;
 export type GeoMentionCheckRow = InferRow<typeof geoMentionChecks>;
 export type ModelUsageShareRow = InferRow<typeof modelUsageShare>;
+export type AiTrafficEventRow = InferRow<typeof aiTrafficEvents>;

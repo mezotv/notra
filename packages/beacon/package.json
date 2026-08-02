@@ -1,0 +1,33 @@
+{
+  "name": "@notra/beacon",
+  "version": "0.0.1",
+  "private": false,
+  "type": "module",
+  "description": "Edge-safe Next.js middleware that detects and reports AI agent traffic",
+  "license": "AGPL-3.0",
+  "sideEffects": false,
+  "files": [
+    "src",
+    "SOURCES.md",
+    "README.md"
+  ],
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      "./*": {
+        "types": "./dist/*.d.ts",
+        "default": "./dist/*.js"
+      }
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
+    "typescript": "5.9.2"
+  }
+}

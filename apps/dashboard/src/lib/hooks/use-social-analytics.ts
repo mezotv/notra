@@ -3,7 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type {
-  TrackAccountPreviewResponse,
   EngagementTimeseriesResponse,
   FollowerGrowthResponse,
   LeaderboardResponse,
@@ -12,6 +11,7 @@ import type {
   PostingPerformanceResponse,
   SocialOverviewResponse,
   TopPostsResponse,
+  TrackAccountPreviewResponse,
 } from "@/types/analytics";
 import { dashboardOrpc } from "../orpc/query";
 
