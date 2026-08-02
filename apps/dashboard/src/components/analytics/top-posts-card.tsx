@@ -8,12 +8,9 @@ import {
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@notra/ui/components/ui/card";
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@/components/instrument/instrument-module";
 import { TOP_POST_CONTENT_PREVIEW_LENGTH } from "@/constants/analytics";
 import type { TopPostItem } from "@/types/analytics";
 import { formatDayLabel, formatMetric } from "@/utils/analytics-charts";
@@ -33,7 +30,7 @@ function previewContent(content: string): string {
 function PostAvatar({ post }: { post: TopPostItem }) {
   const name = post.username ?? post.providerAccountId;
   return (
-    <Avatar className="size-8 shrink-0">
+    <Avatar className="size-7 shrink-0">
       {post.profileImageUrl && (
         <AvatarImage alt={name} src={post.profileImageUrl} />
       )}
@@ -49,7 +46,7 @@ function PostRow({ post }: { post: TopPostItem }) {
     <div className="flex items-start gap-3">
       <PostAvatar post={post} />
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+        <p className="flex items-center gap-1.5 font-mono text-[0.6875rem] text-muted-foreground">
           <HugeiconsIcon
             icon={
               post.provider === "linkedin" ? Linkedin02Icon : NewTwitterIcon
@@ -61,14 +58,14 @@ function PostRow({ post }: { post: TopPostItem }) {
           {formatDayLabel(post.postedAt.slice(0, 10))}
         </p>
         <p className="text-sm leading-snug">{previewContent(post.content)}</p>
-        <p className="text-muted-foreground text-xs tabular-nums">
+        <p className="font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
           {formatMetric(post.likes)} likes · {formatMetric(post.replies)}{" "}
           replies · {formatMetric(post.reposts)} reposts
           {post.impressions !== null &&
             ` · ${formatMetric(post.impressions)} impressions`}
         </p>
       </div>
-      <span className="shrink-0 font-semibold text-sm tabular-nums">
+      <span className="shrink-0 font-mono text-sm tabular-nums">
         {formatMetric(post.engagement)}
       </span>
     </div>
@@ -77,7 +74,7 @@ function PostRow({ post }: { post: TopPostItem }) {
   if (post.url) {
     return (
       <a
-        className="block rounded-md px-2 py-2.5 transition-colors hover:bg-muted/60"
+        className="block px-1 py-2.5 transition-colors hover:bg-muted/60"
         href={post.url}
         rel="noopener noreferrer"
         target="_blank"
@@ -86,34 +83,28 @@ function PostRow({ post }: { post: TopPostItem }) {
       </a>
     );
   }
-  return <div className="px-2 py-2.5">{body}</div>;
+  return <div className="px-1 py-2.5">{body}</div>;
 }
 
 export function TopPostsCard({ posts }: TopPostsCardProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Top posts</CardTitle>
-        <CardDescription>
-          Ranked by likes, replies, and reposts from the latest sync
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {posts.length === 0 ? (
-          <p className="flex h-40 items-center justify-center text-muted-foreground text-sm">
-            No tracked posts yet
-          </p>
-        ) : (
-          <div className="-mx-2 divide-y">
-            {posts.map((post) => (
-              <PostRow
-                key={`${post.provider}:${post.platformPostId}`}
-                post={post}
-              />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <InstrumentModule eyebrow="Top posts" readout="latest sync, by engagement">
+      {posts.length === 0 ? (
+        <InstrumentEmpty
+          className="h-40"
+          message="No tracked posts yet"
+          seed="Top posts"
+        />
+      ) : (
+        <div className="-mx-1 divide-y divide-border">
+          {posts.map((post) => (
+            <PostRow
+              key={`${post.provider}:${post.platformPostId}`}
+              post={post}
+            />
+          ))}
+        </div>
+      )}
+    </InstrumentModule>
   );
 }

@@ -5,14 +5,11 @@ import { PALETTE, rgb } from "@notra/ui/components/dither-kit/palette";
 import { Pie } from "@notra/ui/components/dither-kit/pie";
 import { PieChart } from "@notra/ui/components/dither-kit/pie-chart";
 import { Tooltip } from "@notra/ui/components/dither-kit/tooltip";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
+import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@/components/instrument/instrument-module";
 import { ACCOUNT_SERIES_COLORS } from "@/constants/analytics";
 import { useLeaderboard } from "@/lib/hooks/use-social-analytics";
 
@@ -34,7 +31,7 @@ export function ImpressionsShareCard({
 }: ImpressionsShareCardProps) {
   const { data } = useLeaderboard(organizationId, WINDOW_DAYS);
 
-  const { rows, config, total } = useMemo(() => {
+  const { rows, config, total, caption } = useMemo(() => {
     const shareRows: ShareRow[] = (data?.entries ?? [])
       .filter((entry) => (entry.impressions ?? 0) > 0)
       .map((entry) => ({
@@ -49,28 +46,34 @@ export function ImpressionsShareCard({
           ACCOUNT_SERIES_COLORS[index % ACCOUNT_SERIES_COLORS.length] ?? "blue",
       };
     });
+    const shareTotal = shareRows.reduce((sum, row) => sum + row.impressions, 0);
+    const top = shareRows.reduce<ShareRow | null>(
+      (best, row) =>
+        best === null || row.impressions > best.impressions ? row : best,
+      null
+    );
     return {
       rows: shareRows,
       config: shareConfig,
-      total: shareRows.reduce((sum, row) => sum + row.impressions, 0),
+      total: shareTotal,
+      caption:
+        top && shareTotal > 0
+          ? `${top.account} · ${Math.round((top.impressions / shareTotal) * PERCENT)}% of impressions`
+          : null,
     };
   }, [data?.entries]);
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Impressions share</CardTitle>
-        <CardDescription>
-          Who pulls the reach across every account, last 30 days
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {rows.length === 0 ? (
-          <p className="flex h-56 items-center justify-center text-muted-foreground text-sm">
-            No impression data yet
-          </p>
-        ) : (
-          <div className="flex items-center gap-4">
+    <InstrumentModule eyebrow="Impressions share">
+      {rows.length === 0 ? (
+        <InstrumentEmpty
+          className="h-56"
+          message="No impression data yet"
+          seed="Impressions share"
+        />
+      ) : (
+        <div className="flex h-full flex-col">
+          <div className="flex flex-1 items-center gap-4">
             <PieChart
               className="h-56 w-1/2 min-w-0"
               config={config}
@@ -85,7 +88,7 @@ export function ImpressionsShareCard({
             <div className="min-w-0 flex-1 space-y-1.5">
               {rows.map((row) => (
                 <div
-                  className="flex items-center gap-1.5 text-sm"
+                  className="flex items-center gap-1.5 font-mono text-xs"
                   key={row.account}
                 >
                   <span
@@ -108,8 +111,13 @@ export function ImpressionsShareCard({
               ))}
             </div>
           </div>
-        )}
-      </CardContent>
-    </Card>
+          {caption && (
+            <p className="mt-2 truncate text-[0.6875rem] text-muted-foreground">
+              {caption}
+            </p>
+          )}
+        </div>
+      )}
+    </InstrumentModule>
   );
 }

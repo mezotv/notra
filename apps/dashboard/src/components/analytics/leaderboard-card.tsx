@@ -8,7 +8,6 @@ import {
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
 import { Button } from "@notra/ui/components/ui/button";
-import { Card, CardContent, CardHeader } from "@notra/ui/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -20,6 +19,10 @@ import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { TrackAccountDialog } from "@/components/analytics/track-account-dialog";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
+import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@/components/instrument/instrument-module";
 import { LEADERBOARD_WINDOWS } from "@/constants/analytics";
 
 import {
@@ -66,13 +69,13 @@ function detailMetrics(account: SocialOverviewAccount): DetailMetric[] {
 
 function RankChange({ entry }: { entry: LeaderboardEntry }) {
   if (entry.rankChange === null || entry.rankChange === 0) {
-    return <span className="text-muted-foreground">–</span>;
+    return <span className="font-mono text-muted-foreground">–</span>;
   }
   const up = entry.rankChange > 0;
   return (
     <span
       className={cn(
-        "text-xs tabular-nums",
+        "font-mono text-xs tabular-nums",
         up ? "text-green-500" : "text-red-500"
       )}
     >
@@ -101,11 +104,11 @@ function LeaderboardRow({
       <div className="group flex items-center gap-3">
         <button
           aria-expanded={expanded}
-          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-2.5 text-left"
+          className="flex min-w-0 flex-1 cursor-pointer items-center gap-3 py-2 text-left"
           onClick={onToggleExpand}
           type="button"
         >
-          <span className="w-6 shrink-0 text-center font-semibold text-lg tabular-nums">
+          <span className="w-6 shrink-0 text-center font-mono text-base tabular-nums">
             {entry.rank}
           </span>
           <span className="w-8 shrink-0 text-center">
@@ -113,7 +116,7 @@ function LeaderboardRow({
           </span>
           <Avatar
             className={cn(
-              "size-9 shrink-0",
+              "size-8 shrink-0",
               isSquareTwitterAvatar(entry.verifiedType) && "rounded-md"
             )}
           >
@@ -141,17 +144,17 @@ function LeaderboardRow({
                 verifiedType={entry.verifiedType}
               />
             </p>
-            <p className="truncate text-muted-foreground text-xs">
+            <p className="truncate font-mono text-[0.6875rem] text-muted-foreground">
               @{entry.username}
             </p>
           </div>
-          <span className="w-24 shrink-0 text-right text-sm tabular-nums">
+          <span className="w-24 shrink-0 text-right font-mono text-sm tabular-nums">
             {formatMetric(entry.interactions)}
           </span>
-          <span className="hidden w-24 shrink-0 text-right text-sm tabular-nums sm:block">
+          <span className="hidden w-24 shrink-0 text-right font-mono text-muted-foreground text-sm tabular-nums sm:block">
             {formatMetric(entry.impressions)}
           </span>
-          <span className="hidden w-16 shrink-0 text-right text-sm tabular-nums sm:block">
+          <span className="hidden w-16 shrink-0 text-right font-mono text-muted-foreground text-sm tabular-nums sm:block">
             {entry.posts}
           </span>
         </button>
@@ -175,19 +178,19 @@ function LeaderboardRow({
         </span>
       </div>
       {expanded && detail && (
-        <dl className="mb-2 grid grid-cols-4 gap-2 rounded-md bg-muted/40 p-3 sm:grid-cols-8">
+        <dl className="mb-2 grid grid-cols-4 gap-px overflow-hidden rounded-sm border border-border bg-border sm:grid-cols-8">
           {detailMetrics(detail).map((metric) => (
-            <div key={metric.label}>
-              <dt className="text-muted-foreground text-xs">{metric.label}</dt>
-              <dd className="font-semibold text-sm tabular-nums">
-                {metric.value}
-              </dd>
+            <div className="bg-muted/40 px-2 py-1.5" key={metric.label}>
+              <dt className="font-mono text-[0.5625rem] text-muted-foreground uppercase tracking-wider">
+                {metric.label}
+              </dt>
+              <dd className="font-mono text-sm tabular-nums">{metric.value}</dd>
             </div>
           ))}
         </dl>
       )}
       {expanded && !detail && (
-        <p className="mb-2 rounded-md bg-muted/40 p-3 text-muted-foreground text-xs">
+        <p className="mb-2 rounded-sm border border-border px-3 py-2 font-mono text-[0.6875rem] text-muted-foreground">
           Lifetime stats appear after this account's first sync
         </p>
       )}
@@ -210,94 +213,93 @@ export function LeaderboardCard({
   const entries = data?.entries ?? [];
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0">
-        <div className="space-y-1">
-          <h2 className="font-semibold leading-none tracking-tight">
-            Leaderboard
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            Connected and tracked accounts ranked by interactions
-          </p>
-        </div>
-        <Select
-          onValueChange={(value) => {
-            const parsed = LEADERBOARD_WINDOWS.find(
-              (window) => String(window) === value
-            );
-            if (parsed) {
-              setDays(parsed);
-            }
-          }}
-          value={String(days)}
-        >
-          <SelectTrigger className="w-28">
-            <SelectValue>{`Last ${days}d`}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {LEADERBOARD_WINDOWS.map((window) => (
-              <SelectItem key={window} value={String(window)}>
-                Last {window}d
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex items-center gap-3 border-b pb-2 text-muted-foreground text-xs">
-          <span className="w-6 text-center">Rank</span>
-          <span
-            className="w-8 text-center"
-            title="Rank change vs the previous period"
+    <InstrumentModule
+      action={
+        <div className="flex items-center gap-1.5">
+          <Select
+            onValueChange={(value) => {
+              const parsed = LEADERBOARD_WINDOWS.find(
+                (window) => String(window) === value
+              );
+              if (parsed) {
+                setDays(parsed);
+              }
+            }}
+            value={String(days)}
           >
-            Δ
-          </span>
-          <span className="w-9" />
-          <span className="flex-1">Account</span>
-          <span className="w-24 text-right">Interactions</span>
-          <span className="hidden w-24 text-right sm:block">Impressions</span>
-          <span className="hidden w-16 text-right sm:block">Posts</span>
-          <span className="w-8" />
-        </div>
-        {entries.length === 0 ? (
-          <p className="flex h-32 items-center justify-center text-muted-foreground text-sm">
-            No accounts yet
-          </p>
-        ) : (
-          <div className="divide-y">
-            {entries.map((entry) => (
-              <LeaderboardRow
-                detail={
-                  detailsByUsername.get(entry.username.toLowerCase()) ?? null
-                }
-                entry={entry}
-                expanded={expandedKey === entry.key}
-                key={entry.key}
-                onToggleExpand={() =>
-                  setExpandedKey((previous) =>
-                    previous === entry.key ? null : entry.key
-                  )
-                }
-                organizationId={organizationId}
-              />
-            ))}
-          </div>
-        )}
-        <div className="flex justify-end border-t pt-3">
+            <SelectTrigger
+              className="h-6 gap-1 rounded-sm border-border px-2 font-mono text-[0.6875rem]"
+              size="sm"
+            >
+              <SelectValue>{`${days}D`}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {LEADERBOARD_WINDOWS.map((window) => (
+                <SelectItem key={window} value={String(window)}>
+                  Last {window}d
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Button
+            className="h-6 rounded-sm px-2 font-mono text-[0.6875rem] uppercase tracking-wide"
             onClick={() => setTrackOpen(true)}
             size="sm"
             variant="outline"
           >
-            Track an account
+            Track
           </Button>
         </div>
-        <TrackAccountDialog
-          onOpenChange={setTrackOpen}
-          open={trackOpen}
-          organizationId={organizationId}
+      }
+      eyebrow="Leaderboard"
+      readout="ranked by interactions"
+    >
+      <div className="flex items-center gap-3 border-border border-b pb-1.5 font-mono text-[0.625rem] text-muted-foreground uppercase tracking-wider">
+        <span className="w-6 text-center">Rk</span>
+        <span
+          className="w-8 text-center"
+          title="Rank change vs the previous period"
+        >
+          Δ
+        </span>
+        <span className="w-8" />
+        <span className="flex-1">Account</span>
+        <span className="w-24 text-right">Interact</span>
+        <span className="hidden w-24 text-right sm:block">Impress</span>
+        <span className="hidden w-16 text-right sm:block">Posts</span>
+        <span className="w-8" />
+      </div>
+      {entries.length === 0 ? (
+        <InstrumentEmpty
+          className="h-32"
+          message="No accounts yet"
+          seed="Leaderboard"
         />
-      </CardContent>
-    </Card>
+      ) : (
+        <div className="divide-y divide-border">
+          {entries.map((entry) => (
+            <LeaderboardRow
+              detail={
+                detailsByUsername.get(entry.username.toLowerCase()) ?? null
+              }
+              entry={entry}
+              expanded={expandedKey === entry.key}
+              key={entry.key}
+              onToggleExpand={() =>
+                setExpandedKey((previous) =>
+                  previous === entry.key ? null : entry.key
+                )
+              }
+              organizationId={organizationId}
+            />
+          ))}
+        </div>
+      )}
+      <TrackAccountDialog
+        onOpenChange={setTrackOpen}
+        open={trackOpen}
+        organizationId={organizationId}
+      />
+    </InstrumentModule>
   );
 }
