@@ -1,4 +1,6 @@
 import { type IngestResult, type QueryResult, Tinybird } from "@tinybirdco/sdk";
+import { bumpAnalyticsVersions, cachedQuery } from "../cache/query-cache";
+import type { AnalyticsCacheScope } from "../types/cache";
 import {
   type AiTrafficEventRow,
   aiTrafficEvents,
@@ -117,6 +119,8 @@ function getTinybirdClient() {
 
 async function ingestRows<TRow>(
   rows: TRow[],
+  scope: AnalyticsCacheScope,
+  organizationIds: ReadonlyArray<string | null>,
   ingest: (
     client: NonNullable<ReturnType<typeof getTinybirdClient>>,
     batch: TRow[]
@@ -126,253 +130,329 @@ async function ingestRows<TRow>(
   if (!client || rows.length === 0) {
     return null;
   }
-  return await ingest(client, rows);
+  const result = await ingest(client, rows);
+  await bumpAnalyticsVersions(scope, organizationIds);
+  return result;
+}
+
+function cachedPipeQuery<TParams extends Record<string, unknown>, TRow>(
+  scope: AnalyticsCacheScope,
+  pipe: string,
+  params: TParams,
+  organizationId: string | null,
+  query: (
+    client: NonNullable<ReturnType<typeof getTinybirdClient>>
+  ) => Promise<QueryResult<TRow>>
+): Promise<QueryResult<TRow> | null> {
+  const client = getTinybirdClient();
+  if (!client) {
+    return Promise.resolve(null);
+  }
+  return cachedQuery({
+    scope,
+    pipe,
+    organizationId,
+    params,
+    fetch: () => query(client),
+  });
 }
 
 export function ingestSocialAccounts(
   rows: SocialAccountRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.socialAccounts.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "social",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.socialAccounts.ingestBatch(batch)
   );
 }
 
 export function ingestSocialAccountStats(
   rows: SocialAccountStatsRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.socialAccountStats.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "social",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.socialAccountStats.ingestBatch(batch)
   );
 }
 
 export function ingestSocialPosts(
   rows: SocialPostRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.socialPosts.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "social",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.socialPosts.ingestBatch(batch)
   );
 }
 
 export function ingestSocialPostStats(
   rows: SocialPostStatsRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.socialPostStats.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "social",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.socialPostStats.ingestBatch(batch)
   );
 }
 
 export function ingestSocialPostSources(
   rows: SocialPostSourceRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.socialPostSources.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "social",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.socialPostSources.ingestBatch(batch)
   );
 }
 
 export function ingestGeoMentionChecks(
   rows: GeoMentionCheckRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.geoMentionChecks.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "geo",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.geoMentionChecks.ingestBatch(batch)
   );
 }
 
 export function ingestModelUsageShare(
   rows: ModelUsageShareRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
+  return ingestRows(rows, "model", [null], (client, batch) =>
     client.modelUsageShare.ingestBatch(batch)
   );
-}
-
-export async function querySocialOverview(
-  params: SocialOverviewParams
-): Promise<QueryResult<SocialOverviewRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.socialOverview.query(params);
-}
-
-export async function queryEngagementTimeseries(
-  params: EngagementTimeseriesParams
-): Promise<QueryResult<EngagementTimeseriesRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.engagementTimeseries.query(params);
-}
-
-export async function queryTopPosts(
-  params: TopPostsParams
-): Promise<QueryResult<TopPostsRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.topPosts.query(params);
-}
-
-export async function queryFollowerGrowth(
-  params: FollowerGrowthParams
-): Promise<QueryResult<FollowerGrowthRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.followerGrowth.query(params);
-}
-
-export async function queryPostingPerformance(
-  params: PostingPerformanceParams
-): Promise<QueryResult<PostingPerformanceRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.postingPerformance.query(params);
-}
-
-export async function queryNotraAdoption(params: {
-  organization_id: string;
-}): Promise<QueryResult<NotraAdoptionRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.notraAdoption.query(params);
-}
-
-export async function queryGeoOverview(params: {
-  organization_id: string;
-  days?: number;
-}): Promise<QueryResult<GeoOverviewRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.geoOverview.query(params);
-}
-
-export async function queryGeoTimeseries(params: {
-  organization_id: string;
-  days?: number;
-}): Promise<QueryResult<GeoTimeseriesRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.geoTimeseries.query(params);
-}
-
-export async function queryGeoPromptResults(params: {
-  organization_id: string;
-}): Promise<QueryResult<GeoPromptResultsRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.geoPromptResults.query(params);
-}
-
-export async function queryGeoCompetitorShare(params: {
-  organization_id: string;
-  days?: number;
-  limit?: number;
-}): Promise<QueryResult<GeoCompetitorShareRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.geoCompetitorShare.query(params);
-}
-
-export async function queryAccountLeaderboard(
-  params: AccountLeaderboardParams
-): Promise<QueryResult<AccountLeaderboardRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.accountLeaderboard.query(params);
-}
-
-export async function queryPostMetricsLookup(params: {
-  organization_id: string;
-  post_ids: string[];
-}): Promise<QueryResult<PostMetricsLookupRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  // The SDK serializes arrays as repeated query keys (post_ids=a&post_ids=b),
-  // but Tinybird's Array() template reads a single comma-separated value, so
-  // repeated keys silently collapse to one id. Send one pre-joined value.
-  return await client.postMetricsLookup.query({
-    organization_id: params.organization_id,
-    post_ids: [params.post_ids.join(",")],
-  });
-}
-
-export async function queryModelUsageLatest(
-  params: ModelUsageLatestParams
-): Promise<QueryResult<ModelUsageLatestRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.modelUsageLatest.query(params);
-}
-
-export async function queryModelUsageTrend(
-  params: ModelUsageTrendParams
-): Promise<QueryResult<ModelUsageTrendRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.modelUsageTrend.query(params);
 }
 
 export function ingestAiTrafficEvents(
   rows: AiTrafficEventRow[]
 ): Promise<IngestResult | null> {
-  return ingestRows(rows, (client, batch) =>
-    client.aiTrafficEvents.ingestBatch(batch)
+  return ingestRows(
+    rows,
+    "traffic",
+    rows.map((row) => row.organization_id),
+    (client, batch) => client.aiTrafficEvents.ingestBatch(batch)
   );
 }
 
-export async function queryAiTrafficOverview(params: {
+export function querySocialOverview(
+  params: SocialOverviewParams
+): Promise<QueryResult<SocialOverviewRow> | null> {
+  return cachedPipeQuery(
+    "social",
+    "social_overview",
+    params,
+    params.organization_id,
+    (client) => client.socialOverview.query(params)
+  );
+}
+
+export function queryEngagementTimeseries(
+  params: EngagementTimeseriesParams
+): Promise<QueryResult<EngagementTimeseriesRow> | null> {
+  return cachedPipeQuery(
+    "social",
+    "engagement_timeseries",
+    params,
+    params.organization_id,
+    (client) => client.engagementTimeseries.query(params)
+  );
+}
+
+export function queryTopPosts(
+  params: TopPostsParams
+): Promise<QueryResult<TopPostsRow> | null> {
+  return cachedPipeQuery(
+    "social",
+    "top_posts",
+    params,
+    params.organization_id,
+    (client) => client.topPosts.query(params)
+  );
+}
+
+export function queryFollowerGrowth(
+  params: FollowerGrowthParams
+): Promise<QueryResult<FollowerGrowthRow> | null> {
+  return cachedPipeQuery(
+    "social",
+    "follower_growth",
+    params,
+    params.organization_id,
+    (client) => client.followerGrowth.query(params)
+  );
+}
+
+export function queryPostingPerformance(
+  params: PostingPerformanceParams
+): Promise<QueryResult<PostingPerformanceRow> | null> {
+  return cachedPipeQuery(
+    "social",
+    "posting_performance",
+    params,
+    params.organization_id,
+    (client) => client.postingPerformance.query(params)
+  );
+}
+
+export function queryNotraAdoption(params: {
+  organization_id: string;
+}): Promise<QueryResult<NotraAdoptionRow> | null> {
+  return cachedPipeQuery(
+    "social",
+    "notra_adoption",
+    params,
+    params.organization_id,
+    (client) => client.notraAdoption.query(params)
+  );
+}
+
+export function queryGeoOverview(params: {
+  organization_id: string;
+  days?: number;
+}): Promise<QueryResult<GeoOverviewRow> | null> {
+  return cachedPipeQuery(
+    "geo",
+    "geo_overview",
+    params,
+    params.organization_id,
+    (client) => client.geoOverview.query(params)
+  );
+}
+
+export function queryGeoTimeseries(params: {
+  organization_id: string;
+  days?: number;
+}): Promise<QueryResult<GeoTimeseriesRow> | null> {
+  return cachedPipeQuery(
+    "geo",
+    "geo_timeseries",
+    params,
+    params.organization_id,
+    (client) => client.geoTimeseries.query(params)
+  );
+}
+
+export function queryGeoPromptResults(params: {
+  organization_id: string;
+}): Promise<QueryResult<GeoPromptResultsRow> | null> {
+  return cachedPipeQuery(
+    "geo",
+    "geo_prompt_results",
+    params,
+    params.organization_id,
+    (client) => client.geoPromptResults.query(params)
+  );
+}
+
+export function queryGeoCompetitorShare(params: {
+  organization_id: string;
+  days?: number;
+  limit?: number;
+}): Promise<QueryResult<GeoCompetitorShareRow> | null> {
+  return cachedPipeQuery(
+    "geo",
+    "geo_competitor_share",
+    params,
+    params.organization_id,
+    (client) => client.geoCompetitorShare.query(params)
+  );
+}
+
+export function queryAccountLeaderboard(
+  params: AccountLeaderboardParams
+): Promise<QueryResult<AccountLeaderboardRow> | null> {
+  return cachedPipeQuery(
+    "social",
+    "account_leaderboard",
+    params,
+    params.organization_id,
+    (client) => client.accountLeaderboard.query(params)
+  );
+}
+
+export function queryPostMetricsLookup(params: {
+  organization_id: string;
+  post_ids: string[];
+}): Promise<QueryResult<PostMetricsLookupRow> | null> {
+  return cachedPipeQuery(
+    "social",
+    "post_metrics_lookup",
+    params,
+    params.organization_id,
+    (client) =>
+      // The SDK serializes arrays as repeated query keys (post_ids=a&post_ids=b),
+      // but Tinybird's Array() template reads a single comma-separated value, so
+      // repeated keys silently collapse to one id. Send one pre-joined value.
+      client.postMetricsLookup.query({
+        organization_id: params.organization_id,
+        post_ids: [params.post_ids.join(",")],
+      })
+  );
+}
+
+export function queryModelUsageLatest(
+  params: ModelUsageLatestParams
+): Promise<QueryResult<ModelUsageLatestRow> | null> {
+  return cachedPipeQuery(
+    "model",
+    "model_usage_latest",
+    params,
+    null,
+    (client) => client.modelUsageLatest.query(params)
+  );
+}
+
+export function queryModelUsageTrend(
+  params: ModelUsageTrendParams
+): Promise<QueryResult<ModelUsageTrendRow> | null> {
+  return cachedPipeQuery("model", "model_usage_trend", params, null, (client) =>
+    client.modelUsageTrend.query(params)
+  );
+}
+
+export function queryAiTrafficOverview(params: {
   organization_id: string;
   days?: number;
 }): Promise<QueryResult<AiTrafficOverviewRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.aiTrafficOverview.query(params);
+  return cachedPipeQuery(
+    "traffic",
+    "ai_traffic_overview",
+    params,
+    params.organization_id,
+    (client) => client.aiTrafficOverview.query(params)
+  );
 }
 
-export async function queryAiTrafficTimeseries(params: {
+export function queryAiTrafficTimeseries(params: {
   organization_id: string;
   days?: number;
 }): Promise<QueryResult<AiTrafficTimeseriesRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.aiTrafficTimeseries.query(params);
+  return cachedPipeQuery(
+    "traffic",
+    "ai_traffic_timeseries",
+    params,
+    params.organization_id,
+    (client) => client.aiTrafficTimeseries.query(params)
+  );
 }
 
-export async function queryAiTrafficLog(params: {
+export function queryAiTrafficLog(params: {
   organization_id: string;
   limit?: number;
 }): Promise<QueryResult<AiTrafficLogRow> | null> {
-  const client = getTinybirdClient();
-  if (!client) {
-    return null;
-  }
-  return await client.aiTrafficLog.query(params);
+  return cachedPipeQuery(
+    "traffic",
+    "ai_traffic_log",
+    params,
+    params.organization_id,
+    (client) => client.aiTrafficLog.query(params)
+  );
 }
