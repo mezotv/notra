@@ -85,10 +85,7 @@ export function encryptGithubToken(token: string, secret: string): string {
   );
 }
 
-function decryptGithubToken(
-  value: string,
-  secret: string
-): string | null {
+function decryptGithubToken(value: string, secret: string): string | null {
   try {
     const raw = Buffer.from(value, "base64url");
     const iv = raw.subarray(0, IV_LENGTH);
