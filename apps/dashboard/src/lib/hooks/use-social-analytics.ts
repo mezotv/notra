@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type {
+  TrackAccountPreviewResponse,
   EngagementTimeseriesResponse,
   FollowerGrowthResponse,
   LeaderboardResponse,
@@ -133,5 +134,16 @@ export function useNotraAdoption(organizationId: string) {
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load adoption data" },
+  });
+}
+
+export function useTrackAccountPreview(organizationId: string) {
+  return useMutation({
+    mutationFn: (username: string): Promise<TrackAccountPreviewResponse> =>
+      dashboardOrpc.analytics.previewTrackAccount.call({
+        organizationId,
+        username,
+      }),
+    onError: () => toast.error("Failed to look up account"),
   });
 }

@@ -9,7 +9,6 @@ import {
 } from "@notra/ui/components/ui/avatar";
 import { Button } from "@notra/ui/components/ui/button";
 import { Card, CardContent, CardHeader } from "@notra/ui/components/ui/card";
-import { Input } from "@notra/ui/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -19,24 +18,22 @@ import {
 } from "@notra/ui/components/ui/select";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
+import { TrackAccountDialog } from "@/components/analytics/track-account-dialog";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
 import { LEADERBOARD_WINDOWS } from "@/constants/analytics";
 
-const LEADING_AT = /^@/;
-
 import {
   useLeaderboard,
-  useTrackAccount,
   useUntrackAccount,
 } from "@/lib/hooks/use-social-analytics";
 import { cn } from "@/lib/utils";
-import { isSquareTwitterAvatar } from "@/utils/twitter";
 import type {
   LeaderboardEntry,
   LeaderboardWindow,
   SocialOverviewAccount,
 } from "@/types/analytics";
 import { formatMetric } from "@/utils/analytics-charts";
+import { isSquareTwitterAvatar } from "@/utils/twitter";
 
 interface LeaderboardCardProps {
   organizationId: string;
@@ -203,23 +200,14 @@ export function LeaderboardCard({
   accountDetails,
 }: LeaderboardCardProps) {
   const [days, setDays] = useState<LeaderboardWindow>(7);
-  const [handle, setHandle] = useState("");
+  const [trackOpen, setTrackOpen] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const detailsByUsername = new Map(
     accountDetails.map((account) => [account.username.toLowerCase(), account])
   );
   const { data } = useLeaderboard(organizationId, days);
-  const track = useTrackAccount(organizationId);
 
   const entries = data?.entries ?? [];
-
-  const handleTrack = () => {
-    const username = handle.trim().replace(LEADING_AT, "");
-    if (username.length === 0) {
-      return;
-    }
-    track.mutate(username, { onSuccess: () => setHandle("") });
-  };
 
   return (
     <Card>
@@ -295,26 +283,20 @@ export function LeaderboardCard({
             ))}
           </div>
         )}
-        <div className="flex gap-2 border-t pt-3">
-          <Input
-            onChange={(event) => setHandle(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                handleTrack();
-              }
-            }}
-            placeholder="@handle to track (teammates, affiliates)"
-            value={handle}
-          />
+        <div className="flex justify-end border-t pt-3">
           <Button
-            disabled={handle.trim().length === 0 || track.isPending}
-            onClick={handleTrack}
+            onClick={() => setTrackOpen(true)}
+            size="sm"
             variant="outline"
           >
-            {track.isPending && <Loader2Icon className="size-4 animate-spin" />}
-            Track
+            Track an account
           </Button>
         </div>
+        <TrackAccountDialog
+          onOpenChange={setTrackOpen}
+          open={trackOpen}
+          organizationId={organizationId}
+        />
       </CardContent>
     </Card>
   );
