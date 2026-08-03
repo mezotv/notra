@@ -3,7 +3,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type {
-  TrackAccountPreviewResponse,
   EngagementTimeseriesResponse,
   FollowerGrowthResponse,
   LeaderboardResponse,
@@ -83,27 +82,6 @@ export function useLeaderboard(
   });
 }
 
-export function useTrackAccount(organizationId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (username: string) =>
-      dashboardOrpc.analytics.trackAccount.call({ organizationId, username }),
-    onSuccess: async (result) => {
-      await queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.analytics.leaderboard.key(),
-      });
-      toast.success(`Tracking @${result.username}`);
-    },
-    onError: (error) => {
-      toast.error(
-        error instanceof Error && error.message
-          ? error.message
-          : "Failed to track account"
-      );
-    },
-  });
-}
-
 export function useUntrackAccount(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
@@ -134,16 +112,5 @@ export function useNotraAdoption(organizationId: string) {
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load adoption data" },
-  });
-}
-
-export function useTrackAccountPreview(organizationId: string) {
-  return useMutation({
-    mutationFn: (username: string): Promise<TrackAccountPreviewResponse> =>
-      dashboardOrpc.analytics.previewTrackAccount.call({
-        organizationId,
-        username,
-      }),
-    onError: () => toast.error("Failed to look up account"),
   });
 }
