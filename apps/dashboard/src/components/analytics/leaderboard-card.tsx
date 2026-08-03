@@ -15,9 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
-import { TrackAccountDialog } from "@/components/analytics/track-account-dialog";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
 import {
   InstrumentEmpty,
@@ -67,23 +65,6 @@ function detailMetrics(account: SocialOverviewAccount): DetailMetric[] {
   ];
 }
 
-function RankChange({ entry }: { entry: LeaderboardEntry }) {
-  if (entry.rankChange === null || entry.rankChange === 0) {
-    return <span className="font-mono text-muted-foreground">–</span>;
-  }
-  const up = entry.rankChange > 0;
-  return (
-    <span
-      className={cn(
-        "font-mono text-xs tabular-nums",
-        up ? "text-green-500" : "text-red-500"
-      )}
-    >
-      {up ? "▲" : "▼"} {Math.abs(entry.rankChange)}
-    </span>
-  );
-}
-
 function LeaderboardRow({
   entry,
   organizationId,
@@ -110,9 +91,6 @@ function LeaderboardRow({
         >
           <span className="w-6 shrink-0 text-center font-mono text-base tabular-nums">
             {entry.rank}
-          </span>
-          <span className="w-8 shrink-0 text-center">
-            <RankChange entry={entry} />
           </span>
           <Avatar
             className={cn(
@@ -203,7 +181,6 @@ export function LeaderboardCard({
   accountDetails,
 }: LeaderboardCardProps) {
   const [days, setDays] = useState<LeaderboardWindow>(7);
-  const [trackOpen, setTrackOpen] = useState(false);
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
   const detailsByUsername = new Map(
     accountDetails.map((account) => [account.username.toLowerCase(), account])
@@ -215,53 +192,37 @@ export function LeaderboardCard({
   return (
     <InstrumentModule
       action={
-        <div className="flex items-center gap-1.5">
-          <Select
-            onValueChange={(value) => {
-              const parsed = LEADERBOARD_WINDOWS.find(
-                (window) => String(window) === value
-              );
-              if (parsed) {
-                setDays(parsed);
-              }
-            }}
-            value={String(days)}
-          >
-            <SelectTrigger
-              className="h-6 gap-1 rounded-sm border-border px-2 font-mono text-[0.6875rem]"
-              size="sm"
-            >
-              <SelectValue>{`${days}D`}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {LEADERBOARD_WINDOWS.map((window) => (
-                <SelectItem key={window} value={String(window)}>
-                  Last {window}d
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            className="h-6 rounded-sm px-2 font-mono text-[0.6875rem] uppercase tracking-wide"
-            onClick={() => setTrackOpen(true)}
+        <Select
+          onValueChange={(value) => {
+            const parsed = LEADERBOARD_WINDOWS.find(
+              (window) => String(window) === value
+            );
+            if (parsed) {
+              setDays(parsed);
+            }
+          }}
+          value={String(days)}
+        >
+          <SelectTrigger
+            className="h-6 gap-1 rounded-sm border-border px-2 font-mono text-[0.6875rem] data-[size=sm]:h-6"
             size="sm"
-            variant="outline"
           >
-            Track
-          </Button>
-        </div>
+            <SelectValue>{`${days}D`}</SelectValue>
+          </SelectTrigger>
+          <SelectContent>
+            {LEADERBOARD_WINDOWS.map((window) => (
+              <SelectItem key={window} value={String(window)}>
+                Last {window}d
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       }
       eyebrow="Leaderboard"
       readout="ranked by interactions"
     >
       <div className="flex items-center gap-3 border-border border-b pb-1.5 font-mono text-[0.625rem] text-muted-foreground uppercase tracking-wider">
         <span className="w-6 text-center">Rk</span>
-        <span
-          className="w-8 text-center"
-          title="Rank change vs the previous period"
-        >
-          Δ
-        </span>
         <span className="w-8" />
         <span className="flex-1">Account</span>
         <span className="w-24 text-right">Interact</span>
@@ -295,11 +256,6 @@ export function LeaderboardCard({
           ))}
         </div>
       )}
-      <TrackAccountDialog
-        onOpenChange={setTrackOpen}
-        open={trackOpen}
-        organizationId={organizationId}
-      />
     </InstrumentModule>
   );
 }
