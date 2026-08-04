@@ -116,6 +116,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "media.brand.dev",
+      },
+      {
+        protocol: "https",
         hostname: "**.r2.cloudflarestorage.com",
       },
       {
