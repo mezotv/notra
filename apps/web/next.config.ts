@@ -19,7 +19,6 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     turbopackFileSystemCacheForDev: false,
-    viewTransition: true,
   },
   transpilePackages: ["@notra/ui", "@notra/email", "@notra/kiwi"],
   serverExternalPackages: ["@remotion/bundler", "@remotion/renderer"],

@@ -1,4 +1,23 @@
 [install]
 # Only install package versions published at least 7 days ago
 minimumReleaseAge = 604800
-minimumReleaseAgeExcludes = ["@bydefault/vercel", "cnfast", "next", "shadcn", "@shadcn/react", "eve", "ai"]
+minimumReleaseAgeExcludes = [
+  "@bydefault/vercel",
+  "@next/env",
+  "@next/swc-darwin-arm64",
+  "@next/swc-darwin-x64",
+  "@next/swc-linux-arm64-gnu",
+  "@next/swc-linux-arm64-musl",
+  "@next/swc-linux-x64-gnu",
+  "@next/swc-linux-x64-musl",
+  "@next/swc-win32-arm64-msvc",
+  "@next/swc-win32-x64-msvc",
+  "@types/react",
+  "@types/react-dom",
+  "cnfast",
+  "next",
+  "shadcn",
+  "@shadcn/react",
+  "eve",
+  "ai",
+]
