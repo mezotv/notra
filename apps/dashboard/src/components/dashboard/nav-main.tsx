@@ -43,6 +43,7 @@ import { NavBrandIdentity } from "./nav-brand-identity";
 const categoryLabels: Record<Exclude<NavMainCategory, "none">, string> = {
   workspace: "Workspace",
   automation: "Automation",
+  geo: "GEO",
   manage: "Manage",
 };
 
@@ -71,6 +72,24 @@ const navMainItems: NavMainItem[] = [
     icon: Analytics01Icon,
     label: "Analytics",
     category: "workspace",
+  },
+  {
+    link: "/geo",
+    icon: AiBrowserIcon,
+    label: "Overview",
+    category: "geo",
+  },
+  {
+    link: "/geo/prompts",
+    icon: AiChat01Icon,
+    label: "Prompts",
+    category: "geo",
+  },
+  {
+    link: "/geo/competitors",
+    icon: ChartAnalysisIcon,
+    label: "Competitors",
+    category: "geo",
   },
   {
     link: "/skills",
@@ -120,6 +139,7 @@ const itemsByCategory: Record<NavMainCategory, NavMainItem[]> = {
   none: [],
   workspace: [],
   automation: [],
+  geo: [],
   manage: [],
 };
 for (const item of navMainItems) {

@@ -442,6 +442,13 @@
       "when": 1785962253218,
       "tag": "0062_skinny_weapon_omega",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1785962317262,
+      "tag": "0063_strong_human_cannonball",
+      "breakpoints": true
     }
   ]
 }

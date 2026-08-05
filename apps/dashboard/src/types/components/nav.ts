@@ -4,7 +4,7 @@ export type NavMainCategory =
   | "none"
   | "workspace"
   | "automation"
- 
+  | "geo"
   | "manage";
 
 export interface NavItem {
