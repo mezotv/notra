@@ -48,6 +48,7 @@ import {
   FeedbackForm,
   FeedbackPopover,
 } from "@/components/dashboard/feedback-popover";
+import { NavUser } from "@/components/dashboard/nav-user";
 
 const NON_ORG_PATHS: string[] = [];
 
@@ -255,21 +256,18 @@ export function SiteHeader() {
     : genericBreadcrumbs;
 
   return (
-    <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-dashed transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <div className="flex min-w-0 flex-1 items-center gap-1 lg:gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            className="mx-2 border-border border-l border-dashed bg-transparent"
-            orientation="vertical"
-          />
+    <header className="relative flex h-12 shrink-0 items-center gap-2 border-b bg-muted/30 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+      <div className="flex h-full w-full items-center gap-1 px-4 lg:gap-2">
+        <div className="flex h-full min-w-0 flex-1 items-center gap-1 lg:gap-2">
+          <SidebarTrigger />
+          <Separator className="mx-2" orientation="vertical" />
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="min-w-0 flex-nowrap">
               {breadcrumbs}
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <div className="flex min-w-0 items-center justify-end gap-2">
+        <div className="flex h-full min-w-0 items-center justify-end gap-2">
           <CreditBalanceButton className="hidden sm:inline-flex" />
           <div className="hidden items-center gap-2 lg:flex">
             <FeedbackPopover
@@ -332,6 +330,8 @@ export function SiteHeader() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          <Separator className="mx-2" orientation="vertical" />
+          <NavUser />
           <ResponsiveDialog
             onOpenChange={setMobileFeedbackOpen}
             open={mobileFeedbackOpen}

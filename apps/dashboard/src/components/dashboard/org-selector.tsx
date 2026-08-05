@@ -1,8 +1,11 @@
 "use client";
 
 import {
-  ArrowDown01Icon,
+  ArrowUp01Icon,
+  Moon02Icon,
   PlusSignIcon,
+  Settings01Icon,
+  Sun03Icon,
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -21,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
+import { Kbd } from "@notra/ui/components/ui/kbd";
 import {
   SidebarMenu,
   SidebarMenuButton,
@@ -28,10 +32,12 @@ import {
   useSidebar,
 } from "@notra/ui/components/ui/sidebar";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { useHotkey } from "@tanstack/react-hotkeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCustomer } from "autumn-js/react";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
+import { useTheme } from "next-themes";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { authClient } from "@/lib/auth/client";
@@ -172,7 +178,7 @@ function OrgSelectorTrigger({
                   </Badge>
                 ) : null}
               </div>
-              <HugeiconsIcon className="ml-auto" icon={ArrowDown01Icon} />
+              <HugeiconsIcon className="ml-auto" icon={ArrowUp01Icon} />
             </>
           )}
         </SidebarMenuButton>
@@ -250,12 +256,17 @@ export function OrgSelector() {
   const queryClient = useQueryClient();
   const { isMobile, state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const dropdownSide = isMobile ? "bottom" : isCollapsed ? "right" : "bottom";
+  const dropdownSide = isMobile ? "bottom" : isCollapsed ? "right" : "top";
+  const { setTheme, resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const toggleTheme = () => setTheme(isDark ? "light" : "dark");
   const { activeOrganization, organizations, isLoading } =
     useOrganizationsContext();
   const { data: customer } = useCustomer({
     expand: ["subscriptions.plan"],
   });
+
+  useHotkey("D", toggleTheme);
 
   const [isPending, startTransition] = useTransition();
   const [isSwitching, setIsSwitching] = useState(false);
@@ -388,6 +399,24 @@ export function OrgSelector() {
             >
               <HugeiconsIcon icon={PlusSignIcon} />
               Create Organization
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              className="cursor-pointer"
+              onClick={() =>
+                router.push(`/${activeOrganization?.slug}/settings/account`)
+              }
+            >
+              <HugeiconsIcon icon={Settings01Icon} />
+              Settings
+            </DropdownMenuItem>
+
+            <DropdownMenuItem className="cursor-pointer" onClick={toggleTheme}>
+              <HugeiconsIcon icon={isDark ? Sun03Icon : Moon02Icon} />
+              {isDark ? "Light Mode" : "Dark Mode"}
+              <Kbd className="ml-auto">D</Kbd>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
