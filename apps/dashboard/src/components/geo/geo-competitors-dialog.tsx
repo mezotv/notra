@@ -125,95 +125,93 @@ export function GeoCompetitorsDialog({
   };
 
   return (
-    <>
-      <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
-        <ResponsiveDialogContent className="sm:max-w-2xl">
-          <ResponsiveDialogHeader>
-            <ResponsiveDialogTitle>Competitors</ResponsiveDialogTitle>
-            <ResponsiveDialogDescription>
-              Named competitors get called out in scans; unlisted brands are
-              still detected automatically.
-            </ResponsiveDialogDescription>
-          </ResponsiveDialogHeader>
-          <div className="space-y-4 px-4 md:px-0">
-            <div className="flex gap-2">
-              <Input
-                onChange={(event) => setDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    handleAdd();
-                  }
-                }}
-                placeholder="Competitor name"
-                value={draft}
-              />
-              <Input
-                aria-label="Competitor website"
-                className="max-w-[12rem]"
-                onChange={(event) => setDomainDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    handleAdd();
-                  }
-                }}
-                placeholder="example.com"
-                value={domainDraft}
-              />
-              <Button
-                disabled={draft.trim().length === 0 || upsert.isPending}
-                onClick={handleAdd}
-                variant="outline"
-              >
-                {upsert.isPending && (
-                  <Loader2Icon className="size-4 animate-spin" />
-                )}
-                Add
-              </Button>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10" />
-                  <TableHead>Competitor</TableHead>
-                  <TableHead>Website</TableHead>
-                  <TableHead className="w-16 text-right">Remove</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isPending && (
-                  <TableRow>
-                    <TableCell colSpan={COMPETITOR_COLUMNS}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
-                  </TableRow>
-                )}
-                {!isPending && competitors.length === 0 && (
-                  <TableRow>
-                    <TableCell
-                      className="text-muted-foreground text-sm"
-                      colSpan={COMPETITOR_COLUMNS}
-                    >
-                      No competitors yet
-                    </TableCell>
-                  </TableRow>
-                )}
-                {competitors.map((competitor) => (
-                  <CompetitorRow
-                    competitor={competitor.name}
-                    domain={competitor.domain}
-                    isPending={remove.isPending}
-                    key={competitor.id}
-                    onRemove={(name) => remove.mutate({ name })}
-                    onSelect={handleSelect}
-                  />
-                ))}
-              </TableBody>
-            </Table>
+    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+      <ResponsiveDialogContent className="sm:max-w-2xl">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>Competitors</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
+            Named competitors get called out in scans; unlisted brands are still
+            detected automatically.
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
+        <div className="space-y-4 px-4 md:px-0">
+          <div className="flex gap-2">
+            <Input
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  handleAdd();
+                }
+              }}
+              placeholder="Competitor name"
+              value={draft}
+            />
+            <Input
+              aria-label="Competitor website"
+              className="max-w-[12rem]"
+              onChange={(event) => setDomainDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  handleAdd();
+                }
+              }}
+              placeholder="example.com"
+              value={domainDraft}
+            />
+            <Button
+              disabled={draft.trim().length === 0 || upsert.isPending}
+              onClick={handleAdd}
+              variant="outline"
+            >
+              {upsert.isPending && (
+                <Loader2Icon className="size-4 animate-spin" />
+              )}
+              Add
+            </Button>
           </div>
-        </ResponsiveDialogContent>
-      </ResponsiveDialog>
-    </>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10" />
+                <TableHead>Competitor</TableHead>
+                <TableHead>Website</TableHead>
+                <TableHead className="w-16 text-right">Remove</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isPending && (
+                <TableRow>
+                  <TableCell colSpan={COMPETITOR_COLUMNS}>
+                    <Skeleton className="h-4 w-full" />
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isPending && competitors.length === 0 && (
+                <TableRow>
+                  <TableCell
+                    className="text-muted-foreground text-sm"
+                    colSpan={COMPETITOR_COLUMNS}
+                  >
+                    No competitors yet
+                  </TableCell>
+                </TableRow>
+              )}
+              {competitors.map((competitor) => (
+                <CompetitorRow
+                  competitor={competitor.name}
+                  domain={competitor.domain}
+                  isPending={remove.isPending}
+                  key={competitor.id}
+                  onRemove={(name) => remove.mutate({ name })}
+                  onSelect={handleSelect}
+                />
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

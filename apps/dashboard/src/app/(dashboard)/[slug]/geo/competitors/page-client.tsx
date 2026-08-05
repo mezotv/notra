@@ -3,8 +3,8 @@
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
-import Link from "next/link";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
