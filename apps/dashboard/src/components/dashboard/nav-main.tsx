@@ -11,11 +11,9 @@ import {
   Notification03Icon,
   PlugIcon,
   RainbowIcon,
-  SearchIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Kbd, KbdGroup } from "@notra/ui/components/ui/kbd";
 import {
   SidebarGroup,
   SidebarGroupContent,
@@ -23,11 +21,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@notra/ui/components/ui/sidebar";
-import { useIsApplePlatform } from "@notra/ui/hooks/use-is-apple-platform";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment, memo } from "react";
-import { useCommandPalette } from "@/components/command-palette/command-palette-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { IRIS_FLAG_KEY, IRIS_NAV_LINK } from "@/constants/iris";
 import type { NavMainCategory, NavMainItem } from "@/types/components/nav";
@@ -43,17 +39,17 @@ const categoryLabels: Record<Exclude<NavMainCategory, "none">, string> = {
 
 const navMainItems: NavMainItem[] = [
   {
-    link: "",
-    icon: Home01Icon,
-    label: "Home",
-    category: "none",
-  },
-  {
     link: "/chat",
     icon: Message01Icon,
     label: "Chat",
     category: "none",
     badge: "Beta",
+  },
+  {
+    link: "",
+    icon: Home01Icon,
+    label: "Home",
+    category: "none",
   },
   {
     link: "/content",
@@ -185,8 +181,6 @@ const categories = Object.keys(categoryLabels) as Exclude<
 export function NavMain() {
   const { activeOrganization } = useOrganizationsContext();
   const pathname = usePathname();
-  const { setOpen: setCommandPaletteOpen } = useCommandPalette();
-  const isApplePlatform = useIsApplePlatform();
   const irisFlag = useFlag(IRIS_FLAG_KEY);
   const irisVisible = isIrisVisibleInNav(irisFlag.on);
 
@@ -199,27 +193,6 @@ export function NavMain() {
 
   return (
     <>
-      <SidebarGroup>
-        <SidebarGroupContent>
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                aria-label="Open command palette"
-                className="cursor-pointer border border-sidebar-border/60"
-                onClick={() => setCommandPaletteOpen(true)}
-                tooltip="Open command palette"
-              >
-                <HugeiconsIcon icon={SearchIcon} />
-                <span>Search</span>
-                <KbdGroup className="ml-auto group-data-[collapsible=icon]:hidden">
-                  <Kbd>{isApplePlatform ? "⌘" : "Ctrl"}</Kbd>
-                  <Kbd>K</Kbd>
-                </KbdGroup>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarGroupContent>
-      </SidebarGroup>
       <NavGroup items={rootItems} pathname={pathname} slug={slug} />
       {categories.map((category) => (
         <Fragment key={category}>

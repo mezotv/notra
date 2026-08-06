@@ -25,7 +25,6 @@ import { useEffect, useRef } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { ChatHistoryNav } from "./chat-history-nav";
 import { NavMain } from "./nav-main";
-import { NavSecondary } from "./nav-secondary";
 import { NavSettings } from "./nav-settings";
 import { OrgSelector } from "./org-selector";
 import { SidebarOnboarding } from "./sidebar-onboarding";
@@ -173,7 +172,6 @@ export function DashboardSidebar({
           </AnimatePresence>
         </SidebarContent>
         <SidebarFooter>
-          <NavSecondary className="p-0" />
           <OrgSelector />
         </SidebarFooter>
       </LazyMotion>
