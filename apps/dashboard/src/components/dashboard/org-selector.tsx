@@ -226,40 +226,37 @@ export function OrganizationOptionsList({
       {organizations.map((org) => {
         const isSelected = selectedOrganizationId === org.id;
         return (
-          <DropdownMenuItem
-            className={cn(
-              "cursor-pointer gap-2",
-              isSelected && "bg-accent text-accent-foreground"
-            )}
-            disabled={disabled}
-            key={org.id}
-            onClick={() => onSelect(org.id)}
-          >
-            <Avatar className="size-6 rounded-lg after:rounded-lg">
-              <AvatarImage src={org.logo || undefined} />
-              <AvatarFallback className="rounded-lg">
-                {org.name.slice(0, 2)}
-              </AvatarFallback>
-            </Avatar>
-            <OverflowAwareText
-              className="text-sm"
-              text={org.name}
-              thresholdMultiplier={1.75}
-            />
+          <div className="flex items-center gap-1" key={org.id}>
+            <DropdownMenuItem
+              className={cn(
+                "min-w-0 flex-1 cursor-pointer gap-2",
+                isSelected && "bg-accent text-accent-foreground"
+              )}
+              disabled={disabled}
+              onClick={() => onSelect(org.id)}
+            >
+              <Avatar className="size-6 rounded-lg after:rounded-lg">
+                <AvatarImage src={org.logo || undefined} />
+                <AvatarFallback className="rounded-lg">
+                  {org.name.slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+              <OverflowAwareText
+                className="text-sm"
+                text={org.name}
+                thresholdMultiplier={1.75}
+              />
+            </DropdownMenuItem>
             {isSelected && onCreate ? (
-              <button
+              <DropdownMenuItem
                 aria-label="Create organization"
-                className="ml-auto flex size-5 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-background/80 hover:text-foreground"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onCreate();
-                }}
-                type="button"
+                className="size-7 shrink-0 cursor-pointer justify-center p-0 text-muted-foreground data-highlighted:text-foreground"
+                onClick={onCreate}
               >
                 <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-              </button>
+              </DropdownMenuItem>
             ) : null}
-          </DropdownMenuItem>
+          </div>
         );
       })}
     </DropdownMenuGroup>
