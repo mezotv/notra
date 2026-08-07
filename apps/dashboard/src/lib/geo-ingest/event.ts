@@ -26,11 +26,19 @@ function wantsMarkdown(accept: string | undefined): boolean {
 export function buildGeoTrafficEvent(
   input: GeoTrafficEventInput
 ): GeoTrafficEventRow {
-  const { organizationId, payload, url, capturedAt, classification, journey } =
-    input;
+  const {
+    organizationId,
+    projectId,
+    payload,
+    url,
+    capturedAt,
+    classification,
+    journey,
+  } = input;
 
   return {
     organization_id: organizationId,
+    project_id: projectId ?? "",
     captured_at: toClickHouseDateTime(capturedAt),
     visitor_type: classification.visitorType,
     source: classification.source,

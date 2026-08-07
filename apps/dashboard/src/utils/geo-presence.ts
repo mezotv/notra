@@ -4,6 +4,8 @@ import type {
   GeoPromptSummary,
 } from "@/types/geo";
 
+export const GROUNDED_SUFFIX_PATTERN = /(-direct)?-grounded$/;
+
 const GROUNDED_ENGINE_PATTERN = /(-direct)?-grounded$|^perplexity-sonar$/;
 
 export function isGroundedEngine(engine: string): boolean {

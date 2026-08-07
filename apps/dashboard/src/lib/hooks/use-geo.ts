@@ -3,6 +3,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import type {
   AiTrafficResponse,
   GeoCompetitorDeleteInput,
@@ -16,10 +17,19 @@ import type {
   GeoLanguageShareResponse,
   GeoModelUsageResponse,
   GeoOverviewResponse,
+  GeoProject,
+  GeoProjectCreateInput,
+  GeoProjectsResponse,
   GeoPromptCreateInput,
   GeoPromptDeleteInput,
   GeoPromptResultsResponse,
+  GeoPromptSequence,
   GeoPromptToggleInput,
+  GeoSequenceCreateInput,
+  GeoSequenceDeleteInput,
+  GeoSequenceResultsResponse,
+  GeoSequencesResponse,
+  GeoSequenceUpdateInput,
   GeoSettingsResponse,
   GeoSettingsUpsertInput,
   GeoTimeseriesResponse,
@@ -44,37 +54,70 @@ function toErrorMessage(error: unknown, fallback: string): string {
 
 async function invalidateCompetitorQueries(
   queryClient: QueryClient,
-  organizationId: string
+  organizationId: string,
+  projectId: string | undefined
 ) {
   await Promise.all([
     queryClient.invalidateQueries({
       queryKey: dashboardOrpc.geo.competitors.queryKey({
-        input: { organizationId },
+        input: { organizationId, projectId },
       }),
     }),
     queryClient.invalidateQueries({
       queryKey: dashboardOrpc.geo.settings.queryKey({
-        input: { organizationId },
+        input: { organizationId, projectId },
       }),
     }),
   ]);
 }
 
+async function invalidatePromptQueries(
+  queryClient: QueryClient,
+  organizationId: string,
+  projectId: string | undefined
+) {
+  await queryClient.invalidateQueries({
+    queryKey: dashboardOrpc.geo.promptsList.queryKey({
+      input: { organizationId, projectId },
+    }),
+  });
+}
+
+async function invalidateSequenceQueries(
+  queryClient: QueryClient,
+  organizationId: string,
+  projectId: string | undefined
+) {
+  await queryClient.invalidateQueries({
+    queryKey: dashboardOrpc.geo.sequencesList.queryKey({
+      input: { organizationId, projectId },
+    }),
+  });
+}
+
 export function useGeoSettings(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoSettingsResponse>({
-    ...dashboardOrpc.geo.settings.queryOptions({ input: { organizationId } }),
+    ...dashboardOrpc.geo.settings.queryOptions({
+      input: { organizationId, projectId },
+    }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load AI visibility settings" },
   });
 }
 
 export function useGeoSettingsUpsert(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: GeoSettingsUpsertInput) =>
-      dashboardOrpc.geo.settingsUpsert.call({ ...input, organizationId }),
+      dashboardOrpc.geo.settingsUpsert.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
     onSuccess: async () => {
-      await invalidateCompetitorQueries(queryClient, organizationId);
+      await invalidateCompetitorQueries(queryClient, organizationId, projectId);
       toast.success("AI visibility settings saved");
     },
     onError: (error) => {
@@ -84,9 +127,10 @@ export function useGeoSettingsUpsert(organizationId: string) {
 }
 
 export function useGeoOverview(organizationId: string, days?: number) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoOverviewResponse>({
     ...dashboardOrpc.geo.overview.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load AI visibility overview" },
@@ -94,9 +138,10 @@ export function useGeoOverview(organizationId: string, days?: number) {
 }
 
 export function useGeoTimeseries(organizationId: string, days?: number) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoTimeseriesResponse>({
     ...dashboardOrpc.geo.timeseries.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load AI visibility trend" },
@@ -104,9 +149,10 @@ export function useGeoTimeseries(organizationId: string, days?: number) {
 }
 
 export function useGeoPromptResults(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoPromptResultsResponse>({
     ...dashboardOrpc.geo.promptResults.queryOptions({
-      input: { organizationId },
+      input: { organizationId, projectId },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load prompt results" },
@@ -114,9 +160,14 @@ export function useGeoPromptResults(organizationId: string) {
 }
 
 export function useGeoCompetitorShare(organizationId: string, days?: number) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoCompetitorShareResponse>({
     ...dashboardOrpc.geo.competitorShare.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_COMPETITOR_DAYS },
+      input: {
+        organizationId,
+        projectId,
+        days: days ?? DEFAULT_COMPETITOR_DAYS,
+      },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load competitor share" },
@@ -128,10 +179,12 @@ export function useGeoCompetitorDetail(
   brand: string | null,
   days?: number
 ) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoCompetitorDetailResponse>({
     ...dashboardOrpc.geo.competitorDetail.queryOptions({
       input: {
         organizationId,
+        projectId,
         brand: brand ?? "",
         days: days ?? DEFAULT_COMPETITOR_DAYS,
       },
@@ -142,9 +195,10 @@ export function useGeoCompetitorDetail(
 }
 
 export function useGeoCompetitors(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoCompetitorsResponse>({
     ...dashboardOrpc.geo.competitors.queryOptions({
-      input: { organizationId },
+      input: { organizationId, projectId },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load competitors" },
@@ -152,12 +206,17 @@ export function useGeoCompetitors(organizationId: string) {
 }
 
 export function useGeoCompetitorUpsert(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: GeoCompetitorUpsertInput) =>
-      dashboardOrpc.geo.competitorUpsert.call({ ...input, organizationId }),
+      dashboardOrpc.geo.competitorUpsert.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
     onSuccess: async () => {
-      await invalidateCompetitorQueries(queryClient, organizationId);
+      await invalidateCompetitorQueries(queryClient, organizationId, projectId);
       toast.success("Competitor saved");
     },
     onError: (error) => {
@@ -167,12 +226,17 @@ export function useGeoCompetitorUpsert(organizationId: string) {
 }
 
 export function useGeoCompetitorDelete(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: GeoCompetitorDeleteInput) =>
-      dashboardOrpc.geo.competitorDelete.call({ ...input, organizationId }),
+      dashboardOrpc.geo.competitorDelete.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
     onSuccess: async () => {
-      await invalidateCompetitorQueries(queryClient, organizationId);
+      await invalidateCompetitorQueries(queryClient, organizationId, projectId);
       toast.success("Competitor removed");
     },
     onError: (error) => {
@@ -182,9 +246,10 @@ export function useGeoCompetitorDelete(organizationId: string) {
 }
 
 export function useGeoLanguageShare(organizationId: string, days?: number) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoLanguageShareResponse>({
     ...dashboardOrpc.geo.languageShare.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load language performance" },
@@ -192,9 +257,10 @@ export function useGeoLanguageShare(organizationId: string, days?: number) {
 }
 
 export function useModelUsage(organizationId: string, days?: number) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoModelUsageResponse>({
     ...dashboardOrpc.geo.modelUsage.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load model usage share" },
@@ -202,9 +268,10 @@ export function useModelUsage(organizationId: string, days?: number) {
 }
 
 export function useGeoPrompts(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrackedPromptsResponse>({
     ...dashboardOrpc.geo.promptsList.queryOptions({
-      input: { organizationId },
+      input: { organizationId, projectId },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load tracked prompts" },
@@ -212,16 +279,17 @@ export function useGeoPrompts(organizationId: string) {
 }
 
 export function useGeoPromptCreate(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: GeoPromptCreateInput) =>
-      dashboardOrpc.geo.promptsCreate.call({ ...input, organizationId }),
+      dashboardOrpc.geo.promptsCreate.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.geo.promptsList.queryKey({
-          input: { organizationId },
-        }),
-      });
+      await invalidatePromptQueries(queryClient, organizationId, projectId);
       toast.success("Prompt added");
     },
     onError: (error) => {
@@ -231,16 +299,17 @@ export function useGeoPromptCreate(organizationId: string) {
 }
 
 export function useGeoPromptDelete(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: GeoPromptDeleteInput) =>
-      dashboardOrpc.geo.promptsDelete.call({ ...input, organizationId }),
+      dashboardOrpc.geo.promptsDelete.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.geo.promptsList.queryKey({
-          input: { organizationId },
-        }),
-      });
+      await invalidatePromptQueries(queryClient, organizationId, projectId);
       toast.success("Prompt removed");
     },
     onError: (error) => {
@@ -250,16 +319,17 @@ export function useGeoPromptDelete(organizationId: string) {
 }
 
 export function useGeoPromptToggle(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: GeoPromptToggleInput) =>
-      dashboardOrpc.geo.promptsToggle.call({ ...input, organizationId }),
+      dashboardOrpc.geo.promptsToggle.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.geo.promptsList.queryKey({
-          input: { organizationId },
-        }),
-      });
+      await invalidatePromptQueries(queryClient, organizationId, projectId);
     },
     onError: (error) => {
       toast.error(toErrorMessage(error, "Failed to update prompt"));
@@ -268,18 +338,19 @@ export function useGeoPromptToggle(organizationId: string) {
 }
 
 export function useGeoGenerateFromWebsite(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: GeoGenerateFromWebsiteInput) =>
-      dashboardOrpc.geo.generateFromWebsite.call({ ...input, organizationId }),
+      dashboardOrpc.geo.generateFromWebsite.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
     onSuccess: async () => {
       await Promise.all([
-        invalidateCompetitorQueries(queryClient, organizationId),
-        queryClient.invalidateQueries({
-          queryKey: dashboardOrpc.geo.promptsList.queryKey({
-            input: { organizationId },
-          }),
-        }),
+        invalidateCompetitorQueries(queryClient, organizationId, projectId),
+        invalidatePromptQueries(queryClient, organizationId, projectId),
       ]);
       toast.success("GEO tracking generated from website");
     },
@@ -292,8 +363,10 @@ export function useGeoGenerateFromWebsite(organizationId: string) {
 }
 
 export function useGeoStartScan(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   return useMutation({
-    mutationFn: () => dashboardOrpc.geo.startScan.call({ organizationId }),
+    mutationFn: () =>
+      dashboardOrpc.geo.startScan.call({ organizationId, projectId }),
     onSuccess: () => {
       toast.success("Scan started");
     },
@@ -304,9 +377,10 @@ export function useGeoStartScan(organizationId: string) {
 }
 
 export function useAiTraffic(organizationId: string, days?: number) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<AiTrafficResponse>({
     ...dashboardOrpc.geo.aiTraffic.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load AI traffic" },
@@ -317,12 +391,14 @@ export function useGeoTrafficLog(
   organizationId: string,
   filters: GeoTrafficLogFilters
 ) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrafficLogResponse>({
     ...dashboardOrpc.geo.trafficLog.queryOptions({
       input: {
         organizationId,
-        visitorType: toGeoTrafficLogVisitorFilter(filters.visitorType),
-        category: toGeoTrafficLogPurposeFilter(filters.category),
+        projectId,
+        visitorTypes: toGeoTrafficLogVisitorFilter(filters.visitorTypes),
+        categories: toGeoTrafficLogPurposeFilter(filters.categories),
       },
     }),
     enabled: !!organizationId,
@@ -331,9 +407,10 @@ export function useGeoTrafficLog(
 }
 
 export function useGeoTrafficPages(organizationId: string, days?: number) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrafficPagesResponse>({
     ...dashboardOrpc.geo.trafficPages.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load top AI pages" },
@@ -341,9 +418,10 @@ export function useGeoTrafficPages(organizationId: string, days?: number) {
 }
 
 export function useGeoTrafficJourneys(organizationId: string, days?: number) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrafficJourneysResponse>({
     ...dashboardOrpc.geo.trafficJourneys.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load AI journeys" },
@@ -355,10 +433,12 @@ export function useGeoJourneyDetail(
   journeyId: string | null,
   days?: number
 ) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoJourneyDetailResponse>({
     ...dashboardOrpc.geo.journeyDetail.queryOptions({
       input: {
         organizationId,
+        projectId,
         journeyId: journeyId ?? "",
         days: days ?? DEFAULT_GEO_DAYS,
       },
@@ -369,11 +449,127 @@ export function useGeoJourneyDetail(
 }
 
 export function useGeoIngestSetup(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
   return useQuery<GeoIngestSetupResponse>({
     ...dashboardOrpc.geo.ingestSetup.queryOptions({
-      input: { organizationId },
+      input: { organizationId, projectId },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load tracking setup" },
+  });
+}
+
+export function useGeoProjects(organizationId: string) {
+  return useQuery<GeoProjectsResponse>({
+    ...dashboardOrpc.geo.projectsList.queryOptions({
+      input: { organizationId },
+    }),
+    enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load projects" },
+  });
+}
+
+export function useGeoProjectCreate(organizationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: GeoProjectCreateInput): Promise<GeoProject> =>
+      dashboardOrpc.geo.projectsCreate.call({ ...input, organizationId }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.projectsList.queryKey({
+          input: { organizationId },
+        }),
+      });
+      toast.success("Project created");
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to create project"));
+    },
+  });
+}
+
+export function useGeoSequences(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  return useQuery<GeoSequencesResponse>({
+    ...dashboardOrpc.geo.sequencesList.queryOptions({
+      input: { organizationId, projectId },
+    }),
+    enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load conversations" },
+  });
+}
+
+export function useGeoSequenceResults(
+  organizationId: string,
+  sequenceId?: string
+) {
+  const { projectId } = useGeoProjectScope();
+  return useQuery<GeoSequenceResultsResponse>({
+    ...dashboardOrpc.geo.sequenceResults.queryOptions({
+      input: { organizationId, projectId, sequenceId },
+    }),
+    enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load conversation results" },
+  });
+}
+
+export function useGeoSequenceCreate(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: GeoSequenceCreateInput): Promise<GeoPromptSequence> =>
+      dashboardOrpc.geo.sequencesCreate.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
+    onSuccess: async () => {
+      await invalidateSequenceQueries(queryClient, organizationId, projectId);
+      toast.success("Conversation added");
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to add conversation"));
+    },
+  });
+}
+
+export function useGeoSequenceUpdate(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: GeoSequenceUpdateInput): Promise<GeoPromptSequence> =>
+      dashboardOrpc.geo.sequencesUpdate.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
+    onSuccess: async () => {
+      await invalidateSequenceQueries(queryClient, organizationId, projectId);
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to update conversation"));
+    },
+  });
+}
+
+export function useGeoSequenceDelete(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      input: GeoSequenceDeleteInput
+    ): Promise<{ success: boolean }> =>
+      dashboardOrpc.geo.sequencesDelete.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
+    onSuccess: async () => {
+      await invalidateSequenceQueries(queryClient, organizationId, projectId);
+      toast.success("Conversation removed");
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to remove conversation"));
+    },
   });
 }

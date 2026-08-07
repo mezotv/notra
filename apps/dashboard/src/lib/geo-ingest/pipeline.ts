@@ -17,6 +17,7 @@ import { buildGeoTrafficEvent, toCapturedDate } from "@/lib/geo-ingest/event";
 import { resolveJourneyId } from "@/lib/geo-ingest/journey";
 import { verifyGeoIngestToken } from "@/lib/geo-ingest/token";
 import { geoRequestPayloadSchema } from "@/schemas/geo";
+import type { GeoIngestIdentity } from "@/types/geo";
 import { ratelimit } from "@/utils/ratelimit";
 
 const authenticate = Effect.fn("geoIngest.authenticate")(function* (
@@ -31,12 +32,12 @@ const authenticate = Effect.fn("geoIngest.authenticate")(function* (
     return yield* Effect.fail(new GeoIngestMissingTokenError({}));
   }
 
-  const organizationId = verifyGeoIngestToken(token);
-  if (!organizationId) {
+  const identity = verifyGeoIngestToken(token);
+  if (!identity) {
     return yield* Effect.fail(new GeoIngestInvalidTokenError({}));
   }
 
-  return organizationId;
+  return identity;
 });
 
 const enforceRateLimit = Effect.fn("geoIngest.rateLimit")(function* (
@@ -73,7 +74,7 @@ const parseUrl = Effect.fn("geoIngest.parseUrl")(function* (value: string) {
 });
 
 const buildEvent = Effect.fn("geoIngest.buildEvent")(function* (
-  organizationId: string,
+  identity: GeoIngestIdentity,
   payload: GeoRequestPayload
 ) {
   const url = yield* parseUrl(payload.url);
@@ -92,7 +93,8 @@ const buildEvent = Effect.fn("geoIngest.buildEvent")(function* (
   });
 
   return buildGeoTrafficEvent({
-    organizationId,
+    organizationId: identity.organizationId,
+    projectId: identity.projectId,
     payload,
     url,
     capturedAt,
@@ -113,9 +115,9 @@ const ingestEvent = Effect.fn("geoIngest.ingest")(function* (
 export const runGeoIngest = Effect.fn("geoIngest.run")(function* (
   request: NextRequest
 ) {
-  const organizationId = yield* authenticate(request);
-  yield* enforceRateLimit(organizationId);
+  const identity = yield* authenticate(request);
+  yield* enforceRateLimit(identity.organizationId);
   const payload = yield* readPayload(request);
-  const event = yield* buildEvent(organizationId, payload);
+  const event = yield* buildEvent(identity, payload);
   yield* ingestEvent(event);
 });

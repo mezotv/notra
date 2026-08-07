@@ -23,10 +23,12 @@ import {
 import { competitorKey, normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { GeoDiscoveryError } from "@/lib/geo/errors";
 import { syncGeoCompetitors } from "@/lib/geo/programs";
+import { ensureGeoProject } from "@/lib/geo/projects";
 import { geoWebsiteDiscoverySchema } from "@/schemas/geo";
 import type {
   GeoCompetitorSeed,
   GeoGenerateFromWebsiteResult,
+  GeoScopeInput,
   GeoWebsiteDiscovery,
 } from "@/types/geo";
 
@@ -128,14 +130,44 @@ const extractDiscovery = Effect.fn("geo.discover.extract")(function* (
 });
 
 export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
-  function* (organizationId: string, url: string) {
+  function* (scopeInput: GeoScopeInput, url: string) {
+    const organizationId = scopeInput.organizationId;
     const content = yield* scrapeWebsite(url);
     const discovery = yield* extractDiscovery(url, content);
+
+    const projectId = yield* ensureGeoProject(
+      scopeInput,
+      discovery.companyName
+    ).pipe(
+      Effect.catchTags({
+        GeoDatabaseError: (error) =>
+          Effect.fail(
+            new GeoDiscoveryError({
+              message: "Failed to resolve the project",
+              cause: error,
+            })
+          ),
+        GeoProjectCreateFailedError: (error) =>
+          Effect.fail(
+            new GeoDiscoveryError({
+              message: "Failed to create the project",
+              cause: error,
+            })
+          ),
+        GeoProjectNotFoundError: (error) =>
+          Effect.fail(
+            new GeoDiscoveryError({
+              message: "Project not found",
+              cause: error,
+            })
+          ),
+      })
+    );
 
     const existing = yield* Effect.tryPromise({
       try: () =>
         db.query.geoSettings.findFirst({
-          where: eq(geoSettings.organizationId, organizationId),
+          where: eq(geoSettings.projectId, projectId),
         }),
       catch: (cause) =>
         new GeoDiscoveryError({
@@ -163,13 +195,14 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
           .values({
             id: crypto.randomUUID(),
             organizationId,
+            projectId,
             companyName,
             aliases,
             competitors,
             enabled: true,
           })
           .onConflictDoUpdate({
-            target: geoSettings.organizationId,
+            target: geoSettings.projectId,
             set: { companyName, aliases, competitors },
           }),
       catch: (cause) =>
@@ -181,6 +214,7 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
 
     yield* syncGeoCompetitors(
       organizationId,
+      projectId,
       buildCompetitorSeeds(competitors, discovery.competitors)
     );
 
@@ -188,7 +222,7 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
       try: () =>
         db.query.geoPrompts.findMany({
           columns: { prompt: true },
-          where: eq(geoPrompts.organizationId, organizationId),
+          where: eq(geoPrompts.projectId, projectId),
         }),
       catch: (cause) =>
         new GeoDiscoveryError({ message: "Failed to load GEO prompts", cause }),
@@ -197,7 +231,12 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
     const seen = new Set(
       existingPrompts.map((row) => normalizeKey(row.prompt))
     );
-    const values: { id: string; organizationId: string; prompt: string }[] = [];
+    const values: {
+      id: string;
+      organizationId: string;
+      projectId: string;
+      prompt: string;
+    }[] = [];
     for (const prompt of discovery.prompts) {
       const trimmed = prompt.trim();
       const key = normalizeKey(trimmed);
@@ -209,7 +248,12 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
         continue;
       }
       seen.add(key);
-      values.push({ id: crypto.randomUUID(), organizationId, prompt: trimmed });
+      values.push({
+        id: crypto.randomUUID(),
+        organizationId,
+        projectId,
+        prompt: trimmed,
+      });
     }
 
     if (values.length > 0) {

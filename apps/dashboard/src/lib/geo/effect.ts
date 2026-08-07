@@ -16,6 +16,16 @@ export function geoQuery<A>(
   );
 }
 
+export function geoSkip<A, E>(message: string) {
+  return (effect: Effect.Effect<A, E>): Effect.Effect<A | null> =>
+    effect.pipe(
+      Effect.catch((error) => {
+        console.error(`[GEO] ${message}:`, error);
+        return Effect.succeed(null);
+      })
+    );
+}
+
 export function geoDb<A>(
   label: string,
   run: () => Promise<A>

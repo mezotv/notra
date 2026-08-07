@@ -6,7 +6,7 @@ import { PromptResultsTable } from "@/components/geo/directions/prompt-results-t
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { MentionRateCard } from "@/components/geo/mention-rate-card";
 import { MentionTrendCard } from "@/components/geo/mention-trend-card";
-import { ShareOfVoiceDonut } from "@/components/geo/share-of-voice-donut";
+import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { TrafficPagesCard } from "@/components/geo/traffic-pages-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentModule } from "@/components/instrument/instrument-module";
@@ -21,10 +21,8 @@ import {
   GEO_DIRECTIONS_VISIBILITY,
   GEO_DIRECTIONS_VISIBILITY_DELTA,
 } from "@/constants/geo-directions";
-import {
-  formatDirectionCount,
-  formatDirectionRate,
-} from "@/utils/geo-directions";
+import { formatMentionRate } from "@/utils/geo-charts";
+import { formatDirectionCount } from "@/utils/geo-directions";
 
 const AI_VISITS = GEO_DIRECTIONS_KPIS[0];
 
@@ -40,7 +38,7 @@ function HeroRow() {
           </p>
           <div className="flex items-end gap-2">
             <p className="font-bold text-4xl text-primary tabular-nums">
-              {formatDirectionRate(GEO_DIRECTIONS_VISIBILITY)}
+              {formatMentionRate(GEO_DIRECTIONS_VISIBILITY)}
             </p>
             <DirectionDelta
               className="mb-1"
@@ -64,9 +62,7 @@ function HeroRow() {
             {best?.label ?? "N/A"}
           </p>
           <p className="text-muted-foreground text-xs">
-            {best
-              ? `${formatDirectionRate(best.rate)} mention rate`
-              : "no scans"}
+            {best ? `${formatMentionRate(best.rate)} mention rate` : "no scans"}
           </p>
         </CardContent>
       </Card>
@@ -106,10 +102,10 @@ export function DirectionInstrument() {
       <HeroRow />
       <InstrumentGrid className="grid-cols-1 lg:grid-cols-12">
         <div className="lg:col-span-8">
-          <MentionTrendCard hero points={GEO_DIRECTIONS_TIMESERIES} />
+          <MentionTrendCard points={GEO_DIRECTIONS_TIMESERIES} />
         </div>
         <div className="lg:col-span-4">
-          <ShareOfVoiceDonut points={[...GEO_DIRECTIONS_SHARE]} />
+          <ShareOfVoiceCard points={[...GEO_DIRECTIONS_SHARE]} />
         </div>
         <div className="lg:col-span-8">
           <MentionRateCard engines={GEO_DIRECTIONS_OVERVIEW_ENGINES} />

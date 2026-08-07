@@ -4,6 +4,7 @@ import {
   GEO_INGEST_SECRET_FALLBACK_ENV,
   GEO_INGEST_TOKEN_SEPARATOR,
 } from "@/constants/geo";
+import type { GeoIngestIdentity } from "@/types/geo";
 
 export function getGeoIngestSecret(): string | null {
   const secret =
@@ -20,20 +21,26 @@ export function isGeoIngestConfigured(): boolean {
   return getSecret() !== null;
 }
 
-function sign(organizationId: string, secret: string): string {
-  return createHmac("sha256", secret).update(organizationId).digest("hex");
+function sign(payload: string, secret: string): string {
+  return createHmac("sha256", secret).update(payload).digest("hex");
 }
 
-export function buildGeoIngestToken(organizationId: string): string | null {
+export function buildGeoIngestToken(
+  organizationId: string,
+  projectId?: string
+): string | null {
   const secret = getSecret();
   if (!secret) {
     return null;
   }
-  const signature = sign(organizationId, secret);
-  return `${organizationId}${GEO_INGEST_TOKEN_SEPARATOR}${signature}`;
+  const payload = projectId
+    ? `${organizationId}${GEO_INGEST_TOKEN_SEPARATOR}${projectId}`
+    : organizationId;
+  const signature = sign(payload, secret);
+  return `${payload}${GEO_INGEST_TOKEN_SEPARATOR}${signature}`;
 }
 
-export function verifyGeoIngestToken(token: string): string | null {
+export function verifyGeoIngestToken(token: string): GeoIngestIdentity | null {
   const secret = getSecret();
   if (!secret) {
     return null;
@@ -44,9 +51,9 @@ export function verifyGeoIngestToken(token: string): string | null {
     return null;
   }
 
-  const organizationId = token.slice(0, separatorIndex);
+  const payload = token.slice(0, separatorIndex);
   const signature = token.slice(separatorIndex + 1);
-  const expected = sign(organizationId, secret);
+  const expected = sign(payload, secret);
   if (signature.length !== expected.length) {
     return null;
   }
@@ -55,5 +62,17 @@ export function verifyGeoIngestToken(token: string): string | null {
     Buffer.from(signature),
     Buffer.from(expected)
   );
-  return matches ? organizationId : null;
+  if (!matches) {
+    return null;
+  }
+
+  const payloadSeparatorIndex = payload.indexOf(GEO_INGEST_TOKEN_SEPARATOR);
+  if (payloadSeparatorIndex <= 0) {
+    return { organizationId: payload, projectId: null };
+  }
+
+  return {
+    organizationId: payload.slice(0, payloadSeparatorIndex),
+    projectId: payload.slice(payloadSeparatorIndex + 1) || null,
+  };
 }

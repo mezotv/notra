@@ -8,6 +8,14 @@ export function toGeoOrpcError(failure: GeoRouterError): Error {
       return badRequest("Failed to create prompt");
     case "GeoPromptNotFoundError":
       return notFound("Prompt not found");
+    case "GeoProjectNotFoundError":
+      return notFound("Project not found");
+    case "GeoProjectCreateFailedError":
+      return badRequest("Failed to create project");
+    case "GeoSequenceNotFoundError":
+      return notFound("Conversation not found");
+    case "GeoSequenceCreateFailedError":
+      return badRequest("Failed to create conversation");
     case "GeoSettingsMissingError":
       return badRequest("Configure your brand tracking settings first");
     case "GeoDiscoveryError":

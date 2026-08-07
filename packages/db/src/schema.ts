@@ -1452,6 +1452,24 @@ export const organizationNotificationSettings = pgTable(
   ]
 );
 
+export const projects = pgTable(
+  "projects",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    isDefault: boolean("is_default").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("projects_organizationId_idx").on(table.organizationId)]
+);
+
 export const geoSettings = pgTable(
   "geo_settings",
   {
@@ -1459,6 +1477,9 @@ export const geoSettings = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     companyName: text("company_name").notNull(),
     aliases: text("aliases").array().notNull().default(sql`ARRAY[]::text[]`),
     competitors: text("competitors")
@@ -1474,7 +1495,8 @@ export const geoSettings = pgTable(
       .notNull(),
   },
   (table) => [
-    uniqueIndex("geoSettings_organizationId_uidx").on(table.organizationId),
+    index("geoSettings_organizationId_idx").on(table.organizationId),
+    uniqueIndex("geoSettings_projectId_uidx").on(table.projectId),
   ]
 );
 
@@ -1485,6 +1507,9 @@ export const geoPrompts = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     prompt: text("prompt").notNull(),
     enabled: boolean("enabled").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1493,7 +1518,35 @@ export const geoPrompts = pgTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index("geoPrompts_organizationId_idx").on(table.organizationId)]
+  (table) => [
+    index("geoPrompts_organizationId_idx").on(table.organizationId),
+    index("geoPrompts_projectId_idx").on(table.projectId),
+  ]
+);
+
+export const geoPromptSequences = pgTable(
+  "geo_prompt_sequences",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    steps: text("steps").array().notNull().default(sql`ARRAY[]::text[]`),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoPromptSequences_organizationId_idx").on(table.organizationId),
+    index("geoPromptSequences_projectId_idx").on(table.projectId),
+  ]
 );
 
 export const geoCompetitors = pgTable(
@@ -1503,6 +1556,9 @@ export const geoCompetitors = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
     domain: text("domain"),
     synonyms: text("synonyms").array().notNull().default(sql`ARRAY[]::text[]`),
@@ -1518,8 +1574,9 @@ export const geoCompetitors = pgTable(
   },
   (table) => [
     index("geoCompetitors_organizationId_idx").on(table.organizationId),
-    uniqueIndex("geoCompetitors_organizationId_name_uidx").on(
-      table.organizationId,
+    index("geoCompetitors_projectId_idx").on(table.projectId),
+    uniqueIndex("geoCompetitors_projectId_name_uidx").on(
+      table.projectId,
       table.name
     ),
   ]
@@ -2159,8 +2216,10 @@ export const organizationsRelations = relations(
     mcpSessionToolActivations: many(mcpSessionToolActivations),
     brandSettings: many(brandSettings),
     notificationSettings: one(organizationNotificationSettings),
-    geoSettings: one(geoSettings),
+    projects: many(projects),
+    geoSettings: many(geoSettings),
     geoPrompts: many(geoPrompts),
+    geoPromptSequences: many(geoPromptSequences),
     geoCompetitors: many(geoCompetitors),
     connectedSocialAccounts: many(connectedSocialAccounts),
     postCollections: many(postCollections),
@@ -2547,12 +2606,45 @@ export const geoSettingsRelations = relations(geoSettings, ({ one }) => ({
     fields: [geoSettings.organizationId],
     references: [organizations.id],
   }),
+  project: one(projects, {
+    fields: [geoSettings.projectId],
+    references: [projects.id],
+  }),
 }));
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [projects.organizationId],
+    references: [organizations.id],
+  }),
+  geoSettings: one(geoSettings),
+  geoPrompts: many(geoPrompts),
+  geoPromptSequences: many(geoPromptSequences),
+  geoCompetitors: many(geoCompetitors),
+}));
+
+export const geoPromptSequencesRelations = relations(
+  geoPromptSequences,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoPromptSequences.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [geoPromptSequences.projectId],
+      references: [projects.id],
+    }),
+  })
+);
 
 export const geoPromptsRelations = relations(geoPrompts, ({ one }) => ({
   organization: one(organizations, {
     fields: [geoPrompts.organizationId],
     references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [geoPrompts.projectId],
+    references: [projects.id],
   }),
 }));
 
@@ -2560,6 +2652,10 @@ export const geoCompetitorsRelations = relations(geoCompetitors, ({ one }) => ({
   organization: one(organizations, {
     fields: [geoCompetitors.organizationId],
     references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [geoCompetitors.projectId],
+    references: [projects.id],
   }),
 }));
 

@@ -5,13 +5,15 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import { Loader2Icon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
-import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { GeoOnboardingOverlay } from "@/components/geo/geo-onboarding-overlay";
 import { GeoSettingsDialog } from "@/components/geo/geo-settings-dialog";
 import { GeoSummaryStats } from "@/components/geo/geo-summary-stats";
+import { GeoProjectSwitcher } from "@/components/geo/project-switcher";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { PageContainer } from "@/components/layout/container";
+import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { GEO_DEFAULT_TAB, GEO_TAB_VALUES } from "@/constants/geo";
 import {
@@ -21,6 +23,7 @@ import {
   useGeoIngestSetup,
   useGeoLanguageShare,
   useGeoOverview,
+  useGeoProjects,
   useGeoPromptResults,
   useGeoPrompts,
   useGeoSettings,
@@ -31,6 +34,7 @@ import {
   useModelUsage,
 } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
+import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
 import { formatSyncClock } from "@/utils/instrument";
 import { GeoTabs } from "./components/geo-tabs";
 import { GeoPageSkeleton } from "./skeleton";
@@ -59,11 +63,28 @@ const STAGE = {
   modules: 2, // grid modules visible
 };
 
-interface PageClientProps {
-  organizationSlug: string;
+export default function PageClient({ organizationSlug }: GeoPageClientProps) {
+  const [projectParam, setProjectParam] = useQueryState(
+    "project",
+    parseAsString
+  );
+
+  return (
+    <GeoProjectProvider projectId={projectParam ?? undefined}>
+      <GeoPageContent
+        onProjectChange={setProjectParam}
+        organizationSlug={organizationSlug}
+        projectParam={projectParam}
+      />
+    </GeoProjectProvider>
+  );
 }
 
-export default function PageClient({ organizationSlug }: PageClientProps) {
+function GeoPageContent({
+  organizationSlug,
+  projectParam,
+  onProjectChange,
+}: GeoPageContentProps) {
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
   const organization =
@@ -74,6 +95,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const { data: projectsData } = useGeoProjects(organizationId);
   const { data: settingsData, isPending: isSettingsPending } =
     useGeoSettings(organizationId);
   const { data: overview, dataUpdatedAt } = useGeoOverview(organizationId);
@@ -124,10 +146,22 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const settings = settingsData?.settings ?? null;
 
+  const projects = projectsData?.projects ?? [];
+
   if (!settings) {
     return (
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <div className="w-full px-4 lg:px-6">
+        <div className="w-full space-y-4 px-4 lg:px-6">
+          {projects.length > 0 && (
+            <div className="flex justify-end">
+              <GeoProjectSwitcher
+                activeProjectId={projectParam}
+                onProjectChange={onProjectChange}
+                organizationId={organizationId}
+                projects={projects}
+              />
+            </div>
+          )}
           <GeoOnboardingOverlay
             onManualSetup={() => setSettingsOpen(true)}
             organizationId={organizationId}
@@ -171,6 +205,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <GeoProjectSwitcher
+              activeProjectId={projectParam}
+              onProjectChange={onProjectChange}
+              organizationId={organizationId}
+              projects={projects}
+            />
             <Button
               onClick={() => setSettingsOpen(true)}
               size="sm"
@@ -217,6 +257,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           revealActive={stage >= STAGE.modules}
           settings={settings}
           timeseriesPoints={timeseries?.points ?? []}
+          tracked={overview?.tracked ?? []}
           traffic={aiTraffic}
           trafficPages={trafficPages?.pages ?? []}
         />

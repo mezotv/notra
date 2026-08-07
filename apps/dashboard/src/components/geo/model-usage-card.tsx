@@ -11,9 +11,9 @@ import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { cn } from "@/lib/utils";
 import type { GeoModelUsageRow, ModelUsageCardProps } from "@/types/geo";
 import {
+  barWidthPercent,
   formatMentionRate,
   formatUsageShare,
-  usageBarWidth,
 } from "@/utils/geo-charts";
 import { tableHeightFor } from "@/utils/table";
 
@@ -59,7 +59,7 @@ export function ModelUsageCard({ usage }: ModelUsageCardProps) {
                 "block h-full",
                 row.scanned ? "bg-chart-1" : "bg-muted-foreground/40"
               )}
-              style={{ width: `${usageBarWidth(row.share, maxShare)}%` }}
+              style={{ width: `${barWidthPercent(row.share, maxShare)}%` }}
             />
           </span>
         ),

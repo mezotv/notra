@@ -1,10 +1,13 @@
 import { COMPETITOR_SWATCHES } from "@/constants/charts";
 import { OWN_BRAND_ROW_ID } from "@/constants/geo";
+import { competitorKey } from "@/lib/geo/domain";
 import type { ChartColorPair } from "@/types/charts";
 import type {
   GeoCompetitor,
   GeoCompetitorKind,
   GeoCompetitorRowEntry,
+  GeoCompetitorSharePoint,
+  GeoCompetitorShareTableRow,
   GeoCompetitorTypeFilter,
 } from "@/types/geo";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
@@ -47,6 +50,46 @@ export function competitorSliceColor(index: number): ChartColorPair {
     COMPETITOR_SWATCHES[index % COMPETITOR_SWATCHES.length] ??
     FALLBACK_SLICE_COLOR;
   return { light: hex, dark: hex };
+}
+
+export function buildCompetitorShareRows(
+  points: readonly GeoCompetitorSharePoint[],
+  competitors: readonly GeoCompetitor[] | undefined
+): GeoCompetitorShareTableRow[] {
+  const byKey = new Map(
+    (competitors ?? []).map(
+      (competitor, index) =>
+        [competitorKey(competitor.name), { competitor, index }] as const
+    )
+  );
+
+  const toRow = (
+    brand: string,
+    mentions: number
+  ): GeoCompetitorShareTableRow => {
+    const match = byKey.get(competitorKey(brand));
+    return {
+      brand,
+      mentions,
+      domain: match?.competitor.domain ?? null,
+      color:
+        match?.competitor.color ??
+        (match
+          ? competitorSliceColor(match.index + 1).light
+          : FALLBACK_SLICE_COLOR),
+    };
+  };
+
+  const rows = points.map((point) => toRow(point.brand, point.mentions));
+  const seen = new Set(points.map((point) => competitorKey(point.brand)));
+  for (const competitor of competitors ?? []) {
+    if (seen.has(competitorKey(competitor.name))) {
+      continue;
+    }
+    seen.add(competitorKey(competitor.name));
+    rows.push(toRow(competitor.name, 0));
+  }
+  return rows;
 }
 
 export function buildCompetitorRows(

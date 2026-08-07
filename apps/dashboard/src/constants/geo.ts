@@ -96,17 +96,22 @@ export const GEO_MODEL_USAGE_ATTRIBUTION =
   "Source: OpenRouter (openrouter.ai/rankings)";
 export const GEO_MODEL_USAGE_API_KEY_ENV = "OPENROUTER_API_KEY";
 export const GEO_MODEL_USAGE_ENDPOINT =
-  "https://openrouter.ai/api/v1/datasets/rankings-daily";
+  "https://openrouter.ai/api/frontend/v1/rankings/model-rankings-chart";
 export const GEO_MODEL_USAGE_PERIOD = "week";
 export const GEO_MODEL_USAGE_OTHER_KEY = "other";
+export const GEO_MODEL_USAGE_CACHE_KEY = "openrouter:model-rankings-chart";
+export const GEO_MODEL_USAGE_SLUGS_CACHE_KEY = "openrouter:models";
+export const GEO_MODEL_USAGE_OTHERS_LABEL = "Others";
 export const GEO_MODEL_USAGE_MODELS_ENDPOINT =
   "https://openrouter.ai/api/v1/models";
 export const GEO_MODEL_USAGE_INGEST_LIMIT = 40;
 export const GEO_MODEL_USAGE_FETCH_TIMEOUT_MS = 20_000;
 export const GEO_MODEL_USAGE_DEFAULT_LIMIT = 12;
-export const GEO_MODEL_USAGE_DEFAULT_WEEKS = 8;
 
 export const GEO_MAX_PROMPTS = 8;
+export const GEO_MAX_SEQUENCES = 10;
+export const GEO_COMPETITOR_SHARE_LIMIT = 50;
+export const GEO_SEQUENCE_MAX_TURNS = 5;
 export const GEO_GROUNDED_MAX_PROMPTS = 6;
 export const GEO_GROUNDED_MAX_SEARCHES = 3;
 export const GEO_ANSWER_MAX_TOKENS = 600;
@@ -158,9 +163,13 @@ export const COMPETITOR_TYPE_FILTER_VALUES = [
 ] as const;
 
 export const COMPETITOR_TYPE_FILTERS = [
-  { value: "all", label: "All types" },
-  { value: "direct", label: "Direct" },
-  { value: "indirect", label: "Indirect" },
+  { value: "all", label: "All types", description: "Every tracked competitor" },
+  { value: "direct", label: "Direct", description: "Sells what you sell" },
+  {
+    value: "indirect",
+    label: "Indirect",
+    description: "Solves the same problem differently",
+  },
 ] as const;
 
 export const COMPETITORS_TABLE_HEIGHT = 420;
@@ -168,7 +177,10 @@ export const COMPETITOR_PROMPTS_TABLE_HEIGHT = 288;
 export const COMPETITOR_PROMPTS_PAGE_TABLE_HEIGHT = 620;
 export const COMPETITORS_TABLE_ROW_HEIGHT = 52;
 
-export const GEO_JOURNEY_DEPTH_THRESHOLDS = [1, 2, 3, 5, 10] as const;
+export const GEO_JOURNEY_DEEP_CRAWL_PAGES = 10;
+export const GEO_LOGO_DEBOUNCE_MS = 500;
+export const GEO_COLOR_DEBOUNCE_MS = 200;
+export const GEO_PROMPT_FUNNEL_TOP_POSITION = 3;
 
 export const GEO_JOURNEY_PARAM = "ntr";
 export const GEO_JOURNEY_EXPLICIT_PREFIX = "n_";
@@ -181,8 +193,6 @@ export const GEO_JOURNEY_IPV4_OCTETS = 3;
 export const GEO_JOURNEY_IPV6_GROUPS = 4;
 export const GEO_JOURNEY_CHIP_LENGTH = 6;
 export const GEO_JOURNEY_DETAIL_LIMIT = 200;
-export const GEO_JOURNEY_DETAIL_MIN_EVENTS = 2;
-export const GEO_JOURNEY_DETAIL_SERIES_KEY = "pages";
 
 export const GEO_AI_REFERRER_HOSTS: Record<string, string> = {
   "chatgpt.com": "chatgpt",
@@ -268,11 +278,8 @@ export const AI_TRAFFIC_PURPOSE_DESCRIPTIONS: Record<string, string> = {
     "A person clicked through to your site from an AI answer",
 };
 
-export const GEO_TRAFFIC_LOG_FILTER_ALL = "all";
-
 export const GEO_TRAFFIC_LOG_VISITOR_OPTIONS: readonly GeoTrafficLogVisitorOption[] =
   [
-    { value: GEO_TRAFFIC_LOG_FILTER_ALL, label: "All visitors" },
     { value: "crawler", label: "AI crawler" },
     { value: "ai_referral", label: "AI referral" },
     { value: "human", label: "Human" },
@@ -280,7 +287,6 @@ export const GEO_TRAFFIC_LOG_VISITOR_OPTIONS: readonly GeoTrafficLogVisitorOptio
 
 export const GEO_TRAFFIC_LOG_PURPOSE_OPTIONS: readonly GeoTrafficLogPurposeOption[] =
   [
-    { value: GEO_TRAFFIC_LOG_FILTER_ALL, label: "All purposes" },
     { value: "training-crawler", label: "Training data" },
     { value: "search-index", label: "Search index" },
     { value: "assistant-browse", label: "Used in answer" },

@@ -10,7 +10,8 @@ import {
 } from "@/constants/geo-directions";
 import { cn } from "@/lib/utils";
 import type { DirectionDonutProps } from "@/types/geo-directions";
-import { directionShareOf, formatDirectionRate } from "@/utils/geo-directions";
+import { formatMentionRate } from "@/utils/geo-charts";
+import { directionShareOf } from "@/utils/geo-directions";
 
 export function DirectionDonut({
   className,
@@ -45,7 +46,7 @@ export function DirectionDonut({
               {row.brand}
             </span>
             <span className="shrink-0 tabular-nums">
-              {formatDirectionRate(directionShareOf(row, GEO_DIRECTIONS_SHARE))}
+              {formatMentionRate(directionShareOf(row, GEO_DIRECTIONS_SHARE))}
             </span>
           </div>
         ))}

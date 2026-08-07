@@ -27,6 +27,7 @@ import {
 } from "@notra/ui/components/ui/table";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { Twemoji } from "@/components/geo/twemoji";
 import { GEO_LANGUAGE_FLAGS, GEO_MAX_LANGUAGES } from "@/constants/geo";
 import { removeValue } from "@/lib/geo/string-list";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
@@ -115,7 +116,11 @@ export function GeoLanguagesDialog({
                     <TableCell className="font-medium">
                       <span className="flex items-center gap-2">
                         <span aria-hidden="true">
-                          {GEO_LANGUAGE_FLAGS[language]}
+                          <Twemoji
+                            className="size-4 shrink-0"
+                            emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+                            label={language}
+                          />
                         </span>
                         {language}
                       </span>
@@ -174,7 +179,11 @@ export function GeoLanguagesDialog({
                     type="button"
                   >
                     <span aria-hidden="true">
-                      {GEO_LANGUAGE_FLAGS[language]}
+                      <Twemoji
+                        className="size-4 shrink-0"
+                        emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+                        label={language}
+                      />
                     </span>
                     {language}
                   </button>

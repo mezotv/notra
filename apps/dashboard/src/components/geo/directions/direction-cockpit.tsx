@@ -24,10 +24,8 @@ import {
 } from "@/constants/geo-directions";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { GeoDirectionSourceRow } from "@/types/geo-directions";
-import {
-  formatDirectionCount,
-  formatDirectionRate,
-} from "@/utils/geo-directions";
+import { formatMentionRate } from "@/utils/geo-charts";
+import { formatDirectionCount } from "@/utils/geo-directions";
 import { tableHeightFor } from "@/utils/table";
 
 const MAX_SHARE = 1;
@@ -43,7 +41,7 @@ function Rail() {
             </p>
             <div className="flex items-end gap-2">
               <span className="font-bold text-4xl text-primary tabular-nums">
-                {formatDirectionRate(GEO_DIRECTIONS_VISIBILITY)}
+                {formatMentionRate(GEO_DIRECTIONS_VISIBILITY)}
               </span>
               <DirectionDelta
                 className="mb-1"
@@ -63,7 +61,7 @@ function Rail() {
                   {engine.label}
                 </span>
                 <span className="shrink-0 tabular-nums">
-                  {formatDirectionRate(engine.rate)}
+                  {formatMentionRate(engine.rate)}
                 </span>
               </div>
             ))}
@@ -148,7 +146,7 @@ function SourcesTable() {
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">
-            {formatDirectionRate(row.share)}
+            {formatMentionRate(row.share)}
           </span>
         ),
       },

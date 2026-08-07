@@ -1,11 +1,6 @@
-import type { FunnelStage } from "@/components/charts/funnel-chart";
-import { DONUT_SLICE_COLORS } from "@/constants/charts";
-import { GEO_JOURNEY_DEPTH_THRESHOLDS } from "@/constants/geo";
-import type {
-  GeoJourney,
-  GeoJourneyDetailPoint,
-  GeoJourneyEvent,
-} from "@/types/geo";
+import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
+import { GEO_JOURNEY_DEEP_CRAWL_PAGES } from "@/constants/geo";
+import type { GeoJourney, GeoJourneyEvent } from "@/types/geo";
 
 const WWW_PREFIX = /^www\./;
 
@@ -15,28 +10,12 @@ const clockFormatter = new Intl.DateTimeFormat("en-US", {
   second: "2-digit",
 });
 
-function toDate(value: string): Date {
-  const normalized = value.includes("T")
-    ? value
-    : `${value.replace(" ", "T")}Z`;
-  return new Date(normalized);
-}
-
 export function formatGeoJourneyClock(value: string): string {
-  const date = toDate(value);
+  const date = parseClickHouseDateTime(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
   return clockFormatter.format(date);
-}
-
-export function buildGeoJourneyPoints(
-  events: readonly GeoJourneyEvent[]
-): GeoJourneyDetailPoint[] {
-  return events.map((event, index) => ({
-    point: `${formatGeoJourneyClock(event.capturedAt)} · ${event.path}`,
-    pages: index + 1,
-  }));
 }
 
 export function formatGeoRefererSource(referer: string): string {
@@ -57,17 +36,25 @@ export function hasGeoJourneyReferers(
   return events.some((event) => formatGeoRefererSource(event.referer) !== "");
 }
 
-function journeyDepthColor(index: number): string {
-  const pair = DONUT_SLICE_COLORS[index % DONUT_SLICE_COLORS.length];
-  return pair?.light ?? "#7C5CF0";
-}
-
-export function buildJourneyDepthFunnel(
+export function buildJourneyDepthSummary(
   journeys: readonly GeoJourney[]
-): FunnelStage[] {
-  return GEO_JOURNEY_DEPTH_THRESHOLDS.map((threshold, index) => ({
-    label: threshold === 1 ? "All journeys" : `${threshold}+ pages`,
-    value: journeys.filter((journey) => journey.pages >= threshold).length,
-    color: journeyDepthColor(index),
-  })).filter((stage, index) => index === 0 || stage.value > 0);
+): string {
+  if (journeys.length === 0) {
+    return "";
+  }
+  const pages = journeys
+    .map((journey) => journey.pages)
+    .sort((left, right) => left - right);
+  const middle = Math.floor(pages.length / 2);
+  const median =
+    pages.length % 2 === 0
+      ? Math.round(((pages[middle - 1] ?? 0) + (pages[middle] ?? 0)) / 2)
+      : (pages[middle] ?? 0);
+  const deep = journeys.filter(
+    (journey) => journey.pages >= GEO_JOURNEY_DEEP_CRAWL_PAGES
+  ).length;
+  const single = journeys.filter((journey) => journey.pages <= 1).length;
+  const share = (count: number) =>
+    `${Math.round((count / journeys.length) * 100)}%`;
+  return `median ${median} ${median === 1 ? "page" : "pages"} · ${share(deep)} crawl ${GEO_JOURNEY_DEEP_CRAWL_PAGES}+ · ${share(single)} single-fetch`;
 }

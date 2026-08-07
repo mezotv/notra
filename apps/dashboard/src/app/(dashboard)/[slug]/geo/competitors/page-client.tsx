@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
-import { AddCompetitorDialog } from "@/components/geo/add-competitor-dialog";
+import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorShareCard } from "@/components/geo/competitor-share-card";
 import { CompetitorsTable } from "@/components/geo/competitors-table";
 import { PageContainer } from "@/components/layout/container";
@@ -102,7 +102,8 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           points={competitorShare?.points ?? []}
         />
       </div>
-      <AddCompetitorDialog
+      <CompetitorEditDialog
+        competitor={null}
         onOpenChange={setManagerOpen}
         open={managerOpen}
         organizationId={organizationId}

@@ -2,9 +2,88 @@ import type { GeoRequestPayload } from "@usenotra/geo";
 import type { ReactNode } from "react";
 import type { ChartColorPair } from "@/types/charts";
 
+export interface GeoProject {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface GeoProjectRow {
+  id: string;
+  organizationId: string;
+  name: string;
+  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GeoProjectsResponse {
+  projects: GeoProject[];
+}
+
+export interface GeoProjectCreateInput {
+  name: string;
+}
+
+export interface GeoProjectScope {
+  organizationId: string;
+  projectId: string | null;
+  includeUnassigned: boolean;
+}
+
+export interface GeoScopeInput {
+  organizationId: string;
+  projectId?: string;
+}
+
+export interface GeoIngestIdentity {
+  organizationId: string;
+  projectId: string | null;
+}
+
+export interface GeoProjectContextValue {
+  projectId: string | undefined;
+}
+
+export interface GeoProjectProviderProps {
+  projectId: string | undefined;
+  children: ReactNode;
+}
+
+export interface GeoProjectSwitcherProps {
+  organizationId: string;
+  projects: GeoProject[];
+  activeProjectId: string | null;
+  onProjectChange: (projectId: string | null) => void;
+}
+
+export interface GeoProjectCreateDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId: string;
+  onCreated: (projectId: string) => void;
+}
+
+export interface GeoPageClientProps {
+  organizationSlug: string;
+}
+
+export interface PromptFunnelCardProps {
+  promptCount: number;
+  results: GeoPromptResult[];
+}
+
+export interface GeoPageContentProps {
+  organizationSlug: string;
+  projectParam: string | null;
+  onProjectChange: (projectId: string | null) => void;
+}
+
 export interface GeoSettings {
   id: string;
   organizationId: string;
+  projectId: string;
   companyName: string;
   aliases: string[];
   competitors: string[];
@@ -22,6 +101,7 @@ export interface GeoSettingsResponse {
 export interface GeoSettingsRow {
   id: string;
   organizationId: string;
+  projectId: string;
   companyName: string;
   aliases: string[];
   competitors: string[];
@@ -48,6 +128,27 @@ export interface GeoOverviewEngine {
 export interface GeoOverviewResponse {
   configured: boolean;
   engines: GeoOverviewEngine[];
+  tracked: GeoTrackedEngine[];
+}
+
+export type GeoTrackedEngineMode = "grounded" | "training";
+
+export type GeoTrackedEngineStatus = "active" | "needs-key" | "no-data";
+
+export interface GeoTrackedEngine {
+  key: string;
+  label: string;
+  model: string;
+  mode: GeoTrackedEngineMode;
+  status: GeoTrackedEngineStatus;
+  envVar: string | null;
+  checks: number;
+  mentionRate: number | null;
+  lastCheckedAt: string | null;
+}
+
+export interface TrackedEnginesCardProps {
+  engines: GeoTrackedEngine[];
 }
 
 export interface GeoTimeseriesPoint {
@@ -83,6 +184,18 @@ export interface GeoCompetitorSharePoint {
   mentions: number;
 }
 
+export interface GeoCompetitorShareTableRow {
+  brand: string;
+  mentions: number;
+  domain: string | null;
+  color: string;
+}
+
+export interface GeoCompetitorSharePieSlice extends GeoCompetitorShareTableRow {
+  slice: string;
+  [key: string]: string | number | null;
+}
+
 export interface GeoCompetitorShareResponse {
   configured: boolean;
   points: GeoCompetitorSharePoint[];
@@ -90,6 +203,7 @@ export interface GeoCompetitorShareResponse {
 
 export interface GeoSettingsUpsertInput {
   organizationId: string;
+  projectId?: string;
   companyName: string;
   aliases: string[];
   competitors: string[];
@@ -121,6 +235,7 @@ export interface GeoPromptToggleInput {
 export interface GeoPromptRow {
   id: string;
   organizationId: string;
+  projectId: string;
   prompt: string;
   enabled: boolean;
   createdAt: Date;
@@ -132,8 +247,83 @@ export interface GeoTrackedPromptsResponse {
   prompts: GeoTrackedPrompt[];
 }
 
+export interface GeoPromptSequence {
+  id: string;
+  name: string;
+  steps: string[];
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface GeoPromptSequenceRow {
+  id: string;
+  organizationId: string;
+  projectId: string;
+  name: string;
+  steps: string[];
+  enabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GeoSequencesResponse {
+  sequences: GeoPromptSequence[];
+}
+
+export interface GeoSequenceCreateInput {
+  name: string;
+  steps: string[];
+}
+
+export interface GeoSequenceUpdateInput {
+  sequenceId: string;
+  name?: string;
+  steps?: string[];
+  enabled?: boolean;
+}
+
+export interface GeoSequenceDeleteInput {
+  sequenceId: string;
+}
+
+export interface GeoSequenceTurnResult {
+  sequenceId: string;
+  turn: number;
+  engine: string;
+  prompt: string;
+  mentioned: boolean;
+  position: number | null;
+  sentiment: string | null;
+  excerpt: string;
+  lastCheckedAt: string;
+}
+
+export interface GeoSequenceResultsResponse {
+  configured: boolean;
+  results: GeoSequenceTurnResult[];
+}
+
+export interface ConversationsCardProps {
+  organizationId: string;
+}
+
+export interface ConversationBuilderDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId: string;
+  sequence: GeoPromptSequence | null;
+}
+
+export interface ConversationResultsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId: string;
+  sequence: GeoPromptSequence | null;
+}
+
 export interface GeoScanPayload {
   organizationId: string;
+  projectId?: string;
 }
 
 export interface GeoScanResult {
@@ -145,6 +335,27 @@ export interface GeoScanResult {
 export interface GeoPromptDefinition {
   id: string;
   text: string;
+}
+
+export interface GeoCheckTask {
+  engine: string;
+  grounded: GeoGroundedEngine | null;
+  prompt: GeoPromptDefinition;
+  language: string;
+}
+
+export interface GeoCheckContext {
+  organizationId: string;
+  projectId: string;
+  scanId: string;
+  capturedAt: string;
+  companyName: string;
+  aliases: string[];
+}
+
+export interface GeoSequenceDefinition {
+  id: string;
+  steps: string[];
 }
 
 export interface GeoBrandContext {
@@ -212,11 +423,6 @@ export interface GeoModelUsageResponse {
   models: GeoModelUsageRow[];
 }
 
-export interface GeoModelUsageInput {
-  days?: number;
-  limit?: number;
-}
-
 export interface GeoModelUsageSnapshot {
   status: "captured" | "skipped";
   models?: number;
@@ -230,11 +436,6 @@ export interface GeoJudgeResult {
   competitors: string[];
   excerpt: string;
 }
-
-export type AiTrafficCategory =
-  | "training-crawler"
-  | "search-index"
-  | "assistant-browse";
 
 export type GeoVisitorType = "crawler" | "ai_referral" | "human" | "unknown";
 
@@ -291,32 +492,24 @@ export type GeoTrafficLogPurposeFilter =
   | "search-index"
   | "assistant-browse";
 
-export type GeoTrafficLogFilterAll = "all";
-
 export interface GeoTrafficLogVisitorOption {
-  value: GeoTrafficLogVisitorFilter | GeoTrafficLogFilterAll;
+  value: GeoTrafficLogVisitorFilter;
   label: string;
 }
 
 export interface GeoTrafficLogPurposeOption {
-  value: GeoTrafficLogPurposeFilter | GeoTrafficLogFilterAll;
+  value: GeoTrafficLogPurposeFilter;
   label: string;
 }
 
 export interface GeoTrafficLogFilters {
-  visitorType: GeoTrafficLogVisitorFilter | GeoTrafficLogFilterAll;
-  category: GeoTrafficLogPurposeFilter | GeoTrafficLogFilterAll;
+  visitorTypes: GeoTrafficLogVisitorFilter[];
+  categories: GeoTrafficLogPurposeFilter[];
 }
 
 export interface GeoTrafficLogResponse {
   configured: boolean;
   log: GeoTrafficLogEntry[];
-}
-
-export interface GeoTrafficLogInput {
-  limit?: number;
-  visitorType?: GeoTrafficLogVisitorFilter;
-  category?: GeoTrafficLogPurposeFilter;
 }
 
 export interface GeoJourneyInput {
@@ -335,6 +528,7 @@ export interface GeoJourneyTuning {
 
 export interface GeoTrafficEventInput {
   organizationId: string;
+  projectId: string | null;
   payload: GeoRequestPayload;
   url: URL;
   capturedAt: Date;
@@ -363,11 +557,6 @@ export interface GeoTrafficJourneysResponse {
   journeys: GeoJourney[];
 }
 
-export interface GeoTrafficJourneysInput {
-  days?: number;
-  limit?: number;
-}
-
 export interface GeoJourneyEvent {
   capturedAt: string;
   path: string;
@@ -382,12 +571,6 @@ export interface GeoJourneyEvent {
 export interface GeoJourneyDetailResponse {
   configured: boolean;
   events: GeoJourneyEvent[];
-}
-
-export interface GeoJourneyDetailPoint {
-  point: string;
-  pages: number;
-  [key: string]: string | number;
 }
 
 export interface JourneysCardProps {
@@ -415,11 +598,6 @@ export interface AiTrafficResponse {
   points: GeoTrafficPoint[];
 }
 
-export interface AiTrafficInput {
-  days?: number;
-  limit?: number;
-}
-
 export interface GeoTrafficPage {
   path: string;
   source: string;
@@ -431,12 +609,6 @@ export interface GeoTrafficPage {
 export interface GeoTrafficPagesResponse {
   configured: boolean;
   pages: GeoTrafficPage[];
-}
-
-export interface GeoTrafficPagesInput {
-  days?: number;
-  limit?: number;
-  visitorType?: GeoVisitorType;
 }
 
 export interface GeoIngestSetupResponse {
@@ -535,6 +707,7 @@ export interface EngineRateTableProps {
 export type GeoTab = "visibility" | "prompts" | "traffic" | "journeys";
 
 export interface GeoTabsProps {
+  tracked: GeoTrackedEngine[];
   activeTab: GeoTab;
   onActiveTabChange: (tab: GeoTab) => void;
   organizationSlug: string;
@@ -556,7 +729,6 @@ export interface GeoTabsProps {
 }
 
 export interface MentionTrendCardProps {
-  hero?: boolean;
   points: GeoTimeseriesPoint[];
 }
 
@@ -640,14 +812,13 @@ export interface GeoCompetitorsDialogProps {
   organizationId: string;
 }
 
-export interface ShareOfVoiceSlice {
+export interface ShareOfVoiceRow {
   brand: string;
   mentions: number;
-  slice: string;
-  [key: string]: string | number;
+  share: number;
 }
 
-export interface ShareOfVoiceDonutProps {
+export interface ShareOfVoiceCardProps {
   points: GeoCompetitorSharePoint[];
   competitors?: GeoCompetitor[];
   action?: ReactNode;
@@ -706,7 +877,14 @@ export interface CompetitorEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
-  competitor: GeoCompetitor;
+  competitor: GeoCompetitor | null;
+}
+
+export interface CompetitorEditFormProps {
+  organizationId: string;
+  competitor: GeoCompetitor | null;
+  onDone: () => void;
+  onCancel?: () => void;
 }
 
 export interface GeoCompetitorDeleteInput {
@@ -760,22 +938,16 @@ export interface GeoCompetitorRowEntry {
   color: ChartColorPair;
 }
 
-export interface AddCompetitorDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  organizationId: string;
-}
-
-export interface AddCompetitorFormValues {
-  name: string;
-  website: string;
-  synonyms: string[];
-  kind: GeoCompetitorKind;
-}
-
 export interface CompetitorLogoProps {
   name: string;
   domain: string | null;
+  className?: string;
+  onSettled?: () => void;
+}
+
+export interface CompetitorLogoPreviewProps {
+  name: string;
+  website: string;
   className?: string;
 }
 
@@ -804,4 +976,15 @@ export interface CompetitorRowProps {
   isPending: boolean;
   onSelect: (competitor: string) => void;
   onRemove: (competitor: string) => void;
+}
+
+export interface CountryFlagProps {
+  code: string;
+  className?: string;
+}
+
+export interface TwemojiProps {
+  emoji: string;
+  label: string;
+  className?: string;
 }

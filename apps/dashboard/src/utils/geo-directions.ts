@@ -12,10 +12,6 @@ import type {
 const PERCENT = 100;
 const MIN_BAR_PERCENT = 3;
 
-export function formatDirectionRate(rate: number): string {
-  return `${Math.round(rate * PERCENT)}%`;
-}
-
 export function formatDirectionCount(value: number): string {
   return value.toLocaleString("en-US");
 }
@@ -48,13 +44,6 @@ export function directionPositionTone(position: number): string {
     return "mid";
   }
   return "low";
-}
-
-export function directionBarWidth(rate: number, maxRate: number): number {
-  if (maxRate <= 0) {
-    return 0;
-  }
-  return Math.max((rate / maxRate) * PERCENT, MIN_BAR_PERCENT);
 }
 
 export function directionShareOf(

@@ -1,8 +1,8 @@
+import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
 import {
   GEO_AI_REFERRER_LABELS,
   GEO_JOURNEY_CHIP_LENGTH,
   GEO_JOURNEY_EXPLICIT_PREFIX,
-  GEO_TRAFFIC_LOG_FILTER_ALL,
 } from "@/constants/geo";
 import type {
   GeoTrafficLogFilters,
@@ -12,9 +12,6 @@ import type {
   GeoTrafficTotals,
   GeoVisitorType,
 } from "@/types/geo";
-
-const PERCENT = 100;
-const MIN_BAR_PERCENT = 2;
 
 const VISITOR_TYPES: readonly GeoVisitorType[] = [
   "crawler",
@@ -53,13 +50,6 @@ export function toGeoTrafficTotals(
   return totals;
 }
 
-export function hitBarWidth(hits: number, maxHits: number): number {
-  if (maxHits <= 0) {
-    return 0;
-  }
-  return Math.max((hits / maxHits) * PERCENT, MIN_BAR_PERCENT);
-}
-
 const timestampFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
@@ -68,10 +58,7 @@ const timestampFormatter = new Intl.DateTimeFormat("en-US", {
 });
 
 export function formatAiTrafficTimestamp(value: string): string {
-  const normalized = value.includes("T")
-    ? value
-    : `${value.replace(" ", "T")}Z`;
-  const date = new Date(normalized);
+  const date = parseClickHouseDateTime(value);
   if (Number.isNaN(date.getTime())) {
     return value;
   }
@@ -81,13 +68,6 @@ export function formatAiTrafficTimestamp(value: string): string {
 const MS_PER_MINUTE = 60_000;
 const MINUTES_PER_HOUR = 60;
 const HOURS_PER_DAY = 24;
-
-function toDate(value: string): Date {
-  const normalized = value.includes("T")
-    ? value
-    : `${value.replace(" ", "T")}Z`;
-  return new Date(normalized);
-}
 
 export function formatGeoJourneyChip(journeyId: string): string {
   return journeyId.slice(-GEO_JOURNEY_CHIP_LENGTH);
@@ -99,24 +79,49 @@ export function toGeoJourneyKind(journeyId: string): "tagged" | "fingerprint" {
     : "fingerprint";
 }
 
+export function formatGeoTrafficFilterLabel(
+  base: string,
+  noun: string,
+  selected: readonly string[],
+  options: readonly { value: string; label: string }[]
+): string {
+  const first = selected[0];
+  if (first === undefined) {
+    return base;
+  }
+  if (selected.length === 1) {
+    return options.find((option) => option.value === first)?.label ?? first;
+  }
+  return `${noun} (${selected.length})`;
+}
+
+export function toggleGeoTrafficFilterValue<T extends string>(
+  values: T[],
+  value: T
+): T[] {
+  return values.includes(value)
+    ? values.filter((item) => item !== value)
+    : [...values, value];
+}
+
 export function toGeoTrafficLogVisitorFilter(
-  value: GeoTrafficLogFilters["visitorType"]
-): GeoTrafficLogVisitorFilter | undefined {
-  return value === GEO_TRAFFIC_LOG_FILTER_ALL ? undefined : value;
+  values: GeoTrafficLogFilters["visitorTypes"]
+): GeoTrafficLogVisitorFilter[] | undefined {
+  return values.length > 0 ? values : undefined;
 }
 
 export function toGeoTrafficLogPurposeFilter(
-  value: GeoTrafficLogFilters["category"]
-): GeoTrafficLogPurposeFilter | undefined {
-  return value === GEO_TRAFFIC_LOG_FILTER_ALL ? undefined : value;
+  values: GeoTrafficLogFilters["categories"]
+): GeoTrafficLogPurposeFilter[] | undefined {
+  return values.length > 0 ? values : undefined;
 }
 
 export function formatGeoJourneySpan(
   firstSeenAt: string,
   lastSeenAt: string
 ): string {
-  const start = toDate(firstSeenAt);
-  const end = toDate(lastSeenAt);
+  const start = parseClickHouseDateTime(firstSeenAt);
+  const end = parseClickHouseDateTime(lastSeenAt);
   if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
     return "";
   }
@@ -137,4 +142,11 @@ export function formatGeoJourneySpan(
     return `${hours}h ${minutes % MINUTES_PER_HOUR}m`;
   }
   return `${Math.floor(hours / HOURS_PER_DAY)}d ${hours % HOURS_PER_DAY}h`;
+}
+
+export function formatMarkdownShare(markdown: number, visits: number): string {
+  if (visits === 0) {
+    return "-";
+  }
+  return `${Math.round((markdown / visits) * 100)}%`;
 }

@@ -11,6 +11,7 @@ export function CompetitorLogo({
   name,
   domain,
   className,
+  onSettled,
 }: CompetitorLogoProps) {
   const [failed, setFailed] = useState(false);
   const src = useMemo(
@@ -40,7 +41,11 @@ export function CompetitorLogo({
         alt={`${name} logo`}
         className="size-full object-contain"
         height={GEO_LOGO_SIZE_PX}
-        onError={() => setFailed(true)}
+        onError={() => {
+          setFailed(true);
+          onSettled?.();
+        }}
+        onLoad={() => onSettled?.()}
         src={src}
         unoptimized
         width={GEO_LOGO_SIZE_PX}

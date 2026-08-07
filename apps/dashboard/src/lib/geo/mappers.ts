@@ -6,7 +6,11 @@ import type {
   GeoCompetitorRow,
   GeoEngineCoverage,
   GeoModelUsageRow,
+  GeoProject,
+  GeoProjectRow,
   GeoPromptRow,
+  GeoPromptSequence,
+  GeoPromptSequenceRow,
   GeoSettings,
   GeoSettingsRow,
   GeoTrackedPrompt,
@@ -14,10 +18,20 @@ import type {
 } from "@/types/geo";
 import { toGeoVisitorType } from "@/utils/ai-traffic";
 
+export function toGeoProject(row: GeoProjectRow): GeoProject {
+  return {
+    id: row.id,
+    name: row.name,
+    isDefault: row.isDefault,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
 export function toGeoSettings(row: GeoSettingsRow): GeoSettings {
   return {
     id: row.id,
     organizationId: row.organizationId,
+    projectId: row.projectId,
     companyName: row.companyName,
     aliases: row.aliases,
     competitors: row.competitors,
@@ -36,6 +50,16 @@ export function toGeoCompetitor(row: GeoCompetitorRow): GeoCompetitor {
     synonyms: row.synonyms,
     kind: row.kind,
     color: row.color,
+  };
+}
+
+export function toGeoSequence(row: GeoPromptSequenceRow): GeoPromptSequence {
+  return {
+    id: row.id,
+    name: row.name,
+    steps: row.steps,
+    enabled: row.enabled,
+    createdAt: row.createdAt.toISOString(),
   };
 }
 

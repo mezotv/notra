@@ -13,10 +13,7 @@ import { accountSeriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";
 import { buildMentionRateRows } from "@/utils/geo-charts";
 
-export function MentionTrendCard({
-  hero = false,
-  points,
-}: MentionTrendCardProps) {
+export function MentionTrendCard({ points }: MentionTrendCardProps) {
   const { rows, engines } = useMemo(
     () => buildMentionRateRows(points),
     [points]
@@ -39,7 +36,7 @@ export function MentionTrendCard({
   }, [series]);
 
   return (
-    <InstrumentModule eyebrow="Mention rate trend" readout="daily · per engine">
+    <InstrumentModule eyebrow="Mention rate trend">
       {rows.length < GEO_TREND_MIN_DAYS ? (
         <InstrumentEmpty
           className="h-64"
@@ -61,8 +58,9 @@ export function MentionTrendCard({
           {series.map((entry) => (
             <EChartsLineChart.Line
               dataKey={entry.key}
-              glowing={hero}
+              enableBufferLine
               key={entry.key}
+              strokeVariant="solid"
             />
           ))}
           <EChartsLineChart.Tooltip />

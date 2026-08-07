@@ -20,32 +20,18 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import { useMemo } from "react";
-import { EChartsLineChart } from "@/components/evilcharts/charts/echarts-line-chart";
-import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { CHART_PRIMARY_COLOR } from "@/constants/charts";
-import {
-  GEO_JOURNEY_DETAIL_MIN_EVENTS,
-  GEO_JOURNEY_DETAIL_SERIES_KEY,
-} from "@/constants/geo";
+import { CountryFlag } from "@/components/geo/twemoji";
 import { useGeoJourneyDetail } from "@/lib/hooks/use-geo";
 import type { JourneyDetailDialogProps } from "@/types/geo";
 import { formatGeoJourneySpan, formatGeoSource } from "@/utils/ai-traffic";
-import { seriesColors } from "@/utils/chart-colors";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
+import { countryName } from "@/utils/country";
 import {
-  buildGeoJourneyPoints,
   formatGeoJourneyClock,
   formatGeoRefererSource,
   hasGeoJourneyReferers,
 } from "@/utils/geo-journey";
-
-const CHART_CONFIG: ChartConfig = {
-  [GEO_JOURNEY_DETAIL_SERIES_KEY]: {
-    label: "Pages fetched",
-    colors: seriesColors(CHART_PRIMARY_COLOR),
-  },
-};
 
 export function JourneyDetailDialog({
   open,
@@ -59,7 +45,6 @@ export function JourneyDetailDialog({
   );
 
   const events = useMemo(() => data?.events ?? [], [data]);
-  const points = useMemo(() => buildGeoJourneyPoints(events), [events]);
   const showReferer = useMemo(() => hasGeoJourneyReferers(events), [events]);
 
   if (!journey) {
@@ -115,29 +100,8 @@ export function JourneyDetailDialog({
               <dd className="text-sm tabular-nums">{journey.distinctPaths}</dd>
             </div>
           </dl>
-          {isLoading && <Skeleton className="h-64 w-full" />}
-          {!isLoading && points.length >= GEO_JOURNEY_DETAIL_MIN_EVENTS && (
-            <EChartsLineChart
-              className="h-64 w-full"
-              config={CHART_CONFIG}
-              curveType="step"
-              data={points}
-              xDataKey="point"
-            >
-              <EChartsLineChart.Grid />
-              <EChartsLineChart.XAxis
-                dataKey="point"
-                tickFormatter={(value) => value.split(" · ")[0] ?? ""}
-              />
-              <EChartsLineChart.YAxis />
-              <EChartsLineChart.Line dataKey={GEO_JOURNEY_DETAIL_SERIES_KEY}>
-                <EChartsLineChart.Dot variant="colored-border" />
-                <EChartsLineChart.ActiveDot variant="colored-border" />
-              </EChartsLineChart.Line>
-              <EChartsLineChart.Tooltip />
-            </EChartsLineChart>
-          )}
-          <div className="overflow-x-auto">
+          {isLoading && <Skeleton className="h-40 w-full" />}
+          <div className="max-h-96 overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -181,7 +145,21 @@ export function JourneyDetailDialog({
                         {formatGeoRefererSource(event.referer)}
                       </TableCell>
                     )}
-                    <TableCell className="text-sm">{event.country}</TableCell>
+                    <TableCell className="text-sm">
+                      {event.country ? (
+                        <span className="flex min-w-0 items-center gap-2">
+                          <CountryFlag
+                            className="size-4 shrink-0"
+                            code={event.country}
+                          />
+                          <span className="truncate">
+                            {countryName(event.country)}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

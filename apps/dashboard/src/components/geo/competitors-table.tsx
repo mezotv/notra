@@ -224,12 +224,25 @@ export function CompetitorsTable({
           value={typeFilter}
         >
           <SelectTrigger className="w-40 capitalize">
-            <SelectValue />
+            <SelectValue>
+              {COMPETITOR_TYPE_FILTERS.find(
+                (option) => option.value === typeFilter
+              )?.label ?? "All types"}
+            </SelectValue>
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="w-64">
             {COMPETITOR_TYPE_FILTERS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
+              <SelectItem
+                className="items-start py-1.5"
+                key={option.value}
+                value={option.value}
+              >
+                <span className="flex min-w-0 flex-col gap-0.5">
+                  <span>{option.label}</span>
+                  <span className="whitespace-normal text-muted-foreground text-xs">
+                    {option.description}
+                  </span>
+                </span>
               </SelectItem>
             ))}
           </SelectContent>

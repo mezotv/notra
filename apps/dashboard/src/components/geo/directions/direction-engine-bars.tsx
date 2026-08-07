@@ -11,7 +11,8 @@ import type {
   DirectionBlockProps,
   GeoDirectionEngineRow,
 } from "@/types/geo-directions";
-import { formatDirectionRate } from "@/utils/geo-directions";
+import { formatMentionRate } from "@/utils/geo-charts";
+
 import { tableHeightFor } from "@/utils/table";
 
 const MAX_RATE = 1;
@@ -46,7 +47,7 @@ export function DirectionEngineBars({ className }: DirectionBlockProps) {
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">
-            {formatDirectionRate(row.rate)}
+            {formatMentionRate(row.rate)}
           </span>
         ),
       },

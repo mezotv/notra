@@ -77,7 +77,10 @@ export function EngineRateTable({ engines }: EngineRateTableProps) {
     () => [
       {
         key: "family",
-        header: "Engine",
+        header:
+          families.length > 0
+            ? `Engine (${families.length.toLocaleString()})`
+            : "Engine",
         width: "1.2fr",
         sortable: true,
         cell: (row) => (
@@ -129,17 +132,13 @@ export function EngineRateTable({ engines }: EngineRateTableProps) {
         ),
       },
     ],
-    []
+    [families.length]
   );
 
   return (
     <InstrumentSection
       eyebrow="Mention rate by engine"
-      readout={
-        families.length > 0
-          ? `${families.length} engines · 30D`
-          : "no scans yet"
-      }
+      readout={families.length > 0 ? undefined : "no scans yet"}
     >
       {families.length === 0 ? (
         <InstrumentEmpty
@@ -149,9 +148,6 @@ export function EngineRateTable({ engines }: EngineRateTableProps) {
         />
       ) : (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
-            <span>{families.length.toLocaleString()} engines</span>
-          </div>
           <Table
             className="rounded-2xl"
             columns={columns}

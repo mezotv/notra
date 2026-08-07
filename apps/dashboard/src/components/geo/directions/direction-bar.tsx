@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { DirectionBarProps } from "@/types/geo-directions";
-import { directionBarWidth } from "@/utils/geo-directions";
+import { barWidthPercent } from "@/utils/geo-charts";
 
 export function DirectionBar({ value, max, className }: DirectionBarProps) {
   return (
@@ -14,7 +14,7 @@ export function DirectionBar({ value, max, className }: DirectionBarProps) {
     >
       <div
         className="h-full bg-chart-1"
-        style={{ width: `${directionBarWidth(value, max)}%` }}
+        style={{ width: `${barWidthPercent(value, max)}%` }}
       />
     </div>
   );

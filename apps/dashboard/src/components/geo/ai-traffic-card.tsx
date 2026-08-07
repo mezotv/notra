@@ -1,10 +1,16 @@
 "use client";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
 import { CodeSnippet } from "@/components/geo/code-snippet";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
-import { InstrumentModule } from "@/components/instrument/instrument-module";
+import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type {
@@ -16,8 +22,9 @@ import type {
 import {
   formatAiTrafficTimestamp,
   formatGeoSource,
-  hitBarWidth,
+  formatMarkdownShare,
 } from "@/utils/ai-traffic";
+import { barWidthPercent } from "@/utils/geo-charts";
 import { tableHeightFor } from "@/utils/table";
 
 function IngestSetup({ setup }: { setup: GeoIngestSetupResponse | undefined }) {
@@ -43,7 +50,13 @@ function IngestSetup({ setup }: { setup: GeoIngestSetupResponse | undefined }) {
   );
 }
 
-function TrafficTotals({ totals }: { totals: GeoTrafficTotals }) {
+function TrafficTotals({
+  totals,
+  markdownTotal,
+}: {
+  totals: GeoTrafficTotals;
+  markdownTotal: number;
+}) {
   const tiles = [
     {
       label: "AI crawlers",
@@ -55,16 +68,23 @@ function TrafficTotals({ totals }: { totals: GeoTrafficTotals }) {
       value: totals.aiReferral,
       hint: "people arriving from an AI answer",
     },
+    {
+      label: "Markdown requests",
+      value: markdownTotal,
+      hint: "agents asking for text/markdown",
+    },
   ];
 
   return (
-    <div className="grid gap-6 sm:grid-cols-2">
+    <div className="grid gap-6 sm:grid-cols-3">
       {tiles.map((tile) => (
         <div className="space-y-1" key={tile.label}>
           <p className="font-medium text-muted-foreground text-sm">
             {tile.label}
           </p>
-          <p className="font-bold text-3xl tabular-nums">{tile.value}</p>
+          <p className="font-bold text-3xl tabular-nums">
+            {tile.value.toLocaleString()}
+          </p>
           <p className="text-muted-foreground text-xs">{tile.hint}</p>
         </div>
       ))}
@@ -75,6 +95,10 @@ function TrafficTotals({ totals }: { totals: GeoTrafficTotals }) {
 export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
   const sources = traffic?.sources ?? [];
   const totals = traffic?.totals ?? { crawler: 0, aiReferral: 0, human: 0 };
+  const markdownTotal = sources.reduce(
+    (sum, source) => sum + source.markdownVisits,
+    0
+  );
   const maxVisits = useMemo(
     () => sources.reduce((max, source) => Math.max(max, source.visits), 0),
     [sources]
@@ -115,12 +139,43 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
             <span className="block h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-muted">
               <span
                 className="block h-full rounded-full bg-chart-1"
-                style={{ width: `${hitBarWidth(row.visits, maxVisits)}%` }}
+                style={{ width: `${barWidthPercent(row.visits, maxVisits)}%` }}
               />
             </span>
-            <span className="text-sm tabular-nums">{row.visits}</span>
+            <span className="text-sm tabular-nums">
+              {row.visits.toLocaleString()}
+            </span>
           </span>
         ),
+      },
+      {
+        key: "markdownVisits",
+        header: "Markdown",
+        width: "8rem",
+        align: "right",
+        sortable: true,
+        cell: (row) => (
+          <TooltipProvider delay={150}>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span className="tabular-nums">
+                    {row.markdownVisits > 0
+                      ? formatMarkdownShare(row.markdownVisits, row.visits)
+                      : "-"}
+                  </span>
+                }
+              />
+              <TooltipContent>
+                {row.markdownVisits.toLocaleString()} of{" "}
+                {row.visits.toLocaleString()} requests asked for markdown via
+                the Accept header
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ),
+        sortValue: (row) =>
+          row.visits === 0 ? 0 : row.markdownVisits / row.visits,
       },
       {
         key: "paths",
@@ -148,11 +203,11 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
   );
 
   return (
-    <InstrumentModule
+    <InstrumentSection
       eyebrow="AI traffic to your site"
       readout={
         sources.length > 0
-          ? `${totalVisits} visits · ${sources.length} sources · 30D`
+          ? `${totalVisits.toLocaleString()} visits · ${sources.length.toLocaleString()} sources · 30D`
           : "crawlers and assistants reaching your pages"
       }
     >
@@ -160,12 +215,8 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
         <IngestSetup setup={setup} />
       ) : (
         <div className="space-y-4">
-          <TrafficTotals totals={totals} />
+          <TrafficTotals markdownTotal={markdownTotal} totals={totals} />
           <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
-              <span>{sources.length.toLocaleString()} sources</span>
-              <span>{totalVisits.toLocaleString()} visits</span>
-            </div>
             <Table
               className="rounded-2xl"
               columns={columns}
@@ -180,6 +231,6 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
           </div>
         </div>
       )}
-    </InstrumentModule>
+    </InstrumentSection>
   );
 }

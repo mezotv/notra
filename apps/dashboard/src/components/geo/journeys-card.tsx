@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { FunnelChart } from "@/components/charts/funnel-chart";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { JourneyDetailDialog } from "@/components/geo/journey-detail-dialog";
 import {
@@ -17,14 +16,14 @@ import {
   formatGeoJourneySpan,
   formatGeoSource,
 } from "@/utils/ai-traffic";
-import { buildJourneyDepthFunnel } from "@/utils/geo-journey";
+import { buildJourneyDepthSummary } from "@/utils/geo-journey";
 import { tableHeightFor } from "@/utils/table";
 
 export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
   const [selected, setSelected] = useState<GeoJourney | null>(null);
 
-  const depthStages = useMemo(
-    () => buildJourneyDepthFunnel(journeys),
+  const depthSummary = useMemo(
+    () => buildJourneyDepthSummary(journeys),
     [journeys]
   );
 
@@ -120,11 +119,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
   return (
     <InstrumentSection
       eyebrow="Agent journeys"
-      readout={
-        journeys.length > 0
-          ? `${journeys.length} journeys · 30D`
-          : "no journeys yet"
-      }
+      readout={journeys.length > 0 ? undefined : "no journeys yet"}
     >
       {journeys.length === 0 ? (
         <InstrumentEmpty
@@ -132,22 +127,12 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
           seed="geo-journeys"
         />
       ) : (
-        <div className="flex flex-col gap-4">
-          <div className="space-y-2">
-            <p className="text-muted-foreground text-xs">
-              How deep agents crawl before they stop
+        <div className="flex flex-col gap-2">
+          {depthSummary && (
+            <p className="px-1 text-muted-foreground text-xs tabular-nums">
+              {depthSummary}
             </p>
-            <FunnelChart
-              className="h-40 w-full"
-              data={depthStages}
-              orientation="horizontal"
-              showPercentage
-              showValues
-            />
-          </div>
-          <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
-            <span>{journeys.length.toLocaleString()} journeys</span>
-          </div>
+          )}
           <Table
             className="rounded-2xl"
             columns={columns}

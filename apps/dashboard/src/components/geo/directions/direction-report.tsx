@@ -13,7 +13,7 @@ import {
   GEO_DIRECTIONS_WEEK_LABEL,
 } from "@/constants/geo-directions";
 import { formatGeoJourneyChip } from "@/utils/ai-traffic";
-import { formatDirectionRate } from "@/utils/geo-directions";
+import { formatMentionRate } from "@/utils/geo-charts";
 
 const LEAD_JOURNEY = GEO_DIRECTIONS_JOURNEYS[0];
 
@@ -27,7 +27,7 @@ export function DirectionReport() {
         </p>
         <h1 className="font-semibold text-2xl leading-snug tracking-tight">
           AI engines mention {GEO_DIRECTIONS_COMPANY} in{" "}
-          {formatDirectionRate(GEO_DIRECTIONS_VISIBILITY)} of answers,{" "}
+          {formatMentionRate(GEO_DIRECTIONS_VISIBILITY)} of answers,{" "}
           <span className="text-emerald-600 dark:text-emerald-400">
             up {GEO_DIRECTIONS_VISIBILITY_DELTA} points
           </span>{" "}

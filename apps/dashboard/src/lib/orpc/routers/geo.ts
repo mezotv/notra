@@ -1,5 +1,7 @@
+import type { Effect } from "effect";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { generateGeoFromWebsite } from "@/lib/geo/discover";
+import type { GeoRouterError } from "@/lib/geo/errors";
 import {
   createGeoPrompt,
   deleteGeoCompetitor,
@@ -24,6 +26,14 @@ import {
   upsertGeoCompetitor,
   upsertGeoSettings,
 } from "@/lib/geo/programs";
+import { createGeoProject, listGeoProjects } from "@/lib/geo/projects";
+import {
+  createGeoSequence,
+  deleteGeoSequence,
+  listGeoSequences,
+  loadGeoSequenceResults,
+  updateGeoSequence,
+} from "@/lib/geo/sequences";
 import {
   buildGeoAppUrl,
   buildGeoIngestUrl,
@@ -42,298 +52,126 @@ import {
   geoJourneyDetailInputSchema,
   geoModelUsageInputSchema,
   geoOrganizationInputSchema,
+  geoProjectCreateInputSchema,
   geoPromptCreateInputSchema,
   geoPromptDeleteInputSchema,
   geoPromptToggleInputSchema,
+  geoSequenceCreateInputSchema,
+  geoSequenceDeleteInputSchema,
+  geoSequenceResultsInputSchema,
+  geoSequenceUpdateInputSchema,
   geoSettingsUpsertInputSchema,
   geoTimeseriesInputSchema,
   geoTrafficJourneysInputSchema,
   geoTrafficLogInputSchema,
   geoTrafficPagesInputSchema,
 } from "@/schemas/geo";
-import type {
-  AiTrafficResponse,
-  GeoCompetitorDetailResponse,
-  GeoCompetitorShareResponse,
-  GeoCompetitorsResponse,
-  GeoGenerateFromWebsiteResult,
-  GeoIngestSetupResponse,
-  GeoJourneyDetailResponse,
-  GeoLanguageShareResponse,
-  GeoModelUsageResponse,
-  GeoOverviewResponse,
-  GeoPromptResultsResponse,
-  GeoSettingsResponse,
-  GeoTimeseriesResponse,
-  GeoTrackedPrompt,
-  GeoTrackedPromptsResponse,
-  GeoTrafficJourneysResponse,
-  GeoTrafficLogResponse,
-  GeoTrafficPagesResponse,
-} from "@/types/geo";
+import type { AuthenticatedUser } from "@/types/auth/organization";
+import type { GeoIngestSetupResponse } from "@/types/geo";
+
+interface GeoHandlerOptions<TInput> {
+  context: { headers: Headers; user?: AuthenticatedUser };
+  input: TInput;
+}
+
+function geoHandler<
+  TInput extends { organizationId: string },
+  TOutput,
+  TError extends GeoRouterError,
+>(run: (input: TInput) => Effect.Effect<TOutput, TError>) {
+  return async ({
+    context,
+    input,
+  }: GeoHandlerOptions<TInput>): Promise<TOutput> => {
+    await assertOrganizationAccess({
+      headers: context.headers,
+      organizationId: input.organizationId,
+      user: context.user,
+    });
+
+    return await runOrpcEffect(run(input), toGeoOrpcError);
+  };
+}
 
 export const geoRouter = {
   settings: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(async ({ context, input }): Promise<GeoSettingsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        loadGeoSettings(input.organizationId),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => loadGeoSettings(input))),
   settingsUpsert: authorizedProcedure
     .input(geoSettingsUpsertInputSchema)
-    .handler(async ({ context, input }): Promise<GeoSettingsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(upsertGeoSettings(input), toGeoOrpcError);
-    }),
+    .handler(geoHandler((input) => upsertGeoSettings(input))),
   languageShare: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(async ({ context, input }): Promise<GeoLanguageShareResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        loadGeoLanguageShare(input.organizationId, input.days),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => loadGeoLanguageShare(input, input.days))),
   overview: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(async ({ context, input }): Promise<GeoOverviewResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        loadGeoOverview(input.organizationId, input.days),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => loadGeoOverview(input, input.days))),
   timeseries: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(async ({ context, input }): Promise<GeoTimeseriesResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        loadGeoTimeseries(input.organizationId, input.days),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => loadGeoTimeseries(input, input.days))),
   promptResults: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(async ({ context, input }): Promise<GeoPromptResultsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        loadGeoPromptResults(input.organizationId),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => loadGeoPromptResults(input))),
   competitorShare: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(
-      async ({ context, input }): Promise<GeoCompetitorShareResponse> => {
-        await assertOrganizationAccess({
-          headers: context.headers,
-          organizationId: input.organizationId,
-          user: context.user,
-        });
-
-        return await runOrpcEffect(
-          loadGeoCompetitorShare(input.organizationId, input.days),
-          toGeoOrpcError
-        );
-      }
-    ),
+    .handler(geoHandler((input) => loadGeoCompetitorShare(input, input.days))),
   competitors: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(async ({ context, input }): Promise<GeoCompetitorsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        loadGeoCompetitors(input.organizationId),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => loadGeoCompetitors(input))),
   competitorUpsert: authorizedProcedure
     .input(geoCompetitorUpsertInputSchema)
-    .handler(async ({ context, input }): Promise<GeoCompetitorsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        upsertGeoCompetitor(input.organizationId, {
-          name: input.name,
-          domain: input.domain,
-          synonyms: input.synonyms,
-          kind: input.kind,
-          color: input.color,
-        }),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => upsertGeoCompetitor(input, input))),
   competitorDelete: authorizedProcedure
     .input(geoCompetitorDeleteInputSchema)
-    .handler(async ({ context, input }): Promise<GeoCompetitorsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        deleteGeoCompetitor(input.organizationId, input.name),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => deleteGeoCompetitor(input, input.name))),
   competitorDetail: authorizedProcedure
     .input(geoCompetitorDetailInputSchema)
     .handler(
-      async ({ context, input }): Promise<GeoCompetitorDetailResponse> => {
-        await assertOrganizationAccess({
-          headers: context.headers,
-          organizationId: input.organizationId,
-          user: context.user,
-        });
-
-        return await runOrpcEffect(
-          loadGeoCompetitorDetail(
-            input.organizationId,
-            input.brand,
-            input.days
-          ),
-          toGeoOrpcError
-        );
-      }
+      geoHandler((input) =>
+        loadGeoCompetitorDetail(input, input.brand, input.days)
+      )
     ),
   modelUsage: authorizedProcedure
     .input(geoModelUsageInputSchema)
-    .handler(async ({ context, input }): Promise<GeoModelUsageResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        loadGeoModelUsage(input.organizationId, input.days, input.limit),
-        toGeoOrpcError
-      );
-    }),
+    .handler(
+      geoHandler((input) => loadGeoModelUsage(input, input.days, input.limit))
+    ),
   aiTraffic: authorizedProcedure
     .input(aiTrafficInputSchema)
-    .handler(async ({ context, input }): Promise<AiTrafficResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        loadAiTraffic(input.organizationId, input.days),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => loadAiTraffic(input, input.days))),
   trafficLog: authorizedProcedure
     .input(geoTrafficLogInputSchema)
-    .handler(async ({ context, input }): Promise<GeoTrafficLogResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
+    .handler(
+      geoHandler((input) =>
         loadGeoTrafficLog(
-          input.organizationId,
+          input,
           input.limit,
-          input.visitorType,
-          input.category
-        ),
-        toGeoOrpcError
-      );
-    }),
+          input.visitorTypes,
+          input.categories
+        )
+      )
+    ),
   trafficJourneys: authorizedProcedure
     .input(geoTrafficJourneysInputSchema)
     .handler(
-      async ({ context, input }): Promise<GeoTrafficJourneysResponse> => {
-        await assertOrganizationAccess({
-          headers: context.headers,
-          organizationId: input.organizationId,
-          user: context.user,
-        });
-
-        return await runOrpcEffect(
-          loadGeoTrafficJourneys(input.organizationId, input.days, input.limit),
-          toGeoOrpcError
-        );
-      }
+      geoHandler((input) =>
+        loadGeoTrafficJourneys(input, input.days, input.limit)
+      )
     ),
   journeyDetail: authorizedProcedure
     .input(geoJourneyDetailInputSchema)
-    .handler(async ({ context, input }): Promise<GeoJourneyDetailResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        loadGeoJourneyDetail(input.organizationId, input.journeyId, input.days),
-        toGeoOrpcError
-      );
-    }),
+    .handler(
+      geoHandler((input) =>
+        loadGeoJourneyDetail(input, input.journeyId, input.days)
+      )
+    ),
   trafficPages: authorizedProcedure
     .input(geoTrafficPagesInputSchema)
-    .handler(async ({ context, input }): Promise<GeoTrafficPagesResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        loadGeoTrafficPages(
-          input.organizationId,
-          input.days,
-          input.limit,
-          input.visitorType
-        ),
-        toGeoOrpcError
-      );
-    }),
+    .handler(
+      geoHandler((input) =>
+        loadGeoTrafficPages(input, input.days, input.limit, input.visitorType)
+      )
+    ),
   ingestSetup: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async ({ context, input }): Promise<GeoIngestSetupResponse> => {
@@ -345,94 +183,59 @@ export const geoRouter = {
 
       return {
         ingestUrl: buildGeoIngestUrl(),
-        token: buildGeoIngestToken(input.organizationId) ?? "",
+        token: buildGeoIngestToken(input.organizationId, input.projectId) ?? "",
         snippet: buildGeoSnippet(buildGeoAppUrl()),
       };
     }),
   promptsList: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(async ({ context, input }): Promise<GeoTrackedPromptsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        listGeoPrompts(input.organizationId),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => listGeoPrompts(input))),
   promptsCreate: authorizedProcedure
     .input(geoPromptCreateInputSchema)
-    .handler(async ({ context, input }): Promise<GeoTrackedPrompt> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        createGeoPrompt(input.organizationId, input.prompt),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => createGeoPrompt(input, input.prompt))),
   promptsDelete: authorizedProcedure
     .input(geoPromptDeleteInputSchema)
-    .handler(async ({ context, input }): Promise<{ success: boolean }> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        deleteGeoPrompt(input.organizationId, input.promptId),
-        toGeoOrpcError
-      );
-    }),
+    .handler(
+      geoHandler((input) =>
+        deleteGeoPrompt(input.organizationId, input.promptId)
+      )
+    ),
   promptsToggle: authorizedProcedure
     .input(geoPromptToggleInputSchema)
-    .handler(async ({ context, input }): Promise<GeoTrackedPrompt> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        toggleGeoPrompt(input.organizationId, input.promptId, input.enabled),
-        toGeoOrpcError
-      );
-    }),
+    .handler(
+      geoHandler((input) =>
+        toggleGeoPrompt(input.organizationId, input.promptId, input.enabled)
+      )
+    ),
+  sequencesList: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(geoHandler((input) => listGeoSequences(input))),
+  sequencesCreate: authorizedProcedure
+    .input(geoSequenceCreateInputSchema)
+    .handler(geoHandler((input) => createGeoSequence(input, input))),
+  sequencesUpdate: authorizedProcedure
+    .input(geoSequenceUpdateInputSchema)
+    .handler(geoHandler((input) => updateGeoSequence(input, input))),
+  sequencesDelete: authorizedProcedure
+    .input(geoSequenceDeleteInputSchema)
+    .handler(geoHandler((input) => deleteGeoSequence(input, input.sequenceId))),
+  sequenceResults: authorizedProcedure
+    .input(geoSequenceResultsInputSchema)
+    .handler(
+      geoHandler((input) => loadGeoSequenceResults(input, input.sequenceId))
+    ),
+  projectsList: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(geoHandler((input) => listGeoProjects(input.organizationId))),
+  projectsCreate: authorizedProcedure
+    .input(geoProjectCreateInputSchema)
+    .handler(
+      geoHandler((input) => createGeoProject(input.organizationId, input.name))
+    ),
   generateFromWebsite: authorizedProcedure
     .input(geoGenerateFromWebsiteInputSchema)
-    .handler(
-      async ({ context, input }): Promise<GeoGenerateFromWebsiteResult> => {
-        await assertOrganizationAccess({
-          headers: context.headers,
-          organizationId: input.organizationId,
-          user: context.user,
-        });
-
-        return await runOrpcEffect(
-          generateGeoFromWebsite(input.organizationId, input.url),
-          toGeoOrpcError
-        );
-      }
-    ),
+    .handler(geoHandler((input) => generateGeoFromWebsite(input, input.url))),
   startScan: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(async ({ context, input }): Promise<{ runId: string }> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      return await runOrpcEffect(
-        startGeoScan(input.organizationId),
-        toGeoOrpcError
-      );
-    }),
+    .handler(geoHandler((input) => startGeoScan(input))),
 };

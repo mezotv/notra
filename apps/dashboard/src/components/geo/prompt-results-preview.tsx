@@ -8,6 +8,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
 import { PresenceBadge } from "@/components/geo/presence-badge";
+import { Twemoji } from "@/components/geo/twemoji";
 import {
   InstrumentEmpty,
   InstrumentSection,
@@ -58,9 +59,12 @@ export function PromptResultsPreview({
         cell: () => (
           <span className="flex items-center gap-0.5 text-xs">
             {languages.map((language) => (
-              <span key={language} title={`Also scanned in ${language}`}>
-                {GEO_LANGUAGE_FLAGS[language]}
-              </span>
+              <Twemoji
+                className="size-4 shrink-0"
+                emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+                key={language}
+                label={`Also scanned in ${language}`}
+              />
             ))}
           </span>
         ),

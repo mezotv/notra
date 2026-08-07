@@ -3,8 +3,13 @@ import { ingestGeoMentionChecks } from "@notra/analytics/tinybird/client";
 import type { GeoMentionCheckRow } from "@notra/analytics/tinybird/datasources";
 import { toClickHouseDateTime } from "@notra/analytics/utils/datetime";
 import { db } from "@notra/db/drizzle";
-import { brandSettings, geoPrompts, geoSettings } from "@notra/db/schema";
-import { generateText, Output, stepCountIs } from "ai";
+import {
+  brandSettings,
+  geoPromptSequences,
+  geoPrompts,
+  geoSettings,
+} from "@notra/db/schema";
+import { generateText, type ModelMessage, Output, stepCountIs } from "ai";
 import { and, asc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import {
@@ -20,9 +25,12 @@ import {
   GEO_LANGUAGE_MAX_PROMPTS,
   GEO_MAX_LANGUAGES,
   GEO_MAX_PROMPTS,
+  GEO_MAX_SEQUENCES,
   GEO_SCAN_CONCURRENCY,
+  GEO_SEQUENCE_MAX_TURNS,
   GEO_TRANSLATION_MAX_TOKENS,
 } from "@/constants/geo";
+import { geoSkip } from "@/lib/geo/effect";
 import {
   buildGroundedInvocation,
   resolveGroundedEngines,
@@ -35,30 +43,19 @@ import {
   geoTranslationResultSchema,
 } from "@/schemas/geo";
 import type {
+  GeoCheckContext,
+  GeoCheckTask,
   GeoGroundedEngine,
   GeoJudgeResult,
   GeoPromptDefinition,
   GeoScanResult,
+  GeoSequenceDefinition,
   GeoSettings,
+  GeoSettingsRow,
 } from "@/types/geo";
 
 const MAX_JUDGE_COMPETITORS = 10;
 const GROUNDED_MAX_STEPS = 4;
-
-interface GeoCheckTask {
-  engine: string;
-  grounded: GeoGroundedEngine | null;
-  prompt: GeoPromptDefinition;
-  language: string;
-}
-
-interface GeoCheckContext {
-  organizationId: string;
-  scanId: string;
-  capturedAt: string;
-  companyName: string;
-  aliases: string[];
-}
 
 function normalizePosition(position: number | null): number | null {
   if (position === null || !Number.isFinite(position)) {
@@ -119,30 +116,29 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
   return result.text;
 });
 
-const askGroundedEngine = Effect.fn("geo.askGroundedEngine")(function* (
-  engine: GeoGroundedEngine,
-  promptText: string
-) {
-  const result = yield* Effect.tryPromise({
-    try: () => {
-      const invocation = buildGroundedInvocation(engine);
-      return generateText({
-        model: invocation.model,
-        tools: invocation.tools,
-        stopWhen: stepCountIs(GROUNDED_MAX_STEPS),
-        prompt: promptText,
-        system: GEO_ANSWER_SYSTEM_PROMPT,
-        maxOutputTokens: GEO_GROUNDED_ANSWER_MAX_TOKENS,
-      });
-    },
-    catch: (cause) =>
-      new GeoScanError({
-        message: `Grounded engine ${engine.key} failed to answer`,
-        cause,
-      }),
-  });
-  return result.text;
-});
+const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
+  function* (engine: GeoGroundedEngine, messages: ModelMessage[]) {
+    const result = yield* Effect.tryPromise({
+      try: () => {
+        const invocation = buildGroundedInvocation(engine);
+        return generateText({
+          model: invocation.model,
+          tools: invocation.tools,
+          stopWhen: stepCountIs(GROUNDED_MAX_STEPS),
+          messages,
+          system: GEO_ANSWER_SYSTEM_PROMPT,
+          maxOutputTokens: GEO_GROUNDED_ANSWER_MAX_TOKENS,
+        });
+      },
+      catch: (cause) =>
+        new GeoScanError({
+          message: `Grounded engine ${engine.key} failed to answer`,
+          cause,
+        }),
+    });
+    return result.text;
+  }
+);
 
 const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
   context: GeoCheckContext,
@@ -205,15 +201,20 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
   task: GeoCheckTask
 ) {
   const answer = task.grounded
-    ? yield* askGroundedEngine(task.grounded, task.prompt.text)
+    ? yield* askGroundedConversation(task.grounded, [
+        { role: "user", content: task.prompt.text },
+      ])
     : yield* askEngine(task.engine, task.prompt.text);
   const judged = yield* judgeAnswer(context, task.prompt.text, answer);
 
   const row: GeoMentionCheckRow = {
     organization_id: context.organizationId,
+    project_id: context.projectId,
     scan_id: context.scanId,
     engine: task.engine,
     prompt_id: task.prompt.id,
+    sequence_id: "",
+    turn: 0,
     prompt: task.prompt.text,
     captured_at: context.capturedAt,
     mentioned: judged.mentioned,
@@ -227,26 +228,15 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
   return row;
 });
 
-export const runGeoScan = Effect.fn("geo.runScan")(function* (
-  organizationId: string
+const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
+  settingsRow: GeoSettingsRow
 ) {
-  const settingsRow = yield* Effect.tryPromise({
-    try: () =>
-      db.query.geoSettings.findFirst({
-        where: eq(geoSettings.organizationId, organizationId),
-      }),
-    catch: (cause) =>
-      new GeoScanError({ message: "Failed to load GEO settings", cause }),
-  });
-
-  if (!settingsRow?.enabled) {
-    const skipped: GeoScanResult = { status: "skipped" };
-    return skipped;
-  }
+  const organizationId = settingsRow.organizationId;
 
   const settings: GeoSettings = {
     id: settingsRow.id,
     organizationId: settingsRow.organizationId,
+    projectId: settingsRow.projectId,
     companyName: settingsRow.companyName,
     aliases: settingsRow.aliases,
     competitors: settingsRow.competitors,
@@ -274,7 +264,7 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
       db.query.geoPrompts.findMany({
         columns: { id: true, prompt: true },
         where: and(
-          eq(geoPrompts.organizationId, organizationId),
+          eq(geoPrompts.projectId, settingsRow.projectId),
           eq(geoPrompts.enabled, true)
         ),
         orderBy: [asc(geoPrompts.createdAt)],
@@ -303,6 +293,7 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
 
   const context: GeoCheckContext = {
     organizationId,
+    projectId: settingsRow.projectId,
     scanId: crypto.randomUUID(),
     capturedAt: toClickHouseDateTime(new Date()),
     companyName: settings.companyName,
@@ -332,19 +323,23 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
   const extraLanguages = settings.languages
     .filter((language) => language !== "English")
     .slice(0, GEO_MAX_LANGUAGES);
-  for (const language of extraLanguages) {
-    const localized = yield* translatePrompts(
-      language,
-      prompts.slice(0, GEO_LANGUAGE_MAX_PROMPTS)
-    ).pipe(
-      Effect.catch((error: GeoScanError) => {
-        console.error(`[GEO] skipping language ${language}:`, error);
-        return Effect.succeed(null);
-      })
-    );
-    if (!localized) {
+  const localizedByLanguage = yield* Effect.forEach(
+    extraLanguages,
+    (language) =>
+      translatePrompts(language, prompts.slice(0, GEO_LANGUAGE_MAX_PROMPTS))
+        .pipe(geoSkip(`skipping language ${language}`))
+        .pipe(
+          Effect.map((localized) =>
+            localized ? { language, localized } : null
+          )
+        ),
+    { concurrency: GEO_SCAN_CONCURRENCY }
+  );
+  for (const entry of localizedByLanguage) {
+    if (!entry) {
       continue;
     }
+    const { language, localized } = entry;
     for (const engine of GEO_ENGINES) {
       for (const prompt of localized) {
         tasks.push({ engine, grounded: null, prompt, language });
@@ -365,23 +360,42 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
     tasks,
     (task) =>
       runGeoCheck(context, task).pipe(
-        Effect.catch((error: GeoScanError) => {
-          console.error(
-            `[GEO] check failed for ${task.engine}/${task.prompt.id}:`,
-            error
-          );
-          return Effect.succeed(null);
-        })
+        geoSkip(`check failed for ${task.engine}/${task.prompt.id}`)
       ),
     { concurrency: GEO_SCAN_CONCURRENCY }
   );
 
-  const rows: GeoMentionCheckRow[] = [];
-  for (const result of results) {
-    if (result) {
-      rows.push(result);
-    }
-  }
+  const rows: GeoMentionCheckRow[] = results.filter(
+    (result): result is GeoMentionCheckRow => result !== null
+  );
+
+  const sequenceRows = yield* Effect.tryPromise({
+    try: () =>
+      db.query.geoPromptSequences.findMany({
+        columns: { id: true, steps: true },
+        where: and(
+          eq(geoPromptSequences.projectId, settingsRow.projectId),
+          eq(geoPromptSequences.enabled, true)
+        ),
+        orderBy: [asc(geoPromptSequences.createdAt)],
+        limit: GEO_MAX_SEQUENCES,
+      }),
+    catch: (cause) =>
+      new GeoScanError({ message: "Failed to load GEO sequences", cause }),
+  });
+
+  const sequencePairs = sequenceRows.flatMap((sequence) =>
+    groundedEngines.map((grounded) => ({ sequence, grounded }))
+  );
+  const sequenceResults = yield* Effect.forEach(
+    sequencePairs,
+    (pair) =>
+      runGeoSequenceCheck(context, pair.sequence, pair.grounded).pipe(
+        geoSkip(`sequence failed for ${pair.grounded.key}/${pair.sequence.id}`)
+      ),
+    { concurrency: GEO_SCAN_CONCURRENCY }
+  );
+  rows.push(...sequenceResults.filter((result) => result !== null).flat());
 
   yield* Effect.tryPromise({
     try: () => ingestGeoMentionChecks(rows),
@@ -389,17 +403,90 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
       new GeoScanError({ message: "Failed to ingest GEO checks", cause }),
   });
 
-  yield* captureModelUsageShare().pipe(
-    Effect.catch((error: GeoScanError) => {
-      console.error("[GEO] model usage snapshot failed:", error);
-      return Effect.succeed(null);
-    })
-  );
-
   const completed: GeoScanResult = {
     status: "completed",
     checks: rows.length,
     mentions: rows.filter((row) => row.mentioned).length,
+  };
+  return completed;
+});
+
+const runGeoSequenceCheck = Effect.fn("geo.runSequenceCheck")(function* (
+  context: GeoCheckContext,
+  sequence: GeoSequenceDefinition,
+  grounded: GeoGroundedEngine
+) {
+  const rows: GeoMentionCheckRow[] = [];
+  const messages: ModelMessage[] = [];
+  const steps = sequence.steps.slice(0, GEO_SEQUENCE_MAX_TURNS);
+
+  for (const [index, step] of steps.entries()) {
+    messages.push({ role: "user", content: step });
+    const answer = yield* askGroundedConversation(grounded, messages);
+    messages.push({ role: "assistant", content: answer });
+    const judged = yield* judgeAnswer(context, step, answer);
+
+    rows.push({
+      organization_id: context.organizationId,
+      project_id: context.projectId,
+      scan_id: context.scanId,
+      engine: grounded.key,
+      prompt_id: `sequence-${sequence.id}`,
+      sequence_id: sequence.id,
+      turn: index + 1,
+      prompt: step,
+      captured_at: context.capturedAt,
+      mentioned: judged.mentioned,
+      position: normalizePosition(judged.position),
+      sentiment: judged.sentiment,
+      competitors: judged.competitors.slice(0, MAX_JUDGE_COMPETITORS),
+      excerpt: judged.excerpt.slice(0, GEO_EXCERPT_MAX_LENGTH),
+      language: "English",
+    });
+  }
+
+  return rows;
+});
+
+export const runGeoScan = Effect.fn("geo.runScan")(function* (
+  organizationId: string,
+  projectId?: string
+) {
+  const settingsRows = yield* Effect.tryPromise({
+    try: () =>
+      db.query.geoSettings.findMany({
+        where: projectId
+          ? and(
+              eq(geoSettings.organizationId, organizationId),
+              eq(geoSettings.projectId, projectId)
+            )
+          : eq(geoSettings.organizationId, organizationId),
+        orderBy: [asc(geoSettings.createdAt)],
+      }),
+    catch: (cause) =>
+      new GeoScanError({ message: "Failed to load GEO settings", cause }),
+  });
+
+  const enabledRows = settingsRows.filter((row) => row.enabled);
+  if (enabledRows.length === 0) {
+    const skipped: GeoScanResult = { status: "skipped" };
+    return skipped;
+  }
+
+  let checks = 0;
+  let mentions = 0;
+  for (const settingsRow of enabledRows) {
+    const result = yield* runGeoScanForProject(settingsRow);
+    checks += result.checks ?? 0;
+    mentions += result.mentions ?? 0;
+  }
+
+  yield* captureModelUsageShare().pipe(geoSkip("model usage snapshot failed"));
+
+  const completed: GeoScanResult = {
+    status: "completed",
+    checks,
+    mentions,
   };
   return completed;
 });

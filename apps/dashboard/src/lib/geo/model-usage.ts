@@ -1,26 +1,28 @@
+import { cachedExternalFetch } from "@notra/analytics/cache/query-cache";
 import { ingestModelUsageShare } from "@notra/analytics/tinybird/client";
 import type { ModelUsageShareRow } from "@notra/analytics/tinybird/datasources";
 import { Effect } from "effect";
 import {
-  GEO_MODEL_USAGE_API_KEY_ENV,
+  GEO_MODEL_USAGE_CACHE_KEY,
   GEO_MODEL_USAGE_ENDPOINT,
   GEO_MODEL_USAGE_FETCH_TIMEOUT_MS,
   GEO_MODEL_USAGE_INGEST_LIMIT,
   GEO_MODEL_USAGE_MODELS_ENDPOINT,
   GEO_MODEL_USAGE_OTHER_KEY,
-  GEO_MODEL_USAGE_PERIOD,
+  GEO_MODEL_USAGE_OTHERS_LABEL,
+  GEO_MODEL_USAGE_SLUGS_CACHE_KEY,
   GEO_MODEL_USAGE_SOURCE,
 } from "@/constants/geo";
 import { GeoScanError } from "@/lib/geo/errors";
 import {
   openRouterModelsResponseSchema,
-  openRouterRankingsResponseSchema,
+  openRouterRankingsChartSchema,
 } from "@/schemas/geo";
 import type { GeoModelUsageSnapshot } from "@/types/geo";
+import { GROUNDED_SUFFIX_PATTERN } from "@/utils/geo-presence";
 
 const VARIANT_SUFFIX = /:[a-z0-9-]+$/;
 const PREVIEW_SUFFIX = /-preview$/;
-const GROUNDED_SUFFIX = /(-direct)?-grounded$/;
 
 interface WeeklyTotal {
   model: string;
@@ -30,7 +32,7 @@ interface WeeklyTotal {
 export function normalizeModelId(value: string): string {
   return value
     .toLowerCase()
-    .replace(GROUNDED_SUFFIX, "")
+    .replace(GROUNDED_SUFFIX_PATTERN, "")
     .replace(VARIANT_SUFFIX, "")
     .replace(PREVIEW_SUFFIX, "");
 }
@@ -61,7 +63,14 @@ const fetchJson = Effect.fn("geo.modelUsage.fetchJson")(function* (
 });
 
 const fetchSlugMap = Effect.fn("geo.modelUsage.fetchSlugMap")(function* () {
-  const payload = yield* fetchJson(GEO_MODEL_USAGE_MODELS_ENDPOINT, null);
+  const payload = yield* Effect.tryPromise({
+    try: () =>
+      cachedExternalFetch(GEO_MODEL_USAGE_SLUGS_CACHE_KEY, () =>
+        Effect.runPromise(fetchJson(GEO_MODEL_USAGE_MODELS_ENDPOINT, null))
+      ),
+    catch: (cause) =>
+      new GeoScanError({ message: "Model list fetch failed", cause }),
+  });
   const parsed = openRouterModelsResponseSchema.safeParse(payload);
   const slugs = new Map<string, string>();
   if (!parsed.success) {
@@ -120,17 +129,15 @@ function buildRows(
 
 export const captureModelUsageShare = Effect.fn("geo.captureModelUsageShare")(
   function* () {
-    const apiKey = process.env[GEO_MODEL_USAGE_API_KEY_ENV];
-    if (!apiKey) {
-      const skipped: GeoModelUsageSnapshot = { status: "skipped" };
-      return skipped;
-    }
-
-    const payload = yield* fetchJson(
-      `${GEO_MODEL_USAGE_ENDPOINT}?period=${GEO_MODEL_USAGE_PERIOD}`,
-      apiKey
-    );
-    const parsed = openRouterRankingsResponseSchema.safeParse(payload);
+    const payload = yield* Effect.tryPromise({
+      try: () =>
+        cachedExternalFetch(GEO_MODEL_USAGE_CACHE_KEY, () =>
+          Effect.runPromise(fetchJson(GEO_MODEL_USAGE_ENDPOINT, null))
+        ),
+      catch: (cause) =>
+        new GeoScanError({ message: "Model usage fetch failed", cause }),
+    });
+    const parsed = openRouterRankingsChartSchema.safeParse(payload);
     if (!parsed.success) {
       return yield* Effect.fail(
         new GeoScanError({
@@ -141,14 +148,20 @@ export const captureModelUsageShare = Effect.fn("geo.captureModelUsageShare")(
     }
 
     const weeks = new Map<string, WeeklyTotal[]>();
-    for (const entry of parsed.data.data) {
-      const tokens = Number(entry.total_tokens);
-      if (!Number.isFinite(tokens)) {
-        continue;
+    for (const point of parsed.data.data.data) {
+      const bucket: WeeklyTotal[] = [];
+      for (const [model, tokens] of Object.entries(point.ys)) {
+        if (
+          !Number.isFinite(tokens) ||
+          model === GEO_MODEL_USAGE_OTHERS_LABEL
+        ) {
+          continue;
+        }
+        bucket.push({ model, tokens });
       }
-      const bucket = weeks.get(entry.date) ?? [];
-      bucket.push({ model: entry.model_permaslug, tokens });
-      weeks.set(entry.date, bucket);
+      if (bucket.length > 0) {
+        weeks.set(point.x, bucket);
+      }
     }
 
     const slugs = yield* fetchSlugMap();
@@ -165,10 +178,11 @@ export const captureModelUsageShare = Effect.fn("geo.captureModelUsageShare")(
         new GeoScanError({ message: "Failed to ingest model usage", cause }),
     });
 
+    const lastPoint = parsed.data.data.data.at(-1);
     const captured: GeoModelUsageSnapshot = {
       status: "captured",
       models: rows.length,
-      capturedAt: parsed.data.meta.as_of,
+      capturedAt: lastPoint?.x,
     };
     return captured;
   }

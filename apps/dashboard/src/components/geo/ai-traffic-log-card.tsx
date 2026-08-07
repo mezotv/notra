@@ -1,13 +1,11 @@
 "use client";
 
-import { Badge } from "@notra/ui/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@notra/ui/components/ui/select";
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@notra/ui/components/ui/dropdown-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -16,6 +14,7 @@ import {
 import { useState } from "react";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
+import { CountryFlag } from "@/components/geo/twemoji";
 import {
   InstrumentEmpty,
   InstrumentSection,
@@ -24,11 +23,8 @@ import { Table, type TableColumn } from "@/components/motion/table";
 import {
   AI_TRAFFIC_CONFIDENCE_LABELS,
   AI_TRAFFIC_PURPOSE_LABELS,
-  GEO_JOURNEY_KIND_LABELS,
-  GEO_TRAFFIC_LOG_FILTER_ALL,
   GEO_TRAFFIC_LOG_PURPOSE_OPTIONS,
   GEO_TRAFFIC_LOG_VISITOR_OPTIONS,
-  GEO_VISITOR_TYPE_LABELS,
 } from "@/constants/geo";
 import { useGeoTrafficLog } from "@/lib/hooks/use-geo";
 import type {
@@ -38,10 +34,11 @@ import type {
 } from "@/types/geo";
 import {
   formatAiTrafficTimestamp,
-  formatGeoJourneyChip,
   formatGeoSource,
-  toGeoJourneyKind,
+  formatGeoTrafficFilterLabel,
+  toggleGeoTrafficFilterValue,
 } from "@/utils/ai-traffic";
+import { countryName } from "@/utils/country";
 
 function SourceCell({ entry }: { entry: GeoTrafficLogEntry }) {
   return (
@@ -67,33 +64,9 @@ function SourceCell({ entry }: { entry: GeoTrafficLogEntry }) {
   );
 }
 
-function JourneyCell({ journeyId }: { journeyId: string }) {
-  if (!journeyId) {
-    return <span className="text-muted-foreground text-xs">-</span>;
-  }
-
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span className="cursor-default rounded-sm bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs" />
-        }
-      >
-        {formatGeoJourneyChip(journeyId)}
-      </TooltipTrigger>
-      <TooltipContent>
-        <span className="block font-mono">{journeyId}</span>
-        <span className="block text-muted-foreground">
-          {GEO_JOURNEY_KIND_LABELS[toGeoJourneyKind(journeyId)]}
-        </span>
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-function MarkdownCell({ wantsMarkdown }: { wantsMarkdown: boolean }) {
+function MarkdownFlag({ wantsMarkdown }: { wantsMarkdown: boolean }) {
   if (!wantsMarkdown) {
-    return <span className="text-muted-foreground text-xs">-</span>;
+    return null;
   }
 
   return (
@@ -124,16 +97,6 @@ const TRAFFIC_LOG_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
     ),
   },
   {
-    key: "visitorType",
-    header: "Type",
-    width: "6.5rem",
-    cell: (entry) => (
-      <Badge className="rounded-sm text-[0.6875rem]" variant="secondary">
-        {GEO_VISITOR_TYPE_LABELS[entry.visitorType] ?? entry.visitorType}
-      </Badge>
-    ),
-  },
-  {
     key: "source",
     header: "Source",
     width: "10rem",
@@ -157,33 +120,30 @@ const TRAFFIC_LOG_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
   {
     key: "path",
     header: "Path",
+    width: "18rem",
     cell: (entry) => (
-      <span className="block truncate font-mono text-xs" title={entry.path}>
-        {entry.path}
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="truncate font-mono text-xs" title={entry.path}>
+          {entry.path}
+        </span>
+        <MarkdownFlag wantsMarkdown={entry.wantsMarkdown} />
       </span>
     ),
-  },
-  {
-    key: "wantsMarkdown",
-    header: "Markdown",
-    width: "6rem",
-    cell: (entry) => <MarkdownCell wantsMarkdown={entry.wantsMarkdown} />,
-  },
-  {
-    key: "journeyId",
-    header: "Journey",
-    width: "7rem",
-    cell: (entry) => <JourneyCell journeyId={entry.journeyId} />,
   },
   {
     key: "country",
     header: "Country",
-    width: "5.5rem",
-    cell: (entry) => (
-      <span className="text-[0.6875rem] text-muted-foreground uppercase">
-        {entry.country}
-      </span>
-    ),
+    sortable: true,
+    sortValue: (row) => countryName(row.country),
+    cell: (row) =>
+      row.country ? (
+        <span className="flex min-w-0 items-center gap-2">
+          <CountryFlag className="size-4 shrink-0" code={row.country} />
+          <span className="truncate">{countryName(row.country)}</span>
+        </span>
+      ) : (
+        <span className="text-muted-foreground">-</span>
+      ),
   },
 ];
 
@@ -196,65 +156,76 @@ const TRAFFIC_LOG_ROW_HEIGHT = 40;
 const TRAFFIC_LOG_HEIGHT = 416;
 
 const FILTER_TRIGGER_CLASS =
-  "h-6 gap-1 rounded-sm border-border px-2 text-xs capitalize data-[size=sm]:h-6";
+  "flex h-6 items-center gap-1 rounded-sm border border-border bg-background px-2 text-xs hover:bg-muted";
 
 export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
   const [filters, setFilters] = useState<GeoTrafficLogFilters>({
-    visitorType: GEO_TRAFFIC_LOG_FILTER_ALL,
-    category: GEO_TRAFFIC_LOG_FILTER_ALL,
+    visitorTypes: [],
+    categories: [],
   });
   const { data } = useGeoTrafficLog(organizationId, filters);
   const log = data?.log ?? [];
 
   const filterRow = (
     <div className="flex items-center gap-2">
-      <Select
-        onValueChange={(value) => {
-          const option = GEO_TRAFFIC_LOG_VISITOR_OPTIONS.find(
-            (item) => item.value === value
-          );
-          if (option) {
-            setFilters((previous) => ({
-              ...previous,
-              visitorType: option.value,
-            }));
-          }
-        }}
-        value={filters.visitorType}
-      >
-        <SelectTrigger className={FILTER_TRIGGER_CLASS} size="sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
+      <DropdownMenu>
+        <DropdownMenuTrigger className={FILTER_TRIGGER_CLASS}>
+          {formatGeoTrafficFilterLabel(
+            "All visitors",
+            "visitors",
+            filters.visitorTypes,
+            GEO_TRAFFIC_LOG_VISITOR_OPTIONS
+          )}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
           {GEO_TRAFFIC_LOG_VISITOR_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <DropdownMenuCheckboxItem
+              checked={filters.visitorTypes.includes(option.value)}
+              key={option.value}
+              onCheckedChange={() => {
+                setFilters((previous) => ({
+                  ...previous,
+                  visitorTypes: toggleGeoTrafficFilterValue(
+                    previous.visitorTypes,
+                    option.value
+                  ),
+                }));
+              }}
+            >
               {option.label}
-            </SelectItem>
+            </DropdownMenuCheckboxItem>
           ))}
-        </SelectContent>
-      </Select>
-      <Select
-        onValueChange={(value) => {
-          const option = GEO_TRAFFIC_LOG_PURPOSE_OPTIONS.find(
-            (item) => item.value === value
-          );
-          if (option) {
-            setFilters((previous) => ({ ...previous, category: option.value }));
-          }
-        }}
-        value={filters.category}
-      >
-        <SelectTrigger className={FILTER_TRIGGER_CLASS} size="sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <DropdownMenu>
+        <DropdownMenuTrigger className={FILTER_TRIGGER_CLASS}>
+          {formatGeoTrafficFilterLabel(
+            "All purposes",
+            "purposes",
+            filters.categories,
+            GEO_TRAFFIC_LOG_PURPOSE_OPTIONS
+          )}
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-44">
           {GEO_TRAFFIC_LOG_PURPOSE_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
+            <DropdownMenuCheckboxItem
+              checked={filters.categories.includes(option.value)}
+              key={option.value}
+              onCheckedChange={() => {
+                setFilters((previous) => ({
+                  ...previous,
+                  categories: toggleGeoTrafficFilterValue(
+                    previous.categories,
+                    option.value
+                  ),
+                }));
+              }}
+            >
               {option.label}
-            </SelectItem>
+            </DropdownMenuCheckboxItem>
           ))}
-        </SelectContent>
-      </Select>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 
@@ -271,6 +242,7 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
         />
       ) : (
         <Table
+          className="rounded-2xl"
           columns={TRAFFIC_LOG_COLUMNS}
           data={log}
           defaultSort={TRAFFIC_LOG_DEFAULT_SORT}

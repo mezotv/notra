@@ -5,7 +5,6 @@ import {
   PencilEdit02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Tooltip,
@@ -13,6 +12,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo, useState } from "react";
+import { Button } from "@/components/button";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
 import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
@@ -27,7 +27,6 @@ import {
   COMPETITORS_TABLE_ROW_HEIGHT,
   GEO_COMPETITOR_DETAIL_MIN_POINTS,
   GEO_COMPETITOR_DETAIL_SERIES_KEY,
-  GEO_ENGINE_LABELS,
 } from "@/constants/geo";
 import { useGeoCompetitorDetail, useGeoCompetitors } from "@/lib/hooks/use-geo";
 import type {
@@ -36,6 +35,7 @@ import type {
 } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import { seriesColors } from "@/utils/chart-colors";
+import { engineFamilyLabel, engineFamilyOf } from "@/utils/geo-charts";
 import { buildGeoCompetitorPoints } from "@/utils/geo-competitor";
 
 const CHART_CONFIG: ChartConfig = {
@@ -79,8 +79,10 @@ export function CompetitorDetailView({
     () => [
       {
         key: "prompt",
-        header: "Prompt",
-        width: "2.6fr",
+        header:
+          prompts.length > 0
+            ? `Prompt (${prompts.length.toLocaleString()})`
+            : "Prompt",
         sortable: true,
         cell: (row) => (
           <Tooltip>
@@ -94,13 +96,13 @@ export function CompetitorDetailView({
       {
         key: "engine",
         header: "Engine",
-        width: "1.2fr",
+        width: "11rem",
         sortable: true,
         cell: (row) => (
           <span className="inline-flex min-w-0 items-center gap-2">
             <EngineIcon className="size-4 shrink-0" engine={row.engine} />
             <span className="truncate">
-              {GEO_ENGINE_LABELS[row.engine] ?? row.engine}
+              {engineFamilyLabel(engineFamilyOf(row.engine))}
             </span>
           </span>
         ),
@@ -110,12 +112,18 @@ export function CompetitorDetailView({
         header: "Our position",
         width: "8rem",
         align: "right",
+        sortable: true,
         cell: (row) => (
           <span className="tabular-nums">
             {row.mentioned ? (row.position ?? "Mentioned") : "Absent"}
           </span>
         ),
-        sortValue: (row) => row.position ?? Number.MAX_SAFE_INTEGER,
+        sortValue: (row) => {
+          if (!row.mentioned) {
+            return Number.MAX_SAFE_INTEGER;
+          }
+          return row.position ?? Number.MAX_SAFE_INTEGER - 1;
+        },
       },
       {
         key: "capturedAt",
@@ -129,7 +137,7 @@ export function CompetitorDetailView({
         ),
       },
     ],
-    []
+    [prompts.length]
   );
 
   return (
@@ -165,7 +173,12 @@ export function CompetitorDetailView({
           </div>
         </div>
         {entry ? (
-          <Button onClick={() => setEditOpen(true)} size="sm" variant="outline">
+          <Button
+            className="corner-squircle rounded-[1rem] supports-[corner-shape:round]:rounded-[1.25rem]"
+            onClick={() => setEditOpen(true)}
+            size="sm"
+            variant="outline"
+          >
             <HugeiconsIcon icon={PencilEdit02Icon} size={14} />
             Edit
           </Button>
@@ -189,6 +202,8 @@ export function CompetitorDetailView({
             <EChartsAreaChart.YAxis />
             <EChartsAreaChart.Area
               dataKey={GEO_COMPETITOR_DETAIL_SERIES_KEY}
+              enableBufferLine
+              strokeVariant="solid"
               variant="gradient"
             />
             <EChartsAreaChart.Tooltip crosshair />
@@ -202,14 +217,7 @@ export function CompetitorDetailView({
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-semibold text-base">
-            Where {competitor} shows up
-          </h2>
-          <span className="text-muted-foreground text-xs tabular-nums">
-            {prompts.length.toLocaleString()} results
-          </span>
-        </div>
+        <h2 className="font-semibold text-base">Where {competitor} shows up</h2>
         <Table
           className="rounded-2xl"
           columns={columns}

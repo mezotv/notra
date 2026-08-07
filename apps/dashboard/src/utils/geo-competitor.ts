@@ -2,25 +2,22 @@ import type {
   GeoCompetitorDetailPoint,
   GeoCompetitorTimeseriesPoint,
 } from "@/types/geo";
-
-const dayFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-});
-
-export function formatGeoCompetitorDay(value: string): string {
-  const date = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-  return dayFormatter.format(date);
-}
+import { formatDayLabel } from "@/utils/analytics-charts";
+import { latestChartDay, listDaysThrough } from "@/utils/geo-charts";
 
 export function buildGeoCompetitorPoints(
   points: readonly GeoCompetitorTimeseriesPoint[]
 ): GeoCompetitorDetailPoint[] {
-  return points.map((point) => ({
-    day: formatGeoCompetitorDay(point.day),
-    mentions: point.mentions,
+  const byDay = new Map(points.map((point) => [point.day, point.mentions]));
+  const knownDays = [...byDay.keys()].sort();
+  const firstDay = knownDays.at(0);
+  const lastDay = knownDays.at(-1);
+  const days =
+    firstDay && lastDay
+      ? listDaysThrough(firstDay, latestChartDay(lastDay))
+      : knownDays;
+  return days.map((day) => ({
+    day: formatDayLabel(day),
+    mentions: byDay.get(day) ?? 0,
   }));
 }

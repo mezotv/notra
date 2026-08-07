@@ -15,8 +15,10 @@ import { JourneysCard } from "@/components/geo/journeys-card";
 import { LanguagePerformanceCard } from "@/components/geo/language-performance-card";
 import { MentionTrendCard } from "@/components/geo/mention-trend-card";
 import { ModelUsageCard } from "@/components/geo/model-usage-card";
+import { PromptFunnelCard } from "@/components/geo/prompt-funnel-card";
 import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
-import { ShareOfVoiceDonut } from "@/components/geo/share-of-voice-donut";
+import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
+import { TrackedEnginesCard } from "@/components/geo/tracked-engines-card";
 import { TrafficPagesCard } from "@/components/geo/traffic-pages-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
@@ -31,7 +33,9 @@ function TriggerCount({ count }: { count: number }) {
   if (count <= 0) {
     return null;
   }
-  return <span className="text-muted-foreground">({count})</span>;
+  return (
+    <span className="text-muted-foreground">({count.toLocaleString()})</span>
+  );
 }
 
 function TabSection({
@@ -57,6 +61,7 @@ export function GeoTabs({
   revealActive,
   settings,
   engines,
+  tracked,
   timeseriesPoints,
   competitorPoints,
   competitors,
@@ -96,14 +101,17 @@ export function GeoTabs({
 
       <TabsContent className="mt-6 flex flex-col gap-6" value="visibility">
         <TabSection active={revealActive} order={0}>
-          <MentionTrendCard hero points={timeseriesPoints} />
+          <MentionTrendCard points={timeseriesPoints} />
         </TabSection>
         <TabSection active={revealActive} order={1}>
           <EngineRateTable engines={engines} />
         </TabSection>
+        <TabSection active={revealActive} order={2}>
+          <TrackedEnginesCard engines={tracked} />
+        </TabSection>
         <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-2">
-          <TabSection active={revealActive} order={2}>
-            <ShareOfVoiceDonut
+          <TabSection active={revealActive} order={3}>
+            <ShareOfVoiceCard
               action={
                 <Link
                   className={TAB_LINK_CLASS}
@@ -116,20 +124,23 @@ export function GeoTabs({
               points={competitorPoints}
             />
           </TabSection>
-          <TabSection active={revealActive} order={3}>
+          <TabSection active={revealActive} order={4}>
             <LanguagePerformanceCard
               configuredLanguages={settings.languages}
               points={languagePoints}
             />
           </TabSection>
         </InstrumentGrid>
-        <TabSection active={revealActive} order={4}>
+        <TabSection active={revealActive} order={5}>
           <ModelUsageCard usage={modelUsage} />
         </TabSection>
       </TabsContent>
 
       <TabsContent className="mt-6 flex flex-col gap-6" value="prompts">
         <TabSection active={revealActive} order={0}>
+          <PromptFunnelCard promptCount={promptCount} results={promptResults} />
+        </TabSection>
+        <TabSection active={revealActive} order={1}>
           <PromptResultsPreview
             action={
               <Link

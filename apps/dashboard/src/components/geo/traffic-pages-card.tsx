@@ -69,10 +69,12 @@ export function TrafficPagesCard({ pages }: TrafficPagesCardProps) {
 
   return (
     <InstrumentSection
-      eyebrow="Top pages by AI source"
-      readout={
-        pages.length > 0 ? `${pages.length} pages · 30D` : "no AI visits yet"
+      eyebrow={
+        pages.length > 0
+          ? `Top pages by AI source (${pages.length.toLocaleString()})`
+          : "Top pages by AI source"
       }
+      readout={pages.length > 0 ? "30D" : "no AI visits yet"}
     >
       {pages.length === 0 ? (
         <InstrumentEmpty
@@ -81,9 +83,6 @@ export function TrafficPagesCard({ pages }: TrafficPagesCardProps) {
         />
       ) : (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
-            <span>{pages.length.toLocaleString()} pages</span>
-          </div>
           <Table
             className="rounded-2xl"
             columns={columns}

@@ -28,7 +28,8 @@ import {
   formatGeoJourneySpan,
   formatGeoSource,
 } from "@/utils/ai-traffic";
-import { formatDirectionRate } from "@/utils/geo-directions";
+import { formatMentionRate } from "@/utils/geo-charts";
+
 import { tableHeightFor } from "@/utils/table";
 
 const MAX_RATE = 1;
@@ -71,7 +72,7 @@ function EngineRank() {
         sortable: true,
         cell: (row) => (
           <span className="font-semibold text-sm tabular-nums">
-            {formatDirectionRate(row.rate)}
+            {formatMentionRate(row.rate)}
           </span>
         ),
       },
@@ -221,7 +222,7 @@ export function DirectionLeaderboard() {
           </p>
           <div className="flex items-end gap-3">
             <span className="font-semibold text-[4.5rem] tabular-nums leading-none tracking-tight">
-              {formatDirectionRate(GEO_DIRECTIONS_VISIBILITY)}
+              {formatMentionRate(GEO_DIRECTIONS_VISIBILITY)}
             </span>
             <DirectionDelta
               className="mb-2"

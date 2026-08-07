@@ -30,6 +30,7 @@ import {
   AI_TRAFFIC_DEFAULT_LOG_LIMIT,
   AI_TRAFFIC_DEFAULT_PAGES_LIMIT,
   GEO_COMPETITOR_DETAIL_DAYS,
+  GEO_COMPETITOR_SHARE_LIMIT,
   GEO_JOURNEY_DETAIL_LIMIT,
   GEO_MODEL_USAGE_ATTRIBUTION,
   GEO_MODEL_USAGE_DEFAULT_LIMIT,
@@ -52,7 +53,14 @@ import {
   toNullableNumber,
   toTrackedPrompt,
 } from "@/lib/geo/mappers";
+import {
+  ensureGeoProject,
+  geoScopeParams,
+  requireGeoProject,
+  resolveGeoScope,
+} from "@/lib/geo/projects";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
+import { buildTrackedEngines } from "@/lib/geo/tracked-engines";
 import { startGeoScanRun } from "@/lib/workflows/start";
 import type {
   AiTrafficResponse,
@@ -67,6 +75,7 @@ import type {
   GeoModelUsageResponse,
   GeoOverviewResponse,
   GeoPromptResultsResponse,
+  GeoScopeInput,
   GeoSettingsResponse,
   GeoSettingsUpsertInput,
   GeoTimeseriesResponse,
@@ -106,13 +115,16 @@ function mergeLegacyCompetitors(
 }
 
 export const loadGeoSettings = Effect.fn("geo.settings")(function* (
-  organizationId: string
+  input: GeoScopeInput
 ) {
-  const row = yield* geoDb("settings lookup failed", () =>
-    db.query.geoSettings.findFirst({
-      where: eq(geoSettings.organizationId, organizationId),
-    })
-  );
+  const scope = yield* resolveGeoScope(input);
+  const row = scope.projectId
+    ? yield* geoDb("settings lookup failed", () =>
+        db.query.geoSettings.findFirst({
+          where: eq(geoSettings.projectId, scope.projectId ?? ""),
+        })
+      )
+    : null;
 
   const response: GeoSettingsResponse = {
     configured: isTinybirdConfigured(),
@@ -123,12 +135,13 @@ export const loadGeoSettings = Effect.fn("geo.settings")(function* (
 
 export const syncGeoCompetitors = Effect.fn("geo.competitorsSync")(function* (
   organizationId: string,
+  projectId: string,
   entries: readonly GeoCompetitorSeed[]
 ) {
   const rows = yield* geoDb("competitors sync failed", () =>
     db.transaction(async (tx) => {
       const existing = await tx.query.geoCompetitors.findMany({
-        where: eq(geoCompetitors.organizationId, organizationId),
+        where: eq(geoCompetitors.projectId, projectId),
       });
       const existingByName = new Map(
         existing.map((row) => [competitorKey(row.name), row])
@@ -169,6 +182,7 @@ export const syncGeoCompetitors = Effect.fn("geo.competitorsSync")(function* (
             resolved.map((entry) => ({
               id: crypto.randomUUID(),
               organizationId,
+              projectId,
               name: entry.name,
               domain: entry.domain,
               synonyms: entry.synonyms,
@@ -177,7 +191,7 @@ export const syncGeoCompetitors = Effect.fn("geo.competitorsSync")(function* (
             }))
           )
           .onConflictDoUpdate({
-            target: [geoCompetitors.organizationId, geoCompetitors.name],
+            target: [geoCompetitors.projectId, geoCompetitors.name],
             set: {
               domain: sql`excluded.domain`,
               synonyms: sql`excluded.synonyms`,
@@ -190,10 +204,10 @@ export const syncGeoCompetitors = Effect.fn("geo.competitorsSync")(function* (
       await tx
         .update(geoSettings)
         .set({ competitors: resolved.map((entry) => entry.name) })
-        .where(eq(geoSettings.organizationId, organizationId));
+        .where(eq(geoSettings.projectId, projectId));
 
       return await tx.query.geoCompetitors.findMany({
-        where: eq(geoCompetitors.organizationId, organizationId),
+        where: eq(geoCompetitors.projectId, projectId),
         orderBy: [asc(geoCompetitors.createdAt)],
       });
     })
@@ -202,43 +216,56 @@ export const syncGeoCompetitors = Effect.fn("geo.competitorsSync")(function* (
   return rows.map(toGeoCompetitor);
 });
 
-export const loadGeoCompetitors = Effect.fn("geo.competitors")(function* (
-  organizationId: string
-) {
-  const [rows, settingsRow] = yield* Effect.all(
-    [
-      geoDb("competitors lookup failed", () =>
-        db.query.geoCompetitors.findMany({
-          where: eq(geoCompetitors.organizationId, organizationId),
-          orderBy: [asc(geoCompetitors.createdAt)],
-        })
-      ),
-      geoDb("settings lookup failed", () =>
-        db.query.geoSettings.findFirst({
-          columns: { competitors: true },
-          where: eq(geoSettings.organizationId, organizationId),
-        })
-      ),
-    ],
-    { concurrency: "unbounded" }
-  );
+const loadCompetitorsByProject = Effect.fn("geo.competitorsByProject")(
+  function* (projectId: string) {
+    const [rows, settingsRow] = yield* Effect.all(
+      [
+        geoDb("competitors lookup failed", () =>
+          db.query.geoCompetitors.findMany({
+            where: eq(geoCompetitors.projectId, projectId),
+            orderBy: [asc(geoCompetitors.createdAt)],
+          })
+        ),
+        geoDb("settings lookup failed", () =>
+          db.query.geoSettings.findFirst({
+            columns: { competitors: true },
+            where: eq(geoSettings.projectId, projectId),
+          })
+        ),
+      ],
+      { concurrency: "unbounded" }
+    );
 
-  const response: GeoCompetitorsResponse = {
-    competitors: mergeLegacyCompetitors(
+    return mergeLegacyCompetitors(
       rows.map(toGeoCompetitor),
       settingsRow?.competitors ?? []
-    ),
+    );
+  }
+);
+
+export const loadGeoCompetitors = Effect.fn("geo.competitors")(function* (
+  input: GeoScopeInput
+) {
+  const scope = yield* resolveGeoScope(input);
+  if (!scope.projectId) {
+    const emptyResponse: GeoCompetitorsResponse = { competitors: [] };
+    return emptyResponse;
+  }
+
+  const response: GeoCompetitorsResponse = {
+    competitors: yield* loadCompetitorsByProject(scope.projectId),
   };
   return response;
 });
 
 export const upsertGeoCompetitor = Effect.fn("geo.competitorUpsert")(function* (
-  organizationId: string,
+  scopeInput: GeoScopeInput,
   input: GeoCompetitorUpsertInput
 ) {
-  const current = yield* loadGeoCompetitors(organizationId);
+  const scope = yield* requireGeoProject(scopeInput);
+  const current = yield* loadCompetitorsByProject(scope.projectId);
   const key = competitorKey(input.name);
-  const entries: GeoCompetitorSeed[] = current.competitors.map((competitor) =>
+  const entries: GeoCompetitorSeed[] = current.map((competitor) =>
     competitorKey(competitor.name) === key
       ? {
           name: competitor.name,
@@ -247,13 +274,7 @@ export const upsertGeoCompetitor = Effect.fn("geo.competitorUpsert")(function* (
           kind: input.kind ?? competitor.kind,
           color: input.color ?? competitor.color,
         }
-      : {
-          name: competitor.name,
-          domain: competitor.domain,
-          synonyms: competitor.synonyms,
-          kind: competitor.kind,
-          color: competitor.color,
-        }
+      : competitor
   );
 
   if (!entries.some((entry) => competitorKey(entry.name) === key)) {
@@ -266,28 +287,31 @@ export const upsertGeoCompetitor = Effect.fn("geo.competitorUpsert")(function* (
     });
   }
 
-  const competitors = yield* syncGeoCompetitors(organizationId, entries);
+  const competitors = yield* syncGeoCompetitors(
+    scope.organizationId,
+    scope.projectId,
+    entries
+  );
   const response: GeoCompetitorsResponse = { competitors };
   return response;
 });
 
 export const deleteGeoCompetitor = Effect.fn("geo.competitorDelete")(function* (
-  organizationId: string,
+  scopeInput: GeoScopeInput,
   name: string
 ) {
-  const current = yield* loadGeoCompetitors(organizationId);
+  const scope = yield* requireGeoProject(scopeInput);
+  const current = yield* loadCompetitorsByProject(scope.projectId);
   const key = competitorKey(name);
-  const entries: GeoCompetitorSeed[] = current.competitors
-    .filter((competitor) => competitorKey(competitor.name) !== key)
-    .map((competitor) => ({
-      name: competitor.name,
-      domain: competitor.domain,
-      synonyms: competitor.synonyms,
-      kind: competitor.kind,
-      color: competitor.color,
-    }));
+  const entries: GeoCompetitorSeed[] = current.filter(
+    (competitor) => competitorKey(competitor.name) !== key
+  );
 
-  const competitors = yield* syncGeoCompetitors(organizationId, entries);
+  const competitors = yield* syncGeoCompetitors(
+    scope.organizationId,
+    scope.projectId,
+    entries
+  );
   const response: GeoCompetitorsResponse = { competitors };
   return response;
 });
@@ -295,12 +319,18 @@ export const deleteGeoCompetitor = Effect.fn("geo.competitorDelete")(function* (
 export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
   input: GeoSettingsUpsertInput
 ) {
+  const projectId = yield* ensureGeoProject(
+    { organizationId: input.organizationId, projectId: input.projectId },
+    input.companyName
+  );
+
   yield* geoDb("settings upsert failed", () =>
     db
       .insert(geoSettings)
       .values({
         id: crypto.randomUUID(),
         organizationId: input.organizationId,
+        projectId,
         companyName: input.companyName,
         aliases: input.aliases,
         competitors: input.competitors,
@@ -308,7 +338,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
         enabled: input.enabled,
       })
       .onConflictDoUpdate({
-        target: geoSettings.organizationId,
+        target: geoSettings.projectId,
         set: {
           companyName: input.companyName,
           aliases: input.aliases,
@@ -321,14 +351,12 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
 
   yield* syncGeoCompetitors(
     input.organizationId,
+    projectId,
     input.competitors.map((name) => ({ name, domain: null }))
   );
 
   const rows = yield* geoDb("settings lookup failed", () =>
-    db
-      .select()
-      .from(geoSettings)
-      .where(eq(geoSettings.organizationId, input.organizationId))
+    db.select().from(geoSettings).where(eq(geoSettings.projectId, projectId))
   );
 
   const row = rows.at(0);
@@ -340,11 +368,15 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
 });
 
 export const loadGeoLanguageShare = Effect.fn("geo.languageShare")(function* (
-  organizationId: string,
+  input: GeoScopeInput,
   days: number | undefined
 ) {
+  const scope = yield* resolveGeoScope(input);
   const result = yield* geoQuery("language share query failed", () =>
-    queryGeoLanguageShare({ organization_id: organizationId, days })
+    queryGeoLanguageShare({
+      ...geoScopeParams(scope),
+      days,
+    })
   );
 
   const response: GeoLanguageShareResponse = {
@@ -361,33 +393,46 @@ export const loadGeoLanguageShare = Effect.fn("geo.languageShare")(function* (
 });
 
 export const loadGeoOverview = Effect.fn("geo.overview")(function* (
-  organizationId: string,
+  input: GeoScopeInput,
   days: number | undefined
 ) {
+  const scope = yield* resolveGeoScope(input);
   const result = yield* geoQuery("overview query failed", () =>
-    queryGeoOverview({ organization_id: organizationId, days })
+    queryGeoOverview({
+      ...geoScopeParams(scope),
+      days,
+    })
   );
 
-  const response: GeoOverviewResponse = {
-    configured: isTinybirdConfigured(),
-    engines: (result?.data ?? []).map((row) => ({
+  const engines: GeoOverviewResponse["engines"] = (result?.data ?? []).map(
+    (row) => ({
       engine: row.engine,
       checks: Number(row.checks),
       mentions: Number(row.mentions),
       mentionRate: Number(row.mention_rate),
       avgPosition: toNullableNumber(row.avg_position),
       lastCheckedAt: row.last_checked_at,
-    })),
+    })
+  );
+
+  const response: GeoOverviewResponse = {
+    configured: isTinybirdConfigured(),
+    engines,
+    tracked: buildTrackedEngines(engines),
   };
   return response;
 });
 
 export const loadGeoTimeseries = Effect.fn("geo.timeseries")(function* (
-  organizationId: string,
+  input: GeoScopeInput,
   days: number | undefined
 ) {
+  const scope = yield* resolveGeoScope(input);
   const result = yield* geoQuery("timeseries query failed", () =>
-    queryGeoTimeseries({ organization_id: organizationId, days })
+    queryGeoTimeseries({
+      ...geoScopeParams(scope),
+      days,
+    })
   );
 
   const response: GeoTimeseriesResponse = {
@@ -403,10 +448,13 @@ export const loadGeoTimeseries = Effect.fn("geo.timeseries")(function* (
 });
 
 export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
-  organizationId: string
+  input: GeoScopeInput
 ) {
+  const scope = yield* resolveGeoScope(input);
   const result = yield* geoQuery("prompt results query failed", () =>
-    queryGeoPromptResults({ organization_id: organizationId })
+    queryGeoPromptResults({
+      ...geoScopeParams(scope),
+    })
   );
 
   const response: GeoPromptResultsResponse = {
@@ -426,9 +474,14 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
 });
 
 export const loadGeoCompetitorShare = Effect.fn("geo.competitorShare")(
-  function* (organizationId: string, days: number | undefined) {
+  function* (input: GeoScopeInput, days: number | undefined) {
+    const scope = yield* resolveGeoScope(input);
     const result = yield* geoQuery("competitor share query failed", () =>
-      queryGeoCompetitorShare({ organization_id: organizationId, days })
+      queryGeoCompetitorShare({
+        ...geoScopeParams(scope),
+        days,
+        limit: GEO_COMPETITOR_SHARE_LIMIT,
+      })
     );
 
     const response: GeoCompetitorShareResponse = {
@@ -443,21 +496,22 @@ export const loadGeoCompetitorShare = Effect.fn("geo.competitorShare")(
 );
 
 export const loadGeoCompetitorDetail = Effect.fn("geo.competitorDetail")(
-  function* (organizationId: string, brand: string, days: number | undefined) {
+  function* (input: GeoScopeInput, brand: string, days: number | undefined) {
+    const scope = yield* resolveGeoScope(input);
     const resolvedDays = days ?? GEO_COMPETITOR_DETAIL_DAYS;
 
     const [timeseries, prompts] = yield* Effect.all(
       [
         geoQuery("competitor timeseries query failed", () =>
           queryGeoCompetitorTimeseries({
-            organization_id: organizationId,
+            ...geoScopeParams(scope),
             brand,
             days: resolvedDays,
           })
         ),
         geoQuery("competitor prompts query failed", () =>
           queryGeoCompetitorPrompts({
-            organization_id: organizationId,
+            ...geoScopeParams(scope),
             brand,
             days: resolvedDays,
           })
@@ -487,10 +541,11 @@ export const loadGeoCompetitorDetail = Effect.fn("geo.competitorDetail")(
 );
 
 export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
-  organizationId: string,
+  input: GeoScopeInput,
   days: number | undefined,
   limit: number | undefined
 ) {
+  const scope = yield* resolveGeoScope(input);
   const [usage, overview] = yield* Effect.all(
     [
       geoQuery("model usage query failed", () =>
@@ -500,7 +555,10 @@ export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
         })
       ),
       geoQuery("overview query failed", () =>
-        queryGeoOverview({ organization_id: organizationId, days })
+        queryGeoOverview({
+          ...geoScopeParams(scope),
+          days,
+        })
       ),
     ],
     { concurrency: "unbounded" }
@@ -528,22 +586,23 @@ export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
 });
 
 export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
-  organizationId: string,
+  input: GeoScopeInput,
   days: number | undefined
 ) {
+  const scope = yield* resolveGeoScope(input);
   const resolvedDays = days ?? AI_TRAFFIC_DEFAULT_DAYS;
 
   const [overview, timeseries] = yield* Effect.all(
     [
       geoQuery("traffic overview query failed", () =>
         queryGeoTrafficOverview({
-          organization_id: organizationId,
+          ...geoScopeParams(scope),
           days: resolvedDays,
         })
       ),
       geoQuery("traffic timeseries query failed", () =>
         queryGeoTrafficTimeseries({
-          organization_id: organizationId,
+          ...geoScopeParams(scope),
           days: resolvedDays,
         })
       ),
@@ -580,17 +639,18 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
 });
 
 export const loadGeoTrafficLog = Effect.fn("geo.trafficLog")(function* (
-  organizationId: string,
+  input: GeoScopeInput,
   limit: number | undefined,
-  visitorType: string | undefined,
-  category: string | undefined
+  visitorTypes: readonly string[] | undefined,
+  categories: readonly string[] | undefined
 ) {
+  const scope = yield* resolveGeoScope(input);
   const log = yield* geoQuery("traffic log query failed", () =>
     queryGeoTrafficLog({
-      organization_id: organizationId,
+      ...geoScopeParams(scope),
       limit: limit ?? AI_TRAFFIC_DEFAULT_LOG_LIMIT,
-      visitor_type: visitorType ?? "",
-      category: category ?? "",
+      visitor_type: visitorTypes?.join(",") ?? "",
+      category: categories?.join(",") ?? "",
     })
   );
 
@@ -603,13 +663,14 @@ export const loadGeoTrafficLog = Effect.fn("geo.trafficLog")(function* (
 
 export const loadGeoTrafficJourneys = Effect.fn("geo.trafficJourneys")(
   function* (
-    organizationId: string,
+    input: GeoScopeInput,
     days: number | undefined,
     limit: number | undefined
   ) {
+    const scope = yield* resolveGeoScope(input);
     const journeys = yield* geoQuery("traffic journeys query failed", () =>
       queryGeoTrafficJourneys({
-        organization_id: organizationId,
+        ...geoScopeParams(scope),
         days: days ?? AI_TRAFFIC_DEFAULT_DAYS,
         limit: limit ?? AI_TRAFFIC_DEFAULT_JOURNEYS_LIMIT,
       })
@@ -633,13 +694,14 @@ export const loadGeoTrafficJourneys = Effect.fn("geo.trafficJourneys")(
 );
 
 export const loadGeoJourneyDetail = Effect.fn("geo.journeyDetail")(function* (
-  organizationId: string,
+  input: GeoScopeInput,
   journeyId: string,
   days: number | undefined
 ) {
+  const scope = yield* resolveGeoScope(input);
   const detail = yield* geoQuery("journey detail query failed", () =>
     queryGeoJourneyDetail({
-      organization_id: organizationId,
+      ...geoScopeParams(scope),
       journey_id: journeyId,
       days: days ?? AI_TRAFFIC_DEFAULT_DAYS,
       limit: GEO_JOURNEY_DETAIL_LIMIT,
@@ -663,14 +725,15 @@ export const loadGeoJourneyDetail = Effect.fn("geo.journeyDetail")(function* (
 });
 
 export const loadGeoTrafficPages = Effect.fn("geo.trafficPages")(function* (
-  organizationId: string,
+  input: GeoScopeInput,
   days: number | undefined,
   limit: number | undefined,
   visitorType: string | undefined
 ) {
+  const scope = yield* resolveGeoScope(input);
   const pages = yield* geoQuery("traffic pages query failed", () =>
     queryGeoTrafficPages({
-      organization_id: organizationId,
+      ...geoScopeParams(scope),
       days: days ?? AI_TRAFFIC_DEFAULT_DAYS,
       limit: limit ?? AI_TRAFFIC_DEFAULT_PAGES_LIMIT,
       visitor: visitorType ?? "",
@@ -691,19 +754,38 @@ export const loadGeoTrafficPages = Effect.fn("geo.trafficPages")(function* (
 });
 
 export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
-  organizationId: string
+  input: GeoScopeInput
 ) {
-  const [customRows, settingsRow] = yield* Effect.all(
+  const scope = yield* resolveGeoScope(input);
+  if (!scope.projectId) {
+    const emptyResponse: GeoTrackedPromptsResponse = {
+      configured: isTinybirdConfigured(),
+      prompts: [],
+    };
+    return emptyResponse;
+  }
+
+  const projectId = scope.projectId;
+  const [customRows, settingsRow, brand] = yield* Effect.all(
     [
       geoDb("prompts lookup failed", () =>
         db.query.geoPrompts.findMany({
-          where: eq(geoPrompts.organizationId, organizationId),
+          where: eq(geoPrompts.projectId, projectId),
           orderBy: [asc(geoPrompts.createdAt)],
         })
       ),
       geoDb("settings lookup failed", () =>
         db.query.geoSettings.findFirst({
-          where: eq(geoSettings.organizationId, organizationId),
+          where: eq(geoSettings.projectId, projectId),
+        })
+      ),
+      geoDb("brand lookup failed", () =>
+        db.query.brandSettings.findFirst({
+          columns: { companyDescription: true, audience: true },
+          where: and(
+            eq(brandSettings.organizationId, scope.organizationId),
+            eq(brandSettings.isDefault, true)
+          ),
         })
       ),
     ],
@@ -719,16 +801,6 @@ export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
     };
     return emptyResponse;
   }
-
-  const brand = yield* geoDb("brand lookup failed", () =>
-    db.query.brandSettings.findFirst({
-      columns: { companyDescription: true, audience: true },
-      where: and(
-        eq(brandSettings.organizationId, organizationId),
-        eq(brandSettings.isDefault, true)
-      ),
-    })
-  );
 
   const autoPrompts = buildGeoPrompts(
     toGeoSettings(settingsRow),
@@ -758,15 +830,18 @@ export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
 });
 
 export const createGeoPrompt = Effect.fn("geo.promptsCreate")(function* (
-  organizationId: string,
+  input: GeoScopeInput,
   prompt: string
 ) {
+  const scope = yield* requireGeoProject(input);
+  const projectId = scope.projectId;
   const rows = yield* geoDb("prompt create failed", () =>
     db
       .insert(geoPrompts)
       .values({
         id: crypto.randomUUID(),
-        organizationId,
+        organizationId: scope.organizationId,
+        projectId,
         prompt,
       })
       .returning()
@@ -830,21 +905,26 @@ export const toggleGeoPrompt = Effect.fn("geo.promptsToggle")(function* (
 });
 
 export const startGeoScan = Effect.fn("geo.startScan")(function* (
-  organizationId: string
+  input: GeoScopeInput
 ) {
+  const scope = yield* requireGeoProject(input);
+  const projectId = scope.projectId;
   const row = yield* geoDb("settings lookup failed", () =>
     db.query.geoSettings.findFirst({
       columns: { id: true },
-      where: eq(geoSettings.organizationId, organizationId),
+      where: eq(geoSettings.projectId, projectId),
     })
   );
 
   if (!row) {
-    return yield* Effect.fail(new GeoSettingsMissingError({ organizationId }));
+    return yield* Effect.fail(
+      new GeoSettingsMissingError({ organizationId: scope.organizationId })
+    );
   }
 
   return yield* Effect.tryPromise({
-    try: () => startGeoScanRun({ organizationId }),
+    try: () =>
+      startGeoScanRun({ organizationId: scope.organizationId, projectId }),
     catch: (cause) => new GeoScanStartError({ cause }),
   });
 });

@@ -221,14 +221,9 @@ export function Table<T>({
   const leadColumns = columns.length + (selectable ? 1 : 0);
 
   return (
-    <div
-      className={cn(
-        "w-full overflow-hidden border border-border bg-background text-sm",
-        className
-      )}
-    >
+    <div className={cn("w-full text-sm", className)}>
       <div
-        className="overflow-hidden"
+        className="overflow-hidden rounded-t-2xl border border-border border-b-0 bg-muted pb-3"
         ref={headerScrollRef}
         style={scrolls ? { scrollbarGutter: "stable" } : undefined}
       >
@@ -273,7 +268,7 @@ export function Table<T>({
 
       <div
         className={cn(
-          "scrollbar-floating",
+          "-mt-3 scrollbar-floating relative rounded-2xl border border-border bg-background outline-none",
           scrolls ? "overflow-auto" : "overflow-x-auto overflow-y-hidden"
         )}
         onScroll={handleScroll}
@@ -281,7 +276,7 @@ export function Table<T>({
         style={
           scrolls
             ? { height: bodyHeight, scrollbarGutter: "stable" }
-            : { height: contentHeight }
+            : { height: sortedRows.length === 0 ? bodyHeight : contentHeight }
         }
       >
         <table
