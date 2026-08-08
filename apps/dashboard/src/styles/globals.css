@@ -202,10 +202,6 @@
     @apply bg-background text-foreground;
   }
 
-  [data-slot="sidebar-inset"] {
-    scrollbar-gutter: stable;
-  }
-
   [data-slot="button"] {
     @apply corner-squircle;
   }
