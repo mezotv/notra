@@ -14,6 +14,7 @@ export function ChartSparkline({
   data,
   color,
   className,
+  markIncompleteTail = true,
 }: ChartSparklineProps) {
   const rows = useMemo(
     () =>
@@ -40,6 +41,8 @@ export function ChartSparkline({
     >
       <EChartsAreaChart.Area
         dataKey={SPARKLINE_SERIES_KEY}
+        enableBufferLine={markIncompleteTail}
+        strokeVariant="solid"
         variant="gradient"
       />
     </EChartsAreaChart>

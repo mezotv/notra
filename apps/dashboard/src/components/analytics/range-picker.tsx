@@ -1,0 +1,86 @@
+"use client";
+
+import { ArrowDown01Icon, Calendar03Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Button } from "@notra/ui/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@notra/ui/components/ui/popover";
+import { useState } from "react";
+import type { DateRange } from "react-day-picker";
+import { Calendar } from "@/components/calendar";
+import { ANALYTICS_RANGE_PRESETS } from "@/constants/analytics";
+import { localDayString, parseLocalDay } from "@/lib/analytics/date-range";
+import type { AnalyticsRangePickerProps } from "@/types/analytics";
+
+export function AnalyticsRangePicker({ control }: AnalyticsRangePickerProps) {
+  const [open, setOpen] = useState(false);
+  const [draft, setDraft] = useState<DateRange | undefined>();
+
+  const selected =
+    draft ??
+    (control.preset === "custom"
+      ? {
+          from: parseLocalDay(control.range.dateFrom),
+          to: parseLocalDay(control.range.dateTo),
+        }
+      : undefined);
+
+  const handleOpenChange = (next: boolean) => {
+    if (!next) {
+      setDraft(undefined);
+    }
+    setOpen(next);
+  };
+
+  return (
+    <Popover onOpenChange={handleOpenChange} open={open}>
+      <PopoverTrigger
+        render={<Button className="h-7 px-2" size="sm" variant="ghost" />}
+      >
+        <HugeiconsIcon icon={Calendar03Icon} size={14} />
+        <span className="text-xs tabular-nums">{control.label}</span>
+        <HugeiconsIcon icon={ArrowDown01Icon} size={12} />
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-auto p-0">
+        <div className="flex">
+          <div className="flex flex-col gap-1 border-border border-r p-2">
+            {ANALYTICS_RANGE_PRESETS.map((preset) => (
+              <Button
+                className="justify-start"
+                key={preset.value}
+                onClick={() => {
+                  control.setPreset(preset.value);
+                  handleOpenChange(false);
+                }}
+                size="sm"
+                variant={
+                  control.preset === preset.value ? "secondary" : "ghost"
+                }
+              >
+                {preset.label}
+              </Button>
+            ))}
+          </div>
+          <Calendar
+            defaultMonth={selected?.from}
+            disabled={{ after: new Date() }}
+            mode="range"
+            onSelect={(next) => {
+              setDraft(next);
+              if (next?.from && next.to) {
+                control.setCustom({
+                  dateFrom: localDayString(next.from),
+                  dateTo: localDayString(next.to),
+                });
+              }
+            }}
+            selected={selected}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}

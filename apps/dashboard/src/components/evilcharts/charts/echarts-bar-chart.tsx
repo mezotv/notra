@@ -2032,7 +2032,8 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
         applyChartMarkers(
           merged,
           markers,
-          live.resolved?.tokens.mutedForeground ?? "rgba(120, 120, 120, 1)"
+          live.resolved?.tokens.foreground ?? "rgba(60, 60, 60, 1)",
+          live.resolved?.tokens.background ?? "rgba(255, 255, 255, 1)"
         );
         Object.assign(merged, {
           animation: withEntrance,

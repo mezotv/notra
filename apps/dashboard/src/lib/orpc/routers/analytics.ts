@@ -16,6 +16,7 @@ import { runOrpcEffect } from "@/lib/orpc/effect";
 import { toAnalyticsOrpcError } from "@/lib/orpc/utils/analytics-errors";
 import {
   analyticsOrganizationInputSchema,
+  analyticsPostingPerformanceInputSchema,
   analyticsTimeseriesInputSchema,
   analyticsTopPostsInputSchema,
   leaderboardInputSchema,
@@ -59,7 +60,12 @@ export const analyticsRouter = {
         });
 
         return await runOrpcEffect(
-          loadEngagementTimeseries(input.organizationId, input.days),
+          loadEngagementTimeseries(input.organizationId, {
+            days: input.days,
+            timezone: input.timezone,
+            dateFrom: input.dateFrom,
+            dateTo: input.dateTo,
+          }),
           toAnalyticsOrpcError
         );
       }
@@ -74,7 +80,11 @@ export const analyticsRouter = {
       });
 
       return await runOrpcEffect(
-        loadTopPosts(input.organizationId, input.limit),
+        loadTopPosts(input.organizationId, input.limit, {
+          timezone: input.timezone,
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+        }),
         toAnalyticsOrpcError
       );
     }),
@@ -93,7 +103,7 @@ export const analyticsRouter = {
       );
     }),
   postingPerformance: authorizedProcedure
-    .input(analyticsTimeseriesInputSchema)
+    .input(analyticsPostingPerformanceInputSchema)
     .handler(
       async ({ context, input }): Promise<PostingPerformanceResponse> => {
         await assertOrganizationAccess({
@@ -103,7 +113,12 @@ export const analyticsRouter = {
         });
 
         return await runOrpcEffect(
-          loadPostingPerformance(input.organizationId, input.days),
+          loadPostingPerformance(input.organizationId, {
+            days: input.days,
+            timezone: input.timezone,
+            dateFrom: input.dateFrom,
+            dateTo: input.dateTo,
+          }),
           toAnalyticsOrpcError
         );
       }
@@ -176,7 +191,12 @@ export const analyticsRouter = {
       });
 
       return await runOrpcEffect(
-        loadFollowerGrowth(input.organizationId, input.days),
+        loadFollowerGrowth(input.organizationId, {
+          days: input.days,
+          timezone: input.timezone,
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+        }),
         toAnalyticsOrpcError
       );
     }),

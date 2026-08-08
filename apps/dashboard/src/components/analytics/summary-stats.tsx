@@ -10,7 +10,11 @@ import {
   formatMetric,
 } from "@/utils/analytics-charts";
 
-export function SummaryStats({ accounts, points }: SummaryStatsProps) {
+export function SummaryStats({
+  accounts,
+  points,
+  rangeHint,
+}: SummaryStatsProps) {
   const tiles = useMemo<AnalyticsStatTile[]>(() => {
     const summary = buildAnalyticsHeroSummary(accounts, points);
 
@@ -27,23 +31,23 @@ export function SummaryStats({ accounts, points }: SummaryStatsProps) {
       {
         label: "Followers",
         value: formatMetric(summary.followers),
-        hint: "across connected accounts",
+        hint: `across ${accounts.length} connected ${accounts.length === 1 ? "account" : "accounts"}`,
         accent: false,
       },
       {
         label: "Impressions",
         value: formatMetric(summary.impressions),
-        hint: "posts from the last 30 days",
+        hint: `posts, ${rangeHint}`,
         accent: false,
       },
       {
         label: "Interactions",
         value: formatMetric(summary.interactions),
-        hint: `${summary.posts} posts, last 30 days`,
+        hint: `${summary.posts} posts, ${rangeHint}`,
         accent: false,
       },
     ];
-  }, [accounts, points]);
+  }, [accounts, points, rangeHint]);
 
   return (
     <InstrumentGrid className="grid-cols-2 lg:grid-cols-4">

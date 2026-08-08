@@ -21,6 +21,7 @@ export interface ChartSparklineProps {
   data: number[];
   color: ChartColorPair;
   className?: string;
+  markIncompleteTail?: boolean;
 }
 
 export interface ChartMarker {

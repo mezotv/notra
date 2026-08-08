@@ -17,6 +17,7 @@ import { FollowersCard } from "@/components/analytics/followers-card";
 import { ImpressionsShareCard } from "@/components/analytics/impressions-share-card";
 import { LeaderboardCard } from "@/components/analytics/leaderboard-card";
 import { PostingPerformanceCard } from "@/components/analytics/posting-performance-card";
+import { AnalyticsRangePicker } from "@/components/analytics/range-picker";
 import { SummaryStats } from "@/components/analytics/summary-stats";
 import { TopPostsCard } from "@/components/analytics/top-posts-card";
 import { EmptyState } from "@/components/empty-state";
@@ -25,11 +26,10 @@ import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import {
-  ANALYTICS_TAB_VALUES,
-  ANALYTICS_TIMESERIES_DAYS,
-} from "@/constants/analytics";
+import { ANALYTICS_TAB_VALUES } from "@/constants/analytics";
 import { CHART_MUTED_COLOR } from "@/constants/charts";
+import { buildTimelineRange, rangeHintLabel } from "@/lib/analytics/date-range";
+import { useAnalyticsRange } from "@/lib/hooks/use-analytics-range";
 import {
   useEngagementTimeseries,
   useFollowerGrowth,
@@ -39,13 +39,11 @@ import {
   useTopPosts,
 } from "@/lib/hooks/use-social-analytics";
 import { cn } from "@/lib/utils";
-import type { ChartColorPair, ChartMarker } from "@/types/charts";
+import type { ChartColorPair } from "@/types/charts";
 import {
   accountSeriesKey,
   buildAccountSeriesRows,
-  buildPostingPerformanceRows,
-  buildTimelineDays,
-  markerLabelForDate,
+  buildAdoptionMarkers,
 } from "@/utils/analytics-charts";
 import {
   accountSeriesColorPair,
@@ -90,12 +88,40 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       : orgFromList;
   const organizationId = organization?.id ?? "";
 
+  const engagementRange = useAnalyticsRange("engagementRange");
+  const impressionsRange = useAnalyticsRange("impressionsRange");
+  const volumeRange = useAnalyticsRange("volumeRange");
+  const followersRange = useAnalyticsRange("followersRange");
+  const bestTimeRange = useAnalyticsRange("bestTimeRange", "90d");
+  const topPostsRange = useAnalyticsRange("topPostsRange");
+
   const { data: overview, isPending: isOverviewPending } =
     useSocialOverview(organizationId);
-  const { data: engagement } = useEngagementTimeseries(organizationId);
-  const { data: followerGrowth } = useFollowerGrowth(organizationId);
-  const { data: topPosts } = useTopPosts(organizationId);
-  const { data: performance } = usePostingPerformance(organizationId);
+  const { data: engagement } = useEngagementTimeseries(
+    organizationId,
+    engagementRange.range
+  );
+  const { data: impressionSeries } = useEngagementTimeseries(
+    organizationId,
+    impressionsRange.range
+  );
+  const { data: volumeSeries } = useEngagementTimeseries(
+    organizationId,
+    volumeRange.range
+  );
+  const { data: followerGrowth } = useFollowerGrowth(
+    organizationId,
+    followersRange.range
+  );
+  const { data: topPosts } = useTopPosts(
+    organizationId,
+    undefined,
+    topPostsRange.range
+  );
+  const { data: performance } = usePostingPerformance(
+    organizationId,
+    bestTimeRange.range
+  );
   const { data: adoption } = useNotraAdoption(organizationId);
 
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
@@ -169,67 +195,88 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const selectedKeys = useMemo(() => new Set(visibleKeys), [visibleKeys]);
 
-  const timelineDays = useMemo(
-    () => buildTimelineDays(ANALYTICS_TIMESERIES_DAYS),
-    []
+  const visibleAccounts = useMemo(
+    () =>
+      accounts.filter((account) =>
+        selectedKeys.has(
+          accountSeriesKey(account.provider, account.providerAccountId)
+        )
+      ),
+    [accounts, selectedKeys]
+  );
+
+  const visiblePoints = useMemo(
+    () =>
+      (engagement?.points ?? []).filter((point) =>
+        selectedKeys.has(
+          accountSeriesKey(point.provider, point.providerAccountId)
+        )
+      ),
+    [engagement?.points, selectedKeys]
+  );
+
+  const engagementTimeline = useMemo(
+    () => buildTimelineRange(engagementRange.range),
+    [engagementRange.range]
+  );
+
+  const impressionsTimeline = useMemo(
+    () => buildTimelineRange(impressionsRange.range),
+    [impressionsRange.range]
+  );
+
+  const volumeTimeline = useMemo(
+    () => buildTimelineRange(volumeRange.range),
+    [volumeRange.range]
   );
 
   const engagementRows = useMemo(
     () =>
       buildAccountSeriesRows(
-        timelineDays,
+        engagementTimeline,
         visibleKeys,
         engagement?.points ?? [],
         (point) =>
           (point.likes ?? 0) + (point.replies ?? 0) + (point.reposts ?? 0)
       ),
-    [timelineDays, visibleKeys, engagement?.points]
+    [engagementTimeline, visibleKeys, engagement?.points]
   );
 
   const impressionRows = useMemo(
     () =>
       buildAccountSeriesRows(
-        timelineDays,
+        impressionsTimeline,
         visibleKeys,
-        engagement?.points ?? [],
+        impressionSeries?.points ?? [],
         (point) => point.impressions ?? 0
       ),
-    [timelineDays, visibleKeys, engagement?.points]
+    [impressionsTimeline, visibleKeys, impressionSeries?.points]
   );
 
   const postRows = useMemo(
     () =>
       buildAccountSeriesRows(
-        timelineDays,
+        volumeTimeline,
         visibleKeys,
-        engagement?.points ?? [],
+        volumeSeries?.points ?? [],
         (point) => point.posts
       ),
-    [timelineDays, visibleKeys, engagement?.points]
+    [volumeTimeline, visibleKeys, volumeSeries?.points]
   );
 
-  const markers = useMemo(() => {
-    const result: ChartMarker[] = [];
-    const joined = markerLabelForDate(
-      timelineDays,
-      adoption?.organizationCreatedAt ?? null
-    );
-    if (joined !== null) {
-      result.push({ value: joined, label: "Joined Notra" });
-    }
-    const firstPost = markerLabelForDate(
-      timelineDays,
-      adoption?.firstNotraPostAt ?? null
-    );
-    if (firstPost !== null && firstPost !== joined) {
-      result.push({ value: firstPost, label: "First Notra post" });
-    }
-    return result;
-  }, [timelineDays, adoption]);
+  const engagementMarkers = useMemo(
+    () => buildAdoptionMarkers(engagementTimeline, adoption),
+    [engagementTimeline, adoption]
+  );
 
-  const performanceRows = useMemo(
-    () => buildPostingPerformanceRows(performance?.points ?? []),
-    [performance?.points]
+  const impressionsMarkers = useMemo(
+    () => buildAdoptionMarkers(impressionsTimeline, adoption),
+    [impressionsTimeline, adoption]
+  );
+
+  const volumeMarkers = useMemo(
+    () => buildAdoptionMarkers(volumeTimeline, adoption),
+    [volumeTimeline, adoption]
   );
 
   const toggleAccount = (key: string) => {
@@ -303,7 +350,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         )}
 
         <InstrumentReveal active={stage >= STAGE.rail}>
-          <SummaryStats accounts={accounts} points={engagement?.points ?? []} />
+          <SummaryStats
+            accounts={visibleAccounts}
+            points={visiblePoints}
+            rangeHint={rangeHintLabel(engagementRange)}
+          />
         </InstrumentReveal>
 
         <Tabs
@@ -317,7 +368,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             <TabsTrigger value="leaderboard">Leaderboard</TabsTrigger>
           </TabsList>
 
-          <TabsContent className="mt-6" value="overview">
+          <TabsContent className="mt-6" keepMounted value="overview">
             <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-12">
               <InstrumentReveal
                 active={stage >= STAGE.modules}
@@ -325,15 +376,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 order={0}
               >
                 <AccountSeriesChartCard
+                  action={<AnalyticsRangePicker control={engagementRange} />}
                   allKeys={allKeys}
                   config={accountConfig}
-                  emptyMessage="No engagement data yet"
+                  description="Likes, replies and reposts across your accounts"
+                  emptyMessage="No engagement data for this time frame"
                   hero
                   hiddenKeys={hiddenKeys}
                   kind="area"
-                  markers={markers}
+                  markers={engagementMarkers}
+                  markIncompleteTail={engagementRange.includesToday}
                   onToggleSeries={toggleAccount}
-                  readout={`${ANALYTICS_TIMESERIES_DAYS}D`}
                   rows={engagementRows}
                   title="Engagement"
                 />
@@ -345,10 +398,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               >
                 <FollowersCard
                   accounts={accounts}
+                  action={<AnalyticsRangePicker control={followersRange} />}
                   colorForKey={(key) =>
                     accountColors.get(key) ?? CHART_MUTED_COLOR
                   }
                   hiddenKeys={hiddenKeys}
+                  markIncompleteTail={followersRange.includesToday}
                   points={followerGrowth?.points ?? []}
                 />
               </InstrumentReveal>
@@ -357,22 +412,28 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 className="lg:col-span-4"
                 order={2}
               >
-                <ImpressionsShareCard organizationId={organizationId} />
+                <ImpressionsShareCard
+                  colorForKey={(key) =>
+                    accountColors.get(key) ?? CHART_MUTED_COLOR
+                  }
+                  organizationId={organizationId}
+                />
               </InstrumentReveal>
               <InstrumentReveal
                 active={stage >= STAGE.modules}
-                className="lg:col-span-6"
+                className="lg:col-span-8"
                 order={4}
               >
                 <AccountSeriesChartCard
+                  action={<AnalyticsRangePicker control={impressionsRange} />}
                   allKeys={allKeys}
                   config={accountConfig}
-                  emptyMessage="No impression data yet"
+                  emptyMessage="No impression data for this time frame"
                   hiddenKeys={hiddenKeys}
                   kind="area"
-                  markers={markers}
+                  markers={impressionsMarkers}
+                  markIncompleteTail={impressionsRange.includesToday}
                   onToggleSeries={toggleAccount}
-                  readout={`${ANALYTICS_TIMESERIES_DAYS}D`}
                   rows={impressionRows}
                   title="Impressions"
                 />
@@ -383,14 +444,15 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 order={5}
               >
                 <AccountSeriesChartCard
+                  action={<AnalyticsRangePicker control={volumeRange} />}
                   allKeys={allKeys}
                   config={accountConfig}
-                  emptyMessage="No posts tracked yet"
+                  emptyMessage="No posts for this time frame"
                   hiddenKeys={hiddenKeys}
                   kind="bar"
-                  markers={markers}
+                  markers={volumeMarkers}
+                  markIncompleteTail={volumeRange.includesToday}
                   onToggleSeries={toggleAccount}
-                  readout={`${ANALYTICS_TIMESERIES_DAYS}D`}
                   rows={postRows}
                   title="Publishing volume"
                 />
@@ -400,19 +462,25 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 className="lg:col-span-6"
                 order={6}
               >
-                <PostingPerformanceCard rows={performanceRows} />
+                <PostingPerformanceCard
+                  action={<AnalyticsRangePicker control={bestTimeRange} />}
+                  points={performance?.points ?? []}
+                />
               </InstrumentReveal>
               <InstrumentReveal
                 active={stage >= STAGE.modules}
-                className="lg:col-span-6"
+                className="lg:col-span-12"
                 order={7}
               >
-                <TopPostsCard posts={topPosts?.posts ?? []} />
+                <TopPostsCard
+                  action={<AnalyticsRangePicker control={topPostsRange} />}
+                  posts={topPosts?.posts ?? []}
+                />
               </InstrumentReveal>
             </InstrumentGrid>
           </TabsContent>
 
-          <TabsContent className="mt-6" value="leaderboard">
+          <TabsContent className="mt-6" keepMounted value="leaderboard">
             <LeaderboardCard
               organizationId={organizationId}
               organizationSlug={organizationSlug}

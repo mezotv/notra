@@ -103,7 +103,7 @@ export function LeaderboardCard({
       {
         key: "rank",
         header: "Rank",
-        width: "4.5rem",
+        width: "5.75rem",
         sortable: true,
         cell: (row) => (
           <span className="font-mono text-base tabular-nums">{row.rank}</span>

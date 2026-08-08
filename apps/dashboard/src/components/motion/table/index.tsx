@@ -123,8 +123,8 @@ export function Table<T>({
   const paddingBottom = lastVirtualItem ? totalSize - lastVirtualItem.end : 0;
 
   const resolvedWidths = useMemo(
-    () => resolveColumnWidths(orderedColumns, selectable),
-    [orderedColumns, selectable]
+    () => resolveColumnWidths(orderedColumns),
+    [orderedColumns]
   );
 
   const columnGroup = (
@@ -230,7 +230,7 @@ export function Table<T>({
         <table
           className={cn(
             "border-collapse",
-            sized ? "w-max min-w-full" : "min-w-full"
+            sized ? "w-max min-w-full" : "w-full"
           )}
           style={{ tableLayout: "fixed" }}
         >
@@ -282,7 +282,7 @@ export function Table<T>({
         <table
           className={cn(
             "border-collapse",
-            sized ? "w-max min-w-full" : "min-w-full"
+            sized ? "w-max min-w-full" : "w-full"
           )}
           style={{ tableLayout: "fixed" }}
         >

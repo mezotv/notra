@@ -1,4 +1,7 @@
-import type { LeaderboardWindow } from "@/types/analytics";
+import type {
+  LeaderboardWindow,
+  PostingActivityLevel,
+} from "@/types/analytics";
 
 export const ANALYTICS_TIMESERIES_DAYS = 30;
 export const ANALYTICS_TOP_POSTS_LIMIT = 8;
@@ -34,3 +37,38 @@ export const CONNECT_LINKEDIN_CLASS =
   "bg-[#0a66c2] text-white hover:bg-[#0a66c2]/90";
 
 export const ANALYTICS_TAB_VALUES = ["overview", "leaderboard"] as const;
+
+export const ANALYTICS_TOOLTIP_DELAY_MS = 200;
+
+export const ANALYTICS_RANGE_PRESETS = [
+  { value: "today", label: "Today", compact: "Today" },
+  { value: "yesterday", label: "Yesterday", compact: "Yesterday" },
+  { value: "7d", label: "Last 7 days", compact: "7D" },
+  { value: "30d", label: "Last 30 days", compact: "30D" },
+  { value: "90d", label: "Last 90 days", compact: "90D" },
+] as const;
+
+export const ANALYTICS_RANGE_PRESET_DAYS = {
+  today: 0,
+  yesterday: 1,
+  "7d": 6,
+  "30d": 29,
+  "90d": 89,
+} as const;
+
+export const POSTING_ACTIVITY_LABELS: Record<PostingActivityLevel, string> = {
+  quiet: "No activity",
+  low: "Low activity",
+  medium: "Medium activity",
+  high: "High activity",
+};
+
+export const POSTING_ACTIVITY_BAR_CLASSES: Record<
+  PostingActivityLevel,
+  string
+> = {
+  quiet: "bg-muted",
+  low: "bg-chart-1/40",
+  medium: "bg-chart-1/70",
+  high: "bg-chart-1",
+};

@@ -98,6 +98,7 @@
     "posthog-js": "^1.399.2",
     "postprocessing": "^6.36.0",
     "react": "^19.2.8",
+    "react-day-picker": "^9",
     "react-diff-viewer-continued": "^3.4.0",
     "react-dom": "^19.2.8",
     "react-hotkeys-hook": "^5.2.3",

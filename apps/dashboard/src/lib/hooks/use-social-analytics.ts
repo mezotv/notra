@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type {
+  AnalyticsDateRange,
   EngagementTimeseriesResponse,
   FollowerGrowthResponse,
   LeaderboardResponse,
@@ -17,6 +18,10 @@ import { dashboardOrpc } from "../orpc/query";
 const DEFAULT_TIMESERIES_DAYS = 30;
 const DEFAULT_TOP_POSTS_LIMIT = 8;
 
+function browserTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 export function useSocialOverview(organizationId: string) {
   return useQuery<SocialOverviewResponse>({
     ...dashboardOrpc.analytics.overview.queryOptions({
@@ -27,30 +32,58 @@ export function useSocialOverview(organizationId: string) {
   });
 }
 
-export function useEngagementTimeseries(organizationId: string, days?: number) {
+export function useEngagementTimeseries(
+  organizationId: string,
+  range?: AnalyticsDateRange
+) {
   return useQuery<EngagementTimeseriesResponse>({
     ...dashboardOrpc.analytics.engagementTimeseries.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_TIMESERIES_DAYS },
+      input: {
+        organizationId,
+        days: range ? undefined : DEFAULT_TIMESERIES_DAYS,
+        timezone: browserTimezone(),
+        dateFrom: range?.dateFrom,
+        dateTo: range?.dateTo,
+      },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load engagement data" },
   });
 }
 
-export function useTopPosts(organizationId: string, limit?: number) {
+export function useTopPosts(
+  organizationId: string,
+  limit?: number,
+  range?: AnalyticsDateRange
+) {
   return useQuery<TopPostsResponse>({
     ...dashboardOrpc.analytics.topPosts.queryOptions({
-      input: { organizationId, limit: limit ?? DEFAULT_TOP_POSTS_LIMIT },
+      input: {
+        organizationId,
+        limit: limit ?? DEFAULT_TOP_POSTS_LIMIT,
+        timezone: browserTimezone(),
+        dateFrom: range?.dateFrom,
+        dateTo: range?.dateTo,
+      },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load top posts" },
   });
 }
 
-export function useFollowerGrowth(organizationId: string, days?: number) {
+export function useFollowerGrowth(
+  organizationId: string,
+  range?: AnalyticsDateRange
+) {
   return useQuery<FollowerGrowthResponse>({
     ...dashboardOrpc.analytics.followerGrowth.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_TIMESERIES_DAYS },
+      input: {
+        organizationId,
+        days: range ? undefined : DEFAULT_TIMESERIES_DAYS,
+        timezone: browserTimezone(),
+        dateFrom: range?.dateFrom,
+        dateTo: range?.dateTo,
+      },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load follower growth" },
@@ -59,10 +92,19 @@ export function useFollowerGrowth(organizationId: string, days?: number) {
 
 const DEFAULT_PERFORMANCE_DAYS = 90;
 
-export function usePostingPerformance(organizationId: string, days?: number) {
+export function usePostingPerformance(
+  organizationId: string,
+  range?: AnalyticsDateRange
+) {
   return useQuery<PostingPerformanceResponse>({
     ...dashboardOrpc.analytics.postingPerformance.queryOptions({
-      input: { organizationId, days: days ?? DEFAULT_PERFORMANCE_DAYS },
+      input: {
+        organizationId,
+        days: range ? undefined : DEFAULT_PERFORMANCE_DAYS,
+        timezone: browserTimezone(),
+        dateFrom: range?.dateFrom,
+        dateTo: range?.dateTo,
+      },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load posting performance" },

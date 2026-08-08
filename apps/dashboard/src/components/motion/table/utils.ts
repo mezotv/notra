@@ -46,9 +46,10 @@ export function readSortValue<T>(
 
 const FR_WIDTH_REGEX = /^([\d.]+)fr$/;
 
+const PERCENT_DECIMALS = 4;
+
 export function resolveColumnWidths<T>(
-  columns: readonly TableColumn<T>[],
-  selectable: boolean
+  columns: readonly TableColumn<T>[]
 ): (string | undefined)[] {
   const frValues = columns.map((column) => {
     const match = column.width ? FR_WIDTH_REGEX.exec(column.width) : null;
@@ -62,19 +63,11 @@ export function resolveColumnWidths<T>(
     return columns.map((column) => column.width);
   }
 
-  const fixed = columns
-    .map((column, index) => (frValues[index] === null ? column.width : null))
-    .filter((width): width is string => Boolean(width));
-  if (selectable) {
-    fixed.push(CHECKBOX_WIDTH);
-  }
-  const fixedSum = fixed.length > 0 ? ` - ${fixed.join(" - ")}` : "";
-
   return columns.map((column, index) => {
     const fr = frValues[index];
     if (fr === null || fr === undefined) {
       return column.width;
     }
-    return `calc((100%${fixedSum}) * ${fr / totalFr})`;
+    return `${((fr / totalFr) * 100).toFixed(PERCENT_DECIMALS)}%`;
   });
 }

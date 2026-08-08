@@ -12,9 +12,11 @@ import { DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/constants/charts";
 import { useLeaderboard } from "@/lib/hooks/use-social-analytics";
 import type {
   ImpressionsShareCardProps,
+  ImpressionsSharePieSlice,
   ImpressionsShareRow,
 } from "@/types/analytics";
-import { donutSliceColors } from "@/utils/chart-colors";
+import { accountSeriesKey } from "@/utils/analytics-charts";
+import { seriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";
 
 const WINDOW_DAYS = 30;
@@ -22,25 +24,29 @@ const PERCENT = 100;
 
 export function ImpressionsShareCard({
   organizationId,
+  colorForKey,
 }: ImpressionsShareCardProps) {
   const { data } = useLeaderboard(organizationId, WINDOW_DAYS);
 
   const { rows, config, total, caption } = useMemo(() => {
-    const shareRows: ImpressionsShareRow[] = (data?.entries ?? [])
+    const shareRows = (data?.entries ?? [])
       .filter((entry) => (entry.impressions ?? 0) > 0)
       .map((entry) => ({
         account: `@${entry.username}`,
         impressions: entry.impressions ?? 0,
+        seriesKey: accountSeriesKey(entry.provider, entry.providerAccountId),
       }));
-    const sliceRows = shareRows.map((row, index) => ({
-      ...row,
-      slice: chartKey(`${row.account}-${index}`),
-    }));
+    const sliceRows: ImpressionsSharePieSlice[] = shareRows.map(
+      (row, index) => ({
+        ...row,
+        slice: chartKey(`${row.account}-${index}`),
+      })
+    );
     const shareConfig: ChartConfig = {};
-    for (const [index, row] of sliceRows.entries()) {
+    for (const row of sliceRows) {
       shareConfig[row.slice] = {
         label: row.account,
-        colors: donutSliceColors(index, row.account),
+        colors: seriesColors(colorForKey(row.seriesKey)),
       };
     }
     const shareTotal = sliceRows.reduce((sum, row) => sum + row.impressions, 0);
@@ -61,7 +67,10 @@ export function ImpressionsShareCard({
   }, [data?.entries]);
 
   return (
-    <InstrumentModule eyebrow="Impressions share">
+    <InstrumentModule
+      eyebrow="Impressions share"
+      variant="panel"
+    >
       {rows.length === 0 ? (
         <InstrumentEmpty
           className="h-56"

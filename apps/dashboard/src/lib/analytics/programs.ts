@@ -37,6 +37,7 @@ import { buildAccountRow } from "@/lib/analytics/rows";
 import { resolveTwitterAccount } from "@/lib/analytics/tracked-accounts";
 import { collectTwitterRows } from "@/lib/analytics/twitter-sync";
 import type {
+  AnalyticsRangeOptions,
   EngagementTimeseriesResponse,
   FollowerGrowthResponse,
   LeaderboardAccount,
@@ -146,9 +147,15 @@ export const loadSocialOverview = Effect.fn("analytics.overview")(function* (
 
 export const loadEngagementTimeseries = Effect.fn(
   "analytics.engagementTimeseries"
-)(function* (organizationId: string, days: number | undefined) {
+)(function* (organizationId: string, range: AnalyticsRangeOptions) {
   const result = yield* analyticsQuery("query failed", () =>
-    queryEngagementTimeseries({ organization_id: organizationId, days })
+    queryEngagementTimeseries({
+      organization_id: organizationId,
+      days: range.days,
+      timezone: range.timezone,
+      date_from: range.dateFrom,
+      date_to: range.dateTo,
+    })
   );
 
   const response: EngagementTimeseriesResponse = {
@@ -169,12 +176,19 @@ export const loadEngagementTimeseries = Effect.fn(
 
 export const loadTopPosts = Effect.fn("analytics.topPosts")(function* (
   organizationId: string,
-  limit: number | undefined
+  limit: number | undefined,
+  range: AnalyticsRangeOptions
 ) {
   const [result, accounts, tracked] = yield* Effect.all(
     [
       analyticsQuery("top posts query failed", () =>
-        queryTopPosts({ organization_id: organizationId, limit })
+        queryTopPosts({
+          organization_id: organizationId,
+          limit,
+          timezone: range.timezone,
+          date_from: range.dateFrom,
+          date_to: range.dateTo,
+        })
       ),
       analyticsDb("accounts lookup failed", () =>
         db.query.connectedSocialAccounts.findMany({
@@ -282,16 +296,24 @@ export const loadNotraAdoption = Effect.fn("analytics.adoption")(function* (
 });
 
 export const loadPostingPerformance = Effect.fn("analytics.postingPerformance")(
-  function* (organizationId: string, days: number | undefined) {
+  function* (organizationId: string, range: AnalyticsRangeOptions) {
     const result = yield* analyticsQuery(
       "posting performance query failed",
-      () => queryPostingPerformance({ organization_id: organizationId, days })
+      () =>
+        queryPostingPerformance({
+          organization_id: organizationId,
+          days: range.days,
+          timezone: range.timezone,
+          date_from: range.dateFrom,
+          date_to: range.dateTo,
+        })
     );
 
     const response: PostingPerformanceResponse = {
       configured: isTinybirdConfigured(),
       points: (result?.data ?? []).map((row) => ({
         weekday: Number(row.weekday),
+        hour: Number(row.hour),
         posts: Number(row.posts),
         engagement: Number(row.engagement),
         impressions: toNullableNumber(row.impressions),
@@ -546,9 +568,15 @@ export const untrackTwitterAccount = Effect.fn("analytics.untrackAccount")(
 );
 
 export const loadFollowerGrowth = Effect.fn("analytics.followerGrowth")(
-  function* (organizationId: string, days: number | undefined) {
+  function* (organizationId: string, range: AnalyticsRangeOptions) {
     const result = yield* analyticsQuery("follower growth query failed", () =>
-      queryFollowerGrowth({ organization_id: organizationId, days })
+      queryFollowerGrowth({
+        organization_id: organizationId,
+        days: range.days,
+        timezone: range.timezone,
+        date_from: range.dateFrom,
+        date_to: range.dateTo,
+      })
     );
 
     const response: FollowerGrowthResponse = {

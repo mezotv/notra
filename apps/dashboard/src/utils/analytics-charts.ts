@@ -2,13 +2,18 @@ import { TOP_POST_CONTENT_PREVIEW_LENGTH } from "@/constants/analytics";
 import type {
   AccountSeriesRow,
   AnalyticsHeroSummary,
+  BestPostingSlot,
   EngagementTimeseriesPoint,
   FollowerGrowthPoint,
   LeaderboardDetailMetric,
-  PostingPerformanceChartRow,
+  NotraAdoptionResponse,
+  PostingActivityLevel,
+  PostingHeatmapCell,
   PostingPerformancePoint,
+  PostingTimeSlot,
   SocialOverviewAccount,
 } from "@/types/analytics";
+import type { ChartMarker } from "@/types/charts";
 import { chartKey } from "@/utils/chart-keys";
 
 const compactFormatter = new Intl.NumberFormat("en", {
@@ -21,8 +26,7 @@ const dayLabelFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
-const MS_PER_DAY = 86_400_000;
-const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+export const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function formatMetric(value: number | null): string {
   if (value === null) {
@@ -44,16 +48,6 @@ export function accountSeriesKey(
   providerAccountId: string
 ): string {
   return chartKey(`${provider}-${providerAccountId}`);
-}
-
-export function buildTimelineDays(days: number): string[] {
-  const today = new Date();
-  const result: string[] = [];
-  for (let offset = days - 1; offset >= 0; offset -= 1) {
-    const date = new Date(today.getTime() - offset * MS_PER_DAY);
-    result.push(date.toISOString().slice(0, 10));
-  }
-  return result;
 }
 
 export function buildAccountSeriesRows(
@@ -80,7 +74,7 @@ export function buildAccountSeriesRows(
   });
 }
 
-export function markerLabelForDate(
+function markerLabelForDate(
   timelineDays: string[],
   isoDate: string | null
 ): string | null {
@@ -114,18 +108,186 @@ export function sumMetric(
   return total;
 }
 
-export function buildPostingPerformanceRows(
-  points: PostingPerformancePoint[]
-): PostingPerformanceChartRow[] {
-  const byWeekday = new Map(points.map((point) => [point.weekday, point]));
-  return WEEKDAY_LABELS.map((label, index) => {
-    const point = byWeekday.get(index + 1);
+const HOURS_IN_DAY = 24;
+const HIGH_ACTIVITY_SHARE = 0.75;
+const MEDIUM_ACTIVITY_SHARE = 0.4;
+
+function postingActivityLevel(
+  avgEngagement: number,
+  maxAvgEngagement: number
+): PostingActivityLevel {
+  if (avgEngagement <= 0 || maxAvgEngagement <= 0) {
+    return "quiet";
+  }
+  const share = avgEngagement / maxAvgEngagement;
+  if (share >= HIGH_ACTIVITY_SHARE) {
+    return "high";
+  }
+  if (share >= MEDIUM_ACTIVITY_SHARE) {
+    return "medium";
+  }
+  return "low";
+}
+
+export function buildPostingTimeSlots(
+  points: PostingPerformancePoint[],
+  weekday: number | null = null
+): PostingTimeSlot[] {
+  const source =
+    weekday === null
+      ? points
+      : points.filter((point) => point.weekday === weekday);
+  const totals = new Map<number, { posts: number; engagement: number }>();
+  for (const point of source) {
+    const entry = totals.get(point.hour) ?? { posts: 0, engagement: 0 };
+    entry.posts += point.posts;
+    entry.engagement += point.engagement;
+    totals.set(point.hour, entry);
+  }
+  const slots = Array.from({ length: HOURS_IN_DAY }, (_, hour) => {
+    const entry = totals.get(hour);
+    const posts = entry?.posts ?? 0;
     return {
-      day: label,
-      avgEngagement: point?.avgEngagement ?? 0,
-      posts: point?.posts ?? 0,
+      hour,
+      posts,
+      avgEngagement: entry && posts > 0 ? entry.engagement / posts : 0,
     };
   });
+  const maxAvgEngagement = slots.reduce(
+    (max, slot) => Math.max(max, slot.avgEngagement),
+    0
+  );
+  return slots.map((slot) => ({
+    ...slot,
+    level: postingActivityLevel(slot.avgEngagement, maxAvgEngagement),
+  }));
+}
+
+const MIN_BEST_SLOT_POSTS = 2;
+
+const WEEKDAYS_IN_WEEK = 7;
+
+export function buildPostingHeatmap(
+  points: PostingPerformancePoint[]
+): PostingHeatmapCell[][] {
+  const totals = new Map<string, { posts: number; engagement: number }>();
+  for (const point of points) {
+    const key = `${point.weekday}-${point.hour}`;
+    const entry = totals.get(key) ?? { posts: 0, engagement: 0 };
+    entry.posts += point.posts;
+    entry.engagement += point.engagement;
+    totals.set(key, entry);
+  }
+  const cells = Array.from({ length: WEEKDAYS_IN_WEEK }, (_, dayIndex) =>
+    Array.from({ length: HOURS_IN_DAY }, (_, hour) => {
+      const entry = totals.get(`${dayIndex + 1}-${hour}`);
+      const posts = entry?.posts ?? 0;
+      return {
+        weekday: dayIndex + 1,
+        hour,
+        posts,
+        avgEngagement: entry && posts > 0 ? entry.engagement / posts : 0,
+      };
+    })
+  );
+  const maxAvgEngagement = cells
+    .flat()
+    .reduce((max, cell) => Math.max(max, cell.avgEngagement), 0);
+  return cells.map((row) =>
+    row.map((cell) => ({
+      ...cell,
+      level: postingActivityLevel(cell.avgEngagement, maxAvgEngagement),
+    }))
+  );
+}
+
+export function findBestPostingSlot(
+  points: PostingPerformancePoint[],
+  weekday: number | null = null
+): BestPostingSlot | null {
+  const source =
+    weekday === null
+      ? points
+      : points.filter((point) => point.weekday === weekday);
+  const sampled = source.filter((point) => point.posts >= MIN_BEST_SLOT_POSTS);
+  const candidates = sampled.length > 0 ? sampled : source;
+  let best: PostingPerformancePoint | null = null;
+  for (const point of candidates) {
+    if (point.posts === 0) {
+      continue;
+    }
+    const beatsAverage =
+      best === null || point.avgEngagement > best.avgEngagement;
+    const breaksTie =
+      best !== null &&
+      point.avgEngagement === best.avgEngagement &&
+      point.posts > best.posts;
+    if (beatsAverage || breaksTie) {
+      best = point;
+    }
+  }
+  if (best === null) {
+    return null;
+  }
+  return {
+    weekday: WEEKDAY_LABELS[best.weekday - 1] ?? "",
+    hour: best.hour,
+    posts: best.posts,
+    avgEngagement: best.avgEngagement,
+  };
+}
+
+const HOUR_PAD_LENGTH = 2;
+
+export function formatHourRange(hour: number): string {
+  const label = String(hour).padStart(HOUR_PAD_LENGTH, "0");
+  return `${label}:00 - ${label}:59`;
+}
+
+export function timezoneAbbreviation(): string {
+  const parts = new Intl.DateTimeFormat(undefined, {
+    timeZoneName: "short",
+  }).formatToParts(new Date());
+  return parts.find((part) => part.type === "timeZoneName")?.value ?? "";
+}
+
+const MIN_SLOT_HEIGHT_PERCENT = 12;
+const MAX_SLOT_HEIGHT_PERCENT = 100;
+
+export function postingSlotHeightPercent(
+  avgEngagement: number,
+  maxAvgEngagement: number
+): number {
+  if (maxAvgEngagement <= 0 || avgEngagement <= 0) {
+    return MIN_SLOT_HEIGHT_PERCENT;
+  }
+  return (
+    MIN_SLOT_HEIGHT_PERCENT +
+    (MAX_SLOT_HEIGHT_PERCENT - MIN_SLOT_HEIGHT_PERCENT) *
+      (avgEngagement / maxAvgEngagement)
+  );
+}
+
+export function buildAdoptionMarkers(
+  timelineDays: string[],
+  adoption: NotraAdoptionResponse | undefined
+): ChartMarker[] {
+  const result: ChartMarker[] = [];
+  const joined = markerLabelForDate(
+    timelineDays,
+    adoption?.organizationCreatedAt ?? null
+  );
+  if (joined !== null) {
+    result.push({ value: joined, label: "Joined Notra" });
+  }
+  const firstPost = markerLabelForDate(
+    timelineDays,
+    adoption?.firstNotraPostAt ?? null
+  );
+  if (firstPost !== null && firstPost !== joined) {
+    result.push({ value: firstPost, label: "First Notra post" });
+  }
+  return result;
 }
 
 const PERCENT = 100;

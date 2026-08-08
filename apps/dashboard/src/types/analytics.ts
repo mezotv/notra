@@ -178,8 +178,45 @@ export interface AnalyticsStatCard {
   hint?: string;
 }
 
+export interface AnalyticsRangeOptions {
+  days?: number;
+  timezone?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface AnalyticsDateRange {
+  dateFrom: string;
+  dateTo: string;
+}
+
+export type AnalyticsRangePreset =
+  | "today"
+  | "yesterday"
+  | "7d"
+  | "30d"
+  | "90d"
+  | "custom";
+
+export interface AnalyticsRangeState {
+  preset: AnalyticsRangePreset;
+  range: AnalyticsDateRange;
+}
+
+export interface AnalyticsRangeControl extends AnalyticsRangeState {
+  label: string;
+  includesToday: boolean;
+  setPreset: (preset: Exclude<AnalyticsRangePreset, "custom">) => void;
+  setCustom: (range: AnalyticsDateRange) => void;
+}
+
+export interface AnalyticsRangePickerProps {
+  control: AnalyticsRangeControl;
+}
+
 export interface PostingPerformancePoint {
   weekday: number;
+  hour: number;
   posts: number;
   engagement: number;
   impressions: number | null;
@@ -191,11 +228,20 @@ export interface PostingPerformanceResponse {
   points: PostingPerformancePoint[];
 }
 
-export interface PostingPerformanceChartRow {
-  day: string;
-  avgEngagement: number;
+export type PostingActivityLevel = "quiet" | "low" | "medium" | "high";
+
+export interface PostingTimeSlot {
+  hour: number;
   posts: number;
-  [key: string]: string | number;
+  avgEngagement: number;
+  level: PostingActivityLevel;
+}
+
+export interface BestPostingSlot {
+  weekday: string;
+  hour: number;
+  posts: number;
+  avgEngagement: number;
 }
 
 export interface AccountSeriesRow {
@@ -263,6 +309,7 @@ export interface LeaderboardResponse {
 
 export interface TopPostsCardProps {
   posts: TopPostItem[];
+  action?: ReactNode;
 }
 
 export interface LeaderboardCardProps {
@@ -325,6 +372,7 @@ export interface AnalyticsHeroSummary {
 export interface SummaryStatsProps {
   accounts: SocialOverviewAccount[];
   points: EngagementTimeseriesPoint[];
+  rangeHint: string;
 }
 
 export interface AnalyticsStatTile {
@@ -337,7 +385,9 @@ export interface AnalyticsStatTile {
 export interface AccountSeriesChartCardProps {
   hero?: boolean;
   title: string;
-  readout: string;
+  description?: string;
+  action?: ReactNode;
+  markIncompleteTail: boolean;
   kind: "area" | "line" | "bar";
   rows: AccountSeriesRow[];
   config: ChartConfig;
@@ -360,20 +410,37 @@ export interface FollowersCardProps {
   points: FollowerGrowthPoint[];
   hiddenKeys: ReadonlySet<string>;
   colorForKey: (key: string) => ChartColorPair;
+  action?: ReactNode;
+  markIncompleteTail: boolean;
+}
+
+export interface PostingHeatmapCell {
+  weekday: number;
+  hour: number;
+  posts: number;
+  avgEngagement: number;
+  level: PostingActivityLevel;
 }
 
 export interface PostingPerformanceCardProps {
-  rows: PostingPerformanceChartRow[];
+  points: PostingPerformancePoint[];
+  action?: ReactNode;
 }
 
 export interface ImpressionsShareCardProps {
   organizationId: string;
+  colorForKey: (key: string) => ChartColorPair;
 }
 
 export interface ImpressionsShareRow {
   account: string;
   impressions: number;
+  seriesKey: string;
   [key: string]: string | number;
+}
+
+export interface ImpressionsSharePieSlice extends ImpressionsShareRow {
+  slice: string;
 }
 
 export interface ConnectAccountsButtonsProps {

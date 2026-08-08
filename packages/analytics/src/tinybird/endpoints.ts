@@ -298,6 +298,20 @@ export const engagementTimeseries = defineEndpoint("engagement_timeseries", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_DAYS_PARAM,
+    timezone: p
+      .string()
+      .optional("UTC")
+      .describe("IANA timezone used to bucket days"),
+    date_from: p
+      .string()
+      .optional("")
+      .describe(
+        "Inclusive first local day (YYYY-MM-DD); empty for days window"
+      ),
+    date_to: p
+      .string()
+      .optional("")
+      .describe("Inclusive last local day (YYYY-MM-DD); empty for no bound"),
   },
   nodes: [
     node({
@@ -310,7 +324,12 @@ export const engagementTimeseries = defineEndpoint("engagement_timeseries", {
           min(posted_at) AS first_posted_at
         FROM social_posts
         WHERE organization_id = {{String(organization_id)}}
-          AND posted_at >= now() - toIntervalDay({{Int32(days, 30)}})
+          AND if(
+            {{String(date_from, '')}} = '',
+            posted_at >= now() - toIntervalDay({{Int32(days, 30)}}),
+            toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}})
+          )
+          AND ({{String(date_to, '')}} = '' OR toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) <= toDateOrNull({{String(date_to, '')}}))
         GROUP BY provider, platform_post_id
       `,
     }),
@@ -333,7 +352,7 @@ export const engagementTimeseries = defineEndpoint("engagement_timeseries", {
       name: "daily_totals",
       sql: `
         SELECT
-          toDate(posts.first_posted_at) AS day,
+          toDate(toTimeZone(posts.first_posted_at, {{String(timezone, 'UTC')}})) AS day,
           posts.provider AS provider,
           posts.provider_account_id AS provider_account_id,
           count() AS posts,
@@ -453,6 +472,18 @@ export const topPosts = defineEndpoint("top_posts", {
   params: {
     organization_id: p.string().describe("Organization id"),
     limit: p.int32().optional(10).describe("Number of posts"),
+    timezone: p
+      .string()
+      .optional("UTC")
+      .describe("IANA timezone used to interpret the date range"),
+    date_from: p
+      .string()
+      .optional("")
+      .describe("Inclusive first local day (YYYY-MM-DD); empty for no bound"),
+    date_to: p
+      .string()
+      .optional("")
+      .describe("Inclusive last local day (YYYY-MM-DD); empty for no bound"),
   },
   nodes: [
     node({
@@ -494,6 +525,8 @@ export const topPosts = defineEndpoint("top_posts", {
           ON stats.provider = posts.provider
           AND stats.platform_post_id = posts.platform_post_id
         WHERE posts.organization_id = {{String(organization_id)}}
+          AND ({{String(date_from, '')}} = '' OR toDate(toTimeZone(posts.posted_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}}))
+          AND ({{String(date_to, '')}} = '' OR toDate(toTimeZone(posts.posted_at, {{String(timezone, 'UTC')}})) <= toDateOrNull({{String(date_to, '')}}))
         GROUP BY posts.provider, posts.platform_post_id
         ORDER BY engagement DESC, posted_at DESC
         LIMIT {{Int32(limit, 10)}}
@@ -518,22 +551,42 @@ export const topPosts = defineEndpoint("top_posts", {
 
 export const postingPerformance = defineEndpoint("posting_performance", {
   description:
-    "Post volume and average engagement grouped by weekday of publish",
+    "Post volume and average engagement grouped by weekday and hour of publish",
   params: {
     organization_id: p.string().describe("Organization id"),
     days: p.int32().optional(90).describe("Number of trailing days"),
+    timezone: p
+      .string()
+      .optional("UTC")
+      .describe("IANA timezone used to bucket publish times"),
+    date_from: p
+      .string()
+      .optional("")
+      .describe(
+        "Inclusive first local day (YYYY-MM-DD); empty for days window"
+      ),
+    date_to: p
+      .string()
+      .optional("")
+      .describe("Inclusive last local day (YYYY-MM-DD); empty for no bound"),
   },
   nodes: [
     node({
-      name: "post_weekdays",
+      name: "post_slots",
       sql: `
         SELECT
           provider,
           platform_post_id,
-          toDayOfWeek(min(posted_at)) AS weekday
+          toDayOfWeek(toTimeZone(min(posted_at), {{String(timezone, 'UTC')}})) AS weekday,
+          toHour(toTimeZone(min(posted_at), {{String(timezone, 'UTC')}})) AS hour
         FROM social_posts
         WHERE organization_id = {{String(organization_id)}}
-          AND posted_at >= now() - toIntervalDay({{Int32(days, 90)}})
+          AND if(
+            {{String(date_from, '')}} = '',
+            posted_at >= now() - toIntervalDay({{Int32(days, 90)}}),
+            toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}})
+          )
+          AND ({{String(date_to, '')}} = '' OR toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) <= toDateOrNull({{String(date_to, '')}}))
         GROUP BY provider, platform_post_id
       `,
     }),
@@ -553,25 +606,27 @@ export const postingPerformance = defineEndpoint("posting_performance", {
       `,
     }),
     node({
-      name: "weekday_totals",
+      name: "slot_totals",
       sql: `
         SELECT
           posts.weekday AS weekday,
+          posts.hour AS hour,
           count() AS posts,
           sum(coalesce(stats.likes, 0) + coalesce(stats.replies, 0) + coalesce(stats.reposts, 0)) AS engagement,
           sum(stats.impressions) AS impressions,
           round(sum(coalesce(stats.likes, 0) + coalesce(stats.replies, 0) + coalesce(stats.reposts, 0)) / count(), 1) AS avg_engagement
-        FROM post_weekdays AS posts
+        FROM post_slots AS posts
         LEFT JOIN post_metrics AS stats
           ON stats.provider = posts.provider
           AND stats.platform_post_id = posts.platform_post_id
-        GROUP BY weekday
-        ORDER BY weekday ASC
+        GROUP BY weekday, hour
+        ORDER BY weekday ASC, hour ASC
       `,
     }),
   ],
   output: {
     weekday: t.uint64(),
+    hour: t.uint64(),
     posts: t.uint64(),
     engagement: t.uint64(),
     impressions: t.uint64().nullable(),
@@ -587,19 +642,38 @@ export const followerGrowth = defineEndpoint("follower_growth", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_DAYS_PARAM,
+    timezone: p
+      .string()
+      .optional("UTC")
+      .describe("IANA timezone used to bucket days"),
+    date_from: p
+      .string()
+      .optional("")
+      .describe(
+        "Inclusive first local day (YYYY-MM-DD); empty for days window"
+      ),
+    date_to: p
+      .string()
+      .optional("")
+      .describe("Inclusive last local day (YYYY-MM-DD); empty for no bound"),
   },
   nodes: [
     node({
       name: "daily_followers",
       sql: `
         SELECT
-          toDate(captured_at) AS day,
+          toDate(toTimeZone(captured_at, {{String(timezone, 'UTC')}})) AS day,
           provider,
           provider_account_id,
           argMax(followers_count, captured_at) AS followers_count
         FROM social_account_stats
         WHERE organization_id = {{String(organization_id)}}
-          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+          AND if(
+            {{String(date_from, '')}} = '',
+            captured_at >= now() - toIntervalDay({{Int32(days, 30)}}),
+            toDate(toTimeZone(captured_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}})
+          )
+          AND ({{String(date_to, '')}} = '' OR toDate(toTimeZone(captured_at, {{String(timezone, 'UTC')}})) <= toDateOrNull({{String(date_to, '')}}))
         GROUP BY day, provider, provider_account_id
         ORDER BY day ASC
       `,

@@ -15,7 +15,9 @@ const CHART_CLASS = "h-56 w-full";
 export function AccountSeriesChartCard({
   hero = false,
   title,
-  readout,
+  description,
+  action,
+  markIncompleteTail,
   kind,
   rows,
   config,
@@ -26,10 +28,18 @@ export function AccountSeriesChartCard({
   emptyMessage,
 }: AccountSeriesChartCardProps) {
   const seriesKeys = allKeys.filter((key) => !hiddenKeys.has(key));
-  const hasData = rows.length > 0 && seriesKeys.length > 0;
+  const hasData =
+    rows.length > 0 &&
+    seriesKeys.length > 0 &&
+    rows.some((row) => seriesKeys.some((key) => Number(row[key] ?? 0) > 0));
 
   return (
-    <InstrumentModule eyebrow={title} readout={readout}>
+    <InstrumentModule
+      action={action}
+      description={description}
+      eyebrow={title}
+      variant="panel"
+    >
       {hasData ? (
         <>
           {kind === "area" && (
@@ -48,7 +58,9 @@ export function AccountSeriesChartCard({
               {seriesKeys.map((key) => (
                 <EChartsAreaChart.Area
                   dataKey={key}
+                  enableBufferLine={markIncompleteTail}
                   key={key}
+                  strokeVariant="solid"
                   variant={hero ? "gradient" : "solid"}
                 />
               ))}
@@ -69,7 +81,13 @@ export function AccountSeriesChartCard({
               <EChartsLineChart.XAxis dataKey="day" />
               <EChartsLineChart.YAxis />
               {seriesKeys.map((key) => (
-                <EChartsLineChart.Line dataKey={key} glowing={hero} key={key} />
+                <EChartsLineChart.Line
+                  dataKey={key}
+                  enableBufferLine={markIncompleteTail}
+                  glowing={hero}
+                  key={key}
+                  strokeVariant="solid"
+                />
               ))}
               <EChartsLineChart.Tooltip crosshair />
             </EChartsLineChart>
@@ -87,7 +105,12 @@ export function AccountSeriesChartCard({
               <EChartsBarChart.XAxis dataKey="day" />
               <EChartsBarChart.YAxis />
               {seriesKeys.map((key) => (
-                <EChartsBarChart.Bar dataKey={key} glowing={hero} key={key} />
+                <EChartsBarChart.Bar
+                  bufferBar={markIncompleteTail}
+                  dataKey={key}
+                  glowing={hero}
+                  key={key}
+                />
               ))}
               <EChartsBarChart.Tooltip />
             </EChartsBarChart>
