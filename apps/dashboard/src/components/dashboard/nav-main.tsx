@@ -225,7 +225,8 @@ export function NavMain() {
   );
 
   return (
-       <NavGroup activeLink={activeLink} items={rootItems} slug={slug} />
+    <>
+      <NavGroup activeLink={activeLink} items={rootItems} slug={slug} />
       {categories.map((category) => (
         <Fragment key={category}>
           <NavGroup
