@@ -1,10 +1,5 @@
 import { getCalApi } from "@calcom/embed-react";
-import {
-  ArrowRight01Icon,
-  Calendar03Icon,
-  Message01Icon,
-  MoreHorizontalIcon,
-} from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveDialog,
@@ -21,33 +16,22 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@notra/ui/components/ui/breadcrumb";
-import { Button } from "@notra/ui/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@notra/ui/components/ui/dropdown-menu";
-import { Kbd } from "@notra/ui/components/ui/kbd";
+import { Kbd, KbdGroup } from "@notra/ui/components/ui/kbd";
 import { Separator } from "@notra/ui/components/ui/separator";
 import { SidebarTrigger } from "@notra/ui/components/ui/sidebar";
+import { useIsApplePlatform } from "@notra/ui/hooks/use-is-apple-platform";
 import { cn } from "@notra/ui/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
-import {
-  CreditBalanceButton,
-  CreditBalanceMenuItem,
-} from "@/components/billing/credit-balance-button";
+import { useEffect, useId, useRef } from "react";
+import { useCommandPalette } from "@/components/command-palette/command-palette-context";
 import { BrandTopbarIdentitySelector } from "@/components/dashboard/brand-topbar-identity-selector";
 import { ChatTopbarTitle } from "@/components/dashboard/chat-topbar-title";
 import { ContentTopbarTitle } from "@/components/dashboard/content-topbar-title";
 import { useFeedback } from "@/components/dashboard/feedback-context";
-import {
-  FeedbackForm,
-  FeedbackPopover,
-} from "@/components/dashboard/feedback-popover";
+import { FeedbackForm } from "@/components/dashboard/feedback-popover";
+import { NavUser } from "@/components/dashboard/nav-user";
 
 const NON_ORG_PATHS: string[] = [];
 
@@ -70,9 +54,13 @@ export function SiteHeader() {
   const isInSettings = segments[1] === "settings";
   const preSettingsPathsRef = useRef<Record<string, string>>({});
   const activeSettingsShortcutSlugRef = useRef<string | null>(null);
-  const { openFeedback } = useFeedback();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileFeedbackOpen, setMobileFeedbackOpen] = useState(false);
+  const {
+    open: feedbackOpen,
+    setOpen: setFeedbackOpen,
+    openFeedback,
+  } = useFeedback();
+  const { setOpen: setCommandPaletteOpen } = useCommandPalette();
+  const isApplePlatform = useIsApplePlatform();
 
   function triggerScheduleDemo() {
     const btn = document.querySelector<HTMLButtonElement>(
@@ -255,87 +243,42 @@ export function SiteHeader() {
     : genericBreadcrumbs;
 
   return (
-    <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-dashed transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <div className="flex min-w-0 flex-1 items-center gap-1 lg:gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            className="mx-2 border-border border-l border-dashed bg-transparent"
-            orientation="vertical"
-          />
+    <header className="relative flex h-12 shrink-0 items-center gap-2 border-b bg-muted/30 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+      <div className="flex h-full w-full items-center gap-1 px-4 lg:gap-2">
+        <div className="flex h-full min-w-0 flex-1 items-center gap-1 lg:gap-2">
+          <SidebarTrigger />
+          <Separator className="mx-2" orientation="vertical" />
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="min-w-0 flex-nowrap">
               {breadcrumbs}
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <div className="flex min-w-0 items-center justify-end gap-2">
-          <CreditBalanceButton className="hidden sm:inline-flex" />
-          <div className="hidden items-center gap-2 lg:flex">
-            <FeedbackPopover
-              sharedState
-              trigger={
-                <Button className="gap-1.5" size="sm" variant="outline">
-                  <HugeiconsIcon icon={Message01Icon} size={16} />
-                  Feedback
-                  <Kbd className="ml-1 hidden sm:inline-flex">F</Kbd>
-                </Button>
-              }
-            />
-            <Button
-              className="gap-1.5"
-              data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true"}'
-              data-cal-link="dominikkoch/15min"
-              data-cal-namespace="15min"
-              size="sm"
-              variant="outline"
-            >
-              <HugeiconsIcon icon={Calendar03Icon} size={16} />
-              Schedule a Demo
-              <Kbd className="ml-1 hidden sm:inline-flex">S</Kbd>
-            </Button>
-          </div>
-          <DropdownMenu onOpenChange={setMobileMenuOpen} open={mobileMenuOpen}>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  aria-label="More actions"
-                  className="lg:hidden"
-                  size="icon-sm"
-                  variant="outline"
-                >
-                  <HugeiconsIcon icon={MoreHorizontalIcon} size={16} />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end" className="w-44">
-              <CreditBalanceMenuItem className="sm:hidden" />
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setMobileFeedbackOpen(true);
-                }}
-              >
-                <HugeiconsIcon icon={Message01Icon} />
-                Feedback
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  triggerScheduleDemo();
-                }}
-              >
-                <HugeiconsIcon icon={Calendar03Icon} />
-                Schedule a Demo
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <ResponsiveDialog
-            onOpenChange={setMobileFeedbackOpen}
-            open={mobileFeedbackOpen}
-          >
+        <button
+          className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 hidden w-56 cursor-pointer items-center gap-2 rounded-lg border bg-background/60 px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted/60 md:flex"
+          onClick={() => setCommandPaletteOpen(true)}
+          type="button"
+        >
+          <HugeiconsIcon icon={SearchIcon} size={16} />
+          <span className="flex-1 text-left">Search</span>
+          <KbdGroup>
+            <Kbd>{isApplePlatform ? "⌘" : "Ctrl"}</Kbd>
+            <Kbd>K</Kbd>
+          </KbdGroup>
+        </button>
+        <div className="flex h-full min-w-0 items-center justify-end gap-2">
+          <button
+            aria-hidden
+            className="hidden"
+            data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true"}'
+            data-cal-link="dominikkoch/15min"
+            data-cal-namespace="15min"
+            tabIndex={-1}
+            type="button"
+          />
+          <Separator className="mx-2" orientation="vertical" />
+          <NavUser />
+          <ResponsiveDialog onOpenChange={setFeedbackOpen} open={feedbackOpen}>
             <ResponsiveDialogContent className="gap-0 p-0 sm:max-w-md">
               <ResponsiveDialogHeader className="sr-only">
                 <ResponsiveDialogTitle>Send feedback</ResponsiveDialogTitle>
@@ -343,10 +286,10 @@ export function SiteHeader() {
                   Share your thoughts with us.
                 </ResponsiveDialogDescription>
               </ResponsiveDialogHeader>
-              {mobileFeedbackOpen ? (
+              {feedbackOpen ? (
                 <FeedbackForm
                   autoFocus={false}
-                  onSubmitted={() => setMobileFeedbackOpen(false)}
+                  onSubmitted={() => setFeedbackOpen(false)}
                 />
               ) : null}
             </ResponsiveDialogContent>

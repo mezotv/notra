@@ -10,6 +10,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
 } from "@notra/ui/components/ui/sidebar";
+import { Notra } from "@notra/ui/components/ui/svgs/notra";
 import { cn } from "@notra/ui/lib/utils";
 import {
   AnimatePresence,
@@ -24,9 +25,7 @@ import { useEffect, useRef } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { ChatHistoryNav } from "./chat-history-nav";
 import { NavMain } from "./nav-main";
-import { NavSecondary } from "./nav-secondary";
 import { NavSettings } from "./nav-settings";
-import { NavUser } from "./nav-user";
 import { OrgSelector } from "./org-selector";
 import { SidebarOnboarding } from "./sidebar-onboarding";
 import { SidebarTrialExpired } from "./sidebar-trial-expired";
@@ -92,7 +91,14 @@ export function DashboardSidebar({
     >
       <LazyMotion features={domAnimation}>
         <SidebarHeader>
-          <OrgSelector />
+          <div className="flex items-center gap-2 px-2 pt-1">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg dark:bg-[#F6F3F1]">
+              <Notra className="size-7 dark:size-5" />
+            </div>
+            <span className="truncate font-semibold text-base transition-opacity duration-100 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0 group-data-[state=expanded]:delay-200">
+              Notra
+            </span>
+          </div>
           <AnimatePresence initial={false} mode="popLayout">
             {isSubpage && (
               <m.div
@@ -166,8 +172,7 @@ export function DashboardSidebar({
           </AnimatePresence>
         </SidebarContent>
         <SidebarFooter>
-          <NavSecondary className="p-0" />
-          <NavUser />
+          <OrgSelector />
         </SidebarFooter>
       </LazyMotion>
     </Sidebar>

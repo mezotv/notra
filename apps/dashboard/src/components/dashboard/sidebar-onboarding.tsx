@@ -111,7 +111,7 @@ export function SidebarOnboarding() {
       <LazyMotion features={domMax}>
         <MotionDiv
           layout
-          style={{ transformOrigin: "top" }}
+          style={{ transformOrigin: "bottom" }}
           transition={MORPH_TRANSITION}
         >
           <AnimatePresence initial={false} mode="popLayout">
@@ -124,7 +124,7 @@ export function SidebarOnboarding() {
                 transition={MORPH_TRANSITION}
               >
                 <button
-                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-muted-foreground text-xs transition-colors hover:bg-muted"
+                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-muted-foreground text-xs transition-colors hover:bg-muted"
                   onClick={toggleCollapsed}
                   type="button"
                 >

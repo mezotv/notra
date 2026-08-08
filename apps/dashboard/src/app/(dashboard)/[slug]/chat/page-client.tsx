@@ -2241,173 +2241,180 @@ function StandaloneChatPageClient({
           <MessageScrollerProvider autoScroll>
             <MessageScroller className="min-h-0 flex-1">
               <MessageScrollerViewport className="min-w-0 overflow-x-hidden">
-                <MessageScrollerContent className="px-4 pt-6 pb-6">
-                  <div
-                    className={cn(
-                      "mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-4",
-                      isFirstMessageTransition && "chat-messages-fade-in"
-                    )}
-                  >
-                    {(() => {
-                      const branchPointIndex = branchSwitchSignal
-                        ? visibleMessages.findIndex(
-                            (m) => m.id === branchSwitchSignal.userMessageId
+                <MessageScrollerContent
+                  className={cn(
+                    "gap-4 px-4 pt-6 pb-6",
+                    isFirstMessageTransition && "chat-messages-fade-in"
+                  )}
+                >
+                  {(() => {
+                    const branchPointIndex = branchSwitchSignal
+                      ? visibleMessages.findIndex(
+                          (m) => m.id === branchSwitchSignal.userMessageId
+                        )
+                      : -1;
+                    const lastUserMessageId = [...visibleMessages]
+                      .reverse()
+                      .find((m) => m.role === "user")?.id;
+                    return visibleMessages.map((message, messageIndex) => {
+                      const isUser = message.role === "user";
+                      const isEditing =
+                        isUser && editingMessageId === message.id;
+                      const userContentParts = isUser
+                        ? message.parts.filter((part) => part.type !== "file")
+                        : message.parts;
+                      const userImageParts = isUser
+                        ? message.parts.filter(
+                            (part) =>
+                              part.type === "file" &&
+                              typeof part.mediaType === "string" &&
+                              isImageMimeType(part.mediaType)
                           )
-                        : -1;
-                      return visibleMessages.map((message, messageIndex) => {
-                        const isUser = message.role === "user";
-                        const isEditing =
-                          isUser && editingMessageId === message.id;
-                        const userContentParts = isUser
-                          ? message.parts.filter((part) => part.type !== "file")
-                          : message.parts;
-                        const userImageParts = isUser
-                          ? message.parts.filter(
-                              (part) =>
-                                part.type === "file" &&
-                                typeof part.mediaType === "string" &&
-                                isImageMimeType(part.mediaType)
-                            )
-                          : [];
-                        const userFileParts = isUser
-                          ? message.parts.filter(
-                              (part) =>
-                                part.type === "file" &&
-                                (typeof part.mediaType !== "string" ||
-                                  !isImageMimeType(part.mediaType))
-                            )
-                          : [];
-                        const branches = isUser
-                          ? messageBranches[message.id]
-                          : undefined;
-                        const branchTotal = branches?.tails.length ?? 0;
-                        const branchIdx = branches?.active ?? 0;
-                        const isDownstreamOfBranchSwitch =
-                          branchPointIndex !== -1 &&
-                          messageIndex > branchPointIndex;
-                        const branchFadeKey = isDownstreamOfBranchSwitch
-                          ? `${message.id}-${branchSwitchSignal?.tick}`
-                          : message.id;
-                        return (
-                          <MessageScrollerItem
-                            key={branchFadeKey}
-                            messageId={message.id}
-                            scrollAnchor={isUser}
+                        : [];
+                      const userFileParts = isUser
+                        ? message.parts.filter(
+                            (part) =>
+                              part.type === "file" &&
+                              (typeof part.mediaType !== "string" ||
+                                !isImageMimeType(part.mediaType))
+                          )
+                        : [];
+                      const branches = isUser
+                        ? messageBranches[message.id]
+                        : undefined;
+                      const branchTotal = branches?.tails.length ?? 0;
+                      const branchIdx = branches?.active ?? 0;
+                      const isDownstreamOfBranchSwitch =
+                        branchPointIndex !== -1 &&
+                        messageIndex > branchPointIndex;
+                      const branchFadeKey = isDownstreamOfBranchSwitch
+                        ? `${message.id}-${branchSwitchSignal?.tick}`
+                        : message.id;
+                      return (
+                        <MessageScrollerItem
+                          className="mx-auto w-full max-w-2xl"
+                          key={branchFadeKey}
+                          messageId={message.id}
+                          scrollAnchor={
+                            isUser && message.id === lastUserMessageId
+                          }
+                        >
+                          <Message
+                            className={cn(
+                              isDownstreamOfBranchSwitch &&
+                                "chat-branch-fade-in"
+                            )}
+                            from={message.role}
                           >
-                            <Message
-                              className={cn(
-                                isDownstreamOfBranchSwitch &&
-                                  "chat-branch-fade-in"
-                              )}
-                              from={message.role}
-                            >
-                              {isUser ? (
-                                <m.div
-                                  className={cn(
-                                    "ml-auto overflow-hidden",
-                                    isEditing
-                                      ? "w-full"
-                                      : "flex w-fit max-w-full flex-col items-end gap-2"
-                                  )}
-                                  layout
-                                  transition={{
-                                    duration: 0.25,
-                                    ease: [0.22, 1, 0.36, 1],
-                                  }}
-                                >
-                                  {isEditing ? (
-                                    <UserMessageEditor
-                                      initialText={toDisplayText(
-                                        getUserMessageText(message)
-                                      )}
-                                      onCancel={handleCancelEditMessage}
-                                      onSubmit={(text) =>
-                                        handleEditMessage(message.id, text)
-                                      }
-                                    />
-                                  ) : (
-                                    <>
-                                      {userImageParts.length > 0 && (
-                                        <UserImageGrid>
-                                          {userImageParts.map((part, index) =>
-                                            renderPart(part, message.id, index)
-                                          )}
-                                        </UserImageGrid>
-                                      )}
-                                      {(userContentParts.length > 0 ||
-                                        userFileParts.length > 0) && (
-                                        <MessageContent>
-                                          {userContentParts.map((part, index) =>
-                                            renderPart(part, message.id, index)
-                                          )}
-                                          {userFileParts.length > 0 && (
-                                            <div className="flex max-w-full flex-wrap justify-end gap-2">
-                                              {userFileParts.map(
-                                                (part, index) =>
-                                                  renderPart(
-                                                    part,
-                                                    message.id,
-                                                    index
-                                                  )
-                                              )}
-                                            </div>
-                                          )}
-                                        </MessageContent>
-                                      )}
-                                    </>
-                                  )}
-                                </m.div>
-                              ) : (
-                                <MessageContent>
-                                  {message.parts.map((part, index) =>
-                                    renderPart(part, message.id, index)
-                                  )}
-                                </MessageContent>
-                              )}
-                              {isUser && !isSlackMirrored && (
-                                <UserMessageActions
-                                  branchIndex={
-                                    branchTotal > 1 ? branchIdx : undefined
-                                  }
-                                  branchTotal={
-                                    branchTotal > 1 ? branchTotal : undefined
-                                  }
-                                  canInteract={!isLoading}
-                                  isEditing={isEditing}
-                                  messageText={toDisplayText(
-                                    getUserMessageText(message)
-                                  )}
-                                  onEdit={() =>
-                                    handleStartEditMessage(message.id)
-                                  }
-                                  onNextBranch={() =>
-                                    handleSwitchBranch(message.id, "next")
-                                  }
-                                  onPreviousBranch={() =>
-                                    handleSwitchBranch(message.id, "prev")
-                                  }
-                                  onRetry={(model) =>
-                                    handleRetryMessage(message.id, model)
-                                  }
-                                />
-                              )}
-                              {message.role === "assistant" && (
-                                <AssistantMetadataHover
-                                  metadata={message.metadata}
-                                />
-                              )}
-                            </Message>
-                          </MessageScrollerItem>
-                        );
-                      });
-                    })()}
-                    {wasStoppedByUser && !isLoading && (
+                            {isUser ? (
+                              <m.div
+                                className={cn(
+                                  "ml-auto overflow-hidden",
+                                  isEditing
+                                    ? "w-full"
+                                    : "flex w-fit max-w-full flex-col items-end gap-2"
+                                )}
+                                layout
+                                transition={{
+                                  duration: 0.25,
+                                  ease: [0.22, 1, 0.36, 1],
+                                }}
+                              >
+                                {isEditing ? (
+                                  <UserMessageEditor
+                                    initialText={toDisplayText(
+                                      getUserMessageText(message)
+                                    )}
+                                    onCancel={handleCancelEditMessage}
+                                    onSubmit={(text) =>
+                                      handleEditMessage(message.id, text)
+                                    }
+                                  />
+                                ) : (
+                                  <>
+                                    {userImageParts.length > 0 && (
+                                      <UserImageGrid>
+                                        {userImageParts.map((part, index) =>
+                                          renderPart(part, message.id, index)
+                                        )}
+                                      </UserImageGrid>
+                                    )}
+                                    {(userContentParts.length > 0 ||
+                                      userFileParts.length > 0) && (
+                                      <MessageContent>
+                                        {userContentParts.map((part, index) =>
+                                          renderPart(part, message.id, index)
+                                        )}
+                                        {userFileParts.length > 0 && (
+                                          <div className="flex max-w-full flex-wrap justify-end gap-2">
+                                            {userFileParts.map((part, index) =>
+                                              renderPart(
+                                                part,
+                                                message.id,
+                                                index
+                                              )
+                                            )}
+                                          </div>
+                                        )}
+                                      </MessageContent>
+                                    )}
+                                  </>
+                                )}
+                              </m.div>
+                            ) : (
+                              <MessageContent>
+                                {message.parts.map((part, index) =>
+                                  renderPart(part, message.id, index)
+                                )}
+                              </MessageContent>
+                            )}
+                            {isUser && !isSlackMirrored && (
+                              <UserMessageActions
+                                branchIndex={
+                                  branchTotal > 1 ? branchIdx : undefined
+                                }
+                                branchTotal={
+                                  branchTotal > 1 ? branchTotal : undefined
+                                }
+                                canInteract={!isLoading}
+                                isEditing={isEditing}
+                                messageText={toDisplayText(
+                                  getUserMessageText(message)
+                                )}
+                                onEdit={() =>
+                                  handleStartEditMessage(message.id)
+                                }
+                                onNextBranch={() =>
+                                  handleSwitchBranch(message.id, "next")
+                                }
+                                onPreviousBranch={() =>
+                                  handleSwitchBranch(message.id, "prev")
+                                }
+                                onRetry={(model) =>
+                                  handleRetryMessage(message.id, model)
+                                }
+                              />
+                            )}
+                            {message.role === "assistant" && (
+                              <AssistantMetadataHover
+                                metadata={message.metadata}
+                              />
+                            )}
+                          </Message>
+                        </MessageScrollerItem>
+                      );
+                    });
+                  })()}
+                  {wasStoppedByUser && !isLoading && (
+                    <div className="mx-auto w-full max-w-2xl">
                       <div className="flex w-fit items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1 text-destructive text-xs">
                         <HugeiconsIcon className="size-3.5" icon={X} />
                         <span>Response stopped by user</span>
                       </div>
-                    )}
-                    {chatError && !isLoading && (
+                    </div>
+                  )}
+                  {chatError && !isLoading && (
+                    <div className="mx-auto w-full max-w-2xl">
                       <div className="flex w-fit flex-wrap items-center gap-2 rounded-md bg-destructive/10 px-2.5 py-1.5 text-destructive text-xs">
                         <HugeiconsIcon className="size-3.5 shrink-0" icon={X} />
                         <span>{chatError}</span>
@@ -2425,8 +2432,10 @@ function StandaloneChatPageClient({
                           </button>
                         )}
                       </div>
-                    )}
-                    {showThinkingIndicator && (
+                    </div>
+                  )}
+                  {showThinkingIndicator && (
+                    <div className="mx-auto w-full max-w-2xl">
                       <Message from="assistant">
                         <MessageContent>
                           <BrailleLoader
@@ -2437,8 +2446,8 @@ function StandaloneChatPageClient({
                           />
                         </MessageContent>
                       </Message>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </MessageScrollerContent>
               </MessageScrollerViewport>
               <MessageScrollerButton />
