@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     turbopackFileSystemCacheForDev: false,
-    useCache: true,
     optimizePackageImports: ["@hugeicons/core-free-icons", "lucide-react"],
     staleTimes: {
       dynamic: 30,
