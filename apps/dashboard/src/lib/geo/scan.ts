@@ -3,12 +3,7 @@ import { ingestGeoMentionChecks } from "@notra/analytics/tinybird/client";
 import type { GeoMentionCheckRow } from "@notra/analytics/tinybird/datasources";
 import { toClickHouseDateTime } from "@notra/analytics/utils/datetime";
 import { db } from "@notra/db/drizzle";
-import {
-  brandSettings,
-  geoPromptSequences,
-  geoPrompts,
-  geoSettings,
-} from "@notra/db/schema";
+import { brandSettings, geoPrompts, geoSettings } from "@notra/db/schema";
 import { generateText, type ModelMessage, Output, stepCountIs } from "ai";
 import { and, asc, eq } from "drizzle-orm";
 import { Effect } from "effect";
@@ -25,9 +20,7 @@ import {
   GEO_LANGUAGE_MAX_PROMPTS,
   GEO_MAX_LANGUAGES,
   GEO_MAX_PROMPTS,
-  GEO_MAX_SEQUENCES,
   GEO_SCAN_CONCURRENCY,
-  GEO_SEQUENCE_MAX_TURNS,
   GEO_TRANSLATION_MAX_TOKENS,
 } from "@/constants/geo";
 import { geoSkip } from "@/lib/geo/effect";
@@ -49,7 +42,6 @@ import type {
   GeoJudgeResult,
   GeoPromptDefinition,
   GeoScanResult,
-  GeoSequenceDefinition,
   GeoSettings,
   GeoSettingsRow,
 } from "@/types/geo";
@@ -369,34 +361,6 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
     (result): result is GeoMentionCheckRow => result !== null
   );
 
-  const sequenceRows = yield* Effect.tryPromise({
-    try: () =>
-      db.query.geoPromptSequences.findMany({
-        columns: { id: true, steps: true },
-        where: and(
-          eq(geoPromptSequences.projectId, settingsRow.projectId),
-          eq(geoPromptSequences.enabled, true)
-        ),
-        orderBy: [asc(geoPromptSequences.createdAt)],
-        limit: GEO_MAX_SEQUENCES,
-      }),
-    catch: (cause) =>
-      new GeoScanError({ message: "Failed to load GEO sequences", cause }),
-  });
-
-  const sequencePairs = sequenceRows.flatMap((sequence) =>
-    groundedEngines.map((grounded) => ({ sequence, grounded }))
-  );
-  const sequenceResults = yield* Effect.forEach(
-    sequencePairs,
-    (pair) =>
-      runGeoSequenceCheck(context, pair.sequence, pair.grounded).pipe(
-        geoSkip(`sequence failed for ${pair.grounded.key}/${pair.sequence.id}`)
-      ),
-    { concurrency: GEO_SCAN_CONCURRENCY }
-  );
-  rows.push(...sequenceResults.filter((result) => result !== null).flat());
-
   yield* Effect.tryPromise({
     try: () => ingestGeoMentionChecks(rows),
     catch: (cause) =>
@@ -409,43 +373,6 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
     mentions: rows.filter((row) => row.mentioned).length,
   };
   return completed;
-});
-
-const runGeoSequenceCheck = Effect.fn("geo.runSequenceCheck")(function* (
-  context: GeoCheckContext,
-  sequence: GeoSequenceDefinition,
-  grounded: GeoGroundedEngine
-) {
-  const rows: GeoMentionCheckRow[] = [];
-  const messages: ModelMessage[] = [];
-  const steps = sequence.steps.slice(0, GEO_SEQUENCE_MAX_TURNS);
-
-  for (const [index, step] of steps.entries()) {
-    messages.push({ role: "user", content: step });
-    const answer = yield* askGroundedConversation(grounded, messages);
-    messages.push({ role: "assistant", content: answer });
-    const judged = yield* judgeAnswer(context, step, answer);
-
-    rows.push({
-      organization_id: context.organizationId,
-      project_id: context.projectId,
-      scan_id: context.scanId,
-      engine: grounded.key,
-      prompt_id: `sequence-${sequence.id}`,
-      sequence_id: sequence.id,
-      turn: index + 1,
-      prompt: step,
-      captured_at: context.capturedAt,
-      mentioned: judged.mentioned,
-      position: normalizePosition(judged.position),
-      sentiment: judged.sentiment,
-      competitors: judged.competitors.slice(0, MAX_JUDGE_COMPETITORS),
-      excerpt: judged.excerpt.slice(0, GEO_EXCERPT_MAX_LENGTH),
-      language: "English",
-    });
-  }
-
-  return rows;
 });
 
 export const runGeoScan = Effect.fn("geo.runScan")(function* (

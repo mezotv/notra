@@ -50,16 +50,6 @@ export class GeoProjectCreateFailedError extends Data.TaggedError(
   "GeoProjectCreateFailedError"
 )<Record<string, never>> {}
 
-export class GeoSequenceNotFoundError extends Data.TaggedError(
-  "GeoSequenceNotFoundError"
-)<{
-  readonly sequenceId: string;
-}> {}
-
-export class GeoSequenceCreateFailedError extends Data.TaggedError(
-  "GeoSequenceCreateFailedError"
-)<Record<string, never>> {}
-
 export type GeoRouterError =
   | GeoDatabaseError
   | GeoDiscoveryError
@@ -68,6 +58,4 @@ export type GeoRouterError =
   | GeoPromptCreateFailedError
   | GeoPromptNotFoundError
   | GeoScanStartError
-  | GeoSequenceCreateFailedError
-  | GeoSequenceNotFoundError
   | GeoSettingsMissingError;
