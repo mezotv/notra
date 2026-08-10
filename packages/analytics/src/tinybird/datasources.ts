@@ -144,6 +144,7 @@ export const socialPostStatsLatest = defineDatasource(
         "provider_account_id",
       ],
     }),
+    jsonPaths: false,
   }
 );
 
@@ -182,6 +183,7 @@ export const socialAccountStatsLatest = defineDatasource(
     engine: engine.aggregatingMergeTree({
       sortingKey: ["organization_id", "provider", "provider_account_id"],
     }),
+    jsonPaths: false,
   }
 );
 
@@ -311,6 +313,7 @@ export const geoTrafficDaily = defineDatasource("geo_traffic_daily", {
     sortingKey: ["organization_id", "visitor_type", "source", "day"],
     partitionKey: "toYYYYMM(day)",
   }),
+  jsonPaths: false,
 });
 
 export const geoTrafficPagesDaily = defineDatasource(
@@ -331,6 +334,7 @@ export const geoTrafficPagesDaily = defineDatasource(
       sortingKey: ["organization_id", "visitor_type", "source", "day", "path"],
       partitionKey: "toYYYYMM(day)",
     }),
+    jsonPaths: false,
   }
 );
 
