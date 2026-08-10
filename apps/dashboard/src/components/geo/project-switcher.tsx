@@ -142,7 +142,7 @@ export function GeoProjectSwitcher({
           {projects.map((project) => (
             <DropdownMenuItem
               key={project.id}
-              onSelect={() =>
+              onClick={() =>
                 onProjectChange(project.isDefault ? null : project.id)
               }
             >
@@ -153,7 +153,7 @@ export function GeoProjectSwitcher({
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />
-          <DropdownMenuItem onSelect={() => setCreateOpen(true)}>
+          <DropdownMenuItem onClick={() => setCreateOpen(true)}>
             <HugeiconsIcon icon={PlusSignIcon} size={16} />
             New project
           </DropdownMenuItem>
