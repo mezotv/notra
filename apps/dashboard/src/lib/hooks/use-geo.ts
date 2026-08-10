@@ -23,7 +23,13 @@ import type {
   GeoPromptCreateInput,
   GeoPromptDeleteInput,
   GeoPromptResultsResponse,
+  GeoPromptSequence,
   GeoPromptToggleInput,
+  GeoSequenceCreateInput,
+  GeoSequenceDeleteInput,
+  GeoSequenceResultsResponse,
+  GeoSequencesResponse,
+  GeoSequenceUpdateInput,
   GeoSettingsResponse,
   GeoSettingsUpsertInput,
   GeoTimeseriesResponse,
@@ -72,6 +78,18 @@ async function invalidatePromptQueries(
 ) {
   await queryClient.invalidateQueries({
     queryKey: dashboardOrpc.geo.promptsList.queryKey({
+      input: { organizationId, projectId },
+    }),
+  });
+}
+
+async function invalidateSequenceQueries(
+  queryClient: QueryClient,
+  organizationId: string,
+  projectId: string | undefined
+) {
+  await queryClient.invalidateQueries({
+    queryKey: dashboardOrpc.geo.sequencesList.queryKey({
       input: { organizationId, projectId },
     }),
   });
@@ -466,6 +484,92 @@ export function useGeoProjectCreate(organizationId: string) {
     },
     onError: (error) => {
       toast.error(toErrorMessage(error, "Failed to create project"));
+    },
+  });
+}
+
+export function useGeoSequences(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  return useQuery<GeoSequencesResponse>({
+    ...dashboardOrpc.geo.sequencesList.queryOptions({
+      input: { organizationId, projectId },
+    }),
+    enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load conversations" },
+  });
+}
+
+export function useGeoSequenceResults(
+  organizationId: string,
+  sequenceId?: string
+) {
+  const { projectId } = useGeoProjectScope();
+  return useQuery<GeoSequenceResultsResponse>({
+    ...dashboardOrpc.geo.sequenceResults.queryOptions({
+      input: { organizationId, projectId, sequenceId },
+    }),
+    enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load conversation results" },
+  });
+}
+
+export function useGeoSequenceCreate(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: GeoSequenceCreateInput): Promise<GeoPromptSequence> =>
+      dashboardOrpc.geo.sequencesCreate.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
+    onSuccess: async () => {
+      await invalidateSequenceQueries(queryClient, organizationId, projectId);
+      toast.success("Conversation added");
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to add conversation"));
+    },
+  });
+}
+
+export function useGeoSequenceUpdate(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: GeoSequenceUpdateInput): Promise<GeoPromptSequence> =>
+      dashboardOrpc.geo.sequencesUpdate.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
+    onSuccess: async () => {
+      await invalidateSequenceQueries(queryClient, organizationId, projectId);
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to update conversation"));
+    },
+  });
+}
+
+export function useGeoSequenceDelete(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (
+      input: GeoSequenceDeleteInput
+    ): Promise<{ success: boolean }> =>
+      dashboardOrpc.geo.sequencesDelete.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
+    onSuccess: async () => {
+      await invalidateSequenceQueries(queryClient, organizationId, projectId);
+      toast.success("Conversation removed");
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to remove conversation"));
     },
   });
 }

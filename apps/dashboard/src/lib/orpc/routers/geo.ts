@@ -28,6 +28,13 @@ import {
 } from "@/lib/geo/programs";
 import { createGeoProject, listGeoProjects } from "@/lib/geo/projects";
 import {
+  createGeoSequence,
+  deleteGeoSequence,
+  listGeoSequences,
+  loadGeoSequenceResults,
+  updateGeoSequence,
+} from "@/lib/geo/sequences";
+import {
   buildGeoAppUrl,
   buildGeoIngestUrl,
   buildGeoSnippet,
@@ -49,6 +56,10 @@ import {
   geoPromptCreateInputSchema,
   geoPromptDeleteInputSchema,
   geoPromptToggleInputSchema,
+  geoSequenceCreateInputSchema,
+  geoSequenceDeleteInputSchema,
+  geoSequenceResultsInputSchema,
+  geoSequenceUpdateInputSchema,
   geoSettingsUpsertInputSchema,
   geoTimeseriesInputSchema,
   geoTrafficJourneysInputSchema,
@@ -195,6 +206,23 @@ export const geoRouter = {
       geoHandler((input) =>
         toggleGeoPrompt(input.organizationId, input.promptId, input.enabled)
       )
+    ),
+  sequencesList: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(geoHandler((input) => listGeoSequences(input))),
+  sequencesCreate: authorizedProcedure
+    .input(geoSequenceCreateInputSchema)
+    .handler(geoHandler((input) => createGeoSequence(input, input))),
+  sequencesUpdate: authorizedProcedure
+    .input(geoSequenceUpdateInputSchema)
+    .handler(geoHandler((input) => updateGeoSequence(input, input))),
+  sequencesDelete: authorizedProcedure
+    .input(geoSequenceDeleteInputSchema)
+    .handler(geoHandler((input) => deleteGeoSequence(input, input.sequenceId))),
+  sequenceResults: authorizedProcedure
+    .input(geoSequenceResultsInputSchema)
+    .handler(
+      geoHandler((input) => loadGeoSequenceResults(input, input.sequenceId))
     ),
   projectsList: authorizedProcedure
     .input(geoOrganizationInputSchema)

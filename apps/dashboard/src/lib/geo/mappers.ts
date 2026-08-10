@@ -9,6 +9,8 @@ import type {
   GeoProject,
   GeoProjectRow,
   GeoPromptRow,
+  GeoPromptSequence,
+  GeoPromptSequenceRow,
   GeoSettings,
   GeoSettingsRow,
   GeoTrackedPrompt,
@@ -48,6 +50,16 @@ export function toGeoCompetitor(row: GeoCompetitorRow): GeoCompetitor {
     synonyms: row.synonyms,
     kind: row.kind,
     color: row.color,
+  };
+}
+
+export function toGeoSequence(row: GeoPromptSequenceRow): GeoPromptSequence {
+  return {
+    id: row.id,
+    name: row.name,
+    steps: row.steps,
+    enabled: row.enabled,
+    createdAt: row.createdAt.toISOString(),
   };
 }
 

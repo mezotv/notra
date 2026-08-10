@@ -17,6 +17,7 @@ import {
   GEO_MAX_LANGUAGES,
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
+  GEO_SEQUENCE_MAX_TURNS,
 } from "@/constants/geo";
 import { normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { publicWebsiteUrlSchema } from "@/schemas/url";
@@ -101,6 +102,31 @@ export const geoCompetitorDetailInputSchema = geoOrganizationInputSchema.extend(
 
 export const geoTranslationResultSchema = object({
   translations: array(string().min(1)),
+});
+
+export const geoSequenceCreateInputSchema = geoOrganizationInputSchema.extend({
+  name: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
+  steps: array(string().trim().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH))
+    .min(1)
+    .max(GEO_SEQUENCE_MAX_TURNS),
+});
+
+export const geoSequenceUpdateInputSchema = geoOrganizationInputSchema.extend({
+  sequenceId: string().min(1),
+  name: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
+  steps: array(string().trim().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH))
+    .min(1)
+    .max(GEO_SEQUENCE_MAX_TURNS)
+    .optional(),
+  enabled: boolean().optional(),
+});
+
+export const geoSequenceDeleteInputSchema = geoOrganizationInputSchema.extend({
+  sequenceId: string().min(1),
+});
+
+export const geoSequenceResultsInputSchema = geoOrganizationInputSchema.extend({
+  sequenceId: string().min(1).optional(),
 });
 
 export const geoProjectCreateInputSchema = object({

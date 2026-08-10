@@ -109,7 +109,9 @@ export const GEO_MODEL_USAGE_FETCH_TIMEOUT_MS = 20_000;
 export const GEO_MODEL_USAGE_DEFAULT_LIMIT = 12;
 
 export const GEO_MAX_PROMPTS = 8;
+export const GEO_MAX_SEQUENCES = 10;
 export const GEO_COMPETITOR_SHARE_LIMIT = 50;
+export const GEO_SEQUENCE_MAX_TURNS = 5;
 export const GEO_GROUNDED_MAX_PROMPTS = 6;
 export const GEO_GROUNDED_MAX_SEARCHES = 3;
 export const GEO_ANSWER_MAX_TOKENS = 600;
