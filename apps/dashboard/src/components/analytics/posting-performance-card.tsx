@@ -102,7 +102,7 @@ export function PostingPerformanceCard({
                   )}
                   <div>
                     <div
-                      className="flex flex-col gap-1"
+                      className="flex cursor-pointer flex-col gap-1"
                       onPointerLeave={() => setTip(null)}
                       onPointerMove={(event) =>
                         setTip((previous) =>
@@ -207,7 +207,7 @@ export function PostingPerformanceCard({
                           <button
                             aria-label={`${formatHourRange(slot.hour)}: ${POSTING_ACTIVITY_LABELS[slot.level]}`}
                             className={cn(
-                              "min-w-0 flex-1 cursor-pointer rounded-full",
+                              "min-w-0 flex-1 rounded-full",
                               isBest &&
                                 "ring-2 ring-ring ring-offset-1 ring-offset-card"
                             )}
