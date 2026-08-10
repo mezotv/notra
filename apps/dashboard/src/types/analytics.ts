@@ -483,6 +483,7 @@ export interface PostingPerformanceCardProps {
 export interface CursorTipState {
   x: number;
   y: number;
+  flip: boolean;
   title: string;
   detail: string;
 }

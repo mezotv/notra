@@ -22,6 +22,7 @@ import type {
 import {
   buildPostingHeatmap,
   buildPostingTimeSlots,
+  cursorTipPosition,
   findBestPostingSlot,
   formatHourRange,
   formatMetric,
@@ -107,11 +108,7 @@ export function PostingPerformanceCard({
                       onPointerMove={(event) =>
                         setTip((previous) =>
                           previous
-                            ? {
-                                ...previous,
-                                x: event.clientX,
-                                y: event.clientY,
-                              }
+                            ? { ...previous, ...cursorTipPosition(event) }
                             : previous
                         )
                       }
@@ -133,13 +130,10 @@ export function PostingPerformanceCard({
                                   POSTING_ACTIVITY_BAR_CLASSES[cell.level]
                                 )}
                                 key={cell.hour}
-                                onClick={() =>
-                                  setSelectedWeekday(cell.weekday)
-                                }
+                                onClick={() => setSelectedWeekday(cell.weekday)}
                                 onPointerMove={(event) =>
                                   setTip({
-                                    x: event.clientX,
-                                    y: event.clientY,
+                                    ...cursorTipPosition(event),
                                     title: `${WEEKDAY_LABELS[dayIndex]} ${formatHourRange(cell.hour)}`,
                                     detail: `${POSTING_ACTIVITY_LABELS[cell.level]}${cell.posts > 0 ? ` · ${cell.posts.toLocaleString()} ${cell.posts === 1 ? "post" : "posts"}` : ""}`,
                                   })
@@ -192,11 +186,7 @@ export function PostingPerformanceCard({
                       onPointerMove={(event) =>
                         setTip((previous) =>
                           previous
-                            ? {
-                                ...previous,
-                                x: event.clientX,
-                                y: event.clientY,
-                              }
+                            ? { ...previous, ...cursorTipPosition(event) }
                             : previous
                         )
                       }
@@ -214,8 +204,7 @@ export function PostingPerformanceCard({
                             key={slot.hour}
                             onPointerMove={(event) =>
                               setTip({
-                                x: event.clientX,
-                                y: event.clientY,
+                                ...cursorTipPosition(event),
                                 title: formatHourRange(slot.hour),
                                 detail: `${POSTING_ACTIVITY_LABELS[slot.level]}${slot.posts > 0 ? ` · ${slot.posts.toLocaleString()} ${slot.posts === 1 ? "post" : "posts"}` : ""}`,
                               })

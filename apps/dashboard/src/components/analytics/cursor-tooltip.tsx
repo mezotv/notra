@@ -1,6 +1,5 @@
 "use client";
 
-import { CURSOR_TOOLTIP_EDGE_PX } from "@/constants/analytics";
 import { cn } from "@/lib/utils";
 import type { CursorTooltipProps } from "@/types/analytics";
 
@@ -8,10 +7,6 @@ export function CursorTooltip({ tip }: CursorTooltipProps) {
   if (!tip) {
     return null;
   }
-  const flip =
-    typeof window !== "undefined" &&
-    tip.x > window.innerWidth - CURSOR_TOOLTIP_EDGE_PX;
-
   return (
     <div
       className="pointer-events-none fixed z-50"
@@ -20,7 +15,7 @@ export function CursorTooltip({ tip }: CursorTooltipProps) {
       <div
         className={cn(
           "grid min-w-32 translate-y-3 items-start gap-1 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
-          flip ? "-translate-x-[calc(100%+0.75rem)]" : "translate-x-3"
+          tip.flip ? "-translate-x-[calc(100%+0.75rem)]" : "translate-x-3"
         )}
       >
         <div className="font-medium font-mono text-foreground tabular-nums">

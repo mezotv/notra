@@ -22,12 +22,7 @@ import {
   resolveColumnWidths,
 } from "./utils";
 
-export type {
-  SortDirection,
-  SortState,
-  TableColumn,
-  TableProps,
-} from "./types";
+export type { SortState, TableColumn, TableProps } from "./types";
 
 export function Table<T>({
   data,
@@ -61,6 +56,7 @@ export function Table<T>({
   onRowClick,
   className,
 }: TableProps<T>) {
+  "use no memo";
   const reduce = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement>(null);
   const headerScrollRef = useRef<HTMLDivElement>(null);

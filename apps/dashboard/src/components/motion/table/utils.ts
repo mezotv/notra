@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 import type { TableColumn } from "./types";
 
-export const CHECKBOX_PX = 48;
 export const CHECKBOX_WIDTH = "3rem";
 
 /** Highlights the top edge of the active column's header cell. */

@@ -100,7 +100,10 @@ export function isTinybirdConfigured(): boolean {
 function createTinybirdClient() {
   return new Tinybird({
     token: process.env.TINYBIRD_TOKEN,
-    baseUrl: process.env.TINYBIRD_BASE_URL ?? "https://api.tinybird.co",
+    baseUrl:
+      process.env.TINYBIRD_BASE_URL ??
+      process.env.TINYBIRD_URL ??
+      "https://api.tinybird.co",
     devMode: false,
     datasources: {
       socialAccounts,

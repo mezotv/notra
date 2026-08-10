@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type SortDirection = "asc" | "desc";
+type SortDirection = "asc" | "desc";
 
 export interface SortState {
   key: string;

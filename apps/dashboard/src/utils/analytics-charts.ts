@@ -1,8 +1,12 @@
-import { TOP_POST_CONTENT_PREVIEW_LENGTH } from "@/constants/analytics";
+import {
+  CURSOR_TOOLTIP_EDGE_PX,
+  TOP_POST_CONTENT_PREVIEW_LENGTH,
+} from "@/constants/analytics";
 import type {
   AccountSeriesRow,
   AnalyticsHeroSummary,
   BestPostingSlot,
+  CursorTipState,
   EngagementTimeseriesPoint,
   FollowerGrowthPoint,
   LeaderboardDetailMetric,
@@ -242,6 +246,17 @@ const HOUR_PAD_LENGTH = 2;
 export function formatHourRange(hour: number): string {
   const label = String(hour).padStart(HOUR_PAD_LENGTH, "0");
   return `${label}:00 - ${label}:59`;
+}
+
+export function cursorTipPosition(event: {
+  clientX: number;
+  clientY: number;
+}): Pick<CursorTipState, "x" | "y" | "flip"> {
+  return {
+    x: event.clientX,
+    y: event.clientY,
+    flip: event.clientX > window.innerWidth - CURSOR_TOOLTIP_EDGE_PX,
+  };
 }
 
 export function timezoneAbbreviation(): string {

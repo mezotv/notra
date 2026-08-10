@@ -10,7 +10,6 @@ type EChartsInstance = ReturnType<typeof echarts.init>;
 
 const BRUSH_BORDER_OPACITY = 1; // brush frame, × border alpha (evil-brush uses the full token)
 
-export { BRUSH_BORDER_OPACITY };
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Brush marker — the declarative `<Chart.Brush/>` child. Rendering nothing, its
