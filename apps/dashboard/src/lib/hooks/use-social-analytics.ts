@@ -124,6 +124,24 @@ export function useLeaderboard(
   });
 }
 
+export function useLeaderboardRange(
+  organizationId: string,
+  range: AnalyticsDateRange
+) {
+  return useQuery<LeaderboardResponse>({
+    ...dashboardOrpc.analytics.leaderboard.queryOptions({
+      input: {
+        organizationId,
+        timezone: browserTimezone(),
+        dateFrom: range.dateFrom,
+        dateTo: range.dateTo,
+      },
+    }),
+    enabled: !!organizationId,
+    meta: { errorMessage: "Failed to load leaderboard" },
+  });
+}
+
 export function useUntrackAccount(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({

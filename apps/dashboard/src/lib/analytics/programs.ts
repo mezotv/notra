@@ -326,7 +326,8 @@ export const loadPostingPerformance = Effect.fn("analytics.postingPerformance")(
 
 export const loadLeaderboard = Effect.fn("analytics.leaderboard")(function* (
   organizationId: string,
-  days: LeaderboardWindow
+  days: LeaderboardWindow,
+  range: AnalyticsRangeOptions
 ) {
   const [connected, tracked, result] = yield* Effect.all(
     [
@@ -360,7 +361,13 @@ export const loadLeaderboard = Effect.fn("analytics.leaderboard")(function* (
         })
       ),
       analyticsQuery("leaderboard query failed", () =>
-        queryAccountLeaderboard({ organization_id: organizationId, days })
+        queryAccountLeaderboard({
+          organization_id: organizationId,
+          days,
+          timezone: range.timezone,
+          date_from: range.dateFrom,
+          date_to: range.dateTo,
+        })
       ),
     ],
     { concurrency: "unbounded" }

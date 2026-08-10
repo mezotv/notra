@@ -745,8 +745,8 @@ function buildChartLayout({
 
   return {
     grid: {
-      left: 8,
-      right: 8,
+      left: 20,
+      right: 20,
       top: legendTop ? 42 : 16,
       bottom: 8 + brushGap + (legendBottom ? 34 : 0),
     },

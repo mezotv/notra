@@ -196,6 +196,10 @@ export type AnalyticsRangePreset =
   | "7d"
   | "30d"
   | "90d"
+  | "mtd"
+  | "qtd"
+  | "ytd"
+  | "all"
   | "custom";
 
 export interface AnalyticsRangeState {
@@ -208,6 +212,56 @@ export interface AnalyticsRangeControl extends AnalyticsRangeState {
   includesToday: boolean;
   setPreset: (preset: Exclude<AnalyticsRangePreset, "custom">) => void;
   setCustom: (range: AnalyticsDateRange) => void;
+}
+
+export interface AnalyticsNavProps {
+  slug: string;
+}
+
+export interface PlatformTabItem {
+  value: string;
+  label: string;
+  icon?: ReactNode;
+  collapsedLabel?: string;
+}
+
+export interface PlatformTabsProps {
+  items: PlatformTabItem[];
+  value: string;
+  onValueChange: (value: string) => void;
+  label?: string;
+  className?: string;
+}
+
+export interface AnalyticsContextValue {
+  organizationId: string;
+  organizationSlug: string;
+  accounts: SocialOverviewAccount[];
+  configured: boolean;
+  isPending: boolean;
+  hiddenKeys: Set<string>;
+  toggleAccount: (key: string) => void;
+}
+
+export interface AnalyticsProviderProps {
+  organizationSlug: string;
+  children: ReactNode;
+}
+
+export interface AnalyticsAccountsView {
+  organizationId: string;
+  organizationSlug: string;
+  accounts: SocialOverviewAccount[];
+  configured: boolean;
+  isPending: boolean;
+  hiddenKeys: Set<string>;
+  toggleAccount: (key: string) => void;
+  allKeys: string[];
+  accountConfig: ChartConfig;
+  accountColors: Map<string, ChartColorPair>;
+  visibleKeys: string[];
+  selectedKeys: Set<string>;
+  visibleAccounts: SocialOverviewAccount[];
 }
 
 export interface AnalyticsRangePickerProps {
@@ -379,7 +433,6 @@ export interface AnalyticsStatTile {
   label: string;
   value: string;
   hint: string;
-  accent: boolean;
 }
 
 export interface AccountSeriesChartCardProps {
@@ -425,6 +478,17 @@ export interface PostingHeatmapCell {
 export interface PostingPerformanceCardProps {
   points: PostingPerformancePoint[];
   action?: ReactNode;
+}
+
+export interface CursorTipState {
+  x: number;
+  y: number;
+  title: string;
+  detail: string;
+}
+
+export interface CursorTooltipProps {
+  tip: CursorTipState | null;
 }
 
 export interface ImpressionsShareCardProps {

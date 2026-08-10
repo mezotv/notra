@@ -10,14 +10,6 @@ import {
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@notra/ui/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
-import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
@@ -25,7 +17,9 @@ import {
 import { useRouter } from "next/navigation";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useMemo, useState } from "react";
+import { PlatformTabs } from "@/components/analytics/platform-tabs";
 import { ProviderIcon } from "@/components/analytics/provider-icon";
+import { AnalyticsRangePicker } from "@/components/analytics/range-picker";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
 import {
   InstrumentEmpty,
@@ -35,20 +29,17 @@ import { Table, type TableColumn } from "@/components/motion/table";
 import {
   ANALYTICS_PROVIDER_FILTER_VALUES,
   ANALYTICS_PROVIDER_FILTERS,
+  LEADERBOARD_EMPTY_HEIGHT,
   LEADERBOARD_PAGE_HEIGHT,
-  LEADERBOARD_WINDOWS,
 } from "@/constants/analytics";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import { useAnalyticsRange } from "@/lib/hooks/use-analytics-range";
 import {
-  useLeaderboard,
+  useLeaderboardRange,
   useUntrackAccount,
 } from "@/lib/hooks/use-social-analytics";
 import { cn } from "@/lib/utils";
-import type {
-  LeaderboardCardProps,
-  LeaderboardEntry,
-  LeaderboardWindow,
-} from "@/types/analytics";
+import type { LeaderboardCardProps, LeaderboardEntry } from "@/types/analytics";
 import {
   filterLeaderboardEntries,
   toProviderFilter,
@@ -63,9 +54,9 @@ export function LeaderboardCard({
   variant = "module",
 }: LeaderboardCardProps) {
   const router = useRouter();
-  const [days, setDays] = useState<LeaderboardWindow>(7);
+  const range = useAnalyticsRange("leaderboardRange", "7d");
   const untrack = useUntrackAccount(organizationId);
-  const { data } = useLeaderboard(organizationId, days);
+  const { data } = useLeaderboardRange(organizationId, range.range);
 
   const [search, setSearch] = useQueryState(
     "account",
@@ -85,6 +76,16 @@ export function LeaderboardCard({
     () => filterLeaderboardEntries(entries, search, providerFilter),
     [entries, search, providerFilter]
   );
+
+  const tableHeight = useMemo(() => {
+    if (rows.length === 0) {
+      return LEADERBOARD_EMPTY_HEIGHT;
+    }
+    if (variant === "page") {
+      return Math.max(tableHeightFor(rows.length), LEADERBOARD_PAGE_HEIGHT);
+    }
+    return tableHeightFor(rows.length);
+  }, [rows.length, variant]);
 
   const selectedTrackedIds = useMemo(
     () =>
@@ -172,8 +173,8 @@ export function LeaderboardCard({
       },
       {
         key: "interactions",
-        header: "Interact",
-        width: "7.5rem",
+        header: "Interactions",
+        width: "8.75rem",
         align: "right",
         sortable: true,
         cell: (row) => (
@@ -184,8 +185,8 @@ export function LeaderboardCard({
       },
       {
         key: "impressions",
-        header: "Impress",
-        width: "7.5rem",
+        header: "Impressions",
+        width: "8.75rem",
         align: "right",
         sortable: true,
         cell: (row) => (
@@ -236,30 +237,7 @@ export function LeaderboardCard({
 
   return (
     <InstrumentSection
-      action={
-        <Select
-          onValueChange={(value) => {
-            const parsed = LEADERBOARD_WINDOWS.find(
-              (window) => String(window) === value
-            );
-            if (parsed) {
-              setDays(parsed);
-            }
-          }}
-          value={String(days)}
-        >
-          <SelectTrigger className="w-32">
-            <SelectValue>{`Last ${days}d`}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {LEADERBOARD_WINDOWS.map((window) => (
-              <SelectItem key={window} value={String(window)}>
-                Last {window}d
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      }
+      action={<AnalyticsRangePicker control={range} />}
       eyebrow="Leaderboard"
     >
       {entries.length === 0 ? (
@@ -285,23 +263,22 @@ export function LeaderboardCard({
                 value={search}
               />
             </div>
-            <Tabs
+            <PlatformTabs
+              items={ANALYTICS_PROVIDER_FILTERS.map((option) => ({
+                value: option.value,
+                label: option.value === "all" ? "All Platforms" : option.label,
+                collapsedLabel: option.value === "all" ? "All" : undefined,
+                icon:
+                  option.value === "all" ? undefined : (
+                    <ProviderIcon provider={option.value} />
+                  ),
+              }))}
+              label="Filter by platform"
               onValueChange={(value) =>
-                setProviderFilter(toProviderFilter(value ?? "all"))
+                setProviderFilter(toProviderFilter(value))
               }
               value={providerFilter}
-            >
-              <TabsList>
-                {ANALYTICS_PROVIDER_FILTERS.map((option) => (
-                  <TabsTrigger key={option.value} value={option.value}>
-                    <span className="flex items-center gap-1.5">
-                      <ProviderIcon provider={option.value} />
-                      {option.label}
-                    </span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+            />
             {selectedTrackedIds.length > 0 && (
               <Button
                 disabled={untrack.isPending}
@@ -326,11 +303,7 @@ export function LeaderboardCard({
             defaultSort={{ key: "rank", direction: "asc" }}
             emptyState="No accounts match these filters"
             getRowId={(row) => row.key}
-            height={
-              variant === "page"
-                ? Math.max(tableHeightFor(rows.length), LEADERBOARD_PAGE_HEIGHT)
-                : tableHeightFor(rows.length)
-            }
+            height={tableHeight}
             onRowClick={(row) =>
               router.push(
                 `/${organizationSlug}/analytics/accounts/${encodeURIComponent(row.username)}`

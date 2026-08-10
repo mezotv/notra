@@ -41,6 +41,7 @@ export const analyticsTopPostsInputSchema = object({
 export const leaderboardInputSchema = object({
   organizationId: string().min(1),
   days: union([literal(7), literal(30)]).default(7),
+  ...analyticsRangeFields,
 });
 
 export const trackAccountInputSchema = object({

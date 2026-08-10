@@ -67,10 +67,7 @@ export function ImpressionsShareCard({
   }, [data?.entries]);
 
   return (
-    <InstrumentModule
-      eyebrow="Impressions share"
-      variant="panel"
-    >
+    <InstrumentModule eyebrow="Impressions share" variant="panel">
       {rows.length === 0 ? (
         <InstrumentEmpty
           className="h-56"

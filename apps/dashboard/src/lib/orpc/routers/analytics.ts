@@ -133,7 +133,11 @@ export const analyticsRouter = {
       });
 
       return await runOrpcEffect(
-        loadLeaderboard(input.organizationId, input.days),
+        loadLeaderboard(input.organizationId, input.days, {
+          timezone: input.timezone,
+          dateFrom: input.dateFrom,
+          dateTo: input.dateTo,
+        }),
         toAnalyticsOrpcError
       );
     }),

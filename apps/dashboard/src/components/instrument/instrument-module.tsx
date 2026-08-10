@@ -55,7 +55,7 @@ export function InstrumentModule({
           className={cn(
             bareBody
               ? "flex flex-1 flex-col p-0"
-              : "-mt-9 relative flex flex-1 flex-col rounded-2xl border border-border bg-card pt-6 pb-6",
+              : "-mt-9 relative flex flex-1 flex-col rounded-2xl border border-border bg-card p-6",
             bodyClassName
           )}
         >

@@ -7,8 +7,6 @@ export const ANALYTICS_TIMESERIES_DAYS = 30;
 export const ANALYTICS_TOP_POSTS_LIMIT = 8;
 export const TOP_POST_CONTENT_PREVIEW_LENGTH = 96;
 
-export const LEADERBOARD_WINDOWS = [7, 30] as const;
-
 export const ANALYTICS_PROVIDER_FILTER_VALUES = [
   "all",
   "twitter",
@@ -32,13 +30,13 @@ export const CONNECT_X_CLASS =
   "bg-[#0f1419] text-white hover:bg-[#0f1419]/90 dark:bg-white dark:text-[#0f1419] dark:hover:bg-white/90";
 
 export const LEADERBOARD_PAGE_HEIGHT = 620;
+export const LEADERBOARD_EMPTY_HEIGHT = 260;
 
 export const CONNECT_LINKEDIN_CLASS =
   "bg-[#0a66c2] text-white hover:bg-[#0a66c2]/90";
 
-export const ANALYTICS_TAB_VALUES = ["overview", "leaderboard"] as const;
-
 export const ANALYTICS_TOOLTIP_DELAY_MS = 200;
+export const CURSOR_TOOLTIP_EDGE_PX = 200;
 
 export const ANALYTICS_RANGE_PRESETS = [
   { value: "today", label: "Today", compact: "Today" },
@@ -46,6 +44,10 @@ export const ANALYTICS_RANGE_PRESETS = [
   { value: "7d", label: "Last 7 days", compact: "7D" },
   { value: "30d", label: "Last 30 days", compact: "30D" },
   { value: "90d", label: "Last 90 days", compact: "90D" },
+  { value: "mtd", label: "Month to date", compact: "MTD" },
+  { value: "qtd", label: "Quarter to date", compact: "QTD" },
+  { value: "ytd", label: "Year to date", compact: "YTD" },
+  { value: "all", label: "All time", compact: "All time" },
 ] as const;
 
 export const ANALYTICS_RANGE_PRESET_DAYS = {
@@ -55,6 +57,8 @@ export const ANALYTICS_RANGE_PRESET_DAYS = {
   "30d": 29,
   "90d": 89,
 } as const;
+
+export const ANALYTICS_ALL_TIME_START = "2020-01-01";
 
 export const POSTING_ACTIVITY_LABELS: Record<PostingActivityLevel, string> = {
   quiet: "No activity",

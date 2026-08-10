@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import PageClient from "./page-client";
+import LeaderboardPageClient from "./page-client";
 
 export const metadata: Metadata = {
-  title: "Analytics",
+  title: "Leaderboard",
 };
 
 function Page() {
-  return <PageClient />;
+  return <LeaderboardPageClient />;
 }
 
 export default Page;

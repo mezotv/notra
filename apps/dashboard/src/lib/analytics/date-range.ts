@@ -1,4 +1,5 @@
 import {
+  ANALYTICS_ALL_TIME_START,
   ANALYTICS_RANGE_PRESET_DAYS,
   ANALYTICS_RANGE_PRESETS,
 } from "@/constants/analytics";
@@ -28,20 +29,45 @@ export function parseLocalDay(day: string): Date {
   return new Date(year ?? 0, (month ?? 1) - 1, date ?? 1);
 }
 
+const MONTHS_PER_QUARTER = 3;
+
 function shiftedDay(offsetDays: number): string {
   const date = new Date();
   date.setDate(date.getDate() - offsetDays);
   return localDayString(date);
 }
 
+function firstOfMonth(month: number): string {
+  return localDayString(new Date(new Date().getFullYear(), month, 1));
+}
+
 function presetRange(
   preset: Exclude<AnalyticsRangePreset, "custom">
 ): AnalyticsDateRange {
-  const spanDays = ANALYTICS_RANGE_PRESET_DAYS[preset];
-  if (preset === "yesterday") {
-    return { dateFrom: shiftedDay(1), dateTo: shiftedDay(1) };
+  const today = shiftedDay(0);
+  switch (preset) {
+    case "yesterday":
+      return { dateFrom: shiftedDay(1), dateTo: shiftedDay(1) };
+    case "mtd":
+      return { dateFrom: firstOfMonth(new Date().getMonth()), dateTo: today };
+    case "qtd":
+      return {
+        dateFrom: firstOfMonth(
+          Math.floor(new Date().getMonth() / MONTHS_PER_QUARTER) *
+            MONTHS_PER_QUARTER
+        ),
+        dateTo: today,
+      };
+    case "ytd":
+      return { dateFrom: firstOfMonth(0), dateTo: today };
+    case "all":
+      return { dateFrom: ANALYTICS_ALL_TIME_START, dateTo: today };
+    default:
+      return {
+        dateFrom: shiftedDay(ANALYTICS_RANGE_PRESET_DAYS[preset]),
+        dateTo: today,
+      };
   }
-  return { dateFrom: shiftedDay(spanDays), dateTo: shiftedDay(0) };
 }
 
 function isPresetValue(
@@ -98,10 +124,16 @@ export function rangeIncludesToday(range: AnalyticsDateRange): boolean {
 }
 
 export function buildTimelineRange(range: AnalyticsDateRange): string[] {
-  const cursor = parseLocalDay(range.dateFrom);
-  const end = parseLocalDay(range.dateTo).getTime();
+  const end = parseLocalDay(range.dateTo);
+  const start = parseLocalDay(range.dateFrom);
+  // Cap very long ranges (e.g. "all time") to the most recent window so the
+  // chart anchors on where the data actually is instead of empty early days.
+  const capStart = new Date(end);
+  capStart.setDate(capStart.getDate() - (MAX_TIMELINE_DAYS - 1));
+  const cursor = start.getTime() < capStart.getTime() ? capStart : start;
+  const endMs = end.getTime();
   const result: string[] = [];
-  while (cursor.getTime() <= end && result.length < MAX_TIMELINE_DAYS) {
+  while (cursor.getTime() <= endMs) {
     result.push(localDayString(cursor));
     cursor.setDate(cursor.getDate() + 1);
   }

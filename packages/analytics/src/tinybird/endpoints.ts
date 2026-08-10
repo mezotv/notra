@@ -381,12 +381,32 @@ export const engagementTimeseries = defineEndpoint("engagement_timeseries", {
   },
 });
 
+const LEADERBOARD_CURRENT_WINDOW = `if(
+            {{String(date_from, '')}} = '',
+            window_posts.first_posted_at >= now() - toIntervalDay({{Int32(days, 7)}}),
+            toDate(toTimeZone(window_posts.first_posted_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}})
+          )`;
+
 export const accountLeaderboard = defineEndpoint("account_leaderboard", {
   description:
-    "Per-account interactions for the trailing window and the window before it",
+    "Per-account interactions for the selected window and the window before it",
   params: {
     organization_id: p.string().describe("Organization id"),
-    days: p.int32().optional(7).describe("Length of each window in days"),
+    days: p.int32().optional(7).describe("Trailing window length (fallback)"),
+    timezone: p
+      .string()
+      .optional("UTC")
+      .describe("IANA timezone used to interpret the date range"),
+    date_from: p
+      .string()
+      .optional("")
+      .describe(
+        "Inclusive first local day (YYYY-MM-DD); empty for days window"
+      ),
+    date_to: p
+      .string()
+      .optional("")
+      .describe("Inclusive last local day (YYYY-MM-DD); empty for no bound"),
   },
   nodes: [
     node({
@@ -399,8 +419,12 @@ export const accountLeaderboard = defineEndpoint("account_leaderboard", {
           min(posted_at) AS first_posted_at
         FROM social_posts
         WHERE organization_id = {{String(organization_id)}}
-          AND posted_at >= now() - toIntervalDay({{Int32(days, 7)}} * 2)
-          AND posted_at <= now()
+          AND if(
+            {{String(date_from, '')}} = '',
+            posted_at >= now() - toIntervalDay({{Int32(days, 7)}} * 2) AND posted_at <= now(),
+            toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}}) - (toDateOrNull({{String(date_to, '')}}) - toDateOrNull({{String(date_from, '')}}) + 1)
+              AND toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) <= toDateOrNull({{String(date_to, '')}})
+          )
         GROUP BY provider, platform_post_id
       `,
     }),
@@ -425,23 +449,23 @@ export const accountLeaderboard = defineEndpoint("account_leaderboard", {
         SELECT
           window_posts.provider AS provider,
           window_posts.provider_account_id AS provider_account_id,
-          countIf(window_posts.first_posted_at >= now() - toIntervalDay({{Int32(days, 7)}})) AS posts,
+          countIf(${LEADERBOARD_CURRENT_WINDOW}) AS posts,
           sumIf(
             coalesce(metrics.likes, 0) + coalesce(metrics.replies, 0) + coalesce(metrics.reposts, 0),
-            window_posts.first_posted_at >= now() - toIntervalDay({{Int32(days, 7)}})
+            ${LEADERBOARD_CURRENT_WINDOW}
           ) AS interactions,
           sumIf(
             coalesce(metrics.impressions, 0),
-            window_posts.first_posted_at >= now() - toIntervalDay({{Int32(days, 7)}})
+            ${LEADERBOARD_CURRENT_WINDOW}
           ) AS impressions,
-          countIf(window_posts.first_posted_at < now() - toIntervalDay({{Int32(days, 7)}})) AS prev_posts,
+          countIf(NOT (${LEADERBOARD_CURRENT_WINDOW})) AS prev_posts,
           sumIf(
             coalesce(metrics.likes, 0) + coalesce(metrics.replies, 0) + coalesce(metrics.reposts, 0),
-            window_posts.first_posted_at < now() - toIntervalDay({{Int32(days, 7)}})
+            NOT (${LEADERBOARD_CURRENT_WINDOW})
           ) AS prev_interactions,
           sumIf(
             coalesce(metrics.impressions, 0),
-            window_posts.first_posted_at < now() - toIntervalDay({{Int32(days, 7)}})
+            NOT (${LEADERBOARD_CURRENT_WINDOW})
           ) AS prev_impressions
         FROM leaderboard_window_posts AS window_posts
         LEFT JOIN leaderboard_post_metrics AS metrics
