@@ -1,3 +1,4 @@
+import { assertAnalyticsEnabled } from "@/lib/analytics/access";
 import {
   loadEngagementTimeseries,
   loadFollowerGrowth,
@@ -43,6 +44,7 @@ export const analyticsRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertAnalyticsEnabled(input.organizationId);
 
       return await runOrpcEffect(
         loadSocialOverview(input.organizationId),
@@ -58,6 +60,7 @@ export const analyticsRouter = {
           organizationId: input.organizationId,
           user: context.user,
         });
+        await assertAnalyticsEnabled(input.organizationId);
 
         return await runOrpcEffect(
           loadEngagementTimeseries(input.organizationId, {
@@ -78,6 +81,7 @@ export const analyticsRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertAnalyticsEnabled(input.organizationId);
 
       return await runOrpcEffect(
         loadTopPosts(input.organizationId, input.limit, {
@@ -96,6 +100,7 @@ export const analyticsRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertAnalyticsEnabled(input.organizationId);
 
       return await runOrpcEffect(
         loadNotraAdoption(input.organizationId),
@@ -111,6 +116,7 @@ export const analyticsRouter = {
           organizationId: input.organizationId,
           user: context.user,
         });
+        await assertAnalyticsEnabled(input.organizationId);
 
         return await runOrpcEffect(
           loadPostingPerformance(input.organizationId, {
@@ -131,6 +137,7 @@ export const analyticsRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertAnalyticsEnabled(input.organizationId);
 
       return await runOrpcEffect(
         loadLeaderboard(input.organizationId, input.days, {
@@ -150,6 +157,7 @@ export const analyticsRouter = {
           organizationId: input.organizationId,
           user: context.user,
         });
+        await assertAnalyticsEnabled(input.organizationId);
 
         return await runOrpcEffect(
           previewTrackedAccount(input.username),
@@ -165,6 +173,7 @@ export const analyticsRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertAnalyticsEnabled(input.organizationId);
 
       return await runOrpcEffect(
         trackTwitterAccount(input.organizationId, input.username),
@@ -179,6 +188,7 @@ export const analyticsRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertAnalyticsEnabled(input.organizationId);
 
       return await runOrpcEffect(
         untrackTwitterAccount(input.organizationId, input.trackedAccountId),
@@ -193,6 +203,7 @@ export const analyticsRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertAnalyticsEnabled(input.organizationId);
 
       return await runOrpcEffect(
         loadFollowerGrowth(input.organizationId, {

@@ -378,6 +378,8 @@ export interface AnalyticsPageClientProps {
 
 export type AnalyticsProviderFilter = "all" | "twitter" | "linkedin";
 
+export type AnalyticsFlagState = "enabled" | "disabled" | "unavailable";
+
 export interface AccountDetailViewProps {
   organizationSlug: string;
   handle: string;

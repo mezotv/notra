@@ -29,8 +29,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Fragment, memo } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { SOCIAL_ANALYTICS_FLAG_KEY } from "@/constants/analytics";
 import { IRIS_FLAG_KEY, IRIS_NAV_LINK } from "@/constants/iris";
 import type { NavMainCategory, NavMainItem } from "@/types/components/nav";
+import {
+  filterAnalyticsNavItems,
+  isAnalyticsVisibleInNav,
+} from "@/utils/analytics-flag";
 import { filterIrisNavItems, isIrisVisibleInNav } from "@/utils/iris-flag";
 import { resolveActiveNavLink } from "@/utils/nav";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
@@ -191,6 +196,8 @@ export function NavMain() {
   const pathname = usePathname();
   const irisFlag = useFlag(IRIS_FLAG_KEY);
   const irisVisible = isIrisVisibleInNav(irisFlag.on);
+  const analyticsFlag = useFlag(SOCIAL_ANALYTICS_FLAG_KEY);
+  const analyticsVisible = isAnalyticsVisibleInNav(analyticsFlag.on);
 
   if (!activeOrganization?.slug) {
     return null;
@@ -211,7 +218,10 @@ export function NavMain() {
         <Fragment key={category}>
           <NavGroup
             activeLink={activeLink}
-            items={filterIrisNavItems(itemsByCategory[category], irisVisible)}
+            items={filterAnalyticsNavItems(
+              filterIrisNavItems(itemsByCategory[category], irisVisible),
+              analyticsVisible
+            )}
             label={categoryLabels[category]}
             slug={slug}
           />
