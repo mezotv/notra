@@ -28,9 +28,12 @@ async function filterFlaggedOrganizations(
       enabled: await isAnalyticsEnabledForOrganization(organizationId),
     }))
   );
-  const enabledOrganizations = new Set(
-    flags.filter((flag) => flag.enabled).map((flag) => flag.organizationId)
-  );
+  const enabledOrganizations = new Set<string>();
+  for (const flag of flags) {
+    if (flag.enabled) {
+      enabledOrganizations.add(flag.organizationId);
+    }
+  }
   return accounts.filter((account) =>
     enabledOrganizations.has(account.organizationId)
   );

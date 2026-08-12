@@ -111,18 +111,29 @@ export async function collectTwitterRows(
     capturedAt.getTime() - TWITTER_TIMELINE_WINDOW_DAYS * DAY_IN_MS
   );
 
-  for (const account of accounts) {
-    const user = usersByUsername.get(account.username.toLowerCase());
-    if (!user) {
+  const timelines = await Promise.all(
+    accounts.map(async (account) => {
+      const user = usersByUsername.get(account.username.toLowerCase());
+      if (!user) {
+        return null;
+      }
+      const tweets = await fetchUserTweets(user.id, timelineStart);
+      return { account, user, tweets };
+    })
+  );
+
+  for (const timeline of timelines) {
+    if (!timeline) {
       continue;
     }
     rows.accountStats.push(
-      buildTwitterAccountStatsRow(account, user, capturedAt)
+      buildTwitterAccountStatsRow(timeline.account, timeline.user, capturedAt)
     );
-    const tweets = await fetchUserTweets(user.id, timelineStart);
-    for (const tweet of tweets) {
-      rows.posts.push(buildTweetPostRow(account, tweet, capturedAt));
-      rows.postStats.push(buildTweetStatsRow(account, tweet, capturedAt));
+    for (const tweet of timeline.tweets) {
+      rows.posts.push(buildTweetPostRow(timeline.account, tweet, capturedAt));
+      rows.postStats.push(
+        buildTweetStatsRow(timeline.account, tweet, capturedAt)
+      );
     }
   }
 
