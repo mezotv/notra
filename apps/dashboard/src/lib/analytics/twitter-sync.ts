@@ -4,8 +4,10 @@ import type {
   SocialPostStatsRow,
 } from "@notra/analytics/tinybird/datasources";
 import {
+  DAY_IN_MS,
   TWITTER_TIMELINE_MAX_PAGES,
   TWITTER_TIMELINE_MAX_RESULTS,
+  TWITTER_TIMELINE_WINDOW_DAYS,
   TWITTER_TWEET_FIELDS,
   TWITTER_USER_BATCH_SIZE,
   TWITTER_USER_FIELDS,
@@ -53,7 +55,7 @@ async function fetchTwitterUsersBatch(
   return users;
 }
 
-async function fetchUserTweets(userId: string) {
+async function fetchUserTweets(userId: string, startTime: Date) {
   const tweets: TwitterTimelineResponse["data"] = [];
   let paginationToken: string | undefined;
 
@@ -61,6 +63,7 @@ async function fetchUserTweets(userId: string) {
     const params = new URLSearchParams({
       max_results: String(TWITTER_TIMELINE_MAX_RESULTS),
       exclude: "replies,retweets",
+      start_time: startTime.toISOString(),
       "tweet.fields": TWITTER_TWEET_FIELDS,
     });
     if (paginationToken) {
@@ -104,6 +107,9 @@ export async function collectTwitterRows(
   const usersByUsername = new Map(
     users.map((user) => [user.username.toLowerCase(), user])
   );
+  const timelineStart = new Date(
+    capturedAt.getTime() - TWITTER_TIMELINE_WINDOW_DAYS * DAY_IN_MS
+  );
 
   for (const account of accounts) {
     const user = usersByUsername.get(account.username.toLowerCase());
@@ -113,7 +119,7 @@ export async function collectTwitterRows(
     rows.accountStats.push(
       buildTwitterAccountStatsRow(account, user, capturedAt)
     );
-    const tweets = await fetchUserTweets(user.id);
+    const tweets = await fetchUserTweets(user.id, timelineStart);
     for (const tweet of tweets) {
       rows.posts.push(buildTweetPostRow(account, tweet, capturedAt));
       rows.postStats.push(buildTweetStatsRow(account, tweet, capturedAt));

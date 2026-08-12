@@ -1,8 +1,8 @@
 import { getAppUrl } from "@notra/ai/qstash/triggers";
 import { Client as QStashClient } from "@upstash/qstash";
 
-const HOURLY_CRON = "0 * * * *";
-const SCHEDULE_ID = "social-analytics-sync-hourly";
+const TWICE_DAILY_CRON = "0 6,18 * * *";
+const SCHEDULE_ID = "social-analytics-sync";
 
 const token = process.env.QSTASH_TOKEN;
 if (!token) {
@@ -15,12 +15,12 @@ const destination = `${getAppUrl()}/api/workflows/social-analytics-sync`;
 const result = await client.schedules.create({
   scheduleId: SCHEDULE_ID,
   destination,
-  cron: HOURLY_CRON,
+  cron: TWICE_DAILY_CRON,
   body: JSON.stringify({}),
   headers: { "Content-Type": "application/json" },
 });
 
 console.log(
-  `Registered schedule ${result.scheduleId ?? SCHEDULE_ID} -> ${destination} (${HOURLY_CRON})`
+  `Registered schedule ${result.scheduleId ?? SCHEDULE_ID} -> ${destination} (${TWICE_DAILY_CRON})`
 );
 process.exit(0);
