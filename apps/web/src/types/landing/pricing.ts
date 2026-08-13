@@ -1,22 +1,19 @@
 import type { ComponentType, SVGProps } from "react";
 
 export type PricingIconKey =
-  | "team"
-  | "credits"
-  | "workflows"
-  | "integrations"
+  | "tracking"
+  | "images"
+  | "content"
+  | "social"
+  | "projects"
   | "references"
   | "retention"
-  | "support";
+  | "support"
+  | "zdr";
 
 export type PricingIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
-export type BillingPeriod = "monthly" | "yearly";
-
-export interface BillingToggleOption {
-  value: BillingPeriod;
-  label: string;
-}
+type BillingPeriod = "monthly" | "yearly";
 
 interface PricingFeature {
   label: string;
@@ -41,19 +38,19 @@ export interface PricingPlan {
   price: Record<BillingPeriod, string>;
   priceSuffix?: Record<BillingPeriod, string>;
   variant: "default" | "featured";
-  hasAnnualBadge?: boolean;
   cta: PricingCta;
   features: PricingFeature[];
 }
 
-export interface PricingCardProps {
-  plan: PricingPlan;
-  billingPeriod: BillingPeriod;
+export interface TrackedEngine {
+  name: string;
+  src: string;
+  darkSrc?: string;
+  width: number;
 }
 
-export interface PricingBillingToggleProps {
-  value: BillingPeriod;
-  onValueChange: (value: BillingPeriod) => void;
+export interface PricingCardProps {
+  plan: PricingPlan;
 }
 
 export interface LandingPricingSectionProps {
