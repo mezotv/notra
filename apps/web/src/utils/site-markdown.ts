@@ -150,7 +150,7 @@ export function buildPricingMarkdown() {
     "",
     "Choose the right Notra plan for your team.",
     "",
-    "Upgrade when you need more images, posts, or workspaces.",
+    "Upgrade when you need more images, posts, or projects.",
     "",
     planSections,
     "## Feature Comparison",
@@ -193,7 +193,7 @@ export function buildLandingMarkdown() {
     ]),
     markdownSection("Pricing", [
       "Pricing that scales with what you ship.",
-      "Upgrade when you need more images, posts, or workspaces.",
+      "Upgrade when you need more images, posts, or projects.",
       "",
       "See the dedicated pricing page: [Pricing](https://www.usenotra.com/pricing.md)",
     ]),
