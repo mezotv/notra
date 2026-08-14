@@ -64,6 +64,11 @@ const nextConfig: NextConfig = {
         destination: "/:slug/automation/schedules",
         permanent: true,
       },
+      {
+        source: "/:slug/logs",
+        destination: "/:slug/settings/logs",
+        permanent: true,
+      },
     ];
   },
   async headers() {
