@@ -8,6 +8,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -23,7 +25,6 @@ import {
   findSelectedBrandIdentity,
   readStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
-import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
 
 function subscribeToStorage(onStoreChange: () => void) {
   window.addEventListener("storage", onStoreChange);
@@ -94,7 +95,8 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
     : `${brandBasePath}?view=guidelines`;
 
   return (
-    <CollapsibleSidebarGroup label="Brand Identity">
+    <SidebarGroup>
+      <SidebarGroupLabel>Brand Identity</SidebarGroupLabel>
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton
@@ -160,6 +162,6 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           />
         </SidebarMenuItem>
       </SidebarMenu>
-    </CollapsibleSidebarGroup>
+    </SidebarGroup>
   );
 }

@@ -113,8 +113,8 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     label: "Logs",
     keywords: ["audit", "activity", "events", "history"],
     icon: AnalyticsUpIcon,
-    section: "Manage",
-    path: (slug) => `/${slug}/logs`,
+    section: "Settings",
+    path: (slug) => `/${slug}/settings/logs`,
   },
   {
     id: "settings-account",

@@ -1,21 +1,5 @@
 "use client";
 import { useFlag } from "@databuddy/sdk/react";
-import {
-  AiBrowserIcon,
-  AiChat01Icon,
-  Analytics01Icon,
-  AnalyticsUpIcon,
-  Calendar03Icon,
-  ChartAnalysisIcon,
-  Home01Icon,
-  Key01Icon,
-  MagicWand01Icon,
-  Message01Icon,
-  NoteIcon,
-  Notification03Icon,
-  PlugIcon,
-  RainbowIcon,
-} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
@@ -27,105 +11,18 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Fragment, memo } from "react";
+import { memo } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { SOCIAL_ANALYTICS_FLAG_KEY } from "@/constants/analytics";
-import { IRIS_FLAG_KEY, IRIS_NAV_LINK } from "@/constants/iris";
-import type { NavMainCategory, NavMainItem } from "@/types/components/nav";
 import {
-  filterAnalyticsNavItems,
-  isAnalyticsVisibleInNav,
-} from "@/utils/analytics-flag";
-import { filterIrisNavItems, isIrisVisibleInNav } from "@/utils/iris-flag";
-import { resolveActiveNavLink } from "@/utils/nav";
+  NAV_CATEGORY_LABELS,
+  NAV_DRILLDOWN_ITEMS,
+  NAV_MAIN_ITEMS,
+} from "@/constants/nav";
+import type { NavMainItem } from "@/types/components/nav";
+import { isAnalyticsVisibleInNav } from "@/utils/analytics-flag";
+import { resolveActiveNavLink, resolveMainNavGroups } from "@/utils/nav";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
-import { NavBrandIdentity } from "./nav-brand-identity";
-
-const categoryLabels: Record<Exclude<NavMainCategory, "none">, string> = {
-  workspace: "Workspace",
-  automation: "Automation",
-  manage: "Manage",
-};
-
-const navMainItems: NavMainItem[] = [
-  {
-    link: "/chat",
-    icon: Message01Icon,
-    label: "Chat",
-    category: "none",
-    badge: "Beta",
-  },
-  {
-    link: "",
-    icon: Home01Icon,
-    label: "Home",
-    category: "none",
-  },
-  {
-    link: "/content",
-    icon: NoteIcon,
-    label: "Content",
-    category: "workspace",
-  },
-  {
-    link: "/analytics",
-    icon: Analytics01Icon,
-    label: "Analytics",
-    category: "workspace",
-  },
-  {
-    link: "/skills",
-    icon: MagicWand01Icon,
-    label: "Skills",
-    category: "workspace",
-  },
-  {
-    link: IRIS_NAV_LINK,
-    icon: RainbowIcon,
-    label: "Iris",
-    category: "automation",
-  },
-  {
-    link: "/automation/schedules",
-    icon: Calendar03Icon,
-    label: "Schedules",
-    category: "automation",
-  },
-  {
-    link: "/automation/events",
-    icon: Notification03Icon,
-    label: "Events",
-    category: "automation",
-  },
-  {
-    link: "/api-keys",
-    icon: Key01Icon,
-    label: "API Keys",
-    category: "manage",
-  },
-  {
-    link: "/integrations",
-    icon: PlugIcon,
-    label: "Integrations",
-    category: "manage",
-  },
-  {
-    link: "/logs",
-    icon: AnalyticsUpIcon,
-    label: "Logs",
-    category: "manage",
-  },
-];
-
-const itemsByCategory: Record<NavMainCategory, NavMainItem[]> = {
-  none: [],
-  workspace: [],
-  automation: [],
-  manage: [],
-};
-for (const item of navMainItems) {
-  itemsByCategory[item.category].push(item);
-}
 
 const NavGroup = memo(function NavGroup({
   items,
@@ -186,16 +83,9 @@ const NavGroup = memo(function NavGroup({
   );
 });
 
-const categories = Object.keys(categoryLabels) as Exclude<
-  NavMainCategory,
-  "none"
->[];
-
 export function NavMain() {
   const { activeOrganization } = useOrganizationsContext();
   const pathname = usePathname();
-  const irisFlag = useFlag(IRIS_FLAG_KEY);
-  const irisVisible = isIrisVisibleInNav(irisFlag.on);
   const analyticsFlag = useFlag(SOCIAL_ANALYTICS_FLAG_KEY);
   const analyticsVisible = isAnalyticsVisibleInNav(analyticsFlag.on);
 
@@ -204,30 +94,23 @@ export function NavMain() {
   }
 
   const slug = activeOrganization.slug;
-  const rootItems = itemsByCategory.none;
+  const { rootItems, workspaceItems } = resolveMainNavGroups(analyticsVisible);
   const activeLink = resolveActiveNavLink(
     pathname,
     slug,
-    navMainItems.map((item) => item.link)
+    NAV_MAIN_ITEMS.map((item) => item.link)
   );
 
   return (
     <>
       <NavGroup activeLink={activeLink} items={rootItems} slug={slug} />
-      {categories.map((category) => (
-        <Fragment key={category}>
-          <NavGroup
-            activeLink={activeLink}
-            items={filterAnalyticsNavItems(
-              filterIrisNavItems(itemsByCategory[category], irisVisible),
-              analyticsVisible
-            )}
-            label={categoryLabels[category]}
-            slug={slug}
-          />
-          {category === "workspace" && <NavBrandIdentity slug={slug} />}
-        </Fragment>
-      ))}
+      <NavGroup
+        activeLink={activeLink}
+        items={workspaceItems}
+        label={NAV_CATEGORY_LABELS.workspace}
+        slug={slug}
+      />
+      <NavGroup activeLink={null} items={NAV_DRILLDOWN_ITEMS} slug={slug} />
     </>
   );
 }

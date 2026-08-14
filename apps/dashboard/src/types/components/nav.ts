@@ -1,6 +1,20 @@
 import type { IconSvgElement } from "@hugeicons/react";
 
-export type NavMainCategory = "none" | "workspace" | "automation" | "manage";
+export type NavMainCategory = "none" | "workspace" | "automation" | "utility";
+
+export type NavDrilldownCategory = Exclude<
+  NavMainCategory,
+  "none" | "workspace" | "utility"
+>;
+
+export interface NavCategoryProps {
+  category: NavDrilldownCategory;
+  slug: string;
+}
+
+export interface NavUtilityProps {
+  slug: string;
+}
 
 export interface NavItem {
   link: string;

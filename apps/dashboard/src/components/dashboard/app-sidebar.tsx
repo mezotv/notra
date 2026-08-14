@@ -23,9 +23,13 @@ import { usePathname, useRouter } from "next/navigation";
 import type * as React from "react";
 import { useEffect, useRef } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { resolveDrilldownCategory } from "@/utils/nav";
 import { ChatHistoryNav } from "./chat-history-nav";
+import { NavBrandIdentity } from "./nav-brand-identity";
+import { NavCategory } from "./nav-category";
 import { NavMain } from "./nav-main";
 import { NavSettings } from "./nav-settings";
+import { NavUtility } from "./nav-utility";
 import { OrgSelector } from "./org-selector";
 import { SidebarOnboarding } from "./sidebar-onboarding";
 import { SidebarTrialExpired } from "./sidebar-trial-expired";
@@ -63,14 +67,20 @@ export function DashboardSidebar({
   const section = pathnameSegments[1];
   const isSettingsRoute = section === "settings";
   const isChatRoute = section === "chat";
-  const isSubpage = isSettingsRoute || isChatRoute;
+  const isBrandRoute = section === "brand";
+  const drilldownCategory = resolveDrilldownCategory(section);
+  const isSubpage =
+    isSettingsRoute ||
+    isChatRoute ||
+    isBrandRoute ||
+    drilldownCategory !== null;
 
   const hasVisitedMainRef = useRef(false);
   useEffect(() => {
-    if (!(isSettingsRoute || isChatRoute)) {
+    if (!isSubpage) {
       hasVisitedMainRef.current = true;
     }
-  }, [isSettingsRoute, isChatRoute]);
+  }, [isSubpage]);
 
   function handleBack() {
     if (hasVisitedMainRef.current) {
@@ -151,7 +161,33 @@ export function DashboardSidebar({
                 <ChatHistoryNav />
               </m.div>
             )}
-            {!(isSettingsRoute || isChatRoute) && (
+            {isBrandRoute && (
+              <m.div
+                animate="animate"
+                className="flex flex-1 flex-col"
+                exit="exit"
+                initial="initial"
+                key="brand"
+                transition={TRANSITION}
+                variants={subpageVariants}
+              >
+                <NavBrandIdentity slug={slug} />
+              </m.div>
+            )}
+            {drilldownCategory !== null && (
+              <m.div
+                animate="animate"
+                className="flex flex-1 flex-col"
+                exit="exit"
+                initial="initial"
+                key={`category-${drilldownCategory}`}
+                transition={TRANSITION}
+                variants={subpageVariants}
+              >
+                <NavCategory category={drilldownCategory} slug={slug} />
+              </m.div>
+            )}
+            {!isSubpage && (
               <m.div
                 animate="animate"
                 className="flex flex-1 flex-col"
@@ -162,14 +198,15 @@ export function DashboardSidebar({
                 variants={mainVariants}
               >
                 <NavMain />
-                <div className="mt-auto">
-                  <SidebarTrialExpired />
-                  <SidebarOnboarding />
-                  <SidebarUpgrade />
-                </div>
               </m.div>
             )}
           </AnimatePresence>
+          <div className="mt-auto">
+            <NavUtility slug={slug} />
+            <SidebarTrialExpired />
+            <SidebarOnboarding />
+            <SidebarUpgrade />
+          </div>
         </SidebarContent>
         <SidebarFooter>
           <OrgSelector />

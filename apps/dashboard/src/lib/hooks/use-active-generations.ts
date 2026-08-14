@@ -25,7 +25,7 @@ export function useActiveGenerations(organizationId: string) {
   const router = useRouter();
   const previousCountRef = useRef<number | null>(null);
   const slug = pathname.split("/").filter(Boolean)[0];
-  const logsPath = slug ? `/${slug}/logs` : "/logs";
+  const logsPath = slug ? `/${slug}/settings/logs` : "/settings/logs";
 
   const query = useQuery<ActiveGenerationsResponse>(
     dashboardOrpc.content.activeGenerations.list.queryOptions({
