@@ -62,8 +62,24 @@ function useSessionInvalidation() {
   };
 }
 
+function isNextRedirectError(error: unknown) {
+  return (
+    error !== null &&
+    typeof error === "object" &&
+    "digest" in error &&
+    typeof error.digest === "string" &&
+    error.digest.startsWith("NEXT_REDIRECT")
+  );
+}
+
 async function signOut(options?: SignOutOptions) {
-  await signOutAction();
+  try {
+    await signOutAction();
+  } catch (error) {
+    if (!isNextRedirectError(error)) {
+      throw error;
+    }
+  }
   options?.fetchOptions?.onSuccess?.();
 }
 
