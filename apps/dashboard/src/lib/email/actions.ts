@@ -39,16 +39,13 @@ export async function sendResetPasswordAction({
     });
 
     if (error) {
-      console.error(`Failed to send reset email to ${userEmail}:`, error);
+      console.error("Failed to send reset email:", userEmail, error);
       return { success: false, error: error.message };
     }
 
     return { success: true };
   } catch (error) {
-    console.error(
-      `Unexpected error sending reset email to ${userEmail}:`,
-      error
-    );
+    console.error("Unexpected error sending reset email:", userEmail, error);
     return { success: false, error: "Failed to send email" };
   }
 }
@@ -76,16 +73,13 @@ export async function sendWelcomeEmailAction({
     });
 
     if (error) {
-      console.error(`Failed to send welcome email to ${userEmail}:`, error);
+      console.error("Failed to send welcome email:", userEmail, error);
       return { success: false, error: error.message };
     }
 
     return { success: true };
   } catch (error) {
-    console.error(
-      `Unexpected error sending welcome email to ${userEmail}:`,
-      error
-    );
+    console.error("Unexpected error sending welcome email:", userEmail, error);
     return { success: false, error: "Failed to send email" };
   }
 }
