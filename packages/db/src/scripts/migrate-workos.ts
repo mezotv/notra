@@ -185,6 +185,7 @@ const migrateMemberships = Effect.fn("migrate.memberships")(function* () {
       db
         .select({
           memberId: members.id,
+          role: members.role,
           workosOrgId: organizations.workosOrgId,
           workosUserId: users.workosUserId,
         })
@@ -209,6 +210,7 @@ const migrateMemberships = Effect.fn("migrate.memberships")(function* () {
         await workos.userManagement.createOrganizationMembership({
           organizationId: row.workosOrgId ?? "",
           userId: row.workosUserId ?? "",
+          roleSlug: row.role,
         });
       } catch (error) {
         const message = error instanceof Error ? error.message : "";

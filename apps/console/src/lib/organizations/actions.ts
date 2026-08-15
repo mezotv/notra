@@ -147,7 +147,7 @@ export async function createOrganizationAction(
         );
       }
 
-      yield* syncOrganizationToWorkOS(organizationId, input.name);
+      yield* syncOrganizationToWorkOS(organizationId);
       yield* syncMembershipToWorkOS(organizationId, session.user.id);
 
       if (!input.keepCurrentActiveOrganization) {

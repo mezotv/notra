@@ -26,6 +26,7 @@ import {
 } from "@/lib/organizations/guards";
 import { runOrganizationAction } from "@/lib/organizations/run-action";
 import {
+  ensureWorkOSOrganization,
   removeMembershipFromWorkOS,
   syncMembershipToWorkOS,
   syncOrganizationToWorkOS,
@@ -153,24 +154,16 @@ const mapInvitation = (invitation: Invitation): InvitationSummary => ({
 const requireWorkOSOrganizationId = Effect.fn(
   "organizations.actions.requireWorkOSOrganizationId"
 )(function* (organizationId: string) {
-  const organization = yield* tryDb(
-    () =>
-      db.query.organizations.findFirst({
-        where: eq(organizations.id, organizationId),
-        columns: { workosOrgId: true },
-      }),
-    "Failed to load organization"
+  return yield* ensureWorkOSOrganization(organizationId).pipe(
+    Effect.catch((error) =>
+      Effect.fail(
+        new OrganizationActionError({
+          message: "This organization is not linked to WorkOS yet",
+          cause: error,
+        })
+      )
+    )
   );
-
-  if (!organization?.workosOrgId) {
-    return yield* Effect.fail(
-      new OrganizationActionError({
-        message: "This organization is not linked to WorkOS yet",
-      })
-    );
-  }
-
-  return organization.workosOrgId;
 });
 
 const requireInvitationManagement = Effect.fn(
@@ -309,7 +302,7 @@ export async function createOrganizationAction(
         );
       }
 
-      yield* syncOrganizationToWorkOS(organizationId, input.name);
+      yield* syncOrganizationToWorkOS(organizationId);
       yield* syncMembershipToWorkOS(organizationId, session.user.id, "owner");
 
       if (!input.keepCurrentActiveOrganization) {

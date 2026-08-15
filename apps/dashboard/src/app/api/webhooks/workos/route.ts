@@ -46,15 +46,21 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "invalid_signature" }, { status: 401 });
   }
 
-  await Effect.runPromise(
+  const synced = await Effect.runPromise(
     handleMembershipEvent(event).pipe(
+      Effect.as(true),
       Effect.catch((error) =>
         Effect.logWarning("Webhook membership sync failed").pipe(
-          Effect.annotateLogs({ event: event.event, error: error.message })
+          Effect.annotateLogs({ event: event.event, error: error.message }),
+          Effect.as(false)
         )
       )
     )
   );
+
+  if (!synced) {
+    return Response.json({ error: "sync_failed" }, { status: 500 });
+  }
 
   return Response.json({ received: true });
 }

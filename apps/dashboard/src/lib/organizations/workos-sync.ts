@@ -12,28 +12,61 @@ const logSyncFailure = (context: Record<string, unknown>) =>
     )
   );
 
-export const syncOrganizationToWorkOS = Effect.fn(
-  "organizations.sync.createWorkOSOrganization"
-)(function* (organizationId: string, name: string) {
-  yield* Effect.tryPromise({
+export const ensureWorkOSOrganization = Effect.fn(
+  "organizations.sync.ensureWorkOSOrganization"
+)(function* (organizationId: string) {
+  return yield* Effect.tryPromise({
     try: async () => {
-      const workosOrganization =
-        await getWorkOS().organizations.createOrganization({
-          name,
+      const organization = await db.query.organizations.findFirst({
+        where: eq(organizations.id, organizationId),
+        columns: { name: true, workosOrgId: true },
+      });
+
+      if (!organization) {
+        throw new Error(`Organization ${organizationId} not found`);
+      }
+
+      if (organization.workosOrgId) {
+        return organization.workosOrgId;
+      }
+
+      let workosOrgId: string;
+      try {
+        const created = await getWorkOS().organizations.createOrganization({
+          name: organization.name,
           externalId: organizationId,
         });
+        workosOrgId = created.id;
+      } catch {
+        const existing =
+          await getWorkOS().organizations.getOrganizationByExternalId(
+            organizationId
+          );
+        workosOrgId = existing.id;
+      }
 
       await db
         .update(organizations)
-        .set({ workosOrgId: workosOrganization.id })
+        .set({ workosOrgId })
         .where(eq(organizations.id, organizationId));
+
+      return workosOrgId;
     },
     catch: (cause) =>
       new WorkOSSyncError({
-        message: "Failed to create WorkOS organization",
+        message: "Failed to link organization to WorkOS",
         cause,
       }),
-  }).pipe(logSyncFailure({ organizationId }));
+  });
+});
+
+export const syncOrganizationToWorkOS = Effect.fn(
+  "organizations.sync.createWorkOSOrganization"
+)(function* (organizationId: string) {
+  yield* ensureWorkOSOrganization(organizationId).pipe(
+    Effect.asVoid,
+    logSyncFailure({ organizationId })
+  );
 });
 
 export const syncMembershipToWorkOS = Effect.fn(
