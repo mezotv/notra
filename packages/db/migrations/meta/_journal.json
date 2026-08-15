@@ -442,6 +442,20 @@
       "when": 1786380248232,
       "tag": "0062_light_johnny_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1786790336303,
+      "tag": "0063_tranquil_misty_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1786790341161,
+      "tag": "0064_chubby_wind_dancer",
+      "breakpoints": true
     }
   ]
 }

@@ -66,6 +66,8 @@
     "@upstash/workflow": "^1.1.0",
     "@vercel/oidc": "^3.8.0",
     "@vercel/otel": "^2.1.2",
+    "@workos-inc/authkit-nextjs": "^4.3.1",
+    "@workos-inc/node": "^10.10.0",
     "ai": "6.0.206",
     "autumn-js": "^1.2.7",
     "better-auth": "^1.5.5",

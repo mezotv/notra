@@ -23,6 +23,8 @@
     "@tanstack/react-hotkeys": "^0.3.0",
     "@tanstack/react-query": "^5.90.16",
     "@toolwind/corner-shape": "^0.0.8-3",
+    "@workos-inc/authkit-nextjs": "^4.3.1",
+    "@workos-inc/node": "^10.10.0",
     "better-auth": "^1.6.19",
     "cnfast": "^0.0.6",
     "drizzle-orm": "^0.45.2",
