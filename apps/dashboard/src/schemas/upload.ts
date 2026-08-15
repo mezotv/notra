@@ -133,7 +133,7 @@ export const uploadSvgSchema = z.discriminatedUnion("type", [
 export type UploadSvgInput = z.infer<typeof uploadSvgSchema>;
 
 export const uploadLogoFromUrlSchema = z.object({
-  sourceUrl: z.string().url().max(2048),
+  sourceUrl: z.url().max(2048),
 });
 
 const maxSizeByType = {

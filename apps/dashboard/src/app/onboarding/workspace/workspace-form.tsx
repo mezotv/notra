@@ -14,7 +14,7 @@ import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
@@ -73,6 +73,15 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
   const fetchedLogoUrl = logoFile ? null : (companyLogo?.url ?? null);
   const isResuming = !!existingOrg;
 
+  useEffect(() => {
+    const url = logoPreviewUrl;
+    return () => {
+      if (url?.startsWith("blob:")) {
+        URL.revokeObjectURL(url);
+      }
+    };
+  }, [logoPreviewUrl]);
+
   const handleLogoSelect = (file: File) => {
     const validationError = validateLogoFile(file);
     if (validationError) {
@@ -80,9 +89,6 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
       return;
     }
 
-    if (logoPreviewUrl?.startsWith("blob:")) {
-      URL.revokeObjectURL(logoPreviewUrl);
-    }
     setLogoFile(file);
     setLogoPreviewUrl(URL.createObjectURL(file));
   };
@@ -109,10 +115,14 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
       setIsSubmitting(true);
 
       try {
+        const submittedDomain = extractDomain(value.websiteUrl);
+        const matchesSubmittedDomain =
+          !!submittedDomain && submittedDomain === companyDomain;
+
         await submitWorkspaceForm({
           existingOrg,
           logoFile,
-          logoSourceUrl: fetchedLogoUrl,
+          logoSourceUrl: matchesSubmittedDomain ? fetchedLogoUrl : null,
           value,
         });
         window.location.assign("/onboarding/pricing");
