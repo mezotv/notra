@@ -1,10 +1,6 @@
 import { redirect } from "next/navigation";
-import {
-  getAllUserOrganizations,
-  getLastActiveOrganization,
-  getSession,
-} from "@/lib/auth/actions";
-import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
+import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
+import { redirectIfAnyOrganizationHasPaidHistory } from "@/lib/onboarding/billing-gate";
 import { PricingClient } from "../pricing-client";
 
 export default async function OnboardingPricingPage() {
@@ -14,12 +10,7 @@ export default async function OnboardingPricingPage() {
     redirect("/login");
   }
 
-  const allOrgs = await getAllUserOrganizations();
-  for (const org of allOrgs) {
-    if (await hasPaidSubscriptionHistory(org.id)) {
-      redirect(`/${org.slug}`);
-    }
-  }
+  await redirectIfAnyOrganizationHasPaidHistory();
 
   const organization = await getLastActiveOrganization();
   if (!organization) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import {
@@ -11,14 +12,21 @@ import {
 } from "@notra/ui/components/ui/select";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useForm } from "@tanstack/react-form";
+import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+import { AuthFormHeader } from "@/components/auth/auth-form-header";
 import { Button } from "@/components/button";
+import { OrgLogoField } from "@/components/onboarding/org-logo-field";
 import { OnboardingProgress } from "@/components/onboarding/progress";
+import { COMPANY_LOGO_DEBOUNCE_MS } from "@/constants/company-logo";
 import { ONBOARDING_HEARD_ABOUT_NOTRA_OPTIONS } from "@/constants/onboarding";
+import { useCompanyLogo } from "@/lib/hooks/use-onboarding";
+import { extractDomain } from "@/lib/onboarding/company-logo";
+import { validateLogoFile } from "@/lib/onboarding/logo-file";
 import { submitWorkspaceForm } from "@/lib/onboarding/submit-workspace-form";
 import {
   onboardingWorkspaceFormFieldsSchema,
@@ -51,7 +59,33 @@ function getValidationMessage(error: unknown) {
 
 export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(
+    existingOrg?.logo ?? null
+  );
+  const [websiteValue, setWebsiteValue] = useState("");
+  const [debouncedWebsite] = useDebouncedValue(websiteValue, {
+    wait: COMPANY_LOGO_DEBOUNCE_MS,
+  });
+  const companyDomain = extractDomain(debouncedWebsite);
+  const { data: companyLogo, isFetching: isCompanyLogoLoading } =
+    useCompanyLogo(logoFile ? null : companyDomain);
+  const fetchedLogoUrl = logoFile ? null : (companyLogo?.url ?? null);
   const isResuming = !!existingOrg;
+
+  const handleLogoSelect = (file: File) => {
+    const validationError = validateLogoFile(file);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+
+    if (logoPreviewUrl?.startsWith("blob:")) {
+      URL.revokeObjectURL(logoPreviewUrl);
+    }
+    setLogoFile(file);
+    setLogoPreviewUrl(URL.createObjectURL(file));
+  };
   const existingSource = existingOrg?.heardAboutNotraSource;
   const initialSource = isHeardAboutNotraSource(existingSource)
     ? existingSource
@@ -75,11 +109,16 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
       setIsSubmitting(true);
 
       try {
-        await submitWorkspaceForm({ existingOrg, value });
+        await submitWorkspaceForm({
+          existingOrg,
+          logoFile,
+          logoSourceUrl: fetchedLogoUrl,
+          value,
+        });
         window.location.assign("/onboarding/pricing");
       } catch (err) {
         toast.error(
-          err instanceof Error ? err.message : "Failed to create org"
+          err instanceof Error ? err.message : "Failed to create workspace"
         );
         setIsSubmitting(false);
       }
@@ -87,24 +126,26 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
   });
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center px-4 py-12">
-      <div className="mb-6">
+    <div className="flex w-full flex-col gap-5">
+      <div className="flex justify-center">
         <OnboardingProgress current={1} />
       </div>
 
-      <div className="space-y-2">
-        <h1 className="font-semibold text-2xl tracking-tight">
-          {isResuming ? "Finish setting up your org" : "Tell us about your org"}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {isResuming
-            ? "Your workspace is ready. Add a website if you want us to learn your brand voice automatically."
-            : "Add a website and we'll learn your brand voice while you set up the rest. You can always add it later."}
-        </p>
-      </div>
+      <AuthFormHeader
+        description={
+          isResuming
+            ? "Your workspace is ready. Add your website and we'll pick up your brand voice."
+            : "Add your website and we'll pick up your brand voice from it."
+        }
+        title={
+          isResuming
+            ? "Finish setting up your workspace"
+            : "Set up your workspace"
+        }
+      />
 
       <form
-        className="mt-8 space-y-5"
+        className="mt-2 space-y-5"
         onSubmit={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -119,29 +160,36 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
         >
           {(field) => (
             <div className="grid gap-2">
-              <Label htmlFor="name">
-                Org name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                aria-invalid={field.state.meta.errors.length > 0}
-                autoFocus={!isResuming}
-                disabled={isSubmitting || isResuming}
-                id="name"
-                onBlur={field.handleBlur}
-                onChange={(e) => {
-                  field.handleChange(e.target.value);
-                  const currentSlug = form.getFieldValue("slug");
-                  if (
-                    !currentSlug ||
-                    currentSlug === slugify(field.state.value)
-                  ) {
-                    form.setFieldValue("slug", slugify(e.target.value));
-                  }
-                }}
-                placeholder="Acme Inc"
-                type="text"
-                value={field.state.value}
-              />
+              <Label htmlFor="name">Name</Label>
+              <div className="flex items-center gap-2">
+                <OrgLogoField
+                  disabled={isSubmitting}
+                  isLoading={isCompanyLogoLoading}
+                  onSelect={handleLogoSelect}
+                  previewUrl={logoPreviewUrl ?? fetchedLogoUrl}
+                />
+                <Input
+                  aria-invalid={field.state.meta.errors.length > 0}
+                  autoFocus={!isResuming}
+                  className="h-11 rounded-xl px-3.5"
+                  disabled={isSubmitting || isResuming}
+                  id="name"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                    const currentSlug = form.getFieldValue("slug");
+                    if (
+                      !currentSlug ||
+                      currentSlug === slugify(field.state.value)
+                    ) {
+                      form.setFieldValue("slug", slugify(e.target.value));
+                    }
+                  }}
+                  placeholder="Acme Inc"
+                  type="text"
+                  value={field.state.value}
+                />
+              </div>
               {field.state.meta.errors.length > 0 ? (
                 <p className="text-destructive text-sm">
                   {getValidationMessage(field.state.meta.errors[0])}
@@ -159,11 +207,10 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
         >
           {(field) => (
             <div className="grid gap-2">
-              <Label htmlFor="slug">
-                Org URL <span className="text-destructive">*</span>
-              </Label>
+              <Label htmlFor="slug">Slug</Label>
               <Input
                 aria-invalid={field.state.meta.errors.length > 0}
+                className="h-11 rounded-xl px-3.5"
                 disabled={isSubmitting || isResuming}
                 id="slug"
                 onBlur={field.handleBlur}
@@ -178,9 +225,51 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
                 </p>
               ) : (
                 <p className="text-muted-foreground text-xs">
-                  app.usenotra.com/{field.state.value || "your-slug"}
+                  This becomes your workspace URL.
                 </p>
               )}
+            </div>
+          )}
+        </form.Field>
+
+        <form.Field
+          name="websiteUrl"
+          validators={{
+            onSubmit: onboardingWorkspaceFormFieldsSchema.shape.websiteUrl,
+          }}
+        >
+          {(field) => (
+            <div className="grid gap-2">
+              <Label htmlFor="website">Website</Label>
+              <div
+                className={`flex h-11 w-full flex-row items-center overflow-hidden rounded-xl border transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-input"}`}
+              >
+                <label
+                  className="flex h-full items-center border-input border-r bg-muted/30 px-3.5 text-muted-foreground text-sm"
+                  htmlFor="website"
+                >
+                  https://
+                </label>
+                <input
+                  autoFocus={isResuming}
+                  className="h-full flex-1 bg-transparent px-3.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isSubmitting}
+                  id="website"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => {
+                    field.handleChange(e.target.value);
+                    setWebsiteValue(e.target.value);
+                  }}
+                  placeholder="acme.com"
+                  type="text"
+                  value={field.state.value.replace(WEBSITE_PREFIX_REGEX, "")}
+                />
+              </div>
+              {field.state.meta.errors.length > 0 ? (
+                <p className="text-destructive text-sm">
+                  {getValidationMessage(field.state.meta.errors[0])}
+                </p>
+              ) : null}
             </div>
           )}
         </form.Field>
@@ -235,7 +324,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
                 >
                   <SelectTrigger
                     aria-invalid={field.state.meta.errors.length > 0}
-                    className="h-10 w-full"
+                    className="h-11 w-full rounded-xl px-3.5"
                     disabled={isSubmitting || isAttributionLocked}
                     id="heard-about-notra"
                   >
@@ -302,53 +391,9 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
           )}
         </form.Field>
 
-        <form.Field
-          name="websiteUrl"
-          validators={{
-            onChange: onboardingWorkspaceFormFieldsSchema.shape.websiteUrl,
-          }}
-        >
-          {(field) => (
-            <div className="grid gap-2">
-              <Label htmlFor="website">
-                Website{" "}
-                <span className="text-muted-foreground text-xs">
-                  (optional)
-                </span>
-              </Label>
-              <div
-                className={`flex w-full flex-row items-center rounded-md border transition-colors focus-within:border-ring focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-border"}`}
-              >
-                <label
-                  className="border-border border-r px-2.5 py-1.5 text-muted-foreground text-sm"
-                  htmlFor="website"
-                >
-                  https://
-                </label>
-                <input
-                  autoFocus={isResuming}
-                  className="flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                  disabled={isSubmitting}
-                  id="website"
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  placeholder="acme.com"
-                  type="text"
-                  value={field.state.value.replace(WEBSITE_PREFIX_REGEX, "")}
-                />
-              </div>
-              {field.state.meta.errors.length > 0 ? (
-                <p className="text-destructive text-sm">
-                  {getValidationMessage(field.state.meta.errors[0])}
-                </p>
-              ) : null}
-            </div>
-          )}
-        </form.Field>
-
         <form.Subscribe selector={(state) => [state.canSubmit]}>
           {([canSubmit]) => (
-            <Button
+            <CtaButton
               className="w-full"
               disabled={!canSubmit || isSubmitting}
               type="submit"
@@ -361,7 +406,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
               ) : (
                 "Continue"
               )}
-            </Button>
+            </CtaButton>
           )}
         </form.Subscribe>
       </form>

@@ -1,3 +1,4 @@
+import { retrieveBrand } from "@notra/ai/utils/context-dev";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
@@ -14,12 +15,14 @@ import {
   SELF_SERVE_AGENT_ERROR_MESSAGES,
 } from "@/constants/onboarding-agent";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { pickCompanyLogoUrl } from "@/lib/onboarding/company-logo";
 import {
   getOnboardingAgentState,
   startSelfServeOnboardingAgent,
 } from "@/lib/onboarding-agent";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
+import { companyLogoInputSchema } from "@/schemas/onboarding/company-logo";
 import {
   dismissSuggestionInputSchema,
   listSuggestionsInputSchema,
@@ -31,6 +34,25 @@ const onboardingInputSchema = z.object({
 });
 
 export const onboardingRouter = {
+  companyLogo: authorizedProcedure
+    .input(companyLogoInputSchema)
+    .handler(async ({ context, input }) => {
+      const { success: withinLimit } = await ratelimit.companyLogo.limit(
+        context.user.id
+      );
+      if (!withinLimit) {
+        throw new ORPCError("TOO_MANY_REQUESTS", {
+          message: "Too many logo lookups. Please try again shortly.",
+        });
+      }
+
+      try {
+        const response = await retrieveBrand(input.domain);
+        return { url: pickCompanyLogoUrl(response.brand?.logos) };
+      } catch {
+        return { url: null };
+      }
+    }),
   get: authorizedProcedure
     .input(onboardingInputSchema)
     .handler(async ({ context, input }) => {

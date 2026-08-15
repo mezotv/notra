@@ -65,6 +65,12 @@ export const ratelimit = {
     prefix: "ratelimit:onboarding-brand-analysis",
     limiter: Ratelimit.slidingWindow(2, "10m"),
   }),
+  companyLogo: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:company-logo",
+    limiter: Ratelimit.slidingWindow(20, "1m"),
+  }),
   onboardingAgent: new Ratelimit({
     redis,
     analytics: true,
