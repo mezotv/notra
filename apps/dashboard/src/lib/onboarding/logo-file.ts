@@ -5,6 +5,22 @@ import {
 
 const BYTES_PER_MEGABYTE = 1024 * 1024;
 
+export function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+      } else {
+        reject(new Error("Could not read the selected image."));
+      }
+    };
+    reader.onerror = () =>
+      reject(new Error("Could not read the selected image."));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function validateLogoFile(file: File): string | null {
   if (!ALLOWED_RASTER_MIME_TYPES.some((mimeType) => mimeType === file.type)) {
     return "Please choose a JPEG, PNG, GIF, WebP, or AVIF image.";

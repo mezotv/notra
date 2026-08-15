@@ -14,7 +14,7 @@ import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useForm } from "@tanstack/react-form";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Loader2Icon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
@@ -26,7 +26,10 @@ import { COMPANY_LOGO_DEBOUNCE_MS } from "@/constants/company-logo";
 import { ONBOARDING_HEARD_ABOUT_NOTRA_OPTIONS } from "@/constants/onboarding";
 import { useCompanyLogo } from "@/lib/hooks/use-onboarding";
 import { extractDomain } from "@/lib/onboarding/company-logo";
-import { validateLogoFile } from "@/lib/onboarding/logo-file";
+import {
+  readFileAsDataUrl,
+  validateLogoFile,
+} from "@/lib/onboarding/logo-file";
 import { submitWorkspaceForm } from "@/lib/onboarding/submit-workspace-form";
 import {
   onboardingWorkspaceFormFieldsSchema,
@@ -73,27 +76,24 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
   const fetchedLogoUrl = logoFile ? null : (companyLogo?.url ?? null);
   const isResuming = !!existingOrg;
 
-  useEffect(() => {
-    if (!logoFile) {
-      return;
-    }
-
-    const url = URL.createObjectURL(logoFile);
-    setLogoPreviewUrl(url);
-
-    return () => {
-      URL.revokeObjectURL(url);
-    };
-  }, [logoFile]);
-
-  const handleLogoSelect = (file: File) => {
+  const handleLogoSelect = async (file: File) => {
     const validationError = validateLogoFile(file);
     if (validationError) {
       toast.error(validationError);
       return;
     }
 
-    setLogoFile(file);
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      setLogoFile(file);
+      setLogoPreviewUrl(dataUrl);
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not read the selected image."
+      );
+    }
   };
   const existingSource = existingOrg?.heardAboutNotraSource;
   const initialSource = isHeardAboutNotraSource(existingSource)
