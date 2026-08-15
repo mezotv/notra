@@ -19,19 +19,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@notra/ui/components/ui/card";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@notra/ui/components/ui/tabs";
 import { cn } from "@notra/ui/lib/utils";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useReducer } from "react";
-import { LoginForm } from "@/components/auth/login-form";
-import { SignupForm } from "@/components/auth/signup-form";
 import { Button, buttonVariants } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import {
@@ -260,41 +252,32 @@ function InviteAuthCard({
   invitation: Invitation;
   invitationId: string;
 }) {
+  const returnTo = encodeURIComponent(`/invitation/${invitationId}`);
+
   return (
     <Card className="mx-auto w-full max-w-md rounded-[24px] border bg-transparent px-5 py-7 shadow-none">
+      <CardHeader className="items-center">
+        <CardTitle className="font-medium">Invitation</CardTitle>
+        <CardDescription className="text-center">
+          <strong>{invitation.inviterEmail}</strong> has invited you to join
+          their organization. Please sign in or sign up to proceed.
+        </CardDescription>
+      </CardHeader>
       <CardContent>
-        <Tabs className="w-full" defaultValue="login">
-          <TabsList className="grid w-full grid-cols-2" variant="line">
-            <TabsTrigger value="login">Log in</TabsTrigger>
-            <TabsTrigger value="signup">Sign up</TabsTrigger>
-          </TabsList>
-          <TabsContent className="mt-6" value="login">
-            <div className="mb-6 text-center text-sm">
-              <strong>{invitation.inviterEmail}</strong> has invited you to join
-              their organization. Please sign in to proceed.
-            </div>
-            <LoginForm
-              description=""
-              returnTo={`/invitation/${invitationId}`}
-              showForgotPasswordLink={true}
-              showSignupLink={false}
-              title=""
-            />
-          </TabsContent>
-          <TabsContent className="mt-6" value="signup">
-            <div className="mb-6 text-center text-sm">
-              <strong>{invitation.inviterEmail}</strong> has invited you to join
-              their organization. Please sign up to proceed.
-            </div>
-            <SignupForm
-              description=""
-              returnTo={`/invitation/${invitationId}`}
-              showForgotPasswordLink={false}
-              showLoginLink={false}
-              title=""
-            />
-          </TabsContent>
-        </Tabs>
+        <div className="mt-2 grid grid-cols-2 gap-4">
+          <Link
+            className={buttonVariants({ variant: "outline" })}
+            href={`/login?returnTo=${returnTo}`}
+          >
+            Log in
+          </Link>
+          <Link
+            className={buttonVariants({ variant: "default" })}
+            href={`/signup?returnTo=${returnTo}`}
+          >
+            Sign up
+          </Link>
+        </div>
         {error && (
           <InvitationErrorMessage
             error={error}

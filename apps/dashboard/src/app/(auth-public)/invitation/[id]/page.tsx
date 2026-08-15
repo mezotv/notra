@@ -1,9 +1,8 @@
 import { Loader2Icon } from "lucide-react";
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getInvitationById } from "@/lib/auth/actions";
-import { auth } from "@/lib/auth/server";
+import { getAuthSession } from "@/lib/auth/server";
 import PageClient from "./page-client";
 
 export default async function InvitePage(props: {
@@ -26,11 +25,7 @@ export default async function InvitePage(props: {
 }
 
 async function InvitePageComponent({ invitationId }: { invitationId: string }) {
-  const sessionPromise = headers().then((requestHeaders) =>
-    auth.api.getSession({
-      headers: requestHeaders,
-    })
-  );
+  const sessionPromise = getAuthSession();
   const invitationPromise = getInvitationById(invitationId);
   const [session, invitationData] = await Promise.all([
     sessionPromise,

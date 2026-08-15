@@ -10,7 +10,7 @@ function getBaseUrl() {
 
   return (
     process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.BETTER_AUTH_URL ??
+    process.env.APP_URL ??
     "http://localhost:3000"
   );
 }

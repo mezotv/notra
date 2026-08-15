@@ -7,12 +7,6 @@ export interface SendInviteEmailProps {
   inviteLink: string;
 }
 
-export interface SendVerificationEmailProps {
-  userEmail: string;
-  otp: string;
-  type: "sign-in" | "email-verification";
-}
-
 export interface SendResetPasswordProps {
   userEmail: string;
   resetLink: string;

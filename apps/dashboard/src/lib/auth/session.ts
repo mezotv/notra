@@ -1,8 +1,8 @@
-import { auth } from "@/lib/auth/server";
+import { getAuthSession } from "@/lib/auth/server";
 import type { GetServerSessionParams } from "@/types/auth/session";
 
-export async function getServerSession({ headers }: GetServerSessionParams) {
-  const data = await auth.api.getSession({ headers }).catch((error) => {
+export async function getServerSession(_params?: GetServerSessionParams) {
+  const data = await getAuthSession().catch((error) => {
     console.error("Error getting server session", error);
     return null;
   });

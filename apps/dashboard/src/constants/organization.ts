@@ -22,3 +22,5 @@ export const RESERVED_ORGANIZATION_SLUGS = [
   "privacy",
   "contact",
 ] as const;
+
+export const INVITATION_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;

@@ -24,17 +24,9 @@ export function ConnectedAccountsSection({
 
   const canUnlink = accounts.length > 1;
 
-  async function handleLinkAccount(provider: "google" | "github") {
+  function handleLinkAccount(provider: "google" | "github") {
     setLoadingProvider(provider);
-    try {
-      await authClient.linkSocial({
-        provider,
-        callbackURL: window.location.pathname,
-      });
-    } catch {
-      toast.error(`Failed to link ${provider} account`);
-    }
-    setLoadingProvider(null);
+    window.location.href = `/login?returnTo=${encodeURIComponent(window.location.pathname)}`;
   }
 
   async function handleUnlinkAccount(provider: "google" | "github") {

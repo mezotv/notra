@@ -20,8 +20,7 @@ function readAccountIds(searchParams: URLSearchParams): string[] {
 }
 
 export async function GET(request: NextRequest) {
-  const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   const { searchParams } = new URL(request.url);
   const parsed = socialConnectCallbackQuerySchema.safeParse({

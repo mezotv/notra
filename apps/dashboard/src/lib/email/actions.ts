@@ -7,32 +7,13 @@ import { headers } from "next/headers";
 import type {
   SendInviteEmailProps,
   SendResetPasswordProps,
-  SendVerificationEmailProps,
   SendWelcomeEmailProps,
 } from "@/types/email/actions";
 import { getServerSession } from "../auth/session";
-import {
-  sendInviteEmail,
-  sendResetPassword,
-  sendVerificationEmail,
-  sendWelcomeEmail,
-} from "./send";
+import { sendInviteEmail, sendResetPassword, sendWelcomeEmail } from "./send";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 const resend = getResend();
-
-function getVerificationSubject(type: "sign-in" | "email-verification") {
-  switch (type) {
-    case "sign-in":
-      return "Your sign-in code";
-    case "email-verification":
-      return "Verify your email address";
-    default: {
-      const _exhaustiveCheck: never = type;
-      return _exhaustiveCheck;
-    }
-  }
-}
 
 export async function sendInviteEmailAction({
   inviteeEmail,
@@ -88,50 +69,6 @@ export async function sendInviteEmailAction({
   } catch (error) {
     console.error(
       `Unexpected error sending invite email to ${inviteeEmail}:`,
-      error
-    );
-    return { success: false, error: "Failed to send email" };
-  }
-}
-
-export async function sendVerificationEmailAction({
-  userEmail,
-  otp,
-  type,
-}: SendVerificationEmailProps) {
-  if (!resend && isDevelopment) {
-    return sendDevEmail({
-      from: EMAIL_CONFIG.from,
-      to: userEmail,
-      text: "This is a mock verification email",
-      subject: getVerificationSubject(type),
-      _mockContext: {
-        type: "verification",
-        data: { userEmail, otp, verificationType: type },
-      },
-    });
-  }
-
-  if (!resend) {
-    throw new Error("Resend API key not set");
-  }
-
-  try {
-    const { error } = await sendVerificationEmail(resend, {
-      userEmail,
-      otp,
-      type,
-    });
-
-    if (error) {
-      console.error(`Failed to send ${type} email to ${userEmail}:`, error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error(
-      `Unexpected error sending ${type} email to ${userEmail}:`,
       error
     );
     return { success: false, error: "Failed to send email" };

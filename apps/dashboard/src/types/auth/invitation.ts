@@ -16,11 +16,8 @@ export interface InvitationData {
 export interface InvitationUser {
   id: string;
   email: string;
-  emailVerified: boolean;
   name: string;
-  createdAt: Date;
-  updatedAt: Date;
-  image?: string | null | undefined;
+  image?: string | null;
 }
 
 export interface InvitationPageClientProps {
