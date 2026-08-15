@@ -9,7 +9,7 @@ function getBaseUrl() {
     return window.location.origin;
   }
 
-  return process.env.CONSOLE_BETTER_AUTH_URL ?? "http://localhost:3003";
+  return process.env.CONSOLE_APP_URL ?? "http://localhost:3003";
 }
 
 const link = new RPCLink({
