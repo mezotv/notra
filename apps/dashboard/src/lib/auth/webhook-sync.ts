@@ -4,7 +4,7 @@ import type { OrganizationMembership } from "@workos-inc/node";
 import { and, eq } from "drizzle-orm";
 import { Data, Effect } from "effect";
 
-export class WebhookSyncError extends Data.TaggedError("WebhookSyncError")<{
+class WebhookSyncError extends Data.TaggedError("WebhookSyncError")<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}

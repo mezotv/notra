@@ -18,14 +18,20 @@ export async function fetchAuthKitAuthorizationServerMetadata() {
   const response = await fetch(`https://${domain}${AUTHKIT_METADATA_PATH}`, {
     next: { revalidate: 300 },
   });
+
+  if (!response.ok) {
+    return Response.json(
+      { error: "authorization_server_unavailable" },
+      {
+        status: response.status,
+        headers: { "Cache-Control": METADATA_ERROR_CACHE_CONTROL },
+      }
+    );
+  }
+
   const metadata = await response.json();
 
   return Response.json(metadata, {
-    status: response.status,
-    headers: {
-      "Cache-Control": response.ok
-        ? METADATA_CACHE_CONTROL
-        : METADATA_ERROR_CACHE_CONTROL,
-    },
+    headers: { "Cache-Control": METADATA_CACHE_CONTROL },
   });
 }

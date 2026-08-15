@@ -412,6 +412,22 @@ export async function listOrganizationsAction(): Promise<
   );
 }
 
+function findOrganizationForSelection(input: SetActiveOrganizationInput) {
+  if (input.organizationId) {
+    return db.query.organizations.findFirst({
+      where: eq(organizations.id, input.organizationId),
+    });
+  }
+
+  if (input.organizationSlug) {
+    return db.query.organizations.findFirst({
+      where: eq(organizations.slug, input.organizationSlug),
+    });
+  }
+
+  return Promise.resolve(undefined);
+}
+
 export async function setActiveOrganizationAction(
   input: SetActiveOrganizationInput
 ): Promise<ActionResult<OrganizationRow>> {
@@ -420,16 +436,7 @@ export async function setActiveOrganizationAction(
       const session = yield* requireSession();
 
       const organization = yield* tryDb(
-        () =>
-          input.organizationId
-            ? db.query.organizations.findFirst({
-                where: eq(organizations.id, input.organizationId),
-              })
-            : input.organizationSlug
-              ? db.query.organizations.findFirst({
-                  where: eq(organizations.slug, input.organizationSlug),
-                })
-              : Promise.resolve(undefined),
+        () => findOrganizationForSelection(input),
         "Failed to load organization"
       );
 

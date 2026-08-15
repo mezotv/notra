@@ -6,7 +6,7 @@ import { getAuthSession } from "@/lib/auth/server";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import type { AuthSessionData } from "@/types/auth/session";
 
-export const MANAGER_ROLES: readonly string[] = ["owner", "admin"];
+const MANAGER_ROLES: readonly string[] = ["owner", "admin"];
 
 export const requireSession = Effect.fn("organizations.guards.requireSession")(
   function* () {

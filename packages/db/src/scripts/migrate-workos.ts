@@ -12,6 +12,8 @@ class WorkOSMigrationError extends Data.TaggedError("WorkOSMigrationError")<{
 const SCRYPT_LOG_N = 14;
 const SCRYPT_R = 16;
 const SCRYPT_P = 1;
+const NAME_SPLIT_REGEX = /\s+/;
+const BASE64_PADDING_REGEX = /=+$/;
 
 const workosApiKey = process.env.WORKOS_API_KEY;
 if (!workosApiKey) {
@@ -21,7 +23,7 @@ if (!workosApiKey) {
 const workos = new WorkOS(workosApiKey);
 
 function toPhcBase64(bytes: Uint8Array) {
-  return Buffer.from(bytes).toString("base64").replace(/=+$/, "");
+  return Buffer.from(bytes).toString("base64").replace(BASE64_PADDING_REGEX, "");
 }
 
 function betterAuthHashToPhc(hash: string) {
@@ -38,7 +40,7 @@ function betterAuthHashToPhc(hash: string) {
 }
 
 function splitName(name: string) {
-  const [firstName, ...rest] = name.trim().split(/\s+/);
+  const [firstName, ...rest] = name.trim().split(NAME_SPLIT_REGEX);
   return {
     firstName: firstName || undefined,
     lastName: rest.join(" ") || undefined,

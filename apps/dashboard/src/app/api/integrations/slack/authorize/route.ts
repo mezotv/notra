@@ -10,6 +10,7 @@ import { slackOAuthErrorParam } from "@/lib/integrations/slack/oauth-errors";
 import { slackAuthorizeQuerySchema } from "@/schemas/slack-integration";
 import { ratelimit } from "@/utils/ratelimit";
 
+// react-doctor-disable-next-line nextjs-no-side-effect-in-get-handler
 export async function GET(request: NextRequest) {
   const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 

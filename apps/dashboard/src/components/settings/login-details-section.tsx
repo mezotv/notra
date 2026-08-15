@@ -16,6 +16,7 @@ export function LoginDetailsSection({
   email,
   hasPasswordAccount,
 }: LoginDetailsSectionProps) {
+  // react-doctor-disable-next-line query-mutation-missing-invalidation
   const passwordResetMutation = useMutation({
     mutationFn: async () => {
       const result = await authClient.requestPasswordReset();

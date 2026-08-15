@@ -206,7 +206,7 @@ function OrgSelectorSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
   );
 }
 
-export function OrganizationOptionsList({
+function OrganizationOptionsList({
   organizations,
   selectedOrganizationId,
   onSelect,

@@ -10,8 +10,12 @@ import { authClient } from "@/lib/auth/client";
 import type { ImpersonationBannerProps } from "@/types/auth";
 
 export function ImpersonationBanner({ email, name }: ImpersonationBannerProps) {
+  const invalidateSession = authClient.useSessionInvalidation();
   const stopImpersonating = useMutation({
     mutationFn: () => authClient.signOut(),
+    onSuccess: () => {
+      invalidateSession();
+    },
     onError: () => {
       toast.error("Failed to stop impersonating");
     },
