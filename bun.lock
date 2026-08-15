@@ -108,7 +108,6 @@
         "@toolwind/corner-shape": "^0.0.8-3",
         "@workos-inc/authkit-nextjs": "^4.3.1",
         "@workos-inc/node": "^10.10.0",
-        "better-auth": "^1.6.19",
         "cnfast": "^0.0.6",
         "drizzle-orm": "^0.45.2",
         "effect": "4.0.0-beta.93",
@@ -144,7 +143,6 @@
         "@aws-sdk/client-s3": "^3.990.0",
         "@aws-sdk/s3-request-presigner": "^3.990.0",
         "@base-ui/react": "^1.1.0",
-        "@better-auth/oauth-provider": "1.6.11",
         "@calcom/embed-react": "^1.5.3",
         "@contextcompany/otel": "^1.0.16",
         "@databuddy/sdk": "^2.4.11",
@@ -193,7 +191,6 @@
         "@workos-inc/node": "^10.10.0",
         "ai": "6.0.206",
         "autumn-js": "^1.2.7",
-        "better-auth": "^1.5.5",
         "cmdk": "^1.1.1",
         "cnfast": "^0.0.6",
         "date-fns": "^4.1.0",
@@ -428,7 +425,9 @@
       "devDependencies": {
         "@notra/typescript-config": "*",
         "@types/node": "^22.15.3",
+        "@workos-inc/node": "^10.10.0",
         "drizzle-kit": "^0.31.8",
+        "effect": "4.0.0-beta.93",
         "typescript": "5.9.2",
       },
     },
@@ -724,8 +723,6 @@
     "@better-auth/memory-adapter": ["@better-auth/memory-adapter@1.6.19", "", { "peerDependencies": { "@better-auth/core": "^1.6.19", "@better-auth/utils": "0.4.2" } }, "sha512-cZ8iLRG/T8Oi/CqE9FTHj3z8pIOqRsINi50trWxPNwyY/Eyb7YCljrBi0PuqgIdyVs7BWfrrtEYTpO4ddfuwEw=="],
 
     "@better-auth/mongo-adapter": ["@better-auth/mongo-adapter@1.6.19", "", { "peerDependencies": { "@better-auth/core": "^1.6.19", "@better-auth/utils": "0.4.2", "mongodb": "^6.0.0 || ^7.0.0" }, "optionalPeers": ["mongodb"] }, "sha512-8AReXqhMGiGQIPEpGbmAhh+R4g70TsAVvzwdd6Aj4q+LTSwd3tqC89TFJ4eX8KSplxm9PFBZ6g6gsRmDd7urQg=="],
-
-    "@better-auth/oauth-provider": ["@better-auth/oauth-provider@1.6.11", "", { "dependencies": { "jose": "^6.1.3", "zod": "^4.3.6" }, "peerDependencies": { "@better-auth/core": "^1.6.11", "@better-auth/utils": "0.4.0", "@better-fetch/fetch": "1.1.21", "better-auth": "^1.6.11", "better-call": "1.3.5" } }, "sha512-iMywpOEAiAUdtvpaRS8yKye+wO3AieOB3Sfv8czkmPduzFuKBICCWuOEAElQEk5tQz3vzWx64zNlLBkgEAOhuw=="],
 
     "@better-auth/prisma-adapter": ["@better-auth/prisma-adapter@1.6.19", "", { "peerDependencies": { "@better-auth/core": "^1.6.19", "@better-auth/utils": "0.4.2", "@prisma/client": "^5.0.0 || ^6.0.0 || ^7.0.0", "prisma": "^5.0.0 || ^6.0.0 || ^7.0.0" }, "optionalPeers": ["@prisma/client", "prisma"] }, "sha512-pXZBhR7/bzJb48IUHlGMyz9SM9h1OCO5GIIuHEllJYt8MKgrjtsnXfUkwZh6pAUEIp3WxBEYMMK96bfkqHiWEg=="],
 

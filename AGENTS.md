@@ -19,10 +19,11 @@ non-obvious, durable gotchas for working in the Cursor Cloud environment.
 ### Environment variables
 - Scripts wrap commands in `dotenv --`, so a **root `.env` is required** (it is
   git-ignored and lives in the snapshot). If it is missing, copy `.env.example` to
-  `.env` and set at minimum: `DATABASE_URL` (local Postgres, below),
-  `BETTER_AUTH_SECRET` (`openssl rand -base64 32`), a base64-encoded **32-byte**
+  `.env` and set at minimum: `DATABASE_URL` (local Postgres, below), the WorkOS
+  AuthKit vars (`WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD`
+  with 32+ chars), a base64-encoded **32-byte**
   `INTEGRATION_ENCRYPTION_KEY` (`openssl rand -base64 32`), and the
-  `BETTER_AUTH_URL` / `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL` = `http://localhost:3000`.
+  `APP_URL` / `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL` = `http://localhost:3000`.
 - Most third-party keys are optional and degrade gracefully (Autumn billing, Resend,
   Redis, R2, integrations). Content/chat **generation** needs a real
   `AI_GATEWAY_API_KEY` or `OPENROUTER_API_KEY`; background jobs/schedules need Upstash
