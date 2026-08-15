@@ -1,19 +1,37 @@
 import { LoginForm } from "@/components/auth/login-form";
 
+const ERROR_MESSAGES: Record<string, string> = {
+  "social-sign-in-failed": "Social sign-in failed. Please try again.",
+};
+
 export default async function Login({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const resolvedSearchParams = await searchParams;
-  const returnTo =
-    typeof resolvedSearchParams.returnTo === "string"
-      ? resolvedSearchParams.returnTo
-      : undefined;
+
+  const readParam = (key: string) => {
+    const value = resolvedSearchParams[key];
+    return typeof value === "string" ? value : undefined;
+  };
+
+  const returnTo = readParam("returnTo");
+  const verify = readParam("verify");
+  const email = readParam("email");
+  const errorKey = readParam("error");
 
   return (
     <div className="mx-auto w-full max-w-md rounded-md p-6 lg:px-8 lg:py-10">
-      <LoginForm returnTo={returnTo} />
+      <LoginForm
+        initialError={errorKey ? ERROR_MESSAGES[errorKey] : undefined}
+        initialPendingVerification={
+          verify
+            ? { pendingAuthenticationToken: verify, email: email ?? "" }
+            : undefined
+        }
+        returnTo={returnTo}
+      />
     </div>
   );
 }

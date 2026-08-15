@@ -7,6 +7,14 @@ import { sanitizeReturnTo } from "@/lib/auth/return-to";
 import { syncAuthenticatedUser } from "@/lib/auth/sync";
 import { readWorkOSError } from "@/lib/auth/workos-error";
 
+const VERIFICATION_REQUIRED_CODE = "email_verification_required";
+
+interface SocialCallbackOutcome {
+  kind: "success" | "failed" | "verification-required";
+  pendingAuthenticationToken?: string;
+  email?: string;
+}
+
 const exchangeSocialCode = Effect.fn("auth.social.exchangeCode")(function* (
   code: string
 ) {
@@ -33,6 +41,34 @@ const exchangeSocialCode = Effect.fn("auth.social.exchangeCode")(function* (
   });
 });
 
+const mapFailure = (error: WorkOSAuthError | UserSyncError) => {
+  if (error instanceof WorkOSAuthError) {
+    const info = readWorkOSError(error.error);
+
+    if (
+      info.code === VERIFICATION_REQUIRED_CODE &&
+      info.pendingAuthenticationToken
+    ) {
+      const outcome: SocialCallbackOutcome = {
+        kind: "verification-required",
+        pendingAuthenticationToken: info.pendingAuthenticationToken,
+        email: info.email ?? undefined,
+      };
+      return Effect.succeed(outcome);
+    }
+  }
+
+  return Effect.logWarning("Social sign-in failed").pipe(
+    Effect.annotateLogs({
+      error:
+        error instanceof WorkOSAuthError
+          ? readWorkOSError(error.error).message
+          : error.message,
+    }),
+    Effect.as<SocialCallbackOutcome>({ kind: "failed" })
+  );
+};
+
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const state = request.nextUrl.searchParams.get("state");
@@ -41,26 +77,29 @@ export async function GET(request: NextRequest) {
     redirect("/login");
   }
 
-  const succeeded = await Effect.runPromise(
+  const outcome = await Effect.runPromise(
     exchangeSocialCode(code).pipe(
-      Effect.as(true),
-      Effect.catch((error) =>
-        Effect.logWarning("Social sign-in failed").pipe(
-          Effect.annotateLogs({
-            error:
-              error instanceof WorkOSAuthError
-                ? readWorkOSError(error.error).message
-                : error.message,
-          }),
-          Effect.as(false)
-        )
-      )
+      Effect.as<SocialCallbackOutcome>({ kind: "success" }),
+      Effect.catch(mapFailure)
     )
   );
 
-  if (!succeeded) {
+  const returnTo = sanitizeReturnTo(state) ?? "/callback";
+
+  if (outcome.kind === "verification-required") {
+    const params = new URLSearchParams({
+      verify: outcome.pendingAuthenticationToken ?? "",
+      returnTo,
+    });
+    if (outcome.email) {
+      params.set("email", outcome.email);
+    }
+    redirect(`/login?${params.toString()}`);
+  }
+
+  if (outcome.kind === "failed") {
     redirect("/login?error=social-sign-in-failed");
   }
 
-  redirect(sanitizeReturnTo(state) ?? "/callback");
+  redirect(returnTo);
 }

@@ -39,6 +39,8 @@ export interface LoginFormProps {
   returnTo?: string;
   showSignupLink?: boolean;
   showForgotPasswordLink?: boolean;
+  initialError?: string;
+  initialPendingVerification?: PendingVerification;
 }
 
 export function LoginForm({
@@ -48,11 +50,15 @@ export function LoginForm({
   returnTo,
   showSignupLink = true,
   showForgotPasswordLink = true,
+  initialError,
+  initialPendingVerification,
 }: LoginFormProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(
+    initialError ?? null
+  );
   const [pendingVerification, setPendingVerification] =
-    useState<PendingVerification | null>(null);
+    useState<PendingVerification | null>(initialPendingVerification ?? null);
   const authInFlightRef = useRef(false);
   const lastMethod = useSyncExternalStore(
     subscribeToNothing,

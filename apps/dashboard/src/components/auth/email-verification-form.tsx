@@ -50,7 +50,7 @@ export function EmailVerificationForm({
   return (
     <div className="flex w-full flex-col gap-5">
       <AuthFormHeader
-        description={`We sent a 6-digit code to ${email}. Enter it below to continue.`}
+        description={`We sent a 6-digit code to ${email || "your email address"}. Enter it below to continue.`}
         title="Check your email"
       />
 
