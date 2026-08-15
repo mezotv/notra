@@ -23,7 +23,9 @@ if (!workosApiKey) {
 const workos = new WorkOS(workosApiKey);
 
 function toPhcBase64(bytes: Uint8Array) {
-  return Buffer.from(bytes).toString("base64").replace(BASE64_PADDING_REGEX, "");
+  return Buffer.from(bytes)
+    .toString("base64")
+    .replace(BASE64_PADDING_REGEX, "");
 }
 
 function betterAuthHashToPhc(hash: string) {
