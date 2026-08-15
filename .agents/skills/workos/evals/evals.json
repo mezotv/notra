@@ -1,0 +1,457 @@
+{
+  "skill_name": "workos",
+  "evals": [
+    {
+      "id": 0,
+      "name": "initiate-login-uri-lookup",
+      "prompt": "I'm configuring an OIDC-style integration and saw the term `initiate_login_uri` mentioned. I'm using WorkOS AuthKit. What exactly is this and where do I actually configure it? Give me the canonical docs URL so I can read more. Keep the answer tight.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Mentions Sign-in endpoint as the WorkOS-side term for this concept",
+          "kind": "content_contains_any",
+          "needles": ["Sign-in endpoint", "sign-in endpoint", "Sign-In endpoint"]
+        },
+        {
+          "text": "Points to Dashboard → Redirects as the config location",
+          "kind": "content_contains_all",
+          "needles": ["Dashboard", "Redirects"]
+        },
+        {
+          "text": "Cites an actual workos.com/docs URL (not llms.txt)",
+          "kind": "content_contains_any",
+          "needles": ["workos.com/docs/authkit", "workos.com/docs/sso", "workos.com/docs/reference"]
+        },
+        {
+          "text": "Does NOT invent a URL like /docs/initiate-login-uri",
+          "kind": "content_contains_none",
+          "needles": [
+            "/docs/initiate-login-uri",
+            "/docs/initiate_login_uri",
+            "/docs/oidc/initiate-login-uri",
+            "/docs/reference/initiate_login_uri"
+          ]
+        },
+        {
+          "text": "Does NOT use llms.txt as the primary source",
+          "kind": "content_contains_none",
+          "needles": ["fetch llms.txt", "fetched llms.txt", "from llms.txt"]
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "sign-in-endpoint-lookup",
+      "prompt": "I'm staring at the WorkOS Dashboard and I see a field called 'Sign-in endpoint' in the Redirects section. What IS this exactly — why does WorkOS need it if I'm already passing a Redirect URI? Link me to the canonical docs page.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Distinguishes Sign-in endpoint from Redirect URI",
+          "kind": "content_contains_all",
+          "needles": ["Sign-in endpoint", "Redirect URI"]
+        },
+        {
+          "text": "Explains the bookmark / password-reset use case",
+          "kind": "content_contains_any",
+          "needles": [
+            "bookmark",
+            "password reset",
+            "password-reset",
+            "did not originate",
+            "didn't originate",
+            "originate from your app"
+          ]
+        },
+        {
+          "text": "Cites a workos.com/docs URL",
+          "kind": "content_contains_any",
+          "needles": ["workos.com/docs/authkit", "workos.com/docs/reference"]
+        },
+        {
+          "text": "Does NOT invent /docs/sign-in-endpoint",
+          "kind": "content_contains_none",
+          "needles": ["/docs/sign-in-endpoint", "/docs/authkit/sign-in-endpoint", "/docs/reference/sign-in-endpoint"]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "cookie-password-lookup",
+      "prompt": "My WorkOS AuthKit app is throwing an error about `WORKOS_COOKIE_PASSWORD` being invalid. What is this env var, what are the requirements (length, format), how do I generate a valid one, and where are the official docs?",
+      "files": [],
+      "assertions": [
+        {
+          "text": "States the 32+ character requirement",
+          "kind": "content_contains_any",
+          "needles": ["32+ character", "32+ chars", "32 characters", "at least 32", "minimum 32", "32-character"]
+        },
+        {
+          "text": "Shows how to generate one with openssl",
+          "kind": "content_contains_all",
+          "needles": ["openssl", "rand"]
+        },
+        {
+          "text": "Mentions session cookie encryption / sealing",
+          "kind": "content_contains_any",
+          "needles": ["seal", "encrypt", "session cookie"]
+        },
+        { "text": "Cites a workos.com/docs URL", "kind": "content_contains_any", "needles": ["workos.com/docs"] }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "org-vs-connection-id",
+      "prompt": "For my SSO integration I see both Organization ID and Connection ID as options when generating an authorization URL. What's the actual difference, and which one should I pass to getAuthorizationUrl in typical multi-tenant B2B setup? Docs link please.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Recommends Organization ID for multi-tenant B2B",
+          "kind": "content_contains_any",
+          "needles": ["Organization ID", "organizationId", "organization_id"]
+        },
+        {
+          "text": "Explains what Connection ID is and when to use it",
+          "kind": "content_contains_any",
+          "needles": ["Connection ID", "connectionId", "connection_id"]
+        },
+        {
+          "text": "Explains why Organization ID is preferred (connection routing)",
+          "kind": "content_contains_any",
+          "needles": [
+            "group of users",
+            "preferred",
+            "typically",
+            "let the org",
+            "org can pick",
+            "active connection",
+            "specific connection"
+          ]
+        },
+        {
+          "text": "Cites a workos.com/docs URL",
+          "kind": "content_contains_any",
+          "needles": ["workos.com/docs/sso", "workos.com/docs/authkit", "workos.com/docs/reference"]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "entra-directory-group-to-role-mapping",
+      "prompt": "We use Entra ID (Azure AD) with WorkOS Directory Sync and I need to map our Entra groups to WorkOS roles — for example the 'Engineering' Entra group should get the 'developer' role. How do I set this up? Docs link too.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies Directory Sync as the source (not SSO)",
+          "kind": "content_contains_any",
+          "needles": ["Directory Sync", "directory sync", "SCIM"]
+        },
+        {
+          "text": "Cites the Directory Sync IdP role assignment docs URL",
+          "kind": "content_contains_any",
+          "needles": ["workos.com/docs/directory-sync/identity-provider-role-assignment"]
+        },
+        {
+          "text": "Says roles must be configured first",
+          "kind": "content_contains_any",
+          "needles": [
+            "Configure roles first",
+            "configure roles first",
+            "roles are configured",
+            "Once roles are configured",
+            "create the role",
+            "create the roles",
+            "roles first"
+          ]
+        },
+        {
+          "text": "Mentions Admin Portal or WorkOS Dashboard as the config surface",
+          "kind": "content_contains_any",
+          "needles": ["Admin Portal", "WorkOS Dashboard", "WorkOS dashboard", "dashboard.workos.com"]
+        },
+        {
+          "text": "Does NOT invent a workos CLI command for this operation",
+          "kind": "content_contains_none",
+          "needles": [
+            "workos roles map",
+            "workos role-mapping",
+            "workos rbac map",
+            "workos directory roles",
+            "workos directory-sync map",
+            "workos groups map",
+            "workos map-group"
+          ]
+        },
+        {
+          "text": "Does NOT invent a specific click-path in the Dashboard",
+          "kind": "content_contains_none",
+          "needles": [
+            "Dashboard > Organizations > ",
+            "Dashboard → Organizations →",
+            "Organizations tab > Roles tab > Map Groups",
+            "Organizations → Roles → Map"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "where-in-dashboard-group-role-mapping",
+      "prompt": "Where in the WorkOS Dashboard do I configure the mapping from directory groups to roles? Point me at the exact page. If there's an official docs page for this give me the URL.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Cites the canonical docs URL",
+          "kind": "content_contains_any",
+          "needles": [
+            "workos.com/docs/directory-sync/identity-provider-role-assignment",
+            "workos.com/docs/rbac/idp-role-assignment",
+            "workos.com/docs/rbac/integration"
+          ]
+        },
+        {
+          "text": "Mentions Admin Portal as where the mapping happens, or the directory page",
+          "kind": "content_contains_any",
+          "needles": ["Admin Portal", "directory page", "Authorization page", "Authorization"]
+        },
+        {
+          "text": "Does NOT fabricate a dashboard.workos.com/... deep link",
+          "kind": "content_contains_none",
+          "needles": [
+            "dashboard.workos.com/organizations/",
+            "dashboard.workos.com/directory/",
+            "dashboard.workos.com/rbac",
+            "dashboard.workos.com/roles/",
+            "dashboard.workos.com/group-mappings"
+          ]
+        },
+        {
+          "text": "Does NOT invent a specific click-path in the Dashboard",
+          "kind": "content_contains_none",
+          "needles": [
+            "Dashboard > Organizations > ",
+            "Dashboard → Organizations →",
+            "Click Organizations, then Roles, then Map Groups",
+            "Organizations → Roles → Map"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "cli-group-role-mapping-not-supported",
+      "prompt": "Is there a `workos` CLI command to map Directory Sync groups to WorkOS roles? I'd rather script this than click through the dashboard.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "States that the WorkOS CLI does NOT support this operation",
+          "kind": "content_contains_any",
+          "needles": [
+            "not in the CLI",
+            "not supported in the CLI",
+            "not a CLI",
+            "not configurable via the CLI",
+            "CLI does not support",
+            "no CLI command",
+            "no workos CLI command",
+            "the WorkOS CLI doesn't",
+            "the WorkOS CLI does not"
+          ]
+        },
+        {
+          "text": "Points to the Dashboard / Admin Portal / docs as the correct place",
+          "kind": "content_contains_any",
+          "needles": [
+            "Admin Portal",
+            "WorkOS Dashboard",
+            "WorkOS dashboard",
+            "workos.com/docs/directory-sync/identity-provider-role-assignment",
+            "workos.com/docs/rbac/idp-role-assignment"
+          ]
+        },
+        {
+          "text": "Does NOT invent a workos CLI command for this operation",
+          "kind": "content_contains_none",
+          "needles": [
+            "workos roles map",
+            "workos role-mapping",
+            "workos rbac map",
+            "workos directory roles",
+            "workos directory-sync map",
+            "workos groups map",
+            "workos map-group",
+            "workos group-mapping"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "api-role-assignment-overridden-by-idp",
+      "prompt": "I called `updateOrganizationMembership` to set a user's role to 'admin' and it worked, but next time they log in the role flips back to 'developer'. What's happening and how do I fix it?",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Identifies IdP role assignment precedence as the cause",
+          "kind": "content_contains_any",
+          "needles": [
+            "IdP role assignment",
+            "IdP mapping",
+            "identity provider role assignment",
+            "directory group role assignment",
+            "SSO group role assignment",
+            "takes precedence",
+            "take precedence",
+            "override"
+          ]
+        },
+        {
+          "text": "Points user to change the mapping at the IdP / directory / Admin Portal instead",
+          "kind": "content_contains_any",
+          "needles": ["Admin Portal", "directory", "directory group", "IdP", "identity provider", "mapping"]
+        },
+        {
+          "text": "Cites the canonical docs URL for precedence",
+          "kind": "content_contains_any",
+          "needles": [
+            "workos.com/docs/rbac/integration",
+            "workos.com/docs/rbac/idp-role-assignment",
+            "workos.com/docs/directory-sync/identity-provider-role-assignment"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "name": "sso-connection-create-not-in-cli",
+      "prompt": "How do I create a new SSO connection for one of my organizations using the `workos` CLI? Give me the exact command.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "States connection creation is NOT in the CLI",
+          "kind": "content_contains_any",
+          "needles": [
+            "not in the CLI",
+            "not supported in the CLI",
+            "CLI doesn't support",
+            "CLI does not support",
+            "no CLI command",
+            "cannot be created from the CLI"
+          ]
+        },
+        {
+          "text": "Points at portal generate-link OR the Admin Portal / Dashboard as the right place",
+          "kind": "content_contains_any",
+          "needles": ["portal generate-link", "Admin Portal", "WorkOS Dashboard", "WorkOS dashboard"]
+        },
+        {
+          "text": "Does NOT invent a creation command",
+          "kind": "content_contains_none",
+          "needles": [
+            "workos connection create",
+            "workos sso create",
+            "workos sso connection create",
+            "workos connections create"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "directory-connection-create-not-in-cli",
+      "prompt": "I need to create a new Directory Sync connection for my organization. What's the workos CLI command for that?",
+      "files": [],
+      "assertions": [
+        {
+          "text": "States connection creation is NOT in the CLI",
+          "kind": "content_contains_any",
+          "needles": [
+            "not in the CLI",
+            "not supported in the CLI",
+            "CLI doesn't support",
+            "CLI does not support",
+            "no CLI command",
+            "cannot be created from the CLI"
+          ]
+        },
+        {
+          "text": "Points at portal generate-link OR the Admin Portal / Dashboard as the right place",
+          "kind": "content_contains_any",
+          "needles": ["portal generate-link", "Admin Portal", "WorkOS Dashboard", "WorkOS dashboard", "dsync"]
+        },
+        {
+          "text": "Does NOT invent a creation command",
+          "kind": "content_contains_none",
+          "needles": [
+            "workos directory create",
+            "workos directory-sync create",
+            "workos dsync create",
+            "workos directories create"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "cli-surface-area-verification",
+      "prompt": "Before you answer: I want to know whether the `workos` CLI has a command to update a user's role assignment rules. If yes give me the command; if no, tell me how you verified it's not there.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "References workos --help --json as the verification source",
+          "kind": "content_contains_any",
+          "needles": ["workos --help --json", "--help --json", "help --json"]
+        },
+        {
+          "text": "Does NOT fabricate a role-rule command",
+          "kind": "content_contains_none",
+          "needles": ["workos role-rule", "workos role-rules", "workos role assignment-rule", "workos role rule"]
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "cli-upgrade-recommendation",
+      "prompt": "I just ran `workos --version` and it printed 0.10.0. The docs reference a command that errors with `unknown command` when I run it. What do I do — I want the upgrade command and a way to confirm what the latest version actually is.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Tells the user to check the latest version via npm view rather than guessing",
+          "kind": "content_contains_any",
+          "needles": ["npm view workos version", "npm view workos", "npm view workos dist-tags"]
+        },
+        {
+          "text": "Provides at least one concrete upgrade command using @latest (npm/pnpm or npx)",
+          "kind": "content_contains_any",
+          "needles": [
+            "npm install -g workos@latest",
+            "pnpm add -g workos@latest",
+            "npx workos@latest",
+            "pnpm dlx workos"
+          ]
+        },
+        {
+          "text": "Does NOT pin to a fabricated version number (signals the agent invented 'the latest')",
+          "kind": "content_contains_none",
+          "needles": [
+            "workos@0.11",
+            "workos@0.12",
+            "workos@0.13",
+            "workos@0.14",
+            "workos@1.0",
+            "latest is 0.11",
+            "latest is 0.12",
+            "latest is 0.13",
+            "latest is 0.14",
+            "latest version is 0.1",
+            "latest version is 1.0",
+            "current latest: 0.",
+            "currently 0.11",
+            "currently 0.12",
+            "currently 0.13",
+            "currently 0.14"
+          ]
+        }
+      ]
+    }
+  ]
+}
