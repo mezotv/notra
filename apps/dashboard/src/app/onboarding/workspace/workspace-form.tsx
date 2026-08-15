@@ -74,13 +74,17 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
   const isResuming = !!existingOrg;
 
   useEffect(() => {
-    const url = logoPreviewUrl;
+    if (!logoFile) {
+      return;
+    }
+
+    const url = URL.createObjectURL(logoFile);
+    setLogoPreviewUrl(url);
+
     return () => {
-      if (url?.startsWith("blob:")) {
-        URL.revokeObjectURL(url);
-      }
+      URL.revokeObjectURL(url);
     };
-  }, [logoPreviewUrl]);
+  }, [logoFile]);
 
   const handleLogoSelect = (file: File) => {
     const validationError = validateLogoFile(file);
@@ -90,7 +94,6 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
     }
 
     setLogoFile(file);
-    setLogoPreviewUrl(URL.createObjectURL(file));
   };
   const existingSource = existingOrg?.heardAboutNotraSource;
   const initialSource = isHeardAboutNotraSource(existingSource)
