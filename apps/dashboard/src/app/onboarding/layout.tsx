@@ -7,7 +7,7 @@ export default function OnboardingLayout({
 }) {
   return (
     <div className="relative min-h-screen w-full">
-      <div className="absolute top-4 right-4 z-10">
+      <div className="fixed bottom-4 left-4 z-10">
         <OnboardingAccountMenu />
       </div>
       {children}
