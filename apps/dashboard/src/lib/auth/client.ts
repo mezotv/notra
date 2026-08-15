@@ -10,7 +10,6 @@ import {
   updateUserAction,
 } from "@/lib/auth/user-actions";
 import {
-  acceptInvitationAction,
   cancelInvitationAction,
   createOrganizationAction,
   getFullOrganizationAction,
@@ -18,8 +17,8 @@ import {
   listInvitationsAction,
   listMembersAction,
   listOrganizationsAction,
-  rejectInvitationAction,
   removeMemberAction,
+  resendInvitationAction,
   setActiveOrganizationAction,
   updateMemberRoleAction,
   updateOrganizationAction,
@@ -104,8 +103,7 @@ export const authClient = {
     listInvitations: listInvitationsAction,
     inviteMember: inviteMemberAction,
     cancelInvitation: cancelInvitationAction,
-    acceptInvitation: acceptInvitationAction,
-    rejectInvitation: rejectInvitationAction,
+    resendInvitation: resendInvitationAction,
     updateMemberRole: updateMemberRoleAction,
     removeMember: removeMemberAction,
   },

@@ -240,28 +240,6 @@ export const members = pgTable(
   ]
 );
 
-export const invitations = pgTable(
-  "invitations",
-  {
-    id: text("id").primaryKey(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    email: text("email").notNull(),
-    role: text("role"),
-    status: text("status").default("pending").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    inviterId: text("inviter_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-  },
-  (table) => [
-    index("invitations_organizationId_idx").on(table.organizationId),
-    index("invitations_email_idx").on(table.email),
-  ]
-);
-
 export const githubAppInstallations = pgTable(
   "github_app_installations",
   {
@@ -1884,7 +1862,6 @@ export interface PostSourceMetadata {
 export const usersRelations = relations(users, ({ many }) => ({
   socialConnections: many(socialConnections),
   members: many(members),
-  invitations: many(invitations),
   githubIntegrations: many(githubIntegrations),
   githubAppInstallations: many(githubAppInstallations),
   linearIntegrations: many(linearIntegrations),
@@ -1929,7 +1906,6 @@ export const organizationsRelations = relations(
   organizations,
   ({ many, one }) => ({
     members: many(members),
-    invitations: many(invitations),
     githubIntegrations: many(githubIntegrations),
     githubAppInstallations: many(githubAppInstallations),
     linearIntegrations: many(linearIntegrations),
@@ -1977,17 +1953,6 @@ export const membersRelations = relations(members, ({ one }) => ({
   }),
   users: one(users, {
     fields: [members.userId],
-    references: [users.id],
-  }),
-}));
-
-export const invitationsRelations = relations(invitations, ({ one }) => ({
-  organizations: one(organizations, {
-    fields: [invitations.organizationId],
-    references: [organizations.id],
-  }),
-  users: one(users, {
-    fields: [invitations.inviterId],
     references: [users.id],
   }),
 }));

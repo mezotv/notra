@@ -1,8 +1,13 @@
 import { db } from "@notra/db/drizzle";
-import { socialConnections, users } from "@notra/db/schema";
+import {
+  members,
+  organizations,
+  socialConnections,
+  users,
+} from "@notra/db/schema";
 import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import type { User } from "@workos-inc/node";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";
 import { isValid as isNotDisposableEmail } from "mailchecker";
 import { SocialConnectionError, UserSyncError } from "@/lib/auth/errors";
@@ -231,6 +236,91 @@ export const ensureLocalUser = Effect.fn("auth.sync.ensureLocalUser")(
   }
 );
 
+const reconcileWorkOSMemberships = Effect.fn("auth.sync.reconcileMemberships")(
+  function* (localUserId: string, workosUserId: string) {
+    const memberships = yield* Effect.tryPromise({
+      try: () =>
+        getWorkOS().userManagement.listOrganizationMemberships({
+          userId: workosUserId,
+          statuses: ["active"],
+          limit: 100,
+        }),
+      catch: (cause) =>
+        new UserSyncError({
+          message: "Failed to list WorkOS memberships",
+          cause,
+        }),
+    });
+
+    if (memberships.data.length === 0) {
+      return;
+    }
+
+    const workosOrgIds = memberships.data.map(
+      (membership) => membership.organizationId
+    );
+
+    const localOrganizations = yield* Effect.tryPromise({
+      try: () =>
+        db.query.organizations.findMany({
+          where: inArray(organizations.workosOrgId, workosOrgIds),
+          columns: { id: true, workosOrgId: true },
+        }),
+      catch: (cause) =>
+        new UserSyncError({ message: "Failed to load organizations", cause }),
+    });
+
+    const localOrgByWorkosId = new Map(
+      localOrganizations.map((organization) => [
+        organization.workosOrgId,
+        organization.id,
+      ])
+    );
+
+    for (const membership of memberships.data) {
+      const localOrgId = localOrgByWorkosId.get(membership.organizationId);
+
+      if (!localOrgId) {
+        continue;
+      }
+
+      const role = membership.role.slug || "member";
+
+      yield* Effect.tryPromise({
+        try: async () => {
+          const existing = await db.query.members.findFirst({
+            where: and(
+              eq(members.userId, localUserId),
+              eq(members.organizationId, localOrgId)
+            ),
+            columns: { id: true, role: true },
+          });
+
+          if (!existing) {
+            await db.insert(members).values({
+              id: crypto.randomUUID(),
+              organizationId: localOrgId,
+              userId: localUserId,
+              role,
+              createdAt: new Date(membership.createdAt),
+            });
+            return;
+          }
+
+          if (existing.role !== role && existing.role !== "owner") {
+            await db
+              .update(members)
+              .set({ role })
+              .where(eq(members.id, existing.id));
+          }
+        },
+        catch: (cause) =>
+          new UserSyncError({ message: "Failed to sync membership", cause }),
+      });
+    }
+  }
+);
+
 export const syncAuthenticatedUser = Effect.fn("auth.sync.authenticatedUser")(
   function* ({
     workosUser,
@@ -238,6 +328,14 @@ export const syncAuthenticatedUser = Effect.fn("auth.sync.authenticatedUser")(
     authenticationMethod,
   }: SyncAuthenticatedUserInput) {
     const localUser = yield* ensureLocalUser(workosUser);
+
+    yield* reconcileWorkOSMemberships(localUser.id, workosUser.id).pipe(
+      Effect.catch((error) =>
+        Effect.logWarning("Could not reconcile WorkOS memberships").pipe(
+          Effect.annotateLogs({ userId: localUser.id, error: error.message })
+        )
+      )
+    );
 
     const provider = authenticationMethod
       ? AUTH_METHOD_PROVIDERS[authenticationMethod]

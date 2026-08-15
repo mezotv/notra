@@ -38,7 +38,7 @@ export const syncOrganizationToWorkOS = Effect.fn(
 
 export const syncMembershipToWorkOS = Effect.fn(
   "organizations.sync.createWorkOSMembership"
-)(function* (organizationId: string, userId: string) {
+)(function* (organizationId: string, userId: string, roleSlug?: string) {
   yield* Effect.tryPromise({
     try: async () => {
       const [organization, user] = await Promise.all([
@@ -59,6 +59,7 @@ export const syncMembershipToWorkOS = Effect.fn(
       await getWorkOS().userManagement.createOrganizationMembership({
         organizationId: organization.workosOrgId,
         userId: user.workosUserId,
+        roleSlug,
       });
     },
     catch: (cause) =>

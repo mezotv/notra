@@ -1,5 +1,4 @@
 import type {
-  invitations,
   members,
   organizations,
   socialConnections,
@@ -16,8 +15,17 @@ export interface ActionResult<T> {
 
 export type OrganizationRow = typeof organizations.$inferSelect;
 export type MemberRow = typeof members.$inferSelect;
-export type InvitationRow = typeof invitations.$inferSelect;
 export type SocialConnectionRow = typeof socialConnections.$inferSelect;
+
+export interface InvitationSummary {
+  id: string;
+  email: string;
+  role: string | null;
+  status: "pending" | "accepted" | "expired" | "revoked";
+  expiresAt: Date;
+  createdAt: Date;
+  acceptInvitationUrl: string;
+}
 
 export interface MemberWithUser extends MemberRow {
   user: {
@@ -30,7 +38,6 @@ export interface MemberWithUser extends MemberRow {
 
 export interface FullOrganization extends OrganizationRow {
   members: MemberWithUser[];
-  invitations: InvitationRow[];
 }
 
 export interface CreateOrganizationInput {
@@ -58,7 +65,10 @@ export interface InviteMemberInput {
   email: string;
   role: "member" | "admin" | "owner";
   organizationId?: string;
-  resend?: boolean;
+}
+
+export interface InvitationActionInput {
+  invitationId: string;
 }
 
 export interface UpdateMemberRoleInput {

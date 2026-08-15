@@ -1,13 +1,14 @@
 # Better Auth → WorkOS AuthKit Migration
 
 This branch removes better-auth entirely and replaces it with WorkOS AuthKit
-(hosted auth UI + sealed cookie sessions) across the dashboard, console, API,
+(sealed cookie sessions, WorkOS-managed invitations, custom in-app login/signup
+pages on the AuthKit Authentication API) across the dashboard, console, API,
 and agent/MCP OAuth surface.
 
 ## Architecture
 
-- Local `users`, `organizations`, `members`, and `invitations` tables remain the
-  source of truth. Nothing re-keys: WorkOS ids are mapped via
+- Local `users`, `organizations`, and `members` tables remain the source of
+  truth; invitations live in WorkOS only. Nothing re-keys: WorkOS ids are mapped via
   `users.workos_user_id` and `organizations.workos_org_id`, and the local id is
   stored as `external_id` on the WorkOS side.
 - `apps/dashboard` and `apps/console` use `@workos-inc/authkit-nextjs`
@@ -28,8 +29,7 @@ and agent/MCP OAuth surface.
 - Org creation hooks were moved verbatim into `createOrganizationAction`:
   slug validation, `seedSystemSkills`, `autumn.customers.getOrCreate`
   (customerId = local org id), plus best-effort WorkOS org/membership sync.
-  Team-member limits are enforced in `inviteMemberAction` /
-  `acceptInvitationAction`.
+  Team-member limits are enforced in `inviteMemberAction`.
 - `apps/api` verifies agent/MCP JWTs against the AuthKit OAuth server
   (`https://{WORKOS_AUTHKIT_DOMAIN}/oauth2/jwks`), translating `sub`/`org_id`
   claims into local user/org ids via the mapping columns.
@@ -52,12 +52,17 @@ and agent/MCP OAuth surface.
 5. Social providers: enable Google and GitHub with our existing client ids.
    GitHub must request the scopes the integration needs (including `read:org`),
    since provider tokens now come exclusively from the AuthKit sign-in flow.
-6. Enable the AuthKit OAuth server (Connect) with dynamic client registration
+6. Create the `owner`, `admin`, and `member` roles (member = default) so
+   invitation `roleSlug` and membership sync work.
+7. Register a webhook endpoint for `organization_membership.created/updated/
+   deleted` pointing at `{APP_URL}/api/webhooks/workos` and set its signing
+   secret as `WORKOS_WEBHOOK_SECRET`.
+8. Enable the AuthKit OAuth server (Connect) with dynamic client registration
    for the MCP/agent flow, and model the agent scopes
    (`posts.read`, `posts.write`, `brand-identities.*`, `integrations.*`,
    `schedules.*`, `event-triggers.*`, `chats.*`, `skills.*`, `offline_access`).
    Agent tokens fail scoped endpoints until these exist.
-7. Set the session cookie domain to `.usenotra.com` (env
+9. Set the session cookie domain to `.usenotra.com` (env
    `WORKOS_COOKIE_DOMAIN=.usenotra.com` on the dashboard deployment) so the
    marketing site can show signed-in state.
 
@@ -76,11 +81,12 @@ Removed: `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `CONSOLE_BETTER_AUTH_URL`.
 | `CONSOLE_WORKOS_REDIRECT_URI` | console callback (local dev, port 3003) |
 | `WORKOS_AUTHKIT_DOMAIN` | e.g. `auth.usenotra.com`, no scheme (dashboard `.well-known` proxy + apps/api JWT verification) |
 | `WORKOS_COOKIE_DOMAIN` | `.usenotra.com` in production |
+| `WORKOS_WEBHOOK_SECRET` | signing secret of the `organization_membership.*` webhook endpoint (`{APP_URL}/api/webhooks/workos`) |
 
 ## Cutover order (CRITICAL)
 
 Migration `0063` (additive: mapping columns + `social_connections`) and `0064`
-(drops `accounts`, `sessions`, `jwks`, `oauth_*`) ship in this branch, and
+(drops `accounts`, `sessions`, `invitations`, `jwks`, `oauth_*`) ship in this branch, and
 **Vercel previews auto-apply migrations**. `0064` destroys the scrypt password
 hashes stored in `accounts`. Therefore, for EACH database (staging, prod):
 
@@ -103,13 +109,23 @@ that happen on prod.
 
 - All existing better-auth sessions are invalid at cutover; everyone signs in
   again through hosted AuthKit.
-- Email/password, OTP verification, forgot/reset password: hosted AuthKit
-  screens. The in-app "change password" is now "send a password reset email".
+- Login/signup/forgot/reset are our own pages (`(auth)` group) built on the
+  AuthKit Authentication API (`authenticateWithPassword`, provider-direct social
+  via `/auth/social/*`, email verification codes). The in-app "change password"
+  is "send a password reset email".
 - Social account linking is read-only: users link a provider by signing in with
   it (AuthKit auto-links by verified email). GitHub integration install
   re-routes through `/login`.
-- Invitation "resend" cancels the pending invitation and creates a new one
-  (same email template, `${APP_URL}/invitation/{id}` links unchanged).
+- Invitations are fully WorkOS-managed: `sendInvitation`/`revokeInvitation`/
+  `resendInvitation` with `roleSlug`, WorkOS sends the invitation emails, and
+  the accept URL runs through AuthKit. The local `invitations` table is dropped
+  (migration 0064) along with the `/invitation/[id]` page and our invite email
+  template. Accepted invitations create the WorkOS user + membership; the local
+  `members` row is written by the `organization_membership.*` webhook
+  (`/api/webhooks/workos`, `WORKOS_WEBHOOK_SECRET`) and, as a fallback, by a
+  membership reconcile that runs on every login. Roles `owner`/`admin`/`member`
+  must exist in the WorkOS environment (created via the management API for
+  Development).
 - Console impersonation is initiated from the WorkOS Dashboard; the AuthKit
   session carries the impersonator and the console banner reflects it. "Stop
   impersonating" signs out.

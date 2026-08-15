@@ -5,75 +5,14 @@ import { sendDevEmail } from "@notra/email/utils/dev";
 import { getResend } from "@notra/email/utils/resend";
 import { headers } from "next/headers";
 import type {
-  SendInviteEmailProps,
   SendResetPasswordProps,
   SendWelcomeEmailProps,
 } from "@/types/email/actions";
 import { getServerSession } from "../auth/session";
-import { sendInviteEmail, sendResetPassword, sendWelcomeEmail } from "./send";
+import { sendResetPassword, sendWelcomeEmail } from "./send";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 const resend = getResend();
-
-export async function sendInviteEmailAction({
-  inviteeEmail,
-  inviterName,
-  inviterEmail,
-  workspaceName,
-  inviteLink,
-}: SendInviteEmailProps) {
-  const { session } = await getServerSession({ headers: await headers() });
-
-  if (!session) {
-    return { success: false, error: "Unauthorized" };
-  }
-
-  if (!resend && isDevelopment) {
-    return sendDevEmail({
-      from: EMAIL_CONFIG.from,
-      to: inviteeEmail,
-      subject: `Join ${workspaceName} on Notra`,
-      text: "This is a mock invite email",
-      _mockContext: {
-        type: "invite",
-        data: {
-          inviteeEmail,
-          inviterName,
-          inviterEmail,
-          workspaceName,
-          inviteLink,
-        },
-      },
-    });
-  }
-
-  if (!resend) {
-    throw new Error("Resend API key not set");
-  }
-
-  try {
-    const { error } = await sendInviteEmail(resend, {
-      inviteeEmail,
-      inviterName,
-      inviterEmail,
-      organizationName: workspaceName,
-      inviteLink,
-    });
-
-    if (error) {
-      console.error(`Failed to send invite email to ${inviteeEmail}:`, error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error(
-      `Unexpected error sending invite email to ${inviteeEmail}:`,
-      error
-    );
-    return { success: false, error: "Failed to send email" };
-  }
-}
 
 export async function sendResetPasswordAction({
   userEmail,

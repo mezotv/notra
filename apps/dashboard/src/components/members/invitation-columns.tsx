@@ -4,10 +4,10 @@ import { Mail01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { createColumnHelper } from "@tanstack/react-table";
-import type { InvitationRow } from "@/types/organizations/actions";
+import type { InvitationSummary } from "@/types/organizations/actions";
 import { InvitationActions } from "./invitation-actions";
 
-const columnHelper = createColumnHelper<InvitationRow>();
+const columnHelper = createColumnHelper<InvitationSummary>();
 
 function RoleBadge({ role }: { role: string | null | undefined }) {
   const variants: Record<string, "default" | "secondary" | "outline"> = {

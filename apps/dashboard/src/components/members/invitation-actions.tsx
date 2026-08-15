@@ -42,10 +42,10 @@ import {
   isTeamMemberLimitError,
   mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
-import type { InvitationRow } from "@/types/organizations/actions";
+import type { InvitationSummary } from "@/types/organizations/actions";
 
 interface InvitationActionsProps {
-  invitation: InvitationRow;
+  invitation: InvitationSummary;
 }
 
 export function InvitationActions({ invitation }: InvitationActionsProps) {
@@ -69,14 +69,8 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
 
     setIsResending(true);
     try {
-      const { error } = await authClient.organization.inviteMember({
-        email: invitation.email,
-        role:
-          invitation.role === "admin" || invitation.role === "owner"
-            ? invitation.role
-            : "member",
-        organizationId: activeOrganization.id,
-        resend: true,
+      const { error } = await authClient.organization.resendInvitation({
+        invitationId: invitation.id,
       });
 
       if (error) {

@@ -1,12 +1,10 @@
 import { createHash } from "node:crypto";
 import { AiCreditsDepletedEmail } from "@notra/email/emails/ai-credits-depleted";
 import { FeedbackEmail } from "@notra/email/emails/feedback";
-import { InviteUserEmail } from "@notra/email/emails/invite";
 import { ResetPasswordEmail } from "@notra/email/emails/reset";
 import { ScheduledContentCreatedEmail } from "@notra/email/emails/schedule-content-created";
 import { ScheduledContentFailedEmail } from "@notra/email/emails/schedule-content-failed";
 import { ScheduledContentSkippedEmail } from "@notra/email/emails/schedule-content-skipped";
-import { VerifyUserEmail } from "@notra/email/emails/verify";
 import { WelcomeEmail } from "@notra/email/emails/welcome";
 import { WorkflowPausedEmail } from "@notra/email/emails/workflow-paused";
 import { EMAIL_CONFIG } from "@notra/email/utils/config";
@@ -16,7 +14,6 @@ import type {
   EmailResult,
   SendAiCreditsDepletedEmailProps,
   SendFeedbackEmailProps,
-  SendInviteEmailProps,
   SendScheduledContentCreatedEmailProps,
   SendScheduledContentFailedEmailProps,
   SendScheduledContentSkippedEmailProps,
@@ -108,49 +105,6 @@ async function sendWithRetry(
 }
 
 // --- Send Functions ---
-
-export async function sendInviteEmail(
-  resend: Resend,
-  {
-    inviteeEmail,
-    inviterName,
-    inviterEmail,
-    organizationName,
-    inviteLink,
-  }: SendInviteEmailProps
-) {
-  return sendWithRetry(
-    resend,
-    {
-      from: EMAIL_CONFIG.from,
-      replyTo: EMAIL_CONFIG.replyTo,
-      to: inviteeEmail,
-      subject: `Join ${organizationName} on Notra`,
-      react: InviteUserEmail({
-        inviteeEmail,
-        invitedByUsername: inviterName,
-        invitedByEmail: inviterEmail,
-        organizationName,
-        inviteLink,
-      }),
-      tags: [{ name: "category", value: "invite" }],
-    },
-    `notra:invite:${inviteeEmail}:${inviteLink}`
-  );
-}
-
-function getVerificationSubject(type: "sign-in" | "email-verification") {
-  switch (type) {
-    case "sign-in":
-      return "Your sign-in code";
-    case "email-verification":
-      return "Verify your email address";
-    default: {
-      const _exhaustiveCheck: never = type;
-      return _exhaustiveCheck;
-    }
-  }
-}
 
 export async function sendResetPassword(
   resend: Resend,

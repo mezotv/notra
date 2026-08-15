@@ -35,3 +35,15 @@ export interface AuthPasswordFieldProps {
   onBlur: () => void;
   onChange: (value: string) => void;
 }
+
+export interface EmailVerificationFormProps {
+  pendingAuthenticationToken: string;
+  email: string;
+  returnTo?: string | null;
+  onSuccess?: () => void;
+}
+
+export interface PendingVerification {
+  pendingAuthenticationToken: string;
+  email: string;
+}

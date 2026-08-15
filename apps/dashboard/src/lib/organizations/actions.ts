@@ -8,14 +8,15 @@ import {
 } from "@notra/ai/constants/billing-limits";
 import { seedSystemSkills } from "@notra/ai/skills/seed";
 import { db } from "@notra/db/drizzle";
-import { invitations, members, organizations, users } from "@notra/db/schema";
+import { members, organizations, users } from "@notra/db/schema";
+import { getWorkOS } from "@workos-inc/authkit-nextjs";
+import type { Invitation } from "@workos-inc/node";
 import { and, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { isValid as isNotDisposableEmail } from "mailchecker";
 import { cookies } from "next/headers";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
-import { INVITATION_EXPIRY_MS } from "@/constants/organization";
-import { sendInviteEmailAction } from "@/lib/email/actions";
+import { readWorkOSError } from "@/lib/auth/workos-error";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import {
   requireManagerMembership,
@@ -34,7 +35,8 @@ import type {
   ActionResult,
   CreateOrganizationInput,
   FullOrganization,
-  InvitationRow,
+  InvitationActionInput,
+  InvitationSummary,
   InviteMemberInput,
   ListMembersInput,
   MembersListResult,
@@ -127,6 +129,84 @@ const mapMemberRows = (
       },
     ];
   });
+
+const tryWorkOS = <T>(run: () => Promise<T>, fallbackMessage: string) =>
+  Effect.tryPromise({
+    try: run,
+    catch: (cause) =>
+      new OrganizationActionError({
+        message: readWorkOSError(cause).message || fallbackMessage,
+        cause,
+      }),
+  });
+
+const mapInvitation = (invitation: Invitation): InvitationSummary => ({
+  id: invitation.id,
+  email: invitation.email,
+  role: invitation.roleSlug,
+  status: invitation.state,
+  expiresAt: new Date(invitation.expiresAt),
+  createdAt: new Date(invitation.createdAt),
+  acceptInvitationUrl: invitation.acceptInvitationUrl,
+});
+
+const requireWorkOSOrganizationId = Effect.fn(
+  "organizations.actions.requireWorkOSOrganizationId"
+)(function* (organizationId: string) {
+  const organization = yield* tryDb(
+    () =>
+      db.query.organizations.findFirst({
+        where: eq(organizations.id, organizationId),
+        columns: { workosOrgId: true },
+      }),
+    "Failed to load organization"
+  );
+
+  if (!organization?.workosOrgId) {
+    return yield* Effect.fail(
+      new OrganizationActionError({
+        message: "This organization is not linked to WorkOS yet",
+      })
+    );
+  }
+
+  return organization.workosOrgId;
+});
+
+const requireInvitationManagement = Effect.fn(
+  "organizations.actions.requireInvitationManagement"
+)(function* (invitationId: string) {
+  const session = yield* requireSession();
+
+  const invitation = yield* tryWorkOS(
+    () => getWorkOS().userManagement.getInvitation(invitationId),
+    "Failed to load invitation"
+  );
+
+  if (!invitation.organizationId) {
+    return yield* Effect.fail(
+      new OrganizationActionError({ message: "Invitation not found" })
+    );
+  }
+
+  const organization = yield* tryDb(
+    () =>
+      db.query.organizations.findFirst({
+        where: eq(organizations.workosOrgId, invitation.organizationId ?? ""),
+        columns: { id: true },
+      }),
+    "Failed to load organization"
+  );
+
+  if (!organization) {
+    return yield* Effect.fail(
+      new OrganizationActionError({ message: "Organization not found" })
+    );
+  }
+
+  yield* requireManagerMembership(session, organization.id);
+  return invitation;
+});
 
 export async function createOrganizationAction(
   input: CreateOrganizationInput
@@ -230,7 +310,7 @@ export async function createOrganizationAction(
       }
 
       yield* syncOrganizationToWorkOS(organizationId, input.name);
-      yield* syncMembershipToWorkOS(organizationId, session.user.id);
+      yield* syncMembershipToWorkOS(organizationId, session.user.id, "owner");
 
       if (!input.keepCurrentActiveOrganization) {
         const cookieStore = yield* tryDb(
@@ -420,7 +500,6 @@ export async function getFullOrganizationAction(input?: {
                   },
                 },
               },
-              invitations: true,
             },
           }),
         "Failed to load organization"
@@ -430,16 +509,11 @@ export async function getFullOrganizationAction(input?: {
         return null;
       }
 
-      const {
-        members: memberRows,
-        invitations: invitationRows,
-        ...rest
-      } = organization;
+      const { members: memberRows, ...rest } = organization;
 
       const full: FullOrganization = {
         ...rest,
         members: mapMemberRows(memberRows),
-        invitations: invitationRows,
       };
 
       return full;
@@ -612,7 +686,7 @@ export async function removeMemberAction(
 
 export async function listInvitationsAction(input?: {
   query?: { organizationId?: string };
-}): Promise<ActionResult<InvitationRow[]>> {
+}): Promise<ActionResult<InvitationSummary[]>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
@@ -621,22 +695,25 @@ export async function listInvitationsAction(input?: {
         input?.query?.organizationId
       );
       yield* requireMembership(session, organizationId);
+      const workosOrgId = yield* requireWorkOSOrganizationId(organizationId);
 
-      return yield* tryDb(
+      const invitations = yield* tryWorkOS(
         () =>
-          db.query.invitations.findMany({
-            where: eq(invitations.organizationId, organizationId),
-            orderBy: [desc(invitations.createdAt)],
+          getWorkOS().userManagement.listInvitations({
+            organizationId: workosOrgId,
+            limit: 100,
           }),
         "Failed to list invitations"
       );
+
+      return invitations.data.map(mapInvitation);
     })
   );
 }
 
 export async function inviteMemberAction(
   input: InviteMemberInput
-): Promise<ActionResult<InvitationRow>> {
+): Promise<ActionResult<InvitationSummary>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
@@ -655,266 +732,54 @@ export async function inviteMemberAction(
       }
 
       yield* enforceTeamMembersLimit(organizationId);
+      const workosOrgId = yield* requireWorkOSOrganizationId(organizationId);
 
-      const organization = yield* tryDb(
+      const invitation = yield* tryWorkOS(
         () =>
-          db.query.organizations.findFirst({
-            where: eq(organizations.id, organizationId),
-            columns: { name: true },
+          getWorkOS().userManagement.sendInvitation({
+            email: input.email,
+            organizationId: workosOrgId,
+            roleSlug: input.role,
+            inviterUserId: session.user.workosUserId ?? undefined,
           }),
-        "Failed to load organization"
+        "Failed to send invitation"
       );
 
-      if (!organization) {
-        return yield* Effect.fail(
-          new OrganizationActionError({ message: "Organization not found" })
-        );
-      }
-
-      if (input.resend) {
-        yield* tryDb(
-          () =>
-            db
-              .update(invitations)
-              .set({ status: "canceled" })
-              .where(
-                and(
-                  eq(invitations.organizationId, organizationId),
-                  eq(invitations.email, input.email),
-                  eq(invitations.status, "pending")
-                )
-              ),
-          "Failed to cancel existing invitation"
-        );
-      }
-
-      const [invitation] = yield* tryDb(
-        () =>
-          db
-            .insert(invitations)
-            .values({
-              id: crypto.randomUUID(),
-              organizationId,
-              email: input.email,
-              role: input.role,
-              status: "pending",
-              expiresAt: new Date(Date.now() + INVITATION_EXPIRY_MS),
-              inviterId: session.user.id,
-            })
-            .returning(),
-        "Failed to create invitation"
-      );
-
-      if (!invitation) {
-        return yield* Effect.fail(
-          new OrganizationActionError({
-            message: "Invitation creation returned no row",
-          })
-        );
-      }
-
-      yield* Effect.tryPromise({
-        try: () =>
-          sendInviteEmailAction({
-            inviteeEmail: invitation.email,
-            inviterName: session.user.name,
-            inviterEmail: session.user.email,
-            workspaceName: organization.name,
-            inviteLink: `${process.env.APP_URL ?? "http://localhost:3000"}/invitation/${invitation.id}`,
-          }),
-        catch: (cause) =>
-          new OrganizationActionError({
-            message: "Failed to send invitation email",
-            cause,
-          }),
-      }).pipe(
-        Effect.catch((error) =>
-          Effect.logWarning("Failed to send invitation email").pipe(
-            Effect.annotateLogs({
-              invitationId: invitation.id,
-              error: error.message,
-            })
-          )
-        )
-      );
-
-      return invitation;
+      return mapInvitation(invitation);
     })
   );
 }
 
-export async function cancelInvitationAction(input: {
-  invitationId: string;
-}): Promise<ActionResult<InvitationRow | null>> {
+export async function cancelInvitationAction(
+  input: InvitationActionInput
+): Promise<ActionResult<InvitationSummary>> {
   return runOrganizationAction(
     Effect.gen(function* () {
-      const session = yield* requireSession();
+      yield* requireInvitationManagement(input.invitationId);
 
-      const invitation = yield* tryDb(
-        () =>
-          db.query.invitations.findFirst({
-            where: eq(invitations.id, input.invitationId),
-          }),
-        "Failed to load invitation"
+      const revoked = yield* tryWorkOS(
+        () => getWorkOS().userManagement.revokeInvitation(input.invitationId),
+        "Failed to revoke invitation"
       );
 
-      if (!invitation) {
-        return yield* Effect.fail(
-          new OrganizationActionError({ message: "Invitation not found" })
-        );
-      }
-
-      yield* requireManagerMembership(session, invitation.organizationId);
-
-      const [updated] = yield* tryDb(
-        () =>
-          db
-            .update(invitations)
-            .set({ status: "canceled" })
-            .where(eq(invitations.id, input.invitationId))
-            .returning(),
-        "Failed to cancel invitation"
-      );
-
-      return updated ?? null;
+      return mapInvitation(revoked);
     })
   );
 }
 
-const loadInvitationForResponse = Effect.fn(
-  "organizations.actions.loadInvitationForResponse"
-)(function* (invitationId: string, userEmail: string) {
-  const invitation = yield* tryDb(
-    () =>
-      db.query.invitations.findFirst({
-        where: eq(invitations.id, invitationId),
-      }),
-    "Failed to load invitation"
-  );
-
-  if (!invitation) {
-    return yield* Effect.fail(
-      new OrganizationActionError({ message: "Invitation not found" })
-    );
-  }
-
-  if (invitation.status !== "pending") {
-    return yield* Effect.fail(
-      new OrganizationActionError({
-        message: "This invitation is no longer pending",
-      })
-    );
-  }
-
-  if (invitation.expiresAt < new Date()) {
-    return yield* Effect.fail(
-      new OrganizationActionError({ message: "This invitation has expired" })
-    );
-  }
-
-  if (invitation.email.toLowerCase() !== userEmail.toLowerCase()) {
-    return yield* Effect.fail(
-      new OrganizationActionError({
-        message: "This invitation was sent to a different email address",
-      })
-    );
-  }
-
-  return invitation;
-});
-
-export async function acceptInvitationAction(input: {
-  invitationId: string;
-}): Promise<ActionResult<InvitationRow>> {
+export async function resendInvitationAction(
+  input: InvitationActionInput
+): Promise<ActionResult<InvitationSummary>> {
   return runOrganizationAction(
     Effect.gen(function* () {
-      const session = yield* requireSession();
-      const invitation = yield* loadInvitationForResponse(
-        input.invitationId,
-        session.user.email
+      yield* requireInvitationManagement(input.invitationId);
+
+      const invitation = yield* tryWorkOS(
+        () => getWorkOS().userManagement.resendInvitation(input.invitationId),
+        "Failed to resend invitation"
       );
 
-      const existingMembership = yield* tryDb(
-        () =>
-          db.query.members.findFirst({
-            where: and(
-              eq(members.userId, session.user.id),
-              eq(members.organizationId, invitation.organizationId)
-            ),
-            columns: { id: true },
-          }),
-        "Failed to check membership"
-      );
-
-      if (!existingMembership) {
-        const memberCount = yield* tryDb(
-          () =>
-            db.query.members.findMany({
-              where: eq(members.organizationId, invitation.organizationId),
-              columns: { id: true },
-            }),
-          "Failed to count members"
-        );
-
-        if (memberCount.length > 0) {
-          yield* enforceTeamMembersLimit(invitation.organizationId);
-        }
-
-        yield* tryDb(
-          () =>
-            db.insert(members).values({
-              id: crypto.randomUUID(),
-              organizationId: invitation.organizationId,
-              userId: session.user.id,
-              role: invitation.role ?? "member",
-              createdAt: new Date(),
-            }),
-          "Failed to add membership"
-        );
-
-        yield* syncMembershipToWorkOS(
-          invitation.organizationId,
-          session.user.id
-        );
-      }
-
-      const [updated] = yield* tryDb(
-        () =>
-          db
-            .update(invitations)
-            .set({ status: "accepted" })
-            .where(eq(invitations.id, invitation.id))
-            .returning(),
-        "Failed to accept invitation"
-      );
-
-      return updated ?? invitation;
-    })
-  );
-}
-
-export async function rejectInvitationAction(input: {
-  invitationId: string;
-}): Promise<ActionResult<InvitationRow>> {
-  return runOrganizationAction(
-    Effect.gen(function* () {
-      const session = yield* requireSession();
-      const invitation = yield* loadInvitationForResponse(
-        input.invitationId,
-        session.user.email
-      );
-
-      const [updated] = yield* tryDb(
-        () =>
-          db
-            .update(invitations)
-            .set({ status: "rejected" })
-            .where(eq(invitations.id, invitation.id))
-            .returning(),
-        "Failed to reject invitation"
-      );
-
-      return updated ?? invitation;
+      return mapInvitation(invitation);
     })
   );
 }

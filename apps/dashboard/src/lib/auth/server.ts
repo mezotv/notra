@@ -4,6 +4,7 @@ import { withAuth } from "@workos-inc/authkit-nextjs";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { cookies } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { AuthSessionError } from "@/lib/auth/errors";
 import { ensureLocalUser } from "@/lib/auth/sync";
@@ -96,6 +97,7 @@ export async function getAuthSession(): Promise<AuthSessionData | null> {
   try {
     authResult = await withAuth();
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Error reading AuthKit session", error);
     return null;
   }

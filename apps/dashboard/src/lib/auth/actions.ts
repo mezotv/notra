@@ -1,14 +1,13 @@
 "use server";
 
 import { db } from "@notra/db/drizzle";
-import { invitations, members, organizations } from "@notra/db/schema";
+import { members, organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { getAuthSession } from "@/lib/auth/server";
 import { retryTransientDbError } from "@/lib/db/retry";
-import type { InvitationResponse } from "@/types/auth/actions";
 
 export async function validateOrganizationAccess(slug: string) {
   const session = await getAuthSession();
@@ -155,53 +154,4 @@ export async function getAllUserOrganizations() {
   }
 
   return getAllOrganizationsForUser(session.user.id);
-}
-
-export async function getInvitationById(
-  invitationId: string
-): InvitationResponse {
-  const invitation = await db.query.invitations.findFirst({
-    where: eq(invitations.id, invitationId),
-    with: {
-      organizations: {
-        columns: {
-          id: true,
-          name: true,
-          slug: true,
-        },
-      },
-      users: {
-        columns: {
-          id: true,
-          email: true,
-          name: true,
-        },
-      },
-    },
-  });
-
-  if (!invitation) {
-    return null;
-  }
-
-  const isExpired = invitation.expiresAt < new Date();
-
-  return {
-    id: invitation.id,
-    organizationId: invitation.organizationId,
-    organizationName: invitation.organizations.name,
-    organizationSlug: invitation.organizations.slug,
-    inviterEmail: invitation.users.email,
-    inviterName: invitation.users.name,
-    inviterId: invitation.inviterId,
-    email: invitation.email,
-    role: invitation.role,
-    status: invitation.status as
-      | "pending"
-      | "accepted"
-      | "rejected"
-      | "canceled",
-    expiresAt: invitation.expiresAt,
-    expired: isExpired,
-  };
 }
