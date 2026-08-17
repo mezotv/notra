@@ -128,6 +128,10 @@ const migrateOrganizations = Effect.fn("migrate.organizations")(function* () {
           .where(eq(organizations.id, organization.id)),
       `Failed to store workos id for organization ${organization.id}`
     );
+
+    yield* Effect.logInfo(
+      `  org linked: ${organization.slug} (${organization.id}) -> ${workosOrgId}`
+    );
   }
 });
 
@@ -138,7 +142,9 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
     "Failed to load users"
   );
 
-  yield* Effect.logInfo(`Migrating ${pending.length} users`);
+  yield* Effect.logInfo(
+    `Migrating ${pending.length} users (${hashes.size} password hashes available)`
+  );
 
   for (const user of pending) {
     const { firstName, lastName } = splitName(user.name);
@@ -176,6 +182,10 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
       () => db.update(users).set({ workosUserId }).where(eq(users.id, user.id)),
       `Failed to store workos id for user ${user.id}`
     );
+
+    yield* Effect.logInfo(
+      `  user linked: ${user.email} -> ${workosUserId}${passwordHash ? " (password imported)" : " (no password hash)"}`
+    );
   }
 });
 
@@ -205,24 +215,34 @@ const migrateMemberships = Effect.fn("migrate.memberships")(function* () {
       continue;
     }
 
-    yield* tryWorkOS(async () => {
+    const outcome = yield* tryWorkOS(async () => {
       try {
         await workos.userManagement.createOrganizationMembership({
           organizationId: row.workosOrgId ?? "",
           userId: row.workosUserId ?? "",
           roleSlug: row.role,
         });
+        return "created";
       } catch (error) {
         const message = error instanceof Error ? error.message : "";
         if (!message.toLowerCase().includes("already")) {
           throw error;
         }
+        return "already exists";
       }
     }, `Failed to migrate membership ${row.memberId}`).pipe(
       Effect.catch((error) =>
-        Effect.logWarning(`Membership ${row.memberId}: ${error.message}`)
+        Effect.logWarning(
+          `  membership FAILED ${row.memberId} (role ${row.role}): ${error.message}`
+        ).pipe(Effect.as("failed"))
       )
     );
+
+    if (outcome !== "failed") {
+      yield* Effect.logInfo(
+        `  membership ${outcome}: member ${row.memberId} role ${row.role}`
+      );
+    }
   }
 });
 
