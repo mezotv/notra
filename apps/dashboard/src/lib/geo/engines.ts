@@ -2,7 +2,7 @@ import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI, openai } from "@ai-sdk/openai";
 import { createPerplexity } from "@ai-sdk/perplexity";
 import { gateway } from "@notra/ai/gateway";
-import { type LanguageModel, type ToolSet, tool } from "ai";
+import { tool } from "ai";
 import { z } from "zod";
 import {
   GEO_ANTHROPIC_API_KEY_ENV,
@@ -11,7 +11,11 @@ import {
   GEO_OPENAI_API_KEY_ENV,
   GEO_PERPLEXITY_API_KEY_ENV,
 } from "@/constants/geo";
-import type { GeoGroundedEngine } from "@/types/geo";
+import type {
+  GeoGroundedEngine,
+  GeoGroundedInvocation,
+  GeoGroundedInvocationOptions,
+} from "@/types/geo";
 
 const googleSearchTool = tool({
   type: "provider",
@@ -27,15 +31,6 @@ const requireApiKey = (name: string): string => {
   }
   return value;
 };
-
-export interface GeoGroundedInvocation {
-  model: LanguageModel;
-  tools: ToolSet;
-}
-
-export interface GeoGroundedInvocationOptions {
-  organizationId?: string;
-}
 
 export function buildGroundedInvocation(
   engine: GeoGroundedEngine,

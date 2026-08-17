@@ -1,9 +1,4 @@
-import type { Plan, PlanCacheStore } from "./types";
-
-interface CacheEntry {
-  plan: Plan;
-  expiresAt: number;
-}
+import type { PlanCacheEntry, PlanCacheStore } from "@notra/ai/types/router";
 
 /**
  * Process-local TTL cache for plan lookups. A pluggable `PlanCacheStore`
@@ -12,7 +7,7 @@ interface CacheEntry {
 export function createMemoryPlanCache(
   now: () => number = () => Date.now()
 ): PlanCacheStore {
-  const entries = new Map<string, CacheEntry>();
+  const entries = new Map<string, PlanCacheEntry>();
 
   return {
     get(organizationId) {

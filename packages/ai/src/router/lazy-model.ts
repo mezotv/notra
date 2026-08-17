@@ -7,57 +7,30 @@ import type {
   LanguageModelV3StreamResult,
   SharedV3ProviderMetadata,
 } from "@ai-sdk/provider";
-import type { CreditTracker } from "./credits";
+import {
+  HTTP_FORBIDDEN,
+  HTTP_NOT_FOUND,
+  HTTP_PAYMENT_REQUIRED,
+  HTTP_SERVER_ERROR_MIN,
+  RETRYABLE_STATUS_CODES,
+  ROUTED_MODEL_PROVIDER,
+  ROUTER_METADATA_KEY,
+  ZDR_ERROR_PATTERN,
+} from "@notra/ai/constants/router";
+import type {
+  FallbackReason,
+  GatewayAdapter,
+  GatewayId,
+  ResolvedRoute,
+  RouteDecision,
+  RoutedModelContext,
+  RouteMetadata,
+} from "@notra/ai/types/router";
 import { otherGateway } from "./policy";
 import {
   splitRouterOptions,
   stripForeignGatewayOptions,
 } from "./provider-options";
-import {
-  type FallbackReason,
-  type GatewayAdapter,
-  type GatewayId,
-  ROUTER_METADATA_KEY,
-  type RouteDecision,
-  type RouteMetadata,
-  type RouteRequest,
-  type RouterLogger,
-  type RouterPolicyConfig,
-} from "./types";
-
-export const ROUTED_MODEL_PROVIDER = "notra-router";
-
-const HTTP_PAYMENT_REQUIRED = 402;
-const HTTP_FORBIDDEN = 403;
-const ZDR_ERROR_PATTERN = /zero data retention|\bzdr\b/i;
-const HTTP_NOT_FOUND = 404;
-const HTTP_REQUEST_TIMEOUT = 408;
-const HTTP_CONFLICT = 409;
-const HTTP_TOO_EARLY = 425;
-const HTTP_TOO_MANY_REQUESTS = 429;
-const HTTP_SERVER_ERROR_MIN = 500;
-
-const RETRYABLE_STATUS_CODES: ReadonlySet<number> = new Set([
-  HTTP_REQUEST_TIMEOUT,
-  HTTP_CONFLICT,
-  HTTP_TOO_EARLY,
-  HTTP_TOO_MANY_REQUESTS,
-]);
-
-export interface ResolvedRoute {
-  decision: RouteDecision;
-  adapter: GatewayAdapter;
-  model: LanguageModelV3;
-}
-
-export interface RoutedModelContext {
-  request: RouteRequest;
-  policy: RouterPolicyConfig;
-  adapters: Partial<Record<GatewayId, GatewayAdapter>>;
-  logger: RouterLogger;
-  credits: CreditTracker;
-  resolve: (request: RouteRequest) => Promise<RouteDecision>;
-}
 
 function readStatusCode(error: unknown): number | undefined {
   if (typeof error !== "object" || error === null) {

@@ -1,17 +1,13 @@
 import { createGateway } from "@ai-sdk/gateway";
 import type { SharedV3ProviderMetadata } from "@ai-sdk/provider";
+import type {
+  GatewayAdapter,
+  GatewayBalance,
+  GatewayHealth,
+  VercelAdapterConfig,
+} from "@notra/ai/types/router";
 import { isModelSupported, toVercelModelId } from "../model-ids";
 import { buildVercelProviderOptions } from "../provider-options";
-import type { GatewayAdapter, GatewayBalance, GatewayHealth } from "../types";
-
-export interface VercelAdapterConfig {
-  apiKey?: string;
-  headers?: Record<string, string>;
-  baseURL?: string;
-  fetch?: typeof fetch;
-}
-
-type VercelClient = ReturnType<typeof createGateway>;
 
 function parseBalance(value: unknown): number | null {
   const balance = typeof value === "number" ? value : Number(value);
@@ -25,9 +21,9 @@ function readString(value: unknown): string | undefined {
 export function createVercelAdapter(
   config: VercelAdapterConfig
 ): GatewayAdapter {
-  let client: VercelClient | undefined;
+  let client: ReturnType<typeof createGateway> | undefined;
 
-  const getClient = (): VercelClient => {
+  const getClient = (): ReturnType<typeof createGateway> => {
     client ??= createGateway({
       apiKey: config.apiKey,
       headers: config.headers,

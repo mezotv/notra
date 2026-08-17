@@ -14,7 +14,7 @@ import type {
   GatewayAdapter,
   GatewayId,
   RouterLogFields,
-} from "@notra/ai/router/types";
+} from "@notra/ai/types/router";
 import { generateText, Output, streamText, tool } from "ai";
 import { z } from "zod";
 

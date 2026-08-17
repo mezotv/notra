@@ -3,10 +3,11 @@ import type {
   SharedV3ProviderMetadata,
   SharedV3ProviderOptions,
 } from "@ai-sdk/provider";
+import type { routerProviderOptionsSchema } from "@notra/ai/schemas/router";
+import type { ProviderMetadata } from "ai";
+import type * as z from "zod";
 
 export type GatewayId = "vercel" | "openrouter";
-
-export const GATEWAY_IDS: readonly GatewayId[] = ["vercel", "openrouter"];
 
 export type Plan = "free" | "paid";
 
@@ -25,6 +26,13 @@ export type FallbackReason =
   | "no-credits"
   | "upstream-error"
   | "non-compliant";
+
+export type RouterErrorCode =
+  | "no_compliant_route"
+  | "gateway_not_configured"
+  | "unsupported_model"
+  | "credit_balance"
+  | "gateway_unavailable";
 
 export interface RouteRequest {
   modelId: string;
@@ -112,21 +120,12 @@ export interface BuildProviderOptionsInput {
   allowNonZdr: boolean;
 }
 
-/**
- * Neutral provider options understood by the router. Callers set them under
- * `providerOptions.notraRouter`; the router translates them per gateway.
- */
-export interface RouterProviderOptions {
-  caching?: "auto";
-  fallbackModels?: string[];
-  reasoning?: {
-    effort?: "low" | "medium" | "high";
-    budgetTokens?: number;
-  };
-}
+/** Neutral provider options translated by the router for each gateway. */
+export type RouterProviderOptions = z.infer<typeof routerProviderOptionsSchema>;
 
-export const ROUTER_PROVIDER_OPTIONS_KEY = "notraRouter";
-export const ROUTER_METADATA_KEY = "notraRouter";
+export type ReasoningEffort = NonNullable<
+  RouterProviderOptions["reasoning"]
+>["effort"];
 
 export interface RouterPolicyConfig {
   defaultGateway: GatewayId;
@@ -149,6 +148,31 @@ export interface RouterLogger {
 export interface PlanCacheStore {
   get(organizationId: string): Promise<Plan | undefined>;
   set(organizationId: string, plan: Plan, ttlMs: number): Promise<void>;
+}
+
+export interface CreditTracker {
+  record(gateway: GatewayId, balance: number | null): void;
+  markExhausted(gateway: GatewayId): void;
+  markUnavailable(gateway: GatewayId, reason: FallbackReason): void;
+  isExhausted(gateway: GatewayId): boolean;
+  unavailableReason(gateway: GatewayId): FallbackReason | undefined;
+  isStale(gateway: GatewayId): boolean;
+  snapshot(gateway: GatewayId): CreditSnapshot | undefined;
+}
+
+export interface CreditSnapshot {
+  balance: number | null;
+  checkedAt: number;
+}
+
+export interface UnavailableMark {
+  reason: FallbackReason;
+  until: number;
+}
+
+export interface PlanCacheEntry {
+  plan: Plan;
+  expiresAt: number;
 }
 
 export interface ModelRouterConfig {
@@ -177,4 +201,76 @@ export interface ModelRouter {
   enrichRouteMetadata(metadata: RouteMetadata): Promise<RouteMetadata>;
   readonly adapters: Partial<Record<GatewayId, GatewayAdapter>>;
   readonly policy: RouterPolicyConfig;
+}
+
+export interface DecideGatewayInput {
+  policy: RouterPolicyConfig;
+  organizationId?: string;
+  plan?: Plan;
+  pinned?: GatewayId;
+}
+
+export interface GatewayDecision {
+  gateway: GatewayId;
+  reason: RouteReason;
+}
+
+export interface ResolverContext {
+  adapters: Partial<Record<GatewayId, GatewayAdapter>>;
+  policy: ModelRouterConfig["policy"];
+  resolvePlan: ModelRouterConfig["resolvePlan"];
+  planCache: PlanCacheStore;
+  planCacheTtlMs: number;
+  logger: RouterLogger;
+  credits: CreditTracker;
+}
+
+export interface PlanLookup {
+  plan: Plan;
+  source: PlanSource;
+}
+
+export interface UsableAdapter {
+  adapter: GatewayAdapter;
+  zdrEnforced: boolean;
+}
+
+export interface ResolvedRoute {
+  decision: RouteDecision;
+  adapter: GatewayAdapter;
+  model: LanguageModelV3;
+}
+
+export interface RoutedModelContext {
+  request: RouteRequest;
+  policy: RouterPolicyConfig;
+  adapters: Partial<Record<GatewayId, GatewayAdapter>>;
+  logger: RouterLogger;
+  credits: CreditTracker;
+  resolve: (request: RouteRequest) => Promise<RouteDecision>;
+}
+
+export interface OpenRouterAdapterConfig {
+  apiKey: string;
+  headers?: Record<string, string>;
+  baseURL?: string;
+  fetch?: typeof fetch;
+  /** Base URL for account endpoints (`/credits`, `/key`). */
+  accountBaseURL?: string;
+}
+
+export interface VercelAdapterConfig {
+  apiKey?: string;
+  headers?: Record<string, string>;
+  baseURL?: string;
+  fetch?: typeof fetch;
+}
+
+export interface RouteUsageSummary {
+  /** Route metadata of the last model call (gateway, upstream provider, ...). */
+  route?: RouteMetadata;
+}
+
+export interface RouteUsageStep {
+  providerMetadata?: ProviderMetadata;
 }

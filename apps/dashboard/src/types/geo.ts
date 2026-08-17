@@ -1,3 +1,5 @@
+import type { LanguageModel, ToolSet } from "ai";
+
 export interface GeoSettings {
   id: string;
   organizationId: string;
@@ -152,6 +154,15 @@ export interface GeoGroundedEngine {
   provider: GeoGroundedProvider;
   envVar: string | null;
   isAvailable: () => boolean;
+}
+
+export interface GeoGroundedInvocation {
+  model: LanguageModel;
+  tools: ToolSet;
+}
+
+export interface GeoGroundedInvocationOptions {
+  organizationId?: string;
 }
 
 export interface GeoWebsiteDiscovery {

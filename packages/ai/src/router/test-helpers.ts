@@ -7,45 +7,26 @@ import type {
   SharedV3ProviderMetadata,
   SharedV3ProviderOptions,
 } from "@ai-sdk/provider";
+import type {
+  ModelRouter,
+  RouterLogger,
+  RouterPolicyConfig,
+} from "@notra/ai/types/router";
+import type {
+  FakeAdapter,
+  FakeAdapterOptions,
+  RecordedRouterCall,
+  RouterTestLogEntry,
+  TestRouterOptions,
+} from "@notra/ai/types/router-test";
 import { createModelRouter } from "./create-router";
 import {
   buildOpenRouterProviderOptions,
   buildVercelProviderOptions,
 } from "./provider-options";
-import type {
-  GatewayAdapter,
-  GatewayId,
-  ModelRouter,
-  ModelRouterConfig,
-  Plan,
-  RouterLogFields,
-  RouterLogger,
-  RouterPolicyConfig,
-} from "./types";
-
-export interface RecordedCall {
-  gateway: GatewayId;
-  modelId: string;
-  options: LanguageModelV3CallOptions;
-}
-
-export interface FakeAdapterOptions {
-  id: GatewayId;
-  enforcesZdr?: boolean;
-  supportedModels?: (modelId: string) => boolean;
-  balance?: number | null;
-  /** Called per doGenerate/doStream; throw to simulate upstream errors. */
-  onCall?: (call: RecordedCall) => void;
-  upstreamProvider?: string;
-}
-
-export interface FakeAdapter extends GatewayAdapter {
-  calls: RecordedCall[];
-  balanceCalls: number;
-}
 
 export function createFakeAdapter(options: FakeAdapterOptions): FakeAdapter {
-  const calls: RecordedCall[] = [];
+  const calls: RecordedRouterCall[] = [];
   const buildProviderOptions =
     options.id === "vercel"
       ? buildVercelProviderOptions
@@ -164,14 +145,10 @@ export function createFakeAdapter(options: FakeAdapterOptions): FakeAdapter {
   return adapter;
 }
 
-export interface LogEntry {
-  level: "info" | "warn" | "error";
-  event: string;
-  fields?: RouterLogFields;
-}
-
-export function createCaptureLogger(): RouterLogger & { entries: LogEntry[] } {
-  const entries: LogEntry[] = [];
+export function createCaptureLogger(): RouterLogger & {
+  entries: RouterTestLogEntry[];
+} {
+  const entries: RouterTestLogEntry[] = [];
   return {
     entries,
     info: (event, fields) => {
@@ -197,17 +174,6 @@ export function createPolicy(
     crossGatewayFallback: true,
     ...overrides,
   };
-}
-
-export interface TestRouterOptions {
-  vercel?: FakeAdapter | null;
-  openrouter?: FakeAdapter | null;
-  plans?: Record<string, Plan>;
-  resolvePlan?: ModelRouterConfig["resolvePlan"];
-  policy?: Partial<RouterPolicyConfig>;
-  now?: () => number;
-  planCacheTtlMs?: number;
-  creditCheckTtlMs?: number;
 }
 
 export function createTestRouter(options: TestRouterOptions = {}): {

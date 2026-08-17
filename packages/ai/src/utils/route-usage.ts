@@ -1,22 +1,16 @@
 import { enrichRouteMetadata, getRouteMetadata } from "@notra/ai/gateway";
-import type { RouteMetadata } from "@notra/ai/router/types";
-import type { ProviderMetadata } from "ai";
-
-export interface RouteUsageSummary {
-  /** Route metadata of the last model call (gateway, upstream provider, ...). */
-  route?: RouteMetadata;
-}
-
-interface StepLike {
-  providerMetadata?: ProviderMetadata;
-}
+import type {
+  RouteMetadata,
+  RouteUsageStep,
+  RouteUsageSummary,
+} from "@notra/ai/types/router";
 
 /**
  * Collect router metadata from the steps of a generate/stream result so
  * usage sinks can record the selected gateway.
  */
 export async function summarizeRouteUsage(
-  steps: readonly StepLike[] | undefined
+  steps: readonly RouteUsageStep[] | undefined
 ): Promise<RouteUsageSummary> {
   if (!steps || steps.length === 0) {
     return {};

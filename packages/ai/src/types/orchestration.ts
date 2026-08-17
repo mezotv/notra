@@ -5,8 +5,8 @@ import type {
   ResolveLinearIntegrationContext,
 } from "@notra/ai/types/agents";
 import type { PostToolsResult } from "@notra/ai/types/post-tools";
+import type { RouteUsageSummary } from "@notra/ai/types/router";
 import type { TccMetadata } from "@notra/ai/types/tcc";
-import type { RouteUsageSummary } from "@notra/ai/utils/route-usage";
 import type { LanguageModelUsage, streamText, UIMessage } from "ai";
 
 export interface ValidatedGitHubIntegration {

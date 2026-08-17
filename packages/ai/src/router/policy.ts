@@ -1,16 +1,8 @@
-import type { GatewayId, Plan, RouteReason, RouterPolicyConfig } from "./types";
-
-export interface DecideGatewayInput {
-  policy: RouterPolicyConfig;
-  organizationId?: string;
-  plan?: Plan;
-  pinned?: GatewayId;
-}
-
-export interface GatewayDecision {
-  gateway: GatewayId;
-  reason: RouteReason;
-}
+import type {
+  DecideGatewayInput,
+  GatewayDecision,
+  GatewayId,
+} from "@notra/ai/types/router";
 
 /**
  * Pure routing decision. No I/O, no adapter knowledge — the resolver applies

@@ -1,5 +1,5 @@
 import { withRouterProviderOptions } from "@notra/ai/router/provider-options";
-import type { RouterProviderOptions } from "@notra/ai/router/types";
+import type { RouterProviderOptions } from "@notra/ai/types/router";
 import type { generateText } from "ai";
 
 type ProviderOptions = NonNullable<

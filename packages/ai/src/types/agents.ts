@@ -1,8 +1,8 @@
 import type { AILogTarget } from "@notra/ai/observability";
-import type { RouteMetadata } from "@notra/ai/router/types";
 import type { ToneProfile } from "@notra/ai/schemas/brand";
 import type { ContentType } from "@notra/ai/schemas/content";
 import type { AgentType } from "@notra/ai/types/brand-references";
+import type { RouteMetadata } from "@notra/ai/types/router";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { PostSummary } from "./posts";
 import type {

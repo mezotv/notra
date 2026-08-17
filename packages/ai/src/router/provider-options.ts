@@ -1,27 +1,18 @@
 import type { JSONObject, SharedV3ProviderOptions } from "@ai-sdk/provider";
-import { toOpenRouterModelId, toVercelModelId } from "./model-ids";
 import {
-  type BuildProviderOptionsInput,
-  type GatewayId,
+  OPENROUTER_EFFORTS,
+  OPENROUTER_OPTIONS_KEY,
   ROUTER_PROVIDER_OPTIONS_KEY,
-  type RouterProviderOptions,
-} from "./types";
-
-const VERCEL_OPTIONS_KEY = "gateway";
-const OPENROUTER_OPTIONS_KEY = "openrouter";
-
-type ReasoningEffort = NonNullable<
-  RouterProviderOptions["reasoning"]
->["effort"];
-
-const OPENROUTER_EFFORTS: ReadonlySet<string> = new Set([
-  "xhigh",
-  "high",
-  "medium",
-  "low",
-  "minimal",
-  "none",
-]);
+  VERCEL_OPTIONS_KEY,
+} from "@notra/ai/constants/router";
+import { routerProviderOptionsSchema } from "@notra/ai/schemas/router";
+import type {
+  BuildProviderOptionsInput,
+  GatewayId,
+  ReasoningEffort,
+  RouterProviderOptions,
+} from "@notra/ai/types/router";
+import { toOpenRouterModelId, toVercelModelId } from "./model-ids";
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -60,30 +51,7 @@ export function splitRouterOptions(providerOptions?: SharedV3ProviderOptions): {
   }
 
   const { [ROUTER_PROVIDER_OPTIONS_KEY]: rawRouter, ...rest } = providerOptions;
-  const router: RouterProviderOptions = {};
-  const routerObject = asObject(rawRouter);
-
-  if (routerObject.caching === "auto") {
-    router.caching = "auto";
-  }
-  if (isStringArray(routerObject.fallbackModels)) {
-    router.fallbackModels = routerObject.fallbackModels;
-  }
-  const reasoning = asObject(routerObject.reasoning);
-  const effort = reasoning.effort;
-  const budgetTokens = reasoning.budgetTokens;
-  if (
-    (typeof effort === "string" &&
-      (effort === "low" || effort === "medium" || effort === "high")) ||
-    typeof budgetTokens === "number"
-  ) {
-    router.reasoning = {
-      ...(typeof effort === "string"
-        ? { effort: effort as ReasoningEffort }
-        : {}),
-      ...(typeof budgetTokens === "number" ? { budgetTokens } : {}),
-    };
-  }
+  const router = routerProviderOptionsSchema.parse(rawRouter);
 
   return { router, rest };
 }

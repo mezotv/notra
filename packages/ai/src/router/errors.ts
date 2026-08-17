@@ -1,11 +1,4 @@
-import type { GatewayId } from "./types";
-
-export type RouterErrorCode =
-  | "no_compliant_route"
-  | "gateway_not_configured"
-  | "unsupported_model"
-  | "credit_balance"
-  | "gateway_unavailable";
+import type { GatewayId, RouterErrorCode } from "@notra/ai/types/router";
 
 export class RouterError extends Error {
   readonly code: RouterErrorCode;

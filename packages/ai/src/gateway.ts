@@ -7,6 +7,11 @@ import { createOpenRouterAdapter } from "@notra/ai/router/adapters/openrouter";
 import { createVercelAdapter } from "@notra/ai/router/adapters/vercel";
 import { createModelRouter } from "@notra/ai/router/create-router";
 import type {
+  GatewayArgs,
+  GatewayModelOptions,
+  GatewayResult,
+} from "@notra/ai/types/gateway";
+import type {
   GatewayAdapter,
   GatewayId,
   ModelRouter,
@@ -15,12 +20,7 @@ import type {
   RouteRequest,
   RouterLogFields,
   RouterLogger,
-} from "@notra/ai/router/types";
-import type {
-  GatewayArgs,
-  GatewayModelOptions,
-  GatewayResult,
-} from "@notra/ai/types/gateway";
+} from "@notra/ai/types/router";
 
 const APP_URL = "https://www.usenotra.com";
 const APP_TITLE = "Notra";

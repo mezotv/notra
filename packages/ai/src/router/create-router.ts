@@ -1,21 +1,24 @@
 import type { SharedV3ProviderMetadata } from "@ai-sdk/provider";
-import { createCreditTracker, DEFAULT_CREDIT_CHECK_TTL_MS } from "./credits";
+import {
+  DEFAULT_CREDIT_CHECK_TTL_MS,
+  DEFAULT_PLAN_CACHE_TTL_MS,
+  ROUTER_METADATA_KEY,
+} from "@notra/ai/constants/router";
+import type {
+  ModelRouter,
+  ModelRouterConfig,
+  ResolverContext,
+  RouteDecision,
+  RouteMetadata,
+  RouteRequest,
+  RouterLogger,
+} from "@notra/ai/types/router";
+import { createCreditTracker } from "./credits";
 import { GatewayCreditBalanceError } from "./errors";
 import { RoutedLanguageModel } from "./lazy-model";
 import { createMemoryPlanCache } from "./plan-cache";
 import { otherGateway } from "./policy";
-import { type ResolverContext, resolveRoute } from "./resolve";
-import {
-  type ModelRouter,
-  type ModelRouterConfig,
-  ROUTER_METADATA_KEY,
-  type RouteDecision,
-  type RouteMetadata,
-  type RouteRequest,
-  type RouterLogger,
-} from "./types";
-
-const DEFAULT_PLAN_CACHE_TTL_MS = 60_000;
+import { resolveRoute } from "./resolve";
 
 const noopLogger: RouterLogger = {
   info: () => undefined,

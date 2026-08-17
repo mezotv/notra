@@ -1,38 +1,14 @@
-import type { FallbackReason, GatewayId } from "./types";
-
-interface CreditSnapshot {
-  balance: number | null;
-  checkedAt: number;
-}
-
-interface UnavailableMark {
-  reason: FallbackReason;
-  until: number;
-}
-
-/**
- * Tracks per-gateway availability signals that should influence routing for
- * a short time: observed credit balances and temporary marks such as "this
- * gateway rejected the ZDR requirement".
- */
-export interface CreditTracker {
-  /** Record a balance observation (null = unknown). */
-  record(gateway: GatewayId, balance: number | null): void;
-  /** Mark a gateway as exhausted (e.g. after an upstream 402). */
-  markExhausted(gateway: GatewayId): void;
-  /** Temporarily mark a gateway unavailable for the given reason. */
-  markUnavailable(gateway: GatewayId, reason: FallbackReason): void;
-  /** True while a recent observation says the gateway has no credits. */
-  isExhausted(gateway: GatewayId): boolean;
-  /** Reason the gateway should currently be skipped, if any. */
-  unavailableReason(gateway: GatewayId): FallbackReason | undefined;
-  /** True when no fresh balance observation exists and a lookup should run. */
-  isStale(gateway: GatewayId): boolean;
-  snapshot(gateway: GatewayId): CreditSnapshot | undefined;
-}
-
-export const DEFAULT_CREDIT_CHECK_TTL_MS = 30_000;
-export const DEFAULT_UNAVAILABLE_TTL_MS = 5 * 60_000;
+import {
+  DEFAULT_CREDIT_CHECK_TTL_MS,
+  DEFAULT_UNAVAILABLE_TTL_MS,
+} from "@notra/ai/constants/router";
+import type {
+  CreditSnapshot,
+  CreditTracker,
+  FallbackReason,
+  GatewayId,
+  UnavailableMark,
+} from "@notra/ai/types/router";
 
 export function createCreditTracker(
   ttlMs: number = DEFAULT_CREDIT_CHECK_TTL_MS,

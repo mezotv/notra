@@ -1,30 +1,17 @@
 import type { SharedV3ProviderMetadata } from "@ai-sdk/provider";
+import {
+  DEFAULT_OPENROUTER_ACCOUNT_BASE_URL,
+  OPENROUTER_PRIVACY_PROVIDER_ROUTING,
+} from "@notra/ai/constants/router";
+import type {
+  GatewayAdapter,
+  GatewayBalance,
+  GatewayHealth,
+  OpenRouterAdapterConfig,
+} from "@notra/ai/types/router";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { isModelSupported, toOpenRouterModelId } from "../model-ids";
 import { buildOpenRouterProviderOptions } from "../provider-options";
-import type { GatewayAdapter, GatewayBalance, GatewayHealth } from "../types";
-
-export interface OpenRouterAdapterConfig {
-  apiKey: string;
-  headers?: Record<string, string>;
-  baseURL?: string;
-  fetch?: typeof fetch;
-  /** Base URL for account endpoints (`/credits`, `/key`). */
-  accountBaseURL?: string;
-}
-
-const DEFAULT_ACCOUNT_BASE_URL = "https://openrouter.ai/api/v1";
-
-/**
- * Privacy guardrails applied at provider level (belt) in addition to the
- * per-request provider options (braces) built by buildOpenRouterProviderOptions.
- */
-export const OPENROUTER_PRIVACY_PROVIDER_ROUTING = {
-  zdr: true,
-  data_collection: "deny",
-} as const;
-
-type OpenRouterClient = ReturnType<typeof createOpenRouter>;
 
 function readNumber(value: unknown): number | undefined {
   return typeof value === "number" && Number.isFinite(value)
@@ -35,11 +22,12 @@ function readNumber(value: unknown): number | undefined {
 export function createOpenRouterAdapter(
   config: OpenRouterAdapterConfig
 ): GatewayAdapter {
-  let client: OpenRouterClient | undefined;
+  let client: ReturnType<typeof createOpenRouter> | undefined;
   const fetchImpl = config.fetch ?? fetch;
-  const accountBaseURL = config.accountBaseURL ?? DEFAULT_ACCOUNT_BASE_URL;
+  const accountBaseURL =
+    config.accountBaseURL ?? DEFAULT_OPENROUTER_ACCOUNT_BASE_URL;
 
-  const getClient = (): OpenRouterClient => {
+  const getClient = (): ReturnType<typeof createOpenRouter> => {
     client ??= createOpenRouter({
       apiKey: config.apiKey,
       headers: config.headers,

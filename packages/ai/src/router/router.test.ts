@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+import {
+  ROUTER_METADATA_KEY,
+  ROUTER_PROVIDER_OPTIONS_KEY,
+} from "@notra/ai/constants/router";
 import { createVercelAdapter } from "./adapters/vercel";
 import {
   GatewayCreditBalanceError,
@@ -15,7 +19,6 @@ import {
   httpError,
   readStreamParts,
 } from "./test-helpers";
-import { ROUTER_METADATA_KEY, ROUTER_PROVIDER_OPTIONS_KEY } from "./types";
 
 const PAID_ORG = "org_paid";
 const FREE_ORG = "org_free";

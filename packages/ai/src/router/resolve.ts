@@ -1,4 +1,13 @@
-import type { CreditTracker } from "./credits";
+import type {
+  FallbackReason,
+  GatewayAdapter,
+  GatewayId,
+  PlanLookup,
+  ResolverContext,
+  RouteDecision,
+  RouteRequest,
+  UsableAdapter,
+} from "@notra/ai/types/router";
 import {
   GatewayCreditBalanceError,
   GatewayNotConfiguredError,
@@ -6,33 +15,6 @@ import {
   UnsupportedModelError,
 } from "./errors";
 import { decideGateway, otherGateway } from "./policy";
-import type {
-  FallbackReason,
-  GatewayAdapter,
-  GatewayId,
-  ModelRouterConfig,
-  Plan,
-  PlanCacheStore,
-  PlanSource,
-  RouteDecision,
-  RouteRequest,
-  RouterLogger,
-} from "./types";
-
-export interface ResolverContext {
-  adapters: Partial<Record<GatewayId, GatewayAdapter>>;
-  policy: ModelRouterConfig["policy"];
-  resolvePlan: ModelRouterConfig["resolvePlan"];
-  planCache: PlanCacheStore;
-  planCacheTtlMs: number;
-  logger: RouterLogger;
-  credits: CreditTracker;
-}
-
-export interface PlanLookup {
-  plan: Plan;
-  source: PlanSource;
-}
 
 export async function lookupPlan(
   context: ResolverContext,
@@ -54,11 +36,6 @@ export async function lookupPlan(
     });
     return { plan: "free", source: "default" };
   }
-}
-
-interface UsableAdapter {
-  adapter: GatewayAdapter;
-  zdrEnforced: boolean;
 }
 
 function getUsableAdapter(
