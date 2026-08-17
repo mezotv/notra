@@ -7,7 +7,6 @@ import type {
   GatewayId,
   Plan,
   RouterLogFields,
-  RouterMode,
 } from "@notra/ai/router/types";
 import { generateText, Output, streamText, tool } from "ai";
 import { type NextRequest, NextResponse } from "next/server";
@@ -23,8 +22,6 @@ const requestSchema = z.object({
   organizationId: z.string().optional(),
   plan: z.enum(["free", "paid"]).default("free"),
   gateway: z.enum(["vercel", "openrouter"]).optional(),
-  mode: z.enum(["off", "canary", "on"]).default("on"),
-  forceGateway: z.enum(["vercel", "openrouter"]).optional(),
   defaultGateway: z.enum(["vercel", "openrouter"]).default("openrouter"),
   paidGateway: z.enum(["vercel", "openrouter"]).default("vercel"),
   freeGateway: z.enum(["vercel", "openrouter"]).default("openrouter"),
@@ -114,13 +111,9 @@ export async function POST(request: NextRequest) {
     adapters: buildAdapters(input),
     resolvePlan: () => Promise.resolve(input.plan as Plan),
     policy: {
-      mode: input.mode as RouterMode,
       defaultGateway: input.defaultGateway,
       paidGateway: input.paidGateway,
       freeGateway: input.freeGateway,
-      rolloutPercent: 0,
-      orgAllowlist: new Set(),
-      forceGateway: input.forceGateway,
       allowNonZdr: input.allowNonZdr,
       crossGatewayFallback: input.crossGatewayFallback,
     },

@@ -12,18 +12,11 @@ export type Plan = "free" | "paid";
 
 export type PlanSource = "resolver" | "cache" | "override" | "default";
 
-export type RouterMode = "off" | "canary" | "on";
-
 export type RouteReason =
   | "pinned"
-  | "forced"
-  | "mode-off"
   | "no-org-default"
   | "paid"
   | "free"
-  | "allowlist"
-  | "rollout"
-  | "rollout-excluded"
   | "fallback";
 
 export type FallbackReason =
@@ -142,15 +135,9 @@ export const ROUTER_PROVIDER_OPTIONS_KEY = "notraRouter";
 export const ROUTER_METADATA_KEY = "notraRouter";
 
 export interface RouterPolicyConfig {
-  mode: RouterMode;
   defaultGateway: GatewayId;
   paidGateway: GatewayId;
   freeGateway: GatewayId;
-  /** 0..100 — share of free/no-org traffic that goes to `freeGateway` in canary mode. */
-  rolloutPercent: number;
-  /** Organization ids that always get `freeGateway` in canary mode. */
-  orgAllowlist: ReadonlySet<string>;
-  forceGateway?: GatewayId;
   allowNonZdr: boolean;
   crossGatewayFallback: boolean;
 }

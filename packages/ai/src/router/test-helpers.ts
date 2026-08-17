@@ -195,13 +195,9 @@ export function createPolicy(
   overrides: Partial<RouterPolicyConfig> = {}
 ): RouterPolicyConfig {
   return {
-    mode: "on",
     defaultGateway: "openrouter",
     paidGateway: "vercel",
     freeGateway: "openrouter",
-    rolloutPercent: 0,
-    orgAllowlist: new Set(),
-    forceGateway: undefined,
     allowNonZdr: false,
     crossGatewayFallback: true,
     ...overrides,

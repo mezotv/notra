@@ -1,7 +1,7 @@
 /**
- * Exercise the env-configured router singleton exactly like app code does.
+ * Exercise the product router singleton exactly like app code does.
  *
- *   AI_ROUTER_MODE=on bun packages/ai/evals/router/singleton-check.ts
+ *   bun packages/ai/evals/router/singleton-check.ts
  */
 import {
   gateway,
@@ -14,7 +14,6 @@ import { generateText } from "ai";
 const MODEL = "anthropic/claude-haiku-4.5";
 const MAX_OUTPUT_TOKENS = 20;
 
-console.log("AI_ROUTER_MODE =", process.env.AI_ROUTER_MODE ?? "(unset)");
 console.log("decision (no org):", await resolveModelRoute({ modelId: MODEL }));
 
 const result = await generateText({

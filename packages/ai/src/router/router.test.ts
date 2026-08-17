@@ -182,18 +182,6 @@ describe("resolveRoute", () => {
     );
   });
 
-  test("forced gateways never fall back during route resolution", async () => {
-    const { router } = createTestRouter({
-      plans,
-      openrouter: null,
-      policy: { forceGateway: "openrouter" },
-    });
-    await assert.rejects(
-      router.resolveRoute({ modelId: MODEL, organizationId: PAID_ORG }),
-      GatewayNotConfiguredError
-    );
-  });
-
   test("no configured gateway at all fails with GatewayNotConfiguredError", async () => {
     const { router } = createTestRouter({ vercel: null, openrouter: null });
     await assert.rejects(
@@ -556,26 +544,6 @@ describe("RoutedLanguageModel", () => {
         .model(MODEL, { organizationId: FREE_ORG })
         .doGenerate(callOptions());
     });
-    assert.equal(vercel?.calls.length, 0);
-  });
-
-  test("forced gateways never fall back after an upstream failure", async () => {
-    const openrouter = createFakeAdapter({
-      id: "openrouter",
-      onCall: () => {
-        throw httpError(HTTP_SERVICE_UNAVAILABLE);
-      },
-    });
-    const { router, vercel } = createTestRouter({
-      plans,
-      openrouter,
-      policy: { forceGateway: "openrouter" },
-    });
-    await assert.rejects(async () => {
-      await router
-        .model(MODEL, { organizationId: PAID_ORG })
-        .doGenerate(callOptions());
-    }, UPSTREAM_FAILED_PATTERN);
     assert.equal(vercel?.calls.length, 0);
   });
 

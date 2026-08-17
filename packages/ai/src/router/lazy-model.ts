@@ -346,8 +346,7 @@ export class RoutedLanguageModel implements LanguageModelV3 {
     }
     if (
       !this.context.policy.crossGatewayFallback ||
-      this.context.request.gateway ||
-      this.context.policy.forceGateway
+      this.context.request.gateway
     ) {
       return undefined;
     }

@@ -1,6 +1,7 @@
 import type { SharedV3ProviderMetadata } from "@ai-sdk/provider";
 import { resolveOrganizationPlan } from "@notra/ai/billing/plan";
 import { AGENT_DEFAULT_MODEL } from "@notra/ai/constants/models";
+import { ROUTER_POLICY } from "@notra/ai/constants/router";
 import { log } from "@notra/ai/evlog";
 import { createOpenRouterAdapter } from "@notra/ai/router/adapters/openrouter";
 import { createVercelAdapter } from "@notra/ai/router/adapters/vercel";
@@ -15,7 +16,6 @@ import type {
   RouterLogFields,
   RouterLogger,
 } from "@notra/ai/router/types";
-import { parseRouterConfig } from "@notra/ai/router-config";
 import type {
   GatewayArgs,
   GatewayModelOptions,
@@ -71,26 +71,18 @@ function buildAdapters(): Partial<Record<GatewayId, GatewayAdapter>> {
   return adapters;
 }
 
-function createRouterFromEnv(): ModelRouter {
-  const { policy, warnings } = parseRouterConfig(process.env);
-  for (const warning of warnings) {
-    routerLogger.warn("ai.router.config_invalid", { ...warning });
-  }
-
+function createRouter(): ModelRouter {
   return createModelRouter({
     adapters: buildAdapters(),
     resolvePlan: resolveOrganizationPlan,
-    policy,
+    policy: ROUTER_POLICY,
     logger: routerLogger,
   });
 }
 
-/**
- * Process-wide router singleton. Configured from environment variables; see
- * `parseRouterConfig` for the supported `AI_ROUTER_*` keys.
- */
+/** Process-wide router singleton with the product's fixed routing policy. */
 export function getModelRouter(): ModelRouter {
-  router ??= createRouterFromEnv();
+  router ??= createRouter();
   return router;
 }
 

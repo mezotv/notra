@@ -143,7 +143,7 @@ export async function resolveRoute(
   const { modelId, organizationId } = request;
 
   let planLookup: PlanLookup | undefined;
-  if (organizationId && !request.gateway && !context.policy.forceGateway) {
+  if (organizationId && !request.gateway) {
     planLookup = await lookupPlan(context, organizationId);
   }
 
@@ -165,11 +165,9 @@ export async function resolveRoute(
   }
 
   const canCrossGateway =
-    context.policy.crossGatewayFallback &&
-    !request.gateway &&
-    !context.policy.forceGateway;
+    context.policy.crossGatewayFallback && !request.gateway;
   if (!canCrossGateway) {
-    // Pinned and forced routes never move, and fallback can be disabled globally.
+    // Pinned routes never move, and fallback can be disabled by injected test policies.
     throwUnavailable(decision.gateway, modelId, primary.unavailable);
   }
 

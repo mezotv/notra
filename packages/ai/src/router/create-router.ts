@@ -91,7 +91,6 @@ export function createModelRouter(config: ModelRouterConfig): ModelRouter {
     const canFallback =
       config.policy.crossGatewayFallback &&
       !request.gateway &&
-      !config.policy.forceGateway &&
       config.adapters[otherGateway(decision.gateway)] !== undefined;
     if (!canFallback) {
       throw new GatewayCreditBalanceError(balance, decision.gateway);

@@ -22,8 +22,6 @@ interface LabForm {
   organizationId: string;
   plan: "free" | "paid";
   gateway: GatewayChoice;
-  mode: "off" | "canary" | "on";
-  forceGateway: GatewayChoice;
   defaultGateway: "vercel" | "openrouter";
   paidGateway: "vercel" | "openrouter";
   freeGateway: "vercel" | "openrouter";
@@ -65,8 +63,6 @@ const DEFAULT_FORM: LabForm = {
   organizationId: "org_lab",
   plan: "free",
   gateway: "",
-  mode: "on",
-  forceGateway: "",
   defaultGateway: "openrouter",
   paidGateway: "vercel",
   freeGateway: "openrouter",
@@ -83,8 +79,6 @@ const PRESETS: Array<{ label: string; patch: Partial<LabForm> }> = [
   { label: "Paid org → Vercel", patch: { plan: "paid", gateway: "" } },
   { label: "No org → default", patch: { organizationId: "" } },
   { label: "Pin Vercel", patch: { gateway: "vercel" } },
-  { label: "Force OpenRouter", patch: { forceGateway: "openrouter" } },
-  { label: "Mode off (legacy)", patch: { mode: "off" } },
   {
     label: "OpenRouter key missing → fallback",
     patch: { plan: "free", disableOpenRouter: true },
@@ -208,7 +202,6 @@ export default function RouterLabClient() {
           ...payload,
           organizationId: payload.organizationId || undefined,
           gateway: payload.gateway || undefined,
-          forceGateway: payload.forceGateway || undefined,
         }),
       });
       const json = (await result.json()) as LabResponse;
@@ -342,30 +335,6 @@ export default function RouterLabClient() {
                 onChange={(value) => update("gateway", value as GatewayChoice)}
                 value={form.gateway}
               />
-              <GatewaySelect
-                allowEmpty
-                id="forceGateway"
-                label="Force gateway (ops)"
-                onChange={(value) =>
-                  update("forceGateway", value as GatewayChoice)
-                }
-                value={form.forceGateway}
-              />
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="mode">Mode</Label>
-                <select
-                  className="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                  id="mode"
-                  onChange={(event) =>
-                    update("mode", event.target.value as LabForm["mode"])
-                  }
-                  value={form.mode}
-                >
-                  <option value="off">off</option>
-                  <option value="canary">canary</option>
-                  <option value="on">on</option>
-                </select>
-              </div>
               <GatewaySelect
                 id="defaultGateway"
                 label="Default (no org)"

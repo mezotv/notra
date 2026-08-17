@@ -19,18 +19,17 @@ const grounded = gateway("openai/gpt-5.4", { organizationId, gateway: "vercel" }
 
 ## Policy
 
-| situation                          | gateway                                   |
-| ---------------------------------- | ----------------------------------------- |
-| pinned via `gateway` option        | as pinned, no fallback                    |
-| `AI_ROUTER_FORCE_GATEWAY`          | forced gateway                            |
-| `AI_ROUTER_MODE=off`               | vercel (legacy behaviour)                 |
-| no organization context            | `AI_ROUTER_DEFAULT_GATEWAY` (openrouter)  |
-| paid plan                          | `AI_ROUTER_PAID_GATEWAY` (vercel)         |
-| free plan, `mode=on`               | `AI_ROUTER_FREE_GATEWAY` (openrouter)     |
-| free plan, `mode=canary`           | openrouter if allowlisted / in rollout %  |
+| situation                   | gateway                |
+| --------------------------- | ---------------------- |
+| pinned via `gateway` option | as pinned, no fallback |
+| no organization context     | openrouter             |
+| paid plan                   | vercel                 |
+| free plan                   | openrouter             |
 
 The plan is resolved once per organization through `resolvePlan`
 (`@notra/ai/billing/plan` → Autumn) and cached for 60 s.
+The policy is fixed in `@notra/ai/constants/router` and applies to all
+organizations immediately; there is no environment-controlled rollout.
 
 ## Privacy
 
@@ -45,9 +44,6 @@ model unsupported, credits exhausted, upstream outage, or the gateway rejects
 the ZDR requirement — Vercel ZDR is Pro/Enterprise only) the router retries on
 the other gateway **with the same privacy flags**. When no compliant route is
 left it throws `NoCompliantRouteError` instead of downgrading.
-
-`AI_ROUTER_ALLOW_NON_ZDR_IN_DEVELOPMENT=true` (development only) stops forcing
-the ZDR flags so hobby/local setups can talk to Vercel; no-training stays on.
 
 ## Provider options
 
@@ -65,8 +61,7 @@ Anthropic thinking / OpenAI reasoning settings are mapped to
   `ai.router.fallback_unavailable`, `ai.router.no_compliant_route`,
   `ai.router.zdr_rejected`, `ai.router.zdr_bypassed`,
   `ai.router.plan_lookup_failed`, `ai.router.credits`,
-  `ai.router.credits_check_failed`, `ai.router.generation_lookup_failed`,
-  `ai.router.config_invalid`.
+  `ai.router.credits_check_failed`, `ai.router.generation_lookup_failed`.
 - `providerMetadata.notraRouter` on every result / stream `finish` part:
   gateway, generation ID, requested + mapped model, plan, reason and fallback
   info. `summarizeRouteUsage(steps)` (`@notra/ai/utils/route-usage`) also
@@ -77,8 +72,8 @@ Anthropic thinking / OpenAI reasoning settings are mapped to
 
 `packages/ai/src/router/**` has no `process.env` reads and no `@notra/*`
 imports; everything is injected through `createModelRouter(config)`. The
-Notra-specific glue (env parsing, Autumn plan lookup, evlog logger, singleton)
-lives in `packages/ai/src/gateway.ts` and `packages/ai/src/router-config.ts`.
+Notra-specific glue (fixed policy, Autumn plan lookup, evlog logger, singleton)
+lives in `packages/ai/src/constants/router.ts` and `packages/ai/src/gateway.ts`.
 
 Live smoke test: `bun packages/ai/evals/router/live-check.ts` (uses the keys
 from `.env`, fake plan resolver).

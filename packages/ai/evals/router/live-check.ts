@@ -40,12 +40,9 @@ const router = createModelRouter({
   resolvePlan: (organizationId) =>
     Promise.resolve(organizationId === PAID_ORG ? "paid" : "free"),
   policy: {
-    mode: "on",
     defaultGateway: "openrouter",
     paidGateway: "vercel",
     freeGateway: "openrouter",
-    rolloutPercent: 0,
-    orgAllowlist: new Set(),
     allowNonZdr: false,
     crossGatewayFallback: true,
   },
