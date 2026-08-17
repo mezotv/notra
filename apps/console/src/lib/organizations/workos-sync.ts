@@ -60,7 +60,7 @@ const ensureWorkOSOrganization = Effect.fn(
   });
 });
 
-export const ensureWorkOSOrganizationWithMembers = Effect.fn(
+const ensureWorkOSOrganizationWithMembers = Effect.fn(
   "organizations.sync.ensureWorkOSOrganizationWithMembers"
 )(function* (organizationId: string) {
   const result = yield* ensureWorkOSOrganization(organizationId);
