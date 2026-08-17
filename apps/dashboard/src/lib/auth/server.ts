@@ -72,11 +72,28 @@ const resolveActiveOrganizationId = Effect.fn(
   return membership?.organizationId ?? null;
 });
 
+function isBanned(user: { banned: boolean | null; banExpires: Date | null }) {
+  if (!user.banned) {
+    return false;
+  }
+  return !user.banExpires || user.banExpires > new Date();
+}
+
 const buildAuthSession = Effect.fn("auth.session.build")(function* (
   workosUser: Parameters<typeof ensureLocalUser>[0],
   impersonatorEmail: string | null
 ) {
   const user = yield* ensureLocalUser(workosUser);
+
+  if (isBanned(user)) {
+    return yield* Effect.fail(
+      new AuthSessionError({
+        message: "User is banned",
+        cause: null,
+      })
+    );
+  }
+
   const activeOrganizationId = yield* resolveActiveOrganizationId(user.id);
 
   const session: AuthSessionData = {
