@@ -390,6 +390,22 @@ const migrateMemberships = Effect.fn("migrate.memberships")(function* () {
         if (!message.toLowerCase().includes("already")) {
           throw error;
         }
+
+        const existing =
+          await workos.userManagement.listOrganizationMemberships({
+            organizationId: row.workosOrgId ?? "",
+            userId: row.workosUserId ?? "",
+          });
+        const membership = existing.data[0];
+
+        if (membership && membership.role.slug !== row.role) {
+          await workos.userManagement.updateOrganizationMembership(
+            membership.id,
+            { roleSlug: row.role }
+          );
+          return `role corrected ${membership.role.slug} -> ${row.role}`;
+        }
+
         return "already exists";
       }
     }, `Failed to migrate membership ${row.memberId}`).pipe(

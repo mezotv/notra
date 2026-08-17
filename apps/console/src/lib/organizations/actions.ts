@@ -11,10 +11,7 @@ import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import { requireMembership, requireSession } from "@/lib/organizations/guards";
 import { runOrganizationAction } from "@/lib/organizations/run-action";
-import {
-  syncMembershipToWorkOS,
-  syncOrganizationToWorkOS,
-} from "@/lib/organizations/workos-sync";
+import { syncOrganizationToWorkOS } from "@/lib/organizations/workos-sync";
 import { organizationSlugSchema } from "@/schemas/organization";
 import type {
   ActionResult,
@@ -148,7 +145,6 @@ export async function createOrganizationAction(
       }
 
       yield* syncOrganizationToWorkOS(organizationId);
-      yield* syncMembershipToWorkOS(organizationId, session.user.id);
 
       if (!input.keepCurrentActiveOrganization) {
         const cookieStore = yield* tryDb(

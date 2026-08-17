@@ -26,7 +26,7 @@ import {
 } from "@/lib/organizations/guards";
 import { runOrganizationAction } from "@/lib/organizations/run-action";
 import {
-  ensureWorkOSOrganization,
+  ensureWorkOSOrganizationWithMembers,
   removeMembershipFromWorkOS,
   syncMembershipToWorkOS,
   syncOrganizationToWorkOS,
@@ -154,7 +154,7 @@ const mapInvitation = (invitation: Invitation): InvitationSummary => ({
 const requireWorkOSOrganizationId = Effect.fn(
   "organizations.actions.requireWorkOSOrganizationId"
 )(function* (organizationId: string) {
-  return yield* ensureWorkOSOrganization(organizationId).pipe(
+  return yield* ensureWorkOSOrganizationWithMembers(organizationId).pipe(
     Effect.catch((error) =>
       Effect.fail(
         new OrganizationActionError({
@@ -303,7 +303,6 @@ export async function createOrganizationAction(
       }
 
       yield* syncOrganizationToWorkOS(organizationId);
-      yield* syncMembershipToWorkOS(organizationId, session.user.id, "owner");
 
       if (!input.keepCurrentActiveOrganization) {
         const cookieStore = yield* tryDb(

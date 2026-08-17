@@ -1,5 +1,5 @@
 import { db } from "@notra/db/drizzle";
-import { organizations, users } from "@notra/db/schema";
+import { members, organizations, users } from "@notra/db/schema";
 import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
@@ -12,7 +12,7 @@ const logSyncFailure = (context: Record<string, unknown>) =>
     )
   );
 
-export const ensureWorkOSOrganization = Effect.fn(
+const ensureWorkOSOrganization = Effect.fn(
   "organizations.sync.ensureWorkOSOrganization"
 )(function* (organizationId: string) {
   return yield* Effect.tryPromise({
@@ -27,7 +27,7 @@ export const ensureWorkOSOrganization = Effect.fn(
       }
 
       if (organization.workosOrgId) {
-        return organization.workosOrgId;
+        return { workosOrgId: organization.workosOrgId, healed: false };
       }
 
       let workosOrgId: string;
@@ -50,7 +50,7 @@ export const ensureWorkOSOrganization = Effect.fn(
         .set({ workosOrgId })
         .where(eq(organizations.id, organizationId));
 
-      return workosOrgId;
+      return { workosOrgId, healed: true };
     },
     catch: (cause) =>
       new WorkOSSyncError({
@@ -60,10 +60,40 @@ export const ensureWorkOSOrganization = Effect.fn(
   });
 });
 
+export const ensureWorkOSOrganizationWithMembers = Effect.fn(
+  "organizations.sync.ensureWorkOSOrganizationWithMembers"
+)(function* (organizationId: string) {
+  const result = yield* ensureWorkOSOrganization(organizationId);
+
+  if (result.healed) {
+    yield* syncAllMembershipsToWorkOS(organizationId);
+  }
+
+  return result.workosOrgId;
+});
+
+const syncAllMembershipsToWorkOS = Effect.fn(
+  "organizations.sync.syncAllMemberships"
+)(function* (organizationId: string) {
+  const rows = yield* Effect.tryPromise({
+    try: () =>
+      db.query.members.findMany({
+        where: eq(members.organizationId, organizationId),
+        columns: { userId: true, role: true },
+      }),
+    catch: (cause) =>
+      new WorkOSSyncError({ message: "Failed to load members", cause }),
+  });
+
+  for (const row of rows) {
+    yield* syncMembershipToWorkOS(organizationId, row.userId, row.role);
+  }
+});
+
 export const syncOrganizationToWorkOS = Effect.fn(
   "organizations.sync.createWorkOSOrganization"
 )(function* (organizationId: string) {
-  yield* ensureWorkOSOrganization(organizationId).pipe(
+  yield* ensureWorkOSOrganizationWithMembers(organizationId).pipe(
     Effect.asVoid,
     logSyncFailure({ organizationId })
   );
