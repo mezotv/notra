@@ -7,7 +7,13 @@ import { members, organizations, users } from "../schema";
 class WorkOSMigrationError extends Data.TaggedError("WorkOSMigrationError")<{
   readonly message: string;
   readonly cause?: unknown;
-}> {}
+}> {
+  describe() {
+    const causeText =
+      this.cause instanceof Error ? this.cause.message : String(this.cause);
+    return `${this.message}: ${causeText}`;
+  }
+}
 
 const SCRYPT_LOG_N = 14;
 const SCRYPT_R = 16;
@@ -49,8 +55,30 @@ function splitName(name: string) {
   };
 }
 
-const RETRY_ATTEMPTS = 3;
+const RETRY_ATTEMPTS = 5;
 const RETRY_BASE_DELAY_MS = 750;
+const RATE_LIMIT_DELAY_MS = 15_000;
+
+function isRateLimited(error: unknown) {
+  if (!(error && typeof error === "object")) {
+    return false;
+  }
+  const status = "status" in error ? error.status : undefined;
+  const message = "message" in error ? String(error.message) : "";
+  return status === 429 || message.toLowerCase().includes("rate limit");
+}
+
+function describeError(error: unknown): string {
+  if (error && typeof error === "object") {
+    if ("rawData" in error && error.rawData) {
+      return JSON.stringify(error.rawData).slice(0, 200);
+    }
+    if ("message" in error) {
+      return String(error.message);
+    }
+  }
+  return String(error);
+}
 
 async function withRetries<T>(run: () => Promise<T>): Promise<T> {
   let lastError: unknown;
@@ -61,10 +89,13 @@ async function withRetries<T>(run: () => Promise<T>): Promise<T> {
     } catch (error) {
       lastError = error;
       if (attempt < RETRY_ATTEMPTS) {
-        console.warn(`  transient failure (attempt ${attempt}), retrying...`);
-        await new Promise((resolve) =>
-          setTimeout(resolve, RETRY_BASE_DELAY_MS * attempt)
+        const delay = isRateLimited(error)
+          ? RATE_LIMIT_DELAY_MS
+          : RETRY_BASE_DELAY_MS * attempt;
+        console.warn(
+          `  transient failure (attempt ${attempt}, ${isRateLimited(error) ? "rate limited, " : ""}waiting ${delay}ms): ${describeError(error)}`
         );
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
   }
@@ -208,7 +239,7 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
     }, `Failed to migrate user ${user.id}`).pipe(
       Effect.catch((error) =>
         Effect.logWarning(
-          `  user FAILED ${user.email} (${user.id}): ${error.message}`
+          `  user FAILED ${user.email} (${user.id}): ${error.describe()}`
         ).pipe(Effect.as(null))
       )
     );
@@ -279,7 +310,7 @@ const migrateMemberships = Effect.fn("migrate.memberships")(function* () {
     }, `Failed to migrate membership ${row.memberId}`).pipe(
       Effect.catch((error) =>
         Effect.logWarning(
-          `  membership FAILED ${row.memberId} (role ${row.role}): ${error.message}`
+          `  membership FAILED ${row.memberId} (role ${row.role}): ${error.describe()}`
         ).pipe(Effect.as("failed"))
       )
     );
