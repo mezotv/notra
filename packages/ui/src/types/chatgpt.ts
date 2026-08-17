@@ -1,0 +1,13 @@
+export type ChatgptModelId = "sol" | "terra" | "luna" | "gpt-5.5";
+
+export type ChatgptEffortId = "instant" | "medium" | "high" | "extra-high";
+
+export interface ChatgptModelOption {
+  id: ChatgptModelId;
+  label: string;
+}
+
+export interface ChatgptEffortOption {
+  id: ChatgptEffortId;
+  label: string;
+}

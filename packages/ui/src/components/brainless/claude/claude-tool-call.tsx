@@ -1,7 +1,7 @@
 import type * as React from "react";
 import { cn } from "@notra/ui/lib/utils";
 
-type ClaudeToolCallStatus = "success" | "error" | "pending";
+export type ClaudeToolCallStatus = "success" | "error" | "pending";
 
 const STATUS_COLOR: Record<ClaudeToolCallStatus, string> = {
   success: "#4ea96f",
