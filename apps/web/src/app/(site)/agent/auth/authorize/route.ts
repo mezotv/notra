@@ -6,5 +6,8 @@ export function OPTIONS() {
 }
 
 export function GET(request: NextRequest) {
-  return redirectToAuthServer(request, "https://auth.usenotra.com/oauth2/authorize");
+  return redirectToAuthServer(
+    request,
+    "https://auth.usenotra.com/oauth2/authorize"
+  );
 }
