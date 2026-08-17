@@ -49,9 +49,32 @@ function splitName(name: string) {
   };
 }
 
+const RETRY_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 750;
+
+async function withRetries<T>(run: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= RETRY_ATTEMPTS; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      lastError = error;
+      if (attempt < RETRY_ATTEMPTS) {
+        console.warn(`  transient failure (attempt ${attempt}), retrying...`);
+        await new Promise((resolve) =>
+          setTimeout(resolve, RETRY_BASE_DELAY_MS * attempt)
+        );
+      }
+    }
+  }
+
+  throw lastError;
+}
+
 const tryWorkOS = <T>(run: () => Promise<T>, message: string) =>
   Effect.tryPromise({
-    try: run,
+    try: () => withRetries(run),
     catch: (cause) => new WorkOSMigrationError({ message, cause }),
   });
 
@@ -146,6 +169,8 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
     `Migrating ${pending.length} users (${hashes.size} password hashes available)`
   );
 
+  let failed = 0;
+
   for (const user of pending) {
     const { firstName, lastName } = splitName(user.name);
     const rawHash = hashes.get(user.id);
@@ -162,13 +187,17 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
           ...(passwordHash ? { passwordHash, passwordHashType: "scrypt" } : {}),
         });
         return created.id;
-      } catch {
+      } catch (createError) {
         const existing = await workos.userManagement.listUsers({
           email: user.email.toLowerCase(),
         });
         const match = existing.data[0];
         if (!match) {
-          throw new Error(`No WorkOS user found for ${user.email}`);
+          const reason =
+            createError instanceof Error
+              ? createError.message
+              : "user creation rejected";
+          throw new Error(reason);
         }
         await workos.userManagement.updateUser({
           userId: match.id,
@@ -176,7 +205,18 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
         });
         return match.id;
       }
-    }, `Failed to migrate user ${user.id}`);
+    }, `Failed to migrate user ${user.id}`).pipe(
+      Effect.catch((error) =>
+        Effect.logWarning(
+          `  user FAILED ${user.email} (${user.id}): ${error.message}`
+        ).pipe(Effect.as(null))
+      )
+    );
+
+    if (!workosUserId) {
+      failed += 1;
+      continue;
+    }
 
     yield* tryWorkOS(
       () => db.update(users).set({ workosUserId }).where(eq(users.id, user.id)),
@@ -185,6 +225,12 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
 
     yield* Effect.logInfo(
       `  user linked: ${user.email} -> ${workosUserId}${passwordHash ? " (password imported)" : " (no password hash)"}`
+    );
+  }
+
+  if (failed > 0) {
+    yield* Effect.logWarning(
+      `${failed} users could not be migrated (see FAILED lines above)`
     );
   }
 });
