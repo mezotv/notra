@@ -136,6 +136,44 @@ that happen on prod.
   re-register via DCR and re-authorize).
 - Deleting a user deletes the WorkOS user and cascades locally.
 
+## CLI and MCP server
+
+- **CLI**: the bespoke device-code flow (verifications table, `/api/cli/sessions/*`,
+  Unkey key minting, `/dashboard` code-entry page) is deleted; migration `0065`
+  drops `verifications`. The CLI binary must switch to the OAuth Device
+  Authorization Grant (RFC 8628):
+  1. `POST https://api.workos.com/user_management/authorize/device` with
+     `client_id={WORKOS_CLIENT_ID}` → `device_code`, `user_code`,
+     `verification_uri_complete`, `interval`.
+  2. Open `verification_uri_complete` in the browser (user approves on the
+     hosted auth page; already-signed-in users approve in one click).
+  3. Poll `POST https://api.workos.com/user_management/authenticate` with
+     `grant_type=urn:ietf:params:oauth:grant-type:device_code` and the
+     `device_code`, honoring `interval` and `slow_down`.
+  4. Store the `refresh_token` (keychain); refresh access tokens with
+     `grant_type=refresh_token`. Send `Authorization: Bearer {access_token}`
+     to api.usenotra.com. Ship the new binary at cutover — old binaries break
+     when the dashboard endpoints disappear.
+- **Authorization model**: the API scopes (`posts.read` … `skills.write`) are
+  RBAC permissions in the WorkOS environment, attached to the
+  `owner`/`admin`/`member` roles (all 14 on each; admin additionally keeps the
+  widget permissions). First-party tokens (CLI device flow, sessions) carry
+  them in the `permissions` claim; apps/api reads `permissions` alongside
+  `scope`/`scp` and treats tokens with no scope-ish claim at all as full-access
+  first-party user tokens. Connect/DCR clients (MCP) get scopes granted per
+  application (`setApplicationPermissions`) and shown on the consent screen.
+  Recreate the permissions + role assignments in Staging/Production (done for
+  Development via the management API).
+- **MCP server** (separate service on Unkey Deploy at mcp.usenotra.com): update
+  its `.well-known/oauth-protected-resource` to advertise
+  `authorization_servers: ["https://{WORKOS_AUTHKIT_DOMAIN}"]` and swap JWT
+  verification to issuer `https://{WORKOS_AUTHKIT_DOMAIN}` with JWKS
+  `/oauth2/jwks`, mapping `sub`/`org_id` to local ids exactly like
+  `apps/api/src/middleware/auth.ts`. DCR and CIMD are enabled on the
+  environment. In the WorkOS dashboard, add `https://api.usenotra.com` and
+  `https://mcp.usenotra.com/mcp` as Resource Indicators (Connect
+  configuration) so tokens carry the right `aud`.
+
 ## Rollback
 
 Before `0064` is applied, rollback = redeploy the previous release (better-auth

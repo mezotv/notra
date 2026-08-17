@@ -207,8 +207,7 @@ function looksLikeJwt(token: string) {
   );
 }
 
-function extractScopes(payload: JWTPayload): string[] {
-  const rawScopes = payload.scope ?? payload.scp ?? payload.scopes;
+function normalizeScopeValue(rawScopes: unknown): string[] | null {
   if (typeof rawScopes === "string") {
     return rawScopes.split(SCOPE_SEPARATOR_REGEX).filter(Boolean);
   }
@@ -217,11 +216,28 @@ function extractScopes(payload: JWTPayload): string[] {
       (scope): scope is string => typeof scope === "string" && scope.length > 0
     );
   }
-  return [];
+  return null;
 }
 
-function hasRequiredScope(scopes: string[], requiredScope?: string) {
+function extractScopes(payload: JWTPayload): string[] | null {
+  const scopeClaim = normalizeScopeValue(
+    payload.scope ?? payload.scp ?? payload.scopes
+  );
+  const permissionsClaim = normalizeScopeValue(payload.permissions);
+
+  if (scopeClaim === null && permissionsClaim === null) {
+    return null;
+  }
+
+  return [...new Set([...(scopeClaim ?? []), ...(permissionsClaim ?? [])])];
+}
+
+function hasRequiredScope(scopes: string[] | null, requiredScope?: string) {
   if (!requiredScope) {
+    return true;
+  }
+
+  if (scopes === null) {
     return true;
   }
 
@@ -303,7 +319,7 @@ async function verifyOAuthToken(
         type: "oauth",
         keyId: `oauth:${localUserId}:${localOrgId}`,
         userId: localUserId,
-        scopes,
+        scopes: scopes ?? ["*"],
         identity: { externalId: localOrgId },
       },
     };
