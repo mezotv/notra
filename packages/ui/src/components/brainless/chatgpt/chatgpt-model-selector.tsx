@@ -57,7 +57,8 @@ export function ChatgptModelSelector({
           <button
             aria-label={`Model ${selectedModel.label}, effort ${selectedEffort.label}`}
             className={cn(
-              "flex h-8 shrink-0 items-center gap-1 rounded-full bg-muted px-2.5 text-[13px] leading-none text-foreground outline-none transition-[background-color,transform] duration-150 hover:bg-muted/80 focus-visible:ring-2 focus-visible:ring-blue-600/35 active:scale-[0.96]",
+              "flex h-8 shrink-0 items-center gap-1 rounded-full bg-transparent px-2.5 text-[13px] leading-none text-foreground outline-none transition-[background-color,transform] duration-150 hover:bg-muted focus-visible:ring-2 focus-visible:ring-blue-600/35 active:scale-[0.96]",
+              open && "bg-muted",
               className
             )}
             type="button"
@@ -76,7 +77,7 @@ export function ChatgptModelSelector({
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent
-        align="start"
+        align="end"
         className={cn("w-64", MENU_SURFACE)}
         showBackdrop={false}
         side="top"

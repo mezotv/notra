@@ -68,6 +68,14 @@ export function ChatgptComposer({
       >
         <HugeiconsIcon icon={PlusSignIcon} size={16} strokeWidth={1.75} />
       </button>
+      <input
+        aria-label="Message"
+        className="min-w-0 flex-1 bg-transparent py-2 pr-3 text-[15px] outline-none placeholder:text-muted-foreground"
+        onChange={(event) => setValue(event.target.value)}
+        placeholder={placeholder}
+        type="text"
+        value={value}
+      />
       <ChatgptModelSelector
         effort={effort}
         model={model}
@@ -83,14 +91,6 @@ export function ChatgptComposer({
           }
           onModelChange?.(next);
         }}
-      />
-      <input
-        aria-label="Message"
-        className="min-w-0 flex-1 bg-transparent py-2 pr-3 text-[15px] outline-none placeholder:text-muted-foreground"
-        onChange={(event) => setValue(event.target.value)}
-        placeholder={placeholder}
-        type="text"
-        value={value}
       />
       <button
         aria-label={busy ? "Stop" : "Send"}
