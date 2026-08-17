@@ -1,5 +1,5 @@
 import { WorkOS } from "@workos-inc/node";
-import { eq, isNull, sql } from "drizzle-orm";
+import { eq, isNotNull, isNull, sql } from "drizzle-orm";
 import { Data, Effect } from "effect";
 import { db } from "../drizzle";
 import { members, organizations, users } from "../schema";
@@ -15,9 +15,10 @@ class WorkOSMigrationError extends Data.TaggedError("WorkOSMigrationError")<{
   }
 }
 
-const SCRYPT_LOG_N = 14;
+const SCRYPT_N = 16_384;
 const SCRYPT_R = 16;
 const SCRYPT_P = 1;
+const SCRYPT_KEY_LENGTH = 64;
 const NAME_SPLIT_REGEX = /\s+/;
 const BASE64_PADDING_REGEX = /=+$/;
 
@@ -44,7 +45,7 @@ function betterAuthHashToPhc(hash: string) {
   const salt = toPhcBase64(new TextEncoder().encode(saltHex));
   const key = toPhcBase64(Buffer.from(keyHex, "hex"));
 
-  return `$scrypt$ln=${SCRYPT_LOG_N},r=${SCRYPT_R},p=${SCRYPT_P}$${salt}$${key}`;
+  return `$scrypt$v=1$n=${SCRYPT_N},r=${SCRYPT_R},p=${SCRYPT_P},kl=${SCRYPT_KEY_LENGTH}$${salt}$${key}`;
 }
 
 function splitName(name: string) {
@@ -58,6 +59,13 @@ function splitName(name: string) {
 const RETRY_ATTEMPTS = 5;
 const RETRY_BASE_DELAY_MS = 750;
 const RATE_LIMIT_DELAY_MS = 15_000;
+
+function isNonRetryable(error: unknown) {
+  if (!(error && typeof error === "object" && "status" in error)) {
+    return false;
+  }
+  return error.status === 400 || error.status === 422 || error.status === 404;
+}
 
 function isRateLimited(error: unknown) {
   if (!(error && typeof error === "object")) {
@@ -88,6 +96,9 @@ async function withRetries<T>(run: () => Promise<T>): Promise<T> {
       return await run();
     } catch (error) {
       lastError = error;
+      if (isNonRetryable(error)) {
+        throw error;
+      }
       if (attempt < RETRY_ATTEMPTS) {
         const delay = isRateLimited(error)
           ? RATE_LIMIT_DELAY_MS
@@ -156,7 +167,14 @@ const migrateOrganizations = Effect.fn("migrate.organizations")(function* () {
     "Failed to load organizations"
   );
 
-  yield* Effect.logInfo(`Migrating ${pending.length} organizations`);
+  const totalOrgs = yield* tryWorkOS(
+    () => db.$count(organizations),
+    "Failed to count organizations"
+  );
+
+  yield* Effect.logInfo(
+    `Organizations: ${totalOrgs - pending.length} already linked, ${pending.length} to migrate`
+  );
 
   for (const organization of pending) {
     const workosOrgId = yield* tryWorkOS(async () => {
@@ -196,8 +214,13 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
     "Failed to load users"
   );
 
+  const totalUsers = yield* tryWorkOS(
+    () => db.$count(users),
+    "Failed to count users"
+  );
+
   yield* Effect.logInfo(
-    `Migrating ${pending.length} users (${hashes.size} password hashes available)`
+    `Users: ${totalUsers - pending.length} already linked, ${pending.length} to migrate (${hashes.size} password hashes available)`
   );
 
   let failed = 0;
@@ -266,6 +289,60 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
   }
 });
 
+const backfillPasswords = Effect.fn("migrate.backfillPasswords")(function* () {
+  const hashes = yield* loadPasswordHashes();
+
+  if (hashes.size === 0) {
+    return;
+  }
+
+  const linked = yield* tryWorkOS(
+    () =>
+      db.query.users.findMany({
+        where: isNotNull(users.workosUserId),
+        columns: { id: true, email: true, workosUserId: true },
+      }),
+    "Failed to load linked users"
+  );
+
+  const candidates = linked.filter((user) => hashes.has(user.id));
+
+  if (candidates.length === 0) {
+    return;
+  }
+
+  yield* Effect.logInfo(
+    `Backfilling password hashes for ${candidates.length} already-linked users`
+  );
+
+  for (const user of candidates) {
+    const rawHash = hashes.get(user.id);
+    const passwordHash = rawHash ? betterAuthHashToPhc(rawHash) : null;
+
+    if (!(passwordHash && user.workosUserId)) {
+      continue;
+    }
+
+    yield* tryWorkOS(
+      () =>
+        workos.userManagement.updateUser({
+          userId: user.workosUserId ?? "",
+          passwordHash,
+          passwordHashType: "scrypt",
+        }),
+      `Failed to backfill password for ${user.id}`
+    ).pipe(
+      Effect.catch((error) =>
+        Effect.logWarning(
+          `  password backfill FAILED ${user.email}: ${error.describe()}`
+        )
+      )
+    );
+
+    yield* Effect.logInfo(`  password backfilled: ${user.email}`);
+  }
+});
+
 const migrateMemberships = Effect.fn("migrate.memberships")(function* () {
   const rows = yield* tryWorkOS(
     () =>
@@ -326,6 +403,7 @@ const migrateMemberships = Effect.fn("migrate.memberships")(function* () {
 const run = Effect.fn("migrate.workos")(function* () {
   yield* migrateOrganizations();
   yield* migrateUsers();
+  yield* backfillPasswords();
   yield* migrateMemberships();
   yield* Effect.logInfo("WorkOS migration complete");
 });

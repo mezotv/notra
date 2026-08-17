@@ -98,7 +98,11 @@ hashes stored in `accounts`. Therefore, for EACH database (staging, prod):
    that already have WorkOS ids, recovers from "already exists" conflicts via
    `external_id`/email lookup, and imports password hashes in PHC scrypt format
    (`$scrypt$ln=14,r=16,p=1$...`, matching better-auth's N=16384/r=16/p=1/dkLen=64
-   with the hex-string salt).
+   with the hex-string salt, in WorkOS's PHC dialect
+   `$scrypt$v=1$n=16384,r=16,p=1,kl=64$...`). It also backfills password hashes
+   onto already-linked users, so partial runs self-heal — but do NOT run it
+   again after real users start changing passwords in the new system, or the
+   backfill would revert them to the imported hash.
 3. Only then allow `0064` to apply (deploy of this branch).
 
 The script logs a warning and continues without passwords if `accounts` is
