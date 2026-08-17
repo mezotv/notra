@@ -55,7 +55,11 @@ export async function extractBrandInfo(
   const ai = createAILogger(log);
   try {
     const { output } = await generateText({
-      model: ai.wrap(gateway("anthropic/claude-sonnet-4.6")),
+      model: ai.wrap(
+        gateway("anthropic/claude-sonnet-4.6", {
+          organizationId: input.organizationId,
+        })
+      ),
       output: Output.object({ schema: brandSettingsSchema }),
       prompt: `Analyze this website content and extract brand identity information.
 

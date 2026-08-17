@@ -202,7 +202,9 @@ const generateIrisText = Effect.fn("iris.capabilities.generateText")(
     const generated = yield* Effect.tryPromise({
       try: () =>
         generateText({
-          model: gateway(IRIS_CONTENT_MODEL_ID),
+          model: gateway(IRIS_CONTENT_MODEL_ID, {
+            organizationId: params.input.organizationId,
+          }),
           system: buildIrisContentSystemPrompt({
             objective: params.input.mandate.objective,
           }),
@@ -449,11 +451,14 @@ const reviewIrisImage = Effect.fn("iris.capabilities.reviewImage")(
     pngBase64: string;
     description: string;
     articleTitle: string;
+    organizationId: string;
   }) {
     const reviewed = yield* Effect.tryPromise({
       try: () =>
         generateText({
-          model: gateway(IMAGE_REVIEW_MODEL_ID),
+          model: gateway(IMAGE_REVIEW_MODEL_ID, {
+            organizationId: params.organizationId,
+          }),
           output: Output.object({ schema: irisImageReviewSchema }),
           messages: [
             {
@@ -571,6 +576,7 @@ const generateIrisIllustration = Effect.fn("iris.capabilities.illustration")(
         pngBase64: current.pngBase64,
         description: marker.description,
         articleTitle: params.articleTitle,
+        organizationId: params.input.organizationId,
       })
     );
     let accept = false;
@@ -614,6 +620,7 @@ const generateIrisIllustration = Effect.fn("iris.capabilities.illustration")(
             pngBase64: current.pngBase64,
             description: marker.description,
             articleTitle: params.articleTitle,
+            organizationId: params.input.organizationId,
           })
         );
 

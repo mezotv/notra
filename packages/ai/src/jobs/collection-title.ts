@@ -112,7 +112,9 @@ export async function generateCollectionTitle(
   ];
 
   const { object } = await generateObject({
-    model: gateway(COLLECTION_TITLE_MODEL_ID),
+    model: gateway(COLLECTION_TITLE_MODEL_ID, {
+      organizationId: params.organizationId,
+    }),
     schema: collectionTitleResultSchema,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userContent }],

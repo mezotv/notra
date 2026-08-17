@@ -84,13 +84,14 @@ const scrapeWebsite = Effect.fn("geo.discover.scrape")(function* (url: string) {
 });
 
 const extractDiscovery = Effect.fn("geo.discover.extract")(function* (
+  organizationId: string,
   url: string,
   content: string
 ) {
   const result = yield* Effect.tryPromise({
     try: () =>
       generateText({
-        model: gateway(GEO_DISCOVERY_MODEL),
+        model: gateway(GEO_DISCOVERY_MODEL, { organizationId }),
         output: Output.object({ schema: geoWebsiteDiscoverySchema }),
         prompt: buildDiscoveryPrompt(url, content),
         system: GEO_DISCOVERY_SYSTEM_PROMPT,
@@ -110,7 +111,7 @@ const extractDiscovery = Effect.fn("geo.discover.extract")(function* (
 export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
   function* (organizationId: string, url: string) {
     const content = yield* scrapeWebsite(url);
-    const discovery = yield* extractDiscovery(url, content);
+    const discovery = yield* extractDiscovery(organizationId, url, content);
 
     const existing = yield* Effect.tryPromise({
       try: () =>

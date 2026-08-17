@@ -33,18 +33,29 @@ export interface GeoGroundedInvocation {
   tools: ToolSet;
 }
 
+export interface GeoGroundedInvocationOptions {
+  organizationId?: string;
+}
+
 export function buildGroundedInvocation(
-  engine: GeoGroundedEngine
+  engine: GeoGroundedEngine,
+  options: GeoGroundedInvocationOptions = {}
 ): GeoGroundedInvocation {
+  // Provider-defined web search tools are only available through the Vercel
+  // AI Gateway, so grounded engines are pinned to it.
+  const groundedGateway = {
+    organizationId: options.organizationId,
+    gateway: "vercel",
+  } as const;
   switch (engine.provider) {
     case "gateway-openai":
       return {
-        model: gateway(engine.model),
+        model: gateway(engine.model, groundedGateway),
         tools: { web_search: openai.tools.webSearch({}) },
       };
     case "gateway-anthropic":
       return {
-        model: gateway(engine.model),
+        model: gateway(engine.model, groundedGateway),
         tools: {
           web_search: anthropic.tools.webSearch_20250305({
             maxUses: GEO_GROUNDED_MAX_SEARCHES,
@@ -53,7 +64,7 @@ export function buildGroundedInvocation(
       };
     case "gateway-google":
       return {
-        model: gateway(engine.model),
+        model: gateway(engine.model, groundedGateway),
         tools: { google_search: googleSearchTool },
       };
     case "direct-openai": {

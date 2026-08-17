@@ -1,4 +1,5 @@
 import type { AILogTarget } from "@notra/ai/observability";
+import type { RouteMetadata } from "@notra/ai/router/types";
 import type { ToneProfile } from "@notra/ai/schemas/brand";
 import type { ContentType } from "@notra/ai/schemas/content";
 import type { AgentType } from "@notra/ai/types/brand-references";
@@ -53,6 +54,10 @@ export interface AgentTokenUsage {
   modelId?: string;
   computeMs?: number;
   totalUsd?: number;
+  /** Router metadata of the last model call (gateway, upstream provider). */
+  route?: RouteMetadata;
+  /** Sum of gateway-reported costs (informational, not the billing basis). */
+  gatewayReportedUsd?: number;
   raw?: unknown;
 }
 

@@ -6,6 +6,7 @@ import type {
 } from "@notra/ai/types/agents";
 import type { PostToolsResult } from "@notra/ai/types/post-tools";
 import type { TccMetadata } from "@notra/ai/types/tcc";
+import type { RouteUsageSummary } from "@notra/ai/utils/route-usage";
 import type { LanguageModelUsage, streamText, UIMessage } from "ai";
 
 export interface ValidatedGitHubIntegration {
@@ -164,7 +165,8 @@ export interface OrchestrateDeps {
   resolveLinearContext?: ResolveLinearIntegrationContext;
   onUsage?: (
     usage: LanguageModelUsage,
-    modelId: string
+    modelId: string,
+    routeUsage?: RouteUsageSummary
   ) => void | Promise<void>;
   log?: AILogTarget;
 }

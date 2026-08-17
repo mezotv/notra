@@ -18,6 +18,7 @@ import type {
   StandaloneChatInput,
 } from "@notra/ai/types/standalone-chat";
 import { normalizeMarkdownFileAttachments } from "@notra/ai/utils/message-attachments";
+import { summarizeRouteUsage } from "@notra/ai/utils/route-usage";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { withToolErrorPayloads } from "@notra/ai/utils/tool-error-payload";
 import {
@@ -335,8 +336,12 @@ export async function orchestrateStandaloneChat(
       });
       lazyMcpRuntime?.cleanup().catch(() => undefined);
     },
-    async onFinish({ totalUsage }) {
-      await deps?.onUsage?.(totalUsage, routingDecision.model);
+    async onFinish({ totalUsage, steps }) {
+      await deps?.onUsage?.(
+        totalUsage,
+        routingDecision.model,
+        await summarizeRouteUsage(steps)
+      );
       await lazyMcpRuntime?.cleanup();
     },
     onError({ error }) {
