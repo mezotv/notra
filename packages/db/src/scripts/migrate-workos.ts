@@ -176,7 +176,10 @@ const migrateOrganizations = Effect.fn("migrate.organizations")(function* () {
     `Organizations: ${totalOrgs - pending.length} already linked, ${pending.length} to migrate`
   );
 
+  let orgIndex = 0;
+
   for (const organization of pending) {
+    orgIndex += 1;
     const workosOrgId = yield* tryWorkOS(async () => {
       try {
         const created = await workos.organizations.createOrganization({
@@ -202,7 +205,7 @@ const migrateOrganizations = Effect.fn("migrate.organizations")(function* () {
     );
 
     yield* Effect.logInfo(
-      `  org linked: ${organization.slug} (${organization.id}) -> ${workosOrgId}`
+      `  [${orgIndex}/${pending.length}] org linked: ${organization.slug} (${organization.id}) -> ${workosOrgId}`
     );
   }
 });
@@ -224,8 +227,10 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
   );
 
   let failed = 0;
+  let userIndex = 0;
 
   for (const user of pending) {
+    userIndex += 1;
     const { firstName, lastName } = splitName(user.name);
     const rawHash = hashes.get(user.id);
     const passwordHash = rawHash ? betterAuthHashToPhc(rawHash) : null;
@@ -262,7 +267,7 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
     }, `Failed to migrate user ${user.id}`).pipe(
       Effect.catch((error) =>
         Effect.logWarning(
-          `  user FAILED ${user.email} (${user.id}): ${error.describe()}`
+          `  [${userIndex}/${pending.length}] user FAILED ${user.email} (${user.id}): ${error.describe()}`
         ).pipe(Effect.as(null))
       )
     );
@@ -278,7 +283,7 @@ const migrateUsers = Effect.fn("migrate.users")(function* () {
     );
 
     yield* Effect.logInfo(
-      `  user linked: ${user.email} -> ${workosUserId}${passwordHash ? " (password imported)" : " (no password hash)"}`
+      `  [${userIndex}/${pending.length}] user linked: ${user.email} -> ${workosUserId}${passwordHash ? " (password imported)" : " (no password hash)"}`
     );
   }
 
@@ -361,7 +366,10 @@ const migrateMemberships = Effect.fn("migrate.memberships")(function* () {
 
   yield* Effect.logInfo(`Migrating ${rows.length} memberships`);
 
+  let membershipIndex = 0;
+
   for (const row of rows) {
+    membershipIndex += 1;
     if (!(row.workosOrgId && row.workosUserId)) {
       yield* Effect.logWarning(
         `Skipping membership ${row.memberId} - missing WorkOS ids`
@@ -387,14 +395,14 @@ const migrateMemberships = Effect.fn("migrate.memberships")(function* () {
     }, `Failed to migrate membership ${row.memberId}`).pipe(
       Effect.catch((error) =>
         Effect.logWarning(
-          `  membership FAILED ${row.memberId} (role ${row.role}): ${error.describe()}`
+          `  [${membershipIndex}/${rows.length}] membership FAILED ${row.memberId} (role ${row.role}): ${error.describe()}`
         ).pipe(Effect.as("failed"))
       )
     );
 
     if (outcome !== "failed") {
       yield* Effect.logInfo(
-        `  membership ${outcome}: member ${row.memberId} role ${row.role}`
+        `  [${membershipIndex}/${rows.length}] membership ${outcome}: member ${row.memberId} role ${row.role}`
       );
     }
   }
