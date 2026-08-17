@@ -106,16 +106,11 @@ export function createOpenRouterAdapter(
         return {};
       }
       const record = openrouter as Record<string, unknown>;
-      const usage =
-        typeof record.usage === "object" && record.usage !== null
-          ? (record.usage as Record<string, unknown>)
-          : undefined;
       return {
         upstreamProvider:
           typeof record.provider === "string" && record.provider.length > 0
             ? record.provider
             : undefined,
-        costUsd: readNumber(usage?.cost),
       };
     },
   };

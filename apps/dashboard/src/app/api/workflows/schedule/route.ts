@@ -1212,7 +1212,6 @@ const { POST: legacyWorkflowContinuation } = serve<ScheduleWorkflowPayload>(
               upstream_provider: contentUsage.route?.upstreamProvider,
               route_reason: contentUsage.route?.reason,
               fallback_from: contentUsage.route?.fallbackFrom,
-              gateway_reported_usd: contentUsage.gatewayReportedUsd,
               markup_applied: aiCreditReservation.useMarkup,
               cost_cents: cost.costCents,
               reported_cost_cents: cost.reportedCostCents,

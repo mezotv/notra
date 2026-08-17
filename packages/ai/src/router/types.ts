@@ -58,7 +58,6 @@ export interface RouteMetadata {
   upstreamProvider?: string;
   fallbackFrom?: GatewayId;
   fallbackReason?: FallbackReason;
-  costUsd?: number;
 }
 
 export interface GatewayBalance {
@@ -98,16 +97,11 @@ export interface GatewayAdapter {
   extractRouteMetadata(
     providerMetadata: SharedV3ProviderMetadata | undefined
   ): Partial<
-    Pick<
-      RouteMetadata,
-      "generationId" | "upstreamProvider" | "costUsd" | "model"
-    >
+    Pick<RouteMetadata, "generationId" | "upstreamProvider" | "model">
   >;
   lookupRouteMetadata?(
     generationId: string
-  ): Promise<
-    Partial<Pick<RouteMetadata, "upstreamProvider" | "costUsd" | "model">>
-  >;
+  ): Promise<Partial<Pick<RouteMetadata, "upstreamProvider" | "model">>>;
 }
 
 export interface BuildProviderOptionsInput {

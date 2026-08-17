@@ -76,7 +76,6 @@ describe("Vercel adapter metadata", () => {
     assert.deepEqual(await adapter.lookupRouteMetadata("gen_test"), {
       model: MODEL,
       upstreamProvider: "anthropic",
-      costUsd: 0.001,
     });
     assert.equal(
       requestedUrls[0],
@@ -400,7 +399,6 @@ describe("RoutedLanguageModel", () => {
     assert.equal(metadata?.requestedModel, MODEL);
     assert.equal(metadata?.plan, "free");
     assert.equal(metadata?.upstreamProvider, "Amazon Bedrock");
-    assert.equal(typeof metadata?.costUsd, "number");
     assert.equal(
       router.getRouteMetadata(result.providerMetadata)?.gateway,
       "openrouter"
@@ -433,7 +431,6 @@ describe("RoutedLanguageModel", () => {
     const enriched = await router.enrichRouteMetadata(metadata);
     assert.equal(enriched.generationId, "gen_test");
     assert.equal(enriched.upstreamProvider, "anthropic");
-    assert.equal(enriched.costUsd, 0.001);
   });
 
   test("upstream outage on openrouter falls back to vercel with ZDR preserved", async () => {

@@ -56,8 +56,6 @@ export interface AgentTokenUsage {
   totalUsd?: number;
   /** Router metadata of the last model call (gateway, upstream provider). */
   route?: RouteMetadata;
-  /** Sum of gateway-reported costs (informational, not the billing basis). */
-  gatewayReportedUsd?: number;
   raw?: unknown;
 }
 

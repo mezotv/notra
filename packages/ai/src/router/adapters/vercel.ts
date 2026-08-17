@@ -80,7 +80,6 @@ export function createVercelAdapter(
       return {
         model: generation.model,
         upstreamProvider: generation.providerName,
-        costUsd: generation.totalCost,
       };
     },
   };

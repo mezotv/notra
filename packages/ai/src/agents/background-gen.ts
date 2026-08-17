@@ -230,7 +230,6 @@ export async function runBackgroundGen(
       cacheWriteTokens:
         result.totalUsage.inputTokenDetails?.cacheWriteTokens ?? 0,
       route: routeUsage.route,
-      gatewayReportedUsd: routeUsage.costUsd,
       raw: result.totalUsage,
     },
   };

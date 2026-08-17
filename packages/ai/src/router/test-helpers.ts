@@ -37,7 +37,6 @@ export interface FakeAdapterOptions {
   /** Called per doGenerate/doStream; throw to simulate upstream errors. */
   onCall?: (call: RecordedCall) => void;
   upstreamProvider?: string;
-  costUsd?: number;
 }
 
 export interface FakeAdapter extends GatewayAdapter {
@@ -61,7 +60,6 @@ export function createFakeAdapter(options: FakeAdapterOptions): FakeAdapter {
       : {
           [metadataKey]: {
             provider: options.upstreamProvider ?? "Amazon Bedrock",
-            usage: { cost: options.costUsd ?? 0.002 },
           },
         };
 
@@ -149,10 +147,8 @@ export function createFakeAdapter(options: FakeAdapterOptions): FakeAdapter {
       if (options.id === "vercel") {
         return { generationId: block.generationId as string | undefined };
       }
-      const usage = block.usage as Record<string, unknown> | undefined;
       return {
         upstreamProvider: block.provider as string | undefined,
-        costUsd: usage?.cost as number | undefined,
       };
     },
     ...(options.id === "vercel"
@@ -161,7 +157,6 @@ export function createFakeAdapter(options: FakeAdapterOptions): FakeAdapter {
             Promise.resolve({
               model: "anthropic/claude-sonnet-4.6",
               upstreamProvider: options.upstreamProvider ?? "anthropic",
-              costUsd: options.costUsd ?? 0.001,
             }),
         }
       : {}),

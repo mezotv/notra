@@ -141,7 +141,6 @@ export function buildRouteMetadata(
     ...(decision.fallbackReason
       ? { fallbackReason: decision.fallbackReason }
       : {}),
-    ...(extracted.costUsd !== undefined ? { costUsd: extracted.costUsd } : {}),
   };
 }
 

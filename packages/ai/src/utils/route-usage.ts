@@ -5,8 +5,6 @@ import type { ProviderMetadata } from "ai";
 export interface RouteUsageSummary {
   /** Route metadata of the last model call (gateway, upstream provider, ...). */
   route?: RouteMetadata;
-  /** Sum of gateway-reported costs across all steps, when available. */
-  costUsd?: number;
 }
 
 interface StepLike {
@@ -15,7 +13,7 @@ interface StepLike {
 
 /**
  * Collect router metadata from the steps of a generate/stream result so
- * usage sinks can record the selected gateway and reported cost.
+ * usage sinks can record the selected gateway.
  */
 export async function summarizeRouteUsage(
   steps: readonly StepLike[] | undefined
@@ -25,7 +23,6 @@ export async function summarizeRouteUsage(
   }
 
   let route: RouteMetadata | undefined;
-  let costUsd: number | undefined;
 
   for (const step of steps) {
     const routeMetadata = getRouteMetadata(step.providerMetadata);
@@ -34,12 +31,9 @@ export async function summarizeRouteUsage(
     }
     const metadata = await enrichRouteMetadata(routeMetadata);
     route = metadata;
-    if (typeof metadata.costUsd === "number") {
-      costUsd = (costUsd ?? 0) + metadata.costUsd;
-    }
   }
 
-  return { route, costUsd };
+  return { route };
 }
 
 /**
@@ -56,6 +50,5 @@ export function routeUsageProperties(summary: RouteUsageSummary | undefined) {
     route_reason: route.reason,
     fallback_from: route.fallbackFrom,
     fallback_reason: route.fallbackReason,
-    gateway_reported_usd: summary.costUsd,
   };
 }
