@@ -13,7 +13,6 @@ import {
   GSC_SITES_URL,
   GSC_USERINFO_URL,
   MS_PER_DAY,
-  MS_PER_SECOND,
   REAUTH_ERROR_CODES,
 } from "../constants/google-search-console";
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
@@ -88,7 +87,7 @@ export class GscApiError extends Error {
 
 function toExpiresAt(expiresInSeconds: number | undefined): Date {
   const seconds = expiresInSeconds ?? DEFAULT_ACCESS_TOKEN_TTL_SECONDS;
-  return new Date(Date.now() + seconds * MS_PER_SECOND);
+  return new Date(Date.now() + seconds * 1000);
 }
 
 export async function exchangeGscAuthorizationCode(

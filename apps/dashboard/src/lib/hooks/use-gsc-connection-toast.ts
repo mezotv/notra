@@ -3,7 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
-import { GSC_ERROR_MESSAGES } from "@/constants/google-search-console";
+import { GSC_ERROR_MESSAGES } from "@/lib/integrations/google-search-console/oauth-errors";
 
 export function useGscConnectionToast() {
   const searchParams = useSearchParams();

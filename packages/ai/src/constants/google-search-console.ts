@@ -15,7 +15,6 @@ export const GSC_OAUTH_SCOPES = [
 
 export const ACCESS_TOKEN_REFRESH_BUFFER_MS = 60_000;
 export const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 3600;
-export const MS_PER_SECOND = 1000;
 export const MS_PER_DAY = 86_400_000;
 export const GSC_DATA_LAG_DAYS = 3;
 export const GSC_MAX_ROW_LIMIT = 25_000;

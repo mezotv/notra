@@ -9,14 +9,6 @@ import { Google } from "@notra/ui/components/ui/svgs/google";
 import { useId } from "react";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import {
-  GSC_MAX_VISIBLE_KEYWORDS,
-  GSC_POSITION_DECIMALS,
-  GSC_SUGGESTIONS_CHECKING_DESCRIPTION,
-  GSC_SUGGESTIONS_CHECKING_TITLE,
-  GSC_SUGGESTIONS_HEADER_DESCRIPTION,
-  GSC_SUGGESTIONS_HEADER_TITLE,
-} from "@/constants/google-search-console";
-import {
   useGeoSuggestionAccept,
   useGeoSuggestionDismiss,
   useGeoSuggestions,
@@ -32,6 +24,9 @@ import type {
 } from "@/types/components/geo";
 import type { GeoSuggestionKeyword } from "@/types/geo";
 
+const POSITION_DECIMALS = 1;
+const MAX_VISIBLE_KEYWORDS = 4;
+
 const compactNumber = new Intl.NumberFormat("en", {
   notation: "compact",
   maximumFractionDigits: 1,
@@ -42,7 +37,7 @@ function countedLabel(count: number, singular: string, plural: string): string {
 }
 
 function keywordTitle(keyword: GeoSuggestionKeyword): string {
-  return `${countedLabel(keyword.impressions, "impression", "impressions")} · ${countedLabel(keyword.clicks, "click", "clicks")} · position ${keyword.position.toFixed(GSC_POSITION_DECIMALS)}`;
+  return `${countedLabel(keyword.impressions, "impression", "impressions")} · ${countedLabel(keyword.clicks, "click", "clicks")} · position ${keyword.position.toFixed(POSITION_DECIMALS)}`;
 }
 
 function summarize(keywords: GeoSuggestionKeyword[]): string {
@@ -53,7 +48,7 @@ function summarize(keywords: GeoSuggestionKeyword[]): string {
   const clicks = keywords.reduce((sum, k) => sum + k.clicks, 0);
   const bestPosition = Math.min(...keywords.map((k) => k.position));
   const positionLabel = keywords.length === 1 ? "position" : "best position";
-  return `${countedLabel(impressions, "impression", "impressions")} · ${countedLabel(clicks, "click", "clicks")} · ${positionLabel} ${bestPosition.toFixed(GSC_POSITION_DECIMALS)}`;
+  return `${countedLabel(impressions, "impression", "impressions")} · ${countedLabel(clicks, "click", "clicks")} · ${positionLabel} ${bestPosition.toFixed(POSITION_DECIMALS)}`;
 }
 
 function StatusRow({
@@ -80,7 +75,7 @@ function StatusRow({
 }
 
 function SuggestionEvidence({ keywords }: SuggestionEvidenceProps) {
-  const visible = keywords.slice(0, GSC_MAX_VISIBLE_KEYWORDS);
+  const visible = keywords.slice(0, MAX_VISIBLE_KEYWORDS);
   const hidden = keywords.length - visible.length;
 
   return (
@@ -187,22 +182,22 @@ export function PromptSuggestions({ organizationId }: PromptSuggestionsProps) {
       {checking ? (
         <output className="block">
           <StatusRow
-            description={GSC_SUGGESTIONS_CHECKING_DESCRIPTION}
+            description="Looking through queries your site already ranks for."
             icon={<StatusSpinner />}
-            title={GSC_SUGGESTIONS_CHECKING_TITLE}
+            title="Checking for prompt suggestions…"
             titleId={headingId}
           />
         </output>
       ) : (
         <StatusRow
           action={headerAction}
-          description={GSC_SUGGESTIONS_HEADER_DESCRIPTION}
+          description="You already rank for these searches. Track how AI assistants answer the same questions."
           icon={
             <span className="inline-flex size-5 items-center justify-center">
               <Google className="size-4" />
             </span>
           }
-          title={GSC_SUGGESTIONS_HEADER_TITLE}
+          title="Suggested from Google Search"
           titleId={headingId}
         />
       )}

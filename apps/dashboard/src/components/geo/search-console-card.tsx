@@ -22,11 +22,7 @@ import {
 import { Google } from "@notra/ui/components/ui/svgs/google";
 import { type ReactNode, useId, useState } from "react";
 import { StatusSpinner } from "@/components/geo/status-spinner";
-import {
-  GSC_CARD_DESCRIPTION,
-  GSC_CARD_TITLE,
-  GSC_OAUTH_AUTHORIZE_PATH,
-} from "@/constants/google-search-console";
+import { GSC_OAUTH_AUTHORIZE_PATH } from "@/constants/google-search-console";
 import {
   useGscClearSite,
   useGscDisconnect,
@@ -61,10 +57,11 @@ function HeaderRow({ action, titleId }: SearchConsoleHeaderRowProps) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="font-medium text-sm leading-snug" id={titleId}>
-          {GSC_CARD_TITLE}
+          Google Search Console
         </p>
         <p className="text-muted-foreground text-sm leading-snug">
-          {GSC_CARD_DESCRIPTION}
+          We read the queries your site ranks for and suggest the AI prompts
+          people ask about the same topics. Suggestions refresh every week.
         </p>
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}

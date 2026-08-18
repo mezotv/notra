@@ -7,7 +7,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { gscAnalyzeMutationKey } from "@/constants/google-search-console";
 import type {
   AiTrafficResponse,
   BeaconSetupResponse,
@@ -36,6 +35,11 @@ import { dashboardOrpc } from "../orpc/query";
 
 const DEFAULT_GEO_DAYS = 30;
 const DEFAULT_COMPETITOR_DAYS = 30;
+const GSC_ANALYZE_MUTATION_KEY = "gsc-analyze" as const;
+
+function gscAnalyzeMutationKey(organizationId: string) {
+  return [GSC_ANALYZE_MUTATION_KEY, organizationId] as const;
+}
 
 function toErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
