@@ -131,6 +131,12 @@ export const ratelimit = {
     prefix: "ratelimit:auth-forgot-password",
     limiter: Ratelimit.slidingWindow(3, "1m"),
   }),
+  socialSignInStart: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:auth-social-start",
+    limiter: Ratelimit.slidingWindow(10, "1m"),
+  }),
 };
 
 export function getClientIpFromHeaders(headersList: Headers): string {

@@ -1,7 +1,7 @@
 "use server";
 
 import { getWorkOS } from "@workos-inc/authkit-nextjs";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   SOCIAL_AUTH_CALLBACK_PATH,
@@ -11,12 +11,22 @@ import {
 } from "@/constants/social-auth";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
 import type { StartSocialSignInInput } from "@/types/auth/social-actions";
+import { getClientIpFromHeaders, ratelimit } from "@/utils/ratelimit";
 
 export async function startSocialSignInAction(input: StartSocialSignInInput) {
   const mappedProvider = SOCIAL_AUTH_PROVIDERS[input.provider];
 
   if (!mappedProvider) {
     redirect("/login");
+  }
+
+  const headersList = await headers();
+  const { success } = await ratelimit.socialSignInStart.limit(
+    getClientIpFromHeaders(headersList)
+  );
+
+  if (!success) {
+    redirect("/login?error=social-sign-in-failed");
   }
 
   const returnTo = sanitizeReturnTo(input.returnTo ?? null);
