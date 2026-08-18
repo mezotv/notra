@@ -22,13 +22,12 @@ export async function startSocialSignInAction(input: StartSocialSignInInput) {
 
   const headersList = await headers();
   const clientIp = getClientIpFromHeaders(headersList);
+  const limiterKey =
+    clientIp === "unknown" ? `unknown:${crypto.randomUUID()}` : clientIp;
+  const { success } = await ratelimit.socialSignInStart.limit(limiterKey);
 
-  if (clientIp !== "unknown") {
-    const { success } = await ratelimit.socialSignInStart.limit(clientIp);
-
-    if (!success) {
-      redirect("/login?error=social-sign-in-failed");
-    }
+  if (!success) {
+    redirect("/login?error=social-sign-in-failed");
   }
 
   const returnTo = sanitizeReturnTo(input.returnTo ?? null);
