@@ -346,9 +346,14 @@ export function OrgSelector() {
 
       await setLastVisitedOrganization(org.slug);
       queryClient.invalidateQueries({ refetchType: "none" });
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTH.activeOrganization,
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.AUTH.activeOrganization,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.AUTH.session,
+        }),
+      ]);
 
       setIsSwitching(false);
       startTransition(() => {
