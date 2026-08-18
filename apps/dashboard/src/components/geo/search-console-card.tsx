@@ -31,6 +31,7 @@ import {
   useGscSync,
 } from "@/lib/hooks/use-geo";
 import { useGscConnectionToast } from "@/lib/hooks/use-gsc-connection-toast";
+import { cn } from "@/lib/utils";
 import type {
   SearchConsoleCardProps,
   SearchConsoleConnectActionProps,
@@ -140,9 +141,10 @@ function SelectSiteState({
         </Select>
         <Button
           aria-busy={selectSite.isPending}
-          className={
-            selectSite.isPending ? "shrink-0 disabled:opacity-100" : "shrink-0"
-          }
+          className={cn(
+            "shrink-0",
+            selectSite.isPending && "disabled:opacity-100"
+          )}
           disabled={siteUrl.length === 0 || selectSite.isPending}
           onClick={() => selectSite.mutate({ siteUrl })}
           size="sm"

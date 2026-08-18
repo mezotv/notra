@@ -24,7 +24,6 @@ import type {
 } from "@/types/components/geo";
 import type { GeoSuggestionKeyword } from "@/types/geo";
 
-const POSITION_DECIMALS = 1;
 const MAX_VISIBLE_KEYWORDS = 4;
 
 const compactNumber = new Intl.NumberFormat("en", {
@@ -36,19 +35,39 @@ function countedLabel(count: number, singular: string, plural: string): string {
   return `${compactNumber.format(count)} ${count === 1 ? singular : plural}`;
 }
 
+function keywordMetrics(
+  impressions: number,
+  clicks: number,
+  position: number,
+  positionLabel = "position"
+): string {
+  return `${countedLabel(impressions, "impression", "impressions")} · ${countedLabel(clicks, "click", "clicks")} · ${positionLabel} ${position.toFixed(1)}`;
+}
+
 function keywordTitle(keyword: GeoSuggestionKeyword): string {
-  return `${countedLabel(keyword.impressions, "impression", "impressions")} · ${countedLabel(keyword.clicks, "click", "clicks")} · position ${keyword.position.toFixed(POSITION_DECIMALS)}`;
+  return keywordMetrics(keyword.impressions, keyword.clicks, keyword.position);
 }
 
 function summarize(keywords: GeoSuggestionKeyword[]): string {
   if (keywords.length === 0) {
     return "No ranking queries yet";
   }
-  const impressions = keywords.reduce((sum, k) => sum + k.impressions, 0);
-  const clicks = keywords.reduce((sum, k) => sum + k.clicks, 0);
-  const bestPosition = Math.min(...keywords.map((k) => k.position));
-  const positionLabel = keywords.length === 1 ? "position" : "best position";
-  return `${countedLabel(impressions, "impression", "impressions")} · ${countedLabel(clicks, "click", "clicks")} · ${positionLabel} ${bestPosition.toFixed(POSITION_DECIMALS)}`;
+  let impressions = 0;
+  let clicks = 0;
+  let bestPosition = Number.POSITIVE_INFINITY;
+  for (const keyword of keywords) {
+    impressions += keyword.impressions;
+    clicks += keyword.clicks;
+    if (keyword.position < bestPosition) {
+      bestPosition = keyword.position;
+    }
+  }
+  return keywordMetrics(
+    impressions,
+    clicks,
+    bestPosition,
+    keywords.length === 1 ? "position" : "best position"
+  );
 }
 
 function StatusRow({

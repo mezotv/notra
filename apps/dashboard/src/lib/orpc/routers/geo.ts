@@ -199,6 +199,18 @@ function toGscErrorMessage(error: unknown, fallback: string): string {
   return fallback;
 }
 
+async function runGscSyncOrBadRequest(
+  organizationId: string
+): Promise<GscSyncResult> {
+  try {
+    return await syncGscSuggestions(organizationId);
+  } catch (error) {
+    throw badRequest(
+      toGscErrorMessage(error, "Failed to sync Search Console keywords")
+    );
+  }
+}
+
 async function ensureGscSchedule(
   organizationId: string,
   existingScheduleId: string | null
@@ -246,18 +258,18 @@ async function acceptSuggestionInTx(
       eq(geoPrompts.prompt, suggestion.prompt)
     ),
   });
-  let promptRow = existing ?? null;
-  if (!promptRow) {
-    const [inserted] = await tx
-      .insert(geoPrompts)
-      .values({
-        id: crypto.randomUUID(),
-        organizationId,
-        prompt: suggestion.prompt,
-      })
-      .returning();
-    promptRow = inserted ?? null;
-  }
+  const promptRow =
+    existing ??
+    (
+      await tx
+        .insert(geoPrompts)
+        .values({
+          id: crypto.randomUUID(),
+          organizationId,
+          prompt: suggestion.prompt,
+        })
+        .returning()
+    )[0];
   if (!promptRow) {
     throw badRequest("Failed to create prompt");
   }
@@ -862,14 +874,7 @@ export const geoRouter = {
         throw notFound("Google Search Console is not connected");
       }
 
-      try {
-        return await syncGscSuggestions(input.organizationId);
-      } catch (error) {
-        console.error("[GSC] Initial sync failed:", error);
-        throw badRequest(
-          toGscErrorMessage(error, "Failed to sync Search Console keywords")
-        );
-      }
+      return await runGscSyncOrBadRequest(input.organizationId);
     }),
   searchConsoleSync: authorizedProcedure
     .input(geoOrganizationInputSchema)
@@ -908,14 +913,7 @@ export const geoRouter = {
         }
       }
 
-      try {
-        return await syncGscSuggestions(input.organizationId);
-      } catch (error) {
-        console.error("[GSC] Sync failed:", error);
-        throw badRequest(
-          toGscErrorMessage(error, "Failed to sync Search Console keywords")
-        );
-      }
+      return await runGscSyncOrBadRequest(input.organizationId);
     }),
   searchConsoleClearSite: authorizedProcedure
     .input(geoOrganizationInputSchema)

@@ -14,10 +14,9 @@ import {
   geoSettings,
 } from "@notra/db/schema";
 import { generateText, Output } from "ai";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
 import {
-  GSC_FORBIDDEN_STATUS,
   GSC_SUGGESTION_MAX_TOKENS,
   GSC_SUGGESTION_MODEL,
   GSC_SYNC_LOOKBACK_DAYS,
@@ -56,7 +55,7 @@ async function generateSuggestions(params: GscSuggestionGenerationParams) {
  */
 function toStoredSyncError(error: unknown): string {
   if (error instanceof GscApiError) {
-    return error.status === GSC_FORBIDDEN_STATUS
+    return error.status === 403
       ? "Google denied access to this property. Reconnect or pick another one."
       : "Search Console could not be reached. We will retry with the next sync.";
   }
@@ -115,15 +114,18 @@ async function runSync(
       where: eq(geoPrompts.organizationId, organizationId),
       columns: { prompt: true },
     }),
-    // Every status, not just dismissed: an accepted suggestion whose tracked
-    // prompt was deleted still occupies the (organizationId, prompt) unique index.
+    // Accepted/dismissed rows occupy the (organizationId, prompt) unique index
+    // even after the tracked prompt is deleted. Pending rows are replaced later.
     db.query.geoPromptSuggestions.findMany({
-      where: eq(geoPromptSuggestions.organizationId, organizationId),
-      columns: { prompt: true, status: true },
+      where: and(
+        eq(geoPromptSuggestions.organizationId, organizationId),
+        ne(geoPromptSuggestions.status, "pending")
+      ),
+      columns: { prompt: true },
     }),
   ]);
 
-  const brandTerms = buildBrandTerms(settingsRow ?? null);
+  const brandTerms = buildBrandTerms(settingsRow);
   const keywords = selectKeywordsForModel(rows, brandTerms);
   if (keywords.length === 0) {
     return { status: "completed", keywords: rows.length, suggestionsAdded: 0 };
@@ -131,11 +133,8 @@ async function runSync(
 
   const existingPrompts = [
     ...trackedRows.map((row) => row.prompt),
-    ...suggestionRows
-      .filter((row) => row.status !== "pending")
-      .map((row) => row.prompt),
+    ...suggestionRows.map((row) => row.prompt),
   ];
-  // Pending rows are replaced further down, so they must not block a re-suggestion.
   const seen = new Set(existingPrompts.map(normalizeSuggestionKey));
   const keywordByQuery = new Map(
     keywords.map((row) => [normalizeSuggestionKey(row.query), row] as const)

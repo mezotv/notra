@@ -16,5 +16,4 @@ export const GSC_SUGGESTIONS_MAX_PER_SYNC = 15;
 export const GSC_MAX_KEYWORDS_PER_SUGGESTION = 8;
 export const GSC_SUGGESTION_MODEL = "anthropic/claude-sonnet-4.6";
 export const GSC_SUGGESTION_MAX_TOKENS = 3000;
-export const GSC_FORBIDDEN_STATUS = 403;
 export const GSC_SCHEDULE_ID_PREFIX = "gsc-sync-";

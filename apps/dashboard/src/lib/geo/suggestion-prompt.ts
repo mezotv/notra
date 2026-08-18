@@ -1,3 +1,4 @@
+import type { GscQueryRow } from "@notra/ai/types/google-search-console";
 import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
 import {
   GSC_MAX_KEYWORDS_PER_SUGGESTION,
@@ -6,15 +7,11 @@ import {
 } from "@/constants/google-search-console";
 import type { GscSuggestionGenerationParams } from "@/types/google-search-console";
 
-const POSITION_DECIMALS = 1;
-
 export const GSC_SUGGESTION_SYSTEM_PROMPT =
   "You are a search visibility analyst. You turn the Google Search queries a website already ranks for into the natural-language questions people ask AI assistants about the same topics. Respond only with the requested structured data.";
 
-function formatKeywordLine(
-  row: GscSuggestionGenerationParams["keywords"][number]
-): string {
-  return `- "${row.query}" (impressions ${row.impressions}, clicks ${row.clicks}, avg position ${row.position.toFixed(POSITION_DECIMALS)})`;
+function formatKeywordLine(row: GscQueryRow): string {
+  return `- "${row.query}" (impressions ${row.impressions}, clicks ${row.clicks}, avg position ${row.position.toFixed(1)})`;
 }
 
 function formatExistingPrompts(prompts: string[]): string {

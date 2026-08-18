@@ -33,16 +33,14 @@ export function useGscConnectionToast() {
       toast.success("Google Search Console connected", {
         id: "gsc-connected",
       });
-      router.replace(urlWithoutOAuthParams(pathname, searchParams), {
-        scroll: false,
-      });
+    } else if (error && Object.hasOwn(GSC_ERROR_MESSAGES, error)) {
+      toast.error(GSC_ERROR_MESSAGES[error], { id: `gsc-error-${error}` });
+    } else {
       return;
     }
-    if (error && Object.hasOwn(GSC_ERROR_MESSAGES, error)) {
-      toast.error(GSC_ERROR_MESSAGES[error], { id: `gsc-error-${error}` });
-      router.replace(urlWithoutOAuthParams(pathname, searchParams), {
-        scroll: false,
-      });
-    }
+
+    router.replace(urlWithoutOAuthParams(pathname, searchParams), {
+      scroll: false,
+    });
   }, [searchParams, pathname, router]);
 }

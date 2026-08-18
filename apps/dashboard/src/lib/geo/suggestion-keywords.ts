@@ -4,9 +4,7 @@ import {
   GSC_SYNC_MIN_IMPRESSIONS,
 } from "@/constants/google-search-console";
 import type { GeoSuggestionKeyword } from "@/types/geo";
-import type { GscBrandSettings } from "@/types/google-search-console";
 
-const POSITION_DECIMALS = 1;
 const MIN_BRAND_TERM_LENGTH = 3;
 
 export function normalizeSuggestionKey(value: string): string {
@@ -19,7 +17,9 @@ function isBrandedQuery(query: string, brandTerms: string[]): boolean {
   return brandTerms.some((term) => normalized.includes(` ${term} `));
 }
 
-export function buildBrandTerms(settings: GscBrandSettings | null): string[] {
+export function buildBrandTerms(
+  settings: { companyName: string; aliases: string[] } | null | undefined
+): string[] {
   if (!settings) {
     return [];
   }
@@ -57,7 +57,7 @@ export function resolveSourceKeywords(
         query: match.query,
         clicks: match.clicks,
         impressions: match.impressions,
-        position: Number(match.position.toFixed(POSITION_DECIMALS)),
+        position: Number(match.position.toFixed(1)),
       });
     }
   }

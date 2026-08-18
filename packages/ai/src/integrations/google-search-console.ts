@@ -38,13 +38,23 @@ import type {
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
-function getDedicatedGscOAuthCredentials(): GscOAuthCredentials | null {
-  const clientId = process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_SECRET?.trim();
-  if (!(clientId && clientSecret)) {
+function credentialsFromEnv(
+  clientId: string | undefined,
+  clientSecret: string | undefined
+): GscOAuthCredentials | null {
+  const id = clientId?.trim();
+  const secret = clientSecret?.trim();
+  if (!(id && secret)) {
     return null;
   }
-  return { clientId, clientSecret };
+  return { clientId: id, clientSecret: secret };
+}
+
+function getDedicatedGscOAuthCredentials(): GscOAuthCredentials | null {
+  return credentialsFromEnv(
+    process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_ID,
+    process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_SECRET
+  );
 }
 
 /**
@@ -57,16 +67,13 @@ export function hasDedicatedGscOAuthClient(): boolean {
 }
 
 export function getGscOAuthCredentials(): GscOAuthCredentials | null {
-  const dedicated = getDedicatedGscOAuthCredentials();
-  if (dedicated) {
-    return dedicated;
-  }
-  const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
-  if (!(clientId && clientSecret)) {
-    return null;
-  }
-  return { clientId, clientSecret };
+  return (
+    getDedicatedGscOAuthCredentials() ??
+    credentialsFromEnv(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET
+    )
+  );
 }
 
 export class GscReauthRequiredError extends Error {
@@ -183,12 +190,27 @@ export function hasGscGoogleAccountChanged(
   return previous !== next;
 }
 
+export function shouldClearGscSiteOnReconnect(
+  existing: Pick<GscIntegrationRow, "googleAccountEmail" | "siteUrl"> | null,
+  nextEmail: string | null
+): boolean {
+  if (!existing) {
+    return false;
+  }
+  if (hasGscGoogleAccountChanged(existing.googleAccountEmail, nextEmail)) {
+    return true;
+  }
+  // A selected property with no stored email cannot be proven to belong to
+  // the account that just signed in.
+  return Boolean(existing.siteUrl && !existing.googleAccountEmail?.trim());
+}
+
 export async function upsertGscIntegration(
   params: UpsertGscIntegrationParams
 ): Promise<GscIntegrationRow> {
   const existing = await getGscIntegration(params.organizationId);
-  const googleAccountChanged = hasGscGoogleAccountChanged(
-    existing?.googleAccountEmail,
+  const googleAccountChanged = shouldClearGscSiteOnReconnect(
+    existing,
     params.googleAccountEmail
   );
 
