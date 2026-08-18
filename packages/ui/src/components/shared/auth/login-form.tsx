@@ -4,7 +4,6 @@ import { useForm } from "@tanstack/react-form";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRef, useState, useSyncExternalStore } from "react";
-import { flushSync } from "react-dom";
 import type {
   AuthMethod,
   LoginFormProps,
@@ -74,7 +73,7 @@ export function LoginForm({
 
     setFormError(null);
     authInFlightRef.current = true;
-    flushSync(() => setAuthMethod(provider));
+    setAuthMethod(provider);
     setLastUsedLoginMethod(provider);
     startSocialSignIn({ provider, returnTo: callbackURL }).catch((error) => {
       if (isNextRedirectError(error)) {
@@ -102,7 +101,7 @@ export function LoginForm({
 
       setFormError(null);
       authInFlightRef.current = true;
-      flushSync(() => setAuthMethod("email"));
+      setAuthMethod("email");
       try {
         const result = await signInWithPassword({
           email: value.email,

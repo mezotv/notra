@@ -1,7 +1,7 @@
 "use client";
 
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { EmailVerificationFormProps } from "../../../lib/auth-types";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
@@ -20,8 +20,11 @@ export function EmailVerificationForm({
   const [code, setCode] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [isPending, setIsPending] = useState(false);
+  const requestIdRef = useRef(0);
 
   async function handleVerify() {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
     setIsPending(true);
     try {
       const result = await verifyEmailCode({
@@ -29,6 +32,10 @@ export function EmailVerificationForm({
         code,
         returnTo,
       });
+
+      if (requestIdRef.current !== requestId) {
+        return;
+      }
 
       if (result.status === "success") {
         if (onSuccess) {
@@ -45,10 +52,12 @@ export function EmailVerificationForm({
           : "Verification failed. Please try again."
       );
     } catch {
+      if (requestIdRef.current !== requestId) {
+        return;
+      }
       setFormError("Verification failed. Please try again.");
-    } finally {
-      setIsPending(false);
     }
+    setIsPending(false);
   }
 
   return (

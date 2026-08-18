@@ -11,6 +11,8 @@
   "dependencies": {
     "@hugeicons/core-free-icons": "^4.1.1",
     "@hugeicons/react": "^1.1.4",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.35.8",
     "@neoconfetti/react": "^1.0.0",
     "@notra/ai": "workspace:*",
     "@notra/db": "workspace:*",
