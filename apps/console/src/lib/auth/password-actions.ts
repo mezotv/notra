@@ -43,13 +43,13 @@ function getAppUrl() {
 
 const completeAuthentication = Effect.fn("auth.password.completeSession")(
   function* (response: AuthenticationResponse, returnTo?: string | null) {
+    yield* ensureLocalUser(response.user);
+
     yield* Effect.tryPromise({
       try: () => saveSession(response, getAppUrl()),
       catch: (cause) =>
         new UserSyncError({ message: "Failed to persist session", cause }),
     });
-
-    yield* ensureLocalUser(response.user);
 
     const redirectTo =
       sanitizeReturnTo(returnTo ?? null) ?? DEFAULT_POST_LOGIN_PATH;

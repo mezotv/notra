@@ -62,9 +62,7 @@ export function LoginForm({
   );
   const isAuthLoading = authMethod !== null;
 
-  const callbackURL = returnTo
-    ? `${callbackPath}?returnTo=${encodeURIComponent(returnTo)}`
-    : callbackPath;
+  const callbackURL = returnTo ?? callbackPath;
 
   function handleSocialLogin(provider: SocialProvider) {
     if (authInFlightRef.current) {

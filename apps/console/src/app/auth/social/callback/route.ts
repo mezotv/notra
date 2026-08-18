@@ -23,6 +23,8 @@ const exchangeSocialCode = Effect.fn("auth.social.exchangeCode")(function* (
     })
   );
 
+  yield* ensureLocalUser(response.user);
+
   yield* Effect.tryPromise({
     try: () =>
       saveSession(
@@ -32,8 +34,6 @@ const exchangeSocialCode = Effect.fn("auth.social.exchangeCode")(function* (
     catch: (cause) =>
       new UserSyncError({ message: "Failed to persist session", cause }),
   });
-
-  yield* ensureLocalUser(response.user);
 });
 
 const mapFailure = (error: WorkOSAuthError | UserSyncError) => {

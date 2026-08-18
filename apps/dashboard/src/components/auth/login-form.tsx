@@ -16,11 +16,16 @@ const validators = {
     loginSchema.shape.password.safeParse(value).error?.issues[0]?.message,
 };
 
-export function LoginForm(props: LoginFormProps) {
+export function LoginForm({ returnTo, ...props }: LoginFormProps) {
   return (
     <SharedLoginForm
       {...props}
       callbackPath="/callback"
+      returnTo={
+        returnTo
+          ? `/callback?returnTo=${encodeURIComponent(returnTo)}`
+          : undefined
+      }
       signInWithPassword={signInWithPasswordAction}
       startSocialSignIn={startSocialSignInAction}
       validators={validators}
