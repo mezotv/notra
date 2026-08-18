@@ -25,39 +25,37 @@ export function EmailVerificationForm({
   async function handleVerify() {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
+    setFormError(null);
     setIsPending(true);
-    try {
-      const result = await verifyEmailCode({
-        pendingAuthenticationToken,
-        code,
-        returnTo,
-      });
 
-      if (requestIdRef.current !== requestId) {
-        return;
-      }
+    const result = await verifyEmailCode({
+      pendingAuthenticationToken,
+      code,
+      returnTo,
+    }).catch(() => null);
 
-      if (result.status === "success") {
+    if (result?.status === "success") {
+      if (requestIdRef.current === requestId) {
         if (onSuccess) {
           onSuccess();
         } else {
           window.location.assign(result.redirectTo);
         }
-        return;
       }
-
-      setFormError(
-        result.status === "error"
-          ? result.message
-          : "Verification failed. Please try again."
-      );
-    } catch {
-      if (requestIdRef.current !== requestId) {
-        return;
-      }
-      setFormError("Verification failed. Please try again.");
+      return;
     }
-    setIsPending(false);
+
+    const nextError =
+      result?.status === "error"
+        ? result.message
+        : "Verification failed. Please try again.";
+
+    setFormError((previous) =>
+      requestIdRef.current === requestId ? nextError : previous
+    );
+    setIsPending((previous) =>
+      requestIdRef.current === requestId ? false : previous
+    );
   }
 
   return (
@@ -72,7 +70,6 @@ export function EmailVerificationForm({
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
-          setFormError(null);
           handleVerify();
         }}
       >
