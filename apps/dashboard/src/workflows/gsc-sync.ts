@@ -1,6 +1,9 @@
 import { flattenError } from "zod";
-import { gscSyncPayloadSchema } from "@/schemas/geo";
-import type { GscSyncPayload, GscSyncResult } from "@/types/geo";
+import { gscSyncPayloadSchema } from "@/schemas/google-search-console";
+import type {
+  GscSyncPayload,
+  GscSyncResult,
+} from "@/types/google-search-console";
 import { runGscSyncStep } from "./steps/gsc-sync-steps";
 
 export async function gscSyncWorkflow(

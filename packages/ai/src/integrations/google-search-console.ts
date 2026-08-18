@@ -2,43 +2,43 @@ import { db } from "@notra/db/drizzle";
 import { googleSearchConsoleIntegrations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
-import { z } from "zod";
+import {
+  ACCESS_TOKEN_REFRESH_BUFFER_MS,
+  DEFAULT_ACCESS_TOKEN_TTL_SECONDS,
+  GSC_DATA_LAG_DAYS,
+  GSC_MAX_ROW_LIMIT,
+  GSC_OAUTH_REVOKE_URL,
+  GSC_OAUTH_TOKEN_URL,
+  GSC_SEARCH_ANALYTICS_BASE_URL,
+  GSC_SITES_URL,
+  GSC_USERINFO_URL,
+  MS_PER_DAY,
+  MS_PER_SECOND,
+  REAUTH_ERROR_CODES,
+} from "../constants/google-search-console";
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
 import { deleteQstashSchedule } from "../qstash/triggers";
+import {
+  gscSearchAnalyticsResponseSchema,
+  gscSitesResponseSchema,
+  gscTokenResponseSchema,
+  gscUserInfoSchema,
+} from "../schemas/google-search-console";
+import type {
+  ExchangeGscAuthorizationCodeParams,
+  ExchangeGscAuthorizationCodeResult,
+  GscIntegrationRow,
+  GscIntegrationUpdate,
+  GscOAuthCredentials,
+  GscQueryRow,
+  GscSite,
+  QueryGscTopQueriesParams,
+  UpsertGscIntegrationParams,
+} from "../types/google-search-console";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
-export const GSC_OAUTH_AUTHORIZE_URL =
-  "https://accounts.google.com/o/oauth2/v2/auth";
-export const GSC_OAUTH_TOKEN_URL = "https://oauth2.googleapis.com/token";
-export const GSC_OAUTH_REVOKE_URL = "https://oauth2.googleapis.com/revoke";
-export const GSC_USERINFO_URL =
-  "https://openidconnect.googleapis.com/v1/userinfo";
-export const GSC_SITES_URL = "https://www.googleapis.com/webmasters/v3/sites";
-export const GSC_SEARCH_ANALYTICS_BASE_URL =
-  "https://searchconsole.googleapis.com/webmasters/v3/sites";
-export const GSC_OAUTH_SCOPES = [
-  "https://www.googleapis.com/auth/webmasters.readonly",
-  "openid",
-  "email",
-] as const;
-
-const ACCESS_TOKEN_REFRESH_BUFFER_MS = 60_000;
-const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 3600;
-const MS_PER_SECOND = 1000;
-const MS_PER_DAY = 86_400_000;
-const GSC_DATA_LAG_DAYS = 3;
-const GSC_MAX_ROW_LIMIT = 25_000;
-const REAUTH_ERROR_CODES = new Set([
-  "invalid_grant",
-  "invalid_client",
-  "unauthorized_client",
-]);
-
-function getDedicatedGscOAuthCredentials(): {
-  clientId: string;
-  clientSecret: string;
-} | null {
+function getDedicatedGscOAuthCredentials(): GscOAuthCredentials | null {
   const clientId = process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_ID?.trim();
   const clientSecret = process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_SECRET?.trim();
   if (!(clientId && clientSecret)) {
@@ -56,10 +56,7 @@ export function hasDedicatedGscOAuthClient(): boolean {
   return getDedicatedGscOAuthCredentials() !== null;
 }
 
-export function getGscOAuthCredentials(): {
-  clientId: string;
-  clientSecret: string;
-} | null {
+export function getGscOAuthCredentials(): GscOAuthCredentials | null {
   const dedicated = getDedicatedGscOAuthCredentials();
   if (dedicated) {
     return dedicated;
@@ -71,60 +68,6 @@ export function getGscOAuthCredentials(): {
   }
   return { clientId, clientSecret };
 }
-
-export const gscTokenResponseSchema = z.looseObject({
-  access_token: z.string().min(1),
-  expires_in: z.number().optional(),
-  refresh_token: z.string().optional(),
-  scope: z.string().optional(),
-  id_token: z.string().optional(),
-  error: z.string().optional(),
-  error_description: z.string().optional(),
-});
-
-export const gscUserInfoSchema = z.looseObject({
-  email: z.string().optional(),
-});
-
-export const gscSitesResponseSchema = z.looseObject({
-  siteEntry: z
-    .array(
-      z.looseObject({
-        siteUrl: z.string().min(1),
-        permissionLevel: z.string().optional(),
-      })
-    )
-    .optional(),
-});
-
-export const gscSearchAnalyticsResponseSchema = z.looseObject({
-  rows: z
-    .array(
-      z.looseObject({
-        keys: z.array(z.string()),
-        clicks: z.number(),
-        impressions: z.number(),
-        ctr: z.number(),
-        position: z.number(),
-      })
-    )
-    .optional(),
-});
-
-export interface GscSite {
-  siteUrl: string;
-  permissionLevel: string | null;
-}
-
-export interface GscQueryRow {
-  query: string;
-  clicks: number;
-  impressions: number;
-  position: number;
-}
-
-export type GscIntegrationRow =
-  typeof googleSearchConsoleIntegrations.$inferSelect;
 
 export class GscReauthRequiredError extends Error {
   constructor(message = "Google Search Console access must be re-authorized") {
@@ -148,14 +91,9 @@ function toExpiresAt(expiresInSeconds: number | undefined): Date {
   return new Date(Date.now() + seconds * MS_PER_SECOND);
 }
 
-export async function exchangeGscAuthorizationCode(params: {
-  code: string;
-  redirectUri: string;
-}): Promise<{
-  accessToken: string;
-  refreshToken: string | null;
-  expiresAt: Date;
-}> {
+export async function exchangeGscAuthorizationCode(
+  params: ExchangeGscAuthorizationCodeParams
+): Promise<ExchangeGscAuthorizationCodeResult> {
   const credentials = getGscOAuthCredentials();
   if (!credentials) {
     throw new Error("Google OAuth is not configured");
@@ -228,14 +166,9 @@ export function hasGscGoogleAccountChanged(
   return previous !== next;
 }
 
-export async function upsertGscIntegration(params: {
-  organizationId: string;
-  userId: string;
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: Date;
-  googleAccountEmail: string | null;
-}): Promise<GscIntegrationRow> {
+export async function upsertGscIntegration(
+  params: UpsertGscIntegrationParams
+): Promise<GscIntegrationRow> {
   const existing = await getGscIntegration(params.organizationId);
   const googleAccountChanged = hasGscGoogleAccountChanged(
     existing?.googleAccountEmail,
@@ -296,17 +229,7 @@ export async function upsertGscIntegration(params: {
 
 export async function updateGscIntegration(
   organizationId: string,
-  updates: Partial<
-    Pick<
-      typeof googleSearchConsoleIntegrations.$inferInsert,
-      | "siteUrl"
-      | "status"
-      | "qstashScheduleId"
-      | "lastSyncedAt"
-      | "lastError"
-      | "enabled"
-    >
-  >
+  updates: GscIntegrationUpdate
 ): Promise<GscIntegrationRow | null> {
   const [row] = await db
     .update(googleSearchConsoleIntegrations)
@@ -464,7 +387,7 @@ function toIsoDate(date: Date): string {
 
 export async function queryGscTopQueries(
   integration: GscIntegrationRow,
-  params: { siteUrl: string; days: number; rowLimit: number }
+  params: QueryGscTopQueriesParams
 ): Promise<GscQueryRow[]> {
   const endDate = new Date(Date.now() - GSC_DATA_LAG_DAYS * MS_PER_DAY);
   const startDate = new Date(endDate.getTime() - params.days * MS_PER_DAY);

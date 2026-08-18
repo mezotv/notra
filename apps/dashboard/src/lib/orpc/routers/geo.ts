@@ -67,8 +67,8 @@ import {
   geoSettingsUpsertInputSchema,
   geoSuggestionIdInputSchema,
   geoTimeseriesInputSchema,
-  gscSelectSiteInputSchema,
 } from "@/schemas/geo";
+import { gscSelectSiteInputSchema } from "@/schemas/google-search-console";
 import type {
   AiTrafficResponse,
   BeaconSetupResponse,
@@ -81,15 +81,18 @@ import type {
   GeoPromptResultsResponse,
   GeoPromptRow,
   GeoPromptSuggestion,
+  GeoPromptSuggestionRow,
   GeoPromptSuggestionsResponse,
-  GeoSearchConsoleStatus,
   GeoSettings,
   GeoSettingsResponse,
   GeoTimeseriesResponse,
   GeoTrackedPrompt,
   GeoTrackedPromptsResponse,
-  GscSyncResult,
 } from "@/types/geo";
+import type {
+  GeoSearchConsoleStatus,
+  GscSyncResult,
+} from "@/types/google-search-console";
 import { ratelimit } from "@/utils/ratelimit";
 
 interface GeoSettingsRow {
@@ -173,19 +176,6 @@ function toModelUsageRow(
     checks,
   };
 }
-interface GeoPromptSuggestionRow {
-  id: string;
-  prompt: string;
-  source: "search_console";
-  sourceKeywords: {
-    query: string;
-    clicks: number;
-    impressions: number;
-    position: number;
-  }[];
-  createdAt: Date;
-}
-
 function toPromptSuggestion(row: GeoPromptSuggestionRow): GeoPromptSuggestion {
   return {
     id: row.id,
@@ -238,7 +228,7 @@ async function removeGscSchedule(scheduleId: string | null) {
 
 async function acceptSuggestionRow(
   organizationId: string,
-  suggestion: { id: string; prompt: string }
+  suggestion: Pick<GeoPromptSuggestionRow, "id" | "prompt">
 ): Promise<GeoTrackedPrompt> {
   return await db.transaction(async (tx) => {
     // Reuse an identical tracked prompt instead of creating a duplicate.

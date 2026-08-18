@@ -35,49 +35,23 @@ import {
   useGscSync,
 } from "@/lib/hooks/use-geo";
 import { useGscConnectionToast } from "@/lib/hooks/use-gsc-connection-toast";
-import type { GeoSearchConsoleStatus } from "@/types/geo";
-
-interface SearchConsoleCardProps {
-  organizationId: string;
-  callbackPath: string;
-}
-
-const RELATIVE_TIME_UNITS: { unit: Intl.RelativeTimeFormatUnit; ms: number }[] =
-  [
-    { unit: "day", ms: 86_400_000 },
-    { unit: "hour", ms: 3_600_000 },
-    { unit: "minute", ms: 60_000 },
-  ];
-
-function formatRelative(iso: string): string {
-  const diff = new Date(iso).getTime() - Date.now();
-  const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
-  for (const { unit, ms } of RELATIVE_TIME_UNITS) {
-    if (Math.abs(diff) >= ms) {
-      return formatter.format(Math.round(diff / ms), unit);
-    }
-  }
-  return "just now";
-}
-
-function formatSiteUrl(siteUrl: string): string {
-  return siteUrl.startsWith("sc-domain:")
-    ? `${siteUrl.slice("sc-domain:".length)} (domain)`
-    : siteUrl;
-}
+import type {
+  SearchConsoleCardProps,
+  SearchConsoleConnectActionProps,
+  SearchConsoleConnectedStateProps,
+  SearchConsoleHeaderRowProps,
+  SearchConsoleSelectSiteStateProps,
+} from "@/types/components/geo";
+import type { GeoSearchConsoleStatus } from "@/types/google-search-console";
+import { formatRelative } from "@/utils/format-relative";
+import { formatGscSiteUrl } from "@/utils/gsc-site-url";
 
 function buildAuthorizeUrl(organizationId: string, callbackPath: string) {
   const params = new URLSearchParams({ organizationId, callbackPath });
   return `${GSC_OAUTH_AUTHORIZE_PATH}?${params.toString()}`;
 }
 
-function HeaderRow({
-  action,
-  titleId,
-}: {
-  action?: ReactNode;
-  titleId: string;
-}) {
+function HeaderRow({ action, titleId }: SearchConsoleHeaderRowProps) {
   return (
     <div className="flex items-start gap-3 px-4 py-3">
       <div className="mt-0.5 shrink-0">
@@ -103,12 +77,7 @@ function ConnectAction({
   callbackPath,
   configured,
   reauth,
-}: {
-  organizationId: string;
-  callbackPath: string;
-  configured: boolean;
-  reauth: boolean;
-}) {
+}: SearchConsoleConnectActionProps) {
   if (!configured) {
     return (
       <p className="max-w-40 text-muted-foreground text-xs">
@@ -135,10 +104,7 @@ function ConnectAction({
 function SelectSiteState({
   organizationId,
   status,
-}: {
-  organizationId: string;
-  status: GeoSearchConsoleStatus;
-}) {
+}: SearchConsoleSelectSiteStateProps) {
   const id = useId();
   const [siteUrl, setSiteUrl] = useState("");
   const selectSite = useGscSelectSite(organizationId);
@@ -163,14 +129,14 @@ function SelectSiteState({
           <SelectTrigger className="w-full sm:max-w-md" id={`${id}-site`}>
             <SelectValue placeholder="Select a property">
               {(value: string | null) =>
-                value ? formatSiteUrl(value) : "Select a property"
+                value ? formatGscSiteUrl(value) : "Select a property"
               }
             </SelectValue>
           </SelectTrigger>
           <SelectContent align="start" alignItemWithTrigger={false}>
             {status.sites.map((site) => (
               <SelectItem key={site.siteUrl} value={site.siteUrl}>
-                {formatSiteUrl(site.siteUrl)}
+                {formatGscSiteUrl(site.siteUrl)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -211,10 +177,7 @@ function connectedMeta(status: GeoSearchConsoleStatus): string {
 function ConnectedState({
   organizationId,
   status,
-}: {
-  organizationId: string;
-  status: GeoSearchConsoleStatus;
-}) {
+}: SearchConsoleConnectedStateProps) {
   const sync = useGscSync(organizationId);
   const clearSite = useGscClearSite(organizationId);
   const disconnect = useGscDisconnect(organizationId);
@@ -225,7 +188,7 @@ function ConnectedState({
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <p className="truncate font-medium text-sm leading-snug">
-            {formatSiteUrl(status.siteUrl ?? "")}
+            {formatGscSiteUrl(status.siteUrl ?? "")}
           </p>
           {status.weeklySyncScheduled ? (
             <Badge className="font-normal" variant="secondary">

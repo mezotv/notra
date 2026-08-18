@@ -9,7 +9,8 @@ import {
 } from "@/constants/iris";
 import { socialAnalyticsSyncPayloadSchema } from "@/schemas/analytics";
 import { brandGuidelinesWorkflowPayloadSchema } from "@/schemas/brand-guidelines";
-import { geoScanPayloadSchema, gscSyncPayloadSchema } from "@/schemas/geo";
+import { geoScanPayloadSchema } from "@/schemas/geo";
+import { gscSyncPayloadSchema } from "@/schemas/google-search-console";
 import {
   eventWorkflowPayloadSchema,
   scheduleWorkflowPayloadSchema,
@@ -20,6 +21,7 @@ import {
 } from "@/schemas/workflows/iris";
 import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/workflows/onboarding-agent-payload";
 import type { BrandAnalysisPayload } from "@/types/brand-analysis";
+import type { GscSyncPayload } from "@/types/google-search-console";
 import {
   brandAnalysisPayloadSchema,
   brandAnalysisWorkflow,
@@ -127,9 +129,9 @@ export async function startGeoScanRun(payload: {
   return { runId: run.runId };
 }
 
-export async function startGscSyncRun(payload: {
-  organizationId: string;
-}): Promise<{ runId: string }> {
+export async function startGscSyncRun(
+  payload: GscSyncPayload
+): Promise<{ runId: string }> {
   const parsed = gscSyncPayloadSchema.parse(payload);
   const run = await start(gscSyncWorkflow, [parsed]);
   return { runId: run.runId };

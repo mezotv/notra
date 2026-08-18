@@ -3,7 +3,7 @@ import { flattenError } from "zod";
 import { GSC_SYNC_WORKFLOW_PATH } from "@/constants/google-search-console";
 import { verifyQstashSignature } from "@/lib/workflows/qstash-verify";
 import { startGscSyncRun } from "@/lib/workflows/start";
-import { gscSyncPayloadSchema } from "@/schemas/geo";
+import { gscSyncPayloadSchema } from "@/schemas/google-search-console";
 
 export async function POST(request: Request) {
   const rawBody = await request.text();

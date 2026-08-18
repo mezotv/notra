@@ -6,9 +6,11 @@ import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { Card } from "@notra/ui/components/ui/card";
 import { Google } from "@notra/ui/components/ui/svgs/google";
-import { type ReactNode, useId } from "react";
+import { useId } from "react";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import {
+  GSC_MAX_VISIBLE_KEYWORDS,
+  GSC_POSITION_DECIMALS,
   GSC_SUGGESTIONS_CHECKING_DESCRIPTION,
   GSC_SUGGESTIONS_CHECKING_TITLE,
   GSC_SUGGESTIONS_HEADER_DESCRIPTION,
@@ -22,14 +24,13 @@ import {
   useGscAnalyzing,
 } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
-import type { GeoPromptSuggestion, GeoSuggestionKeyword } from "@/types/geo";
-
-interface PromptSuggestionsProps {
-  organizationId: string;
-}
-
-const MAX_VISIBLE_KEYWORDS = 4;
-const POSITION_DECIMALS = 1;
+import type {
+  PromptSuggestionsProps,
+  SuggestionEvidenceProps,
+  SuggestionRowProps,
+  SuggestionStatusRowProps,
+} from "@/types/components/geo";
+import type { GeoSuggestionKeyword } from "@/types/geo";
 
 const compactNumber = new Intl.NumberFormat("en", {
   notation: "compact",
@@ -41,7 +42,7 @@ function countedLabel(count: number, singular: string, plural: string): string {
 }
 
 function keywordTitle(keyword: GeoSuggestionKeyword): string {
-  return `${countedLabel(keyword.impressions, "impression", "impressions")} · ${countedLabel(keyword.clicks, "click", "clicks")} · position ${keyword.position.toFixed(POSITION_DECIMALS)}`;
+  return `${countedLabel(keyword.impressions, "impression", "impressions")} · ${countedLabel(keyword.clicks, "click", "clicks")} · position ${keyword.position.toFixed(GSC_POSITION_DECIMALS)}`;
 }
 
 function summarize(keywords: GeoSuggestionKeyword[]): string {
@@ -52,7 +53,7 @@ function summarize(keywords: GeoSuggestionKeyword[]): string {
   const clicks = keywords.reduce((sum, k) => sum + k.clicks, 0);
   const bestPosition = Math.min(...keywords.map((k) => k.position));
   const positionLabel = keywords.length === 1 ? "position" : "best position";
-  return `${countedLabel(impressions, "impression", "impressions")} · ${countedLabel(clicks, "click", "clicks")} · ${positionLabel} ${bestPosition.toFixed(POSITION_DECIMALS)}`;
+  return `${countedLabel(impressions, "impression", "impressions")} · ${countedLabel(clicks, "click", "clicks")} · ${positionLabel} ${bestPosition.toFixed(GSC_POSITION_DECIMALS)}`;
 }
 
 function StatusRow({
@@ -61,13 +62,7 @@ function StatusRow({
   icon,
   title,
   titleId,
-}: {
-  action?: ReactNode;
-  description: string;
-  icon: ReactNode;
-  title: string;
-  titleId?: string;
-}) {
+}: SuggestionStatusRowProps) {
   return (
     <div className="flex items-start gap-3 px-4 py-3">
       <div className="mt-0.5 shrink-0">{icon}</div>
@@ -84,12 +79,8 @@ function StatusRow({
   );
 }
 
-function SuggestionEvidence({
-  keywords,
-}: {
-  keywords: GeoSuggestionKeyword[];
-}) {
-  const visible = keywords.slice(0, MAX_VISIBLE_KEYWORDS);
+function SuggestionEvidence({ keywords }: SuggestionEvidenceProps) {
+  const visible = keywords.slice(0, GSC_MAX_VISIBLE_KEYWORDS);
   const hidden = keywords.length - visible.length;
 
   return (
@@ -118,11 +109,7 @@ function SuggestionRow({
   checking,
   organizationId,
   suggestion,
-}: {
-  checking: boolean;
-  organizationId: string;
-  suggestion: GeoPromptSuggestion;
-}) {
+}: SuggestionRowProps) {
   const accept = useGeoSuggestionAccept(organizationId);
   const dismiss = useGeoSuggestionDismiss(organizationId);
   const busy = checking || accept.isPending || dismiss.isPending;

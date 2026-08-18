@@ -1,7 +1,4 @@
-const GSC_OAUTH_ERROR_BY_STATUS = new Map<number, string>([
-  [401, "gsc_session_expired"],
-  [403, "gsc_forbidden"],
-]);
+import { GSC_OAUTH_ERROR_BY_STATUS } from "@/constants/google-search-console";
 
 export function gscOAuthErrorParam(
   status: number,

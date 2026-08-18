@@ -1,12 +1,14 @@
 import { gateway } from "@notra/ai/gateway";
 import {
-  type GscIntegrationRow,
-  type GscQueryRow,
   GscReauthRequiredError,
   getGscIntegration,
   queryGscTopQueries,
   updateGscIntegration,
 } from "@notra/ai/integrations/google-search-console";
+import type {
+  GscIntegrationRow,
+  GscQueryRow,
+} from "@notra/ai/types/google-search-console";
 import { db } from "@notra/db/drizzle";
 import {
   geoPromptSuggestions,
@@ -17,6 +19,8 @@ import { generateText, Output } from "ai";
 import { eq } from "drizzle-orm";
 import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
 import {
+  GSC_MIN_BRAND_TERM_LENGTH,
+  GSC_POSITION_DECIMALS,
   GSC_SUGGESTION_MAX_TOKENS,
   GSC_SUGGESTION_MODEL,
   GSC_SUGGESTION_SYSTEM_PROMPT,
@@ -26,16 +30,17 @@ import {
   GSC_SYNC_MIN_IMPRESSIONS,
   GSC_SYNC_ROW_LIMIT,
 } from "@/constants/google-search-console";
-import { geoSearchConsoleSuggestionSchema } from "@/schemas/geo";
-import type { GeoSuggestionKeyword, GscSyncResult } from "@/types/geo";
-
-const POSITION_DECIMALS = 1;
+import { geoSearchConsoleSuggestionSchema } from "@/schemas/google-search-console";
+import type { GeoSuggestionKeyword } from "@/types/geo";
+import type {
+  GscBrandSettings,
+  GscSuggestionGenerationParams,
+  GscSyncResult,
+} from "@/types/google-search-console";
 
 function normalizeKey(value: string): string {
   return value.trim().toLowerCase();
 }
-
-const MIN_BRAND_TERM_LENGTH = 3;
 
 function isBrandedQuery(query: string, brandTerms: string[]): boolean {
   const normalized = ` ${normalizeKey(query)} `;
@@ -43,18 +48,13 @@ function isBrandedQuery(query: string, brandTerms: string[]): boolean {
   return brandTerms.some((term) => normalized.includes(` ${term} `));
 }
 
-function buildBrandTerms(
-  settings: {
-    companyName: string;
-    aliases: string[];
-  } | null
-): string[] {
+function buildBrandTerms(settings: GscBrandSettings | null): string[] {
   if (!settings) {
     return [];
   }
   return [settings.companyName, ...settings.aliases]
     .map(normalizeKey)
-    .filter((term) => term.length >= MIN_BRAND_TERM_LENGTH);
+    .filter((term) => term.length >= GSC_MIN_BRAND_TERM_LENGTH);
 }
 
 function selectKeywordsForModel(
@@ -71,16 +71,11 @@ function selectKeywordsForModel(
     .slice(0, GSC_SYNC_MAX_KEYWORDS_FOR_MODEL);
 }
 
-function buildSuggestionPrompt(params: {
-  companyName: string | null;
-  siteUrl: string;
-  keywords: GscQueryRow[];
-  existingPrompts: string[];
-}): string {
+function buildSuggestionPrompt(params: GscSuggestionGenerationParams): string {
   const keywordLines = params.keywords
     .map(
       (row) =>
-        `- "${row.query}" (impressions ${row.impressions}, clicks ${row.clicks}, avg position ${row.position.toFixed(POSITION_DECIMALS)})`
+        `- "${row.query}" (impressions ${row.impressions}, clicks ${row.clicks}, avg position ${row.position.toFixed(GSC_POSITION_DECIMALS)})`
     )
     .join("\n");
   const existing =
@@ -106,12 +101,7 @@ Write up to ${GSC_SUGGESTIONS_MAX_PER_SYNC} questions a real person would type i
 - For each prompt, list the exact source queries (copied verbatim from the list above) it was derived from.`;
 }
 
-async function generateSuggestions(params: {
-  companyName: string | null;
-  siteUrl: string;
-  keywords: GscQueryRow[];
-  existingPrompts: string[];
-}) {
+async function generateSuggestions(params: GscSuggestionGenerationParams) {
   const result = await generateText({
     model: gateway(GSC_SUGGESTION_MODEL),
     output: Output.object({ schema: geoSearchConsoleSuggestionSchema }),
@@ -223,7 +213,7 @@ async function runSync(
           query: match.query,
           clicks: match.clicks,
           impressions: match.impressions,
-          position: Number(match.position.toFixed(POSITION_DECIMALS)),
+          position: Number(match.position.toFixed(GSC_POSITION_DECIMALS)),
         });
       }
     }

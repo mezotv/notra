@@ -1,8 +1,8 @@
 import {
   GSC_OAUTH_AUTHORIZE_URL,
   GSC_OAUTH_SCOPES,
-  getGscOAuthCredentials,
-} from "@notra/ai/integrations/google-search-console";
+} from "@notra/ai/constants/google-search-console";
+import { getGscOAuthCredentials } from "@notra/ai/integrations/google-search-console";
 import { redis } from "@notra/ai/utils/redis";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
@@ -13,7 +13,7 @@ import {
 } from "@/constants/google-search-console";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { gscOAuthErrorParam } from "@/lib/integrations/google-search-console/oauth-errors";
-import { gscAuthorizeQuerySchema } from "@/schemas/geo";
+import { gscAuthorizeQuerySchema } from "@/schemas/google-search-console";
 import type { GscOAuthState } from "@/types/google-search-console";
 import { ratelimit } from "@/utils/ratelimit";
 

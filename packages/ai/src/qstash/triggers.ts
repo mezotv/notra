@@ -2,6 +2,7 @@ import { Client as QStashClient } from "@upstash/qstash";
 import { Client as WorkflowClient } from "@upstash/workflow";
 import type { BrandGuidelinesWorkflowPayload } from "../types/brand-guidelines";
 import type { OnboardingAgentWorkflowPayload } from "../types/onboarding-agent";
+import type { CreateQstashRouteScheduleProps } from "../types/qstash";
 import {
   getConfiguredAppUrl,
   getConfiguredWorkflowUrl,
@@ -142,13 +143,6 @@ export async function createQstashSchedule({
   }
 
   return resolvedScheduleId;
-}
-
-export interface CreateQstashRouteScheduleProps {
-  path: string;
-  cron: string;
-  body: Record<string, unknown>;
-  scheduleId?: string;
 }
 
 export async function createQstashRouteSchedule({

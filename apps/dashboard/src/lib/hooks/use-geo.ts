@@ -21,15 +21,17 @@ import type {
   GeoPromptResultsResponse,
   GeoPromptSuggestionsResponse,
   GeoPromptToggleInput,
-  GeoSearchConsoleStatus,
   GeoSettingsResponse,
   GeoSettingsUpsertInput,
   GeoSuggestionIdInput,
   GeoTimeseriesResponse,
   GeoTrackedPromptsResponse,
+} from "@/types/geo";
+import type {
+  GeoSearchConsoleStatus,
   GscSelectSiteInput,
   GscSyncResult,
-} from "@/types/geo";
+} from "@/types/google-search-console";
 import { dashboardOrpc } from "../orpc/query";
 
 const DEFAULT_GEO_DAYS = 30;
