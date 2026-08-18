@@ -24,9 +24,14 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { cn } from "@notra/ui/lib/utils";
+import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { AVAILABLE_MODELS, ModelIcon } from "@/components/chat/chat-input";
+import type {
+  UserMessageEditorProps,
+  UserMessageTextBubbleProps,
+} from "@/types/components/chat-page";
 
 interface UserMessageActionsProps {
   messageText: string;
@@ -72,9 +77,10 @@ export function UserMessageActions({
   return (
     <div
       className={cn(
-        "mt-0.5 ml-auto flex items-center gap-1 text-muted-foreground opacity-0 transition-opacity duration-150 focus-within:opacity-100 group-hover:opacity-100 data-[force-visible=true]:opacity-100",
-        isEditing &&
-          "pointer-events-none line-through opacity-40 focus-within:opacity-40 group-hover:opacity-40"
+        "mt-0.5 ml-auto flex items-center gap-1 text-muted-foreground transition-[opacity,height,margin] duration-200 ease-out",
+        isEditing
+          ? "pointer-events-none mt-0 h-0 overflow-hidden opacity-0"
+          : "opacity-0 focus-within:opacity-100 group-hover:opacity-100 data-[force-visible=true]:opacity-100"
       )}
       data-force-visible={retryOpen || undefined}
     >
@@ -204,19 +210,27 @@ export function UserMessageActions({
   );
 }
 
-interface UserMessageEditorProps {
-  initialText: string;
-  onCancel: () => void;
-  onSubmit: (text: string) => void;
-}
+const USER_MESSAGE_BUBBLE_CLASS =
+  "ml-auto flex min-w-0 flex-col gap-2 overflow-hidden rounded-lg bg-secondary px-4 py-3 text-foreground text-sm";
 
-export function UserMessageEditor({
+const USER_MESSAGE_EDIT_TRANSITION = {
+  duration: 0.22,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+
+const USER_MESSAGE_FADE_TRANSITION = {
+  duration: 0.14,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+
+function UserMessageEditor({
   initialText,
   onCancel,
   onSubmit,
 }: UserMessageEditorProps) {
   const [value, setValue] = useState(initialText);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const reduceMotion = useReducedMotion();
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: re-measure when value changes (scrollHeight is read from the DOM).
   useEffect(() => {
@@ -252,7 +266,7 @@ export function UserMessageEditor({
   };
 
   return (
-    <div className="ml-auto flex w-full flex-col gap-2 rounded-lg bg-secondary px-4 py-3">
+    <div className="flex flex-col gap-2">
       <textarea
         className="wrap-break-word max-h-80 min-h-6 w-full resize-none bg-transparent text-foreground text-sm leading-6 outline-none placeholder:text-muted-foreground"
         onChange={(e) => setValue(e.target.value)}
@@ -272,7 +286,12 @@ export function UserMessageEditor({
         rows={1}
         value={value}
       />
-      <div className="flex items-center justify-end gap-2">
+      <m.div
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center justify-end gap-2"
+        initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+        transition={USER_MESSAGE_FADE_TRANSITION}
+      >
         <Button onClick={onCancel} size="sm" type="button" variant="ghost">
           Cancel
         </Button>
@@ -284,7 +303,57 @@ export function UserMessageEditor({
         >
           Send
         </Button>
-      </div>
+      </m.div>
     </div>
+  );
+}
+
+export function UserMessageTextBubble({
+  children,
+  isEditing,
+  initialText,
+  onCancel,
+  onSubmit,
+}: UserMessageTextBubbleProps) {
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <m.div
+      className={cn(
+        USER_MESSAGE_BUBBLE_CLASS,
+        isEditing ? "w-full" : "is-user:dark w-fit max-w-full"
+      )}
+      layout={!reduceMotion}
+      transition={USER_MESSAGE_EDIT_TRANSITION}
+    >
+      <AnimatePresence initial={false} mode="popLayout">
+        {isEditing ? (
+          <m.div
+            animate={{ opacity: 1 }}
+            exit={reduceMotion ? undefined : { opacity: 0 }}
+            initial={reduceMotion ? false : { opacity: 0 }}
+            key="edit"
+            transition={USER_MESSAGE_FADE_TRANSITION}
+          >
+            <UserMessageEditor
+              initialText={initialText}
+              onCancel={onCancel}
+              onSubmit={onSubmit}
+            />
+          </m.div>
+        ) : (
+          <m.div
+            animate={{ opacity: 1 }}
+            className="flex min-w-0 flex-col gap-2 overflow-hidden"
+            exit={reduceMotion ? undefined : { opacity: 0 }}
+            initial={reduceMotion ? false : { opacity: 0 }}
+            key="view"
+            transition={USER_MESSAGE_FADE_TRANSITION}
+          >
+            {children}
+          </m.div>
+        )}
+      </AnimatePresence>
+    </m.div>
   );
 }

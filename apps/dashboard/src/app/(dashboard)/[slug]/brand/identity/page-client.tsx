@@ -88,11 +88,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   );
   const [activeVoiceId, setActiveVoiceId] = useQueryState(
     "voice",
-    parseAsString
+    parseAsString.withOptions({ history: "replace" })
   );
   const [activeTab, setActiveTab] = useQueryState(
     "view",
-    parseAsStringLiteral(BRAND_IDENTITY_TAB_VALUES).withDefault("identity")
+    parseAsStringLiteral(BRAND_IDENTITY_TAB_VALUES)
+      .withDefault("identity")
+      .withOptions({ history: "replace" })
   );
   const [newIdentityParam, setNewIdentityParam] = useQueryState("new");
   const isAddIdentityOpen =

@@ -21,6 +21,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateTablePreview } from "@/components/empty-state-preview";
+import {
+  EMPTY_STATE_TABLE_COLUMNS,
+  EMPTY_STATE_TABLE_ROWS,
+} from "@/constants/empty-state";
 import { useDeleteSitemap, useSitemaps } from "@/lib/hooks/use-brand-sitemaps";
 import { getSafeHttpUrl } from "@/lib/sitemap/sitemap-url";
 import type { SitemapListProps } from "@/types/hooks/brand-sitemaps";
@@ -104,6 +109,12 @@ export function SitemapList({
           actionLabel="Add Sitemap"
           description="Add a sitemap to track indexed pages and monitor site health for AI discovery."
           onActionClick={() => onDialogOpenChange(true)}
+          preview={
+            <EmptyStateTablePreview
+              columns={EMPTY_STATE_TABLE_COLUMNS.sitemap}
+              rows={EMPTY_STATE_TABLE_ROWS}
+            />
+          }
           title="No sitemaps yet"
         />
       ) : (

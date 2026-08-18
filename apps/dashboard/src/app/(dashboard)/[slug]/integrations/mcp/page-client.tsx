@@ -10,6 +10,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { AddMcpServerDialog } from "@/components/integrations/add-mcp-server-dialog";
 import { McpServerCard } from "@/components/integrations/mcp-server-card";
 import { PageContainer } from "@/components/layout/container";
@@ -154,6 +155,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 </Button>
               }
               description="Connect a custom MCP server to extend Notra with tools and data from your own systems."
+              preview={
+                <EmptyStateCardsPreview
+                  columns={3}
+                  count={3}
+                  variant="integration"
+                />
+              }
               title="No custom servers yet"
             />
           ) : null}

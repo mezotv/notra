@@ -272,7 +272,7 @@ const ChatInput = ({
       </CardHeader>
       <CardContent className="p-0">
         <div
-          className="overflow-hidden rounded-[14px] border border-border bg-background shadow-sm"
+          className="overflow-hidden rounded-[14px] border border-border bg-background shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none"
           tabIndex={-1}
         >
           <div className="p-0.5">

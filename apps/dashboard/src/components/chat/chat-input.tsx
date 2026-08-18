@@ -101,6 +101,7 @@ import type {
 } from "@/types/components/chat-input";
 import type { GitHubRepository } from "@/types/integrations";
 import { AttachmentPreviewDialog } from "./attachment-preview";
+import { ChatContextConnectSuggestions } from "./chat-context-connect-suggestions";
 import type { QueuedMessage } from "./chat-queue";
 import {
   buildFragmentFromReferencedText,
@@ -1736,7 +1737,7 @@ export function ChatInputAdvanced({
         </CardHeader>
         <CardContent className="p-0">
           <div
-            className={`rounded-[14px] border border-border bg-background shadow-sm ${connectedTop ? "rounded-t-none border-t-0" : ""}`}
+            className={`rounded-[14px] border border-border bg-background shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none ${connectedTop ? "rounded-t-none border-t-0" : ""}`}
             tabIndex={-1}
           >
             <section
@@ -2131,8 +2132,16 @@ export function ChatInputAdvanced({
                           <CommandInput placeholder="Search tools and context..." />
                           <CommandList>
                             <CommandEmpty>
-                              No matching tools or context found.
+                              {contextOptions.length === 0
+                                ? "No matching integrations."
+                                : "No matching tools or context found."}
                             </CommandEmpty>
+                            {contextOptions.length === 0 && organizationSlug ? (
+                              <ChatContextConnectSuggestions
+                                onSelect={() => setIsContextPickerOpen(false)}
+                                organizationSlug={organizationSlug}
+                              />
+                            ) : null}
                             {integrationContextOptions.length > 0 && (
                               <CommandGroup heading="Context">
                                 {integrationContextOptions.map((option) => {

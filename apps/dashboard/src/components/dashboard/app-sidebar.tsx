@@ -101,11 +101,11 @@ export function DashboardSidebar({
     >
       <LazyMotion features={domAnimation}>
         <SidebarHeader>
-          <div className="flex items-center gap-2 px-2 pt-1">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg dark:bg-[#F6F3F1]">
-              <Notra className="size-7 dark:size-5" />
+          <div className="flex h-8 items-center gap-2 px-2">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg transition-[width,height] duration-(--sidebar-duration) ease-(--sidebar-ease) group-data-[collapsible=icon]:size-6 group-data-[collapsible=icon]:rounded-md motion-reduce:transition-none dark:bg-[#F6F3F1]">
+              <Notra className="size-7 group-data-[collapsible=icon]:size-6 dark:size-5 dark:group-data-[collapsible=icon]:size-5" />
             </div>
-            <span className="truncate font-semibold text-base transition-opacity duration-100 group-data-[collapsible=icon]:w-0 group-data-[collapsible=icon]:opacity-0 group-data-[state=expanded]:delay-200">
+            <span className="min-w-0 truncate font-semibold text-base transition-opacity duration-200 ease-(--sidebar-ease) group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:delay-75 group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0">
               Notra
             </span>
           </div>

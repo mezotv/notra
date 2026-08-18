@@ -107,7 +107,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
               !isGuidelinesView
             }
             render={
-              <Link href={companyInfoHref}>
+              <Link href={companyInfoHref} replace>
                 <HugeiconsIcon icon={CorporateIcon} />
                 <span>Company Info</span>
               </Link>
@@ -119,7 +119,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           <SidebarMenuButton
             isActive={isGuidelinesView}
             render={
-              <Link href={guidelinesHref}>
+              <Link href={guidelinesHref} replace>
                 <HugeiconsIcon icon={PaintBoardIcon} />
                 <span>Brand Guidelines</span>
               </Link>
@@ -131,7 +131,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           <SidebarMenuButton
             isActive={isReferencesView}
             render={
-              <Link href={referencesHref}>
+              <Link href={referencesHref} replace>
                 <HugeiconsIcon icon={Comment01Icon} />
                 <span>References</span>
                 {referenceCount > 0 ? (
@@ -148,7 +148,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           <SidebarMenuButton
             isActive={isSitemapView}
             render={
-              <Link href={sitemapHref}>
+              <Link href={sitemapHref} replace>
                 <HugeiconsIcon icon={GlobalIcon} />
                 <span>Sitemap</span>
                 {sitemapCount > 0 ? (
