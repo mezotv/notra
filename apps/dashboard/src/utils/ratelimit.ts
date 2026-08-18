@@ -141,10 +141,13 @@ export const ratelimit = {
 
 export function getClientIpFromHeaders(headersList: Headers): string {
   if (process.env.VERCEL !== "1") {
-    return "unknown";
+    return `unknown:${crypto.randomUUID()}`;
   }
 
-  return headersList.get("x-vercel-forwarded-for")?.trim() || "unknown";
+  return (
+    headersList.get("x-vercel-forwarded-for")?.trim() ||
+    `unknown:${crypto.randomUUID()}`
+  );
 }
 
 export function getClientIp(request: NextRequest): string {

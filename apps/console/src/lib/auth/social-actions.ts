@@ -21,10 +21,9 @@ export async function startSocialSignInAction(input: StartSocialSignInInput) {
   }
 
   const headersList = await headers();
-  const clientIp = getClientIpFromHeaders(headersList);
-  const limiterKey =
-    clientIp === "unknown" ? `unknown:${crypto.randomUUID()}` : clientIp;
-  const { success } = await ratelimit.socialSignInStart.limit(limiterKey);
+  const { success } = await ratelimit.socialSignInStart.limit(
+    getClientIpFromHeaders(headersList)
+  );
 
   if (!success) {
     redirect("/login?error=social-sign-in-failed");
