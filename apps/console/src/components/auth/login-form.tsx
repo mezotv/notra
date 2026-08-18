@@ -6,8 +6,8 @@ import {
   verifyEmailCodeAction,
 } from "@/lib/auth/password-actions";
 import { startSocialSignInAction } from "@/lib/auth/social-actions";
-import { loginSchema } from "@/schemas/auth/credentials";
-import type { LoginFormProps } from "@/types/auth/login-form";
+import { loginSchema } from "@/schemas/auth";
+import type { ConsoleLoginFormProps } from "@/types/auth";
 
 const validators = {
   email: (value: string) =>
@@ -16,13 +16,17 @@ const validators = {
     loginSchema.shape.password.safeParse(value).error?.issues[0]?.message,
 };
 
-export function LoginForm(props: LoginFormProps) {
+export function LoginForm(props: ConsoleLoginFormProps) {
   return (
     <SharedLoginForm
       {...props}
-      callbackPath="/callback"
+      callbackPath="/dashboard"
+      description="Sign in to manage Notra."
+      showForgotPasswordLink={false}
+      showSignupLink={false}
       signInWithPassword={signInWithPasswordAction}
       startSocialSignIn={startSocialSignInAction}
+      title="Notra Console"
       validators={validators}
       verifyEmailCode={verifyEmailCodeAction}
     />

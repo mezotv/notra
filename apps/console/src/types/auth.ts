@@ -1,4 +1,5 @@
 import type { users } from "@notra/db/schema";
+import type { PendingVerification } from "@notra/ui/lib/auth-types";
 import type { CSSProperties } from "react";
 
 export type SessionUser = typeof users.$inferSelect;
@@ -79,4 +80,16 @@ export interface ImpersonationBannerStyle extends CSSProperties {
 export interface UserMenuProps {
   isAdmin: boolean;
   user: ConsoleUser;
+}
+
+export interface SocialCallbackOutcome {
+  kind: "success" | "failed" | "verification-required";
+  pendingAuthenticationToken?: string;
+  email?: string;
+}
+
+export interface ConsoleLoginFormProps {
+  returnTo?: string;
+  initialError?: string;
+  initialPendingVerification?: PendingVerification;
 }

@@ -23,6 +23,7 @@
     "@shadcn/react": "^0.2.0",
     "@shikijs/transformers": "^3.21.0",
     "@tailwindcss/typography": "^0.5.19",
+    "@tanstack/react-form": "^1.27.7",
     "@tanstack/react-virtual": "^3.14.9",
     "@toolwind/corner-shape": "^0.0.8-3",
     "@xyflow/react": "^12.10.0",

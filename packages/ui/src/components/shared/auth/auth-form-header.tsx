@@ -1,4 +1,4 @@
-import type { AuthFormHeaderProps } from "@/types/auth/form-ui";
+import type { AuthFormHeaderProps } from "../../../lib/auth-types";
 
 export function AuthFormHeader({ title, description }: AuthFormHeaderProps) {
   if (!(title || description)) {

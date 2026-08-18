@@ -1,14 +1,14 @@
 "use client";
 
-import { CtaButton } from "@notra/ui/components/shared/cta-button";
-import { Badge } from "@notra/ui/components/ui/badge";
-import { Github } from "@notra/ui/components/ui/svgs/github";
-import { Google } from "@notra/ui/components/ui/svgs/google";
 import { Loader2Icon } from "lucide-react";
 import type {
   AuthSocialButtonsProps,
   SocialProvider,
-} from "@/types/auth/form-ui";
+} from "../../../lib/auth-types";
+import { Badge } from "../../ui/badge";
+import { Github } from "../../ui/svgs/github";
+import { Google } from "../../ui/svgs/google";
+import { CtaButton } from "../cta-button";
 
 const PROVIDERS: {
   provider: SocialProvider;

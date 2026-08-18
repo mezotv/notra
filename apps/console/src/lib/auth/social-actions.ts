@@ -2,7 +2,7 @@
 
 import type { StartSocialSignInInput } from "@notra/ui/lib/auth-types";
 import { getWorkOS } from "@workos-inc/authkit-nextjs";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   SOCIAL_AUTH_CALLBACK_PATH,
@@ -11,7 +11,6 @@ import {
   SOCIAL_AUTH_STATE_MAX_AGE_SECONDS,
 } from "@/constants/social-auth";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
-import { getClientIpFromHeaders, ratelimit } from "@/utils/ratelimit";
 
 export async function startSocialSignInAction(input: StartSocialSignInInput) {
   const mappedProvider = SOCIAL_AUTH_PROVIDERS[input.provider];
@@ -20,17 +19,8 @@ export async function startSocialSignInAction(input: StartSocialSignInInput) {
     redirect("/login");
   }
 
-  const headersList = await headers();
-  const { success } = await ratelimit.socialSignInStart.limit(
-    getClientIpFromHeaders(headersList)
-  );
-
-  if (!success) {
-    redirect("/login?error=social-sign-in-failed");
-  }
-
   const returnTo = sanitizeReturnTo(input.returnTo ?? null);
-  const appUrl = process.env.APP_URL ?? "http://localhost:3000";
+  const appUrl = process.env.CONSOLE_APP_URL ?? "http://localhost:3003";
 
   const nonce = crypto.randomUUID();
   const cookieStore = await cookies();

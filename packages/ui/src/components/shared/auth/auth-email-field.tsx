@@ -1,8 +1,8 @@
 "use client";
 
-import { Input } from "@notra/ui/components/ui/input";
-import { Label } from "@notra/ui/components/ui/label";
-import type { AuthEmailFieldProps } from "@/types/auth/form-ui";
+import type { AuthEmailFieldProps } from "../../../lib/auth-types";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
 
 export function AuthEmailField({
   id,

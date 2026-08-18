@@ -9,3 +9,7 @@ export class UserSyncError extends Data.TaggedError("UserSyncError")<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
+
+export class WorkOSAuthError extends Data.TaggedError("WorkOSAuthError")<{
+  readonly error: unknown;
+}> {}

@@ -1,5 +1,6 @@
 "use client";
 
+import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
@@ -18,7 +19,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
-import { AuthFormHeader } from "@/components/auth/auth-form-header";
 import { Button } from "@/components/button";
 import { OrgLogoField } from "@/components/onboarding/org-logo-field";
 import { OnboardingProgress } from "@/components/onboarding/progress";

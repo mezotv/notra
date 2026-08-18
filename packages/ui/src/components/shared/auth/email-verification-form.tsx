@@ -1,32 +1,35 @@
 "use client";
 
-import { CtaButton } from "@notra/ui/components/shared/cta-button";
-import { Input } from "@notra/ui/components/ui/input";
-import { Label } from "@notra/ui/components/ui/label";
-import { useMutation } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
-import { AuthFormHeader } from "@/components/auth/auth-form-header";
-import { verifyEmailCodeAction } from "@/lib/auth/password-actions";
-import type { EmailVerificationFormProps } from "@/types/auth/form-ui";
+import type { EmailVerificationFormProps } from "../../../lib/auth-types";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
+import { CtaButton } from "../cta-button";
+import { AuthFormHeader } from "./auth-form-header";
+
+const NON_DIGIT_REGEX = /\D/g;
 
 export function EmailVerificationForm({
   pendingAuthenticationToken,
   email,
   returnTo,
   onSuccess,
+  verifyEmailCode,
 }: EmailVerificationFormProps) {
   const [code, setCode] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
-  const verifyMutation = useMutation({
-    mutationFn: () =>
-      verifyEmailCodeAction({
+  async function handleVerify() {
+    setIsPending(true);
+    try {
+      const result = await verifyEmailCode({
         pendingAuthenticationToken,
         code,
         returnTo,
-      }),
-    onSuccess: (result) => {
+      });
+
       if (result.status === "success") {
         if (onSuccess) {
           onSuccess();
@@ -41,11 +44,12 @@ export function EmailVerificationForm({
           ? result.message
           : "Verification failed. Please try again."
       );
-    },
-    onError: () => {
+    } catch {
       setFormError("Verification failed. Please try again.");
-    },
-  });
+    } finally {
+      setIsPending(false);
+    }
+  }
 
   return (
     <div className="flex w-full flex-col gap-5">
@@ -60,7 +64,7 @@ export function EmailVerificationForm({
         onSubmit={(event) => {
           event.preventDefault();
           setFormError(null);
-          verifyMutation.mutate();
+          handleVerify();
         }}
       >
         <div className="grid gap-2">
@@ -69,11 +73,13 @@ export function EmailVerificationForm({
             autoComplete="one-time-code"
             autoFocus
             className="h-11 rounded-xl px-3.5 text-center font-mono text-lg tracking-[0.5em]"
-            disabled={verifyMutation.isPending}
+            disabled={isPending}
             id="verification-code"
             inputMode="numeric"
             maxLength={6}
-            onChange={(event) => setCode(event.target.value.replace(/\D/g, ""))}
+            onChange={(event) =>
+              setCode(event.target.value.replace(NON_DIGIT_REGEX, ""))
+            }
             placeholder="000000"
             value={code}
           />
@@ -85,10 +91,10 @@ export function EmailVerificationForm({
 
         <CtaButton
           className="w-full"
-          disabled={verifyMutation.isPending || code.length !== 6}
+          disabled={isPending || code.length !== 6}
           type="submit"
         >
-          {verifyMutation.isPending ? (
+          {isPending ? (
             <>
               <Loader2Icon className="size-4 animate-spin" />
               Verifying...

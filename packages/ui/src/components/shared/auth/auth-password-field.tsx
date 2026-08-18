@@ -2,10 +2,10 @@
 
 import { ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Input } from "@notra/ui/components/ui/input";
-import { Label } from "@notra/ui/components/ui/label";
 import { useState } from "react";
-import type { AuthPasswordFieldProps } from "@/types/auth/form-ui";
+import type { AuthPasswordFieldProps } from "../../../lib/auth-types";
+import { Input } from "../../ui/input";
+import { Label } from "../../ui/label";
 
 export function AuthPasswordField({
   id,

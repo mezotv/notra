@@ -1,28 +1,34 @@
 "use client";
 
+import { AuthEmailField } from "@notra/ui/components/shared/auth/auth-email-field";
+import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
+import { AuthOrDivider } from "@notra/ui/components/shared/auth/auth-or-divider";
+import { AuthPasswordField } from "@notra/ui/components/shared/auth/auth-password-field";
+import { AuthSocialButtons } from "@notra/ui/components/shared/auth/auth-social-buttons";
+import { EmailVerificationForm } from "@notra/ui/components/shared/auth/email-verification-form";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Separator } from "@notra/ui/components/ui/separator";
+import type {
+  AuthMethod,
+  PendingVerification,
+  SocialProvider,
+} from "@notra/ui/lib/auth-types";
+import { setLastUsedLoginMethod } from "@notra/ui/lib/last-login-method";
 import { useForm } from "@tanstack/react-form";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useQueryStates } from "nuqs";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { AuthEmailField } from "@/components/auth/auth-email-field";
-import { AuthFormHeader } from "@/components/auth/auth-form-header";
-import { AuthOrDivider } from "@/components/auth/auth-or-divider";
-import { AuthPasswordField } from "@/components/auth/auth-password-field";
-import { AuthSocialButtons } from "@/components/auth/auth-social-buttons";
-import { EmailVerificationForm } from "@/components/auth/email-verification-form";
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
-import { setLastUsedLoginMethod } from "@/lib/auth/last-login-method";
-import { signUpWithPasswordAction } from "@/lib/auth/password-actions";
+import {
+  signUpWithPasswordAction,
+  verifyEmailCodeAction,
+} from "@/lib/auth/password-actions";
 import { isNextRedirectError } from "@/lib/auth/redirect-error";
 import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import { signupSchema } from "@/schemas/auth/credentials";
-import type { PendingVerification, SocialProvider } from "@/types/auth/form-ui";
-import type { AuthMethod } from "@/types/auth/method";
 import {
   marketingAttributionSearchParams,
   persistMarketingAttribution,
@@ -190,6 +196,7 @@ export function SignupForm({
           pendingVerification.pendingAuthenticationToken
         }
         returnTo={buildCallbackUrl("email")}
+        verifyEmailCode={verifyEmailCodeAction}
       />
     );
   }

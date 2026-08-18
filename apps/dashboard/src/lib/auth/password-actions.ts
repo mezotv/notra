@@ -1,5 +1,10 @@
 "use server";
 
+import type {
+  AuthFlowResult,
+  SignInWithPasswordInput,
+  VerifyEmailCodeInput,
+} from "@notra/ui/lib/auth-types";
 import type { Ratelimit } from "@upstash/ratelimit";
 import { getWorkOS, saveSession } from "@workos-inc/authkit-nextjs";
 import type { AuthenticationResponse } from "@workos-inc/node";
@@ -17,12 +22,9 @@ import {
   verificationCodeSchema,
 } from "@/schemas/auth/credentials";
 import type {
-  AuthFlowResult,
   ForgotPasswordInput,
   ResetPasswordInput,
-  SignInWithPasswordInput,
   SignUpWithPasswordInput,
-  VerifyEmailCodeInput,
 } from "@/types/auth/password-actions";
 import { getClientIpFromHeaders, ratelimit } from "@/utils/ratelimit";
 
