@@ -62,7 +62,15 @@ and agent/MCP OAuth surface.
    (`posts.read`, `posts.write`, `brand-identities.*`, `integrations.*`,
    `schedules.*`, `event-triggers.*`, `chats.*`, `skills.*`, `offline_access`).
    Agent tokens fail scoped endpoints until these exist.
-9. Set the session cookie domain to `.usenotra.com` (env
+9. Set the environment's **external login URI** to
+   `https://app.usenotra.com/auth/external` (management API:
+   `updateAuthkitExternalLoginUri`) so hosted flows (device approval, MCP
+   consent) authenticate through our custom pages: AuthKit redirects there with
+   `external_auth_id`, the route completes via
+   `POST api.workos.com/authkit/oauth2/complete` using the existing app
+   session, and no hosted login screen is ever shown. (Development is set to
+   `http://localhost:3000/auth/external`.)
+10. Set the session cookie domain to `.usenotra.com` (env
    `WORKOS_COOKIE_DOMAIN=.usenotra.com` on the dashboard deployment) so the
    marketing site can show signed-in state.
 

@@ -2,6 +2,7 @@ import { LoginForm } from "@/components/auth/login-form";
 
 const ERROR_MESSAGES: Record<string, string> = {
   "social-sign-in-failed": "Social sign-in failed. Please try again.",
+  "external-login-failed": "Authorization could not be completed. Please try again.",
 };
 
 export default async function Login({
