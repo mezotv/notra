@@ -1,5 +1,4 @@
 import { array, object, string } from "zod";
-import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
 import {
   GSC_MAX_KEYWORDS_PER_SUGGESTION,
   GSC_SUGGESTIONS_MAX_PER_SYNC,
@@ -27,15 +26,18 @@ export const gscSyncPayloadSchema = object({
   organizationId: string().min(1),
 });
 
+/**
+ * Deliberately permissive: a single over-long prompt or one extra item must not
+ * fail the whole generation. runSync re-checks length per prompt and drops what
+ * does not fit.
+ */
 export const geoSearchConsoleSuggestionSchema = object({
   prompts: array(
     object({
-      prompt: string().min(GEO_PROMPT_MIN_LENGTH).max(GEO_PROMPT_MAX_LENGTH),
-      keywords: array(string().min(1))
-        .min(1)
-        .transform((keywords) =>
-          keywords.slice(0, GSC_MAX_KEYWORDS_PER_SUGGESTION)
-        ),
+      prompt: string().min(1),
+      keywords: array(string().min(1)).transform((keywords) =>
+        keywords.slice(0, GSC_MAX_KEYWORDS_PER_SUGGESTION)
+      ),
     })
-  ).max(GSC_SUGGESTIONS_MAX_PER_SYNC),
+  ).transform((prompts) => prompts.slice(0, GSC_SUGGESTIONS_MAX_PER_SYNC)),
 });

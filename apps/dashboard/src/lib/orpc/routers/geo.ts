@@ -42,6 +42,7 @@ import {
   GEO_MODEL_USAGE_SOURCE,
 } from "@/constants/geo";
 import {
+  GSC_SCHEDULE_ID_PREFIX,
   GSC_SYNC_CRON,
   GSC_SYNC_WORKFLOW_PATH,
 } from "@/constants/google-search-console";
@@ -190,7 +191,9 @@ function toGscErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof GscReauthRequiredError) {
     return "Google Search Console access expired. Please reconnect.";
   }
-  if (error instanceof GscApiError || error instanceof Error) {
+  // GscApiError messages are curated in the integration layer; anything else
+  // (AI SDK, driver, ...) would leak internals into a user-facing toast.
+  if (error instanceof GscApiError) {
     return error.message || fallback;
   }
   return fallback;
@@ -204,10 +207,13 @@ async function ensureGscSchedule(
     return existingScheduleId;
   }
   try {
+    // Deterministic id: a retry (or a row that never recorded the id) reuses the
+    // same schedule instead of leaving an orphan firing every week.
     return await createQstashRouteSchedule({
       path: GSC_SYNC_WORKFLOW_PATH,
       cron: GSC_SYNC_CRON,
       body: { organizationId },
+      scheduleId: `${GSC_SCHEDULE_ID_PREFIX}${organizationId}`,
     });
   } catch (error) {
     console.error("[GSC] Failed to create weekly sync schedule:", error);
@@ -226,39 +232,40 @@ async function removeGscSchedule(scheduleId: string | null) {
   }
 }
 
-async function acceptSuggestionRow(
+type GeoTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function acceptSuggestionInTx(
+  tx: GeoTransaction,
   organizationId: string,
   suggestion: Pick<GeoPromptSuggestionRow, "id" | "prompt">
 ): Promise<GeoTrackedPrompt> {
-  return await db.transaction(async (tx) => {
-    // Reuse an identical tracked prompt instead of creating a duplicate.
-    const existing = await tx.query.geoPrompts.findFirst({
-      where: and(
-        eq(geoPrompts.organizationId, organizationId),
-        eq(geoPrompts.prompt, suggestion.prompt)
-      ),
-    });
-    let promptRow = existing ?? null;
-    if (!promptRow) {
-      const [inserted] = await tx
-        .insert(geoPrompts)
-        .values({
-          id: crypto.randomUUID(),
-          organizationId,
-          prompt: suggestion.prompt,
-        })
-        .returning();
-      promptRow = inserted ?? null;
-    }
-    if (!promptRow) {
-      throw badRequest("Failed to create prompt");
-    }
-    await tx
-      .update(geoPromptSuggestions)
-      .set({ status: "accepted", acceptedPromptId: promptRow.id })
-      .where(eq(geoPromptSuggestions.id, suggestion.id));
-    return toTrackedPrompt(promptRow);
+  // Reuse an identical tracked prompt instead of creating a duplicate.
+  const existing = await tx.query.geoPrompts.findFirst({
+    where: and(
+      eq(geoPrompts.organizationId, organizationId),
+      eq(geoPrompts.prompt, suggestion.prompt)
+    ),
   });
+  let promptRow = existing ?? null;
+  if (!promptRow) {
+    const [inserted] = await tx
+      .insert(geoPrompts)
+      .values({
+        id: crypto.randomUUID(),
+        organizationId,
+        prompt: suggestion.prompt,
+      })
+      .returning();
+    promptRow = inserted ?? null;
+  }
+  if (!promptRow) {
+    throw badRequest("Failed to create prompt");
+  }
+  await tx
+    .update(geoPromptSuggestions)
+    .set({ status: "accepted", acceptedPromptId: promptRow.id })
+    .where(eq(geoPromptSuggestions.id, suggestion.id));
+  return toTrackedPrompt(promptRow);
 }
 
 export const geoRouter = {
@@ -781,6 +788,7 @@ export const geoRouter = {
 
       let sites: GeoSearchConsoleStatus["sites"] = [];
       let lastError = integration.lastError;
+      let refreshed = integration;
       if (!integration.siteUrl && integration.status === "active") {
         try {
           sites = await listGscSites(integration);
@@ -791,10 +799,11 @@ export const geoRouter = {
             "Failed to load Search Console properties"
           );
         }
+        // Listing may have refreshed the access token or flipped the row to
+        // reauth_required, so re-read only on that path.
+        refreshed =
+          (await getGscIntegration(input.organizationId)) ?? integration;
       }
-
-      const refreshed =
-        (await getGscIntegration(input.organizationId)) ?? integration;
 
       return {
         configured,
@@ -822,16 +831,36 @@ export const geoRouter = {
         throw notFound("Google Search Console is not connected");
       }
 
+      let sites: Awaited<ReturnType<typeof listGscSites>>;
+      try {
+        sites = await listGscSites(integration);
+      } catch (error) {
+        console.error("[GSC] Failed to verify property:", error);
+        throw badRequest(
+          toGscErrorMessage(error, "Failed to load Search Console properties")
+        );
+      }
+      if (!sites.some((site) => site.siteUrl === input.siteUrl)) {
+        throw badRequest(
+          "That property is not available on the connected Google account"
+        );
+      }
+
       const scheduleId = await ensureGscSchedule(
         input.organizationId,
         integration.qstashScheduleId
       );
 
-      await updateGscIntegration(input.organizationId, {
+      const updated = await updateGscIntegration(input.organizationId, {
         siteUrl: input.siteUrl,
         qstashScheduleId: scheduleId,
         lastError: null,
       });
+      if (!updated) {
+        // The row vanished mid-flight; do not leave the schedule behind.
+        await removeGscSchedule(scheduleId);
+        throw notFound("Google Search Console is not connected");
+      }
 
       try {
         return await syncGscSuggestions(input.organizationId);
@@ -870,9 +899,12 @@ export const geoRouter = {
         // Backfill the weekly schedule if it could not be created earlier.
         const scheduleId = await ensureGscSchedule(input.organizationId, null);
         if (scheduleId) {
-          await updateGscIntegration(input.organizationId, {
+          const updated = await updateGscIntegration(input.organizationId, {
             qstashScheduleId: scheduleId,
           });
+          if (!updated) {
+            await removeGscSchedule(scheduleId);
+          }
         }
       }
 
@@ -966,7 +998,9 @@ export const geoRouter = {
         throw notFound("Suggestion not found");
       }
 
-      return await acceptSuggestionRow(input.organizationId, suggestion);
+      return await db.transaction((tx) =>
+        acceptSuggestionInTx(tx, input.organizationId, suggestion)
+      );
     }),
   suggestionsAcceptAll: authorizedProcedure
     .input(geoOrganizationInputSchema)
@@ -984,10 +1018,15 @@ export const geoRouter = {
         ),
         orderBy: [asc(geoPromptSuggestions.createdAt)],
       });
-
-      for (const row of rows) {
-        await acceptSuggestionRow(input.organizationId, row);
+      if (rows.length === 0) {
+        return { accepted: 0 };
       }
+
+      await db.transaction(async (tx) => {
+        for (const row of rows) {
+          await acceptSuggestionInTx(tx, input.organizationId, row);
+        }
+      });
       return { accepted: rows.length };
     }),
   suggestionDismiss: authorizedProcedure

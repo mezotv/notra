@@ -23,12 +23,7 @@ export type GscIntegrationRow =
 export type GscIntegrationUpdate = Partial<
   Pick<
     typeof googleSearchConsoleIntegrations.$inferInsert,
-    | "siteUrl"
-    | "status"
-    | "qstashScheduleId"
-    | "lastSyncedAt"
-    | "lastError"
-    | "enabled"
+    "siteUrl" | "status" | "qstashScheduleId" | "lastSyncedAt" | "lastError"
   >
 >;
 

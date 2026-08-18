@@ -1,5 +1,6 @@
 import { gateway } from "@notra/ai/gateway";
 import {
+  GscApiError,
   GscReauthRequiredError,
   getGscIntegration,
   queryGscTopQueries,
@@ -16,6 +17,7 @@ import { generateText, Output } from "ai";
 import { and, eq } from "drizzle-orm";
 import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
 import {
+  GSC_FORBIDDEN_STATUS,
   GSC_SUGGESTION_MAX_TOKENS,
   GSC_SUGGESTION_MODEL,
   GSC_SYNC_LOOKBACK_DAYS,
@@ -48,11 +50,24 @@ async function generateSuggestions(params: GscSuggestionGenerationParams) {
   return result.output.prompts;
 }
 
+/**
+ * `lastError` is rendered in the dashboard, so only curated copy goes in —
+ * raw provider/SDK messages stay in the logs.
+ */
+function toStoredSyncError(error: unknown): string {
+  if (error instanceof GscApiError) {
+    return error.status === GSC_FORBIDDEN_STATUS
+      ? "Google denied access to this property. Reconnect or pick another one."
+      : "Search Console could not be reached. We will retry with the next sync.";
+  }
+  return "We could not turn your Search Console keywords into prompt suggestions.";
+}
+
 export async function syncGscSuggestions(
   organizationId: string
 ): Promise<GscSyncResult> {
   const integration = await getGscIntegration(organizationId);
-  if (!integration?.enabled) {
+  if (!integration) {
     return { status: "skipped", reason: "not_connected" };
   }
   if (!integration.siteUrl) {
@@ -70,10 +85,11 @@ export async function syncGscSuggestions(
     });
     return result;
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Search Console sync failed";
+    console.error("[GSC] Sync failed:", error);
     if (!(error instanceof GscReauthRequiredError)) {
-      await updateGscIntegration(organizationId, { lastError: message });
+      await updateGscIntegration(organizationId, {
+        lastError: toStoredSyncError(error),
+      });
     }
     throw error;
   }
@@ -85,7 +101,7 @@ async function runSync(
 ): Promise<GscSyncResult> {
   const organizationId = integration.organizationId;
 
-  const [rows, settingsRow, trackedRows, dismissedRows] = await Promise.all([
+  const [rows, settingsRow, trackedRows, suggestionRows] = await Promise.all([
     queryGscTopQueries(integration, {
       siteUrl,
       days: GSC_SYNC_LOOKBACK_DAYS,
@@ -99,12 +115,11 @@ async function runSync(
       where: eq(geoPrompts.organizationId, organizationId),
       columns: { prompt: true },
     }),
+    // Every status, not just dismissed: an accepted suggestion whose tracked
+    // prompt was deleted still occupies the (organizationId, prompt) unique index.
     db.query.geoPromptSuggestions.findMany({
-      where: and(
-        eq(geoPromptSuggestions.organizationId, organizationId),
-        eq(geoPromptSuggestions.status, "dismissed")
-      ),
-      columns: { prompt: true },
+      where: eq(geoPromptSuggestions.organizationId, organizationId),
+      columns: { prompt: true, status: true },
     }),
   ]);
 
@@ -116,8 +131,11 @@ async function runSync(
 
   const existingPrompts = [
     ...trackedRows.map((row) => row.prompt),
-    ...dismissedRows.map((row) => row.prompt),
+    ...suggestionRows
+      .filter((row) => row.status !== "pending")
+      .map((row) => row.prompt),
   ];
+  // Pending rows are replaced further down, so they must not block a re-suggestion.
   const seen = new Set(existingPrompts.map(normalizeSuggestionKey));
   const keywordByQuery = new Map(
     keywords.map((row) => [normalizeSuggestionKey(row.query), row] as const)
@@ -156,6 +174,7 @@ async function runSync(
     });
   }
 
+  let inserted: { id: string }[] = [];
   if (values.length > 0) {
     await db.transaction(async (tx) => {
       await tx
@@ -166,13 +185,17 @@ async function runSync(
             eq(geoPromptSuggestions.status, "pending")
           )
         );
-      await tx.insert(geoPromptSuggestions).values(values);
+      inserted = await tx
+        .insert(geoPromptSuggestions)
+        .values(values)
+        .onConflictDoNothing()
+        .returning({ id: geoPromptSuggestions.id });
     });
   }
 
   return {
     status: "completed",
     keywords: rows.length,
-    suggestionsAdded: values.length,
+    suggestionsAdded: inserted.length,
   };
 }

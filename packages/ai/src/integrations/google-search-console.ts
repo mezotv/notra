@@ -20,6 +20,7 @@ import { deleteQstashSchedule } from "../qstash/triggers";
 import {
   gscSearchAnalyticsResponseSchema,
   gscSitesResponseSchema,
+  gscTokenErrorSchema,
   gscTokenResponseSchema,
   gscUserInfoSchema,
 } from "../schemas/google-search-console";
@@ -85,6 +86,17 @@ export class GscApiError extends Error {
   }
 }
 
+function parseTokenError(payload: unknown): {
+  code: string | undefined;
+  description: string | undefined;
+} {
+  const parsed = gscTokenErrorSchema.safeParse(payload);
+  return {
+    code: parsed.success ? parsed.data.error : undefined,
+    description: parsed.success ? parsed.data.error_description : undefined,
+  };
+}
+
 function toExpiresAt(expiresInSeconds: number | undefined): Date {
   const seconds = expiresInSeconds ?? DEFAULT_ACCESS_TOKEN_TTL_SECONDS;
   return new Date(Date.now() + seconds * 1000);
@@ -110,12 +122,12 @@ export async function exchangeGscAuthorizationCode(
     }),
   });
 
-  const parsed = gscTokenResponseSchema.safeParse(await response.json());
+  const payload = await response.json();
+  const parsed = gscTokenResponseSchema.safeParse(payload);
   if (!(response.ok && parsed.success)) {
+    const { code, description } = parseTokenError(payload);
     throw new GscApiError(
-      parsed.success && parsed.data.error_description
-        ? parsed.data.error_description
-        : "Google token exchange failed",
+      description ?? code ?? "Google token exchange failed",
       response.status
     );
   }
@@ -200,7 +212,6 @@ export async function upsertGscIntegration(
         accessTokenExpiresAt: params.expiresAt,
         status: "active",
         lastError: null,
-        enabled: true,
         ...(googleAccountChanged
           ? { siteUrl: null, qstashScheduleId: null }
           : {}),
@@ -285,13 +296,14 @@ async function refreshGscAccessToken(
     }),
   });
 
-  const parsed = gscTokenResponseSchema.safeParse(await response.json());
+  const payload = await response.json();
+  const parsed = gscTokenResponseSchema.safeParse(payload);
   if (!(response.ok && parsed.success)) {
-    const errorCode = parsed.success ? parsed.data.error : undefined;
-    if (errorCode && REAUTH_ERROR_CODES.has(errorCode)) {
+    const { code, description } = parseTokenError(payload);
+    if (code && REAUTH_ERROR_CODES.has(code)) {
       await updateGscIntegration(integration.organizationId, {
         status: "reauth_required",
-        lastError: parsed.data?.error_description ?? errorCode,
+        lastError: description ?? code,
       });
       throw new GscReauthRequiredError();
     }

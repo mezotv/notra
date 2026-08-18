@@ -6,6 +6,14 @@ export const gscTokenResponseSchema = z.looseObject({
   refresh_token: z.string().optional(),
   scope: z.string().optional(),
   id_token: z.string().optional(),
+});
+
+/**
+ * Google's OAuth error payloads carry no access_token, so they can never satisfy
+ * gscTokenResponseSchema. They are parsed separately to keep `invalid_grant` and
+ * friends reachable.
+ */
+export const gscTokenErrorSchema = z.looseObject({
   error: z.string().optional(),
   error_description: z.string().optional(),
 });

@@ -5,6 +5,21 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { GSC_ERROR_MESSAGES } from "@/lib/integrations/google-search-console/oauth-errors";
 
+const OAUTH_RESULT_PARAMS = ["gscConnected", "error"] as const;
+
+/** Drops only the OAuth result params so page state (filters, tabs) survives. */
+function urlWithoutOAuthParams(
+  pathname: string,
+  searchParams: URLSearchParams
+): string {
+  const next = new URLSearchParams(searchParams);
+  for (const param of OAUTH_RESULT_PARAMS) {
+    next.delete(param);
+  }
+  const query = next.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
 export function useGscConnectionToast() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -18,12 +33,16 @@ export function useGscConnectionToast() {
       toast.success("Google Search Console connected", {
         id: "gsc-connected",
       });
-      router.replace(pathname, { scroll: false });
+      router.replace(urlWithoutOAuthParams(pathname, searchParams), {
+        scroll: false,
+      });
       return;
     }
     if (error && Object.hasOwn(GSC_ERROR_MESSAGES, error)) {
       toast.error(GSC_ERROR_MESSAGES[error], { id: `gsc-error-${error}` });
-      router.replace(pathname, { scroll: false });
+      router.replace(urlWithoutOAuthParams(pathname, searchParams), {
+        scroll: false,
+      });
     }
   }, [searchParams, pathname, router]);
 }

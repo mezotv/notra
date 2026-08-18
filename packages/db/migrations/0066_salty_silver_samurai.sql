@@ -23,7 +23,6 @@ CREATE TABLE "google_search_console_integrations" (
 	"qstash_schedule_id" text,
 	"last_synced_at" timestamp,
 	"last_error" text,
-	"enabled" boolean DEFAULT true NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );

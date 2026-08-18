@@ -1517,7 +1517,6 @@ export const googleSearchConsoleIntegrations = pgTable(
     qstashScheduleId: text("qstash_schedule_id"),
     lastSyncedAt: timestamp("last_synced_at"),
     lastError: text("last_error"),
-    enabled: boolean("enabled").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
