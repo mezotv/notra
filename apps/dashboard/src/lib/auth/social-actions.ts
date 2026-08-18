@@ -21,12 +21,14 @@ export async function startSocialSignInAction(input: StartSocialSignInInput) {
   }
 
   const headersList = await headers();
-  const { success } = await ratelimit.socialSignInStart.limit(
-    getClientIpFromHeaders(headersList)
-  );
+  const clientIp = getClientIpFromHeaders(headersList);
 
-  if (!success) {
-    redirect("/login?error=social-sign-in-failed");
+  if (clientIp !== "unknown") {
+    const { success } = await ratelimit.socialSignInStart.limit(clientIp);
+
+    if (!success) {
+      redirect("/login?error=social-sign-in-failed");
+    }
   }
 
   const returnTo = sanitizeReturnTo(input.returnTo ?? null);
