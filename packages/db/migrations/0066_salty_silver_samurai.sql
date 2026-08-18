@@ -13,7 +13,7 @@ CREATE TABLE "geo_prompt_suggestions" (
 CREATE TABLE "google_search_console_integrations" (
 	"id" text PRIMARY KEY NOT NULL,
 	"organization_id" text NOT NULL,
-	"created_by_user_id" text NOT NULL,
+	"created_by_user_id" text,
 	"google_account_email" text,
 	"encrypted_access_token" text NOT NULL,
 	"encrypted_refresh_token" text NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE "google_search_console_integrations" (
 ALTER TABLE "geo_prompt_suggestions" ADD CONSTRAINT "geo_prompt_suggestions_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "geo_prompt_suggestions" ADD CONSTRAINT "geo_prompt_suggestions_accepted_prompt_id_geo_prompts_id_fk" FOREIGN KEY ("accepted_prompt_id") REFERENCES "public"."geo_prompts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "google_search_console_integrations" ADD CONSTRAINT "google_search_console_integrations_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "google_search_console_integrations" ADD CONSTRAINT "google_search_console_integrations_created_by_user_id_users_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "google_search_console_integrations" ADD CONSTRAINT "google_search_console_integrations_created_by_user_id_users_id_fk" FOREIGN KEY ("created_by_user_id") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "geoPromptSuggestions_organizationId_status_idx" ON "geo_prompt_suggestions" USING btree ("organization_id","status");--> statement-breakpoint
 CREATE UNIQUE INDEX "geoPromptSuggestions_organizationId_prompt_uidx" ON "geo_prompt_suggestions" USING btree ("organization_id","prompt");--> statement-breakpoint
 CREATE UNIQUE INDEX "googleSearchConsoleIntegrations_organizationId_uidx" ON "google_search_console_integrations" USING btree ("organization_id");--> statement-breakpoint
