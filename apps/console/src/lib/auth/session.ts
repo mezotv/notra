@@ -1,10 +1,11 @@
-import { headers } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
 import { cache } from "react";
-import { auth } from "@/lib/auth/server";
+import { getAuthSession } from "@/lib/auth/server";
 import type { GetServerSessionParams } from "@/types/auth";
 
-export async function getServerSession({ headers }: GetServerSessionParams) {
-  const data = await auth.api.getSession({ headers }).catch((error) => {
+export async function getServerSession(_params?: GetServerSessionParams) {
+  const data = await getAuthSession().catch((error) => {
+    unstable_rethrow(error);
     console.error("Error getting server session", error);
     return null;
   });
@@ -15,6 +16,4 @@ export async function getServerSession({ headers }: GetServerSessionParams) {
   };
 }
 
-export const getRequestSession = cache(async () =>
-  getServerSession({ headers: await headers() })
-);
+export const getRequestSession = cache(async () => getServerSession());

@@ -221,26 +221,31 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
           {(field) => (
             <div className="grid gap-2">
               <Label htmlFor="slug">Slug</Label>
-              <Input
-                aria-invalid={field.state.meta.errors.length > 0}
-                className="h-11 rounded-xl px-3.5"
-                disabled={isSubmitting || isResuming}
-                id="slug"
-                onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(slugify(e.target.value))}
-                placeholder="acme-inc"
-                type="text"
-                value={field.state.value}
-              />
+              <div
+                className={`flex h-11 w-full flex-row items-center overflow-hidden rounded-xl border transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-input"}`}
+              >
+                <label
+                  className="flex h-full items-center border-input border-r bg-muted/30 px-3.5 text-muted-foreground text-sm"
+                  htmlFor="slug"
+                >
+                  app.usenotra.com/
+                </label>
+                <input
+                  className="h-full flex-1 bg-transparent px-3.5 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={isSubmitting || isResuming}
+                  id="slug"
+                  onBlur={field.handleBlur}
+                  onChange={(e) => field.handleChange(slugify(e.target.value))}
+                  placeholder="acme-inc"
+                  type="text"
+                  value={field.state.value}
+                />
+              </div>
               {field.state.meta.errors.length > 0 ? (
                 <p className="text-destructive text-sm">
                   {getValidationMessage(field.state.meta.errors[0])}
                 </p>
-              ) : (
-                <p className="text-muted-foreground text-xs">
-                  This becomes your workspace URL.
-                </p>
-              )}
+              ) : null}
             </div>
           )}
         </form.Field>
@@ -337,7 +342,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
                 >
                   <SelectTrigger
                     aria-invalid={field.state.meta.errors.length > 0}
-                    className="h-11 w-full rounded-xl px-3.5"
+                    className="w-full rounded-xl px-3.5 data-[size=default]:h-11"
                     disabled={isSubmitting || isAttributionLocked}
                     id="heard-about-notra"
                   >

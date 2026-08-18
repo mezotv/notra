@@ -1,12 +1,10 @@
 import { createHash } from "node:crypto";
 import { AiCreditsDepletedEmail } from "@notra/email/emails/ai-credits-depleted";
 import { FeedbackEmail } from "@notra/email/emails/feedback";
-import { InviteUserEmail } from "@notra/email/emails/invite";
 import { ResetPasswordEmail } from "@notra/email/emails/reset";
 import { ScheduledContentCreatedEmail } from "@notra/email/emails/schedule-content-created";
 import { ScheduledContentFailedEmail } from "@notra/email/emails/schedule-content-failed";
 import { ScheduledContentSkippedEmail } from "@notra/email/emails/schedule-content-skipped";
-import { VerifyUserEmail } from "@notra/email/emails/verify";
 import { WelcomeEmail } from "@notra/email/emails/welcome";
 import { WorkflowPausedEmail } from "@notra/email/emails/workflow-paused";
 import { EMAIL_CONFIG } from "@notra/email/utils/config";
@@ -16,7 +14,6 @@ import type {
   EmailResult,
   SendAiCreditsDepletedEmailProps,
   SendFeedbackEmailProps,
-  SendInviteEmailProps,
   SendScheduledContentCreatedEmailProps,
   SendScheduledContentFailedEmailProps,
   SendScheduledContentSkippedEmailProps,
@@ -109,82 +106,6 @@ async function sendWithRetry(
 
 // --- Send Functions ---
 
-export async function sendInviteEmail(
-  resend: Resend,
-  {
-    inviteeEmail,
-    inviterName,
-    inviterEmail,
-    organizationName,
-    inviteLink,
-  }: SendInviteEmailProps
-) {
-  return sendWithRetry(
-    resend,
-    {
-      from: EMAIL_CONFIG.from,
-      replyTo: EMAIL_CONFIG.replyTo,
-      to: inviteeEmail,
-      subject: `Join ${organizationName} on Notra`,
-      react: InviteUserEmail({
-        inviteeEmail,
-        invitedByUsername: inviterName,
-        invitedByEmail: inviterEmail,
-        organizationName,
-        inviteLink,
-      }),
-      tags: [{ name: "category", value: "invite" }],
-    },
-    `notra:invite:${inviteeEmail}:${inviteLink}`
-  );
-}
-
-function getVerificationSubject(type: "sign-in" | "email-verification") {
-  switch (type) {
-    case "sign-in":
-      return "Your sign-in code";
-    case "email-verification":
-      return "Verify your email address";
-    default: {
-      const _exhaustiveCheck: never = type;
-      return _exhaustiveCheck;
-    }
-  }
-}
-
-export async function sendVerificationEmail(
-  resend: Resend,
-  {
-    userEmail,
-    otp,
-    type,
-  }: {
-    userEmail: string;
-    otp: string;
-    type: "sign-in" | "email-verification";
-  }
-) {
-  return sendWithRetry(
-    resend,
-    {
-      from: EMAIL_CONFIG.from,
-      replyTo: EMAIL_CONFIG.replyTo,
-      to: userEmail,
-      subject: getVerificationSubject(type),
-      react: VerifyUserEmail({
-        userEmail,
-        otp,
-        type,
-      }),
-      tags: [{ name: "category", value: type }],
-      headers: {
-        "X-Entity-Ref-ID": `notra:${type}:${userEmail}:${otp}`,
-      },
-    },
-    `notra:verify:${userEmail}:${otp}`
-  );
-}
-
 export async function sendResetPassword(
   resend: Resend,
   {
@@ -245,7 +166,7 @@ export async function sendScheduledContentFailedEmail(
     subject,
   }: SendScheduledContentFailedEmailProps
 ) {
-  const settingsLink = `${process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
+  const settingsLink = `${process.env.APP_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
 
   return sendWithRetry(
     resend,
@@ -279,7 +200,7 @@ export async function sendScheduledContentSkippedEmail(
     subject,
   }: SendScheduledContentSkippedEmailProps
 ) {
-  const settingsLink = `${process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
+  const settingsLink = `${process.env.APP_URL ?? "https://app.usenotra.com"}/${organizationSlug}/schedules`;
 
   return sendWithRetry(
     resend,
@@ -312,7 +233,7 @@ export async function sendAiCreditsDepletedEmail(
     subject,
   }: SendAiCreditsDepletedEmailProps
 ) {
-  const appUrl = process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
+  const appUrl = process.env.APP_URL ?? EMAIL_CONFIG.getAppUrl();
   const creditsLink = `${appUrl}/${organizationSlug}/settings/credits`;
   const idempotencyKey = createHash("sha256")
     .update(
@@ -352,7 +273,7 @@ export async function sendWorkflowPausedEmail(
     subject,
   }: SendWorkflowPausedEmailProps
 ) {
-  const appUrl = process.env.BETTER_AUTH_URL ?? EMAIL_CONFIG.getAppUrl();
+  const appUrl = process.env.APP_URL ?? EMAIL_CONFIG.getAppUrl();
   const settingsLink = `${appUrl}/${organizationSlug}/automation/schedules`;
   const idempotencyKey = createHash("sha256")
     .update(

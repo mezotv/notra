@@ -57,19 +57,15 @@ export function apiUrl(path = "") {
   return `${API_URL}${path}`;
 }
 
-function appUrl(path = "") {
-  return `${APP_URL}${path}`;
-}
-
 function authIssuerUrl() {
-  return appUrl("/api/auth");
+  return "https://auth.usenotra.com";
 }
 
-export function buildAgentAuthMetadata() {
+function buildAgentAuthMetadata() {
   return {
-    register_uri: appUrl("/agent/auth/register"),
+    register_uri: `${authIssuerUrl()}/oauth2/register`,
     claim_uri: siteUrl("/agent/auth/claim"),
-    revocation_uri: appUrl("/agent/auth/revoke"),
+    revocation_uri: `${authIssuerUrl()}/oauth2/revoke`,
     skill: siteUrl(AGENT_DISCOVERY_PATHS.authMarkdown),
     identity_types_supported: ["anonymous", "identity_assertion"],
     anonymous: {

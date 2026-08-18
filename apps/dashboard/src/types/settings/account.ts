@@ -1,9 +1,4 @@
-export interface Account {
-  id: string;
-  providerId: string;
-  accountId: string;
-  [key: string]: unknown;
-}
+import type { AccountInfo } from "@/types/organizations/actions";
 
 export interface ProfileSectionUser {
   id: string;
@@ -23,7 +18,7 @@ export interface LoginDetailsSectionProps {
 }
 
 export interface ConnectedAccountsSectionProps {
-  accounts: Account[];
+  accounts: AccountInfo[];
   hasGoogleLinked: boolean;
   hasGithubLinked: boolean;
   isError: boolean;

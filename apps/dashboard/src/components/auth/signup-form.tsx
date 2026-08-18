@@ -13,11 +13,15 @@ import { AuthFormHeader } from "@/components/auth/auth-form-header";
 import { AuthOrDivider } from "@/components/auth/auth-or-divider";
 import { AuthPasswordField } from "@/components/auth/auth-password-field";
 import { AuthSocialButtons } from "@/components/auth/auth-social-buttons";
+import { EmailVerificationForm } from "@/components/auth/email-verification-form";
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
-import { authClient } from "@/lib/auth/client";
+import { setLastUsedLoginMethod } from "@/lib/auth/last-login-method";
+import { signUpWithPasswordAction } from "@/lib/auth/password-actions";
+import { isNextRedirectError } from "@/lib/auth/redirect-error";
+import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import { signupSchema } from "@/schemas/auth/credentials";
-import type { SocialProvider } from "@/types/auth/form-ui";
+import type { PendingVerification, SocialProvider } from "@/types/auth/form-ui";
 import type { AuthMethod } from "@/types/auth/method";
 import {
   marketingAttributionSearchParams,
@@ -47,6 +51,8 @@ export function SignupForm({
 }: SignupFormProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [pendingVerification, setPendingVerification] =
+    useState<PendingVerification | null>(null);
   const authInFlightRef = useRef(false);
   const [attributionParams] = useQueryStates(marketingAttributionSearchParams, {
     history: "replace",
@@ -88,7 +94,7 @@ export function SignupForm({
     return query ? `/callback?${query}` : "/callback";
   }
 
-  async function handleSocialSignup(provider: SocialProvider) {
+  function handleSocialSignup(provider: SocialProvider) {
     if (authInFlightRef.current) {
       return;
     }
@@ -96,19 +102,19 @@ export function SignupForm({
     setFormError(null);
     authInFlightRef.current = true;
     flushSync(() => setAuthMethod(provider));
-    try {
-      persistMarketingAttribution({ ...attribution, signupMethod: provider });
-
-      await authClient.signIn.social({
-        provider,
-        callbackURL: buildCallbackUrl(provider),
-      });
-    } catch (error) {
-      console.error("Social signup error:", error);
-      setFormError(SIGNUP_ERROR_FALLBACK);
+    persistMarketingAttribution({ ...attribution, signupMethod: provider });
+    setLastUsedLoginMethod(provider);
+    startSocialSignInAction({
+      provider,
+      returnTo: buildCallbackUrl(provider),
+    }).catch((error) => {
+      if (isNextRedirectError(error)) {
+        return;
+      }
       authInFlightRef.current = false;
       setAuthMethod(null);
-    }
+      setFormError("Social sign-up failed. Please try again.");
+    });
   }
 
   const form = useForm({
@@ -131,30 +137,40 @@ export function SignupForm({
       flushSync(() => setAuthMethod("email"));
       const fallbackName = parsed.data.email.split("@")[0] || "User";
       try {
-        const result = await authClient.signUp.email({
+        const result = await signUpWithPasswordAction({
           email: parsed.data.email,
           password: parsed.data.password,
           name: fallbackName,
+          returnTo: buildCallbackUrl("email"),
         });
 
-        if (result.error) {
-          setFormError(
-            errorMessageOr(result.error.message, SIGNUP_ERROR_FALLBACK)
-          );
+        if (result.status === "error") {
+          setFormError(errorMessageOr(result.message, SIGNUP_ERROR_FALLBACK));
           authInFlightRef.current = false;
           setAuthMethod(null);
           return;
         }
 
-        // Call onSuccess callback if provided, otherwise redirect through callback
+        setLastUsedLoginMethod("email");
+        persistMarketingAttribution({
+          ...attribution,
+          signupMethod: "email",
+        });
+
+        if (result.status === "verification-required") {
+          authInFlightRef.current = false;
+          setAuthMethod(null);
+          setPendingVerification({
+            pendingAuthenticationToken: result.pendingAuthenticationToken,
+            email: result.email,
+          });
+          return;
+        }
+
         if (onSuccess) {
           onSuccess();
         } else {
-          persistMarketingAttribution({
-            ...attribution,
-            signupMethod: "email",
-          });
-          window.location.assign(buildCallbackUrl("email"));
+          window.location.assign(result.redirectTo);
         }
       } catch (error) {
         console.error("Email signup error:", error);
@@ -164,6 +180,19 @@ export function SignupForm({
       }
     },
   });
+
+  if (pendingVerification) {
+    return (
+      <EmailVerificationForm
+        email={pendingVerification.email}
+        onSuccess={onSuccess}
+        pendingAuthenticationToken={
+          pendingVerification.pendingAuthenticationToken
+        }
+        returnTo={buildCallbackUrl("email")}
+      />
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-5">
@@ -234,7 +263,7 @@ export function SignupForm({
                   id={field.name}
                   onBlur={field.handleBlur}
                   onChange={field.handleChange}
-                  placeholder="At least 8 characters"
+                  placeholder="At least 10 characters"
                   value={field.state.value}
                 />
               )}

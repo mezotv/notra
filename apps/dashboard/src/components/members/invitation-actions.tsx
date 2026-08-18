@@ -32,7 +32,6 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { useQueryClient } from "@tanstack/react-query";
-import type { Invitation } from "better-auth/plugins/organization";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -43,9 +42,10 @@ import {
   isTeamMemberLimitError,
   mapBillingLimitErrorMessage,
 } from "@/lib/billing/limits";
+import type { InvitationSummary } from "@/types/organizations/actions";
 
 interface InvitationActionsProps {
-  invitation: Invitation;
+  invitation: InvitationSummary;
 }
 
 export function InvitationActions({ invitation }: InvitationActionsProps) {
@@ -69,11 +69,8 @@ export function InvitationActions({ invitation }: InvitationActionsProps) {
 
     setIsResending(true);
     try {
-      const { error } = await authClient.organization.inviteMember({
-        email: invitation.email,
-        role: invitation.role as "member" | "owner" | "admin",
-        organizationId: activeOrganization.id,
-        resend: true,
+      const { error } = await authClient.organization.resendInvitation({
+        invitationId: invitation.id,
       });
 
       if (error) {

@@ -1,13 +1,39 @@
+import type { users } from "@notra/db/schema";
 import type { CSSProperties } from "react";
 
-export type AuthMethod = "email" | "google" | "github";
+export type SessionUser = typeof users.$inferSelect;
 
-export type SocialProvider = "google" | "github";
+export interface SessionInfo {
+  userId: string;
+  activeOrganizationId: string | null;
+  impersonatedBy: string | null;
+}
 
-export interface SocialAuthButtonsProps {
-  authMethod: AuthMethod | null;
-  disabled: boolean;
-  onSelect: (provider: SocialProvider) => void;
+export interface AuthSessionData {
+  session: SessionInfo;
+  user: SessionUser;
+}
+
+export interface ClientSessionData {
+  session: SessionInfo;
+  user: Pick<
+    SessionUser,
+    | "id"
+    | "name"
+    | "email"
+    | "emailVerified"
+    | "image"
+    | "role"
+    | "hidePersonalData"
+    | "showAgentStats"
+    | "createdAt"
+  >;
+}
+
+export interface SignOutOptions {
+  fetchOptions?: {
+    onSuccess?: () => void;
+  };
 }
 
 export interface ConsoleUser {
@@ -18,19 +44,17 @@ export interface ConsoleUser {
 }
 
 export interface ImpersonationUser extends ConsoleUser {
-  role?: string;
-  banned: boolean | null;
-}
-
-export interface ImpersonationTarget {
-  id: string;
   role: string | null;
   banned: boolean | null;
 }
 
-export interface AssertImpersonationTargetAllowedParams {
-  actorUserId: string;
-  target: ImpersonationTarget;
+export interface BannedStatusUser {
+  banned: boolean | null;
+  banExpires: Date | null;
+}
+
+export interface ListUsersInput {
+  search?: string;
 }
 
 export interface GetServerSessionParams {

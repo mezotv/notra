@@ -18,8 +18,7 @@ import type {
 } from "@/types/linear-oauth";
 
 export async function GET(request: NextRequest) {
-  const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   let restoreOAuthState: (() => Promise<void>) | null = null;
 

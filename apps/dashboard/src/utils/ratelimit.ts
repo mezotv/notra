@@ -113,7 +113,39 @@ export const ratelimit = {
     prefix: "ratelimit:slack-oauth",
     limiter: Ratelimit.slidingWindow(10, "10m"),
   }),
+  signIn: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:auth-sign-in",
+    limiter: Ratelimit.slidingWindow(5, "1m"),
+  }),
+  signUp: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:auth-sign-up",
+    limiter: Ratelimit.slidingWindow(5, "1m"),
+  }),
+  forgotPassword: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:auth-forgot-password",
+    limiter: Ratelimit.slidingWindow(3, "1m"),
+  }),
+  socialSignInStart: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:auth-social-start",
+    limiter: Ratelimit.slidingWindow(10, "1m"),
+  }),
 };
+
+export function getClientIpFromHeaders(headersList: Headers): string {
+  if (process.env.VERCEL !== "1") {
+    return "unknown";
+  }
+
+  return headersList.get("x-vercel-forwarded-for")?.trim() || "unknown";
+}
 
 export function getClientIp(request: NextRequest): string {
   // Vercel injects this header at its trusted network boundary. Do not fall

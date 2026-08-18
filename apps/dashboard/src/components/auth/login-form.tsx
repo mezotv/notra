@@ -6,20 +6,33 @@ import { Separator } from "@notra/ui/components/ui/separator";
 import { useForm } from "@tanstack/react-form";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
-import { useRef, useState } from "react";
+import { useRef, useState, useSyncExternalStore } from "react";
 import { flushSync } from "react-dom";
 import { AuthEmailField } from "@/components/auth/auth-email-field";
 import { AuthFormHeader } from "@/components/auth/auth-form-header";
 import { AuthOrDivider } from "@/components/auth/auth-or-divider";
 import { AuthPasswordField } from "@/components/auth/auth-password-field";
 import { AuthSocialButtons } from "@/components/auth/auth-social-buttons";
-import { authClient } from "@/lib/auth/client";
+import { EmailVerificationForm } from "@/components/auth/email-verification-form";
+import {
+  getLastUsedLoginMethod,
+  setLastUsedLoginMethod,
+} from "@/lib/auth/last-login-method";
+import { signInWithPasswordAction } from "@/lib/auth/password-actions";
+import { isNextRedirectError } from "@/lib/auth/redirect-error";
+import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import { loginSchema } from "@/schemas/auth/credentials";
-import type { SocialProvider } from "@/types/auth/form-ui";
+import type { PendingVerification, SocialProvider } from "@/types/auth/form-ui";
 import type { AuthMethod } from "@/types/auth/method";
 
 const LOGIN_ERROR_FALLBACK = "Failed to sign in. Please try again.";
+
+const noop = () => {
+  return;
+};
+const subscribeToNothing = () => noop;
+const returnNull = () => null;
 
 export interface LoginFormProps {
   title?: string;
@@ -28,6 +41,8 @@ export interface LoginFormProps {
   returnTo?: string;
   showSignupLink?: boolean;
   showForgotPasswordLink?: boolean;
+  initialError?: string;
+  initialPendingVerification?: PendingVerification;
 }
 
 export function LoginForm({
@@ -37,18 +52,28 @@ export function LoginForm({
   returnTo,
   showSignupLink = true,
   showForgotPasswordLink = true,
+  initialError,
+  initialPendingVerification,
 }: LoginFormProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(
+    initialError ?? null
+  );
+  const [pendingVerification, setPendingVerification] =
+    useState<PendingVerification | null>(initialPendingVerification ?? null);
   const authInFlightRef = useRef(false);
-  const lastMethod = authClient.getLastUsedLoginMethod();
+  const lastMethod = useSyncExternalStore(
+    subscribeToNothing,
+    getLastUsedLoginMethod,
+    returnNull
+  );
   const isAuthLoading = authMethod !== null;
 
   const callbackURL = returnTo
     ? `/callback?returnTo=${encodeURIComponent(returnTo)}`
     : "/callback";
 
-  async function handleSocialLogin(provider: SocialProvider) {
+  function handleSocialLogin(provider: SocialProvider) {
     if (authInFlightRef.current) {
       return;
     }
@@ -56,18 +81,17 @@ export function LoginForm({
     setFormError(null);
     authInFlightRef.current = true;
     flushSync(() => setAuthMethod(provider));
-
-    try {
-      await authClient.signIn.social({
-        provider,
-        callbackURL,
-      });
-    } catch (error) {
-      console.error("Social login error:", error);
-      setFormError(LOGIN_ERROR_FALLBACK);
-      authInFlightRef.current = false;
-      setAuthMethod(null);
-    }
+    setLastUsedLoginMethod(provider);
+    startSocialSignInAction({ provider, returnTo: callbackURL }).catch(
+      (error) => {
+        if (isNextRedirectError(error)) {
+          return;
+        }
+        authInFlightRef.current = false;
+        setAuthMethod(null);
+        setFormError("Social sign-in failed. Please try again.");
+      }
+    );
   }
 
   const form = useForm({
@@ -89,25 +113,34 @@ export function LoginForm({
       authInFlightRef.current = true;
       flushSync(() => setAuthMethod("email"));
       try {
-        const result = await authClient.signIn.email({
+        const result = await signInWithPasswordAction({
           email: parsed.data.email,
           password: parsed.data.password,
+          returnTo: callbackURL,
         });
 
-        if (result.error) {
-          setFormError(
-            errorMessageOr(result.error.message, LOGIN_ERROR_FALLBACK)
-          );
+        if (result.status === "error") {
+          setFormError(errorMessageOr(result.message, LOGIN_ERROR_FALLBACK));
           authInFlightRef.current = false;
           setAuthMethod(null);
           return;
         }
 
-        // Call onSuccess callback if provided, otherwise redirect through callback
+        if (result.status === "verification-required") {
+          authInFlightRef.current = false;
+          setAuthMethod(null);
+          setPendingVerification({
+            pendingAuthenticationToken: result.pendingAuthenticationToken,
+            email: result.email,
+          });
+          return;
+        }
+
+        setLastUsedLoginMethod("email");
         if (onSuccess) {
           onSuccess();
         } else {
-          window.location.assign(callbackURL);
+          window.location.assign(result.redirectTo);
         }
       } catch (error) {
         console.error("Email login error:", error);
@@ -117,6 +150,19 @@ export function LoginForm({
       }
     },
   });
+
+  if (pendingVerification) {
+    return (
+      <EmailVerificationForm
+        email={pendingVerification.email}
+        onSuccess={onSuccess}
+        pendingAuthenticationToken={
+          pendingVerification.pendingAuthenticationToken
+        }
+        returnTo={callbackURL}
+      />
+    );
+  }
 
   return (
     <div className="flex w-full flex-col gap-5">

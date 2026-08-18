@@ -44,6 +44,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { CreditBalanceMenuItem } from "@/components/billing/credit-balance-button";
+import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { authClient } from "@/lib/auth/client";
 import { cn, errorMessageOr } from "@/lib/utils";
@@ -199,7 +200,7 @@ function OrgSelectorSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
 
 const ORG_MENU_ITEM_CLASS = "cursor-pointer py-1.5";
 
-export function OrganizationOptionsList({
+function OrganizationOptionsList({
   organizations,
   selectedOrganizationId,
   onSelect,
@@ -290,6 +291,7 @@ export function OrgSelector() {
   const [isPending, startTransition] = useTransition();
   const [isSwitching, setIsSwitching] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
   const isNavigating = isSwitching || isPending;
 
   const activeSubscription = customer?.subscriptions.find(
@@ -344,9 +346,14 @@ export function OrgSelector() {
 
       await setLastVisitedOrganization(org.slug);
       queryClient.invalidateQueries({ refetchType: "none" });
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTH.activeOrganization,
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.AUTH.activeOrganization,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.AUTH.session,
+        }),
+      ]);
 
       setIsSwitching(false);
       startTransition(() => {
@@ -412,7 +419,10 @@ export function OrgSelector() {
 
             <DropdownMenuSeparator />
 
-            <CreditBalanceMenuItem className={ORG_MENU_ITEM_CLASS} />
+            <CreditBalanceMenuItem
+              className={ORG_MENU_ITEM_CLASS}
+              onOpenTopup={() => setIsTopupModalOpen(true)}
+            />
             <DropdownMenuItem
               className={ORG_MENU_ITEM_CLASS}
               onClick={() => openFeedback()}
@@ -470,6 +480,11 @@ export function OrgSelector() {
         <CreateOrgModal
           onOpenChange={setIsCreateModalOpen}
           open={isCreateModalOpen}
+        />
+
+        <CreditTopupModal
+          onOpenChange={setIsTopupModalOpen}
+          open={isTopupModalOpen}
         />
       </SidebarMenuItem>
     </SidebarMenu>

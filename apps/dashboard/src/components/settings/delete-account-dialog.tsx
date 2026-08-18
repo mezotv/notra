@@ -109,13 +109,9 @@ export function DeleteAccountDialog({
         }
       }
 
-      const result = await authClient.deleteUser({
-        callbackURL: "/",
-      });
+      const result = await authClient.deleteUser();
 
-      if (result) {
-        deleteError = result.error;
-      }
+      deleteError = result.error;
     } catch (error) {
       console.error("Delete account error:", error);
       toast.error("Failed to delete account");

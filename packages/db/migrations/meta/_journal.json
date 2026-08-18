@@ -442,6 +442,27 @@
       "when": 1786380248232,
       "tag": "0062_light_johnny_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1786806003994,
+      "tag": "0063_complex_kang",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1786806009026,
+      "tag": "0064_rainy_meteorite",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1786982538830,
+      "tag": "0065_glamorous_young_avengers",
+      "breakpoints": true
     }
   ]
 }
