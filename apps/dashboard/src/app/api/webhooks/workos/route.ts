@@ -51,7 +51,14 @@ export async function POST(request: NextRequest) {
       Effect.as(true),
       Effect.catch((error) =>
         Effect.logWarning("Webhook membership sync failed").pipe(
-          Effect.annotateLogs({ event: event.event, error: error.message }),
+          Effect.annotateLogs({
+            event: event.event,
+            error: error.message,
+            cause:
+              error.cause instanceof Error
+                ? error.cause.message
+                : String(error.cause),
+          }),
           Effect.as(false)
         )
       )
