@@ -422,7 +422,6 @@
       "devDependencies": {
         "@notra/typescript-config": "*",
         "@types/node": "^22.15.3",
-        "@workos-inc/node": "^10.10.0",
         "drizzle-kit": "^0.31.8",
         "effect": "4.0.0-beta.93",
         "typescript": "5.9.2",
