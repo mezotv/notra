@@ -42,6 +42,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { CreditBalanceMenuItem } from "@/components/billing/credit-balance-button";
+import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { authClient } from "@/lib/auth/client";
 import { cn, errorMessageOr } from "@/lib/utils";
@@ -292,6 +293,7 @@ export function OrgSelector() {
   const [isPending, startTransition] = useTransition();
   const [isSwitching, setIsSwitching] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
   const isNavigating = isSwitching || isPending;
 
   const activeSubscription = customer?.subscriptions.find(
@@ -420,7 +422,9 @@ export function OrgSelector() {
 
             <DropdownMenuSeparator />
 
-            <CreditBalanceMenuItem />
+            <CreditBalanceMenuItem
+              onOpenTopup={() => setIsTopupModalOpen(true)}
+            />
             <DropdownMenuItem
               className="cursor-pointer"
               onClick={() => openFeedback()}
@@ -476,6 +480,11 @@ export function OrgSelector() {
         <CreateOrgModal
           onOpenChange={setIsCreateModalOpen}
           open={isCreateModalOpen}
+        />
+
+        <CreditTopupModal
+          onOpenChange={setIsTopupModalOpen}
+          open={isTopupModalOpen}
         />
       </SidebarMenuItem>
     </SidebarMenu>
