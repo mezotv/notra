@@ -6,6 +6,7 @@ import {
   EMPTY_STATE_CARD_COUNT,
   EMPTY_STATE_CARD_KEYS,
   EMPTY_STATE_CHART_BARS,
+  EMPTY_STATE_COLUMN_KEYS,
   EMPTY_STATE_GUIDELINE_ASSET_KEYS,
   EMPTY_STATE_GUIDELINE_COLOR_KEYS,
   EMPTY_STATE_ROW_KEYS,
@@ -50,26 +51,38 @@ export function EmptyStateTablePreview({
   return (
     <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
       <div className="flex items-center gap-4 border-border/60 border-b bg-muted/80 px-4 py-2.5">
-        {columns.map((width, index) => (
-          <GhostBar
-            className="h-3"
-            key={`${id}-header-${index}-${width}`}
-            width={Math.round(width * 0.7)}
-          />
-        ))}
+        {columns.map((width, column) => {
+          const columnKey = EMPTY_STATE_COLUMN_KEYS[column];
+          if (!columnKey) {
+            return null;
+          }
+          return (
+            <GhostBar
+              className="h-3"
+              key={`${id}-header-${columnKey}`}
+              width={Math.round(width * 0.7)}
+            />
+          );
+        })}
       </div>
       {EMPTY_STATE_ROW_KEYS.slice(0, rows).map((rowKey, row) => (
         <div
           className="flex items-center gap-4 border-border/60 border-b bg-background px-4 py-3 last:border-b-0"
           key={`${id}-${rowKey}`}
         >
-          {columns.map((width, column) => (
-            <GhostBar
-              className="h-4"
-              key={`${id}-${rowKey}-${column}-${width}`}
-              width={scaledWidth(width, row, column)}
-            />
-          ))}
+          {columns.map((width, column) => {
+            const columnKey = EMPTY_STATE_COLUMN_KEYS[column];
+            if (!columnKey) {
+              return null;
+            }
+            return (
+              <GhostBar
+                className="h-4"
+                key={`${id}-${rowKey}-${columnKey}`}
+                width={scaledWidth(width, row, column)}
+              />
+            );
+          })}
         </div>
       ))}
     </div>

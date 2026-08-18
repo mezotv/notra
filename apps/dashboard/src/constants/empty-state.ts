@@ -28,6 +28,17 @@ export const EMPTY_STATE_ROW_KEYS = [
   "row-h",
 ] as const;
 
+export const EMPTY_STATE_COLUMN_KEYS = [
+  "col-a",
+  "col-b",
+  "col-c",
+  "col-d",
+  "col-e",
+  "col-f",
+  "col-g",
+  "col-h",
+] as const;
+
 export const EMPTY_STATE_CARD_KEYS = [
   "card-a",
   "card-b",
