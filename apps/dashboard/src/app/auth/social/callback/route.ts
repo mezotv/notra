@@ -1,7 +1,9 @@
 import { getWorkOS, saveSession } from "@workos-inc/authkit-nextjs";
 import { Effect } from "effect";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { NextRequest } from "next/server";
+import { SOCIAL_AUTH_STATE_COOKIE } from "@/constants/social-auth";
 import { UserSyncError, WorkOSAuthError } from "@/lib/auth/errors";
 import { authenticateResolvingOrgSelection } from "@/lib/auth/org-selection";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
@@ -76,6 +78,20 @@ export async function GET(request: NextRequest) {
     redirect("/login");
   }
 
+  const cookieStore = await cookies();
+  const expectedNonce = cookieStore.get(SOCIAL_AUTH_STATE_COOKIE)?.value;
+  cookieStore.delete(SOCIAL_AUTH_STATE_COOKIE);
+
+  const separatorIndex = state?.indexOf(":") ?? -1;
+  const stateNonce =
+    separatorIndex === -1 ? state : (state?.slice(0, separatorIndex) ?? null);
+  const stateReturnTo =
+    separatorIndex === -1 ? null : (state?.slice(separatorIndex + 1) ?? null);
+
+  if (!(expectedNonce && stateNonce) || expectedNonce !== stateNonce) {
+    redirect("/login?error=social-sign-in-failed");
+  }
+
   const outcome = await Effect.runPromise(
     exchangeSocialCode(code).pipe(
       Effect.as<SocialCallbackOutcome>({ kind: "success" }),
@@ -83,7 +99,7 @@ export async function GET(request: NextRequest) {
     )
   );
 
-  const returnTo = sanitizeReturnTo(state) ?? "/callback";
+  const returnTo = sanitizeReturnTo(stateReturnTo) ?? "/callback";
 
   if (outcome.kind === "verification-required") {
     const params = new URLSearchParams({

@@ -30,10 +30,12 @@ import {
   removeMembershipFromWorkOS,
   syncMembershipToWorkOS,
   syncOrganizationNameToWorkOS,
-  syncOrganizationToWorkOS,
   updateMembershipRoleInWorkOS,
 } from "@/lib/organizations/workos-sync";
-import { organizationSlugSchema } from "@/schemas/organization";
+import {
+  memberRoleSchema,
+  organizationSlugSchema,
+} from "@/schemas/organization";
 import type {
   ActionResult,
   CreateOrganizationInput,
@@ -266,6 +268,27 @@ export async function createOrganizationAction(
         );
       }
 
+      yield* ensureWorkOSOrganizationWithMembers(organizationId).pipe(
+        Effect.catch((error) =>
+          tryDb(
+            () =>
+              db
+                .delete(organizations)
+                .where(eq(organizations.id, organizationId)),
+            "Failed to roll back organization"
+          ).pipe(
+            Effect.andThen(
+              Effect.fail(
+                new OrganizationActionError({
+                  message: "Failed to link organization to WorkOS",
+                  cause: error,
+                })
+              )
+            )
+          )
+        )
+      );
+
       yield* Effect.tryPromise({
         try: () => seedSystemSkills(organizationId),
         catch: (cause) =>
@@ -303,8 +326,6 @@ export async function createOrganizationAction(
           )
         );
       }
-
-      yield* syncOrganizationToWorkOS(organizationId);
 
       if (!input.keepCurrentActiveOrganization) {
         const cookieStore = yield* tryDb(
@@ -579,7 +600,29 @@ export async function updateMemberRoleAction(
         );
       }
 
-      yield* requireManagerMembership(session, member.organizationId);
+      const callerMembership = yield* requireManagerMembership(
+        session,
+        member.organizationId
+      );
+
+      const roleValidation = memberRoleSchema.safeParse(input.role);
+
+      if (!roleValidation.success) {
+        return yield* Effect.fail(
+          new OrganizationActionError({ message: "Invalid role" })
+        );
+      }
+
+      if (
+        roleValidation.data === "owner" &&
+        callerMembership.role !== "owner"
+      ) {
+        return yield* Effect.fail(
+          new OrganizationActionError({
+            message: "Only the organization owner can assign the owner role",
+          })
+        );
+      }
 
       if (member.role === "owner" && input.role !== "owner") {
         return yield* Effect.fail(
@@ -732,7 +775,29 @@ export async function inviteMemberAction(
         session,
         input.organizationId
       );
-      yield* requireManagerMembership(session, organizationId);
+      const callerMembership = yield* requireManagerMembership(
+        session,
+        organizationId
+      );
+
+      const roleValidation = memberRoleSchema.safeParse(input.role);
+
+      if (!roleValidation.success) {
+        return yield* Effect.fail(
+          new OrganizationActionError({ message: "Invalid role" })
+        );
+      }
+
+      if (
+        roleValidation.data === "owner" &&
+        callerMembership.role !== "owner"
+      ) {
+        return yield* Effect.fail(
+          new OrganizationActionError({
+            message: "Only the organization owner can assign the owner role",
+          })
+        );
+      }
 
       if (!isNotDisposableEmail(input.email)) {
         return yield* Effect.fail(

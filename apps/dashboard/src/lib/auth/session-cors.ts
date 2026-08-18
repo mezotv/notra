@@ -1,7 +1,12 @@
-const ALLOWED_ORIGIN_PATTERNS = [
-  /^https:\/\/([a-z0-9-]+\.)?usenotra\.com$/,
-  /^http:\/\/localhost:\d+$/,
-];
+const ALLOWED_ORIGINS = new Set([
+  "https://usenotra.com",
+  "https://www.usenotra.com",
+]);
+const LOCALHOST_ORIGIN_PATTERN = /^http:\/\/localhost:\d+$/;
+
+function isAllowedOrigin(origin: string) {
+  return ALLOWED_ORIGINS.has(origin) || LOCALHOST_ORIGIN_PATTERN.test(origin);
+}
 
 export function buildSessionCorsHeaders(
   origin: string | null
@@ -11,7 +16,7 @@ export function buildSessionCorsHeaders(
     Vary: "Origin",
   };
 
-  if (origin && ALLOWED_ORIGIN_PATTERNS.some((p) => p.test(origin))) {
+  if (origin && isAllowedOrigin(origin)) {
     headers["Access-Control-Allow-Origin"] = origin;
     headers["Access-Control-Allow-Credentials"] = "true";
   }

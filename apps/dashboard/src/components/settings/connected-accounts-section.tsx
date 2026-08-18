@@ -26,7 +26,7 @@ export function ConnectedAccountsSection({
 
   function handleLinkAccount(provider: "google" | "github") {
     setLoadingProvider(provider);
-    window.location.href = `/login?returnTo=${encodeURIComponent(window.location.pathname)}`;
+    window.location.href = `/auth/social/${provider}?returnTo=${encodeURIComponent(window.location.pathname)}`;
   }
 
   async function handleUnlinkAccount(provider: "google" | "github") {

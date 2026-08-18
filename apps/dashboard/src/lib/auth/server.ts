@@ -6,6 +6,7 @@ import { Effect } from "effect";
 import { cookies } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
+import { isUserBanned } from "@/lib/auth/banned";
 import { AuthSessionError } from "@/lib/auth/errors";
 import { ensureLocalUser } from "@/lib/auth/sync";
 import type { AuthSessionData } from "@/types/auth/session";
@@ -72,20 +73,13 @@ const resolveActiveOrganizationId = Effect.fn(
   return membership?.organizationId ?? null;
 });
 
-function isBanned(user: { banned: boolean | null; banExpires: Date | null }) {
-  if (!user.banned) {
-    return false;
-  }
-  return !user.banExpires || user.banExpires > new Date();
-}
-
 const buildAuthSession = Effect.fn("auth.session.build")(function* (
   workosUser: Parameters<typeof ensureLocalUser>[0],
   impersonatorEmail: string | null
 ) {
   const user = yield* ensureLocalUser(workosUser);
 
-  if (isBanned(user)) {
+  if (isUserBanned(user)) {
     return yield* Effect.fail(
       new AuthSessionError({
         message: "User is banned",

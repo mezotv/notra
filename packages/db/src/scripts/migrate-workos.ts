@@ -133,10 +133,19 @@ const loadPasswordHashes = Effect.fn("migrate.loadPasswordHashes")(
     const present = Boolean(tableExists.rows[0]?.present);
 
     if (!present) {
-      yield* Effect.logWarning(
-        "accounts table not found - password hashes cannot be imported. Run this script BEFORE applying migration 0064."
+      if (process.env.SKIP_PASSWORD_IMPORT === "1") {
+        yield* Effect.logWarning(
+          "accounts table not found - continuing WITHOUT password import because SKIP_PASSWORD_IMPORT=1."
+        );
+        return new Map<string, string>();
+      }
+
+      return yield* Effect.fail(
+        new WorkOSMigrationError({
+          message:
+            "accounts table not found - password hashes cannot be imported. Run this script BEFORE applying migration 0064, or set SKIP_PASSWORD_IMPORT=1 to continue without passwords.",
+        })
       );
-      return new Map<string, string>();
     }
 
     const result = yield* tryWorkOS(
@@ -337,14 +346,13 @@ const backfillPasswords = Effect.fn("migrate.backfillPasswords")(function* () {
         }),
       `Failed to backfill password for ${user.id}`
     ).pipe(
+      Effect.andThen(Effect.logInfo(`  password backfilled: ${user.email}`)),
       Effect.catch((error) =>
         Effect.logWarning(
           `  password backfill FAILED ${user.email}: ${error.describe()}`
         )
       )
     );
-
-    yield* Effect.logInfo(`  password backfilled: ${user.email}`);
   }
 });
 

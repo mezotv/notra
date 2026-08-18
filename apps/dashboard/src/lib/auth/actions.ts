@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
+import { isSessionBanned } from "@/lib/auth/banned";
 import { getAuthSession } from "@/lib/auth/server";
 import { retryTransientDbError } from "@/lib/db/retry";
 
@@ -13,6 +14,9 @@ export async function validateOrganizationAccess(slug: string) {
   const session = await getAuthSession();
 
   if (!session?.user) {
+    if (await isSessionBanned()) {
+      redirect("/auth/banned");
+    }
     redirect("/login");
   }
 
@@ -54,6 +58,9 @@ export async function requireAuth() {
   const session = await getAuthSession();
 
   if (!session?.user) {
+    if (await isSessionBanned()) {
+      redirect("/auth/banned");
+    }
     redirect("/login");
   }
 

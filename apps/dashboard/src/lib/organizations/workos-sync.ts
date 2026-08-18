@@ -37,12 +37,16 @@ const ensureWorkOSOrganization = Effect.fn(
           externalId: organizationId,
         });
         workosOrgId = created.id;
-      } catch {
-        const existing =
-          await getWorkOS().organizations.getOrganizationByExternalId(
-            organizationId
-          );
-        workosOrgId = existing.id;
+      } catch (createError) {
+        try {
+          const existing =
+            await getWorkOS().organizations.getOrganizationByExternalId(
+              organizationId
+            );
+          workosOrgId = existing.id;
+        } catch {
+          throw createError;
+        }
       }
 
       await db
@@ -109,15 +113,6 @@ const syncAllMembershipsToWorkOS = Effect.fn(
   for (const row of rows) {
     yield* syncMembershipToWorkOS(organizationId, row.userId, row.role);
   }
-});
-
-export const syncOrganizationToWorkOS = Effect.fn(
-  "organizations.sync.createWorkOSOrganization"
-)(function* (organizationId: string) {
-  yield* ensureWorkOSOrganizationWithMembers(organizationId).pipe(
-    Effect.asVoid,
-    logSyncFailure({ organizationId })
-  );
 });
 
 export const syncMembershipToWorkOS = Effect.fn(

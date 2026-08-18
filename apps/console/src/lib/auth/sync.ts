@@ -64,6 +64,15 @@ export const ensureLocalUser = Effect.fn("auth.sync.ensureLocalUser")(
     });
 
     if (byEmail) {
+      if (!workosUser.emailVerified) {
+        return yield* Effect.fail(
+          new UserSyncError({
+            message:
+              "Verify your email address before signing in to this account",
+          })
+        );
+      }
+
       const [linked] = yield* Effect.tryPromise({
         try: () =>
           db

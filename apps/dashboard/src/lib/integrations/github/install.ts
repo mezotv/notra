@@ -12,7 +12,7 @@ function authorizeGitHub(callbackURL: string) {
   return Effect.try({
     try: () => {
       window.location.assign(
-        `/login?returnTo=${encodeURIComponent(callbackURL)}`
+        `/auth/social/github?returnTo=${encodeURIComponent(callbackURL)}`
       );
       return true;
     },

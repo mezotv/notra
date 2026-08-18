@@ -1,8 +1,10 @@
 "use server";
 
+import type { Ratelimit } from "@upstash/ratelimit";
 import { getWorkOS, saveSession } from "@workos-inc/authkit-nextjs";
 import type { AuthenticationResponse } from "@workos-inc/node";
 import { Effect } from "effect";
+import { headers } from "next/headers";
 import { UserSyncError, WorkOSAuthError } from "@/lib/auth/errors";
 import { authenticateResolvingOrgSelection } from "@/lib/auth/org-selection";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
@@ -22,10 +24,19 @@ import type {
   SignUpWithPasswordInput,
   VerifyEmailCodeInput,
 } from "@/types/auth/password-actions";
+import { getClientIpFromHeaders, ratelimit } from "@/utils/ratelimit";
 
 const VERIFICATION_REQUIRED_CODE = "email_verification_required";
 const NAME_SPLIT_REGEX = /\s+/;
 const DEFAULT_POST_LOGIN_PATH = "/callback";
+const RATE_LIMITED_MESSAGE = "Too many attempts. Please try again shortly.";
+
+async function isRateLimited(limiter: Ratelimit, email: string) {
+  const headersList = await headers();
+  const ip = getClientIpFromHeaders(headersList);
+  const { success } = await limiter.limit(`${ip}:${email.toLowerCase()}`);
+  return !success;
+}
 
 function getClientId() {
   const clientId = process.env.WORKOS_CLIENT_ID;
@@ -114,6 +125,10 @@ export async function signInWithPasswordAction(
     };
   }
 
+  if (await isRateLimited(ratelimit.signIn, parsed.data.email)) {
+    return { status: "error", message: RATE_LIMITED_MESSAGE };
+  }
+
   return runAuthFlow(
     parsed.data.email,
     Effect.gen(function* () {
@@ -140,6 +155,10 @@ export async function signUpWithPasswordAction(
       status: "error",
       message: parsed.error.issues[0]?.message ?? "Invalid details",
     };
+  }
+
+  if (await isRateLimited(ratelimit.signUp, parsed.data.email)) {
+    return { status: "error", message: RATE_LIMITED_MESSAGE };
   }
 
   const [firstName, ...rest] = (input.name ?? "")
@@ -202,6 +221,10 @@ export async function verifyEmailCodeAction(
 export async function forgotPasswordAction(
   input: ForgotPasswordInput
 ): Promise<{ sent: boolean }> {
+  if (await isRateLimited(ratelimit.forgotPassword, input.email)) {
+    return { sent: false };
+  }
+
   return Effect.runPromise(
     Effect.gen(function* () {
       const reset = yield* tryWorkOSAuth(() =>

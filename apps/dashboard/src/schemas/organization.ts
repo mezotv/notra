@@ -26,6 +26,8 @@ export const organizationWebsiteSchema = z
   .optional()
   .or(z.literal(""));
 
+export const memberRoleSchema = z.enum(["owner", "admin", "member"]);
+
 export const createOrganizationSchema = z.object({
   name: organizationNameSchema,
   slug: organizationSlugSchema,

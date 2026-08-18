@@ -11,7 +11,7 @@ import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import { requireMembership, requireSession } from "@/lib/organizations/guards";
 import { runOrganizationAction } from "@/lib/organizations/run-action";
-import { syncOrganizationToWorkOS } from "@/lib/organizations/workos-sync";
+import { ensureWorkOSOrganizationWithMembers } from "@/lib/organizations/workos-sync";
 import { organizationSlugSchema } from "@/schemas/organization";
 import type {
   ActionResult,
@@ -106,6 +106,27 @@ export async function createOrganizationAction(
         );
       }
 
+      yield* ensureWorkOSOrganizationWithMembers(organizationId).pipe(
+        Effect.catch((error) =>
+          tryDb(
+            () =>
+              db
+                .delete(organizations)
+                .where(eq(organizations.id, organizationId)),
+            "Failed to roll back organization"
+          ).pipe(
+            Effect.andThen(
+              Effect.fail(
+                new OrganizationActionError({
+                  message: "Failed to link organization to WorkOS",
+                  cause: error,
+                })
+              )
+            )
+          )
+        )
+      );
+
       yield* Effect.tryPromise({
         try: () => seedSystemSkills(organizationId),
         catch: (cause) =>
@@ -143,8 +164,6 @@ export async function createOrganizationAction(
           )
         );
       }
-
-      yield* syncOrganizationToWorkOS(organizationId);
 
       if (!input.keepCurrentActiveOrganization) {
         const cookieStore = yield* tryDb(

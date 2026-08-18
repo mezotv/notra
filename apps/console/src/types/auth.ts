@@ -48,6 +48,11 @@ export interface ImpersonationUser extends ConsoleUser {
   banned: boolean | null;
 }
 
+export interface BannedStatusUser {
+  banned: boolean | null;
+  banExpires: Date | null;
+}
+
 export interface ListUsersInput {
   search?: string;
 }
