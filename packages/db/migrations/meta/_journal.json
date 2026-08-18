@@ -470,6 +470,13 @@
       "when": 1787028025472,
       "tag": "0066_salty_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1787053598362,
+      "tag": "0067_material_thor",
+      "breakpoints": true
     }
   ]
 }

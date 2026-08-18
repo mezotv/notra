@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 import { z } from "zod";
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
+import { deleteQstashSchedule } from "../qstash/triggers";
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
@@ -215,6 +216,18 @@ export async function getGscIntegration(
   return row ?? null;
 }
 
+export function hasGscGoogleAccountChanged(
+  previousEmail: string | null | undefined,
+  nextEmail: string | null
+): boolean {
+  const previous = previousEmail?.trim().toLowerCase();
+  const next = nextEmail?.trim().toLowerCase();
+  if (!(previous && next)) {
+    return false;
+  }
+  return previous !== next;
+}
+
 export async function upsertGscIntegration(params: {
   organizationId: string;
   userId: string;
@@ -223,6 +236,12 @@ export async function upsertGscIntegration(params: {
   expiresAt: Date;
   googleAccountEmail: string | null;
 }): Promise<GscIntegrationRow> {
+  const existing = await getGscIntegration(params.organizationId);
+  const googleAccountChanged = hasGscGoogleAccountChanged(
+    existing?.googleAccountEmail,
+    params.googleAccountEmail
+  );
+
   const encryptedAccessToken = encryptToken(params.accessToken);
   const encryptedRefreshToken = encryptToken(params.refreshToken);
 
@@ -250,6 +269,9 @@ export async function upsertGscIntegration(params: {
         status: "active",
         lastError: null,
         enabled: true,
+        ...(googleAccountChanged
+          ? { siteUrl: null, qstashScheduleId: null }
+          : {}),
       },
     })
     .returning();
@@ -257,6 +279,18 @@ export async function upsertGscIntegration(params: {
   if (!row) {
     throw new Error("Failed to save Google Search Console integration");
   }
+
+  if (googleAccountChanged && existing) {
+    await revokeGscToken(existing);
+    if (existing.qstashScheduleId) {
+      try {
+        await deleteQstashSchedule(existing.qstashScheduleId);
+      } catch (error) {
+        console.error("[GSC] Failed to delete QStash schedule:", error);
+      }
+    }
+  }
+
   return row;
 }
 
