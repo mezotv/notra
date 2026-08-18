@@ -1,6 +1,7 @@
 "use client";
 
 import { Effect } from "effect";
+import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   GitHubAccountConnectionIncompleteError,
@@ -9,11 +10,12 @@ import {
 } from "@/types/integrations/github";
 
 function authorizeGitHub(callbackURL: string) {
-  return Effect.try({
-    try: () => {
-      window.location.assign(
-        `/auth/social/github?returnTo=${encodeURIComponent(callbackURL)}`
-      );
+  return Effect.tryPromise({
+    try: async () => {
+      await startSocialSignInAction({
+        provider: "github",
+        returnTo: callbackURL,
+      });
       return true;
     },
     catch: (cause) => new GitHubInstallStartError({ cause }),

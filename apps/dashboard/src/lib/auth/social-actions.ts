@@ -1,7 +1,8 @@
+"use server";
+
 import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import type { NextRequest } from "next/server";
 import {
   SOCIAL_AUTH_CALLBACK_PATH,
   SOCIAL_AUTH_PROVIDERS,
@@ -9,28 +10,16 @@ import {
   SOCIAL_AUTH_STATE_MAX_AGE_SECONDS,
 } from "@/constants/social-auth";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
+import type { StartSocialSignInInput } from "@/types/auth/social-actions";
 
-export function GET(
-  request: NextRequest,
-  context: { params: Promise<{ provider: string }> }
-) {
-  return handleSocialStart(request, context.params);
-}
-
-async function handleSocialStart(
-  request: NextRequest,
-  params: Promise<{ provider: string }>
-) {
-  const { provider } = await params;
-  const mappedProvider = SOCIAL_AUTH_PROVIDERS[provider];
+export async function startSocialSignInAction(input: StartSocialSignInInput) {
+  const mappedProvider = SOCIAL_AUTH_PROVIDERS[input.provider];
 
   if (!mappedProvider) {
     redirect("/login");
   }
 
-  const returnTo = sanitizeReturnTo(
-    request.nextUrl.searchParams.get("returnTo")
-  );
+  const returnTo = sanitizeReturnTo(input.returnTo ?? null);
   const appUrl = process.env.APP_URL ?? "http://localhost:3000";
 
   const nonce = crypto.randomUUID();

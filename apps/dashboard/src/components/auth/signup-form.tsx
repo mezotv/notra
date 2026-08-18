@@ -17,6 +17,7 @@ import { EmailVerificationForm } from "@/components/auth/email-verification-form
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
 import { setLastUsedLoginMethod } from "@/lib/auth/last-login-method";
 import { signUpWithPasswordAction } from "@/lib/auth/password-actions";
+import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import { signupSchema } from "@/schemas/auth/credentials";
 import type { PendingVerification, SocialProvider } from "@/types/auth/form-ui";
@@ -102,9 +103,14 @@ export function SignupForm({
     flushSync(() => setAuthMethod(provider));
     persistMarketingAttribution({ ...attribution, signupMethod: provider });
     setLastUsedLoginMethod(provider);
-    window.location.assign(
-      `/auth/social/${provider}?returnTo=${encodeURIComponent(buildCallbackUrl(provider))}`
-    );
+    startSocialSignInAction({
+      provider,
+      returnTo: buildCallbackUrl(provider),
+    }).catch(() => {
+      authInFlightRef.current = false;
+      setAuthMethod(null);
+      setFormError("Social sign-up failed. Please try again.");
+    });
   }
 
   const form = useForm({

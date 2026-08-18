@@ -19,6 +19,7 @@ import {
   setLastUsedLoginMethod,
 } from "@/lib/auth/last-login-method";
 import { signInWithPasswordAction } from "@/lib/auth/password-actions";
+import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import { loginSchema } from "@/schemas/auth/credentials";
 import type { PendingVerification, SocialProvider } from "@/types/auth/form-ui";
@@ -80,9 +81,11 @@ export function LoginForm({
     authInFlightRef.current = true;
     flushSync(() => setAuthMethod(provider));
     setLastUsedLoginMethod(provider);
-    window.location.assign(
-      `/auth/social/${provider}?returnTo=${encodeURIComponent(callbackURL)}`
-    );
+    startSocialSignInAction({ provider, returnTo: callbackURL }).catch(() => {
+      authInFlightRef.current = false;
+      setAuthMethod(null);
+      setFormError("Social sign-in failed. Please try again.");
+    });
   }
 
   const form = useForm({

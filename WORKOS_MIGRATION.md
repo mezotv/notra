@@ -98,11 +98,25 @@ Migration `0063` (additive: mapping columns + `social_connections`) and `0064`
 **Vercel previews auto-apply migrations**. `0064` destroys the scrypt password
 hashes stored in `accounts`. Therefore, for EACH database (staging, prod):
 
+Use the cutover helper, which does steps 1-2 in the right order and leaves
+the destructive migrations for the deploy:
+
+```bash
+DATABASE_URL=<target db> WORKOS_API_KEY=<sk_...> \
+  bash packages/db/src/scripts/cutover-workos.sh
+```
+
+It temporarily trims the drizzle journal to apply `0063` and earlier only,
+restores the journal, then runs `migrate:workos`. Pass `--finalize` to also
+apply `0064+` immediately instead of letting the deploy do it. The manual
+equivalent:
+
 1. Apply `0063` only (or let a deploy of just that migration do it — do not
    push `0064` first).
 2. Run the data migration while `accounts` still exists:
    `cd packages/db && bun run migrate:workos`
-   (needs `DATABASE_URL` + `WORKOS_API_KEY`). It is idempotent: it skips rows
+   (needs `DATABASE_URL` + `WORKOS_API_KEY`). The script aborts if `accounts`
+   is already gone (override with `SKIP_PASSWORD_IMPORT=1`). It is idempotent: it skips rows
    that already have WorkOS ids, recovers from "already exists" conflicts via
    `external_id`/email lookup, and imports password hashes in PHC scrypt format
    (`$scrypt$ln=14,r=16,p=1$...`, matching better-auth's N=16384/r=16/p=1/dkLen=64

@@ -111,11 +111,11 @@ const syncAllMembershipsToWorkOS = Effect.fn(
   });
 
   for (const row of rows) {
-    yield* syncMembershipToWorkOS(organizationId, row.userId, row.role);
+    yield* createWorkOSMembership(organizationId, row.userId, row.role);
   }
 });
 
-export const syncMembershipToWorkOS = Effect.fn(
+const createWorkOSMembership = Effect.fn(
   "organizations.sync.createWorkOSMembership"
 )(function* (organizationId: string, userId: string, roleSlug?: string) {
   yield* Effect.tryPromise({
@@ -135,18 +135,38 @@ export const syncMembershipToWorkOS = Effect.fn(
         return;
       }
 
-      await getWorkOS().userManagement.createOrganizationMembership({
-        organizationId: organization.workosOrgId,
-        userId: user.workosUserId,
-        roleSlug,
-      });
+      try {
+        await getWorkOS().userManagement.createOrganizationMembership({
+          organizationId: organization.workosOrgId,
+          userId: user.workosUserId,
+          roleSlug,
+        });
+      } catch (createError) {
+        const existing =
+          await getWorkOS().userManagement.listOrganizationMemberships({
+            organizationId: organization.workosOrgId,
+            userId: user.workosUserId,
+          });
+
+        if (existing.data.length === 0) {
+          throw createError;
+        }
+      }
     },
     catch: (cause) =>
       new WorkOSSyncError({
         message: "Failed to create WorkOS membership",
         cause,
       }),
-  }).pipe(logSyncFailure({ organizationId, userId }));
+  });
+});
+
+export const syncMembershipToWorkOS = Effect.fn(
+  "organizations.sync.syncMembership"
+)(function* (organizationId: string, userId: string, roleSlug?: string) {
+  yield* createWorkOSMembership(organizationId, userId, roleSlug).pipe(
+    logSyncFailure({ organizationId, userId })
+  );
 });
 
 export const updateMembershipRoleInWorkOS = Effect.fn(

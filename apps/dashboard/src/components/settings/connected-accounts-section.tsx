@@ -10,6 +10,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
+import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import type { ConnectedAccountsSectionProps } from "@/types/settings/account";
 
@@ -26,7 +27,13 @@ export function ConnectedAccountsSection({
 
   function handleLinkAccount(provider: "google" | "github") {
     setLoadingProvider(provider);
-    window.location.href = `/auth/social/${provider}?returnTo=${encodeURIComponent(window.location.pathname)}`;
+    startSocialSignInAction({
+      provider,
+      returnTo: window.location.pathname,
+    }).catch(() => {
+      setLoadingProvider(null);
+      toast.error("Could not start the connection. Please try again.");
+    });
   }
 
   async function handleUnlinkAccount(provider: "google" | "github") {

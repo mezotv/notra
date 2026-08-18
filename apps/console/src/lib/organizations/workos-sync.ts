@@ -5,13 +5,6 @@ import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { WorkOSSyncError } from "@/lib/organizations/errors";
 
-const logSyncFailure = (context: Record<string, unknown>) =>
-  Effect.catch((error: WorkOSSyncError) =>
-    Effect.logWarning("WorkOS sync failed").pipe(
-      Effect.annotateLogs({ ...context, error: error.message })
-    )
-  );
-
 const ensureWorkOSOrganization = Effect.fn(
   "organizations.sync.ensureWorkOSOrganization"
 )(function* (organizationId: string) {
@@ -114,16 +107,28 @@ const syncMembershipToWorkOS = Effect.fn(
         return;
       }
 
-      await getWorkOS().userManagement.createOrganizationMembership({
-        organizationId: organization.workosOrgId,
-        userId: user.workosUserId,
-        roleSlug,
-      });
+      try {
+        await getWorkOS().userManagement.createOrganizationMembership({
+          organizationId: organization.workosOrgId,
+          userId: user.workosUserId,
+          roleSlug,
+        });
+      } catch (createError) {
+        const existing =
+          await getWorkOS().userManagement.listOrganizationMemberships({
+            organizationId: organization.workosOrgId,
+            userId: user.workosUserId,
+          });
+
+        if (existing.data.length === 0) {
+          throw createError;
+        }
+      }
     },
     catch: (cause) =>
       new WorkOSSyncError({
         message: "Failed to create WorkOS membership",
         cause,
       }),
-  }).pipe(logSyncFailure({ organizationId, userId }));
+  });
 });

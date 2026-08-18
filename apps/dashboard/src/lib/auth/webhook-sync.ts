@@ -1,5 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { members, organizations, users } from "@notra/db/schema";
+import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import type { OrganizationMembership } from "@workos-inc/node";
 import { and, eq } from "drizzle-orm";
 import { Data, Effect } from "effect";
@@ -32,6 +33,57 @@ const resolveLocalIds = Effect.fn("auth.webhook.resolveLocalIds")(function* (
     organizationId: organization?.id ?? null,
     userId: user?.id ?? null,
   };
+});
+
+const resolveOrganizationIdByExternalId = Effect.fn(
+  "auth.webhook.resolveOrganizationByExternalId"
+)(function* (workosOrgId: string) {
+  return yield* Effect.tryPromise({
+    try: async () => {
+      const remote =
+        await getWorkOS().organizations.getOrganization(workosOrgId);
+
+      if (!remote.externalId) {
+        return null;
+      }
+
+      const organization = await db.query.organizations.findFirst({
+        where: eq(organizations.id, remote.externalId),
+        columns: { id: true },
+      });
+
+      return organization?.id ?? null;
+    },
+    catch: (cause) =>
+      new WebhookSyncError({
+        message: "Failed to resolve organization via WorkOS",
+        cause,
+      }),
+  });
+});
+
+const resolveUserIdByExternalId = Effect.fn(
+  "auth.webhook.resolveUserByExternalId"
+)(function* (workosUserId: string) {
+  return yield* Effect.tryPromise({
+    try: async () => {
+      const remote = await getWorkOS().userManagement.getUser(workosUserId);
+
+      const user = await db.query.users.findFirst({
+        where: remote.externalId
+          ? eq(users.id, remote.externalId)
+          : eq(users.email, remote.email),
+        columns: { id: true },
+      });
+
+      return user?.id ?? null;
+    },
+    catch: (cause) =>
+      new WebhookSyncError({
+        message: "Failed to resolve user via WorkOS",
+        cause,
+      }),
+  });
 });
 
 export const upsertMembershipFromWebhook = Effect.fn(
@@ -87,9 +139,23 @@ export const upsertMembershipFromWebhook = Effect.fn(
 export const removeMembershipFromWebhook = Effect.fn(
   "auth.webhook.removeMembership"
 )(function* (membership: OrganizationMembership) {
-  const { organizationId, userId } = yield* resolveLocalIds(membership);
+  const resolved = yield* resolveLocalIds(membership);
+
+  const organizationId =
+    resolved.organizationId ??
+    (yield* resolveOrganizationIdByExternalId(membership.organizationId));
+  const userId =
+    resolved.userId ?? (yield* resolveUserIdByExternalId(membership.userId));
 
   if (!(organizationId && userId)) {
+    yield* Effect.logWarning(
+      "Membership deletion webhook could not be mapped to local records"
+    ).pipe(
+      Effect.annotateLogs({
+        workosOrgId: membership.organizationId,
+        workosUserId: membership.userId,
+      })
+    );
     return;
   }
 
