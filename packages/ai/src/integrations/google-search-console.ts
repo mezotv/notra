@@ -171,7 +171,13 @@ export function hasGscGoogleAccountChanged(
 ): boolean {
   const previous = previousEmail?.trim().toLowerCase();
   const next = nextEmail?.trim().toLowerCase();
-  if (!(previous && next)) {
+  // Userinfo can fail, return malformed JSON, or omit email. If we cannot
+  // confirm the next identity, treat the account as changed so reconnect
+  // never keeps the previous property or weekly schedule under new tokens.
+  if (!next) {
+    return true;
+  }
+  if (!previous) {
     return false;
   }
   return previous !== next;
