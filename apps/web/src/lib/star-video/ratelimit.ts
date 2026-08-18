@@ -35,6 +35,7 @@ function getLimiter(kind: LimiterKind): Ratelimit | null {
 
   limiters[kind] = new Ratelimit({
     redis: new Redis({ url, token }),
+    analytics: true,
     prefix: `ratelimit:web:star-video-${kind}`,
     limiter: Ratelimit.slidingWindow(
       LIMITS[kind].requests,

@@ -124,6 +124,7 @@ function dualChatGenerationLimiter(): Algorithm<ChatRatelimitContext> {
 
 const chatGenerationRatelimit = new Ratelimit({
   redis: Redis.fromEnv(),
+  analytics: true,
   prefix: DUAL_LIMIT_PREFIX,
   limiter: dualChatGenerationLimiter(),
 });
