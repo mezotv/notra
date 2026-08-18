@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { AnalyticsPageSkeleton } from "@/app/(dashboard)/[slug]/analytics/skeleton";
 import { AccountFilter } from "@/components/analytics/account-filter";
@@ -9,6 +8,7 @@ import { AnalyticsNav } from "@/components/analytics/analytics-nav";
 import { ConnectAccountsButtons } from "@/components/analytics/connect-accounts-buttons";
 import { SummaryStats } from "@/components/analytics/summary-stats";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateAnalyticsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
 import { rangeHintLabel } from "@/lib/analytics/date-range";
 import { useAnalyticsRange } from "@/lib/hooks/use-analytics-range";
@@ -67,15 +67,9 @@ export function AnalyticsShell({ children }: { children: ReactNode }) {
             </p>
           </header>
           <EmptyState
-            action={
-              <Link
-                className="text-primary text-sm underline underline-offset-4"
-                href={`/${organizationSlug}/settings/general`}
-              >
-                Connect an account
-              </Link>
-            }
+            action={<ConnectAccountsButtons organizationId={organizationId} />}
             description="Connect an X or LinkedIn account to start tracking followers, impressions, and engagement."
+            preview={<EmptyStateAnalyticsPreview />}
             title="No connected accounts"
           />
         </div>

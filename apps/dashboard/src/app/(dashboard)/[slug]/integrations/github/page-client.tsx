@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { ConnectGitHubDialog } from "@/components/integrations/github/connect-github-dialog";
 import { GitHubAccountCard } from "@/components/integrations/github/github-account-card";
 import { SelectRepositoriesDialog } from "@/components/integrations/github/select-repositories-dialog";
@@ -339,7 +340,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   let githubAppContent = (
     <EmptyState
+      action={
+        <Button onClick={handleOpenConnect} variant="outline">
+          <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+          Connect GitHub
+        </Button>
+      }
       description="Install the Notra GitHub App to get started."
+      preview={<EmptyStateCardsPreview count={2} variant="integration" />}
       title="No GitHub account connected"
     />
   );

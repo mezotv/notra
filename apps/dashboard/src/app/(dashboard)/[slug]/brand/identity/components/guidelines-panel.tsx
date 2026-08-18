@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateGuidelinesPreview } from "@/components/empty-state-preview";
 import { GUIDELINES_SKELETON_KEYS } from "@/constants/brand-guideline-ui";
 import {
   useBrandGuidelines,
@@ -84,11 +85,7 @@ export function GuidelinesPanel({
     return (
       <EmptyState
         action={
-          <Button
-            disabled={isRefreshBusy}
-            onClick={refresh.refreshGuidelines}
-            size="sm"
-          >
+          <Button disabled={isRefreshBusy} onClick={refresh.refreshGuidelines}>
             {isRefreshBusy ? (
               <Loader2Icon className="size-4 animate-spin" />
             ) : (
@@ -98,6 +95,7 @@ export function GuidelinesPanel({
           </Button>
         }
         description="Brand guidelines have not been generated yet. Generate them to pull logos, colors, typography, and landing page screenshots from your website."
+        preview={<EmptyStateGuidelinesPreview />}
         title="No guidelines yet"
       />
     );
@@ -179,7 +177,6 @@ export function GuidelinesPanel({
             <Button
               disabled={isRefreshBusy}
               onClick={refresh.refreshGuidelines}
-              size="sm"
             >
               {isRefreshBusy ? (
                 <Loader2Icon className="size-4 animate-spin" />
@@ -190,6 +187,7 @@ export function GuidelinesPanel({
             </Button>
           }
           description="No brand assets were detected for this identity yet. Refresh to pull the latest logos, colors, and screenshots."
+          preview={<EmptyStateGuidelinesPreview />}
           title="Guidelines are empty"
         />
       )}

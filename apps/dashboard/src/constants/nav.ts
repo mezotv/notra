@@ -32,17 +32,17 @@ export const NAV_CATEGORY_LABELS: Record<
 
 export const NAV_MAIN_ITEMS: NavMainItem[] = [
   {
+    link: "",
+    icon: Home01Icon,
+    label: "Home",
+    category: "none",
+  },
+  {
     link: "/chat",
     icon: Message01Icon,
     label: "Chat",
     category: "none",
     badge: "Beta",
-  },
-  {
-    link: "",
-    icon: Home01Icon,
-    label: "Home",
-    category: "none",
   },
   {
     link: CONTENT_NAV_LINK,

@@ -21,12 +21,8 @@ export function resolveMainNavGroups(analyticsVisible: boolean): {
   if (!contentItem) {
     return { rootItems: NAV_ITEMS_BY_CATEGORY.none, workspaceItems: [] };
   }
-  const [firstItem, ...restItems] = NAV_ITEMS_BY_CATEGORY.none;
-  if (!firstItem) {
-    return { rootItems: [contentItem], workspaceItems: [] };
-  }
   return {
-    rootItems: [firstItem, contentItem, ...restItems],
+    rootItems: [...NAV_ITEMS_BY_CATEGORY.none, contentItem],
     workspaceItems: [],
   };
 }

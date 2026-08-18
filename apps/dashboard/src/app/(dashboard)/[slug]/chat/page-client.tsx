@@ -74,7 +74,7 @@ import { renderTextWithIntegrationReferences } from "@/components/chat/integrati
 import { SlackRelayFooterNotice } from "@/components/chat/slack-relay-footer-notice";
 import {
   UserMessageActions,
-  UserMessageEditor,
+  UserMessageTextBubble,
 } from "@/components/chat/user-message-actions";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { MAX_VISIBLE_CHAT_IMAGES } from "@/constants/chat-images";
@@ -2307,60 +2307,40 @@ function StandaloneChatPageClient({
                             from={message.role}
                           >
                             {isUser ? (
-                              <m.div
-                                className={cn(
-                                  "ml-auto overflow-hidden",
-                                  isEditing
-                                    ? "w-full"
-                                    : "flex w-fit max-w-full flex-col items-end gap-2"
+                              <div className="ml-auto flex w-full max-w-full flex-col items-end gap-2">
+                                {userImageParts.length > 0 && (
+                                  <UserImageGrid>
+                                    {userImageParts.map((part, index) =>
+                                      renderPart(part, message.id, index)
+                                    )}
+                                  </UserImageGrid>
                                 )}
-                                layout
-                                transition={{
-                                  duration: 0.25,
-                                  ease: [0.22, 1, 0.36, 1],
-                                }}
-                              >
-                                {isEditing ? (
-                                  <UserMessageEditor
+                                {(isEditing ||
+                                  userContentParts.length > 0 ||
+                                  userFileParts.length > 0) && (
+                                  <UserMessageTextBubble
                                     initialText={toDisplayText(
                                       getUserMessageText(message)
                                     )}
+                                    isEditing={isEditing}
                                     onCancel={handleCancelEditMessage}
                                     onSubmit={(text) =>
                                       handleEditMessage(message.id, text)
                                     }
-                                  />
-                                ) : (
-                                  <>
-                                    {userImageParts.length > 0 && (
-                                      <UserImageGrid>
-                                        {userImageParts.map((part, index) =>
+                                  >
+                                    {userContentParts.map((part, index) =>
+                                      renderPart(part, message.id, index)
+                                    )}
+                                    {userFileParts.length > 0 && (
+                                      <div className="flex max-w-full flex-wrap justify-end gap-2">
+                                        {userFileParts.map((part, index) =>
                                           renderPart(part, message.id, index)
                                         )}
-                                      </UserImageGrid>
+                                      </div>
                                     )}
-                                    {(userContentParts.length > 0 ||
-                                      userFileParts.length > 0) && (
-                                      <MessageContent>
-                                        {userContentParts.map((part, index) =>
-                                          renderPart(part, message.id, index)
-                                        )}
-                                        {userFileParts.length > 0 && (
-                                          <div className="flex max-w-full flex-wrap justify-end gap-2">
-                                            {userFileParts.map((part, index) =>
-                                              renderPart(
-                                                part,
-                                                message.id,
-                                                index
-                                              )
-                                            )}
-                                          </div>
-                                        )}
-                                      </MessageContent>
-                                    )}
-                                  </>
+                                  </UserMessageTextBubble>
                                 )}
-                              </m.div>
+                              </div>
                             ) : (
                               <MessageContent>
                                 {message.parts.map((part, index) =>

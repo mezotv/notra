@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
+import { ArrowLeft02Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveAlertDialog,
@@ -13,7 +13,11 @@ import {
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Field, FieldLabel } from "@notra/ui/components/ui/field";
+import {
+  Field,
+  FieldDescription,
+  FieldLabel,
+} from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
@@ -30,6 +34,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useRef, useState } from "react";
@@ -38,17 +43,12 @@ import { Button } from "@/components/button";
 import { DiffView } from "@/components/content/diff-view";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { SKILL_EDITOR_VIEWS } from "@/constants/skills";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { updateSkillSchema } from "@/schemas/skills";
+import type { SkillDetailPageClientProps } from "@/types/skills/page";
 
-const VIEW_OPTIONS = ["edit", "diff"] as const;
-
-interface PageClientProps {
-  slug: string;
-  name: string;
-}
-
-export default function PageClient({ slug, name }: PageClientProps) {
+export default function PageClient({ slug, name }: SkillDetailPageClientProps) {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
   const queryClient = useQueryClient();
@@ -56,7 +56,7 @@ export default function PageClient({ slug, name }: PageClientProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [view, setView] = useQueryState(
     "view",
-    parseAsStringLiteral(VIEW_OPTIONS).withDefault("edit")
+    parseAsStringLiteral(SKILL_EDITOR_VIEWS).withDefault("edit")
   );
 
   const [original, setOriginal] = useState<{
@@ -227,123 +227,141 @@ export default function PageClient({ slug, name }: PageClientProps) {
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="w-full space-y-6 px-4 lg:px-6">
-        <div className="flex items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-3">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <Button
-                        onClick={() => router.push(`/${slug}/skills`)}
-                        size="icon"
-                        variant="ghost"
-                      />
-                    }
-                  >
-                    <HugeiconsIcon className="size-4" icon={ArrowLeft01Icon} />
-                  </TooltipTrigger>
-                  <TooltipContent>All skills</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <h1 className="font-bold font-mono text-3xl tracking-tight">
+      <div className="w-full space-y-8 px-4 lg:px-6">
+        <div className="space-y-4">
+          <Link
+            className="inline-flex items-center gap-1.5 text-muted-foreground text-sm transition-colors hover:text-foreground"
+            href={`/${slug}/skills`}
+          >
+            <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
+            Skills
+          </Link>
+
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <h1 className="truncate font-bold font-mono text-2xl tracking-tight">
                 {name}
               </h1>
-              {skill?.isSystem && (
+              {skill?.isSystem ? (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger
-                      render={<Badge variant="secondary">System</Badge>}
+                      render={
+                        <Badge
+                          className="whitespace-nowrap"
+                          variant="secondary"
+                        >
+                          System
+                        </Badge>
+                      }
                     />
                     <TooltipContent>
                       System skills cannot be renamed or deleted.
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-              )}
+              ) : null}
             </div>
+            {skill && !skill.isSystem ? (
+              <Button
+                className="w-fit gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                disabled={saveMutation.isPending || deleteMutation.isPending}
+                onClick={() => setDeleteOpen(true)}
+                variant="outline"
+              >
+                <HugeiconsIcon className="size-4" icon={Delete02Icon} />
+                Delete
+              </Button>
+            ) : null}
           </div>
-          {skill && !skill.isSystem && (
-            <Button
-              className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              disabled={saveMutation.isPending || deleteMutation.isPending}
-              onClick={() => setDeleteOpen(true)}
-              variant="outline"
-            >
-              <HugeiconsIcon className="size-4" icon={Delete02Icon} />
-              Delete
-            </Button>
-          )}
         </div>
 
-        {organizationId && isPending && (
-          <div className="space-y-4">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-96 w-full" />
+        {organizationId && isPending ? (
+          <div className="space-y-8">
+            <div className="max-w-2xl space-y-5">
+              <Skeleton className="h-10 w-full max-w-md" />
+              <Skeleton className="h-20 w-full" />
+            </div>
+            <Skeleton className="h-[28rem] w-full rounded-xl" />
           </div>
-        )}
-        {!(organizationId && isPending) && skill && (
-          <div className="space-y-4">
-            <Field>
-              <FieldLabel>Name</FieldLabel>
-              <Input
-                disabled={skill.isSystem || saveMutation.isPending}
-                onChange={(e) => setNameInput(e.target.value)}
-                readOnly={skill.isSystem}
-                value={nameInput}
-              />
-              {!skill.isSystem && (
-                <p className="text-muted-foreground text-xs">
-                  Lowercase letters, digits, and hyphens. Renaming may affect
-                  references to this skill by name.
-                </p>
-              )}
-            </Field>
-            <Field>
-              <FieldLabel>
-                Description<span className="-ml-1 text-destructive">*</span>
-              </FieldLabel>
-              <Textarea
-                className="max-h-[5rem] min-h-[4rem] overflow-y-auto"
-                disabled={saveMutation.isPending}
-                onChange={(e) => setDescription(e.target.value)}
-                value={description}
-              />
-            </Field>
-            <Field>
-              <FieldLabel>
-                Content<span className="-ml-1 text-destructive">*</span>
-              </FieldLabel>
+        ) : null}
+
+        {!(organizationId && isPending) && skill ? (
+          <div className="space-y-8">
+            <div className="max-w-2xl space-y-5">
+              <Field>
+                <FieldLabel>Name</FieldLabel>
+                <Input
+                  className="max-w-md font-mono"
+                  disabled={skill.isSystem || saveMutation.isPending}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  readOnly={skill.isSystem}
+                  value={nameInput}
+                />
+                {skill.isSystem ? (
+                  <FieldDescription>
+                    System skills keep a fixed name.
+                  </FieldDescription>
+                ) : (
+                  <FieldDescription>
+                    Lowercase letters, digits, and hyphens. Renaming may affect
+                    references to this skill by name.
+                  </FieldDescription>
+                )}
+              </Field>
+              <Field>
+                <FieldLabel>
+                  Description
+                  <span className="text-destructive">*</span>
+                </FieldLabel>
+                <Textarea
+                  className="max-h-32 min-h-20 resize-none overflow-y-auto leading-relaxed"
+                  disabled={saveMutation.isPending}
+                  onChange={(e) => setDescription(e.target.value)}
+                  value={description}
+                />
+              </Field>
+            </div>
+
+            <Field className="gap-3">
               <Tabs
+                className="gap-3"
                 onValueChange={(v) =>
-                  setView(v as (typeof VIEW_OPTIONS)[number])
+                  setView(v as (typeof SKILL_EDITOR_VIEWS)[number])
                 }
                 value={view}
               >
-                <TabsList variant="line">
-                  <TabsTrigger value="edit">Edit</TabsTrigger>
-                  <TabsTrigger value="diff">Diff</TabsTrigger>
-                </TabsList>
-                <TabsContent className="mt-2" value="edit">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <FieldLabel>
+                    Content
+                    <span className="text-destructive">*</span>
+                  </FieldLabel>
+                  <TabsList variant="line">
+                    <TabsTrigger value="edit">Edit</TabsTrigger>
+                    <TabsTrigger value="diff">Diff</TabsTrigger>
+                  </TabsList>
+                </div>
+                <TabsContent value="edit">
                   <Textarea
-                    className="max-h-[20rem] min-h-[16rem] overflow-y-auto font-mono text-sm"
+                    className="max-h-[min(70vh,40rem)] min-h-48 resize-none overflow-y-auto font-mono text-sm leading-relaxed"
                     disabled={saveMutation.isPending}
                     onChange={(e) => setContent(e.target.value)}
+                    spellCheck={false}
                     value={content}
                   />
                 </TabsContent>
-                <TabsContent className="mt-2" value="diff">
-                  <DiffView
-                    currentMarkdown={content}
-                    originalMarkdown={original?.content ?? ""}
-                  />
+                <TabsContent value="diff">
+                  <div className="min-h-48 overflow-auto rounded-lg border border-border/80 bg-muted/20">
+                    <DiffView
+                      currentMarkdown={content}
+                      originalMarkdown={original?.content ?? ""}
+                    />
+                  </div>
                 </TabsContent>
               </Tabs>
             </Field>
           </div>
-        )}
+        ) : null}
       </div>
 
       <ResponsiveAlertDialog onOpenChange={setDeleteOpen} open={deleteOpen}>

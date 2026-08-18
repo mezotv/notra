@@ -62,8 +62,13 @@ import { SourcesCell } from "@/components/automation/sources-cell";
 import { TriggerStatusBadge } from "@/components/automation/triggers/trigger-status-badge";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import {
+  EMPTY_STATE_TABLE_COLUMNS,
+  EMPTY_STATE_TABLE_ROWS,
+} from "@/constants/empty-state";
 import { useCreateFromSuggestion } from "@/lib/hooks/use-onboarding";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
@@ -422,10 +427,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             open={createOpen}
             organizationId={organizationId ?? ""}
             trigger={
-              <Button className="gap-1.5">
-                <HugeiconsIcon className="size-4" icon={Add01Icon} />
-                Create Schedule
-                <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+              <Button className="w-fit gap-2">
+                <span className="inline-flex items-center gap-1.5">
+                  <HugeiconsIcon className="size-4" icon={Add01Icon} />
+                  Create Schedule
+                </span>
+                <Kbd className="hidden sm:inline-flex">C</Kbd>
               </Button>
             }
           />
@@ -472,6 +479,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               />
             }
             description="Create your first schedule to automate recurring content."
+            preview={
+              <EmptyStateTablePreview
+                columns={EMPTY_STATE_TABLE_COLUMNS.schedule}
+                rows={EMPTY_STATE_TABLE_ROWS}
+              />
+            }
             title="No schedules yet"
           />
         )}
