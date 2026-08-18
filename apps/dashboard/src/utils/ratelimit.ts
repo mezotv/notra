@@ -107,6 +107,18 @@ export const ratelimit = {
     prefix: "ratelimit:slack-oauth",
     limiter: Ratelimit.slidingWindow(10, "10m"),
   }),
+  gscOAuth: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:gsc-oauth",
+    limiter: Ratelimit.slidingWindow(10, "10m"),
+  }),
+  gscSync: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:gsc-sync",
+    limiter: Ratelimit.slidingWindow(5, "10m"),
+  }),
 };
 
 export function getClientIp(request: NextRequest): string {

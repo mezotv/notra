@@ -318,3 +318,60 @@ export interface MentionTrendCardProps {
 export interface AiTrafficLogCardProps {
   log: AiTrafficLogEntry[];
 }
+
+export type GscIntegrationStatus = "active" | "reauth_required";
+
+export interface GscSiteOption {
+  siteUrl: string;
+  permissionLevel: string | null;
+}
+
+export interface GeoSearchConsoleStatus {
+  configured: boolean;
+  connected: boolean;
+  email: string | null;
+  siteUrl: string | null;
+  status: GscIntegrationStatus | null;
+  lastSyncedAt: string | null;
+  lastError: string | null;
+  weeklySyncScheduled: boolean;
+  sites: GscSiteOption[];
+}
+
+export interface GscSelectSiteInput {
+  siteUrl: string;
+}
+
+export interface GscSyncResult {
+  status: "completed" | "skipped" | "invalid_payload";
+  keywords?: number;
+  suggestionsAdded?: number;
+  reason?: string;
+}
+
+export interface GscSyncPayload {
+  organizationId: string;
+}
+
+export interface GeoSuggestionKeyword {
+  query: string;
+  clicks: number;
+  impressions: number;
+  position: number;
+}
+
+export interface GeoPromptSuggestion {
+  id: string;
+  prompt: string;
+  source: "search_console";
+  keywords: GeoSuggestionKeyword[];
+  createdAt: string;
+}
+
+export interface GeoPromptSuggestionsResponse {
+  suggestions: GeoPromptSuggestion[];
+}
+
+export interface GeoSuggestionIdInput {
+  suggestionId: string;
+}

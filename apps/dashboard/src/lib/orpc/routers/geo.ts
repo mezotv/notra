@@ -1,4 +1,18 @@
 import {
+  deleteGscIntegration,
+  GscApiError,
+  GscReauthRequiredError,
+  getGscIntegration,
+  getGscOAuthCredentials,
+  listGscSites,
+  revokeGscToken,
+  updateGscIntegration,
+} from "@notra/ai/integrations/google-search-console";
+import {
+  createQstashRouteSchedule,
+  deleteQstashSchedule,
+} from "@notra/ai/qstash/triggers";
+import {
   isTinybirdConfigured,
   queryAiTrafficLog,
   queryAiTrafficOverview,
@@ -11,8 +25,13 @@ import {
   queryModelUsageLatest,
 } from "@notra/analytics/tinybird/client";
 import { db } from "@notra/db/drizzle";
-import { brandSettings, geoPrompts, geoSettings } from "@notra/db/schema";
-import { and, asc, eq } from "drizzle-orm";
+import {
+  brandSettings,
+  geoPromptSuggestions,
+  geoPrompts,
+  geoSettings,
+} from "@notra/db/schema";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import {
   AI_TRAFFIC_DEFAULT_DAYS,
@@ -22,6 +41,10 @@ import {
   GEO_MODEL_USAGE_DEFAULT_LIMIT,
   GEO_MODEL_USAGE_SOURCE,
 } from "@/constants/geo";
+import {
+  GSC_SYNC_CRON,
+  GSC_SYNC_WORKFLOW_PATH,
+} from "@/constants/google-search-console";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { buildBeaconIngestUrl, buildBeaconSnippet } from "@/lib/beacon/snippet";
 import { deriveBeaconToken } from "@/lib/beacon/token";
@@ -29,6 +52,7 @@ import { generateGeoFromWebsite } from "@/lib/geo/discover";
 import type { GeoDiscoveryError } from "@/lib/geo/errors";
 import { normalizeModelId } from "@/lib/geo/model-usage";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
+import { syncGscSuggestions } from "@/lib/geo/search-console";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { badRequest, notFound } from "@/lib/orpc/utils/errors";
 import { startGeoScanRun } from "@/lib/workflows/start";
@@ -41,7 +65,9 @@ import {
   geoPromptDeleteInputSchema,
   geoPromptToggleInputSchema,
   geoSettingsUpsertInputSchema,
+  geoSuggestionIdInputSchema,
   geoTimeseriesInputSchema,
+  gscSelectSiteInputSchema,
 } from "@/schemas/geo";
 import type {
   AiTrafficResponse,
@@ -54,12 +80,17 @@ import type {
   GeoOverviewResponse,
   GeoPromptResultsResponse,
   GeoPromptRow,
+  GeoPromptSuggestion,
+  GeoPromptSuggestionsResponse,
+  GeoSearchConsoleStatus,
   GeoSettings,
   GeoSettingsResponse,
   GeoTimeseriesResponse,
   GeoTrackedPrompt,
   GeoTrackedPromptsResponse,
+  GscSyncResult,
 } from "@/types/geo";
+import { ratelimit } from "@/utils/ratelimit";
 
 interface GeoSettingsRow {
   id: string;
@@ -142,6 +173,104 @@ function toModelUsageRow(
     checks,
   };
 }
+interface GeoPromptSuggestionRow {
+  id: string;
+  prompt: string;
+  source: "search_console";
+  sourceKeywords: {
+    query: string;
+    clicks: number;
+    impressions: number;
+    position: number;
+  }[];
+  createdAt: Date;
+}
+
+function toPromptSuggestion(row: GeoPromptSuggestionRow): GeoPromptSuggestion {
+  return {
+    id: row.id,
+    prompt: row.prompt,
+    source: row.source,
+    keywords: row.sourceKeywords,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+function toGscErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof GscReauthRequiredError) {
+    return "Google Search Console access expired. Please reconnect.";
+  }
+  if (error instanceof GscApiError || error instanceof Error) {
+    return error.message || fallback;
+  }
+  return fallback;
+}
+
+async function ensureGscSchedule(
+  organizationId: string,
+  existingScheduleId: string | null
+): Promise<string | null> {
+  if (existingScheduleId) {
+    return existingScheduleId;
+  }
+  try {
+    return await createQstashRouteSchedule({
+      path: GSC_SYNC_WORKFLOW_PATH,
+      cron: GSC_SYNC_CRON,
+      body: { organizationId },
+    });
+  } catch (error) {
+    console.error("[GSC] Failed to create weekly sync schedule:", error);
+    return null;
+  }
+}
+
+async function removeGscSchedule(scheduleId: string | null) {
+  if (!scheduleId) {
+    return;
+  }
+  try {
+    await deleteQstashSchedule(scheduleId);
+  } catch (error) {
+    console.error("[GSC] Failed to delete QStash schedule:", error);
+  }
+}
+
+async function acceptSuggestionRow(
+  organizationId: string,
+  suggestion: { id: string; prompt: string }
+): Promise<GeoTrackedPrompt> {
+  return await db.transaction(async (tx) => {
+    // Reuse an identical tracked prompt instead of creating a duplicate.
+    const existing = await tx.query.geoPrompts.findFirst({
+      where: and(
+        eq(geoPrompts.organizationId, organizationId),
+        eq(geoPrompts.prompt, suggestion.prompt)
+      ),
+    });
+    let promptRow = existing ?? null;
+    if (!promptRow) {
+      const [inserted] = await tx
+        .insert(geoPrompts)
+        .values({
+          id: crypto.randomUUID(),
+          organizationId,
+          prompt: suggestion.prompt,
+        })
+        .returning();
+      promptRow = inserted ?? null;
+    }
+    if (!promptRow) {
+      throw badRequest("Failed to create prompt");
+    }
+    await tx
+      .update(geoPromptSuggestions)
+      .set({ status: "accepted", acceptedPromptId: promptRow.id })
+      .where(eq(geoPromptSuggestions.id, suggestion.id));
+    return toTrackedPrompt(promptRow);
+  });
+}
+
 export const geoRouter = {
   settings: authorizedProcedure
     .input(geoOrganizationInputSchema)
@@ -634,5 +763,266 @@ export const geoRouter = {
       }
 
       return await startGeoScanRun({ organizationId: input.organizationId });
+    }),
+  searchConsoleStatus: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async ({ context, input }): Promise<GeoSearchConsoleStatus> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const configured = getGscOAuthCredentials() !== null;
+      const integration = await getGscIntegration(input.organizationId);
+      if (!integration) {
+        return {
+          configured,
+          connected: false,
+          email: null,
+          siteUrl: null,
+          status: null,
+          lastSyncedAt: null,
+          lastError: null,
+          weeklySyncScheduled: false,
+          sites: [],
+        };
+      }
+
+      let sites: GeoSearchConsoleStatus["sites"] = [];
+      let lastError = integration.lastError;
+      if (!integration.siteUrl && integration.status === "active") {
+        try {
+          sites = await listGscSites(integration);
+        } catch (error) {
+          console.error("[GSC] Failed to list sites:", error);
+          lastError = toGscErrorMessage(
+            error,
+            "Failed to load Search Console properties"
+          );
+        }
+      }
+
+      const refreshed =
+        (await getGscIntegration(input.organizationId)) ?? integration;
+
+      return {
+        configured,
+        connected: true,
+        email: refreshed.googleAccountEmail,
+        siteUrl: refreshed.siteUrl,
+        status: refreshed.status,
+        lastSyncedAt: refreshed.lastSyncedAt?.toISOString() ?? null,
+        lastError,
+        weeklySyncScheduled: refreshed.qstashScheduleId !== null,
+        sites,
+      };
+    }),
+  searchConsoleSelectSite: authorizedProcedure
+    .input(gscSelectSiteInputSchema)
+    .handler(async ({ context, input }): Promise<GscSyncResult> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const integration = await getGscIntegration(input.organizationId);
+      if (!integration) {
+        throw notFound("Google Search Console is not connected");
+      }
+
+      const scheduleId = await ensureGscSchedule(
+        input.organizationId,
+        integration.qstashScheduleId
+      );
+
+      await updateGscIntegration(input.organizationId, {
+        siteUrl: input.siteUrl,
+        qstashScheduleId: scheduleId,
+        lastError: null,
+      });
+
+      try {
+        return await syncGscSuggestions(input.organizationId);
+      } catch (error) {
+        console.error("[GSC] Initial sync failed:", error);
+        throw badRequest(
+          toGscErrorMessage(error, "Failed to sync Search Console keywords")
+        );
+      }
+    }),
+  searchConsoleSync: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async ({ context, input }): Promise<GscSyncResult> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const { success: withinLimit } = await ratelimit.gscSync.limit(
+        input.organizationId
+      );
+      if (!withinLimit) {
+        throw badRequest("Too many syncs. Please wait a few minutes.");
+      }
+
+      const integration = await getGscIntegration(input.organizationId);
+      if (!integration) {
+        throw notFound("Google Search Console is not connected");
+      }
+      if (!integration.siteUrl) {
+        throw badRequest("Select a Search Console property first");
+      }
+
+      if (!integration.qstashScheduleId) {
+        // Backfill the weekly schedule if it could not be created earlier.
+        const scheduleId = await ensureGscSchedule(input.organizationId, null);
+        if (scheduleId) {
+          await updateGscIntegration(input.organizationId, {
+            qstashScheduleId: scheduleId,
+          });
+        }
+      }
+
+      try {
+        return await syncGscSuggestions(input.organizationId);
+      } catch (error) {
+        console.error("[GSC] Sync failed:", error);
+        throw badRequest(
+          toGscErrorMessage(error, "Failed to sync Search Console keywords")
+        );
+      }
+    }),
+  searchConsoleClearSite: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async ({ context, input }): Promise<{ cleared: boolean }> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const integration = await getGscIntegration(input.organizationId);
+      if (!integration) {
+        throw notFound("Google Search Console is not connected");
+      }
+      await removeGscSchedule(integration.qstashScheduleId);
+      await updateGscIntegration(input.organizationId, {
+        siteUrl: null,
+        qstashScheduleId: null,
+        lastError: null,
+      });
+      return { cleared: true };
+    }),
+  searchConsoleDisconnect: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async ({ context, input }): Promise<{ disconnected: boolean }> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const integration = await deleteGscIntegration(input.organizationId);
+      if (!integration) {
+        return { disconnected: false };
+      }
+      await Promise.all([
+        removeGscSchedule(integration.qstashScheduleId),
+        revokeGscToken(integration),
+      ]);
+      return { disconnected: true };
+    }),
+  suggestionsList: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(
+      async ({ context, input }): Promise<GeoPromptSuggestionsResponse> => {
+        await assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+          user: context.user,
+        });
+
+        const rows = await db.query.geoPromptSuggestions.findMany({
+          where: and(
+            eq(geoPromptSuggestions.organizationId, input.organizationId),
+            eq(geoPromptSuggestions.status, "pending")
+          ),
+          orderBy: [desc(geoPromptSuggestions.createdAt)],
+        });
+
+        return { suggestions: rows.map(toPromptSuggestion) };
+      }
+    ),
+  suggestionAccept: authorizedProcedure
+    .input(geoSuggestionIdInputSchema)
+    .handler(async ({ context, input }): Promise<GeoTrackedPrompt> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const suggestion = await db.query.geoPromptSuggestions.findFirst({
+        where: and(
+          eq(geoPromptSuggestions.id, input.suggestionId),
+          eq(geoPromptSuggestions.organizationId, input.organizationId),
+          eq(geoPromptSuggestions.status, "pending")
+        ),
+      });
+      if (!suggestion) {
+        throw notFound("Suggestion not found");
+      }
+
+      return await acceptSuggestionRow(input.organizationId, suggestion);
+    }),
+  suggestionsAcceptAll: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async ({ context, input }): Promise<{ accepted: number }> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const rows = await db.query.geoPromptSuggestions.findMany({
+        where: and(
+          eq(geoPromptSuggestions.organizationId, input.organizationId),
+          eq(geoPromptSuggestions.status, "pending")
+        ),
+        orderBy: [asc(geoPromptSuggestions.createdAt)],
+      });
+
+      for (const row of rows) {
+        await acceptSuggestionRow(input.organizationId, row);
+      }
+      return { accepted: rows.length };
+    }),
+  suggestionDismiss: authorizedProcedure
+    .input(geoSuggestionIdInputSchema)
+    .handler(async ({ context, input }): Promise<{ dismissed: boolean }> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const [row] = await db
+        .update(geoPromptSuggestions)
+        .set({ status: "dismissed" })
+        .where(
+          and(
+            eq(geoPromptSuggestions.id, input.suggestionId),
+            eq(geoPromptSuggestions.organizationId, input.organizationId),
+            eq(geoPromptSuggestions.status, "pending")
+          )
+        )
+        .returning({ id: geoPromptSuggestions.id });
+      if (!row) {
+        throw notFound("Suggestion not found");
+      }
+      return { dismissed: true };
     }),
 };

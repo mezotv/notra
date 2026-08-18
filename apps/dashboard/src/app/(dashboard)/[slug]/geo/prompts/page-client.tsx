@@ -4,6 +4,8 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PromptManager } from "@/components/geo/prompt-manager";
 import { PromptResultsCard } from "@/components/geo/prompt-results-card";
+import { PromptSuggestions } from "@/components/geo/prompt-suggestions";
+import { SearchConsoleCard } from "@/components/geo/search-console-card";
 import { WebsiteGenerateCard } from "@/components/geo/website-generate-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -66,7 +68,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             The questions we ask AI engines on your behalf
           </p>
         </header>
+        <PromptSuggestions organizationId={organizationId} />
         <PromptManager organizationId={organizationId} />
+        <SearchConsoleCard
+          callbackPath={`/${organizationSlug}/geo/prompts`}
+          organizationId={organizationId}
+        />
         <WebsiteGenerateCard compact organizationId={organizationId} />
         <PromptResultsCard results={promptResults?.results ?? []} />
       </div>
