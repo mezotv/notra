@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
     "/*": ["./src/lib/ai/skills/**/*", "../../packages/ai/src/skills/**/*"],
   },
   experimental: {
-    turbopackFileSystemCacheForDev: false,
     optimizePackageImports: ["@hugeicons/core-free-icons", "lucide-react"],
     staleTimes: {
       dynamic: 30,

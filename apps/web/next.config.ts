@@ -17,9 +17,6 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname, "../.."),
   },
-  experimental: {
-    turbopackFileSystemCacheForDev: false,
-  },
   transpilePackages: ["@notra/ui", "@notra/email", "@notra/kiwi"],
   serverExternalPackages: ["@remotion/bundler", "@remotion/renderer"],
   rewrites: async () => {
