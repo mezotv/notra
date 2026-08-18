@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isNextRedirectError } from "@/lib/auth/redirect-error";
 import {
   deleteUserAction,
   listAccountsAction,
@@ -76,16 +77,6 @@ function useSessionInvalidation() {
   return () => {
     queryClient.invalidateQueries({ queryKey: QUERY_KEYS.AUTH.session });
   };
-}
-
-function isNextRedirectError(error: unknown) {
-  return (
-    error !== null &&
-    typeof error === "object" &&
-    "digest" in error &&
-    typeof error.digest === "string" &&
-    error.digest.startsWith("NEXT_REDIRECT")
-  );
 }
 
 async function signOut(options?: SignOutOptions) {

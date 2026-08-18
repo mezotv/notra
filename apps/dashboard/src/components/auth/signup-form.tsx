@@ -17,6 +17,7 @@ import { EmailVerificationForm } from "@/components/auth/email-verification-form
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
 import { setLastUsedLoginMethod } from "@/lib/auth/last-login-method";
 import { signUpWithPasswordAction } from "@/lib/auth/password-actions";
+import { isNextRedirectError } from "@/lib/auth/redirect-error";
 import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import { signupSchema } from "@/schemas/auth/credentials";
@@ -106,7 +107,10 @@ export function SignupForm({
     startSocialSignInAction({
       provider,
       returnTo: buildCallbackUrl(provider),
-    }).catch(() => {
+    }).catch((error) => {
+      if (isNextRedirectError(error)) {
+        return;
+      }
       authInFlightRef.current = false;
       setAuthMethod(null);
       setFormError("Social sign-up failed. Please try again.");

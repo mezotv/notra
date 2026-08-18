@@ -10,6 +10,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
+import { isNextRedirectError } from "@/lib/auth/redirect-error";
 import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import type { ConnectedAccountsSectionProps } from "@/types/settings/account";
@@ -30,7 +31,10 @@ export function ConnectedAccountsSection({
     startSocialSignInAction({
       provider,
       returnTo: window.location.pathname,
-    }).catch(() => {
+    }).catch((error) => {
+      if (isNextRedirectError(error)) {
+        return;
+      }
       setLoadingProvider(null);
       toast.error("Could not start the connection. Please try again.");
     });

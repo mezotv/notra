@@ -1,6 +1,7 @@
 "use client";
 
 import { Effect } from "effect";
+import { isNextRedirectError } from "@/lib/auth/redirect-error";
 import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
@@ -15,6 +16,10 @@ function authorizeGitHub(callbackURL: string) {
       await startSocialSignInAction({
         provider: "github",
         returnTo: callbackURL,
+      }).catch((error) => {
+        if (!isNextRedirectError(error)) {
+          throw error;
+        }
       });
       return true;
     },

@@ -19,6 +19,7 @@ import {
   setLastUsedLoginMethod,
 } from "@/lib/auth/last-login-method";
 import { signInWithPasswordAction } from "@/lib/auth/password-actions";
+import { isNextRedirectError } from "@/lib/auth/redirect-error";
 import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import { loginSchema } from "@/schemas/auth/credentials";
@@ -81,11 +82,16 @@ export function LoginForm({
     authInFlightRef.current = true;
     flushSync(() => setAuthMethod(provider));
     setLastUsedLoginMethod(provider);
-    startSocialSignInAction({ provider, returnTo: callbackURL }).catch(() => {
-      authInFlightRef.current = false;
-      setAuthMethod(null);
-      setFormError("Social sign-in failed. Please try again.");
-    });
+    startSocialSignInAction({ provider, returnTo: callbackURL }).catch(
+      (error) => {
+        if (isNextRedirectError(error)) {
+          return;
+        }
+        authInFlightRef.current = false;
+        setAuthMethod(null);
+        setFormError("Social sign-in failed. Please try again.");
+      }
+    );
   }
 
   const form = useForm({
