@@ -36,7 +36,6 @@ function getLimiter(): Ratelimit | null {
 
   limiter = new Ratelimit({
     redis: new Redis({ url, token }),
-    analytics: true,
     prefix: "ratelimit:web:contact-message",
     limiter: Ratelimit.slidingWindow(
       CONTACT_RATE_LIMIT.requests,

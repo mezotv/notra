@@ -20,13 +20,11 @@ export const RATE_LIMITS = {
 export const ratelimit = {
   postGeneration: new Ratelimit({
     redis,
-    analytics: true,
     prefix: "ratelimit:api:post-generation",
     limiter: Ratelimit.slidingWindow(RATE_LIMITS.postGeneration.requests, "1m"),
   }),
   brandGeneration: new Ratelimit({
     redis,
-    analytics: true,
     prefix: "ratelimit:api:brand-generation",
     limiter: Ratelimit.slidingWindow(
       RATE_LIMITS.brandGeneration.requests,
@@ -35,7 +33,6 @@ export const ratelimit = {
   }),
   chatGeneration: new Ratelimit({
     redis,
-    analytics: true,
     prefix: "ratelimit:chat-generation",
     limiter: Ratelimit.slidingWindow(
       CHAT_GENERATION_RATE_LIMIT.requests,
@@ -44,7 +41,6 @@ export const ratelimit = {
   }),
   integrationCreate: new Ratelimit({
     redis,
-    analytics: true,
     prefix: "ratelimit:api:integration-create",
     limiter: Ratelimit.slidingWindow(
       RATE_LIMITS.integrationCreate.requests,
@@ -53,7 +49,6 @@ export const ratelimit = {
   }),
   postUpdate: new Ratelimit({
     redis,
-    analytics: true,
     prefix: "ratelimit:api:post-update",
     limiter: Ratelimit.slidingWindow(RATE_LIMITS.postUpdate.requests, "1m"),
   }),
