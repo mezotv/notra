@@ -4,6 +4,7 @@ import { getWorkOS, saveSession } from "@workos-inc/authkit-nextjs";
 import type { AuthenticationResponse } from "@workos-inc/node";
 import { Effect } from "effect";
 import { UserSyncError, WorkOSAuthError } from "@/lib/auth/errors";
+import { authenticateResolvingOrgSelection } from "@/lib/auth/org-selection";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
 import { syncAuthenticatedUser } from "@/lib/auth/sync";
 import { readWorkOSError } from "@/lib/auth/workos-error";
@@ -116,7 +117,7 @@ export async function signInWithPasswordAction(
   return runAuthFlow(
     parsed.data.email,
     Effect.gen(function* () {
-      const response = yield* tryWorkOSAuth(() =>
+      const response = yield* authenticateResolvingOrgSelection(() =>
         getWorkOS().userManagement.authenticateWithPassword({
           clientId: getClientId(),
           email: parsed.data.email,
@@ -157,7 +158,7 @@ export async function signUpWithPasswordAction(
         })
       );
 
-      const response = yield* tryWorkOSAuth(() =>
+      const response = yield* authenticateResolvingOrgSelection(() =>
         getWorkOS().userManagement.authenticateWithPassword({
           clientId: getClientId(),
           email: parsed.data.email,
@@ -185,7 +186,7 @@ export async function verifyEmailCodeAction(
   return runAuthFlow(
     "",
     Effect.gen(function* () {
-      const response = yield* tryWorkOSAuth(() =>
+      const response = yield* authenticateResolvingOrgSelection(() =>
         getWorkOS().userManagement.authenticateWithEmailVerification({
           clientId: getClientId(),
           code: codeValidation.data,

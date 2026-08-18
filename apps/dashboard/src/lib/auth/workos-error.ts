@@ -10,6 +10,7 @@ const workosErrorSchema = z.looseObject({
       message: z.string().optional(),
       email: z.string().optional(),
       pending_authentication_token: z.string().optional(),
+      organizations: z.array(z.looseObject({ id: z.string() })).optional(),
     })
     .optional(),
 });
@@ -19,6 +20,7 @@ export interface WorkOSErrorInfo {
   message: string;
   email: string | null;
   pendingAuthenticationToken: string | null;
+  organizationIds: string[];
 }
 
 export function readWorkOSError(error: unknown): WorkOSErrorInfo {
@@ -30,6 +32,7 @@ export function readWorkOSError(error: unknown): WorkOSErrorInfo {
       message: "Something went wrong",
       email: null,
       pendingAuthenticationToken: null,
+      organizationIds: [],
     };
   }
 
@@ -40,5 +43,7 @@ export function readWorkOSError(error: unknown): WorkOSErrorInfo {
     message: rawData?.message ?? message ?? "Something went wrong",
     email: rawData?.email ?? null,
     pendingAuthenticationToken: rawData?.pending_authentication_token ?? null,
+    organizationIds:
+      rawData?.organizations?.map((organization) => organization.id) ?? [],
   };
 }

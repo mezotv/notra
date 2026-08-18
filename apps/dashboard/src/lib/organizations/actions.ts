@@ -29,7 +29,9 @@ import {
   ensureWorkOSOrganizationWithMembers,
   removeMembershipFromWorkOS,
   syncMembershipToWorkOS,
+  syncOrganizationNameToWorkOS,
   syncOrganizationToWorkOS,
+  updateMembershipRoleInWorkOS,
 } from "@/lib/organizations/workos-sync";
 import { organizationSlugSchema } from "@/schemas/organization";
 import type {
@@ -359,6 +361,10 @@ export async function updateOrganizationAction(
         );
       }
 
+      if (updates.name !== undefined) {
+        yield* syncOrganizationNameToWorkOS(input.organizationId, updates.name);
+      }
+
       if (updates.slug) {
         const cookieStore = yield* tryDb(
           () => cookies(),
@@ -590,6 +596,12 @@ export async function updateMemberRoleAction(
             .set({ role: input.role })
             .where(eq(members.id, input.memberId)),
         "Failed to update member role"
+      );
+
+      yield* updateMembershipRoleInWorkOS(
+        member.organizationId,
+        member.userId,
+        input.role
       );
 
       const updated = yield* tryDb(

@@ -60,6 +60,27 @@ const ensureWorkOSOrganization = Effect.fn(
   });
 });
 
+export const syncOrganizationNameToWorkOS = Effect.fn(
+  "organizations.sync.syncOrganizationName"
+)(function* (organizationId: string, name: string) {
+  yield* Effect.gen(function* () {
+    const { workosOrgId } = yield* ensureWorkOSOrganization(organizationId);
+
+    yield* Effect.tryPromise({
+      try: () =>
+        getWorkOS().organizations.updateOrganization({
+          organization: workosOrgId,
+          name,
+        }),
+      catch: (cause) =>
+        new WorkOSSyncError({
+          message: "Failed to sync organization name to WorkOS",
+          cause,
+        }),
+    });
+  }).pipe(logSyncFailure({ organizationId }));
+});
+
 export const ensureWorkOSOrganizationWithMembers = Effect.fn(
   "organizations.sync.ensureWorkOSOrganizationWithMembers"
 )(function* (organizationId: string) {
@@ -131,6 +152,73 @@ export const syncMembershipToWorkOS = Effect.fn(
         cause,
       }),
   }).pipe(logSyncFailure({ organizationId, userId }));
+});
+
+export const updateMembershipRoleInWorkOS = Effect.fn(
+  "organizations.sync.updateWorkOSMembershipRole"
+)(function* (organizationId: string, userId: string, roleSlug: string) {
+  yield* Effect.tryPromise({
+    try: async () => {
+      const [organization, user] = await Promise.all([
+        db.query.organizations.findFirst({
+          where: eq(organizations.id, organizationId),
+          columns: { workosOrgId: true },
+        }),
+        db.query.users.findFirst({
+          where: eq(users.id, userId),
+          columns: { workosUserId: true },
+        }),
+      ]);
+
+      if (!(organization?.workosOrgId && user?.workosUserId)) {
+        return;
+      }
+
+      const memberships =
+        await getWorkOS().userManagement.listOrganizationMemberships({
+          organizationId: organization.workosOrgId,
+          userId: user.workosUserId,
+        });
+
+      const membership = memberships.data[0];
+
+      if (membership) {
+        await getWorkOS().userManagement.updateOrganizationMembership(
+          membership.id,
+          { roleSlug }
+        );
+        return;
+      }
+
+      await getWorkOS().userManagement.createOrganizationMembership({
+        organizationId: organization.workosOrgId,
+        userId: user.workosUserId,
+        roleSlug,
+      });
+    },
+    catch: (cause) =>
+      new WorkOSSyncError({
+        message: "Failed to update WorkOS membership role",
+        cause,
+      }),
+  }).pipe(logSyncFailure({ organizationId, userId }));
+});
+
+export const deleteOrganizationFromWorkOS = Effect.fn(
+  "organizations.sync.deleteWorkOSOrganization"
+)(function* (workosOrgId: string | null) {
+  if (!workosOrgId) {
+    return;
+  }
+
+  yield* Effect.tryPromise({
+    try: () => getWorkOS().organizations.deleteOrganization(workosOrgId),
+    catch: (cause) =>
+      new WorkOSSyncError({
+        message: "Failed to delete WorkOS organization",
+        cause,
+      }),
+  }).pipe(logSyncFailure({ workosOrgId }));
 });
 
 export const removeMembershipFromWorkOS = Effect.fn(

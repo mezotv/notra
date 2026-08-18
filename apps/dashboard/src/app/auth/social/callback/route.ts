@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { redirect } from "next/navigation";
 import type { NextRequest } from "next/server";
 import { UserSyncError, WorkOSAuthError } from "@/lib/auth/errors";
+import { authenticateResolvingOrgSelection } from "@/lib/auth/org-selection";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
 import { syncAuthenticatedUser } from "@/lib/auth/sync";
 import { readWorkOSError } from "@/lib/auth/workos-error";
@@ -18,14 +19,12 @@ interface SocialCallbackOutcome {
 const exchangeSocialCode = Effect.fn("auth.social.exchangeCode")(function* (
   code: string
 ) {
-  const response = yield* Effect.tryPromise({
-    try: () =>
-      getWorkOS().userManagement.authenticateWithCode({
-        clientId: process.env.WORKOS_CLIENT_ID ?? "",
-        code,
-      }),
-    catch: (error) => new WorkOSAuthError({ error }),
-  });
+  const response = yield* authenticateResolvingOrgSelection(() =>
+    getWorkOS().userManagement.authenticateWithCode({
+      clientId: process.env.WORKOS_CLIENT_ID ?? "",
+      code,
+    })
+  );
 
   yield* Effect.tryPromise({
     try: () =>
