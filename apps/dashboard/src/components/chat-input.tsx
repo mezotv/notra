@@ -118,7 +118,8 @@ const ChatInput = ({
     remainingChatCredits !== null &&
     remainingChatCredits > 0 &&
     remainingChatCredits <= 10;
-  const isUsageBlocked = checkResult ? checkResult.allowed === false : false;
+  const isUsageBlocked =
+    process.env.NODE_ENV !== "development" && checkResult?.allowed === false;
   const usageLimitError =
     externalError ??
     internalError ??

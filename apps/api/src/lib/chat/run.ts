@@ -1,5 +1,8 @@
 import type { z } from "@hono/zod-openapi";
-import { autumn } from "@notra/ai/billing/autumn";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import {
@@ -43,7 +46,7 @@ export async function runChatMessage({
   requestId,
 }: RunChatMessageArgs): Promise<Response> {
   let useMarkup = false;
-  if (autumn) {
+  if (autumn && !allowUnmeteredAiInDevelopment) {
     let checkData: CheckResponse | null = null;
     try {
       checkData = await autumn.check({
