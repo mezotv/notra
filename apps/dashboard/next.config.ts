@@ -8,8 +8,6 @@ const nextConfig: NextConfig = {
     "/*": ["./src/lib/ai/skills/**/*", "../../packages/ai/src/skills/**/*"],
   },
   experimental: {
-    turbopackFileSystemCacheForDev: false,
-    useCache: true,
     optimizePackageImports: ["@hugeicons/core-free-icons", "lucide-react"],
     staleTimes: {
       dynamic: 30,
@@ -27,6 +25,7 @@ const nextConfig: NextConfig = {
     "@notra/content-generation",
     "@notra/kiwi",
     "@notra/utils",
+    "@usenotra/geo",
   ],
   serverExternalPackages: ["@resvg/resvg-js"],
   async rewrites() {
@@ -63,6 +62,11 @@ const nextConfig: NextConfig = {
       {
         source: "/:slug/automation/schedule",
         destination: "/:slug/automation/schedules",
+        permanent: true,
+      },
+      {
+        source: "/:slug/logs",
+        destination: "/:slug/settings/logs",
         permanent: true,
       },
     ];
@@ -112,7 +116,15 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "logos.context.dev",
+      },
+      {
+        protocol: "https",
         hostname: "pbs.twimg.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media.brand.dev",
       },
       {
         protocol: "https",

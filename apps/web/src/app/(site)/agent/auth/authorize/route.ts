@@ -1,17 +1,13 @@
-import { jsonResponse } from "@/utils/http";
+import type { NextRequest } from "next/server";
+import { redirectToAuthServer } from "@/utils/oauth-redirect";
 
 export function OPTIONS() {
   return new Response(null, { status: 204 });
 }
 
-export function GET() {
-  return jsonResponse(
-    {
-      error: "temporarily_unavailable",
-      error_description:
-        "Automatic OAuth authorization is not enabled yet. Create a Notra API key in the dashboard and use it as a bearer credential.",
-      auth: "/auth.md",
-    },
-    { status: 503 }
+export function GET(request: NextRequest) {
+  return redirectToAuthServer(
+    request,
+    "https://auth.usenotra.com/oauth2/authorize"
   );
 }

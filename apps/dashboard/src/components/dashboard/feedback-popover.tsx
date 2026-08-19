@@ -2,24 +2,17 @@
 
 import { SentIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@notra/ui/components/ui/popover";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { cn } from "@notra/ui/lib/utils";
 import { usePathname } from "next/navigation";
-import { cloneElement, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
-import { useFeedback } from "@/components/dashboard/feedback-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { FEEDBACK_MAX_MESSAGE_LENGTH } from "@/constants/feedback";
 import { dashboardOrpcClient } from "@/lib/orpc/client";
 import type {
   FeedbackFormProps,
-  FeedbackPopoverProps,
   FeedbackSentiment,
 } from "@/types/dashboard/feedback";
 import { FEEDBACK_SENTIMENT_OPTIONS } from "@/utils/feedback";
@@ -146,41 +139,5 @@ export function FeedbackForm({
         </Button>
       </div>
     </>
-  );
-}
-
-export function FeedbackPopover({
-  trigger,
-  side = "bottom",
-  align = "end",
-  sharedState = false,
-}: FeedbackPopoverProps = {}) {
-  const feedback = useFeedback();
-  const [localOpen, setLocalOpen] = useState(false);
-  const open = sharedState ? feedback.open : localOpen;
-  const setOpen = sharedState ? feedback.setOpen : setLocalOpen;
-
-  return (
-    <Popover onOpenChange={setOpen} open={open}>
-      <PopoverTrigger
-        render={
-          trigger ? (
-            cloneElement(trigger)
-          ) : (
-            <Button className="gap-1.5" size="sm" variant="outline">
-              Feedback
-            </Button>
-          )
-        }
-      />
-      <PopoverContent
-        align={align}
-        className="w-80 gap-0 p-0"
-        side={side}
-        sideOffset={8}
-      >
-        {open ? <FeedbackForm onSubmitted={() => setOpen(false)} /> : null}
-      </PopoverContent>
-    </Popover>
   );
 }

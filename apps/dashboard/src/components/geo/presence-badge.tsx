@@ -23,7 +23,7 @@ export function PresenceBadge({ status }: PresenceBadgeProps) {
   }
   return (
     <Badge
-      className="gap-1.5 whitespace-nowrap rounded-sm font-mono text-[0.625rem] uppercase tracking-wide"
+      className="gap-1.5 whitespace-nowrap rounded-sm text-[0.6875rem] capitalize"
       title={PRESENCE_TITLES[status]}
       variant="outline"
     >

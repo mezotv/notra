@@ -1,12 +1,11 @@
 "use client";
 
-import type { DitherColor } from "@notra/ui/components/dither-kit/palette";
-import { Sparkline } from "@notra/ui/components/dither-kit/sparkline";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
+import { ChartSparkline } from "@/components/charts/chart-sparkline";
 import {
   InstrumentEmpty,
   InstrumentModule,
@@ -14,16 +13,9 @@ import {
 import { cn } from "@/lib/utils";
 import type {
   FollowerGrowthPoint,
-  SocialOverviewAccount,
+  FollowersCardProps,
 } from "@/types/analytics";
 import { accountSeriesKey, formatMetric } from "@/utils/analytics-charts";
-
-interface FollowersCardProps {
-  accounts: SocialOverviewAccount[];
-  points: FollowerGrowthPoint[];
-  hiddenKeys: ReadonlySet<string>;
-  colorForKey: (key: string) => DitherColor;
-}
 
 function seriesFor(
   points: FollowerGrowthPoint[],
@@ -46,7 +38,7 @@ function DeltaBadge({ series }: { series: number[] }) {
   const last = series.at(-1);
   if (first === undefined || last === undefined || series.length < 2) {
     return (
-      <span className="font-mono text-[0.6875rem] text-muted-foreground">
+      <span className="whitespace-nowrap font-mono text-[0.6875rem] text-muted-foreground">
         tracking started
       </span>
     );
@@ -76,6 +68,8 @@ export function FollowersCard({
   points,
   hiddenKeys,
   colorForKey,
+  action,
+  markIncompleteTail,
 }: FollowersCardProps) {
   const visible = accounts.filter(
     (account) =>
@@ -85,7 +79,7 @@ export function FollowersCard({
   );
 
   return (
-    <InstrumentModule eyebrow="Followers" readout="since tracking began">
+    <InstrumentModule action={action} eyebrow="Followers" variant="panel">
       {visible.length === 0 ? (
         <InstrumentEmpty
           className="h-56"
@@ -128,15 +122,16 @@ export function FollowersCard({
                     <DeltaBadge series={series} />
                   </div>
                 </div>
-                <div className="ml-auto h-10 w-2/5 min-w-24">
-                  {series.length >= 2 && (
-                    <Sparkline
+                {series.length >= 2 && (
+                  <div className="ml-auto h-10 w-2/5 min-w-24">
+                    <ChartSparkline
                       className="h-full w-full"
                       color={colorForKey(key)}
                       data={series}
+                      markIncompleteTail={markIncompleteTail}
                     />
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             );
           })}

@@ -2,14 +2,18 @@
 
 import type { ContentType } from "@notra/ai/schemas/content";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import Link from "next/link";
 import { useId } from "react";
+import { Button } from "@/components/button";
 import { ContentCard } from "@/components/content/content-card";
 import { ContentSkeletonCard } from "@/components/content/content-skeleton-card";
 import { CreateContentDialog } from "@/components/content/create-content-dialog";
 import { ContentActivityCard } from "@/components/dashboard/content-activity-card";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
 import { authClient } from "@/lib/auth/client";
 import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useTodayPosts } from "@/lib/hooks/use-posts";
@@ -98,8 +102,19 @@ export default function PageClient({
 
     return (
       <EmptyState
-        className="p-6"
+        action={
+          <Button render={<Link href={`/${organizationSlug}/content`} />}>
+            View content
+          </Button>
+        }
         description="You have no new posts today. Create one now or review your existing drafts on the content page."
+        preview={
+          <EmptyStateCardsPreview
+            columns={3}
+            count={EMPTY_STATE_CARD_COUNT.content}
+            variant="content"
+          />
+        }
         title="No content created today"
       />
     );

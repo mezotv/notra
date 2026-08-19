@@ -174,6 +174,9 @@ export function OrganizationsProvider({
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.AUTH.activeOrganization,
           });
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.AUTH.session,
+          });
         }
       })
       .catch((error) => {
@@ -221,6 +224,9 @@ export function OrganizationsProvider({
               queryClient.invalidateQueries({ refetchType: "none" });
               queryClient.invalidateQueries({
                 queryKey: QUERY_KEYS.AUTH.activeOrganization,
+              });
+              queryClient.invalidateQueries({
+                queryKey: QUERY_KEYS.AUTH.session,
               });
             }
           })

@@ -1,22 +1,9 @@
-import { headers } from "next/headers";
-import { type NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth/server";
+import { authkitProxy } from "@workos-inc/authkit-nextjs";
 
-export async function proxy(request: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  // THIS IS NOT SECURE!
-  // This is the recommended approach to optimistically redirect users
-  // We recommend handling auth checks in each page/route
-  if (!session) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  return NextResponse.next();
-}
+export default authkitProxy();
 
 export const config = {
-  matcher: ["/dashboard"], // Specify the routes the middleware applies to
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|apple-icon.png|icon0.svg|icon1.png|robots.txt).*)",
+  ],
 };

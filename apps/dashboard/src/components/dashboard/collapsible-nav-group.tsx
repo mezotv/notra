@@ -34,7 +34,11 @@ export function CollapsibleSidebarGroup({
       <SidebarGroup>
         <SidebarGroupLabel
           render={
-            <CollapsibleTrigger className="w-full cursor-pointer hover:text-sidebar-foreground [&[data-panel-open]>svg]:rotate-0">
+            <CollapsibleTrigger
+              aria-hidden={isIconMode}
+              className="w-full cursor-pointer hover:text-sidebar-foreground [&[data-panel-open]>svg]:rotate-0"
+              tabIndex={isIconMode ? -1 : undefined}
+            >
               {label}
               <HugeiconsIcon
                 className="-rotate-90 ml-1 size-3.5! text-sidebar-foreground/50 transition-transform"

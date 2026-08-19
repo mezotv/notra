@@ -1,7 +1,5 @@
 import { BRAND_ASSETS, BRAND_COLORS, BRAND_FONTS } from "@/lib/brand/constants";
 import {
-  ANNUAL_DISCOUNT_PERCENT,
-  ANNUAL_FREE_MONTHS,
   COMPARISON_FEATURES,
   PRICING_PLANS,
   SOCIAL_PROOF_LOGOS,
@@ -39,30 +37,23 @@ const FAQ_ITEMS = [
   {
     question: "Is there a free tier?",
     answer:
-      "There is no permanent free tier. When you sign up, an automatic Basic trial is applied for 3 days at no cost so you can explore Notra before committing to a paid plan.",
+      "There is no free tier or trial. Pick the plan that fits your team and you can cancel anytime.",
   },
   {
     question: "How do I get started?",
     answer:
-      "Sign up, connect your GitHub, and Notra starts generating content within minutes. Your 3-day Basic trial begins automatically.",
+      "Sign up, connect your GitHub, pick a plan, and Notra starts generating content within minutes.",
   },
 ] as const;
 
 function renderPlanPrice(
-  plan: (typeof PRICING_PLANS)[keyof typeof PRICING_PLANS],
-  billingPeriod: "monthly" | "annually"
+  plan: (typeof PRICING_PLANS)[keyof typeof PRICING_PLANS]
 ) {
   if (plan.name === "Enterprise") {
     return "Contact us";
   }
 
-  const price = plan.pricing[billingPeriod];
-
-  if (billingPeriod === "annually") {
-    return `$${price}/year (save ${ANNUAL_DISCOUNT_PERCENT}% vs monthly billing)`;
-  }
-
-  return `$${price}/month`;
+  return `$${plan.pricing.monthly}/month`;
 }
 
 function renderPlanFeatures(
@@ -131,8 +122,7 @@ export function buildPricingMarkdown() {
         "",
         plan.description,
         "",
-        `Monthly: ${renderPlanPrice(plan, "monthly")}`,
-        `Annual: ${renderPlanPrice(plan, "annually")}`,
+        `Price: ${renderPlanPrice(plan)}`,
         `CTA: [${plan.cta.label}](${plan.cta.href})`,
         "",
         ...renderPlanFeatures(plan),
@@ -145,11 +135,12 @@ export function buildPricingMarkdown() {
     markdownSection(
       category,
       features.map((feature) => {
-        const basic = renderComparisonValue(feature.basic);
+        const starter = renderComparisonValue(feature.starter);
         const pro = renderComparisonValue(feature.pro);
+        const scale = renderComparisonValue(feature.scale);
         const enterprise = renderComparisonValue(feature.enterprise);
 
-        return `- ${feature.name}: Basic ${basic}, Pro ${pro}, Enterprise ${enterprise}`;
+        return `- ${feature.name}: Starter ${starter}, Pro ${pro}, Scale ${scale}, Enterprise ${enterprise}`;
       })
     )
   ).join("\n");
@@ -159,9 +150,7 @@ export function buildPricingMarkdown() {
     "",
     "Choose the right Notra plan for your team.",
     "",
-    "Start with a 3-day free trial. Upgrade when you need more integrations, posts, or team seats.",
-    "",
-    `Annual billing saves ${ANNUAL_DISCOUNT_PERCENT}% compared to monthly billing (${ANNUAL_FREE_MONTHS} months free).`,
+    "Upgrade when you need more images, posts, or projects.",
     "",
     planSections,
     "## Feature Comparison",
@@ -204,7 +193,7 @@ export function buildLandingMarkdown() {
     ]),
     markdownSection("Pricing", [
       "Pricing that scales with what you ship.",
-      "Start with a 3-day free trial. Upgrade when you need more integrations, posts, or team seats.",
+      "Upgrade when you need more images, posts, or projects.",
       "",
       "See the dedicated pricing page: [Pricing](https://www.usenotra.com/pricing.md)",
     ]),

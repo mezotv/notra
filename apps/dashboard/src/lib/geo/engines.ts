@@ -2,7 +2,7 @@ import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
 import { createOpenAI, openai } from "@ai-sdk/openai";
 import { createPerplexity } from "@ai-sdk/perplexity";
 import { gateway } from "@notra/ai/gateway";
-import { type LanguageModel, type ToolSet, tool } from "ai";
+import { tool } from "ai";
 import { z } from "zod";
 import {
   GEO_ANTHROPIC_API_KEY_ENV,
@@ -11,7 +11,11 @@ import {
   GEO_OPENAI_API_KEY_ENV,
   GEO_PERPLEXITY_API_KEY_ENV,
 } from "@/constants/geo";
-import type { GeoGroundedEngine } from "@/types/geo";
+import type {
+  GeoGroundedEngine,
+  GeoGroundedInvocation,
+  GeoGroundedInvocationOptions,
+} from "@/types/geo";
 
 const googleSearchTool = tool({
   type: "provider",
@@ -28,23 +32,25 @@ const requireApiKey = (name: string): string => {
   return value;
 };
 
-export interface GeoGroundedInvocation {
-  model: LanguageModel;
-  tools: ToolSet;
-}
-
 export function buildGroundedInvocation(
-  engine: GeoGroundedEngine
+  engine: GeoGroundedEngine,
+  options: GeoGroundedInvocationOptions = {}
 ): GeoGroundedInvocation {
+  // Provider-defined web search tools are only available through the Vercel
+  // AI Gateway, so grounded engines are pinned to it.
+  const groundedGateway = {
+    organizationId: options.organizationId,
+    gateway: "vercel",
+  } as const;
   switch (engine.provider) {
     case "gateway-openai":
       return {
-        model: gateway(engine.model),
+        model: gateway(engine.model, groundedGateway),
         tools: { web_search: openai.tools.webSearch({}) },
       };
     case "gateway-anthropic":
       return {
-        model: gateway(engine.model),
+        model: gateway(engine.model, groundedGateway),
         tools: {
           web_search: anthropic.tools.webSearch_20250305({
             maxUses: GEO_GROUNDED_MAX_SEARCHES,
@@ -53,7 +59,7 @@ export function buildGroundedInvocation(
       };
     case "gateway-google":
       return {
-        model: gateway(engine.model),
+        model: gateway(engine.model, groundedGateway),
         tools: { google_search: googleSearchTool },
       };
     case "direct-openai": {

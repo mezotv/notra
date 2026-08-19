@@ -53,9 +53,12 @@ export function OnboardingAgentBanner({
   };
 
   return (
-    <div className="relative isolate flex h-(--eve-banner-height) w-full shrink-0 items-center justify-center overflow-hidden">
+    <div
+      className="relative isolate flex h-(--eve-banner-height) w-full shrink-0 items-center justify-center overflow-hidden"
+      style={{ backgroundColor: colors.colorBack }}
+    >
       <Dithering
-        className="-z-10 absolute inset-0 h-full w-full"
+        className="-z-10 -inset-px absolute size-[calc(100%+2px)] min-h-full min-w-full"
         colorBack={colors.colorBack}
         colorFront={colors.colorFront}
         scale={EVE_BANNER_DITHER_SCALE}

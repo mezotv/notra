@@ -99,7 +99,7 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
   function handleSelectVoice(voiceId: string) {
     writeStoredBrandIdentityId(organizationId, voiceId);
     notifyStoredBrandIdentityChange();
-    router.push(`${brandBasePath}?voice=${voiceId}${viewSuffix}`);
+    router.replace(`${brandBasePath}?voice=${voiceId}${viewSuffix}`);
   }
 
   if (voices.length === 0 || !activeVoice) {

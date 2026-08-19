@@ -15,6 +15,7 @@ import { Input } from "@notra/ui/components/ui/input";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
+import { Twemoji } from "@/components/geo/twemoji";
 import { GEO_LANGUAGE_FLAGS, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
 import {
   useGeoPromptCreate,
@@ -48,7 +49,11 @@ function PromptRow({
         <span className="flex shrink-0 items-center gap-0.5 text-xs">
           {languages.map((language) => (
             <span key={language} title={`Also scanned in ${language}`}>
-              {GEO_LANGUAGE_FLAGS[language]}
+              <Twemoji
+                className="size-4 shrink-0"
+                emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+                label={language}
+              />
             </span>
           ))}
         </span>

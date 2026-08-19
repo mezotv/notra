@@ -5,6 +5,8 @@
     "maxSize": 2097152,
     "includes": [
       "!packages/ui/src",
+      "!.agents/skills",
+      "!apps/dashboard/src/components/evilcharts",
       "!packages/db/migrations",
       "!.temp",
       "!**/*.astro"
@@ -67,5 +69,18 @@
         "useAriaPropsSupportedByRole": "warn"
       }
     }
-  }
+  },
+  "overrides": [
+    {
+      /* Published package entry point */
+      "includes": ["packages/geo/src/index.ts"],
+      "linter": {
+        "rules": {
+          "performance": {
+            "noBarrelFile": "off"
+          }
+        }
+      }
+    }
+  ]
 }

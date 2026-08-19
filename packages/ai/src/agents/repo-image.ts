@@ -242,9 +242,12 @@ async function reviewRenderedRepoImageForLogoIssues(params: {
   repo: string;
   branch: string;
   source: RepoImageSourceContext;
+  organizationId?: string;
 }) {
   const { output } = await generateText({
-    model: gateway(IMAGE_REVIEW_MODEL_ID),
+    model: gateway(IMAGE_REVIEW_MODEL_ID, {
+      organizationId: params.organizationId,
+    }),
     output: Output.object({ schema: repoImageLogoReviewSchema }),
     messages: [
       {
@@ -578,6 +581,7 @@ export async function generateRepoImage(params: {
           repo: repository.repo,
           branch: input.branch,
           source,
+          organizationId: input.organizationId,
         });
       } catch (error) {
         console.warn("[repo-image] logo review skipped after error", error);

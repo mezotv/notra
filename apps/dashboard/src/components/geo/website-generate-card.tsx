@@ -7,13 +7,12 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
 import { useId, useState } from "react";
 import { useGeoGenerateFromWebsite } from "@/lib/hooks/use-geo";
+import { normalizeWebsiteUrl } from "@/utils/geo-website";
 
 interface WebsiteGenerateCardProps {
   organizationId: string;
   compact?: boolean;
 }
-
-const URL_PREFIX = /^https?:\/\//i;
 
 export function WebsiteGenerateCard({
   organizationId,
@@ -24,13 +23,10 @@ export function WebsiteGenerateCard({
   const generate = useGeoGenerateFromWebsite(organizationId);
 
   const handleGenerate = () => {
-    const trimmed = url.trim();
-    if (trimmed.length === 0) {
+    const normalized = normalizeWebsiteUrl(url);
+    if (!normalized) {
       return;
     }
-    const normalized = URL_PREFIX.test(trimmed)
-      ? trimmed
-      : `https://${trimmed}`;
     generate.mutate({ url: normalized });
   };
 

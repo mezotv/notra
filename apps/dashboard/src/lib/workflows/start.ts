@@ -9,7 +9,7 @@ import {
 } from "@/constants/iris";
 import { socialAnalyticsSyncPayloadSchema } from "@/schemas/analytics";
 import { brandGuidelinesWorkflowPayloadSchema } from "@/schemas/brand-guidelines";
-import { geoScanPayloadSchema } from "@/schemas/geo";
+import { geoOrganizationInputSchema } from "@/schemas/geo";
 import { gscSyncPayloadSchema } from "@/schemas/google-search-console";
 import {
   eventWorkflowPayloadSchema,
@@ -123,8 +123,9 @@ export async function startSocialAnalyticsSyncRun(payload: {
 
 export async function startGeoScanRun(payload: {
   organizationId: string;
+  projectId?: string;
 }): Promise<{ runId: string }> {
-  const parsed = geoScanPayloadSchema.parse(payload);
+  const parsed = geoOrganizationInputSchema.parse(payload);
   const run = await start(geoScanWorkflow, [parsed]);
   return { runId: run.runId };
 }

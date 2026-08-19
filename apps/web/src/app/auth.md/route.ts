@@ -6,19 +6,19 @@ Notra exposes an authenticated API and MCP server for agents that generate, read
 
 ## Discover
 
-Start at \`/.well-known/agent.json\`, \`/.well-known/agent-card.json\`, and \`/.well-known/api-catalog\`. The API resource server is \`https://api.usenotra.com\`, and its protected resource metadata is published at \`https://api.usenotra.com/.well-known/oauth-protected-resource\`. The MCP resource server is \`https://mcp.usenotra.com\`, and its protected resource metadata is published at \`https://mcp.usenotra.com/.well-known/oauth-protected-resource\`. Unauthenticated API and MCP requests return a \`WWW-Authenticate\` header with a \`resource_metadata\` URL.
+Start at \`/.well-known/agent.json\`, \`/.well-known/agent-card.json\`, and \`/.well-known/api-catalog\`. The API resource server is \`https://api.usenotra.com\`, and its protected resource metadata is published at \`https://api.usenotra.com/.well-known/oauth-protected-resource\`. The MCP resource server is \`https://mcp.usenotra.com\`, and its protected resource metadata is published at \`https://mcp.usenotra.com/.well-known/oauth-protected-resource\`. Unauthenticated API and MCP requests return a \`WWW-Authenticate\` header with a \`resource_metadata\` url.
 
 ## Pick a method
 
-OAuth-capable clients should follow the authorization server advertised by the protected resource metadata. The production authorization server is \`https://app.usenotra.com\`, with authorization, token, registration, and revocation endpoints under \`/agent/auth/*\`. Manual clients can use API keys created in the Notra dashboard.
+OAuth-capable clients should follow the authorization server advertised by the protected resource metadata. The production authorization server is \`https://auth.usenotra.com\`, with standard endpoints at \`/oauth2/authorize\`, \`/oauth2/token\`, \`/oauth2/register\`, and \`/oauth2/revoke\`, and signing keys at \`/oauth2/jwks\`. Manual clients can use API keys created in the Notra dashboard.
 
 ## Register
 
-Call \`POST https://app.usenotra.com/agent/auth/register\` for dynamic OAuth client registration. Agents should request the least privileged resource scopes, such as \`posts.read\`, \`posts.write\`, \`skills.read\`, \`skills.write\`, \`integrations.read\`, and \`integrations.write\`.
+Call \`POST https://auth.usenotra.com/oauth2/register\` for dynamic OAuth client registration, or identify with a Client ID Metadata Document if your client supports it. Agents should request the least privileged resource scopes, such as \`posts.read\`, \`posts.write\`, \`skills.read\`, \`skills.write\`, \`integrations.read\`, and \`integrations.write\`. Include \`offline_access\` when a refresh token is needed.
 
-## Claim
+## Authorize
 
-Call \`POST /agent/auth/claim\` to check the claim endpoint shape. It returns manual-approval guidance until automatic credential issuance is enabled. Browser-only challenges and CAPTCHAs are not required for API-key use.
+Use the authorization code flow with PKCE (\`S256\`). Headless clients without a redirect target can use the device authorization grant at \`https://auth.usenotra.com/oauth2/device_authorization\`, then poll \`/oauth2/token\` with the returned device code while the user approves in a browser.
 
 ## Use the credential
 
@@ -30,7 +30,7 @@ Send the credential as \`Authorization: Bearer <TOKEN>\`. For MCP clients that s
 
 ## Revocation
 
-Call \`POST https://app.usenotra.com/agent/auth/revoke\` for OAuth tokens, or revoke API keys in the Notra dashboard. Agents should discard revoked credentials immediately and repeat discovery before requesting a replacement.
+Call \`POST https://auth.usenotra.com/oauth2/revoke\` for OAuth tokens, or revoke API keys in the Notra dashboard. Agents should discard revoked credentials immediately and repeat discovery before requesting a replacement.
 `;
 
 export function GET() {

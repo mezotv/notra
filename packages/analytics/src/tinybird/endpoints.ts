@@ -8,7 +8,41 @@ import {
   p,
   t,
 } from "@tinybirdco/sdk";
-import { socialAccountStatsLatest, socialPostStatsLatest } from "./datasources";
+import {
+  geoTrafficDaily,
+  geoTrafficPagesDaily,
+  socialAccountStatsLatest,
+  socialPostStatsLatest,
+} from "./datasources";
+
+// Shared GEO scope plumbing. Every geo endpoint takes the same project filter
+// pair and applies the same Tinybird-side predicate; single-prompt endpoints
+// additionally exclude conversation-sequence rows, and mention-rate endpoints
+// count only English answers (legacy rows have an empty language).
+const GEO_PROJECT_SCOPE_PARAMS = {
+  project_id: p
+    .string()
+    .optional("")
+    .describe("Project id filter, empty for every project"),
+  include_unassigned: p
+    .int32()
+    .optional(0)
+    .describe("Set to 1 to include rows captured before project scoping"),
+};
+
+const GEO_DAYS_PARAM = {
+  days: p.int32().optional(30).describe("Number of trailing days"),
+};
+
+const GEO_PROJECT_SCOPE_SQL = `AND (
+            {{String(project_id, '')}} = ''
+            OR project_id = {{String(project_id, '')}}
+            OR ({{Int32(include_unassigned, 0)}} = 1 AND project_id = '')
+          )`;
+
+const GEO_SINGLE_PROMPT_SQL = `AND sequence_id = ''`;
+
+const GEO_ENGLISH_ONLY_SQL = `AND language IN ('', 'English')`;
 
 const POST_STATS_LATEST_SQL = `
   SELECT
@@ -59,6 +93,64 @@ export const socialAccountStatsLatestMv = defineMaterializedView(
     datasource: socialAccountStatsLatest,
     nodes: [
       node({ name: "account_stats_latest", sql: ACCOUNT_STATS_LATEST_SQL }),
+    ],
+  }
+);
+
+export const geoTrafficDailyMv = defineMaterializedView(
+  "geo_traffic_daily_mv",
+  {
+    description:
+      "Rolls geo_traffic_events into geo_traffic_daily on every ingest",
+    datasource: geoTrafficDaily,
+    nodes: [
+      node({
+        name: "traffic_daily",
+        sql: `
+        SELECT
+          toDate(captured_at) AS day,
+          organization_id,
+          project_id,
+          visitor_type,
+          source,
+          countState() AS visits_state,
+          countIfState(toUInt8(wants_markdown)) AS markdown_visits_state,
+          uniqExactState(path) AS paths_state,
+          maxState(captured_at) AS last_seen_state,
+          anyState(agent) AS agent_state,
+          anyState(category) AS category_state,
+          anyState(confidence) AS confidence_state
+        FROM geo_traffic_events
+        GROUP BY day, organization_id, project_id, visitor_type, source
+      `,
+      }),
+    ],
+  }
+);
+
+export const geoTrafficPagesDailyMv = defineMaterializedView(
+  "geo_traffic_pages_daily_mv",
+  {
+    description:
+      "Rolls geo_traffic_events into geo_traffic_pages_daily on every ingest",
+    datasource: geoTrafficPagesDaily,
+    nodes: [
+      node({
+        name: "traffic_pages_daily",
+        sql: `
+          SELECT
+            toDate(captured_at) AS day,
+            organization_id,
+            project_id,
+            visitor_type,
+            source,
+            path,
+            countState() AS visits_state,
+            maxState(captured_at) AS last_seen_state
+          FROM geo_traffic_events
+          GROUP BY day, organization_id, project_id, visitor_type, source, path
+        `,
+      }),
     ],
   }
 );
@@ -205,7 +297,21 @@ export const engagementTimeseries = defineEndpoint("engagement_timeseries", {
     "Daily post counts and engagement per account, attributed to each post's publish date",
   params: {
     organization_id: p.string().describe("Organization id"),
-    days: p.int32().optional(30).describe("Number of trailing days"),
+    ...GEO_DAYS_PARAM,
+    timezone: p
+      .string()
+      .optional("UTC")
+      .describe("IANA timezone used to bucket days"),
+    date_from: p
+      .string()
+      .optional("")
+      .describe(
+        "Inclusive first local day (YYYY-MM-DD); empty for days window"
+      ),
+    date_to: p
+      .string()
+      .optional("")
+      .describe("Inclusive last local day (YYYY-MM-DD); empty for no bound"),
   },
   nodes: [
     node({
@@ -218,7 +324,12 @@ export const engagementTimeseries = defineEndpoint("engagement_timeseries", {
           min(posted_at) AS first_posted_at
         FROM social_posts
         WHERE organization_id = {{String(organization_id)}}
-          AND posted_at >= now() - toIntervalDay({{Int32(days, 30)}})
+          AND if(
+            {{String(date_from, '')}} = '',
+            posted_at >= now() - toIntervalDay({{Int32(days, 30)}}),
+            toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}})
+          )
+          AND ({{String(date_to, '')}} = '' OR toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) <= toDateOrNull({{String(date_to, '')}}))
         GROUP BY provider, platform_post_id
       `,
     }),
@@ -241,7 +352,7 @@ export const engagementTimeseries = defineEndpoint("engagement_timeseries", {
       name: "daily_totals",
       sql: `
         SELECT
-          toDate(posts.first_posted_at) AS day,
+          toDate(toTimeZone(posts.first_posted_at, {{String(timezone, 'UTC')}})) AS day,
           posts.provider AS provider,
           posts.provider_account_id AS provider_account_id,
           count() AS posts,
@@ -270,12 +381,32 @@ export const engagementTimeseries = defineEndpoint("engagement_timeseries", {
   },
 });
 
+const LEADERBOARD_CURRENT_WINDOW = `if(
+            {{String(date_from, '')}} = '',
+            window_posts.first_posted_at >= now() - toIntervalDay({{Int32(days, 7)}}),
+            toDate(toTimeZone(window_posts.first_posted_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}})
+          )`;
+
 export const accountLeaderboard = defineEndpoint("account_leaderboard", {
   description:
-    "Per-account interactions for the trailing window and the window before it",
+    "Per-account interactions for the selected window and the window before it",
   params: {
     organization_id: p.string().describe("Organization id"),
-    days: p.int32().optional(7).describe("Length of each window in days"),
+    days: p.int32().optional(7).describe("Trailing window length (fallback)"),
+    timezone: p
+      .string()
+      .optional("UTC")
+      .describe("IANA timezone used to interpret the date range"),
+    date_from: p
+      .string()
+      .optional("")
+      .describe(
+        "Inclusive first local day (YYYY-MM-DD); empty for days window"
+      ),
+    date_to: p
+      .string()
+      .optional("")
+      .describe("Inclusive last local day (YYYY-MM-DD); empty for no bound"),
   },
   nodes: [
     node({
@@ -288,8 +419,12 @@ export const accountLeaderboard = defineEndpoint("account_leaderboard", {
           min(posted_at) AS first_posted_at
         FROM social_posts
         WHERE organization_id = {{String(organization_id)}}
-          AND posted_at >= now() - toIntervalDay({{Int32(days, 7)}} * 2)
-          AND posted_at <= now()
+          AND if(
+            {{String(date_from, '')}} = '',
+            posted_at >= now() - toIntervalDay({{Int32(days, 7)}} * 2) AND posted_at <= now(),
+            toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}}) - (toDateOrNull({{String(date_to, '')}}) - toDateOrNull({{String(date_from, '')}}) + 1)
+              AND toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) <= toDateOrNull({{String(date_to, '')}})
+          )
         GROUP BY provider, platform_post_id
       `,
     }),
@@ -314,23 +449,23 @@ export const accountLeaderboard = defineEndpoint("account_leaderboard", {
         SELECT
           window_posts.provider AS provider,
           window_posts.provider_account_id AS provider_account_id,
-          countIf(window_posts.first_posted_at >= now() - toIntervalDay({{Int32(days, 7)}})) AS posts,
+          countIf(${LEADERBOARD_CURRENT_WINDOW}) AS posts,
           sumIf(
             coalesce(metrics.likes, 0) + coalesce(metrics.replies, 0) + coalesce(metrics.reposts, 0),
-            window_posts.first_posted_at >= now() - toIntervalDay({{Int32(days, 7)}})
+            ${LEADERBOARD_CURRENT_WINDOW}
           ) AS interactions,
           sumIf(
             coalesce(metrics.impressions, 0),
-            window_posts.first_posted_at >= now() - toIntervalDay({{Int32(days, 7)}})
+            ${LEADERBOARD_CURRENT_WINDOW}
           ) AS impressions,
-          countIf(window_posts.first_posted_at < now() - toIntervalDay({{Int32(days, 7)}})) AS prev_posts,
+          countIf(NOT (${LEADERBOARD_CURRENT_WINDOW})) AS prev_posts,
           sumIf(
             coalesce(metrics.likes, 0) + coalesce(metrics.replies, 0) + coalesce(metrics.reposts, 0),
-            window_posts.first_posted_at < now() - toIntervalDay({{Int32(days, 7)}})
+            NOT (${LEADERBOARD_CURRENT_WINDOW})
           ) AS prev_interactions,
           sumIf(
             coalesce(metrics.impressions, 0),
-            window_posts.first_posted_at < now() - toIntervalDay({{Int32(days, 7)}})
+            NOT (${LEADERBOARD_CURRENT_WINDOW})
           ) AS prev_impressions
         FROM leaderboard_window_posts AS window_posts
         LEFT JOIN leaderboard_post_metrics AS metrics
@@ -361,6 +496,18 @@ export const topPosts = defineEndpoint("top_posts", {
   params: {
     organization_id: p.string().describe("Organization id"),
     limit: p.int32().optional(10).describe("Number of posts"),
+    timezone: p
+      .string()
+      .optional("UTC")
+      .describe("IANA timezone used to interpret the date range"),
+    date_from: p
+      .string()
+      .optional("")
+      .describe("Inclusive first local day (YYYY-MM-DD); empty for no bound"),
+    date_to: p
+      .string()
+      .optional("")
+      .describe("Inclusive last local day (YYYY-MM-DD); empty for no bound"),
   },
   nodes: [
     node({
@@ -402,6 +549,8 @@ export const topPosts = defineEndpoint("top_posts", {
           ON stats.provider = posts.provider
           AND stats.platform_post_id = posts.platform_post_id
         WHERE posts.organization_id = {{String(organization_id)}}
+          AND ({{String(date_from, '')}} = '' OR toDate(toTimeZone(posts.posted_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}}))
+          AND ({{String(date_to, '')}} = '' OR toDate(toTimeZone(posts.posted_at, {{String(timezone, 'UTC')}})) <= toDateOrNull({{String(date_to, '')}}))
         GROUP BY posts.provider, posts.platform_post_id
         ORDER BY engagement DESC, posted_at DESC
         LIMIT {{Int32(limit, 10)}}
@@ -426,22 +575,42 @@ export const topPosts = defineEndpoint("top_posts", {
 
 export const postingPerformance = defineEndpoint("posting_performance", {
   description:
-    "Post volume and average engagement grouped by weekday of publish",
+    "Post volume and average engagement grouped by weekday and hour of publish",
   params: {
     organization_id: p.string().describe("Organization id"),
     days: p.int32().optional(90).describe("Number of trailing days"),
+    timezone: p
+      .string()
+      .optional("UTC")
+      .describe("IANA timezone used to bucket publish times"),
+    date_from: p
+      .string()
+      .optional("")
+      .describe(
+        "Inclusive first local day (YYYY-MM-DD); empty for days window"
+      ),
+    date_to: p
+      .string()
+      .optional("")
+      .describe("Inclusive last local day (YYYY-MM-DD); empty for no bound"),
   },
   nodes: [
     node({
-      name: "post_weekdays",
+      name: "post_slots",
       sql: `
         SELECT
           provider,
           platform_post_id,
-          toDayOfWeek(min(posted_at)) AS weekday
+          toDayOfWeek(toTimeZone(min(posted_at), {{String(timezone, 'UTC')}})) AS weekday,
+          toHour(toTimeZone(min(posted_at), {{String(timezone, 'UTC')}})) AS hour
         FROM social_posts
         WHERE organization_id = {{String(organization_id)}}
-          AND posted_at >= now() - toIntervalDay({{Int32(days, 90)}})
+          AND if(
+            {{String(date_from, '')}} = '',
+            posted_at >= now() - toIntervalDay({{Int32(days, 90)}}),
+            toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}})
+          )
+          AND ({{String(date_to, '')}} = '' OR toDate(toTimeZone(posted_at, {{String(timezone, 'UTC')}})) <= toDateOrNull({{String(date_to, '')}}))
         GROUP BY provider, platform_post_id
       `,
     }),
@@ -461,25 +630,27 @@ export const postingPerformance = defineEndpoint("posting_performance", {
       `,
     }),
     node({
-      name: "weekday_totals",
+      name: "slot_totals",
       sql: `
         SELECT
           posts.weekday AS weekday,
+          posts.hour AS hour,
           count() AS posts,
           sum(coalesce(stats.likes, 0) + coalesce(stats.replies, 0) + coalesce(stats.reposts, 0)) AS engagement,
           sum(stats.impressions) AS impressions,
           round(sum(coalesce(stats.likes, 0) + coalesce(stats.replies, 0) + coalesce(stats.reposts, 0)) / count(), 1) AS avg_engagement
-        FROM post_weekdays AS posts
+        FROM post_slots AS posts
         LEFT JOIN post_metrics AS stats
           ON stats.provider = posts.provider
           AND stats.platform_post_id = posts.platform_post_id
-        GROUP BY weekday
-        ORDER BY weekday ASC
+        GROUP BY weekday, hour
+        ORDER BY weekday ASC, hour ASC
       `,
     }),
   ],
   output: {
     weekday: t.uint64(),
+    hour: t.uint64(),
     posts: t.uint64(),
     engagement: t.uint64(),
     impressions: t.uint64().nullable(),
@@ -494,20 +665,39 @@ export const followerGrowth = defineEndpoint("follower_growth", {
   description: "Daily follower counts per account",
   params: {
     organization_id: p.string().describe("Organization id"),
-    days: p.int32().optional(30).describe("Number of trailing days"),
+    ...GEO_DAYS_PARAM,
+    timezone: p
+      .string()
+      .optional("UTC")
+      .describe("IANA timezone used to bucket days"),
+    date_from: p
+      .string()
+      .optional("")
+      .describe(
+        "Inclusive first local day (YYYY-MM-DD); empty for days window"
+      ),
+    date_to: p
+      .string()
+      .optional("")
+      .describe("Inclusive last local day (YYYY-MM-DD); empty for no bound"),
   },
   nodes: [
     node({
       name: "daily_followers",
       sql: `
         SELECT
-          toDate(captured_at) AS day,
+          toDate(toTimeZone(captured_at, {{String(timezone, 'UTC')}})) AS day,
           provider,
           provider_account_id,
           argMax(followers_count, captured_at) AS followers_count
         FROM social_account_stats
         WHERE organization_id = {{String(organization_id)}}
-          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+          AND if(
+            {{String(date_from, '')}} = '',
+            captured_at >= now() - toIntervalDay({{Int32(days, 30)}}),
+            toDate(toTimeZone(captured_at, {{String(timezone, 'UTC')}})) >= toDateOrNull({{String(date_from, '')}})
+          )
+          AND ({{String(date_to, '')}} = '' OR toDate(toTimeZone(captured_at, {{String(timezone, 'UTC')}})) <= toDateOrNull({{String(date_to, '')}}))
         GROUP BY day, provider, provider_account_id
         ORDER BY day ASC
       `,
@@ -562,7 +752,8 @@ export const geoOverview = defineEndpoint("geo_overview", {
   description: "AI mention rate per engine over the trailing window",
   params: {
     organization_id: p.string().describe("Organization id"),
-    days: p.int32().optional(30).describe("Number of trailing days"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_DAYS_PARAM,
   },
   nodes: [
     node({
@@ -577,8 +768,10 @@ export const geoOverview = defineEndpoint("geo_overview", {
           max(captured_at) AS last_checked_at
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
+          ${GEO_SINGLE_PROMPT_SQL}
+          ${GEO_PROJECT_SCOPE_SQL}
           AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
-          AND language IN ('', 'English')
+          ${GEO_ENGLISH_ONLY_SQL}
         GROUP BY engine
         ORDER BY mention_rate DESC
       `,
@@ -598,7 +791,8 @@ export const geoTimeseries = defineEndpoint("geo_timeseries", {
   description: "Daily AI mention rate per engine",
   params: {
     organization_id: p.string().describe("Organization id"),
-    days: p.int32().optional(30).describe("Number of trailing days"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_DAYS_PARAM,
   },
   nodes: [
     node({
@@ -611,8 +805,10 @@ export const geoTimeseries = defineEndpoint("geo_timeseries", {
           countIf(mentioned) AS mentions
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
+          ${GEO_SINGLE_PROMPT_SQL}
+          ${GEO_PROJECT_SCOPE_SQL}
           AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
-          AND language IN ('', 'English')
+          ${GEO_ENGLISH_ONLY_SQL}
         GROUP BY day, engine
         ORDER BY day ASC
       `,
@@ -630,6 +826,7 @@ export const geoPromptResults = defineEndpoint("geo_prompt_results", {
   description: "Latest result per prompt and engine",
   params: {
     organization_id: p.string().describe("Organization id"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
   },
   nodes: [
     node({
@@ -646,7 +843,9 @@ export const geoPromptResults = defineEndpoint("geo_prompt_results", {
           max(captured_at) AS last_checked_at
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
-          AND language IN ('', 'English')
+          ${GEO_SINGLE_PROMPT_SQL}
+          ${GEO_PROJECT_SCOPE_SQL}
+          ${GEO_ENGLISH_ONLY_SQL}
         GROUP BY prompt_id, engine
         ORDER BY prompt_id ASC, engine ASC
       `,
@@ -668,7 +867,8 @@ export const geoCompetitorShare = defineEndpoint("geo_competitor_share", {
   description: "Competitor brands surfaced by AI engines, by mention count",
   params: {
     organization_id: p.string().describe("Organization id"),
-    days: p.int32().optional(30).describe("Number of trailing days"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_DAYS_PARAM,
     limit: p.int32().optional(10).describe("Max competitors"),
   },
   nodes: [
@@ -680,6 +880,8 @@ export const geoCompetitorShare = defineEndpoint("geo_competitor_share", {
           count() AS mentions
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
+          ${GEO_SINGLE_PROMPT_SQL}
+          ${GEO_PROJECT_SCOPE_SQL}
           AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
         GROUP BY brand
         ORDER BY mentions DESC
@@ -693,12 +895,103 @@ export const geoCompetitorShare = defineEndpoint("geo_competitor_share", {
   },
 });
 
+export const geoCompetitorTimeseries = defineEndpoint(
+  "geo_competitor_timeseries",
+  {
+    description: "Daily mentions of a single competitor brand",
+    params: {
+      organization_id: p.string().describe("Organization id"),
+      ...GEO_PROJECT_SCOPE_PARAMS,
+      brand: p.string().describe("Competitor brand name"),
+      ...GEO_DAYS_PARAM,
+    },
+    nodes: [
+      node({
+        name: "competitor_daily",
+        sql: `
+        SELECT
+          toDate(captured_at) AS day,
+          countIf(has(competitors, {{String(brand)}})) AS mentions,
+          count() AS checks
+        FROM geo_mention_checks
+        WHERE organization_id = {{String(organization_id)}}
+          ${GEO_SINGLE_PROMPT_SQL}
+          ${GEO_PROJECT_SCOPE_SQL}
+          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+        GROUP BY day
+        ORDER BY day ASC
+      `,
+      }),
+    ],
+    output: {
+      day: t.date(),
+      mentions: t.uint64(),
+      checks: t.uint64(),
+    },
+  }
+);
+
+export const geoCompetitorPrompts = defineEndpoint("geo_competitor_prompts", {
+  description:
+    "Latest result per prompt and engine where a competitor brand appears",
+  params: {
+    organization_id: p.string().describe("Organization id"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    brand: p.string().describe("Competitor brand name"),
+    ...GEO_DAYS_PARAM,
+  },
+  nodes: [
+    node({
+      name: "competitor_agg",
+      sql: `
+        SELECT
+          prompt_id,
+          engine,
+          argMax(prompt, captured_at) AS prompt,
+          argMax(mentioned, captured_at) AS mentioned,
+          argMax(position, captured_at) AS position,
+          max(captured_at) AS last_captured_at
+        FROM geo_mention_checks
+        WHERE organization_id = {{String(organization_id)}}
+          ${GEO_SINGLE_PROMPT_SQL}
+          ${GEO_PROJECT_SCOPE_SQL}
+          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+          AND has(competitors, {{String(brand)}})
+        GROUP BY prompt_id, engine
+      `,
+    }),
+    node({
+      name: "competitor_latest",
+      sql: `
+        SELECT
+          prompt_id,
+          engine,
+          prompt,
+          mentioned,
+          position,
+          last_captured_at AS captured_at
+        FROM competitor_agg
+        ORDER BY captured_at DESC
+      `,
+    }),
+  ],
+  output: {
+    prompt_id: t.string(),
+    engine: t.string(),
+    prompt: t.string(),
+    mentioned: t.bool(),
+    position: t.uint64().nullable(),
+    captured_at: t.dateTime(),
+  },
+});
+
 export const geoLanguageShare = defineEndpoint("geo_language_share", {
   description:
     "Mention rate per answer language over the trailing window; legacy rows without a language count as English",
   params: {
     organization_id: p.string().describe("Organization id"),
-    days: p.int32().optional(30).describe("Number of trailing days"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_DAYS_PARAM,
   },
   nodes: [
     node({
@@ -713,6 +1006,8 @@ export const geoLanguageShare = defineEndpoint("geo_language_share", {
           max(captured_at) AS last_checked_at
         FROM geo_mention_checks
         WHERE organization_id = {{String(organization_id)}}
+          ${GEO_SINGLE_PROMPT_SQL}
+          ${GEO_PROJECT_SCOPE_SQL}
           AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
         GROUP BY language_name
         ORDER BY mention_rate DESC
@@ -725,6 +1020,54 @@ export const geoLanguageShare = defineEndpoint("geo_language_share", {
     mentions: t.uint64(),
     mention_rate: t.float64(),
     avg_position: t.float64().nullable(),
+    last_checked_at: t.dateTime(),
+  },
+});
+
+export const geoSequenceResults = defineEndpoint("geo_sequence_results", {
+  description:
+    "Latest conversation-sequence results: one row per sequence, turn and engine",
+  params: {
+    organization_id: p.string().describe("Organization id"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    sequence_id: p
+      .string()
+      .optional("")
+      .describe("Sequence id filter, empty for every sequence"),
+  },
+  nodes: [
+    node({
+      name: "latest_turns",
+      sql: `
+        SELECT
+          sequence_id,
+          turn,
+          engine,
+          argMax(prompt, captured_at) AS prompt,
+          argMax(mentioned, captured_at) AS mentioned,
+          argMax(position, captured_at) AS position,
+          argMax(sentiment, captured_at) AS sentiment,
+          argMax(excerpt, captured_at) AS excerpt,
+          max(captured_at) AS last_checked_at
+        FROM geo_mention_checks
+        WHERE organization_id = {{String(organization_id)}}
+          ${GEO_PROJECT_SCOPE_SQL}
+          AND sequence_id != ''
+          AND ({{String(sequence_id, '')}} = '' OR sequence_id = {{String(sequence_id, '')}})
+        GROUP BY sequence_id, turn, engine
+        ORDER BY sequence_id ASC, turn ASC, engine ASC
+      `,
+    }),
+  ],
+  output: {
+    sequence_id: t.string(),
+    turn: t.uint8(),
+    engine: t.string(),
+    prompt: t.string(),
+    mentioned: t.bool(),
+    position: t.uint64().nullable(),
+    sentiment: t.string().nullable(),
+    excerpt: t.string(),
     last_checked_at: t.dateTime(),
   },
 });
@@ -825,7 +1168,14 @@ export type GeoOverviewRow = InferOutputRow<typeof geoOverview>;
 export type GeoTimeseriesRow = InferOutputRow<typeof geoTimeseries>;
 export type GeoPromptResultsRow = InferOutputRow<typeof geoPromptResults>;
 export type GeoCompetitorShareRow = InferOutputRow<typeof geoCompetitorShare>;
+export type GeoCompetitorTimeseriesRow = InferOutputRow<
+  typeof geoCompetitorTimeseries
+>;
+export type GeoCompetitorPromptsRow = InferOutputRow<
+  typeof geoCompetitorPrompts
+>;
 export type GeoLanguageShareRow = InferOutputRow<typeof geoLanguageShare>;
+export type GeoSequenceResultsRow = InferOutputRow<typeof geoSequenceResults>;
 
 export const postMetricsLookup = defineEndpoint("post_metrics_lookup", {
   description: "Latest metric snapshot for specific posts by platform post id",
@@ -898,7 +1248,7 @@ export const aiTrafficOverview = defineEndpoint("ai_traffic_overview", {
   description: "AI agent hits per agent over the trailing window",
   params: {
     organization_id: p.string().describe("Organization id"),
-    days: p.int32().optional(30).describe("Number of trailing days"),
+    ...GEO_DAYS_PARAM,
   },
   nodes: [
     node({
@@ -933,7 +1283,7 @@ export const aiTrafficTimeseries = defineEndpoint("ai_traffic_timeseries", {
   description: "Daily AI agent hits per category",
   params: {
     organization_id: p.string().describe("Organization id"),
-    days: p.int32().optional(30).describe("Number of trailing days"),
+    ...GEO_DAYS_PARAM,
   },
   nodes: [
     node({
@@ -994,6 +1344,305 @@ export const aiTrafficLog = defineEndpoint("ai_traffic_log", {
   },
 });
 
+export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
+  description:
+    "Captured site visits grouped by traffic source and visitor type over the trailing window",
+  params: {
+    organization_id: p.string().describe("Organization id"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_DAYS_PARAM,
+  },
+  nodes: [
+    node({
+      name: "per_source",
+      sql: `
+        SELECT
+          source,
+          visitor_type,
+          anyMerge(agent_state) AS agent,
+          anyMerge(category_state) AS category,
+          anyMerge(confidence_state) AS confidence,
+          countMerge(visits_state) AS visits,
+          countIfMerge(markdown_visits_state) AS markdown_visits,
+          uniqExactMerge(paths_state) AS paths,
+          maxMerge(last_seen_state) AS last_seen_at
+        FROM geo_traffic_daily
+        WHERE organization_id = {{String(organization_id)}}
+          ${GEO_PROJECT_SCOPE_SQL}
+          AND day >= toDate(now() - toIntervalDay({{Int32(days, 30)}}))
+        GROUP BY source, visitor_type
+        ORDER BY visits DESC, source ASC
+      `,
+    }),
+  ],
+  output: {
+    source: t.string(),
+    visitor_type: t.string(),
+    agent: t.string(),
+    category: t.string(),
+    confidence: t.string(),
+    visits: t.uint64(),
+    markdown_visits: t.uint64(),
+    paths: t.uint64(),
+    last_seen_at: t.dateTime(),
+  },
+});
+
+export const geoTrafficTimeseries = defineEndpoint("geo_traffic_timeseries", {
+  description: "Daily captured visits per visitor type",
+  params: {
+    organization_id: p.string().describe("Organization id"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_DAYS_PARAM,
+  },
+  nodes: [
+    node({
+      name: "daily",
+      sql: `
+        SELECT
+          day,
+          visitor_type,
+          countMerge(visits_state) AS visits
+        FROM geo_traffic_daily
+        WHERE organization_id = {{String(organization_id)}}
+          ${GEO_PROJECT_SCOPE_SQL}
+          AND day >= toDate(now() - toIntervalDay({{Int32(days, 30)}}))
+        GROUP BY day, visitor_type
+        ORDER BY day ASC, visitor_type ASC
+      `,
+    }),
+  ],
+  output: {
+    day: t.date(),
+    visitor_type: t.string(),
+    visits: t.uint64(),
+  },
+});
+
+export const geoTrafficPages = defineEndpoint("geo_traffic_pages", {
+  description:
+    "Top pages by AI traffic source, optionally narrowed to one visitor type",
+  params: {
+    organization_id: p.string().describe("Organization id"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_DAYS_PARAM,
+    visitor: p
+      .string()
+      .optional("")
+      .describe("Visitor type filter, empty for every AI visitor"),
+    limit: p.int32().optional(20).describe("Max rows"),
+  },
+  nodes: [
+    node({
+      name: "top_pages",
+      sql: `
+        SELECT
+          path,
+          source,
+          visitor_type,
+          countMerge(visits_state) AS visits,
+          maxMerge(last_seen_state) AS last_seen_at
+        FROM geo_traffic_pages_daily
+        WHERE organization_id = {{String(organization_id)}}
+          ${GEO_PROJECT_SCOPE_SQL}
+          AND day >= toDate(now() - toIntervalDay({{Int32(days, 30)}}))
+          AND visitor_type IN ('crawler', 'ai_referral')
+          AND ({{String(visitor, '')}} = '' OR visitor_type = {{String(visitor, '')}})
+        GROUP BY path, source, visitor_type
+        ORDER BY visits DESC, path ASC
+        LIMIT {{Int32(limit, 20)}}
+      `,
+    }),
+  ],
+  output: {
+    path: t.string(),
+    source: t.string(),
+    visitor_type: t.string(),
+    visits: t.uint64(),
+    last_seen_at: t.dateTime(),
+  },
+});
+
+export const geoTrafficLog = defineEndpoint("geo_traffic_log", {
+  description: "Most recent captured AI visits, newest first",
+  params: {
+    organization_id: p.string().describe("Organization id"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    limit: p.int32().optional(50).describe("Max events"),
+    visitor_type: p
+      .string()
+      .optional("")
+      .describe(
+        "Comma-separated visitor type filter, empty for every AI visitor"
+      ),
+    category: p
+      .string()
+      .optional("")
+      .describe(
+        "Comma-separated request purpose filter, empty for every purpose"
+      ),
+  },
+  nodes: [
+    node({
+      name: "recent",
+      sql: `
+        SELECT
+          captured_at,
+          visitor_type,
+          source,
+          agent,
+          category,
+          confidence,
+          path,
+          host,
+          country,
+          journey_id,
+          wants_markdown,
+          substring(ua, 1, 180) AS ua_snippet
+        FROM geo_traffic_events
+        WHERE organization_id = {{String(organization_id)}}
+          ${GEO_PROJECT_SCOPE_SQL}
+          AND (
+            ({{String(visitor_type, '')}} = '' AND visitor_type IN ('crawler', 'ai_referral'))
+            OR has(splitByChar(',', {{String(visitor_type, '')}}), visitor_type)
+          )
+          AND (
+            {{String(category, '')}} = ''
+            OR has(splitByChar(',', {{String(category, '')}}), category)
+          )
+        ORDER BY captured_at DESC
+        LIMIT {{Int32(limit, 50)}}
+      `,
+    }),
+  ],
+  output: {
+    captured_at: t.dateTime(),
+    visitor_type: t.string(),
+    source: t.string(),
+    agent: t.string(),
+    category: t.string(),
+    confidence: t.string(),
+    path: t.string(),
+    host: t.string(),
+    country: t.string(),
+    journey_id: t.string(),
+    wants_markdown: t.bool(),
+    ua_snippet: t.string(),
+  },
+});
+
+export const geoTrafficJourneys = defineEndpoint("geo_traffic_journeys", {
+  description:
+    "AI agent journeys, one row per journey id, newest activity first",
+  params: {
+    organization_id: p.string().describe("Organization id"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_DAYS_PARAM,
+    limit: p.int32().optional(25).describe("Max journeys"),
+  },
+  nodes: [
+    node({
+      name: "journey_events",
+      sql: `
+        SELECT
+          journey_id,
+          source,
+          visitor_type,
+          path,
+          captured_at
+        FROM geo_traffic_events
+        WHERE organization_id = {{String(organization_id)}}
+          ${GEO_PROJECT_SCOPE_SQL}
+          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+          AND visitor_type IN ('crawler', 'ai_referral')
+          AND journey_id != ''
+      `,
+    }),
+    node({
+      name: "journey_rollup",
+      sql: `
+        SELECT
+          journey_id,
+          any(source) AS source,
+          any(visitor_type) AS visitor_type,
+          count() AS pages,
+          uniqExact(path) AS distinct_paths,
+          min(captured_at) AS first_seen_at,
+          max(captured_at) AS last_seen_at,
+          arraySlice(groupUniqArray(path), 1, 5) AS sample_paths
+        FROM journey_events
+        GROUP BY journey_id
+        ORDER BY last_seen_at DESC, journey_id ASC
+        LIMIT {{Int32(limit, 25)}}
+      `,
+    }),
+  ],
+  output: {
+    journey_id: t.string(),
+    source: t.string(),
+    visitor_type: t.string(),
+    pages: t.uint64(),
+    distinct_paths: t.uint64(),
+    first_seen_at: t.dateTime(),
+    last_seen_at: t.dateTime(),
+    sample_paths: t.array(t.string()),
+  },
+});
+
+export const geoJourneyDetail = defineEndpoint("geo_journey_detail", {
+  description: "Every captured event for a single journey, oldest first",
+  params: {
+    organization_id: p.string().describe("Organization id"),
+    ...GEO_PROJECT_SCOPE_PARAMS,
+    journey_id: p.string().describe("Journey id"),
+    ...GEO_DAYS_PARAM,
+    limit: p.int32().optional(200).describe("Max events"),
+  },
+  nodes: [
+    node({
+      name: "journey_detail_events",
+      sql: `
+        SELECT
+          captured_at,
+          path,
+          host,
+          method,
+          referer,
+          country,
+          agent,
+          category
+        FROM geo_traffic_events
+        WHERE organization_id = {{String(organization_id)}}
+          ${GEO_PROJECT_SCOPE_SQL}
+          AND journey_id = {{String(journey_id)}}
+          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+        ORDER BY captured_at ASC
+        LIMIT {{Int32(limit, 200)}}
+      `,
+    }),
+  ],
+  output: {
+    captured_at: t.dateTime(),
+    path: t.string(),
+    host: t.string(),
+    method: t.string(),
+    referer: t.string(),
+    country: t.string(),
+    agent: t.string(),
+    category: t.string(),
+  },
+});
+
 export type AiTrafficOverviewRow = InferOutputRow<typeof aiTrafficOverview>;
 export type AiTrafficTimeseriesRow = InferOutputRow<typeof aiTrafficTimeseries>;
 export type AiTrafficLogRow = InferOutputRow<typeof aiTrafficLog>;
+export type GeoTrafficOverviewRow = InferOutputRow<typeof geoTrafficOverview>;
+export type GeoTrafficTimeseriesRow = InferOutputRow<
+  typeof geoTrafficTimeseries
+>;
+export type GeoTrafficPagesRow = InferOutputRow<typeof geoTrafficPages>;
+export type GeoTrafficLogRow = InferOutputRow<typeof geoTrafficLog>;
+export type GeoTrafficLogParams = InferParams<typeof geoTrafficLog>;
+export type GeoTrafficPagesParams = InferParams<typeof geoTrafficPages>;
+export type GeoTrafficJourneysRow = InferOutputRow<typeof geoTrafficJourneys>;
+export type GeoJourneyDetailRow = InferOutputRow<typeof geoJourneyDetail>;

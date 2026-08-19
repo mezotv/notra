@@ -1,20 +1,14 @@
 import { Tracker } from "@bydefault/vercel";
 import { createDualmarkMiddleware } from "@dualmark/nextjs";
-import { createBeaconMiddleware } from "@notra/beacon/middleware";
+import { createGeoProxy } from "@usenotra/geo/next";
 import { after, type NextRequest, NextResponse } from "next/server";
 import { HOMEPAGE_LINK_HEADER, SITE_URL } from "@/utils/urls";
 
-const beaconIngestUrl = process.env.BEACON_INGEST_URL;
-const beaconToken = process.env.BEACON_ORG_TOKEN;
-const beaconOrganizationId = process.env.BEACON_ORG_ID;
-const beacon =
-  beaconIngestUrl && beaconToken && beaconOrganizationId
-    ? createBeaconMiddleware({
-        ingestUrl: beaconIngestUrl,
-        token: beaconToken,
-        organizationId: beaconOrganizationId,
-      })
-    : null;
+const geoTracker = createGeoProxy({
+  token: process.env.NOTRA_GEO_TOKEN ?? "",
+  endpoint: process.env.NOTRA_GEO_ENDPOINT,
+  tagLinks: { host: new URL(SITE_URL).hostname, html: true },
+});
 
 const bydefaultToken = process.env.BYDEFAULT_TOKEN;
 const tracker = bydefaultToken
@@ -55,20 +49,11 @@ const dualmarkProxy = createDualmarkMiddleware({
 });
 
 function trackAiTraffic(request: NextRequest) {
-  if (!beacon) {
-    return;
-  }
-
-  const pending: Promise<unknown>[] = [];
-  beacon(request, {
+  return geoTracker(request, {
     waitUntil: (promise) => {
-      pending.push(promise);
+      after(promise);
     },
   });
-
-  if (pending.length > 0) {
-    after(Promise.all(pending));
-  }
 }
 
 function appendLinkHeader(headers: Headers, value: string) {
@@ -77,7 +62,11 @@ function appendLinkHeader(headers: Headers, value: string) {
 }
 
 export async function proxy(request: NextRequest) {
-  trackAiTraffic(request);
+  const tagged = await trackAiTraffic(request);
+
+  if (tagged) {
+    return tagged;
+  }
 
   if (
     request.nextUrl.pathname === "/" &&

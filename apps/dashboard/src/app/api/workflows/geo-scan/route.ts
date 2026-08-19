@@ -2,7 +2,7 @@ import { getAppUrl } from "@notra/ai/qstash/triggers";
 import { flattenError } from "zod";
 import { verifyQstashSignature } from "@/lib/workflows/qstash-verify";
 import { startGeoScanRun } from "@/lib/workflows/start";
-import { geoScanPayloadSchema } from "@/schemas/geo";
+import { geoOrganizationInputSchema } from "@/schemas/geo";
 
 const ROUTE_PATH = "/api/workflows/geo-scan";
 
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     }
   }
 
-  const parsed = geoScanPayloadSchema.safeParse(body);
+  const parsed = geoOrganizationInputSchema.safeParse(body);
   if (!parsed.success) {
     console.error("[GEO] Invalid scan payload:", flattenError(parsed.error));
     return new Response("Invalid payload", { status: 400 });

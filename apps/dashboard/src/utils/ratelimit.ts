@@ -65,6 +65,12 @@ export const ratelimit = {
     prefix: "ratelimit:onboarding-brand-analysis",
     limiter: Ratelimit.slidingWindow(2, "10m"),
   }),
+  companyLogo: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:company-logo",
+    limiter: Ratelimit.slidingWindow(20, "1m"),
+  }),
   onboardingAgent: new Ratelimit({
     redis,
     analytics: true,
@@ -95,11 +101,11 @@ export const ratelimit = {
     prefix: "ratelimit:chat-relay",
     limiter: Ratelimit.slidingWindow(20, "1m"),
   }),
-  beaconIngest: new Ratelimit({
+  geoIngest: new Ratelimit({
     redis,
     analytics: true,
-    prefix: "ratelimit:beacon-ingest",
-    limiter: Ratelimit.slidingWindow(300, "1m"),
+    prefix: "ratelimit:geo-ingest",
+    limiter: Ratelimit.slidingWindow(1000, "1m"),
   }),
   slackOAuth: new Ratelimit({
     redis,
@@ -119,7 +125,42 @@ export const ratelimit = {
     prefix: "ratelimit:gsc-sync",
     limiter: Ratelimit.slidingWindow(5, "10m"),
   }),
+  signIn: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:auth-sign-in",
+    limiter: Ratelimit.slidingWindow(5, "1m"),
+  }),
+  signUp: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:auth-sign-up",
+    limiter: Ratelimit.slidingWindow(5, "1m"),
+  }),
+  forgotPassword: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:auth-forgot-password",
+    limiter: Ratelimit.slidingWindow(3, "1m"),
+  }),
+  socialSignInStart: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:auth-social-start",
+    limiter: Ratelimit.slidingWindow(10, "1m"),
+  }),
 };
+
+export function getClientIpFromHeaders(headersList: Headers): string {
+  if (process.env.VERCEL !== "1") {
+    return `unknown:${crypto.randomUUID()}`;
+  }
+
+  return (
+    headersList.get("x-vercel-forwarded-for")?.trim() ||
+    `unknown:${crypto.randomUUID()}`
+  );
+}
 
 export function getClientIp(request: NextRequest): string {
   // Vercel injects this header at its trusted network boundary. Do not fall

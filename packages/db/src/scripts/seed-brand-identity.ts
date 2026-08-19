@@ -1,11 +1,10 @@
-import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "../drizzle";
 import {
   brandGuidelineColors,
   brandGuidelines,
   brandSettings,
   organizations,
-  sessions,
 } from "../schema";
 
 const DEFAULT_BRAND_NAME = "Upload QA Brand";
@@ -40,16 +39,6 @@ async function getOrganizationIdFromSlug(slug: string) {
 }
 
 async function getFallbackOrganizationId() {
-  const activeSession = await db.query.sessions.findFirst({
-    where: isNotNull(sessions.activeOrganizationId),
-    orderBy: [desc(sessions.updatedAt)],
-    columns: { activeOrganizationId: true },
-  });
-
-  if (activeSession?.activeOrganizationId) {
-    return activeSession.activeOrganizationId;
-  }
-
   const organization = await db.query.organizations.findFirst({
     orderBy: [desc(organizations.createdAt)],
     columns: { id: true },

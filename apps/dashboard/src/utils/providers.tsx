@@ -86,7 +86,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <QueryClientProvider client={queryClient}>
       {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
       <ThemeProvider attribute="class" disableTransitionOnChange enableSystem>
-        <TooltipProvider>
+        <TooltipProvider delay={500}>
           <AutumnOrgProvider>
             <NuqsAdapter>
               <RealtimeProvider

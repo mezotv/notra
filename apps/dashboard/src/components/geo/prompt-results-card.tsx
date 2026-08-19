@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
+import { EngineIcon } from "@/components/geo/engine-icon";
 import { PresenceBadge } from "@/components/geo/presence-badge";
 import { GEO_ENGINE_LABELS } from "@/constants/geo";
 import type { GeoPromptResult } from "@/types/geo";
@@ -42,13 +43,15 @@ function ResultBadge({ result }: { result: GeoPromptResult }) {
   const label = GEO_ENGINE_LABELS[result.engine] ?? result.engine;
   if (!result.mentioned) {
     return (
-      <Badge className="text-muted-foreground" variant="outline">
+      <Badge className="gap-1.5 text-muted-foreground" variant="outline">
+        <EngineIcon className="size-3" engine={result.engine} />
         {label} · not mentioned
       </Badge>
     );
   }
   return (
-    <Badge variant="secondary">
+    <Badge className="gap-1.5" variant="secondary">
+      <EngineIcon className="size-3" engine={result.engine} />
       {label}
       {result.position !== null && ` · #${result.position}`}
       {result.sentiment === "positive" && " · positive"}

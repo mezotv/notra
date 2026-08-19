@@ -22,7 +22,7 @@ export function createModel(
   options?: CreateModelOptions,
   log?: AILogTarget
 ): GatewayResult {
-  const base = gateway(modelId);
+  const base = gateway(modelId, { organizationId });
 
   if (!organizationId || options?.disableMemory) {
     return wrapModelForDevTools(wrapModelWithObservability(base, log));

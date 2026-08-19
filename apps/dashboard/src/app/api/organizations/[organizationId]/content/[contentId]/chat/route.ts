@@ -15,6 +15,7 @@ import {
   getLinearToolContextByIntegrationId,
 } from "@notra/ai/integrations/linear";
 import { orchestrateChat } from "@notra/ai/orchestration/orchestrate";
+import { routeUsageProperties } from "@notra/ai/utils/route-usage";
 import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
 import type { CheckResponse } from "autumn-js";
@@ -186,7 +187,7 @@ export const POST = withEvlog(async function POST(
         },
         resolveContext: getGitHubToolRepositoryContextByIntegrationId,
         resolveLinearContext: getLinearToolContextByIntegrationId,
-        async onUsage(usage, modelId) {
+        async onUsage(usage, modelId, routeUsage) {
           if (!autumnClient || allowUnmeteredAiInDevelopment) {
             return;
           }
@@ -209,6 +210,7 @@ export const POST = withEvlog(async function POST(
               featureId: FEATURES.AI_CREDITS,
               value: cost.costCents,
               properties: {
+                ...routeUsageProperties(routeUsage),
                 source: "chat",
                 content_id: contentId,
                 model: modelId,

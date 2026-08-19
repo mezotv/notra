@@ -1,0 +1,70 @@
+"use client";
+
+import { ArrowLeft02Icon, Delete02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Badge } from "@notra/ui/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import Link from "next/link";
+import { Button } from "@/components/button";
+import type { SkillDetailHeaderProps } from "@/types/skills/page";
+
+export function SkillDetailHeader({
+  slug,
+  name,
+  isSystem,
+  canDelete,
+  deleteDisabled,
+  onDelete,
+}: SkillDetailHeaderProps) {
+  return (
+    <div className="space-y-4">
+      <Link
+        className="inline-flex items-center gap-1.5 text-muted-foreground text-sm transition-colors hover:text-foreground"
+        href={`/${slug}/skills`}
+      >
+        <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
+        Skills
+      </Link>
+
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <h1 className="truncate font-bold font-mono text-2xl tracking-tight">
+            {name}
+          </h1>
+          {isSystem ? (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Badge className="whitespace-nowrap" variant="secondary">
+                      System
+                    </Badge>
+                  }
+                />
+                <TooltipContent>
+                  System skills cannot be renamed or deleted.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          ) : null}
+        </div>
+        {canDelete ? (
+          <Button
+            className="w-fit gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            disabled={deleteDisabled}
+            onClick={onDelete}
+            variant="outline"
+          >
+            <HugeiconsIcon className="size-4" icon={Delete02Icon} />
+            Delete
+          </Button>
+        ) : null}
+      </div>
+    </div>
+  );
+}

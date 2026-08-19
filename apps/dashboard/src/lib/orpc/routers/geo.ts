@@ -12,83 +12,94 @@ import {
   createQstashRouteSchedule,
   deleteQstashSchedule,
 } from "@notra/ai/qstash/triggers";
-import {
-  isTinybirdConfigured,
-  queryAiTrafficLog,
-  queryAiTrafficOverview,
-  queryAiTrafficTimeseries,
-  queryGeoCompetitorShare,
-  queryGeoLanguageShare,
-  queryGeoOverview,
-  queryGeoPromptResults,
-  queryGeoTimeseries,
-  queryModelUsageLatest,
-} from "@notra/analytics/tinybird/client";
 import { db } from "@notra/db/drizzle";
-import {
-  brandSettings,
-  geoPromptSuggestions,
-  geoPrompts,
-  geoSettings,
-} from "@notra/db/schema";
+import { geoPromptSuggestions, geoPrompts, projects } from "@notra/db/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
-import { Effect } from "effect";
-import {
-  AI_TRAFFIC_DEFAULT_DAYS,
-  AI_TRAFFIC_DEFAULT_LOG_LIMIT,
-  GEO_ENGINE_LABELS,
-  GEO_MODEL_USAGE_ATTRIBUTION,
-  GEO_MODEL_USAGE_DEFAULT_LIMIT,
-  GEO_MODEL_USAGE_SOURCE,
-} from "@/constants/geo";
+import type { Effect } from "effect";
 import {
   GSC_SCHEDULE_ID_PREFIX,
   GSC_SYNC_CRON,
   GSC_SYNC_WORKFLOW_PATH,
 } from "@/constants/google-search-console";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { buildBeaconIngestUrl, buildBeaconSnippet } from "@/lib/beacon/snippet";
-import { deriveBeaconToken } from "@/lib/beacon/token";
 import { generateGeoFromWebsite } from "@/lib/geo/discover";
-import type { GeoDiscoveryError } from "@/lib/geo/errors";
-import { normalizeModelId } from "@/lib/geo/model-usage";
-import { buildGeoPrompts } from "@/lib/geo/prompts";
+import type { GeoRouterError } from "@/lib/geo/errors";
+import { toTrackedPrompt } from "@/lib/geo/mappers";
+import {
+  createGeoPrompt,
+  deleteGeoCompetitor,
+  deleteGeoPrompt,
+  listGeoPrompts,
+  loadAiTraffic,
+  loadGeoCompetitorDetail,
+  loadGeoCompetitorShare,
+  loadGeoCompetitors,
+  loadGeoJourneyDetail,
+  loadGeoLanguageShare,
+  loadGeoModelUsage,
+  loadGeoOverview,
+  loadGeoPromptResults,
+  loadGeoSettings,
+  loadGeoTimeseries,
+  loadGeoTrafficJourneys,
+  loadGeoTrafficLog,
+  loadGeoTrafficPages,
+  startGeoScan,
+  toggleGeoPrompt,
+  upsertGeoCompetitor,
+  upsertGeoSettings,
+} from "@/lib/geo/programs";
+import { createGeoProject, listGeoProjects } from "@/lib/geo/projects";
 import { syncGscSuggestions } from "@/lib/geo/search-console";
+import {
+  createGeoSequence,
+  deleteGeoSequence,
+  listGeoSequences,
+  loadGeoSequenceResults,
+  updateGeoSequence,
+} from "@/lib/geo/sequences";
+import {
+  buildGeoAppUrl,
+  buildGeoIngestUrl,
+  buildGeoSnippet,
+} from "@/lib/geo-ingest/snippet";
+import { buildGeoIngestToken } from "@/lib/geo-ingest/token";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { badRequest, notFound } from "@/lib/orpc/utils/errors";
-import { startGeoScanRun } from "@/lib/workflows/start";
+import { runOrpcEffect } from "@/lib/orpc/effect";
+import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
 import {
   aiTrafficInputSchema,
+  geoCompetitorDeleteInputSchema,
+  geoCompetitorDetailInputSchema,
+  geoCompetitorUpsertInputSchema,
   geoGenerateFromWebsiteInputSchema,
+  geoJourneyDetailInputSchema,
   geoModelUsageInputSchema,
   geoOrganizationInputSchema,
+  geoProjectCreateInputSchema,
   geoPromptCreateInputSchema,
   geoPromptDeleteInputSchema,
   geoPromptToggleInputSchema,
+  geoSequenceCreateInputSchema,
+  geoSequenceDeleteInputSchema,
+  geoSequenceResultsInputSchema,
+  geoSequenceUpdateInputSchema,
   geoSettingsUpsertInputSchema,
   geoSuggestionIdInputSchema,
   geoTimeseriesInputSchema,
+  geoTrafficJourneysInputSchema,
+  geoTrafficLogInputSchema,
+  geoTrafficPagesInputSchema,
 } from "@/schemas/geo";
 import { gscSelectSiteInputSchema } from "@/schemas/google-search-console";
+import type { AuthenticatedUser } from "@/types/auth/organization";
 import type {
-  AiTrafficResponse,
-  BeaconSetupResponse,
-  GeoCompetitorShareResponse,
-  GeoGenerateFromWebsiteResult,
-  GeoLanguageShareResponse,
-  GeoModelUsageResponse,
-  GeoModelUsageRow,
-  GeoOverviewResponse,
-  GeoPromptResultsResponse,
-  GeoPromptRow,
+  GeoIngestSetupResponse,
   GeoPromptSuggestion,
   GeoPromptSuggestionRow,
   GeoPromptSuggestionsResponse,
-  GeoSettings,
-  GeoSettingsResponse,
-  GeoTimeseriesResponse,
   GeoTrackedPrompt,
-  GeoTrackedPromptsResponse,
 } from "@/types/geo";
 import type {
   GeoSearchConsoleStatus,
@@ -96,87 +107,30 @@ import type {
 } from "@/types/google-search-console";
 import { ratelimit } from "@/utils/ratelimit";
 
-interface GeoSettingsRow {
-  id: string;
-  organizationId: string;
-  companyName: string;
-  aliases: string[];
-  competitors: string[];
-  languages: string[] | null;
-  enabled: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+interface GeoHandlerOptions<TInput> {
+  context: { headers: Headers; user?: AuthenticatedUser };
+  input: TInput;
 }
 
-function toGeoSettings(row: GeoSettingsRow): GeoSettings {
-  return {
-    id: row.id,
-    organizationId: row.organizationId,
-    companyName: row.companyName,
-    aliases: row.aliases,
-    competitors: row.competitors,
-    languages: row.languages ?? [],
-    enabled: row.enabled,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
+function geoHandler<
+  TInput extends { organizationId: string },
+  TOutput,
+  TError extends GeoRouterError,
+>(run: (input: TInput) => Effect.Effect<TOutput, TError>) {
+  return async ({
+    context,
+    input,
+  }: GeoHandlerOptions<TInput>): Promise<TOutput> => {
+    await assertOrganizationAccess({
+      headers: context.headers,
+      organizationId: input.organizationId,
+      user: context.user,
+    });
+
+    return await runOrpcEffect(run(input), toGeoOrpcError);
   };
 }
 
-function toTrackedPrompt(row: GeoPromptRow): GeoTrackedPrompt {
-  return {
-    id: row.id,
-    prompt: row.prompt,
-    enabled: row.enabled,
-    source: "custom",
-    createdAt: row.createdAt.toISOString(),
-  };
-}
-
-function toNullableNumber(value: number | bigint | null): number | null {
-  if (value === null) {
-    return null;
-  }
-  return Number(value);
-}
-
-interface EngineCoverage {
-  mentions: number;
-  checks: number;
-}
-
-function buildCoverageByModel(
-  rows: { engine: string; mentions: number | bigint; checks: number | bigint }[]
-): Map<string, EngineCoverage> {
-  const coverage = new Map<string, EngineCoverage>();
-  for (const row of rows) {
-    const model = normalizeModelId(row.engine);
-    const entry = coverage.get(model) ?? { mentions: 0, checks: 0 };
-    entry.mentions += Number(row.mentions);
-    entry.checks += Number(row.checks);
-    coverage.set(model, entry);
-  }
-  return coverage;
-}
-
-function toModelUsageRow(
-  model: string,
-  rank: number | bigint,
-  share: number,
-  rawTokens: number | bigint | null,
-  coverage: EngineCoverage | undefined
-): GeoModelUsageRow {
-  const checks = coverage?.checks ?? 0;
-  return {
-    model,
-    label: GEO_ENGINE_LABELS[model] ?? model,
-    rank: Number(rank),
-    share,
-    rawTokens: rawTokens === null ? null : Number(rawTokens),
-    scanned: checks > 0,
-    mentionRate: checks > 0 ? (coverage?.mentions ?? 0) / checks : null,
-    checks,
-  };
-}
 function toPromptSuggestion(row: GeoPromptSuggestionRow): GeoPromptSuggestion {
   return {
     id: row.id,
@@ -244,17 +198,31 @@ async function removeGscSchedule(scheduleId: string | null) {
   }
 }
 
+async function requireDefaultProjectId(organizationId: string): Promise<string> {
+  const row = await db.query.projects.findFirst({
+    columns: { id: true },
+    where: eq(projects.organizationId, organizationId),
+    orderBy: [desc(projects.isDefault), asc(projects.createdAt)],
+  });
+  if (!row) {
+    throw badRequest("Configure your brand tracking settings first");
+  }
+  return row.id;
+}
+
 type GeoTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 async function acceptSuggestionInTx(
   tx: GeoTransaction,
   organizationId: string,
+  projectId: string,
   suggestion: Pick<GeoPromptSuggestionRow, "id" | "prompt">
 ): Promise<GeoTrackedPrompt> {
   // Reuse an identical tracked prompt instead of creating a duplicate.
   const existing = await tx.query.geoPrompts.findFirst({
     where: and(
       eq(geoPrompts.organizationId, organizationId),
+      eq(geoPrompts.projectId, projectId),
       eq(geoPrompts.prompt, suggestion.prompt)
     ),
   });
@@ -266,6 +234,7 @@ async function acceptSuggestionInTx(
         .values({
           id: crypto.randomUUID(),
           organizationId,
+          projectId,
           prompt: suggestion.prompt,
         })
         .returning()
@@ -279,500 +248,151 @@ async function acceptSuggestionInTx(
     .where(eq(geoPromptSuggestions.id, suggestion.id));
   return toTrackedPrompt(promptRow);
 }
-
 export const geoRouter = {
   settings: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(async ({ context, input }): Promise<GeoSettingsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const row = await db.query.geoSettings.findFirst({
-        where: eq(geoSettings.organizationId, input.organizationId),
-      });
-
-      return {
-        configured: isTinybirdConfigured(),
-        settings: row ? toGeoSettings(row) : null,
-      };
-    }),
+    .handler(geoHandler((input) => loadGeoSettings(input))),
   settingsUpsert: authorizedProcedure
     .input(geoSettingsUpsertInputSchema)
-    .handler(async ({ context, input }): Promise<GeoSettingsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const [row] = await db
-        .insert(geoSettings)
-        .values({
-          id: crypto.randomUUID(),
-          organizationId: input.organizationId,
-          companyName: input.companyName,
-          aliases: input.aliases,
-          competitors: input.competitors,
-          languages: input.languages,
-          enabled: input.enabled,
-        })
-        .onConflictDoUpdate({
-          target: geoSettings.organizationId,
-          set: {
-            companyName: input.companyName,
-            aliases: input.aliases,
-            competitors: input.competitors,
-            languages: input.languages,
-            enabled: input.enabled,
-          },
-        })
-        .returning();
-
-      return {
-        configured: isTinybirdConfigured(),
-        settings: row ? toGeoSettings(row) : null,
-      };
-    }),
+    .handler(geoHandler((input) => upsertGeoSettings(input))),
   languageShare: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(async ({ context, input }): Promise<GeoLanguageShareResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const result = await queryGeoLanguageShare({
-        organization_id: input.organizationId,
-        days: input.days,
-      }).catch((error) => {
-        console.error("[GEO] language share query failed:", error);
-        return null;
-      });
-
-      return {
-        configured: isTinybirdConfigured(),
-        points: (result?.data ?? []).map((row) => ({
-          language: row.language_name,
-          checks: Number(row.checks),
-          mentions: Number(row.mentions),
-          mentionRate: Number(row.mention_rate),
-          avgPosition: toNullableNumber(row.avg_position),
-        })),
-      };
-    }),
+    .handler(geoHandler((input) => loadGeoLanguageShare(input, input.days))),
   overview: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(async ({ context, input }): Promise<GeoOverviewResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const result = await queryGeoOverview({
-        organization_id: input.organizationId,
-        days: input.days,
-      }).catch((error) => {
-        console.error("[GEO] overview query failed:", error);
-        return null;
-      });
-
-      return {
-        configured: isTinybirdConfigured(),
-        engines: (result?.data ?? []).map((row) => ({
-          engine: row.engine,
-          checks: Number(row.checks),
-          mentions: Number(row.mentions),
-          mentionRate: Number(row.mention_rate),
-          avgPosition: toNullableNumber(row.avg_position),
-          lastCheckedAt: row.last_checked_at,
-        })),
-      };
-    }),
+    .handler(geoHandler((input) => loadGeoOverview(input, input.days))),
   timeseries: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(async ({ context, input }): Promise<GeoTimeseriesResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const result = await queryGeoTimeseries({
-        organization_id: input.organizationId,
-        days: input.days,
-      }).catch((error) => {
-        console.error("[GEO] timeseries query failed:", error);
-        return null;
-      });
-
-      return {
-        configured: isTinybirdConfigured(),
-        points: (result?.data ?? []).map((row) => ({
-          day: row.day,
-          engine: row.engine,
-          checks: Number(row.checks),
-          mentions: Number(row.mentions),
-        })),
-      };
-    }),
+    .handler(geoHandler((input) => loadGeoTimeseries(input, input.days))),
   promptResults: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(async ({ context, input }): Promise<GeoPromptResultsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const result = await queryGeoPromptResults({
-        organization_id: input.organizationId,
-      }).catch((error) => {
-        console.error("[GEO] prompt results query failed:", error);
-        return null;
-      });
-
-      return {
-        configured: isTinybirdConfigured(),
-        results: (result?.data ?? []).map((row) => ({
-          promptId: row.prompt_id,
-          engine: row.engine,
-          prompt: row.prompt,
-          mentioned: row.mentioned,
-          position: toNullableNumber(row.position),
-          sentiment: row.sentiment,
-          excerpt: row.excerpt,
-          lastCheckedAt: row.last_checked_at,
-        })),
-      };
-    }),
+    .handler(geoHandler((input) => loadGeoPromptResults(input))),
   competitorShare: authorizedProcedure
     .input(geoTimeseriesInputSchema)
+    .handler(geoHandler((input) => loadGeoCompetitorShare(input, input.days))),
+  competitors: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(geoHandler((input) => loadGeoCompetitors(input))),
+  competitorUpsert: authorizedProcedure
+    .input(geoCompetitorUpsertInputSchema)
+    .handler(geoHandler((input) => upsertGeoCompetitor(input, input))),
+  competitorDelete: authorizedProcedure
+    .input(geoCompetitorDeleteInputSchema)
+    .handler(geoHandler((input) => deleteGeoCompetitor(input, input.name))),
+  competitorDetail: authorizedProcedure
+    .input(geoCompetitorDetailInputSchema)
     .handler(
-      async ({ context, input }): Promise<GeoCompetitorShareResponse> => {
-        await assertOrganizationAccess({
-          headers: context.headers,
-          organizationId: input.organizationId,
-          user: context.user,
-        });
-
-        const result = await queryGeoCompetitorShare({
-          organization_id: input.organizationId,
-          days: input.days,
-        }).catch((error) => {
-          console.error("[GEO] competitor share query failed:", error);
-          return null;
-        });
-
-        return {
-          configured: isTinybirdConfigured(),
-          points: (result?.data ?? []).map((row) => ({
-            brand: row.brand,
-            mentions: Number(row.mentions),
-          })),
-        };
-      }
+      geoHandler((input) =>
+        loadGeoCompetitorDetail(input, input.brand, input.days)
+      )
     ),
   modelUsage: authorizedProcedure
     .input(geoModelUsageInputSchema)
-    .handler(async ({ context, input }): Promise<GeoModelUsageResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const [usage, overview] = await Promise.all([
-        queryModelUsageLatest({
-          source: GEO_MODEL_USAGE_SOURCE,
-          limit: input.limit ?? GEO_MODEL_USAGE_DEFAULT_LIMIT,
-        }).catch((error) => {
-          console.error("[GEO] model usage query failed:", error);
-          return null;
-        }),
-        queryGeoOverview({
-          organization_id: input.organizationId,
-          days: input.days,
-        }).catch((error) => {
-          console.error("[GEO] overview query failed:", error);
-          return null;
-        }),
-      ]);
-
-      const coverage = buildCoverageByModel(overview?.data ?? []);
-      const rows = usage?.data ?? [];
-
-      return {
-        configured: isTinybirdConfigured(),
-        source: GEO_MODEL_USAGE_SOURCE,
-        attribution: GEO_MODEL_USAGE_ATTRIBUTION,
-        capturedAt: rows[0]?.captured_at ?? null,
-        models: rows.map((row) =>
-          toModelUsageRow(
-            row.model,
-            row.rank,
-            Number(row.share),
-            row.raw_tokens,
-            coverage.get(row.model)
-          )
-        ),
-      };
-    }),
+    .handler(
+      geoHandler((input) => loadGeoModelUsage(input, input.days, input.limit))
+    ),
   aiTraffic: authorizedProcedure
     .input(aiTrafficInputSchema)
-    .handler(async ({ context, input }): Promise<AiTrafficResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const days = input.days ?? AI_TRAFFIC_DEFAULT_DAYS;
-      const limit = input.limit ?? AI_TRAFFIC_DEFAULT_LOG_LIMIT;
-
-      const [overview, timeseries, log] = await Promise.all([
-        queryAiTrafficOverview({
-          organization_id: input.organizationId,
-          days,
-        }).catch((error) => {
-          console.error("[BEACON] ai traffic overview query failed:", error);
-          return null;
-        }),
-        queryAiTrafficTimeseries({
-          organization_id: input.organizationId,
-          days,
-        }).catch((error) => {
-          console.error("[BEACON] ai traffic timeseries query failed:", error);
-          return null;
-        }),
-        queryAiTrafficLog({
-          organization_id: input.organizationId,
-          limit,
-        }).catch((error) => {
-          console.error("[BEACON] ai traffic log query failed:", error);
-          return null;
-        }),
-      ]);
-
-      return {
-        configured: isTinybirdConfigured(),
-        agents: (overview?.data ?? []).map((row) => ({
-          agent: row.agent,
-          category: row.category,
-          confidence: row.confidence,
-          hits: Number(row.hits),
-          paths: Number(row.paths),
-          lastSeenAt: row.last_seen_at,
-        })),
-        points: (timeseries?.data ?? []).map((row) => ({
-          day: row.day,
-          category: row.category,
-          hits: Number(row.hits),
-        })),
-        log: (log?.data ?? []).map((row) => ({
-          capturedAt: row.captured_at,
-          agent: row.agent,
-          category: row.category,
-          confidence: row.confidence,
-          path: row.path,
-          method: row.method,
-          referer: row.referer,
-        })),
-      };
-    }),
-  beaconSetup: authorizedProcedure
+    .handler(geoHandler((input) => loadAiTraffic(input, input.days))),
+  trafficLog: authorizedProcedure
+    .input(geoTrafficLogInputSchema)
+    .handler(
+      geoHandler((input) =>
+        loadGeoTrafficLog(
+          input,
+          input.limit,
+          input.visitorTypes,
+          input.categories
+        )
+      )
+    ),
+  trafficJourneys: authorizedProcedure
+    .input(geoTrafficJourneysInputSchema)
+    .handler(
+      geoHandler((input) =>
+        loadGeoTrafficJourneys(input, input.days, input.limit)
+      )
+    ),
+  journeyDetail: authorizedProcedure
+    .input(geoJourneyDetailInputSchema)
+    .handler(
+      geoHandler((input) =>
+        loadGeoJourneyDetail(input, input.journeyId, input.days)
+      )
+    ),
+  trafficPages: authorizedProcedure
+    .input(geoTrafficPagesInputSchema)
+    .handler(
+      geoHandler((input) =>
+        loadGeoTrafficPages(input, input.days, input.limit, input.visitorType)
+      )
+    ),
+  ingestSetup: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(async ({ context, input }): Promise<BeaconSetupResponse> => {
+    .handler(async ({ context, input }): Promise<GeoIngestSetupResponse> => {
       await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
       });
 
-      const ingestUrl = buildBeaconIngestUrl();
-
       return {
-        ingestUrl,
-        token: deriveBeaconToken(input.organizationId) ?? "",
-        snippet: buildBeaconSnippet(ingestUrl, input.organizationId),
+        ingestUrl: buildGeoIngestUrl(),
+        token: buildGeoIngestToken(input.organizationId, input.projectId) ?? "",
+        snippet: buildGeoSnippet(buildGeoAppUrl()),
       };
     }),
   promptsList: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(async ({ context, input }): Promise<GeoTrackedPromptsResponse> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const [customRows, settingsRow] = await Promise.all([
-        db.query.geoPrompts.findMany({
-          where: eq(geoPrompts.organizationId, input.organizationId),
-          orderBy: [asc(geoPrompts.createdAt)],
-        }),
-        db.query.geoSettings.findFirst({
-          where: eq(geoSettings.organizationId, input.organizationId),
-        }),
-      ]);
-
-      const prompts: GeoTrackedPrompt[] = customRows.map(toTrackedPrompt);
-
-      if (!settingsRow) {
-        return { configured: isTinybirdConfigured(), prompts };
-      }
-
-      const brand = await db.query.brandSettings.findFirst({
-        columns: { companyDescription: true, audience: true },
-        where: and(
-          eq(brandSettings.organizationId, input.organizationId),
-          eq(brandSettings.isDefault, true)
-        ),
-      });
-
-      const autoPrompts = buildGeoPrompts(
-        toGeoSettings(settingsRow),
-        brand
-          ? {
-              companyDescription: brand.companyDescription,
-              audience: brand.audience,
-            }
-          : null
-      );
-
-      for (const autoPrompt of autoPrompts) {
-        prompts.push({
-          id: autoPrompt.id,
-          prompt: autoPrompt.text,
-          enabled: true,
-          source: "auto",
-          createdAt: null,
-        });
-      }
-
-      return { configured: isTinybirdConfigured(), prompts };
-    }),
+    .handler(geoHandler((input) => listGeoPrompts(input))),
   promptsCreate: authorizedProcedure
     .input(geoPromptCreateInputSchema)
-    .handler(async ({ context, input }): Promise<GeoTrackedPrompt> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const [row] = await db
-        .insert(geoPrompts)
-        .values({
-          id: crypto.randomUUID(),
-          organizationId: input.organizationId,
-          prompt: input.prompt,
-        })
-        .returning();
-
-      if (!row) {
-        throw badRequest("Failed to create prompt");
-      }
-
-      return toTrackedPrompt(row);
-    }),
+    .handler(geoHandler((input) => createGeoPrompt(input, input.prompt))),
   promptsDelete: authorizedProcedure
     .input(geoPromptDeleteInputSchema)
-    .handler(async ({ context, input }): Promise<{ success: boolean }> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const [row] = await db
-        .delete(geoPrompts)
-        .where(
-          and(
-            eq(geoPrompts.id, input.promptId),
-            eq(geoPrompts.organizationId, input.organizationId)
-          )
-        )
-        .returning();
-
-      if (!row) {
-        throw notFound("Prompt not found");
-      }
-
-      return { success: true };
-    }),
+    .handler(
+      geoHandler((input) =>
+        deleteGeoPrompt(input.organizationId, input.promptId)
+      )
+    ),
   promptsToggle: authorizedProcedure
     .input(geoPromptToggleInputSchema)
-    .handler(async ({ context, input }): Promise<GeoTrackedPrompt> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const [row] = await db
-        .update(geoPrompts)
-        .set({ enabled: input.enabled })
-        .where(
-          and(
-            eq(geoPrompts.id, input.promptId),
-            eq(geoPrompts.organizationId, input.organizationId)
-          )
-        )
-        .returning();
-
-      if (!row) {
-        throw notFound("Prompt not found");
-      }
-
-      return toTrackedPrompt(row);
-    }),
+    .handler(
+      geoHandler((input) =>
+        toggleGeoPrompt(input.organizationId, input.promptId, input.enabled)
+      )
+    ),
+  sequencesList: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(geoHandler((input) => listGeoSequences(input))),
+  sequencesCreate: authorizedProcedure
+    .input(geoSequenceCreateInputSchema)
+    .handler(geoHandler((input) => createGeoSequence(input, input))),
+  sequencesUpdate: authorizedProcedure
+    .input(geoSequenceUpdateInputSchema)
+    .handler(geoHandler((input) => updateGeoSequence(input, input))),
+  sequencesDelete: authorizedProcedure
+    .input(geoSequenceDeleteInputSchema)
+    .handler(geoHandler((input) => deleteGeoSequence(input, input.sequenceId))),
+  sequenceResults: authorizedProcedure
+    .input(geoSequenceResultsInputSchema)
+    .handler(
+      geoHandler((input) => loadGeoSequenceResults(input, input.sequenceId))
+    ),
+  projectsList: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(geoHandler((input) => listGeoProjects(input.organizationId))),
+  projectsCreate: authorizedProcedure
+    .input(geoProjectCreateInputSchema)
+    .handler(
+      geoHandler((input) => createGeoProject(input.organizationId, input.name))
+    ),
   generateFromWebsite: authorizedProcedure
     .input(geoGenerateFromWebsiteInputSchema)
-    .handler(
-      async ({ context, input }): Promise<GeoGenerateFromWebsiteResult> => {
-        await assertOrganizationAccess({
-          headers: context.headers,
-          organizationId: input.organizationId,
-          user: context.user,
-        });
-
-        const outcome = await Effect.runPromise(
-          Effect.result(generateGeoFromWebsite(input.organizationId, input.url))
-        );
-
-        if (outcome._tag === "Failure") {
-          const failure: GeoDiscoveryError = outcome.failure;
-          console.error("[GEO] website discovery failed:", failure);
-          throw badRequest(failure.message);
-        }
-
-        return outcome.success;
-      }
-    ),
+    .handler(geoHandler((input) => generateGeoFromWebsite(input, input.url))),
   startScan: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(async ({ context, input }): Promise<{ runId: string }> => {
-      await assertOrganizationAccess({
-        headers: context.headers,
-        organizationId: input.organizationId,
-        user: context.user,
-      });
-
-      const row = await db.query.geoSettings.findFirst({
-        columns: { id: true },
-        where: eq(geoSettings.organizationId, input.organizationId),
-      });
-      if (!row) {
-        throw badRequest("Configure your brand tracking settings first");
-      }
-
-      return await startGeoScanRun({ organizationId: input.organizationId });
-    }),
+    .handler(geoHandler((input) => startGeoScan(input))),
   searchConsoleStatus: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async ({ context, input }): Promise<GeoSearchConsoleStatus> => {
@@ -996,8 +616,9 @@ export const geoRouter = {
         throw notFound("Suggestion not found");
       }
 
+      const projectId = await requireDefaultProjectId(input.organizationId);
       return await db.transaction((tx) =>
-        acceptSuggestionInTx(tx, input.organizationId, suggestion)
+        acceptSuggestionInTx(tx, input.organizationId, projectId, suggestion)
       );
     }),
   suggestionsAcceptAll: authorizedProcedure
@@ -1020,9 +641,10 @@ export const geoRouter = {
         return { accepted: 0 };
       }
 
+      const projectId = await requireDefaultProjectId(input.organizationId);
       await db.transaction(async (tx) => {
         for (const row of rows) {
-          await acceptSuggestionInTx(tx, input.organizationId, row);
+          await acceptSuggestionInTx(tx, input.organizationId, projectId, row);
         }
       });
       return { accepted: rows.length };

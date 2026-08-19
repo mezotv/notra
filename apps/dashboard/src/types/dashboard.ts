@@ -8,6 +8,7 @@ export interface OrganizationOptionsListProps {
   organizations: OrgSelectOption[];
   selectedOrganizationId?: string | null;
   onSelect: (organizationId: string) => void;
+  onCreate?: () => void;
   disabled?: boolean;
 }
 

@@ -64,3 +64,4 @@ opencode.json
 .output
 apps/onboarding-agent/logs
 .workflow-data
+.env.staging

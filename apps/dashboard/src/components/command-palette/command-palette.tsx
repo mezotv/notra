@@ -416,7 +416,7 @@ export function CommandPalette() {
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogContent
-        className="top-[18%] w-[calc(100%-2rem)] max-w-[640px]! translate-y-0 gap-0 overflow-hidden rounded-xl! border border-border/60 p-0! shadow-2xl sm:max-w-[640px]!"
+        className="top-[18%] w-[calc(100%-2rem)] max-w-[45rem]! translate-y-0 gap-0 overflow-hidden rounded-xl! border border-border/60 p-0! shadow-2xl sm:max-w-[45rem]!"
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">

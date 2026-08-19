@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { EngineIcon } from "@/components/geo/engine-icon";
 import {
   InstrumentEmpty,
   InstrumentModule,
@@ -74,19 +75,19 @@ function RateBar({
   const percent = Math.round(engine.mentionRate * 100);
   return (
     <div className="flex items-center gap-2">
-      <span className="w-8 shrink-0 font-mono text-[0.625rem] text-muted-foreground uppercase tracking-wider">
+      <span className="w-8 shrink-0 text-muted-foreground text-xs capitalize">
         {variant}
       </span>
-      <div className="h-2 flex-1 overflow-hidden bg-muted">
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
         <div
           className={cn(
             "h-full",
-            variant === "web" ? "bg-foreground/80" : "bg-foreground/35"
+            variant === "web" ? "bg-chart-1" : "bg-chart-2"
           )}
           style={{ width: `${Math.max(percent, 2)}%` }}
         />
       </div>
-      <span className="w-24 shrink-0 text-right font-mono text-xs tabular-nums">
+      <span className="w-24 shrink-0 text-right text-xs tabular-nums">
         <span className="text-foreground text-sm">
           {formatMentionRate(engine.mentionRate)}
         </span>{" "}
@@ -114,10 +115,13 @@ export function MentionRateCard({ engines }: MentionRateCardProps) {
           {families.map((family) => (
             <div className="space-y-1.5" key={family.family}>
               <div className="flex items-baseline justify-between">
-                <span className="font-medium text-sm">{family.label}</span>
+                <span className="inline-flex items-center gap-2 font-medium text-sm">
+                  <EngineIcon engine={family.family} />
+                  {family.label}
+                </span>
                 {family.web?.avgPosition !== null &&
                   family.web?.avgPosition !== undefined && (
-                    <span className="font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
+                    <span className="text-muted-foreground text-xs tabular-nums">
                       avg position {family.web.avgPosition}
                     </span>
                   )}

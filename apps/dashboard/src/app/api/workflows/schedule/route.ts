@@ -1153,8 +1153,7 @@ const { POST: legacyWorkflowContinuation } = serve<ScheduleWorkflowPayload>(
 
       if (notificationData.enabled && notificationData.ownerEmails.length > 0) {
         await context.run("send-notification-emails", async () => {
-          const baseUrl =
-            process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
+          const baseUrl = process.env.APP_URL ?? "https://app.usenotra.com";
           const contentOverviewLink = `${baseUrl}/${notificationData.organizationSlug}/content`;
           const createdContent = createdPosts.map((createdPost) => ({
             title: createdPost.title,
@@ -1208,6 +1207,10 @@ const { POST: legacyWorkflowContinuation } = serve<ScheduleWorkflowPayload>(
               cache_write_tokens: contentResult.usage?.cacheWriteTokens,
               total_tokens: contentResult.usage?.totalTokens,
               sandbox_total_usd: contentResult.usage?.totalUsd,
+              gateway: contentUsage.route?.gateway,
+              upstream_provider: contentUsage.route?.upstreamProvider,
+              route_reason: contentUsage.route?.reason,
+              fallback_from: contentUsage.route?.fallbackFrom,
               markup_applied: aiCreditReservation.useMarkup,
               cost_cents: cost.costCents,
               reported_cost_cents: cost.reportedCostCents,

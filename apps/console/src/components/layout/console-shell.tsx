@@ -83,6 +83,7 @@ function OrganizationSwitcher({
     }
 
     router.push(`/${organization.slug}/integrations`);
+    router.refresh();
   }
 
   return (
@@ -207,7 +208,6 @@ function ConsoleNavigation({
 }
 
 function UserMenu({ isAdmin, user }: UserMenuProps) {
-  const router = useRouter();
   const { isMobile, state } = useSidebar();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [impersonationOpen, setImpersonationOpen] = useState(false);
@@ -220,15 +220,12 @@ function UserMenu({ isAdmin, user }: UserMenuProps) {
 
   async function signOut() {
     setIsSigningOut(true);
-    const result = await authClient.signOut();
-    if (result.error) {
-      toast.error(result.error.message ?? "Failed to sign out");
+    try {
+      await authClient.signOut();
+    } catch {
+      toast.error("Failed to sign out");
       setIsSigningOut(false);
-      return;
     }
-
-    router.push("/login");
-    router.refresh();
   }
 
   return (

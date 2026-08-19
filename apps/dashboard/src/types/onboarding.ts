@@ -18,12 +18,20 @@ export interface OnboardingExistingOrg {
   heardAboutNotraOther: string | null;
   heardAboutNotraSource: string | null;
   id: string;
+  logo: string | null;
   slug: string;
   name: string;
 }
 
 export interface WorkspaceFormProps {
   existingOrg?: OnboardingExistingOrg;
+}
+
+export interface OrgLogoFieldProps {
+  disabled?: boolean;
+  isLoading?: boolean;
+  onSelect: (file: File) => void;
+  previewUrl: string | null;
 }
 
 export interface OnboardingWorkspaceFormValues {
@@ -36,6 +44,8 @@ export interface OnboardingWorkspaceFormValues {
 
 export interface SubmitWorkspaceFormArgs {
   existingOrg?: OnboardingExistingOrg;
+  logoFile: File | null;
+  logoSourceUrl: string | null;
   value: OnboardingWorkspaceFormValues;
 }
 

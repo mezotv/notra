@@ -13,7 +13,6 @@ import {
   Notification03Icon,
   PlugIcon,
   Settings01Icon,
-  TestTube01Icon,
   UserCircleIcon,
   UserGroupIcon,
   Wallet01Icon,
@@ -110,14 +109,6 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     path: (slug) => `/${slug}/automation/schedules`,
   },
   {
-    id: "experiments",
-    label: "A/B Tests",
-    keywords: ["experiments", "ab test", "variants", "testing"],
-    icon: TestTube01Icon,
-    section: "Automation",
-    path: (slug) => `/${slug}/experiments`,
-  },
-  {
     id: "automation-events",
     label: "Events",
     keywords: ["triggers", "webhooks", "automation"],
@@ -146,8 +137,8 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     label: "Logs",
     keywords: ["audit", "activity", "events", "history"],
     icon: AnalyticsUpIcon,
-    section: "Manage",
-    path: (slug) => `/${slug}/logs`,
+    section: "Settings",
+    path: (slug) => `/${slug}/settings/logs`,
   },
   {
     id: "settings-account",

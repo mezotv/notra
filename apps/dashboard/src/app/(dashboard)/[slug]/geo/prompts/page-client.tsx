@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
+import { ConversationsCard } from "@/components/geo/conversations-card";
 import { PromptManager } from "@/components/geo/prompt-manager";
 import { PromptResultsCard } from "@/components/geo/prompt-results-card";
 import { PromptSuggestions } from "@/components/geo/prompt-suggestions";
@@ -74,6 +75,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           callbackPath={`/${organizationSlug}/geo/prompts`}
           organizationId={organizationId}
         />
+        <ConversationsCard organizationId={organizationId} />
         <WebsiteGenerateCard compact organizationId={organizationId} />
         <PromptResultsCard results={promptResults?.results ?? []} />
       </div>
