@@ -101,7 +101,6 @@ export function GeoCompetitorsDialog({
 }: GeoCompetitorsDialogProps) {
   const [draft, setDraft] = useState("");
   const [domainDraft, setDomainDraft] = useState("");
-  const [selected, setSelected] = useState<string | null>(null);
   const { data, isPending } = useGeoCompetitors(organizationId);
   const upsert = useGeoCompetitorUpsert(organizationId);
   const remove = useGeoCompetitorDelete(organizationId);
@@ -119,8 +118,7 @@ export function GeoCompetitorsDialog({
     setDomainDraft("");
   };
 
-  const handleSelect = (competitor: string) => {
-    setSelected(competitor);
+  const handleSelect = () => {
     onOpenChange(false);
   };
 

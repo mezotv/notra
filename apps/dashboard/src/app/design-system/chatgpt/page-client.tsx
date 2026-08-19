@@ -28,6 +28,10 @@ import {
   CHATGPT_STORY_THREAD,
   CHATGPT_STORY_USER_MESSAGES,
 } from "@/constants/design-system-chatgpt";
+import {
+  splitBoldSegments,
+  splitWithOffsets,
+} from "@/lib/design-system/text-segments";
 import type { ChatgptStoryMessage } from "@/types/design-system-chatgpt";
 
 function ChatgptFrame({
@@ -64,27 +68,23 @@ function ChatgptFrame({
 }
 
 function ChatgptStoryText({ text }: { text: string }) {
-  const paragraphs = text.split("\n\n");
-  let offset = 0;
+  const paragraphs = splitWithOffsets(text, "\n\n", 2);
 
   return (
     <span className={paragraphs.length > 1 ? "flex flex-col gap-3" : undefined}>
       {paragraphs.map((paragraph) => {
-        const paragraphKey = offset;
-        offset += paragraph.length + 2;
-        const parts = paragraph.split(/(\*\*[^*]+\*\*)/g);
-        let partOffset = 0;
+        const parts = splitBoldSegments(paragraph.text);
 
         return (
-          <span key={paragraphKey}>
+          <span key={paragraph.offset}>
             {parts.map((part) => {
-              const partKey = partOffset;
-              partOffset += part.length;
-              if (part.startsWith("**") && part.endsWith("**")) {
-                return <strong key={partKey}>{part.slice(2, -2)}</strong>;
+              if (part.text.startsWith("**") && part.text.endsWith("**")) {
+                return (
+                  <strong key={part.offset}>{part.text.slice(2, -2)}</strong>
+                );
               }
 
-              return <span key={partKey}>{part}</span>;
+              return <span key={part.offset}>{part.text}</span>;
             })}
           </span>
         );

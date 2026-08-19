@@ -461,18 +461,12 @@ export const seedGeoSampleData = Effect.fn("geo.sampleData")(function* (
     GEO_SAMPLE_PROMPTS.map((prompt) => [prompt.english, prompt])
   );
   const promptRowsForChecks = [
-    ...existingPrompts
-      .filter((row) => promptByEnglish.has(row.prompt))
-      .map((row) => {
-        const sample = promptByEnglish.get(row.prompt);
-        return sample
-          ? { id: row.id, english: sample.english, german: sample.german }
-          : null;
-      })
-      .filter(
-        (row): row is { id: string; english: string; german: string } =>
-          row !== null
-      ),
+    ...existingPrompts.flatMap((row) => {
+      const sample = promptByEnglish.get(row.prompt);
+      return sample
+        ? [{ id: row.id, english: sample.english, german: sample.german }]
+        : [];
+    }),
     ...insertedPrompts.flatMap((row) => {
       const sample = promptByEnglish.get(row.prompt);
       return sample

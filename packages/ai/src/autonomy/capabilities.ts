@@ -848,6 +848,7 @@ const executeAnalyticsRead = Effect.fn("iris.capabilities.analyticsRead")(
       engagement: row.engagement,
     }));
 
+    // react-doctor-disable-next-line js-tosorted-immutable -- tsconfig lib predates ES2023
     const bestWeekdays = [...performance.data]
       .sort((left, right) => right.avg_engagement - left.avg_engagement)
       .slice(0, IRIS_ANALYTICS_BEST_WEEKDAY_COUNT)

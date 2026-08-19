@@ -23,11 +23,13 @@ import { tableHeightFor } from "@/utils/table";
 
 const DEFAULT_LIMIT = 3;
 
+const NO_LANGUAGES: string[] = [];
+
 export function PromptResultsPreview({
   results,
   limit = DEFAULT_LIMIT,
   action,
-  languages = [],
+  languages = NO_LANGUAGES,
   isScanning = false,
 }: PromptResultsPreviewProps) {
   const summaries = useMemo(() => summarizePromptResults(results), [results]);

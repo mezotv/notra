@@ -211,11 +211,11 @@ export async function runBackgroundGen(
   }
 
   const primaryPost = postToolsResult.posts[0];
-  const routeUsage = await summarizeRouteUsage(result.steps);
-
   if (!primaryPost) {
     throw new Error(`${contentLabel} agent did not return a primary post.`);
   }
+
+  const routeUsage = await summarizeRouteUsage(result.steps);
 
   return {
     postId: primaryPost.postId,

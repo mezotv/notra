@@ -5,12 +5,15 @@ const RELATIVE_TIME_UNITS: { unit: Intl.RelativeTimeFormatUnit; ms: number }[] =
     { unit: "minute", ms: 60_000 },
   ];
 
+const relativeTimeFormatter = new Intl.RelativeTimeFormat("en", {
+  numeric: "auto",
+});
+
 export function formatRelative(iso: string, now = Date.now()): string {
   const diff = new Date(iso).getTime() - now;
-  const formatter = new Intl.RelativeTimeFormat("en", { numeric: "auto" });
   for (const { unit, ms } of RELATIVE_TIME_UNITS) {
     if (Math.abs(diff) >= ms) {
-      return formatter.format(Math.round(diff / ms), unit);
+      return relativeTimeFormatter.format(Math.round(diff / ms), unit);
     }
   }
   return "just now";

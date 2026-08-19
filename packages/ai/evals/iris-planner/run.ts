@@ -260,9 +260,10 @@ const nextRoundNumber = async (): Promise<number> => {
   }
   try {
     const files = await readdir(RESULTS_DIR);
-    const rounds = files
-      .map((file) => Number.parseInt(file.replace(/[^0-9]/g, ""), 10))
-      .filter((value) => Number.isInteger(value));
+    const rounds = files.flatMap((file) => {
+      const value = Number.parseInt(file.replace(/[^0-9]/g, ""), 10);
+      return Number.isInteger(value) ? [value] : [];
+    });
     return rounds.length === 0 ? 1 : Math.max(...rounds) + 1;
   } catch {
     return 1;

@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { GeoStringListDialog } from "@/components/geo/geo-string-list-dialog";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import type { GeoSubDialogProps } from "@/types/geo";
@@ -14,7 +13,7 @@ export function GeoAliasesDialog({
   enabled,
 }: GeoSubDialogProps) {
   const upsert = useGeoSettingsUpsert(organizationId);
-  const values = useMemo(() => settings?.aliases ?? [], [settings]);
+  const values = settings?.aliases ?? [];
 
   const handleSave = (aliases: string[]) => {
     upsert.mutate(

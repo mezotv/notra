@@ -411,13 +411,16 @@ export async function listGscSites(
   if (!parsed.success) {
     throw new GscApiError("Unexpected Search Console response", 502);
   }
-  return (parsed.data.siteEntry ?? [])
-    .filter((entry) => entry.permissionLevel !== "siteUnverifiedUser")
-    .map((entry) => ({
+  const sites = (parsed.data.siteEntry ?? []).flatMap((entry) => {
+    if (entry.permissionLevel === "siteUnverifiedUser") {
+      return [];
+    }
+    return {
       siteUrl: entry.siteUrl,
       permissionLevel: entry.permissionLevel ?? null,
-    }))
-    .sort((a, b) => a.siteUrl.localeCompare(b.siteUrl));
+    };
+  });
+  return sites.sort((a, b) => a.siteUrl.localeCompare(b.siteUrl));
 }
 
 function toIsoDate(date: Date): string {
@@ -457,12 +460,16 @@ export async function queryGscTopQueries(
     throw new GscApiError("Unexpected Search Console response", 502);
   }
 
-  return (parsed.data.rows ?? [])
-    .map((row) => ({
-      query: row.keys[0] ?? "",
+  return (parsed.data.rows ?? []).flatMap((row) => {
+    const query = row.keys[0] ?? "";
+    if (query.length === 0) {
+      return [];
+    }
+    return {
+      query,
       clicks: row.clicks,
       impressions: row.impressions,
       position: row.position,
-    }))
-    .filter((row) => row.query.length > 0);
+    };
+  });
 }

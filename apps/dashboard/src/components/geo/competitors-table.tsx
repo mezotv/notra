@@ -106,13 +106,12 @@ export function CompetitorsTable({
     [competitors, companyName, ownDomain, search, typeFilter]
   );
 
-  const selectedNames = useMemo(
-    () =>
-      rows
-        .filter((row) => !row.isOwnBrand && selectedIds.includes(row.id))
-        .map((row) => row.name),
-    [rows, selectedIds]
-  );
+  const selectedNames = useMemo(() => {
+    const selectedIdSet = new Set(selectedIds);
+    return rows.flatMap((row) =>
+      !row.isOwnBrand && selectedIdSet.has(row.id) ? [row.name] : []
+    );
+  }, [rows, selectedIds]);
 
   const columns = useMemo<TableColumn<GeoCompetitorRowEntry>[]>(
     () => [

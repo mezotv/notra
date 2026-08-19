@@ -23,9 +23,10 @@ export function buildBrandTerms(
   if (!settings) {
     return [];
   }
-  return [settings.companyName, ...settings.aliases]
-    .map(normalizeSuggestionKey)
-    .filter((term) => term.length >= MIN_BRAND_TERM_LENGTH);
+  return [settings.companyName, ...settings.aliases].flatMap((value) => {
+    const term = normalizeSuggestionKey(value);
+    return term.length >= MIN_BRAND_TERM_LENGTH ? [term] : [];
+  });
 }
 
 export function selectKeywordsForModel(

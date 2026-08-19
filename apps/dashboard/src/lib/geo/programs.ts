@@ -168,9 +168,9 @@ export const syncGeoCompetitors = Effect.fn("geo.competitorsSync")(function* (
         });
       }
 
-      const staleIds = existing
-        .filter((row) => !seen.has(competitorKey(row.name)))
-        .map((row) => row.id);
+      const staleIds = existing.flatMap((row) =>
+        seen.has(competitorKey(row.name)) ? [] : [row.id]
+      );
       if (staleIds.length > 0) {
         await tx
           .delete(geoCompetitors)

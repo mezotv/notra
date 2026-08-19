@@ -32,14 +32,14 @@ const VARIATION_SELECTOR = 0xfe_0f;
 const ZERO_WIDTH_JOINER = 0x20_0d;
 
 export function emojiCodePoints(emoji: string): string | null {
-  const points = [...emoji]
-    .map((char) => char.codePointAt(0) ?? 0)
-    .filter(
-      (point) =>
-        point !== 0 &&
-        point !== VARIATION_SELECTOR &&
-        point !== ZERO_WIDTH_JOINER
-    );
+  const points = [...emoji].flatMap((char) => {
+    const point = char.codePointAt(0) ?? 0;
+    const isIgnored =
+      point === 0 ||
+      point === VARIATION_SELECTOR ||
+      point === ZERO_WIDTH_JOINER;
+    return isIgnored ? [] : [point];
+  });
   if (points.length === 0) {
     return null;
   }

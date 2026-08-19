@@ -1,6 +1,6 @@
 import { GEO_FAVICON_BASE, GEO_LOGO_LINK_BASE } from "@/constants/geo";
 
-export function buildCompetitorLogoUrl(domain: string): string | null {
+function buildCompetitorLogoUrl(domain: string): string | null {
   const clientId = process.env.NEXT_PUBLIC_LOGOLINK_CLIENT_ID;
   if (!clientId) {
     return null;
@@ -12,7 +12,7 @@ export function buildCompetitorLogoUrl(domain: string): string | null {
   return url.toString();
 }
 
-export function buildCompetitorFaviconUrl(domain: string): string {
+function buildCompetitorFaviconUrl(domain: string): string {
   return `${GEO_FAVICON_BASE}/${encodeURIComponent(domain)}.ico`;
 }
 

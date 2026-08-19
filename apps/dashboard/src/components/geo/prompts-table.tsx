@@ -87,13 +87,12 @@ export function PromptsTable({
     [prompts, results, search, sourceFilter]
   );
 
-  const selectedCustomRows = useMemo(
-    () =>
-      rows.filter(
-        (row) => row.source === "custom" && selectedIds.includes(row.id)
-      ),
-    [rows, selectedIds]
-  );
+  const selectedCustomRows = useMemo(() => {
+    const selectedIdSet = new Set(selectedIds);
+    return rows.filter(
+      (row) => row.source === "custom" && selectedIdSet.has(row.id)
+    );
+  }, [rows, selectedIds]);
 
   const requestDelete = useCallback((targets: GeoPromptTableRow[]) => {
     const custom = targets.filter((row) => row.source === "custom");

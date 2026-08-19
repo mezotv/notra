@@ -99,9 +99,9 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
     (sum, source) => sum + source.markdownVisits,
     0
   );
-  const maxVisits = useMemo(
-    () => sources.reduce((max, source) => Math.max(max, source.visits), 0),
-    [sources]
+  const maxVisits = sources.reduce(
+    (max, source) => Math.max(max, source.visits),
+    0
   );
   const totalVisits = totals.crawler + totals.aiReferral;
 

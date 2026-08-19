@@ -39,6 +39,9 @@ export function useGscConnectionToast() {
       return;
     }
 
+    // Not a redirect: strips the one-shot OAuth query params from the current
+    // URL after the toast has been shown.
+    // react-doctor-disable-next-line nextjs-no-client-side-redirect
     router.replace(urlWithoutOAuthParams(pathname, searchParams), {
       scroll: false,
     });

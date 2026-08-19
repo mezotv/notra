@@ -338,6 +338,11 @@ export interface ConversationsCardProps {
   organizationId: string;
 }
 
+export interface ConversationTurnDraft {
+  id: string;
+  text: string;
+}
+
 export interface ConversationBuilderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

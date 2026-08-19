@@ -64,6 +64,24 @@ const STAGE = {
   modules: 2, // grid modules visible
 };
 
+function resolveStage({
+  ready,
+  reduceMotion,
+  timedStage,
+}: {
+  ready: boolean;
+  reduceMotion: boolean | null;
+  timedStage: number;
+}): number {
+  if (!ready) {
+    return 0;
+  }
+  if (reduceMotion) {
+    return STAGE.modules;
+  }
+  return timedStage;
+}
+
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
   const [projectParam, setProjectParam] = useQueryState(
     "project",
@@ -120,21 +138,21 @@ function GeoPageContent({
   );
 
   const reduceMotion = useReducedMotion();
-  const [stage, setStage] = useState(0);
+  const [timedStage, setTimedStage] = useState(0);
   const ready = !isSettingsPending;
+  // Only the timer-driven stage lives in state; the "not ready" and
+  // reduced-motion cases are derived so the effect never sets state directly.
+  const stage = resolveStage({ ready, reduceMotion, timedStage });
 
   useEffect(() => {
-    if (!ready) {
-      setStage(0);
-      return;
-    }
-    if (reduceMotion) {
-      setStage(STAGE.modules);
+    if (!(ready && !reduceMotion)) {
       return;
     }
     const timers: ReturnType<typeof setTimeout>[] = [];
-    timers.push(setTimeout(() => setStage(STAGE.gauge), TIMING.masterGauge));
-    timers.push(setTimeout(() => setStage(STAGE.modules), TIMING.modules));
+    timers.push(
+      setTimeout(() => setTimedStage(STAGE.gauge), TIMING.masterGauge)
+    );
+    timers.push(setTimeout(() => setTimedStage(STAGE.modules), TIMING.modules));
     return () => {
       for (const timer of timers) {
         clearTimeout(timer);

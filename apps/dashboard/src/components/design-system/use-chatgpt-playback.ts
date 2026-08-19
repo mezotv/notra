@@ -133,7 +133,7 @@ export function useChatgptPlayback(
         text: reply,
       };
 
-      try {
+      const playExchange = async () => {
         setPlaying(true);
         await playTurn(userMessage, alive);
         if (!alive()) {
@@ -143,9 +143,13 @@ export function useChatgptPlayback(
         if (alive()) {
           setPlaying(false);
         }
-      } finally {
+      };
+
+      // `.finally` instead of try/finally: React Compiler bails out of the
+      // whole hook on try/finally syntax.
+      await playExchange().finally(() => {
         sendingRef.current = false;
-      }
+      });
     },
     [playTurn]
   );

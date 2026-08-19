@@ -17,6 +17,9 @@ import { gscAuthorizeQuerySchema } from "@/schemas/google-search-console";
 import type { GscOAuthState } from "@/types/google-search-console";
 import { ratelimit } from "@/utils/ratelimit";
 
+// OAuth authorize endpoints are GET by spec; the only side effect is storing
+// a random, short-lived CSRF state nonce in Redis.
+// react-doctor-disable-next-line nextjs-no-side-effect-in-get-handler
 export async function GET(request: NextRequest) {
   const baseUrl =
     process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";

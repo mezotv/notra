@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { geoDb, geoSkip } from "@/lib/geo/effect";
 
-export const markGeoScanStarted = Effect.fn("geo.markScanStarted")(function* (
+const markGeoScanStarted = Effect.fn("geo.markScanStarted")(function* (
   projectId: string
 ) {
   yield* geoDb("scan start stamp failed", () =>

@@ -592,6 +592,18 @@ function VSegment({
 
 // ─── Label overlay ──────────────────────────────────────────────────
 
+// Map align to flexbox alignment on the cross axes
+const justifyMap = {
+  start: "justify-start",
+  center: "justify-center",
+  end: "justify-end",
+} as const;
+const itemsMap = {
+  start: "items-start",
+  center: "items-center",
+  end: "items-end",
+} as const;
+
 function SegmentLabel({
   stage,
   pct,
@@ -688,18 +700,6 @@ function SegmentLabel({
   const resolvedOrientation =
     orientation ?? (isHorizontal ? "vertical" : "horizontal");
   const isVerticalStack = resolvedOrientation === "vertical";
-
-  // Map align to flexbox alignment on the cross axes
-  const justifyMap = {
-    start: "justify-start",
-    center: "justify-center",
-    end: "justify-end",
-  } as const;
-  const itemsMap = {
-    start: "items-start",
-    center: "items-center",
-    end: "items-end",
-  } as const;
 
   // The outer container uses the chart orientation to position the group,
   // and the inner group uses the label orientation for stacking.

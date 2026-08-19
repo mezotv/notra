@@ -28,6 +28,10 @@ import {
   CLAUDE_CHAT_STORY_THREAD,
   CLAUDE_CHAT_STORY_USER_MESSAGES,
 } from "@/constants/design-system-claude-chat";
+import {
+  splitBoldSegments,
+  splitWithOffsets,
+} from "@/lib/design-system/text-segments";
 import type { ClaudeChatStoryMessage } from "@/types/design-system-claude-chat";
 
 function ClaudeChatFrame({
@@ -64,39 +68,32 @@ function ClaudeChatFrame({
 }
 
 function ClaudeChatStoryText({ text }: { text: string }) {
-  const blocks = text.split("\n\n");
-  let offset = 0;
+  const blocks = splitWithOffsets(text, "\n\n", 2);
 
   return (
     <span className={blocks.length > 1 ? "flex flex-col gap-3.5" : undefined}>
       {blocks.map((block) => {
-        const blockKey = offset;
-        offset += block.length + 2;
-        const isList = block.split("\n").every((line) => line.startsWith("- "));
+        const lines = splitWithOffsets(block.text, "\n", 1);
+        const isList = lines.every((line) => line.text.startsWith("- "));
         if (isList) {
-          let lineOffset = 0;
           return (
-            <span className="flex flex-col gap-1.5 ps-1" key={blockKey}>
-              {block.split("\n").map((line) => {
-                const lineKey = lineOffset;
-                lineOffset += line.length + 1;
-                return (
-                  <span className="flex gap-2.5" key={lineKey}>
-                    <span
-                      aria-hidden
-                      className="mt-[0.7em] size-1 shrink-0 rounded-full bg-current"
-                    />
-                    <ClaudeChatInlineText text={line.slice(2)} />
-                  </span>
-                );
-              })}
+            <span className="flex flex-col gap-1.5 ps-1" key={block.offset}>
+              {lines.map((line) => (
+                <span className="flex gap-2.5" key={line.offset}>
+                  <span
+                    aria-hidden
+                    className="mt-[0.7em] size-1 shrink-0 rounded-full bg-current"
+                  />
+                  <ClaudeChatInlineText text={line.text.slice(2)} />
+                </span>
+              ))}
             </span>
           );
         }
 
         return (
-          <span key={blockKey}>
-            <ClaudeChatInlineText text={block} />
+          <span key={block.offset}>
+            <ClaudeChatInlineText text={block.text} />
           </span>
         );
       })}
@@ -105,19 +102,16 @@ function ClaudeChatStoryText({ text }: { text: string }) {
 }
 
 function ClaudeChatInlineText({ text }: { text: string }) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  let offset = 0;
+  const parts = splitBoldSegments(text);
 
   return (
     <>
       {parts.map((part) => {
-        const partKey = offset;
-        offset += part.length;
-        if (part.startsWith("**") && part.endsWith("**")) {
-          return <strong key={partKey}>{part.slice(2, -2)}</strong>;
+        if (part.text.startsWith("**") && part.text.endsWith("**")) {
+          return <strong key={part.offset}>{part.text.slice(2, -2)}</strong>;
         }
 
-        return <span key={partKey}>{part}</span>;
+        return <span key={part.offset}>{part.text}</span>;
       })}
     </>
   );

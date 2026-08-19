@@ -57,7 +57,9 @@ function CompetitorSynonymsField({
   const skipCommitRef = useRef(false);
   const restoreFocusRef = useRef(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
-  draftRef.current = draft;
+  useEffect(() => {
+    draftRef.current = draft;
+  }, [draft]);
 
   useEffect(() => {
     if (adding || !restoreFocusRef.current) {

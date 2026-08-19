@@ -20,7 +20,23 @@ import {
   useGeoSequenceCreate,
   useGeoSequenceUpdate,
 } from "@/lib/hooks/use-geo";
-import type { ConversationBuilderDialogProps } from "@/types/geo";
+import type {
+  ConversationBuilderDialogProps,
+  ConversationTurnDraft,
+} from "@/types/geo";
+
+let turnIdCounter = 0;
+const createTurn = (text = ""): ConversationTurnDraft => {
+  turnIdCounter += 1;
+  return { id: `turn-${turnIdCounter}`, text };
+};
+
+const turnsFromSequence = (
+  sequence: ConversationBuilderDialogProps["sequence"]
+): ConversationTurnDraft[] =>
+  sequence && sequence.steps.length > 0
+    ? sequence.steps.map((step) => createTurn(step))
+    : [createTurn()];
 
 export function ConversationBuilderDialog({
   open,
@@ -32,20 +48,21 @@ export function ConversationBuilderDialog({
   const create = useGeoSequenceCreate(organizationId);
   const update = useGeoSequenceUpdate(organizationId);
   const [name, setName] = useState(sequence?.name ?? "");
-  const [steps, setSteps] = useState<string[]>(
-    sequence && sequence.steps.length > 0 ? sequence.steps : [""]
+  const [steps, setSteps] = useState<ConversationTurnDraft[]>(() =>
+    turnsFromSequence(sequence)
   );
 
   const pending = create.isPending || update.isPending;
-  const validSteps = steps
-    .map((step) => step.trim())
-    .filter((step) => step.length >= GEO_PROMPT_MIN_LENGTH);
+  const validSteps = steps.flatMap((step) => {
+    const text = step.text.trim();
+    return text.length >= GEO_PROMPT_MIN_LENGTH ? [text] : [];
+  });
   const canSave = name.trim().length > 0 && validSteps.length > 0 && !pending;
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setName(sequence?.name ?? "");
-      setSteps(sequence && sequence.steps.length > 0 ? sequence.steps : [""]);
+      setSteps(turnsFromSequence(sequence));
     }
     onOpenChange(next);
   };
@@ -63,7 +80,7 @@ export function ConversationBuilderDialog({
     } else {
       await create.mutateAsync({ name: name.trim(), steps: validSteps });
       setName("");
-      setSteps([""]);
+      setSteps([createTurn()]);
     }
     onOpenChange(false);
   };
@@ -94,10 +111,7 @@ export function ConversationBuilderDialog({
             <Label>Turns</Label>
             <div className="space-y-2">
               {steps.map((step, index) => (
-                <div
-                  className="flex items-start gap-2"
-                  key={`turn-${index.toString()}`}
-                >
+                <div className="flex items-start gap-2" key={step.id}>
                   <span className="mt-2 w-5 shrink-0 text-right text-muted-foreground text-xs tabular-nums">
                     {index + 1}
                   </span>
@@ -106,8 +120,10 @@ export function ConversationBuilderDialog({
                       className="block w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                       onChange={(event) =>
                         setSteps((previous) =>
-                          previous.map((item, itemIndex) =>
-                            itemIndex === index ? event.target.value : item
+                          previous.map((item) =>
+                            item.id === step.id
+                              ? { ...item, text: event.target.value }
+                              : item
                           )
                         )
                       }
@@ -117,7 +133,7 @@ export function ConversationBuilderDialog({
                           : "Which of those is the cheapest?"
                       }
                       rows={2}
-                      value={step}
+                      value={step.text}
                     />
                   </div>
                   {steps.length > 1 && (
@@ -126,7 +142,7 @@ export function ConversationBuilderDialog({
                       className="mt-1 shrink-0"
                       onClick={() =>
                         setSteps((previous) =>
-                          previous.filter((_, itemIndex) => itemIndex !== index)
+                          previous.filter((item) => item.id !== step.id)
                         )
                       }
                       size="icon"
@@ -142,7 +158,9 @@ export function ConversationBuilderDialog({
             {steps.length < GEO_SEQUENCE_MAX_TURNS && (
               <Button
                 className="ml-7"
-                onClick={() => setSteps((previous) => [...previous, ""])}
+                onClick={() =>
+                  setSteps((previous) => [...previous, createTurn()])
+                }
                 size="sm"
                 type="button"
                 variant="outline"
