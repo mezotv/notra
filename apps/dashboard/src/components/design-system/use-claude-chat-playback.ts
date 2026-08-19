@@ -1,6 +1,6 @@
 "use client";
 
-import { claudeChatSearchDuration } from "@notra/ui/components/brainless/claude-chat/claude-chat-search";
+import { claudeChatSearchDuration } from "@notra/ui/components/brainless/claude-chat/claude-chat-search-timing";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ClaudeChatStoryMessage } from "@/types/design-system-claude-chat";
 
@@ -25,6 +25,7 @@ export function useClaudeChatPlayback(
   const [thinking, setThinking] = useState(false);
   const [playing, setPlaying] = useState(false);
   const runRef = useRef(0);
+  const sendingRef = useRef(false);
 
   const resetToScript = useCallback(() => {
     setMessages([...script]);
@@ -35,6 +36,7 @@ export function useClaudeChatPlayback(
 
   const stop = useCallback(() => {
     runRef.current += 1;
+    sendingRef.current = false;
     resetToScript();
   }, [resetToScript]);
 
@@ -126,6 +128,7 @@ export function useClaudeChatPlayback(
       if (!alive()) {
         return;
       }
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop
       await playTurn(message, alive);
     }
 
@@ -136,6 +139,10 @@ export function useClaudeChatPlayback(
 
   const send = useCallback(
     async (text: string, reply: string) => {
+      if (sendingRef.current) {
+        return;
+      }
+      sendingRef.current = true;
       const run = runRef.current + 1;
       runRef.current = run;
       const alive = () => runRef.current === run;
@@ -151,22 +158,22 @@ export function useClaudeChatPlayback(
         text: reply,
       };
 
-      setPlaying(true);
-      await playTurn(userMessage, alive);
-      if (!alive()) {
-        return;
-      }
-      await playTurn(assistantMessage, alive);
-      if (alive()) {
-        setPlaying(false);
+      try {
+        setPlaying(true);
+        await playTurn(userMessage, alive);
+        if (!alive()) {
+          return;
+        }
+        await playTurn(assistantMessage, alive);
+        if (alive()) {
+          setPlaying(false);
+        }
+      } finally {
+        sendingRef.current = false;
       }
     },
     [playTurn]
   );
-
-  useEffect(() => {
-    resetToScript();
-  }, [resetToScript]);
 
   useEffect(
     () => () => {

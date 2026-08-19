@@ -93,7 +93,9 @@ export function SectionTicks({
   const paintedRef = useRef(false);
   const [activeId, setActiveId] = useState(items[0]?.id ?? "");
 
-  itemsRef.current = items;
+  useLayoutEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   useLayoutEffect(() => {
     const marker = markerRef.current;
@@ -153,7 +155,7 @@ export function SectionTicks({
         <div className="relative">
           <div
             aria-hidden
-            className="pointer-events-none absolute top-[3.5px] left-0 h-px w-8 rounded-full bg-foreground opacity-0 will-change-transform motion-reduce:!transition-none"
+            className="pointer-events-none absolute top-[3.5px] left-0 h-px w-8 rounded-full bg-foreground opacity-0 motion-reduce:!transition-none"
             ref={markerRef}
           />
           <ol className="flex flex-col items-start">

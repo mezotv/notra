@@ -19,12 +19,14 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useRef } from "react";
 import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
 import { useClaudeChatPlayback } from "@/components/design-system/use-claude-chat-playback";
 import {
+  CLAUDE_CHAT_STORY_ASSISTANT_MESSAGES,
   CLAUDE_CHAT_STORY_REPLIES,
   CLAUDE_CHAT_STORY_THREAD,
+  CLAUDE_CHAT_STORY_USER_MESSAGES,
 } from "@/constants/design-system-claude-chat";
 import type { ClaudeChatStoryMessage } from "@/types/design-system-claude-chat";
 
@@ -63,29 +65,37 @@ function ClaudeChatFrame({
 
 function ClaudeChatStoryText({ text }: { text: string }) {
   const blocks = text.split("\n\n");
+  let offset = 0;
 
   return (
     <span className={blocks.length > 1 ? "flex flex-col gap-3.5" : undefined}>
-      {blocks.map((block, blockIndex) => {
+      {blocks.map((block) => {
+        const blockKey = offset;
+        offset += block.length + 2;
         const isList = block.split("\n").every((line) => line.startsWith("- "));
         if (isList) {
+          let lineOffset = 0;
           return (
-            <span className="flex flex-col gap-1.5 ps-1" key={blockIndex}>
-              {block.split("\n").map((line, lineIndex) => (
-                <span className="flex gap-2.5" key={lineIndex}>
-                  <span
-                    aria-hidden
-                    className="mt-[0.7em] size-1 shrink-0 rounded-full bg-current"
-                  />
-                  <ClaudeChatInlineText text={line.slice(2)} />
-                </span>
-              ))}
+            <span className="flex flex-col gap-1.5 ps-1" key={blockKey}>
+              {block.split("\n").map((line) => {
+                const lineKey = lineOffset;
+                lineOffset += line.length + 1;
+                return (
+                  <span className="flex gap-2.5" key={lineKey}>
+                    <span
+                      aria-hidden
+                      className="mt-[0.7em] size-1 shrink-0 rounded-full bg-current"
+                    />
+                    <ClaudeChatInlineText text={line.slice(2)} />
+                  </span>
+                );
+              })}
             </span>
           );
         }
 
         return (
-          <span key={blockIndex}>
+          <span key={blockKey}>
             <ClaudeChatInlineText text={block} />
           </span>
         );
@@ -96,15 +106,18 @@ function ClaudeChatStoryText({ text }: { text: string }) {
 
 function ClaudeChatInlineText({ text }: { text: string }) {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  let offset = 0;
 
   return (
     <>
-      {parts.map((part, index) => {
+      {parts.map((part) => {
+        const partKey = offset;
+        offset += part.length;
         if (part.startsWith("**") && part.endsWith("**")) {
-          return <strong key={index}>{part.slice(2, -2)}</strong>;
+          return <strong key={partKey}>{part.slice(2, -2)}</strong>;
         }
 
-        return <span key={index}>{part}</span>;
+        return <span key={partKey}>{part}</span>;
       })}
     </>
   );
@@ -246,7 +259,7 @@ function ClaudeChatPlayFrame({
     CLAUDE_CHAT_STORY_THREAD,
     reducedMotion
   );
-  const [replyIndex, setReplyIndex] = useState(0);
+  const replyIndexRef = useRef(0);
 
   return (
     <ClaudeChatFrame
@@ -271,9 +284,9 @@ function ClaudeChatPlayFrame({
                 }
                 const reply =
                   CLAUDE_CHAT_STORY_REPLIES[
-                    replyIndex % CLAUDE_CHAT_STORY_REPLIES.length
+                    replyIndexRef.current % CLAUDE_CHAT_STORY_REPLIES.length
                   ] ?? "Gerne.";
-                setReplyIndex((index) => index + 1);
+                replyIndexRef.current += 1;
                 playback.send(text, reply).catch(() => undefined);
               }
             : undefined
@@ -308,9 +321,7 @@ export function DesignSystemClaudeChatCatalog() {
           title="User bubbles"
         />
         <div className="space-y-6 rounded-[1.25rem] border border-black/8 bg-[#faf9f5] px-4 py-8 dark:border-white/10 dark:bg-[#1c1b18]">
-          {CLAUDE_CHAT_STORY_THREAD.filter(
-            (message) => message.from === "user"
-          ).map((message) => (
+          {CLAUDE_CHAT_STORY_USER_MESSAGES.map((message) => (
             <ClaudeChatMessage from="user" key={message.id}>
               {message.text}
             </ClaudeChatMessage>
@@ -326,9 +337,7 @@ export function DesignSystemClaudeChatCatalog() {
         />
         <div className="space-y-10 rounded-[1.25rem] border border-black/8 bg-[#faf9f5] px-4 py-8 dark:border-white/10 dark:bg-[#1c1b18]">
           <ClaudeChatThinking reducedMotion={reducedMotion} />
-          {CLAUDE_CHAT_STORY_THREAD.filter(
-            (message) => message.from === "assistant"
-          ).map((message) => (
+          {CLAUDE_CHAT_STORY_ASSISTANT_MESSAGES.map((message) => (
             <ClaudeChatStoryBody
               key={message.id}
               message={message}

@@ -6,8 +6,16 @@ import {
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  CLAUDE_CHAT_SEARCH_QUERY_MS,
+  CLAUDE_CHAT_SEARCH_RESULTS_MS,
+  CLAUDE_CHAT_SEARCH_STAGGER_MS,
+  CLAUDE_CHAT_SEARCH_STEP_MS,
+  CLAUDE_CHAT_SEARCH_VERB_HOLD_MS,
+} from "@notra/ui/components/brainless/claude-chat/claude-chat-search-timing";
 import { ClaudeChatSpinner } from "@notra/ui/components/brainless/claude-chat/claude-chat-spinner";
 import { cn } from "@notra/ui/lib/utils";
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
 
@@ -29,11 +37,6 @@ export interface ClaudeChatSearchStep {
   label: string;
 }
 
-const VERB_HOLD_MS = 1100;
-const QUERY_MS = 420;
-const RESULTS_MS = 640;
-const STEP_MS = 380;
-const STAGGER_MS = 50;
 const EMPTY_STEPS: readonly ClaudeChatSearchStep[] = [];
 const ENTER_CLASS =
   "translate-y-0 opacity-100 transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] starting:translate-y-1.5 starting:opacity-0 motion-reduce:transition-none motion-reduce:starting:translate-y-0 motion-reduce:starting:opacity-100";
@@ -41,21 +44,6 @@ const FADE_IN_CLASS =
   "animate-in fade-in slide-in-from-top-2 fill-mode-both duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:animate-none motion-reduce:opacity-100 motion-reduce:translate-y-0";
 const FADE_IN_SOFT_CLASS =
   "animate-in fade-in fill-mode-both duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:animate-none motion-reduce:opacity-100";
-
-export function claudeChatSearchDuration(
-  groupCount: number,
-  stepCount: number,
-  reducedMotion: boolean
-) {
-  if (reducedMotion) {
-    return 0;
-  }
-  return (
-    VERB_HOLD_MS +
-    groupCount * (QUERY_MS + RESULTS_MS) +
-    stepCount * STEP_MS
-  );
-}
 
 function faviconSrc(domain: string) {
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
@@ -80,11 +68,14 @@ function SiteFavicon({
   }
 
   return (
-    <img
+    <Image
       alt=""
       className={cn("rounded-[3px] bg-[#eceae4]", className)}
+      height={64}
       onError={() => setFailed(true)}
       src={faviconSrc(domain)}
+      unoptimized
+      width={64}
     />
   );
 }
@@ -148,7 +139,7 @@ function SearchRow({
 }
 
 function staggerStyle(index: number, startMs = 0) {
-  const delay = startMs + index * STAGGER_MS;
+  const delay = startMs + index * CLAUDE_CHAT_SEARCH_STAGGER_MS;
   if (delay <= 0) {
     return undefined;
   }
@@ -171,34 +162,26 @@ export function ClaudeChatSearch({
   className?: string;
 }) {
   const shouldSequence = sequential && !reducedMotion;
-  const [visibleQueries, setVisibleQueries] = useState(
-    shouldSequence ? 0 : groups.length
-  );
-  const [filledGroups, setFilledGroups] = useState(
-    shouldSequence ? 0 : groups.length
-  );
-  const [visibleSteps, setVisibleSteps] = useState(
-    shouldSequence ? 0 : steps.length
-  );
-  const [finished, setFinished] = useState(!shouldSequence);
+  const [progress, setProgress] = useState({
+    queries: 0,
+    filled: 0,
+    steps: 0,
+    done: false,
+  });
+  const visibleQueries = shouldSequence ? progress.queries : groups.length;
+  const filledGroups = shouldSequence ? progress.filled : groups.length;
+  const visibleSteps = shouldSequence ? progress.steps : steps.length;
+  const finished = shouldSequence ? progress.done : true;
 
   useEffect(() => {
     if (!shouldSequence) {
-      setVisibleQueries(groups.length);
-      setFilledGroups(groups.length);
-      setVisibleSteps(steps.length);
-      setFinished(true);
       return;
     }
 
     let cancelled = false;
-    setVisibleQueries(0);
-    setFilledGroups(0);
-    setVisibleSteps(0);
-    setFinished(false);
 
     async function run() {
-      await wait(VERB_HOLD_MS);
+      await wait(CLAUDE_CHAT_SEARCH_VERB_HOLD_MS);
       if (cancelled) {
         return;
       }
@@ -207,25 +190,25 @@ export function ClaudeChatSearch({
         if (cancelled) {
           return;
         }
-        setVisibleQueries(index + 1);
-        await wait(QUERY_MS);
+        setProgress((current) => ({ ...current, queries: index + 1 }));
+        await wait(CLAUDE_CHAT_SEARCH_QUERY_MS);
         if (cancelled) {
           return;
         }
-        setFilledGroups(index + 1);
-        await wait(RESULTS_MS);
+        setProgress((current) => ({ ...current, filled: index + 1 }));
+        await wait(CLAUDE_CHAT_SEARCH_RESULTS_MS);
       }
 
       for (let index = 0; index < steps.length; index += 1) {
         if (cancelled) {
           return;
         }
-        setVisibleSteps(index + 1);
-        await wait(STEP_MS);
+        setProgress((current) => ({ ...current, steps: index + 1 }));
+        await wait(CLAUDE_CHAT_SEARCH_STEP_MS);
       }
 
       if (!cancelled) {
-        setFinished(true);
+        setProgress((current) => ({ ...current, done: true }));
       }
     }
 
@@ -318,7 +301,7 @@ export function ClaudeChatSearch({
                       key={`${result.domain}-${result.title}`}
                       style={
                         animateEnter
-                          ? staggerStyle(resultIndex, STAGGER_MS)
+                          ? staggerStyle(resultIndex, CLAUDE_CHAT_SEARCH_STAGGER_MS)
                           : undefined
                       }
                     >

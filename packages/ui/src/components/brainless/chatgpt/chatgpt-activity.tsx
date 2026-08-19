@@ -13,6 +13,7 @@ import {
   SheetTrigger,
 } from "@notra/ui/components/ui/sheet";
 import { cn } from "@notra/ui/lib/utils";
+import Image from "next/image";
 import { useState } from "react";
 
 export interface ChatgptActivitySite {
@@ -52,11 +53,14 @@ function SiteFavicon({
   }
 
   return (
-    <img
+    <Image
       alt=""
       className={cn("rounded-full bg-muted", className)}
+      height={64}
       onError={() => setFailed(true)}
       src={faviconSrc(domain)}
+      unoptimized
+      width={64}
     />
   );
 }

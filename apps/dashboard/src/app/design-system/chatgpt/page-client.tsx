@@ -19,12 +19,14 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { domAnimation, LazyMotion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useRef } from "react";
 import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
 import { useChatgptPlayback } from "@/components/design-system/use-chatgpt-playback";
 import {
+  CHATGPT_STORY_ASSISTANT_MESSAGES,
   CHATGPT_STORY_REPLIES,
   CHATGPT_STORY_THREAD,
+  CHATGPT_STORY_USER_MESSAGES,
 } from "@/constants/design-system-chatgpt";
 import type { ChatgptStoryMessage } from "@/types/design-system-chatgpt";
 
@@ -63,20 +65,26 @@ function ChatgptFrame({
 
 function ChatgptStoryText({ text }: { text: string }) {
   const paragraphs = text.split("\n\n");
+  let offset = 0;
 
   return (
     <span className={paragraphs.length > 1 ? "flex flex-col gap-3" : undefined}>
-      {paragraphs.map((paragraph, paragraphIndex) => {
+      {paragraphs.map((paragraph) => {
+        const paragraphKey = offset;
+        offset += paragraph.length + 2;
         const parts = paragraph.split(/(\*\*[^*]+\*\*)/g);
+        let partOffset = 0;
 
         return (
-          <span key={paragraphIndex}>
-            {parts.map((part, index) => {
+          <span key={paragraphKey}>
+            {parts.map((part) => {
+              const partKey = partOffset;
+              partOffset += part.length;
               if (part.startsWith("**") && part.endsWith("**")) {
-                return <strong key={index}>{part.slice(2, -2)}</strong>;
+                return <strong key={partKey}>{part.slice(2, -2)}</strong>;
               }
 
-              return <span key={index}>{part}</span>;
+              return <span key={partKey}>{part}</span>;
             })}
           </span>
         );
@@ -209,7 +217,7 @@ function ChatgptPlayFrame({
   allowSend?: boolean;
 }) {
   const playback = useChatgptPlayback(CHATGPT_STORY_THREAD, reducedMotion);
-  const [replyIndex, setReplyIndex] = useState(0);
+  const replyIndexRef = useRef(0);
 
   return (
     <ChatgptFrame
@@ -234,9 +242,9 @@ function ChatgptPlayFrame({
                 }
                 const reply =
                   CHATGPT_STORY_REPLIES[
-                    replyIndex % CHATGPT_STORY_REPLIES.length
+                    replyIndexRef.current % CHATGPT_STORY_REPLIES.length
                   ] ?? "Gerne.";
-                setReplyIndex((index) => index + 1);
+                replyIndexRef.current += 1;
                 await playback.send(text, reply);
               }
             : undefined
@@ -270,9 +278,7 @@ export function DesignSystemChatgptCatalog() {
           title="User bubbles"
         />
         <div className="space-y-6 rounded-[1.25rem] border bg-background px-4 py-8">
-          {CHATGPT_STORY_THREAD.filter(
-            (message) => message.from === "user"
-          ).map((message) => (
+          {CHATGPT_STORY_USER_MESSAGES.map((message) => (
             <ChatgptMessage from="user" key={message.id}>
               {message.text}
             </ChatgptMessage>
@@ -287,9 +293,7 @@ export function DesignSystemChatgptCatalog() {
           title="Assistant + actions"
         />
         <div className="space-y-10 rounded-[1.25rem] border bg-background px-4 py-8">
-          {CHATGPT_STORY_THREAD.filter(
-            (message) => message.from === "assistant"
-          ).map((message) => (
+          {CHATGPT_STORY_ASSISTANT_MESSAGES.map((message) => (
             <ChatgptStoryBody key={message.id} message={message} />
           ))}
         </div>

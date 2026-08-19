@@ -24,6 +24,7 @@ export function useChatgptPlayback(
   const [thinking, setThinking] = useState(false);
   const [playing, setPlaying] = useState(false);
   const runRef = useRef(0);
+  const sendingRef = useRef(false);
 
   const resetToScript = useCallback(() => {
     setMessages([...script]);
@@ -34,6 +35,7 @@ export function useChatgptPlayback(
 
   const stop = useCallback(() => {
     runRef.current += 1;
+    sendingRef.current = false;
     resetToScript();
   }, [resetToScript]);
 
@@ -101,6 +103,7 @@ export function useChatgptPlayback(
       if (!alive()) {
         return;
       }
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop
       await playTurn(message, alive);
     }
 
@@ -111,6 +114,10 @@ export function useChatgptPlayback(
 
   const send = useCallback(
     async (text: string, reply: string) => {
+      if (sendingRef.current) {
+        return;
+      }
+      sendingRef.current = true;
       const run = runRef.current + 1;
       runRef.current = run;
       const alive = () => runRef.current === run;
@@ -126,22 +133,22 @@ export function useChatgptPlayback(
         text: reply,
       };
 
-      setPlaying(true);
-      await playTurn(userMessage, alive);
-      if (!alive()) {
-        return;
-      }
-      await playTurn(assistantMessage, alive);
-      if (alive()) {
-        setPlaying(false);
+      try {
+        setPlaying(true);
+        await playTurn(userMessage, alive);
+        if (!alive()) {
+          return;
+        }
+        await playTurn(assistantMessage, alive);
+        if (alive()) {
+          setPlaying(false);
+        }
+      } finally {
+        sendingRef.current = false;
       }
     },
     [playTurn]
   );
-
-  useEffect(() => {
-    resetToScript();
-  }, [resetToScript]);
 
   useEffect(
     () => () => {

@@ -100,3 +100,11 @@ export const CHATGPT_STORY_REPLIES = [
   "Top. Ich bin da.",
   "Gerne. Was als Nächstes?",
 ] as const;
+
+export const CHATGPT_STORY_USER_MESSAGES = CHATGPT_STORY_THREAD.filter(
+  (message) => message.from === "user"
+);
+
+export const CHATGPT_STORY_ASSISTANT_MESSAGES = CHATGPT_STORY_THREAD.filter(
+  (message) => message.from === "assistant"
+);

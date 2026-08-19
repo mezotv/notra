@@ -81,3 +81,10 @@ export const CLAUDE_CHAT_STORY_REPLIES = [
   "Gern. Ich bin da.",
   "Kurz notiert. Was als Nächstes?",
 ] as const;
+
+export const CLAUDE_CHAT_STORY_USER_MESSAGES = CLAUDE_CHAT_STORY_THREAD.filter(
+  (message) => message.from === "user"
+);
+
+export const CLAUDE_CHAT_STORY_ASSISTANT_MESSAGES =
+  CLAUDE_CHAT_STORY_THREAD.filter((message) => message.from === "assistant");
