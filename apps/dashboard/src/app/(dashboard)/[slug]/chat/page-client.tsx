@@ -2160,8 +2160,8 @@ function StandaloneChatPageClient({
 
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-4">
-        <div className="flex w-full max-w-2xl flex-col items-center gap-4">
-          <div className="text-center">
+        <div className="flex w-full max-w-2xl flex-col gap-4">
+          <div className="w-full space-y-1">
             <p className="text-muted-foreground text-xs">{dateStr}</p>
             <h1 className="font-semibold text-2xl tracking-tight">
               {greeting}

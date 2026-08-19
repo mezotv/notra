@@ -31,6 +31,7 @@ import {
 } from "nuqs";
 import { useState } from "react";
 import { PageContainer } from "@/components/layout/container";
+import { LogDetailsSheet } from "@/components/logs/log-details-sheet";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   SOURCE_LABELS,
@@ -39,7 +40,7 @@ import {
   STATUS_VALUES,
 } from "@/constants/logs";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type { LogsResponse } from "@/types/webhooks/webhooks";
+import type { Log, LogsResponse } from "@/types/webhooks/webhooks";
 import { getSourceLabel, getStatusLabel } from "@/utils/logs";
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
@@ -69,6 +70,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   );
   const [searchInput, setSearchInput] = useState(search);
   const [prevSearch, setPrevSearch] = useState(search);
+  const [selectedLog, setSelectedLog] = useState<Log | null>(null);
 
   if (search !== prevSearch) {
     setPrevSearch(search);
@@ -274,10 +276,20 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                   }
             }
             onPageChange={setPage}
+            onRowClick={setSelectedLog}
             page={page}
             totalPages={data?.pagination.totalPages ?? 1}
           />
         )}
+        <LogDetailsSheet
+          log={selectedLog}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelectedLog(null);
+            }
+          }}
+          open={selectedLog !== null}
+        />
       </div>
     </PageContainer>
   );

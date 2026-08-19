@@ -15,6 +15,7 @@ import { NAV_CATEGORY_LABELS, NAV_ITEMS_BY_CATEGORY } from "@/constants/nav";
 import type { NavCategoryProps } from "@/types/components/nav";
 import { filterIrisNavItems, isIrisVisibleInNav } from "@/utils/iris-flag";
 import { resolveActiveNavLink } from "@/utils/nav";
+import { SidebarLabel } from "./sidebar-label";
 
 export function NavCategory({ category, slug }: NavCategoryProps) {
   const pathname = usePathname();
@@ -33,7 +34,9 @@ export function NavCategory({ category, slug }: NavCategoryProps) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{NAV_CATEGORY_LABELS[category]}</SidebarGroupLabel>
+      <SidebarGroupLabel>
+        <SidebarLabel>{NAV_CATEGORY_LABELS[category]}</SidebarLabel>
+      </SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuButton
@@ -42,7 +45,7 @@ export function NavCategory({ category, slug }: NavCategoryProps) {
             render={
               <Link href={`/${slug}${item.link}`} replace>
                 <HugeiconsIcon icon={item.icon} />
-                <span>{item.label}</span>
+                <SidebarLabel>{item.label}</SidebarLabel>
               </Link>
             }
             tooltip={item.label}

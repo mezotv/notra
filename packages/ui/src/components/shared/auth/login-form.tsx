@@ -222,15 +222,15 @@ export function LoginForm({
 
           <p
             aria-live="polite"
-            className="mt-1 min-h-5 text-destructive text-sm"
+            className="mt-3 text-destructive text-sm empty:hidden"
           >
             {formError}
           </p>
 
-          <div className="relative mt-1">
+          <div className="relative mt-4 pt-2">
             {lastMethod === "email" && (
               <Badge
-                className="-top-2 -right-2 absolute z-10"
+                className="-right-2 absolute top-0 z-10"
                 variant="default"
               >
                 Last Used

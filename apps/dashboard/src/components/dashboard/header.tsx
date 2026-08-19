@@ -17,7 +17,6 @@ import {
   BreadcrumbSeparator,
 } from "@notra/ui/components/ui/breadcrumb";
 import { Kbd, KbdGroup } from "@notra/ui/components/ui/kbd";
-import { Separator } from "@notra/ui/components/ui/separator";
 import { SidebarTrigger } from "@notra/ui/components/ui/sidebar";
 import { useIsApplePlatform } from "@notra/ui/hooks/use-is-apple-platform";
 import { cn } from "@notra/ui/lib/utils";
@@ -247,7 +246,6 @@ export function SiteHeader() {
       <div className="flex h-full w-full items-center gap-1 px-4 lg:gap-2">
         <div className="flex h-full min-w-0 flex-1 items-center gap-1 lg:gap-2">
           <SidebarTrigger />
-          <Separator className="mx-2" orientation="vertical" />
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="min-w-0 flex-nowrap">
               {breadcrumbs}
@@ -276,7 +274,6 @@ export function SiteHeader() {
             tabIndex={-1}
             type="button"
           />
-          <Separator className="mx-2" orientation="vertical" />
           <NavUser />
           <ResponsiveDialog onOpenChange={setFeedbackOpen} open={feedbackOpen}>
             <ResponsiveDialogContent className="gap-0 p-0 sm:max-w-md">

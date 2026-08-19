@@ -19,15 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
+import { AttachmentPreviewDialog } from "@/components/chat/attachment-preview";
+import { EmptyState } from "@/components/empty-state";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import { type AttachmentRow, buildAttachmentColumns } from "./columns";
-import { AttachmentsDataTable } from "./data-table";
+import type { AttachmentRow } from "@/types/settings/attachments";
+import { AttachmentCard } from "./attachment-card";
 
 type Filter = "all" | "image" | "pdf" | "text" | "other";
 
@@ -39,6 +42,17 @@ const FILTER_LABELS: Record<Filter, string> = {
   other: "Other",
 };
 
+const LOADING_SKELETON_KEYS = [
+  "sk-1",
+  "sk-2",
+  "sk-3",
+  "sk-4",
+  "sk-5",
+  "sk-6",
+  "sk-7",
+  "sk-8",
+] as const;
+
 export function AttachmentsSection() {
   const queryClient = useQueryClient();
   const { activeOrganization } = useOrganizationsContext();
@@ -46,6 +60,8 @@ export function AttachmentsSection() {
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
   const [pendingKey, setPendingKey] = useState<string | null>(null);
   const [confirmKeys, setConfirmKeys] = useState<string[] | null>(null);
+  const [previewAttachment, setPreviewAttachment] =
+    useState<AttachmentRow | null>(null);
 
   const organizationId = activeOrganization?.id ?? "";
 
@@ -105,16 +121,6 @@ export function AttachmentsSection() {
 
   const selectedKeys = Object.keys(rowSelection).filter((k) => rowSelection[k]);
   const hasSelection = selectedKeys.length > 0;
-
-  const columns = useMemo(
-    () =>
-      buildAttachmentColumns({
-        onDelete: (key) => setConfirmKeys([key]),
-        pendingKey,
-      }),
-    [pendingKey]
-  );
-
   const confirmOpen = confirmKeys !== null;
 
   return (
@@ -161,12 +167,64 @@ export function AttachmentsSection() {
         )}
       </div>
 
-      <AttachmentsDataTable
-        columns={columns}
-        data={attachments}
-        isLoading={isLoading}
-        onRowSelectionChange={setRowSelection}
-        rowSelection={rowSelection}
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+          {LOADING_SKELETON_KEYS.map((skeletonKey) => (
+            <div
+              className="overflow-hidden rounded-lg border border-border/80"
+              key={skeletonKey}
+            >
+              <Skeleton className="aspect-square w-full rounded-none" />
+              <div className="space-y-2 px-3 py-2">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-3 w-1/2" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {isLoading || attachments.length > 0 ? null : (
+        <EmptyState
+          className="min-h-56"
+          description="Files you upload in chat will show up here."
+          title="No attachments yet"
+        />
+      )}
+
+      {!isLoading && attachments.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+          {attachments.map((attachment) => (
+            <AttachmentCard
+              attachment={attachment}
+              key={attachment.key}
+              onDelete={() => setConfirmKeys([attachment.key])}
+              onOpen={() => setPreviewAttachment(attachment)}
+              onSelectedChange={(selected) => {
+                setRowSelection((prev) => {
+                  if (selected) {
+                    return { ...prev, [attachment.key]: true };
+                  }
+                  const next = { ...prev };
+                  delete next[attachment.key];
+                  return next;
+                });
+              }}
+              pending={pendingKey === attachment.key}
+              selected={Boolean(rowSelection[attachment.key])}
+            />
+          ))}
+        </div>
+      ) : null}
+
+      <AttachmentPreviewDialog
+        attachment={previewAttachment}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewAttachment(null);
+          }
+        }}
+        open={previewAttachment !== null}
       />
 
       <ResponsiveAlertDialog

@@ -23,6 +23,7 @@ import type { NavMainItem } from "@/types/components/nav";
 import { isAnalyticsVisibleInNav } from "@/utils/analytics-flag";
 import { resolveActiveNavLink, resolveMainNavGroups } from "@/utils/nav";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
+import { SidebarLabel } from "./sidebar-label";
 
 const NavGroup = memo(function NavGroup({
   items,
@@ -51,10 +52,10 @@ const NavGroup = memo(function NavGroup({
               render={
                 <Link href={href}>
                   <HugeiconsIcon icon={item.icon} />
-                  <span>{item.label}</span>
+                  <SidebarLabel>{item.label}</SidebarLabel>
                   {item.badge && (
                     <Badge
-                      className="ml-auto h-[1.125rem] px-[0.375rem] text-[0.625rem] text-muted-foreground"
+                      className="ml-auto h-[1.125rem] px-[0.375rem] text-[0.625rem] text-muted-foreground group-data-[collapsible=icon]:hidden"
                       variant="secondary"
                     >
                       {item.badge}

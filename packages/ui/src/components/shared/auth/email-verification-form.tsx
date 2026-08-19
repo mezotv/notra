@@ -66,7 +66,7 @@ export function EmailVerificationForm({
       />
 
       <form
-        className="grid gap-3"
+        className="grid gap-4"
         noValidate
         onSubmit={(event) => {
           event.preventDefault();
@@ -91,7 +91,7 @@ export function EmailVerificationForm({
           />
         </div>
 
-        <p aria-live="polite" className="min-h-5 text-destructive text-sm">
+        <p aria-live="polite" className="text-destructive text-sm empty:hidden">
           {formError}
         </p>
 

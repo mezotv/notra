@@ -85,7 +85,7 @@ export function NavUser() {
                 className="rounded-lg"
                 src={user.image ?? undefined}
               />
-              <AvatarFallback className="rounded-lg">
+              <AvatarFallback className="flex items-center justify-center rounded-lg font-medium text-[0.6875rem] leading-none">
                 {user.name.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
@@ -107,7 +107,7 @@ export function NavUser() {
                   className="rounded-lg"
                   src={user.image ?? undefined}
                 />
-                <AvatarFallback className="rounded-lg">
+                <AvatarFallback className="flex items-center justify-center rounded-lg font-medium text-xs leading-none">
                   {user.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>

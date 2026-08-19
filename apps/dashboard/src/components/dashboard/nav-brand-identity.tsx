@@ -25,6 +25,7 @@ import {
   findSelectedBrandIdentity,
   readStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
+import { SidebarLabel } from "./sidebar-label";
 
 function subscribeToStorage(onStoreChange: () => void) {
   window.addEventListener("storage", onStoreChange);
@@ -96,7 +97,9 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Brand Identity</SidebarGroupLabel>
+      <SidebarGroupLabel>
+        <SidebarLabel>Brand Identity</SidebarLabel>
+      </SidebarGroupLabel>
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton
@@ -109,7 +112,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
             render={
               <Link href={companyInfoHref} replace>
                 <HugeiconsIcon icon={CorporateIcon} />
-                <span>Company Info</span>
+                <SidebarLabel>Company Info</SidebarLabel>
               </Link>
             }
             tooltip="Company Info"
@@ -121,7 +124,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
             render={
               <Link href={guidelinesHref} replace>
                 <HugeiconsIcon icon={PaintBoardIcon} />
-                <span>Brand Guidelines</span>
+                <SidebarLabel>Brand Guidelines</SidebarLabel>
               </Link>
             }
             tooltip="Brand Guidelines"
@@ -133,7 +136,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
             render={
               <Link href={referencesHref} replace>
                 <HugeiconsIcon icon={Comment01Icon} />
-                <span>References</span>
+                <SidebarLabel>References</SidebarLabel>
                 {referenceCount > 0 ? (
                   <span className="ml-auto text-muted-foreground text-xs tabular-nums group-data-[collapsible=icon]:hidden">
                     {referenceCount}
@@ -150,7 +153,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
             render={
               <Link href={sitemapHref} replace>
                 <HugeiconsIcon icon={GlobalIcon} />
-                <span>Sitemap</span>
+                <SidebarLabel>Sitemap</SidebarLabel>
                 {sitemapCount > 0 ? (
                   <span className="ml-auto text-muted-foreground text-xs tabular-nums group-data-[collapsible=icon]:hidden">
                     {sitemapCount}

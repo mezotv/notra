@@ -142,12 +142,12 @@ function OrgSelectorTrigger({
     <DropdownMenuTrigger
       render={
         <SidebarMenuButton
-          className="min-w-0 cursor-pointer data-popup-open:bg-sidebar-accent/90 data-popup-open:text-sidebar-accent-foreground data-popup-open:ring-1 data-popup-open:ring-sidebar-border/70 group-data-[collapsible=icon]:justify-center"
+          className="min-w-0 cursor-pointer data-popup-open:bg-sidebar-accent/90 data-popup-open:text-sidebar-accent-foreground data-popup-open:ring-1 data-popup-open:ring-sidebar-border/70"
           disabled={isSwitching}
           size="lg"
           tooltip={`Organization | ${activeOrganization?.name}`}
         >
-          <Avatar className="size-8 rounded-lg transition-[width,height] duration-(--sidebar-duration) ease-(--sidebar-ease) after:rounded-lg group-data-[collapsible=icon]:size-6 motion-reduce:transition-none">
+          <Avatar className="size-8 shrink-0 rounded-lg after:rounded-lg">
             <AvatarImage
               className="rounded-lg"
               src={activeOrganization?.logo || undefined}

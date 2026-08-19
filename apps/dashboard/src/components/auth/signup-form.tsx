@@ -279,13 +279,13 @@ export function SignupForm({
 
           <p
             aria-live="polite"
-            className="mt-1 min-h-5 text-destructive text-sm"
+            className="mt-3 text-destructive text-sm empty:hidden"
           >
             {formError}
           </p>
 
           <CtaButton
-            className="mt-1 w-full"
+            className="mt-4 w-full"
             disabled={isAuthLoading}
             type="submit"
           >

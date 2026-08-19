@@ -31,6 +31,7 @@ import { NavMain } from "./nav-main";
 import { NavSettings } from "./nav-settings";
 import { NavUtility } from "./nav-utility";
 import { OrgSelector } from "./org-selector";
+import { SidebarLabel } from "./sidebar-label";
 import { SidebarOnboarding } from "./sidebar-onboarding";
 import { SidebarTrialExpired } from "./sidebar-trial-expired";
 import { SidebarUpgrade } from "./sidebar-upgrade";
@@ -100,14 +101,14 @@ export function DashboardSidebar({
       className={cn("overflow-hidden overscroll-none border-none", className)}
     >
       <LazyMotion features={domAnimation}>
-        <SidebarHeader>
-          <div className="flex h-8 items-center gap-2 px-2">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg transition-[width,height] duration-(--sidebar-duration) ease-(--sidebar-ease) group-data-[collapsible=icon]:size-6 group-data-[collapsible=icon]:rounded-md motion-reduce:transition-none dark:bg-[#F6F3F1]">
-              <Notra className="size-7 group-data-[collapsible=icon]:size-6 dark:size-5 dark:group-data-[collapsible=icon]:size-5" />
+        <SidebarHeader className="group-data-[collapsible=icon]:px-4">
+          <div className="flex h-8 items-center gap-2 px-2 group-data-[collapsible=icon]:px-0">
+            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg dark:bg-[#F6F3F1]">
+              <Notra className="size-7 dark:size-5" />
             </div>
-            <span className="min-w-0 truncate font-semibold text-base transition-opacity duration-200 ease-(--sidebar-ease) group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:delay-75 group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0">
+            <SidebarLabel className="font-semibold text-base">
               Notra
-            </span>
+            </SidebarLabel>
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -129,7 +130,7 @@ export function DashboardSidebar({
                     tooltip="Back"
                   >
                     <HugeiconsIcon icon={ArrowLeft01Icon} />
-                    <span>Back</span>
+                    <SidebarLabel>Back</SidebarLabel>
                   </SidebarMenuButton>
                 </SidebarMenu>
               </m.div>
