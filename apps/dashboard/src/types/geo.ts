@@ -247,6 +247,80 @@ export interface GeoTrackedPromptsResponse {
   prompts: GeoTrackedPrompt[];
 }
 
+export interface GeoPromptSequence {
+  id: string;
+  name: string;
+  steps: string[];
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface GeoPromptSequenceRow {
+  id: string;
+  organizationId: string;
+  projectId: string;
+  name: string;
+  steps: string[];
+  enabled: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface GeoSequencesResponse {
+  sequences: GeoPromptSequence[];
+}
+
+export interface GeoSequenceCreateInput {
+  name: string;
+  steps: string[];
+}
+
+export interface GeoSequenceUpdateInput {
+  sequenceId: string;
+  name?: string;
+  steps?: string[];
+  enabled?: boolean;
+}
+
+export interface GeoSequenceDeleteInput {
+  sequenceId: string;
+}
+
+export interface GeoSequenceTurnResult {
+  sequenceId: string;
+  turn: number;
+  engine: string;
+  prompt: string;
+  mentioned: boolean;
+  position: number | null;
+  sentiment: string | null;
+  excerpt: string;
+  lastCheckedAt: string;
+}
+
+export interface GeoSequenceResultsResponse {
+  configured: boolean;
+  results: GeoSequenceTurnResult[];
+}
+
+export interface ConversationsCardProps {
+  organizationId: string;
+}
+
+export interface ConversationBuilderDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId: string;
+  sequence: GeoPromptSequence | null;
+}
+
+export interface ConversationResultsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId: string;
+  sequence: GeoPromptSequence | null;
+}
+
 export interface GeoScanPayload {
   organizationId: string;
   projectId?: string;
@@ -277,6 +351,11 @@ export interface GeoCheckContext {
   capturedAt: string;
   companyName: string;
   aliases: string[];
+}
+
+export interface GeoSequenceDefinition {
+  id: string;
+  steps: string[];
 }
 
 export interface GeoBrandContext {

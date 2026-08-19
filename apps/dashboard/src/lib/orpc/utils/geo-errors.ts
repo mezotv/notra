@@ -12,6 +12,10 @@ export function toGeoOrpcError(failure: GeoRouterError): Error {
       return notFound("Project not found");
     case "GeoProjectCreateFailedError":
       return badRequest("Failed to create project");
+    case "GeoSequenceNotFoundError":
+      return notFound("Conversation not found");
+    case "GeoSequenceCreateFailedError":
+      return badRequest("Failed to create conversation");
     case "GeoSettingsMissingError":
       return badRequest("Configure your brand tracking settings first");
     case "GeoDiscoveryError":
