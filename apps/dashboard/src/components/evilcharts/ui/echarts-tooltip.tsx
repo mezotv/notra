@@ -3,6 +3,11 @@ import {
   indicatorBackground,
   type ResolvedColors,
 } from "@/components/evilcharts/ui/echarts-chart";
+import type {
+  TooltipBodyItem,
+  TooltipLayout,
+  TooltipValueFormatter,
+} from "@/types/charts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tooltip — the shared HTML shell/row primitives and the chart-agnostic option
@@ -17,6 +22,22 @@ export type TooltipRoundness = "sm" | "md" | "lg" | "xl";
 // behavior); "fixed" tracks the pointer's X (centered) but stays pinned near
 // the top (fixed Y).
 export type TooltipPosition = "fixed" | "variable";
+
+const HTML_ESCAPE_PATTERN = /[&<>"']/g;
+const HTML_ESCAPES: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+// Tooltip markup is injected as an HTML string by ECharts, so every
+// user-derived string (series labels, axis labels, formatted values) must be
+// escaped before interpolation — competitor names etc. come from user/LLM input.
+export function escapeHtml(value: string): string {
+  return value.replace(HTML_ESCAPE_PATTERN, (char) => HTML_ESCAPES[char] ?? char);
+}
 
 export const roundnessClass: Record<TooltipRoundness, string> = {
   sm: "rounded-sm",
@@ -54,10 +75,124 @@ export function tooltipRow({
   return `<div class="flex w-full flex-wrap items-center gap-2${dimmed}">
           ${indicatorHtml}
           <div class="flex flex-1 items-center justify-between gap-4 leading-none">
-            <span class="text-muted-foreground">${labelText}</span>
-            <span class="text-foreground font-mono font-medium tabular-nums">${valueText}</span>
+            <span class="text-muted-foreground">${escapeHtml(labelText)}</span>
+            <span class="text-foreground font-mono font-medium tabular-nums">${escapeHtml(valueText)}</span>
           </div>
         </div>`;
+}
+
+const TOOLTIP_BAR_TRACK = 100;
+const TOOLTIP_BAR_MIN = 2;
+
+export function formatTooltipValue(
+  value: unknown,
+  formatter?: TooltipValueFormatter
+): { numeric: number | null; text: string } {
+  if (typeof value === "number") {
+    return {
+      numeric: value,
+      text: formatter ? formatter(value) : value.toLocaleString(),
+    };
+  }
+  if (value === null || value === undefined) {
+    return { numeric: null, text: "" };
+  }
+  return { numeric: null, text: String(value) };
+}
+
+export function tooltipBarWidth(value: number, max: number): number {
+  if (value <= 0 || max <= 0) {
+    return 0;
+  }
+  return Math.min(
+    TOOLTIP_BAR_TRACK,
+    Math.max(
+      Math.round((value / max) * TOOLTIP_BAR_TRACK),
+      TOOLTIP_BAR_MIN
+    )
+  );
+}
+
+export function configIndicatorHtml(
+  item: { indicatorHtml?: string } | undefined
+): string | undefined {
+  const html = item?.indicatorHtml;
+  return typeof html === "string" && html.length > 0 ? html : undefined;
+}
+
+export function tooltipBarRow({
+  key,
+  colorsCount,
+  labelText,
+  valueText,
+  widthPercent,
+  dimmed,
+  indicatorHtml,
+}: {
+  key: string;
+  colorsCount: number;
+  labelText: string;
+  valueText: string;
+  widthPercent: number;
+  dimmed: string;
+  indicatorHtml?: string;
+}): string {
+  return `<div class="flex w-full flex-col gap-1${dimmed}">
+          <div class="flex items-center justify-between gap-4 leading-none">
+            <span class="flex min-w-0 items-center gap-1.5">
+              ${indicatorHtml ?? ""}
+              <span class="text-muted-foreground truncate">${escapeHtml(labelText)}</span>
+            </span>
+            <span class="text-foreground font-mono font-medium tabular-nums">${escapeHtml(valueText)}</span>
+          </div>
+          <div class="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+            <div class="h-full rounded-full" style="width:${widthPercent}%;background:${indicatorBackground(key, colorsCount)}"></div>
+          </div>
+        </div>`;
+}
+
+export function composeTooltipBody(
+  items: readonly TooltipBodyItem[],
+  layout: TooltipLayout,
+  barMax?: number
+): string {
+  if (layout !== "bars") {
+    return items
+      .map((item) =>
+        tooltipRow({
+          indicatorHtml: tooltipIndicatorHtml(item.key, item.colorsCount),
+          labelText: item.labelText,
+          valueText: item.valueText,
+          dimmed: item.dimmed,
+        })
+      )
+      .join("");
+  }
+
+  let max = barMax ?? 0;
+  if (barMax === undefined) {
+    for (const item of items) {
+      if (item.value !== null && item.value > max) {
+        max = item.value;
+      }
+    }
+  }
+
+  const ranked = [...items];
+  ranked.sort((left, right) => (right.value ?? -1) - (left.value ?? -1));
+  return ranked
+    .map((item) =>
+      tooltipBarRow({
+        key: item.key,
+        colorsCount: item.colorsCount,
+        labelText: item.labelText,
+        valueText: item.valueText,
+        widthPercent: tooltipBarWidth(item.value ?? 0, max),
+        dimmed: item.dimmed,
+        indicatorHtml: item.indicatorHtml,
+      })
+    )
+    .join("");
 }
 
 // The outer tooltip surface — border, padding, shadow, roundness + variant
@@ -67,15 +202,22 @@ export function tooltipShell({
   body,
   roundness,
   variant,
+  layout = "rows",
 }: {
   label: string;
   body: string;
   roundness: TooltipRoundness;
   variant: TooltipVariant;
+  layout?: TooltipLayout;
 }): string {
-  return `<div class="grid min-w-32 items-start gap-1.5 border border-border/50 px-2.5 py-1.5 text-xs shadow-xl ${roundnessClass[roundness]} ${tooltipVariantClass[variant]}">
-      <div class="font-medium text-foreground">${label}</div>
-      <div class="grid gap-1.5">${body}</div>
+  const isBars = layout === "bars";
+  const header =
+    label.length > 0
+      ? `<div class="font-medium text-foreground">${escapeHtml(label)}</div>`
+      : "";
+  return `<div class="grid ${isBars ? "min-w-52 gap-2 px-2.5 py-2" : "min-w-32 gap-1.5 px-2.5 py-1.5"} items-start border border-border/50 text-xs shadow-xl ${roundnessClass[roundness]} ${tooltipVariantClass[variant]}">
+      ${header}
+      <div class="grid ${isBars ? "gap-2" : "gap-1.5"}">${body}</div>
     </div>`;
 }
 

@@ -3,7 +3,6 @@
 import { useMemo } from "react";
 import { ChartColorScope } from "@/components/charts/chart-color-scope";
 import { EChartsPieChart } from "@/components/evilcharts/charts/echarts-pie-chart";
-import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
 import {
   InstrumentEmpty,
   InstrumentModule,
@@ -15,6 +14,7 @@ import type {
   ImpressionsSharePieSlice,
   ImpressionsShareRow,
 } from "@/types/analytics";
+import type { ChartConfig } from "@/types/charts";
 import { accountSeriesKey } from "@/utils/analytics-charts";
 import { seriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";

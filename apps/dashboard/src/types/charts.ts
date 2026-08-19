@@ -1,5 +1,20 @@
-import type { ReactNode } from "react";
-import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
+import type { ComponentType, ReactNode } from "react";
+
+// Require at least one theme key — identical constraint to the repo's ChartConfig.
+export type AtLeastOneThemeColor =
+  | { light: string[]; dark?: string[] }
+  | { light?: string[]; dark: string[] };
+
+export type ChartConfig = Record<
+  string,
+  {
+    label?: ReactNode;
+    icon?: ComponentType;
+    colors?: AtLeastOneThemeColor;
+    // Optional HTML (inline SVG/img) shown instead of the color swatch in bar tooltips.
+    indicatorHtml?: string;
+  }
+>;
 
 export interface ChartColorPair {
   light: string;
@@ -19,12 +34,33 @@ export interface ChartColorScopeProps {
 
 export interface ChartSparklineProps {
   data: number[];
+  labels?: string[];
   color: ChartColorPair;
   className?: string;
   markIncompleteTail?: boolean;
+  children?: ReactNode;
 }
 
 export interface ChartMarker {
   value: string;
   label: string;
+}
+
+export type TooltipLayout = "rows" | "bars";
+
+export type TooltipValueFormatter = (value: number) => string;
+
+export interface ChartSparklineTooltipProps {
+  valueFormatter?: TooltipValueFormatter;
+  seriesLabel?: string;
+}
+
+export interface TooltipBodyItem {
+  key: string;
+  colorsCount: number;
+  labelText: string;
+  value: number | null;
+  valueText: string;
+  dimmed: string;
+  indicatorHtml?: string;
 }

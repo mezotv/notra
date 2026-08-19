@@ -7,7 +7,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useSocialOverview } from "@/lib/hooks/use-social-analytics";
 import type {
@@ -15,7 +14,7 @@ import type {
   AnalyticsContextValue,
   AnalyticsProviderProps,
 } from "@/types/analytics";
-import type { ChartColorPair } from "@/types/charts";
+import type { ChartColorPair, ChartConfig } from "@/types/charts";
 import { accountSeriesKey } from "@/utils/analytics-charts";
 import {
   accountSeriesColorPair,

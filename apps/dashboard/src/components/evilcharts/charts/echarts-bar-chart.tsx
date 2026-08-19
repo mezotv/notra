@@ -38,7 +38,6 @@ import {
 } from "@/components/evilcharts/ui/echarts-brush";
 import {
   buildChartCss,
-  type ChartConfig,
   flattenColor,
   getColorsCount,
   type ResolvedColors,
@@ -55,22 +54,19 @@ import {
   type TooltipPosition,
   type TooltipRoundness,
   type TooltipVariant,
+  composeTooltipBody,
+  configIndicatorHtml,
+  formatTooltipValue,
   tooltipBaseOption,
-  tooltipIndicatorHtml,
-  tooltipRow,
   tooltipShell,
 } from "@/components/evilcharts/ui/echarts-tooltip";
-import type { ChartMarker } from "@/types/charts";
-
-// Re-export the shared types that were previously declared inline here, so
-// existing consumers/examples keep importing them from the chart module.
-export type {
+import type {
   ChartConfig,
-  LegendVariant,
-  TooltipPosition,
-  TooltipRoundness,
-  TooltipVariant,
-};
+  ChartMarker,
+  TooltipBodyItem,
+  TooltipLayout,
+  TooltipValueFormatter,
+} from "@/types/charts";
 
 // Modular registration keeps the bundle lean — only the pieces this chart needs.
 // `DataZoomComponent` bundles both the slider (brush footer) and inside (wheel/drag)
@@ -294,6 +290,9 @@ export interface TooltipProps {
   roundness?: TooltipRoundness; // border-radius of the tooltip
   defaultIndex?: number; // data index the tooltip shows by default, with no hover
   position?: TooltipPosition; // "variable" follows the pointer (default); "fixed" pins the tooltip near the top and only tracks the pointer's X
+  layout?: TooltipLayout; // "rows" is the default swatch list; "bars" ranks series as a mini bar chart
+  valueFormatter?: TooltipValueFormatter;
+  barMax?: number; // bar layout: scale tracks to this ceiling (e.g. 100 for percents); omit to scale to the hovered max
 }
 
 /** Presence enables the hover tooltip. Renders nothing. */
@@ -338,6 +337,9 @@ type TooltipSlot = {
   roundness: TooltipRoundness;
   defaultIndex?: number;
   position: TooltipPosition;
+  layout: TooltipLayout;
+  valueFormatter?: TooltipValueFormatter;
+  barMax?: number;
 };
 type LegendSlot = {
   present: boolean;
@@ -373,6 +375,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
     variant: "default",
     roundness: "lg",
     position: "variable",
+    layout: "rows",
   };
   let legend: LegendSlot = {
     present: false,
@@ -427,6 +430,9 @@ function collectConfig(children: ReactNode): CollectedConfig {
         roundness: props.roundness ?? "lg",
         defaultIndex: props.defaultIndex,
         position: props.position ?? "variable",
+        layout: props.layout ?? "rows",
+        valueFormatter: props.valueFormatter,
+        barMax: props.barMax,
       };
     } else if (type === Legend) {
       const props = child.props as LegendProps;
@@ -1024,44 +1030,51 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
     const axisValue = first.axisValue ?? first.name ?? "";
     const label = String(axisValue);
 
-    const body = rows
-      .map((param) => {
-        const p = param as {
-          seriesId?: string;
-          seriesName?: string;
-          value?: number | string;
-        };
-        // Internal series (the brush's mini chart, the loading skeleton) never
-        // surface in the tooltip.
-        if (String(p.seriesId ?? "").startsWith("__")) return "";
-        const key = p.seriesId ?? p.seriesName ?? "";
-        const item = config[key];
-        const colorsCount = item ? getColorsCount(item) : 1;
-        const labelText =
-          typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
-        const dimmed =
-          selectedDataKey != null && selectedDataKey !== key
-            ? " opacity-30"
-            : "";
-        const value =
-          typeof p.value === "number"
-            ? p.value.toLocaleString()
-            : String(p.value ?? "");
-
-        return tooltipRow({
-          indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
-          labelText,
-          valueText: value,
-          dimmed,
-        });
-      })
-      .join("");
+    const items: TooltipBodyItem[] = [];
+    for (const param of rows) {
+      const p = param as {
+        seriesId?: string;
+        seriesName?: string;
+        value?: number | string;
+      };
+      // Internal series (the brush's mini chart, the loading skeleton) never
+      // surface in the tooltip.
+      if (String(p.seriesId ?? "").startsWith("__")) continue;
+      const key = p.seriesId ?? p.seriesName ?? "";
+      if (!key) continue;
+      const item = config[key];
+      const colorsCount = item ? getColorsCount(item) : 1;
+      const labelText =
+        typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
+      const dimmed =
+        selectedDataKey != null && selectedDataKey !== key
+          ? " opacity-30"
+          : "";
+      const formatted = formatTooltipValue(
+        p.value,
+        tooltipSlot.valueFormatter
+      );
+      items.push({
+        key,
+        colorsCount,
+        labelText,
+        value: formatted.numeric,
+        valueText: formatted.text,
+        dimmed,
+        indicatorHtml: configIndicatorHtml(item),
+      });
+    }
 
     return tooltipShell({
       label,
-      body,
+      body: composeTooltipBody(
+        items,
+        tooltipSlot.layout,
+        tooltipSlot.barMax
+      ),
       roundness: tooltipSlot.roundness,
       variant: tooltipSlot.variant,
+      layout: tooltipSlot.layout,
     });
   };
 }

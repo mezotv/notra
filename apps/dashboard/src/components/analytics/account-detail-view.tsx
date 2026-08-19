@@ -15,7 +15,6 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
-import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -38,6 +37,7 @@ import {
 } from "@/lib/hooks/use-social-analytics";
 import { cn } from "@/lib/utils";
 import type { AccountDetailViewProps, TopPostItem } from "@/types/analytics";
+import type { ChartConfig } from "@/types/charts";
 import {
   buildAccountEngagementPoints,
   buildAccountIdentity,
@@ -125,7 +125,7 @@ export function AccountDetailView({
           <Tooltip>
             <TooltipTrigger
               render={
-                <span className="block truncate text-sm leading-snug">
+                <span className="block w-full min-w-0 truncate text-sm leading-snug">
                   {previewPostContent(row.content)}
                 </span>
               }

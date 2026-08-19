@@ -4,21 +4,20 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Checkbox } from "@/components/motion/checkbox";
 import { cn } from "@/lib/utils";
-import { EditableCell } from "./editable-cell";
 import { RowHandle } from "./row-handle";
 import { SkeletonRows } from "./skeleton-rows";
+import { TableBodyRow } from "./table-body-row";
 import { TableHeader } from "./table-header";
-import type { HeaderCellRefs, TableProps } from "./types";
+import type { HeaderCellRefs, TableProps, TableRow } from "./types";
 import { useColumnReorder } from "./use-column-reorder";
 import { useColumnResize } from "./use-column-resize";
 import { useColumnSort } from "./use-column-sort";
 import { useRowSelection } from "./use-row-selection";
 import {
-  alignText,
   CHECKBOX_WIDTH,
-  readCell,
+  colWidthStyle,
+  isFrWidth,
   resolveColumnWidths,
 } from "./utils";
 
@@ -54,6 +53,8 @@ export function Table<T>({
   skeletonRows = 3,
   emptyState = "No data",
   onRowClick,
+  onRowPointerEnter,
+  isRowPinned,
   className,
 }: TableProps<T>) {
   "use no memo";
@@ -105,33 +106,62 @@ export function Table<T>({
       onSelectionChange,
     });
 
+  const { pinnedRows, scrollRows } = useMemo(() => {
+    if (!isRowPinned) {
+      return { pinnedRows: [] as TableRow<T>[], scrollRows: sortedRows };
+    }
+    const pinned: TableRow<T>[] = [];
+    const scroll: TableRow<T>[] = [];
+    for (const entry of sortedRows) {
+      if (isRowPinned(entry.row)) {
+        pinned.push(entry);
+      } else {
+        scroll.push(entry);
+      }
+    }
+    return { pinnedRows: pinned, scrollRows: scroll };
+  }, [sortedRows, isRowPinned]);
+
+  const pinnedHeight = pinnedRows.length * rowHeight;
+
   const virtualizer = useVirtualizer({
-    count: sortedRows.length,
+    count: scrollRows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeight,
     overscan,
+    paddingStart: pinnedHeight,
   });
 
   const virtualItems = virtualizer.getVirtualItems();
   const totalSize = virtualizer.getTotalSize();
-  const paddingTop = virtualItems[0]?.start ?? 0;
+  const paddingTop = Math.max(
+    0,
+    (virtualItems[0]?.start ?? pinnedHeight) - pinnedHeight
+  );
   const lastVirtualItem = virtualItems.at(-1);
   const paddingBottom = lastVirtualItem ? totalSize - lastVirtualItem.end : 0;
 
   const resolvedWidths = useMemo(
-    () => resolveColumnWidths(orderedColumns),
-    [orderedColumns]
+    () =>
+      resolveColumnWidths(orderedColumns, selectable ? [CHECKBOX_WIDTH] : []),
+    [orderedColumns, selectable]
+  );
+  const hasFlexibleColumn = orderedColumns.some(
+    (column) => widths[column.key] == null && isFrWidth(column.width)
   );
 
   const columnGroup = (
     <colgroup>
-      {selectable ? <col style={{ width: CHECKBOX_WIDTH }} /> : null}
+      {selectable ? (
+        <col style={{ width: CHECKBOX_WIDTH, minWidth: CHECKBOX_WIDTH }} />
+      ) : null}
       {orderedColumns.map((column, index) => {
         const override = widths[column.key];
         const width = override ? `${override}px` : resolvedWidths[index];
-        return <col key={column.key} style={width ? { width } : undefined} />;
+        const flexible = override == null && isFrWidth(column.width);
+        return <col key={column.key} style={colWidthStyle(width, flexible)} />;
       })}
-      <col />
+      <col style={hasFlexibleColumn ? { width: 0 } : undefined} />
     </colgroup>
   );
   const bodyHeight = Math.max(rowHeight, height - rowHeight);
@@ -277,7 +307,9 @@ export function Table<T>({
       >
         <table
           className={cn(
-            "border-collapse",
+            pinnedRows.length > 0
+              ? "border-separate border-spacing-0"
+              : "border-collapse",
             sized ? "w-max min-w-full" : "w-full"
           )}
           style={{ tableLayout: "fixed" }}
@@ -306,88 +338,58 @@ export function Table<T>({
               )
             ) : (
               <>
+                {pinnedRows.map((entry, index) => (
+                  <TableBodyRow
+                    columns={orderedColumns}
+                    entry={entry}
+                    hasRowMenu={hasRowMenu}
+                    index={index}
+                    isSelected={selected.has(entry.id)}
+                    key={entry.id}
+                    onActivate={activateRow}
+                    onCellEdit={onCellEdit}
+                    onDeactivate={deactivateRow}
+                    onRowClick={onRowClick}
+                    onRowPointerEnter={onRowPointerEnter}
+                    onToggleRow={toggleRow}
+                    rowHeight={rowHeight}
+                    rowRef={(el) => {
+                      rowRefs.current[entry.id] = el;
+                    }}
+                    selectable={selectable}
+                    sticky
+                  />
+                ))}
                 {paddingTop > 0 ? (
                   <tr aria-hidden style={{ height: paddingTop }}>
                     <td colSpan={leadColumns + 1} />
                   </tr>
                 ) : null}
                 {virtualItems.map((vItem) => {
-                  const entry = sortedRows[vItem.index];
+                  const entry = scrollRows[vItem.index];
                   if (!entry) {
                     return null;
                   }
-                  const isSelected = selected.has(entry.id);
                   return (
-                    <tr
-                      className={cn(
-                        "border-border/60 border-b transition-colors",
-                        "data-[selected=true]:bg-primary/5",
-                        "hover:bg-muted/50",
-                        onRowClick && "cursor-pointer"
-                      )}
-                      data-selected={isSelected}
+                    <TableBodyRow
+                      columns={orderedColumns}
+                      entry={entry}
+                      hasRowMenu={hasRowMenu}
+                      index={pinnedRows.length + vItem.index}
+                      isSelected={selected.has(entry.id)}
                       key={entry.id}
-                      onClick={
-                        onRowClick ? () => onRowClick(entry.row) : undefined
-                      }
-                      onKeyDown={
-                        onRowClick
-                          ? (event) => {
-                              if (event.key === "Enter" || event.key === " ") {
-                                event.preventDefault();
-                                onRowClick(entry.row);
-                              }
-                            }
-                          : undefined
-                      }
-                      onPointerEnter={
-                        hasRowMenu
-                          ? () => activateRow(entry.id, vItem.index)
-                          : undefined
-                      }
-                      onPointerLeave={hasRowMenu ? deactivateRow : undefined}
-                      ref={(el) => {
+                      onActivate={activateRow}
+                      onCellEdit={onCellEdit}
+                      onDeactivate={deactivateRow}
+                      onRowClick={onRowClick}
+                      onRowPointerEnter={onRowPointerEnter}
+                      onToggleRow={toggleRow}
+                      rowHeight={rowHeight}
+                      rowRef={(el) => {
                         rowRefs.current[entry.id] = el;
                       }}
-                      style={{ height: rowHeight }}
-                      tabIndex={onRowClick ? 0 : undefined}
-                    >
-                      {selectable ? (
-                        <td className="text-center">
-                          <div className="flex items-center justify-center">
-                            <Checkbox
-                              aria-label={`Select row ${vItem.index + 1}`}
-                              checked={isSelected}
-                              className="size-6"
-                              onCheckedChange={() => toggleRow(entry.id)}
-                            />
-                          </div>
-                        </td>
-                      ) : null}
-                      {orderedColumns.map((column) => (
-                        <td
-                          className={cn(
-                            "max-w-0 truncate px-4 text-foreground",
-                            "[&>*]:min-w-0 [&>*]:max-w-full",
-                            alignText(column.align)
-                          )}
-                          key={column.key}
-                        >
-                          {!column.cell && column.editable ? (
-                            <EditableCell
-                              label={`${column.key} for row ${vItem.index + 1}`}
-                              onChange={(next) =>
-                                onCellEdit?.(entry.id, column.key, next)
-                              }
-                              value={String(readCell(entry.row, column) ?? "")}
-                            />
-                          ) : (
-                            readCell(entry.row, column)
-                          )}
-                        </td>
-                      ))}
-                      <td aria-hidden />
-                    </tr>
+                      selectable={selectable}
+                    />
                   );
                 })}
                 {paddingBottom > 0 ? (

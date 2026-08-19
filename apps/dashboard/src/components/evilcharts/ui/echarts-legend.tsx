@@ -2,10 +2,10 @@
 
 import type { CSSProperties } from "react";
 import {
-  type ChartConfig,
   getColorsCount,
   indicatorBackground,
 } from "@/components/evilcharts/ui/echarts-chart";
+import type { ChartConfig } from "@/types/charts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Legend overlay (React) — replicates ChartLegendContent + its 7 indicators.

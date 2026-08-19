@@ -24,7 +24,6 @@ import {
 } from "react";
 import {
   buildChartCss,
-  type ChartConfig,
   getColorsCount,
   type ResolvedColors,
   resolveColors,
@@ -35,25 +34,21 @@ import {
   type LegendVariant,
 } from "@/components/evilcharts/ui/echarts-legend";
 import {
-  resolveTooltipPosition,
-  roundnessClass,
   type TooltipPosition,
   type TooltipRoundness,
   type TooltipVariant,
-  tooltipIndicatorHtml,
-  tooltipRow,
-  tooltipVariantClass,
+  composeTooltipBody,
+  configIndicatorHtml,
+  formatTooltipValue,
+  resolveTooltipPosition,
+  tooltipShell,
 } from "@/components/evilcharts/ui/echarts-tooltip";
-
-// Re-export the shared types that were previously declared inline here, so
-// existing consumers/examples keep importing them from the chart module.
-export type {
+import type {
   ChartConfig,
-  LegendVariant,
-  TooltipPosition,
-  TooltipRoundness,
-  TooltipVariant,
-};
+  TooltipBodyItem,
+  TooltipLayout,
+  TooltipValueFormatter,
+} from "@/types/charts";
 
 // Modular registration keeps the bundle lean — only the pieces this chart needs.
 // A pie has no coordinate system, so there is no GridComponent and no axes; the
@@ -233,6 +228,9 @@ export interface TooltipProps {
   roundness?: TooltipRoundness; // border-radius of the tooltip
   defaultIndex?: number; // sector index shown by default with no hover
   position?: TooltipPosition; // "variable" follows the pointer (default); "fixed" pins the tooltip near the top and tracks the pointer's X
+  layout?: TooltipLayout; // "rows" is a single slice; "bars" ranks every slice as a mini bar chart
+  valueFormatter?: TooltipValueFormatter;
+  barMax?: number; // bar layout: scale tracks to this ceiling; omit to scale to the largest slice
 }
 
 /** Presence enables the hover tooltip. Renders nothing. */
@@ -280,6 +278,9 @@ type TooltipSlot = {
   roundness: TooltipRoundness;
   defaultIndex?: number;
   position: TooltipPosition;
+  layout: TooltipLayout;
+  valueFormatter?: TooltipValueFormatter;
+  barMax?: number;
 };
 type LegendSlot = {
   present: boolean;
@@ -304,6 +305,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
     variant: "default",
     roundness: "lg",
     position: "variable",
+    layout: "rows",
   };
   // Pie legend defaults differ from the area chart's: centered along the bottom.
   let legend: LegendSlot = {
@@ -350,6 +352,9 @@ function collectConfig(children: ReactNode): CollectedConfig {
         roundness: props.roundness ?? "lg",
         defaultIndex: props.defaultIndex,
         position: props.position ?? "variable",
+        layout: props.layout ?? "rows",
+        valueFormatter: props.valueFormatter,
+        barMax: props.barMax,
       };
     } else if (type === Legend) {
       const props = child.props as LegendProps;
@@ -703,10 +708,18 @@ function pieCenterY(legendSlot: LegendSlot): string {
 }
 
 // Tooltip HTML builder, closed over the build context. The pie tooltip is
-// item-triggered, so each hover surfaces exactly one sector — its indicator,
-// label, and value, matching ChartTooltipContent with `hideLabel` (no header).
+// item-triggered. `layout: "rows"` surfaces the hovered sector only (matching
+// ChartTooltipContent with `hideLabel`). `layout: "bars"` ranks every slice so
+// the hover reads as a comparison, with the hovered sector undimmed.
 function createTooltipFormatter(ctx: OptionBuildContext) {
-  const { config, selectedSector, tooltipSlot } = ctx;
+  const {
+    config,
+    selectedSector,
+    tooltipSlot,
+    data,
+    nameKey,
+    dataKey,
+  } = ctx;
 
   return (params: unknown): string => {
     const p = (Array.isArray(params) ? params[0] : params) as {
@@ -717,32 +730,52 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
     // The loading skeleton is a `__`-prefixed series and never surfaces a tooltip.
     if (!p || String(p.seriesId ?? "").startsWith("__")) return "";
 
-    const name = String(p.name ?? "");
-    const item = config[name];
-    const colorsCount = item ? getColorsCount(item) : 1;
-    const labelText = typeof item?.label === "string" ? item.label : name;
-    const value =
-      typeof p.value === "number"
-        ? p.value.toLocaleString()
-        : String(p.value ?? "");
-    const dimmed =
-      selectedSector != null && selectedSector !== name ? " opacity-30" : "";
+    const hoveredName = String(p.name ?? "");
+    const source =
+      tooltipSlot.layout === "bars"
+        ? data
+        : [{ [nameKey]: hoveredName, [dataKey]: p.value }];
 
-    // The row shape matches the area chart's indicator + label + value, so it
-    // reuses the shared tooltipRow/tooltipIndicatorHtml. The pie tooltip is
-    // item-triggered with NO header (hideLabel), so it keeps its own no-header
-    // shell — built from the shared roundnessClass/tooltipVariantClass — rather
-    // than the header-carrying tooltipShell.
-    const row = tooltipRow({
-      indicatorHtml: tooltipIndicatorHtml(name, colorsCount),
-      labelText,
-      valueText: value,
-      dimmed,
+    const items: TooltipBodyItem[] = [];
+    for (const row of source) {
+      const key = String(row[nameKey] ?? hoveredName);
+      if (!key) continue;
+      const item = config[key];
+      const colorsCount = item ? getColorsCount(item) : 1;
+      const labelText = typeof item?.label === "string" ? item.label : key;
+      const formatted = formatTooltipValue(
+        row[dataKey] ?? p.value,
+        tooltipSlot.valueFormatter
+      );
+      if (formatted.numeric === null && formatted.text === "") continue;
+      const dimmed =
+        selectedSector != null && selectedSector !== key
+          ? " opacity-30"
+          : tooltipSlot.layout === "bars" && hoveredName !== key
+            ? " opacity-30"
+            : "";
+      items.push({
+        key,
+        colorsCount,
+        labelText,
+        value: formatted.numeric,
+        valueText: formatted.text,
+        dimmed,
+        indicatorHtml: configIndicatorHtml(item),
+      });
+    }
+
+    return tooltipShell({
+      label: "",
+      body: composeTooltipBody(
+        items,
+        tooltipSlot.layout,
+        tooltipSlot.barMax
+      ),
+      roundness: tooltipSlot.roundness,
+      variant: tooltipSlot.variant,
+      layout: tooltipSlot.layout,
     });
-
-    return `<div class="grid min-w-32 items-start gap-1.5 border border-border/50 px-2.5 py-1.5 text-xs shadow-xl ${roundnessClass[tooltipSlot.roundness]} ${tooltipVariantClass[tooltipSlot.variant]}">
-      <div class="grid gap-1.5">${row}</div>
-    </div>`;
   };
 }
 

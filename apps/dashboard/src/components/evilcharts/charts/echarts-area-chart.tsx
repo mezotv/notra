@@ -38,7 +38,6 @@ import {
 } from "@/components/evilcharts/ui/echarts-brush";
 import {
   buildChartCss,
-  type ChartConfig,
   flattenColor,
   getColorsCount,
   type ResolvedColors,
@@ -61,23 +60,19 @@ import {
   type TooltipPosition,
   type TooltipRoundness,
   type TooltipVariant,
+  composeTooltipBody,
+  configIndicatorHtml,
+  formatTooltipValue,
   tooltipBaseOption,
-  tooltipIndicatorHtml,
-  tooltipRow,
   tooltipShell,
 } from "@/components/evilcharts/ui/echarts-tooltip";
-import type { ChartMarker } from "@/types/charts";
-
-// Re-export the shared types that were previously declared inline here, so
-// existing consumers/examples keep importing them from the chart module.
-export type {
+import type {
   ChartConfig,
-  DotVariant,
-  LegendVariant,
-  TooltipPosition,
-  TooltipRoundness,
-  TooltipVariant,
-};
+  ChartMarker,
+  TooltipBodyItem,
+  TooltipLayout,
+  TooltipValueFormatter,
+} from "@/types/charts";
 
 // Modular registration keeps the bundle lean — only the pieces this chart needs.
 // `DataZoomComponent` bundles both the slider (brush footer) and inside (wheel/drag)
@@ -273,6 +268,10 @@ export interface TooltipProps {
   cursor?: boolean; // whether the vertical cursor line follows the pointer
   crosshair?: boolean; // also draw the horizontal line to the value axis
   position?: TooltipPosition; // "variable" follows both axes (default); "fixed" pins the tooltip near the top and tracks the pointer's X
+  layout?: TooltipLayout; // "rows" is the default swatch list; "bars" ranks series as a mini bar chart
+  valueFormatter?: TooltipValueFormatter;
+  barMax?: number; // bar layout: scale tracks to this ceiling (e.g. 100 for percents); omit to scale to the hovered max
+  confine?: boolean; // keep the tooltip inside the chart rect (default true); false lets small sparklines overflow
 }
 
 /** Presence enables the hover tooltip. Renders nothing. */
@@ -329,6 +328,10 @@ type TooltipSlot = {
   cursor: boolean;
   crosshair?: boolean;
   position: TooltipPosition;
+  layout: TooltipLayout;
+  valueFormatter?: TooltipValueFormatter;
+  barMax?: number;
+  confine: boolean;
 };
 type LegendSlot = {
   present: boolean;
@@ -365,6 +368,8 @@ function collectConfig(children: ReactNode): CollectedConfig {
     roundness: "lg",
     cursor: true,
     position: "variable",
+    layout: "rows",
+    confine: true,
   };
   let legend: LegendSlot = {
     present: false,
@@ -433,6 +438,10 @@ function collectConfig(children: ReactNode): CollectedConfig {
         cursor: props.cursor ?? true,
         crosshair: props.crosshair ?? false,
         position: props.position ?? "variable",
+        layout: props.layout ?? "rows",
+        valueFormatter: props.valueFormatter,
+        barMax: props.barMax,
+        confine: props.confine ?? true,
       };
     } else if (type === Legend) {
       const props = child.props as LegendProps;
@@ -973,58 +982,67 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
     // second-to-last point. Keep the first non-null value seen per key so the
     // final point (only the overlay has data there) still shows its number.
     const seen = new Set<string>();
-    const body = rows
-      .map((param) => {
-        const p = param as {
-          seriesId?: string;
-          seriesName?: string;
-          value?: number | string | null;
-        };
-        const rawId = String(p.seriesId ?? "");
-        // Map the dashed buffer overlay back onto its series; drop every other
-        // internal series (mini chart, loading skeleton, hover-reveal base).
-        const key = rawId.startsWith(BUFFER_PREFIX)
-          ? rawId.slice(BUFFER_PREFIX.length)
-          : rawId.startsWith("__")
+    const items: TooltipBodyItem[] = [];
+    for (const param of rows) {
+      const p = param as {
+        seriesId?: string;
+        seriesName?: string;
+        value?: number | string | null;
+      };
+      const rawId = String(p.seriesId ?? "");
+      // Map the dashed buffer overlay back onto its series; drop every other
+      // internal series (mini chart, loading skeleton, hover-reveal base).
+      const key = rawId.startsWith(BUFFER_PREFIX)
+        ? rawId.slice(BUFFER_PREFIX.length)
+        : rawId.startsWith("__")
+          ? ""
+          : (p.seriesId ?? p.seriesName ?? "");
+      if (!key) continue;
+      // A null value means this series does not reach the hovered x (a buffer
+      // area's solid part stops before the last point, a revealed series stops
+      // at the cursor) — skip it, letting another row for the key stand in.
+      if (p.value === null || p.value === undefined) continue;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      const item = config[key];
+      const colorsCount = item ? getColorsCount(item) : 1;
+      const labelText =
+        typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
+      const hovered = getHoveredKey();
+      const dimmed =
+        selectedDataKey != null && selectedDataKey !== key
+          ? " opacity-30"
+          : tooltipSlot.layout === "bars"
             ? ""
-            : (p.seriesId ?? p.seriesName ?? "");
-        if (!key) return "";
-        // A null value means this series does not reach the hovered x (a buffer
-        // area's solid part stops before the last point, a revealed series stops
-        // at the cursor) — skip it, letting another row for the key stand in.
-        if (p.value === null || p.value === undefined) return "";
-        if (seen.has(key)) return "";
-        seen.add(key);
-
-        const item = config[key];
-        const colorsCount = item ? getColorsCount(item) : 1;
-        const labelText =
-          typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
-        const hovered = getHoveredKey();
-        const dimmed =
-          (selectedDataKey != null && selectedDataKey !== key) ||
-          (hovered != null && hovered !== key)
-            ? " opacity-30"
-            : "";
-        const value =
-          typeof p.value === "number"
-            ? p.value.toLocaleString()
-            : String(p.value ?? "");
-
-        return tooltipRow({
-          indicatorHtml: tooltipIndicatorHtml(key, colorsCount),
-          labelText,
-          valueText: value,
-          dimmed,
-        });
-      })
-      .join("");
+            : hovered != null && hovered !== key
+              ? " opacity-30"
+              : "";
+      const formatted = formatTooltipValue(
+        p.value,
+        tooltipSlot.valueFormatter
+      );
+      items.push({
+        key,
+        colorsCount,
+        labelText,
+        value: formatted.numeric,
+        valueText: formatted.text,
+        dimmed,
+        indicatorHtml: configIndicatorHtml(item),
+      });
+    }
 
     return tooltipShell({
       label,
-      body,
+      body: composeTooltipBody(
+        items,
+        tooltipSlot.layout,
+        tooltipSlot.barMax
+      ),
       roundness: tooltipSlot.roundness,
       variant: tooltipSlot.variant,
+      layout: tooltipSlot.layout,
     });
   };
 }
@@ -1043,6 +1061,7 @@ function buildTooltipOption(ctx: OptionBuildContext): TooltipComponentOption {
       axisPointerColor: withAlpha(tokens.mutedForeground, AXIS_POINTER_OPACITY),
       strokeWidth: AXIS_POINTER_WIDTH,
     }),
+    confine: tooltipSlot.confine,
     formatter: createTooltipFormatter(ctx),
   };
 }

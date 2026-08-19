@@ -82,7 +82,7 @@ export function TopPostsCard({ posts, action }: TopPostsCardProps) {
           <DelayedTooltip delay={ANALYTICS_TOOLTIP_DELAY_MS}>
             <TooltipTrigger
               render={
-                <span className="block w-full truncate text-left text-sm leading-snug" />
+                <span className="block w-full min-w-0 truncate text-left text-sm leading-snug" />
               }
             >
               {previewPostContent(row.content)}

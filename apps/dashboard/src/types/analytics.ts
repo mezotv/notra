@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
-import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
-import type { ChartColorPair, ChartMarker } from "@/types/charts";
+import type { ChartColorPair, ChartConfig, ChartMarker } from "@/types/charts";
 
 export interface SocialAnalyticsSyncPayload {
   organizationId?: string;

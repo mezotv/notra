@@ -1,5 +1,5 @@
 import * as echarts from "echarts/core";
-import type { ComponentType, ReactNode } from "react";
+import type { ChartConfig } from "@/types/charts";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Theme keys + config — replicated from the repo's <ChartStyle> so the ECharts
@@ -12,19 +12,6 @@ export const THEMES = { light: "", dark: ".dark" } as const;
 export type ThemeKey = keyof typeof THEMES;
 export const THEME_KEYS = Object.keys(THEMES) as ThemeKey[];
 
-// Require at least one theme key — identical constraint to the repo's ChartConfig.
-export type AtLeastOneThemeColor =
-  | { light: string[]; dark?: string[] }
-  | { light?: string[]; dark: string[] };
-
-export type ChartConfig = Record<
-  string,
-  {
-    label?: ReactNode;
-    icon?: ComponentType;
-    colors?: AtLeastOneThemeColor;
-  }
->;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Color plumbing — replicated from the repo's <ChartStyle> so the charts stay

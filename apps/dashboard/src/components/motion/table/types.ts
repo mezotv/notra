@@ -75,6 +75,10 @@ export interface TableProps<T> {
   skeletonRows?: number;
   /** Called when a row is clicked or activated with Enter/Space. */
   onRowClick?: (row: T) => void;
+  /** Called when a pointer enters a row — prefetch, hover menus, etc. */
+  onRowPointerEnter?: (row: T) => void;
+  /** Pin matching rows to the top of the table; they stay visible while the rest scroll. */
+  isRowPinned?: (row: T) => boolean;
   emptyState?: ReactNode;
   className?: string;
 }
