@@ -208,9 +208,12 @@ export const geoMentionChecks = defineDatasource("geo_mention_checks", {
     "AI engine mention checks: one row per prompt x engine per scan, with extracted mention data",
   schema: {
     organization_id: t.string(),
+    project_id: t.string().lowCardinality(),
     scan_id: t.string(),
     engine: t.string().lowCardinality(),
     prompt_id: t.string().lowCardinality(),
+    sequence_id: t.string().lowCardinality(),
+    turn: t.uint8(),
     prompt: t.string(),
     captured_at: t.dateTime(),
     mentioned: t.bool(),
@@ -268,6 +271,7 @@ export const geoTrafficEvents = defineDatasource("geo_traffic_events", {
     "Append-only log of every request captured by the geo SDK, classified into AI crawlers, AI assistant referrals and humans",
   schema: {
     organization_id: t.string(),
+    project_id: t.string().lowCardinality(),
     captured_at: t.dateTime(),
     visitor_type: t.string().lowCardinality(),
     source: t.string().lowCardinality(),
@@ -299,6 +303,7 @@ export const geoTrafficDaily = defineDatasource("geo_traffic_daily", {
   schema: {
     day: t.date(),
     organization_id: t.string(),
+    project_id: t.string().lowCardinality(),
     visitor_type: t.string().lowCardinality(),
     source: t.string().lowCardinality(),
     visits_state: t.aggregateFunction("count"),
@@ -310,7 +315,13 @@ export const geoTrafficDaily = defineDatasource("geo_traffic_daily", {
     confidence_state: t.aggregateFunction("any", t.string().lowCardinality()),
   },
   engine: engine.aggregatingMergeTree({
-    sortingKey: ["organization_id", "visitor_type", "source", "day"],
+    sortingKey: [
+      "organization_id",
+      "project_id",
+      "visitor_type",
+      "source",
+      "day",
+    ],
     partitionKey: "toYYYYMM(day)",
   }),
   jsonPaths: false,
@@ -324,6 +335,7 @@ export const geoTrafficPagesDaily = defineDatasource(
     schema: {
       day: t.date(),
       organization_id: t.string(),
+      project_id: t.string().lowCardinality(),
       visitor_type: t.string().lowCardinality(),
       source: t.string().lowCardinality(),
       path: t.string(),
@@ -331,7 +343,14 @@ export const geoTrafficPagesDaily = defineDatasource(
       last_seen_state: t.aggregateFunction("max", t.dateTime()),
     },
     engine: engine.aggregatingMergeTree({
-      sortingKey: ["organization_id", "visitor_type", "source", "day", "path"],
+      sortingKey: [
+        "organization_id",
+        "project_id",
+        "visitor_type",
+        "source",
+        "day",
+        "path",
+      ],
       partitionKey: "toYYYYMM(day)",
     }),
     jsonPaths: false,

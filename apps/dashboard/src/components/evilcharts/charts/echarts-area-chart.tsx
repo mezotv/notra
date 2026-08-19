@@ -1479,7 +1479,13 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
         lineStyle: { opacity: opacity.stroke },
         itemStyle: { opacity: dotOpacity },
       },
-      blur: { lineStyle: { opacity: 0.3 }, itemStyle: { opacity: 0.3 } },
+      // Stays at full stroke opacity on blur: this silent overlay belongs to
+      // its parent series, and the companion re-highlight dispatch can lag the
+      // native focus blur — a dimmed tail under a bright line reads as a bug.
+      blur: {
+        lineStyle: { opacity: opacity.stroke },
+        itemStyle: { opacity: dotOpacity },
+      },
     };
 
     // Fill patch — the main area drops its last point (so the tail stroke can be

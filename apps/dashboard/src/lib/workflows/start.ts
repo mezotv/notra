@@ -9,6 +9,7 @@ import {
 } from "@/constants/iris";
 import { socialAnalyticsSyncPayloadSchema } from "@/schemas/analytics";
 import { brandGuidelinesWorkflowPayloadSchema } from "@/schemas/brand-guidelines";
+import { geoOrganizationInputSchema } from "@/schemas/geo";
 import {
   eventWorkflowPayloadSchema,
   scheduleWorkflowPayloadSchema,
@@ -25,6 +26,7 @@ import {
 } from "@/workflows/brand-analysis";
 import { brandGuidelinesWorkflow } from "@/workflows/brand-guidelines";
 import { eventContentWorkflow } from "@/workflows/event-content";
+import { geoScanWorkflow } from "@/workflows/geo-scan";
 import { irisControllerRun } from "@/workflows/iris-controller";
 import { onDemandContentWorkflow } from "@/workflows/on-demand-content";
 import { onboardingAgentWorkflow } from "@/workflows/onboarding-agent";
@@ -113,6 +115,15 @@ export async function startSocialAnalyticsSyncRun(payload: {
 }): Promise<{ runId: string }> {
   const parsed = socialAnalyticsSyncPayloadSchema.parse(payload);
   const run = await start(socialAnalyticsSyncWorkflow, [parsed]);
+  return { runId: run.runId };
+}
+
+export async function startGeoScanRun(payload: {
+  organizationId: string;
+  projectId?: string;
+}): Promise<{ runId: string }> {
+  const parsed = geoOrganizationInputSchema.parse(payload);
+  const run = await start(geoScanWorkflow, [parsed]);
   return { runId: run.runId };
 }
 

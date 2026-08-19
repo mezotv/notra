@@ -76,7 +76,7 @@ export function dotItemStyle(
 // Sizes mirror the Recharts markers: default r3, border r6 (mostly halo), and
 // colored-border r3+ring. Flattening these to one size makes the hover ring read
 // LARGER than a haloed resting dot — the opposite of the Recharts twin.
-const DOT_SIZES: Record<DotVariant, number> = {
+export const DOT_SIZES: Record<DotVariant, number> = {
   none: 0,
   default: 6,
   border: 8,

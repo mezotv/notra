@@ -22,6 +22,7 @@
     "@hugeicons/core-free-icons": "^4.1.1",
     "@hugeicons/react": "^1.1.5",
     "@neoconfetti/react": "^1.0.0",
+
     "@notra/email": "workspace:*",
     "@notra/kiwi": "workspace:*",
     "@notra/ui": "workspace:*",
@@ -38,6 +39,7 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.35.8",
     "@usemarble/sdk": "^1.2.1",
+    "@usenotra/geo": "workspace:*",
     "dompurify": "^3.4.12",
     "effect": "4.0.0-beta.93",
     "fumadocs-core": "^16.6.17",

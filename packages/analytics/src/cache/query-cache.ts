@@ -1,6 +1,8 @@
 import type { Redis } from "@upstash/redis";
 import { Effect } from "effect";
 import {
+  EXTERNAL_CACHE_KEY_PREFIX,
+  EXTERNAL_CACHE_TTL_SECONDS,
   GLOBAL_SCOPE_ID,
   INITIAL_CACHE_VERSION,
   QUERY_CACHE_KEY_PREFIX,
@@ -92,5 +94,33 @@ export function bumpAnalyticsVersions(
     }
     return pipeline.exec();
   }).pipe(Effect.ignore);
+  return Effect.runPromise(program);
+}
+
+export function cachedExternalFetch<TResult>(
+  key: string,
+  fetchFresh: () => Promise<TResult>,
+  ttlSeconds: number = EXTERNAL_CACHE_TTL_SECONDS
+): Promise<TResult> {
+  const redis = getAnalyticsRedis();
+  if (!redis) {
+    return fetchFresh();
+  }
+  const cacheKey = `${EXTERNAL_CACHE_KEY_PREFIX}:${key}`;
+  const program = Effect.gen(function* () {
+    const hit = yield* Effect.tryPromise(() =>
+      redis.get<TResult>(cacheKey)
+    ).pipe(Effect.orElseSucceed(() => null));
+    if (hit !== null) {
+      return hit;
+    }
+    const fresh = yield* Effect.tryPromise(() => fetchFresh());
+    if (fresh !== null) {
+      yield* Effect.tryPromise(() =>
+        redis.set(cacheKey, toJsonSafe(fresh), { ex: ttlSeconds })
+      ).pipe(Effect.ignore);
+    }
+    return fresh;
+  });
   return Effect.runPromise(program);
 }

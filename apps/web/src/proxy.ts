@@ -1,7 +1,14 @@
 import { Tracker } from "@bydefault/vercel";
 import { createDualmarkMiddleware } from "@dualmark/nextjs";
+import { createGeoProxy } from "@usenotra/geo/next";
 import { after, type NextRequest, NextResponse } from "next/server";
 import { HOMEPAGE_LINK_HEADER, SITE_URL } from "@/utils/urls";
+
+const geoTracker = createGeoProxy({
+  token: process.env.NOTRA_GEO_TOKEN ?? "",
+  endpoint: process.env.NOTRA_GEO_ENDPOINT,
+  tagLinks: { host: new URL(SITE_URL).hostname, html: true },
+});
 
 const bydefaultToken = process.env.BYDEFAULT_TOKEN;
 const tracker = bydefaultToken
@@ -41,12 +48,26 @@ const dualmarkProxy = createDualmarkMiddleware({
   },
 });
 
+function trackAiTraffic(request: NextRequest) {
+  return geoTracker(request, {
+    waitUntil: (promise) => {
+      after(promise);
+    },
+  });
+}
+
 function appendLinkHeader(headers: Headers, value: string) {
   const existing = headers.get("Link");
   headers.set("Link", existing ? `${existing}, ${value}` : value);
 }
 
 export async function proxy(request: NextRequest) {
+  const tagged = await trackAiTraffic(request);
+
+  if (tagged) {
+    return tagged;
+  }
+
   if (
     request.nextUrl.pathname === "/" &&
     request.nextUrl.searchParams.get("mode") === "agent"
