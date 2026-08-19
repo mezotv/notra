@@ -215,11 +215,15 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useState } from "react";
 import { toast } from "sonner";
+import { DesignSystemChatgptCatalog } from "@/app/design-system/chatgpt/page-client";
+import { DesignSystemClaudeCatalog } from "@/app/design-system/claude/page-client";
+import { DesignSystemClaudeChatCatalog } from "@/app/design-system/claude-chat/page-client";
+import { DesignSystemCodexCatalog } from "@/app/design-system/codex/page-client";
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button, buttonVariants } from "@/components/button";
 import ChatInput from "@/components/chat-input";
-import { ThemeToggle } from "@/components/dashboard/theme-toggle";
-
+import { DesignSystemFrame } from "@/components/design-system/design-system-frame";
+import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LinkedInPost } from "@/components/linkedin-post";
 
@@ -341,23 +345,6 @@ function ColorSwatch({ name, label }: { name: string; label: string }) {
   );
 }
 
-function SectionHeader({
-  title,
-  description,
-}: {
-  title: string;
-  description?: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <h2 className="font-semibold text-xl">{title}</h2>
-      {description && (
-        <p className="text-muted-foreground text-sm">{description}</p>
-      )}
-    </div>
-  );
-}
-
 export default function DesignSystemClientPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
@@ -373,24 +360,14 @@ export default function DesignSystemClientPage() {
   );
 
   return (
-    <main className="container mx-auto flex flex-col gap-12 py-10">
-      <header className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="font-semibold text-3xl tracking-tight">
-            Notra UI Preview
-          </h1>
-          <SidebarProvider className="min-h-0! w-auto" defaultOpen={false}>
-            <ThemeToggle />
-          </SidebarProvider>
-        </div>
-        <p className="max-w-2xl text-muted-foreground text-sm">
-          Component and token showcase for the dashboard UI kit.
-        </p>
-      </header>
-
-      <section className="space-y-6">
-        <SectionHeader
+    <DesignSystemFrame
+      description="Full catalog: UI kit, Claude TUI, Codex TUI, ChatGPT chat, and Claude chat. Everything is on this page."
+      title="Notra UI Preview"
+    >
+      <section className="scroll-mt-10 space-y-6" id="colors">
+        <DesignSystemSectionHeader
           description="Theme tokens from the dashboard CSS variables."
+          id="colors"
           title="Colors"
         />
         <div className="space-y-6">
@@ -411,8 +388,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Buttons & Badges" />
+      <section className="scroll-mt-10 space-y-6" id="buttons">
+        <DesignSystemSectionHeader id="buttons" title="Buttons & Badges" />
         <Card>
           <CardHeader>
             <CardTitle>Buttons</CardTitle>
@@ -494,8 +471,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Forms & Inputs" />
+      <section className="scroll-mt-10 space-y-6" id="forms">
+        <DesignSystemSectionHeader id="forms" title="Forms & Inputs" />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -626,8 +603,11 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Navigation & Overlays" />
+      <section className="scroll-mt-10 space-y-6" id="navigation">
+        <DesignSystemSectionHeader
+          id="navigation"
+          title="Navigation & Overlays"
+        />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -808,8 +788,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Feedback & Status" />
+      <section className="scroll-mt-10 space-y-6" id="feedback">
+        <DesignSystemSectionHeader id="feedback" title="Feedback & Status" />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -907,8 +887,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Data Display" />
+      <section className="scroll-mt-10 space-y-6" id="data-display">
+        <DesignSystemSectionHeader id="data-display" title="Data Display" />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -1045,8 +1025,11 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Rich Interactions" />
+      <section className="scroll-mt-10 space-y-6" id="rich-interactions">
+        <DesignSystemSectionHeader
+          id="rich-interactions"
+          title="Rich Interactions"
+        />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -1247,8 +1230,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Identity & Layout" />
+      <section className="scroll-mt-10 space-y-6" id="identity">
+        <DesignSystemSectionHeader id="identity" title="Identity & Layout" />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -1376,8 +1359,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Utility Elements" />
+      <section className="scroll-mt-10 space-y-6" id="utility">
+        <DesignSystemSectionHeader id="utility" title="Utility Elements" />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -1430,9 +1413,10 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader
+      <section className="scroll-mt-10 space-y-6" id="social">
+        <DesignSystemSectionHeader
           description="LinkedIn post preview cards for content planning."
+          id="social"
           title="Social Media Previews"
         />
         <div className="grid gap-6 lg:grid-cols-2">
@@ -1472,9 +1456,10 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader
+      <section className="scroll-mt-10 space-y-6" id="onboarding">
+        <DesignSystemSectionHeader
           description="Guided setup checklist for onboarding flows."
+          id="onboarding"
           title="Onboarding Checklist"
         />
         <div className="grid gap-6 lg:grid-cols-2">
@@ -1526,9 +1511,10 @@ export default function DesignSystemClientPage() {
         </div>
       </section>
 
-      <section className="space-y-6">
-        <SectionHeader
+      <section className="scroll-mt-10 space-y-6" id="braille-loader">
+        <DesignSystemSectionHeader
           description="Braille animation for AI thinking state — spells ⠠⠝⠕⠞⠗⠁ (notra)."
+          id="braille-loader"
           title="Braille Loader"
         />
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
@@ -1559,7 +1545,12 @@ export default function DesignSystemClientPage() {
         </div>
       </section>
 
+      <DesignSystemClaudeCatalog />
+      <DesignSystemCodexCatalog />
+      <DesignSystemChatgptCatalog />
+      <DesignSystemClaudeChatCatalog />
+
       <Toaster richColors />
-    </main>
+    </DesignSystemFrame>
   );
 }
