@@ -88,6 +88,9 @@ export function AttachmentPreviewDialog({
   const typeLabel =
     MIME_DISPLAY_LABELS[attachment.mediaType] ?? attachment.mediaType;
   const isImage = isImageMimeType(attachment.mediaType);
+  const isPdf = isPdfMimeType(attachment.mediaType);
+  const isText = isTextMimeType(attachment.mediaType);
+  const canPreview = isImage || isPdf || isText;
 
   async function handleCopyImage() {
     if (!attachment) {
@@ -160,7 +163,7 @@ export function AttachmentPreviewDialog({
           </div>
         </div>
         <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
-          {isImage && (
+          {isImage ? (
             <div className="relative flex h-full w-full items-center justify-center bg-muted/20">
               <Image
                 alt={attachment.filename}
@@ -171,8 +174,8 @@ export function AttachmentPreviewDialog({
                 width={1200}
               />
             </div>
-          )}
-          {isPdfMimeType(attachment.mediaType) && (
+          ) : null}
+          {isPdf ? (
             <iframe
               className="h-full w-full"
               referrerPolicy="no-referrer"
@@ -180,9 +183,15 @@ export function AttachmentPreviewDialog({
               src={attachment.url}
               title={attachment.filename}
             />
-          )}
-          {isTextMimeType(attachment.mediaType) && (
-            <TextPreview url={attachment.url} />
+          ) : null}
+          {isText ? <TextPreview url={attachment.url} /> : null}
+          {canPreview ? null : (
+            <div className="flex h-full flex-col items-center justify-center gap-1 bg-muted/20 px-6 text-center">
+              <p className="font-medium text-sm">Preview isn't available</p>
+              <p className="text-muted-foreground text-xs">
+                Download this file to open it on your device.
+              </p>
+            </div>
           )}
         </div>
       </DialogContent>
