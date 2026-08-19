@@ -45,7 +45,7 @@ export const ContentActivityCard = () => {
   }) as { data?: ContentPublishingMetricsData; isPending: boolean };
 
   if (isPending) {
-    return <Skeleton className="h-40 w-full max-w-[53rem] rounded-lg" />;
+    return <Skeleton className="h-40 w-full rounded-lg" />;
   }
 
   return (

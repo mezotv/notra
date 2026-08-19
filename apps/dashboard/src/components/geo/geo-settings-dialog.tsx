@@ -1,6 +1,7 @@
 "use client";
 
-import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
+import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -15,23 +16,39 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useId, useState } from "react";
-import { GEO_LANGUAGE_FLAGS, GEO_MAX_LANGUAGES } from "@/constants/geo";
+import { GeoAliasesDialog } from "@/components/geo/geo-aliases-dialog";
+import { GeoCompetitorsDialog } from "@/components/geo/geo-competitors-dialog";
+import { GeoLanguagesDialog } from "@/components/geo/geo-languages-dialog";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
-import { cn } from "@/lib/utils";
-import type { GeoSettings } from "@/types/geo";
+import type {
+  GeoSettingsDialogProps,
+  GeoSettingsSectionRowProps,
+} from "@/types/geo";
 
-interface GeoSettingsDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  organizationId: string;
-  settings: GeoSettings | null;
-}
-
-function parseList(value: string): string[] {
-  return value
-    .split(",")
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0);
+function SectionRow({
+  label,
+  count,
+  disabled,
+  onClick,
+}: GeoSettingsSectionRowProps) {
+  return (
+    <button
+      className="flex w-full cursor-pointer items-center justify-between border px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      <span className="flex items-center gap-2">
+        <span className="font-medium">{label}</span>
+        <span className="text-muted-foreground tabular-nums">·</span>
+        <span className="text-muted-foreground tabular-nums">{count}</span>
+      </span>
+      <HugeiconsIcon
+        className="size-4 text-muted-foreground"
+        icon={ArrowRight01Icon}
+      />
+    </button>
+  );
 }
 
 export function GeoSettingsDialog({
@@ -42,18 +59,15 @@ export function GeoSettingsDialog({
 }: GeoSettingsDialogProps) {
   const id = useId();
   const [companyName, setCompanyName] = useState("");
-  const [aliases, setAliases] = useState("");
-  const [competitors, setCompetitors] = useState("");
-  const [languages, setLanguages] = useState<string[]>([]);
   const [enabled, setEnabled] = useState(true);
+  const [aliasesOpen, setAliasesOpen] = useState(false);
+  const [competitorsOpen, setCompetitorsOpen] = useState(false);
+  const [languagesOpen, setLanguagesOpen] = useState(false);
   const upsert = useGeoSettingsUpsert(organizationId);
 
   useEffect(() => {
     if (open) {
       setCompanyName(settings?.companyName ?? "");
-      setAliases(settings?.aliases.join(", ") ?? "");
-      setCompetitors(settings?.competitors.join(", ") ?? "");
-      setLanguages(settings?.languages ?? []);
       setEnabled(settings?.enabled ?? true);
     }
   }, [open, settings]);
@@ -63,117 +77,106 @@ export function GeoSettingsDialog({
       {
         organizationId,
         companyName: companyName.trim(),
-        aliases: parseList(aliases),
-        competitors: parseList(competitors),
-        languages,
+        aliases: settings?.aliases ?? [],
+        competitors: settings?.competitors ?? [],
+        languages: settings?.languages ?? [],
         enabled,
       },
       { onSuccess: () => onOpenChange(false) }
     );
   };
 
+  const nameMissing = companyName.trim().length === 0;
+
   return (
-    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
-      <ResponsiveDialogContent>
-        <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle>GEO tracking settings</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription>
-            What should AI engines be checked for? Aliases count as mentions
-            too.
-          </ResponsiveDialogDescription>
-        </ResponsiveDialogHeader>
-        <div className="space-y-4 px-4 md:px-0">
-          <div className="space-y-2">
-            <Label htmlFor={`${id}-name`}>Company name</Label>
-            <Input
-              id={`${id}-name`}
-              onChange={(event) => setCompanyName(event.target.value)}
-              placeholder="Notra"
-              value={companyName}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={`${id}-aliases`}>Aliases</Label>
-            <Input
-              id={`${id}-aliases`}
-              onChange={(event) => setAliases(event.target.value)}
-              placeholder="usenotra, notra.so (comma separated)"
-              value={aliases}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={`${id}-competitors`}>Competitors to watch</Label>
-            <Input
-              id={`${id}-competitors`}
-              onChange={(event) => setCompetitors(event.target.value)}
-              placeholder="Buffer, Hypefury (comma separated)"
-              value={competitors}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Also scan in (up to {GEO_MAX_LANGUAGES})</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {SUPPORTED_LANGUAGES.filter(
-                (language) => language !== "English"
-              ).map((language) => {
-                const selected = languages.includes(language);
-                const atLimit =
-                  !selected && languages.length >= GEO_MAX_LANGUAGES;
-                return (
-                  <button
-                    aria-pressed={selected}
-                    className={cn(
-                      "flex cursor-pointer items-center gap-1 rounded-sm border px-2 py-1 text-xs transition-colors",
-                      selected
-                        ? "border-border bg-muted/60"
-                        : "border-transparent bg-muted/20 text-muted-foreground hover:bg-muted/40",
-                      atLimit && "cursor-not-allowed opacity-40"
-                    )}
-                    disabled={atLimit}
-                    key={language}
-                    onClick={() =>
-                      setLanguages((previous) =>
-                        previous.includes(language)
-                          ? previous.filter((item) => item !== language)
-                          : [...previous, language]
-                      )
-                    }
-                    type="button"
-                  >
-                    <span aria-hidden="true">
-                      {GEO_LANGUAGE_FLAGS[language]}
-                    </span>
-                    {language}
-                  </button>
-                );
-              })}
+    <>
+      <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+        <ResponsiveDialogContent>
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>GEO tracking settings</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
+              What should AI engines be checked for? Aliases count as mentions
+              too.
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
+          <div className="space-y-4 px-4 md:px-0">
+            <div className="space-y-2">
+              <Label htmlFor={`${id}-name`}>Company name</Label>
+              <Input
+                id={`${id}-name`}
+                onChange={(event) => setCompanyName(event.target.value)}
+                placeholder="Notra"
+                value={companyName}
+              />
             </div>
-            <p className="text-muted-foreground text-xs">
-              Each scan also asks the engines in these languages so you can see
-              how you perform beyond English.
-            </p>
+            <div className="space-y-2">
+              <SectionRow
+                count={settings?.aliases.length ?? 0}
+                disabled={nameMissing}
+                label="Aliases"
+                onClick={() => setAliasesOpen(true)}
+              />
+              <SectionRow
+                count={settings?.competitors.length ?? 0}
+                disabled={nameMissing}
+                label="Competitors"
+                onClick={() => setCompetitorsOpen(true)}
+              />
+              <SectionRow
+                count={settings?.languages.length ?? 0}
+                disabled={nameMissing}
+                label="Languages"
+                onClick={() => setLanguagesOpen(true)}
+              />
+              {nameMissing && (
+                <p className="text-muted-foreground text-xs">
+                  Add a company name to edit these lists.
+                </p>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <Label htmlFor={`${id}-enabled`}>Scans enabled</Label>
+              <Switch
+                checked={enabled}
+                id={`${id}-enabled`}
+                onCheckedChange={setEnabled}
+              />
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <Label htmlFor={`${id}-enabled`}>Scans enabled</Label>
-            <Switch
-              checked={enabled}
-              id={`${id}-enabled`}
-              onCheckedChange={setEnabled}
-            />
-          </div>
-        </div>
-        <ResponsiveDialogFooter>
-          <Button
-            disabled={companyName.trim().length === 0 || upsert.isPending}
-            onClick={handleSave}
-          >
-            {upsert.isPending && (
-              <Loader2Icon className="size-4 animate-spin" />
-            )}
-            Save
-          </Button>
-        </ResponsiveDialogFooter>
-      </ResponsiveDialogContent>
-    </ResponsiveDialog>
+          <ResponsiveDialogFooter>
+            <Button
+              disabled={nameMissing || upsert.isPending}
+              onClick={handleSave}
+            >
+              {upsert.isPending && (
+                <Loader2Icon className="size-4 animate-spin" />
+              )}
+              Save
+            </Button>
+          </ResponsiveDialogFooter>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
+      <GeoAliasesDialog
+        companyName={companyName}
+        enabled={enabled}
+        onOpenChange={setAliasesOpen}
+        open={aliasesOpen}
+        organizationId={organizationId}
+        settings={settings}
+      />
+      <GeoCompetitorsDialog
+        onOpenChange={setCompetitorsOpen}
+        open={competitorsOpen}
+        organizationId={organizationId}
+      />
+      <GeoLanguagesDialog
+        companyName={companyName}
+        enabled={enabled}
+        onOpenChange={setLanguagesOpen}
+        open={languagesOpen}
+        organizationId={organizationId}
+        settings={settings}
+      />
+    </>
   );
 }

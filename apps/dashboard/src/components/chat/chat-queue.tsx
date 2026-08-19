@@ -36,7 +36,7 @@ export function ChatQueue({ messages, onEdit, onRemove }: ChatQueueProps) {
         <motion.div
           animate={{ height: "auto", opacity: 1, y: 0 }}
           aria-label="Queued messages"
-          className="overflow-hidden rounded-t-[14px] border border-border border-b-0 bg-background px-1.5 pt-1.5 pb-1 shadow-sm"
+          className="overflow-hidden rounded-t-[14px] border border-border border-b-0 bg-background px-1.5 pt-1.5 pb-1 shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none"
           exit={{ height: 0, opacity: 0, y: 12 }}
           initial={{ height: 0, opacity: 0, y: 12 }}
           transition={containerTransition}

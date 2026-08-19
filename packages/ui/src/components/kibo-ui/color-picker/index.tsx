@@ -448,19 +448,87 @@ export const ColorPickerOutput = ({
   );
 };
 
+const HexInput = () => {
+  const { hue, saturation, lightness, commit } = useColorPicker();
+  const hex = Color.hsl(hue, saturation, lightness).hex();
+  const [draft, setDraft] = useState(hex);
+  const [editing, setEditing] = useState(false);
+
+  const commitDraft = (value: string) => {
+    const normalized = value.startsWith("#") ? value : `#${value}`;
+    try {
+      const color = Color(normalized);
+      commit({
+        hue: color.hue(),
+        saturation: color.saturationl(),
+        lightness: color.lightness(),
+      });
+    } catch {
+      // Ignore unparseable drafts and fall back to the current color.
+    }
+  };
+
+  return (
+    <Input
+      className="h-8 bg-secondary px-2 text-xs shadow-none"
+      onBlur={() => setEditing(false)}
+      onChange={(event) => {
+        setDraft(event.target.value);
+        commitDraft(event.target.value);
+      }}
+      onFocus={() => {
+        setDraft(hex);
+        setEditing(true);
+      }}
+      onKeyDown={(event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          event.currentTarget.blur();
+        }
+      }}
+      type="text"
+      value={editing ? draft : hex}
+    />
+  );
+};
+
 type PercentageInputProps = ComponentProps<typeof Input>;
 
 const PercentageInput = ({ className, ...props }: PercentageInputProps) => {
+  const { alpha, commit } = useColorPicker();
+  const [draft, setDraft] = useState(String(Math.round(alpha)));
+  const [editing, setEditing] = useState(false);
+
+  const apply = () => {
+    setEditing(false);
+    const parsed = Number.parseFloat(draft);
+    if (!Number.isNaN(parsed)) {
+      commit({ alpha: Math.min(100, Math.max(0, parsed)) });
+    }
+  };
+
   return (
     <div className="relative">
       <Input
-        readOnly
         type="text"
         {...props}
         className={cn(
           "h-8 w-[3.25rem] rounded-l-none bg-secondary px-2 text-xs shadow-none",
           className
         )}
+        onBlur={apply}
+        onChange={(event) => setDraft(event.target.value)}
+        onFocus={() => {
+          setDraft(String(Math.round(alpha)));
+          setEditing(true);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            event.currentTarget.blur();
+          }
+        }}
+        value={editing ? draft : String(Math.round(alpha))}
       />
       <span className="-translate-y-1/2 absolute top-1/2 right-2 text-muted-foreground text-xs">
         %
@@ -479,8 +547,6 @@ export const ColorPickerFormat = ({
   const color = Color.hsl(hue, saturation, lightness, alpha / 100);
 
   if (mode === "hex") {
-    const hex = color.hex();
-
     return (
       <div
         className={cn(
@@ -489,13 +555,7 @@ export const ColorPickerFormat = ({
         )}
         {...props}
       >
-        <Input
-          className="h-8 rounded-r-none bg-secondary px-2 text-xs shadow-none"
-          readOnly
-          type="text"
-          value={hex}
-        />
-        <PercentageInput value={alpha} />
+        <HexInput />
       </div>
     );
   }

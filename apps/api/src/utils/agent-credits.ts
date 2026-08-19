@@ -1,4 +1,7 @@
-import { autumn } from "@notra/ai/billing/autumn";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import type { CheckResponse } from "autumn-js";
@@ -10,7 +13,7 @@ export type AgentCreditCheck =
 export async function checkAgentAiCredits(
   organizationId: string
 ): Promise<AgentCreditCheck> {
-  if (!autumn) {
+  if (!autumn || allowUnmeteredAiInDevelopment) {
     return { allowed: true, useMarkup: false };
   }
   let checkData: CheckResponse | null = null;

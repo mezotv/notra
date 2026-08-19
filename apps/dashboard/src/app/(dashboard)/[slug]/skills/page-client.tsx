@@ -22,7 +22,6 @@ import { Input } from "@notra/ui/components/ui/input";
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupButton,
   InputGroupInput,
 } from "@notra/ui/components/ui/input-group";
 import { Kbd } from "@notra/ui/components/ui/kbd";
@@ -35,8 +34,11 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
+import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseSkillFrontmatter } from "@/lib/skills/parse-frontmatter";
 import { createSkillSchema } from "@/schemas/skills";
@@ -164,16 +166,34 @@ export default function PageClient({ slug }: PageClientProps) {
               Reusable instructions your agents load when generating content.
             </p>
           </div>
-          <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
-            <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            Create Skill
-            <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+          <Button className="w-fit gap-2" onClick={() => setDialogOpen(true)}>
+            <span className="inline-flex items-center gap-1.5">
+              <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+              Create Skill
+            </span>
+            <Kbd className="hidden sm:inline-flex">C</Kbd>
           </Button>
         </div>
 
         {isLoadingSkills && <SkillsPageSkeleton />}
         {!isLoadingSkills && skills.length === 0 && (
-          <p className="text-muted-foreground">No skills yet.</p>
+          <EmptyState
+            action={
+              <Button onClick={() => setDialogOpen(true)} variant="outline">
+                <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+                Create Skill
+              </Button>
+            }
+            description="Add a skill to capture writing knowledge the AI can reuse."
+            preview={
+              <EmptyStateCardsPreview
+                columns={3}
+                count={EMPTY_STATE_CARD_COUNT.skill}
+                variant="skill"
+              />
+            }
+            title="No skills yet"
+          />
         )}
         {!isLoadingSkills && skills.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -245,8 +265,9 @@ export default function PageClient({ slug }: PageClientProps) {
                   placeholder="https://skills.sh/..."
                   value={quickstartUrl}
                 />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupButton
+                <InputGroupAddon align="inline-end" className="pr-1">
+                  <Button
+                    className="h-7 px-2.5"
                     disabled={
                       !quickstartUrl.trim() ||
                       !!quickstartError ||
@@ -254,13 +275,13 @@ export default function PageClient({ slug }: PageClientProps) {
                       createMutation.isPending
                     }
                     onClick={() => importMutation.mutate()}
-                    variant="default"
+                    size="sm"
                   >
                     {importMutation.isPending ? (
                       <Loader2Icon className="size-3.5 animate-spin" />
                     ) : null}
                     {importMutation.isPending ? "Importing" : "Import"}
-                  </InputGroupButton>
+                  </Button>
                 </InputGroupAddon>
               </InputGroup>
               <p

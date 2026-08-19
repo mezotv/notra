@@ -55,6 +55,7 @@ export const users = pgTable("users", {
   banExpires: timestamp("ban_expires"),
   hidePersonalData: boolean("hide_personal_data").default(false).notNull(),
   showAgentStats: boolean("show_agent_stats").default(false).notNull(),
+  workosUserId: text("workos_user_id").unique(),
 });
 
 export const chatSessions = pgTable(
@@ -150,181 +151,19 @@ export const chatAttachments = pgTable(
   ]
 );
 
-export const sessions = pgTable(
-  "sessions",
+export const socialConnections = pgTable(
+  "social_connections",
   {
     id: text("id").primaryKey(),
-    expiresAt: timestamp("expires_at").notNull(),
-    token: text("token").notNull().unique(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    impersonatedBy: text("impersonated_by"),
-    activeOrganizationId: text("active_organization_id"),
-  },
-  (table) => [index("sessions_userId_idx").on(table.userId)]
-);
-
-export const accounts = pgTable(
-  "accounts",
-  {
-    id: text("id").primaryKey(),
-    accountId: text("account_id").notNull(),
-    providerId: text("provider_id").notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    providerAccountId: text("provider_account_id").notNull(),
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
-    idToken: text("id_token"),
-    accessTokenExpiresAt: timestamp("access_token_expires_at"),
-    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
     scope: text("scope"),
-    password: text("password"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-  },
-  (table) => [index("accounts_userId_idx").on(table.userId)]
-);
-
-export const verifications = pgTable(
-  "verifications",
-  {
-    id: text("id").primaryKey(),
-    identifier: text("identifier").notNull(),
-    value: text("value").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-  },
-  (table) => [index("verifications_identifier_idx").on(table.identifier)]
-);
-
-export const jwks = pgTable("jwks", {
-  id: text("id").primaryKey(),
-  publicKey: text("public_key").notNull(),
-  privateKey: text("private_key").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at"),
-});
-
-export const oauthClients = pgTable(
-  "oauth_clients",
-  {
-    id: text("id").primaryKey(),
-    clientId: text("client_id").notNull().unique(),
-    clientSecret: text("client_secret"),
-    disabled: boolean("disabled").default(false),
-    skipConsent: boolean("skip_consent"),
-    enableEndSession: boolean("enable_end_session"),
-    subjectType: text("subject_type"),
-    scopes: text("scopes").array(),
-    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-    name: text("name"),
-    uri: text("uri"),
-    icon: text("icon"),
-    contacts: text("contacts").array(),
-    tos: text("tos"),
-    policy: text("policy"),
-    softwareId: text("software_id"),
-    softwareVersion: text("software_version"),
-    softwareStatement: text("software_statement"),
-    redirectUris: text("redirect_uris").array().notNull(),
-    postLogoutRedirectUris: text("post_logout_redirect_uris").array(),
-    tokenEndpointAuthMethod: text("token_endpoint_auth_method"),
-    grantTypes: text("grant_types").array(),
-    responseTypes: text("response_types").array(),
-    public: boolean("public"),
-    type: text("type"),
-    requirePKCE: boolean("require_pkce"),
-    referenceId: text("reference_id"),
-    metadata: jsonb("metadata"),
-  },
-  (table) => [index("oauthClients_userId_idx").on(table.userId)]
-);
-
-export const oauthRefreshTokens = pgTable(
-  "oauth_refresh_tokens",
-  {
-    id: text("id").primaryKey(),
-    token: text("token").notNull().unique(),
-    clientId: text("client_id")
-      .notNull()
-      .references(() => oauthClients.clientId, { onDelete: "cascade" }),
-    sessionId: text("session_id").references(() => sessions.id, {
-      onDelete: "set null",
-    }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    referenceId: text("reference_id"),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    revoked: timestamp("revoked"),
-    authTime: timestamp("auth_time"),
-    scopes: text("scopes").array().notNull(),
-  },
-  (table) => [
-    index("oauthRefreshTokens_clientId_idx").on(table.clientId),
-    index("oauthRefreshTokens_sessionId_idx").on(table.sessionId),
-    index("oauthRefreshTokens_userId_idx").on(table.userId),
-  ]
-);
-
-export const oauthAccessTokens = pgTable(
-  "oauth_access_tokens",
-  {
-    id: text("id").primaryKey(),
-    token: text("token").unique(),
-    clientId: text("client_id")
-      .notNull()
-      .references(() => oauthClients.clientId, { onDelete: "cascade" }),
-    sessionId: text("session_id").references(() => sessions.id, {
-      onDelete: "set null",
-    }),
-    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
-    referenceId: text("reference_id"),
-    refreshId: text("refresh_id").references(() => oauthRefreshTokens.id, {
-      onDelete: "set null",
-    }),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    scopes: text("scopes").array().notNull(),
-  },
-  (table) => [
-    index("oauthAccessTokens_clientId_idx").on(table.clientId),
-    index("oauthAccessTokens_sessionId_idx").on(table.sessionId),
-    index("oauthAccessTokens_userId_idx").on(table.userId),
-    index("oauthAccessTokens_refreshId_idx").on(table.refreshId),
-  ]
-);
-
-export const oauthConsents = pgTable(
-  "oauth_consents",
-  {
-    id: text("id").primaryKey(),
-    clientId: text("client_id")
-      .notNull()
-      .references(() => oauthClients.clientId, { onDelete: "cascade" }),
-    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
-    referenceId: text("reference_id"),
-    scopes: text("scopes").array().notNull(),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -332,8 +171,11 @@ export const oauthConsents = pgTable(
       .notNull(),
   },
   (table) => [
-    index("oauthConsents_clientId_idx").on(table.clientId),
-    index("oauthConsents_userId_idx").on(table.userId),
+    uniqueIndex("socialConnections_userId_provider_uidx").on(
+      table.userId,
+      table.provider
+    ),
+    index("socialConnections_userId_idx").on(table.userId),
   ]
 );
 
@@ -358,6 +200,7 @@ export const organizations = pgTable(
       .default(false)
       .notNull(),
     onboardingAgentStartedAt: timestamp("onboarding_agent_started_at"),
+    workosOrgId: text("workos_org_id").unique(),
   },
   (table) => [uniqueIndex("organizations_slug_uidx").on(table.slug)]
 );
@@ -378,28 +221,6 @@ export const members = pgTable(
   (table) => [
     index("members_organizationId_idx").on(table.organizationId),
     index("members_userId_idx").on(table.userId),
-  ]
-);
-
-export const invitations = pgTable(
-  "invitations",
-  {
-    id: text("id").primaryKey(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    email: text("email").notNull(),
-    role: text("role"),
-    status: text("status").default("pending").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    inviterId: text("inviter_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-  },
-  (table) => [
-    index("invitations_organizationId_idx").on(table.organizationId),
-    index("invitations_email_idx").on(table.email),
   ]
 );
 
@@ -1452,6 +1273,24 @@ export const organizationNotificationSettings = pgTable(
   ]
 );
 
+export const projects = pgTable(
+  "projects",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    isDefault: boolean("is_default").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [index("projects_organizationId_idx").on(table.organizationId)]
+);
+
 export const geoSettings = pgTable(
   "geo_settings",
   {
@@ -1459,6 +1298,9 @@ export const geoSettings = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     companyName: text("company_name").notNull(),
     aliases: text("aliases").array().notNull().default(sql`ARRAY[]::text[]`),
     competitors: text("competitors")
@@ -1474,7 +1316,8 @@ export const geoSettings = pgTable(
       .notNull(),
   },
   (table) => [
-    uniqueIndex("geoSettings_organizationId_uidx").on(table.organizationId),
+    index("geoSettings_organizationId_idx").on(table.organizationId),
+    uniqueIndex("geoSettings_projectId_uidx").on(table.projectId),
   ]
 );
 
@@ -1485,6 +1328,9 @@ export const geoPrompts = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
     prompt: text("prompt").notNull(),
     enabled: boolean("enabled").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -1493,7 +1339,68 @@ export const geoPrompts = pgTable(
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index("geoPrompts_organizationId_idx").on(table.organizationId)]
+  (table) => [
+    index("geoPrompts_organizationId_idx").on(table.organizationId),
+    index("geoPrompts_projectId_idx").on(table.projectId),
+  ]
+);
+
+export const geoPromptSequences = pgTable(
+  "geo_prompt_sequences",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    steps: text("steps").array().notNull().default(sql`ARRAY[]::text[]`),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoPromptSequences_organizationId_idx").on(table.organizationId),
+    index("geoPromptSequences_projectId_idx").on(table.projectId),
+  ]
+);
+
+export const geoCompetitors = pgTable(
+  "geo_competitors",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    domain: text("domain"),
+    synonyms: text("synonyms").array().notNull().default(sql`ARRAY[]::text[]`),
+    kind: text("kind", { enum: ["direct", "indirect"] })
+      .notNull()
+      .default("direct"),
+    color: text("color"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoCompetitors_organizationId_idx").on(table.organizationId),
+    index("geoCompetitors_projectId_idx").on(table.projectId),
+    uniqueIndex("geoCompetitors_projectId_name_uidx").on(
+      table.projectId,
+      table.name
+    ),
+  ]
 );
 
 export const socialExperiments = pgTable(
@@ -1523,6 +1430,7 @@ export const socialExperiments = pgTable(
     index("socialExperiments_organizationId_idx").on(table.organizationId),
   ]
 );
+
 
 export const postCollections = pgTable(
   "post_collections",
@@ -2095,10 +2003,8 @@ export interface PostSourceMetadata {
 }
 
 export const usersRelations = relations(users, ({ many }) => ({
-  sessions: many(sessions),
-  accounts: many(accounts),
+  socialConnections: many(socialConnections),
   members: many(members),
-  invitations: many(invitations),
   githubIntegrations: many(githubIntegrations),
   githubAppInstallations: many(githubAppInstallations),
   linearIntegrations: many(linearIntegrations),
@@ -2129,25 +2035,20 @@ export const chatAttachmentsRelations = relations(
   })
 );
 
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-  users: one(users, {
-    fields: [sessions.userId],
-    references: [users.id],
-  }),
-}));
-
-export const accountsRelations = relations(accounts, ({ one }) => ({
-  users: one(users, {
-    fields: [accounts.userId],
-    references: [users.id],
-  }),
-}));
+export const socialConnectionsRelations = relations(
+  socialConnections,
+  ({ one }) => ({
+    users: one(users, {
+      fields: [socialConnections.userId],
+      references: [users.id],
+    }),
+  })
+);
 
 export const organizationsRelations = relations(
   organizations,
   ({ many, one }) => ({
     members: many(members),
-    invitations: many(invitations),
     githubIntegrations: many(githubIntegrations),
     githubAppInstallations: many(githubAppInstallations),
     linearIntegrations: many(linearIntegrations),
@@ -2158,8 +2059,11 @@ export const organizationsRelations = relations(
     mcpSessionToolActivations: many(mcpSessionToolActivations),
     brandSettings: many(brandSettings),
     notificationSettings: one(organizationNotificationSettings),
-    geoSettings: one(geoSettings),
+    projects: many(projects),
+    geoSettings: many(geoSettings),
     geoPrompts: many(geoPrompts),
+    geoPromptSequences: many(geoPromptSequences),
+    geoCompetitors: many(geoCompetitors),
     connectedSocialAccounts: many(connectedSocialAccounts),
     postCollections: many(postCollections),
     posts: many(posts),
@@ -2197,17 +2101,6 @@ export const membersRelations = relations(members, ({ one }) => ({
   }),
   users: one(users, {
     fields: [members.userId],
-    references: [users.id],
-  }),
-}));
-
-export const invitationsRelations = relations(invitations, ({ one }) => ({
-  organizations: one(organizations, {
-    fields: [invitations.organizationId],
-    references: [organizations.id],
-  }),
-  users: one(users, {
-    fields: [invitations.inviterId],
     references: [users.id],
   }),
 }));
@@ -2545,7 +2438,36 @@ export const geoSettingsRelations = relations(geoSettings, ({ one }) => ({
     fields: [geoSettings.organizationId],
     references: [organizations.id],
   }),
+  project: one(projects, {
+    fields: [geoSettings.projectId],
+    references: [projects.id],
+  }),
 }));
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [projects.organizationId],
+    references: [organizations.id],
+  }),
+  geoSettings: one(geoSettings),
+  geoPrompts: many(geoPrompts),
+  geoPromptSequences: many(geoPromptSequences),
+  geoCompetitors: many(geoCompetitors),
+}));
+
+export const geoPromptSequencesRelations = relations(
+  geoPromptSequences,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoPromptSequences.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [geoPromptSequences.projectId],
+      references: [projects.id],
+    }),
+  })
+);
 
 export const socialExperimentsRelations = relations(
   socialExperiments,
@@ -2557,10 +2479,26 @@ export const socialExperimentsRelations = relations(
   })
 );
 
+
 export const geoPromptsRelations = relations(geoPrompts, ({ one }) => ({
   organization: one(organizations, {
     fields: [geoPrompts.organizationId],
     references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [geoPrompts.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const geoCompetitorsRelations = relations(geoCompetitors, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [geoCompetitors.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [geoCompetitors.projectId],
+    references: [projects.id],
   }),
 }));
 

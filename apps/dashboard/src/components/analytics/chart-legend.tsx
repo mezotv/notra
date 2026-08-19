@@ -1,15 +1,9 @@
 "use client";
 
-import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context";
-import { PALETTE, rgb } from "@notra/ui/components/dither-kit/palette";
+import { useId, useMemo } from "react";
+import { buildChartCss } from "@/components/evilcharts/ui/echarts-chart";
 import { cn } from "@/lib/utils";
-
-interface ChartSeriesLegendProps {
-  config: ChartConfig;
-  orderedKeys: string[];
-  hiddenKeys: ReadonlySet<string>;
-  onToggle: (key: string) => void;
-}
+import type { ChartSeriesLegendProps } from "@/types/analytics";
 
 export function ChartSeriesLegend({
   config,
@@ -17,8 +11,19 @@ export function ChartSeriesLegend({
   hiddenKeys,
   onToggle,
 }: ChartSeriesLegendProps) {
+  const rawId = useId();
+  const legendId = `legend-${rawId.replace(/:/g, "")}`;
+  const css = useMemo(
+    () => buildChartCss(legendId, config),
+    [legendId, config]
+  );
+
   return (
-    <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+    <div
+      className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5"
+      data-chart={legendId}
+    >
+      <style>{css}</style>
       {orderedKeys.map((key) => {
         const entry = config[key];
         if (!entry) {
@@ -43,7 +48,7 @@ export function ChartSeriesLegend({
                 "size-2 rounded-[0.0625rem]",
                 hidden && "opacity-50"
               )}
-              style={{ backgroundColor: rgb(PALETTE[entry.color].fill) }}
+              style={{ backgroundColor: `var(--color-${key}-0)` }}
             />
             <span className={cn(hidden && "line-through")}>
               {entry.label ?? key}

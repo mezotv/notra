@@ -1463,8 +1463,7 @@ export const integrationsRouter = {
         await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);
 
-        const baseUrl =
-          process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+        const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
         if (!baseUrl) {
           throw internalServerError("MCP OAuth is not configured");
         }
@@ -1530,8 +1529,7 @@ export const integrationsRouter = {
         ) {
           throw notFound("OAuth MCP server not found");
         }
-        const baseUrl =
-          process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+        const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
         if (!baseUrl) {
           throw internalServerError("MCP OAuth is not configured");
         }

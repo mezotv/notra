@@ -5,40 +5,38 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import { Loader2Icon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
-import Link from "next/link";
+import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
-import { EmptyState } from "@/components/empty-state";
-import { AiTrafficCard } from "@/components/geo/ai-traffic-card";
-import { AiTrafficLogCard } from "@/components/geo/ai-traffic-log-card";
-import { EngineRadarCard } from "@/components/geo/engine-radar-card";
+import { GeoOnboardingOverlay } from "@/components/geo/geo-onboarding-overlay";
 import { GeoSettingsDialog } from "@/components/geo/geo-settings-dialog";
 import { GeoSummaryStats } from "@/components/geo/geo-summary-stats";
-import { LanguagePerformanceCard } from "@/components/geo/language-performance-card";
-import { MentionRateCard } from "@/components/geo/mention-rate-card";
-import { MentionTrendCard } from "@/components/geo/mention-trend-card";
-import { ModelUsageCard } from "@/components/geo/model-usage-card";
-import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
-import { ShareOfVoiceDonut } from "@/components/geo/share-of-voice-donut";
-import { WebsiteGenerateCard } from "@/components/geo/website-generate-card";
-import { InstrumentGrid } from "@/components/instrument/instrument-grid";
+import { GeoProjectSwitcher } from "@/components/geo/project-switcher";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { PageContainer } from "@/components/layout/container";
+import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { GEO_DEFAULT_TAB, GEO_TAB_VALUES } from "@/constants/geo";
 import {
   useAiTraffic,
-  useBeaconSetup,
   useGeoCompetitorShare,
+  useGeoCompetitors,
+  useGeoIngestSetup,
   useGeoLanguageShare,
   useGeoOverview,
+  useGeoProjects,
   useGeoPromptResults,
   useGeoPrompts,
   useGeoSettings,
   useGeoStartScan,
   useGeoTimeseries,
+  useGeoTrafficJourneys,
+  useGeoTrafficPages,
   useModelUsage,
 } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
+import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
 import { formatSyncClock } from "@/utils/instrument";
+import { GeoTabs } from "./components/geo-tabs";
 import { GeoPageSkeleton } from "./skeleton";
 
 /* ─────────────────────────────────────────────────────────
@@ -65,11 +63,28 @@ const STAGE = {
   modules: 2, // grid modules visible
 };
 
-interface PageClientProps {
-  organizationSlug: string;
+export default function PageClient({ organizationSlug }: GeoPageClientProps) {
+  const [projectParam, setProjectParam] = useQueryState(
+    "project",
+    parseAsString
+  );
+
+  return (
+    <GeoProjectProvider projectId={projectParam ?? undefined}>
+      <GeoPageContent
+        onProjectChange={setProjectParam}
+        organizationSlug={organizationSlug}
+        projectParam={projectParam}
+      />
+    </GeoProjectProvider>
+  );
 }
 
-export default function PageClient({ organizationSlug }: PageClientProps) {
+function GeoPageContent({
+  organizationSlug,
+  projectParam,
+  onProjectChange,
+}: GeoPageContentProps) {
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
   const organization =
@@ -80,6 +95,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  const { data: projectsData } = useGeoProjects(organizationId);
   const { data: settingsData, isPending: isSettingsPending } =
     useGeoSettings(organizationId);
   const { data: overview, dataUpdatedAt } = useGeoOverview(organizationId);
@@ -87,11 +103,19 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { data: prompts } = useGeoPrompts(organizationId);
   const { data: promptResults } = useGeoPromptResults(organizationId);
   const { data: competitorShare } = useGeoCompetitorShare(organizationId);
+  const { data: competitorList } = useGeoCompetitors(organizationId);
   const { data: languageShare } = useGeoLanguageShare(organizationId);
   const { data: modelUsage } = useModelUsage(organizationId);
   const { data: aiTraffic } = useAiTraffic(organizationId);
-  const { data: beaconSetup } = useBeaconSetup(organizationId);
+  const { data: ingestSetup } = useGeoIngestSetup(organizationId);
+  const { data: trafficPages } = useGeoTrafficPages(organizationId);
+  const { data: trafficJourneys } = useGeoTrafficJourneys(organizationId);
   const startScan = useGeoStartScan(organizationId);
+
+  const [activeTab, setActiveTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(GEO_TAB_VALUES).withDefault(GEO_DEFAULT_TAB)
+  );
 
   const reduceMotion = useReducedMotion();
   const [stage, setStage] = useState(0);
@@ -122,27 +146,25 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const settings = settingsData?.settings ?? null;
 
+  const projects = projectsData?.projects ?? [];
+
   if (!settings) {
     return (
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <div className="w-full space-y-6 px-4 lg:px-6">
-          <header className="space-y-1">
-            <p className="font-mono text-[0.6875rem] text-muted-foreground uppercase tracking-wider">
-              AI engine visibility instrument
-            </p>
-            <h1 className="font-semibold text-xl tracking-tight">
-              How often do AI engines mention you?
-            </h1>
-          </header>
-          <WebsiteGenerateCard organizationId={organizationId} />
-          <EmptyState
-            action={
-              <Button onClick={() => setSettingsOpen(true)} variant="outline">
-                Set up manually instead
-              </Button>
-            }
-            description="Or tell us your company name, aliases, and competitors yourself. We'll ask the major AI engines the questions your customers ask and track whether you come up."
-            title="Prefer manual setup?"
+        <div className="w-full space-y-4 px-4 lg:px-6">
+          {projects.length > 0 && (
+            <div className="flex justify-end">
+              <GeoProjectSwitcher
+                activeProjectId={projectParam}
+                onProjectChange={onProjectChange}
+                organizationId={organizationId}
+                projects={projects}
+              />
+            </div>
+          )}
+          <GeoOnboardingOverlay
+            onManualSetup={() => setSettingsOpen(true)}
+            organizationId={organizationId}
           />
           <GeoSettingsDialog
             onOpenChange={setSettingsOpen}
@@ -161,7 +183,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         <header className="flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-1">
             <h1 className="font-semibold text-xl tracking-tight">GEO</h1>
-            <p className="flex flex-wrap items-center gap-x-1.5 font-mono text-[0.6875rem] text-muted-foreground uppercase tracking-wider">
+            <p className="flex flex-wrap items-center gap-x-1.5 text-muted-foreground text-sm">
               <span>
                 How AI engines talk about {settings.companyName} ·{" "}
                 {startScan.isPending
@@ -183,6 +205,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <GeoProjectSwitcher
+              activeProjectId={projectParam}
+              onProjectChange={onProjectChange}
+              organizationId={organizationId}
+              projects={projects}
+            />
             <Button
               onClick={() => setSettingsOpen(true)}
               size="sm"
@@ -212,97 +240,27 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           />
         </InstrumentReveal>
 
-        <InstrumentGrid className="grid-cols-1 lg:grid-cols-12">
-          <InstrumentReveal
-            active={stage >= STAGE.modules}
-            className="lg:col-span-8"
-            order={0}
-          >
-            <MentionTrendCard hero points={timeseries?.points ?? []} />
-          </InstrumentReveal>
-          <InstrumentReveal
-            active={stage >= STAGE.modules}
-            className="lg:col-span-4"
-            order={1}
-          >
-            <EngineRadarCard engines={overview?.engines ?? []} />
-          </InstrumentReveal>
-          <InstrumentReveal
-            active={stage >= STAGE.modules}
-            className="lg:col-span-8"
-            order={2}
-          >
-            <MentionRateCard engines={overview?.engines ?? []} />
-          </InstrumentReveal>
-          <InstrumentReveal
-            active={stage >= STAGE.modules}
-            className="lg:col-span-4"
-            order={3}
-          >
-            <ShareOfVoiceDonut
-              action={
-                <Link
-                  className="font-mono text-[0.625rem] text-muted-foreground uppercase tracking-wider underline-offset-4 hover:text-foreground hover:underline"
-                  href={`/${organizationSlug}/geo/competitors`}
-                >
-                  All competitors
-                </Link>
-              }
-              points={competitorShare?.points ?? []}
-            />
-          </InstrumentReveal>
-          <InstrumentReveal
-            active={stage >= STAGE.modules}
-            className="lg:col-span-8"
-            order={4}
-          >
-            <PromptResultsPreview
-              action={
-                <Link
-                  className="font-mono text-[0.625rem] text-muted-foreground uppercase tracking-wider underline-offset-4 hover:text-foreground hover:underline"
-                  href={`/${organizationSlug}/geo/prompts`}
-                >
-                  All prompts
-                </Link>
-              }
-              languages={settings.languages}
-              results={promptResults?.results ?? []}
-            />
-          </InstrumentReveal>
-          <InstrumentReveal
-            active={stage >= STAGE.modules}
-            className="lg:col-span-4"
-            order={5}
-          >
-            <LanguagePerformanceCard
-              configuredLanguages={settings.languages}
-              points={languageShare?.points ?? []}
-            />
-          </InstrumentReveal>
-          <InstrumentReveal
-            active={stage >= STAGE.modules}
-            className="lg:col-span-4"
-            order={6}
-          >
-            <ModelUsageCard usage={modelUsage} />
-          </InstrumentReveal>
-          <InstrumentReveal
-            active={stage >= STAGE.modules}
-            className="lg:col-span-8"
-            order={7}
-          >
-            <AiTrafficCard setup={beaconSetup} traffic={aiTraffic} />
-          </InstrumentReveal>
-          {(aiTraffic?.log.length ?? 0) > 0 && (
-            <InstrumentReveal
-              active={stage >= STAGE.modules}
-              className="lg:col-span-12"
-              order={8}
-            >
-              <AiTrafficLogCard log={aiTraffic?.log ?? []} />
-            </InstrumentReveal>
-          )}
-        </InstrumentGrid>
+        <GeoTabs
+          activeTab={activeTab}
+          competitorPoints={competitorShare?.points ?? []}
+          competitors={competitorList?.competitors ?? []}
+          engines={overview?.engines ?? []}
+          ingestSetup={ingestSetup}
+          journeys={trafficJourneys?.journeys ?? []}
+          languagePoints={languageShare?.points ?? []}
+          modelUsage={modelUsage}
+          onActiveTabChange={setActiveTab}
+          organizationId={organizationId}
+          organizationSlug={organizationSlug}
+          promptCount={prompts?.prompts.length ?? 0}
+          promptResults={promptResults?.results ?? []}
+          revealActive={stage >= STAGE.modules}
+          settings={settings}
+          timeseriesPoints={timeseries?.points ?? []}
+          tracked={overview?.tracked ?? []}
+          traffic={aiTraffic}
+          trafficPages={trafficPages?.pages ?? []}
+        />
 
         <GeoSettingsDialog
           onOpenChange={setSettingsOpen}

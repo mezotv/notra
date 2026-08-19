@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
-import { authClient } from "@/lib/auth/client";
+import { forgotPasswordAction } from "@/lib/auth/password-actions";
 
 export default function ForgotPassword() {
   const [isLoading, setIsLoading] = useState(false);
@@ -24,17 +24,7 @@ export default function ForgotPassword() {
     setIsLoading(true);
 
     try {
-      const result = await authClient.requestPasswordReset({
-        email,
-        redirectTo: "/reset-password",
-      });
-
-      if (result.error) {
-        toast.error("Something went wrong. Please try again.");
-        setIsLoading(false);
-        return;
-      }
-
+      await forgotPasswordAction({ email });
       setIsSubmitted(true);
     } catch {
       toast.error("Network error. Please check your connection and try again.");

@@ -118,7 +118,8 @@ const ChatInput = ({
     remainingChatCredits !== null &&
     remainingChatCredits > 0 &&
     remainingChatCredits <= 10;
-  const isUsageBlocked = checkResult ? checkResult.allowed === false : false;
+  const isUsageBlocked =
+    process.env.NODE_ENV !== "development" && checkResult?.allowed === false;
   const usageLimitError =
     externalError ??
     internalError ??
@@ -272,7 +273,7 @@ const ChatInput = ({
       </CardHeader>
       <CardContent className="p-0">
         <div
-          className="overflow-hidden rounded-[14px] border border-border bg-background shadow-sm"
+          className="overflow-hidden rounded-[14px] border border-border bg-background shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none"
           tabIndex={-1}
         >
           <div className="p-0.5">

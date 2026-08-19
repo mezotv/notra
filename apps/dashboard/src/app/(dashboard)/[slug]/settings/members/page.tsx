@@ -11,11 +11,10 @@ import {
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import type { Invitation } from "better-auth/plugins/organization";
 import { use, useState } from "react";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
-import { columns, type Member } from "@/components/members/columns";
+import { columns } from "@/components/members/columns";
 import { DataTable } from "@/components/members/data-table";
 import { invitationColumns } from "@/components/members/invitation-columns";
 import { InviteMemberModal } from "@/components/members/invite-member-modal";
@@ -55,11 +54,9 @@ export default function MembersPage({ params }: PageProps) {
     enabled: !!organization?.id,
   });
 
-  const members = membersData?.members as Member[] | undefined;
+  const members = membersData?.members;
 
-  const { data: invitations, isLoading: invitationsLoading } = useQuery<
-    Invitation[]
-  >({
+  const { data: invitations, isLoading: invitationsLoading } = useQuery({
     queryKey: ["invitations", organization?.id],
     queryFn: async () => {
       if (!organization?.id) {

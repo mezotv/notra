@@ -19,7 +19,11 @@ function sanitize(value: string): string {
 }
 
 function tinybirdBaseUrl(): string {
-  return process.env.TINYBIRD_BASE_URL ?? "https://api.tinybird.co";
+  return (
+    process.env.TINYBIRD_BASE_URL ??
+    process.env.TINYBIRD_URL ??
+    "https://api.tinybird.co"
+  );
 }
 
 async function waitForJob(jobId: string): Promise<void> {

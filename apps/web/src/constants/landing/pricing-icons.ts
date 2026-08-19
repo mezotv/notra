@@ -1,20 +1,24 @@
 import {
-  CreditsIcon,
-  IntegrationsIcon,
+  ContentIcon,
+  ImagesIcon,
+  ProjectsIcon,
   ReferencesIcon,
   RetentionIcon,
+  SocialIcon,
   SupportIcon,
-  TeamIcon,
-  WorkflowsIcon,
+  TrackingIcon,
+  ZdrIcon,
 } from "@/components/landing/pricing-icons";
 import type { PricingIcon, PricingIconKey } from "@/types/landing/pricing";
 
 export const PRICING_ICONS: Record<PricingIconKey, PricingIcon> = {
-  team: TeamIcon,
-  credits: CreditsIcon,
-  workflows: WorkflowsIcon,
-  integrations: IntegrationsIcon,
+  tracking: TrackingIcon,
+  images: ImagesIcon,
+  content: ContentIcon,
+  social: SocialIcon,
+  projects: ProjectsIcon,
   references: ReferencesIcon,
   retention: RetentionIcon,
   support: SupportIcon,
+  zdr: ZdrIcon,
 };
