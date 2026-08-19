@@ -173,7 +173,7 @@ function OrgSelectorTrigger({
             ) : null}
           </div>
           <HugeiconsIcon
-            className="ml-auto transition-opacity duration-200 ease-(--sidebar-ease) group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:delay-75 group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0"
+            className="ml-auto transition-opacity duration-200 ease-(--sidebar-ease) group-data-[collapsible=icon]:hidden group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0"
             icon={ArrowUp01Icon}
           />
         </SidebarMenuButton>
