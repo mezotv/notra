@@ -272,3 +272,8 @@ export const geoTrafficPagesInputSchema = geoOrganizationInputSchema.extend({
   limit: number().int().min(1).max(MAX_AI_TRAFFIC_PAGES_LIMIT).optional(),
   visitorType: enumType(["crawler", "ai_referral"]).optional(),
 });
+
+export const geoSuggestionIdInputSchema = object({
+  organizationId: string().min(1),
+  suggestionId: string().min(1),
+});

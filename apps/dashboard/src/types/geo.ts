@@ -998,3 +998,34 @@ export interface TwemojiProps {
   label: string;
   className?: string;
 }
+
+export interface GeoSuggestionKeyword {
+  query: string;
+  clicks: number;
+  impressions: number;
+  position: number;
+}
+
+export interface GeoPromptSuggestionRow {
+  id: string;
+  prompt: string;
+  source: "search_console";
+  sourceKeywords: GeoSuggestionKeyword[];
+  createdAt: Date;
+}
+
+export interface GeoPromptSuggestion {
+  id: string;
+  prompt: string;
+  source: "search_console";
+  keywords: GeoSuggestionKeyword[];
+  createdAt: string;
+}
+
+export interface GeoPromptSuggestionsResponse {
+  suggestions: GeoPromptSuggestion[];
+}
+
+export interface GeoSuggestionIdInput {
+  suggestionId: string;
+}

@@ -2,6 +2,7 @@ import { Client as QStashClient } from "@upstash/qstash";
 import { Client as WorkflowClient } from "@upstash/workflow";
 import type { BrandGuidelinesWorkflowPayload } from "../types/brand-guidelines";
 import type { OnboardingAgentWorkflowPayload } from "../types/onboarding-agent";
+import type { CreateQstashRouteScheduleProps } from "../types/qstash";
 import {
   getConfiguredAppUrl,
   getConfiguredWorkflowUrl,
@@ -130,6 +131,34 @@ export async function createQstashSchedule({
     destination,
     cron,
     body: JSON.stringify({ triggerId }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const resolvedScheduleId = result.scheduleId ?? scheduleId;
+
+  if (!resolvedScheduleId) {
+    throw new Error("QStash schedule id was not returned");
+  }
+
+  return resolvedScheduleId;
+}
+
+export async function createQstashRouteSchedule({
+  path,
+  cron,
+  body,
+  scheduleId,
+}: CreateQstashRouteScheduleProps) {
+  const client = getQStashClient();
+  const appUrl = getAppUrl();
+
+  const result = await client.schedules.create({
+    ...(scheduleId && { scheduleId }),
+    destination: `${appUrl}${path}`,
+    cron,
+    body: JSON.stringify(body),
     headers: {
       "Content-Type": "application/json",
     },

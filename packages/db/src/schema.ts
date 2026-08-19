@@ -1403,6 +1403,90 @@ export const geoCompetitors = pgTable(
   ]
 );
 
+export const googleSearchConsoleIntegrations = pgTable(
+  "google_search_console_integrations",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    googleAccountEmail: text("google_account_email"),
+    encryptedAccessToken: text("encrypted_access_token").notNull(),
+    encryptedRefreshToken: text("encrypted_refresh_token").notNull(),
+    accessTokenExpiresAt: timestamp("access_token_expires_at").notNull(),
+    siteUrl: text("site_url"),
+    status: text("status", { enum: ["active", "reauth_required"] })
+      .notNull()
+      .default("active"),
+    qstashScheduleId: text("qstash_schedule_id"),
+    lastSyncedAt: timestamp("last_synced_at"),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("googleSearchConsoleIntegrations_organizationId_uidx").on(
+      table.organizationId
+    ),
+    index("googleSearchConsoleIntegrations_createdByUserId_idx").on(
+      table.createdByUserId
+    ),
+  ]
+);
+
+export const geoPromptSuggestions = pgTable(
+  "geo_prompt_suggestions",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    prompt: text("prompt").notNull(),
+    source: text("source", { enum: ["search_console"] })
+      .notNull()
+      .default("search_console"),
+    sourceKeywords: jsonb("source_keywords")
+      .$type<
+        {
+          query: string;
+          clicks: number;
+          impressions: number;
+          position: number;
+        }[]
+      >()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    status: text("status", { enum: ["pending", "accepted", "dismissed"] })
+      .notNull()
+      .default("pending"),
+    acceptedPromptId: text("accepted_prompt_id").references(
+      () => geoPrompts.id,
+      { onDelete: "set null" }
+    ),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoPromptSuggestions_organizationId_status_idx").on(
+      table.organizationId,
+      table.status
+    ),
+    uniqueIndex("geoPromptSuggestions_organizationId_prompt_uidx").on(
+      table.organizationId,
+      table.prompt
+    ),
+  ]
+);
+
 export const socialExperiments = pgTable(
   "social_experiments",
   {
@@ -2061,6 +2145,8 @@ export const organizationsRelations = relations(
     projects: many(projects),
     geoSettings: many(geoSettings),
     geoPrompts: many(geoPrompts),
+    geoPromptSuggestions: many(geoPromptSuggestions),
+    googleSearchConsoleIntegration: one(googleSearchConsoleIntegrations),
     geoPromptSequences: many(geoPromptSequences),
     geoCompetitors: many(geoCompetitors),
     connectedSocialAccounts: many(connectedSocialAccounts),
@@ -2080,8 +2166,8 @@ export const organizationsRelations = relations(
     autonomyOutbox: many(autonomyOutbox),
     autonomyClaims: many(autonomyClaims),
     autonomyControllerLeases: many(autonomyControllerLeases),
-  })
-);
+})
+)
 
 export const onboardingSuggestionsRelations = relations(
   onboardingSuggestions,
@@ -2499,6 +2585,34 @@ export const geoCompetitorsRelations = relations(geoCompetitors, ({ one }) => ({
     references: [projects.id],
   }),
 }));
+
+export const geoPromptSuggestionsRelations = relations(
+  geoPromptSuggestions,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoPromptSuggestions.organizationId],
+      references: [organizations.id],
+    }),
+    acceptedPrompt: one(geoPrompts, {
+      fields: [geoPromptSuggestions.acceptedPromptId],
+      references: [geoPrompts.id],
+    }),
+  })
+);
+
+export const googleSearchConsoleIntegrationsRelations = relations(
+  googleSearchConsoleIntegrations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [googleSearchConsoleIntegrations.organizationId],
+      references: [organizations.id],
+    }),
+    createdByUser: one(users, {
+      fields: [googleSearchConsoleIntegrations.createdByUserId],
+      references: [users.id],
+    }),
+  })
+);
 
 export const postCollectionsRelations = relations(
   postCollections,

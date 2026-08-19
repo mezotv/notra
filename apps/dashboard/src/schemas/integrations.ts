@@ -10,6 +10,7 @@ export const INPUT_INTEGRATION_TYPES = [
   "slack",
   "linear",
   "granola",
+  "google-search-console",
 ] as const;
 export type InputIntegrationType = (typeof INPUT_INTEGRATION_TYPES)[number];
 

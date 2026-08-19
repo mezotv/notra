@@ -24,6 +24,7 @@ const WEBHOOK_HANDLERS: Record<InputIntegrationType, WebhookHandler | null> = {
   linear: handleLinearWebhook,
   slack: null,
   granola: null,
+  "google-search-console": null,
 };
 
 type IntegrationFetcher = (
@@ -56,6 +57,7 @@ const INTEGRATION_FETCHERS: Record<
   },
   slack: null,
   granola: null,
+  "google-search-console": null,
 };
 
 export async function POST(request: NextRequest, { params }: RouteContext) {

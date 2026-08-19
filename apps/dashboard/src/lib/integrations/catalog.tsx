@@ -2,6 +2,7 @@
 
 import { Framer } from "@notra/ui/components/ui/svgs/framer";
 import { Github } from "@notra/ui/components/ui/svgs/github";
+import { Google } from "@notra/ui/components/ui/svgs/google";
 import { Granola } from "@notra/ui/components/ui/svgs/granola";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Raycast } from "@notra/ui/components/ui/svgs/raycast";
@@ -49,6 +50,17 @@ const INPUT_SOURCES: readonly IntegrationConfig[] = [
     icon: <Granola />,
     accentColor: "#B2C248",
     href: "granola",
+    available: true,
+    category: "input",
+  },
+  {
+    id: "google-search-console",
+    name: "Google Search Console",
+    description:
+      "Turn the search queries you already rank for into AI prompt suggestions for GEO tracking",
+    icon: <Google />,
+    accentColor: "#4285F4",
+    href: "google-search-console",
     available: true,
     category: "input",
   },
