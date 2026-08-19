@@ -29,6 +29,7 @@ import { Button } from "@/components/button";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { DevSampleDataCard } from "@/components/settings/dev-sample-data-card";
 import { OrganizationMembershipActionDialog } from "@/components/settings/organization-membership-action-dialog";
 import { authClient } from "@/lib/auth/client";
 import {
@@ -172,6 +173,10 @@ export default function GeneralSettingsPage({
         <OrganizationDetailsCard organization={organization} slug={slug} />
 
         <ConnectedAccountsSection organizationId={organization.id} />
+
+        {process.env.NODE_ENV === "development" && (
+          <DevSampleDataCard organizationId={organization.id} />
+        )}
 
         <TitleCard heading="Danger Zone">
           <div className="space-y-4">

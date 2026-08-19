@@ -27,3 +27,7 @@ export interface OrganizationDetailsCardProps {
   organization: OrganizationDetails;
   slug: string;
 }
+
+export interface DevSampleDataCardProps {
+  organizationId: string;
+}

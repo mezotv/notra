@@ -16,6 +16,7 @@ import { db } from "@notra/db/drizzle";
 import { geoPromptSuggestions, geoPrompts, projects } from "@notra/db/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
 import type { Effect } from "effect";
+import { GEO_SAMPLE_DATA_ENABLED } from "@/constants/geo";
 import {
   GSC_SCHEDULE_ID_PREFIX,
   GSC_SYNC_CRON,
@@ -50,6 +51,7 @@ import {
   upsertGeoSettings,
 } from "@/lib/geo/programs";
 import { createGeoProject, listGeoProjects } from "@/lib/geo/projects";
+import { seedGeoSampleData } from "@/lib/geo/sample-data";
 import { syncGscSuggestions } from "@/lib/geo/search-console";
 import {
   createGeoSequence,
@@ -395,6 +397,14 @@ export const geoRouter = {
   startScan: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => startGeoScan(input))),
+  sampleData: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async (options) => {
+      if (!GEO_SAMPLE_DATA_ENABLED) {
+        throw notFound();
+      }
+      return geoHandler((input) => seedGeoSampleData(input))(options);
+    }),
   searchConsoleStatus: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async ({ context, input }): Promise<GeoSearchConsoleStatus> => {
