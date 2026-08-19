@@ -10,7 +10,9 @@ import { ContentSkeletonCard } from "@/components/content/content-skeleton-card"
 import { GroupContentTypes } from "@/components/content/group/group-content-types";
 import { RenameCollectionDialog } from "@/components/content/group/rename-collection-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
+import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
 import { useCollection } from "@/lib/hooks/use-collections";
 import type { CollectionDetailPageClientProps } from "@/types/content/collection";
 import { formatLongDate, getMarkdownPreview } from "@/utils/content-preview";
@@ -140,6 +142,13 @@ export default function PageClient({
         {!hasContent && (
           <EmptyState
             description="This collection has no posts."
+            preview={
+              <EmptyStateCardsPreview
+                columns={3}
+                count={EMPTY_STATE_CARD_COUNT.content}
+                variant="content"
+              />
+            }
             title="Nothing here yet"
           />
         )}

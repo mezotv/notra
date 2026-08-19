@@ -9,6 +9,7 @@ import {
   Settings01Icon,
   SparklesIcon,
   Sun03Icon,
+  Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -22,6 +23,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
@@ -42,6 +44,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { CreditBalanceMenuItem } from "@/components/billing/credit-balance-button";
+import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { authClient } from "@/lib/auth/client";
 import { cn, errorMessageOr } from "@/lib/utils";
@@ -127,12 +130,10 @@ function OverflowAwareText({
 }
 
 function OrgSelectorTrigger({
-  isCollapsed,
   isSwitching,
   activeOrganization,
   planBadge,
 }: {
-  isCollapsed: boolean;
   isSwitching: boolean;
   activeOrganization: Organization | null;
   planBadge: "pro" | "basic" | null;
@@ -141,20 +142,12 @@ function OrgSelectorTrigger({
     <DropdownMenuTrigger
       render={
         <SidebarMenuButton
-          className={cn(
-            "cursor-pointer data-popup-open:bg-sidebar-accent/90 data-popup-open:text-sidebar-accent-foreground data-popup-open:ring-1 data-popup-open:ring-sidebar-border/70",
-            isCollapsed ? "min-w-0 justify-center" : ""
-          )}
+          className="min-w-0 cursor-pointer data-popup-open:bg-sidebar-accent/90 data-popup-open:text-sidebar-accent-foreground data-popup-open:ring-1 data-popup-open:ring-sidebar-border/70 group-data-[collapsible=icon]:justify-center"
           disabled={isSwitching}
           size="lg"
           tooltip={`Organization | ${activeOrganization?.name}`}
         >
-          <Avatar
-            className={cn(
-              "size-8 rounded-lg after:rounded-lg",
-              isCollapsed ? "size-6" : ""
-            )}
-          >
+          <Avatar className="size-8 rounded-lg transition-[width,height] duration-(--sidebar-duration) ease-(--sidebar-ease) after:rounded-lg group-data-[collapsible=icon]:size-6 motion-reduce:transition-none">
             <AvatarImage
               className="rounded-lg"
               src={activeOrganization?.logo || undefined}
@@ -163,27 +156,26 @@ function OrgSelectorTrigger({
               {activeOrganization?.name.charAt(0)}
             </AvatarFallback>
           </Avatar>
-          {isCollapsed ? null : (
-            <>
-              <div className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm leading-tight">
-                <OverflowAwareText
-                  className="font-medium text-sm"
-                  text={activeOrganization?.name}
-                />
-                {planBadge === "pro" ? (
-                  <Badge className="shrink-0 bg-purple-500/15 px-1.5 py-0 font-semibold text-[10px] text-purple-600 hover:bg-purple-500/15 dark:text-purple-400">
-                    PRO
-                  </Badge>
-                ) : null}
-                {planBadge === "basic" ? (
-                  <Badge className="shrink-0 bg-blue-500/15 px-1.5 py-0 font-semibold text-[10px] text-blue-600 hover:bg-blue-500/15 dark:text-blue-400">
-                    BASIC
-                  </Badge>
-                ) : null}
-              </div>
-              <HugeiconsIcon className="ml-auto" icon={ArrowUp01Icon} />
-            </>
-          )}
+          <div className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm leading-tight transition-opacity duration-200 ease-(--sidebar-ease) group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:delay-75 group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0">
+            <OverflowAwareText
+              className="font-medium text-sm"
+              text={activeOrganization?.name}
+            />
+            {planBadge === "pro" ? (
+              <Badge className="shrink-0 bg-purple-500/15 px-1.5 py-0 font-semibold text-[10px] text-purple-600 hover:bg-purple-500/15 dark:text-purple-400">
+                PRO
+              </Badge>
+            ) : null}
+            {planBadge === "basic" ? (
+              <Badge className="shrink-0 bg-blue-500/15 px-1.5 py-0 font-semibold text-[10px] text-blue-600 hover:bg-blue-500/15 dark:text-blue-400">
+                BASIC
+              </Badge>
+            ) : null}
+          </div>
+          <HugeiconsIcon
+            className="ml-auto transition-opacity duration-200 ease-(--sidebar-ease) group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:delay-75 group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0"
+            icon={ArrowUp01Icon}
+          />
         </SidebarMenuButton>
       }
     />
@@ -206,7 +198,9 @@ function OrgSelectorSkeleton({ isCollapsed }: { isCollapsed: boolean }) {
   );
 }
 
-export function OrganizationOptionsList({
+const ORG_MENU_ITEM_CLASS = "cursor-pointer py-1.5";
+
+function OrganizationOptionsList({
   organizations,
   selectedOrganizationId,
   onSelect,
@@ -223,42 +217,47 @@ export function OrganizationOptionsList({
 
   return (
     <DropdownMenuGroup>
+      <DropdownMenuLabel>Organizations</DropdownMenuLabel>
       {organizations.map((org) => {
         const isSelected = selectedOrganizationId === org.id;
         return (
-          <div className="flex items-center gap-1" key={org.id}>
-            <DropdownMenuItem
-              className={cn(
-                "min-w-0 flex-1 cursor-pointer gap-2",
-                isSelected && "bg-accent text-accent-foreground"
-              )}
-              disabled={disabled}
-              onClick={() => onSelect(org.id)}
-            >
-              <Avatar className="size-6 rounded-lg after:rounded-lg">
-                <AvatarImage src={org.logo || undefined} />
-                <AvatarFallback className="rounded-lg">
-                  {org.name.slice(0, 2)}
-                </AvatarFallback>
-              </Avatar>
-              <OverflowAwareText
-                className="text-sm"
-                text={org.name}
-                thresholdMultiplier={1.75}
+          <DropdownMenuItem
+            aria-current={isSelected ? "true" : undefined}
+            className={ORG_MENU_ITEM_CLASS}
+            disabled={disabled}
+            key={org.id}
+            onClick={() => onSelect(org.id)}
+          >
+            <Avatar className="size-5 rounded-md after:rounded-md">
+              <AvatarImage src={org.logo || undefined} />
+              <AvatarFallback className="rounded-md text-[10px]">
+                {org.name.slice(0, 2)}
+              </AvatarFallback>
+            </Avatar>
+            <OverflowAwareText
+              className="text-sm"
+              text={org.name}
+              thresholdMultiplier={1.75}
+            />
+            {isSelected ? (
+              <HugeiconsIcon
+                className="ml-auto size-4 text-muted-foreground"
+                icon={Tick02Icon}
               />
-            </DropdownMenuItem>
-            {isSelected && onCreate ? (
-              <DropdownMenuItem
-                aria-label="Create organization"
-                className="size-7 shrink-0 cursor-pointer justify-center p-0 text-muted-foreground data-highlighted:text-foreground"
-                onClick={onCreate}
-              >
-                <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-              </DropdownMenuItem>
             ) : null}
-          </div>
+          </DropdownMenuItem>
         );
       })}
+      {onCreate ? (
+        <DropdownMenuItem
+          className={cn(ORG_MENU_ITEM_CLASS, "text-muted-foreground")}
+          disabled={disabled}
+          onClick={onCreate}
+        >
+          <HugeiconsIcon icon={PlusSignIcon} />
+          New organization
+        </DropdownMenuItem>
+      ) : null}
     </DropdownMenuGroup>
   );
 }
@@ -292,6 +291,7 @@ export function OrgSelector() {
   const [isPending, startTransition] = useTransition();
   const [isSwitching, setIsSwitching] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
   const isNavigating = isSwitching || isPending;
 
   const activeSubscription = customer?.subscriptions.find(
@@ -346,9 +346,14 @@ export function OrgSelector() {
 
       await setLastVisitedOrganization(org.slug);
       queryClient.invalidateQueries({ refetchType: "none" });
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTH.activeOrganization,
-      });
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.AUTH.activeOrganization,
+        }),
+        queryClient.invalidateQueries({
+          queryKey: QUERY_KEYS.AUTH.session,
+        }),
+      ]);
 
       setIsSwitching(false);
       startTransition(() => {
@@ -392,7 +397,6 @@ export function OrgSelector() {
           {shouldShowTrigger ? (
             <OrgSelectorTrigger
               activeOrganization={activeOrganization}
-              isCollapsed={isCollapsed}
               isSwitching={isNavigating}
               planBadge={planBadge}
             />
@@ -401,9 +405,9 @@ export function OrgSelector() {
           )}
           <DropdownMenuContent
             align="start"
-            className="w-72 rounded-lg"
+            className="w-64"
             side={dropdownSide}
-            sideOffset={4}
+            sideOffset={6}
           >
             <OrganizationOptionsList
               disabled={isNavigating}
@@ -415,9 +419,12 @@ export function OrgSelector() {
 
             <DropdownMenuSeparator />
 
-            <CreditBalanceMenuItem />
+            <CreditBalanceMenuItem
+              className={ORG_MENU_ITEM_CLASS}
+              onOpenTopup={() => setIsTopupModalOpen(true)}
+            />
             <DropdownMenuItem
-              className="cursor-pointer"
+              className={ORG_MENU_ITEM_CLASS}
               onClick={() => openFeedback()}
             >
               <HugeiconsIcon icon={Message01Icon} />
@@ -425,33 +432,32 @@ export function OrgSelector() {
               <Kbd className="ml-auto">F</Kbd>
             </DropdownMenuItem>
             <DropdownMenuItem
-              className="cursor-pointer"
+              className={ORG_MENU_ITEM_CLASS}
               onClick={triggerScheduleDemo}
             >
               <HugeiconsIcon icon={Calendar03Icon} />
               Schedule a Demo
               <Kbd className="ml-auto">S</Kbd>
             </DropdownMenuItem>
-
             {hasActivePaidPlan ? null : (
-              <>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  className="cursor-pointer bg-primary/10 text-primary data-highlighted:bg-primary/15 data-highlighted:text-primary [&_svg]:text-primary"
-                  onClick={() =>
-                    router.push(`/${activeOrganization?.slug}/settings/billing`)
-                  }
-                >
-                  <HugeiconsIcon icon={SparklesIcon} />
-                  Upgrade to Pro
-                </DropdownMenuItem>
-              </>
+              <DropdownMenuItem
+                className={cn(
+                  ORG_MENU_ITEM_CLASS,
+                  "text-primary focus:text-primary [&_svg]:text-primary"
+                )}
+                onClick={() =>
+                  router.push(`/${activeOrganization?.slug}/settings/billing`)
+                }
+              >
+                <HugeiconsIcon icon={SparklesIcon} />
+                Upgrade to Pro
+              </DropdownMenuItem>
             )}
 
             <DropdownMenuSeparator />
 
             <DropdownMenuItem
-              className="cursor-pointer"
+              className={ORG_MENU_ITEM_CLASS}
               onClick={() =>
                 router.push(`/${activeOrganization?.slug}/settings/account`)
               }
@@ -460,7 +466,10 @@ export function OrgSelector() {
               Settings
             </DropdownMenuItem>
 
-            <DropdownMenuItem className="cursor-pointer" onClick={toggleTheme}>
+            <DropdownMenuItem
+              className={ORG_MENU_ITEM_CLASS}
+              onClick={toggleTheme}
+            >
               <HugeiconsIcon icon={isDark ? Sun03Icon : Moon02Icon} />
               {isDark ? "Light Mode" : "Dark Mode"}
               <Kbd className="ml-auto">D</Kbd>
@@ -471,6 +480,11 @@ export function OrgSelector() {
         <CreateOrgModal
           onOpenChange={setIsCreateModalOpen}
           open={isCreateModalOpen}
+        />
+
+        <CreditTopupModal
+          onOpenChange={setIsTopupModalOpen}
+          open={isTopupModalOpen}
         />
       </SidebarMenuItem>
     </SidebarMenu>

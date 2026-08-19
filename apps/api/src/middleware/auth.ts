@@ -1,5 +1,7 @@
 import type { createDb } from "@notra/db/drizzle";
+import { organizations, users } from "@notra/db/schema";
 import { Unkey } from "@unkey/api";
+import { eq } from "drizzle-orm";
 import type { Context, Next } from "hono";
 import {
   createRemoteJWKSet,
@@ -32,16 +34,16 @@ interface AuthOptions {
 }
 
 const BEARER_HEADER_REGEX = /^Bearer\s+(.+)$/i;
-const DEFAULT_OAUTH_BASE_URL = "https://app.usenotra.com";
-const OAUTH_BASE_PATH = "/api/auth";
-const OAUTH_JWKS_PATH = `${OAUTH_BASE_PATH}/jwks`;
-const TRAILING_SLASH_REGEX = /\/+$/;
+const DEFAULT_AUTHKIT_DOMAIN = "auth.usenotra.com";
 const OAUTH_AUDIENCES = [
   API_URL,
   "https://mcp.usenotra.com",
   "https://mcp.usenotra.com/mcp",
 ] as const;
 const SCOPE_SEPARATOR_REGEX = /\s+/;
+const WORKOS_ID_CACHE_MAX_SIZE = 1000;
+const WORKOS_ID_CACHE_TTL_MS = 5 * 60 * 1000;
+const workosIdCache = new Map<string, { localId: string; expiresAt: number }>();
 const remoteJwksByUrl = new Map<
   string,
   ReturnType<typeof createRemoteJWKSet>
@@ -62,17 +64,103 @@ type AuthResult =
   | { success: false; error: string; status: 401 | 403 | 503 };
 
 function getOAuthIssuer(c: Context) {
-  const baseUrl = (c.env.BETTER_AUTH_URL ?? DEFAULT_OAUTH_BASE_URL).replace(
-    TRAILING_SLASH_REGEX,
-    ""
-  );
-  return baseUrl.endsWith(OAUTH_BASE_PATH)
-    ? baseUrl
-    : `${baseUrl}${OAUTH_BASE_PATH}`;
+  const domain = c.env.WORKOS_AUTHKIT_DOMAIN ?? DEFAULT_AUTHKIT_DOMAIN;
+  return `https://${domain}`;
 }
 
 function getOAuthJwksUrl(c: Context) {
-  return new URL(OAUTH_JWKS_PATH, getOAuthIssuer(c)).toString();
+  return `${getOAuthIssuer(c)}/oauth2/jwks`;
+}
+
+function getCachedLocalId(cacheKey: string): string | null {
+  const entry = workosIdCache.get(cacheKey);
+  if (!entry) {
+    return null;
+  }
+
+  if (Date.now() > entry.expiresAt) {
+    workosIdCache.delete(cacheKey);
+    return null;
+  }
+
+  return entry.localId;
+}
+
+function setCachedLocalId(cacheKey: string, localId: string) {
+  if (workosIdCache.size >= WORKOS_ID_CACHE_MAX_SIZE) {
+    const oldestKey = workosIdCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      workosIdCache.delete(oldestKey);
+    }
+  }
+
+  workosIdCache.set(cacheKey, {
+    localId,
+    expiresAt: Date.now() + WORKOS_ID_CACHE_TTL_MS,
+  });
+}
+
+async function resolveLocalUserId(
+  db: ReturnType<typeof createDb>,
+  workosUserId: string
+): Promise<string | null> {
+  const cacheKey = `user:${workosUserId}`;
+  const cached = getCachedLocalId(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.workosUserId, workosUserId),
+    columns: { id: true },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  setCachedLocalId(cacheKey, user.id);
+  return user.id;
+}
+
+async function resolveLocalOrganizationId(
+  db: ReturnType<typeof createDb>,
+  workosOrgId: string
+): Promise<string | null> {
+  const cacheKey = `org:${workosOrgId}`;
+  const cached = getCachedLocalId(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.workosOrgId, workosOrgId),
+    columns: { id: true },
+  });
+
+  if (!organization) {
+    return null;
+  }
+
+  setCachedLocalId(cacheKey, organization.id);
+  return organization.id;
+}
+
+function isAllowedAudience(
+  aud: JWTPayload["aud"],
+  workosClientId: string | undefined
+) {
+  if (aud === undefined) {
+    return true;
+  }
+
+  const allowed = new Set<string>(OAUTH_AUDIENCES);
+  if (workosClientId) {
+    allowed.add(workosClientId);
+  }
+
+  const audiences = Array.isArray(aud) ? aud : [aud];
+  return audiences.some((audience) => allowed.has(audience));
 }
 
 function getRemoteJwks(jwksUrl: string): ReturnType<typeof createRemoteJWKSet> {
@@ -119,8 +207,7 @@ function looksLikeJwt(token: string) {
   );
 }
 
-function extractScopes(payload: JWTPayload): string[] {
-  const rawScopes = payload.scope ?? payload.scp ?? payload.scopes;
+function normalizeScopeValue(rawScopes: unknown): string[] | null {
   if (typeof rawScopes === "string") {
     return rawScopes.split(SCOPE_SEPARATOR_REGEX).filter(Boolean);
   }
@@ -129,11 +216,28 @@ function extractScopes(payload: JWTPayload): string[] {
       (scope): scope is string => typeof scope === "string" && scope.length > 0
     );
   }
-  return [];
+  return null;
 }
 
-function hasRequiredScope(scopes: string[], requiredScope?: string) {
+function extractScopes(payload: JWTPayload): string[] | null {
+  const scopeClaim = normalizeScopeValue(
+    payload.scope ?? payload.scp ?? payload.scopes
+  );
+  const permissionsClaim = normalizeScopeValue(payload.permissions);
+
+  if (scopeClaim === null && permissionsClaim === null) {
+    return null;
+  }
+
+  return [...new Set([...(scopeClaim ?? []), ...(permissionsClaim ?? [])])];
+}
+
+function hasRequiredScope(scopes: string[] | null, requiredScope?: string) {
   if (!requiredScope) {
+    return true;
+  }
+
+  if (scopes === null) {
     return true;
   }
 
@@ -160,18 +264,22 @@ async function verifyOAuthToken(
       token,
       getRemoteJwks(getOAuthJwksUrl(c)),
       {
-        audience: [...OAUTH_AUDIENCES],
         issuer: getOAuthIssuer(c),
       }
     );
+
+    if (!isAllowedAudience(payload.aud, c.env.WORKOS_CLIENT_ID)) {
+      return { success: false, error: "Invalid token audience", status: 401 };
+    }
+
     const scopes = extractScopes(payload);
-    const organizationId = payload.organizationId;
+    const workosOrgId = payload.org_id;
 
     if (!payload.sub) {
       return { success: false, error: "Missing OAuth subject", status: 401 };
     }
 
-    if (!(typeof organizationId === "string" && organizationId.length > 0)) {
+    if (!(typeof workosOrgId === "string" && workosOrgId.length > 0)) {
       return {
         success: false,
         error: "Missing OAuth organization",
@@ -183,14 +291,36 @@ async function verifyOAuthToken(
       return { success: false, error: "Forbidden", status: 403 };
     }
 
+    const db = c.get("db");
+    const [localUserId, localOrgId] = await Promise.all([
+      resolveLocalUserId(db, payload.sub),
+      resolveLocalOrganizationId(db, workosOrgId),
+    ]);
+
+    if (!localUserId) {
+      return {
+        success: false,
+        error: "No local user found for OAuth subject",
+        status: 401,
+      };
+    }
+
+    if (!localOrgId) {
+      return {
+        success: false,
+        error: "No local organization found for OAuth token",
+        status: 401,
+      };
+    }
+
     return {
       success: true,
       auth: {
         type: "oauth",
-        keyId: `oauth:${payload.sub}:${organizationId}`,
-        userId: payload.sub,
-        scopes,
-        identity: { externalId: organizationId },
+        keyId: `oauth:${localUserId}:${localOrgId}`,
+        userId: localUserId,
+        scopes: scopes ?? ["*"],
+        identity: { externalId: localOrgId },
       },
     };
   } catch (error) {

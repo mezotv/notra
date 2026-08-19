@@ -40,6 +40,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { AddSlackIntegrationDialog } from "@/components/integrations/add-slack-integration-dialog";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -653,6 +654,9 @@ export default function PageClient({
                 </Button>
               }
               description="Install the Notra agent in your Slack workspace to chat and approve content from Slack threads."
+              preview={
+                <EmptyStateCardsPreview count={2} variant="integration" />
+              }
               title="No workspace connected"
             />
           ) : null}

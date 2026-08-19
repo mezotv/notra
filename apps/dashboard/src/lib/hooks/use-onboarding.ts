@@ -8,6 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { COMPANY_LOGO_STALE_TIME_MS } from "@/constants/company-logo";
 import {
   AGENT_RUN_REFETCH_INTERVAL_MS,
   AGENT_RUN_STALE_TIME_MS,
@@ -32,6 +33,17 @@ export function useOnboardingStatus(
       input: { organizationId },
       enabled: !!organizationId,
       refetchInterval: options?.refetchInterval,
+    })
+  );
+}
+
+export function useCompanyLogo(domain: string | null) {
+  return useQuery(
+    dashboardOrpc.onboarding.companyLogo.queryOptions({
+      input: { domain: domain ?? "" },
+      enabled: !!domain,
+      staleTime: COMPANY_LOGO_STALE_TIME_MS,
+      retry: false,
     })
   );
 }

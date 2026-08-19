@@ -10,7 +10,7 @@ import {
 } from "@notra/ui/components/ui/card";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
-import { Loader2 } from "lucide-react";
+import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useRef, useState } from "react";
@@ -119,7 +119,7 @@ export function CreateWorkspace() {
             <Button disabled={isCreating} type="submit">
               {isCreating ? (
                 <>
-                  <Loader2 className="animate-spin" />
+                  <Loader2Icon className="animate-spin" />
                   Creating...
                 </>
               ) : (

@@ -3,6 +3,14 @@ import type {
   PostingActivityLevel,
 } from "@/types/analytics";
 
+export const SOCIAL_ANALYTICS_FLAG_KEY = "social-analytics";
+export const ANALYTICS_NAV_LINK = "/analytics";
+export const ANALYTICS_FLAG_CACHE_TTL_MS = 60_000;
+export const ANALYTICS_FLAG_STALE_TIME_MS = 30_000;
+export const ANALYTICS_FLAG_ERROR_REASON = "ERROR";
+export const ANALYTICS_UNAVAILABLE_DESCRIPTION =
+  "Analytics is not available for this workspace yet.";
+
 export const ANALYTICS_TIMESERIES_DAYS = 30;
 export const ANALYTICS_TOP_POSTS_LIMIT = 8;
 export const TOP_POST_CONTENT_PREVIEW_LENGTH = 96;

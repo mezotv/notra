@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
-import { authClient } from "@/lib/auth/client";
+import { resetPasswordAction } from "@/lib/auth/password-actions";
 
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -94,14 +94,14 @@ function ResetPasswordForm() {
     let hasResetError = false;
     let resetErrorMessage: string | null | undefined;
     try {
-      const result = await authClient.resetPassword({
+      const result = await resetPasswordAction({
         newPassword: password,
         token,
       });
 
-      if (result.error) {
+      if (result.status === "error") {
         hasResetError = true;
-        resetErrorMessage = result.error.message;
+        resetErrorMessage = result.message;
       }
     } catch {
       toast.error("Network error. Please check your connection and try again.");

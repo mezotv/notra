@@ -11,9 +11,33 @@ import {
   trackedSocialAccounts,
 } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
+import { isAnalyticsEnabledForOrganization } from "@/lib/analytics/flag";
 import { buildAccountRow } from "@/lib/analytics/rows";
 import { collectTwitterRows } from "@/lib/analytics/twitter-sync";
 import type { SyncableSocialAccount } from "@/types/analytics";
+
+async function filterFlaggedOrganizations(
+  accounts: SyncableSocialAccount[]
+): Promise<SyncableSocialAccount[]> {
+  const organizationIds = [
+    ...new Set(accounts.map((account) => account.organizationId)),
+  ];
+  const flags = await Promise.all(
+    organizationIds.map(async (organizationId) => ({
+      organizationId,
+      enabled: await isAnalyticsEnabledForOrganization(organizationId),
+    }))
+  );
+  const enabledOrganizations = new Set<string>();
+  for (const flag of flags) {
+    if (flag.enabled) {
+      enabledOrganizations.add(flag.organizationId);
+    }
+  }
+  return accounts.filter((account) =>
+    enabledOrganizations.has(account.organizationId)
+  );
+}
 
 export async function listSyncableAccounts(
   organizationId?: string
@@ -94,7 +118,7 @@ export async function listSyncableAccounts(
       verified: false,
     }));
 
-  return [...connected, ...trackedOnly];
+  return await filterFlaggedOrganizations([...connected, ...trackedOnly]);
 }
 
 export async function snapshotAccountDimensions(

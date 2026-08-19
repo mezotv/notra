@@ -38,3 +38,10 @@ export type AnalyticsRouterError =
   | AnalyticsDatabaseError
   | AnalyticsRequestError
   | TrackedAccountNotFoundError;
+
+export class AnalyticsFlagEvaluationError extends Data.TaggedError(
+  "AnalyticsFlagEvaluationError"
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}

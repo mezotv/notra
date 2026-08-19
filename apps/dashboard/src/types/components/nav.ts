@@ -5,7 +5,21 @@ export type NavMainCategory =
   | "workspace"
   | "automation"
   | "geo"
-  | "manage";
+  | "utility";
+
+export type NavDrilldownCategory = Exclude<
+  NavMainCategory,
+  "none" | "workspace" | "utility"
+>;
+
+export interface NavCategoryProps {
+  category: NavDrilldownCategory;
+  slug: string;
+}
+
+export interface NavUtilityProps {
+  slug: string;
+}
 
 export interface NavItem {
   link: string;

@@ -1,4 +1,7 @@
-import { autumn } from "@notra/ai/billing/autumn";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
 import { ACTIVE_PAID_PLAN_IDS, FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import type { CheckResponse } from "autumn-js";
@@ -7,7 +10,7 @@ import type { WorkflowAiCreditGateResult } from "@/types/billing/workflow-ai-cre
 export async function checkWorkflowAiCredits(
   organizationId: string
 ): Promise<WorkflowAiCreditGateResult> {
-  if (!autumn) {
+  if (!autumn || allowUnmeteredAiInDevelopment) {
     return { allowed: true, reserved: false, useMarkup: false };
   }
 

@@ -2,12 +2,8 @@ import { db } from "@notra/db/drizzle";
 import { brandSettings, organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import {
-  getAllUserOrganizations,
-  getLastActiveOrganization,
-  getSession,
-} from "@/lib/auth/actions";
-import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
+import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
+import { redirectIfAnyOrganizationHasPaidHistory } from "@/lib/onboarding/billing-gate";
 import { WorkspaceForm } from "./workspace-form";
 
 export default async function OnboardingWorkspacePage() {
@@ -17,12 +13,7 @@ export default async function OnboardingWorkspacePage() {
     redirect("/login");
   }
 
-  const allOrgs = await getAllUserOrganizations();
-  for (const org of allOrgs) {
-    if (await hasPaidSubscriptionHistory(org.id)) {
-      redirect(`/${org.slug}`);
-    }
-  }
+  await redirectIfAnyOrganizationHasPaidHistory();
 
   const existing = await getLastActiveOrganization();
   if (existing) {
@@ -40,6 +31,7 @@ export default async function OnboardingWorkspacePage() {
         heardAboutNotraOther: true,
         heardAboutNotraSource: true,
         id: true,
+        logo: true,
         slug: true,
         name: true,
       },

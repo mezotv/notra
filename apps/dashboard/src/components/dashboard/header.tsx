@@ -255,7 +255,7 @@ export function SiteHeader() {
           </Breadcrumb>
         </div>
         <button
-          className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 hidden w-56 cursor-pointer items-center gap-2 rounded-lg border bg-background/60 px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted/60 md:flex"
+          className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 hidden w-80 cursor-pointer items-center gap-2 rounded-lg border bg-background/60 px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted/60 md:flex"
           onClick={() => setCommandPaletteOpen(true)}
           type="button"
         >

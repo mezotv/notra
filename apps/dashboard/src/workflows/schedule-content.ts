@@ -487,8 +487,7 @@ export async function scheduleContentWorkflow(payload: {
         setting: "scheduledContentCreation",
       });
       if (notificationData.enabled && notificationData.ownerEmails.length > 0) {
-        const baseUrl =
-          process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
+        const baseUrl = process.env.APP_URL ?? "https://app.usenotra.com";
         const contentOverviewLink = `${baseUrl}/${notificationData.organizationSlug}/content`;
         await enqueueDigest({
           organizationId: trigger.organizationId,

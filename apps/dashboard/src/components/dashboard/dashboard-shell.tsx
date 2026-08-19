@@ -1,6 +1,7 @@
 "use client";
 
 import { SidebarInset, SidebarProvider } from "@notra/ui/components/ui/sidebar";
+import { cn } from "@notra/ui/lib/utils";
 import { toast } from "sonner";
 import { SubscriptionGate } from "@/components/billing/subscription-gate";
 import { DashboardSidebar } from "@/components/dashboard/app-sidebar";
@@ -71,10 +72,18 @@ export function DashboardShell({
         defaultOpen={initialSidebarOpen}
       >
         <DashboardSidebar
-          className="md:top-(--eve-banner-height) md:h-[calc(100svh-var(--eve-banner-height))]"
+          className={cn(
+            "md:top-(--eve-banner-height) md:h-[calc(100svh-var(--eve-banner-height))]",
+            visible && "md:pt-0!"
+          )}
           variant="inset"
         />
-        <SidebarInset className="min-h-0 min-w-0 overflow-hidden">
+        <SidebarInset
+          className={cn(
+            "min-h-0 min-w-0 overflow-hidden",
+            visible && "md:mt-0! md:rounded-t-none! md:border-t-0!"
+          )}
+        >
           <SiteHeader />
           <div className="@container/main scrollbar-stable flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain">
             <SubscriptionGate>{children}</SubscriptionGate>

@@ -8,7 +8,6 @@ const nextConfig: NextConfig = {
     "/*": ["./src/lib/ai/skills/**/*", "../../packages/ai/src/skills/**/*"],
   },
   experimental: {
-    turbopackFileSystemCacheForDev: false,
     optimizePackageImports: ["@hugeicons/core-free-icons", "lucide-react"],
     staleTimes: {
       dynamic: 30,
@@ -63,6 +62,11 @@ const nextConfig: NextConfig = {
       {
         source: "/:slug/automation/schedule",
         destination: "/:slug/automation/schedules",
+        permanent: true,
+      },
+      {
+        source: "/:slug/logs",
+        destination: "/:slug/settings/logs",
         permanent: true,
       },
     ];

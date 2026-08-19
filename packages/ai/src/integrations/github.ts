@@ -1,10 +1,10 @@
 import crypto from "node:crypto";
 import { db } from "@notra/db/drizzle";
 import {
-  accounts,
   githubAppInstallations,
   githubIntegrations,
   repositoryOutputs,
+  socialConnections,
 } from "@notra/db/schema";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
@@ -241,13 +241,13 @@ async function assertGitHubInstallationAdmin(params: {
     type: "User" | "Organization";
   };
 }) {
-  const githubAccount = await db.query.accounts.findFirst({
+  const githubAccount = await db.query.socialConnections.findFirst({
     where: and(
-      eq(accounts.userId, params.userId),
-      eq(accounts.providerId, "github")
+      eq(socialConnections.userId, params.userId),
+      eq(socialConnections.provider, "github")
     ),
     columns: {
-      accountId: true,
+      providerAccountId: true,
       accessToken: true,
       scope: true,
     },
@@ -272,12 +272,14 @@ async function assertGitHubInstallationAdmin(params: {
     });
   const githubUser = userResponse.data;
 
-  if (String(githubUser.id) !== githubAccount.accountId) {
+  if (String(githubUser.id) !== githubAccount.providerAccountId) {
     throw new GitHubInstallationAccessDeniedError();
   }
 
   if (params.installationAccount.type === "User") {
-    if (githubAccount.accountId !== String(params.installationAccount.id)) {
+    if (
+      githubAccount.providerAccountId !== String(params.installationAccount.id)
+    ) {
       throw new GitHubInstallationAccessDeniedError();
     }
     return;
@@ -330,8 +332,11 @@ async function assertGitHubInstallationAdmin(params: {
 }
 
 export async function isGitHubAccountConnectionRequired(userId: string) {
-  const githubAccount = await db.query.accounts.findFirst({
-    where: and(eq(accounts.userId, userId), eq(accounts.providerId, "github")),
+  const githubAccount = await db.query.socialConnections.findFirst({
+    where: and(
+      eq(socialConnections.userId, userId),
+      eq(socialConnections.provider, "github")
+    ),
     columns: {
       accessToken: true,
     },

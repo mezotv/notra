@@ -1,13 +1,11 @@
 import { autumnHandler } from "autumn-js/next";
-import { auth } from "@/lib/auth/server";
+import { getAuthSession } from "@/lib/auth/server";
 
 type RouteHandler = (request: Request) => Response | Promise<Response>;
 
 const handlers: { GET: RouteHandler; POST: RouteHandler } = autumnHandler({
-  identify: async (request) => {
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+  identify: async () => {
+    const session = await getAuthSession();
 
     if (!(session?.user && session?.session?.activeOrganizationId)) {
       return null;

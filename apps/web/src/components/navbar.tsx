@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDashboardSession } from "@/lib/auth/use-dashboard-session";
 import { BRAND_ASSETS } from "@/lib/brand/constants";
 import { getNavbarVariantForPath } from "@/lib/navigation/navbar-variant";
 import type { NavbarProps } from "@/types/navbar";
@@ -43,6 +44,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { TrackedSignupLink } from "./tracked-signup-link";
 
 const SIGNIN_URL = "https://app.usenotra.com/login";
+const DASHBOARD_URL = "https://app.usenotra.com/callback";
 const HOVER_CLOSE_DELAY = 120;
 const CONTENT_SLIDE = 48;
 const EASE = [0.32, 0.72, 0, 1] as const;
@@ -254,6 +256,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
     []
   );
 
+  const isAuthenticated = useDashboardSession();
   const reduceMotion = useReducedMotion();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
@@ -623,18 +626,29 @@ export function Navbar({ variant }: NavbarProps = {}) {
                 </div>
                 <div className="hidden items-center gap-3 lg:flex">
                   <ThemeToggle />
-                  <Link
-                    className="font-display text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
-                    href={SIGNIN_URL}
-                  >
-                    Sign In
-                  </Link>
-                  <TrackedSignupLink
-                    className="font-display font-semibold text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
-                    source="navbar_desktop_signup"
-                  >
-                    Sign Up
-                  </TrackedSignupLink>
+                  {isAuthenticated ? (
+                    <Link
+                      className="font-display font-semibold text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
+                      href={DASHBOARD_URL}
+                    >
+                      Dashboard
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        className="font-display text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
+                        href={SIGNIN_URL}
+                      >
+                        Sign In
+                      </Link>
+                      <TrackedSignupLink
+                        className="font-display font-semibold text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
+                        source="navbar_desktop_signup"
+                      >
+                        Sign Up
+                      </TrackedSignupLink>
+                    </>
+                  )}
                 </div>
                 <button
                   aria-controls="mobile-navigation"
@@ -674,6 +688,8 @@ export function Navbar({ variant }: NavbarProps = {}) {
 }
 
 function MobileNav({ onNavigate }: { onNavigate: () => void }) {
+  const isAuthenticated = useDashboardSession();
+
   return (
     <div className="flex flex-col gap-3">
       <nav className="flex flex-col gap-1">
@@ -723,20 +739,32 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
         })}
       </nav>
       <div className="flex flex-col gap-2 border-[#1E1E1E14] border-t pt-3 dark:border-white/10">
-        <Link
-          className="rounded-md px-3 py-2 text-center font-display text-[#1E1E1E] text-sm tracking-[-0.015em] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
-          href={SIGNIN_URL}
-          onClick={onNavigate}
-        >
-          Sign In
-        </Link>
-        <TrackedSignupLink
-          className="cta-gradient-primary rounded-full px-3 py-2.5 text-center font-display font-medium text-sm text-white tracking-[-0.015em]"
-          onClick={onNavigate}
-          source="navbar_mobile_signup"
-        >
-          Sign Up
-        </TrackedSignupLink>
+        {isAuthenticated ? (
+          <Link
+            className="cta-gradient-primary rounded-full px-3 py-2.5 text-center font-display font-medium text-sm text-white tracking-[-0.015em]"
+            href={DASHBOARD_URL}
+            onClick={onNavigate}
+          >
+            Dashboard
+          </Link>
+        ) : (
+          <>
+            <Link
+              className="rounded-md px-3 py-2 text-center font-display text-[#1E1E1E] text-sm tracking-[-0.015em] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
+              href={SIGNIN_URL}
+              onClick={onNavigate}
+            >
+              Sign In
+            </Link>
+            <TrackedSignupLink
+              className="cta-gradient-primary rounded-full px-3 py-2.5 text-center font-display font-medium text-sm text-white tracking-[-0.015em]"
+              onClick={onNavigate}
+              source="navbar_mobile_signup"
+            >
+              Sign Up
+            </TrackedSignupLink>
+          </>
+        )}
       </div>
     </div>
   );

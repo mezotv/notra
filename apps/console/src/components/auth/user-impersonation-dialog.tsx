@@ -1,12 +1,13 @@
 "use client";
 
-import { UserSwitchIcon } from "@hugeicons/core-free-icons";
+import { LinkSquare02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
+import { Button } from "@notra/ui/components/ui/button";
 import {
   Command,
   CommandDialog,
@@ -16,19 +17,16 @@ import {
   CommandItem,
   CommandList,
 } from "@notra/ui/components/ui/command";
+import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
-import {
-  IMPERSONATION_SEARCH_DEBOUNCE_MS,
-  IMPERSONATION_USER_RESULT_LIMIT,
-} from "@/constants/auth";
+import { IMPERSONATION_SEARCH_DEBOUNCE_MS } from "@/constants/auth";
 import { authClient } from "@/lib/auth/client";
 import { hasAdminRole } from "@/lib/auth/role";
-import type {
-  ImpersonationUser,
-  UserImpersonationDialogProps,
-} from "@/types/auth";
+import type { UserImpersonationDialogProps } from "@/types/auth";
+import { QUERY_KEYS } from "@/utils/query-keys";
+
+const WORKOS_DASHBOARD_URL = "https://dashboard.workos.com/";
 
 export function UserImpersonationDialog({
   currentUserId,
@@ -37,9 +35,6 @@ export function UserImpersonationDialog({
 }: UserImpersonationDialogProps) {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [users, setUsers] = useState<ImpersonationUser[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [impersonatingUserId, setImpersonatingUserId] = useState<string>();
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -49,127 +44,25 @@ export function UserImpersonationDialog({
     return () => window.clearTimeout(timeout);
   }, [search]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    let ignore = false;
-    setIsLoading(true);
-
-    async function loadUsers() {
-      const baseQuery = {
-        limit: IMPERSONATION_USER_RESULT_LIMIT,
-        sortBy: "name",
-        sortDirection: "asc" as const,
-      };
-
-      if (!debouncedSearch) {
-        const result = await authClient.admin.listUsers({
-          query: baseQuery,
-        });
-
-        if (!ignore) {
-          if (result.error) {
-            toast.error(result.error.message ?? "Failed to load users");
-            setUsers([]);
-          } else {
-            setUsers(result.data?.users ?? []);
-          }
-          setIsLoading(false);
-        }
-        return;
-      }
-
-      const [nameResult, emailResult] = await Promise.all([
-        authClient.admin.listUsers({
-          query: {
-            ...baseQuery,
-            searchField: "name",
-            searchOperator: "contains",
-            searchValue: debouncedSearch,
-          },
-        }),
-        authClient.admin.listUsers({
-          query: {
-            ...baseQuery,
-            searchField: "email",
-            searchOperator: "contains",
-            searchValue: debouncedSearch,
-          },
-        }),
-      ]);
-
-      if (!ignore) {
-        const error = nameResult.error ?? emailResult.error;
-        if (error) {
-          toast.error(error.message ?? "Failed to search users");
-          setUsers([]);
-        } else {
-          const uniqueUsers = new Map<string, ImpersonationUser>();
-          for (const user of [
-            ...(nameResult.data?.users ?? []),
-            ...(emailResult.data?.users ?? []),
-          ]) {
-            uniqueUsers.set(user.id, user);
-          }
-          setUsers(
-            Array.from(uniqueUsers.values()).slice(
-              0,
-              IMPERSONATION_USER_RESULT_LIMIT
-            )
-          );
-        }
-        setIsLoading(false);
-      }
-    }
-
-    loadUsers().catch(() => {
-      if (!ignore) {
-        toast.error("Failed to load users");
-        setUsers([]);
-        setIsLoading(false);
-      }
-    });
-
-    return () => {
-      ignore = true;
-    };
-  }, [debouncedSearch, open]);
-
-  async function impersonateUser(user: ImpersonationUser) {
-    if (
-      user.id === currentUserId ||
-      user.banned === true ||
-      hasAdminRole(user.role)
-    ) {
-      toast.error("This user cannot be impersonated");
-      return;
-    }
-
-    setImpersonatingUserId(user.id);
-    try {
-      const result = await authClient.admin.impersonateUser({
-        userId: user.id,
+  const usersQuery = useQuery({
+    queryKey: QUERY_KEYS.AUTH.adminUsers(debouncedSearch),
+    queryFn: async () => {
+      const result = await authClient.admin.listUsers({
+        search: debouncedSearch,
       });
-
       if (result.error) {
-        toast.error(result.error.message ?? "Failed to impersonate user");
-        setImpersonatingUserId(undefined);
-        return;
+        throw new Error(result.error.message);
       }
+      return result.data ?? [];
+    },
+    enabled: open,
+  });
 
-      onOpenChange(false);
-      window.location.assign("/dashboard");
-    } catch {
-      toast.error("Failed to impersonate user");
-      setImpersonatingUserId(undefined);
-    }
-  }
+  const users = usersQuery.data ?? [];
 
   return (
     <CommandDialog
-      description="Search by name or email and choose a user to impersonate."
+      description="Look up a user, then start impersonation from the WorkOS dashboard."
       onOpenChange={onOpenChange}
       open={open}
       showCloseButton
@@ -182,53 +75,36 @@ export function UserImpersonationDialog({
           value={search}
         />
         <CommandList>
-          {isLoading ? (
+          {usersQuery.isPending ? (
             <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground text-sm">
               <Loader2Icon className="size-4 animate-spin" />
               Loading users...
             </div>
           ) : (
             <>
-              <CommandEmpty>No users found.</CommandEmpty>
+              <CommandEmpty>
+                {usersQuery.isError
+                  ? "Failed to load users."
+                  : "No users found."}
+              </CommandEmpty>
               <CommandGroup heading="Users">
                 {users.map((user) => {
                   const isCurrentUser = user.id === currentUserId;
-                  const isAdmin = hasAdminRole(user.role);
-                  const disabled =
-                    isCurrentUser || isAdmin || user.banned === true;
                   let status: string | undefined;
                   if (isCurrentUser) {
                     status = "Current account";
-                  } else if (isAdmin) {
+                  } else if (hasAdminRole(user.role)) {
                     status = "Admin";
                   } else if (user.banned) {
                     status = "Banned";
                   }
 
-                  let trailing = (
-                    <HugeiconsIcon
-                      className="ml-auto text-muted-foreground"
-                      icon={UserSwitchIcon}
-                    />
-                  );
-                  if (status) {
-                    trailing = (
-                      <span className="ml-auto text-muted-foreground text-xs">
-                        {status}
-                      </span>
-                    );
-                  }
-                  if (impersonatingUserId === user.id) {
-                    trailing = (
-                      <Loader2Icon className="ml-auto size-4 animate-spin" />
-                    );
-                  }
-
                   return (
                     <CommandItem
-                      disabled={disabled || impersonatingUserId !== undefined}
                       key={user.id}
-                      onSelect={() => impersonateUser(user)}
+                      onSelect={() => {
+                        window.open(WORKOS_DASHBOARD_URL, "_blank", "noopener");
+                      }}
                       value={`${user.name} ${user.email} ${user.id}`}
                     >
                       <Avatar size="sm">
@@ -243,7 +119,16 @@ export function UserImpersonationDialog({
                           {user.email}
                         </div>
                       </div>
-                      {trailing}
+                      {status ? (
+                        <span className="ml-auto text-muted-foreground text-xs">
+                          {status}
+                        </span>
+                      ) : (
+                        <HugeiconsIcon
+                          className="ml-auto text-muted-foreground"
+                          icon={LinkSquare02Icon}
+                        />
+                      )}
                     </CommandItem>
                   );
                 })}
@@ -251,6 +136,22 @@ export function UserImpersonationDialog({
             </>
           )}
         </CommandList>
+        <div className="flex items-center justify-between gap-3 border-t px-3 py-2">
+          <p className="text-muted-foreground text-xs">
+            Impersonation is started from the WorkOS dashboard. Find the user
+            there and choose Impersonate.
+          </p>
+          <Button
+            onClick={() => {
+              window.open(WORKOS_DASHBOARD_URL, "_blank", "noopener");
+            }}
+            size="sm"
+            variant="outline"
+          >
+            <HugeiconsIcon icon={LinkSquare02Icon} />
+            Open WorkOS
+          </Button>
+        </div>
       </Command>
     </CommandDialog>
   );

@@ -52,3 +52,18 @@ export interface ChatContextOption {
 export interface ChatContextOptionContentProps {
   option: ChatContextOption;
 }
+
+export type ChatContextSuggestedIntegrationId = "github" | "linear" | "mcp";
+
+export interface ChatContextSuggestedIntegration {
+  id: ChatContextSuggestedIntegrationId;
+  name: string;
+  description: string;
+  href: string;
+  keywords: readonly string[];
+}
+
+export interface ChatContextConnectSuggestionsProps {
+  organizationSlug: string;
+  onSelect: () => void;
+}

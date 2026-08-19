@@ -63,8 +63,7 @@ async function readInstallState(state: string | null) {
 }
 
 export async function GET(request: NextRequest) {
-  const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
   let callbackPath: string | null = null;
   let installationId: string | null = null;
   let state: string | null = null;

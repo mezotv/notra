@@ -1,0 +1,3374 @@
+openapi: 3.1.1
+paths:
+  /_widgets/ApiKeys/organization-api-keys:
+    post:
+      operationId: createOrganizationApiKey
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOrganizationApiKeyRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateOrganizationApiKeyResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code:
+                          type: string
+                        field:
+                          type: string
+                      required:
+                        - code
+                        - field
+                required:
+                  - message
+                  - errors
+    get:
+      operationId: listOrganizationApiKeys
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters:
+        - name: limit
+          required: false
+          in: query
+          schema:
+            type: number
+        - name: before
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: after
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: search
+          required: false
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOrganizationApiKeysResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/ApiKeys/permissions:
+    get:
+      operationId: listOrganizationApiKeyPermissions
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters:
+        - name: search
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: false
+          in: query
+          schema:
+            type: number
+        - name: before
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: after
+          required: false
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListOrganizationApiKeyPermissionsResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/ApiKeys/{apiKeyId}:
+    delete:
+      operationId: deleteOrganizationApiKey
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters:
+        - name: apiKeyId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/DataIntegrations/installations/{installationId}:
+    delete:
+      operationId: deleteDataInstallation
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters:
+        - name: installationId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/DataIntegrations/mine:
+    get:
+      operationId: myDataIntegrations
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataIntegrationsResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/DataIntegrations/{dataIntegrationId}/authorization-status/{state}:
+    get:
+      operationId: getDataInstallationAuthorizationStatus
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters:
+        - name: dataIntegrationId
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: state
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetAuthorizationStatusResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/DataIntegrations/{slug}/authorize:
+    get:
+      operationId: getDataIntegrationAuthorizeUrl
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters:
+        - name: slug
+          required: true
+          in: path
+          schema:
+            type: string
+        - name: requireHandoff
+          required: false
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDataIntegrationAuthorizeUrlResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserManagement/invite-user:
+    post:
+      operationId: inviteMember
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Sends an invitation email to a user to join the organization. If the
+        user does not have an account, they will be prompted to create one upon
+        accepting.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                firstName:
+                  type:
+                    - string
+                    - 'null'
+                lastName:
+                  type:
+                    - string
+                    - 'null'
+                roles:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - email
+                - roles
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserManagement/invites/{userId}:
+    delete:
+      operationId: revokeInvite
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Cancels a pending invitation for the specified user, preventing them
+        from joining the organization via that invite link.
+      parameters:
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  success:
+                    type: boolean
+                required:
+                  - id
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserManagement/invites/{userId}/resend:
+    post:
+      operationId: resendInvite
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Resends the pending invitation email to the specified user. Returns an
+        error if the invitation has already been accepted or has expired.
+      parameters:
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type:
+                      - string
+                      - 'null'
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserManagement/members:
+    get:
+      operationId: members
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Returns a paginated list of members belonging to the organization.
+        Supports filtering by search term and role, and cursor-based pagination
+        via before/after parameters.
+      parameters:
+        - name: search
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: limit
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: before
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: after
+          required: false
+          in: query
+          schema:
+            type: string
+        - name: role
+          required: false
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Member'
+                  list_metadata:
+                    $ref: '#/components/schemas/ListMetadata'
+                required:
+                  - data
+                  - list_metadata
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserManagement/members/{userId}:
+    delete:
+      operationId: removeMember
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Removes the specified user from the organization by revoking their
+        membership. The user account itself is not deleted.
+      parameters:
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  success:
+                    type: boolean
+                required:
+                  - id
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+    post:
+      operationId: updateMember
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Updates the specified member's organization membership, such as changing
+        their assigned role.
+      parameters:
+        - name: userId
+          required: true
+          in: path
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                roles:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - roles
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  success:
+                    type: boolean
+                required:
+                  - id
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '422':
+          description: Unprocessable Entity
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserManagement/organizations:
+    get:
+      operationId: organizations
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: Returns the list of organizations the authenticated user is a member of.
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationsResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserManagement/roles:
+    get:
+      operationId: roles
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Returns the list of roles available in the organization that can be
+        assigned to members.
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemberRole'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserManagement/roles-and-config:
+    get:
+      operationId: rolesAndConfig
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Returns the list of roles available in the organization along with the
+        user management configuration, such as whether role assignment is
+        enabled.
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RolesAndConfigResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/authentication-information:
+    get:
+      operationId: authenticationInformation
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Returns the authentication methods and MFA factors configured for the
+        authenticated user, including enrolled TOTP factors and passkeys.
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticationInformationResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/create-password:
+    post:
+      operationId: createPassword
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Sets a password for the authenticated user. Only available when the user
+        does not already have a password configured. Requires elevated access.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePasswordRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/create-totp-factor:
+    post:
+      operationId: createTotpFactor
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Initiates TOTP (authenticator app) enrollment for the authenticated user
+        by generating a new TOTP secret and QR code. Requires elevated access.
+      parameters: []
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateTotpFactorResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/me:
+    get:
+      operationId: me
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Returns the profile information of the currently authenticated user,
+        including their name, email, and linked authentication factors.
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+    post:
+      operationId: updateMe
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Updates the profile information of the currently authenticated user,
+        such as their first name, last name, or email address.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+                locale:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/passkeys:
+    post:
+      operationId: registerPasskey
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Initiates passkey (WebAuthn) registration for the authenticated user by
+        returning the credential creation options. Requires elevated access.
+      parameters: []
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterPasskeyResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/passkeys/verify:
+    post:
+      operationId: verifyPasskey
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Completes passkey (WebAuthn) registration by verifying the credential
+        created by the authenticator. Requires elevated access.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyPasskeyRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/passkeys/{passkeyId}:
+    delete:
+      operationId: deletePasskey
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Removes the specified passkey from the authenticated user's account.
+        Requires elevated access.
+      parameters:
+        - name: passkeyId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/send-verification:
+    post:
+      operationId: sendVerification
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Sends a verification email to the authenticated user to confirm their
+        email address.
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendVerificationResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/sessions:
+    get:
+      operationId: sessions
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Returns all currently active sessions for the authenticated user,
+        including device and location information where available.
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActiveSessionsResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/sessions/revoke-all:
+    delete:
+      operationId: revokeAllSessions
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Revokes all active sessions for the authenticated user except optionally
+        the current one, signing them out of all other devices.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeAllSessionsRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/sessions/revoke/{sessionId}:
+    delete:
+      operationId: revokeSession
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Revokes a specific active session by ID, signing the user out of that
+        particular device or browser.
+      parameters:
+        - name: sessionId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/totp-factors:
+    delete:
+      operationId: deleteTotpFactors
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Removes all TOTP factors enrolled for the authenticated user, disabling
+        authenticator app as a second factor. Requires elevated access.
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/update-password:
+    post:
+      operationId: updatePassword
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Changes the password for the authenticated user. Requires the current
+        password to be supplied alongside the new password.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/verify:
+    post:
+      operationId: verify
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Verifies the email address of the authenticated user using the code sent
+        via the send-verification endpoint. On success, returns an elevated
+        access token that grants access to sensitive operations such as MFA
+        enrollment and passkey management.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/UserProfile/verify-totp-factor:
+    post:
+      operationId: verifyTotpFactor
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Completes TOTP enrollment by verifying the one-time code generated by
+        the authenticator app. Requires elevated access.
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyTotpFactorRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                required:
+                  - success
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/admin-portal/generate-link:
+    post:
+      operationId: generateAdminPortalLink
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters:
+        - name: intent
+          required: true
+          in: query
+          schema:
+            enum:
+              - domain_verification
+              - sso
+            type: string
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  link:
+                    type: string
+                required:
+                  - link
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '500':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/admin-portal/organization-domains:
+    get:
+      operationId: listOrganizationDomains
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrganizationDomain'
+                required:
+                  - data
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/admin-portal/organization-domains/{domainId}:
+    delete:
+      operationId: deleteOrganizationDomain
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters:
+        - name: domainId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationDomain'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/admin-portal/organization-domains/{domainId}/reverify:
+    post:
+      operationId: reverifyOrganizationDomain
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters:
+        - name: domainId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationDomain'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/admin-portal/sso-connections:
+    get:
+      operationId: listSsoConnections
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SsoConnection'
+  /_widgets/directory-sync/directories:
+    get:
+      operationId: listDirectories
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DirectoriesResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/directory-sync/directories/{directoryId}:
+    get:
+      operationId: getDirectory
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      parameters:
+        - name: directoryId
+          required: true
+          in: path
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Directory'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+  /_widgets/settings:
+    get:
+      operationId: settings
+      x-internal: false
+      x-api-client: widgets
+      summary: ''
+      description: >-
+        Returns the widget settings for the current environment, including
+        enabled authentication methods and branding configuration.
+      parameters: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                required:
+                  - message
+info:
+  title: WorkOS Widgets
+  description: WorkOS Widgets API
+  version: '1.0'
+  contact: {}
+tags: []
+servers:
+  - url: https://api.workos.com
+    description: Production
+  - url: https://api.workos-test.com
+    description: Staging
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+  schemas:
+    MemberStatus:
+      type: string
+      enum:
+        - Active
+        - Invited
+        - InviteExpired
+        - InviteRevoked
+        - NoInvite
+    MemberActions:
+      type: array
+      items:
+        type: string
+        enum:
+          - edit-role
+          - resend-invite
+          - revoke-invite
+          - revoke-membership
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        emailVerified:
+          type: boolean
+        profilePictureUrl:
+          type:
+            - string
+            - 'null'
+        firstName:
+          type:
+            - string
+            - 'null'
+        lastName:
+          type:
+            - string
+            - 'null'
+        createdAt:
+          format: date-time
+          type: string
+          description: An ISO 8601 timestamp.
+          example: '2026-01-15T12:00:00.000Z'
+        lastActivityAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        status:
+          $ref: '#/components/schemas/MemberStatus'
+        actions:
+          $ref: '#/components/schemas/MemberActions'
+        isLoggedInUser:
+          oneOf:
+            - type: boolean
+              const: true
+            - type: 'null'
+        roles:
+          oneOf:
+            - type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  slug:
+                    type: string
+                  description:
+                    type:
+                      - string
+                      - 'null'
+                required:
+                  - name
+                  - slug
+            - type: 'null'
+      required:
+        - id
+        - email
+        - emailVerified
+        - createdAt
+        - status
+        - actions
+    ListMetadata:
+      type: object
+      properties:
+        before:
+          type:
+            - string
+            - 'null'
+          description: >-
+            An object ID that defines your place in the list. When the ID is not
+            present, you are at the start of the list.
+          example: xxx_01HXYZ123456789ABCDEFGHIJ
+        after:
+          type:
+            - string
+            - 'null'
+          description: >-
+            An object ID that defines your place in the list. When the ID is not
+            present, you are at the end of the list.
+          example: xxx_01HXYZ987654321KJIHGFEDCBA
+      required:
+        - before
+        - after
+    MemberRole:
+      type: object
+      properties:
+        name:
+          type: string
+        slug:
+          type: string
+        default:
+          type: boolean
+        description:
+          type:
+            - string
+            - 'null'
+      required:
+        - name
+        - slug
+        - default
+    RolesAndConfigResponse:
+      type: object
+      properties:
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MemberRole'
+        multipleRolesEnabled:
+          type: boolean
+      required:
+        - roles
+        - multipleRolesEnabled
+    OrganizationInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        current:
+          type: boolean
+        favicon:
+          type:
+            - string
+            - 'null'
+      required:
+        - id
+        - name
+        - current
+    OrganizationsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationInfo'
+      required:
+        - data
+    OAuthProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type:
+            - string
+            - 'null'
+        firstName:
+          type:
+            - string
+            - 'null'
+        lastName:
+          type:
+            - string
+            - 'null'
+        profilePictureUrl:
+          type:
+            - string
+            - 'null'
+        lastLoginAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+      required:
+        - id
+    Me:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        firstName:
+          type:
+            - string
+            - 'null'
+        lastName:
+          type:
+            - string
+            - 'null'
+        locale:
+          type:
+            - string
+            - 'null'
+        profilePictureUrl:
+          type:
+            - string
+            - 'null'
+        oauthProfiles:
+          oneOf:
+            - type: object
+              properties:
+                AppleOAuth:
+                  $ref: '#/components/schemas/OAuthProfile'
+                GithubOAuth:
+                  $ref: '#/components/schemas/OAuthProfile'
+                GoogleOAuth:
+                  $ref: '#/components/schemas/OAuthProfile'
+                MicrosoftOAuth:
+                  $ref: '#/components/schemas/OAuthProfile'
+            - type: 'null'
+      required:
+        - id
+        - email
+    CreateTotpFactorResponse:
+      type: object
+      properties:
+        authenticationFactor:
+          allOf:
+            - type: object
+              properties:
+                object:
+                  type: string
+                  enum:
+                    - authentication_factor
+                id:
+                  type: string
+                type:
+                  type: string
+                  enum:
+                    - generic_otp
+                    - sms
+                    - totp
+                    - webauthn
+                user_id:
+                  type:
+                    - string
+                    - 'null'
+                sms:
+                  oneOf:
+                    - type: object
+                      properties:
+                        phone_number:
+                          type: string
+                      required:
+                        - phone_number
+                    - type: 'null'
+                totp:
+                  anyOf:
+                    - type: object
+                      properties:
+                        issuer:
+                          type: string
+                        user:
+                          type: string
+                        secret:
+                          type: string
+                        qr_code:
+                          type: string
+                        uri:
+                          type: string
+                      required:
+                        - issuer
+                        - user
+                        - secret
+                        - qr_code
+                        - uri
+                    - type: object
+                      properties:
+                        issuer:
+                          type: string
+                        user:
+                          type: string
+                      required:
+                        - issuer
+                        - user
+                    - type: 'null'
+              required:
+                - object
+                - id
+                - type
+            - type: object
+              properties:
+                created_at:
+                  type: string
+                  format: date-time
+                updated_at:
+                  type: string
+                  format: date-time
+              required:
+                - created_at
+                - updated_at
+        authenticationChallenge:
+          allOf:
+            - type: object
+              properties:
+                object:
+                  type: string
+                  enum:
+                    - authentication_challenge
+                id:
+                  type: string
+                expires_at:
+                  type:
+                    - string
+                    - 'null'
+                  format: date-time
+                code:
+                  type:
+                    - string
+                    - 'null'
+                authentication_factor_id:
+                  type: string
+              required:
+                - object
+                - id
+                - authentication_factor_id
+            - type: object
+              properties:
+                created_at:
+                  type: string
+                  format: date-time
+                updated_at:
+                  type: string
+                  format: date-time
+              required:
+                - created_at
+                - updated_at
+      required:
+        - authenticationFactor
+        - authenticationChallenge
+    VerifyTotpFactorRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        authenticationChallengeId:
+          type: string
+      required:
+        - code
+        - authenticationChallengeId
+    AuthenticationInformationResponse:
+      type: object
+      properties:
+        data:
+          type: object
+          properties:
+            verificationMethods:
+              type: object
+              properties:
+                Mfa:
+                  oneOf:
+                    - type: object
+                      properties:
+                        provider:
+                          type: string
+                          enum:
+                            - MFA
+                        isSetUp:
+                          type: boolean
+                        lastUsed:
+                          type:
+                            - string
+                            - 'null'
+                      required:
+                        - provider
+                        - isSetUp
+                    - type: 'null'
+                Password:
+                  oneOf:
+                    - type: object
+                      properties:
+                        provider:
+                          type: string
+                          enum:
+                            - Password
+                        isSetUp:
+                          type: boolean
+                        lastUsed:
+                          type:
+                            - string
+                            - 'null'
+                        isCurrentSession:
+                          type: boolean
+                      required:
+                        - provider
+                        - isSetUp
+                        - isCurrentSession
+                    - type: 'null'
+                Passkey:
+                  oneOf:
+                    - type: object
+                      properties:
+                        provider:
+                          type: string
+                          enum:
+                            - Passkey
+                        isSetUp:
+                          type: boolean
+                        lastUsed:
+                          type:
+                            - string
+                            - 'null'
+                        passKeys:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              id:
+                                type: string
+                            required:
+                              - id
+                        isCurrentSession:
+                          type: boolean
+                      required:
+                        - provider
+                        - isSetUp
+                        - passKeys
+                        - isCurrentSession
+                    - type: 'null'
+            passwordSettings:
+              type: object
+              properties:
+                isPasswordNumberRequired:
+                  type: boolean
+                isPasswordPwnedRequired:
+                  type: boolean
+                isPasswordSymbolRequired:
+                  type: boolean
+                isPasswordUppercaseRequired:
+                  type: boolean
+                passwordMinimumLength:
+                  type: number
+                passwordMinimumStrength:
+                  type: number
+              required:
+                - isPasswordNumberRequired
+                - isPasswordPwnedRequired
+                - isPasswordSymbolRequired
+                - isPasswordUppercaseRequired
+                - passwordMinimumLength
+                - passwordMinimumStrength
+          required:
+            - verificationMethods
+            - passwordSettings
+      required:
+        - data
+    CreatePasswordRequest:
+      type: object
+      properties:
+        password:
+          type: string
+      required:
+        - password
+    UpdatePasswordRequest:
+      type: object
+      properties:
+        newPassword:
+          type: string
+        currentPassword:
+          type: string
+      required:
+        - newPassword
+        - currentPassword
+    RevokeAllSessionsRequest:
+      type: object
+      properties:
+        currentSessionId:
+          type: string
+      required:
+        - currentSessionId
+    ActiveSession:
+      type: object
+      properties:
+        id:
+          type: string
+        userlandUserId:
+          type: string
+        ipAddress:
+          type:
+            - string
+            - 'null'
+        userAgent:
+          type:
+            - string
+            - 'null'
+        organizationId:
+          type:
+            - string
+            - 'null'
+        state:
+          type: object
+          properties:
+            tag:
+              type: string
+            expiresAt:
+              type:
+                - string
+                - 'null'
+              format: date-time
+          required:
+            - tag
+        currentLocation:
+          oneOf:
+            - type: object
+              properties:
+                cityName:
+                  type: string
+                countryISOCode:
+                  type: string
+              required:
+                - cityName
+                - countryISOCode
+            - type: 'null'
+        usedSsoAuth:
+          type: boolean
+        usedPasswordAuth:
+          type: boolean
+        usedPasskeyAuth:
+          type: boolean
+        usedAppleOauth:
+          type: boolean
+        usedBitbucketOauth:
+          type: boolean
+        usedGithubOauth:
+          type: boolean
+        usedGitLabOauth:
+          type: boolean
+        usedGoogleOauth:
+          type: boolean
+        usedLinkedInOauth:
+          type: boolean
+        usedImpersonation:
+          type: boolean
+        usedMicrosoftOauth:
+          type: boolean
+        usedSlackOauth:
+          type: boolean
+        usedXeroOauth:
+          type: boolean
+        usedMagicAuth:
+          type: boolean
+        impersonatorUserId:
+          type:
+            - string
+            - 'null'
+        impersonatorEmail:
+          type:
+            - string
+            - 'null'
+        impersonationReason:
+          type:
+            - string
+            - 'null'
+        lastActivityAt:
+          type:
+            - string
+            - 'null'
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - userlandUserId
+        - state
+        - usedSsoAuth
+        - usedPasswordAuth
+        - usedPasskeyAuth
+        - usedAppleOauth
+        - usedBitbucketOauth
+        - usedGithubOauth
+        - usedGitLabOauth
+        - usedGoogleOauth
+        - usedLinkedInOauth
+        - usedImpersonation
+        - usedMicrosoftOauth
+        - usedSlackOauth
+        - usedXeroOauth
+        - usedMagicAuth
+        - createdAt
+        - updatedAt
+    ActiveSessionsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActiveSession'
+      required:
+        - data
+    SendVerificationResponse:
+      type: object
+      properties:
+        authenticationChallenge:
+          type: string
+        type:
+          type: string
+          enum:
+            - EmailVerification
+      required:
+        - authenticationChallenge
+        - type
+    VerifyRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        authenticationChallengeId:
+          type: string
+      required:
+        - code
+        - authenticationChallengeId
+    VerifyResponse:
+      type: object
+      properties:
+        elevatedAccessToken:
+          type: string
+        expiresAt:
+          type: string
+      required:
+        - elevatedAccessToken
+        - expiresAt
+    RegisterPasskeyResponse:
+      type: object
+      properties:
+        challengeId:
+          type: string
+        options:
+          type: object
+      required:
+        - challengeId
+        - options
+    VerifyPasskeyRequest:
+      type: object
+      properties:
+        challengeId:
+          type: string
+        response:
+          type: object
+      required:
+        - challengeId
+        - response
+    SettingsResponse:
+      type: object
+      properties:
+        object:
+          type: string
+          enum:
+            - settings
+        authkitOrigin:
+          type: string
+        logoDarkIconPath:
+          type:
+            - string
+            - 'null'
+        logoDarkPath:
+          type:
+            - string
+            - 'null'
+        logoLightIconPath:
+          type:
+            - string
+            - 'null'
+        logoLightPath:
+          type:
+            - string
+            - 'null'
+        teamName:
+          type: string
+      required:
+        - object
+        - authkitOrigin
+        - teamName
+    OrganizationDomainState:
+      type: string
+      enum:
+        - Failed
+        - LegacyVerified
+        - Pending
+        - Verified
+    DomainVerificationNameServer:
+      type: string
+      enum:
+        - AwsRoute53
+        - GoogleDomains
+        - CloudFlare
+        - GoDaddy
+        - Other
+    OrganizationDomain:
+      type: object
+      properties:
+        id:
+          type: string
+        domain:
+          type: string
+        state:
+          $ref: '#/components/schemas/OrganizationDomainState'
+        nameServer:
+          $ref: '#/components/schemas/DomainVerificationNameServer'
+        verificationPrefix:
+          type:
+            - string
+            - 'null'
+        verificationToken:
+          type:
+            - string
+            - 'null'
+        subdomain:
+          type:
+            - string
+            - 'null'
+        createdAt:
+          type: string
+      required:
+        - id
+        - domain
+        - state
+        - nameServer
+        - createdAt
+    X509CertificateJSON:
+      type: object
+      properties:
+        id:
+          type: string
+        value:
+          type: string
+        notBefore:
+          type:
+            - string
+            - 'null'
+        notAfter:
+          type:
+            - string
+            - 'null'
+        lastExpiryEventSentAt:
+          type:
+            - string
+            - 'null'
+      required:
+        - id
+        - value
+    SamlSessionState:
+      type: string
+      enum:
+        - Authorized
+        - Failed
+        - Started
+        - Successful
+        - Timedout
+    OidcSessionState:
+      type: string
+      enum:
+        - Started
+        - Authorized
+        - Successful
+        - Failed
+        - Terminated
+        - Timedout
+    SsoConnectionSessionJSON:
+      type: object
+      properties:
+        id:
+          type: string
+        createdAt:
+          type: string
+        state:
+          anyOf:
+            - $ref: '#/components/schemas/SamlSessionState'
+            - $ref: '#/components/schemas/OidcSessionState'
+      required:
+        - id
+        - createdAt
+        - state
+    SsoConnection:
+      anyOf:
+        - type: object
+          properties:
+            id:
+              type: string
+            type:
+              type: string
+              enum:
+                - AdfsSaml
+                - Auth0Saml
+                - AzureSaml
+                - CasSaml
+                - ClassLinkSaml
+                - CloudflareSaml
+                - CyberArkSaml
+                - DuoSaml
+                - GenericSaml
+                - GoogleSaml
+                - JumpCloudSaml
+                - KeycloakSaml
+                - LastPassSaml
+                - MiniOrangeSaml
+                - NetIqSaml
+                - OktaSaml
+                - OneLoginSaml
+                - OracleSaml
+                - PingFederateSaml
+                - PingOneSaml
+                - RipplingSaml
+                - SalesforceSaml
+                - ShibbolethGenericSaml
+                - ShibbolethSaml
+                - SimpleSamlPhpSaml
+                - TestIdp
+                - VmWareSaml
+            name:
+              type: string
+            state:
+              type: string
+              enum:
+                - Inactive
+                - Validating
+                - Active
+                - Deleting
+            x509Certificates:
+              type: array
+              items:
+                $ref: '#/components/schemas/X509CertificateJSON'
+            latestExpiringCertificate:
+              oneOf:
+                - $ref: '#/components/schemas/X509CertificateJSON'
+                - type: 'null'
+            latestExpiredCertificate:
+              oneOf:
+                - $ref: '#/components/schemas/X509CertificateJSON'
+                - type: 'null'
+            createdAt:
+              type: string
+            providerTag:
+              type: string
+              enum:
+                - Saml
+            lastSession:
+              oneOf:
+                - $ref: '#/components/schemas/SsoConnectionSessionJSON'
+                - type: 'null'
+          required:
+            - id
+            - type
+            - name
+            - state
+            - x509Certificates
+            - createdAt
+            - providerTag
+        - allOf:
+            - type: object
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+                state:
+                  type: string
+                  enum:
+                    - Inactive
+                    - Validating
+                    - Active
+                    - Deleting
+                type:
+                  type: string
+                  enum:
+                    - AdpOidc
+                    - Auth0Migration
+                    - CleverOidc
+                    - EntraIdOidc
+                    - GenericOidc
+                    - GoogleOidc
+                    - OktaOidc
+                    - LoginGovOidc
+                createdAt:
+                  type: string
+                providerTag:
+                  type: string
+                  enum:
+                    - OpenIdConnect
+                lastSession:
+                  oneOf:
+                    - $ref: '#/components/schemas/SsoConnectionSessionJSON'
+                    - type: 'null'
+              required:
+                - id
+                - name
+                - state
+                - type
+                - createdAt
+                - providerTag
+            - type: object
+              properties:
+                x509Certificates:
+                  type: 'null'
+                latestExpiringCertificate:
+                  type: 'null'
+                latestExpiredCertificate:
+                  type: 'null'
+    ListOrganizationApiKeysResponseData:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        obfuscatedValue:
+          type: string
+        createdAt:
+          type: string
+        lastUsedAt:
+          type:
+            - string
+            - 'null'
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - name
+        - obfuscatedValue
+        - createdAt
+        - permissions
+    ListOrganizationApiKeysResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListOrganizationApiKeysResponseData'
+        list_metadata:
+          type: object
+          properties:
+            before:
+              type: string
+            after:
+              type: string
+      required:
+        - data
+        - list_metadata
+    CreateOrganizationApiKeyRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - name
+        - permissions
+    CreateOrganizationApiKeyResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        value:
+          type: string
+        obfuscatedValue:
+          type: string
+        createdAt:
+          type: string
+        name:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - value
+        - obfuscatedValue
+        - createdAt
+        - name
+        - permissions
+    ListOrganizationApiKeyPermission:
+      type: object
+      properties:
+        id:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        description:
+          type:
+            - string
+            - 'null'
+      required:
+        - id
+        - slug
+        - name
+    ListOrganizationApiKeyPermissionsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListOrganizationApiKeyPermission'
+        list_metadata:
+          type: object
+          properties:
+            before:
+              type: string
+            after:
+              type: string
+      required:
+        - data
+        - list_metadata
+    DataInstallation:
+      allOf:
+        - type: object
+          properties:
+            object:
+              anyOf:
+                - type: string
+                  enum:
+                    - data_installation
+                - type: string
+                  enum:
+                    - connected_account
+            id:
+              type: string
+            user_id:
+              type:
+                - string
+                - 'null'
+            organization_id:
+              type:
+                - string
+                - 'null'
+            scopes:
+              type: array
+              items:
+                type: string
+            state:
+              anyOf:
+                - type: string
+                  enum:
+                    - connected
+                - type: string
+                  enum:
+                    - needs_reauthorization
+            created_at:
+              type: string
+            updated_at:
+              type: string
+          required:
+            - object
+            - id
+            - scopes
+            - state
+            - created_at
+            - updated_at
+        - type: object
+          properties:
+            userlandUserId:
+              type:
+                - string
+                - 'null'
+            organizationId:
+              type:
+                - string
+                - 'null'
+            createdAt:
+              type: string
+            updatedAt:
+              type: string
+    DataIntegration:
+      type: object
+      properties:
+        object:
+          type: string
+          enum:
+            - data_integration
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type:
+            - string
+            - 'null'
+        slug:
+          type: string
+        integrationType:
+          anyOf:
+            - type: string
+              enum:
+                - asana
+            - type: string
+              enum:
+                - box
+            - type: string
+              enum:
+                - cal-dot-com
+            - type: string
+              enum:
+                - calendly
+            - type: string
+              enum:
+                - confluence
+            - type: string
+              enum:
+                - dropbox
+            - type: string
+              enum:
+                - frame-io
+            - type: string
+              enum:
+                - front
+            - type: string
+              enum:
+                - github
+            - type: string
+              enum:
+                - gitlab
+            - type: string
+              enum:
+                - gmail
+            - type: string
+              enum:
+                - google
+            - type: string
+              enum:
+                - google-calendar
+            - type: string
+              enum:
+                - google-drive
+            - type: string
+              enum:
+                - helpscout
+            - type: string
+              enum:
+                - hubspot
+            - type: string
+              enum:
+                - intercom
+            - type: string
+              enum:
+                - jira
+            - type: string
+              enum:
+                - linear
+            - type: string
+              enum:
+                - microsoft
+            - type: string
+              enum:
+                - microsoft-onedrive
+            - type: string
+              enum:
+                - microsoft-onenote
+            - type: string
+              enum:
+                - microsoft-outlook
+            - type: string
+              enum:
+                - microsoft-outlook-calendar
+            - type: string
+              enum:
+                - microsoft-sharepoint
+            - type: string
+              enum:
+                - microsoft-teams
+            - type: string
+              enum:
+                - microsoft-todo
+            - type: string
+              enum:
+                - notion
+            - type: string
+              enum:
+                - prefect
+            - type: string
+              enum:
+                - pydantic-logfire
+            - type: string
+              enum:
+                - salesforce
+            - type: string
+              enum:
+                - sentry
+            - type: string
+              enum:
+                - slack
+            - type: string
+              enum:
+                - snowflake
+            - type: string
+              enum:
+                - stripe
+            - type: string
+              enum:
+                - xero
+            - type: string
+              enum:
+                - zendesk
+        ownership:
+          anyOf:
+            - type: string
+              enum:
+                - userland_user
+            - type: string
+              enum:
+                - organization
+        credentialsType:
+          anyOf:
+            - type: string
+              enum:
+                - shared
+            - type: string
+              enum:
+                - custom
+        scopes:
+          oneOf:
+            - type: array
+              items:
+                type: string
+            - type: 'null'
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        installation:
+          oneOf:
+            - $ref: '#/components/schemas/DataInstallation'
+            - type: 'null'
+      required:
+        - object
+        - id
+        - name
+        - slug
+        - integrationType
+        - ownership
+        - credentialsType
+        - createdAt
+        - updatedAt
+    DataIntegrationsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataIntegration'
+      required:
+        - data
+    GetDataIntegrationAuthorizeUrlResponse:
+      allOf:
+        - type: object
+          properties:
+            url:
+              type: string
+            redirectToken:
+              type: string
+          required:
+            - url
+            - redirectToken
+        - type: object
+          properties:
+            handoffToken:
+              type: string
+    GetAuthorizationStatusResponse:
+      type: object
+      properties:
+        isConnecting:
+          type: boolean
+      required:
+        - isConnecting
+    DirectoryType:
+      type: string
+      enum:
+        - azure scim v2.0
+        - bamboohr
+        - breathe hr
+        - cezanne hr
+        - cyberark scim v2.0
+        - fourth hr
+        - generic scim v2.0
+        - gsuite directory
+        - gusto
+        - hibob
+        - jump cloud scim v2.0
+        - okta scim v2.0
+        - onelogin scim v2.0
+        - people hr
+        - personio
+        - pingfederate scim v2.0
+        - rippling
+        - rippling scim v2.0
+        - s3
+        - sailpoint scim v2.0
+        - sftp
+        - sftp workday
+        - workday
+    DirectoryState:
+      type: string
+      enum:
+        - requires_type
+        - linked
+        - validating
+        - invalid_credentials
+        - unlinked
+        - deleting
+    DirectoryUsersMetadata:
+      type: object
+      properties:
+        active:
+          type: number
+        inactive:
+          type: number
+      required:
+        - active
+        - inactive
+    DirectoryMetadata:
+      type: object
+      properties:
+        users:
+          $ref: '#/components/schemas/DirectoryUsersMetadata'
+        groups:
+          type: number
+      required:
+        - users
+        - groups
+    Directory:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/DirectoryType'
+        state:
+          $ref: '#/components/schemas/DirectoryState'
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        metadata:
+          $ref: '#/components/schemas/DirectoryMetadata'
+      required:
+        - id
+        - name
+        - type
+        - state
+        - createdAt
+        - updatedAt
+        - metadata
+    DirectoriesResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Directory'
+        link:
+          type: string
+      required:
+        - data
+        - link

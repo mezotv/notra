@@ -121,6 +121,7 @@ export function SidebarOnboarding() {
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
                 key="collapsed"
+                layout
                 transition={MORPH_TRANSITION}
               >
                 <button
@@ -164,6 +165,7 @@ export function SidebarOnboarding() {
                 exit={{ opacity: 0 }}
                 initial={{ opacity: 0 }}
                 key="expanded"
+                layout
                 transition={MORPH_TRANSITION}
               >
                 <OnboardingChecklist
