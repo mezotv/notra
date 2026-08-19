@@ -1,0 +1,459 @@
+{
+  "round": 3,
+  "ranAt": "2026-08-02T00:42:02.368Z",
+  "overallMean": 6.2,
+  "dimensionMeans": {
+    "dataFirst": 6.666666666666667,
+    "groundedDecisions": 5.666666666666667,
+    "experimentDiscipline": 7.333333333333333,
+    "marketerJudgment": 5.5,
+    "communication": 5.833333333333333
+  },
+  "results": [
+    {
+      "scenarioId": "cold-start",
+      "decision": "plan",
+      "taskCount": 4,
+      "capabilities": [
+        "analytics.social.read",
+        "analytics.experiment.read",
+        "content.blog-post.create",
+        "content.social-post.create"
+      ],
+      "structuralErrors": [],
+      "fabricatedTokens": [],
+      "costCents": 2,
+      "plan": {
+        "contractVersion": 1,
+        "mandate": {
+          "mandateId": "mnd_cold_start",
+          "mandateVersion": 1
+        },
+        "decision": "plan",
+        "reason": "Notra 1.0 is the first published release for this newly connected repo, which is a genuine launch worth establishing as the first marketing footprint, while the dependency bump, readme typo and CI cache tweak are routine chores not worth covering.",
+        "consumedSignalIds": ["github.release.published", "github.push"],
+        "goal": {
+          "title": "Cover the Notra 1.0 launch",
+          "summary": "Ground the first announcement in current social and experiment data, then publish a launch blog post and a companion social post for v1.0.0."
+        },
+        "tasks": [
+          {
+            "localId": "t1",
+            "capabilityName": "analytics.social.read",
+            "capabilityVersion": 1,
+            "params": {},
+            "dependsOn": [],
+            "reason": "Check current follower, impression and engagement numbers before shaping the first launch content."
+          },
+          {
+            "localId": "t2",
+            "capabilityName": "analytics.experiment.read",
+            "capabilityVersion": 1,
+            "params": {},
+            "dependsOn": [],
+            "reason": "Confirm whether any A/B test is already running before deciding on a testing angle for launch content."
+          },
+          {
+            "localId": "t3",
+            "capabilityName": "content.blog-post.create",
+            "capabilityVersion": 1,
+            "params": {
+              "topic": "Notra 1.0 is here: the first stable release",
+              "angle": "Why the 1.0 milestone matters and what it means for adopting Notra now, framed by the workspace's current social reach",
+              "audience": "Developers and technical founders evaluating Notra",
+              "imageCount": 1
+            },
+            "dependsOn": ["t1", "t2"],
+            "reason": "A first stable release is a major milestone that deserves a full narrative post as the workspace's inaugural announcement."
+          },
+          {
+            "localId": "t4",
+            "capabilityName": "content.social-post.create",
+            "capabilityVersion": 1,
+            "params": {
+              "topic": "Notra 1.0 just shipped",
+              "angle": "Point followers at the launch post for the full story, timed to the weekday the social read shows performs best",
+              "audience": "Developers following Notra on Twitter",
+              "platform": "twitter"
+            },
+            "dependsOn": ["t3"],
+            "reason": "Twitter is chosen as the launch amplification channel to build the first entries in the publishing history that the social read data will later refine."
+          }
+        ]
+      },
+      "scores": {
+        "dataFirst": 7,
+        "groundedDecisions": 6,
+        "experimentDiscipline": 9,
+        "marketerJudgment": 7,
+        "communication": 7
+      },
+      "notes": {
+        "dataFirst": "Reads are correctly scheduled first (t1, t2) and content tasks declare dependsOn against them, which is structurally sound. However, t4 references 'timed to the weekday the social read shows performs best' — this implies the social read will return timing data, but in a cold-start workspace it will return nothing, so the angle premise is hollow.",
+        "groundedDecisions": "The release tag v1.0.0 and product name Notra are accurately restated from the signal. The critical failure is in t4's angle: 'timed to the weekday the social read shows performs best' fabricates a meaningful result from an analytics read that will return empty, embedding a false assumption about what the data will contain into the content params.",
+        "experimentDiscipline": "analytics.experiment.create is correctly absent; analytics.experiment.read is scheduled to check for running tests before any content is written. No invented post ids appear anywhere. This is exactly the right posture for a cold-start workspace.",
+        "marketerJudgment": "Correctly ignores the chore commits and focuses on the v1.0.0 milestone with a blog post plus a social post — appropriate scope for a first footprint. The plan is slightly over-engineered by promising to use social timing data that cannot exist, and a changelog entry (content.changelog.create) for a 1.0 release would have been a natural, low-risk first artifact that is missing.",
+        "communication": "The reason and goal summary name the release tag and milestone concretely, and per-task reasons reference specific metrics to check (follower, impression, engagement, A/B tests). The weakness is t4's reason, which promises a timing optimisation from data that will not exist, making that concrete-sounding claim misleading rather than grounded."
+      },
+      "headline": "The plan embeds a fabricated assumption — that the social analytics read will return best-performing day data — into the social post angle, which will silently fail in a workspace with zero publishing history."
+    },
+    {
+      "scenarioId": "data-rich",
+      "decision": "plan",
+      "taskCount": 4,
+      "capabilities": [
+        "analytics.social.read",
+        "analytics.experiment.read",
+        "content.blog-post.create",
+        "content.social-post.create"
+      ],
+      "structuralErrors": [],
+      "fabricatedTokens": [],
+      "costCents": 4,
+      "plan": {
+        "contractVersion": 1,
+        "mandate": {
+          "mandateId": "mnd_data_rich",
+          "mandateVersion": 1
+        },
+        "decision": "plan",
+        "reason": "A new scheduled digests feature just shipped with per workspace timezone handling and quiet hours, which is a real customer facing capability worth covering, and it has not been announced yet. We will pull current social and experiment analytics first so the angle and platform choice are grounded in live numbers rather than habit.",
+        "consumedSignalIds": ["sig_github_pr_digest", "sig_github_push_digest"],
+        "goal": {
+          "title": "Announce the scheduled digests feature",
+          "summary": "Read current social and experiment analytics, then publish a blog post on the new weekly digest scheduler and a linked social post, choosing platform and framing from the data."
+        },
+        "tasks": [
+          {
+            "localId": "t1",
+            "capabilityName": "analytics.social.read",
+            "capabilityVersion": 1,
+            "params": {},
+            "dependsOn": [],
+            "reason": "Check current follower, impression and engagement numbers plus top posts before deciding the angle and platform for the digest announcement."
+          },
+          {
+            "localId": "t2",
+            "capabilityName": "analytics.experiment.read",
+            "capabilityVersion": 1,
+            "params": {},
+            "dependsOn": ["t1"],
+            "reason": "Check whether an A/B test is already running or has a declared winner so the new content can reuse a winning format instead of starting blind."
+          },
+          {
+            "localId": "t3",
+            "capabilityName": "content.blog-post.create",
+            "capabilityVersion": 1,
+            "params": {
+              "topic": "Scheduled digests: a weekly content digest per workspace",
+              "angle": "How per-workspace timezone handling and quiet hours make the digest land at the right moment for every team, framed by the engagement and timing patterns from the latest social analytics",
+              "audience": "Developers and technical founders managing multiple workspaces",
+              "imageCount": 1
+            },
+            "dependsOn": ["t1", "t2"],
+            "reason": "The digest scheduler with timezone and quiet hours support is a full feature that merits a narrative post, and the reads let us pick the framing that matches what has actually driven engagement."
+          },
+          {
+            "localId": "t4",
+            "capabilityName": "content.social-post.create",
+            "capabilityVersion": 1,
+            "params": {
+              "topic": "Notra now sends a weekly digest, tuned to your workspace's timezone and quiet hours",
+              "angle": "Short announcement pointing to the blog post, timed to the weekday the social read shows performs best",
+              "audience": "Developers and technical founders following Notra",
+              "platform": "linkedin"
+            },
+            "dependsOn": ["t3"],
+            "reason": "Linkedin is chosen because the audience is technical founders evaluating workspace tooling, and this post drives traffic to the blog post once it is live."
+          }
+        ]
+      },
+      "scores": {
+        "dataFirst": 8,
+        "groundedDecisions": 7,
+        "experimentDiscipline": 8,
+        "marketerJudgment": 6,
+        "communication": 7
+      },
+      "notes": {
+        "dataFirst": "Reads are correctly sequenced first and both content tasks declare dependsOn against t1 and t2, so the writing is genuinely gated on the analytics results. Minor deduction: t4 depends only on t3 and not explicitly on t1/t2, meaning the platform choice for the social post is technically unblocked from the reads, though it inherits indirectly through t3.",
+        "groundedDecisions": "The plan accurately restates the shipped feature (weekly digest scheduler, per-workspace timezone handling, quiet hours) and defers numbers to the reads without fabricating any. However, LinkedIn is chosen as the platform in t4 with a stated rationale about 'technical founders evaluating workspace tooling' that is asserted rather than deferred to the data — the plan should have left platform selection conditional on what analytics.social.read returns, especially since Twitter is the dominant channel for this workspace.",
+        "experimentDiscipline": "analytics.experiment.read is correctly scheduled to check for running experiments before any content is created, and no analytics.experiment.create task is included, which is appropriate given the planner cannot see post ids. The plan does not attempt to invent ids or create an experiment blind, which is the right call.",
+        "marketerJudgment": "Choosing LinkedIn as the sole social platform for a feature announcement targeting developers is a questionable call — the mandate emphasises Twitter as a steady drumbeat channel and the recent action history shows social posts going out, but no Twitter post is planned here. A blog post plus one LinkedIn post for a meaningful shipped feature undershoots the cadence expectation, and skipping Twitter entirely without data to justify it is a real gap.",
+        "communication": "The reason and task notes name the specific feature components (weekly digest scheduler, per-workspace timezone handling, quiet hours) concretely, which is good. However, phrases like 'framed by the engagement and timing patterns from the latest social analytics' and 'timed to the weekday the social read shows performs best' are vague promises rather than checkable instructions — the task params do not encode how the analytics output will actually influence the content."
+      },
+      "headline": "The plan locks in LinkedIn as the only social platform before reading the data, bypassing Twitter entirely despite the mandate's explicit drumbeat requirement there."
+    },
+    {
+      "scenarioId": "experiment-running",
+      "decision": "plan",
+      "taskCount": 4,
+      "capabilities": [
+        "analytics.social.read",
+        "analytics.experiment.read",
+        "content.changelog.create",
+        "content.social-post.create"
+      ],
+      "structuralErrors": [],
+      "fabricatedTokens": [],
+      "costCents": 4,
+      "plan": {
+        "contractVersion": 1,
+        "mandate": {
+          "mandateId": "mnd_experiment_running",
+          "mandateVersion": 1
+        },
+        "decision": "plan",
+        "reason": "Notra just shipped v2.3.0 with inline comments in the editor, a feature customers will notice, and this hasn't been covered by the social post from two days ago. We'll read current social and experiment data first so the changelog and follow-up post are grounded in real numbers rather than a blank slate.",
+        "consumedSignalIds": [],
+        "goal": {
+          "title": "Announce v2.3.0 inline comments feature",
+          "summary": "Publish a changelog entry and a single social post for the new inline comments feature, both informed by current engagement data, without duplicating the post already sent two days ago."
+        },
+        "tasks": [
+          {
+            "localId": "t1",
+            "capabilityName": "analytics.social.read",
+            "capabilityVersion": 1,
+            "params": {},
+            "dependsOn": [],
+            "reason": "Pull current follower, impression and engagement numbers before deciding how to frame the release."
+          },
+          {
+            "localId": "t2",
+            "capabilityName": "analytics.experiment.read",
+            "capabilityVersion": 1,
+            "params": {},
+            "dependsOn": [],
+            "reason": "Check whether the A/B test created two days ago is still running so we avoid starting a duplicate test on the same pair."
+          },
+          {
+            "localId": "t3",
+            "capabilityName": "content.changelog.create",
+            "capabilityVersion": 1,
+            "params": {
+              "topic": "v2.3.0: Inline comments in the editor",
+              "angle": "Frame the release around the concrete workflow improvement of commenting directly in context, using current engagement numbers to set expectations",
+              "audience": "Developers and technical founders using Notra"
+            },
+            "dependsOn": ["t1", "t2"],
+            "reason": "A single shipped feature release fits a changelog entry, and grounding it in the read data keeps the tone consistent with what is actually resonating."
+          },
+          {
+            "localId": "t4",
+            "capabilityName": "content.social-post.create",
+            "capabilityVersion": 1,
+            "params": {
+              "topic": "Notra v2.3.0 ships inline comments in the editor",
+              "angle": "Short announcement pointing at the new feature, timed and framed by the current engagement data from analytics.social.read",
+              "audience": "Developers and technical founders following Notra",
+              "platform": "twitter"
+            },
+            "dependsOn": ["t1", "t2", "t3"],
+            "reason": "Twitter is chosen because the workspace's developer audience concentrates there for shipping updates, and this keeps the steady drumbeat going without repeating the post from two days ago."
+          }
+        ]
+      },
+      "scores": {
+        "dataFirst": 8,
+        "groundedDecisions": 7,
+        "experimentDiscipline": 9,
+        "marketerJudgment": 7,
+        "communication": 7
+      },
+      "notes": {
+        "dataFirst": "Reads are correctly scheduled first as t1 and t2 with no dependsOn, and both content tasks (t3, t4) declare dependsOn on both reads. The plan does not fabricate numbers and defers framing to the read results, which is the right pattern.",
+        "groundedDecisions": "Topics and audiences are grounded in the GitHub signal and mandate. However, the reason for t4 claims the developer audience 'concentrates on Twitter' without any analytics data to support that — a mild assumption stated as fact before the reads have run. No fabricated IDs or numbers appear, which is good.",
+        "experimentDiscipline": "The plan correctly schedules analytics.experiment.read (t2) to check the running test and does not attempt to create a new experiment, which is exactly the right discipline given an experiment was created two days ago and is likely still running.",
+        "marketerJudgment": "The plan correctly avoids re-announcing the post from two days ago and picks the right content types (changelog + social post) for a moderate feature ship. However, it misses an opportunity to note that the experiment result from exp_0031 should inform the angle or format of the new social post — the plan reads the experiment but never explains what it would do differently based on the outcome, making the read feel like a checkbox rather than a decision input.",
+        "communication": "The reason field names the release tag (v2.3.0), the feature (inline comments), and the specific concern (avoid duplicating the post from two days ago), which is concrete. Per-task reasons are adequate but the experiment read reason only says 'avoid starting a duplicate test' rather than naming what decision the result would actually drive for this plan."
+      },
+      "headline": "The plan reads the running experiment but never explains what it would do differently based on the result, making the experiment read a dead-end checkbox rather than a real decision input."
+    },
+    {
+      "scenarioId": "experiment-concluded",
+      "decision": null,
+      "taskCount": 0,
+      "capabilities": [],
+      "structuralErrors": ["planner defect: No output generated."],
+      "fabricatedTokens": [],
+      "costCents": 0,
+      "plan": null,
+      "scores": {
+        "dataFirst": 0,
+        "groundedDecisions": 0,
+        "experimentDiscipline": 0,
+        "marketerJudgment": 0,
+        "communication": 0
+      },
+      "notes": {
+        "dataFirst": "The planner produced no output at all — no reads, no content tasks, no dependency chain. A structural failure means zero data-first discipline was demonstrated.",
+        "groundedDecisions": "No plan was generated, so no grounding decisions were made. The GitHub signal about the URL-paste-to-link feature was entirely ignored.",
+        "experimentDiscipline": "No experiment read was scheduled to confirm the concluded test result, and no disciplined decision about whether to start a new experiment was made. Complete absence of output is the worst possible outcome here.",
+        "marketerJudgment": "A clear winner just concluded and a shippable feature just merged — two strong content triggers — yet the planner produced nothing. A competent marketer would never no-op on this combination of signals.",
+        "communication": "There is no plan text, no reasoning, no goal summary, and no per-task rationale to evaluate. Nothing was communicated."
+      },
+      "headline": "structural failure: planner defect: No output generated."
+    },
+    {
+      "scenarioId": "signal-driven",
+      "decision": "plan",
+      "taskCount": 4,
+      "capabilities": [
+        "analytics.social.read",
+        "analytics.experiment.read",
+        "content.blog-post.create",
+        "content.social-post.create"
+      ],
+      "structuralErrors": [],
+      "fabricatedTokens": [],
+      "costCents": 3,
+      "plan": {
+        "contractVersion": 1,
+        "mandate": {
+          "mandateId": "mnd_signal_driven",
+          "mandateVersion": 1
+        },
+        "decision": "plan",
+        "reason": "Notra 3.0 ships workspaces and shared brand kits, a major multi-feature release worth a blog post and a launch tweet, and it has not been covered by the prior changelog or social post yet.",
+        "consumedSignalIds": ["sig_github_release_v3", "sig_github_push_v3"],
+        "goal": {
+          "title": "Announce Notra 3.0: Workspaces and shared brand kits",
+          "summary": "Read current social and experiment data first, then publish a blog post on the 3.0 launch with a companion tweet driving traffic to it."
+        },
+        "tasks": [
+          {
+            "localId": "t1",
+            "capabilityName": "analytics.social.read",
+            "capabilityVersion": 1,
+            "params": {},
+            "dependsOn": [],
+            "reason": "Check current follower, impression and engagement numbers before shaping the launch narrative."
+          },
+          {
+            "localId": "t2",
+            "capabilityName": "analytics.experiment.read",
+            "capabilityVersion": 1,
+            "params": {},
+            "dependsOn": [],
+            "reason": "Check for a concluded or running test so the new content can build on a proven format instead of guessing."
+          },
+          {
+            "localId": "t3",
+            "capabilityName": "content.blog-post.create",
+            "capabilityVersion": 1,
+            "params": {
+              "topic": "Notra 3.0: Workspaces and shared brand kits",
+              "angle": "How multi-workspace switching and shared brand kits change daily collaboration for teams",
+              "audience": "Developers and technical founders using Notra",
+              "imageCount": 2
+            },
+            "dependsOn": ["t1", "t2"],
+            "reason": "A 3.0 release with two headline features is a launch, which is large enough to carry a full narrative post."
+          },
+          {
+            "localId": "t4",
+            "capabilityName": "content.social-post.create",
+            "capabilityVersion": 1,
+            "params": {
+              "topic": "Notra 3.0 is live: workspaces and shared brand kits",
+              "angle": "Point followers at the launch post for the full breakdown",
+              "audience": "Developers and technical founders following Notra",
+              "platform": "twitter"
+            },
+            "dependsOn": ["t3"],
+            "reason": "Twitter is chosen because prior Notra release announcements have driven the bulk of launch-day engagement there, and this post follows the blog post it promotes."
+          }
+        ]
+      },
+      "scores": {
+        "dataFirst": 9,
+        "groundedDecisions": 7,
+        "experimentDiscipline": 9,
+        "marketerJudgment": 8,
+        "communication": 8
+      },
+      "notes": {
+        "dataFirst": "Both analytics reads are scheduled in parallel before any content task, and t3 and t4 both declare dependsOn against them, so the writing genuinely cannot run until the numbers are in hand. Minor deduction only because the reason for t4 references prior engagement patterns as if already known rather than deferring to what t1 will reveal.",
+        "groundedDecisions": "Topics, angles, and audience are grounded cleanly in the GitHub signal. However, t4's reason states 'prior Notra release announcements have driven the bulk of launch-day engagement' on Twitter — this is a fabricated claim; no analytics have been read yet and no such data appears in the planner input, which is exactly the kind of invented number the rubric penalises.",
+        "experimentDiscipline": "The plan correctly schedules analytics.experiment.read to discover what is running before doing anything else, and does not attempt to create an experiment with invented post ids. No violations.",
+        "marketerJudgment": "A blog post plus a companion tweet is the right content mix for a two-headline major release, the changelog was last created ten days ago and doesn't cover v3.0, and the plan avoids double-announcing. A LinkedIn post would strengthen the plan given the mandate explicitly names LinkedIn as a channel, and the planner left it out without justification.",
+        "communication": "The reason field in most tasks names the release tag, the two specific features, and the concrete action being taken. The t4 reason weakens the plan by asserting an unverified engagement claim rather than saying 'Twitter platform choice will be confirmed or revised once t1 returns impression and follower data.'"
+      },
+      "headline": "T4 invents a Twitter engagement advantage that hasn't been read yet, undermining the data-first discipline the rest of the plan correctly follows."
+    },
+    {
+      "scenarioId": "quiet-week",
+      "decision": "plan",
+      "taskCount": 3,
+      "capabilities": [
+        "analytics.social.read",
+        "analytics.experiment.read",
+        "content.social-post.create"
+      ],
+      "structuralErrors": [],
+      "fabricatedTokens": [],
+      "costCents": 3,
+      "plan": {
+        "contractVersion": 1,
+        "mandate": {
+          "mandateId": "mnd_quiet_week",
+          "mandateVersion": 1
+        },
+        "decision": "plan",
+        "reason": "This week's signals are only a dependency bump, a refactor and a typo fix, none of which are announcement worthy, but the cadence target of two to three posts a week is not yet met since only one post went out this Monday. We pull fresh social and experiment analytics first, then plan a single social post that leans on whatever angle those numbers already reward.",
+        "consumedSignalIds": [],
+        "goal": {
+          "title": "Keep weekly cadence with a data grounded post",
+          "summary": "Read current social and experiment analytics, then publish one social post built on the best performing angle to hit this week's two to three post target."
+        },
+        "tasks": [
+          {
+            "localId": "t1",
+            "capabilityName": "analytics.social.read",
+            "capabilityVersion": 1,
+            "params": {},
+            "dependsOn": [],
+            "reason": "We need current follower, impression and engagement numbers before committing to any content angle this cycle."
+          },
+          {
+            "localId": "t2",
+            "capabilityName": "analytics.experiment.read",
+            "capabilityVersion": 1,
+            "params": {},
+            "dependsOn": [],
+            "reason": "Checking recent experiments first lets the next post reuse a concluded test's winning variant instead of guessing."
+          },
+          {
+            "localId": "t3",
+            "capabilityName": "content.social-post.create",
+            "capabilityVersion": 1,
+            "params": {
+              "topic": "Behind the scenes: steady engineering progress at Notra this week",
+              "angle": "Frame the week's incremental hardening work through whichever format or posting day the analytics show performs best, following the winning variant if a test has concluded",
+              "audience": "Developers and technical founders following Notra",
+              "platform": "twitter"
+            },
+            "dependsOn": ["t1", "t2"],
+            "reason": "Twitter is where Notra's developer audience concentrates, and this fills the cadence gap for the week without dressing up chores as a launch."
+          }
+        ]
+      },
+      "scores": {
+        "dataFirst": 8,
+        "groundedDecisions": 7,
+        "experimentDiscipline": 9,
+        "marketerJudgment": 5,
+        "communication": 6
+      },
+      "notes": {
+        "dataFirst": "Analytics reads are correctly scheduled before content and t3 declares dependsOn t1 and t2, so the writing genuinely cannot proceed until numbers are in hand. The structure is clean and correct.",
+        "groundedDecisions": "The plan correctly defers all numbers to the reads and does not fabricate follower counts or post IDs. However, the topic 'Behind the scenes: steady engineering progress' is vague and the angle param still leans on chore-level work (dependency bump, refactor, typo fix) as implied content fodder, which the mandate explicitly forbids dressing up as news.",
+        "experimentDiscipline": "The plan schedules analytics.experiment.read to discover what is running before doing anything else, creates no experiment with invented IDs, and correctly defers to concluded test results. No violations.",
+        "marketerJudgment": "The mandate says never dress up chores as news, yet the only content task is built around a dependency bump, a refactor, and a typo fix — exactly the chores the mandate prohibits. A competent marketer would instead plan an evergreen post (e.g. a developer tip, a how-it-works thread, or a reuse of a top-performing angle) that requires no announcement signal at all, which is precisely what the mandate instructs for quiet weeks.",
+        "communication": "The reason correctly names the specific commits and explains the cadence gap, which is concrete. But the task-level reason for t3 is generic ('fills the cadence gap', 'developer audience concentrates on Twitter') and never names what metric or angle the analytics read is expected to surface, missing the specificity the rubric requires."
+      },
+      "headline": "The plan's only content task is built on chores the mandate explicitly forbids dressing up as news, with no evergreen fallback planned for a quiet week."
+    }
+  ]
+}

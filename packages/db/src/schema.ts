@@ -1403,6 +1403,35 @@ export const geoCompetitors = pgTable(
   ]
 );
 
+export const socialExperiments = pgTable(
+  "social_experiments",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    hypothesis: text("hypothesis"),
+    provider: text("provider").notNull(),
+    variantAPostId: text("variant_a_post_id").notNull(),
+    variantBPostId: text("variant_b_post_id").notNull(),
+    metric: text("metric").notNull(),
+    status: text("status").notNull().default("running"),
+    winner: text("winner"),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    endedAt: timestamp("ended_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("socialExperiments_organizationId_idx").on(table.organizationId),
+  ]
+);
+
+
 export const postCollections = pgTable(
   "post_collections",
   {
@@ -2439,6 +2468,17 @@ export const geoPromptSequencesRelations = relations(
     }),
   })
 );
+
+export const socialExperimentsRelations = relations(
+  socialExperiments,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [socialExperiments.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
+
 
 export const geoPromptsRelations = relations(geoPrompts, ({ one }) => ({
   organization: one(organizations, {
