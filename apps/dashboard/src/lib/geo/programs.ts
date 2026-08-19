@@ -42,6 +42,7 @@ import {
   GeoPromptCreateFailedError,
   GeoPromptNotFoundError,
   GeoScanStartError,
+  GeoSettingsDisabledError,
   GeoSettingsMissingError,
 } from "@/lib/geo/errors";
 import {
@@ -60,6 +61,7 @@ import {
   resolveGeoScope,
 } from "@/lib/geo/projects";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
+import { withGeoScanStatus } from "@/lib/geo/scan-status";
 import { buildTrackedEngines } from "@/lib/geo/tracked-engines";
 import { startGeoScanRun } from "@/lib/workflows/start";
 import type {
@@ -911,7 +913,7 @@ export const startGeoScan = Effect.fn("geo.startScan")(function* (
   const projectId = scope.projectId;
   const row = yield* geoDb("settings lookup failed", () =>
     db.query.geoSettings.findFirst({
-      columns: { id: true },
+      columns: { id: true, enabled: true },
       where: eq(geoSettings.projectId, projectId),
     })
   );
@@ -922,9 +924,17 @@ export const startGeoScan = Effect.fn("geo.startScan")(function* (
     );
   }
 
-  return yield* Effect.tryPromise({
-    try: () =>
-      startGeoScanRun({ organizationId: scope.organizationId, projectId }),
-    catch: (cause) => new GeoScanStartError({ cause }),
-  });
+  if (!row.enabled) {
+    return yield* Effect.fail(new GeoSettingsDisabledError({ projectId }));
+  }
+
+  return yield* withGeoScanStatus(
+    projectId,
+    Effect.tryPromise({
+      try: () =>
+        startGeoScanRun({ organizationId: scope.organizationId, projectId }),
+      catch: (cause) => new GeoScanStartError({ cause }),
+    }),
+    { finishOn: "failure" }
+  );
 });

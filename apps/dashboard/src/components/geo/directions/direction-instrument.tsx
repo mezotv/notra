@@ -30,64 +30,63 @@ function HeroRow() {
   const best = GEO_DIRECTIONS_ENGINES[0];
 
   return (
-    <InstrumentGrid className="grid-cols-2 lg:grid-cols-5">
-      <Card className="col-span-2">
-        <CardContent className="flex flex-1 flex-col justify-center gap-2">
+    <InstrumentGrid className="grid-cols-2 lg:grid-cols-4">
+      <Card className="h-full min-w-0 overflow-visible">
+        <CardContent className="flex min-w-0 flex-1 flex-col gap-2">
           <p className="font-medium text-muted-foreground text-sm">
             AI visibility
           </p>
-          <div className="flex items-end gap-2">
-            <p className="font-bold text-4xl text-primary tabular-nums">
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="font-bold text-3xl text-primary tabular-nums leading-tight">
               {formatMentionRate(GEO_DIRECTIONS_VISIBILITY)}
             </p>
-            <DirectionDelta
-              className="mb-1"
-              delta={GEO_DIRECTIONS_VISIBILITY_DELTA}
-            />
+            <DirectionDelta delta={GEO_DIRECTIONS_VISIBILITY_DELTA} />
           </div>
-          <p className="text-muted-foreground text-xs">
+          <p className="min-w-0 text-pretty text-muted-foreground text-xs leading-snug">
             Share of tracked answers that name you, across every engine.
           </p>
         </CardContent>
       </Card>
-      <Card>
-        <CardContent className="flex flex-1 flex-col justify-center gap-2">
+      <Card className="h-full min-w-0 overflow-visible">
+        <CardContent className="flex min-w-0 flex-1 flex-col gap-2">
           <p className="font-medium text-muted-foreground text-sm">
             Best engine
           </p>
-          <p className="flex items-center gap-2 truncate font-bold text-3xl tabular-nums">
+          <p className="flex min-w-0 items-center gap-2 font-bold text-3xl leading-tight">
             {best ? (
-              <EngineIcon className="size-6" engine={best.engine} />
+              <EngineIcon className="size-6 shrink-0" engine={best.engine} />
             ) : null}
-            {best?.label ?? "N/A"}
+            <span className="wrap-break-word min-w-0">
+              {best?.label ?? "N/A"}
+            </span>
           </p>
-          <p className="text-muted-foreground text-xs">
+          <p className="min-w-0 text-muted-foreground text-xs leading-snug">
             {best ? `${formatMentionRate(best.rate)} mention rate` : "no scans"}
           </p>
         </CardContent>
       </Card>
-      <Card>
-        <CardContent className="flex flex-1 flex-col justify-center gap-2">
+      <Card className="h-full min-w-0 overflow-visible">
+        <CardContent className="flex min-w-0 flex-1 flex-col gap-2">
           <p className="font-medium text-muted-foreground text-sm">
             Tracked prompts
           </p>
-          <p className="font-bold text-3xl tabular-nums">
+          <p className="font-bold text-3xl tabular-nums leading-tight">
             {GEO_DIRECTIONS_PROMPT_COUNT}
           </p>
-          <p className="text-muted-foreground text-xs">
+          <p className="min-w-0 text-muted-foreground text-xs leading-snug">
             asked to every engine per scan
           </p>
         </CardContent>
       </Card>
-      <Card className="col-span-2 lg:col-span-1">
-        <CardContent className="flex flex-1 flex-col justify-center gap-2">
+      <Card className="h-full min-w-0 overflow-visible">
+        <CardContent className="flex min-w-0 flex-1 flex-col gap-2">
           <p className="font-medium text-muted-foreground text-sm">
             AI traffic
           </p>
-          <p className="font-bold text-3xl tabular-nums">
+          <p className="font-bold text-3xl tabular-nums leading-tight">
             {formatDirectionCount(AI_VISITS?.value ?? 0)}
           </p>
-          <p className="text-muted-foreground text-xs">
+          <p className="min-w-0 text-muted-foreground text-xs leading-snug">
             {AI_VISITS?.hint ?? ""}
           </p>
         </CardContent>

@@ -1,14 +1,21 @@
 "use client";
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoBar } from "@/components/geo/geo-bar";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { GEO_MEMORY_LABEL, GEO_SEARCH_LABEL } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
-import { cn } from "@/lib/utils";
 import type {
   EngineRateTableProps,
   GeoEngineFamily,
@@ -17,46 +24,84 @@ import type {
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import {
   engineFamilyLabel,
+  engineFamilyTotals,
   formatMentionRate,
   groupEngineFamilies,
 } from "@/utils/geo-charts";
+import { geoScanEmptyMessage } from "@/utils/geo-scan";
 import { tableHeightFor } from "@/utils/table";
 
-const PERCENT = 100;
-const MIN_BAR_PERCENT = 2;
 const NOT_SCANNED_RATE = -1;
 
-function RateCell({
+function BreakdownRow({
+  label,
   engine,
   variant,
 }: {
+  label: string;
   engine: GeoOverviewEngine | null;
   variant: "web" | "raw";
 }) {
-  if (!engine) {
+  return (
+    <span className="flex items-center gap-2">
+      <span className="w-14 shrink-0 text-muted-foreground">{label}</span>
+      {engine ? (
+        <>
+          <GeoBar
+            className="w-24 shrink-0"
+            fillClassName={variant === "web" ? "bg-chart-1" : "bg-chart-2"}
+            value={engine.mentionRate}
+          />
+          <span className="tabular-nums">
+            {formatMentionRate(engine.mentionRate)}
+          </span>
+          <span className="text-muted-foreground tabular-nums">
+            {engine.mentions}/{engine.checks}
+          </span>
+        </>
+      ) : (
+        <span className="text-muted-foreground">Not scanned</span>
+      )}
+    </span>
+  );
+}
+
+function RateCell({ family }: { family: GeoEngineFamily }) {
+  const totals = engineFamilyTotals(family);
+  if (!totals) {
     return <span className="text-muted-foreground text-xs">Not scanned</span>;
   }
 
-  const percent = Math.round(engine.mentionRate * PERCENT);
-
   return (
-    <span className="flex items-center gap-2">
-      <span className="block h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-muted">
-        <span
-          className={cn(
-            "block h-full",
-            variant === "web" ? "bg-chart-1" : "bg-chart-2"
-          )}
-          style={{ width: `${Math.max(percent, MIN_BAR_PERCENT)}%` }}
+    <TooltipProvider delay={150}>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span className="flex cursor-default items-center gap-2">
+              <GeoBar className="w-24 shrink-0" value={totals.rate} />
+              <span className="text-sm tabular-nums">
+                {formatMentionRate(totals.rate)}
+              </span>
+              <span className="text-muted-foreground text-xs tabular-nums">
+                {totals.mentions}/{totals.checks}
+              </span>
+            </span>
+          }
         />
-      </span>
-      <span className="text-sm tabular-nums">
-        {formatMentionRate(engine.mentionRate)}
-      </span>
-      <span className="text-muted-foreground text-xs tabular-nums">
-        {engine.mentions}/{engine.checks}
-      </span>
-    </span>
+        <TooltipContent className="flex flex-col gap-1.5 text-xs">
+          <BreakdownRow
+            engine={family.web}
+            label={GEO_SEARCH_LABEL}
+            variant="web"
+          />
+          <BreakdownRow
+            engine={family.raw}
+            label={GEO_MEMORY_LABEL}
+            variant="raw"
+          />
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
@@ -70,7 +115,10 @@ function avgPositionOf(family: GeoEngineFamily): string {
   return position === null ? "-" : `#${position}`;
 }
 
-export function EngineRateTable({ engines }: EngineRateTableProps) {
+export function EngineRateTable({
+  engines,
+  isScanning = false,
+}: EngineRateTableProps) {
   const families = useMemo(() => groupEngineFamilies(engines), [engines]);
 
   const columns = useMemo<TableColumn<GeoEngineFamily>[]>(
@@ -92,25 +140,17 @@ export function EngineRateTable({ engines }: EngineRateTableProps) {
         sortValue: (row) => engineFamilyLabel(row.family),
       },
       {
-        key: "web",
-        header: "Web rate",
-        width: "1.6fr",
+        key: "rate",
+        header: "Mention rate",
+        width: "2fr",
         sortable: true,
-        cell: (row) => <RateCell engine={row.web} variant="web" />,
-        sortValue: (row) => row.web?.mentionRate ?? NOT_SCANNED_RATE,
-      },
-      {
-        key: "raw",
-        header: "Raw rate",
-        width: "1.6fr",
-        sortable: true,
-        cell: (row) => <RateCell engine={row.raw} variant="raw" />,
-        sortValue: (row) => row.raw?.mentionRate ?? NOT_SCANNED_RATE,
+        cell: (row) => <RateCell family={row} />,
+        sortValue: (row) => engineFamilyTotals(row)?.rate ?? NOT_SCANNED_RATE,
       },
       {
         key: "avgPosition",
         header: "Avg position",
-        width: "7.5rem",
+        width: "9.5rem",
         align: "right",
         sortable: true,
         cell: (row) => (
@@ -135,15 +175,19 @@ export function EngineRateTable({ engines }: EngineRateTableProps) {
     [families.length]
   );
 
+  const emptyReadout = isScanning ? "scanning now" : "no scans yet";
+  const readout = families.length > 0 ? undefined : emptyReadout;
+
   return (
-    <InstrumentSection
-      eyebrow="Mention rate by engine"
-      readout={families.length > 0 ? undefined : "no scans yet"}
-    >
+    <InstrumentSection eyebrow="Mention rate by engine" readout={readout}>
       {families.length === 0 ? (
         <InstrumentEmpty
+          busy={isScanning}
           className="h-40"
-          message="Run a scan to see engine mention rates"
+          message={geoScanEmptyMessage(
+            isScanning,
+            "Run a scan to see engine mention rates"
+          )}
           seed="Mention rate by engine"
         />
       ) : (

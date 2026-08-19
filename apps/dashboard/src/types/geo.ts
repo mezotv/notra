@@ -1,7 +1,7 @@
 import type { GeoRequestPayload } from "@usenotra/geo";
 import type { LanguageModel, ToolSet } from "ai";
 import type { ReactNode } from "react";
-import type { ChartColorPair } from "@/types/charts";
+import type { ChartColorPair, ChartConfig } from "@/types/charts";
 
 export interface GeoProject {
   id: string;
@@ -73,6 +73,7 @@ export interface GeoPageClientProps {
 export interface PromptFunnelCardProps {
   promptCount: number;
   results: GeoPromptResult[];
+  isScanning?: boolean;
 }
 
 export interface GeoPageContentProps {
@@ -90,6 +91,9 @@ export interface GeoSettings {
   competitors: string[];
   languages: string[];
   enabled: boolean;
+  scanStartedAt: string | null;
+  lastScanAt: string | null;
+  isScanning: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -108,6 +112,8 @@ export interface GeoSettingsRow {
   competitors: string[];
   languages: string[] | null;
   enabled: boolean;
+  scanStartedAt: Date | null;
+  lastScanAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -164,6 +170,18 @@ export interface GeoTimeseriesResponse {
   points: GeoTimeseriesPoint[];
 }
 
+export type GeoSparklineMode = "all" | "search" | "memory";
+
+export interface MentionRateSparklineOptions {
+  family?: string;
+  mode?: GeoSparklineMode;
+}
+
+export interface GeoSparklinePoint {
+  day: string;
+  value: number;
+}
+
 export interface GeoPromptResult {
   promptId: string;
   engine: string;
@@ -185,18 +203,6 @@ export interface GeoCompetitorSharePoint {
   mentions: number;
 }
 
-export interface GeoCompetitorShareTableRow {
-  brand: string;
-  mentions: number;
-  domain: string | null;
-  color: string;
-}
-
-export interface GeoCompetitorSharePieSlice extends GeoCompetitorShareTableRow {
-  slice: string;
-  [key: string]: string | number | null;
-}
-
 export interface GeoCompetitorShareResponse {
   configured: boolean;
   points: GeoCompetitorSharePoint[];
@@ -210,6 +216,16 @@ export interface GeoSettingsUpsertInput {
   competitors: string[];
   languages: string[];
   enabled: boolean;
+}
+
+export interface GeoSampleDataResponse {
+  projectId: string;
+  promptsAdded: number;
+  competitorsAdded: number;
+  sequencesAdded: number;
+  mentionChecks: number;
+  trafficEvents: number;
+  analyticsIngested: boolean;
 }
 
 export interface GeoTrackedPrompt {
@@ -246,6 +262,20 @@ export interface GeoPromptRow {
 export interface GeoTrackedPromptsResponse {
   configured: boolean;
   prompts: GeoTrackedPrompt[];
+}
+
+export type GeoPromptSourceFilter = "all" | GeoTrackedPrompt["source"];
+
+export interface GeoPromptTableRow {
+  id: string;
+  prompt: string;
+  enabled: boolean;
+  source: GeoTrackedPrompt["source"];
+  mentioned: number;
+  total: number;
+  bestPosition: number | null;
+  presence: GeoPresenceStatus | null;
+  results: GeoPromptResult[];
 }
 
 export interface GeoPromptSequence {
@@ -367,7 +397,12 @@ export interface GeoBrandContext {
 export interface MentionRateRow {
   day: string;
   rawDay: string;
-  [engine: string]: string | number;
+  [engine: string]: string | number | null;
+}
+
+export interface MentionRateTrend {
+  rows: MentionRateRow[];
+  engines: string[];
 }
 
 export type GeoGroundedProvider =
@@ -647,6 +682,19 @@ export interface GeoEngineFamily {
   raw: GeoOverviewEngine | null;
 }
 
+export interface GeoEngineFamilyTotals {
+  mentions: number;
+  checks: number;
+  rate: number;
+}
+
+export interface GeoBarProps {
+  value: number;
+  max?: number;
+  className?: string;
+  fillClassName?: string;
+}
+
 export interface GeoHeroSummary {
   visibilityRate: number | null;
   grounded: boolean;
@@ -658,6 +706,7 @@ export interface GeoSummaryStatsProps {
   engines: GeoOverviewEngine[];
   settings: GeoSettings;
   promptCount: number;
+  timeseriesPoints: GeoTimeseriesPoint[];
 }
 
 export interface GeoStatTile {
@@ -665,6 +714,11 @@ export interface GeoStatTile {
   value: string;
   hint: string;
   engine?: string;
+  family?: GeoEngineFamily;
+  sparkline?: GeoSparklinePoint[];
+  searchSparkline?: GeoSparklinePoint[];
+  memorySparkline?: GeoSparklinePoint[];
+  valueClassName?: string;
 }
 
 export interface GeoLanguageSharePoint {
@@ -682,15 +736,19 @@ export interface GeoLanguageShareResponse {
 
 export interface ModelUsageCardProps {
   usage: GeoModelUsageResponse | undefined;
+  isScanning?: boolean;
 }
 
 export interface LanguagePerformanceCardProps {
   points: GeoLanguageSharePoint[];
-  configuredLanguages: string[];
+  organizationId: string;
+  settings: GeoSettings;
+  isScanning?: boolean;
 }
 
 export interface MentionRateCardProps {
   engines: GeoOverviewEngine[];
+  isScanning?: boolean;
 }
 
 export interface GeoPromptSummary {
@@ -708,10 +766,12 @@ export interface PromptResultsPreviewProps {
   limit?: number;
   action?: ReactNode;
   languages?: string[];
+  isScanning?: boolean;
 }
 
 export interface EngineRateTableProps {
   engines: GeoOverviewEngine[];
+  isScanning?: boolean;
 }
 
 export type GeoTab = "visibility" | "prompts" | "traffic" | "journeys";
@@ -730,12 +790,26 @@ export interface GeoTabsProps {
   languagePoints: GeoLanguageSharePoint[];
   promptResults: GeoPromptResult[];
   promptCount: number;
+  isScanning: boolean;
   modelUsage: GeoModelUsageResponse | undefined;
   traffic: AiTrafficResponse | undefined;
   ingestSetup: GeoIngestSetupResponse | undefined;
   trafficPages: GeoTrafficPage[];
   journeys: GeoJourney[];
   organizationId: string;
+}
+
+export interface MentionTrendSeries {
+  key: string;
+  engine: string;
+  label: string;
+}
+
+export interface MentionTrendLegendProps {
+  series: readonly MentionTrendSeries[];
+  config: ChartConfig;
+  hiddenKeys: ReadonlySet<string>;
+  onToggle: (key: string) => void;
 }
 
 export interface MentionTrendCardProps {
@@ -756,7 +830,9 @@ export type EngineIconKey =
   | "meta"
   | "grok"
   | "qwen"
-  | "copilot";
+  | "copilot"
+  | "tencent"
+  | "xiaomi";
 
 export interface EngineIconProps {
   engine: string;
@@ -766,6 +842,16 @@ export interface EngineIconProps {
 export interface EngineIconRule {
   key: EngineIconKey;
   patterns: readonly string[];
+}
+
+export interface ParsedModelId {
+  provider: string;
+  slug: string;
+}
+
+export interface ModelProviderLogoProps {
+  provider: string;
+  className?: string;
 }
 
 export interface CodeSnippetProps {
@@ -832,12 +918,41 @@ export interface ShareOfVoiceCardProps {
   points: GeoCompetitorSharePoint[];
   competitors?: GeoCompetitor[];
   action?: ReactNode;
+  isScanning?: boolean;
+  organizationSlug?: string;
+  organizationId?: string;
+}
+
+export interface ShareOfVoiceTableProps {
+  points: GeoCompetitorSharePoint[];
+  competitors?: GeoCompetitor[];
+  limit?: number;
+  isScanning?: boolean;
+  onRowClick?: (row: ShareOfVoiceRow) => void;
+  onRowPointerEnter?: (row: ShareOfVoiceRow) => void;
+}
+
+export interface ShareOfVoiceDonutSlice extends ShareOfVoiceRow {
+  slice: string;
+  [key: string]: string | number;
+}
+
+export interface ShareOfVoiceDonutProps {
+  points: GeoCompetitorSharePoint[];
+  competitors?: GeoCompetitor[];
+  limit?: number;
+  isScanning?: boolean;
+  onSliceClick?: (row: ShareOfVoiceRow) => void;
+  onSlicePointerEnter?: (row: ShareOfVoiceRow) => void;
 }
 
 export interface CompetitorShareCardProps {
   points: GeoCompetitorSharePoint[];
   companyName: string | null;
   competitors?: GeoCompetitor[];
+  isScanning?: boolean;
+  organizationSlug?: string;
+  organizationId?: string;
 }
 
 export type GeoCompetitorKind = "direct" | "indirect";
@@ -934,6 +1049,43 @@ export interface CompetitorsTableProps {
   organizationSlug: string;
   companyName: string;
   aliases: string[];
+}
+
+export interface PromptsTableProps {
+  organizationId: string;
+  prompts: GeoTrackedPrompt[];
+  results: GeoPromptResult[];
+  isScanning?: boolean;
+}
+
+export type PromptAddMode = "write" | "website";
+
+export interface PromptAddDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId: string;
+}
+
+export interface GeoRemoveDialogNouns {
+  singular: string;
+  plural: string;
+}
+
+export interface GeoRemoveDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  items: string[];
+  onConfirm: () => void;
+  isPending: boolean;
+  nouns: GeoRemoveDialogNouns;
+  description: string | ((items: string[]) => string);
+}
+
+export interface PromptDetailDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  row: GeoPromptTableRow | null;
+  isScanning?: boolean;
 }
 
 export type GeoCompetitorTypeFilter = "all" | GeoCompetitorKind;

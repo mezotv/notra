@@ -29,7 +29,7 @@ const hasEnv = (name: string): boolean => {
 export const GEO_GROUNDED_ENGINES: readonly GeoGroundedEngine[] = [
   {
     key: "openai/gpt-5.4-grounded",
-    label: "ChatGPT (web)",
+    label: "ChatGPT",
     model: "openai/gpt-5.4",
     provider: "gateway-openai",
     envVar: null,
@@ -37,7 +37,7 @@ export const GEO_GROUNDED_ENGINES: readonly GeoGroundedEngine[] = [
   },
   {
     key: "anthropic/claude-sonnet-4.6-grounded",
-    label: "Claude (web)",
+    label: "Claude",
     model: "anthropic/claude-sonnet-4.6",
     provider: "gateway-anthropic",
     envVar: null,
@@ -45,7 +45,7 @@ export const GEO_GROUNDED_ENGINES: readonly GeoGroundedEngine[] = [
   },
   {
     key: "google/gemini-3-flash-grounded",
-    label: "Gemini (web)",
+    label: "Gemini",
     model: "google/gemini-3-flash",
     provider: "gateway-google",
     envVar: null,
@@ -53,7 +53,7 @@ export const GEO_GROUNDED_ENGINES: readonly GeoGroundedEngine[] = [
   },
   {
     key: "openai-direct-grounded",
-    label: "ChatGPT (web)",
+    label: "ChatGPT",
     model: "gpt-5.4",
     provider: "direct-openai",
     envVar: GEO_OPENAI_API_KEY_ENV,
@@ -61,7 +61,7 @@ export const GEO_GROUNDED_ENGINES: readonly GeoGroundedEngine[] = [
   },
   {
     key: "anthropic-direct-grounded",
-    label: "Claude (web)",
+    label: "Claude",
     model: "claude-sonnet-4-6",
     provider: "direct-anthropic",
     envVar: GEO_ANTHROPIC_API_KEY_ENV,
@@ -91,6 +91,9 @@ export const GEO_ENGINE_LABELS: Record<string, string> = {
   ...groundedEngineLabels,
 };
 
+export const GEO_SEARCH_LABEL = "Search";
+export const GEO_MEMORY_LABEL = "Memory";
+
 export const GEO_MODEL_USAGE_SOURCE = "openrouter";
 export const GEO_MODEL_USAGE_ATTRIBUTION =
   "Source: OpenRouter (openrouter.ai/rankings)";
@@ -111,6 +114,8 @@ export const GEO_MODEL_USAGE_DEFAULT_LIMIT = 12;
 export const GEO_MAX_PROMPTS = 8;
 export const GEO_MAX_SEQUENCES = 10;
 export const GEO_COMPETITOR_SHARE_LIMIT = 50;
+export const GEO_SHARE_OF_VOICE_TOP_BRANDS = 5;
+export const GEO_SHARE_OF_VOICE_PAGE_TOP_BRANDS = 8;
 export const GEO_SEQUENCE_MAX_TURNS = 5;
 export const GEO_GROUNDED_MAX_PROMPTS = 6;
 export const GEO_GROUNDED_MAX_SEARCHES = 3;
@@ -118,6 +123,9 @@ export const GEO_ANSWER_MAX_TOKENS = 600;
 export const GEO_GROUNDED_ANSWER_MAX_TOKENS = 1200;
 export const GEO_JUDGE_MAX_TOKENS = 800;
 export const GEO_SCAN_CONCURRENCY = 4;
+export const GEO_SCAN_STALE_MS = 2 * 60 * 60 * 1000;
+export const GEO_SCAN_POLL_INTERVAL_MS = 3000;
+export const GEO_START_SCAN_MUTATION_KEY = "geo-start-scan";
 export const GEO_EXCERPT_MAX_LENGTH = 300;
 export const GEO_PROMPT_MIN_LENGTH = 8;
 export const GEO_PROMPT_MAX_LENGTH = 300;
@@ -176,6 +184,29 @@ export const COMPETITORS_TABLE_HEIGHT = 420;
 export const COMPETITOR_PROMPTS_TABLE_HEIGHT = 288;
 export const COMPETITOR_PROMPTS_PAGE_TABLE_HEIGHT = 620;
 export const COMPETITORS_TABLE_ROW_HEIGHT = 52;
+
+export const PROMPT_SOURCE_FILTER_VALUES = ["all", "custom", "auto"] as const;
+
+export const PROMPT_SOURCE_FILTERS = [
+  {
+    value: "all",
+    label: "All sources",
+    description: "Every tracked question",
+  },
+  {
+    value: "custom",
+    label: "Custom",
+    description: "Questions you added yourself",
+  },
+  {
+    value: "auto",
+    label: "Auto",
+    description: "Generated from your site",
+  },
+] as const;
+
+export const PROMPTS_TABLE_HEIGHT = 420;
+export const PROMPTS_TABLE_ROW_HEIGHT = 52;
 
 export const GEO_JOURNEY_DEEP_CRAWL_PAGES = 10;
 export const GEO_LOGO_DEBOUNCE_MS = 500;
@@ -304,18 +335,13 @@ export const AI_TRAFFIC_CONFIDENCE_LABELS: Record<string, string> = {
 };
 
 export const GEO_PRESENCE_LABELS: Record<string, string> = {
-  "training-data": "Training data",
-  "retrieval-only": "Retrieval only",
+  "training-data": GEO_MEMORY_LABEL,
+  "retrieval-only": `${GEO_SEARCH_LABEL} only`,
   invisible: "Invisible",
 };
 
-export const GEO_PRESENCE_DOT_CLASSES: Record<string, string> = {
-  "training-data": "bg-emerald-500",
-  "retrieval-only": "bg-amber-500",
-  invisible: "bg-muted-foreground/50",
-};
-
 export const GEO_TREND_MIN_DAYS = 5;
+export const GEO_SPARKLINE_MIN_POINTS = 2;
 
 export const GEO_MAX_LANGUAGES = 3;
 export const GEO_LANGUAGE_MAX_PROMPTS = 5;
@@ -339,8 +365,13 @@ export const GEO_PROMPTS_TAB_LIMIT = 12;
 
 export const GEO_LOGO_LINK_BASE = "https://logos.context.dev/";
 export const GEO_LOGO_LINK_CLIENT_ID_ENV = "NEXT_PUBLIC_LOGOLINK_CLIENT_ID";
+export const GEO_FAVICON_BASE = "https://icons.duckduckgo.com/ip3";
 export const GEO_LOGO_SIZE_PX = 40;
 
 export const GEO_COMPETITOR_DETAIL_DAYS = 30;
 export const GEO_COMPETITOR_DETAIL_MIN_POINTS = 2;
 export const GEO_COMPETITOR_DETAIL_SERIES_KEY = "mentions";
+export const GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS = "h-52";
+
+/** Dev-only: enables seeding GEO sample data from the settings page. */
+export const GEO_SAMPLE_DATA_ENABLED = process.env.NODE_ENV === "development";

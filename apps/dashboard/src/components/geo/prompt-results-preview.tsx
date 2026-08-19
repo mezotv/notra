@@ -18,6 +18,7 @@ import { GEO_LANGUAGE_FLAGS } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { GeoPromptSummary, PromptResultsPreviewProps } from "@/types/geo";
 import { summarizePromptResults } from "@/utils/geo-presence";
+import { geoScanEmptyMessage } from "@/utils/geo-scan";
 import { tableHeightFor } from "@/utils/table";
 
 const DEFAULT_LIMIT = 3;
@@ -27,6 +28,7 @@ export function PromptResultsPreview({
   limit = DEFAULT_LIMIT,
   action,
   languages = [],
+  isScanning = false,
 }: PromptResultsPreviewProps) {
   const summaries = useMemo(() => summarizePromptResults(results), [results]);
   const rows = useMemo(() => summaries.slice(0, limit), [summaries, limit]);
@@ -42,7 +44,9 @@ export function PromptResultsPreview({
           <Tooltip>
             <TooltipTrigger
               render={
-                <span className="block truncate text-sm">{row.prompt}</span>
+                <span className="block w-full min-w-0 truncate text-sm">
+                  {row.prompt}
+                </span>
               }
             />
             <TooltipContent className="max-w-sm">{row.prompt}</TooltipContent>
@@ -83,7 +87,7 @@ export function PromptResultsPreview({
       {
         key: "bestPosition",
         header: "Best position",
-        width: "8.125rem",
+        width: "9.75rem",
         align: "right",
         sortable: true,
         cell: (row) =>
@@ -122,8 +126,12 @@ export function PromptResultsPreview({
     >
       {rows.length === 0 ? (
         <InstrumentEmpty
+          busy={isScanning}
           className="h-24"
-          message="Run a scan to see which prompts surface you"
+          message={geoScanEmptyMessage(
+            isScanning,
+            "Run a scan to see which prompts surface you"
+          )}
           seed="Winning prompts"
         />
       ) : (
@@ -136,7 +144,10 @@ export function PromptResultsPreview({
             className="rounded-2xl"
             columns={columns}
             data={rows}
-            emptyState="Run a scan to see which prompts surface you"
+            emptyState={geoScanEmptyMessage(
+              isScanning,
+              "Run a scan to see which prompts surface you"
+            )}
             getRowId={(row) => row.promptId}
             height={tableHeightFor(rows.length)}
             resizable

@@ -1,4 +1,8 @@
-import { COMPETITOR_SWATCHES } from "@/constants/charts";
+import {
+  CHART_MUTED_COLOR,
+  CHART_OTHER_SLICE_LABEL,
+  COMPETITOR_SWATCHES,
+} from "@/constants/charts";
 import { OWN_BRAND_ROW_ID } from "@/constants/geo";
 import { competitorKey } from "@/lib/geo/domain";
 import type { ChartColorPair } from "@/types/charts";
@@ -7,7 +11,6 @@ import type {
   GeoCompetitorKind,
   GeoCompetitorRowEntry,
   GeoCompetitorSharePoint,
-  GeoCompetitorShareTableRow,
   GeoCompetitorTypeFilter,
 } from "@/types/geo";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
@@ -52,44 +55,59 @@ export function competitorSliceColor(index: number): ChartColorPair {
   return { light: hex, dark: hex };
 }
 
-export function buildCompetitorShareRows(
+export function shareOfVoiceSliceColor(
+  brand: string,
+  index: number,
+  competitors?: readonly GeoCompetitor[]
+): ChartColorPair {
+  if (brand === CHART_OTHER_SLICE_LABEL) {
+    return CHART_MUTED_COLOR;
+  }
+  const key = competitorKey(brand);
+  const stored = competitors?.find(
+    (competitor) => competitorKey(competitor.name) === key
+  )?.color;
+  if (stored) {
+    return { light: stored, dark: stored };
+  }
+  return competitorSliceColor(index);
+}
+
+export function mergeCompetitorSharePoints(
   points: readonly GeoCompetitorSharePoint[],
   competitors: readonly GeoCompetitor[] | undefined
-): GeoCompetitorShareTableRow[] {
-  const byKey = new Map(
-    (competitors ?? []).map(
-      (competitor, index) =>
-        [competitorKey(competitor.name), { competitor, index }] as const
-    )
-  );
-
-  const toRow = (
-    brand: string,
-    mentions: number
-  ): GeoCompetitorShareTableRow => {
-    const match = byKey.get(competitorKey(brand));
-    return {
-      brand,
-      mentions,
-      domain: match?.competitor.domain ?? null,
-      color:
-        match?.competitor.color ??
-        (match
-          ? competitorSliceColor(match.index + 1).light
-          : FALLBACK_SLICE_COLOR),
-    };
-  };
-
-  const rows = points.map((point) => toRow(point.brand, point.mentions));
-  const seen = new Set(points.map((point) => competitorKey(point.brand)));
+): GeoCompetitorSharePoint[] {
+  const canonicalByKey = new Map<string, string>();
   for (const competitor of competitors ?? []) {
-    if (seen.has(competitorKey(competitor.name))) {
-      continue;
+    canonicalByKey.set(competitorKey(competitor.name), competitor.name);
+    for (const synonym of competitor.synonyms) {
+      const key = competitorKey(synonym);
+      if (!canonicalByKey.has(key)) {
+        canonicalByKey.set(key, competitor.name);
+      }
     }
-    seen.add(competitorKey(competitor.name));
-    rows.push(toRow(competitor.name, 0));
   }
-  return rows;
+
+  const merged = new Map<string, GeoCompetitorSharePoint>();
+  for (const point of points) {
+    const rawKey = competitorKey(point.brand);
+    const brand = canonicalByKey.get(rawKey) ?? point.brand;
+    const key = competitorKey(brand);
+    const existing = merged.get(key);
+    merged.set(key, {
+      brand: canonicalByKey.get(key) ?? existing?.brand ?? point.brand,
+      mentions: (existing?.mentions ?? 0) + point.mentions,
+    });
+  }
+
+  return [...merged.values()].sort((a, b) => b.mentions - a.mentions);
+}
+
+export function geoCompetitorDetailPath(
+  organizationSlug: string,
+  brand: string
+): string {
+  return `/${organizationSlug}/geo/competitors/${encodeURIComponent(brand)}`;
 }
 
 export function buildCompetitorRows(

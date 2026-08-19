@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoBar } from "@/components/geo/geo-bar";
 import {
   InstrumentEmpty,
   InstrumentSection,
@@ -10,14 +11,14 @@ import { Table, type TableColumn } from "@/components/motion/table";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { cn } from "@/lib/utils";
 import type { GeoModelUsageRow, ModelUsageCardProps } from "@/types/geo";
-import {
-  barWidthPercent,
-  formatMentionRate,
-  formatUsageShare,
-} from "@/utils/geo-charts";
+import { formatMentionRate, formatUsageShare } from "@/utils/geo-charts";
+import { geoScanEmptyMessage } from "@/utils/geo-scan";
 import { tableHeightFor } from "@/utils/table";
 
-export function ModelUsageCard({ usage }: ModelUsageCardProps) {
+export function ModelUsageCard({
+  usage,
+  isScanning = false,
+}: ModelUsageCardProps) {
   const models = useMemo(() => usage?.models ?? [], [usage]);
   const maxShare = useMemo(
     () => models.reduce((max, model) => Math.max(max, model.share), 0),
@@ -53,15 +54,14 @@ export function ModelUsageCard({ usage }: ModelUsageCardProps) {
         width: "1.6fr",
         sortable: true,
         cell: (row) => (
-          <span className="block h-2 w-full overflow-hidden rounded-full bg-muted">
-            <span
-              className={cn(
-                "block h-full",
-                row.scanned ? "bg-chart-1" : "bg-muted-foreground/40"
-              )}
-              style={{ width: `${barWidthPercent(row.share, maxShare)}%` }}
-            />
-          </span>
+          <GeoBar
+            className="h-2"
+            fillClassName={
+              row.scanned ? "bg-chart-1" : "bg-muted-foreground/40"
+            }
+            max={maxShare}
+            value={row.share}
+          />
         ),
       },
       {
@@ -80,7 +80,7 @@ export function ModelUsageCard({ usage }: ModelUsageCardProps) {
       {
         key: "mentionRate",
         header: "Mention rate",
-        width: "8.75rem",
+        width: "9.5rem",
         align: "right",
         sortable: true,
         cell: (row) =>
@@ -110,8 +110,12 @@ export function ModelUsageCard({ usage }: ModelUsageCardProps) {
     >
       {models.length === 0 ? (
         <InstrumentEmpty
+          busy={isScanning}
           className="h-40"
-          message="Run a scan to capture model usage share"
+          message={geoScanEmptyMessage(
+            isScanning,
+            "Run a scan to capture model usage share"
+          )}
           seed="Where AI usage actually happens"
         />
       ) : (
@@ -125,7 +129,10 @@ export function ModelUsageCard({ usage }: ModelUsageCardProps) {
             columns={columns}
             data={models}
             defaultSort={{ key: "shareValue", direction: "desc" }}
-            emptyState="Run a scan to capture model usage share"
+            emptyState={geoScanEmptyMessage(
+              isScanning,
+              "Run a scan to capture model usage share"
+            )}
             getRowId={(row) => row.model}
             height={tableHeightFor(models.length)}
             resizable

@@ -1,5 +1,4 @@
 import type { GeoTrafficLogRow } from "@notra/analytics/tinybird/endpoints";
-import { GEO_ENGINE_LABELS } from "@/constants/geo";
 import { normalizeModelId } from "@/lib/geo/model-usage";
 import type {
   GeoCompetitor,
@@ -17,6 +16,8 @@ import type {
   GeoTrafficLogEntry,
 } from "@/types/geo";
 import { toGeoVisitorType } from "@/utils/ai-traffic";
+import { formatModelLabel } from "@/utils/geo-model-display";
+import { isGeoScanRunning } from "@/utils/geo-scan";
 
 export function toGeoProject(row: GeoProjectRow): GeoProject {
   return {
@@ -28,6 +29,8 @@ export function toGeoProject(row: GeoProjectRow): GeoProject {
 }
 
 export function toGeoSettings(row: GeoSettingsRow): GeoSettings {
+  const scanStartedAt = row.scanStartedAt?.toISOString() ?? null;
+  const lastScanAt = row.lastScanAt?.toISOString() ?? null;
   return {
     id: row.id,
     organizationId: row.organizationId,
@@ -37,6 +40,9 @@ export function toGeoSettings(row: GeoSettingsRow): GeoSettings {
     competitors: row.competitors,
     languages: row.languages ?? [],
     enabled: row.enabled,
+    scanStartedAt,
+    lastScanAt,
+    isScanning: isGeoScanRunning(row.scanStartedAt, row.lastScanAt),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
@@ -123,7 +129,7 @@ export function toModelUsageRow(
   const checks = coverage?.checks ?? 0;
   return {
     model,
-    label: GEO_ENGINE_LABELS[model] ?? model,
+    label: formatModelLabel(model),
     rank: Number(rank),
     share,
     rawTokens: rawTokens === null ? null : Number(rawTokens),

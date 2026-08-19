@@ -13,6 +13,11 @@ import type { DirectionDonutProps } from "@/types/geo-directions";
 import { formatMentionRate } from "@/utils/geo-charts";
 import { directionShareOf } from "@/utils/geo-directions";
 
+const SHARE_TOTAL = GEO_DIRECTIONS_SHARE.reduce(
+  (sum, point) => sum + point.mentions,
+  0
+);
+
 export function DirectionDonut({
   className,
   legendClassName,
@@ -30,7 +35,13 @@ export function DirectionDonut({
           innerRadius={DONUT_INNER_RADIUS}
           outerRadius={DONUT_OUTER_RADIUS}
         />
-        <EChartsPieChart.Tooltip />
+        <EChartsPieChart.Tooltip
+          barMax={SHARE_TOTAL}
+          layout="bars"
+          valueFormatter={(mentions) =>
+            formatMentionRate(SHARE_TOTAL > 0 ? mentions / SHARE_TOTAL : 0)
+          }
+        />
       </EChartsPieChart>
       <ChartColorScope
         className={cn("min-w-0 flex-1 space-y-1.5", legendClassName)}

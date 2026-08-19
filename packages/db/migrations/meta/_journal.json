@@ -484,6 +484,13 @@
       "when": 1787028025472,
       "tag": "0066_salty_silver_samurai",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1787149095479,
+      "tag": "0069_thankful_chamber",
+      "breakpoints": true
     }
   ]
 }

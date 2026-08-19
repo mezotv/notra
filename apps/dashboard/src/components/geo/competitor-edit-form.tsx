@@ -4,6 +4,7 @@ import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip";
 import {
   Cancel01Icon,
   InformationCircleIcon,
+  PlusSignIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -32,7 +33,7 @@ import { useForm } from "@tanstack/react-form";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import Color from "color";
 import { Loader2Icon } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { CompetitorLogoPreview } from "@/components/geo/competitor-logo-preview";
 import { COMPETITOR_SWATCHES } from "@/constants/charts";
 import { COMPETITOR_KIND_HINT, GEO_COLOR_DEBOUNCE_MS } from "@/constants/geo";
@@ -40,6 +41,121 @@ import { normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { useGeoCompetitorUpsert } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
 import type { CompetitorEditFormProps, GeoCompetitorKind } from "@/types/geo";
+
+function CompetitorSynonymsField({
+  id,
+  synonyms,
+  onChange,
+}: {
+  id: string;
+  synonyms: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  const draftRef = useRef(draft);
+  const skipCommitRef = useRef(false);
+  const restoreFocusRef = useRef(false);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  draftRef.current = draft;
+
+  useEffect(() => {
+    if (adding || !restoreFocusRef.current) {
+      return;
+    }
+    restoreFocusRef.current = false;
+    addButtonRef.current?.focus();
+  }, [adding]);
+
+  const commitDraft = () => {
+    const value = draftRef.current.trim();
+    if (value.length === 0) {
+      return;
+    }
+    const exists = synonyms.some(
+      (item) => item.toLowerCase() === value.toLowerCase()
+    );
+    if (!exists) {
+      onChange([...synonyms, value]);
+    }
+    draftRef.current = "";
+    setDraft("");
+  };
+
+  const stopAdding = (restoreFocus: boolean) => {
+    restoreFocusRef.current = restoreFocus;
+    draftRef.current = "";
+    setDraft("");
+    setAdding(false);
+  };
+
+  return (
+    <div className="space-y-1.5">
+      <Label htmlFor={adding ? id : undefined}>
+        Synonyms <span className="text-muted-foreground">(optional)</span>
+      </Label>
+      <div className="flex flex-wrap items-center gap-1.5">
+        {synonyms.map((synonym) => (
+          <Badge className="gap-1 pr-1" key={synonym} variant="secondary">
+            {synonym}
+            <button
+              aria-label={`Remove ${synonym}`}
+              className="rounded-sm p-0.5 hover:bg-background"
+              onClick={() =>
+                onChange(synonyms.filter((item) => item !== synonym))
+              }
+              type="button"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} size={12} />
+            </button>
+          </Badge>
+        ))}
+        {adding ? (
+          <Input
+            autoFocus
+            className="h-6 w-36 px-2 text-xs"
+            id={id}
+            onBlur={() => {
+              if (!skipCommitRef.current) {
+                commitDraft();
+              }
+              skipCommitRef.current = false;
+              draftRef.current = "";
+              setDraft("");
+              setAdding(false);
+            }}
+            onChange={(event) => setDraft(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                commitDraft();
+              }
+              if (event.key === "Escape") {
+                event.preventDefault();
+                event.stopPropagation();
+                skipCommitRef.current = true;
+                stopAdding(true);
+              }
+            }}
+            placeholder="Another name"
+            value={draft}
+          />
+        ) : (
+          <button
+            aria-label="Add synonym"
+            className="inline-flex h-6 items-center gap-0.5 rounded-4xl border border-border border-dashed px-2 text-muted-foreground text-xs transition-colors hover:border-foreground/40 hover:text-foreground"
+            onClick={() => setAdding(true)}
+            ref={addButtonRef}
+            type="button"
+          >
+            <HugeiconsIcon icon={PlusSignIcon} size={12} strokeWidth={2} />
+            Add
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function CompetitorEditForm({
   organizationId,
@@ -51,7 +167,6 @@ export function CompetitorEditForm({
   const nameId = useId();
   const websiteId = useId();
   const synonymId = useId();
-  const [synonymDraft, setSynonymDraft] = useState("");
 
   const form = useForm({
     defaultValues: {
@@ -124,72 +239,13 @@ export function CompetitorEditForm({
       </form.Field>
 
       <form.Field name="synonyms">
-        {(field) => {
-          const addSynonym = () => {
-            const value = synonymDraft.trim();
-            if (value.length === 0) {
-              return;
-            }
-            const exists = field.state.value.some(
-              (item) => item.toLowerCase() === value.toLowerCase()
-            );
-            if (!exists) {
-              field.handleChange([...field.state.value, value]);
-            }
-            setSynonymDraft("");
-          };
-
-          return (
-            <div className="space-y-1.5">
-              <Label htmlFor={synonymId}>
-                Synonyms{" "}
-                <span className="text-muted-foreground">(optional)</span>
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id={synonymId}
-                  onChange={(event) => setSynonymDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      addSynonym();
-                    }
-                  }}
-                  placeholder="Other names this brand goes by"
-                  value={synonymDraft}
-                />
-                <Button onClick={addSynonym} type="button" variant="outline">
-                  Add
-                </Button>
-              </div>
-              {field.state.value.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {field.state.value.map((synonym) => (
-                    <Badge
-                      className="gap-1 pr-1"
-                      key={synonym}
-                      variant="secondary"
-                    >
-                      {synonym}
-                      <button
-                        aria-label={`Remove ${synonym}`}
-                        className="rounded-sm p-0.5 hover:bg-background"
-                        onClick={() =>
-                          field.handleChange(
-                            field.state.value.filter((item) => item !== synonym)
-                          )
-                        }
-                        type="button"
-                      >
-                        <HugeiconsIcon icon={Cancel01Icon} size={12} />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        }}
+        {(field) => (
+          <CompetitorSynonymsField
+            id={synonymId}
+            onChange={field.handleChange}
+            synonyms={field.state.value}
+          />
+        )}
       </form.Field>
 
       <form.Field name="color">

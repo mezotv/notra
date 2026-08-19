@@ -1,3 +1,4 @@
+import { CHART_PERCENT_SCALE } from "@/constants/charts";
 import type {
   GeoCompetitorSharePoint,
   GeoOverviewEngine,
@@ -8,9 +9,6 @@ import type {
   GeoDirectionTone,
   GeoDirectionTrendRow,
 } from "@/types/geo-directions";
-
-const PERCENT = 100;
-const MIN_BAR_PERCENT = 3;
 
 export function formatDirectionCount(value: number): string {
   return value.toLocaleString("en-US");
@@ -95,13 +93,13 @@ export function buildDirectionTimeseries(
     points.push({
       day,
       engine: groundedEngine,
-      checks: PERCENT,
+      checks: CHART_PERCENT_SCALE,
       mentions: grounded[index] ?? 0,
     });
     points.push({
       day,
       engine: trainingEngine,
-      checks: PERCENT,
+      checks: CHART_PERCENT_SCALE,
       mentions: training[index] ?? 0,
     });
   });

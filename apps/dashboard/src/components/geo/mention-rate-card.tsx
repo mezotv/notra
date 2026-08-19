@@ -2,14 +2,15 @@
 
 import { useMemo } from "react";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoBar } from "@/components/geo/geo-bar";
 import {
   InstrumentEmpty,
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
-import { GEO_ENGINE_LABELS } from "@/constants/geo";
-import { cn } from "@/lib/utils";
+import { GEO_MEMORY_LABEL, GEO_SEARCH_LABEL } from "@/constants/geo";
 import type { GeoOverviewEngine, MentionRateCardProps } from "@/types/geo";
-import { formatMentionRate } from "@/utils/geo-charts";
+import { engineFamilyLabel, formatMentionRate } from "@/utils/geo-charts";
+import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 interface EngineFamily {
   family: string;
@@ -19,7 +20,6 @@ interface EngineFamily {
 }
 
 const GROUNDED_SUFFIX = /(-direct)?-grounded$/;
-const WEB_LABEL_SUFFIX = /\s*\(web\)$/;
 
 function isGrounded(engine: string): boolean {
   return GROUNDED_SUFFIX.test(engine) || engine === "perplexity-sonar";
@@ -29,22 +29,13 @@ function familyOf(engine: string): string {
   return engine.replace(GROUNDED_SUFFIX, "");
 }
 
-function familyLabel(family: string): string {
-  const label =
-    GEO_ENGINE_LABELS[family] ?? GEO_ENGINE_LABELS[`${family}-grounded`];
-  if (!label) {
-    return family;
-  }
-  return label.replace(WEB_LABEL_SUFFIX, "");
-}
-
 function groupEngines(engines: GeoOverviewEngine[]): EngineFamily[] {
   const families = new Map<string, EngineFamily>();
   for (const engine of engines) {
     const family = familyOf(engine.engine);
     const entry = families.get(family) ?? {
       family,
-      label: familyLabel(family),
+      label: engineFamilyLabel(family),
       web: null,
       raw: null,
     };
@@ -72,21 +63,17 @@ function RateBar({
   if (!engine) {
     return null;
   }
-  const percent = Math.round(engine.mentionRate * 100);
+  const label = variant === "web" ? GEO_SEARCH_LABEL : GEO_MEMORY_LABEL;
   return (
     <div className="flex items-center gap-2">
-      <span className="w-8 shrink-0 text-muted-foreground text-xs capitalize">
-        {variant}
+      <span className="w-12 shrink-0 text-muted-foreground text-xs">
+        {label}
       </span>
-      <div className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
-        <div
-          className={cn(
-            "h-full",
-            variant === "web" ? "bg-chart-1" : "bg-chart-2"
-          )}
-          style={{ width: `${Math.max(percent, 2)}%` }}
-        />
-      </div>
+      <GeoBar
+        className="h-2 w-auto flex-1"
+        fillClassName={variant === "web" ? "bg-chart-1" : "bg-chart-2"}
+        value={engine.mentionRate}
+      />
       <span className="w-24 shrink-0 text-right text-xs tabular-nums">
         <span className="text-foreground text-sm">
           {formatMentionRate(engine.mentionRate)}
@@ -99,15 +86,19 @@ function RateBar({
   );
 }
 
-export function MentionRateCard({ engines }: MentionRateCardProps) {
+export function MentionRateCard({
+  engines,
+  isScanning = false,
+}: MentionRateCardProps) {
   const families = useMemo(() => groupEngines(engines), [engines]);
 
   return (
     <InstrumentModule eyebrow="Mention rate" readout="30D">
       {families.length === 0 ? (
         <InstrumentEmpty
+          busy={isScanning}
           className="h-40"
-          message="No scans yet"
+          message={geoScanEmptyMessage(isScanning, "No scans yet")}
           seed="Mention rate"
         />
       ) : (

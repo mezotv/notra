@@ -18,6 +18,10 @@ export function toGeoOrpcError(failure: GeoRouterError): Error {
       return badRequest("Failed to create conversation");
     case "GeoSettingsMissingError":
       return badRequest("Configure your brand tracking settings first");
+    case "GeoSettingsDisabledError":
+      return badRequest("Enable brand tracking before starting a scan");
+    case "GeoSampleDataDisabledError":
+      return notFound();
     case "GeoDiscoveryError":
       console.error("[GEO] website discovery failed:", failure);
       return badRequest(failure.message);

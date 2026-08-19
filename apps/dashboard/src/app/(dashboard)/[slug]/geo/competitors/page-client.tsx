@@ -8,15 +8,21 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorShareCard } from "@/components/geo/competitor-share-card";
 import { CompetitorsTable } from "@/components/geo/competitors-table";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
+  EMPTY_STATE_TABLE_COLUMNS,
+  EMPTY_STATE_TABLE_ROWS,
+} from "@/constants/empty-state";
+import {
   useGeoCompetitorShare,
   useGeoCompetitors,
   useGeoSettings,
+  useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
 import { GeoPageSkeleton } from "../skeleton";
 
@@ -36,6 +42,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const { data: settingsData, isPending } = useGeoSettings(organizationId);
   const { data: competitorShare } = useGeoCompetitorShare(organizationId);
   const { data: competitorList } = useGeoCompetitors(organizationId);
+  const isScanning = useIsGeoScanning(organizationId);
   const [managerOpen, setManagerOpen] = useState(false);
 
   useHotkey("C", () => setManagerOpen(true), { enabled: !managerOpen });
@@ -58,14 +65,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </header>
           <EmptyState
             action={
-              <Link
-                className="text-primary text-sm underline underline-offset-4"
-                href={`/${organizationSlug}/geo`}
-              >
+              <Button render={<Link href={`/${organizationSlug}/geo`} />}>
                 Set up GEO tracking
-              </Link>
+              </Button>
             }
             description="Set up GEO tracking first, then track which competitors AI engines surface."
+            preview={
+              <EmptyStateTablePreview
+                columns={EMPTY_STATE_TABLE_COLUMNS.competitors}
+                rows={EMPTY_STATE_TABLE_ROWS}
+              />
+            }
             title="Not set up yet"
           />
         </div>
@@ -99,6 +109,9 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         <CompetitorShareCard
           companyName={settings.companyName}
           competitors={competitorList?.competitors}
+          isScanning={isScanning}
+          organizationId={organizationId}
+          organizationSlug={organizationSlug}
           points={competitorShare?.points ?? []}
         />
       </div>

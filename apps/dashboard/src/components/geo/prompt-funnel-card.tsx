@@ -8,10 +8,22 @@ import {
 } from "@/components/instrument/instrument-module";
 import type { PromptFunnelCardProps } from "@/types/geo";
 import { buildPromptVisibilityFunnel } from "@/utils/geo-prompts";
+import { geoScanEmptyMessage } from "@/utils/geo-scan";
+
+function promptFunnelReadout(isScanning: boolean, promptCount: number): string {
+  if (isScanning) {
+    return "scanning now";
+  }
+  if (promptCount > 0) {
+    return `${promptCount.toLocaleString()} prompts tracked`;
+  }
+  return "no prompts yet";
+}
 
 export function PromptFunnelCard({
   promptCount,
   results,
+  isScanning = false,
 }: PromptFunnelCardProps) {
   const stages = useMemo(
     () => buildPromptVisibilityFunnel(promptCount, results),
@@ -21,15 +33,15 @@ export function PromptFunnelCard({
   return (
     <InstrumentSection
       eyebrow="Prompt funnel"
-      readout={
-        promptCount > 0
-          ? `${promptCount.toLocaleString()} prompts tracked`
-          : "no prompts yet"
-      }
+      readout={promptFunnelReadout(isScanning, promptCount)}
     >
       {promptCount === 0 || results.length === 0 ? (
         <InstrumentEmpty
-          message="Run a scan to see how your prompts convert"
+          busy={isScanning}
+          message={geoScanEmptyMessage(
+            isScanning,
+            "Run a scan to see how your prompts convert"
+          )}
           seed="geo-prompt-funnel"
         />
       ) : (

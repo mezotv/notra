@@ -37,7 +37,8 @@ import {
 } from "@/lib/geo/engines";
 import { GeoScanError } from "@/lib/geo/errors";
 import { captureModelUsageShare } from "@/lib/geo/model-usage";
-import { buildGeoPrompts } from "@/lib/geo/prompts";
+import { buildGeoPrompts, customPromptScanId } from "@/lib/geo/prompts";
+import { markGeoScanFinished, withGeoScanStatus } from "@/lib/geo/scan-status";
 import {
   geoJudgeResultSchema,
   geoTranslationResultSchema,
@@ -53,6 +54,7 @@ import type {
   GeoSettings,
   GeoSettingsRow,
 } from "@/types/geo";
+import { isGeoScanRunning } from "@/utils/geo-scan";
 
 const MAX_JUDGE_COMPETITORS = 10;
 const GROUNDED_MAX_STEPS = 4;
@@ -250,6 +252,9 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
     competitors: settingsRow.competitors,
     languages: settingsRow.languages ?? [],
     enabled: settingsRow.enabled,
+    scanStartedAt: settingsRow.scanStartedAt?.toISOString() ?? null,
+    lastScanAt: settingsRow.lastScanAt?.toISOString() ?? null,
+    isScanning: true,
     createdAt: settingsRow.createdAt.toISOString(),
     updatedAt: settingsRow.updatedAt.toISOString(),
   };
@@ -294,7 +299,7 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
   const prompts: GeoPromptDefinition[] = [
     ...autoPrompts,
     ...customRows.map((row) => ({
-      id: `custom-${row.id}`,
+      id: customPromptScanId(row.id),
       text: row.prompt,
     })),
   ];
@@ -484,6 +489,19 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
   });
 
   const enabledRows = settingsRows.filter((row) => row.enabled);
+
+  // A scan may have been stamped as started (e.g. by a manual trigger) before
+  // tracking was disabled; release that stamp so the UI doesn't show a
+  // phantom "scanning" state until it goes stale.
+  for (const row of settingsRows) {
+    if (row.enabled || !isGeoScanRunning(row.scanStartedAt, row.lastScanAt)) {
+      continue;
+    }
+    yield* markGeoScanFinished(row.projectId).pipe(
+      geoSkip("scan finish stamp failed")
+    );
+  }
+
   if (enabledRows.length === 0) {
     const skipped: GeoScanResult = { status: "skipped" };
     return skipped;
@@ -492,7 +510,10 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
   let checks = 0;
   let mentions = 0;
   for (const settingsRow of enabledRows) {
-    const result = yield* runGeoScanForProject(settingsRow);
+    const result = yield* withGeoScanStatus(
+      settingsRow.projectId,
+      runGeoScanForProject(settingsRow)
+    );
     checks += result.checks ?? 0;
     mentions += result.mentions ?? 0;
   }

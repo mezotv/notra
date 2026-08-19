@@ -9,6 +9,7 @@ import {
 import { useMemo } from "react";
 import { CodeSnippet } from "@/components/geo/code-snippet";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoBar } from "@/components/geo/geo-bar";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
 import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
@@ -24,7 +25,6 @@ import {
   formatGeoSource,
   formatMarkdownShare,
 } from "@/utils/ai-traffic";
-import { barWidthPercent } from "@/utils/geo-charts";
 import { tableHeightFor } from "@/utils/table";
 
 function IngestSetup({ setup }: { setup: GeoIngestSetupResponse | undefined }) {
@@ -136,12 +136,12 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
         sortable: true,
         cell: (row) => (
           <span className="flex items-center gap-2">
-            <span className="block h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-muted">
-              <span
-                className="block h-full rounded-full bg-chart-1"
-                style={{ width: `${barWidthPercent(row.visits, maxVisits)}%` }}
-              />
-            </span>
+            <GeoBar
+              className="w-24 shrink-0"
+              fillClassName="rounded-full"
+              max={maxVisits}
+              value={row.visits}
+            />
             <span className="text-sm tabular-nums">
               {row.visits.toLocaleString()}
             </span>

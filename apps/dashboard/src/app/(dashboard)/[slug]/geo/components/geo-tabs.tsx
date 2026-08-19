@@ -68,6 +68,7 @@ export function GeoTabs({
   languagePoints,
   promptResults,
   promptCount,
+  isScanning,
   modelUsage,
   traffic,
   ingestSetup,
@@ -104,7 +105,7 @@ export function GeoTabs({
           <MentionTrendCard points={timeseriesPoints} />
         </TabSection>
         <TabSection active={revealActive} order={1}>
-          <EngineRateTable engines={engines} />
+          <EngineRateTable engines={engines} isScanning={isScanning} />
         </TabSection>
         <TabSection active={revealActive} order={2}>
           <TrackedEnginesCard engines={tracked} />
@@ -121,24 +122,33 @@ export function GeoTabs({
                 </Link>
               }
               competitors={competitors}
+              isScanning={isScanning}
+              organizationId={organizationId}
+              organizationSlug={organizationSlug}
               points={competitorPoints}
             />
           </TabSection>
           <TabSection active={revealActive} order={4}>
             <LanguagePerformanceCard
-              configuredLanguages={settings.languages}
+              isScanning={isScanning}
+              organizationId={organizationId}
               points={languagePoints}
+              settings={settings}
             />
           </TabSection>
         </InstrumentGrid>
         <TabSection active={revealActive} order={5}>
-          <ModelUsageCard usage={modelUsage} />
+          <ModelUsageCard isScanning={isScanning} usage={modelUsage} />
         </TabSection>
       </TabsContent>
 
       <TabsContent className="mt-6 flex flex-col gap-6" value="prompts">
         <TabSection active={revealActive} order={0}>
-          <PromptFunnelCard promptCount={promptCount} results={promptResults} />
+          <PromptFunnelCard
+            isScanning={isScanning}
+            promptCount={promptCount}
+            results={promptResults}
+          />
         </TabSection>
         <TabSection active={revealActive} order={1}>
           <PromptResultsPreview
@@ -150,6 +160,7 @@ export function GeoTabs({
                 All prompts
               </Link>
             }
+            isScanning={isScanning}
             languages={settings.languages}
             limit={GEO_PROMPTS_TAB_LIMIT}
             results={promptResults}

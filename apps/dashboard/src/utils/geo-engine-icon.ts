@@ -2,6 +2,14 @@ import type { EngineIconKey, EngineIconRule } from "@/types/geo";
 
 const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
   {
+    key: "tencent",
+    patterns: ["tencent", "hunyuan", "hy3"],
+  },
+  {
+    key: "xiaomi",
+    patterns: ["xiaomi"],
+  },
+  {
     key: "copilot",
     patterns: ["copilot", "bingbot", "microsoft", "bing/"],
   },

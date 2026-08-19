@@ -5,6 +5,8 @@ export const EMPTY_STATE_TABLE_COLUMNS = {
   schedule: [140, 120, 88, 72, 80, 56, 88],
   events: [80, 132, 88, 72, 80, 56, 88],
   sitemap: [220, 72, 96],
+  prompts: [240, 72, 56],
+  competitors: [160, 120, 72, 88],
 } as const;
 
 export const EMPTY_STATE_TABLE_ROWS = 6;

@@ -12,7 +12,7 @@ export function isGroundedEngine(engine: string): boolean {
   return GROUNDED_ENGINE_PATTERN.test(engine);
 }
 
-export function classifyPromptPresence(
+function classifyPromptPresence(
   results: GeoPromptResult[]
 ): GeoPresenceStatus | null {
   if (results.length === 0) {

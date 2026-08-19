@@ -1309,6 +1309,8 @@ export const geoSettings = pgTable(
       .default(sql`ARRAY[]::text[]`),
     languages: text("languages").array(),
     enabled: boolean("enabled").notNull().default(true),
+    scanStartedAt: timestamp("scan_started_at"),
+    lastScanAt: timestamp("last_scan_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

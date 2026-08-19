@@ -4,35 +4,43 @@ import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
 import { useMemo, useState } from "react";
 import { GEO_LOGO_SIZE_PX } from "@/constants/geo";
-import { buildCompetitorLogoUrl } from "@/lib/geo/logo";
+import { competitorLogoSources } from "@/lib/geo/logo";
 import type { CompetitorLogoProps } from "@/types/geo";
 
-export function CompetitorLogo({
+function CompetitorLogoFallback({
+  name,
+  className,
+}: {
+  name: string;
+  className: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(className, "bg-muted text-[0.625rem] leading-none")}
+    >
+      {name.trim().charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+function CompetitorLogoInner({
   name,
   domain,
   className,
   onSettled,
 }: CompetitorLogoProps) {
-  const [failed, setFailed] = useState(false);
-  const src = useMemo(
-    () => (domain ? buildCompetitorLogoUrl(domain) : null),
-    [domain]
-  );
+  const sources = useMemo(() => competitorLogoSources(domain), [domain]);
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const src = sources[sourceIndex] ?? null;
 
   const shellClassName = cn(
     "inline-flex size-5 shrink-0 items-center justify-center overflow-hidden rounded-sm",
     className
   );
 
-  if (!src || failed) {
-    return (
-      <span
-        aria-hidden="true"
-        className={cn(shellClassName, "bg-muted text-[0.625rem] leading-none")}
-      >
-        {name.trim().charAt(0).toUpperCase()}
-      </span>
-    );
+  if (!src) {
+    return <CompetitorLogoFallback className={shellClassName} name={name} />;
   }
 
   return (
@@ -42,8 +50,12 @@ export function CompetitorLogo({
         className="size-full object-contain"
         height={GEO_LOGO_SIZE_PX}
         onError={() => {
-          setFailed(true);
+          if (sourceIndex + 1 < sources.length) {
+            setSourceIndex((current) => current + 1);
+            return;
+          }
           onSettled?.();
+          setSourceIndex(sources.length);
         }}
         onLoad={() => onSettled?.()}
         src={src}
@@ -51,5 +63,22 @@ export function CompetitorLogo({
         width={GEO_LOGO_SIZE_PX}
       />
     </span>
+  );
+}
+
+export function CompetitorLogo({
+  name,
+  domain,
+  className,
+  onSettled,
+}: CompetitorLogoProps) {
+  return (
+    <CompetitorLogoInner
+      className={className}
+      domain={domain}
+      key={`${domain ?? ""}:${name}`}
+      name={name}
+      onSettled={onSettled}
+    />
   );
 }

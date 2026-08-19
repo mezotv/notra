@@ -36,6 +36,12 @@ export class GeoSettingsMissingError extends Data.TaggedError(
   readonly organizationId: string;
 }> {}
 
+export class GeoSettingsDisabledError extends Data.TaggedError(
+  "GeoSettingsDisabledError"
+)<{
+  readonly projectId: string;
+}> {}
+
 export class GeoScanStartError extends Data.TaggedError("GeoScanStartError")<{
   readonly cause: unknown;
 }> {}
@@ -60,6 +66,10 @@ export class GeoSequenceCreateFailedError extends Data.TaggedError(
   "GeoSequenceCreateFailedError"
 )<Record<string, never>> {}
 
+export class GeoSampleDataDisabledError extends Data.TaggedError(
+  "GeoSampleDataDisabledError"
+)<Record<string, never>> {}
+
 export type GeoRouterError =
   | GeoDatabaseError
   | GeoDiscoveryError
@@ -67,7 +77,10 @@ export type GeoRouterError =
   | GeoProjectNotFoundError
   | GeoPromptCreateFailedError
   | GeoPromptNotFoundError
+  | GeoSampleDataDisabledError
   | GeoScanStartError
   | GeoSequenceCreateFailedError
   | GeoSequenceNotFoundError
-  | GeoSettingsMissingError;
+  | GeoSettingsDisabledError
+  | GeoSettingsMissingError
+  | GeoTinybirdError;

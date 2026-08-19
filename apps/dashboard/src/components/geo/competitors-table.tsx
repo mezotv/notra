@@ -12,10 +12,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import { useRouter } from "next/navigation";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
+import { GeoRemoveDialog } from "@/components/geo/geo-remove-dialog";
 import { Table, type TableColumn } from "@/components/motion/table";
 import {
   COMPETITOR_TYPE_FILTER_VALUES,
@@ -23,7 +23,10 @@ import {
   COMPETITORS_TABLE_HEIGHT,
   COMPETITORS_TABLE_ROW_HEIGHT,
 } from "@/constants/geo";
-import { useGeoCompetitorDelete } from "@/lib/hooks/use-geo";
+import {
+  useGeoCompetitorDelete,
+  useGeoCompetitorRowNavigation,
+} from "@/lib/hooks/use-geo";
 import type {
   CompetitorsTableProps,
   GeoCompetitorRowEntry,
@@ -35,11 +38,27 @@ import {
   formatCompetitorKind,
 } from "@/utils/geo-competitors";
 
+const COMPETITOR_NOUNS = {
+  singular: "competitor",
+  plural: "competitors",
+} as const;
+
+function competitorRemoveDescription(items: string[]): string {
+  if (items.length > 1) {
+    return "These brands will no longer be called out in GEO scans. Historical mentions stay in your results.";
+  }
+  return `"${items[0]}" will no longer be called out in GEO scans. Historical mentions stay in your results.`;
+}
+
 function toTypeFilter(value: string): GeoCompetitorTypeFilter {
   if (value === "direct" || value === "indirect") {
     return value;
   }
   return "all";
+}
+
+function isOwnBrandRow(row: GeoCompetitorRowEntry): boolean {
+  return row.isOwnBrand;
 }
 
 export function CompetitorsTable({
@@ -49,8 +68,11 @@ export function CompetitorsTable({
   companyName,
   aliases,
 }: CompetitorsTableProps) {
-  const router = useRouter();
   const remove = useGeoCompetitorDelete(organizationId);
+  const { openRow, prefetchRow } = useGeoCompetitorRowNavigation(
+    organizationSlug,
+    organizationId
+  );
   const [search, setSearch] = useQueryState(
     "q",
     parseAsString.withDefault("").withOptions({ clearOnDefault: true })
@@ -62,6 +84,13 @@ export function CompetitorsTable({
       .withOptions({ clearOnDefault: true })
   );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [pendingDeleteNames, setPendingDeleteNames] = useState<string[]>([]);
+
+  const requestDelete = useCallback((names: string[]) => {
+    setPendingDeleteNames(names);
+    setDeleteOpen(true);
+  }, []);
 
   const ownDomain = useMemo(() => findOwnBrandDomain(aliases), [aliases]);
 
@@ -189,7 +218,7 @@ export function CompetitorsTable({
               disabled={remove.isPending}
               onClick={(event) => {
                 event.stopPropagation();
-                remove.mutate({ name: row.name });
+                requestDelete([row.name]);
               }}
               size="icon"
               variant="ghost"
@@ -199,7 +228,7 @@ export function CompetitorsTable({
           ),
       },
     ],
-    [remove, rows.length]
+    [remove.isPending, rows.length, requestDelete]
   );
 
   return (
@@ -250,17 +279,12 @@ export function CompetitorsTable({
         {selectedNames.length > 0 && (
           <Button
             disabled={remove.isPending}
-            onClick={() => {
-              for (const name of selectedNames) {
-                remove.mutate({ name });
-              }
-              setSelectedIds([]);
-            }}
+            onClick={() => requestDelete(selectedNames)}
             size="sm"
             variant="outline"
           >
             <HugeiconsIcon icon={Delete02Icon} size={14} />
-            Remove {selectedNames.length}
+            Remove ({selectedNames.length})
           </Button>
         )}
       </div>
@@ -274,12 +298,18 @@ export function CompetitorsTable({
           emptyState="No competitors match these filters"
           getRowId={(row) => row.id}
           height={COMPETITORS_TABLE_HEIGHT}
+          isRowPinned={isOwnBrandRow}
           onRowClick={(row) => {
-            if (!row.isOwnBrand) {
-              router.push(
-                `/${organizationSlug}/geo/competitors/${encodeURIComponent(row.name)}`
-              );
+            if (row.isOwnBrand) {
+              return;
             }
+            openRow(row.name);
+          }}
+          onRowPointerEnter={(row) => {
+            if (row.isOwnBrand) {
+              return;
+            }
+            prefetchRow(row.name);
           }}
           onSelectionChange={setSelectedIds}
           resizable
@@ -288,6 +318,27 @@ export function CompetitorsTable({
           selectedRowIds={selectedIds}
         />
       </div>
+
+      <GeoRemoveDialog
+        description={competitorRemoveDescription}
+        isPending={remove.isPending}
+        items={pendingDeleteNames}
+        nouns={COMPETITOR_NOUNS}
+        onConfirm={() => {
+          for (const name of pendingDeleteNames) {
+            remove.mutate({ name });
+          }
+          setSelectedIds([]);
+          setDeleteOpen(false);
+        }}
+        onOpenChange={(open) => {
+          setDeleteOpen(open);
+          if (!open) {
+            setPendingDeleteNames([]);
+          }
+        }}
+        open={deleteOpen}
+      />
     </div>
   );
 }

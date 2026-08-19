@@ -24,6 +24,8 @@ import { competitorKey, normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { GeoDiscoveryError } from "@/lib/geo/errors";
 import { syncGeoCompetitors } from "@/lib/geo/programs";
 import { ensureGeoProject } from "@/lib/geo/projects";
+import { withGeoScanStatus } from "@/lib/geo/scan-status";
+import { startGeoScanRun } from "@/lib/workflows/start";
 import { geoWebsiteDiscoverySchema } from "@/schemas/geo";
 import type {
   GeoCompetitorSeed,
@@ -274,6 +276,33 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
       competitors,
       promptsAdded: values.length,
     };
+
+    // Newly created settings default to enabled; an existing disabled row is
+    // left alone so we never stamp a scan start that the scan will skip.
+    const scanEnabled = existing?.enabled ?? true;
+    if (scanEnabled) {
+      yield* withGeoScanStatus(
+        projectId,
+        Effect.tryPromise({
+          try: () => startGeoScanRun({ organizationId, projectId }),
+          catch: (cause) =>
+            new GeoDiscoveryError({
+              message: "Failed to start GEO scan",
+              cause,
+            }),
+        }),
+        { finishOn: "failure" }
+      ).pipe(
+        Effect.catch((error) => {
+          console.error(
+            "[GEO] Failed to start scan after website generate:",
+            error
+          );
+          return Effect.void;
+        })
+      );
+    }
+
     return summary;
   }
 );

@@ -89,6 +89,7 @@ export function InstrumentModule({
 
 export function InstrumentSection({
   eyebrow,
+  description,
   readout,
   action,
   children,
@@ -97,10 +98,20 @@ export function InstrumentSection({
 }: InstrumentModuleProps) {
   return (
     <section className={cn("flex min-w-0 flex-col gap-3", className)}>
-      <div className="flex min-w-0 items-center justify-between gap-2">
-        <h2 className="font-medium text-foreground text-sm capitalize">
-          {eyebrow}
-        </h2>
+      <div
+        className={cn(
+          "flex min-w-0 justify-between gap-2",
+          description ? "items-start" : "items-center"
+        )}
+      >
+        <div className="min-w-0 space-y-1">
+          <h2 className="font-medium text-foreground text-sm capitalize">
+            {eyebrow}
+          </h2>
+          {description ? (
+            <p className="text-muted-foreground text-sm">{description}</p>
+          ) : null}
+        </div>
         {(readout || action) && (
           <div className="flex min-w-0 items-center gap-2">
             {readout && (
@@ -117,15 +128,53 @@ export function InstrumentSection({
   );
 }
 
-export function InstrumentEmpty({ message, className }: InstrumentEmptyProps) {
+export function InstrumentEmpty({
+  message,
+  className,
+  busy = false,
+  action,
+}: InstrumentEmptyProps) {
   return (
     <div
+      aria-busy={busy}
+      aria-live={busy ? "polite" : undefined}
       className={cn(
         "flex h-full min-h-56 flex-col items-center justify-center gap-3 text-center",
         className
       )}
     >
-      <p className="text-muted-foreground text-sm capitalize">{message}</p>
+      <div className="flex items-center justify-center gap-2">
+        {busy ? (
+          <span
+            aria-hidden="true"
+            className="inline-flex size-4 text-muted-foreground motion-safe:animate-spin"
+          >
+            <svg
+              aria-hidden="true"
+              className="size-full"
+              fill="none"
+              viewBox="0 0 16 16"
+            >
+              <circle
+                cx="8"
+                cy="8"
+                r="6"
+                stroke="currentColor"
+                strokeOpacity="0.25"
+                strokeWidth="2"
+              />
+              <path
+                d="M14 8A6 6 0 0 0 8 2"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeWidth="2"
+              />
+            </svg>
+          </span>
+        ) : null}
+        <p className="text-muted-foreground text-sm capitalize">{message}</p>
+      </div>
+      {action && !busy ? action : null}
     </div>
   );
 }

@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { DirectionBar } from "@/components/geo/directions/direction-bar";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoBar } from "@/components/geo/geo-bar";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { GEO_DIRECTIONS_ENGINES } from "@/constants/geo-directions";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
@@ -36,7 +36,7 @@ export function DirectionEngineBars({ className }: DirectionBlockProps) {
         key: "bar",
         header: "Mention rate",
         width: "2fr",
-        cell: (row) => <DirectionBar max={MAX_RATE} value={row.rate} />,
+        cell: (row) => <GeoBar max={MAX_RATE} value={row.rate} />,
         sortValue: (row) => row.rate,
       },
       {

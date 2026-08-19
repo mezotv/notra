@@ -3,6 +3,7 @@
 import { DirectionDonut } from "@/components/geo/directions/direction-donut";
 import { DirectionEngineBars } from "@/components/geo/directions/direction-engine-bars";
 import { DirectionPagesTable } from "@/components/geo/directions/direction-pages-table";
+import { GEO_MEMORY_LABEL, GEO_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_CHECK_COUNT,
   GEO_DIRECTIONS_COMPANY,
@@ -37,12 +38,12 @@ export function DirectionReport() {
 
       <section className="space-y-3">
         <h2 className="font-semibold text-lg tracking-tight">
-          ChatGPT with web search is where you win.
+          ChatGPT {GEO_SEARCH_LABEL} is where you win.
         </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Engines that can search the web name you in{" "}
+          {GEO_SEARCH_LABEL} names you in{" "}
           <span className="font-semibold text-foreground">71%</span> of answers,
-          while memory alone gets you to{" "}
+          while {GEO_MEMORY_LABEL} gets you to{" "}
           <span className="font-semibold text-foreground">62%</span>.
         </p>
         <DirectionEngineBars />

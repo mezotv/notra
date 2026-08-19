@@ -84,9 +84,3 @@ export interface DirectionSectionHeadingProps {
 export interface DirectionPositionCellProps {
   position: number | null;
 }
-
-export interface DirectionBarProps {
-  value: number;
-  max: number;
-  className?: string;
-}

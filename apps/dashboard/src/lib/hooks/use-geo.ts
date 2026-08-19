@@ -7,8 +7,15 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
+import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
+import {
+  GEO_SCAN_POLL_INTERVAL_MS,
+  GEO_START_SCAN_MUTATION_KEY,
+} from "@/constants/geo";
 import type {
   AiTrafficResponse,
   GeoCompetitorDeleteInput,
@@ -55,6 +62,7 @@ import {
   toGeoTrafficLogPurposeFilter,
   toGeoTrafficLogVisitorFilter,
 } from "@/utils/ai-traffic";
+import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
 import { dashboardOrpc } from "../orpc/query";
 
 const DEFAULT_GEO_DAYS = 30;
@@ -100,6 +108,51 @@ async function invalidatePromptQueries(
   });
 }
 
+async function invalidateGeoScanResultQueries(
+  queryClient: QueryClient,
+  organizationId: string,
+  projectId: string | undefined
+) {
+  const input = { organizationId, projectId };
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.overview.queryKey({
+        input: { ...input, days: DEFAULT_GEO_DAYS },
+      }),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.timeseries.queryKey({
+        input: { ...input, days: DEFAULT_GEO_DAYS },
+      }),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.promptResults.queryKey({ input }),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.competitorShare.queryKey({
+        input: { ...input, days: DEFAULT_COMPETITOR_DAYS },
+      }),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.languageShare.queryKey({
+        input: { ...input, days: DEFAULT_GEO_DAYS },
+      }),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.modelUsage.queryKey({
+        input: { ...input, days: DEFAULT_GEO_DAYS },
+      }),
+    }),
+  ]);
+}
+
+function geoStartScanMutationKey(
+  organizationId: string,
+  projectId: string | undefined
+) {
+  return [GEO_START_SCAN_MUTATION_KEY, organizationId, projectId] as const;
+}
+
 async function invalidateSequenceQueries(
   queryClient: QueryClient,
   organizationId: string,
@@ -114,13 +167,36 @@ async function invalidateSequenceQueries(
 
 export function useGeoSettings(organizationId: string) {
   const { projectId } = useGeoProjectScope();
-  return useQuery<GeoSettingsResponse>({
+  const queryClient = useQueryClient();
+  const wasScanningRef = useRef<boolean | null>(null);
+
+  const query = useQuery<GeoSettingsResponse>({
     ...dashboardOrpc.geo.settings.queryOptions({
       input: { organizationId, projectId },
     }),
     enabled: !!organizationId,
+    refetchInterval: (current) =>
+      current.state.data?.settings?.isScanning
+        ? GEO_SCAN_POLL_INTERVAL_MS
+        : false,
     meta: { errorMessage: "Failed to load AI visibility settings" },
   });
+
+  const isScanning = query.data?.settings?.isScanning ?? false;
+
+  useEffect(() => {
+    const wasScanning = wasScanningRef.current;
+    wasScanningRef.current = isScanning;
+    if (wasScanning === true && !isScanning) {
+      invalidateGeoScanResultQueries(
+        queryClient,
+        organizationId,
+        projectId
+      ).catch(() => undefined);
+    }
+  }, [isScanning, organizationId, projectId, queryClient]);
+
+  return query;
 }
 
 export function useGeoSettingsUpsert(organizationId: string) {
@@ -209,6 +285,66 @@ export function useGeoCompetitorDetail(
     enabled: !!organizationId && !!brand,
     meta: { errorMessage: "Failed to load competitor detail" },
   });
+}
+
+export function usePrefetchGeoCompetitorDetail(organizationId: string) {
+  const queryClient = useQueryClient();
+  const { projectId } = useGeoProjectScope();
+
+  return (brand: string) => {
+    if (!organizationId || brand.length === 0) {
+      return;
+    }
+    return queryClient.prefetchQuery(
+      dashboardOrpc.geo.competitorDetail.queryOptions({
+        input: {
+          organizationId,
+          projectId,
+          brand,
+          days: DEFAULT_COMPETITOR_DAYS,
+        },
+      })
+    );
+  };
+}
+
+function geoCompetitorRowHref(organizationSlug: string, brand: string): string {
+  if (brand === CHART_OTHER_SLICE_LABEL) {
+    return `/${organizationSlug}/geo/competitors`;
+  }
+  return geoCompetitorDetailPath(organizationSlug, brand);
+}
+
+/**
+ * Row navigation for competitor lists/charts. The aggregated "Other" slice
+ * routes to the competitors index; every other brand opens its detail page
+ * (and prefetches its detail query on hover).
+ */
+export function useGeoCompetitorRowNavigation(
+  organizationSlug: string | undefined,
+  organizationId: string | undefined
+) {
+  const router = useRouter();
+  const prefetchDetail = usePrefetchGeoCompetitorDetail(organizationId ?? "");
+
+  const openRow = (brand: string) => {
+    if (!organizationSlug) {
+      return;
+    }
+    router.push(geoCompetitorRowHref(organizationSlug, brand));
+  };
+
+  const prefetchRow = (brand: string) => {
+    if (!organizationSlug) {
+      return;
+    }
+    router.prefetch(geoCompetitorRowHref(organizationSlug, brand));
+    if (brand !== CHART_OTHER_SLICE_LABEL) {
+      prefetchDetail(brand);
+    }
+  };
+
+  return { openRow, prefetchRow };
 }
 
 export function useGeoCompetitors(organizationId: string) {
@@ -381,16 +517,32 @@ export function useGeoGenerateFromWebsite(organizationId: string) {
 
 export function useGeoStartScan(organizationId: string) {
   const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: geoStartScanMutationKey(organizationId, projectId),
     mutationFn: () =>
       dashboardOrpc.geo.startScan.call({ organizationId, projectId }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.settings.queryKey({
+          input: { organizationId, projectId },
+        }),
+      });
       toast.success("Scan started");
     },
     onError: (error) => {
       toast.error(toErrorMessage(error, "Failed to start scan"));
     },
   });
+}
+
+export function useIsGeoScanning(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const { data } = useGeoSettings(organizationId);
+  const pendingCount = useIsMutating({
+    mutationKey: geoStartScanMutationKey(organizationId, projectId),
+  });
+  return pendingCount > 0 || Boolean(data?.settings?.isScanning);
 }
 
 export function useAiTraffic(organizationId: string, days?: number) {

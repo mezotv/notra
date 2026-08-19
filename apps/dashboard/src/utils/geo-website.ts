@@ -1,9 +1,13 @@
 const URL_PREFIX = /^https?:\/\//i;
 
+export function stripWebsiteProtocol(value: string): string {
+  return value.trim().replace(URL_PREFIX, "");
+}
+
 export function normalizeWebsiteUrl(value: string): string | null {
-  const trimmed = value.trim();
-  if (trimmed.length === 0) {
+  const host = stripWebsiteProtocol(value);
+  if (host.length === 0) {
     return null;
   }
-  return URL_PREFIX.test(trimmed) ? trimmed : `https://${trimmed}`;
+  return `https://${host}`;
 }

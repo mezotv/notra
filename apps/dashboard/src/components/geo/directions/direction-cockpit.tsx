@@ -5,12 +5,14 @@ import { Button } from "@notra/ui/components/ui/button";
 import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
 import { EChartsLineChart } from "@/components/evilcharts/charts/echarts-line-chart";
-import { DirectionBar } from "@/components/geo/directions/direction-bar";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { PromptResultsTable } from "@/components/geo/directions/prompt-results-table";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoBar } from "@/components/geo/geo-bar";
 import { InstrumentModule } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { CHART_PERCENT_SCALE } from "@/constants/charts";
+import { GEO_MEMORY_LABEL, GEO_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_ENGINES,
   GEO_DIRECTIONS_KPIS,
@@ -24,7 +26,7 @@ import {
 } from "@/constants/geo-directions";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { GeoDirectionSourceRow } from "@/types/geo-directions";
-import { formatMentionRate } from "@/utils/geo-charts";
+import { formatChartPercent, formatMentionRate } from "@/utils/geo-charts";
 import { formatDirectionCount } from "@/utils/geo-directions";
 import { tableHeightFor } from "@/utils/table";
 
@@ -154,7 +156,7 @@ function SourcesTable() {
         key: "weight",
         header: "Weight",
         width: "1.6fr",
-        cell: (row) => <DirectionBar max={MAX_SHARE} value={row.share} />,
+        cell: (row) => <GeoBar max={MAX_SHARE} value={row.share} />,
         sortValue: (row) => row.share,
       },
     ],
@@ -189,7 +191,7 @@ export function DirectionCockpit() {
         <KpiStrip />
         <InstrumentModule
           eyebrow="Mention rate trend"
-          readout="web search vs memory"
+          readout={`${GEO_SEARCH_LABEL} vs ${GEO_MEMORY_LABEL}`}
         >
           <EChartsLineChart
             className="h-64 w-full"
@@ -201,10 +203,14 @@ export function DirectionCockpit() {
           >
             <EChartsLineChart.Grid />
             <EChartsLineChart.XAxis dataKey="day" />
-            <EChartsLineChart.YAxis tickFormatter={(value) => `${value}%`} />
+            <EChartsLineChart.YAxis tickFormatter={formatChartPercent} />
             <EChartsLineChart.Line dataKey="grounded" />
             <EChartsLineChart.Line dataKey="training" />
-            <EChartsLineChart.Tooltip />
+            <EChartsLineChart.Tooltip
+              barMax={CHART_PERCENT_SCALE}
+              layout="bars"
+              valueFormatter={formatChartPercent}
+            />
           </EChartsLineChart>
         </InstrumentModule>
         <InstrumentModule eyebrow="Traffic by source" readout="30D">

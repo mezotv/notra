@@ -29,7 +29,7 @@ export function DirectionPagesTable({ className }: DirectionBlockProps) {
           <Tooltip>
             <TooltipTrigger
               render={
-                <span className="block truncate font-mono text-xs">
+                <span className="block w-full min-w-0 truncate font-mono text-xs">
                   {row.path}
                 </span>
               }

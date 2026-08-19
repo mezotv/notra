@@ -31,6 +31,7 @@ import {
   useGeoTimeseries,
   useGeoTrafficJourneys,
   useGeoTrafficPages,
+  useIsGeoScanning,
   useModelUsage,
 } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
@@ -111,6 +112,7 @@ function GeoPageContent({
   const { data: trafficPages } = useGeoTrafficPages(organizationId);
   const { data: trafficJourneys } = useGeoTrafficJourneys(organizationId);
   const startScan = useGeoStartScan(organizationId);
+  const isScanning = useIsGeoScanning(organizationId);
 
   const [activeTab, setActiveTab] = useQueryState(
     "tab",
@@ -150,10 +152,10 @@ function GeoPageContent({
 
   if (!settings) {
     return (
-      <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <div className="w-full space-y-4 px-4 lg:px-6">
+      <PageContainer className="flex h-full min-h-0 flex-1 flex-col overflow-hidden py-4 md:py-6">
+        <div className="flex min-h-0 w-full flex-1 flex-col gap-4 px-4 lg:px-6">
           {projects.length > 0 && (
-            <div className="flex justify-end">
+            <div className="flex shrink-0 justify-end">
               <GeoProjectSwitcher
                 activeProjectId={projectParam}
                 onProjectChange={onProjectChange}
@@ -180,13 +182,13 @@ function GeoPageContent({
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-4 px-4 lg:px-6">
-        <header className="flex flex-wrap items-end justify-between gap-3">
+        <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <h1 className="font-semibold text-xl tracking-tight">GEO</h1>
             <p className="flex flex-wrap items-center gap-x-1.5 text-muted-foreground text-sm">
               <span>
                 How AI engines talk about {settings.companyName} ·{" "}
-                {startScan.isPending
+                {isScanning
                   ? "Scanning"
                   : `Sync ${formatSyncClock(dataUpdatedAt || null)}`}
               </span>
@@ -194,10 +196,8 @@ function GeoPageContent({
                 aria-hidden="true"
                 className={cn(
                   "size-1.5 rounded-full",
-                  startScan.isPending
-                    ? "bg-muted-foreground/50"
-                    : "bg-emerald-500",
-                  !startScan.isPending &&
+                  isScanning ? "bg-muted-foreground/50" : "bg-emerald-500",
+                  !isScanning &&
                     stage >= STAGE.gauge &&
                     "animate-pulse motion-reduce:animate-none"
                 )}
@@ -220,13 +220,11 @@ function GeoPageContent({
               Settings
             </Button>
             <Button
-              disabled={startScan.isPending}
+              disabled={isScanning}
               onClick={() => startScan.mutate()}
               size="sm"
             >
-              {startScan.isPending && (
-                <Loader2Icon className="size-4 animate-spin" />
-              )}
+              {isScanning && <Loader2Icon className="size-4 animate-spin" />}
               Run scan
             </Button>
           </div>
@@ -237,6 +235,7 @@ function GeoPageContent({
             engines={overview?.engines ?? []}
             promptCount={prompts?.prompts.length ?? 0}
             settings={settings}
+            timeseriesPoints={timeseries?.points ?? []}
           />
         </InstrumentReveal>
 
@@ -246,6 +245,7 @@ function GeoPageContent({
           competitors={competitorList?.competitors ?? []}
           engines={overview?.engines ?? []}
           ingestSetup={ingestSetup}
+          isScanning={isScanning}
           journeys={trafficJourneys?.journeys ?? []}
           languagePoints={languageShare?.points ?? []}
           modelUsage={modelUsage}

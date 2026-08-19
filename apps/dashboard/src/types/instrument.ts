@@ -28,4 +28,6 @@ export interface InstrumentEmptyProps {
   seed: string;
   message: string;
   className?: string;
+  busy?: boolean;
+  action?: ReactNode;
 }

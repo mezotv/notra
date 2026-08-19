@@ -19,6 +19,7 @@ import type { GeoTrackedEngine, TrackedEnginesCardProps } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import { formatMentionRate } from "@/utils/geo-charts";
 import {
+  describeEngineStatus,
   formatEngineMode,
   formatEngineStatus,
   trackedEngineStatusTone,
@@ -64,7 +65,7 @@ export function TrackedEnginesCard({ engines }: TrackedEnginesCardProps) {
       {
         key: "mode",
         header: "Answers from",
-        width: "9rem",
+        width: "9.5rem",
         sortable: true,
         cell: (row) => (
           <TooltipProvider delay={150}>
@@ -80,8 +81,8 @@ export function TrackedEnginesCard({ engines }: TrackedEnginesCardProps) {
               />
               <TooltipContent>
                 {row.mode === "grounded"
-                  ? "Searches the web before answering, so fresh pages can be cited"
-                  : "Answers from training data only, so mentions reflect what the model learned"}
+                  ? "Looks up the live web before answering"
+                  : "Answers from what the model already knows"}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -102,13 +103,7 @@ export function TrackedEnginesCard({ engines }: TrackedEnginesCardProps) {
                   </span>
                 }
               />
-              <TooltipContent>
-                {row.status === "needs-key"
-                  ? `Set ${row.envVar} to start scanning this engine`
-                  : row.status === "no-data"
-                    ? "Configured but has not returned a scan yet"
-                    : "Scanning normally"}
-              </TooltipContent>
+              <TooltipContent>{describeEngineStatus(row)}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         ),
@@ -116,7 +111,7 @@ export function TrackedEnginesCard({ engines }: TrackedEnginesCardProps) {
       {
         key: "mentionRate",
         header: "Mention rate",
-        width: "8rem",
+        width: "9.5rem",
         align: "right",
         sortable: true,
         cell: (row) => (
@@ -131,7 +126,7 @@ export function TrackedEnginesCard({ engines }: TrackedEnginesCardProps) {
       {
         key: "lastCheckedAt",
         header: "Last checked",
-        width: "9rem",
+        width: "9.5rem",
         sortable: true,
         cell: (row) => (
           <span className="text-muted-foreground text-xs tabular-nums">

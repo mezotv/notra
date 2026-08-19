@@ -13,8 +13,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/button";
-import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
-import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
+import { EChartsLineChart } from "@/components/evilcharts/charts/echarts-line-chart";
 import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -25,18 +24,23 @@ import {
   COMPETITOR_PROMPTS_PAGE_TABLE_HEIGHT,
   COMPETITOR_PROMPTS_TABLE_HEIGHT,
   COMPETITORS_TABLE_ROW_HEIGHT,
+  GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS,
   GEO_COMPETITOR_DETAIL_MIN_POINTS,
   GEO_COMPETITOR_DETAIL_SERIES_KEY,
 } from "@/constants/geo";
 import { useGeoCompetitorDetail, useGeoCompetitors } from "@/lib/hooks/use-geo";
+import { cn } from "@/lib/utils";
+import type { ChartConfig } from "@/types/charts";
 import type {
   CompetitorDetailViewProps,
+  GeoCompetitorDetailPoint,
   GeoCompetitorPromptRow,
 } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import { seriesColors } from "@/utils/chart-colors";
-import { engineFamilyLabel, engineFamilyOf } from "@/utils/geo-charts";
+import { formatEngineFamily } from "@/utils/geo-charts";
 import { buildGeoCompetitorPoints } from "@/utils/geo-competitor";
+import { tableHeightFor } from "@/utils/table";
 
 const CHART_CONFIG: ChartConfig = {
   [GEO_COMPETITOR_DETAIL_SERIES_KEY]: {
@@ -44,6 +48,98 @@ const CHART_CONFIG: ChartConfig = {
     colors: seriesColors(CHART_PRIMARY_COLOR),
   },
 };
+
+function CompetitorMentionsChart({
+  competitor,
+  points,
+  showLoading,
+}: {
+  competitor: string;
+  points: GeoCompetitorDetailPoint[];
+  showLoading: boolean;
+}) {
+  if (showLoading) {
+    return (
+      <Skeleton
+        className={cn("w-full", GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS)}
+      />
+    );
+  }
+
+  if (points.length >= GEO_COMPETITOR_DETAIL_MIN_POINTS) {
+    return (
+      <EChartsLineChart
+        className={cn("w-full", GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS)}
+        config={CHART_CONFIG}
+        curveType="monotone"
+        data={points}
+        xDataKey="day"
+      >
+        <EChartsLineChart.Grid />
+        <EChartsLineChart.XAxis dataKey="day" />
+        <EChartsLineChart.Line
+          dataKey={GEO_COMPETITOR_DETAIL_SERIES_KEY}
+          enableBufferLine
+          glowing
+          strokeVariant="solid"
+          strokeWidth={1.5}
+        >
+          <EChartsLineChart.ActiveDot variant="ping" />
+        </EChartsLineChart.Line>
+        <EChartsLineChart.Tooltip
+          crosshair
+          position="fixed"
+          roundness="xl"
+          variant="frosted-glass"
+        />
+      </EChartsLineChart>
+    );
+  }
+
+  return (
+    <p className="text-muted-foreground text-sm">
+      Not enough scans yet to chart {competitor}.
+    </p>
+  );
+}
+
+function CompetitorPromptAppearances({
+  competitor,
+  prompts,
+  columns,
+  tableHeight,
+  showLoading,
+}: {
+  competitor: string;
+  prompts: GeoCompetitorPromptRow[];
+  columns: TableColumn<GeoCompetitorPromptRow>[];
+  tableHeight: number;
+  showLoading: boolean;
+}) {
+  if (showLoading) {
+    return <Skeleton className="h-36 w-full rounded-2xl" />;
+  }
+
+  if (prompts.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        {competitor} has not shown up in your tracked prompts yet.
+      </p>
+    );
+  }
+
+  return (
+    <Table
+      className="rounded-2xl"
+      columns={columns}
+      data={prompts}
+      defaultSort={{ key: "capturedAt", direction: "desc" }}
+      getRowId={(row) => `${row.promptId}-${row.engine}`}
+      height={tableHeight}
+      rowHeight={COMPETITORS_TABLE_ROW_HEIGHT}
+    />
+  );
+}
 
 export function CompetitorDetailView({
   organizationSlug,
@@ -65,29 +161,41 @@ export function CompetitorDetailView({
     ) ?? null;
   const domain = entry?.domain ?? null;
   const [editOpen, setEditOpen] = useState(false);
-  const { data, isLoading } = useGeoCompetitorDetail(
+  const { data, isPending } = useGeoCompetitorDetail(
     organizationId,
     competitor
   );
+  const showLoading = isPending || !organizationId;
   const points = useMemo(
     () => buildGeoCompetitorPoints(data?.points ?? []),
     [data]
   );
+  const latestMentions =
+    showLoading || points.length === 0 ? undefined : points.at(-1)?.mentions;
   const prompts = useMemo(() => data?.prompts ?? [], [data]);
 
   const columns = useMemo<TableColumn<GeoCompetitorPromptRow>[]>(
     () => [
       {
         key: "prompt",
-        header:
-          prompts.length > 0
-            ? `Prompt (${prompts.length.toLocaleString()})`
-            : "Prompt",
+        header: (
+          <span className="inline-flex items-center gap-1.5">
+            Prompt
+            <span className="font-normal text-muted-foreground tabular-nums">
+              ({prompts.length.toLocaleString()})
+            </span>
+          </span>
+        ),
         sortable: true,
+        width: "1fr",
         cell: (row) => (
           <Tooltip>
             <TooltipTrigger
-              render={<span className="block truncate">{row.prompt}</span>}
+              render={
+                <span className="block w-full min-w-0 truncate">
+                  {row.prompt}
+                </span>
+              }
             />
             <TooltipContent className="max-w-sm">{row.prompt}</TooltipContent>
           </Tooltip>
@@ -96,20 +204,18 @@ export function CompetitorDetailView({
       {
         key: "engine",
         header: "Engine",
-        width: "11rem",
+        width: "8.5rem",
         sortable: true,
         cell: (row) => (
           <span className="inline-flex min-w-0 items-center gap-2">
             <EngineIcon className="size-4 shrink-0" engine={row.engine} />
-            <span className="truncate">
-              {engineFamilyLabel(engineFamilyOf(row.engine))}
-            </span>
+            <span className="truncate">{formatEngineFamily(row.engine)}</span>
           </span>
         ),
       },
       {
         key: "position",
-        header: "Our position",
+        header: "Position",
         width: "8rem",
         align: "right",
         sortable: true,
@@ -128,7 +234,7 @@ export function CompetitorDetailView({
       {
         key: "capturedAt",
         header: "Last seen",
-        width: "9rem",
+        width: "8.5rem",
         sortable: true,
         cell: (row) => (
           <span className="text-muted-foreground text-xs tabular-nums">
@@ -140,99 +246,102 @@ export function CompetitorDetailView({
     [prompts.length]
   );
 
+  const tableHeight =
+    variant === "page"
+      ? COMPETITOR_PROMPTS_PAGE_TABLE_HEIGHT
+      : Math.min(
+          COMPETITOR_PROMPTS_TABLE_HEIGHT,
+          tableHeightFor(prompts.length)
+        );
+
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <CompetitorLogo
-            className="size-10"
-            domain={domain}
-            name={competitor}
-          />
-          <div className="min-w-0 leading-tight">
+    <div className="space-y-6">
+      <div
+        className={cn(
+          "flex min-w-0 items-center gap-3",
+          variant === "modal" && "pr-10"
+        )}
+      >
+        <CompetitorLogo
+          className="-outline-offset-1 size-10 rounded-lg outline outline-1 outline-black/10 dark:outline-white/10"
+          domain={domain}
+          name={competitor}
+        />
+        <div className="min-w-0 flex-1 leading-tight">
+          <div className="flex min-w-0 items-center gap-1">
             <p className="truncate font-semibold text-lg">{competitor}</p>
-            {domain ? (
-              <a
-                className="group inline-flex items-center gap-1 text-muted-foreground text-xs hover:text-foreground"
-                href={`https://${domain}`}
-                rel="noopener"
-                target="_blank"
-              >
-                <span className="underline underline-offset-4">{domain}</span>
-                <HugeiconsIcon
-                  className="opacity-0 transition-opacity group-hover:opacity-100"
-                  icon={ArrowUpRight01Icon}
-                  size={12}
-                />
-              </a>
-            ) : (
-              <span className="text-muted-foreground text-xs">
-                No website yet
-              </span>
-            )}
+            {entry ? (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Button
+                      aria-label={`Edit ${competitor}`}
+                      className="size-7 shrink-0 text-muted-foreground"
+                      onClick={() => setEditOpen(true)}
+                      size="icon-sm"
+                      variant="ghost"
+                    />
+                  }
+                >
+                  <HugeiconsIcon
+                    className="size-4"
+                    icon={PencilEdit02Icon}
+                    strokeWidth={1.5}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>Edit competitor</TooltipContent>
+              </Tooltip>
+            ) : null}
           </div>
+          {domain ? (
+            <a
+              className="group inline-flex items-center gap-1 text-muted-foreground text-xs transition-colors hover:text-foreground"
+              href={`https://${domain}`}
+              rel="noopener"
+              target="_blank"
+            >
+              <span className="underline underline-offset-4">{domain}</span>
+              <HugeiconsIcon
+                className="opacity-0 transition-opacity group-hover:opacity-100"
+                icon={ArrowUpRight01Icon}
+                size={12}
+              />
+            </a>
+          ) : (
+            <span className="text-muted-foreground text-xs">
+              No website yet
+            </span>
+          )}
         </div>
-        {entry ? (
-          <Button
-            className="corner-squircle rounded-[1rem] supports-[corner-shape:round]:rounded-[1.25rem]"
-            onClick={() => setEditOpen(true)}
-            size="sm"
-            variant="outline"
-          >
-            <HugeiconsIcon icon={PencilEdit02Icon} size={14} />
-            Edit
-          </Button>
-        ) : null}
       </div>
 
       <div className="space-y-2">
-        <h2 className="font-semibold text-base">Mentions over time</h2>
-        {isLoading && <Skeleton className="h-52 w-full" />}
-        {!isLoading && points.length >= GEO_COMPETITOR_DETAIL_MIN_POINTS && (
-          <EChartsAreaChart
-            className="h-52 w-full"
-            config={CHART_CONFIG}
-            curveType="monotone"
-            data={points}
-            enableHoverHighlight
-            xDataKey="day"
-          >
-            <EChartsAreaChart.Grid />
-            <EChartsAreaChart.XAxis dataKey="day" />
-            <EChartsAreaChart.YAxis />
-            <EChartsAreaChart.Area
-              dataKey={GEO_COMPETITOR_DETAIL_SERIES_KEY}
-              enableBufferLine
-              strokeVariant="solid"
-              variant="gradient"
-            />
-            <EChartsAreaChart.Tooltip crosshair />
-          </EChartsAreaChart>
-        )}
-        {!isLoading && points.length < GEO_COMPETITOR_DETAIL_MIN_POINTS && (
-          <p className="text-muted-foreground text-sm">
-            Not enough scans yet to chart {competitor}
-          </p>
-        )}
+        <div className="flex items-baseline justify-between gap-3">
+          <h2 className="font-semibold text-base">Mentions over time</h2>
+          {latestMentions === undefined ? null : (
+            <p className="text-muted-foreground text-sm tabular-nums">
+              <span className="font-semibold text-foreground">
+                {latestMentions.toLocaleString()}
+              </span>{" "}
+              latest
+            </p>
+          )}
+        </div>
+        <CompetitorMentionsChart
+          competitor={competitor}
+          points={points}
+          showLoading={showLoading}
+        />
       </div>
 
       <div className="space-y-2">
         <h2 className="font-semibold text-base">Where {competitor} shows up</h2>
-        <Table
-          className="rounded-2xl"
+        <CompetitorPromptAppearances
           columns={columns}
-          data={prompts}
-          defaultSort={{ key: "capturedAt", direction: "desc" }}
-          emptyState={`${competitor} has not shown up in your tracked prompts yet`}
-          getRowId={(row) => `${row.promptId}-${row.engine}`}
-          height={
-            variant === "page"
-              ? COMPETITOR_PROMPTS_PAGE_TABLE_HEIGHT
-              : COMPETITOR_PROMPTS_TABLE_HEIGHT
-          }
-          loading={isLoading}
-          resizable
-          rowHeight={COMPETITORS_TABLE_ROW_HEIGHT}
+          competitor={competitor}
+          prompts={prompts}
+          showLoading={showLoading}
+          tableHeight={tableHeight}
         />
       </div>
       {entry ? (

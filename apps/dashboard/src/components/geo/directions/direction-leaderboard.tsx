@@ -2,13 +2,14 @@
 
 import { useMemo } from "react";
 import { ChartSparkline } from "@/components/charts/chart-sparkline";
-import { DirectionBar } from "@/components/geo/directions/direction-bar";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { DirectionDonut } from "@/components/geo/directions/direction-donut";
 import { DirectionPagesTable } from "@/components/geo/directions/direction-pages-table";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoBar } from "@/components/geo/geo-bar";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_PRIMARY_COLOR } from "@/constants/charts";
+import { GEO_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_ENGINES,
   GEO_DIRECTIONS_GROUNDED_SERIES,
@@ -61,7 +62,7 @@ function EngineRank() {
         key: "bar",
         header: "Mention rate",
         width: "2fr",
-        cell: (row) => <DirectionBar max={MAX_RATE} value={row.rate} />,
+        cell: (row) => <GeoBar max={MAX_RATE} value={row.rate} />,
         sortValue: (row) => row.rate,
       },
       {
@@ -182,7 +183,7 @@ function JourneysTable() {
         header: "Entry path",
         width: "1.6fr",
         cell: (row) => (
-          <span className="block truncate font-mono text-xs">
+          <span className="block w-full min-w-0 truncate font-mono text-xs">
             {row.samplePaths[0] ?? ""}
           </span>
         ),
@@ -232,7 +233,7 @@ export function DirectionLeaderboard() {
         </div>
         <div className="min-w-[16rem] flex-1 space-y-1">
           <p className="text-muted-foreground text-xs capitalize">
-            With web search · last 12 days
+            {GEO_SEARCH_LABEL} · last 12 days
           </p>
           <ChartSparkline
             className="h-20 w-full"

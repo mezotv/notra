@@ -29,7 +29,7 @@ export function GeoOnboardingOverlay({
   };
 
   return (
-    <div className="relative isolate">
+    <div className="relative isolate min-h-0 flex-1 overflow-y-auto">
       <div
         aria-hidden="true"
         className="pointer-events-none select-none opacity-60 blur-[0.375rem]"
@@ -40,19 +40,19 @@ export function GeoOnboardingOverlay({
 
       <div className="absolute inset-0 z-10 flex items-start justify-center bg-gradient-to-b from-background/40 via-background/80 to-background px-4 py-10 sm:items-center">
         <Card className="w-full max-w-md">
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 text-center">
             <div className="space-y-1.5">
-              <h2 className="font-semibold text-lg tracking-tight">
+              <h2 className="text-balance font-semibold text-lg tracking-tight">
                 See how AI engines talk about you
               </h2>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-pretty text-muted-foreground text-sm">
                 We read your site, work out your company, aliases, and
                 competitors, then ask the major AI engines the questions your
                 buyers ask and track whether you come up.
               </p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 text-left">
               <Label htmlFor={`${id}-url`}>Your website</Label>
               <Input
                 autoComplete="url"

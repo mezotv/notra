@@ -3,7 +3,25 @@ import type {
   GeoBrandContext,
   GeoPromptDefinition,
   GeoSettings,
+  GeoTrackedPrompt,
 } from "@/types/geo";
+
+const CUSTOM_PROMPT_SCAN_ID_PREFIX = "custom-";
+
+/**
+ * Scan results are recorded under a namespaced prompt id for custom prompts
+ * (`custom-<uuid>`) so they never collide with the slug ids of auto prompts.
+ */
+export function customPromptScanId(promptId: string): string {
+  return `${CUSTOM_PROMPT_SCAN_ID_PREFIX}${promptId}`;
+}
+
+/** The prompt id under which a tracked prompt's scan results are stored. */
+export function trackedPromptScanId(
+  prompt: Pick<GeoTrackedPrompt, "id" | "source">
+): string {
+  return prompt.source === "custom" ? customPromptScanId(prompt.id) : prompt.id;
+}
 
 const SENTENCE_SPLIT_REGEX = /[.!?]/;
 const LEADING_FILLER_REGEX =

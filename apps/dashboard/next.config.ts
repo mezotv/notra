@@ -128,6 +128,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "models.dev",
+      },
+      {
+        protocol: "https",
         hostname: "**.r2.cloudflarestorage.com",
       },
       {

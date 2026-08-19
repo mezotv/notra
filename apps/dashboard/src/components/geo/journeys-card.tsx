@@ -104,7 +104,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
         width: "1.6fr",
         cell: (row) => (
           <span
-            className="block truncate font-mono text-xs"
+            className="block w-full min-w-0 truncate font-mono text-xs"
             title={row.samplePaths.join("\n")}
           >
             {row.samplePaths[0] ?? ""}

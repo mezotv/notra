@@ -60,7 +60,9 @@ export function PromptResultsTable({ className }: PromptResultsTableProps) {
           <Tooltip>
             <TooltipTrigger
               render={
-                <span className="block truncate text-sm">{row.prompt}</span>
+                <span className="block w-full min-w-0 truncate text-sm">
+                  {row.prompt}
+                </span>
               }
             />
             <TooltipContent className="max-w-sm">{row.prompt}</TooltipContent>
