@@ -109,7 +109,10 @@ import {
   readStoredChatPreferences,
   writeStoredChatPreferences,
 } from "@/utils/chat-preferences";
-import { updateWasStoppedByUser } from "@/utils/chat-state";
+import {
+  resetNewChatClientState,
+  updateWasStoppedByUser,
+} from "@/utils/chat-state";
 import { formatLongDate, getGreeting } from "@/utils/dashboard-greeting";
 import { formatElapsedSeconds } from "@/utils/format-elapsed-seconds";
 import {
@@ -974,20 +977,25 @@ function StandaloneChatPageClient({
       return;
     }
 
-    setPendingMessageId(null);
-    setChatError(null);
-    setQueuedMessages([]);
-
     if (initialChatId) {
+      setPendingMessageId(null);
+      setChatError(null);
+      setQueuedMessages([]);
       return;
     }
 
-    hasUpdatedUrlRef.current = false;
-    updateWasStoppedByUser(false, wasStoppedByUserRef, setWasStoppedByUser);
-    setMessages([]);
-    setContext([]);
-    setHasCustomizedContext(false);
-    setGeneratedChatId(crypto.randomUUID());
+    resetNewChatClientState({
+      hasUpdatedUrlRef,
+      setChatError,
+      setContext,
+      setGeneratedChatId,
+      setHasCustomizedContext,
+      setMessages,
+      setPendingMessageId,
+      setQueuedMessages,
+      setWasStoppedByUser,
+      wasStoppedByUserRef,
+    });
   }, [initialChatId, setMessages]);
 
   const draftStorageKey = localStorageKeys.chatDraft(
@@ -1471,15 +1479,18 @@ function StandaloneChatPageClient({
         return;
       }
       pendingInitialQueryResetRef.current = trimmedInitialQuery;
-      setPendingMessageId(null);
-      setChatError(null);
-      setQueuedMessages([]);
-      hasUpdatedUrlRef.current = false;
-      updateWasStoppedByUser(false, wasStoppedByUserRef, setWasStoppedByUser);
-      setMessages([]);
-      setContext([]);
-      setHasCustomizedContext(false);
-      setGeneratedChatId(crypto.randomUUID());
+      resetNewChatClientState({
+        hasUpdatedUrlRef,
+        setChatError,
+        setContext,
+        setGeneratedChatId,
+        setHasCustomizedContext,
+        setMessages,
+        setPendingMessageId,
+        setQueuedMessages,
+        setWasStoppedByUser,
+        wasStoppedByUserRef,
+      });
       return;
     }
 

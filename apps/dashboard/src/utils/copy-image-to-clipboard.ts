@@ -2,37 +2,38 @@ import { fetchBlobFromUrl } from "@/utils/download";
 
 async function blobToPng(blob: Blob) {
   const objectUrl = URL.createObjectURL(blob);
+  let image: HTMLImageElement;
   try {
-    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    image = await new Promise<HTMLImageElement>((resolve, reject) => {
       const element = document.createElement("img");
       element.onload = () => resolve(element);
       element.onerror = () => reject(new Error("Failed to decode image"));
       element.src = objectUrl;
     });
-
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth || image.width;
-    canvas.height = image.naturalHeight || image.height;
-    const context = canvas.getContext("2d");
-    if (!context) {
-      throw new Error("Failed to create canvas");
-    }
-    context.drawImage(image, 0, 0);
-
-    const pngBlob = await new Promise<Blob>((resolve, reject) => {
-      canvas.toBlob((encoded) => {
-        if (encoded) {
-          resolve(encoded);
-          return;
-        }
-        reject(new Error("Failed to encode PNG"));
-      }, "image/png");
-    });
-
-    return pngBlob;
-  } finally {
+  } catch (error) {
     URL.revokeObjectURL(objectUrl);
+    throw error;
   }
+  URL.revokeObjectURL(objectUrl);
+
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth || image.width;
+  canvas.height = image.naturalHeight || image.height;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Failed to create canvas");
+  }
+  context.drawImage(image, 0, 0);
+
+  return await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((encoded) => {
+      if (encoded) {
+        resolve(encoded);
+        return;
+      }
+      reject(new Error("Failed to encode PNG"));
+    }, "image/png");
+  });
 }
 
 export async function copyImageToClipboard(url: string) {
