@@ -16,18 +16,18 @@ export function AnalyticsPageSkeleton() {
           <Skeleton className="h-7 w-40" />
           <Skeleton className="h-3.5 w-64" />
         </div>
-        <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {Array.from({ length: RAIL_TILE_COUNT }).map((_, index) => (
             <Skeleton
-              className="h-20 w-full rounded-none"
+              className="h-28 w-full rounded-xl"
               key={`${id}-rail-${index}`}
             />
           ))}
         </div>
-        <div className="grid grid-cols-1 gap-px overflow-hidden rounded-md border lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {Array.from({ length: MODULE_COUNT }).map((_, index) => (
             <Skeleton
-              className="h-72 w-full rounded-none"
+              className="h-72 w-full rounded-xl"
               key={`${id}-module-${index}`}
             />
           ))}

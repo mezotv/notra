@@ -8,24 +8,25 @@ import {
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
 import {
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import { useMemo } from "react";
+import { DelayedTooltip } from "@/components/delayed-tooltip";
+import {
   InstrumentEmpty,
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
-import { TOP_POST_CONTENT_PREVIEW_LENGTH } from "@/constants/analytics";
-import type { TopPostItem } from "@/types/analytics";
-import { formatDayLabel, formatMetric } from "@/utils/analytics-charts";
-
-interface TopPostsCardProps {
-  posts: TopPostItem[];
-}
-
-function previewContent(content: string): string {
-  const singleLine = content.replace(/\s+/g, " ").trim();
-  if (singleLine.length <= TOP_POST_CONTENT_PREVIEW_LENGTH) {
-    return singleLine;
-  }
-  return `${singleLine.slice(0, TOP_POST_CONTENT_PREVIEW_LENGTH)}…`;
-}
+import { Table, type TableColumn } from "@/components/motion/table";
+import { ANALYTICS_TOOLTIP_DELAY_MS } from "@/constants/analytics";
+import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import type { TopPostItem, TopPostsCardProps } from "@/types/analytics";
+import {
+  formatDayLabel,
+  formatMetric,
+  previewPostContent,
+} from "@/utils/analytics-charts";
+import { tableHeightFor } from "@/utils/table";
 
 function PostAvatar({ post }: { post: TopPostItem }) {
   const name = post.username ?? post.providerAccountId;
@@ -41,69 +42,127 @@ function PostAvatar({ post }: { post: TopPostItem }) {
   );
 }
 
-function PostRow({ post }: { post: TopPostItem }) {
-  const body = (
-    <div className="flex items-start gap-3">
-      <PostAvatar post={post} />
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="flex items-center gap-1.5 font-mono text-[0.6875rem] text-muted-foreground">
-          <HugeiconsIcon
-            icon={
-              post.provider === "linkedin" ? Linkedin02Icon : NewTwitterIcon
-            }
-            size={12}
-          />
-          {post.username ? `@${post.username}` : post.providerAccountId}
-          <span>·</span>
-          {formatDayLabel(post.postedAt.slice(0, 10))}
-        </p>
-        <p className="text-sm leading-snug">{previewContent(post.content)}</p>
-        <p className="font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
-          {formatMetric(post.likes)} likes · {formatMetric(post.replies)}{" "}
-          replies · {formatMetric(post.reposts)} reposts
-          {post.impressions !== null &&
-            ` · ${formatMetric(post.impressions)} impressions`}
-        </p>
-      </div>
-      <span className="shrink-0 font-mono text-sm tabular-nums">
-        {formatMetric(post.engagement)}
-      </span>
-    </div>
+export function TopPostsCard({ posts, action }: TopPostsCardProps) {
+  const columns = useMemo<TableColumn<TopPostItem>[]>(
+    () => [
+      {
+        key: "account",
+        header: "Account",
+        width: "7rem",
+        sortable: true,
+        cell: (row) => (
+          <DelayedTooltip delay={ANALYTICS_TOOLTIP_DELAY_MS}>
+            <TooltipTrigger
+              render={<span className="flex items-center gap-2" />}
+            >
+              <PostAvatar post={row} />
+              <HugeiconsIcon
+                className="text-muted-foreground"
+                icon={
+                  row.provider === "linkedin" ? Linkedin02Icon : NewTwitterIcon
+                }
+                size={12}
+              />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="font-mono text-xs">
+                {row.username ? `@${row.username}` : "-"}
+              </p>
+            </TooltipContent>
+          </DelayedTooltip>
+        ),
+        sortValue: (row) => row.username ?? row.providerAccountId,
+      },
+      {
+        key: "content",
+        header:
+          posts.length > 0 ? `Post (${posts.length.toLocaleString()})` : "Post",
+        width: "2.6fr",
+        cell: (row) => (
+          <DelayedTooltip delay={ANALYTICS_TOOLTIP_DELAY_MS}>
+            <TooltipTrigger
+              render={
+                <span className="block w-full truncate text-left text-sm leading-snug" />
+              }
+            >
+              {previewPostContent(row.content)}
+            </TooltipTrigger>
+            <TooltipContent className="max-w-sm">
+              <p className="text-xs leading-snug">{row.content}</p>
+            </TooltipContent>
+          </DelayedTooltip>
+        ),
+      },
+      {
+        key: "postedAt",
+        header: "Posted",
+        width: "7.5rem",
+        sortable: true,
+        cell: (row) => (
+          <span className="whitespace-nowrap font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
+            {formatDayLabel(row.postedAt.slice(0, 10))}
+          </span>
+        ),
+      },
+      {
+        key: "impressions",
+        header: "Impressions",
+        width: "8.5rem",
+        align: "right",
+        sortable: true,
+        cell: (row) => (
+          <span className="font-mono text-muted-foreground text-sm tabular-nums">
+            {row.impressions === null ? "-" : formatMetric(row.impressions)}
+          </span>
+        ),
+        sortValue: (row) => row.impressions ?? 0,
+      },
+      {
+        key: "engagement",
+        header: "Engagement",
+        width: "9rem",
+        align: "right",
+        sortable: true,
+        cell: (row) => (
+          <span className="font-mono text-sm tabular-nums">
+            {formatMetric(row.engagement)}
+          </span>
+        ),
+      },
+    ],
+    [posts.length]
   );
 
-  if (post.url) {
-    return (
-      <a
-        className="block px-1 py-2.5 transition-colors hover:bg-muted/60"
-        href={post.url}
-        rel="noopener noreferrer"
-        target="_blank"
-      >
-        {body}
-      </a>
-    );
-  }
-  return <div className="px-1 py-2.5">{body}</div>;
-}
-
-export function TopPostsCard({ posts }: TopPostsCardProps) {
   return (
-    <InstrumentModule eyebrow="Top posts" readout="latest sync, by engagement">
+    <InstrumentModule
+      action={action}
+      bareBody
+      eyebrow="Top posts"
+      variant="panel"
+    >
       {posts.length === 0 ? (
         <InstrumentEmpty
           className="h-40"
-          message="No tracked posts yet"
+          message="No posts for this time frame"
           seed="Top posts"
         />
       ) : (
-        <div className="-mx-1 divide-y divide-border">
-          {posts.map((post) => (
-            <PostRow
-              key={`${post.provider}:${post.platformPostId}`}
-              post={post}
-            />
-          ))}
-        </div>
+        <Table
+          className="rounded-2xl"
+          columns={columns}
+          data={posts}
+          defaultSort={{ key: "engagement", direction: "desc" }}
+          emptyState="No posts for this time frame"
+          getRowId={(row) => `${row.provider}:${row.platformPostId}`}
+          height={tableHeightFor(posts.length)}
+          onRowClick={(row) => {
+            if (row.url) {
+              window.open(row.url, "_blank", "noopener,noreferrer");
+            }
+          }}
+          resizable
+          rowHeight={TABLE_ROW_HEIGHT}
+        />
       )}
     </InstrumentModule>
   );

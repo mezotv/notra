@@ -17,8 +17,7 @@ import { getServerSession } from "@/lib/auth/session";
 import { mcpOAuthCallbackQuerySchema } from "@/schemas/integrations";
 
 export async function GET(request: NextRequest) {
-  const baseUrl =
-    process.env.CONSOLE_BETTER_AUTH_URL ?? new URL(request.url).origin;
+  const baseUrl = process.env.CONSOLE_APP_URL ?? new URL(request.url).origin;
   const { searchParams } = new URL(request.url);
   const parsed = mcpOAuthCallbackQuerySchema.safeParse({
     code: searchParams.get("code") ?? undefined,

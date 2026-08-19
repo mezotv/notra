@@ -144,6 +144,7 @@ export const socialPostStatsLatest = defineDatasource(
         "provider_account_id",
       ],
     }),
+    jsonPaths: false,
   }
 );
 
@@ -182,6 +183,7 @@ export const socialAccountStatsLatest = defineDatasource(
     engine: engine.aggregatingMergeTree({
       sortingKey: ["organization_id", "provider", "provider_account_id"],
     }),
+    jsonPaths: false,
   }
 );
 
@@ -206,9 +208,12 @@ export const geoMentionChecks = defineDatasource("geo_mention_checks", {
     "AI engine mention checks: one row per prompt x engine per scan, with extracted mention data",
   schema: {
     organization_id: t.string(),
+    project_id: t.string().lowCardinality(),
     scan_id: t.string(),
     engine: t.string().lowCardinality(),
     prompt_id: t.string().lowCardinality(),
+    sequence_id: t.string().lowCardinality(),
+    turn: t.uint8(),
     prompt: t.string(),
     captured_at: t.dateTime(),
     mentioned: t.bool(),
@@ -261,6 +266,97 @@ export const aiTrafficEvents = defineDatasource("ai_traffic_events", {
   }),
 });
 
+export const geoTrafficEvents = defineDatasource("geo_traffic_events", {
+  description:
+    "Append-only log of every request captured by the geo SDK, classified into AI crawlers, AI assistant referrals and humans",
+  schema: {
+    organization_id: t.string(),
+    project_id: t.string().lowCardinality(),
+    captured_at: t.dateTime(),
+    visitor_type: t.string().lowCardinality(),
+    source: t.string().lowCardinality(),
+    agent: t.string().lowCardinality(),
+    category: t.string().lowCardinality(),
+    confidence: t.string().lowCardinality(),
+    path: t.string(),
+    host: t.string(),
+    method: t.string().lowCardinality(),
+    referer: t.string(),
+    ua: t.string(),
+    country: t.string().lowCardinality(),
+    language: t.string().lowCardinality(),
+    request_id: t.string(),
+    journey_id: t.string(),
+    wants_markdown: t.bool(),
+  },
+  engine: engine.mergeTree({
+    sortingKey: ["organization_id", "visitor_type", "captured_at"],
+    partitionKey: "toYYYYMM(captured_at)",
+    ttl: "captured_at + toIntervalDay(396)",
+    settings: { ttl_only_drop_parts: 1 },
+  }),
+});
+
+export const geoTrafficDaily = defineDatasource("geo_traffic_daily", {
+  description:
+    "Daily rollup of geo_traffic_events per organization, visitor type and source; read with countMerge/uniqExactMerge/maxMerge/anyMerge",
+  schema: {
+    day: t.date(),
+    organization_id: t.string(),
+    project_id: t.string().lowCardinality(),
+    visitor_type: t.string().lowCardinality(),
+    source: t.string().lowCardinality(),
+    visits_state: t.aggregateFunction("count"),
+    markdown_visits_state: t.aggregateFunction("countIf", t.uint8()),
+    paths_state: t.aggregateFunction("uniqExact", t.string()),
+    last_seen_state: t.aggregateFunction("max", t.dateTime()),
+    agent_state: t.aggregateFunction("any", t.string().lowCardinality()),
+    category_state: t.aggregateFunction("any", t.string().lowCardinality()),
+    confidence_state: t.aggregateFunction("any", t.string().lowCardinality()),
+  },
+  engine: engine.aggregatingMergeTree({
+    sortingKey: [
+      "organization_id",
+      "project_id",
+      "visitor_type",
+      "source",
+      "day",
+    ],
+    partitionKey: "toYYYYMM(day)",
+  }),
+  jsonPaths: false,
+});
+
+export const geoTrafficPagesDaily = defineDatasource(
+  "geo_traffic_pages_daily",
+  {
+    description:
+      "Daily rollup of geo_traffic_events per organization, visitor type, source and path; read with countMerge/maxMerge",
+    schema: {
+      day: t.date(),
+      organization_id: t.string(),
+      project_id: t.string().lowCardinality(),
+      visitor_type: t.string().lowCardinality(),
+      source: t.string().lowCardinality(),
+      path: t.string(),
+      visits_state: t.aggregateFunction("count"),
+      last_seen_state: t.aggregateFunction("max", t.dateTime()),
+    },
+    engine: engine.aggregatingMergeTree({
+      sortingKey: [
+        "organization_id",
+        "project_id",
+        "visitor_type",
+        "source",
+        "day",
+        "path",
+      ],
+      partitionKey: "toYYYYMM(day)",
+    }),
+    jsonPaths: false,
+  }
+);
+
 export type SocialAccountRow = InferRow<typeof socialAccounts>;
 export type SocialAccountStatsRow = InferRow<typeof socialAccountStats>;
 export type SocialPostRow = InferRow<typeof socialPosts>;
@@ -269,3 +365,4 @@ export type SocialPostSourceRow = InferRow<typeof socialPostSources>;
 export type GeoMentionCheckRow = InferRow<typeof geoMentionChecks>;
 export type ModelUsageShareRow = InferRow<typeof modelUsageShare>;
 export type AiTrafficEventRow = InferRow<typeof aiTrafficEvents>;
+export type GeoTrafficEventRow = InferRow<typeof geoTrafficEvents>;

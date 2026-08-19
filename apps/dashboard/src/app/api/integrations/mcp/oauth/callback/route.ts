@@ -18,7 +18,7 @@ import { mcpOAuthCallbackQuerySchema } from "@/schemas/integrations";
 
 export async function GET(request: NextRequest) {
   const baseUrl =
-    process.env.BETTER_AUTH_URL ??
+    process.env.APP_URL ??
     process.env.NEXT_PUBLIC_SITE_URL ??
     new URL(request.url).origin;
   const { searchParams } = new URL(request.url);

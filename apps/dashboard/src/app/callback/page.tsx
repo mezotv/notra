@@ -5,6 +5,7 @@ import {
   getLastActiveOrganization,
   getSession,
 } from "@/lib/auth/actions";
+import { isSessionBanned } from "@/lib/auth/banned";
 import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
 import {
   marketingAttributionServerSearchParams,
@@ -40,6 +41,9 @@ export default async function AuthCallback(props: {
   let returnTo = searchParams.returnTo;
 
   if (!session?.user) {
+    if (await isSessionBanned()) {
+      redirect("/auth/banned");
+    }
     redirect("/login");
   }
 

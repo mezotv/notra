@@ -11,7 +11,6 @@ import { OrganizationsSection } from "@/components/settings/organizations-sectio
 import { PrivacySection } from "@/components/settings/privacy-section";
 import { ProfileSection } from "@/components/settings/profile-section";
 import { authClient } from "@/lib/auth/client";
-import type { Account } from "@/types/settings/account";
 import { AccountPageSkeleton } from "./skeleton";
 
 export default function SettingsAccountPage() {
@@ -34,7 +33,7 @@ export default function SettingsAccountPage() {
       if (result.error) {
         throw new Error(result.error.message ?? "Failed to load accounts");
       }
-      return (result.data ?? []) as Account[];
+      return result.data ?? [];
     },
     enabled: !!user,
   });
@@ -65,7 +64,12 @@ export default function SettingsAccountPage() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
-          <ProfileSection onSessionRefetch={refetchSession} user={user} />
+          <ProfileSection
+            onSessionRefetch={async () => {
+              await refetchSession();
+            }}
+            user={user}
+          />
           <LoginDetailsSection
             email={user.email}
             hasPasswordAccount={hasPasswordAccount ?? false}

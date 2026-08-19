@@ -1,4 +1,6 @@
-import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context";
+import type { ReactNode } from "react";
+import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
+import type { ChartColorPair, ChartMarker } from "@/types/charts";
 
 export interface SocialAnalyticsSyncPayload {
   organizationId?: string;
@@ -176,8 +178,99 @@ export interface AnalyticsStatCard {
   hint?: string;
 }
 
+export interface AnalyticsRangeOptions {
+  days?: number;
+  timezone?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export interface AnalyticsDateRange {
+  dateFrom: string;
+  dateTo: string;
+}
+
+export type AnalyticsRangePreset =
+  | "today"
+  | "yesterday"
+  | "7d"
+  | "30d"
+  | "90d"
+  | "mtd"
+  | "qtd"
+  | "ytd"
+  | "all"
+  | "custom";
+
+export interface AnalyticsRangeState {
+  preset: AnalyticsRangePreset;
+  range: AnalyticsDateRange;
+}
+
+export interface AnalyticsRangeControl extends AnalyticsRangeState {
+  label: string;
+  includesToday: boolean;
+  setPreset: (preset: Exclude<AnalyticsRangePreset, "custom">) => void;
+  setCustom: (range: AnalyticsDateRange) => void;
+}
+
+export interface AnalyticsNavProps {
+  slug: string;
+}
+
+export interface PlatformTabItem {
+  value: string;
+  label: string;
+  icon?: ReactNode;
+  collapsedLabel?: string;
+}
+
+export interface PlatformTabsProps {
+  items: PlatformTabItem[];
+  value: string;
+  onValueChange: (value: string) => void;
+  label?: string;
+  className?: string;
+}
+
+export interface AnalyticsContextValue {
+  organizationId: string;
+  organizationSlug: string;
+  accounts: SocialOverviewAccount[];
+  configured: boolean;
+  isPending: boolean;
+  hiddenKeys: Set<string>;
+  toggleAccount: (key: string) => void;
+}
+
+export interface AnalyticsProviderProps {
+  organizationSlug: string;
+  children: ReactNode;
+}
+
+export interface AnalyticsAccountsView {
+  organizationId: string;
+  organizationSlug: string;
+  accounts: SocialOverviewAccount[];
+  configured: boolean;
+  isPending: boolean;
+  hiddenKeys: Set<string>;
+  toggleAccount: (key: string) => void;
+  allKeys: string[];
+  accountConfig: ChartConfig;
+  accountColors: Map<string, ChartColorPair>;
+  visibleKeys: string[];
+  selectedKeys: Set<string>;
+  visibleAccounts: SocialOverviewAccount[];
+}
+
+export interface AnalyticsRangePickerProps {
+  control: AnalyticsRangeControl;
+}
+
 export interface PostingPerformancePoint {
   weekday: number;
+  hour: number;
   posts: number;
   engagement: number;
   impressions: number | null;
@@ -189,10 +282,20 @@ export interface PostingPerformanceResponse {
   points: PostingPerformancePoint[];
 }
 
-export interface PostingPerformanceChartRow {
-  day: string;
-  avgEngagement: number;
+export type PostingActivityLevel = "quiet" | "low" | "medium" | "high";
+
+export interface PostingTimeSlot {
+  hour: number;
   posts: number;
+  avgEngagement: number;
+  level: PostingActivityLevel;
+}
+
+export interface BestPostingSlot {
+  weekday: string;
+  hour: number;
+  posts: number;
+  avgEngagement: number;
 }
 
 export interface AccountSeriesRow {
@@ -258,9 +361,56 @@ export interface LeaderboardResponse {
   entries: LeaderboardEntry[];
 }
 
-export interface TimelineMarker {
-  index: number | null;
+export interface TopPostsCardProps {
+  posts: TopPostItem[];
+  action?: ReactNode;
+}
+
+export interface LeaderboardCardProps {
+  organizationId: string;
+  organizationSlug: string;
+  variant?: "module" | "page";
+}
+
+export interface AnalyticsPageClientProps {
+  organizationSlug: string;
+}
+
+export type AnalyticsProviderFilter = "all" | "twitter" | "linkedin";
+
+export type AnalyticsFlagState = "enabled" | "disabled" | "unavailable";
+
+export interface AccountDetailViewProps {
+  organizationSlug: string;
+  handle: string;
+  variant?: "modal" | "page";
+}
+
+export interface AccountModalProps {
+  title: string;
+  children: ReactNode;
+}
+
+export interface AccountEngagementPoint {
+  day: string;
+  engagement: number;
+  [key: string]: string | number;
+}
+
+export interface AccountIdentity {
+  provider: string;
+  providerAccountId: string;
+  username: string;
+  displayName: string | null;
+  profileImageUrl: string | null;
+  verified: boolean;
+  verifiedType: string | null;
+  followersCount: number | null;
+}
+
+export interface LeaderboardDetailMetric {
   label: string;
+  value: string;
 }
 
 export interface TrackAccountPreviewResponse {
@@ -278,27 +428,93 @@ export interface AnalyticsHeroSummary {
 export interface SummaryStatsProps {
   accounts: SocialOverviewAccount[];
   points: EngagementTimeseriesPoint[];
+  rangeHint: string;
 }
 
 export interface AnalyticsStatTile {
   label: string;
   value: string;
   hint: string;
-  accent: boolean;
 }
 
 export interface AccountSeriesChartCardProps {
   hero?: boolean;
   title: string;
-  readout: string;
+  description?: string;
+  action?: ReactNode;
+  markIncompleteTail: boolean;
   kind: "area" | "line" | "bar";
   rows: AccountSeriesRow[];
   config: ChartConfig;
   allKeys: string[];
   hiddenKeys: ReadonlySet<string>;
   onToggleSeries: (key: string) => void;
-  hoverIndex: number | null;
-  onHoverChange: (index: number | null) => void;
-  markers: TimelineMarker[];
+  markers: ChartMarker[];
   emptyMessage: string;
+}
+
+export interface ChartSeriesLegendProps {
+  config: ChartConfig;
+  orderedKeys: string[];
+  hiddenKeys: ReadonlySet<string>;
+  onToggle: (key: string) => void;
+}
+
+export interface FollowersCardProps {
+  accounts: SocialOverviewAccount[];
+  points: FollowerGrowthPoint[];
+  hiddenKeys: ReadonlySet<string>;
+  colorForKey: (key: string) => ChartColorPair;
+  action?: ReactNode;
+  markIncompleteTail: boolean;
+}
+
+export interface PostingHeatmapCell {
+  weekday: number;
+  hour: number;
+  posts: number;
+  avgEngagement: number;
+  level: PostingActivityLevel;
+}
+
+export interface PostingPerformanceCardProps {
+  points: PostingPerformancePoint[];
+  action?: ReactNode;
+}
+
+export interface CursorTipState {
+  x: number;
+  y: number;
+  flip: boolean;
+  title: string;
+  detail: string;
+}
+
+export interface CursorTooltipProps {
+  tip: CursorTipState | null;
+}
+
+export interface ImpressionsShareCardProps {
+  organizationId: string;
+  colorForKey: (key: string) => ChartColorPair;
+}
+
+export interface ImpressionsShareRow {
+  account: string;
+  impressions: number;
+  seriesKey: string;
+  [key: string]: string | number;
+}
+
+export interface ImpressionsSharePieSlice extends ImpressionsShareRow {
+  slice: string;
+}
+
+export interface ConnectAccountsButtonsProps {
+  organizationId: string;
+}
+
+export interface ProviderIconProps {
+  provider: string;
+  className?: string;
 }

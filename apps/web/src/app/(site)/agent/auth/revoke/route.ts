@@ -1,13 +1,13 @@
-import { jsonResponse } from "@/utils/http";
+import type { NextRequest } from "next/server";
+import { redirectToAuthServer } from "@/utils/oauth-redirect";
 
 export function OPTIONS() {
   return new Response(null, { status: 204 });
 }
 
-export function POST() {
-  return jsonResponse({
-    status: "accepted",
-    message:
-      "Revoke Notra API keys from the dashboard. Agents should discard the credential and repeat discovery before reconnecting.",
-  });
+export function POST(request: NextRequest) {
+  return redirectToAuthServer(
+    request,
+    "https://auth.usenotra.com/oauth2/revoke"
+  );
 }

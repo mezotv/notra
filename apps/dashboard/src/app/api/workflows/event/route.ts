@@ -771,8 +771,7 @@ export const { POST } = serve<EventWorkflowPayload>(
 
       if (notificationData.enabled && notificationData.ownerEmails.length > 0) {
         await context.run("send-notification-emails", async () => {
-          const baseUrl =
-            process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
+          const baseUrl = process.env.APP_URL ?? "https://app.usenotra.com";
           const contentOverviewLink = `${baseUrl}/${notificationData.organizationSlug}/content`;
           const createdContent = createdPosts.map((createdPost) => ({
             title: createdPost.title,

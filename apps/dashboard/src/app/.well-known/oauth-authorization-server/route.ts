@@ -1,4 +1,5 @@
-import { auth } from "@/lib/auth/server";
-import { publicOAuthAuthorizationServerMetadata } from "@/utils/oauth-metadata";
+import { fetchAuthKitAuthorizationServerMetadata } from "@/lib/auth/authkit-metadata";
 
-export const GET = publicOAuthAuthorizationServerMetadata(auth);
+export function GET() {
+  return fetchAuthKitAuthorizationServerMetadata();
+}

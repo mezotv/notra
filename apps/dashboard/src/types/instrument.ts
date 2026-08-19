@@ -7,11 +7,14 @@ export interface InstrumentGridProps {
 
 export interface InstrumentModuleProps {
   eyebrow: string;
+  description?: ReactNode;
   readout?: ReactNode;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
   bodyClassName?: string;
+  variant?: "flat" | "panel";
+  bareBody?: boolean;
 }
 
 export interface InstrumentRevealProps {

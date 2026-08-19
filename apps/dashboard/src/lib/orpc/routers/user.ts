@@ -1,7 +1,13 @@
 import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
 import { and, count, eq, ne } from "drizzle-orm";
+import { Effect } from "effect";
 import { deleteAutumnCustomer } from "@/lib/billing/delete-autumn-customer";
+import {
+  deleteOrganizationFromWorkOS,
+  removeMembershipFromWorkOS,
+  updateMembershipRoleInWorkOS,
+} from "@/lib/organizations/workos-sync";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import {
   deleteOrganizationChatFiles,
@@ -147,6 +153,11 @@ export const userRouter = {
               );
             }
 
+            const organization = await tx.query.organizations.findFirst({
+              columns: { workosOrgId: true },
+              where: eq(organizations.id, input.organizationId),
+            });
+
             await tx
               .delete(organizations)
               .where(eq(organizations.id, input.organizationId));
@@ -156,6 +167,7 @@ export const userRouter = {
             return {
               action: "delete" as const,
               success: true,
+              workosOrgId: organization?.workosOrgId ?? null,
             };
           }
 
@@ -179,6 +191,16 @@ export const userRouter = {
             success: true,
           };
         });
+
+        if (result.action === "delete") {
+          await Effect.runPromise(
+            deleteOrganizationFromWorkOS(result.workosOrgId)
+          );
+        } else {
+          await Effect.runPromise(
+            removeMembershipFromWorkOS(input.organizationId, context.user.id)
+          );
+        }
 
         if (shouldCleanupDeletedOrganization) {
           await Promise.all([
@@ -212,7 +234,7 @@ export const userRouter = {
       const organizationsToCleanup: string[] = [];
 
       for (const transfer of input.transfers) {
-        await db.transaction(async (tx) => {
+        const outcome = await db.transaction(async (tx) => {
           const membership = await tx.query.members.findFirst({
             where: and(
               eq(members.organizationId, transfer.orgId),
@@ -264,25 +286,50 @@ export const userRouter = {
                   eq(members.userId, context.user.id)
                 )
               );
-          } else {
-            const existingOrganization = await tx.query.organizations.findFirst(
-              {
-                columns: { id: true },
-                where: eq(organizations.id, transfer.orgId),
-              }
-            );
 
-            if (!existingOrganization) {
-              throw notFound(`Organization ${transfer.orgId} not found`);
-            }
-
-            await tx
-              .delete(organizations)
-              .where(eq(organizations.id, transfer.orgId));
-
-            organizationsToCleanup.push(transfer.orgId);
+            return {
+              kind: "transfer" as const,
+              newOwnerUserId: newOwner.userId,
+            };
           }
+
+          const existingOrganization = await tx.query.organizations.findFirst({
+            columns: { id: true, workosOrgId: true },
+            where: eq(organizations.id, transfer.orgId),
+          });
+
+          if (!existingOrganization) {
+            throw notFound(`Organization ${transfer.orgId} not found`);
+          }
+
+          await tx
+            .delete(organizations)
+            .where(eq(organizations.id, transfer.orgId));
+
+          organizationsToCleanup.push(transfer.orgId);
+
+          return {
+            kind: "delete" as const,
+            workosOrgId: existingOrganization.workosOrgId,
+          };
         });
+
+        if (outcome.kind === "transfer") {
+          await Effect.runPromise(
+            updateMembershipRoleInWorkOS(
+              transfer.orgId,
+              outcome.newOwnerUserId,
+              "owner"
+            )
+          );
+          await Effect.runPromise(
+            removeMembershipFromWorkOS(transfer.orgId, context.user.id)
+          );
+        } else {
+          await Effect.runPromise(
+            deleteOrganizationFromWorkOS(outcome.workosOrgId)
+          );
+        }
       }
 
       await Promise.all(

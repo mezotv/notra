@@ -1,7 +1,6 @@
 import { DatabuddyLogo } from "@/components/landing/marquee-logos/databuddy-logo";
 import { EmdashLogo } from "@/components/landing/marquee-logos/emdash-logo";
 import { InthLogo } from "@/components/landing/marquee-logos/inth-logo";
-import { MintlifyLogo } from "@/components/landing/marquee-logos/mintlify-logo";
 import { StackAuthLogo } from "@/components/landing/marquee-logos/stack-auth-logo";
 import type {
   FounderQuoteData,
@@ -18,7 +17,6 @@ export const MARQUEE_LOGOS: MarqueeLogo[] = [
   { name: "inth", label: "Inth", Logo: InthLogo },
   { name: "databuddy", label: "Databuddy", Logo: DatabuddyLogo },
   { name: "emdash", label: "Emdash", Logo: EmdashLogo },
-  { name: "mintlify", label: "Mintlify", Logo: MintlifyLogo },
   { name: "stack-auth", label: "Stack Auth", Logo: StackAuthLogo },
 ];
 

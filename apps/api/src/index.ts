@@ -104,7 +104,8 @@ interface Bindings {
   INTEGRATION_ENCRYPTION_KEY?: string;
   NEXT_PUBLIC_APP_URL?: string;
   APP_URL?: string;
-  BETTER_AUTH_URL?: string;
+  WORKOS_AUTHKIT_DOMAIN?: string;
+  WORKOS_CLIENT_ID?: string;
 }
 
 interface AppEnv {

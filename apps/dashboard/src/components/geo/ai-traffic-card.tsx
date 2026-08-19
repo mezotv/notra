@@ -1,76 +1,48 @@
 "use client";
 
-import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context";
-import { Pie } from "@notra/ui/components/dither-kit/pie";
-import { PieChart } from "@notra/ui/components/dither-kit/pie-chart";
-import { Tooltip as DitherTooltip } from "@notra/ui/components/dither-kit/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
+import { CodeSnippet } from "@/components/geo/code-snippet";
+import { EngineIcon } from "@/components/geo/engine-icon";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
-import { InstrumentModule } from "@/components/instrument/instrument-module";
-import { AI_TRAFFIC_PURPOSE_LABELS } from "@/constants/geo";
+import { InstrumentSection } from "@/components/instrument/instrument-module";
+import { Table, type TableColumn } from "@/components/motion/table";
+import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type {
-  AiTrafficAgent,
-  AiTrafficResponse,
-  BeaconSetupResponse,
+  AiTrafficCardProps,
+  GeoIngestSetupResponse,
+  GeoTrafficSource,
+  GeoTrafficTotals,
 } from "@/types/geo";
-import { formatAiTrafficTimestamp, hitBarWidth } from "@/utils/ai-traffic";
+import {
+  formatAiTrafficTimestamp,
+  formatGeoSource,
+  formatMarkdownShare,
+} from "@/utils/ai-traffic";
+import { barWidthPercent } from "@/utils/geo-charts";
+import { tableHeightFor } from "@/utils/table";
 
-interface AiTrafficCardProps {
-  traffic: AiTrafficResponse | undefined;
-  setup: BeaconSetupResponse | undefined;
-}
-
-function AgentRow({
-  agent,
-  maxHits,
-}: {
-  agent: AiTrafficAgent;
-  maxHits: number;
-}) {
-  return (
-    <div className="space-y-1">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="flex min-w-0 items-center gap-2">
-          <span className="truncate font-medium text-foreground text-sm">
-            {agent.agent}
-          </span>
-          <PurposeBadge category={agent.category} />
-        </span>
-        <span className="shrink-0 font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
-          last seen {formatAiTrafficTimestamp(agent.lastSeenAt)}
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="h-2 flex-1 overflow-hidden bg-muted">
-          <div
-            className="h-full bg-foreground/80"
-            style={{ width: `${hitBarWidth(agent.hits, maxHits)}%` }}
-          />
-        </div>
-        <span className="w-16 shrink-0 text-right font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
-          {agent.hits} hits
-        </span>
-      </div>
-    </div>
-  );
-}
-
-function BeaconSetup({ setup }: { setup: BeaconSetupResponse | undefined }) {
+function IngestSetup({ setup }: { setup: GeoIngestSetupResponse | undefined }) {
   return (
     <div className="space-y-3">
       <p className="text-muted-foreground text-sm">
-        No AI agent has been seen on your site yet. Install the beacon to start
-        recording hits.
+        No AI crawler or AI assistant visit has been captured yet. Install
+        @usenotra/geo to start recording requests.
       </p>
-      <pre className="overflow-x-auto rounded-sm border border-border bg-muted/40 p-3 font-mono text-xs leading-relaxed">
-        <code>
-          {setup?.snippet ??
-            "Set BEACON_INGEST_SECRET to generate your install snippet"}
-        </code>
-      </pre>
+      <CodeSnippet
+        code={
+          setup?.snippet ??
+          "// Set GEO_INGEST_SECRET to generate your install snippet"
+        }
+      />
       {setup?.token ? (
         <p className="break-all text-muted-foreground text-xs">
-          <span className="font-medium text-foreground">BEACON_ORG_TOKEN</span>{" "}
+          <span className="font-medium text-foreground">NOTRA_GEO_TOKEN</span>{" "}
           <span className="font-mono">{setup.token}</span>
         </p>
       ) : null}
@@ -78,81 +50,187 @@ function BeaconSetup({ setup }: { setup: BeaconSetupResponse | undefined }) {
   );
 }
 
-const PURPOSE_DONUT_CONFIG: ChartConfig = {
-  "Training data": { label: "Training data", color: "green" },
-  "Search index": { label: "Search index", color: "blue" },
-  "Used in answer": { label: "Used in answer", color: "purple" },
-};
-
-function PurposeDonut({ agents }: { agents: AiTrafficAgent[] }) {
-  const rows = useMemo(() => {
-    const byPurpose = new Map<string, number>();
-    for (const agent of agents) {
-      const label = AI_TRAFFIC_PURPOSE_LABELS[agent.category] ?? agent.category;
-      byPurpose.set(label, (byPurpose.get(label) ?? 0) + agent.hits);
-    }
-    return [...byPurpose.entries()].map(([purpose, hits]) => ({
-      purpose,
-      hits,
-    }));
-  }, [agents]);
-
-  if (rows.length === 0) {
-    return null;
-  }
+function TrafficTotals({
+  totals,
+  markdownTotal,
+}: {
+  totals: GeoTrafficTotals;
+  markdownTotal: number;
+}) {
+  const tiles = [
+    {
+      label: "AI crawlers",
+      value: totals.crawler,
+      hint: "bots fetching your pages",
+    },
+    {
+      label: "AI referrals",
+      value: totals.aiReferral,
+      hint: "people arriving from an AI answer",
+    },
+    {
+      label: "Markdown requests",
+      value: markdownTotal,
+      hint: "agents asking for text/markdown",
+    },
+  ];
 
   return (
-    <div className="space-y-2">
-      <p className="font-mono text-[0.625rem] text-muted-foreground uppercase tracking-[0.14em]">
-        Requests by purpose
-      </p>
-      <PieChart
-        className="h-40 w-full"
-        config={PURPOSE_DONUT_CONFIG}
-        data={rows}
-        dataKey="hits"
-        innerRadius={0.55}
-        nameKey="purpose"
-      >
-        <Pie />
-        <DitherTooltip inlineHeading />
-      </PieChart>
+    <div className="grid gap-6 sm:grid-cols-3">
+      {tiles.map((tile) => (
+        <div className="space-y-1" key={tile.label}>
+          <p className="font-medium text-muted-foreground text-sm">
+            {tile.label}
+          </p>
+          <p className="font-bold text-3xl tabular-nums">
+            {tile.value.toLocaleString()}
+          </p>
+          <p className="text-muted-foreground text-xs">{tile.hint}</p>
+        </div>
+      ))}
     </div>
   );
 }
 
 export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
-  const agents = traffic?.agents ?? [];
-  const maxHits = useMemo(
-    () => agents.reduce((max, agent) => Math.max(max, agent.hits), 0),
-    [agents]
+  const sources = traffic?.sources ?? [];
+  const totals = traffic?.totals ?? { crawler: 0, aiReferral: 0, human: 0 };
+  const markdownTotal = sources.reduce(
+    (sum, source) => sum + source.markdownVisits,
+    0
   );
-  const totalHits = useMemo(
-    () => agents.reduce((sum, agent) => sum + agent.hits, 0),
-    [agents]
+  const maxVisits = useMemo(
+    () => sources.reduce((max, source) => Math.max(max, source.visits), 0),
+    [sources]
+  );
+  const totalVisits = totals.crawler + totals.aiReferral;
+
+  const columns = useMemo<TableColumn<GeoTrafficSource>[]>(
+    () => [
+      {
+        key: "source",
+        header: "Source",
+        width: "1.4fr",
+        sortable: true,
+        cell: (row) => (
+          <span className="flex min-w-0 items-center gap-2 font-medium text-sm">
+            <EngineIcon engine={row.source} />
+            <span className="truncate">
+              {formatGeoSource(row.source, row.visitorType)}
+            </span>
+          </span>
+        ),
+        sortValue: (row) => formatGeoSource(row.source, row.visitorType),
+      },
+      {
+        key: "category",
+        header: "Purpose",
+        width: "8.75rem",
+        sortable: true,
+        cell: (row) => <PurposeBadge category={row.category} />,
+      },
+      {
+        key: "visits",
+        header: "Visits",
+        width: "1.2fr",
+        sortable: true,
+        cell: (row) => (
+          <span className="flex items-center gap-2">
+            <span className="block h-1.5 w-24 shrink-0 overflow-hidden rounded-full bg-muted">
+              <span
+                className="block h-full rounded-full bg-chart-1"
+                style={{ width: `${barWidthPercent(row.visits, maxVisits)}%` }}
+              />
+            </span>
+            <span className="text-sm tabular-nums">
+              {row.visits.toLocaleString()}
+            </span>
+          </span>
+        ),
+      },
+      {
+        key: "markdownVisits",
+        header: "Markdown",
+        width: "8rem",
+        align: "right",
+        sortable: true,
+        cell: (row) => (
+          <TooltipProvider delay={150}>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <span className="tabular-nums">
+                    {row.markdownVisits > 0
+                      ? formatMarkdownShare(row.markdownVisits, row.visits)
+                      : "-"}
+                  </span>
+                }
+              />
+              <TooltipContent>
+                {row.markdownVisits.toLocaleString()} of{" "}
+                {row.visits.toLocaleString()} requests asked for markdown via
+                the Accept header
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        ),
+        sortValue: (row) =>
+          row.visits === 0 ? 0 : row.markdownVisits / row.visits,
+      },
+      {
+        key: "paths",
+        header: "Pages",
+        width: "5.625rem",
+        align: "right",
+        sortable: true,
+        cell: (row) => (
+          <span className="text-sm tabular-nums">{row.paths}</span>
+        ),
+      },
+      {
+        key: "lastSeenAt",
+        header: "Last seen",
+        width: "9.375rem",
+        sortable: true,
+        cell: (row) => (
+          <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+            {formatAiTrafficTimestamp(row.lastSeenAt)}
+          </span>
+        ),
+      },
+    ],
+    [maxVisits]
   );
 
   return (
-    <InstrumentModule
+    <InstrumentSection
       eyebrow="AI traffic to your site"
       readout={
-        agents.length > 0
-          ? `${totalHits} requests · ${agents.length} agents · 30D`
-          : "crawlers and assistants fetching your pages"
+        sources.length > 0
+          ? `${totalVisits.toLocaleString()} visits · ${sources.length.toLocaleString()} sources · 30D`
+          : "crawlers and assistants reaching your pages"
       }
     >
-      {agents.length === 0 ? (
-        <BeaconSetup setup={setup} />
+      {sources.length === 0 ? (
+        <IngestSetup setup={setup} />
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[1fr_16rem]">
-          <div className="space-y-3">
-            {agents.map((agent) => (
-              <AgentRow agent={agent} key={agent.agent} maxHits={maxHits} />
-            ))}
+        <div className="space-y-4">
+          <TrafficTotals markdownTotal={markdownTotal} totals={totals} />
+          <div className="flex flex-col gap-2">
+            <Table
+              className="rounded-2xl"
+              columns={columns}
+              data={sources}
+              defaultSort={{ key: "visits", direction: "desc" }}
+              emptyState="No AI traffic captured yet"
+              getRowId={(row) => `${row.visitorType}-${row.source}`}
+              height={tableHeightFor(sources.length)}
+              resizable
+              rowHeight={TABLE_ROW_HEIGHT}
+            />
           </div>
-          <PurposeDonut agents={agents} />
         </div>
       )}
-    </InstrumentModule>
+    </InstrumentSection>
   );
 }

@@ -1,8 +1,9 @@
 import { PUBLIC_API_SCOPES } from "../constants/oauth-scopes";
 
 export const API_URL = "https://api.usenotra.com";
-const AUTH_SERVER_URL = "https://app.usenotra.com";
-const AUTH_ISSUER_URL = `${AUTH_SERVER_URL}/api/auth`;
+const DEFAULT_AUTHKIT_DOMAIN = "auth.usenotra.com";
+const AUTH_SERVER_URL = `https://${DEFAULT_AUTHKIT_DOMAIN}`;
+const AUTH_ISSUER_URL = AUTH_SERVER_URL;
 const MCP_ORIGIN_URL = "https://mcp.usenotra.com";
 const MCP_RESOURCE_URL = `${MCP_ORIGIN_URL}/mcp`;
 const SUPPORTED_RESOURCE_URLS = new Set([
@@ -24,9 +25,9 @@ function normalizeProtectedResource(resource: string) {
 }
 
 const AGENT_AUTH_METADATA = {
-  register_uri: `${AUTH_SERVER_URL}/agent/auth/register`,
+  register_uri: `${AUTH_SERVER_URL}/oauth2/register`,
   claim_uri: `${SITE_URL}/agent/auth/claim`,
-  revocation_uri: `${AUTH_SERVER_URL}/agent/auth/revoke`,
+  revocation_uri: `${AUTH_SERVER_URL}/oauth2/revoke`,
   skill: AUTH_GUIDE_URL,
   identity_types_supported: ["anonymous", "identity_assertion"],
   anonymous: {
@@ -54,10 +55,11 @@ export function buildProtectedResourceMetadata(resource = API_URL) {
 export function buildAuthorizationServerMetadata() {
   return {
     issuer: AUTH_ISSUER_URL,
-    authorization_endpoint: `${AUTH_SERVER_URL}/agent/auth/authorize`,
-    token_endpoint: `${AUTH_SERVER_URL}/agent/auth/token`,
-    registration_endpoint: `${AUTH_SERVER_URL}/agent/auth/register`,
-    revocation_endpoint: `${AUTH_SERVER_URL}/agent/auth/revoke`,
+    authorization_endpoint: `${AUTH_SERVER_URL}/oauth2/authorize`,
+    token_endpoint: `${AUTH_SERVER_URL}/oauth2/token`,
+    registration_endpoint: `${AUTH_SERVER_URL}/oauth2/register`,
+    revocation_endpoint: `${AUTH_SERVER_URL}/oauth2/revoke`,
+    jwks_uri: `${AUTH_SERVER_URL}/oauth2/jwks`,
     response_types_supported: ["code"],
     grant_types_supported: ["authorization_code", "refresh_token"],
     token_endpoint_auth_methods_supported: ["none"],

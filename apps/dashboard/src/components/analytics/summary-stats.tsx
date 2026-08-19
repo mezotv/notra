@@ -1,15 +1,19 @@
 "use client";
 
+import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
-import { cn } from "@/lib/utils";
 import type { AnalyticsStatTile, SummaryStatsProps } from "@/types/analytics";
 import {
   buildAnalyticsHeroSummary,
   formatMetric,
 } from "@/utils/analytics-charts";
 
-export function SummaryStats({ accounts, points }: SummaryStatsProps) {
+export function SummaryStats({
+  accounts,
+  points,
+  rangeHint,
+}: SummaryStatsProps) {
   const tiles = useMemo<AnalyticsStatTile[]>(() => {
     const summary = buildAnalyticsHeroSummary(accounts, points);
 
@@ -21,48 +25,39 @@ export function SummaryStats({ accounts, points }: SummaryStatsProps) {
             ? "N/A"
             : `${summary.engagementRate.toFixed(1)}%`,
         hint: `${formatMetric(summary.interactions)} interactions / ${formatMetric(summary.impressions)} impressions`,
-        accent: true,
       },
       {
         label: "Followers",
         value: formatMetric(summary.followers),
-        hint: "across connected accounts",
-        accent: false,
+        hint: `across ${accounts.length} connected ${accounts.length === 1 ? "account" : "accounts"}`,
       },
       {
         label: "Impressions",
         value: formatMetric(summary.impressions),
-        hint: "posts from the last 30 days",
-        accent: false,
+        hint: `posts, ${rangeHint}`,
       },
       {
         label: "Interactions",
         value: formatMetric(summary.interactions),
-        hint: `${summary.posts} posts, last 30 days`,
-        accent: false,
+        hint: `${summary.posts} posts, ${rangeHint}`,
       },
     ];
-  }, [accounts, points]);
+  }, [accounts, points, rangeHint]);
 
   return (
     <InstrumentGrid className="grid-cols-2 lg:grid-cols-4">
       {tiles.map((tile) => (
-        <div className="space-y-1 bg-card px-3 py-2.5" key={tile.label}>
-          <p className="font-mono text-[0.625rem] text-muted-foreground uppercase tracking-[0.14em]">
-            {tile.label}
-          </p>
-          <p
-            className={cn(
-              "font-mono text-[1.625rem] tabular-nums leading-none tracking-tight",
-              tile.accent && "text-primary"
-            )}
-          >
-            {tile.value}
-          </p>
-          <p className="truncate text-[0.6875rem] text-muted-foreground">
-            {tile.hint}
-          </p>
-        </div>
+        <Card key={tile.label}>
+          <CardContent className="flex flex-1 flex-col justify-center gap-2">
+            <p className="font-medium text-muted-foreground text-sm">
+              {tile.label}
+            </p>
+            <p className="font-bold text-3xl tabular-nums">{tile.value}</p>
+            <p className="truncate text-muted-foreground text-xs">
+              {tile.hint}
+            </p>
+          </CardContent>
+        </Card>
       ))}
     </InstrumentGrid>
   );

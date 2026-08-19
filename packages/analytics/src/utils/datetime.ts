@@ -11,3 +11,10 @@ export function toClickHouseDateTime(date: Date): string {
     date.getUTCSeconds()
   )}`;
 }
+
+export function parseClickHouseDateTime(value: string): Date {
+  const normalized = value.includes("T")
+    ? value
+    : `${value.replace(" ", "T")}Z`;
+  return new Date(normalized);
+}

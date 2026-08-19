@@ -13,10 +13,12 @@ import { Loader2Icon } from "lucide-react";
 import { useId } from "react";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { IrisReadinessList } from "@/components/iris/iris-readiness-list";
 import { IrisRunCard } from "@/components/iris/iris-run-card";
 import { IrisSignalsList } from "@/components/iris/iris-signals-list";
 import { IrisStatsRow } from "@/components/iris/iris-stats";
+import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
 import { cn } from "@/lib/utils";
 import type { IrisRunningStateProps } from "@/types/iris";
 
@@ -137,6 +139,12 @@ export function IrisRunningState({
           {!(runsState.isPending || runsState.isError) && runs.length === 0 ? (
             <EmptyState
               description="Iris is watching your sources. The first report shows up here as soon as something is worth announcing."
+              preview={
+                <EmptyStateCardsPreview
+                  count={EMPTY_STATE_CARD_COUNT.run}
+                  variant="run"
+                />
+              }
               title="No runs yet"
             />
           ) : null}

@@ -8,6 +8,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -23,7 +25,6 @@ import {
   findSelectedBrandIdentity,
   readStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
-import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
 
 function subscribeToStorage(onStoreChange: () => void) {
   window.addEventListener("storage", onStoreChange);
@@ -94,7 +95,8 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
     : `${brandBasePath}?view=guidelines`;
 
   return (
-    <CollapsibleSidebarGroup label="Brand Identity">
+    <SidebarGroup>
+      <SidebarGroupLabel>Brand Identity</SidebarGroupLabel>
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton
@@ -105,7 +107,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
               !isGuidelinesView
             }
             render={
-              <Link href={companyInfoHref}>
+              <Link href={companyInfoHref} replace>
                 <HugeiconsIcon icon={CorporateIcon} />
                 <span>Company Info</span>
               </Link>
@@ -117,7 +119,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           <SidebarMenuButton
             isActive={isGuidelinesView}
             render={
-              <Link href={guidelinesHref}>
+              <Link href={guidelinesHref} replace>
                 <HugeiconsIcon icon={PaintBoardIcon} />
                 <span>Brand Guidelines</span>
               </Link>
@@ -129,7 +131,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           <SidebarMenuButton
             isActive={isReferencesView}
             render={
-              <Link href={referencesHref}>
+              <Link href={referencesHref} replace>
                 <HugeiconsIcon icon={Comment01Icon} />
                 <span>References</span>
                 {referenceCount > 0 ? (
@@ -146,7 +148,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           <SidebarMenuButton
             isActive={isSitemapView}
             render={
-              <Link href={sitemapHref}>
+              <Link href={sitemapHref} replace>
                 <HugeiconsIcon icon={GlobalIcon} />
                 <span>Sitemap</span>
                 {sitemapCount > 0 ? (
@@ -160,6 +162,6 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           />
         </SidebarMenuItem>
       </SidebarMenu>
-    </CollapsibleSidebarGroup>
+    </SidebarGroup>
   );
 }

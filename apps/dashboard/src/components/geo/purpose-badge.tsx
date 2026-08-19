@@ -13,7 +13,7 @@ interface PurposeBadgeProps {
 export function PurposeBadge({ category }: PurposeBadgeProps) {
   return (
     <Badge
-      className="rounded-sm font-mono text-[0.625rem] uppercase tracking-wide"
+      className="rounded-sm text-[0.6875rem] capitalize"
       title={AI_TRAFFIC_PURPOSE_DESCRIPTIONS[category] ?? category}
       variant="secondary"
     >

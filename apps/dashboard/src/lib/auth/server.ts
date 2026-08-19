@@ -1,484 +1,136 @@
-import { oauthProvider } from "@better-auth/oauth-provider";
-import { autumn } from "@notra/ai/billing/autumn";
-import { checkTeamMembersLimit } from "@notra/ai/billing/team-members";
-import {
-  TEAM_MEMBER_LIMIT_CHECK_UNAVAILABLE_MESSAGE,
-  TEAM_MEMBER_LIMIT_ERROR_MESSAGE,
-} from "@notra/ai/constants/billing-limits";
-import { seedSystemSkills } from "@notra/ai/skills/seed";
-import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError } from "better-auth/api";
-import { nextCookies } from "better-auth/next-js";
-import {
-  admin,
-  emailOTP,
-  haveIBeenPwned,
-  jwt,
-  lastLoginMethod,
-  organization,
-} from "better-auth/plugins";
-import { count, eq } from "drizzle-orm";
-import { isValid as isNotDisposableEmail } from "mailchecker";
+import { withAuth } from "@workos-inc/authkit-nextjs";
+import { eq } from "drizzle-orm";
+import { Effect } from "effect";
 import { cookies } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
-import { GITHUB_OAUTH_SCOPES } from "@/constants/github";
-import {
-  OAUTH_ACCEPTED_SCOPES,
-  OAUTH_ACCESS_TOKEN_TTL_SECONDS,
-  OAUTH_AUTH_CODE_TTL_MS,
-  OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES,
-  OAUTH_REFRESH_TOKEN_TTL_MS,
-  OAUTH_SUPPORTED_RESOURCES,
-  OAUTH_SUPPORTED_SCOPES,
-} from "@/constants/oauth";
-import {
-  sendInviteEmailAction,
-  sendResetPasswordAction,
-  sendVerificationEmailAction,
-  sendWelcomeEmailAction,
-} from "@/lib/email/actions";
-import { organizationSlugSchema } from "@/schemas/organization";
+import { isUserBanned } from "@/lib/auth/banned";
+import { AuthSessionError } from "@/lib/auth/errors";
+import { ensureLocalUser } from "@/lib/auth/sync";
+import type { AuthSessionData } from "@/types/auth/session";
 
-async function enforceTeamMembersLimit(organizationId?: string | null) {
-  const status = await checkTeamMembersLimit(organizationId);
+const readLastVisitedOrganizationSlug = Effect.fn(
+  "auth.session.readLastVisitedSlug"
+)(function* () {
+  const cookieStore = yield* Effect.tryPromise({
+    try: () => cookies(),
+    catch: (cause) =>
+      new AuthSessionError({ message: "Failed to read cookies", cause }),
+  });
 
-  if (status === "check-unavailable") {
-    throw new APIError("INTERNAL_SERVER_ERROR", {
-      message: TEAM_MEMBER_LIMIT_CHECK_UNAVAILABLE_MESSAGE,
+  const slug = cookieStore.get(LAST_VISITED_ORGANIZATION_COOKIE)?.value;
+  return slug?.trim() || null;
+});
+
+const resolveActiveOrganizationId = Effect.fn(
+  "auth.session.resolveActiveOrganization"
+)(function* (userId: string) {
+  const lastVisitedSlug = yield* readLastVisitedOrganizationSlug().pipe(
+    Effect.catch(() => Effect.succeed(null))
+  );
+
+  if (lastVisitedSlug) {
+    const organization = yield* Effect.tryPromise({
+      try: () =>
+        db.query.organizations.findFirst({
+          where: eq(organizations.slug, lastVisitedSlug),
+          columns: { id: true },
+          with: {
+            members: {
+              where: eq(members.userId, userId),
+              columns: { id: true },
+            },
+          },
+        }),
+      catch: (cause) =>
+        new AuthSessionError({
+          message: "Failed to resolve organization from cookie",
+          cause,
+        }),
     });
+
+    if (organization && organization.members.length > 0) {
+      return organization.id;
+    }
   }
 
-  if (status === "limit-reached") {
-    throw new APIError("BAD_REQUEST", {
-      message: TEAM_MEMBER_LIMIT_ERROR_MESSAGE,
-    });
-  }
-}
+  const membership = yield* Effect.tryPromise({
+    try: () =>
+      db.query.members.findFirst({
+        where: eq(members.userId, userId),
+        columns: { organizationId: true },
+        orderBy: (table, { desc }) => [desc(table.createdAt)],
+      }),
+    catch: (cause) =>
+      new AuthSessionError({
+        message: "Failed to resolve membership",
+        cause,
+      }),
+  });
 
-function validateAndNormalizeOrganizationSlug(org: {
-  slug?: unknown;
-  [key: string]: unknown;
-}) {
-  if (!org.slug || typeof org.slug !== "string") {
-    throw new Error("Organization slug is required");
-  }
+  return membership?.organizationId ?? null;
+});
 
-  const slug = org.slug.trim();
-  const validation = organizationSlugSchema.safeParse(slug);
+const buildAuthSession = Effect.fn("auth.session.build")(function* (
+  workosUser: Parameters<typeof ensureLocalUser>[0],
+  impersonatorEmail: string | null
+) {
+  const user = yield* ensureLocalUser(workosUser);
 
-  if (!validation.success) {
-    throw new Error(
-      validation.error.issues[0]?.message ?? "Invalid organization slug"
+  if (isUserBanned(user)) {
+    return yield* Effect.fail(
+      new AuthSessionError({
+        message: "User is banned",
+        cause: null,
+      })
     );
   }
 
-  return {
-    data: {
-      ...org,
-      slug: validation.data,
-      userId: undefined,
-      keepCurrentActiveOrganization: undefined,
+  const activeOrganizationId = yield* resolveActiveOrganizationId(user.id);
+
+  const session: AuthSessionData = {
+    session: {
+      userId: user.id,
+      activeOrganizationId,
+      impersonatedBy: impersonatorEmail,
     },
+    user,
   };
-}
 
-function buildSocialProviders() {
-  const providers: Record<
-    string,
-    { clientId: string; clientSecret: string; scope?: string[] }
-  > = {};
+  return session;
+});
 
-  if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
-    providers.google = {
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    };
+export async function getAuthSession(): Promise<AuthSessionData | null> {
+  let authResult: Awaited<ReturnType<typeof withAuth>>;
+
+  try {
+    authResult = await withAuth();
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Error reading AuthKit session", error);
+    return null;
   }
 
-  if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
-    providers.github = {
-      clientId: process.env.GITHUB_CLIENT_ID,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET,
-      scope: [...GITHUB_OAUTH_SCOPES],
-    };
+  if (!authResult.user) {
+    return null;
   }
 
-  if (Object.keys(providers).length === 0) {
-    return undefined;
-  }
-
-  return providers;
-}
-
-const socialProviders = buildSocialProviders();
-
-const authSecret = process.env.BETTER_AUTH_SECRET;
-if (!authSecret) {
-  throw new Error("BETTER_AUTH_SECRET must be defined");
-}
-
-function getOAuthConsentReferenceId(session: Record<string, unknown>) {
-  const organizationId = session.activeOrganizationId;
-  return typeof organizationId === "string" ? organizationId : undefined;
-}
-
-function getTrustedOrigins() {
-  return Array.from(
-    new Set(
-      [
-        "http://localhost:3000",
-        "https://app.usenotra.com",
-        process.env.BETTER_AUTH_URL,
-        process.env.NEXT_PUBLIC_APP_URL,
-        process.env.WORKFLOW_BASE_URL,
-      ].flatMap((origin) => {
-        if (!origin) {
-          return [];
-        }
-
-        try {
-          return [new URL(origin).origin];
-        } catch {
-          return [];
-        }
-      })
+  return await Effect.runPromise(
+    buildAuthSession(
+      authResult.user,
+      authResult.impersonator?.email ?? null
+    ).pipe(
+      Effect.catch((error) =>
+        Effect.logWarning("Failed to build auth session").pipe(
+          Effect.annotateLogs({
+            workosUserId: authResult.user?.id,
+            error: error.message,
+          }),
+          Effect.as(null)
+        )
+      )
     )
   );
 }
-
-async function getActiveOrganizationId(
-  userId: string,
-  cookieHeader?: string | null
-): Promise<string | undefined> {
-  try {
-    let lastVisitedSlug: string | undefined;
-
-    try {
-      const cookieStore = await cookies();
-      lastVisitedSlug = cookieStore.get(
-        LAST_VISITED_ORGANIZATION_COOKIE
-      )?.value;
-    } catch {
-      if (cookieHeader) {
-        const parsedCookies = Object.fromEntries(
-          cookieHeader.split(";").map((c) => {
-            const [key, ...v] = c.trim().split("=");
-            return [key, v.join("=")];
-          })
-        );
-        lastVisitedSlug = parsedCookies[LAST_VISITED_ORGANIZATION_COOKIE];
-      }
-    }
-
-    if (
-      lastVisitedSlug &&
-      typeof lastVisitedSlug === "string" &&
-      lastVisitedSlug.trim()
-    ) {
-      const org = await db.query.organizations.findFirst({
-        where: eq(organizations.slug, lastVisitedSlug.trim()),
-        columns: { id: true },
-        with: {
-          members: {
-            where: eq(members.userId, userId),
-            columns: { id: true },
-          },
-        },
-      });
-
-      if (org && org.members.length > 0) {
-        return org.id;
-      }
-    }
-
-    const membership = await db.query.members.findFirst({
-      where: eq(members.userId, userId),
-      columns: { organizationId: true, role: true },
-      orderBy: (m, { desc }) => [desc(m.createdAt)],
-    });
-
-    if (membership) {
-      return membership.organizationId;
-    }
-
-    return;
-  } catch (error) {
-    console.error("Error getting active organization ID:", error);
-    return;
-  }
-}
-
-export const auth = betterAuth({
-  secret: authSecret,
-  database: drizzleAdapter(db, {
-    provider: "pg",
-    usePlural: true,
-  }),
-  experimental: {
-    joins: true,
-  },
-  plugins: [
-    admin(),
-    jwt({
-      schema: {
-        jwks: {
-          modelName: "jwk",
-        },
-      },
-    }),
-    emailOTP({
-      otpLength: 6,
-      expiresIn: 300,
-      sendVerificationOTP: async ({ email, otp, type }) => {
-        if (type === "forget-password" || type === "change-email") {
-          return;
-        }
-        sendVerificationEmailAction({
-          userEmail: email,
-          otp,
-          type,
-        });
-      },
-    }),
-    organization({
-      sendInvitationEmail: async (data) => {
-        const inviteLink = `${process.env.BETTER_AUTH_URL}/invitation/${data.id}`;
-        await sendInviteEmailAction({
-          inviteeEmail: data.email,
-          inviterName: data.inviter.user.name,
-          inviterEmail: data.inviter.user.email,
-          workspaceName: data.organization.name,
-          inviteLink,
-        });
-      },
-      organizationHooks: {
-        beforeCreateOrganization: async ({ organization }) => {
-          return validateAndNormalizeOrganizationSlug(organization);
-        },
-        afterCreateOrganization: async ({ organization }) => {
-          try {
-            await seedSystemSkills(organization.id);
-          } catch (error) {
-            console.error(
-              "[Skills] Failed to seed system skills for new org:",
-              {
-                organizationId: organization.id,
-                error,
-              }
-            );
-          }
-
-          if (!autumn) {
-            console.warn(
-              "[Autumn] Skipping customer creation - AUTUMN_SECRET_KEY not configured"
-            );
-            return;
-          }
-          try {
-            await autumn.customers.getOrCreate({
-              customerId: organization.id,
-              name: organization.name,
-              metadata: {
-                orgId: organization.id,
-              },
-            });
-          } catch (error) {
-            console.error("[Autumn] Failed to create customer for new org:", {
-              organizationId: organization.id,
-              error,
-            });
-          }
-        },
-        beforeCreateInvitation: async ({ invitation, organization }) => {
-          if (!isNotDisposableEmail(invitation.email)) {
-            throw new APIError("BAD_REQUEST", {
-              message: "Disposable email addresses are not allowed",
-            });
-          }
-          await enforceTeamMembersLimit(organization.id);
-        },
-        beforeAddMember: async ({ organization }) => {
-          const [result] = await db
-            .select({ value: count() })
-            .from(members)
-            .where(eq(members.organizationId, organization.id));
-
-          if (result && result.value > 0) {
-            await enforceTeamMembersLimit(organization.id);
-          }
-        },
-        beforeUpdateOrganization: async ({ organization }) => {
-          if (!organization.slug) {
-            return;
-          }
-
-          return validateAndNormalizeOrganizationSlug(organization);
-        },
-      },
-    }),
-    oauthProvider({
-      loginPage: "/login",
-      consentPage: "/agent/auth/authorize",
-      scopes: [...OAUTH_ACCEPTED_SCOPES],
-      validAudiences: [...OAUTH_SUPPORTED_RESOURCES],
-      grantTypes: ["authorization_code", "refresh_token"],
-      accessTokenExpiresIn: OAUTH_ACCESS_TOKEN_TTL_SECONDS,
-      codeExpiresIn: OAUTH_AUTH_CODE_TTL_MS / 1000,
-      refreshTokenExpiresIn: OAUTH_REFRESH_TOKEN_TTL_MS / 1000,
-      allowPublicClientPrelogin: true,
-      allowDynamicClientRegistration: true,
-      allowUnauthenticatedClientRegistration: false,
-      clientRegistrationDefaultScopes: [
-        ...OAUTH_CLIENT_REGISTRATION_DEFAULT_SCOPES,
-      ],
-      clientRegistrationAllowedScopes: [...OAUTH_SUPPORTED_SCOPES],
-      customAccessTokenClaims: ({ referenceId }) =>
-        referenceId ? { organizationId: referenceId } : {},
-      silenceWarnings: {
-        oauthAuthServerConfig: true,
-      },
-      postLogin: {
-        page: "/callback",
-        consentReferenceId: ({ session }) =>
-          getOAuthConsentReferenceId(session),
-        shouldRedirect: () => false,
-      },
-    }),
-    lastLoginMethod(),
-    haveIBeenPwned(),
-    nextCookies(),
-  ],
-  secondaryStorage: redis
-    ? {
-        get: async (key) => await redis?.get(key),
-        set: async (key, value, ttl) => {
-          if (ttl) {
-            await redis?.set(key, value, { ex: ttl });
-          } else {
-            await redis?.set(key, value);
-          }
-        },
-        delete: async (key) => {
-          await redis?.del(key);
-        },
-      }
-    : undefined,
-  rateLimit: {
-    enabled: true,
-    window: 60,
-    max: 100,
-    storage: redis ? "secondary-storage" : "memory",
-    customRules: {
-      "/sign-in/email": {
-        window: 60,
-        max: 5,
-      },
-      "/sign-up/email": {
-        window: 60,
-        max: 5,
-      },
-      "/forget-password": {
-        window: 60,
-        max: 3,
-      },
-      "/reset-password/*": {
-        window: 60,
-        max: 5,
-      },
-      "/email-otp/*": {
-        window: 60,
-        max: 5,
-      },
-      "/organization/invite-member": {
-        window: 60,
-        max: 5,
-      },
-    },
-  },
-  trustedOrigins: getTrustedOrigins(),
-  session: {
-    storeSessionInDatabase: true,
-    preserveSessionInDatabase: true,
-  },
-  baseURL: process.env.BETTER_AUTH_URL,
-  emailAndPassword: {
-    enabled: true,
-    sendResetPassword: async ({ user, url }) => {
-      // Not awaited to avoid timing attacks
-      sendResetPasswordAction({
-        userEmail: user.email,
-        resetLink: url,
-      });
-    },
-    resetPasswordTokenExpiresIn: 3600,
-    onPasswordReset: async ({ user }) => {
-      const { internalAdapter } = await auth.$context;
-      await internalAdapter.deleteUserSessions(user.id);
-    },
-  },
-  account: {
-    accountLinking: {
-      enabled: true,
-      trustedProviders: Object.keys(socialProviders ?? {}),
-      allowDifferentEmails: true,
-    },
-  },
-  ...(socialProviders && { socialProviders }),
-  databaseHooks: {
-    user: {
-      create: {
-        before: async (user) => {
-          if (!isNotDisposableEmail(user.email)) {
-            throw new APIError("BAD_REQUEST", {
-              message: "Disposable email addresses are not allowed",
-            });
-          }
-        },
-        after: async (user) => {
-          sendWelcomeEmailAction({ userEmail: user.email ?? "" });
-        },
-      },
-    },
-    session: {
-      create: {
-        before: async (session, ctx) => {
-          const cookieHeader = ctx?.headers?.get("cookie");
-          const activeOrgId = await getActiveOrganizationId(
-            session.userId,
-            cookieHeader
-          );
-
-          if (activeOrgId) {
-            return {
-              data: {
-                ...session,
-                activeOrganizationId: activeOrgId,
-              },
-            };
-          }
-        },
-      },
-    },
-  },
-  user: {
-    deleteUser: {
-      enabled: true,
-    },
-    additionalFields: {
-      hidePersonalData: {
-        type: "boolean",
-        required: false,
-        defaultValue: false,
-      },
-      showAgentStats: {
-        type: "boolean",
-        required: false,
-        defaultValue: false,
-      },
-    },
-  },
-});

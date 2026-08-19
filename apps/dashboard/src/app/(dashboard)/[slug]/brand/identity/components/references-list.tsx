@@ -1,9 +1,14 @@
 "use client";
 
+import { Add01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
+import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import {
   useDeleteReference,
@@ -104,12 +109,20 @@ export function ReferencesList({
   return (
     <div className="space-y-4">
       {references.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-6 text-center">
-          <p className="text-muted-foreground text-sm">
-            No references yet. Add a tweet to help the AI match your writing
-            style.
-          </p>
-        </div>
+        <EmptyState
+          actionIcon={<HugeiconsIcon className="size-4" icon={Add01Icon} />}
+          actionLabel="Add Reference"
+          description="Add a tweet or writing sample so the AI can match your style."
+          onActionClick={() => onDialogOpenChange(true)}
+          preview={
+            <EmptyStateCardsPreview
+              columns={2}
+              count={EMPTY_STATE_CARD_COUNT.reference}
+              variant="reference"
+            />
+          }
+          title="No references yet"
+        />
       ) : (
         <div className="columns-1 gap-4 space-y-4 sm:columns-2">
           {references.map((ref) => (

@@ -1,59 +1,62 @@
 "use client";
 
-import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context";
-import { PALETTE, rgb } from "@notra/ui/components/dither-kit/palette";
-import { Pie } from "@notra/ui/components/dither-kit/pie";
-import { PieChart } from "@notra/ui/components/dither-kit/pie-chart";
-import { Tooltip } from "@notra/ui/components/dither-kit/tooltip";
 import { useMemo } from "react";
+import { ChartColorScope } from "@/components/charts/chart-color-scope";
+import { EChartsPieChart } from "@/components/evilcharts/charts/echarts-pie-chart";
+import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
 import {
   InstrumentEmpty,
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
-import { ACCOUNT_SERIES_COLORS } from "@/constants/analytics";
+import { DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/constants/charts";
 import { useLeaderboard } from "@/lib/hooks/use-social-analytics";
+import type {
+  ImpressionsShareCardProps,
+  ImpressionsSharePieSlice,
+  ImpressionsShareRow,
+} from "@/types/analytics";
+import { accountSeriesKey } from "@/utils/analytics-charts";
+import { seriesColors } from "@/utils/chart-colors";
+import { chartKey } from "@/utils/chart-keys";
 
-interface ImpressionsShareCardProps {
-  organizationId: string;
-}
-
-interface ShareRow {
-  account: string;
-  impressions: number;
-}
-
-const DONUT_INNER_RADIUS = 0.55;
 const WINDOW_DAYS = 30;
 const PERCENT = 100;
 
 export function ImpressionsShareCard({
   organizationId,
+  colorForKey,
 }: ImpressionsShareCardProps) {
   const { data } = useLeaderboard(organizationId, WINDOW_DAYS);
 
   const { rows, config, total, caption } = useMemo(() => {
-    const shareRows: ShareRow[] = (data?.entries ?? [])
+    const shareRows = (data?.entries ?? [])
       .filter((entry) => (entry.impressions ?? 0) > 0)
       .map((entry) => ({
         account: `@${entry.username}`,
         impressions: entry.impressions ?? 0,
+        seriesKey: accountSeriesKey(entry.provider, entry.providerAccountId),
       }));
+    const sliceRows: ImpressionsSharePieSlice[] = shareRows.map(
+      (row, index) => ({
+        ...row,
+        slice: chartKey(`${row.account}-${index}`),
+      })
+    );
     const shareConfig: ChartConfig = {};
-    shareRows.forEach((row, index) => {
-      shareConfig[row.account] = {
+    for (const row of sliceRows) {
+      shareConfig[row.slice] = {
         label: row.account,
-        color:
-          ACCOUNT_SERIES_COLORS[index % ACCOUNT_SERIES_COLORS.length] ?? "blue",
+        colors: seriesColors(colorForKey(row.seriesKey)),
       };
-    });
-    const shareTotal = shareRows.reduce((sum, row) => sum + row.impressions, 0);
-    const top = shareRows.reduce<ShareRow | null>(
+    }
+    const shareTotal = sliceRows.reduce((sum, row) => sum + row.impressions, 0);
+    const top = sliceRows.reduce<ImpressionsShareRow | null>(
       (best, row) =>
         best === null || row.impressions > best.impressions ? row : best,
       null
     );
     return {
-      rows: shareRows,
+      rows: sliceRows,
       config: shareConfig,
       total: shareTotal,
       caption:
@@ -64,7 +67,7 @@ export function ImpressionsShareCard({
   }, [data?.entries]);
 
   return (
-    <InstrumentModule eyebrow="Impressions share">
+    <InstrumentModule eyebrow="Impressions share" variant="panel">
       {rows.length === 0 ? (
         <InstrumentEmpty
           className="h-56"
@@ -74,30 +77,31 @@ export function ImpressionsShareCard({
       ) : (
         <div className="flex h-full flex-col">
           <div className="flex flex-1 items-center gap-4">
-            <PieChart
+            <EChartsPieChart
               className="h-56 w-1/2 min-w-0"
               config={config}
               data={rows}
               dataKey="impressions"
-              innerRadius={DONUT_INNER_RADIUS}
-              nameKey="account"
+              nameKey="slice"
             >
-              <Pie />
-              <Tooltip inlineHeading />
-            </PieChart>
-            <div className="min-w-0 flex-1 space-y-1.5">
+              <EChartsPieChart.Pie
+                innerRadius={DONUT_INNER_RADIUS}
+                outerRadius={DONUT_OUTER_RADIUS}
+              />
+              <EChartsPieChart.Tooltip />
+            </EChartsPieChart>
+            <ChartColorScope
+              className="min-w-0 flex-1 space-y-1.5"
+              config={config}
+            >
               {rows.map((row) => (
                 <div
                   className="flex items-center gap-1.5 font-mono text-xs"
-                  key={row.account}
+                  key={row.slice}
                 >
                   <span
                     className="size-2 shrink-0 rounded-[0.0625rem]"
-                    style={{
-                      backgroundColor: rgb(
-                        PALETTE[config[row.account]?.color ?? "grey"].fill
-                      ),
-                    }}
+                    style={{ backgroundColor: `var(--color-${row.slice}-0)` }}
                   />
                   <span className="min-w-0 flex-1 truncate text-muted-foreground">
                     {row.account}
@@ -109,7 +113,7 @@ export function ImpressionsShareCard({
                   </span>
                 </div>
               ))}
-            </div>
+            </ChartColorScope>
           </div>
           {caption && (
             <p className="mt-2 truncate text-[0.6875rem] text-muted-foreground">

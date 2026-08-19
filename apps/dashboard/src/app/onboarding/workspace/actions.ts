@@ -10,7 +10,7 @@ import { headers } from "next/headers";
 import { after } from "next/server";
 import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { auth } from "@/lib/auth/server";
+import { getAuthSession } from "@/lib/auth/server";
 import { queueBrandAnalysisForOnboarding } from "@/lib/brand-analysis";
 import {
   resolveCompanyDomain,
@@ -104,7 +104,7 @@ export async function triggerOnboardingBrandAnalysis(
   rawInput: OnboardingBrandAnalysisInput
 ) {
   const input = onboardingBrandAnalysisSchema.parse(rawInput);
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getAuthSession();
 
   if (!session?.user) {
     throw new Error("Unauthorized");
@@ -169,7 +169,7 @@ export async function triggerOnboardingAgentSetup(
   rawInput: TriggerOnboardingAgentSetupInput
 ): Promise<TriggerOnboardingAgentSetupResult> {
   const input = triggerOnboardingAgentSetupSchema.parse(rawInput);
-  const session = await auth.api.getSession({ headers: await headers() });
+  const session = await getAuthSession();
 
   if (!session?.user) {
     throw new Error("Unauthorized");

@@ -101,7 +101,7 @@ export function VoiceSelector({
 
           return (
             <button
-              className={`group flex min-w-40 shrink-0 cursor-pointer gap-2 rounded-lg border px-4 py-3 text-left transition-colors ${
+              className={`group flex min-w-40 shrink-0 cursor-pointer items-center gap-2.5 rounded-lg border py-2.5 pr-2 pl-3 text-left transition-colors ${
                 isActive
                   ? "border-primary bg-primary/5"
                   : "border-border hover:border-primary/40"
@@ -111,7 +111,7 @@ export function VoiceSelector({
               type="button"
             >
               <Avatar
-                className="size-8 rounded-full after:rounded-full"
+                className="size-8 shrink-0 rounded-full after:rounded-full"
                 size="sm"
               >
                 <AvatarImage src={getBrandFaviconUrl(voice.websiteUrl)} />
@@ -120,118 +120,113 @@ export function VoiceSelector({
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  {hasTooltipInfo ? (
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <span className="block cursor-help truncate font-medium text-sm leading-tight">
-                            {truncateText(voice.name, IDENTITY_NAME_MAX_LENGTH)}
-                          </span>
-                        }
-                      />
-                      <TooltipContent className="max-w-64 space-y-1">
-                        {voice.toneProfile && (
-                          <p>Tone Profile: {voice.toneProfile}</p>
-                        )}
-                        {voice.language && <p>Language: {voice.language}</p>}
-                        {voice.isDefault && (
-                          <p>
-                            Default brand identity used when no specific
-                            identity is selected.
-                          </p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : (
-                    <span className="block truncate font-medium text-sm leading-tight">
-                      {truncateText(voice.name, IDENTITY_NAME_MAX_LENGTH)}
-                    </span>
-                  )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      className={`ml-auto flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-accent ${
-                        isActive
-                          ? "opacity-100"
-                          : "opacity-0 group-hover:opacity-100"
-                      }`}
-                      disabled={isDeleting || isSettingDefault || isReanalyzing}
-                      nativeButton={false}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (!isActive) {
-                          onSelect(voice.id);
-                        }
-                      }}
-                      render={<span />}
-                    >
-                      <HugeiconsIcon
-                        className="size-3.5 text-muted-foreground"
-                        icon={MoreVerticalIcon}
-                      />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-64">
-                      <DropdownMenuItem
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelect(voice.id);
-                          setIdentityName(voice.name);
-                          setEditDialogOpen(true);
-                        }}
-                      >
-                        <HugeiconsIcon className="size-4" icon={Edit02Icon} />
-                        Edit identity name
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={!voice.websiteUrl?.trim() || isReanalyzing}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelect(voice.id);
-                          if (voice.websiteUrl) {
-                            onReanalyze(voice.websiteUrl);
-                          }
-                        }}
-                      >
-                        <HugeiconsIcon
-                          className="size-4"
-                          icon={Refresh01Icon}
-                        />
-                        Re-analyze
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        disabled={voice.isDefault}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelect(voice.id);
-                          onSetDefault();
-                        }}
-                      >
-                        <HugeiconsIcon className="size-4" icon={StarIcon} />
-                        {voice.isDefault
-                          ? "Already default identity"
-                          : "Set as default identity"}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        disabled={voice.isDefault}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onRequestDelete(voice.id);
-                        }}
-                        variant="destructive"
-                      >
-                        <HugeiconsIcon className="size-4" icon={Delete02Icon} />
-                        Delete identity
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-                {voice.websiteUrl && (
-                  <p className="truncate text-muted-foreground text-xs italic">
+                {hasTooltipInfo ? (
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <span className="block cursor-help truncate font-medium text-sm leading-5">
+                          {truncateText(voice.name, IDENTITY_NAME_MAX_LENGTH)}
+                        </span>
+                      }
+                    />
+                    <TooltipContent className="max-w-64 space-y-1">
+                      {voice.toneProfile && (
+                        <p>Tone Profile: {voice.toneProfile}</p>
+                      )}
+                      {voice.language && <p>Language: {voice.language}</p>}
+                      {voice.isDefault && (
+                        <p>
+                          Default brand identity used when no specific identity
+                          is selected.
+                        </p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  <span className="block truncate font-medium text-sm leading-5">
+                    {truncateText(voice.name, IDENTITY_NAME_MAX_LENGTH)}
+                  </span>
+                )}
+                {voice.websiteUrl ? (
+                  <p className="truncate text-muted-foreground text-xs leading-4">
                     {getWebsiteDisplayText(voice.websiteUrl)}
                   </p>
-                )}
+                ) : null}
               </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={`flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-accent ${
+                    isActive
+                      ? "opacity-100"
+                      : "opacity-0 group-hover:opacity-100"
+                  }`}
+                  disabled={isDeleting || isSettingDefault || isReanalyzing}
+                  nativeButton={false}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (!isActive) {
+                      onSelect(voice.id);
+                    }
+                  }}
+                  render={<span />}
+                >
+                  <HugeiconsIcon
+                    className="size-3.5 text-muted-foreground"
+                    icon={MoreVerticalIcon}
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect(voice.id);
+                      setIdentityName(voice.name);
+                      setEditDialogOpen(true);
+                    }}
+                  >
+                    <HugeiconsIcon className="size-4" icon={Edit02Icon} />
+                    Edit identity name
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={!voice.websiteUrl?.trim() || isReanalyzing}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect(voice.id);
+                      if (voice.websiteUrl) {
+                        onReanalyze(voice.websiteUrl);
+                      }
+                    }}
+                  >
+                    <HugeiconsIcon className="size-4" icon={Refresh01Icon} />
+                    Re-analyze
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    disabled={voice.isDefault}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect(voice.id);
+                      onSetDefault();
+                    }}
+                  >
+                    <HugeiconsIcon className="size-4" icon={StarIcon} />
+                    {voice.isDefault
+                      ? "Already default identity"
+                      : "Set as default identity"}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    disabled={voice.isDefault}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRequestDelete(voice.id);
+                    }}
+                    variant="destructive"
+                  >
+                    <HugeiconsIcon className="size-4" icon={Delete02Icon} />
+                    Delete identity
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </button>
           );
         })}

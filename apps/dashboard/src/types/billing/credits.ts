@@ -9,6 +9,11 @@ export const CREDIT_RANGE_LABELS: Record<CreditRangeOption, string> = {
   "90d": "90 days",
 };
 
+export interface CreditBalanceMenuItemProps {
+  className?: string;
+  onOpenTopup: () => void;
+}
+
 export type ListEventsRow = NonNullable<
   Awaited<ReturnType<IAutumnClient["listEvents"]>>["list"]
 >[number];

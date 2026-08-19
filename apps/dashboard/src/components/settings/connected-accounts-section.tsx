@@ -10,6 +10,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
+import { isNextRedirectError } from "@/lib/auth/redirect-error";
+import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import type { ConnectedAccountsSectionProps } from "@/types/settings/account";
 
@@ -24,17 +26,18 @@ export function ConnectedAccountsSection({
 
   const canUnlink = accounts.length > 1;
 
-  async function handleLinkAccount(provider: "google" | "github") {
+  function handleLinkAccount(provider: "google" | "github") {
     setLoadingProvider(provider);
-    try {
-      await authClient.linkSocial({
-        provider,
-        callbackURL: window.location.pathname,
-      });
-    } catch {
-      toast.error(`Failed to link ${provider} account`);
-    }
-    setLoadingProvider(null);
+    startSocialSignInAction({
+      provider,
+      returnTo: window.location.pathname,
+    }).catch((error) => {
+      if (isNextRedirectError(error)) {
+        return;
+      }
+      setLoadingProvider(null);
+      toast.error("Could not start the connection. Please try again.");
+    });
   }
 
   async function handleUnlinkAccount(provider: "google" | "github") {

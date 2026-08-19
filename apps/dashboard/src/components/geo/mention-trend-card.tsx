@@ -1,46 +1,42 @@
 "use client";
 
-import { Line } from "@notra/ui/components/dither-kit/area";
-import { LineChart } from "@notra/ui/components/dither-kit/area-chart";
-import type { ChartConfig } from "@notra/ui/components/dither-kit/chart-context";
-import { Grid } from "@notra/ui/components/dither-kit/grid";
-import { Tooltip } from "@notra/ui/components/dither-kit/tooltip";
-import { XAxis } from "@notra/ui/components/dither-kit/x-axis";
-import { YAxis } from "@notra/ui/components/dither-kit/y-axis";
 import { useMemo } from "react";
+import { EChartsLineChart } from "@/components/evilcharts/charts/echarts-line-chart";
+import type { ChartConfig } from "@/components/evilcharts/ui/echarts-chart";
 import {
   InstrumentEmpty,
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
-import { ACCOUNT_SERIES_COLORS } from "@/constants/analytics";
 import { GEO_ENGINE_LABELS, GEO_TREND_MIN_DAYS } from "@/constants/geo";
 import type { MentionTrendCardProps } from "@/types/geo";
+import { accountSeriesColors } from "@/utils/chart-colors";
+import { chartKey } from "@/utils/chart-keys";
 import { buildMentionRateRows } from "@/utils/geo-charts";
 
-export function MentionTrendCard({
-  hero = false,
-  points,
-}: MentionTrendCardProps) {
+export function MentionTrendCard({ points }: MentionTrendCardProps) {
   const { rows, engines } = useMemo(
     () => buildMentionRateRows(points),
     [points]
   );
 
+  const series = useMemo(
+    () => engines.map((engine) => ({ key: chartKey(engine), engine })),
+    [engines]
+  );
+
   const config = useMemo(() => {
     const trendConfig: ChartConfig = {};
-    engines.forEach((engine, index) => {
-      trendConfig[engine] = {
-        label: GEO_ENGINE_LABELS[engine] ?? engine,
-        color:
-          ACCOUNT_SERIES_COLORS[index % ACCOUNT_SERIES_COLORS.length] ??
-          "purple",
+    for (const [index, entry] of series.entries()) {
+      trendConfig[entry.key] = {
+        label: GEO_ENGINE_LABELS[entry.engine] ?? entry.engine,
+        colors: accountSeriesColors(index),
       };
-    });
+    }
     return trendConfig;
-  }, [engines]);
+  }, [series]);
 
   return (
-    <InstrumentModule eyebrow="Mention rate trend" readout="daily · per engine">
+    <InstrumentModule eyebrow="Mention rate trend">
       {rows.length < GEO_TREND_MIN_DAYS ? (
         <InstrumentEmpty
           className="h-64"
@@ -48,20 +44,27 @@ export function MentionTrendCard({
           seed="Mention rate trend"
         />
       ) : (
-        <LineChart
-          bloom={hero ? "low" : "off"}
+        <EChartsLineChart
           className="h-64 w-full"
           config={config}
+          curveType="monotone"
           data={rows}
+          enableHoverHighlight
+          xDataKey="day"
         >
-          <Grid />
-          <XAxis dataKey="day" />
-          <YAxis />
-          {engines.map((engine) => (
-            <Line dataKey={engine} key={engine} />
+          <EChartsLineChart.Grid />
+          <EChartsLineChart.XAxis dataKey="day" />
+          <EChartsLineChart.YAxis tickFormatter={(value) => `${value}%`} />
+          {series.map((entry) => (
+            <EChartsLineChart.Line
+              dataKey={entry.key}
+              enableBufferLine
+              key={entry.key}
+              strokeVariant="solid"
+            />
           ))}
-          <Tooltip labelKey="day" valueFormatter={(value) => `${value}%`} />
-        </LineChart>
+          <EChartsLineChart.Tooltip />
+        </EChartsLineChart>
       )}
     </InstrumentModule>
   );

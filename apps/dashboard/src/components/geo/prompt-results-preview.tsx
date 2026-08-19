@@ -1,69 +1,26 @@
 "use client";
 
 import { Badge } from "@notra/ui/components/ui/badge";
-import type { ReactNode } from "react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
 import { PresenceBadge } from "@/components/geo/presence-badge";
+import { Twemoji } from "@/components/geo/twemoji";
 import {
   InstrumentEmpty,
-  InstrumentModule,
+  InstrumentSection,
 } from "@/components/instrument/instrument-module";
+import { Table, type TableColumn } from "@/components/motion/table";
 import { GEO_LANGUAGE_FLAGS } from "@/constants/geo";
-import type { GeoPresenceStatus, GeoPromptResult } from "@/types/geo";
-import { classifyPromptPresence } from "@/utils/geo-presence";
-
-interface PromptResultsPreviewProps {
-  results: GeoPromptResult[];
-  limit?: number;
-  action?: ReactNode;
-  languages?: string[];
-}
-
-interface PromptSummary {
-  promptId: string;
-  prompt: string;
-  mentioned: number;
-  total: number;
-  bestPosition: number | null;
-  presence: GeoPresenceStatus | null;
-  results: GeoPromptResult[];
-}
+import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import type { GeoPromptSummary, PromptResultsPreviewProps } from "@/types/geo";
+import { summarizePromptResults } from "@/utils/geo-presence";
+import { tableHeightFor } from "@/utils/table";
 
 const DEFAULT_LIMIT = 3;
-
-function summarize(results: GeoPromptResult[]): PromptSummary[] {
-  const groups = new Map<string, PromptSummary>();
-  for (const result of results) {
-    const group = groups.get(result.promptId) ?? {
-      promptId: result.promptId,
-      prompt: result.prompt,
-      mentioned: 0,
-      total: 0,
-      bestPosition: null,
-      presence: null,
-      results: [],
-    };
-    group.results.push(result);
-    group.total += 1;
-    if (result.mentioned) {
-      group.mentioned += 1;
-    }
-    if (
-      result.position !== null &&
-      (group.bestPosition === null || result.position < group.bestPosition)
-    ) {
-      group.bestPosition = result.position;
-    }
-    groups.set(result.promptId, group);
-  }
-  const summaries = [...groups.values()].map((group) => ({
-    ...group,
-    presence: classifyPromptPresence(group.results),
-  }));
-  return summaries.sort(
-    (a, b) => b.mentioned / b.total - a.mentioned / a.total
-  );
-}
 
 export function PromptResultsPreview({
   results,
@@ -71,55 +28,122 @@ export function PromptResultsPreview({
   action,
   languages = [],
 }: PromptResultsPreviewProps) {
-  const summaries = useMemo(() => summarize(results), [results]);
+  const summaries = useMemo(() => summarizePromptResults(results), [results]);
+  const rows = useMemo(() => summaries.slice(0, limit), [summaries, limit]);
+
+  const columns = useMemo<TableColumn<GeoPromptSummary>[]>(() => {
+    const base: TableColumn<GeoPromptSummary>[] = [
+      {
+        key: "prompt",
+        header: "Prompt",
+        width: "2.4fr",
+        sortable: true,
+        cell: (row) => (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <span className="block truncate text-sm">{row.prompt}</span>
+              }
+            />
+            <TooltipContent className="max-w-sm">{row.prompt}</TooltipContent>
+          </Tooltip>
+        ),
+      },
+    ];
+
+    if (languages.length > 0) {
+      base.push({
+        key: "languages",
+        header: "Languages",
+        width: "7.5rem",
+        cell: () => (
+          <span className="flex items-center gap-0.5 text-xs">
+            {languages.map((language) => (
+              <Twemoji
+                className="size-4 shrink-0"
+                emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+                key={language}
+                label={`Also scanned in ${language}`}
+              />
+            ))}
+          </span>
+        ),
+      });
+    }
+
+    base.push(
+      {
+        key: "presence",
+        header: "Presence",
+        width: "9.375rem",
+        sortable: true,
+        cell: (row) => <PresenceBadge status={row.presence} />,
+        sortValue: (row) => row.presence ?? "",
+      },
+      {
+        key: "bestPosition",
+        header: "Best position",
+        width: "8.125rem",
+        align: "right",
+        sortable: true,
+        cell: (row) =>
+          row.bestPosition === null ? (
+            <span className="text-muted-foreground text-xs">-</span>
+          ) : (
+            <Badge className="rounded-sm tabular-nums" variant="outline">
+              #{row.bestPosition}
+            </Badge>
+          ),
+        sortValue: (row) => row.bestPosition ?? Number.MAX_SAFE_INTEGER,
+      },
+      {
+        key: "engines",
+        header: "Engines",
+        width: "6.875rem",
+        align: "right",
+        sortable: true,
+        cell: (row) => (
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {row.mentioned}/{row.total}
+          </span>
+        ),
+        sortValue: (row) => row.mentioned / row.total,
+      }
+    );
+
+    return base;
+  }, [languages]);
 
   return (
-    <InstrumentModule
+    <InstrumentSection
       action={action}
       eyebrow="Winning prompts"
       readout="best surfacing first"
     >
-      {summaries.length === 0 ? (
+      {rows.length === 0 ? (
         <InstrumentEmpty
           className="h-24"
           message="Run a scan to see which prompts surface you"
           seed="Winning prompts"
         />
       ) : (
-        <div className="divide-y divide-border">
-          {summaries.slice(0, limit).map((summary) => (
-            <div
-              className="flex items-center gap-3 py-2.5"
-              key={summary.promptId}
-            >
-              <p className="min-w-0 flex-1 truncate text-sm">
-                {summary.prompt}
-              </p>
-              {languages.length > 0 && (
-                <span className="flex shrink-0 items-center gap-0.5 text-xs">
-                  {languages.map((language) => (
-                    <span key={language} title={`Also scanned in ${language}`}>
-                      {GEO_LANGUAGE_FLAGS[language]}
-                    </span>
-                  ))}
-                </span>
-              )}
-              <PresenceBadge status={summary.presence} />
-              {summary.bestPosition !== null && (
-                <Badge
-                  className="rounded-sm font-mono tabular-nums"
-                  variant="outline"
-                >
-                  #{summary.bestPosition}
-                </Badge>
-              )}
-              <span className="shrink-0 font-mono text-muted-foreground text-xs tabular-nums">
-                {summary.mentioned}/{summary.total} engines
-              </span>
-            </div>
-          ))}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
+            <span>{rows.length.toLocaleString()} prompts</span>
+            <span>{summaries.length.toLocaleString()} tracked</span>
+          </div>
+          <Table
+            className="rounded-2xl"
+            columns={columns}
+            data={rows}
+            emptyState="Run a scan to see which prompts surface you"
+            getRowId={(row) => row.promptId}
+            height={tableHeightFor(rows.length)}
+            resizable
+            rowHeight={TABLE_ROW_HEIGHT}
+          />
         </div>
       )}
-    </InstrumentModule>
+    </InstrumentSection>
   );
 }

@@ -21,6 +21,11 @@
     "src/schemas/**/*.ts": ["exports", "types"],
     "src/types/**/*.ts": ["exports", "types"],
     "src/utils/**/*.ts": ["exports", "types"],
-    "src/utils/**/*.tsx": ["exports", "types"]
+    "src/utils/**/*.tsx": ["exports", "types"],
+    "src/components/charts/**/*.{ts,tsx}": ["exports", "types"],
+    "src/components/evilcharts/**/*.{ts,tsx}": ["exports", "types"],
+    "src/components/motion/**/*.{ts,tsx}": ["exports", "types"],
+    "src/lib/ease.ts": ["exports", "types"],
+    "src/lib/geo-ingest/**/*.ts": ["exports", "types"]
   }
 }

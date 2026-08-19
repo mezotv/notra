@@ -68,6 +68,15 @@
   --shadow-2xl: 0px 4px 10px 0px hsl(0 0% 0% / 0.25);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+  --sh-class: oklch(0.55 0.13 265);
+  --sh-identifier: oklch(0.42 0.02 265);
+  --sh-sign: oklch(0.62 0.01 265);
+  --sh-property: oklch(0.55 0.15 25);
+  --sh-entity: oklch(0.55 0.13 265);
+  --sh-jsxliterals: oklch(0.52 0.16 300);
+  --sh-string: oklch(0.52 0.12 155);
+  --sh-keyword: oklch(0.55 0.19 320);
+  --sh-comment: oklch(0.65 0.02 265);
 }
 
 .dark {
@@ -127,6 +136,15 @@
   --shadow-xl:
     0px 0px 0px 0px hsl(0 0% 0% / 0), 0px 8px 10px -1px hsl(0 0% 0% / 0);
   --shadow-2xl: 0px 0px 0px 0px hsl(0 0% 0% / 0);
+  --sh-class: oklch(0.78 0.11 255);
+  --sh-identifier: oklch(0.86 0.01 265);
+  --sh-sign: oklch(0.66 0.01 265);
+  --sh-property: oklch(0.76 0.12 30);
+  --sh-entity: oklch(0.78 0.11 255);
+  --sh-jsxliterals: oklch(0.78 0.13 300);
+  --sh-string: oklch(0.79 0.13 150);
+  --sh-keyword: oklch(0.76 0.15 330);
+  --sh-comment: oklch(0.6 0.02 265);
 }
 
 @theme inline {
@@ -211,6 +229,35 @@
 
 @utility scrollbar-thin {
   scrollbar-width: thin;
+}
+
+@utility scrollbar-floating {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+
+  &::-webkit-scrollbar {
+    width: 0.5rem;
+    height: 0.5rem;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    border: 0.125rem solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+    background-color: transparent;
+  }
+
+  &:hover::-webkit-scrollbar-thumb {
+    background-color: color-mix(in oklab, var(--foreground) 22%, transparent);
+  }
+
+  &::-webkit-scrollbar-corner {
+    background: transparent;
+  }
 }
 
 @utility scrollbar-none {

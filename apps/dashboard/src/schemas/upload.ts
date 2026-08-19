@@ -132,6 +132,10 @@ export const uploadSvgSchema = z.discriminatedUnion("type", [
 
 export type UploadSvgInput = z.infer<typeof uploadSvgSchema>;
 
+export const uploadLogoFromUrlSchema = z.object({
+  sourceUrl: z.url().max(2048),
+});
+
 const maxSizeByType = {
   avatar: MAX_AVATAR_FILE_SIZE,
   brand_asset: MAX_BRAND_ASSET_FILE_SIZE,

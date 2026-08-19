@@ -308,7 +308,7 @@ export const integrationsRouter = {
         });
 
         const baseUrl =
-          process.env.CONSOLE_BETTER_AUTH_URL ??
+          process.env.CONSOLE_APP_URL ??
           (process.env.NODE_ENV === "production"
             ? undefined
             : "http://localhost:3003");
