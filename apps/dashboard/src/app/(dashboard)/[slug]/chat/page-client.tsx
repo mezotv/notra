@@ -110,6 +110,7 @@ import {
   writeStoredChatPreferences,
 } from "@/utils/chat-preferences";
 import {
+  clearPendingChatClientState,
   resetNewChatClientState,
   updateWasStoppedByUser,
 } from "@/utils/chat-state";
@@ -978,9 +979,11 @@ function StandaloneChatPageClient({
     }
 
     if (initialChatId) {
-      setPendingMessageId(null);
-      setChatError(null);
-      setQueuedMessages([]);
+      clearPendingChatClientState({
+        setChatError,
+        setPendingMessageId,
+        setQueuedMessages,
+      });
       return;
     }
 

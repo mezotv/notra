@@ -7,6 +7,20 @@ export function updateWasStoppedByUser(
   setState(value);
 }
 
+export function clearPendingChatClientState({
+  setChatError,
+  setPendingMessageId,
+  setQueuedMessages,
+}: {
+  setChatError: (error: string | null) => void;
+  setPendingMessageId: (id: string | null) => void;
+  setQueuedMessages: (messages: []) => void;
+}) {
+  setPendingMessageId(null);
+  setChatError(null);
+  setQueuedMessages([]);
+}
+
 export function resetNewChatClientState({
   hasUpdatedUrlRef,
   setChatError,
@@ -30,9 +44,11 @@ export function resetNewChatClientState({
   setWasStoppedByUser: (value: boolean) => void;
   wasStoppedByUserRef: { current: boolean };
 }) {
-  setPendingMessageId(null);
-  setChatError(null);
-  setQueuedMessages([]);
+  clearPendingChatClientState({
+    setChatError,
+    setPendingMessageId,
+    setQueuedMessages,
+  });
   hasUpdatedUrlRef.current = false;
   updateWasStoppedByUser(false, wasStoppedByUserRef, setWasStoppedByUser);
   setMessages([]);

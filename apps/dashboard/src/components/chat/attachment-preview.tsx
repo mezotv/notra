@@ -102,9 +102,8 @@ export function AttachmentPreviewDialog({
       toast.success("Image copied");
     } catch {
       toast.error("Failed to copy image");
-    } finally {
-      setIsCopying(false);
     }
+    setIsCopying(false);
   }
 
   async function handleDownload() {
@@ -120,9 +119,8 @@ export function AttachmentPreviewDialog({
       toast.success(isImage ? "Downloaded image" : "Downloaded file");
     } catch {
       window.open(attachment.url, "_blank", "noopener,noreferrer");
-    } finally {
-      setIsDownloading(false);
     }
+    setIsDownloading(false);
   }
 
   return (

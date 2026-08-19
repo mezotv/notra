@@ -11,7 +11,6 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { memo } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { SOCIAL_ANALYTICS_FLAG_KEY } from "@/constants/analytics";
 import {
@@ -25,7 +24,7 @@ import { resolveActiveNavLink, resolveMainNavGroups } from "@/utils/nav";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
 import { SidebarLabel } from "./sidebar-label";
 
-const NavGroup = memo(function NavGroup({
+function NavGroup({
   items,
   slug,
   label,
@@ -82,7 +81,7 @@ const NavGroup = memo(function NavGroup({
       <SidebarGroupContent>{menu}</SidebarGroupContent>
     </SidebarGroup>
   );
-});
+}
 
 export function NavMain() {
   const { activeOrganization } = useOrganizationsContext();
