@@ -117,7 +117,15 @@ export async function routeMessage(
     ? "\n\nNote: The user has connected integration context (for example GitHub or Linear), so they may want help using external project data."
     : "";
 
-  const routerModel = wrapModelWithObservability(gateway(MODELS.router), log);
+  const routerModel = wrapModelWithObservability(
+    gateway(MODELS.router, {
+      organizationId:
+        typeof telemetryMetadata?.organizationId === "string"
+          ? telemetryMetadata.organizationId
+          : undefined,
+    }),
+    log
+  );
 
   try {
     const { object } = await generateObject({

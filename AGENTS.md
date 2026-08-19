@@ -26,7 +26,8 @@ non-obvious, durable gotchas for working in the Cursor Cloud environment.
   `APP_URL` / `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_APP_URL` = `http://localhost:3000`.
 - Most third-party keys are optional and degrade gracefully (Autumn billing, Resend,
   Redis, R2, integrations). Content/chat **generation** needs a real
-  `AI_GATEWAY_API_KEY` or `OPENROUTER_API_KEY`; background jobs/schedules need Upstash
+  `AI_GATEWAY_API_KEY` and/or `OPENROUTER_API_KEY` — the model router picks the
+  gateway per organization plan; background jobs/schedules need Upstash
   Redis + QStash. `turbo.json` uses `envMode: "strict"`, so new env vars must be added
   to its `globalEnv` list to be visible to tasks.
 

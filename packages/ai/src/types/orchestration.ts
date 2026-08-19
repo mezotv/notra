@@ -5,6 +5,7 @@ import type {
   ResolveLinearIntegrationContext,
 } from "@notra/ai/types/agents";
 import type { PostToolsResult } from "@notra/ai/types/post-tools";
+import type { RouteUsageSummary } from "@notra/ai/types/router";
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { LanguageModelUsage, streamText, UIMessage } from "ai";
 
@@ -164,7 +165,8 @@ export interface OrchestrateDeps {
   resolveLinearContext?: ResolveLinearIntegrationContext;
   onUsage?: (
     usage: LanguageModelUsage,
-    modelId: string
+    modelId: string,
+    routeUsage?: RouteUsageSummary
   ) => void | Promise<void>;
   log?: AILogTarget;
 }

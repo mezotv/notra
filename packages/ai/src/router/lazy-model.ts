@@ -1,0 +1,375 @@
+import type {
+  JSONObject,
+  LanguageModelV3,
+  LanguageModelV3CallOptions,
+  LanguageModelV3GenerateResult,
+  LanguageModelV3StreamPart,
+  LanguageModelV3StreamResult,
+  SharedV3ProviderMetadata,
+} from "@ai-sdk/provider";
+import {
+  HTTP_FORBIDDEN,
+  HTTP_NOT_FOUND,
+  HTTP_PAYMENT_REQUIRED,
+  HTTP_SERVER_ERROR_MIN,
+  RETRYABLE_STATUS_CODES,
+  ROUTED_MODEL_PROVIDER,
+  ROUTER_METADATA_KEY,
+  ZDR_ERROR_PATTERN,
+} from "@notra/ai/constants/router";
+import type {
+  FallbackReason,
+  GatewayAdapter,
+  GatewayId,
+  ResolvedRoute,
+  RouteDecision,
+  RoutedModelContext,
+  RouteMetadata,
+} from "@notra/ai/types/router";
+import { otherGateway } from "./policy";
+import {
+  splitRouterOptions,
+  stripForeignGatewayOptions,
+} from "./provider-options";
+
+function readStatusCode(error: unknown): number | undefined {
+  if (typeof error !== "object" || error === null) {
+    return undefined;
+  }
+  const record = error as Record<string, unknown>;
+  const candidate = record.statusCode ?? record.status;
+  return typeof candidate === "number" ? candidate : undefined;
+}
+
+function readMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return typeof error === "string" ? error : "";
+}
+
+function readIsRetryable(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+  return (error as Record<string, unknown>).isRetryable === true;
+}
+
+/**
+ * Decide whether a failed upstream call may be retried on the other gateway
+ * and why. Returns undefined for errors that must surface to the caller
+ * (validation errors, aborts, auth errors, ...).
+ */
+export function classifyUpstreamFailure(
+  error: unknown
+): FallbackReason | undefined {
+  if (error instanceof Error && error.name === "AbortError") {
+    return undefined;
+  }
+  const status = readStatusCode(error);
+  if (status === HTTP_PAYMENT_REQUIRED) {
+    return "no-credits";
+  }
+  if (status === HTTP_FORBIDDEN && ZDR_ERROR_PATTERN.test(readMessage(error))) {
+    // The gateway refused to honour the zero-data-retention requirement
+    // (e.g. Vercel ZDR is Pro/Enterprise only). The route is not compliant.
+    return "non-compliant";
+  }
+  if (status === HTTP_NOT_FOUND) {
+    return "unsupported-model";
+  }
+  if (
+    status !== undefined &&
+    (status >= HTTP_SERVER_ERROR_MIN || RETRYABLE_STATUS_CODES.has(status))
+  ) {
+    return "upstream-error";
+  }
+  if (readIsRetryable(error)) {
+    return "upstream-error";
+  }
+  if (status === undefined && error instanceof TypeError) {
+    // fetch() network failures surface as TypeError without a status.
+    return "upstream-error";
+  }
+  return undefined;
+}
+
+export function buildRouteMetadata(
+  decision: RouteDecision,
+  adapter: GatewayAdapter,
+  providerMetadata: SharedV3ProviderMetadata | undefined
+): RouteMetadata {
+  const extracted = adapter.extractRouteMetadata(providerMetadata);
+  return {
+    gateway: decision.gateway,
+    requestedModel: decision.requestedModelId,
+    model: extracted.model ?? decision.modelId,
+    reason: decision.reason,
+    ...(decision.plan ? { plan: decision.plan } : {}),
+    ...(extracted.generationId ? { generationId: extracted.generationId } : {}),
+    ...(extracted.upstreamProvider
+      ? { upstreamProvider: extracted.upstreamProvider }
+      : {}),
+    ...(decision.fallbackFrom ? { fallbackFrom: decision.fallbackFrom } : {}),
+    ...(decision.fallbackReason
+      ? { fallbackReason: decision.fallbackReason }
+      : {}),
+  };
+}
+
+function annotateProviderMetadata(
+  providerMetadata: SharedV3ProviderMetadata | undefined,
+  route: ResolvedRoute
+): SharedV3ProviderMetadata {
+  const metadata = buildRouteMetadata(
+    route.decision,
+    route.adapter,
+    providerMetadata
+  );
+  return {
+    ...providerMetadata,
+    [ROUTER_METADATA_KEY]: metadata as unknown as JSONObject,
+  };
+}
+
+function annotateStream(
+  stream: ReadableStream<LanguageModelV3StreamPart>,
+  route: ResolvedRoute
+): ReadableStream<LanguageModelV3StreamPart> {
+  let observedProviderMetadata: SharedV3ProviderMetadata | undefined;
+  return stream.pipeThrough(
+    new TransformStream<LanguageModelV3StreamPart, LanguageModelV3StreamPart>({
+      transform(part, controller) {
+        if ("providerMetadata" in part && part.providerMetadata) {
+          observedProviderMetadata = {
+            ...observedProviderMetadata,
+            ...part.providerMetadata,
+          };
+        }
+        if (part.type === "finish") {
+          controller.enqueue({
+            ...part,
+            providerMetadata: annotateProviderMetadata(
+              observedProviderMetadata,
+              route
+            ),
+          });
+          return;
+        }
+        controller.enqueue(part);
+      },
+    })
+  );
+}
+
+function decisionLogFields(decision: RouteDecision) {
+  return {
+    organizationId: decision.organizationId,
+    plan: decision.plan,
+    planSource: decision.planSource,
+    gateway: decision.gateway,
+    requestedModel: decision.requestedModelId,
+    model: decision.modelId,
+    reason: decision.reason,
+    fallbackFrom: decision.fallbackFrom,
+    fallbackReason: decision.fallbackReason,
+    zdrEnforced: decision.zdrEnforced,
+  };
+}
+
+/**
+ * LanguageModelV3 that resolves its route (plan lookup, gateway choice,
+ * privacy options) lazily on first use and delegates to the concrete gateway
+ * model. Compatible with wrapLanguageModel/middleware wrappers because it
+ * only exposes the V3 surface.
+ */
+export class RoutedLanguageModel implements LanguageModelV3 {
+  readonly specificationVersion = "v3" as const;
+  readonly provider = ROUTED_MODEL_PROVIDER;
+  readonly modelId: string;
+  readonly supportedUrls: PromiseLike<Record<string, RegExp[]>>;
+
+  private readonly context: RoutedModelContext;
+  private routePromise: Promise<ResolvedRoute> | undefined;
+
+  constructor(context: RoutedModelContext) {
+    this.context = context;
+    this.modelId = context.request.modelId;
+    // Lazy thenable: wrappers read `supportedUrls` eagerly, and we must not
+    // start route resolution (or leak rejections) before the first call.
+    this.supportedUrls = {
+      // biome-ignore lint/suspicious/noThenProperty: intentional lazy thenable so wrappers can read supportedUrls without triggering resolution
+      then: (onFulfilled, onRejected) =>
+        this.getRoute()
+          .then((route) => route.model.supportedUrls)
+          .then(onFulfilled, onRejected),
+    };
+  }
+
+  doGenerate(
+    options: LanguageModelV3CallOptions
+  ): Promise<LanguageModelV3GenerateResult> {
+    return this.execute(options, async (route, params) => {
+      const result = await route.model.doGenerate(params);
+      return {
+        ...result,
+        providerMetadata: annotateProviderMetadata(
+          result.providerMetadata,
+          route
+        ),
+      };
+    });
+  }
+
+  doStream(
+    options: LanguageModelV3CallOptions
+  ): Promise<LanguageModelV3StreamResult> {
+    return this.execute(options, async (route, params) => {
+      const result = await route.model.doStream(params);
+      return { ...result, stream: annotateStream(result.stream, route) };
+    });
+  }
+
+  private getRoute(): Promise<ResolvedRoute> {
+    if (!this.routePromise) {
+      const promise = this.resolvePrimary();
+      this.routePromise = promise;
+      // Do not memoise failures so a later call can retry resolution.
+      promise.catch(() => {
+        if (this.routePromise === promise) {
+          this.routePromise = undefined;
+        }
+      });
+    }
+    return this.routePromise;
+  }
+
+  private async resolvePrimary(): Promise<ResolvedRoute> {
+    const decision = await this.context.resolve(this.context.request);
+    const route = this.materialize(decision);
+    this.context.logger.info("ai.router.route", decisionLogFields(decision));
+    return route;
+  }
+
+  private materialize(decision: RouteDecision): ResolvedRoute {
+    const adapter = this.context.adapters[decision.gateway];
+    if (!adapter) {
+      throw new Error(
+        `Router resolved gateway "${decision.gateway}" but no adapter is registered.`
+      );
+    }
+    return {
+      decision,
+      adapter,
+      model: adapter.createModel(decision.requestedModelId),
+    };
+  }
+
+  private buildParams(
+    route: ResolvedRoute,
+    options: LanguageModelV3CallOptions
+  ): LanguageModelV3CallOptions {
+    const { router, rest } = splitRouterOptions(options.providerOptions);
+    const providerOptions = route.adapter.buildProviderOptions({
+      providerOptions: stripForeignGatewayOptions(route.decision.gateway, rest),
+      router,
+      allowNonZdr: this.context.policy.allowNonZdr,
+    });
+    return { ...options, providerOptions };
+  }
+
+  private async execute<T>(
+    options: LanguageModelV3CallOptions,
+    run: (
+      route: ResolvedRoute,
+      params: LanguageModelV3CallOptions
+    ) => Promise<T>
+  ): Promise<T> {
+    const route = await this.getRoute();
+    try {
+      return await run(route, this.buildParams(route, options));
+    } catch (error) {
+      const fallback = await this.tryFallbackRoute(route, error);
+      if (!fallback) {
+        throw error;
+      }
+      return await run(fallback, this.buildParams(fallback, options));
+    }
+  }
+
+  private async tryFallbackRoute(
+    route: ResolvedRoute,
+    error: unknown
+  ): Promise<ResolvedRoute | undefined> {
+    const reason = classifyUpstreamFailure(error);
+    if (!reason) {
+      return undefined;
+    }
+    if (reason === "no-credits") {
+      this.context.credits.markExhausted(route.decision.gateway);
+    } else if (reason === "non-compliant") {
+      this.context.credits.markUnavailable(route.decision.gateway, reason);
+      this.context.logger.error("ai.router.zdr_rejected", {
+        gateway: route.decision.gateway,
+        requestedModel: route.decision.requestedModelId,
+        organizationId: route.decision.organizationId,
+        message: readMessage(error),
+      });
+    }
+    if (
+      !this.context.policy.crossGatewayFallback ||
+      this.context.request.gateway
+    ) {
+      return undefined;
+    }
+
+    const target = otherGateway(route.decision.gateway);
+    const adapter = this.context.adapters[target];
+    const status = readStatusCode(error);
+    const errorName = error instanceof Error ? error.name : typeof error;
+
+    if (!adapter?.supportsModel(route.decision.requestedModelId)) {
+      this.context.logger.warn("ai.router.fallback_unavailable", {
+        from: route.decision.gateway,
+        to: target,
+        fallbackReason: reason,
+        errorName,
+        status,
+      });
+      return undefined;
+    }
+    if (!(adapter.enforcesZdr || this.context.policy.allowNonZdr)) {
+      this.context.logger.error("ai.router.no_compliant_route", {
+        from: route.decision.gateway,
+        to: target,
+        fallbackReason: reason,
+        errorName,
+        status,
+      });
+      return undefined;
+    }
+
+    const decision: RouteDecision = {
+      ...route.decision,
+      gateway: target,
+      modelId: adapter.mapModelId(route.decision.requestedModelId),
+      reason: "fallback",
+      fallbackFrom: route.decision.gateway,
+      fallbackReason: reason,
+      zdrEnforced: adapter.enforcesZdr,
+    };
+    this.context.logger.warn("ai.router.fallback", {
+      ...decisionLogFields(decision),
+      errorName,
+      status,
+    });
+    const fallbackRoute: ResolvedRoute = {
+      decision,
+      adapter,
+      model: adapter.createModel(decision.requestedModelId),
+    };
+    // Subsequent calls on this model instance stay on the fallback gateway.
+    this.routePromise = Promise.resolve(fallbackRoute);
+    return fallbackRoute;
+  }
+}

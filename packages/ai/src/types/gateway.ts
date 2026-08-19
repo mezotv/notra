@@ -1,6 +1,7 @@
-import type { createGateway } from "@ai-sdk/gateway";
+import type { LanguageModelV3 } from "@ai-sdk/provider";
+import type { RoutedModelOptions } from "@notra/ai/types/router";
 
-export type GatewayClient = ReturnType<typeof createGateway>;
+export type GatewayModelOptions = RoutedModelOptions;
 
-export type GatewayArgs = Parameters<GatewayClient>;
-export type GatewayResult = ReturnType<GatewayClient>;
+export type GatewayArgs = [modelId: string, options?: GatewayModelOptions];
+export type GatewayResult = LanguageModelV3;

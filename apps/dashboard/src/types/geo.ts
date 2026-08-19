@@ -1,4 +1,5 @@
 import type { GeoRequestPayload } from "@usenotra/geo";
+import type { LanguageModel, ToolSet } from "ai";
 import type { ReactNode } from "react";
 import type { ChartColorPair } from "@/types/charts";
 
@@ -384,6 +385,15 @@ export interface GeoGroundedEngine {
   provider: GeoGroundedProvider;
   envVar: string | null;
   isAvailable: () => boolean;
+}
+
+export interface GeoGroundedInvocation {
+  model: LanguageModel;
+  tools: ToolSet;
+}
+
+export interface GeoGroundedInvocationOptions {
+  organizationId?: string;
 }
 
 export interface GeoWebsiteDiscovery {

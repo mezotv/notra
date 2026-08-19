@@ -7,6 +7,7 @@ import type {
   OrchestrateResult,
 } from "@notra/ai/types/orchestration";
 import { normalizeMarkdownFileAttachments } from "@notra/ai/utils/message-attachments";
+import { summarizeRouteUsage } from "@notra/ai/utils/route-usage";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import {
   convertToModelMessages,
@@ -136,8 +137,12 @@ export async function orchestrateChat(
       }
     ),
     experimental_telemetry: buildExperimentalTelemetry(telemetryMetadata),
-    async onFinish({ totalUsage }) {
-      await deps?.onUsage?.(totalUsage, routingDecision.model);
+    async onFinish({ totalUsage, steps }) {
+      await deps?.onUsage?.(
+        totalUsage,
+        routingDecision.model,
+        await summarizeRouteUsage(steps)
+      );
     },
     onError({ error }) {
       console.error("[Chat Stream Error]", {

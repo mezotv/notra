@@ -96,13 +96,14 @@ The answer may be written in any language or script; count mentions of the compa
 }
 
 const askEngine = Effect.fn("geo.askEngine")(function* (
+  organizationId: string,
   engine: string,
   promptText: string
 ) {
   const result = yield* Effect.tryPromise({
     try: () =>
       generateText({
-        model: gateway(engine),
+        model: gateway(engine, { organizationId }),
         prompt: promptText,
         system: GEO_ANSWER_SYSTEM_PROMPT,
         maxOutputTokens: GEO_ANSWER_MAX_TOKENS,
@@ -117,10 +118,14 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
 });
 
 const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
-  function* (engine: GeoGroundedEngine, messages: ModelMessage[]) {
+  function* (
+    organizationId: string,
+    engine: GeoGroundedEngine,
+    messages: ModelMessage[]
+  ) {
     const result = yield* Effect.tryPromise({
       try: () => {
-        const invocation = buildGroundedInvocation(engine);
+        const invocation = buildGroundedInvocation(engine, { organizationId });
         return generateText({
           model: invocation.model,
           tools: invocation.tools,
@@ -148,7 +153,9 @@ const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
   const result = yield* Effect.tryPromise({
     try: () =>
       generateText({
-        model: gateway(GEO_JUDGE_MODEL),
+        model: gateway(GEO_JUDGE_MODEL, {
+          organizationId: context.organizationId,
+        }),
         output: Output.object({ schema: geoJudgeResultSchema }),
         prompt: buildJudgePrompt(context, promptText, answer),
         system:
@@ -163,13 +170,14 @@ const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
 });
 
 const translatePrompts = Effect.fn("geo.translatePrompts")(function* (
+  organizationId: string,
   language: string,
   prompts: GeoPromptDefinition[]
 ) {
   const result = yield* Effect.tryPromise({
     try: () =>
       generateText({
-        model: gateway(GEO_JUDGE_MODEL),
+        model: gateway(GEO_JUDGE_MODEL, { organizationId }),
         output: Output.object({ schema: geoTranslationResultSchema }),
         prompt: `Translate each prompt into ${language}. Keep brand and product names unchanged. Return the translations in the same order.\n\n${JSON.stringify(prompts.map((prompt) => prompt.text))}`,
         system:
@@ -201,10 +209,10 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
   task: GeoCheckTask
 ) {
   const answer = task.grounded
-    ? yield* askGroundedConversation(task.grounded, [
+    ? yield* askGroundedConversation(context.organizationId, task.grounded, [
         { role: "user", content: task.prompt.text },
       ])
-    : yield* askEngine(task.engine, task.prompt.text);
+    : yield* askEngine(context.organizationId, task.engine, task.prompt.text);
   const judged = yield* judgeAnswer(context, task.prompt.text, answer);
 
   const row: GeoMentionCheckRow = {
@@ -326,7 +334,11 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
   const localizedByLanguage = yield* Effect.forEach(
     extraLanguages,
     (language) =>
-      translatePrompts(language, prompts.slice(0, GEO_LANGUAGE_MAX_PROMPTS))
+      translatePrompts(
+        organizationId,
+        language,
+        prompts.slice(0, GEO_LANGUAGE_MAX_PROMPTS)
+      )
         .pipe(geoSkip(`skipping language ${language}`))
         .pipe(
           Effect.map((localized) =>
@@ -422,7 +434,11 @@ const runGeoSequenceCheck = Effect.fn("geo.runSequenceCheck")(function* (
 
   for (const [index, step] of steps.entries()) {
     messages.push({ role: "user", content: step });
-    const answer = yield* askGroundedConversation(grounded, messages);
+    const answer = yield* askGroundedConversation(
+      context.organizationId,
+      grounded,
+      messages
+    );
     messages.push({ role: "assistant", content: answer });
     const judged = yield* judgeAnswer(context, step, answer);
 

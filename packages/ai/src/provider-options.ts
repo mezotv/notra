@@ -1,18 +1,16 @@
-import {
-  type GatewayOptions,
-  gatewayOptionsSchema,
-} from "@notra/ai/schemas/provider-options";
+import { withRouterProviderOptions } from "@notra/ai/router/provider-options";
+import type { RouterProviderOptions } from "@notra/ai/types/router";
 import type { generateText } from "ai";
 
 type ProviderOptions = NonNullable<
   Parameters<typeof generateText>[0]["providerOptions"]
 >;
 
-const DEFAULT_GATEWAY_FALLBACK_MODELS = ["anthropic/claude-sonnet-4.6"];
+const DEFAULT_FALLBACK_MODELS = ["anthropic/claude-sonnet-4.6"];
 
 export function getGatewayFallbackModels(modelId?: string): string[] {
   if (!modelId) {
-    return [...DEFAULT_GATEWAY_FALLBACK_MODELS];
+    return [...DEFAULT_FALLBACK_MODELS];
   }
 
   if (modelId.startsWith("anthropic/claude-opus-")) {
@@ -29,35 +27,36 @@ export function getGatewayFallbackModels(modelId?: string): string[] {
       : ["openai/gpt-5.4-mini"];
   }
 
-  return DEFAULT_GATEWAY_FALLBACK_MODELS.filter((model) => model !== modelId);
+  return DEFAULT_FALLBACK_MODELS.filter((model) => model !== modelId);
 }
 
-export function withGatewayDefaults(
+export const getFallbackModels = getGatewayFallbackModels;
+
+/**
+ * Attach route-neutral defaults (automatic caching + model fallback chain).
+ * The router translates them into Vercel (`gateway`) or OpenRouter
+ * (`openrouter`) options depending on the selected route, so call sites stay
+ * gateway-agnostic. Vendor blocks such as `anthropic` or `openai` pass
+ * through unchanged.
+ */
+export function withRouterDefaults(
   providerOptions?: ProviderOptions,
   options?: { modelId?: string; fallbackModels?: string[] }
 ): ProviderOptions {
-  const parsedGatewayOptions = gatewayOptionsSchema.safeParse(
-    providerOptions?.gateway
-  );
-  const existingGatewayOptions = parsedGatewayOptions.success
-    ? parsedGatewayOptions.data
-    : undefined;
-  const existingModels = existingGatewayOptions?.models;
   const fallbackModels =
     options?.fallbackModels ?? getGatewayFallbackModels(options?.modelId);
-  const gatewayOptions = {
-    ...existingGatewayOptions,
+  const routerOptions: RouterProviderOptions = {
     caching: "auto",
-    models:
-      existingModels && existingModels.length > 0
-        ? existingModels
-        : fallbackModels,
-  } satisfies GatewayOptions;
-
-  return {
-    ...providerOptions,
-    gateway: gatewayOptions,
+    fallbackModels,
   };
+
+  return withRouterProviderOptions(
+    providerOptions,
+    routerOptions
+  ) as ProviderOptions;
 }
 
-export const withGatewayAutomaticCaching = withGatewayDefaults;
+/** @deprecated Use `withRouterDefaults`. */
+export const withGatewayDefaults = withRouterDefaults;
+/** @deprecated Use `withRouterDefaults`. */
+export const withGatewayAutomaticCaching = withRouterDefaults;

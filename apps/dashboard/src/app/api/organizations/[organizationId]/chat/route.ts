@@ -38,6 +38,7 @@ import type { ValidatedIntegration } from "@notra/ai/types/orchestration";
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
 import { signChatWorkflowPayload } from "@notra/ai/utils/chat-workflow-auth";
+import { routeUsageProperties } from "@notra/ai/utils/route-usage";
 import { InvalidToolInputError, NoSuchToolError, type UIMessage } from "ai";
 import type { CheckResponse } from "autumn-js";
 import { nanoid } from "nanoid";
@@ -429,7 +430,7 @@ async function createDirectStandaloneChatResponse({
             firstChunkAt = Date.now();
           }
         },
-        async onUsage(usage, modelId) {
+        async onUsage(usage, modelId, routeUsage) {
           usageSnapshot.inputTokens = usage.inputTokens ?? 0;
           usageSnapshot.outputTokens = usage.outputTokens ?? 0;
           usageSnapshot.totalTokens = usage.totalTokens ?? 0;
@@ -460,6 +461,7 @@ async function createDirectStandaloneChatResponse({
               featureId: FEATURES.AI_CREDITS,
               value: cost.costCents,
               properties: {
+                ...routeUsageProperties(routeUsage),
                 source: "standalone_chat",
                 model: modelId,
                 billing_basis: cost.billingBasis,
