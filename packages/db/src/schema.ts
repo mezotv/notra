@@ -1431,7 +1431,6 @@ export const socialExperiments = pgTable(
   ]
 );
 
-
 export const postCollections = pgTable(
   "post_collections",
   {
@@ -2478,7 +2477,6 @@ export const socialExperimentsRelations = relations(
     }),
   })
 );
-
 
 export const geoPromptsRelations = relations(geoPrompts, ({ one }) => ({
   organization: one(organizations, {
