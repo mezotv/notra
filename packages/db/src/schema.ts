@@ -2166,8 +2166,8 @@ export const organizationsRelations = relations(
     autonomyOutbox: many(autonomyOutbox),
     autonomyClaims: many(autonomyClaims),
     autonomyControllerLeases: many(autonomyControllerLeases),
-})
-)
+  })
+);
 
 export const onboardingSuggestionsRelations = relations(
   onboardingSuggestions,

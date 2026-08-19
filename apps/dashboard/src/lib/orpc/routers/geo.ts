@@ -65,8 +65,8 @@ import {
 } from "@/lib/geo-ingest/snippet";
 import { buildGeoIngestToken } from "@/lib/geo-ingest/token";
 import { authorizedProcedure } from "@/lib/orpc/base";
-import { badRequest, notFound } from "@/lib/orpc/utils/errors";
 import { runOrpcEffect } from "@/lib/orpc/effect";
+import { badRequest, notFound } from "@/lib/orpc/utils/errors";
 import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
 import {
   aiTrafficInputSchema,
@@ -198,7 +198,9 @@ async function removeGscSchedule(scheduleId: string | null) {
   }
 }
 
-async function requireDefaultProjectId(organizationId: string): Promise<string> {
+async function requireDefaultProjectId(
+  organizationId: string
+): Promise<string> {
   const row = await db.query.projects.findFirst({
     columns: { id: true },
     where: eq(projects.organizationId, organizationId),
