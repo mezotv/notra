@@ -56,6 +56,18 @@ export class GeoProjectCreateFailedError extends Data.TaggedError(
   "GeoProjectCreateFailedError"
 )<Record<string, never>> {}
 
+export class GeoBrandIdentityNotFoundError extends Data.TaggedError(
+  "GeoBrandIdentityNotFoundError"
+)<{
+  readonly brandSettingsId: string;
+}> {}
+
+export class GeoBrandIdentityMissingError extends Data.TaggedError(
+  "GeoBrandIdentityMissingError"
+)<{
+  readonly organizationId: string;
+}> {}
+
 export class GeoSequenceNotFoundError extends Data.TaggedError(
   "GeoSequenceNotFoundError"
 )<{
@@ -71,6 +83,8 @@ export class GeoSampleDataDisabledError extends Data.TaggedError(
 )<Record<string, never>> {}
 
 export type GeoRouterError =
+  | GeoBrandIdentityMissingError
+  | GeoBrandIdentityNotFoundError
   | GeoDatabaseError
   | GeoDiscoveryError
   | GeoProjectCreateFailedError

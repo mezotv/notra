@@ -206,7 +206,7 @@ async function requireDefaultProjectId(
   const row = await db.query.projects.findFirst({
     columns: { id: true },
     where: eq(projects.organizationId, organizationId),
-    orderBy: [desc(projects.isDefault), asc(projects.createdAt)],
+    orderBy: [asc(projects.createdAt)],
   });
   if (!row) {
     throw badRequest("Configure your brand tracking settings first");
@@ -391,7 +391,13 @@ export const geoRouter = {
   projectsCreate: authorizedProcedure
     .input(geoProjectCreateInputSchema)
     .handler(
-      geoHandler((input) => createGeoProject(input.organizationId, input.name))
+      geoHandler((input) =>
+        createGeoProject(
+          input.organizationId,
+          input.name,
+          input.brandSettingsId
+        )
+      )
     ),
   generateFromWebsite: authorizedProcedure
     .input(geoGenerateFromWebsiteInputSchema)

@@ -1,9 +1,11 @@
 import { db } from "@notra/db/drizzle";
-import { projects } from "@notra/db/schema";
+import { brandSettings, projects } from "@notra/db/schema";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { geoDb } from "@/lib/geo/effect";
 import {
+  GeoBrandIdentityMissingError,
+  GeoBrandIdentityNotFoundError,
   GeoProjectCreateFailedError,
   GeoProjectNotFoundError,
   GeoSettingsMissingError,
@@ -21,7 +23,7 @@ export const listGeoProjects = Effect.fn("geo.projectsList")(function* (
   const rows = yield* geoDb("projects lookup failed", () =>
     db.query.projects.findMany({
       where: eq(projects.organizationId, organizationId),
-      orderBy: [desc(projects.isDefault), asc(projects.createdAt)],
+      orderBy: [asc(projects.createdAt)],
     })
   );
 
@@ -31,16 +33,71 @@ export const listGeoProjects = Effect.fn("geo.projectsList")(function* (
   return response;
 });
 
-export const createGeoProject = Effect.fn("geo.projectCreate")(function* (
+const requireBrandIdentity = Effect.fn("geo.requireBrandIdentity")(function* (
   organizationId: string,
-  name: string
+  brandSettingsId: string
 ) {
-  const existing = yield* geoDb("projects lookup failed", () =>
+  const identity = yield* geoDb("brand identity lookup failed", () =>
+    db.query.brandSettings.findFirst({
+      columns: { id: true },
+      where: and(
+        eq(brandSettings.id, brandSettingsId),
+        eq(brandSettings.organizationId, organizationId)
+      ),
+    })
+  );
+
+  if (!identity) {
+    return yield* Effect.fail(
+      new GeoBrandIdentityNotFoundError({ brandSettingsId })
+    );
+  }
+
+  return identity.id;
+});
+
+const resolveDefaultBrandIdentity = Effect.fn(
+  "geo.resolveDefaultBrandIdentity"
+)(function* (organizationId: string) {
+  const identity = yield* geoDb("brand identity lookup failed", () =>
+    db.query.brandSettings.findFirst({
+      columns: { id: true },
+      where: eq(brandSettings.organizationId, organizationId),
+      orderBy: [desc(brandSettings.isDefault), asc(brandSettings.createdAt)],
+    })
+  );
+
+  if (!identity) {
+    return yield* Effect.fail(
+      new GeoBrandIdentityMissingError({ organizationId })
+    );
+  }
+
+  return identity.id;
+});
+
+const findOldestProjectId = Effect.fn("geo.oldestProject")(function* (
+  organizationId: string
+) {
+  const row = yield* geoDb("projects lookup failed", () =>
     db.query.projects.findFirst({
       columns: { id: true },
       where: eq(projects.organizationId, organizationId),
+      orderBy: [asc(projects.createdAt)],
     })
   );
+
+  return row?.id ?? null;
+});
+
+export const createGeoProject = Effect.fn("geo.projectCreate")(function* (
+  organizationId: string,
+  name: string,
+  brandSettingsId?: string
+) {
+  const linkedBrandSettingsId = brandSettingsId
+    ? yield* requireBrandIdentity(organizationId, brandSettingsId)
+    : yield* resolveDefaultBrandIdentity(organizationId);
 
   const rows = yield* geoDb("project create failed", () =>
     db
@@ -49,7 +106,7 @@ export const createGeoProject = Effect.fn("geo.projectCreate")(function* (
         id: crypto.randomUUID(),
         organizationId,
         name: name.trim(),
-        isDefault: !existing,
+        brandSettingsId: linkedBrandSettingsId,
       })
       .returning()
   );
@@ -65,10 +122,12 @@ export const createGeoProject = Effect.fn("geo.projectCreate")(function* (
 export const resolveGeoScope = Effect.fn("geo.resolveScope")(function* (
   input: GeoScopeInput
 ) {
+  const oldestProjectId = yield* findOldestProjectId(input.organizationId);
+
   if (input.projectId) {
     const row = yield* geoDb("project lookup failed", () =>
       db.query.projects.findFirst({
-        columns: { id: true, isDefault: true },
+        columns: { id: true },
         where: and(
           eq(projects.id, input.projectId ?? ""),
           eq(projects.organizationId, input.organizationId)
@@ -85,23 +144,15 @@ export const resolveGeoScope = Effect.fn("geo.resolveScope")(function* (
     const scope: GeoProjectScope = {
       organizationId: input.organizationId,
       projectId: row.id,
-      includeUnassigned: row.isDefault,
+      includeUnassigned: row.id === oldestProjectId,
     };
     return scope;
   }
 
-  const row = yield* geoDb("default project lookup failed", () =>
-    db.query.projects.findFirst({
-      columns: { id: true, isDefault: true },
-      where: eq(projects.organizationId, input.organizationId),
-      orderBy: [desc(projects.isDefault), asc(projects.createdAt)],
-    })
-  );
-
   const scope: GeoProjectScope = {
     organizationId: input.organizationId,
-    projectId: row?.id ?? null,
-    includeUnassigned: row?.isDefault ?? true,
+    projectId: oldestProjectId,
+    includeUnassigned: true,
   };
   return scope;
 });

@@ -23,7 +23,7 @@ export function toGeoProject(row: GeoProjectRow): GeoProject {
   return {
     id: row.id,
     name: row.name,
-    isDefault: row.isDefault,
+    brandSettingsId: row.brandSettingsId,
     createdAt: row.createdAt.toISOString(),
   };
 }

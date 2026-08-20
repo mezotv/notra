@@ -6,7 +6,7 @@ import type { ChartColorPair, ChartConfig } from "@/types/charts";
 export interface GeoProject {
   id: string;
   name: string;
-  isDefault: boolean;
+  brandSettingsId: string;
   createdAt: string;
 }
 
@@ -14,7 +14,7 @@ export interface GeoProjectRow {
   id: string;
   organizationId: string;
   name: string;
-  isDefault: boolean;
+  brandSettingsId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -25,6 +25,7 @@ export interface GeoProjectsResponse {
 
 export interface GeoProjectCreateInput {
   name: string;
+  brandSettingsId: string;
 }
 
 export interface GeoProjectScope {
@@ -52,18 +53,17 @@ export interface GeoProjectProviderProps {
   children: ReactNode;
 }
 
-export interface GeoProjectSwitcherProps {
-  organizationId: string;
-  projects: GeoProject[];
-  activeProjectId: string | null;
-  onProjectChange: (projectId: string | null) => void;
-}
-
 export interface GeoProjectCreateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
   onCreated: (projectId: string) => void;
+}
+
+export interface GeoProjectLogoProps {
+  name: string;
+  domain: string | null;
+  className?: string;
 }
 
 export interface GeoPageClientProps {
@@ -78,8 +78,6 @@ export interface PromptFunnelCardProps {
 
 export interface GeoPageContentProps {
   organizationSlug: string;
-  projectParam: string | null;
-  onProjectChange: (projectId: string | null) => void;
 }
 
 export interface GeoSettings {
