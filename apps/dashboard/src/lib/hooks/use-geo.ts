@@ -530,7 +530,6 @@ export function useGeoStartScan(organizationId: string) {
           input: { organizationId, projectId },
         }),
       });
-      toast.success("Scan started");
     },
     onError: (error) => {
       toast.error(toErrorMessage(error, "Failed to start scan"));
