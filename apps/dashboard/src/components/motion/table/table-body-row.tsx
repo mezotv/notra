@@ -21,7 +21,6 @@ export function TableBodyRow<T>({
   rowHeight,
   selectable,
   isSelected,
-  sticky = false,
   columns,
   onRowClick,
   onRowPointerEnter,
@@ -37,7 +36,6 @@ export function TableBodyRow<T>({
   rowHeight: number;
   selectable: boolean;
   isSelected: boolean;
-  sticky?: boolean;
   columns: TableColumn<T>[];
   onRowClick?: (row: T) => void;
   onRowPointerEnter?: (row: T) => void;
@@ -48,18 +46,13 @@ export function TableBodyRow<T>({
   onCellEdit?: (rowId: string, columnKey: string, value: string) => void;
   rowRef: (el: HTMLTableRowElement | null) => void;
 }) {
-  const stickyCell = sticky
-    ? "sticky top-0 z-20 bg-background shadow-[inset_0_-1px_0_0_var(--color-border)] group-hover:bg-muted/50 group-data-[selected=true]:bg-primary/5"
-    : undefined;
-
   return (
     <tr
       className={cn(
         "group transition-colors",
         "data-[selected=true]:bg-primary/5",
         "hover:bg-muted/50",
-        onRowClick && "cursor-pointer",
-        sticky && "sticky top-0 z-20 bg-background"
+        onRowClick && "cursor-pointer"
       )}
       data-selected={isSelected}
       onClick={
@@ -101,7 +94,7 @@ export function TableBodyRow<T>({
       tabIndex={onRowClick ? 0 : undefined}
     >
       {selectable ? (
-        <td className={cn("border-border/60 border-b text-center", stickyCell)}>
+        <td className="border-border/60 border-b text-center">
           <div className="flex items-center justify-center">
             <Checkbox
               aria-label={`Select row ${index + 1}`}
@@ -116,8 +109,7 @@ export function TableBodyRow<T>({
         <td
           className={cn(
             "max-w-0 overflow-hidden border-border/60 border-b px-4 text-foreground",
-            alignText(column.align),
-            stickyCell
+            alignText(column.align)
           )}
           key={column.key}
         >
@@ -134,7 +126,7 @@ export function TableBodyRow<T>({
           </div>
         </td>
       ))}
-      <td aria-hidden className={cn("border-border/60 border-b", stickyCell)} />
+      <td aria-hidden className="border-border/60 border-b" />
     </tr>
   );
 }

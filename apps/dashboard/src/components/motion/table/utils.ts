@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { TableColumn } from "./types";
+import type { TableColumn, TableRow } from "./types";
 
 export const CHECKBOX_WIDTH = "3rem";
 
@@ -48,6 +48,26 @@ export function readSortValue<T>(
   return (row as Record<string, string | number>)[column.key] ?? "";
 }
 
+/** After column sort, move matching rows to the front without pinning them sticky. */
+export function pinRowsFirst<T>(
+  rows: readonly TableRow<T>[],
+  isRowPinned?: (row: T) => boolean
+): TableRow<T>[] {
+  if (!isRowPinned) {
+    return [...rows];
+  }
+  const pinned: TableRow<T>[] = [];
+  const rest: TableRow<T>[] = [];
+  for (const entry of rows) {
+    if (isRowPinned(entry.row)) {
+      pinned.push(entry);
+    } else {
+      rest.push(entry);
+    }
+  }
+  return pinned.length === 0 ? [...rows] : [...pinned, ...rest];
+}
+
 const FR_WIDTH_REGEX = /^([\d.]+)fr$/;
 
 const PERCENT_DECIMALS = 4;
@@ -56,17 +76,45 @@ export function isFrWidth(width: string | undefined): boolean {
   return width != null && FR_WIDTH_REGEX.test(width);
 }
 
+/** Horizontal padding of header labels (`px-4` on both sides). */
+export const HEADER_PAD_X_PX = 32;
+/** Sort arrow: 14px icon + 4px `gap-1`. */
+export const SORT_ICON_PX = 18;
+/** Reorder grip (`w-6`). */
+export const REORDER_HANDLE_PX = 24;
+/** Default resize/layout floor, used as `Table`'s `minColumnWidth`. */
+export const DEFAULT_MIN_COLUMN_WIDTH = 64;
+/** Extra `ch` so wide glyphs (M, W) are not clipped vs the `0`-width `ch` unit. */
+const HEADER_CH_BUFFER = 1;
+
+export function headerMinWidth(
+  column: Pick<TableColumn<unknown>, "header" | "sortable" | "minWidth">,
+  minColumnWidth: number,
+  extraChromePx = 0
+): string {
+  if (column.minWidth) {
+    return column.minWidth;
+  }
+  const chromePx =
+    HEADER_PAD_X_PX + (column.sortable ? SORT_ICON_PX : 0) + extraChromePx;
+  if (typeof column.header === "string" && column.header.length > 0) {
+    return `max(${minColumnWidth}px, calc(${column.header.length + HEADER_CH_BUFFER}ch + ${chromePx}px))`;
+  }
+  return `${minColumnWidth}px`;
+}
+
 export function colWidthStyle(
   width: string | undefined,
-  flexible: boolean
-): { width: string; minWidth?: string } | undefined {
+  flexible: boolean,
+  minWidth: string
+): { width?: string; minWidth: string } {
   if (!width) {
-    return undefined;
+    return { minWidth };
   }
   if (flexible) {
-    return { width };
+    return { width, minWidth };
   }
-  return { width, minWidth: width };
+  return { width, minWidth: `max(${width}, ${minWidth})` };
 }
 
 export function resolveColumnWidths<T>(

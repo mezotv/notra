@@ -18,6 +18,8 @@ export interface TableColumn<T> {
   align?: "left" | "center" | "right";
   /** Column width as a CSS length, e.g. "160px" or "20%". Omit to share remaining space equally. */
   width?: string;
+  /** Floor for this column. Defaults to the header label plus sort/padding chrome so titles never ellipsize. */
+  minWidth?: string;
   /** Custom cell renderer. Falls back to `row[key]`. */
   cell?: (row: T) => ReactNode;
   /** Render an inline text input for this column's cells (ignored when `cell` is set). */
@@ -65,6 +67,8 @@ export interface TableProps<T> {
   rowHeight?: number;
   /** Scroll viewport height in px. */
   height?: number;
+  /** Floor for the table body when there are fewer rows than `height` allows. */
+  minHeight?: number;
   /** Rows rendered above/below the viewport. */
   overscan?: number;
   /** Fires when the viewport scrolls near the bottom — load the next page. */
@@ -77,7 +81,7 @@ export interface TableProps<T> {
   onRowClick?: (row: T) => void;
   /** Called when a pointer enters a row — prefetch, hover menus, etc. */
   onRowPointerEnter?: (row: T) => void;
-  /** Pin matching rows to the top of the table; they stay visible while the rest scroll. */
+  /** Keep matching rows first after sort. They scroll with the table (not sticky). */
   isRowPinned?: (row: T) => boolean;
   emptyState?: ReactNode;
   className?: string;

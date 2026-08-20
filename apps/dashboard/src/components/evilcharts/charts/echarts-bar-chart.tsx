@@ -51,6 +51,7 @@ import {
 } from "@/components/evilcharts/ui/echarts-legend";
 import { applyChartMarkers } from "@/components/evilcharts/ui/echarts-marker";
 import {
+  type TooltipAxisPointer,
   type TooltipPosition,
   type TooltipRoundness,
   type TooltipVariant,
@@ -67,6 +68,8 @@ import type {
   TooltipLayout,
   TooltipValueFormatter,
 } from "@/types/charts";
+import { stackSegmentGapValues } from "@/utils/chart-stack-gap";
+import { echartsDatumValue } from "@/utils/echarts-datum";
 
 // Modular registration keeps the bundle lean — only the pieces this chart needs.
 // `DataZoomComponent` bundles both the slider (brush footer) and inside (wheel/drag)
@@ -116,6 +119,7 @@ const LOADING_DEFAULT_BARS = 12;
 // stomps the grow — the same reason the area chart tracks this timestamp.
 const SELECTION_DIM = 0.3; // opacity of an unselected series while a selection is active
 const HOVER_BLUR = 0.3; // opacity of the non-hovered bars while hover-highlight is on
+const AXIS_POINTER_SHADOW_OPACITY = 0.06; // active-column fill while the tooltip is open
 // Soft outer glow — the canvas analogue of the Recharts feGaussianBlur filter
 // (stdDeviation 8, alpha 0.5). A generous shadowBlur keeps the halo soft with no
 // hard rim; the shadowColor is sampled PER BAR so a multi-stop gradient series
@@ -144,7 +148,7 @@ const BLOCK_TRACK_OPACITY = 0.22; // unfilled block tone, x the muted-foreground
 // between the real ones — not a background-colored border: a border paints on all
 // four sides, so it outlines each segment (obvious the moment a bar glows) instead
 // of only parting them.
-const STACK_SEGMENT_GAP = 4; // separation between stacked segments, in pixels
+const STACK_SEGMENT_GAP = 2; // separation between stacked segments, in pixels
 const MAX_HIGHLIGHT_DIM = 0.16; // non-winning columns under enableMaxValueHighlight, x muted-foreground
 
 // The `stripped` variant caps each bar with a small BRIGHT pill of CONSTANT pixel
@@ -218,6 +222,8 @@ export interface EChartsBarChartProps<TData extends Record<string, unknown>> {
   barCategoryGap?: number; // gap between categories of bars, in pixels
   defaultSelectedDataKey?: string | null; // series selected on first render
   onSelectionChange?: (key: string | null) => void; // fires when the selected series changes
+  hoverDataKey?: string | null; // controlled hover from a legend or other sibling UI
+  onHoverChange?: (key: string | null) => void; // fires when the hovered series changes
   // Colors ONLY the tallest column and mutes the rest. With several series the
   // comparison is per COLUMN — the totals across every series at that category —
   // so a whole stack or group lights up together, not one bar inside it.
@@ -293,6 +299,7 @@ export interface TooltipProps {
   layout?: TooltipLayout; // "rows" is the default swatch list; "bars" ranks series as a mini bar chart
   valueFormatter?: TooltipValueFormatter;
   barMax?: number; // bar layout: scale tracks to this ceiling (e.g. 100 for percents); omit to scale to the hovered max
+  pointer?: TooltipAxisPointer; // "shadow" lights the hovered column; default is none
 }
 
 /** Presence enables the hover tooltip. Renders nothing. */
@@ -340,6 +347,7 @@ type TooltipSlot = {
   layout: TooltipLayout;
   valueFormatter?: TooltipValueFormatter;
   barMax?: number;
+  pointer: TooltipAxisPointer;
 };
 type LegendSlot = {
   present: boolean;
@@ -376,6 +384,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
     roundness: "lg",
     position: "variable",
     layout: "rows",
+    pointer: "none",
   };
   let legend: LegendSlot = {
     present: false,
@@ -433,6 +442,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
         layout: props.layout ?? "rows",
         valueFormatter: props.valueFormatter,
         barMax: props.barMax,
+        pointer: props.pointer ?? "none",
       };
     } else if (type === Legend) {
       const props = child.props as LegendProps;
@@ -846,6 +856,7 @@ type OptionBuildContext = {
     progress: Map<number, number>;
   };
   maxHighlightIndex: number | null; // column to keep colored under enableMaxValueHighlight
+  getHoveredKey: () => string | null;
 };
 
 // Grid insets plus the footer band reserved for the brush. ECharts 6 contains
@@ -1019,7 +1030,7 @@ function buildMainAxes(ctx: OptionBuildContext): {
 // selection only — the Recharts twin passes `cursor={false}`, so there is no
 // axis-pointer line and hover-highlight never touches the tooltip.
 function createTooltipFormatter(ctx: OptionBuildContext) {
-  const { config, selectedDataKey, tooltipSlot } = ctx;
+  const { config, selectedDataKey, tooltipSlot, getHoveredKey } = ctx;
 
   return (params: unknown): string => {
     const rows = Array.isArray(params) ? params : [params];
@@ -1046,12 +1057,19 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
       const colorsCount = item ? getColorsCount(item) : 1;
       const labelText =
         typeof item?.label === "string" ? item.label : (p.seriesName ?? key);
+      const hovered = getHoveredKey();
       const dimmed =
         selectedDataKey != null && selectedDataKey !== key
           ? " opacity-30"
-          : "";
+          : hovered != null && hovered !== key
+            ? " opacity-30"
+            : "";
+      const numeric = echartsDatumValue(p.value);
+      if (numeric === null || numeric <= 0) {
+        continue;
+      }
       const formatted = formatTooltipValue(
-        p.value,
+        numeric,
         tooltipSlot.valueFormatter
       );
       items.push({
@@ -1086,13 +1104,15 @@ function buildTooltipOption(ctx: OptionBuildContext): TooltipComponentOption {
   return {
     ...tooltipBaseOption({
       present: tooltipSlot.present && !isLoading,
-      // The twin disables the cursor (`cursor={false}`) — no shadow, no line —
-      // so the axisPointer color/width below go unused; only `position` applies.
-      cursor: false,
+      cursor: tooltipSlot.pointer !== "none",
       tokens,
       position: tooltipSlot.position,
-      axisPointerColor: tokens.border,
+      axisPointerColor:
+        tooltipSlot.pointer === "shadow"
+          ? withAlpha(tokens.foreground, AXIS_POINTER_SHADOW_OPACITY)
+          : tokens.border,
       strokeWidth: STROKE_WIDTH,
+      pointer: tooltipSlot.pointer,
     }),
     formatter: createTooltipFormatter(ctx),
   };
@@ -1409,16 +1429,15 @@ function buildBarSeries(ctx: OptionBuildContext): BarSeriesOption[] {
         // The glow lives on each datum's itemStyle (per-bar sampled shadowColor),
         // not here — a single series-level shadowColor can't follow a gradient.
       },
-      // Hover-highlight uses ECharts-native focus/blur: `self` keeps only the
-      // hovered bar lit and dims every other, matching the twin's per-bar dim.
-      // A click-selection OWNS the dim while it is active, so hover highlighting
-      // switches off entirely whenever a selection exists (this option rebuilds on
-      // every selection change, and the notMerge push clears any live blur) and
-      // resumes once the selection clears. Otherwise emphasis is disabled so
-      // hovering leaves the bar untouched.
+      // Hover-highlight uses ECharts-native focus/blur. Stacked series highlight
+      // the whole series so a DeepSeek segment lights every week; grouped bars
+      // keep `self` so only the hovered rectangle stands out.
       emphasis:
         bar.enableHoverHighlight && !hasSelection
-          ? { focus: "self" as const, blurScope: "coordinateSystem" as const }
+          ? {
+              focus: (isStacked ? "series" : "self") as "series" | "self",
+              blurScope: "coordinateSystem" as const,
+            }
           : { disabled: true },
       blur:
         bar.enableHoverHighlight && !hasSelection
@@ -1449,15 +1468,21 @@ function buildBarSeries(ctx: OptionBuildContext): BarSeriesOption[] {
       : 0;
   if (!gapUnits) return series;
 
+  const seriesValues = bars.map((bar) =>
+    data.map((row) => Number(row[bar.dataKey]) || 0)
+  );
+  const gapSeries = stackSegmentGapValues(seriesValues, gapUnits);
+
   const spaced: BarSeriesOption[] = [];
   series.forEach((entry, i) => {
     spaced.push(entry);
-    if (i === series.length - 1) return;
+    const gapData = gapSeries[i];
+    if (!gapData) return;
     spaced.push({
       id: `__stackgap-${i}`,
       type: "bar",
       stack: isStacked ? "total" : undefined,
-      data: data.map(() => gapUnits),
+      data: gapData,
       itemStyle: { color: "transparent" },
       silent: true,
       tooltip: { show: false },
@@ -1512,7 +1537,13 @@ type LiveState = {
     expandableKey: string | null; // the expandable series, if any — drives the column hover
     barCategoryGap?: number; // consumer's category gap, needed to derive the bar width
     isHorizontal: boolean; // layout, for measuring the value axis in the finished handler
+    enableHoverHighlight: boolean;
+    selectedDataKey: string | null;
+    onHoverChange?: (key: string | null) => void;
   };
+  applyHoverKey: (key: string | null) => void;
+  hoveredKey: string | null;
+  hoverClearRaf: number;
   // Update-style re-push for paths that bypass React entirely (theme flips,
   // resizes) — set by the sync effect.
   repush: () => void;
@@ -1550,6 +1581,8 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
   barCategoryGap,
   defaultSelectedDataKey = null,
   onSelectionChange,
+  hoverDataKey,
+  onHoverChange,
   enableMaxValueHighlight = false,
   isLoading = false,
   loadingBars = LOADING_DEFAULT_BARS,
@@ -1594,7 +1627,12 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       hasStackGap: false,
       expandableKey: null,
       isHorizontal: false,
+      enableHoverHighlight: false,
+      selectedDataKey: null,
     },
+    applyHoverKey: () => {},
+    hoveredKey: null,
+    hoverClearRaf: 0,
     repush: () => {},
     patchStrippedCaps: () => {},
   }).current;
@@ -1610,6 +1648,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
   const [selectedDataKey, setSelectedDataKey] = useState<string | null>(
     defaultSelectedDataKey
   );
+  const [hoveredDataKey, setHoveredDataKey] = useState<string | null>(null);
 
   // ── Declarative config, collected from children by reference ─────────────────
   const collected = useMemo(() => collectConfig(children), [children]);
@@ -1703,6 +1742,9 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       bars.find((bar) => bar.variant === "expandable")?.dataKey ?? null,
     barCategoryGap,
     isHorizontal,
+    enableHoverHighlight: bars.some((bar) => bar.enableHoverHighlight),
+    selectedDataKey,
+    onHoverChange,
   };
   live.dataLength = data.length;
 
@@ -1796,6 +1838,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       barWidthPx: live.barWidthPx,
       expand: live.expand,
       maxHighlightIndex,
+      getHoveredKey: () => live.hoveredKey,
     };
 
     const { grid, brushBottom } = buildChartLayout(ctx);
@@ -1855,6 +1898,23 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     const chart = echarts.init(mount);
     echartsRef.current = chart;
 
+    live.applyHoverKey = (key) => {
+      if (live.hoverClearRaf) {
+        cancelAnimationFrame(live.hoverClearRaf);
+        live.hoverClearRaf = 0;
+      }
+      if (live.hoveredKey === key) {
+        return;
+      }
+      live.hoveredKey = key;
+      setHoveredDataKey(key);
+      live.handlers.onHoverChange?.(key);
+      chart.dispatchAction({ type: "downplay" });
+      if (key) {
+        chart.dispatchAction({ type: "highlight", seriesId: key });
+      }
+    };
+
     const resizeObserver = new ResizeObserver(() => {
       // Observers always fire once right after observe(). Repushing on that
       // no-op fire would land one frame into the intro and stomp the grow-in —
@@ -1909,6 +1969,50 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     chart.getZr().on("globalout", () => {
       const { expandableKey } = live.handlers;
       if (expandableKey) live.animateExpand(expandableKey, null);
+      if (live.handlers.enableHoverHighlight) {
+        live.applyHoverKey(null);
+      }
+    });
+
+    chart.on("mouseover", (params) => {
+      if (!live.handlers.enableHoverHighlight) {
+        return;
+      }
+      if (live.handlers.selectedDataKey !== null) {
+        return;
+      }
+      const p = params as { seriesId?: string; componentType?: string };
+      if (p.componentType !== "series") {
+        return;
+      }
+      const key = String(p.seriesId ?? "");
+      if (!key || key.startsWith("__")) {
+        return;
+      }
+      live.applyHoverKey(key);
+    });
+    chart.on("mouseout", (params) => {
+      if (!live.handlers.enableHoverHighlight) {
+        return;
+      }
+      if (live.handlers.selectedDataKey !== null) {
+        return;
+      }
+      const p = params as { seriesId?: string; componentType?: string };
+      if (p.componentType !== "series") {
+        return;
+      }
+      const key = String(p.seriesId ?? "");
+      if (!key || key.startsWith("__")) {
+        return;
+      }
+      if (live.hoverClearRaf) {
+        cancelAnimationFrame(live.hoverClearRaf);
+      }
+      live.hoverClearRaf = requestAnimationFrame(() => {
+        live.hoverClearRaf = 0;
+        live.applyHoverKey(null);
+      });
     });
 
     chart.on("click", (params) => {
@@ -2016,9 +2120,22 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
       // reset, StrictMode's dev-only mount→unmount→remount plays the entrance on
       // the throwaway instance and the surviving one renders without it.
       live.hasRevealed = false;
+      live.hoveredKey = null;
+      if (live.hoverClearRaf) {
+        cancelAnimationFrame(live.hoverClearRaf);
+        live.hoverClearRaf = 0;
+      }
+      live.applyHoverKey = () => {};
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (hoverDataKey === undefined) {
+      return;
+    }
+    live.applyHoverKey(hoverDataKey);
+  }, [hoverDataKey, live]);
 
   // ── Sync ECharts with props/theme/selection — resolve, build, push ────────────
   useEffect(() => {
@@ -2098,6 +2215,13 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
         : 0;
       // Overlays live outside the option — reposition them after every push.
       syncBrushOverlayNow();
+      chart.dispatchAction({ type: "downplay" });
+      if (live.hoveredKey) {
+        chart.dispatchAction({
+          type: "highlight",
+          seriesId: live.hoveredKey,
+        });
+      }
     };
 
     // A stripped-cap correction that never disturbs the entrance or a brush drag:
@@ -2347,7 +2471,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
         <LegendOverlay
           align={legendSlot.align}
           config={config}
-          hoveredKey={null}
+          hoveredKey={hoveredDataKey}
           isClickable={legendSlot.isClickable}
           onToggle={toggleSelection}
           selectedKey={selectedDataKey}

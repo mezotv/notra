@@ -2,61 +2,106 @@
 
 import { Delete02Icon, SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Badge } from "@notra/ui/components/ui/badge";
 import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@notra/ui/components/ui/select";
 import { Switch } from "@notra/ui/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsString, useQueryState } from "nuqs";
 import { useCallback, useMemo, useState } from "react";
 import { GeoRemoveDialog } from "@/components/geo/geo-remove-dialog";
 import { PresenceBadge } from "@/components/geo/presence-badge";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { Table, type TableColumn } from "@/components/motion/table";
 import {
-  PROMPT_SOURCE_FILTER_VALUES,
-  PROMPT_SOURCE_FILTERS,
   PROMPTS_TABLE_HEIGHT,
   PROMPTS_TABLE_ROW_HEIGHT,
 } from "@/constants/geo";
 import { useGeoPromptDelete, useGeoPromptToggle } from "@/lib/hooks/use-geo";
-import type {
-  GeoPromptSourceFilter,
-  GeoPromptTableRow,
-  PromptsTableProps,
-} from "@/types/geo";
+import type { GeoPromptTableRow, PromptsTableProps } from "@/types/geo";
 import {
   buildPromptTableRows,
-  formatPromptSource,
   promptPresenceSortValue,
 } from "@/utils/geo-prompts";
 import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 const PROMPT_NOUNS = { singular: "prompt", plural: "prompts" } as const;
+const PROMPT_ACTIONS_WIDTH = "6.5rem";
+
+function PromptRowActions({
+  row,
+  isToggling,
+  isRemoving,
+  onToggle,
+  onDelete,
+}: {
+  row: GeoPromptTableRow;
+  isToggling: boolean;
+  isRemoving: boolean;
+  onToggle: (enabled: boolean) => void;
+  onDelete: () => void;
+}) {
+  if (row.source === "auto") {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <button
+              aria-label="Auto-generated prompts cannot be paused or removed"
+              className="inline-flex size-8 cursor-help items-center justify-center text-muted-foreground"
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+              type="button"
+            >
+              —
+            </button>
+          }
+        />
+        <TooltipContent className="max-w-xs">
+          Generated from your site. Only custom prompts can be paused or
+          removed.
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <Switch
+        aria-label={
+          row.enabled ? `Pause ${row.prompt}` : `Enable ${row.prompt}`
+        }
+        checked={row.enabled}
+        disabled={isToggling}
+        onCheckedChange={onToggle}
+        onClick={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        size="sm"
+      />
+      <Button
+        aria-label={`Remove ${row.prompt}`}
+        disabled={isRemoving}
+        onClick={(event) => {
+          event.stopPropagation();
+          onDelete();
+        }}
+        size="icon"
+        variant="ghost"
+      >
+        <HugeiconsIcon icon={Delete02Icon} size={14} />
+      </Button>
+    </div>
+  );
+}
 
 function promptRemoveDescription(items: string[]): string {
   if (items.length > 1) {
     return "These questions will no longer be asked in GEO scans. Historical answers stay in your results.";
   }
   return `"${items[0]}" will no longer be asked in GEO scans. Historical answers stay in your results.`;
-}
-
-function toSourceFilter(value: string): GeoPromptSourceFilter {
-  if (value === "custom" || value === "auto") {
-    return value;
-  }
-  return "all";
 }
 
 export function PromptsTable({
@@ -71,20 +116,14 @@ export function PromptsTable({
     "q",
     parseAsString.withDefault("").withOptions({ clearOnDefault: true })
   );
-  const [sourceFilter, setSourceFilter] = useQueryState(
-    "source",
-    parseAsStringLiteral(PROMPT_SOURCE_FILTER_VALUES)
-      .withDefault("all")
-      .withOptions({ clearOnDefault: true })
-  );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<GeoPromptTableRow[]>([]);
   const [detail, setDetail] = useState<GeoPromptTableRow | null>(null);
 
   const rows = useMemo(
-    () => buildPromptTableRows(prompts, results, search, sourceFilter),
-    [prompts, results, search, sourceFilter]
+    () => buildPromptTableRows(prompts, results, search),
+    [prompts, results, search]
   );
 
   const selectedCustomRows = useMemo(() => {
@@ -131,17 +170,6 @@ export function PromptsTable({
         ),
       },
       {
-        key: "source",
-        header: "Source",
-        width: "6.5rem",
-        sortable: true,
-        cell: (row) => (
-          <Badge variant={row.source === "auto" ? "outline" : "secondary"}>
-            {formatPromptSource(row.source)}
-          </Badge>
-        ),
-      },
-      {
         key: "presence",
         header: "Presence",
         width: "9.375rem",
@@ -185,47 +213,20 @@ export function PromptsTable({
         sortValue: (row) => row.bestPosition ?? Number.MAX_SAFE_INTEGER,
       },
       {
-        key: "enabled",
-        header: "",
-        width: "3.25rem",
-        align: "right",
-        cell: (row) =>
-          row.source === "auto" ? null : (
-            <Switch
-              aria-label={
-                row.enabled ? `Pause ${row.prompt}` : `Enable ${row.prompt}`
-              }
-              checked={row.enabled}
-              disabled={toggle.isPending}
-              onCheckedChange={(enabled) =>
-                toggle.mutate({ promptId: row.id, enabled })
-              }
-              onClick={(event) => event.stopPropagation()}
-              onPointerDown={(event) => event.stopPropagation()}
-              size="sm"
-            />
-          ),
-      },
-      {
         key: "actions",
         header: "",
-        width: "3.25rem",
+        width: PROMPT_ACTIONS_WIDTH,
+        minWidth: PROMPT_ACTIONS_WIDTH,
         align: "right",
-        cell: (row) =>
-          row.source === "auto" ? null : (
-            <Button
-              aria-label={`Remove ${row.prompt}`}
-              disabled={remove.isPending}
-              onClick={(event) => {
-                event.stopPropagation();
-                requestDelete([row]);
-              }}
-              size="icon"
-              variant="ghost"
-            >
-              <HugeiconsIcon icon={Delete02Icon} size={14} />
-            </Button>
-          ),
+        cell: (row) => (
+          <PromptRowActions
+            isRemoving={remove.isPending}
+            isToggling={toggle.isPending}
+            onDelete={() => requestDelete([row])}
+            onToggle={(enabled) => toggle.mutate({ promptId: row.id, enabled })}
+            row={row}
+          />
+        ),
       },
     ],
     [
@@ -254,36 +255,6 @@ export function PromptsTable({
             value={search}
           />
         </div>
-        <Select
-          onValueChange={(value) =>
-            setSourceFilter(toSourceFilter(value ?? "all"))
-          }
-          value={sourceFilter}
-        >
-          <SelectTrigger className="w-40 capitalize">
-            <SelectValue>
-              {PROMPT_SOURCE_FILTERS.find(
-                (option) => option.value === sourceFilter
-              )?.label ?? "All sources"}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent className="w-64">
-            {PROMPT_SOURCE_FILTERS.map((option) => (
-              <SelectItem
-                className="items-start py-1.5"
-                key={option.value}
-                value={option.value}
-              >
-                <span className="flex min-w-0 flex-col gap-0.5">
-                  <span>{option.label}</span>
-                  <span className="whitespace-normal text-muted-foreground text-xs">
-                    {option.description}
-                  </span>
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         {selectedCustomRows.length > 0 && (
           <Button
             disabled={remove.isPending}

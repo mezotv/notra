@@ -64,6 +64,7 @@ import {
   configIndicatorHtml,
   formatTooltipValue,
   tooltipBaseOption,
+  tooltipItemsFromRow,
   tooltipShell,
 } from "@/components/evilcharts/ui/echarts-tooltip";
 import type {
@@ -272,6 +273,12 @@ export interface TooltipProps {
   valueFormatter?: TooltipValueFormatter;
   barMax?: number; // bar layout: scale tracks to this ceiling (e.g. 100 for percents); omit to scale to the hovered max
   confine?: boolean; // keep the tooltip inside the chart rect (default true); false lets small sparklines overflow
+  // When set, tooltip rows come from these data keys at the hovered index
+  // instead of the visible series — so a single total line can still list a
+  // per-engine breakdown on hover.
+  rowKeys?: readonly string[];
+  hideZeros?: boolean; // drop series whose hovered value is 0 / empty
+  excludeKeys?: readonly string[]; // series drawn on the chart but omitted from the tooltip
 }
 
 /** Presence enables the hover tooltip. Renders nothing. */
@@ -332,6 +339,9 @@ type TooltipSlot = {
   valueFormatter?: TooltipValueFormatter;
   barMax?: number;
   confine: boolean;
+  rowKeys?: readonly string[];
+  hideZeros: boolean;
+  excludeKeys: readonly string[];
 };
 type LegendSlot = {
   present: boolean;
@@ -370,6 +380,8 @@ function collectConfig(children: ReactNode): CollectedConfig {
     position: "variable",
     layout: "rows",
     confine: true,
+    hideZeros: false,
+    excludeKeys: [],
   };
   let legend: LegendSlot = {
     present: false,
@@ -442,6 +454,9 @@ function collectConfig(children: ReactNode): CollectedConfig {
         valueFormatter: props.valueFormatter,
         barMax: props.barMax,
         confine: props.confine ?? true,
+        rowKeys: props.rowKeys,
+        hideZeros: props.hideZeros ?? false,
+        excludeKeys: props.excludeKeys ?? [],
       };
     } else if (type === Legend) {
       const props = child.props as LegendProps;
@@ -966,16 +981,40 @@ function buildMainAxes(ctx: OptionBuildContext): {
 // per invocation — ECharts calls the formatter at hover time, and syncing hover
 // through an option push instead would reset the native blur state mid-hover.
 function createTooltipFormatter(ctx: OptionBuildContext) {
-  const { config, selectedDataKey, tooltipSlot, getHoveredKey } = ctx;
+  const { config, data, selectedDataKey, tooltipSlot, getHoveredKey } = ctx;
 
   return (params: unknown): string => {
     const rows = Array.isArray(params) ? params : [params];
     if (!rows.length) return "";
 
-    const first = rows[0] as { axisValue?: string | number; name?: string };
+    const first = rows[0] as {
+      axisValue?: string | number;
+      name?: string;
+      dataIndex?: number;
+    };
     // Label shows the RAW axis value — matches ChartTooltipContent (no tick formatter).
     const axisValue = first.axisValue ?? first.name ?? "";
     const label = String(axisValue);
+    const rowKeys = tooltipSlot.rowKeys;
+    if (rowKeys && rowKeys.length > 0 && typeof first.dataIndex === "number") {
+      const items = tooltipItemsFromRow(
+        data[first.dataIndex],
+        rowKeys,
+        config,
+        tooltipSlot.valueFormatter
+      );
+      return tooltipShell({
+        label,
+        body: composeTooltipBody(
+          items,
+          tooltipSlot.layout,
+          tooltipSlot.barMax
+        ),
+        roundness: tooltipSlot.roundness,
+        variant: tooltipSlot.variant,
+        layout: tooltipSlot.layout,
+      });
+    }
 
     // Dedupe by effective key: a buffer area contributes both its solid part
     // (id=key) and its dashed overlay (id=`__buffer-{key}`) at the shared
@@ -997,11 +1036,21 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
         : rawId.startsWith("__")
           ? ""
           : (p.seriesId ?? p.seriesName ?? "");
-      if (!key) continue;
+      if (!key || tooltipSlot.excludeKeys.includes(key)) continue;
       // A null value means this series does not reach the hovered x (a buffer
       // area's solid part stops before the last point, a revealed series stops
       // at the cursor) — skip it, letting another row for the key stand in.
       if (p.value === null || p.value === undefined) continue;
+      const formatted = formatTooltipValue(
+        p.value,
+        tooltipSlot.valueFormatter
+      );
+      if (
+        tooltipSlot.hideZeros &&
+        (formatted.numeric === null || formatted.numeric <= 0)
+      ) {
+        continue;
+      }
       if (seen.has(key)) continue;
       seen.add(key);
 
@@ -1018,10 +1067,6 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
             : hovered != null && hovered !== key
               ? " opacity-30"
               : "";
-      const formatted = formatTooltipValue(
-        p.value,
-        tooltipSlot.valueFormatter
-      );
       items.push({
         key,
         colorsCount,
@@ -1060,8 +1105,8 @@ function buildTooltipOption(ctx: OptionBuildContext): TooltipComponentOption {
       position: tooltipSlot.position,
       axisPointerColor: withAlpha(tokens.mutedForeground, AXIS_POINTER_OPACITY),
       strokeWidth: AXIS_POINTER_WIDTH,
+      confine: tooltipSlot.confine,
     }),
-    confine: tooltipSlot.confine,
     formatter: createTooltipFormatter(ctx),
   };
 }
@@ -1256,6 +1301,7 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
       resolved.tokens.background
     );
     const restingVisible = area.dotVariant !== "none";
+    const hoverSymbol = area.activeDotVariant !== "none";
     const dotOpacity = opacity.dot;
     const multiColor = slots.length > 1;
 
@@ -1364,7 +1410,9 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
       // the line AND the filled area clickable, like the Recharts <Area>.
       // (`true` covers both; the deprecated `triggerLineEvent` did the same.)
       triggerEvent: area.isClickable,
-      showSymbol: restingVisible,
+      // Resting dots stay on the line; ActiveDot-only series keep symbols
+      // invisible until the axis pointer highlights the scrubbed index.
+      showSymbol: restingVisible || hoverSymbol,
       symbol: "circle",
       symbolSize: restingVisible ? restingDot.size : activeDot.size,
       z,
@@ -1376,10 +1424,10 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
         dashOffset: 0,
       },
       itemStyle: multiColor
-        ? { opacity: dotOpacity }
+        ? { opacity: restingVisible ? dotOpacity : hoverSymbol ? 0 : dotOpacity }
         : {
             ...(restingVisible ? restingDot.itemStyle : activeDot.itemStyle),
-            opacity: dotOpacity,
+            opacity: restingVisible ? dotOpacity : hoverSymbol ? 0 : dotOpacity,
           },
       areaStyle: {
         color: fillPaint(area.variant, showUnselected, slots, rendererSize),

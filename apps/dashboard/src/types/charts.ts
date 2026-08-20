@@ -38,7 +38,6 @@ export interface ChartSparklineProps {
   color: ChartColorPair;
   className?: string;
   markIncompleteTail?: boolean;
-  children?: ReactNode;
 }
 
 export interface ChartMarker {
@@ -49,11 +48,6 @@ export interface ChartMarker {
 export type TooltipLayout = "rows" | "bars";
 
 export type TooltipValueFormatter = (value: number) => string;
-
-export interface ChartSparklineTooltipProps {
-  valueFormatter?: TooltipValueFormatter;
-  seriesLabel?: string;
-}
 
 export interface TooltipBodyItem {
   key: string;

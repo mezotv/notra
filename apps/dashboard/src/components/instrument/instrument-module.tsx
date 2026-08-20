@@ -104,8 +104,20 @@ export function InstrumentSection({
           description ? "items-start" : "items-center"
         )}
       >
-        <div className="min-w-0 space-y-1">
-          <h2 className="font-medium text-foreground text-sm capitalize">
+        <div
+          className={cn(
+            "min-w-0",
+            description
+              ? "space-y-1"
+              : (readout || action) && "flex h-7 items-center"
+          )}
+        >
+          <h2
+            className={cn(
+              "font-medium text-foreground text-sm capitalize",
+              !description && (readout || action) && "leading-none"
+            )}
+          >
             {eyebrow}
           </h2>
           {description ? (

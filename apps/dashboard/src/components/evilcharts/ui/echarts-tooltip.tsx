@@ -1,13 +1,20 @@
 import type { TooltipComponentOption } from "echarts/components";
 import {
+  getColorsCount,
   indicatorBackground,
   type ResolvedColors,
 } from "@/components/evilcharts/ui/echarts-chart";
 import type {
+  ChartConfig,
   TooltipBodyItem,
   TooltipLayout,
   TooltipValueFormatter,
 } from "@/types/charts";
+import {
+  fixedTooltipPosition,
+  overflowTooltipPosition,
+} from "@/utils/chart-tooltip-position";
+import { echartsDatumValue } from "@/utils/echarts-datum";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tooltip — the shared HTML shell/row primitives and the chart-agnostic option
@@ -22,6 +29,7 @@ export type TooltipRoundness = "sm" | "md" | "lg" | "xl";
 // behavior); "fixed" tracks the pointer's X (centered) but stays pinned near
 // the top (fixed Y).
 export type TooltipPosition = "fixed" | "variable";
+export type TooltipAxisPointer = "none" | "line" | "shadow" | "cross";
 
 const HTML_ESCAPE_PATTERN = /[&<>"']/g;
 const HTML_ESCAPES: Record<string, string> = {
@@ -88,10 +96,11 @@ export function formatTooltipValue(
   value: unknown,
   formatter?: TooltipValueFormatter
 ): { numeric: number | null; text: string } {
-  if (typeof value === "number") {
+  const numeric = echartsDatumValue(value);
+  if (numeric !== null) {
     return {
-      numeric: value,
-      text: formatter ? formatter(value) : value.toLocaleString(),
+      numeric,
+      text: formatter ? formatter(numeric) : numeric.toLocaleString(),
     };
   }
   if (value === null || value === undefined) {
@@ -137,18 +146,44 @@ export function tooltipBarRow({
   dimmed: string;
   indicatorHtml?: string;
 }): string {
-  return `<div class="flex w-full flex-col gap-1${dimmed}">
-          <div class="flex items-center justify-between gap-4 leading-none">
-            <span class="flex min-w-0 items-center gap-1.5">
-              ${indicatorHtml ?? ""}
-              <span class="text-muted-foreground truncate">${escapeHtml(labelText)}</span>
-            </span>
-            <span class="text-foreground font-mono font-medium tabular-nums">${escapeHtml(valueText)}</span>
-          </div>
-          <div class="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+  return `<div class="grid w-full grid-cols-[1rem_minmax(0,1fr)_auto] gap-x-2 gap-y-1${dimmed}">
+          <span class="flex size-4 items-center justify-center self-center">${indicatorHtml ?? ""}</span>
+          <span class="self-center truncate text-muted-foreground leading-none">${escapeHtml(labelText)}</span>
+          <span class="self-center font-mono font-medium text-foreground tabular-nums leading-none">${escapeHtml(valueText)}</span>
+          <div class="col-span-2 col-start-2 h-1.5 overflow-hidden rounded-full bg-muted">
             <div class="h-full rounded-full" style="width:${widthPercent}%;background:${indicatorBackground(key, colorsCount)}"></div>
           </div>
         </div>`;
+}
+
+export function tooltipItemsFromRow(
+  row: Record<string, unknown> | undefined,
+  keys: readonly string[],
+  config: ChartConfig,
+  valueFormatter?: TooltipValueFormatter
+): TooltipBodyItem[] {
+  if (!row) {
+    return [];
+  }
+  const items: TooltipBodyItem[] = [];
+  for (const key of keys) {
+    const raw = row[key];
+    if (typeof raw !== "number" || raw <= 0) {
+      continue;
+    }
+    const item = config[key];
+    const formatted = formatTooltipValue(raw, valueFormatter);
+    items.push({
+      key,
+      colorsCount: item ? getColorsCount(item) : 1,
+      labelText: typeof item?.label === "string" ? item.label : key,
+      value: formatted.numeric,
+      valueText: formatted.text,
+      dimmed: "",
+      indicatorHtml: configIndicatorHtml(item),
+    });
+  }
+  return items;
 }
 
 export function composeTooltipBody(
@@ -160,7 +195,8 @@ export function composeTooltipBody(
     return items
       .map((item) =>
         tooltipRow({
-          indicatorHtml: tooltipIndicatorHtml(item.key, item.colorsCount),
+          indicatorHtml:
+            item.indicatorHtml ?? tooltipIndicatorHtml(item.key, item.colorsCount),
           labelText: item.labelText,
           valueText: item.valueText,
           dimmed: item.dimmed,
@@ -222,17 +258,27 @@ export function tooltipShell({
 }
 
 // Maps the TooltipPosition prop onto the ECharts tooltip `position` field.
-// "variable" → undefined (default follow-both-axes, current behavior); "fixed" →
-// a callback that centers the tooltip on the pointer's X but pins it near the
-// top (fixed Y).
+// "variable" + confine → undefined (ECharts default, stays inside the chart).
+// "variable" without confine → follow the pointer, clamp X so a left-edge flip
+// cannot paint outside the chart (sparklines sit in overflow-hidden cards).
+// "fixed" → center on the pointer's X, pin near the top, still clamp X.
 export function resolveTooltipPosition(
-  position: TooltipPosition
+  position: TooltipPosition,
+  confine = true
 ): TooltipComponentOption["position"] {
-  if (position === "variable") return undefined;
-  return (point, _params, _dom, _rect, size) => [
-    point[0] - size.contentSize[0] / 2,
-    8,
-  ];
+  if (position === "fixed") {
+    return (point, _params, _dom, _rect, size) =>
+      fixedTooltipPosition(point[0], size.contentSize[0], size.viewSize[0]);
+  }
+  if (confine) {
+    return undefined;
+  }
+  return (point, _params, _dom, _rect, size) =>
+    overflowTooltipPosition(
+      [point[0], point[1]],
+      [size.contentSize[0], size.contentSize[1]],
+      [size.viewSize[0], size.viewSize[1]]
+    );
 }
 
 // The chart-agnostic tooltip option fields (show, trigger, confine,
@@ -247,6 +293,8 @@ export function tooltipBaseOption(params: {
   axisPointerColor: string;
   strokeWidth: number;
   crosshair?: boolean;
+  confine?: boolean;
+  pointer?: TooltipAxisPointer;
 }): TooltipComponentOption {
   const {
     present,
@@ -255,32 +303,42 @@ export function tooltipBaseOption(params: {
     axisPointerColor,
     strokeWidth,
     crosshair,
+    confine = true,
+    pointer = cursor ? (crosshair ? "cross" : "line") : "none",
   } = params;
+
+  const linePointer = {
+    type: pointer === "cross" ? ("cross" as const) : ("line" as const),
+    label: { show: false },
+    lineStyle: {
+      color: axisPointerColor,
+      width: strokeWidth,
+      type: [3, 3] as [number, number],
+    },
+    crossStyle: {
+      color: axisPointerColor,
+      width: strokeWidth,
+      type: [3, 3] as [number, number],
+    },
+  };
 
   return {
     show: present,
     trigger: "axis",
-    confine: true,
+    confine,
     backgroundColor: "transparent",
     borderWidth: 0,
     padding: 0,
     extraCssText: "box-shadow:none;",
-    axisPointer: cursor
-      ? {
-          type: crosshair ? "cross" : "line",
-          label: { show: false },
-          lineStyle: {
-            color: axisPointerColor,
-            width: strokeWidth,
-            type: [3, 3] as [number, number],
-          },
-          crossStyle: {
-            color: axisPointerColor,
-            width: strokeWidth,
-            type: [3, 3] as [number, number],
-          },
-        }
-      : { type: "none" },
-    position: resolveTooltipPosition(position),
+    axisPointer:
+      pointer === "none"
+        ? { type: "none" }
+        : pointer === "shadow"
+          ? {
+              type: "shadow",
+              shadowStyle: { color: axisPointerColor },
+            }
+          : linePointer,
+    position: resolveTooltipPosition(position, confine),
   };
 }

@@ -9,7 +9,7 @@ import { RowHandle } from "./row-handle";
 import { SkeletonRows } from "./skeleton-rows";
 import { TableBodyRow } from "./table-body-row";
 import { TableHeader } from "./table-header";
-import type { HeaderCellRefs, TableProps, TableRow } from "./types";
+import type { HeaderCellRefs, TableProps } from "./types";
 import { useColumnReorder } from "./use-column-reorder";
 import { useColumnResize } from "./use-column-resize";
 import { useColumnSort } from "./use-column-sort";
@@ -17,7 +17,11 @@ import { useRowSelection } from "./use-row-selection";
 import {
   CHECKBOX_WIDTH,
   colWidthStyle,
+  DEFAULT_MIN_COLUMN_WIDTH,
+  headerMinWidth,
   isFrWidth,
+  pinRowsFirst,
+  REORDER_HANDLE_PX,
   resolveColumnWidths,
 } from "./utils";
 
@@ -35,7 +39,7 @@ export function Table<T>({
   defaultSort = null,
   onSortChange,
   resizable = false,
-  minColumnWidth = 64,
+  minColumnWidth = DEFAULT_MIN_COLUMN_WIDTH,
   onColumnResize,
   reorderable = false,
   onColumnOrderChange,
@@ -47,6 +51,7 @@ export function Table<T>({
   onDeleteColumn,
   rowHeight = 48,
   height = 440,
+  minHeight,
   overscan = 10,
   onEndReached,
   loading = false,
@@ -106,38 +111,21 @@ export function Table<T>({
       onSelectionChange,
     });
 
-  const { pinnedRows, scrollRows } = useMemo(() => {
-    if (!isRowPinned) {
-      return { pinnedRows: [] as TableRow<T>[], scrollRows: sortedRows };
-    }
-    const pinned: TableRow<T>[] = [];
-    const scroll: TableRow<T>[] = [];
-    for (const entry of sortedRows) {
-      if (isRowPinned(entry.row)) {
-        pinned.push(entry);
-      } else {
-        scroll.push(entry);
-      }
-    }
-    return { pinnedRows: pinned, scrollRows: scroll };
-  }, [sortedRows, isRowPinned]);
-
-  const pinnedHeight = pinnedRows.length * rowHeight;
+  const displayRows = useMemo(
+    () => pinRowsFirst(sortedRows, isRowPinned),
+    [sortedRows, isRowPinned]
+  );
 
   const virtualizer = useVirtualizer({
-    count: scrollRows.length,
+    count: displayRows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeight,
     overscan,
-    paddingStart: pinnedHeight,
   });
 
   const virtualItems = virtualizer.getVirtualItems();
   const totalSize = virtualizer.getTotalSize();
-  const paddingTop = Math.max(
-    0,
-    (virtualItems[0]?.start ?? pinnedHeight) - pinnedHeight
-  );
+  const paddingTop = virtualItems[0]?.start ?? 0;
   const lastVirtualItem = virtualItems.at(-1);
   const paddingBottom = lastVirtualItem ? totalSize - lastVirtualItem.end : 0;
 
@@ -159,17 +147,36 @@ export function Table<T>({
         const override = widths[column.key];
         const width = override ? `${override}px` : resolvedWidths[index];
         const flexible = override == null && isFrWidth(column.width);
-        return <col key={column.key} style={colWidthStyle(width, flexible)} />;
+        const minWidth = headerMinWidth(
+          column,
+          minColumnWidth,
+          reorderable ? REORDER_HANDLE_PX : 0
+        );
+        return (
+          <col
+            key={column.key}
+            style={colWidthStyle(width, flexible, minWidth)}
+          />
+        );
       })}
       <col style={hasFlexibleColumn ? { width: 0 } : undefined} />
     </colgroup>
   );
-  const bodyHeight = Math.max(rowHeight, height - rowHeight);
+  const resolvedHeight = Math.max(height, minHeight ?? 0);
+  const bodyHeight = Math.max(rowHeight, resolvedHeight - rowHeight);
+  const minBodyHeight =
+    minHeight == null ? 0 : Math.max(rowHeight, minHeight - rowHeight);
   const contentHeight = Math.max(
     rowHeight,
     Math.min(bodyHeight, sortedRows.length * rowHeight)
   );
   const scrolls = sortedRows.length * rowHeight > bodyHeight;
+  const viewportHeight = scrolls
+    ? bodyHeight
+    : Math.max(
+        sortedRows.length === 0 ? bodyHeight : contentHeight,
+        minBodyHeight
+      );
 
   const hasRowMenu = !!(onInsertRow || onDeleteRow);
   const hasColumnMenu = !!(onInsertColumn || onDeleteColumn);
@@ -248,8 +255,9 @@ export function Table<T>({
 
   return (
     <div className={cn("w-full text-sm", className)}>
+      {/* Overlap (>= rounded-2xl) hides the header's side border in the body radius. */}
       <div
-        className="overflow-hidden rounded-t-2xl border border-border border-b-0 bg-muted pb-3"
+        className="overflow-hidden rounded-t-2xl border border-border border-b-0 bg-muted pb-5"
         ref={headerScrollRef}
         style={scrolls ? { scrollbarGutter: "stable" } : undefined}
       >
@@ -267,6 +275,7 @@ export function Table<T>({
             columns={orderedColumns}
             dragKey={dragKey}
             dropIndex={dropIndex}
+            minColumnWidth={minColumnWidth}
             onColumnActivate={hasColumnMenu ? activateColumn : undefined}
             onColumnDeactivate={hasColumnMenu ? deactivateColumn : undefined}
             onColumnRename={onColumnRename}
@@ -294,22 +303,21 @@ export function Table<T>({
 
       <div
         className={cn(
-          "-mt-3 scrollbar-floating relative rounded-2xl border border-border bg-background outline-none",
+          "-mt-5 scrollbar-floating relative rounded-2xl border border-border bg-background outline-none",
+          "[&_tr:last-child_td]:border-b-0",
           scrolls ? "overflow-auto" : "overflow-x-auto overflow-y-hidden"
         )}
         onScroll={handleScroll}
         ref={scrollRef}
         style={
           scrolls
-            ? { height: bodyHeight, scrollbarGutter: "stable" }
-            : { height: sortedRows.length === 0 ? bodyHeight : contentHeight }
+            ? { height: viewportHeight, scrollbarGutter: "stable" }
+            : { height: viewportHeight }
         }
       >
         <table
           className={cn(
-            pinnedRows.length > 0
-              ? "border-separate border-spacing-0"
-              : "border-collapse",
+            "border-collapse",
             sized ? "w-max min-w-full" : "w-full"
           )}
           style={{ tableLayout: "fixed" }}
@@ -338,35 +346,13 @@ export function Table<T>({
               )
             ) : (
               <>
-                {pinnedRows.map((entry, index) => (
-                  <TableBodyRow
-                    columns={orderedColumns}
-                    entry={entry}
-                    hasRowMenu={hasRowMenu}
-                    index={index}
-                    isSelected={selected.has(entry.id)}
-                    key={entry.id}
-                    onActivate={activateRow}
-                    onCellEdit={onCellEdit}
-                    onDeactivate={deactivateRow}
-                    onRowClick={onRowClick}
-                    onRowPointerEnter={onRowPointerEnter}
-                    onToggleRow={toggleRow}
-                    rowHeight={rowHeight}
-                    rowRef={(el) => {
-                      rowRefs.current[entry.id] = el;
-                    }}
-                    selectable={selectable}
-                    sticky
-                  />
-                ))}
                 {paddingTop > 0 ? (
                   <tr aria-hidden style={{ height: paddingTop }}>
                     <td colSpan={leadColumns + 1} />
                   </tr>
                 ) : null}
                 {virtualItems.map((vItem) => {
-                  const entry = scrollRows[vItem.index];
+                  const entry = displayRows[vItem.index];
                   if (!entry) {
                     return null;
                   }
@@ -375,7 +361,7 @@ export function Table<T>({
                       columns={orderedColumns}
                       entry={entry}
                       hasRowMenu={hasRowMenu}
-                      index={pinnedRows.length + vItem.index}
+                      index={vItem.index}
                       isSelected={selected.has(entry.id)}
                       key={entry.id}
                       onActivate={activateRow}

@@ -22,7 +22,13 @@ import type {
   SortState,
   TableColumn,
 } from "./types";
-import { alignFlex, alignText, COLUMN_ACTIVE_SHADOW } from "./utils";
+import {
+  alignFlex,
+  alignText,
+  COLUMN_ACTIVE_SHADOW,
+  headerMinWidth,
+  REORDER_HANDLE_PX,
+} from "./utils";
 
 export interface TableHeaderProps<T> {
   columns: TableColumn<T>[];
@@ -36,6 +42,7 @@ export interface TableHeaderProps<T> {
   sort: SortState | null;
   onToggleSort: (key: string) => void;
   resizable: boolean;
+  minColumnWidth: number;
   onResizeStart: (key: string, e: ReactPointerEvent) => void;
   onResizeMove: (e: ReactPointerEvent) => void;
   onResizeEnd: (e: ReactPointerEvent) => void;
@@ -157,6 +164,7 @@ export function TableHeader<T>({
   onResizeMove,
   onResizeEnd,
   reorderable,
+  minColumnWidth,
   dragKey,
   dropIndex,
   onReorderStart,
@@ -231,9 +239,14 @@ export function TableHeader<T>({
                 ref={(el) => {
                   thRefs.current[column.key] = el;
                 }}
-                style={
-                  isActive ? { boxShadow: COLUMN_ACTIVE_SHADOW } : undefined
-                }
+                style={{
+                  minWidth: headerMinWidth(
+                    column,
+                    minColumnWidth,
+                    reorderable ? REORDER_HANDLE_PX : 0
+                  ),
+                  ...(isActive ? { boxShadow: COLUMN_ACTIVE_SHADOW } : {}),
+                }}
               >
                 <motion.div
                   animate={
@@ -266,7 +279,7 @@ export function TableHeader<T>({
                   {column.sortable ? (
                     <button
                       className={cn(
-                        "flex h-full min-w-0 flex-1 select-none items-center gap-1 px-4 transition-colors hover:text-foreground",
+                        "flex h-full flex-1 select-none items-center gap-1 px-4 transition-colors hover:text-foreground",
                         alignFlex(column.align),
                         active && "text-foreground"
                       )}
@@ -274,7 +287,9 @@ export function TableHeader<T>({
                       type="button"
                     >
                       {column.align === "right" ? null : (
-                        <span className="truncate">{column.header}</span>
+                        <span className="whitespace-nowrap">
+                          {column.header}
+                        </span>
                       )}
                       <motion.span
                         animate={{
@@ -293,7 +308,9 @@ export function TableHeader<T>({
                         <HugeiconsIcon icon={ArrowUp01Icon} size={14} />
                       </motion.span>
                       {column.align === "right" ? (
-                        <span className="truncate">{column.header}</span>
+                        <span className="whitespace-nowrap">
+                          {column.header}
+                        </span>
                       ) : null}
                     </button>
                   ) : onColumnRename ? (
@@ -314,7 +331,7 @@ export function TableHeader<T>({
                   ) : (
                     <span
                       className={cn(
-                        "min-w-0 flex-1 truncate px-4",
+                        "flex-1 whitespace-nowrap px-4",
                         alignText(column.align)
                       )}
                     >
