@@ -69,7 +69,6 @@ function EngineRank() {
         key: "rate",
         header: "Rate",
         width: "6.25rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="font-semibold text-sm tabular-nums">
@@ -81,7 +80,6 @@ function EngineRank() {
         key: "delta",
         header: "\u0394",
         width: "5.625rem",
-        align: "right",
         sortable: true,
         cell: (row) => <DirectionDelta delta={row.delta} />,
       },
@@ -141,7 +139,6 @@ function JourneysTable() {
         key: "pages",
         header: "Pages",
         width: "5.625rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">{row.pages}</span>
@@ -151,7 +148,6 @@ function JourneysTable() {
         key: "distinctPaths",
         header: "Unique",
         width: "5.625rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">{row.distinctPaths}</span>

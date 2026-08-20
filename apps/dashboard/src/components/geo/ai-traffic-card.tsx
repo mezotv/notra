@@ -130,7 +130,6 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         key: "markdownVisits",
         header: "Markdown",
         width: "8rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <TooltipProvider delay={150}>
@@ -159,7 +158,6 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         key: "paths",
         header: "Pages",
         width: "5.625rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">{row.paths}</span>

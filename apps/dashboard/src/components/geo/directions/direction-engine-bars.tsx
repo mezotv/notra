@@ -43,7 +43,6 @@ export function DirectionEngineBars({ className }: DirectionBlockProps) {
         key: "rate",
         header: "Rate",
         width: "6.25rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">

@@ -90,7 +90,6 @@ export function PromptResultsPreview({
         key: "bestPosition",
         header: "Best position",
         width: "9.75rem",
-        align: "right",
         sortable: true,
         cell: (row) =>
           row.bestPosition === null ? (
@@ -106,7 +105,6 @@ export function PromptResultsPreview({
         key: "engines",
         header: "Engines",
         width: "6.875rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-muted-foreground text-xs tabular-nums">

@@ -186,7 +186,6 @@ export function PromptsTable({
         key: "engines",
         header: "Engines",
         width: "8rem",
-        align: "right",
         sortable: true,
         cell: (row) =>
           row.total === 0 ? (
@@ -202,7 +201,6 @@ export function PromptsTable({
         key: "bestPosition",
         header: "Best",
         width: "6.5rem",
-        align: "right",
         sortable: true,
         cell: (row) =>
           row.bestPosition === null ? (

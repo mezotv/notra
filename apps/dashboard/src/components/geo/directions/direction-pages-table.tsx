@@ -57,7 +57,6 @@ export function DirectionPagesTable({ className }: DirectionBlockProps) {
         key: "visits",
         header: "Visits",
         width: "6.875rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">

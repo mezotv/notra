@@ -57,7 +57,6 @@ export function TrafficPagesCard({ pages }: TrafficPagesCardProps) {
         key: "visits",
         header: "Visits",
         width: "6.25rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">{row.visits}</span>

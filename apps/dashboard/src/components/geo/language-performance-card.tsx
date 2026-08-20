@@ -171,7 +171,6 @@ function languagePerformanceColumns({
       key: "checks",
       header: "Checks",
       width: "8.75rem",
-      align: "right",
       sortable: true,
       sortValue: (row) =>
         row.kind === "tracked" ? row.checks : Number.NEGATIVE_INFINITY,

@@ -90,7 +90,6 @@ export function EngineRateTable({
         key: "avgPosition",
         header: "Avg position",
         width: "9.5rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">{avgPositionOf(row)}</span>

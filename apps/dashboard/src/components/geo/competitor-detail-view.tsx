@@ -246,7 +246,6 @@ export function CompetitorDetailView({
         key: "position",
         header: "Position",
         width: "8rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="tabular-nums">

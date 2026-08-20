@@ -93,7 +93,6 @@ export function ShareOfVoiceTable({
         key: "mentions",
         header: "Mentions",
         width: "8.75rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">

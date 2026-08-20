@@ -132,7 +132,6 @@ function SourcesTable() {
         key: "visits",
         header: "Visits",
         width: "6.875rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">
@@ -144,7 +143,6 @@ function SourcesTable() {
         key: "share",
         header: "Share",
         width: "6.25rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">

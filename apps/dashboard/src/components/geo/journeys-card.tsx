@@ -61,7 +61,6 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
         key: "pages",
         header: "Pages",
         width: "5.625rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">{row.pages}</span>
@@ -71,7 +70,6 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
         key: "distinctPaths",
         header: "Unique",
         width: "5.625rem",
-        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">{row.distinctPaths}</span>
