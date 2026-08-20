@@ -13,7 +13,7 @@ export function AnalyticsPageSkeleton() {
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-4 px-4 lg:px-6">
         <div className="space-y-1">
-          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-9 w-40" />
           <Skeleton className="h-3.5 w-64" />
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">

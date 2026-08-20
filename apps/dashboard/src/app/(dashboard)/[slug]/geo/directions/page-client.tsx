@@ -20,7 +20,7 @@ export default function PageClient() {
         <Tabs defaultValue="instrument">
           <header className="flex flex-wrap items-end justify-between gap-3">
             <div className="space-y-1">
-              <h1 className="font-semibold text-xl tracking-tight">
+              <h1 className="font-bold text-3xl tracking-tight">
                 GEO directions
               </h1>
               <p className="text-muted-foreground text-sm">

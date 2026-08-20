@@ -120,7 +120,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       <div className="w-full space-y-4 px-4 lg:px-6">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-semibold text-xl tracking-tight">GEO</h1>
+            <h1 className="font-bold text-3xl tracking-tight">GEO</h1>
             <p className="text-muted-foreground text-sm">
               How AI engines talk about {settings.companyName}
             </p>

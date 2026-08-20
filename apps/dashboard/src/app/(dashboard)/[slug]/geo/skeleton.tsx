@@ -15,7 +15,7 @@ export function GeoPageSkeleton() {
       <div className="w-full space-y-4 px-4 lg:px-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-2">
-            <Skeleton className="h-7 w-16" />
+            <Skeleton className="h-9 w-20" />
             <Skeleton className="h-3.5 w-72" />
           </div>
           <div className="flex items-center gap-2">

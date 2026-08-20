@@ -86,7 +86,7 @@ export default function PageClient({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 space-y-2">
               <div className="flex items-center gap-2">
-                <h1 className="font-bold text-2xl tracking-tight">
+                <h1 className="font-bold text-3xl tracking-tight">
                   {collection.name}
                 </h1>
                 <Button
