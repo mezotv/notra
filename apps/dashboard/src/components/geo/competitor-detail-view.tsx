@@ -13,7 +13,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/button";
-import { EChartsLineChart } from "@/components/evilcharts/charts/echarts-line-chart";
+import { EChartsBarChart } from "@/components/evilcharts/charts/echarts-bar-chart";
 import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -34,12 +34,17 @@ import type { ChartConfig } from "@/types/charts";
 import type {
   CompetitorDetailViewProps,
   GeoCompetitorDetailPoint,
+  GeoCompetitorMentionStats,
   GeoCompetitorPromptRow,
 } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import { seriesColors } from "@/utils/chart-colors";
 import { formatEngineFamily } from "@/utils/geo-charts";
-import { buildGeoCompetitorPoints } from "@/utils/geo-competitor";
+import {
+  buildGeoCompetitorPoints,
+  competitorChartHasIncompleteTail,
+  competitorMentionStats,
+} from "@/utils/geo-competitor";
 import { tableHeightFor } from "@/utils/table";
 
 const CHART_CONFIG: ChartConfig = {
@@ -52,10 +57,12 @@ const CHART_CONFIG: ChartConfig = {
 function CompetitorMentionsChart({
   competitor,
   points,
+  incompleteTail,
   showLoading,
 }: {
   competitor: string;
   points: GeoCompetitorDetailPoint[];
+  incompleteTail: boolean;
   showLoading: boolean;
 }) {
   if (showLoading) {
@@ -68,31 +75,23 @@ function CompetitorMentionsChart({
 
   if (points.length >= GEO_COMPETITOR_DETAIL_MIN_POINTS) {
     return (
-      <EChartsLineChart
+      <EChartsBarChart
+        animation={false}
         className={cn("w-full", GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS)}
         config={CHART_CONFIG}
-        curveType="monotone"
         data={points}
+        key={competitor}
         xDataKey="day"
       >
-        <EChartsLineChart.Grid />
-        <EChartsLineChart.XAxis dataKey="day" />
-        <EChartsLineChart.Line
+        <EChartsBarChart.Grid />
+        <EChartsBarChart.XAxis dataKey="day" />
+        <EChartsBarChart.YAxis />
+        <EChartsBarChart.Bar
+          bufferBar={incompleteTail}
           dataKey={GEO_COMPETITOR_DETAIL_SERIES_KEY}
-          enableBufferLine
-          glowing
-          strokeVariant="solid"
-          strokeWidth={1.5}
-        >
-          <EChartsLineChart.ActiveDot variant="ping" />
-        </EChartsLineChart.Line>
-        <EChartsLineChart.Tooltip
-          crosshair
-          position="fixed"
-          roundness="xl"
-          variant="frosted-glass"
         />
-      </EChartsLineChart>
+        <EChartsBarChart.Tooltip />
+      </EChartsBarChart>
     );
   }
 
@@ -100,6 +99,32 @@ function CompetitorMentionsChart({
     <p className="text-muted-foreground text-sm">
       Not enough scans yet to chart {competitor}.
     </p>
+  );
+}
+
+function CompetitorMentionStats({
+  stats,
+}: {
+  stats: GeoCompetitorMentionStats;
+}) {
+  return (
+    <dl className="flex items-baseline gap-4 text-sm tabular-nums">
+      <div className="flex items-baseline gap-1.5">
+        <dt className="sr-only">Latest on {stats.latestDay}</dt>
+        <dd>
+          <span className="font-semibold text-foreground">
+            {stats.latest.toLocaleString()}
+          </span>{" "}
+          <span className="text-muted-foreground">{stats.latestDay}</span>
+        </dd>
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <dt className="text-muted-foreground">Peak</dt>
+        <dd className="font-medium text-foreground">
+          {stats.peak.toLocaleString()}
+        </dd>
+      </div>
+    </dl>
   );
 }
 
@@ -136,6 +161,7 @@ function CompetitorPromptAppearances({
       defaultSort={{ key: "capturedAt", direction: "desc" }}
       getRowId={(row) => `${row.promptId}-${row.engine}`}
       height={tableHeight}
+      key={competitor}
       rowHeight={COMPETITORS_TABLE_ROW_HEIGHT}
     />
   );
@@ -165,13 +191,16 @@ export function CompetitorDetailView({
     organizationId,
     competitor
   );
-  const showLoading = isPending || !organizationId;
+  const showLoading = !organizationId || (isPending && !data);
   const points = useMemo(
     () => buildGeoCompetitorPoints(data?.points ?? []),
     [data]
   );
-  const latestMentions =
-    showLoading || points.length === 0 ? undefined : points.at(-1)?.mentions;
+  const stats = useMemo(
+    () => (showLoading ? null : competitorMentionStats(points)),
+    [points, showLoading]
+  );
+  const incompleteTail = competitorChartHasIncompleteTail(points);
   const prompts = useMemo(() => data?.prompts ?? [], [data]);
 
   const columns = useMemo<TableColumn<GeoCompetitorPromptRow>[]>(
@@ -317,18 +346,14 @@ export function CompetitorDetailView({
 
       <div className="space-y-2">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-semibold text-base">Mentions over time</h2>
-          {latestMentions === undefined ? null : (
-            <p className="text-muted-foreground text-sm tabular-nums">
-              <span className="font-semibold text-foreground">
-                {latestMentions.toLocaleString()}
-              </span>{" "}
-              latest
-            </p>
-          )}
+          <h2 className="text-pretty font-semibold text-base">
+            Mentions over time
+          </h2>
+          {stats ? <CompetitorMentionStats stats={stats} /> : null}
         </div>
         <CompetitorMentionsChart
           competitor={competitor}
+          incompleteTail={incompleteTail}
           points={points}
           showLoading={showLoading}
         />

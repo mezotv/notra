@@ -23,19 +23,26 @@ import {
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
 import { Textarea } from "@notra/ui/components/ui/textarea";
-import { type FormEvent, useId, useState } from "react";
+import { type FormEvent, useId, useRef, useState } from "react";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
 import {
   useGeoGenerateFromWebsite,
   useGeoPromptCreate,
 } from "@/lib/hooks/use-geo";
+import { cn } from "@/lib/utils";
 import type { PromptAddDialogProps, PromptAddMode } from "@/types/geo";
 import { normalizeWebsiteUrl, stripWebsiteProtocol } from "@/utils/geo-website";
 
 function toPromptAddMode(value: string): PromptAddMode {
   return value === "website" ? "website" : "write";
 }
+
+const MODE_COPY_CLASS =
+  "col-start-1 row-start-1 transition-opacity duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:duration-150";
+
+const MODE_PANEL_CLASS =
+  "col-start-1 row-start-1 w-full transition-[opacity,translate] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] data-[starting-style]:translate-y-1.5 data-[ending-style]:-translate-y-1.5 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 data-[hidden]:pointer-events-none data-[hidden]:invisible motion-reduce:translate-none motion-reduce:duration-150 [&[hidden]]:!block";
 
 export function PromptAddDialog({
   open,
@@ -47,6 +54,8 @@ export function PromptAddDialog({
   const promptHintId = useId();
   const urlId = useId();
   const urlHintId = useId();
+  const promptRef = useRef<HTMLTextAreaElement>(null);
+  const urlRef = useRef<HTMLInputElement>(null);
   const [mode, setMode] = useState<PromptAddMode>("write");
   const [draft, setDraft] = useState("");
   const [url, setUrl] = useState("");
@@ -62,6 +71,7 @@ export function PromptAddDialog({
   const normalizedUrl = normalizeWebsiteUrl(url);
   const busy = create.isPending || generate.isPending;
   const canGenerate = normalizedUrl !== null && !busy;
+  const writeMode = mode === "write";
 
   const close = () => {
     setMode("write");
@@ -93,6 +103,18 @@ export function PromptAddDialog({
     handleAdd();
   };
 
+  const handleModeChange = (value: string) => {
+    const next = toPromptAddMode(value);
+    setMode(next);
+    requestAnimationFrame(() => {
+      if (next === "website") {
+        urlRef.current?.focus();
+        return;
+      }
+      promptRef.current?.focus();
+    });
+  };
+
   return (
     <ResponsiveDialog
       onOpenChange={(next) => {
@@ -107,10 +129,25 @@ export function PromptAddDialog({
       <ResponsiveDialogContent className="sm:max-w-md">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>Add prompt</ResponsiveDialogTitle>
-          <ResponsiveDialogDescription>
-            {mode === "website"
-              ? "Generate more buyer questions from a site you already have."
-              : "A question your buyers ask AI engines."}
+          <ResponsiveDialogDescription className="grid">
+            <span
+              aria-hidden={!writeMode}
+              className={cn(
+                MODE_COPY_CLASS,
+                !writeMode && "invisible opacity-0"
+              )}
+            >
+              A question your buyers ask AI engines.
+            </span>
+            <span
+              aria-hidden={writeMode}
+              className={cn(
+                MODE_COPY_CLASS,
+                writeMode && "invisible opacity-0"
+              )}
+            >
+              Generate more buyer questions from a site you already have.
+            </span>
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <form
@@ -118,10 +155,7 @@ export function PromptAddDialog({
           id={formId}
           onSubmit={handleSubmit}
         >
-          <Tabs
-            onValueChange={(value) => setMode(toPromptAddMode(value))}
-            value={mode}
-          >
+          <Tabs onValueChange={handleModeChange} value={mode}>
             <TabsList className="grid h-9 w-full grid-cols-2">
               <TabsTrigger disabled={busy} value="write">
                 Write one
@@ -130,66 +164,83 @@ export function PromptAddDialog({
                 From a website
               </TabsTrigger>
             </TabsList>
-            <TabsContent className="mt-4" value="write">
-              <div className="space-y-2">
-                <Label htmlFor={promptId}>Question</Label>
-                <Textarea
-                  aria-describedby={promptHintId}
-                  autoFocus
-                  disabled={create.isPending}
-                  id={promptId}
-                  maxLength={GEO_PROMPT_MAX_LENGTH}
-                  onChange={(event) => setDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === "Enter" &&
-                      (event.metaKey || event.ctrlKey)
-                    ) {
-                      event.preventDefault();
-                      handleAdd();
-                    }
-                  }}
-                  placeholder="What's the best tool for automating changelogs?"
-                  rows={4}
-                  value={draft}
-                />
-                <p
-                  className="text-muted-foreground text-xs tabular-nums"
-                  id={promptHintId}
-                >
-                  {remainingToMin > 0 && trimmed.length > 0
-                    ? `${remainingToMin} more characters`
-                    : `${trimmed.length}/${GEO_PROMPT_MAX_LENGTH}`}
-                </p>
-              </div>
-            </TabsContent>
-            <TabsContent className="mt-4" value="website">
-              <div className="space-y-2">
-                <Label htmlFor={urlId}>Website</Label>
-                <InputGroup>
-                  <InputGroupAddon className="border-input border-r pr-2">
-                    <InputGroupText>https://</InputGroupText>
-                  </InputGroupAddon>
-                  <InputGroupInput
-                    aria-describedby={urlHintId}
-                    autoComplete="url"
+            <div className="mt-4 grid">
+              <TabsContent
+                className={cn(
+                  MODE_PANEL_CLASS,
+                  writeMode ? "z-10" : "pointer-events-none"
+                )}
+                keepMounted
+                value="write"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor={promptId}>Question</Label>
+                  <Textarea
+                    aria-describedby={promptHintId}
                     autoFocus
-                    disabled={generate.isPending}
-                    id={urlId}
-                    inputMode="url"
-                    onChange={(event) =>
-                      setUrl(stripWebsiteProtocol(event.target.value))
-                    }
-                    placeholder="yourcompany.com"
-                    value={url}
+                    disabled={create.isPending}
+                    id={promptId}
+                    maxLength={GEO_PROMPT_MAX_LENGTH}
+                    onChange={(event) => setDraft(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (
+                        event.key === "Enter" &&
+                        (event.metaKey || event.ctrlKey)
+                      ) {
+                        event.preventDefault();
+                        handleAdd();
+                      }
+                    }}
+                    placeholder="What's the best tool for automating changelogs?"
+                    ref={promptRef}
+                    rows={4}
+                    value={draft}
                   />
-                </InputGroup>
-                <p className="text-muted-foreground text-xs" id={urlHintId}>
-                  We'll add buyer questions, plus aliases and competitors.
-                  Existing prompts stay.
-                </p>
-              </div>
-            </TabsContent>
+                  <p
+                    className="text-muted-foreground text-xs tabular-nums"
+                    id={promptHintId}
+                  >
+                    {remainingToMin > 0 && trimmed.length > 0
+                      ? `${remainingToMin} more characters`
+                      : `${trimmed.length}/${GEO_PROMPT_MAX_LENGTH}`}
+                  </p>
+                </div>
+              </TabsContent>
+              <TabsContent
+                className={cn(
+                  MODE_PANEL_CLASS,
+                  writeMode ? "pointer-events-none" : "z-10"
+                )}
+                keepMounted
+                value="website"
+              >
+                <div className="space-y-2">
+                  <Label htmlFor={urlId}>Website</Label>
+                  <InputGroup>
+                    <InputGroupAddon className="border-input border-r pr-2">
+                      <InputGroupText>https://</InputGroupText>
+                    </InputGroupAddon>
+                    <InputGroupInput
+                      aria-describedby={urlHintId}
+                      autoComplete="url"
+                      disabled={generate.isPending}
+                      id={urlId}
+                      inputMode="url"
+                      onChange={(event) =>
+                        setUrl(stripWebsiteProtocol(event.target.value))
+                      }
+                      placeholder="yourcompany.com"
+                      ref={urlRef}
+                      value={url}
+                    />
+                  </InputGroup>
+                  <p className="text-muted-foreground text-xs" id={urlHintId}>
+                    We'll add buyer questions, plus aliases and competitors.
+                    Existing prompts stay.
+                  </p>
+                </div>
+              </TabsContent>
+            </div>
           </Tabs>
         </form>
         <ResponsiveDialogFooter>
@@ -201,17 +252,34 @@ export function PromptAddDialog({
           >
             Cancel
           </Button>
-          {mode === "website" ? (
-            <Button disabled={!canGenerate} form={formId} type="submit">
-              {generate.isPending ? <StatusSpinner /> : null}
-              Generate prompts
-            </Button>
-          ) : (
-            <Button disabled={!canAdd} form={formId} type="submit">
+          <div className="grid">
+            <Button
+              className={cn(
+                "col-start-1 row-start-1",
+                !writeMode && "invisible"
+              )}
+              disabled={!writeMode || !canAdd}
+              form={formId}
+              tabIndex={writeMode ? undefined : -1}
+              type="submit"
+            >
               {create.isPending ? <StatusSpinner /> : null}
               Add prompt
             </Button>
-          )}
+            <Button
+              className={cn(
+                "col-start-1 row-start-1",
+                writeMode && "invisible"
+              )}
+              disabled={writeMode || !canGenerate}
+              form={formId}
+              tabIndex={writeMode ? -1 : undefined}
+              type="submit"
+            >
+              {generate.isPending ? <StatusSpinner /> : null}
+              Generate prompts
+            </Button>
+          </div>
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>

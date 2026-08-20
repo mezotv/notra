@@ -1,4 +1,5 @@
-import { GEO_INGEST_PATH } from "@/constants/geo";
+import { GEO_INGEST_PATH, GEO_INGEST_TOKEN_ENV } from "@/constants/geo";
+import type { GeoIngestFramework, GeoIngestSnippets } from "@/types/geo";
 
 const FALLBACK_APP_URL = "https://app.usenotra.com";
 
@@ -14,20 +15,83 @@ export function buildGeoIngestUrl(): string {
   return new URL(GEO_INGEST_PATH, buildGeoAppUrl()).toString();
 }
 
-export function buildGeoSnippet(appUrl: string): string {
+function processTokenExpr(): string {
+  return `process.env.${GEO_INGEST_TOKEN_ENV} ?? ""`;
+}
+
+function denoTokenExpr(): string {
+  return `Deno.env.get("${GEO_INGEST_TOKEN_ENV}") ?? ""`;
+}
+
+function buildNextSnippet(appUrl: string): string {
   return [
     "// proxy.ts on Next.js 16, middleware.ts before that",
     'import { createGeoProxy } from "@usenotra/geo/next";',
     'import { NextResponse } from "next/server";',
     "",
     "const geo = createGeoProxy({",
-    '  token: process.env.NOTRA_GEO_TOKEN ?? "",',
+    `  token: ${processTokenExpr()},`,
     `  endpoint: "${appUrl}",`,
     "});",
     "",
-    "export function proxy(request, event) {",
+    "export function proxy(request: Request, event: { waitUntil(p: Promise<unknown>): void }) {",
     "  geo(request, event);",
     "  return NextResponse.next();",
     "}",
   ].join("\n");
+}
+
+function buildNuxtSnippet(appUrl: string): string {
+  return [
+    "// server/middleware/geo.ts",
+    'import { createGeoHandler } from "@usenotra/geo/nuxt";',
+    "",
+    "const geo = createGeoHandler({",
+    `  token: ${processTokenExpr()},`,
+    `  endpoint: "${appUrl}",`,
+    "});",
+    "",
+    "export default defineEventHandler(async (event) => {",
+    "  await geo(event);",
+    "});",
+  ].join("\n");
+}
+
+function buildNetlifySnippet(appUrl: string): string {
+  return [
+    "// netlify/edge-functions/geo.ts",
+    'import { createGeoHandler } from "@usenotra/geo/netlify";',
+    "",
+    "const geo = createGeoHandler({",
+    `  token: ${denoTokenExpr()},`,
+    `  endpoint: "${appUrl}",`,
+    "});",
+    "",
+    "export default (request: Request, context: { waitUntil(p: Promise<unknown>): void }) => {",
+    "  geo(request, context);",
+    "};",
+    "",
+    'export const config = { path: "/*" };',
+  ].join("\n");
+}
+
+export function buildGeoSnippet(
+  appUrl: string,
+  framework: GeoIngestFramework = "next"
+): string {
+  if (framework === "nuxt") {
+    return buildNuxtSnippet(appUrl);
+  }
+  if (framework === "netlify") {
+    return buildNetlifySnippet(appUrl);
+  }
+  return buildNextSnippet(appUrl);
+}
+
+export function buildGeoSnippets(appUrl: string): GeoIngestSnippets {
+  return {
+    next: buildGeoSnippet(appUrl, "next"),
+    nuxt: buildGeoSnippet(appUrl, "nuxt"),
+    netlify: buildGeoSnippet(appUrl, "netlify"),
+  };
 }

@@ -2,154 +2,194 @@
 
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useState } from "react";
+import { DEFAULT_LANGUAGE } from "@notra/ai/constants/languages";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { GeoBar } from "@/components/geo/geo-bar";
 import { GeoLanguagesDialog } from "@/components/geo/geo-languages-dialog";
+import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Twemoji } from "@/components/geo/twemoji";
-import {
-  InstrumentEmpty,
-  InstrumentSection,
-} from "@/components/instrument/instrument-module";
+import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { GEO_LANGUAGE_FLAGS } from "@/constants/geo";
+import {
+  GEO_LANGUAGE_FLAGS,
+  GEO_MAX_LANGUAGES,
+  GEO_VISIBILITY_TABLE_ROWS,
+} from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
 import type {
-  GeoLanguageSharePoint,
   LanguagePerformanceCardProps,
+  LanguagePerformanceRow,
 } from "@/types/geo";
 import { formatMentionRate } from "@/utils/geo-charts";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
-import { tableHeightFor } from "@/utils/table";
+import {
+  buildLanguagePerformanceRows,
+  extraGeoLanguages,
+  withAddedGeoLanguage,
+} from "@/utils/geo-language-rows";
+import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
 
-const BASELINE_LANGUAGE = "English";
-
-const LANGUAGE_COLUMNS: TableColumn<GeoLanguageSharePoint>[] = [
-  {
-    key: "language",
-    header: "Language",
-    width: "1.2fr",
-    sortable: true,
-    cell: (row) => (
-      <span className="flex min-w-0 items-center gap-1.5 text-sm">
-        <Twemoji
-          className="size-4 shrink-0"
-          emoji={GEO_LANGUAGE_FLAGS[row.language] ?? ""}
-          label={row.language}
-        />
-        <span
-          className={cn(
-            "truncate",
-            row.language === BASELINE_LANGUAGE
-              ? "text-foreground/70"
-              : "font-medium"
-          )}
-        >
-          {row.language}
-        </span>
-      </span>
-    ),
-  },
-  {
-    key: "mentionRate",
-    header: "Mention rate",
-    width: "1.6fr",
-    sortable: true,
-    sortValue: (row) => row.mentionRate,
-    cell: (row) => (
-      <span className="flex items-center gap-2">
-        <GeoBar
-          className="h-2 max-w-40"
-          fillClassName={
-            row.language === BASELINE_LANGUAGE ? "bg-chart-2" : "bg-chart-1"
-          }
-          value={row.mentionRate}
-        />
-        <span className="shrink-0 text-xs tabular-nums">
-          {formatMentionRate(row.mentionRate)}
-        </span>
-      </span>
-    ),
-  },
-  {
-    key: "checks",
-    header: "Checks",
-    width: "8.75rem",
-    align: "right",
-    sortable: true,
-    cell: (row) => (
-      <span className="text-[0.6875rem] text-muted-foreground tabular-nums">
-        {row.mentions}/{row.checks} checks
-      </span>
-    ),
-  },
-];
-
-function LanguageScanEmpty({ isScanning }: { isScanning: boolean }) {
-  return (
-    <InstrumentEmpty
-      busy={isScanning}
-      className="flex-1"
-      message={geoScanEmptyMessage(
-        isScanning,
-        "Run a scan to see how engines answer beyond English"
-      )}
-      seed="Performance by language"
-    />
-  );
+function languageNameClass(language: string, muted?: boolean) {
+  if (muted) {
+    return undefined;
+  }
+  if (language === DEFAULT_LANGUAGE) {
+    return "text-foreground/70";
+  }
+  return "font-medium";
 }
 
-function LanguageAddEmpty({ onAddLanguages }: { onAddLanguages: () => void }) {
-  return (
-    <InstrumentEmpty
-      action={
-        <Button onClick={onAddLanguages} size="sm" type="button">
-          <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-          Add languages
-        </Button>
-      }
-      className="flex-1"
-      message="See how engines answer beyond English"
-      seed="Performance by language"
-    />
-  );
+function trackedChecksLabel(
+  mentions: number,
+  checks: number,
+  isScanning: boolean
+) {
+  if (checks > 0) {
+    return `${mentions}/${checks} checks`;
+  }
+  if (isScanning) {
+    return "Scanning…";
+  }
+  return "No checks yet";
 }
 
-function LanguagePerformanceBody({
-  hasExtraLanguages,
-  isScanning,
-  onAddLanguages,
-  points,
+function LanguageNameCell({
+  language,
+  muted,
 }: {
-  hasExtraLanguages: boolean;
-  isScanning: boolean;
-  onAddLanguages: () => void;
-  points: GeoLanguageSharePoint[];
+  language: string;
+  muted?: boolean;
 }) {
-  if (hasExtraLanguages && points.length > 0) {
-    return (
-      <div className="flex flex-col gap-2">
-        <Table
-          className="rounded-2xl"
-          columns={LANGUAGE_COLUMNS}
-          data={points}
-          defaultSort={{ key: "mentionRate", direction: "desc" }}
-          emptyState="No language results yet"
-          getRowId={(row) => row.language}
-          height={tableHeightFor(points.length)}
-          resizable
-          rowHeight={TABLE_ROW_HEIGHT}
+  return (
+    <span
+      className={cn(
+        "flex min-w-0 items-center gap-1.5 text-sm",
+        muted && "text-muted-foreground"
+      )}
+    >
+      <Twemoji
+        className={cn("size-4 shrink-0", muted && "opacity-40")}
+        emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+        label={language}
+      />
+      <span
+        className={cn("min-w-0 truncate", languageNameClass(language, muted))}
+      >
+        {language}
+      </span>
+    </span>
+  );
+}
+
+function LanguageAddButton({
+  language,
+  disabled,
+  pending,
+  onAdd,
+}: {
+  language: string;
+  disabled: boolean;
+  pending: boolean;
+  onAdd: (language: string) => void;
+}) {
+  return (
+    <Button
+      aria-label={`Add ${language}`}
+      className="shrink-0"
+      disabled={disabled}
+      onClick={() => onAdd(language)}
+      size="sm"
+      type="button"
+      variant="outline"
+    >
+      {pending ? (
+        <StatusSpinner />
+      ) : (
+        <HugeiconsIcon className="size-3.5" icon={PlusSignIcon} />
+      )}
+      Add
+    </Button>
+  );
+}
+
+function languagePerformanceColumns({
+  adding,
+  atLimit,
+  isScanning,
+  pendingLanguage,
+  onAddLanguage,
+}: {
+  adding: boolean;
+  atLimit: boolean;
+  isScanning: boolean;
+  pendingLanguage: string | undefined;
+  onAddLanguage: (language: string) => void;
+}): TableColumn<LanguagePerformanceRow>[] {
+  return [
+    {
+      key: "language",
+      header: "Language",
+      width: "1.2fr",
+      sortable: true,
+      cell: (row) => (
+        <LanguageNameCell
+          language={row.language}
+          muted={row.kind === "suggested"}
         />
-      </div>
-    );
-  }
-
-  if (hasExtraLanguages) {
-    return <LanguageScanEmpty isScanning={isScanning} />;
-  }
-
-  return <LanguageAddEmpty onAddLanguages={onAddLanguages} />;
+      ),
+    },
+    {
+      key: "mentionRate",
+      header: "Mention rate",
+      width: "1.6fr",
+      sortable: true,
+      sortValue: (row) =>
+        row.kind === "tracked" ? row.mentionRate : Number.NEGATIVE_INFINITY,
+      cell: (row) =>
+        row.kind === "suggested" ? (
+          <span className="text-muted-foreground/50 text-xs">Not tracked</span>
+        ) : (
+          <span className="flex items-center gap-2">
+            <GeoBar
+              className="h-2 max-w-40"
+              fillClassName={
+                row.language === DEFAULT_LANGUAGE
+                  ? "bg-muted-foreground/40"
+                  : "bg-geo-search"
+              }
+              value={row.mentionRate}
+            />
+            <span className="shrink-0 text-xs tabular-nums">
+              {formatMentionRate(row.mentionRate)}
+            </span>
+          </span>
+        ),
+    },
+    {
+      key: "checks",
+      header: "Checks",
+      width: "8.75rem",
+      align: "right",
+      sortable: true,
+      sortValue: (row) =>
+        row.kind === "tracked" ? row.checks : Number.NEGATIVE_INFINITY,
+      cell: (row) =>
+        row.kind === "suggested" ? (
+          <LanguageAddButton
+            disabled={adding || atLimit}
+            language={row.language}
+            onAdd={onAddLanguage}
+            pending={pendingLanguage === row.language}
+          />
+        ) : (
+          <span className="text-[0.6875rem] text-muted-foreground tabular-nums">
+            {trackedChecksLabel(row.mentions, row.checks, isScanning)}
+          </span>
+        ),
+    },
+  ];
 }
 
 export function LanguagePerformanceCard({
@@ -159,23 +199,99 @@ export function LanguagePerformanceCard({
   isScanning = false,
 }: LanguagePerformanceCardProps) {
   const [languagesOpen, setLanguagesOpen] = useState(false);
-  const hasExtraLanguages =
-    settings.languages.length > 0 ||
-    points.some((point) => point.language !== BASELINE_LANGUAGE);
+  const upsert = useGeoSettingsUpsert(organizationId);
+  const savedExtras = extraGeoLanguages(settings.languages);
+  const savedExtraSet = new Set(savedExtras);
+  const configuredLanguages =
+    upsert.isPending && upsert.variables
+      ? extraGeoLanguages(upsert.variables.languages)
+      : savedExtras;
+  const pendingLanguage =
+    configuredLanguages.find((language) => !savedExtraSet.has(language)) ??
+    savedExtras.find((language) => !configuredLanguages.includes(language));
+  const atLimit = configuredLanguages.length >= GEO_MAX_LANGUAGES;
+
+  const rows = buildLanguagePerformanceRows({
+    configuredLanguages,
+    points,
+    slotCount: GEO_VISIBILITY_TABLE_ROWS,
+  });
+
+  const persistLanguages = useCallback(
+    (next: string[] | null) => {
+      if (upsert.isPending) {
+        return;
+      }
+      const companyName = settings.companyName.trim();
+      if (next === null || companyName.length === 0) {
+        return;
+      }
+      upsert.mutate({
+        aliases: settings.aliases,
+        companyName,
+        competitors: settings.competitors,
+        enabled: settings.enabled,
+        languages: next,
+        organizationId,
+      });
+    },
+    [
+      organizationId,
+      settings.aliases,
+      settings.companyName,
+      settings.competitors,
+      settings.enabled,
+      upsert,
+    ]
+  );
+
+  const handleAddLanguage = useCallback(
+    (language: string) => {
+      persistLanguages(withAddedGeoLanguage(configuredLanguages, language));
+    },
+    [configuredLanguages, persistLanguages]
+  );
+
+  const columns = useMemo(
+    () =>
+      languagePerformanceColumns({
+        adding: upsert.isPending,
+        atLimit,
+        isScanning,
+        onAddLanguage: handleAddLanguage,
+        pendingLanguage,
+      }),
+    [atLimit, handleAddLanguage, isScanning, pendingLanguage, upsert.isPending]
+  );
 
   return (
     <>
       <InstrumentSection
-        bodyClassName="flex flex-col"
-        className="flex-1"
+        action={
+          <button
+            className="text-muted-foreground text-xs underline-offset-4 hover:text-foreground hover:underline"
+            onClick={() => setLanguagesOpen(true)}
+            type="button"
+          >
+            Languages
+          </button>
+        }
+        bodyClassName="flex min-h-0 flex-1 flex-col"
+        className="h-full"
         eyebrow="Performance by language"
         readout={points.length > 0 ? "30D" : undefined}
       >
-        <LanguagePerformanceBody
-          hasExtraLanguages={hasExtraLanguages}
-          isScanning={isScanning}
-          onAddLanguages={() => setLanguagesOpen(true)}
-          points={points}
+        <Table
+          className="rounded-2xl"
+          columns={columns}
+          data={rows}
+          defaultSort={{ key: "mentionRate", direction: "desc" }}
+          emptyState="No language results yet"
+          getRowId={(row) => `${row.kind}:${row.language}`}
+          height={GEO_VISIBILITY_TABLE_HEIGHT}
+          minHeight={GEO_VISIBILITY_TABLE_HEIGHT}
+          resizable
+          rowHeight={TABLE_ROW_HEIGHT}
         />
       </InstrumentSection>
       <GeoLanguagesDialog

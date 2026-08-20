@@ -12,6 +12,9 @@ import {
   EMPTY_STATE_ROW_KEYS,
   EMPTY_STATE_SKILL_CARD_LAYOUTS,
   EMPTY_STATE_STAT_KEYS,
+  EMPTY_STATE_TABLE_COLUMNS,
+  EMPTY_STATE_TABLE_ROWS,
+  EMPTY_STATE_TRAFFIC_STAT_COUNT,
 } from "@/constants/empty-state";
 import { cn } from "@/lib/utils";
 import type {
@@ -219,6 +222,31 @@ export function EmptyStateAnalyticsPreview() {
         </div>
         <AnalyticsChartGhost bars={EMPTY_STATE_CHART_BARS.slice(3, 11)} />
       </div>
+    </div>
+  );
+}
+
+export function EmptyStateTrafficPreview() {
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-3 gap-3">
+        {EMPTY_STATE_STAT_KEYS.slice(0, EMPTY_STATE_TRAFFIC_STAT_COUNT).map(
+          (key) => (
+            <div
+              className="flex flex-col justify-center gap-2 rounded-xl border border-border/80 bg-card p-4"
+              key={key}
+            >
+              <GhostBar className="h-3 w-16" />
+              <GhostBar className="h-7 w-12" />
+              <GhostBar className="h-3 w-24" />
+            </div>
+          )
+        )}
+      </div>
+      <EmptyStateTablePreview
+        columns={EMPTY_STATE_TABLE_COLUMNS.traffic}
+        rows={EMPTY_STATE_TABLE_ROWS}
+      />
     </div>
   );
 }

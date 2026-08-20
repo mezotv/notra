@@ -7,6 +7,8 @@ export const EMPTY_STATE_TABLE_COLUMNS = {
   sitemap: [220, 72, 96],
   prompts: [240, 72, 56],
   competitors: [160, 120, 72, 88],
+  citations: [108, 140, 160, 96, 88],
+  traffic: [128, 96, 72, 80, 88],
 } as const;
 
 export const EMPTY_STATE_TABLE_ROWS = 6;
@@ -54,6 +56,8 @@ export const EMPTY_STATE_STAT_KEYS = [
   "stat-c",
   "stat-d",
 ] as const;
+
+export const EMPTY_STATE_TRAFFIC_STAT_COUNT = 3;
 
 export const EMPTY_STATE_CHART_BARS = [
   28, 44, 36, 52, 40, 48, 32, 56, 42, 38, 50, 34,

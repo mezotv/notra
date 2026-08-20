@@ -3,7 +3,7 @@
 import { DirectionDonut } from "@/components/geo/directions/direction-donut";
 import { DirectionEngineBars } from "@/components/geo/directions/direction-engine-bars";
 import { DirectionPagesTable } from "@/components/geo/directions/direction-pages-table";
-import { GEO_MEMORY_LABEL, GEO_SEARCH_LABEL } from "@/constants/geo";
+import { GEO_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_CHECK_COUNT,
   GEO_DIRECTIONS_COMPANY,
@@ -43,7 +43,7 @@ export function DirectionReport() {
         <p className="text-muted-foreground text-sm leading-relaxed">
           {GEO_SEARCH_LABEL} names you in{" "}
           <span className="font-semibold text-foreground">71%</span> of answers,
-          while {GEO_MEMORY_LABEL} gets you to{" "}
+          while ChatGPT without search gets you to{" "}
           <span className="font-semibold text-foreground">62%</span>.
         </p>
         <DirectionEngineBars />

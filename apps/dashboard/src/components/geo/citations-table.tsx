@@ -1,0 +1,161 @@
+"use client";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import { EngineIcon } from "@/components/geo/engine-icon";
+import { PurposeBadge } from "@/components/geo/purpose-badge";
+import { CountryFlag } from "@/components/geo/twemoji";
+import { Table, type TableColumn } from "@/components/motion/table";
+import {
+  AI_TRAFFIC_CONFIDENCE_LABELS,
+  AI_TRAFFIC_PURPOSE_LABELS,
+  GEO_CITATIONS_ROW_HEIGHT,
+} from "@/constants/geo";
+import type { CitationsTableProps, GeoTrafficLogEntry } from "@/types/geo";
+import { countryName } from "@/utils/country";
+import {
+  citationRowId,
+  formatCitationProvider,
+  formatCitationTimestamp,
+} from "@/utils/geo-citations";
+
+function ProviderCell({ entry }: { entry: GeoTrafficLogEntry }) {
+  const label = formatCitationProvider(
+    entry.agent,
+    entry.source,
+    entry.visitorType
+  );
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span className="inline-flex cursor-default items-center gap-2" />
+        }
+      >
+        <EngineIcon engine={entry.agent || entry.source} />
+        <span className="truncate">{label}</span>
+      </TooltipTrigger>
+      <TooltipContent>
+        <span className="block font-mono">{entry.agent || entry.source}</span>
+        <span className="block text-muted-foreground">
+          {AI_TRAFFIC_PURPOSE_LABELS[entry.category] ?? entry.category}
+        </span>
+        <span className="block text-muted-foreground">
+          {AI_TRAFFIC_CONFIDENCE_LABELS[entry.confidence] ?? entry.confidence}
+        </span>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+function MarkdownFlag({ wantsMarkdown }: { wantsMarkdown: boolean }) {
+  if (!wantsMarkdown) {
+    return null;
+  }
+
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span className="cursor-default rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] text-muted-foreground" />
+        }
+      >
+        MD
+      </TooltipTrigger>
+      <TooltipContent>Requested markdown (Accept header)</TooltipContent>
+    </Tooltip>
+  );
+}
+
+const CITATIONS_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
+  {
+    key: "capturedAt",
+    header: "When",
+    width: "10.5rem",
+    sortable: true,
+    sortValue: (entry) => entry.capturedAt,
+    cell: (entry) => (
+      <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+        {formatCitationTimestamp(entry.capturedAt)}
+      </span>
+    ),
+  },
+  {
+    key: "source",
+    header: "Provider",
+    width: "12rem",
+    sortable: true,
+    sortValue: (entry) =>
+      formatCitationProvider(entry.agent, entry.source, entry.visitorType),
+    cell: (entry) => (
+      <span className="font-medium text-sm">
+        <ProviderCell entry={entry} />
+      </span>
+    ),
+  },
+  {
+    key: "path",
+    header: "Path",
+    width: "18rem",
+    cell: (entry) => (
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="truncate font-mono text-xs" title={entry.path}>
+          {entry.path}
+        </span>
+        <MarkdownFlag wantsMarkdown={entry.wantsMarkdown} />
+      </span>
+    ),
+  },
+  {
+    key: "category",
+    header: "Purpose",
+    width: "9.5rem",
+    sortable: true,
+    sortValue: (entry) =>
+      AI_TRAFFIC_PURPOSE_LABELS[entry.category] ?? entry.category,
+    cell: (entry) => <PurposeBadge category={entry.category} />,
+  },
+  {
+    key: "country",
+    header: "Country",
+    sortable: true,
+    sortValue: (row) => countryName(row.country),
+    cell: (row) =>
+      row.country ? (
+        <span className="flex min-w-0 items-center gap-2">
+          <CountryFlag className="size-4 shrink-0" code={row.country} />
+          <span className="truncate">{countryName(row.country)}</span>
+        </span>
+      ) : (
+        <span className="text-muted-foreground">-</span>
+      ),
+  },
+];
+
+const CITATIONS_DEFAULT_SORT = {
+  key: "capturedAt",
+  direction: "desc",
+} as const;
+
+export function CitationsTable({
+  entries,
+  height,
+  loading = false,
+}: CitationsTableProps) {
+  return (
+    <Table
+      className="rounded-2xl"
+      columns={CITATIONS_COLUMNS}
+      data={entries}
+      defaultSort={CITATIONS_DEFAULT_SORT}
+      getRowId={citationRowId}
+      height={height}
+      loading={loading}
+      resizable
+      rowHeight={GEO_CITATIONS_ROW_HEIGHT}
+    />
+  );
+}

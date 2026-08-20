@@ -10,6 +10,7 @@ import type { CompetitorShareCardProps, ShareOfVoiceRow } from "@/types/geo";
 export function CompetitorShareCard({
   points,
   companyName,
+  aliases,
   competitors,
   isScanning = false,
   organizationSlug,
@@ -45,6 +46,8 @@ export function CompetitorShareCard({
       readout={points.length > 0 ? "30D" : undefined}
     >
       <ShareOfVoiceDonut
+        aliases={aliases}
+        companyName={companyName}
         competitors={competitors}
         isScanning={isScanning}
         limit={GEO_SHARE_OF_VOICE_PAGE_TOP_BRANDS}

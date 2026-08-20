@@ -9,7 +9,10 @@ export function GeoBar({
   max = 1,
   className,
   fillClassName,
+  fillColor,
 }: GeoBarProps) {
+  const hasFillTone =
+    Boolean(fillColor) || Boolean(fillClassName?.includes("bg-"));
   return (
     <span
       className={cn(
@@ -18,8 +21,15 @@ export function GeoBar({
       )}
     >
       <span
-        className={cn("block h-full bg-chart-1", fillClassName)}
-        style={{ width: `${barWidthPercent(value, max)}%` }}
+        className={cn(
+          "block h-full",
+          hasFillTone ? undefined : "bg-geo-search",
+          fillClassName
+        )}
+        style={{
+          width: `${barWidthPercent(value, max)}%`,
+          ...(fillColor ? { backgroundColor: fillColor } : {}),
+        }}
       />
     </span>
   );

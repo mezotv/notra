@@ -32,6 +32,7 @@ export function PromptFunnelCard({
 
   return (
     <InstrumentSection
+      className="h-full"
       eyebrow="Prompt funnel"
       readout={promptFunnelReadout(isScanning, promptCount)}
     >

@@ -1,13 +1,24 @@
 import {
   ACCOUNT_SERIES_COLORS,
+  CHART_MEMORY_FILL_CLASS,
   CHART_MUTED_COLOR,
-  CHART_OTHER_SLICE_LABEL,
-  DONUT_SLICE_COLORS,
+  CHART_PRIMARY_COLOR,
+  CHART_SEARCH_FILL_CLASS,
+  CHART_SECONDARY_COLOR,
+  MODEL_USAGE_SERIES_COLORS,
 } from "@/constants/charts";
 import type { ChartColorPair, ChartSeriesColors } from "@/types/charts";
 
 export function seriesColors(pair: ChartColorPair): ChartSeriesColors {
   return { light: [pair.light], dark: [pair.dark] };
+}
+
+export function geoModeFillClass(variant: "web" | "raw"): string {
+  return variant === "web" ? CHART_SEARCH_FILL_CLASS : CHART_MEMORY_FILL_CLASS;
+}
+
+export function geoModeColor(variant: "web" | "raw"): ChartColorPair {
+  return variant === "web" ? CHART_PRIMARY_COLOR : CHART_SECONDARY_COLOR;
 }
 
 export function accountSeriesColorPair(index: number): ChartColorPair {
@@ -21,21 +32,9 @@ export function accountSeriesColors(index: number): ChartSeriesColors {
   return seriesColors(accountSeriesColorPair(index));
 }
 
-export function donutSliceColorPair(
-  index: number,
-  name: string
-): ChartColorPair {
-  if (name === CHART_OTHER_SLICE_LABEL) {
-    return CHART_MUTED_COLOR;
-  }
-  return (
-    DONUT_SLICE_COLORS[index % DONUT_SLICE_COLORS.length] ?? CHART_MUTED_COLOR
+export function modelUsageSeriesColors(index: number): ChartSeriesColors {
+  return seriesColors(
+    MODEL_USAGE_SERIES_COLORS[index % MODEL_USAGE_SERIES_COLORS.length] ??
+      CHART_MUTED_COLOR
   );
-}
-
-export function donutSliceColors(
-  index: number,
-  name: string
-): ChartSeriesColors {
-  return seriesColors(donutSliceColorPair(index, name));
 }

@@ -4,8 +4,9 @@ import {
   CHART_PERCENT_SCALE,
 } from "@/constants/charts";
 import {
+  GEO_BRAND_LABELS,
   GEO_ENGINE_LABELS,
-  GEO_MEMORY_LABEL,
+  GEO_MENTION_TREND_TOTAL_KEY,
   GEO_SEARCH_LABEL,
   GEO_SHARE_OF_VOICE_TOP_BRANDS,
 } from "@/constants/geo";
@@ -14,19 +15,20 @@ import type {
   GeoCompetitorSharePoint,
   GeoEngineFamily,
   GeoEngineFamilyTotals,
-  GeoHeroSummary,
+  GeoEngineVariant,
   GeoOverviewEngine,
   GeoSparklinePoint,
   GeoTimeseriesPoint,
-  MentionRateRow,
   MentionRateSparklineOptions,
-  MentionRateTrend,
+  MentionTrend,
+  MentionTrendRow,
   ShareOfVoiceDonutSlice,
   ShareOfVoiceRow,
 } from "@/types/geo";
-import { formatDayLabel } from "@/utils/analytics-charts";
+import { formatDayLabel, todayIsoDate } from "@/utils/analytics-charts";
 import { chartKey } from "@/utils/chart-keys";
 import { mergeCompetitorSharePoints } from "@/utils/geo-competitors";
+import { resolveEngineIconKey } from "@/utils/geo-engine-icon";
 import {
   GROUNDED_SUFFIX_PATTERN,
   isGroundedEngine,
@@ -76,6 +78,10 @@ export function formatChartPercent(value: number): string {
   return `${Math.round(value)}%`;
 }
 
+export function formatChartInteger(value: number): string {
+  return Math.round(value).toLocaleString("en-US");
+}
+
 const SHARE_DECIMALS = 10;
 const MIN_SHARE_PERCENT = 0.1;
 
@@ -88,7 +94,7 @@ export function formatUsageShare(share: number): string {
 }
 
 export function barWidthPercent(value: number, max: number): number {
-  if (max <= 0) {
+  if (max <= 0 || value <= 0) {
     return 0;
   }
   return Math.max((value / max) * CHART_PERCENT_SCALE, CHART_MIN_BAR_PERCENT);
@@ -114,12 +120,56 @@ export function listDaysThrough(firstDay: string, lastDay: string): string[] {
   return days;
 }
 
-function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
+function isoDateDaysAgo(days: number, today = todayIsoDate()): string {
+  const start = new Date(`${today}T00:00:00Z`);
+  start.setUTCDate(start.getUTCDate() - (days - 1));
+  return start.toISOString().slice(0, 10);
 }
 
-export function latestChartDay(lastKnownDay: string): string {
-  const today = todayIsoDate();
+export function filterTimeseriesByDays(
+  points: readonly GeoTimeseriesPoint[],
+  days: number,
+  today = todayIsoDate()
+): GeoTimeseriesPoint[] {
+  const start = isoDateDaysAgo(days, today);
+  return points.filter((point) => point.day >= start && point.day <= today);
+}
+
+function visibleEngineStats(
+  row: MentionTrendRow,
+  keys: readonly string[]
+): { total: number; count: number } | null {
+  let total = 0;
+  let count = 0;
+  for (const key of keys) {
+    const value = row[key];
+    if (typeof value === "number" && value > 0) {
+      total += value;
+      count += 1;
+    }
+  }
+  return count > 0 ? { total, count } : null;
+}
+
+function rowVisibleAverage(
+  row: MentionTrendRow,
+  keys: readonly string[]
+): number | null {
+  const stats = visibleEngineStats(row, keys);
+  return stats ? stats.total / stats.count : null;
+}
+
+export function fitMentionTrendAverage(
+  rows: readonly MentionTrendRow[],
+  keys: readonly string[]
+): (number | null)[] {
+  return rows.map((row) => rowVisibleAverage(row, keys));
+}
+
+export function latestChartDay(
+  lastKnownDay: string,
+  today = todayIsoDate()
+): string {
   return lastKnownDay > today ? lastKnownDay : today;
 }
 
@@ -135,10 +185,14 @@ export function mentionRateSparkline(
   options?: MentionRateSparklineOptions
 ): GeoSparklinePoint[] {
   const family = options?.family;
+  const model = options?.model;
   const mode = options?.mode ?? "all";
   const byDay = new Map<string, { mentions: number; checks: number }>();
   for (const point of points) {
     if (family && engineFamilyOf(point.engine) !== family) {
+      continue;
+    }
+    if (model && engineModelOf(point.engine) !== model) {
       continue;
     }
     if (mode === "search" && !isGroundedEngine(point.engine)) {
@@ -162,41 +216,34 @@ export function mentionRateSparkline(
   });
 }
 
-export function toSparklineSeries(points: readonly GeoSparklinePoint[]): {
-  data: number[];
-  labels: string[];
-} {
-  return {
-    data: points.map((point) => point.value),
-    labels: points.map((point) => formatDayLabel(point.day)),
-  };
-}
-
 function daysWithSettledUsage(knownDays: readonly string[]): string[] {
   const settled = knownDays.filter((day) => day < todayIsoDate());
   return settled.length > 0 ? [...settled] : [...knownDays];
 }
 
-function engineHasUsage(
+function engineMentionTotal(
   engine: string,
   days: readonly string[],
   byDay: ReadonlyMap<string, ReadonlyMap<string, GeoTimeseriesPoint>>
-): boolean {
-  return days.some((day) => (byDay.get(day)?.get(engine)?.checks ?? 0) > 0);
+): number {
+  return days.reduce(
+    (total, day) => total + (byDay.get(day)?.get(engine)?.mentions ?? 0),
+    0
+  );
 }
 
-export function buildMentionRateRows(
+export function buildMentionTrendRows(
   points: GeoTimeseriesPoint[]
-): MentionRateTrend {
+): MentionTrend {
   const byDay = new Map<string, Map<string, GeoTimeseriesPoint>>();
   for (const point of points) {
-    const family = engineFamilyOf(point.engine);
+    const model = engineModelOf(point.engine);
     const dayPoints: Map<string, GeoTimeseriesPoint> =
       byDay.get(point.day) ?? new Map();
-    const existing = dayPoints.get(family);
-    dayPoints.set(family, {
+    const existing = dayPoints.get(model);
+    dayPoints.set(model, {
       day: point.day,
-      engine: family,
+      engine: model,
       checks: (existing?.checks ?? 0) + point.checks,
       mentions: (existing?.mentions ?? 0) + point.mentions,
     });
@@ -206,100 +253,73 @@ export function buildMentionRateRows(
   const knownDays = [...byDay.keys()].sort();
   const usageWindow = daysWithSettledUsage(knownDays);
   const engines = [
-    ...new Set(points.map((point) => engineFamilyOf(point.engine))),
-  ].filter((engine) => engineHasUsage(engine, usageWindow, byDay));
+    ...new Set(points.map((point) => engineModelOf(point.engine))),
+  ];
   const firstDay = knownDays.at(0);
   const lastDay = knownDays.at(-1);
   const days =
     firstDay && lastDay ? listDaysThrough(firstDay, lastDay) : knownDays;
   const rows = days.map((day) => {
-    const row: MentionRateRow = { day: formatDayLabel(day), rawDay: day };
+    const row: MentionTrendRow = { day: formatDayLabel(day), rawDay: day };
     const dayPoints = byDay.get(day);
+    let total = 0;
+    let sampled = false;
     for (const engine of engines) {
       const point = dayPoints?.get(engine);
-      row[chartKey(engine)] = point
-        ? ratePercent(point.mentions, point.checks)
-        : null;
+      row[chartKey(engine)] = point ? point.mentions : null;
+      if (point) {
+        total += point.mentions;
+        sampled = true;
+      }
     }
+    row[GEO_MENTION_TREND_TOTAL_KEY] = sampled ? total : null;
     return row;
   });
 
-  const latest = [...rows]
-    .reverse()
-    .find((row) =>
-      engines.some((engine) => typeof row[chartKey(engine)] === "number")
-    );
-  const ranked = [...engines].sort((left, right) => {
-    const leftRate = Number(latest?.[chartKey(left)] ?? -1);
-    const rightRate = Number(latest?.[chartKey(right)] ?? -1);
-    return rightRate - leftRate;
-  });
+  const ranked = [...engines].sort(
+    (left, right) =>
+      engineMentionTotal(right, usageWindow, byDay) -
+      engineMentionTotal(left, usageWindow, byDay)
+  );
 
   return { rows, engines: ranked };
 }
 
-function poolRate(pool: GeoOverviewEngine[]): number | null {
-  const checks = pool.reduce((total, engine) => total + engine.checks, 0);
-  if (checks === 0) {
-    return null;
-  }
-  const mentions = pool.reduce((total, engine) => total + engine.mentions, 0);
-  return mentions / checks;
-}
-
-export function buildGeoHeroSummary(
-  engines: GeoOverviewEngine[]
-): GeoHeroSummary {
-  const grounded = engines.filter((engine) => isGroundedEngine(engine.engine));
-  const raw = engines.filter((engine) => !isGroundedEngine(engine.engine));
-  const groundedRate = poolRate(grounded);
-  const rawRate = poolRate(raw);
-  const visibilityRate = groundedRate ?? poolRate(engines);
-  const gapPoints =
-    groundedRate !== null && rawRate !== null
-      ? Math.round((groundedRate - rawRate) * CHART_PERCENT_SCALE)
-      : null;
-  const bestEngine =
-    [...engines].sort((a, b) => b.mentionRate - a.mentionRate)[0] ?? null;
-  return {
-    visibilityRate,
-    grounded: groundedRate !== null,
-    gapPoints,
-    bestEngine,
-  };
-}
-
-export function gapInsight(gapPoints: number | null): string {
-  if (gapPoints === null) {
-    return "mention rate across all engines";
-  }
-  if (gapPoints > 0) {
-    return `+${gapPoints} pts in ${GEO_SEARCH_LABEL} vs ${GEO_MEMORY_LABEL}`;
-  }
-  if (gapPoints < 0) {
-    return `+${Math.abs(gapPoints)} pts in ${GEO_MEMORY_LABEL} vs ${GEO_SEARCH_LABEL}`;
-  }
-  return `${GEO_SEARCH_LABEL} and ${GEO_MEMORY_LABEL} on par`;
-}
-
-function engineFamilyOf(engine: string): string {
+export function engineModelOf(engine: string): string {
   return engine.replace(GROUNDED_SUFFIX_PATTERN, "");
+}
+
+export function engineFamilyOf(engine: string): string {
+  return resolveEngineIconKey(engine) ?? engineModelOf(engine);
 }
 
 export function engineFamilyLabel(family: string): string {
   return (
+    GEO_BRAND_LABELS[family] ??
     GEO_ENGINE_LABELS[family] ??
     GEO_ENGINE_LABELS[`${family}-grounded`] ??
     family
   );
 }
 
-export function formatEngineFamily(engine: string): string {
-  return engineFamilyLabel(engineFamilyOf(engine));
+export function engineVariantLabel(model: string, brandLabel: string): string {
+  const label = engineFamilyLabel(model);
+  const prefix = `${brandLabel} `;
+  return label.startsWith(prefix) ? label.slice(prefix.length) : label;
 }
 
-export function engineAnswerMode(engine: string): string {
-  return isGroundedEngine(engine) ? GEO_SEARCH_LABEL : GEO_MEMORY_LABEL;
+export function formatEngineFamily(engine: string): string {
+  const model = engineModelOf(engine);
+  return (
+    GEO_ENGINE_LABELS[model] ??
+    GEO_ENGINE_LABELS[engine] ??
+    GEO_ENGINE_LABELS[`${model}-grounded`] ??
+    engineFamilyLabel(engineFamilyOf(engine))
+  );
+}
+
+export function engineAnswerMode(engine: string): string | null {
+  return isGroundedEngine(engine) ? GEO_SEARCH_LABEL : null;
 }
 
 export function sharedEngineAnswerMode(
@@ -316,44 +336,92 @@ export function sharedEngineAnswerMode(
 }
 
 export function formatEngineWithMode(engine: string): string {
-  return `${formatEngineFamily(engine)} ${engineAnswerMode(engine)}`;
+  const family = formatEngineFamily(engine);
+  const mode = engineAnswerMode(engine);
+  return mode ? `${family} ${mode}` : family;
+}
+
+export function engineFamilySources(
+  family: GeoEngineFamily
+): GeoOverviewEngine[] {
+  return family.variants.flatMap((variant) =>
+    [variant.web, variant.raw].filter(
+      (engine): engine is GeoOverviewEngine => engine !== null
+    )
+  );
+}
+
+export function engineFamilyAvgPosition(
+  family: GeoEngineFamily
+): number | null {
+  const ranked = engineFamilySources(family)
+    .filter((engine) => engine.avgPosition !== null)
+    .sort((left, right) => right.checks - left.checks);
+  return ranked[0]?.avgPosition ?? null;
+}
+
+export function engineFamilyLastCheckedAt(
+  family: GeoEngineFamily
+): string | null {
+  let latest: string | null = null;
+  for (const engine of engineFamilySources(family)) {
+    if (
+      engine.lastCheckedAt &&
+      (latest === null || engine.lastCheckedAt > latest)
+    ) {
+      latest = engine.lastCheckedAt;
+    }
+  }
+  return latest;
+}
+
+function emptyVariant(model: string): GeoEngineVariant {
+  return { model, web: null, raw: null };
+}
+
+function variantPeakRate(variant: GeoEngineVariant): number {
+  return Math.max(variant.web?.mentionRate ?? 0, variant.raw?.mentionRate ?? 0);
 }
 
 export function groupEngineFamilies(
   engines: GeoOverviewEngine[]
 ): GeoEngineFamily[] {
-  const families = new Map<string, GeoEngineFamily>();
+  const families = new Map<string, Map<string, GeoEngineVariant>>();
   for (const engine of engines) {
     const family = engineFamilyOf(engine.engine);
-    const entry = families.get(family) ?? {
-      family,
-      web: null,
-      raw: null,
-    };
+    const model = engineModelOf(engine.engine);
+    const variants = families.get(family) ?? new Map();
+    const variant = variants.get(model) ?? emptyVariant(model);
     if (isGroundedEngine(engine.engine)) {
-      entry.web = engine;
+      variant.web = engine;
     } else {
-      entry.raw = engine;
+      variant.raw = engine;
     }
-    families.set(family, entry);
+    variants.set(model, variant);
+    families.set(family, variants);
   }
-  return [...families.values()].sort(
-    (a, b) =>
-      Math.max(b.web?.mentionRate ?? 0, b.raw?.mentionRate ?? 0) -
-      Math.max(a.web?.mentionRate ?? 0, a.raw?.mentionRate ?? 0)
-  );
+  return [...families.entries()]
+    .map(([family, variants]) => ({
+      family,
+      variants: [...variants.values()].sort(
+        (left, right) => variantPeakRate(right) - variantPeakRate(left)
+      ),
+    }))
+    .sort((left, right) => familySortRate(right) - familySortRate(left));
 }
 
 export function engineFamilyTotals(
   family: GeoEngineFamily
 ): GeoEngineFamilyTotals | null {
-  const sources = [family.web, family.raw].filter(
-    (engine): engine is GeoOverviewEngine => engine !== null
-  );
+  const sources = engineFamilySources(family);
   if (sources.length === 0) {
     return null;
   }
   const mentions = sources.reduce((sum, engine) => sum + engine.mentions, 0);
   const checks = sources.reduce((sum, engine) => sum + engine.checks, 0);
   return { mentions, checks, rate: checks === 0 ? 0 : mentions / checks };
+}
+
+function familySortRate(family: GeoEngineFamily): number {
+  return engineFamilyTotals(family)?.rate ?? -1;
 }

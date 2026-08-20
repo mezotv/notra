@@ -9,9 +9,15 @@ import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { findCompetitorDomain } from "@/lib/geo/domain";
 import type { ShareOfVoiceRow, ShareOfVoiceTableProps } from "@/types/geo";
+import { geoModeFillClass } from "@/utils/chart-colors";
 import { buildShareOfVoiceRows, formatMentionRate } from "@/utils/geo-charts";
+import {
+  isOwnBrandName,
+  shareOfVoiceRivalIndex,
+  shareOfVoiceSliceColor,
+} from "@/utils/geo-competitors";
 import { geoScanEmptyMessage } from "@/utils/geo-scan";
-import { tableHeightFor } from "@/utils/table";
+import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
 
 export function ShareOfVoiceTable({
   points,
@@ -20,10 +26,16 @@ export function ShareOfVoiceTable({
   isScanning = false,
   onRowClick,
   onRowPointerEnter,
+  companyName,
+  aliases,
 }: ShareOfVoiceTableProps) {
   const rows = useMemo(
     () => buildShareOfVoiceRows(points, { limit, competitors }),
     [points, limit, competitors]
+  );
+  const ownBrand = useMemo(
+    () => ({ companyName, aliases }),
+    [aliases, companyName]
   );
   const maxShare = rows.reduce((max, row) => Math.max(max, row.share), 0);
 
@@ -53,14 +65,29 @@ export function ShareOfVoiceTable({
         width: "1.6fr",
         sortable: true,
         sortValue: (row) => row.share,
-        cell: (row) => (
-          <span className="flex items-center gap-2">
-            <GeoBar className="h-2 max-w-40" max={maxShare} value={row.share} />
-            <span className="shrink-0 text-xs tabular-nums">
-              {formatMentionRate(row.share)}
+        cell: (row) => {
+          const own = isOwnBrandName(row.brand, companyName, aliases);
+          const color = shareOfVoiceSliceColor(
+            row.brand,
+            shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
+            competitors,
+            ownBrand
+          );
+          return (
+            <span className="flex items-center gap-2">
+              <GeoBar
+                className="h-2 max-w-40"
+                fillClassName={own ? geoModeFillClass("web") : undefined}
+                fillColor={own ? undefined : color.light}
+                max={maxShare}
+                value={row.share}
+              />
+              <span className="shrink-0 text-xs tabular-nums">
+                {formatMentionRate(row.share)}
+              </span>
             </span>
-          </span>
-        ),
+          );
+        },
       },
       {
         key: "mentions",
@@ -75,14 +102,14 @@ export function ShareOfVoiceTable({
         ),
       },
     ],
-    [competitors, maxShare]
+    [aliases, companyName, competitors, maxShare, ownBrand, rows]
   );
 
   if (rows.length === 0) {
     return (
       <InstrumentEmpty
         busy={isScanning}
-        className="h-56"
+        className="h-full"
         message={geoScanEmptyMessage(isScanning, "No competitor data yet")}
         seed="Share of voice"
       />
@@ -97,7 +124,8 @@ export function ShareOfVoiceTable({
       defaultSort={{ key: "share", direction: "desc" }}
       emptyState="No competitor data yet"
       getRowId={(row) => row.brand}
-      height={tableHeightFor(rows.length)}
+      height={GEO_VISIBILITY_TABLE_HEIGHT}
+      minHeight={GEO_VISIBILITY_TABLE_HEIGHT}
       onRowClick={onRowClick}
       onRowPointerEnter={onRowPointerEnter}
       resizable

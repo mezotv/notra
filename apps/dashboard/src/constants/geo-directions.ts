@@ -1,5 +1,5 @@
 import { CHART_PRIMARY_COLOR, CHART_SECONDARY_COLOR } from "@/constants/charts";
-import { GEO_MEMORY_LABEL, GEO_SEARCH_LABEL } from "@/constants/geo";
+import { GEO_SEARCH_LABEL, GEO_WITHOUT_SEARCH_LABEL } from "@/constants/geo";
 import type { ChartConfig } from "@/types/charts";
 import type {
   GeoCompetitorSharePoint,
@@ -16,12 +16,17 @@ import type {
   GeoDirectionTone,
 } from "@/types/geo-directions";
 import { formatDayLabel } from "@/utils/analytics-charts";
-import { donutSliceColors, seriesColors } from "@/utils/chart-colors";
+import { seriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";
+import {
+  shareOfVoiceRivalIndex,
+  shareOfVoiceSliceColor,
+} from "@/utils/geo-competitors";
 import {
   buildDirectionOverviewEngines,
   buildDirectionTimeseries,
   buildDirectionTrendRows,
+  groupDirectionEngineRows,
 } from "@/utils/geo-directions";
 
 export const GEO_DIRECTION_TABS: readonly GeoDirectionTab[] = [
@@ -60,10 +65,10 @@ export const GEO_DIRECTIONS_POSITION_CLASS: Record<string, string> = {
   low: "border-border bg-muted text-muted-foreground",
 };
 
-export const GEO_DIRECTIONS_ENGINES: readonly GeoDirectionEngineRow[] = [
+export const GEO_DIRECTIONS_ENGINE_SCANS: readonly GeoDirectionEngineRow[] = [
   {
     engine: "openai/gpt-5.4-grounded",
-    label: `ChatGPT ${GEO_SEARCH_LABEL}`,
+    label: "ChatGPT",
     rate: 0.71,
     delta: 7,
     checks: 64,
@@ -71,7 +76,7 @@ export const GEO_DIRECTIONS_ENGINES: readonly GeoDirectionEngineRow[] = [
   },
   {
     engine: "openai/gpt-5.4",
-    label: `ChatGPT ${GEO_MEMORY_LABEL}`,
+    label: "ChatGPT",
     rate: 0.62,
     delta: 4,
     checks: 64,
@@ -79,7 +84,7 @@ export const GEO_DIRECTIONS_ENGINES: readonly GeoDirectionEngineRow[] = [
   },
   {
     engine: "perplexity-sonar",
-    label: `Perplexity ${GEO_SEARCH_LABEL}`,
+    label: "Perplexity",
     rate: 0.58,
     delta: 9,
     checks: 62,
@@ -87,7 +92,7 @@ export const GEO_DIRECTIONS_ENGINES: readonly GeoDirectionEngineRow[] = [
   },
   {
     engine: "anthropic/claude-sonnet-4.6",
-    label: `Claude ${GEO_MEMORY_LABEL}`,
+    label: "Claude Sonnet",
     rate: 0.48,
     delta: 0,
     checks: 61,
@@ -95,7 +100,7 @@ export const GEO_DIRECTIONS_ENGINES: readonly GeoDirectionEngineRow[] = [
   },
   {
     engine: "google/gemini-3-flash",
-    label: `Gemini ${GEO_MEMORY_LABEL}`,
+    label: "Gemini",
     rate: 0.35,
     delta: -2,
     checks: 61,
@@ -104,9 +109,12 @@ export const GEO_DIRECTIONS_ENGINES: readonly GeoDirectionEngineRow[] = [
 ];
 
 export const GEO_DIRECTIONS_OVERVIEW_ENGINES = buildDirectionOverviewEngines(
-  GEO_DIRECTIONS_ENGINES,
+  GEO_DIRECTIONS_ENGINE_SCANS,
   GEO_DIRECTIONS_LAST_SCAN
 );
+
+export const GEO_DIRECTIONS_ENGINES: readonly GeoDirectionEngineRow[] =
+  groupDirectionEngineRows(GEO_DIRECTIONS_ENGINE_SCANS);
 
 export const GEO_DIRECTIONS_TREND_DAYS: readonly string[] = [
   "2026-07-24",
@@ -151,7 +159,7 @@ export const GEO_DIRECTIONS_TREND_CONFIG: ChartConfig = {
     colors: seriesColors(CHART_PRIMARY_COLOR),
   },
   training: {
-    label: GEO_MEMORY_LABEL,
+    label: GEO_WITHOUT_SEARCH_LABEL,
     colors: seriesColors(CHART_SECONDARY_COLOR),
   },
 };
@@ -164,6 +172,8 @@ export const GEO_DIRECTIONS_SHARE: readonly GeoCompetitorSharePoint[] = [
   { brand: "Other", mentions: 13 },
 ];
 
+const GEO_DIRECTIONS_OWN_BRAND = { companyName: GEO_DIRECTIONS_COMPANY };
+
 export const GEO_DIRECTIONS_SHARE_SLICES = GEO_DIRECTIONS_SHARE.map(
   (point, index) => ({
     brand: point.brand,
@@ -173,23 +183,37 @@ export const GEO_DIRECTIONS_SHARE_SLICES = GEO_DIRECTIONS_SHARE.map(
 );
 
 export const GEO_DIRECTIONS_SHARE_CONFIG: ChartConfig = Object.fromEntries(
-  GEO_DIRECTIONS_SHARE_SLICES.map((row, index) => [
+  GEO_DIRECTIONS_SHARE_SLICES.map((row) => [
     row.slice,
-    { label: row.brand, colors: donutSliceColors(index, row.brand) },
+    {
+      label: row.brand,
+      colors: seriesColors(
+        shareOfVoiceSliceColor(
+          row.brand,
+          shareOfVoiceRivalIndex(
+            GEO_DIRECTIONS_SHARE_SLICES,
+            row.brand,
+            GEO_DIRECTIONS_OWN_BRAND
+          ),
+          undefined,
+          GEO_DIRECTIONS_OWN_BRAND
+        )
+      ),
+    },
   ])
 );
 
 export const GEO_DIRECTIONS_PROMPT_ENGINES: readonly GeoDirectionPromptEngine[] =
   [
-    { engine: "openai/gpt-5.4-grounded", label: `ChatGPT ${GEO_SEARCH_LABEL}` },
+    { engine: "openai/gpt-5.4-grounded", label: "ChatGPT" },
     {
       engine: "anthropic/claude-sonnet-4.6",
-      label: `Claude ${GEO_MEMORY_LABEL}`,
+      label: "Claude Sonnet",
     },
-    { engine: "perplexity-sonar", label: `Perplexity ${GEO_SEARCH_LABEL}` },
+    { engine: "perplexity-sonar", label: "Perplexity" },
     {
       engine: "google/gemini-3-flash",
-      label: `Gemini ${GEO_MEMORY_LABEL}`,
+      label: "Gemini",
     },
   ];
 

@@ -18,7 +18,7 @@ import { ModelUsageCard } from "@/components/geo/model-usage-card";
 import { PromptFunnelCard } from "@/components/geo/prompt-funnel-card";
 import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
 import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
-import { TrackedEnginesCard } from "@/components/geo/tracked-engines-card";
+import { TrafficEmpty } from "@/components/geo/traffic-empty";
 import { TrafficPagesCard } from "@/components/geo/traffic-pages-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
@@ -48,7 +48,7 @@ function TabSection({
   children: ReactNode;
 }) {
   return (
-    <InstrumentReveal active={active} order={order}>
+    <InstrumentReveal active={active} className="h-full" order={order}>
       {children}
     </InstrumentReveal>
   );
@@ -61,7 +61,6 @@ export function GeoTabs({
   revealActive,
   settings,
   engines,
-  tracked,
   timeseriesPoints,
   competitorPoints,
   competitors,
@@ -105,13 +104,14 @@ export function GeoTabs({
           <MentionTrendCard points={timeseriesPoints} />
         </TabSection>
         <TabSection active={revealActive} order={1}>
-          <EngineRateTable engines={engines} isScanning={isScanning} />
-        </TabSection>
-        <TabSection active={revealActive} order={2}>
-          <TrackedEnginesCard engines={tracked} />
+          <EngineRateTable
+            engines={engines}
+            isScanning={isScanning}
+            timeseriesPoints={timeseriesPoints}
+          />
         </TabSection>
         <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-2">
-          <TabSection active={revealActive} order={3}>
+          <TabSection active={revealActive} order={2}>
             <ShareOfVoiceCard
               action={
                 <Link
@@ -121,6 +121,8 @@ export function GeoTabs({
                   All competitors
                 </Link>
               }
+              aliases={settings.aliases}
+              companyName={settings.companyName}
               competitors={competitors}
               isScanning={isScanning}
               organizationId={organizationId}
@@ -128,7 +130,7 @@ export function GeoTabs({
               points={competitorPoints}
             />
           </TabSection>
-          <TabSection active={revealActive} order={4}>
+          <TabSection active={revealActive} order={3}>
             <LanguagePerformanceCard
               isScanning={isScanning}
               organizationId={organizationId}
@@ -137,47 +139,60 @@ export function GeoTabs({
             />
           </TabSection>
         </InstrumentGrid>
-        <TabSection active={revealActive} order={5}>
+        <TabSection active={revealActive} order={4}>
           <ModelUsageCard isScanning={isScanning} usage={modelUsage} />
         </TabSection>
       </TabsContent>
 
       <TabsContent className="mt-6 flex flex-col gap-6" value="prompts">
-        <TabSection active={revealActive} order={0}>
-          <PromptFunnelCard
-            isScanning={isScanning}
-            promptCount={promptCount}
-            results={promptResults}
-          />
-        </TabSection>
-        <TabSection active={revealActive} order={1}>
-          <PromptResultsPreview
-            action={
-              <Link
-                className={TAB_LINK_CLASS}
-                href={`/${organizationSlug}/geo/prompts`}
-              >
-                All prompts
-              </Link>
-            }
-            isScanning={isScanning}
-            languages={settings.languages}
-            limit={GEO_PROMPTS_TAB_LIMIT}
-            results={promptResults}
-          />
-        </TabSection>
+        <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-2">
+          <TabSection active={revealActive} order={0}>
+            <PromptFunnelCard
+              isScanning={isScanning}
+              promptCount={promptCount}
+              results={promptResults}
+            />
+          </TabSection>
+          <TabSection active={revealActive} order={1}>
+            <PromptResultsPreview
+              action={
+                <Link
+                  className={TAB_LINK_CLASS}
+                  href={`/${organizationSlug}/geo/prompts`}
+                >
+                  All prompts
+                </Link>
+              }
+              isScanning={isScanning}
+              languages={settings.languages}
+              limit={GEO_PROMPTS_TAB_LIMIT}
+              results={promptResults}
+            />
+          </TabSection>
+        </InstrumentGrid>
       </TabsContent>
 
       <TabsContent className="mt-6 flex flex-col gap-6" value="traffic">
-        <TabSection active={revealActive} order={0}>
-          <AiTrafficCard setup={ingestSetup} traffic={traffic} />
-        </TabSection>
-        <TabSection active={revealActive} order={1}>
-          <TrafficPagesCard pages={trafficPages} />
-        </TabSection>
-        <TabSection active={revealActive} order={2}>
-          <AiTrafficLogCard organizationId={organizationId} />
-        </TabSection>
+        {(traffic?.sources.length ?? 0) === 0 ? (
+          <TabSection active={revealActive} order={0}>
+            <TrafficEmpty setup={ingestSetup} />
+          </TabSection>
+        ) : (
+          <>
+            <TabSection active={revealActive} order={0}>
+              <AiTrafficCard traffic={traffic} />
+            </TabSection>
+            <TabSection active={revealActive} order={1}>
+              <TrafficPagesCard pages={trafficPages} />
+            </TabSection>
+            <TabSection active={revealActive} order={2}>
+              <AiTrafficLogCard
+                organizationId={organizationId}
+                organizationSlug={organizationSlug}
+              />
+            </TabSection>
+          </>
+        )}
       </TabsContent>
 
       <TabsContent className="mt-6 flex flex-col gap-6" value="journeys">

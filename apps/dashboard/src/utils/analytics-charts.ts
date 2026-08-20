@@ -30,6 +30,13 @@ const dayLabelFormatter = new Intl.DateTimeFormat("en-US", {
   day: "numeric",
 });
 
+const sparklineDayLabelFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+  timeZone: "UTC",
+});
+
 export const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 export function formatMetric(value: number | null): string {
@@ -39,12 +46,24 @@ export function formatMetric(value: number | null): string {
   return compactFormatter.format(value);
 }
 
+export function todayIsoDate(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 export function formatDayLabel(day: string): string {
   const date = new Date(`${day}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) {
     return day;
   }
   return dayLabelFormatter.format(date);
+}
+
+export function formatSparklineDayLabel(day: string): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) {
+    return day;
+  }
+  return sparklineDayLabelFormatter.format(date);
 }
 
 export function accountSeriesKey(

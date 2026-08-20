@@ -3,18 +3,18 @@ import { GEO_PROMPT_FUNNEL_TOP_POSITION } from "@/constants/geo";
 import { trackedPromptScanId } from "@/lib/geo/prompts";
 import type {
   GeoPresenceStatus,
+  GeoPromptCoverage,
   GeoPromptResult,
-  GeoPromptSourceFilter,
   GeoPromptTableRow,
   GeoTrackedPrompt,
 } from "@/types/geo";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
 import { summarizePromptResults } from "@/utils/geo-presence";
 
-export function buildPromptVisibilityFunnel(
-  promptCount: number,
-  results: readonly GeoPromptResult[]
-): FunnelStage[] {
+function promptMentionSets(results: readonly GeoPromptResult[]): {
+  mentioned: Set<string>;
+  topRanked: Set<string>;
+} {
   const mentioned = new Set<string>();
   const topRanked = new Set<string>();
   for (const result of results) {
@@ -29,6 +29,39 @@ export function buildPromptVisibilityFunnel(
       topRanked.add(result.promptId);
     }
   }
+  return { mentioned, topRanked };
+}
+
+export function promptCoverage(
+  promptCount: number,
+  results: readonly GeoPromptResult[]
+): GeoPromptCoverage {
+  const { mentioned } = promptMentionSets(results);
+  if (promptCount <= 0) {
+    return { mentioned: mentioned.size, total: 0, rate: null };
+  }
+  return {
+    mentioned: mentioned.size,
+    total: promptCount,
+    rate: mentioned.size / promptCount,
+  };
+}
+
+export function promptCoverageInsight(coverage: GeoPromptCoverage): string {
+  if (coverage.rate === null) {
+    return "add prompts to scan";
+  }
+  if (coverage.mentioned === 0) {
+    return "no tracked prompts mentioned yet";
+  }
+  return `${coverage.mentioned} of ${coverage.total} tracked prompts`;
+}
+
+export function buildPromptVisibilityFunnel(
+  promptCount: number,
+  results: readonly GeoPromptResult[]
+): FunnelStage[] {
+  const { mentioned, topRanked } = promptMentionSets(results);
 
   return [
     { label: "Tracked prompts", value: promptCount },
@@ -46,10 +79,6 @@ const PRESENCE_SORT_VALUE: Record<GeoPresenceStatus, number> = {
   invisible: 1,
 };
 
-export function formatPromptSource(source: GeoTrackedPrompt["source"]): string {
-  return source === "auto" ? "Auto" : "Custom";
-}
-
 export function promptPresenceSortValue(
   status: GeoPresenceStatus | null
 ): number {
@@ -62,8 +91,7 @@ export function promptPresenceSortValue(
 export function buildPromptTableRows(
   prompts: readonly GeoTrackedPrompt[],
   results: readonly GeoPromptResult[],
-  search: string,
-  sourceFilter: GeoPromptSourceFilter
+  search: string
 ): GeoPromptTableRow[] {
   const summaries = new Map(
     summarizePromptResults([...results]).map((summary) => [
@@ -75,9 +103,6 @@ export function buildPromptTableRows(
   const rows: GeoPromptTableRow[] = [];
 
   for (const prompt of prompts) {
-    if (sourceFilter !== "all" && prompt.source !== sourceFilter) {
-      continue;
-    }
     if (!fuzzyMatches([prompt.prompt], query)) {
       continue;
     }

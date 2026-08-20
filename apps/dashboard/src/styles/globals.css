@@ -4,15 +4,21 @@
 
 :root {
   --sidebar: hsl(0 0% 100%);
+  --geo-search: var(--primary);
+  --geo-memory: oklch(0.636 0.107 206.2);
 }
 
 .dark {
   --sidebar: hsl(233 7% 8%);
+  --geo-search: var(--primary);
+  --geo-memory: oklch(0.646 0.107 206.2);
 }
 
 @theme inline {
   --font-sans: var(--font-noto-sans);
   --font-mono: var(--font-geist-mono);
+  --color-geo-search: var(--geo-search);
+  --color-geo-memory: var(--geo-memory);
 }
 
 @layer base {

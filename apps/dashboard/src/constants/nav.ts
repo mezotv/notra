@@ -12,6 +12,7 @@ import {
   Notification03Icon,
   PaintBoardIcon,
   PlugIcon,
+  QuotesIcon,
   RainbowIcon,
   WorkflowSquare01Icon,
 } from "@hugeicons/core-free-icons";
@@ -100,6 +101,12 @@ export const NAV_MAIN_ITEMS: NavMainItem[] = [
     link: "/geo/competitors",
     icon: ChartAnalysisIcon,
     label: "Competitors",
+    category: "geo",
+  },
+  {
+    link: "/geo/citations",
+    icon: QuotesIcon,
+    label: "Citations",
     category: "geo",
   },
   {

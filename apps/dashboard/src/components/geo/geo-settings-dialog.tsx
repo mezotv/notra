@@ -1,7 +1,5 @@
 "use client";
 
-import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -16,40 +14,12 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { Loader2Icon } from "lucide-react";
 import { useId, useState } from "react";
-import { GeoAliasesDialog } from "@/components/geo/geo-aliases-dialog";
-import { GeoCompetitorsDialog } from "@/components/geo/geo-competitors-dialog";
-import { GeoLanguagesDialog } from "@/components/geo/geo-languages-dialog";
+import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
+import { GeoTagList } from "@/components/geo/geo-tag-list";
+import { GEO_MAX_ALIASES, GEO_MAX_COMPETITORS } from "@/constants/geo";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
-import type {
-  GeoSettingsDialogProps,
-  GeoSettingsSectionRowProps,
-} from "@/types/geo";
-
-function SectionRow({
-  label,
-  count,
-  disabled,
-  onClick,
-}: GeoSettingsSectionRowProps) {
-  return (
-    <button
-      className="flex w-full cursor-pointer items-center justify-between border px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/50 disabled:cursor-not-allowed disabled:opacity-50"
-      disabled={disabled}
-      onClick={onClick}
-      type="button"
-    >
-      <span className="flex items-center gap-2">
-        <span className="font-medium">{label}</span>
-        <span className="text-muted-foreground tabular-nums">·</span>
-        <span className="text-muted-foreground tabular-nums">{count}</span>
-      </span>
-      <HugeiconsIcon
-        className="size-4 text-muted-foreground"
-        icon={ArrowRight01Icon}
-      />
-    </button>
-  );
-}
+import type { GeoSettingsDialogProps } from "@/types/geo";
+import { extraGeoLanguages } from "@/utils/geo-language-rows";
 
 export function GeoSettingsDialog({
   open,
@@ -59,7 +29,7 @@ export function GeoSettingsDialog({
 }: GeoSettingsDialogProps) {
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
-      <ResponsiveDialogContent>
+      <ResponsiveDialogContent className="sm:max-w-md">
         <GeoSettingsDialogBody
           onOpenChange={onOpenChange}
           organizationId={organizationId}
@@ -81,10 +51,14 @@ function GeoSettingsDialogBody({
   const [companyName, setCompanyName] = useState(
     () => settings?.companyName ?? ""
   );
+  const [aliases, setAliases] = useState(() => settings?.aliases ?? []);
+  const [competitors, setCompetitors] = useState(
+    () => settings?.competitors ?? []
+  );
+  const [languages, setLanguages] = useState(() =>
+    extraGeoLanguages(settings?.languages ?? [])
+  );
   const [enabled, setEnabled] = useState(() => settings?.enabled ?? true);
-  const [aliasesOpen, setAliasesOpen] = useState(false);
-  const [competitorsOpen, setCompetitorsOpen] = useState(false);
-  const [languagesOpen, setLanguagesOpen] = useState(false);
   const upsert = useGeoSettingsUpsert(organizationId);
 
   const handleSave = () => {
@@ -92,9 +66,9 @@ function GeoSettingsDialogBody({
       {
         organizationId,
         companyName: companyName.trim(),
-        aliases: settings?.aliases ?? [],
-        competitors: settings?.competitors ?? [],
-        languages: settings?.languages ?? [],
+        aliases,
+        competitors,
+        languages,
         enabled,
       },
       { onSuccess: () => onOpenChange(false) }
@@ -106,12 +80,13 @@ function GeoSettingsDialogBody({
   return (
     <>
       <ResponsiveDialogHeader>
-        <ResponsiveDialogTitle>GEO tracking settings</ResponsiveDialogTitle>
+        <ResponsiveDialogTitle>Tracking settings</ResponsiveDialogTitle>
         <ResponsiveDialogDescription>
-          What should AI engines be checked for? Aliases count as mentions too.
+          Company name and aliases count as mentions. Named competitors get
+          called out in scans.
         </ResponsiveDialogDescription>
       </ResponsiveDialogHeader>
-      <div className="space-y-4 px-4 md:px-0">
+      <div className="md:-mx-1 max-h-[min(28rem,60vh)] min-w-0 space-y-4 overflow-y-auto px-4 py-1 md:px-1">
         <div className="space-y-2">
           <Label htmlFor={`${id}-name`}>Company name</Label>
           <Input
@@ -121,33 +96,32 @@ function GeoSettingsDialogBody({
             value={companyName}
           />
         </div>
-        <div className="space-y-2">
-          <SectionRow
-            count={settings?.aliases.length ?? 0}
-            disabled={nameMissing}
-            label="Aliases"
-            onClick={() => setAliasesOpen(true)}
-          />
-          <SectionRow
-            count={settings?.competitors.length ?? 0}
-            disabled={nameMissing}
-            label="Competitors"
-            onClick={() => setCompetitorsOpen(true)}
-          />
-          <SectionRow
-            count={settings?.languages.length ?? 0}
-            disabled={nameMissing}
-            label="Languages"
-            onClick={() => setLanguagesOpen(true)}
-          />
-          {nameMissing && (
+        <GeoTagList
+          description="Other spellings, product names, or the bare domain."
+          id={`${id}-aliases`}
+          label="Aliases"
+          max={GEO_MAX_ALIASES}
+          onChange={setAliases}
+          placeholder="usenotra"
+          values={aliases}
+        />
+        <GeoTagList
+          description="Websites and colors live on the Competitors page."
+          id={`${id}-competitors`}
+          label="Competitors"
+          max={GEO_MAX_COMPETITORS}
+          onChange={setCompetitors}
+          placeholder="Competitor name"
+          values={competitors}
+        />
+        <GeoLanguagePicker onChange={setLanguages} selected={languages} />
+        <div className="flex items-center justify-between gap-3">
+          <div className="space-y-1">
+            <Label htmlFor={`${id}-enabled`}>Scans enabled</Label>
             <p className="text-muted-foreground text-xs">
-              Add a company name to edit these lists.
+              Turn off to pause scheduled engine checks.
             </p>
-          )}
-        </div>
-        <div className="flex items-center justify-between">
-          <Label htmlFor={`${id}-enabled`}>Scans enabled</Label>
+          </div>
           <Switch
             checked={enabled}
             id={`${id}-enabled`}
@@ -161,27 +135,6 @@ function GeoSettingsDialogBody({
           Save
         </Button>
       </ResponsiveDialogFooter>
-      <GeoAliasesDialog
-        companyName={companyName}
-        enabled={enabled}
-        onOpenChange={setAliasesOpen}
-        open={aliasesOpen}
-        organizationId={organizationId}
-        settings={settings}
-      />
-      <GeoCompetitorsDialog
-        onOpenChange={setCompetitorsOpen}
-        open={competitorsOpen}
-        organizationId={organizationId}
-      />
-      <GeoLanguagesDialog
-        companyName={companyName}
-        enabled={enabled}
-        onOpenChange={setLanguagesOpen}
-        open={languagesOpen}
-        organizationId={organizationId}
-        settings={settings}
-      />
     </>
   );
 }

@@ -14,6 +14,7 @@ import {
   queryGeoTrafficPages,
   queryGeoTrafficTimeseries,
   queryModelUsageLatest,
+  queryModelUsageTrend,
 } from "@notra/analytics/tinybird/client";
 import { db } from "@notra/db/drizzle";
 import {
@@ -35,6 +36,7 @@ import {
   GEO_MODEL_USAGE_ATTRIBUTION,
   GEO_MODEL_USAGE_DEFAULT_LIMIT,
   GEO_MODEL_USAGE_SOURCE,
+  GEO_MODEL_USAGE_TREND_WEEKS,
 } from "@/constants/geo";
 import { competitorKey } from "@/lib/geo/domain";
 import { geoDb, geoQuery } from "@/lib/geo/effect";
@@ -62,7 +64,6 @@ import {
 } from "@/lib/geo/projects";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
 import { withGeoScanStatus } from "@/lib/geo/scan-status";
-import { buildTrackedEngines } from "@/lib/geo/tracked-engines";
 import { startGeoScanRun } from "@/lib/workflows/start";
 import type {
   AiTrafficResponse,
@@ -420,7 +421,6 @@ export const loadGeoOverview = Effect.fn("geo.overview")(function* (
   const response: GeoOverviewResponse = {
     configured: isTinybirdConfigured(),
     engines,
-    tracked: buildTrackedEngines(engines),
   };
   return response;
 });
@@ -548,12 +548,19 @@ export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
   limit: number | undefined
 ) {
   const scope = yield* resolveGeoScope(input);
-  const [usage, overview] = yield* Effect.all(
+  const resolvedLimit = limit ?? GEO_MODEL_USAGE_DEFAULT_LIMIT;
+  const [usage, trend, overview] = yield* Effect.all(
     [
       geoQuery("model usage query failed", () =>
         queryModelUsageLatest({
           source: GEO_MODEL_USAGE_SOURCE,
-          limit: limit ?? GEO_MODEL_USAGE_DEFAULT_LIMIT,
+          limit: resolvedLimit,
+        })
+      ),
+      geoQuery("model usage trend query failed", () =>
+        queryModelUsageTrend({
+          source: GEO_MODEL_USAGE_SOURCE,
+          weeks: GEO_MODEL_USAGE_TREND_WEEKS,
         })
       ),
       geoQuery("overview query failed", () =>
@@ -583,6 +590,12 @@ export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
         coverage.get(row.model)
       )
     ),
+    points: (trend?.data ?? []).map((row) => ({
+      week: String(row.week).slice(0, 10),
+      model: row.model,
+      share: Number(row.avg_share),
+      tokens: row.peak_tokens === null ? null : Number(row.peak_tokens),
+    })),
   };
   return response;
 });
@@ -647,7 +660,7 @@ export const loadGeoTrafficLog = Effect.fn("geo.trafficLog")(function* (
   categories: readonly string[] | undefined
 ) {
   const scope = yield* resolveGeoScope(input);
-  const log = yield* geoQuery("traffic log query failed", () =>
+  const rows = yield* geoQuery("traffic log query failed", () =>
     queryGeoTrafficLog({
       ...geoScopeParams(scope),
       limit: limit ?? AI_TRAFFIC_DEFAULT_LOG_LIMIT,
@@ -655,10 +668,13 @@ export const loadGeoTrafficLog = Effect.fn("geo.trafficLog")(function* (
       category: categories?.join(",") ?? "",
     })
   );
+  const data = rows?.data ?? [];
+  const log = data.map(toGeoTrafficLogEntry);
 
   const response: GeoTrafficLogResponse = {
     configured: isTinybirdConfigured(),
-    log: (log?.data ?? []).map(toGeoTrafficLogEntry),
+    log,
+    total: log.length,
   };
   return response;
 });

@@ -12,7 +12,7 @@ import { GeoBar } from "@/components/geo/geo-bar";
 import { InstrumentModule } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_PERCENT_SCALE } from "@/constants/charts";
-import { GEO_MEMORY_LABEL, GEO_SEARCH_LABEL } from "@/constants/geo";
+import { GEO_SEARCH_LABEL, GEO_WITHOUT_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_ENGINES,
   GEO_DIRECTIONS_KPIS,
@@ -191,7 +191,7 @@ export function DirectionCockpit() {
         <KpiStrip />
         <InstrumentModule
           eyebrow="Mention rate trend"
-          readout={`${GEO_SEARCH_LABEL} vs ${GEO_MEMORY_LABEL}`}
+          readout={`${GEO_SEARCH_LABEL} vs ${GEO_WITHOUT_SEARCH_LABEL}`}
         >
           <EChartsLineChart
             className="h-64 w-full"

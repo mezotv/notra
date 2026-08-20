@@ -11,6 +11,7 @@ import { TrafficPagesCard } from "@/components/geo/traffic-pages-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentModule } from "@/components/instrument/instrument-module";
 import {
+  GEO_DIRECTIONS_COMPANY,
   GEO_DIRECTIONS_ENGINES,
   GEO_DIRECTIONS_KPIS,
   GEO_DIRECTIONS_OVERVIEW_ENGINES,
@@ -104,10 +105,16 @@ export function DirectionInstrument() {
           <MentionTrendCard points={GEO_DIRECTIONS_TIMESERIES} />
         </div>
         <div className="lg:col-span-4">
-          <ShareOfVoiceCard points={[...GEO_DIRECTIONS_SHARE]} />
+          <ShareOfVoiceCard
+            companyName={GEO_DIRECTIONS_COMPANY}
+            points={[...GEO_DIRECTIONS_SHARE]}
+          />
         </div>
         <div className="lg:col-span-8">
-          <MentionRateCard engines={GEO_DIRECTIONS_OVERVIEW_ENGINES} />
+          <MentionRateCard
+            engines={GEO_DIRECTIONS_OVERVIEW_ENGINES}
+            timeseriesPoints={GEO_DIRECTIONS_TIMESERIES}
+          />
         </div>
         <div className="lg:col-span-4">
           <TrafficPagesCard pages={[...GEO_DIRECTIONS_PAGES]} />

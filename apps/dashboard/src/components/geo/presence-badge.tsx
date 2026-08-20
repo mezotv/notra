@@ -2,20 +2,19 @@
 
 import { Badge } from "@notra/ui/components/ui/badge";
 import { GEO_PRESENCE_LABELS } from "@/constants/geo";
-import type { GeoPresenceStatus } from "@/types/geo";
+import type { GeoPresenceStatus, PresenceBadgeProps } from "@/types/geo";
 
-interface PresenceBadgeProps {
-  status: GeoPresenceStatus | null;
-}
-
-const PRESENCE_TITLES: Record<string, string> = {
-  "training-data": "Mentioned in Memory: the model knows you without searching",
-  "retrieval-only": "Mentioned in Search only: found live, not remembered",
+const PRESENCE_TITLES: Partial<Record<GeoPresenceStatus, string>> = {
+  "retrieval-only": "Mentioned in Search only: found live, not in the model",
   invisible: "No engine mentions you on this prompt yet",
 };
 
 export function PresenceBadge({ status }: PresenceBadgeProps) {
-  if (!status) {
+  if (!status || status === "training-data") {
+    return null;
+  }
+  const label = GEO_PRESENCE_LABELS[status];
+  if (!label) {
     return null;
   }
   return (
@@ -24,7 +23,7 @@ export function PresenceBadge({ status }: PresenceBadgeProps) {
       title={PRESENCE_TITLES[status]}
       variant="outline"
     >
-      {GEO_PRESENCE_LABELS[status]}
+      {label}
     </Badge>
   );
 }

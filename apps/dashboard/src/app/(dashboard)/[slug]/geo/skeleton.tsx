@@ -4,7 +4,6 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
 import { PageContainer } from "@/components/layout/container";
 
-const STAT_TILE_COUNT = 4;
 const HEADER_BUTTON_COUNT = 3;
 const TAB_COUNT = 4;
 const TABLE_ROW_COUNT = 5;
@@ -27,14 +26,6 @@ export function GeoPageSkeleton() {
               />
             ))}
           </div>
-        </div>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {Array.from({ length: STAT_TILE_COUNT }).map((_, index) => (
-            <Skeleton
-              className="h-32 w-full rounded-xl"
-              key={`${id}-tile-${index}`}
-            />
-          ))}
         </div>
         <div className="flex items-center gap-4 border-border border-b pb-2">
           {Array.from({ length: TAB_COUNT }).map((_, index) => (

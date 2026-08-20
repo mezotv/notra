@@ -15,7 +15,7 @@ import type {
   ConversationResultsDialogProps,
   GeoSequenceTurnResult,
 } from "@/types/geo";
-import { engineAnswerMode, formatEngineFamily } from "@/utils/geo-charts";
+import { formatEngineFamily, formatEngineWithMode } from "@/utils/geo-charts";
 import { buildSequenceTurnGroups } from "@/utils/geo-sequences";
 
 function EngineResult({ result }: { result: GeoSequenceTurnResult }) {
@@ -23,7 +23,7 @@ function EngineResult({ result }: { result: GeoSequenceTurnResult }) {
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full border border-border px-2 py-0.5 text-xs"
-      title={`${engineAnswerMode(result.engine)} · ${result.excerpt}`}
+      title={`${formatEngineWithMode(result.engine)} · ${result.excerpt}`}
     >
       <EngineIcon className="size-3.5" engine={result.engine} />
       {label}

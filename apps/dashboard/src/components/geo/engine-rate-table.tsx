@@ -1,12 +1,7 @@
 "use client";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoBar } from "@/components/geo/geo-bar";
 import {
@@ -14,16 +9,14 @@ import {
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { GEO_MEMORY_LABEL, GEO_SEARCH_LABEL } from "@/constants/geo";
+import { GEO_EMPTY_TIMESERIES } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
-import type {
-  EngineRateTableProps,
-  GeoEngineFamily,
-  GeoOverviewEngine,
-} from "@/types/geo";
+import type { EngineRateTableProps, GeoEngineFamily } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import {
+  engineFamilyAvgPosition,
   engineFamilyLabel,
+  engineFamilyLastCheckedAt,
   engineFamilyTotals,
   formatMentionRate,
   groupEngineFamilies,
@@ -33,39 +26,6 @@ import { tableHeightFor } from "@/utils/table";
 
 const NOT_SCANNED_RATE = -1;
 
-function BreakdownRow({
-  label,
-  engine,
-  variant,
-}: {
-  label: string;
-  engine: GeoOverviewEngine | null;
-  variant: "web" | "raw";
-}) {
-  return (
-    <span className="flex items-center gap-2">
-      <span className="w-14 shrink-0 text-muted-foreground">{label}</span>
-      {engine ? (
-        <>
-          <GeoBar
-            className="w-24 shrink-0"
-            fillClassName={variant === "web" ? "bg-chart-1" : "bg-chart-2"}
-            value={engine.mentionRate}
-          />
-          <span className="tabular-nums">
-            {formatMentionRate(engine.mentionRate)}
-          </span>
-          <span className="text-muted-foreground tabular-nums">
-            {engine.mentions}/{engine.checks}
-          </span>
-        </>
-      ) : (
-        <span className="text-muted-foreground">Not scanned</span>
-      )}
-    </span>
-  );
-}
-
 function RateCell({ family }: { family: GeoEngineFamily }) {
   const totals = engineFamilyTotals(family);
   if (!totals) {
@@ -73,53 +33,32 @@ function RateCell({ family }: { family: GeoEngineFamily }) {
   }
 
   return (
-    <TooltipProvider delay={150}>
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <span className="flex cursor-default items-center gap-2">
-              <GeoBar className="w-24 shrink-0" value={totals.rate} />
-              <span className="text-sm tabular-nums">
-                {formatMentionRate(totals.rate)}
-              </span>
-              <span className="text-muted-foreground text-xs tabular-nums">
-                {totals.mentions}/{totals.checks}
-              </span>
-            </span>
-          }
-        />
-        <TooltipContent className="flex flex-col gap-1.5 text-xs">
-          <BreakdownRow
-            engine={family.web}
-            label={GEO_SEARCH_LABEL}
-            variant="web"
-          />
-          <BreakdownRow
-            engine={family.raw}
-            label={GEO_MEMORY_LABEL}
-            variant="raw"
-          />
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <span className="flex items-center gap-2">
+      <GeoBar className="w-24 shrink-0" value={totals.rate} />
+      <span className="text-sm tabular-nums">
+        {formatMentionRate(totals.rate)}
+      </span>
+    </span>
   );
 }
 
 function lastCheckedOf(family: GeoEngineFamily): string {
-  const value = family.web?.lastCheckedAt ?? family.raw?.lastCheckedAt ?? "";
+  const value = engineFamilyLastCheckedAt(family);
   return value ? formatAiTrafficTimestamp(value) : "-";
 }
 
 function avgPositionOf(family: GeoEngineFamily): string {
-  const position = family.web?.avgPosition ?? family.raw?.avgPosition ?? null;
+  const position = engineFamilyAvgPosition(family);
   return position === null ? "-" : `#${position}`;
 }
 
 export function EngineRateTable({
   engines,
+  timeseriesPoints = GEO_EMPTY_TIMESERIES,
   isScanning = false,
 }: EngineRateTableProps) {
   const families = useMemo(() => groupEngineFamilies(engines), [engines]);
+  const [selected, setSelected] = useState<GeoEngineFamily | null>(null);
 
   const columns = useMemo<TableColumn<GeoEngineFamily>[]>(
     () => [
@@ -157,9 +96,7 @@ export function EngineRateTable({
           <span className="text-sm tabular-nums">{avgPositionOf(row)}</span>
         ),
         sortValue: (row) =>
-          row.web?.avgPosition ??
-          row.raw?.avgPosition ??
-          Number.MAX_SAFE_INTEGER,
+          engineFamilyAvgPosition(row) ?? Number.MAX_SAFE_INTEGER,
       },
       {
         key: "lastChecked",
@@ -179,7 +116,11 @@ export function EngineRateTable({
   const readout = families.length > 0 ? undefined : emptyReadout;
 
   return (
-    <InstrumentSection eyebrow="Mention rate by engine" readout={readout}>
+    <InstrumentSection
+      className="h-full"
+      eyebrow="Mention rate by engine"
+      readout={readout}
+    >
       {families.length === 0 ? (
         <InstrumentEmpty
           busy={isScanning}
@@ -196,14 +137,26 @@ export function EngineRateTable({
             className="rounded-2xl"
             columns={columns}
             data={families}
+            defaultSort={{ key: "rate", direction: "desc" }}
             emptyState="No engines scanned yet"
             getRowId={(row) => row.family}
             height={tableHeightFor(families.length)}
+            onRowClick={setSelected}
             resizable
             rowHeight={TABLE_ROW_HEIGHT}
           />
         </div>
       )}
+      <EngineFamilySheet
+        family={selected}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelected(null);
+          }
+        }}
+        open={selected !== null}
+        timeseriesPoints={timeseriesPoints}
+      />
     </InstrumentSection>
   );
 }

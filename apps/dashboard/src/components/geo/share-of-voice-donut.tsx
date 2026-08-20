@@ -24,7 +24,10 @@ import {
   formatMentionRate,
   toShareOfVoiceDonutSlices,
 } from "@/utils/geo-charts";
-import { shareOfVoiceSliceColor } from "@/utils/geo-competitors";
+import {
+  shareOfVoiceRivalIndex,
+  shareOfVoiceSliceColor,
+} from "@/utils/geo-competitors";
 import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 function ShareOfVoiceLegendRow({
@@ -91,17 +94,25 @@ export function ShareOfVoiceDonut({
   isScanning = false,
   onSliceClick,
   onSlicePointerEnter,
+  companyName,
+  aliases,
 }: ShareOfVoiceDonutProps) {
   const { slices, config, caption, totalMentions } = useMemo(() => {
+    const ownBrand = { companyName, aliases };
     const rows = toShareOfVoiceDonutSlices(
       buildShareOfVoiceRows(points, { limit, competitors })
     );
     const sliceConfig: ChartConfig = {};
-    for (const [index, row] of rows.entries()) {
+    for (const row of rows) {
       sliceConfig[row.slice] = {
         label: row.brand,
         colors: seriesColors(
-          shareOfVoiceSliceColor(row.brand, index, competitors)
+          shareOfVoiceSliceColor(
+            row.brand,
+            shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
+            competitors,
+            ownBrand
+          )
         ),
       };
     }
@@ -115,7 +126,7 @@ export function ShareOfVoiceDonut({
         : null,
       totalMentions,
     };
-  }, [points, limit, competitors]);
+  }, [aliases, companyName, competitors, limit, points]);
 
   if (slices.length === 0) {
     return (

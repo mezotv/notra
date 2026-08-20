@@ -3,42 +3,124 @@
 import { Copy01Icon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { highlight } from "sugar-high";
 import { COPY_FEEDBACK_MS } from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { CodeSnippetProps } from "@/types/geo";
 
-export function CodeSnippet({ code, className }: CodeSnippetProps) {
-  const [copied, setCopied] = useState(false);
+function useCopyCode(code: string) {
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copied = copiedCode === code;
 
-  const handleCopy = async () => {
-    if (!navigator?.clipboard?.writeText) {
+  useEffect(
+    () => () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    },
+    []
+  );
+
+  const copy = async () => {
+    if (!navigator.clipboard?.writeText) {
+      toast.error("Clipboard not supported");
       return;
     }
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), COPY_FEEDBACK_MS);
+
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      toast.error("Failed to copy to clipboard");
+      return;
+    }
+
+    setCopiedCode(code);
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    timerRef.current = setTimeout(() => setCopiedCode(null), COPY_FEEDBACK_MS);
   };
 
+  return { copied, copy };
+}
+
+function CopyCodeButton({ code, label }: { code: string; label: string }) {
+  const { copied, copy } = useCopyCode(code);
+
   return (
-    <div className={cn("group relative", className)}>
-      <pre className="overflow-x-auto rounded-md bg-muted/40 p-3 font-mono text-xs leading-relaxed">
-        <code
-          // biome-ignore lint/security/noDangerouslySetInnerHtml: sugar-high escapes the source before tokenizing
-          dangerouslySetInnerHTML={{ __html: highlight(code) }}
-        />
-      </pre>
-      <Button
-        aria-label={copied ? "Snippet copied" : "Copy snippet"}
-        className="absolute top-1.5 right-1.5 size-7 bg-background/80 opacity-0 backdrop-blur-sm transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
-        onClick={handleCopy}
-        size="icon"
-        type="button"
-        variant="ghost"
-      >
-        <HugeiconsIcon icon={copied ? Tick01Icon : Copy01Icon} size={14} />
-      </Button>
+    <Button
+      aria-label={copied ? `${label} copied` : `Copy ${label}`}
+      className="shrink-0 text-muted-foreground"
+      onClick={copy}
+      size="icon-xs"
+      type="button"
+      variant="ghost"
+    >
+      <HugeiconsIcon icon={copied ? Tick01Icon : Copy01Icon} size={14} />
+    </Button>
+  );
+}
+
+function CommandSnippet({
+  code,
+  className,
+}: Pick<CodeSnippetProps, "code" | "className">) {
+  return (
+    <div
+      className={cn(
+        "flex h-9 min-w-0 items-center rounded-lg bg-muted/40 ps-3 pe-1",
+        className
+      )}
+    >
+      <input
+        aria-label="Package install command"
+        className="h-full min-w-0 flex-1 cursor-text appearance-none border-0 bg-transparent p-0 font-mono text-foreground text-xs leading-none shadow-none outline-none"
+        onFocus={(event) => event.currentTarget.select()}
+        readOnly
+        value={code}
+      />
+      <CopyCodeButton code={code} label="command" />
+    </div>
+  );
+}
+
+export function CodeSnippet({
+  code,
+  className,
+  filename,
+  headerEnd,
+  variant = "panel",
+}: CodeSnippetProps) {
+  if (variant === "command") {
+    return <CommandSnippet className={className} code={code} />;
+  }
+
+  return (
+    <div
+      className={cn(
+        "min-w-0 overflow-hidden rounded-lg bg-muted/40",
+        className
+      )}
+    >
+      <div className="flex h-9 min-w-0 items-center gap-2 border-border/60 border-b ps-3 pe-1">
+        {filename ? (
+          <p className="min-w-0 flex-1 truncate font-mono text-muted-foreground text-xs">
+            {filename}
+          </p>
+        ) : (
+          <span className="min-w-0 flex-1" />
+        )}
+        {headerEnd}
+        <CopyCodeButton code={code} label="snippet" />
+      </div>
+      <pre
+        className="m-0 overflow-x-auto p-3 font-mono text-xs leading-relaxed"
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: sugar-high escapes the source before tokenizing
+        dangerouslySetInnerHTML={{ __html: highlight(code) }}
+      />
     </div>
   );
 }

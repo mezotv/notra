@@ -1,117 +1,107 @@
 "use client";
 
-import { useMemo } from "react";
-import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoBar } from "@/components/geo/geo-bar";
+import { useId, useMemo, useState } from "react";
+import { EChartsBarChart } from "@/components/evilcharts/charts/echarts-bar-chart";
+import { buildChartCss } from "@/components/evilcharts/ui/echarts-chart";
+import { EngineIcon, engineIconHtml } from "@/components/geo/engine-icon";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
-import { Table, type TableColumn } from "@/components/motion/table";
-import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import { GEO_MODEL_USAGE_CHART_HEIGHT_CLASS } from "@/constants/geo";
 import { cn } from "@/lib/utils";
-import type { GeoModelUsageRow, ModelUsageCardProps } from "@/types/geo";
-import { formatMentionRate, formatUsageShare } from "@/utils/geo-charts";
+import type { ChartConfig } from "@/types/charts";
+import type { ModelUsageCardProps, ModelUsageLegendProps } from "@/types/geo";
+import { formatMetric } from "@/utils/analytics-charts";
+import { modelUsageSeriesColors } from "@/utils/chart-colors";
+import { formatUsageShare } from "@/utils/geo-charts";
+import { buildModelUsageChart } from "@/utils/geo-model-usage";
 import { geoScanEmptyMessage } from "@/utils/geo-scan";
-import { tableHeightFor } from "@/utils/table";
+
+function ModelUsageLegend({
+  series,
+  config,
+  hoveredKey,
+  onHoverKeyChange,
+}: ModelUsageLegendProps) {
+  const rawId = useId();
+  const legendId = `model-usage-legend-${rawId.replace(/:/g, "")}`;
+  const css = useMemo(
+    () => buildChartCss(legendId, config),
+    [legendId, config]
+  );
+
+  return (
+    <ul
+      className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-3"
+      data-chart={legendId}
+    >
+      <style>{css}</style>
+      {series.map((entry) => (
+        <li key={entry.key}>
+          <button
+            className={cn(
+              "flex min-w-0 cursor-pointer items-center gap-1.5 bg-transparent p-0 text-left text-muted-foreground text-xs transition-opacity",
+              hoveredKey !== null && hoveredKey !== entry.key && "opacity-30"
+            )}
+            onBlur={() => onHoverKeyChange(null)}
+            onFocus={() => onHoverKeyChange(entry.key)}
+            onMouseEnter={() => onHoverKeyChange(entry.key)}
+            onMouseLeave={() => onHoverKeyChange(null)}
+            type="button"
+          >
+            <span
+              className="size-2 shrink-0 rounded-[0.0625rem]"
+              style={{ backgroundColor: `var(--color-${entry.key}-0)` }}
+            />
+            <EngineIcon className="size-3.5" engine={entry.model} />
+            <span className="truncate">{entry.label}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 export function ModelUsageCard({
   usage,
   isScanning = false,
 }: ModelUsageCardProps) {
-  const models = useMemo(() => usage?.models ?? [], [usage]);
-  const maxShare = useMemo(
-    () => models.reduce((max, model) => Math.max(max, model.share), 0),
-    [models]
+  const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const chart = useMemo(
+    () =>
+      buildModelUsageChart(
+        usage?.models ?? [],
+        usage?.points ?? [],
+        usage?.capturedAt ?? null
+      ),
+    [usage]
   );
-  const scannedCount = useMemo(
-    () => models.filter((model) => model.scanned).length,
-    [models]
-  );
-
-  const columns = useMemo<TableColumn<GeoModelUsageRow>[]>(
-    () => [
-      {
-        key: "label",
-        header: "Model",
-        width: "1.4fr",
-        sortable: true,
-        cell: (row) => (
-          <span
-            className={cn(
-              "flex min-w-0 items-center gap-2 text-sm",
-              row.scanned ? "font-medium text-foreground" : "text-foreground/70"
-            )}
-          >
-            <EngineIcon engine={row.model} />
-            <span className="truncate">{row.label}</span>
-          </span>
-        ),
-      },
-      {
-        key: "share",
-        header: "Usage share",
-        width: "1.6fr",
-        sortable: true,
-        cell: (row) => (
-          <GeoBar
-            className="h-2"
-            fillClassName={
-              row.scanned ? "bg-chart-1" : "bg-muted-foreground/40"
-            }
-            max={maxShare}
-            value={row.share}
-          />
-        ),
-      },
-      {
-        key: "shareValue",
-        header: "Share",
-        width: "5.625rem",
-        align: "right",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-[0.6875rem] text-muted-foreground tabular-nums">
-            {formatUsageShare(row.share)}
-          </span>
-        ),
-        sortValue: (row) => row.share,
-      },
-      {
-        key: "mentionRate",
-        header: "Mention rate",
-        width: "9.5rem",
-        align: "right",
-        sortable: true,
-        cell: (row) =>
-          row.scanned && row.mentionRate !== null ? (
-            <span className="text-[0.6875rem] text-foreground tabular-nums">
-              {formatMentionRate(row.mentionRate)}
-            </span>
-          ) : (
-            <span className="text-[0.6875rem] text-muted-foreground">
-              not scanned
-            </span>
-          ),
-        sortValue: (row) => row.mentionRate ?? -1,
-      },
-    ],
-    [maxShare]
-  );
+  const config = useMemo(() => {
+    const chartConfig: ChartConfig = {};
+    for (const [index, entry] of chart.series.entries()) {
+      chartConfig[entry.key] = {
+        label: entry.label,
+        colors: modelUsageSeriesColors(index),
+        indicatorHtml: engineIconHtml(entry.model),
+      };
+    }
+    return chartConfig;
+  }, [chart.series]);
+  const valueFormatter =
+    chart.metric === "tokens" ? formatMetric : formatUsageShare;
 
   return (
     <InstrumentSection
-      eyebrow="Where AI usage actually happens"
-      readout={
-        models.length > 0
-          ? `we scan ${scannedCount} of the top ${models.length} · ${usage?.attribution ?? ""}`
-          : "industry token share per model"
+      description={
+        chart.rows.length > 0 ? "Weekly tokens on OpenRouter" : undefined
       }
+      eyebrow="Where AI usage actually happens"
     >
-      {models.length === 0 ? (
+      {chart.rows.length === 0 ? (
         <InstrumentEmpty
           busy={isScanning}
-          className="h-40"
+          className={GEO_MODEL_USAGE_CHART_HEIGHT_CLASS}
           message={geoScanEmptyMessage(
             isScanning,
             "Run a scan to capture model usage share"
@@ -119,24 +109,38 @@ export function ModelUsageCard({
           seed="Where AI usage actually happens"
         />
       ) : (
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
-            <span>{models.length.toLocaleString()} models</span>
-            <span>{scannedCount.toLocaleString()} scanned</span>
-          </div>
-          <Table
-            className="rounded-2xl"
-            columns={columns}
-            data={models}
-            defaultSort={{ key: "shareValue", direction: "desc" }}
-            emptyState={geoScanEmptyMessage(
-              isScanning,
-              "Run a scan to capture model usage share"
-            )}
-            getRowId={(row) => row.model}
-            height={tableHeightFor(models.length)}
-            resizable
-            rowHeight={TABLE_ROW_HEIGHT}
+        <div>
+          <EChartsBarChart
+            barRadius={0}
+            className={cn("w-full", GEO_MODEL_USAGE_CHART_HEIGHT_CLASS)}
+            config={config}
+            data={chart.rows}
+            stackType={chart.metric === "share" ? "percent" : "stacked"}
+            xDataKey="week"
+          >
+            <EChartsBarChart.Grid />
+            <EChartsBarChart.XAxis dataKey="week" />
+            <EChartsBarChart.YAxis
+              tickFormatter={
+                chart.metric === "tokens"
+                  ? (value) => formatMetric(Number(value))
+                  : undefined
+              }
+            />
+            {chart.series.map((entry) => (
+              <EChartsBarChart.Bar dataKey={entry.key} key={entry.key} />
+            ))}
+            <EChartsBarChart.Tooltip
+              layout="bars"
+              pointer="shadow"
+              valueFormatter={valueFormatter}
+            />
+          </EChartsBarChart>
+          <ModelUsageLegend
+            config={config}
+            hoveredKey={hoveredKey}
+            onHoverKeyChange={setHoveredKey}
+            series={chart.series}
           />
         </div>
       )}

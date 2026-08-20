@@ -9,6 +9,13 @@ import type {
   GeoDirectionTone,
   GeoDirectionTrendRow,
 } from "@/types/geo-directions";
+import {
+  engineFamilyAvgPosition,
+  engineFamilyLabel,
+  engineFamilySources,
+  engineFamilyTotals,
+  groupEngineFamilies,
+} from "@/utils/geo-charts";
 
 export function formatDirectionCount(value: number): string {
   return value.toLocaleString("en-US");
@@ -67,6 +74,37 @@ export function buildDirectionOverviewEngines(
     avgPosition: row.avgPosition,
     lastCheckedAt,
   }));
+}
+
+export function groupDirectionEngineRows(
+  rows: readonly GeoDirectionEngineRow[]
+): GeoDirectionEngineRow[] {
+  const families = groupEngineFamilies(buildDirectionOverviewEngines(rows, ""));
+  const byEngine = new Map(rows.map((row) => [row.engine, row]));
+
+  return families.flatMap((family) => {
+    const totals = engineFamilyTotals(family);
+    const sources = engineFamilySources(family);
+    const primary = [...sources].sort(
+      (left, right) => right.checks - left.checks
+    )[0];
+    if (!totals || !primary) {
+      return [];
+    }
+    const matched = sources
+      .map((engine) => byEngine.get(engine.engine))
+      .find((row) => row !== undefined);
+    return [
+      {
+        engine: primary.engine,
+        label: engineFamilyLabel(family.family),
+        rate: totals.rate,
+        delta: matched?.delta ?? 0,
+        checks: totals.checks,
+        avgPosition: engineFamilyAvgPosition(family),
+      },
+    ];
+  });
 }
 
 export function buildDirectionTrendRows(

@@ -1,7 +1,10 @@
 import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
 import type {
   GeoGroundedEngine,
+  GeoIngestFramework,
+  GeoMentionTrendRange,
   GeoTab,
+  GeoTimeseriesPoint,
   GeoTrafficLogPurposeOption,
   GeoTrafficLogVisitorOption,
 } from "@/types/geo";
@@ -83,7 +86,7 @@ const groundedEngineLabels = Object.fromEntries(
 
 export const GEO_ENGINE_LABELS: Record<string, string> = {
   "openai/gpt-5.4": "ChatGPT",
-  "anthropic/claude-sonnet-4.6": "Claude",
+  "anthropic/claude-sonnet-4.6": "Claude Sonnet",
   "google/gemini-3-flash": "Gemini",
   "anthropic/claude-opus-5": "Claude Opus",
   "anthropic/claude-haiku-4.5": "Claude Haiku",
@@ -91,8 +94,23 @@ export const GEO_ENGINE_LABELS: Record<string, string> = {
   ...groundedEngineLabels,
 };
 
+export const GEO_BRAND_LABELS: Record<string, string> = {
+  openai: "ChatGPT",
+  claude: "Claude",
+  gemini: "Gemini",
+  perplexity: "Perplexity",
+  copilot: "Copilot",
+  mistral: "Mistral",
+  deepseek: "DeepSeek",
+  meta: "Llama",
+  grok: "Grok",
+  qwen: "Qwen",
+  tencent: "Hunyuan",
+  xiaomi: "Xiaomi",
+};
+
 export const GEO_SEARCH_LABEL = "Search";
-export const GEO_MEMORY_LABEL = "Memory";
+export const GEO_WITHOUT_SEARCH_LABEL = "Without search";
 
 export const GEO_MODEL_USAGE_SOURCE = "openrouter";
 export const GEO_MODEL_USAGE_ATTRIBUTION =
@@ -109,13 +127,16 @@ export const GEO_MODEL_USAGE_MODELS_ENDPOINT =
   "https://openrouter.ai/api/v1/models";
 export const GEO_MODEL_USAGE_INGEST_LIMIT = 40;
 export const GEO_MODEL_USAGE_FETCH_TIMEOUT_MS = 20_000;
-export const GEO_MODEL_USAGE_DEFAULT_LIMIT = 12;
+export const GEO_MODEL_USAGE_DEFAULT_LIMIT = 8;
+export const GEO_MODEL_USAGE_TREND_WEEKS = 16;
+export const GEO_MODEL_USAGE_CHART_HEIGHT_CLASS = "h-80";
 
 export const GEO_MAX_PROMPTS = 8;
 export const GEO_MAX_SEQUENCES = 10;
 export const GEO_COMPETITOR_SHARE_LIMIT = 50;
 export const GEO_SHARE_OF_VOICE_TOP_BRANDS = 5;
 export const GEO_SHARE_OF_VOICE_PAGE_TOP_BRANDS = 8;
+export const GEO_VISIBILITY_TABLE_ROWS = GEO_SHARE_OF_VOICE_TOP_BRANDS + 1;
 export const GEO_SEQUENCE_MAX_TURNS = 5;
 export const GEO_GROUNDED_MAX_PROMPTS = 6;
 export const GEO_GROUNDED_MAX_SEARCHES = 3;
@@ -147,7 +168,31 @@ export const GEO_ANSWER_SYSTEM_PROMPT =
 export const AI_TRAFFIC_DEFAULT_DAYS = 30;
 export const AI_TRAFFIC_DEFAULT_LOG_LIMIT = 50;
 export const AI_TRAFFIC_DEFAULT_PAGES_LIMIT = 20;
+export const GEO_CITATIONS_PAGE_SIZE = 12;
+export const GEO_CITATIONS_FETCH_LIMIT = 200;
+export const GEO_CITATIONS_ROW_HEIGHT = 40;
+export const GEO_CITATIONS_TABLE_HEIGHT =
+  GEO_CITATIONS_PAGE_SIZE * GEO_CITATIONS_ROW_HEIGHT;
+export const GEO_CITATIONS_LIVE_INTERVAL_MS = 5000;
 export const GEO_INGEST_PATH = "/api/geo/ingest";
+export const GEO_INGEST_SNIPPET_FALLBACK =
+  "// Set GEO_INGEST_SECRET to generate your install snippet";
+export const GEO_INGEST_INSTALL_COMMAND = "bun add @usenotra/geo";
+export const GEO_INGEST_TOKEN_ENV = "NOTRA_GEO_TOKEN";
+export const GEO_INGEST_DEFAULT_FRAMEWORK: GeoIngestFramework = "next";
+export const GEO_INGEST_FRAMEWORK_OPTIONS = [
+  { value: "next", label: "Next.js", file: "proxy.ts" },
+  { value: "nuxt", label: "Nuxt", file: "server/middleware/geo.ts" },
+  {
+    value: "netlify",
+    label: "Netlify",
+    file: "netlify/edge-functions/geo.ts",
+  },
+] as const satisfies readonly {
+  value: GeoIngestFramework;
+  label: string;
+  file: string;
+}[];
 export const GEO_INGEST_SECRET_ENV = "GEO_INGEST_SECRET";
 export const GEO_INGEST_SECRET_FALLBACK_ENV = "BEACON_INGEST_SECRET";
 export const GEO_INGEST_TOKEN_SEPARATOR = ".";
@@ -184,26 +229,6 @@ export const COMPETITORS_TABLE_HEIGHT = 420;
 export const COMPETITOR_PROMPTS_TABLE_HEIGHT = 288;
 export const COMPETITOR_PROMPTS_PAGE_TABLE_HEIGHT = 620;
 export const COMPETITORS_TABLE_ROW_HEIGHT = 52;
-
-export const PROMPT_SOURCE_FILTER_VALUES = ["all", "custom", "auto"] as const;
-
-export const PROMPT_SOURCE_FILTERS = [
-  {
-    value: "all",
-    label: "All sources",
-    description: "Every tracked question",
-  },
-  {
-    value: "custom",
-    label: "Custom",
-    description: "Questions you added yourself",
-  },
-  {
-    value: "auto",
-    label: "Auto",
-    description: "Generated from your site",
-  },
-] as const;
 
 export const PROMPTS_TABLE_HEIGHT = 420;
 export const PROMPTS_TABLE_ROW_HEIGHT = 52;
@@ -294,9 +319,9 @@ export const GEO_VISITOR_TYPE_LABELS: Record<string, string> = {
 };
 
 export const AI_TRAFFIC_PURPOSE_LABELS: Record<string, string> = {
-  "training-crawler": "Training data",
+  "training-crawler": "Model training",
   "search-index": "Search index",
-  "assistant-browse": "Used in answer",
+  "assistant-browse": "Cited in answer",
   "assistant-referral": "Referral",
 };
 
@@ -318,9 +343,9 @@ export const GEO_TRAFFIC_LOG_VISITOR_OPTIONS: readonly GeoTrafficLogVisitorOptio
 
 export const GEO_TRAFFIC_LOG_PURPOSE_OPTIONS: readonly GeoTrafficLogPurposeOption[] =
   [
-    { value: "training-crawler", label: "Training data" },
+    { value: "training-crawler", label: "Model training" },
     { value: "search-index", label: "Search index" },
-    { value: "assistant-browse", label: "Used in answer" },
+    { value: "assistant-browse", label: "Cited in answer" },
   ];
 
 export const GEO_JOURNEY_KIND_LABELS: Record<string, string> = {
@@ -335,14 +360,49 @@ export const AI_TRAFFIC_CONFIDENCE_LABELS: Record<string, string> = {
 };
 
 export const GEO_PRESENCE_LABELS: Record<string, string> = {
-  "training-data": GEO_MEMORY_LABEL,
   "retrieval-only": `${GEO_SEARCH_LABEL} only`,
   invisible: "Invisible",
 };
 
-export const GEO_TREND_MIN_DAYS = 5;
-export const GEO_SPARKLINE_MIN_POINTS = 2;
+export const GEO_SENTIMENT_LABELS: Record<string, string> = {
+  positive: "Positive",
+  neutral: "Neutral",
+  negative: "Negative",
+};
 
+export const GEO_TREND_MIN_DAYS = 5;
+export const GEO_MENTION_TREND_TOTAL_KEY = "total";
+export const GEO_MENTION_TREND_TOTAL_LABEL = "All engines";
+export const GEO_MENTION_TREND_DEFAULT_RANGE: GeoMentionTrendRange = "30d";
+export const GEO_MENTION_TREND_AVERAGE_KEY = "average";
+export const GEO_MENTION_TREND_AVERAGE_LABEL = "Average";
+export const GEO_MENTION_TREND_AGENT_ICON_LIMIT = 4;
+export const GEO_MENTION_TREND_RANGES = [
+  { value: "24h", label: "24h", description: "Last 24 hours", days: 1 },
+  { value: "7d", label: "7d", description: "Last 7 days", days: 7 },
+  { value: "14d", label: "14d", description: "Last 14 days", days: 14 },
+  { value: "30d", label: "30d", description: "Last 30 days", days: 30 },
+] as const satisfies readonly {
+  value: GeoMentionTrendRange;
+  label: string;
+  description: string;
+  days: number;
+}[];
+export const GEO_MENTION_TREND_RANGE_DAYS: Record<
+  GeoMentionTrendRange,
+  number
+> = {
+  "24h": 1,
+  "7d": 7,
+  "14d": 14,
+  "30d": 30,
+};
+export const GEO_MENTION_RATE_LABEL = "Mention rate";
+export const GEO_SPARKLINE_MIN_POINTS = 2;
+export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
+
+export const GEO_MAX_ALIASES = 10;
+export const GEO_MAX_COMPETITORS = 25;
 export const GEO_MAX_LANGUAGES = 3;
 export const GEO_LANGUAGE_MAX_PROMPTS = 5;
 export const GEO_LANGUAGE_GROUNDED_MAX_PROMPTS = 3;
@@ -371,7 +431,7 @@ export const GEO_LOGO_SIZE_PX = 40;
 export const GEO_COMPETITOR_DETAIL_DAYS = 30;
 export const GEO_COMPETITOR_DETAIL_MIN_POINTS = 2;
 export const GEO_COMPETITOR_DETAIL_SERIES_KEY = "mentions";
-export const GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS = "h-52";
+export const GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS = "h-56";
 
 /** Dev-only: enables seeding GEO sample data from the settings page. */
 export const GEO_SAMPLE_DATA_ENABLED = process.env.NODE_ENV === "development";

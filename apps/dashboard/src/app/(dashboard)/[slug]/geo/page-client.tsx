@@ -9,9 +9,7 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { GeoOnboardingOverlay } from "@/components/geo/geo-onboarding-overlay";
 import { GeoSettingsDialog } from "@/components/geo/geo-settings-dialog";
-import { GeoSummaryStats } from "@/components/geo/geo-summary-stats";
 import { GeoProjectSwitcher } from "@/components/geo/project-switcher";
-import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { PageContainer } from "@/components/layout/container";
 import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -34,53 +32,11 @@ import {
   useIsGeoScanning,
   useModelUsage,
 } from "@/lib/hooks/use-geo";
-import { cn } from "@/lib/utils";
 import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
-import { formatSyncClock } from "@/utils/instrument";
 import { GeoTabs } from "./components/geo-tabs";
 import { GeoPageSkeleton } from "./skeleton";
 
-/* ─────────────────────────────────────────────────────────
- * ANIMATION STORYBOARD — GEO instrument panel
- *
- * Read top-to-bottom. Each `at` value is ms after data mount.
- *
- *    0ms   header + scan controls render statically
- *   60ms   AI visibility master gauge powers on,
- *          sync dot starts pulsing
- *  150ms   modules materialize over the grid substrate
- *          (staggered 45ms in reading order)
- *
- * Reduced motion: everything appears at once, no offsets.
- * ───────────────────────────────────────────────────────── */
-
-const TIMING = {
-  masterGauge: 60, // AI visibility gauge powers on
-  modules: 150, // grid modules start staggering in
-};
-
-const STAGE = {
-  gauge: 1, // master gauge visible
-  modules: 2, // grid modules visible
-};
-
-function resolveStage({
-  ready,
-  reduceMotion,
-  timedStage,
-}: {
-  ready: boolean;
-  reduceMotion: boolean | null;
-  timedStage: number;
-}): number {
-  if (!ready) {
-    return 0;
-  }
-  if (reduceMotion) {
-    return STAGE.modules;
-  }
-  return timedStage;
-}
+const MODULES_REVEAL_MS = 150;
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
   const [projectParam, setProjectParam] = useQueryState(
@@ -117,7 +73,7 @@ function GeoPageContent({
   const { data: projectsData } = useGeoProjects(organizationId);
   const { data: settingsData, isPending: isSettingsPending } =
     useGeoSettings(organizationId);
-  const { data: overview, dataUpdatedAt } = useGeoOverview(organizationId);
+  const { data: overview } = useGeoOverview(organizationId);
   const { data: timeseries } = useGeoTimeseries(organizationId);
   const { data: prompts } = useGeoPrompts(organizationId);
   const { data: promptResults } = useGeoPromptResults(organizationId);
@@ -138,26 +94,16 @@ function GeoPageContent({
   );
 
   const reduceMotion = useReducedMotion();
-  const [timedStage, setTimedStage] = useState(0);
+  const [modulesVisible, setModulesVisible] = useState(false);
   const ready = !isSettingsPending;
-  // Only the timer-driven stage lives in state; the "not ready" and
-  // reduced-motion cases are derived so the effect never sets state directly.
-  const stage = resolveStage({ ready, reduceMotion, timedStage });
+  const revealActive = ready && (Boolean(reduceMotion) || modulesVisible);
 
   useEffect(() => {
     if (!(ready && !reduceMotion)) {
       return;
     }
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    timers.push(
-      setTimeout(() => setTimedStage(STAGE.gauge), TIMING.masterGauge)
-    );
-    timers.push(setTimeout(() => setTimedStage(STAGE.modules), TIMING.modules));
-    return () => {
-      for (const timer of timers) {
-        clearTimeout(timer);
-      }
-    };
+    const timer = setTimeout(() => setModulesVisible(true), MODULES_REVEAL_MS);
+    return () => clearTimeout(timer);
   }, [ready, reduceMotion]);
 
   if (isSettingsPending) {
@@ -203,23 +149,8 @@ function GeoPageContent({
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <h1 className="font-semibold text-xl tracking-tight">GEO</h1>
-            <p className="flex flex-wrap items-center gap-x-1.5 text-muted-foreground text-sm">
-              <span>
-                How AI engines talk about {settings.companyName} ·{" "}
-                {isScanning
-                  ? "Scanning"
-                  : `Sync ${formatSyncClock(dataUpdatedAt || null)}`}
-              </span>
-              <span
-                aria-hidden="true"
-                className={cn(
-                  "size-1.5 rounded-full",
-                  isScanning ? "bg-muted-foreground/50" : "bg-emerald-500",
-                  !isScanning &&
-                    stage >= STAGE.gauge &&
-                    "animate-pulse motion-reduce:animate-none"
-                )}
-              />
+            <p className="text-muted-foreground text-sm">
+              How AI engines talk about {settings.companyName}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -248,15 +179,6 @@ function GeoPageContent({
           </div>
         </header>
 
-        <InstrumentReveal active={stage >= STAGE.gauge}>
-          <GeoSummaryStats
-            engines={overview?.engines ?? []}
-            promptCount={prompts?.prompts.length ?? 0}
-            settings={settings}
-            timeseriesPoints={timeseries?.points ?? []}
-          />
-        </InstrumentReveal>
-
         <GeoTabs
           activeTab={activeTab}
           competitorPoints={competitorShare?.points ?? []}
@@ -272,10 +194,9 @@ function GeoPageContent({
           organizationSlug={organizationSlug}
           promptCount={prompts?.prompts.length ?? 0}
           promptResults={promptResults?.results ?? []}
-          revealActive={stage >= STAGE.modules}
+          revealActive={revealActive}
           settings={settings}
           timeseriesPoints={timeseries?.points ?? []}
-          tracked={overview?.tracked ?? []}
           traffic={aiTraffic}
           trafficPages={trafficPages?.pages ?? []}
         />

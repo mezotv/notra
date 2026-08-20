@@ -107,6 +107,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           organizationSlug={organizationSlug}
         />
         <CompetitorShareCard
+          aliases={settings.aliases}
           companyName={settings.companyName}
           competitors={competitorList?.competitors}
           isScanning={isScanning}

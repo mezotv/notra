@@ -14,6 +14,8 @@ import {
   GEO_DISCOVERY_MAX_PROMPTS,
   GEO_DISCOVERY_MIN_COMPETITORS,
   GEO_DISCOVERY_MIN_PROMPTS,
+  GEO_MAX_ALIASES,
+  GEO_MAX_COMPETITORS,
   GEO_MAX_LANGUAGES,
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
@@ -24,8 +26,6 @@ import { publicWebsiteUrlSchema } from "@/schemas/url";
 
 const GEO_SUPPORTED_LANGUAGE_SET = new Set<string>(SUPPORTED_LANGUAGES);
 const MAX_GEO_TRAFFIC_LOG_FILTER_VALUES = 3;
-const MAX_ALIASES = 10;
-const MAX_COMPETITORS = 10;
 const MAX_JUDGE_COMPETITORS = 15;
 const MAX_EXCERPT_LENGTH = 300;
 const MAX_DAYS = 365;
@@ -49,8 +49,8 @@ export const geoOrganizationInputSchema = object({
 
 export const geoSettingsUpsertInputSchema = geoOrganizationInputSchema.extend({
   companyName: string().min(1),
-  aliases: array(string().min(1)).max(MAX_ALIASES),
-  competitors: array(string().min(1)).max(MAX_COMPETITORS),
+  aliases: array(string().min(1)).max(GEO_MAX_ALIASES),
+  competitors: array(string().min(1)).max(GEO_MAX_COMPETITORS),
   languages: array(string().min(1))
     .max(GEO_MAX_LANGUAGES)
     .refine(

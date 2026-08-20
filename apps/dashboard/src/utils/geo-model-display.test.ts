@@ -13,6 +13,18 @@ describe("formatModelLabel", () => {
   test("prefers curated engine labels for tracked engines", () => {
     assert.equal(formatModelLabel("openai/gpt-5.4"), "ChatGPT");
     assert.equal(formatModelLabel("openai/gpt-5.4-mini"), "GPT-5.4 mini");
-    assert.equal(formatModelLabel("anthropic/claude-sonnet-4.6"), "Claude");
+    assert.equal(
+      formatModelLabel("anthropic/claude-sonnet-4.6"),
+      "Claude Sonnet"
+    );
+    assert.equal(formatModelLabel("anthropic/claude-opus-5"), "Claude Opus");
+    assert.equal(
+      formatModelLabel("anthropic/claude-haiku-4.5"),
+      "Claude Haiku"
+    );
+    assert.equal(
+      formatModelLabel("anthropic/claude-sonnet-4.6-grounded"),
+      "Claude"
+    );
   });
 });

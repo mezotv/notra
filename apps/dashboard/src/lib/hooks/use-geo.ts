@@ -2,6 +2,7 @@
 
 import type { QueryClient } from "@tanstack/react-query";
 import {
+  keepPreviousData,
   useIsMutating,
   useMutation,
   useQuery,
@@ -50,6 +51,7 @@ import type {
   GeoTrackedPromptsResponse,
   GeoTrafficJourneysResponse,
   GeoTrafficLogFilters,
+  GeoTrafficLogQueryOptions,
   GeoTrafficLogResponse,
   GeoTrafficPagesResponse,
 } from "@/types/geo";
@@ -558,7 +560,8 @@ export function useAiTraffic(organizationId: string, days?: number) {
 
 export function useGeoTrafficLog(
   organizationId: string,
-  filters: GeoTrafficLogFilters
+  filters: GeoTrafficLogFilters,
+  options?: GeoTrafficLogQueryOptions
 ) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrafficLogResponse>({
@@ -566,11 +569,14 @@ export function useGeoTrafficLog(
       input: {
         organizationId,
         projectId,
+        limit: options?.limit,
         visitorTypes: toGeoTrafficLogVisitorFilter(filters.visitorTypes),
         categories: toGeoTrafficLogPurposeFilter(filters.categories),
       },
     }),
     enabled: !!organizationId,
+    placeholderData: keepPreviousData,
+    refetchInterval: options?.refetchInterval,
     meta: { errorMessage: "Failed to load AI tracking log" },
   });
 }

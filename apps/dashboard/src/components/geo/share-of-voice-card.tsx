@@ -12,6 +12,8 @@ export function ShareOfVoiceCard({
   isScanning = false,
   organizationSlug,
   organizationId,
+  companyName,
+  aliases,
 }: ShareOfVoiceCardProps) {
   const navigation = useGeoCompetitorRowNavigation(
     organizationSlug,
@@ -24,10 +26,14 @@ export function ShareOfVoiceCard({
   return (
     <InstrumentSection
       action={action}
+      bodyClassName="flex min-h-0 flex-1 flex-col"
+      className="h-full"
       eyebrow="Share of voice"
       readout={points.length > 0 ? "30D" : undefined}
     >
       <ShareOfVoiceTable
+        aliases={aliases}
+        companyName={companyName}
         competitors={competitors}
         isScanning={isScanning}
         onRowClick={organizationSlug ? openRow : undefined}

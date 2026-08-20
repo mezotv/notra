@@ -12,6 +12,7 @@ import {
   NoteIcon,
   Notification03Icon,
   PlugIcon,
+  QuotesIcon,
   Settings01Icon,
   UserCircleIcon,
   UserGroupIcon,
@@ -75,6 +76,14 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     icon: AiBrowserIcon,
     section: "Navigation",
     path: (slug) => `/${slug}/geo/competitors`,
+  },
+  {
+    id: "geo-citations",
+    label: "GEO Citations",
+    keywords: ["ai", "citations", "crawler", "traffic", "bots"],
+    icon: QuotesIcon,
+    section: "Navigation",
+    path: (slug) => `/${slug}/geo/citations`,
   },
   {
     id: "content",

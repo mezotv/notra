@@ -7,16 +7,17 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
-import { CodeSnippet } from "@/components/geo/code-snippet";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoBar } from "@/components/geo/geo-bar";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
-import { InstrumentSection } from "@/components/instrument/instrument-module";
+import {
+  InstrumentEmpty,
+  InstrumentSection,
+} from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type {
   AiTrafficCardProps,
-  GeoIngestSetupResponse,
   GeoTrafficSource,
   GeoTrafficTotals,
 } from "@/types/geo";
@@ -26,29 +27,6 @@ import {
   formatMarkdownShare,
 } from "@/utils/ai-traffic";
 import { tableHeightFor } from "@/utils/table";
-
-function IngestSetup({ setup }: { setup: GeoIngestSetupResponse | undefined }) {
-  return (
-    <div className="space-y-3">
-      <p className="text-muted-foreground text-sm">
-        No AI crawler or AI assistant visit has been captured yet. Install
-        @usenotra/geo to start recording requests.
-      </p>
-      <CodeSnippet
-        code={
-          setup?.snippet ??
-          "// Set GEO_INGEST_SECRET to generate your install snippet"
-        }
-      />
-      {setup?.token ? (
-        <p className="break-all text-muted-foreground text-xs">
-          <span className="font-medium text-foreground">NOTRA_GEO_TOKEN</span>{" "}
-          <span className="font-mono">{setup.token}</span>
-        </p>
-      ) : null}
-    </div>
-  );
-}
 
 function TrafficTotals({
   totals,
@@ -92,7 +70,7 @@ function TrafficTotals({
   );
 }
 
-export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
+export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
   const sources = traffic?.sources ?? [];
   const totals = traffic?.totals ?? { crawler: 0, aiReferral: 0, human: 0 };
   const markdownTotal = sources.reduce(
@@ -212,7 +190,10 @@ export function AiTrafficCard({ traffic, setup }: AiTrafficCardProps) {
       }
     >
       {sources.length === 0 ? (
-        <IngestSetup setup={setup} />
+        <InstrumentEmpty
+          message="No AI traffic captured yet"
+          seed="geo-traffic-sources"
+        />
       ) : (
         <div className="space-y-4">
           <TrafficTotals markdownTotal={markdownTotal} totals={totals} />

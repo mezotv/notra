@@ -123,6 +123,7 @@ export function PromptResultsPreview({
   return (
     <InstrumentSection
       action={action}
+      className="h-full"
       eyebrow="Winning prompts"
       readout="best surfacing first"
     >

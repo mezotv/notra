@@ -63,7 +63,7 @@ import {
 import {
   buildGeoAppUrl,
   buildGeoIngestUrl,
-  buildGeoSnippet,
+  buildGeoSnippets,
 } from "@/lib/geo-ingest/snippet";
 import { buildGeoIngestToken } from "@/lib/geo-ingest/token";
 import { authorizedProcedure } from "@/lib/orpc/base";
@@ -340,10 +340,12 @@ export const geoRouter = {
         user: context.user,
       });
 
+      const snippets = buildGeoSnippets(buildGeoAppUrl());
       return {
         ingestUrl: buildGeoIngestUrl(),
         token: buildGeoIngestToken(input.organizationId, input.projectId) ?? "",
-        snippet: buildGeoSnippet(buildGeoAppUrl()),
+        snippet: snippets.next,
+        snippets,
       };
     }),
   promptsList: authorizedProcedure
