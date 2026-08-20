@@ -49,7 +49,7 @@ export function ConversationsCard({ organizationId }: ConversationsCardProps) {
             variant="outline"
           >
             <HugeiconsIcon icon={PlusSignIcon} size={14} />
-            New conversation
+            New Conversation
           </Button>
         </CardAction>
       </CardHeader>
