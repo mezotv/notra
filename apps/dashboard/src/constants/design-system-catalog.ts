@@ -246,6 +246,41 @@ export const DESIGN_SYSTEM_CATALOG: DesignSystemCatalogItem[] = [
     href: "/design-system#claude-chat-playground",
     level: "section",
   },
+  {
+    id: "gemini-thread",
+    number: "36",
+    label: "Gemini · Thread",
+    href: "/design-system#gemini-thread",
+    level: "group",
+  },
+  {
+    id: "gemini-user",
+    number: "37",
+    label: "Gemini · User",
+    href: "/design-system#gemini-user",
+    level: "section",
+  },
+  {
+    id: "gemini-assistant",
+    number: "38",
+    label: "Gemini · Assistant",
+    href: "/design-system#gemini-assistant",
+    level: "section",
+  },
+  {
+    id: "gemini-models",
+    number: "39",
+    label: "Gemini · Models",
+    href: "/design-system#gemini-models",
+    level: "section",
+  },
+  {
+    id: "gemini-playground",
+    number: "40",
+    label: "Gemini · Playground",
+    href: "/design-system#gemini-playground",
+    level: "section",
+  },
 ];
 
 export const DESIGN_SYSTEM_CATALOG_BY_ID = Object.fromEntries(

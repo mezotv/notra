@@ -6,6 +6,7 @@ const LINKS = [
   { href: "/design-system#colors", label: "UI kit" },
   { href: "/design-system#chatgpt-thread", label: "ChatGPT chat" },
   { href: "/design-system#claude-chat-thread", label: "Claude chat" },
+  { href: "/design-system#gemini-thread", label: "Gemini chat" },
   { href: "/design-system#claude-session", label: "Claude TUI" },
   { href: "/design-system#codex-session", label: "Codex TUI" },
 ] as const;

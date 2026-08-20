@@ -219,6 +219,7 @@ import { DesignSystemChatgptCatalog } from "@/app/design-system/chatgpt/page-cli
 import { DesignSystemClaudeCatalog } from "@/app/design-system/claude/page-client";
 import { DesignSystemClaudeChatCatalog } from "@/app/design-system/claude-chat/page-client";
 import { DesignSystemCodexCatalog } from "@/app/design-system/codex/page-client";
+import { DesignSystemGeminiCatalog } from "@/app/design-system/gemini/page-client";
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button, buttonVariants } from "@/components/button";
 import ChatInput from "@/components/chat-input";
@@ -361,7 +362,7 @@ export default function DesignSystemClientPage() {
 
   return (
     <DesignSystemFrame
-      description="Full catalog: UI kit, Claude TUI, Codex TUI, ChatGPT chat, and Claude chat. Everything is on this page."
+      description="Full catalog: UI kit, Claude TUI, Codex TUI, ChatGPT chat, Claude chat, and Gemini chat. Everything is on this page."
       title="Notra UI Preview"
     >
       <section className="scroll-mt-10 space-y-6" id="colors">
@@ -1549,6 +1550,7 @@ export default function DesignSystemClientPage() {
       <DesignSystemCodexCatalog />
       <DesignSystemChatgptCatalog />
       <DesignSystemClaudeChatCatalog />
+      <DesignSystemGeminiCatalog />
 
       <Toaster richColors />
     </DesignSystemFrame>
