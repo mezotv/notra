@@ -23,8 +23,7 @@
 
 @layer base {
   html,
-  body,
-  [data-slot="sidebar-inset"] {
+  body {
     scrollbar-gutter: stable;
   }
 }

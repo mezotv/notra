@@ -189,8 +189,7 @@
     @apply border-border outline-ring/50;
   }
   html,
-  body,
-  [data-slot="sidebar-inset"] {
+  body {
     scrollbar-gutter: stable;
   }
   body {

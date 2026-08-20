@@ -365,7 +365,7 @@ export function ConsoleShell({
               </div>
             </div>
           </header>
-          <div className="@container/main flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain">
+          <div className="@container/main scrollbar-stable flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain">
             {children}
           </div>
         </SidebarInset>
