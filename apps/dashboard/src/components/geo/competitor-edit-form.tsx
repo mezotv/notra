@@ -38,7 +38,7 @@ import { CompetitorLogoPreview } from "@/components/geo/competitor-logo-preview"
 import { COMPETITOR_SWATCHES } from "@/constants/charts";
 import { COMPETITOR_KIND_HINT, GEO_COLOR_DEBOUNCE_MS } from "@/constants/geo";
 import { normalizeCompetitorDomain } from "@/lib/geo/domain";
-import { useGeoCompetitorUpsert } from "@/lib/hooks/use-geo";
+import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { cn } from "@/lib/utils";
 import type { CompetitorEditFormProps, GeoCompetitorKind } from "@/types/geo";
 
@@ -94,67 +94,68 @@ function CompetitorSynonymsField({
   return (
     <div className="space-y-1.5">
       <Label htmlFor={adding ? id : undefined}>
-        Synonyms <span className="text-muted-foreground">(optional)</span>
+        Synonyms <span className="text-muted-foreground">(Optional)</span>
       </Label>
-      <div className="flex flex-wrap items-center gap-1.5">
-        {synonyms.map((synonym) => (
-          <Badge className="gap-1 pr-1" key={synonym} variant="secondary">
-            {synonym}
-            <button
-              aria-label={`Remove ${synonym}`}
-              className="rounded-sm p-0.5 hover:bg-background"
-              onClick={() =>
-                onChange(synonyms.filter((item) => item !== synonym))
-              }
-              type="button"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} size={12} />
-            </button>
-          </Badge>
-        ))}
-        {adding ? (
-          <Input
-            autoFocus
-            className="h-6 w-36 px-2 text-xs"
-            id={id}
-            onBlur={() => {
-              if (!skipCommitRef.current) {
-                commitDraft();
-              }
-              skipCommitRef.current = false;
-              draftRef.current = "";
-              setDraft("");
-              setAdding(false);
-            }}
-            onChange={(event) => setDraft(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                commitDraft();
-              }
-              if (event.key === "Escape") {
-                event.preventDefault();
-                event.stopPropagation();
-                skipCommitRef.current = true;
-                stopAdding(true);
-              }
-            }}
-            placeholder="Another name"
-            value={draft}
-          />
-        ) : (
-          <button
-            aria-label="Add synonym"
-            className="inline-flex h-6 items-center gap-0.5 rounded-4xl border border-border border-dashed px-2 text-muted-foreground text-xs transition-colors hover:border-foreground/40 hover:text-foreground"
-            onClick={() => setAdding(true)}
-            ref={addButtonRef}
-            type="button"
-          >
-            <HugeiconsIcon icon={PlusSignIcon} size={12} strokeWidth={2} />
-            Add
-          </button>
-        )}
-      </div>
+      {adding ? (
+        <Input
+          autoFocus
+          id={id}
+          onBlur={() => {
+            if (!skipCommitRef.current) {
+              commitDraft();
+            }
+            skipCommitRef.current = false;
+            draftRef.current = "";
+            setDraft("");
+            setAdding(false);
+          }}
+          onChange={(event) => setDraft(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commitDraft();
+            }
+            if (event.key === "Escape") {
+              event.preventDefault();
+              event.stopPropagation();
+              skipCommitRef.current = true;
+              stopAdding(true);
+            }
+          }}
+          placeholder="Another name"
+          value={draft}
+        />
+      ) : (
+        <button
+          aria-label="Add synonym"
+          className="inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-4xl border border-border border-dashed px-2.5 text-muted-foreground text-xs transition-colors hover:border-foreground/40 hover:text-foreground"
+          onClick={() => setAdding(true)}
+          ref={addButtonRef}
+          type="button"
+        >
+          <HugeiconsIcon icon={PlusSignIcon} size={12} strokeWidth={2} />
+          Add
+        </button>
+      )}
+      {synonyms.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {synonyms.map((synonym) => (
+            <Badge className="gap-1 pr-1" key={synonym} variant="secondary">
+              {synonym}
+              <button
+                aria-label={`Remove ${synonym}`}
+                className="rounded-sm p-0.5 hover:bg-background"
+                onClick={() =>
+                  onChange(synonyms.filter((item) => item !== synonym))
+                }
+                type="button"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} size={12} />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -165,7 +166,7 @@ export function CompetitorEditForm({
   onDone,
   onCancel,
 }: CompetitorEditFormProps) {
-  const upsert = useGeoCompetitorUpsert(organizationId);
+  const { saveCompetitor } = useGeoCompetitorsDb(organizationId);
   const nameId = useId();
   const websiteId = useId();
   const synonymId = useId();
@@ -178,8 +179,9 @@ export function CompetitorEditForm({
       kind: competitor?.kind ?? ("direct" as GeoCompetitorKind),
       color: competitor?.color ?? "",
     },
-    onSubmit: async ({ value }) => {
-      await upsert.mutateAsync({
+    onSubmit: ({ value }) => {
+      saveCompetitor({
+        id: competitor?.id ?? crypto.randomUUID(),
         name: value.name.trim(),
         domain: normalizeCompetitorDomain(value.website),
         synonyms: value.synonyms,
@@ -337,7 +339,7 @@ export function CompetitorEditForm({
                   <Label className="inline-flex w-fit items-center gap-1">
                     Type
                     <span className="font-normal text-muted-foreground">
-                      (optional)
+                      (Optional)
                     </span>
                     <HugeiconsIcon
                       className="text-muted-foreground"
@@ -381,8 +383,7 @@ export function CompetitorEditForm({
             Cancel
           </Button>
         )}
-        <Button disabled={upsert.isPending} type="submit">
-          {upsert.isPending && <Loader2Icon className="size-4 animate-spin" />}
+        <Button type="submit">
           {competitor ? "Save changes" : "Add competitor"}
         </Button>
       </div>
