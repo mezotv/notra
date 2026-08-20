@@ -20,10 +20,10 @@ import {
 } from "@/constants/empty-state";
 import {
   useGeoCompetitorShare,
-  useGeoCompetitors,
   useGeoSettings,
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
+import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { GeoPageSkeleton } from "../skeleton";
 
 interface PageClientProps {
@@ -41,7 +41,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 
   const { data: settingsData, isPending } = useGeoSettings(organizationId);
   const { data: competitorShare } = useGeoCompetitorShare(organizationId);
-  const { data: competitorList } = useGeoCompetitors(organizationId);
+  const { competitors } = useGeoCompetitorsDb(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
   const [managerOpen, setManagerOpen] = useState(false);
 
@@ -105,14 +105,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         <CompetitorsTable
           aliases={settings.aliases}
           companyName={settings.companyName}
-          competitors={competitorList?.competitors ?? []}
+          competitors={competitors}
           organizationId={organizationId}
           organizationSlug={organizationSlug}
         />
         <CompetitorShareCard
           aliases={settings.aliases}
           companyName={settings.companyName}
-          competitors={competitorList?.competitors}
+          competitors={competitors}
           isScanning={isScanning}
           organizationId={organizationId}
           organizationSlug={organizationSlug}

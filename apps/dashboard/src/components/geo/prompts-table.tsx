@@ -20,7 +20,7 @@ import {
   PROMPTS_TABLE_HEIGHT,
   PROMPTS_TABLE_ROW_HEIGHT,
 } from "@/constants/geo";
-import { useGeoPromptDelete, useGeoPromptToggle } from "@/lib/hooks/use-geo";
+import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import type { GeoPromptTableRow, PromptsTableProps } from "@/types/geo";
 import {
   buildPromptTableRows,
@@ -110,8 +110,8 @@ export function PromptsTable({
   results,
   isScanning = false,
 }: PromptsTableProps) {
-  const toggle = useGeoPromptToggle(organizationId);
-  const remove = useGeoPromptDelete(organizationId);
+  const { pendingPromptIds, togglePrompt, removePrompts } =
+    useGeoPromptsDb(organizationId);
   const [search, setSearch] = useQueryState(
     "q",
     parseAsString.withDefault("").withOptions({ clearOnDefault: true })
@@ -218,22 +218,16 @@ export function PromptsTable({
         align: "right",
         cell: (row) => (
           <PromptRowActions
-            isRemoving={remove.isPending}
-            isToggling={toggle.isPending}
+            isRemoving={pendingPromptIds.has(row.id)}
+            isToggling={pendingPromptIds.has(row.id)}
             onDelete={() => requestDelete([row])}
-            onToggle={(enabled) => toggle.mutate({ promptId: row.id, enabled })}
+            onToggle={(enabled) => togglePrompt(row.id, enabled)}
             row={row}
           />
         ),
       },
     ],
-    [
-      remove.isPending,
-      requestDelete,
-      rows.length,
-      toggle.isPending,
-      toggle.mutate,
-    ]
+    [pendingPromptIds, requestDelete, rows.length, togglePrompt]
   );
 
   return (
@@ -255,7 +249,6 @@ export function PromptsTable({
         </div>
         {selectedCustomRows.length > 0 && (
           <Button
-            disabled={remove.isPending}
             onClick={() => requestDelete(selectedCustomRows)}
             size="sm"
             variant="outline"
@@ -291,13 +284,11 @@ export function PromptsTable({
 
       <GeoRemoveDialog
         description={promptRemoveDescription}
-        isPending={remove.isPending}
+        isPending={false}
         items={pendingDelete.map((row) => row.prompt)}
         nouns={PROMPT_NOUNS}
         onConfirm={() => {
-          for (const row of pendingDelete) {
-            remove.mutate({ promptId: row.id });
-          }
+          removePrompts(pendingDelete.map((row) => row.id));
           setSelectedIds([]);
           setDeleteOpen(false);
         }}

@@ -15,22 +15,15 @@ import { useState } from "react";
 import { Button } from "@/components/button";
 import { ConversationBuilderDialog } from "@/components/geo/conversation-builder-dialog";
 import { ConversationResultsDialog } from "@/components/geo/conversation-results-dialog";
-import {
-  useGeoSequenceDelete,
-  useGeoSequences,
-  useGeoSequenceUpdate,
-} from "@/lib/hooks/use-geo";
+import { useGeoSequencesDb } from "@/lib/hooks/use-geo-db";
 import type { ConversationsCardProps, GeoPromptSequence } from "@/types/geo";
 
 export function ConversationsCard({ organizationId }: ConversationsCardProps) {
-  const { data } = useGeoSequences(organizationId);
-  const update = useGeoSequenceUpdate(organizationId);
-  const remove = useGeoSequenceDelete(organizationId);
+  const { sequences, pendingSequenceIds, updateSequence, removeSequence } =
+    useGeoSequencesDb(organizationId);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editing, setEditing] = useState<GeoPromptSequence | null>(null);
   const [viewing, setViewing] = useState<GeoPromptSequence | null>(null);
-
-  const sequences = data?.sequences ?? [];
 
   return (
     <Card className="overflow-visible rounded-2xl bg-transparent p-0 ring-0">
@@ -97,16 +90,16 @@ export function ConversationsCard({ organizationId }: ConversationsCardProps) {
                         : `Enable ${sequence.name}`
                     }
                     checked={sequence.enabled}
-                    disabled={update.isPending}
+                    disabled={pendingSequenceIds.has(sequence.id)}
                     onCheckedChange={(enabled) =>
-                      update.mutate({ sequenceId: sequence.id, enabled })
+                      updateSequence(sequence.id, { enabled })
                     }
                     size="sm"
                   />
                   <Button
                     aria-label={`Delete ${sequence.name}`}
-                    disabled={remove.isPending}
-                    onClick={() => remove.mutate({ sequenceId: sequence.id })}
+                    disabled={pendingSequenceIds.has(sequence.id)}
+                    onClick={() => removeSequence(sequence.id)}
                     size="icon"
                     variant="ghost"
                   >

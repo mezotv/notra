@@ -215,19 +215,6 @@ export interface GeoTrackedPrompt {
   createdAt: string | null;
 }
 
-export interface GeoPromptCreateInput {
-  prompt: string;
-}
-
-export interface GeoPromptDeleteInput {
-  promptId: string;
-}
-
-export interface GeoPromptToggleInput {
-  promptId: string;
-  enabled: boolean;
-}
-
 export interface GeoPromptRow {
   id: string;
   organizationId: string;
@@ -279,6 +266,7 @@ export interface GeoSequencesResponse {
 }
 
 export interface GeoSequenceCreateInput {
+  id?: string;
   name: string;
   steps: string[];
 }
@@ -288,10 +276,6 @@ export interface GeoSequenceUpdateInput {
   name?: string;
   steps?: string[];
   enabled?: boolean;
-}
-
-export interface GeoSequenceDeleteInput {
-  sequenceId: string;
 }
 
 export interface GeoSequenceTurnResult {
@@ -1072,6 +1056,7 @@ export interface GeoCompetitorsResponse {
 
 export interface GeoCompetitorUpsertInput {
   name: string;
+  previousName?: string;
   domain: string | null;
   synonyms?: string[];
   kind?: GeoCompetitorKind;
@@ -1090,10 +1075,6 @@ export interface CompetitorEditFormProps {
   competitor: GeoCompetitor | null;
   onDone: () => void;
   onCancel?: () => void;
-}
-
-export interface GeoCompetitorDeleteInput {
-  name: string;
 }
 
 export interface GeoCompetitorTimeseriesPoint {

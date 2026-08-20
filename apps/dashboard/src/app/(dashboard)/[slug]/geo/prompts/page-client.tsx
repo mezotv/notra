@@ -22,10 +22,10 @@ import {
 } from "@/constants/empty-state";
 import {
   useGeoPromptResults,
-  useGeoPrompts,
   useGeoSettings,
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
+import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import { GeoPageSkeleton } from "../skeleton";
 
 interface PageClientProps {
@@ -42,7 +42,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   const organizationId = organization?.id ?? "";
 
   const { data: settingsData, isPending } = useGeoSettings(organizationId);
-  const { data: promptsData } = useGeoPrompts(organizationId);
+  const { prompts } = useGeoPromptsDb(organizationId);
   const { data: promptResults } = useGeoPromptResults(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
   const [addOpen, setAddOpen] = useState(false);
@@ -110,7 +110,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         <PromptsTable
           isScanning={isScanning}
           organizationId={organizationId}
-          prompts={promptsData?.prompts ?? []}
+          prompts={prompts}
           results={promptResults?.results ?? []}
         />
         <ConversationsCard organizationId={organizationId} />

@@ -18,13 +18,12 @@ import {
   GEO_START_SCAN_MUTATION_KEY,
 } from "@/constants/geo";
 import { localStorageKeys } from "@/constants/storage";
+import { geoDbOrgQueryKey, geoDbQueryKey } from "@/lib/db/geo-collections";
 import type {
   AiTrafficResponse,
-  GeoCompetitorDeleteInput,
   GeoCompetitorDetailResponse,
   GeoCompetitorShareResponse,
   GeoCompetitorsResponse,
-  GeoCompetitorUpsertInput,
   GeoGenerateFromWebsiteInput,
   GeoIngestSetupResponse,
   GeoJourneyDetailResponse,
@@ -34,17 +33,9 @@ import type {
   GeoProject,
   GeoProjectCreateInput,
   GeoProjectsResponse,
-  GeoPromptCreateInput,
-  GeoPromptDeleteInput,
   GeoPromptResultsResponse,
-  GeoPromptSequence,
   GeoPromptSuggestionsResponse,
-  GeoPromptToggleInput,
-  GeoSequenceCreateInput,
-  GeoSequenceDeleteInput,
   GeoSequenceResultsResponse,
-  GeoSequencesResponse,
-  GeoSequenceUpdateInput,
   GeoSettingsResponse,
   GeoSettingsUpsertInput,
   GeoSuggestionIdInput,
@@ -65,6 +56,7 @@ import {
   toGeoTrafficLogPurposeFilter,
   toGeoTrafficLogVisitorFilter,
 } from "@/utils/ai-traffic";
+import { toErrorMessage } from "@/utils/error-message";
 import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
 import { dashboardOrpc } from "../orpc/query";
 
@@ -74,10 +66,6 @@ const GSC_ANALYZE_MUTATION_KEY = "gsc-analyze" as const;
 
 function gscAnalyzeMutationKey(organizationId: string) {
   return [GSC_ANALYZE_MUTATION_KEY, organizationId] as const;
-}
-
-function toErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error && error.message ? error.message : fallback;
 }
 
 async function invalidateCompetitorQueries(
@@ -96,6 +84,9 @@ async function invalidateCompetitorQueries(
         input: { organizationId, projectId },
       }),
     }),
+    queryClient.invalidateQueries({
+      queryKey: geoDbQueryKey("competitors", { organizationId, projectId }),
+    }),
   ]);
 }
 
@@ -104,11 +95,16 @@ async function invalidatePromptQueries(
   organizationId: string,
   projectId: string | undefined
 ) {
-  await queryClient.invalidateQueries({
-    queryKey: dashboardOrpc.geo.promptsList.queryKey({
-      input: { organizationId, projectId },
+  await Promise.all([
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.promptsList.queryKey({
+        input: { organizationId, projectId },
+      }),
     }),
-  });
+    queryClient.invalidateQueries({
+      queryKey: geoDbQueryKey("prompts", { organizationId, projectId }),
+    }),
+  ]);
 }
 
 async function invalidateGeoScanResultQueries(
@@ -154,18 +150,6 @@ function geoStartScanMutationKey(
   projectId: string | undefined
 ) {
   return [GEO_START_SCAN_MUTATION_KEY, organizationId, projectId] as const;
-}
-
-async function invalidateSequenceQueries(
-  queryClient: QueryClient,
-  organizationId: string,
-  projectId: string | undefined
-) {
-  await queryClient.invalidateQueries({
-    queryKey: dashboardOrpc.geo.sequencesList.queryKey({
-      input: { organizationId, projectId },
-    }),
-  });
 }
 
 export function useGeoSettings(organizationId: string) {
@@ -361,46 +345,6 @@ export function useGeoCompetitors(organizationId: string) {
   });
 }
 
-export function useGeoCompetitorUpsert(organizationId: string) {
-  const { projectId } = useGeoProjectScope();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: GeoCompetitorUpsertInput) =>
-      dashboardOrpc.geo.competitorUpsert.call({
-        ...input,
-        organizationId,
-        projectId,
-      }),
-    onSuccess: async () => {
-      await invalidateCompetitorQueries(queryClient, organizationId, projectId);
-      toast.success("Competitor saved");
-    },
-    onError: (error) => {
-      toast.error(toErrorMessage(error, "Failed to save competitor"));
-    },
-  });
-}
-
-export function useGeoCompetitorDelete(organizationId: string) {
-  const { projectId } = useGeoProjectScope();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: GeoCompetitorDeleteInput) =>
-      dashboardOrpc.geo.competitorDelete.call({
-        ...input,
-        organizationId,
-        projectId,
-      }),
-    onSuccess: async () => {
-      await invalidateCompetitorQueries(queryClient, organizationId, projectId);
-      toast.success("Competitor removed");
-    },
-    onError: (error) => {
-      toast.error(toErrorMessage(error, "Failed to remove competitor"));
-    },
-  });
-}
-
 export function useGeoLanguageShare(organizationId: string, days?: number) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoLanguageShareResponse>({
@@ -431,65 +375,6 @@ export function useGeoPrompts(organizationId: string) {
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load tracked prompts" },
-  });
-}
-
-export function useGeoPromptCreate(organizationId: string) {
-  const { projectId } = useGeoProjectScope();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: GeoPromptCreateInput) =>
-      dashboardOrpc.geo.promptsCreate.call({
-        ...input,
-        organizationId,
-        projectId,
-      }),
-    onSuccess: async () => {
-      await invalidatePromptQueries(queryClient, organizationId, projectId);
-      toast.success("Prompt added");
-    },
-    onError: (error) => {
-      toast.error(toErrorMessage(error, "Failed to add prompt"));
-    },
-  });
-}
-
-export function useGeoPromptDelete(organizationId: string) {
-  const { projectId } = useGeoProjectScope();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: GeoPromptDeleteInput) =>
-      dashboardOrpc.geo.promptsDelete.call({
-        ...input,
-        organizationId,
-        projectId,
-      }),
-    onSuccess: async () => {
-      await invalidatePromptQueries(queryClient, organizationId, projectId);
-      toast.success("Prompt removed");
-    },
-    onError: (error) => {
-      toast.error(toErrorMessage(error, "Failed to remove prompt"));
-    },
-  });
-}
-
-export function useGeoPromptToggle(organizationId: string) {
-  const { projectId } = useGeoProjectScope();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: GeoPromptToggleInput) =>
-      dashboardOrpc.geo.promptsToggle.call({
-        ...input,
-        organizationId,
-        projectId,
-      }),
-    onSuccess: async () => {
-      await invalidatePromptQueries(queryClient, organizationId, projectId);
-    },
-    onError: (error) => {
-      toast.error(toErrorMessage(error, "Failed to update prompt"));
-    },
   });
 }
 
@@ -663,17 +548,6 @@ export function useGeoProjectCreate(organizationId: string) {
   });
 }
 
-export function useGeoSequences(organizationId: string) {
-  const { projectId } = useGeoProjectScope();
-  return useQuery<GeoSequencesResponse>({
-    ...dashboardOrpc.geo.sequencesList.queryOptions({
-      input: { organizationId, projectId },
-    }),
-    enabled: !!organizationId,
-    meta: { errorMessage: "Failed to load conversations" },
-  });
-}
-
 export function useGeoSequenceResults(
   organizationId: string,
   sequenceId?: string
@@ -685,67 +559,6 @@ export function useGeoSequenceResults(
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load conversation results" },
-  });
-}
-
-export function useGeoSequenceCreate(organizationId: string) {
-  const { projectId } = useGeoProjectScope();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: GeoSequenceCreateInput): Promise<GeoPromptSequence> =>
-      dashboardOrpc.geo.sequencesCreate.call({
-        ...input,
-        organizationId,
-        projectId,
-      }),
-    onSuccess: async () => {
-      await invalidateSequenceQueries(queryClient, organizationId, projectId);
-      toast.success("Conversation added");
-    },
-    onError: (error) => {
-      toast.error(toErrorMessage(error, "Failed to add conversation"));
-    },
-  });
-}
-
-export function useGeoSequenceUpdate(organizationId: string) {
-  const { projectId } = useGeoProjectScope();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (input: GeoSequenceUpdateInput): Promise<GeoPromptSequence> =>
-      dashboardOrpc.geo.sequencesUpdate.call({
-        ...input,
-        organizationId,
-        projectId,
-      }),
-    onSuccess: async () => {
-      await invalidateSequenceQueries(queryClient, organizationId, projectId);
-    },
-    onError: (error) => {
-      toast.error(toErrorMessage(error, "Failed to update conversation"));
-    },
-  });
-}
-
-export function useGeoSequenceDelete(organizationId: string) {
-  const { projectId } = useGeoProjectScope();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (
-      input: GeoSequenceDeleteInput
-    ): Promise<{ success: boolean }> =>
-      dashboardOrpc.geo.sequencesDelete.call({
-        ...input,
-        organizationId,
-        projectId,
-      }),
-    onSuccess: async () => {
-      await invalidateSequenceQueries(queryClient, organizationId, projectId);
-      toast.success("Conversation removed");
-    },
-    onError: (error) => {
-      toast.error(toErrorMessage(error, "Failed to remove conversation"));
-    },
   });
 }
 
@@ -885,6 +698,9 @@ function useInvalidateSuggestionQueries(organizationId: string) {
         queryKey: dashboardOrpc.geo.promptsList.queryKey({
           input: { organizationId },
         }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: geoDbOrgQueryKey("prompts", organizationId),
       }),
     ]);
   };

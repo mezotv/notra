@@ -23,10 +23,8 @@ import {
   COMPETITORS_TABLE_HEIGHT,
   COMPETITORS_TABLE_ROW_HEIGHT,
 } from "@/constants/geo";
-import {
-  useGeoCompetitorDelete,
-  useGeoCompetitorRowNavigation,
-} from "@/lib/hooks/use-geo";
+import { useGeoCompetitorRowNavigation } from "@/lib/hooks/use-geo";
+import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import type {
   CompetitorsTableProps,
   GeoCompetitorRowEntry,
@@ -68,7 +66,8 @@ export function CompetitorsTable({
   companyName,
   aliases,
 }: CompetitorsTableProps) {
-  const remove = useGeoCompetitorDelete(organizationId);
+  const { pendingCompetitorIds, removeCompetitor } =
+    useGeoCompetitorsDb(organizationId);
   const { openRow, prefetchRow } = useGeoCompetitorRowNavigation(
     organizationSlug,
     organizationId
@@ -214,7 +213,7 @@ export function CompetitorsTable({
           row.isOwnBrand ? null : (
             <Button
               aria-label={`Remove ${row.name}`}
-              disabled={remove.isPending}
+              disabled={pendingCompetitorIds.has(row.id)}
               onClick={(event) => {
                 event.stopPropagation();
                 requestDelete([row.name]);
@@ -227,7 +226,7 @@ export function CompetitorsTable({
           ),
       },
     ],
-    [remove.isPending, rows.length, requestDelete]
+    [pendingCompetitorIds, rows.length, requestDelete]
   );
 
   return (
@@ -277,7 +276,6 @@ export function CompetitorsTable({
         </Select>
         {selectedNames.length > 0 && (
           <Button
-            disabled={remove.isPending}
             onClick={() => requestDelete(selectedNames)}
             size="sm"
             variant="outline"
@@ -320,12 +318,18 @@ export function CompetitorsTable({
 
       <GeoRemoveDialog
         description={competitorRemoveDescription}
-        isPending={remove.isPending}
+        isPending={false}
         items={pendingDeleteNames}
         nouns={COMPETITOR_NOUNS}
         onConfirm={() => {
+          const idsByName = new Map(
+            competitors.map((competitor) => [competitor.name, competitor.id])
+          );
           for (const name of pendingDeleteNames) {
-            remove.mutate({ name });
+            const competitorId = idsByName.get(name);
+            if (competitorId) {
+              removeCompetitor(competitorId);
+            }
           }
           setSelectedIds([]);
           setDeleteOpen(false);

@@ -51,6 +51,8 @@
     "@orpc/server": "^1.13.9",
     "@orpc/tanstack-query": "^1.13.9",
     "@paper-design/shaders-react": "^0.0.77",
+    "@tanstack/query-db-collection": "^1.2.6",
+    "@tanstack/react-db": "^0.3.1",
     "@tanstack/react-form": "^1.27.7",
     "@tanstack/react-hotkeys": "^0.3.0",
     "@tanstack/react-pacer": "^0.19.0",

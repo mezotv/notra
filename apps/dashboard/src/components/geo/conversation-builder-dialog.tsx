@@ -12,14 +12,10 @@ import {
 } from "@notra/ui/components/shared/responsive-dialog";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
-import { Loader2Icon } from "lucide-react";
 import { useId, useState } from "react";
 import { Button } from "@/components/button";
 import { GEO_PROMPT_MIN_LENGTH, GEO_SEQUENCE_MAX_TURNS } from "@/constants/geo";
-import {
-  useGeoSequenceCreate,
-  useGeoSequenceUpdate,
-} from "@/lib/hooks/use-geo";
+import { useGeoSequencesDb } from "@/lib/hooks/use-geo-db";
 import type {
   ConversationBuilderDialogProps,
   ConversationTurnDraft,
@@ -45,19 +41,17 @@ export function ConversationBuilderDialog({
   sequence,
 }: ConversationBuilderDialogProps) {
   const nameId = useId();
-  const create = useGeoSequenceCreate(organizationId);
-  const update = useGeoSequenceUpdate(organizationId);
+  const { addSequence, updateSequence } = useGeoSequencesDb(organizationId);
   const [name, setName] = useState(sequence?.name ?? "");
   const [steps, setSteps] = useState<ConversationTurnDraft[]>(() =>
     turnsFromSequence(sequence)
   );
 
-  const pending = create.isPending || update.isPending;
   const validSteps = steps.flatMap((step) => {
     const text = step.text.trim();
     return text.length >= GEO_PROMPT_MIN_LENGTH ? [text] : [];
   });
-  const canSave = name.trim().length > 0 && validSteps.length > 0 && !pending;
+  const canSave = name.trim().length > 0 && validSteps.length > 0;
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
@@ -67,18 +61,14 @@ export function ConversationBuilderDialog({
     onOpenChange(next);
   };
 
-  const handleSave = async () => {
+  const handleSave = () => {
     if (!canSave) {
       return;
     }
     if (sequence) {
-      await update.mutateAsync({
-        sequenceId: sequence.id,
-        name: name.trim(),
-        steps: validSteps,
-      });
+      updateSequence(sequence.id, { name: name.trim(), steps: validSteps });
     } else {
-      await create.mutateAsync({ name: name.trim(), steps: validSteps });
+      addSequence(name.trim(), validSteps);
       setName("");
       setSteps([createTurn()]);
     }
@@ -173,7 +163,6 @@ export function ConversationBuilderDialog({
         </div>
         <ResponsiveDialogFooter>
           <Button disabled={!canSave} onClick={handleSave} type="button">
-            {pending && <Loader2Icon className="size-4 animate-spin" />}
             {sequence ? "Save changes" : "Create conversation"}
           </Button>
         </ResponsiveDialogFooter>

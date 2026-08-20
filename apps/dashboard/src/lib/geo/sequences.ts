@@ -57,7 +57,7 @@ export const createGeoSequence = Effect.fn("geo.sequenceCreate")(function* (
     db
       .insert(geoPromptSequences)
       .values({
-        id: crypto.randomUUID(),
+        id: sequence.id ?? crypto.randomUUID(),
         organizationId: scope.organizationId,
         projectId: scope.projectId,
         name: sequence.name,

@@ -74,6 +74,11 @@ export const geoCompetitorDomainSchema = string()
 export const geoCompetitorUpsertInputSchema = geoOrganizationInputSchema.extend(
   {
     name: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
+    previousName: string()
+      .trim()
+      .min(1)
+      .max(MAX_GEO_SHORT_FIELD_LENGTH)
+      .optional(),
     domain: geoCompetitorDomainSchema.nullable(),
     synonyms: array(string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH))
       .max(MAX_GEO_COMPETITOR_SYNONYMS)
@@ -105,6 +110,7 @@ export const geoTranslationResultSchema = object({
 });
 
 export const geoSequenceCreateInputSchema = geoOrganizationInputSchema.extend({
+  id: string().uuid().optional(),
   name: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
   steps: array(string().trim().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH))
     .min(1)
@@ -140,6 +146,7 @@ export const geoTimeseriesInputSchema = geoOrganizationInputSchema.extend({
 });
 
 export const geoPromptCreateInputSchema = geoOrganizationInputSchema.extend({
+  id: string().uuid().optional(),
   prompt: string().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH),
 });
 

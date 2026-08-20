@@ -267,11 +267,11 @@ export const upsertGeoCompetitor = Effect.fn("geo.competitorUpsert")(function* (
 ) {
   const scope = yield* requireGeoProject(scopeInput);
   const current = yield* loadCompetitorsByProject(scope.projectId);
-  const key = competitorKey(input.name);
+  const key = competitorKey(input.previousName ?? input.name);
   const entries: GeoCompetitorSeed[] = current.map((competitor) =>
     competitorKey(competitor.name) === key
       ? {
-          name: competitor.name,
+          name: input.name.trim(),
           domain: input.domain,
           synonyms: input.synonyms ?? competitor.synonyms,
           kind: input.kind ?? competitor.kind,
@@ -280,7 +280,11 @@ export const upsertGeoCompetitor = Effect.fn("geo.competitorUpsert")(function* (
       : competitor
   );
 
-  if (!entries.some((entry) => competitorKey(entry.name) === key)) {
+  if (
+    !entries.some(
+      (entry) => competitorKey(entry.name) === competitorKey(input.name)
+    )
+  ) {
     entries.push({
       name: input.name.trim(),
       domain: input.domain,
@@ -849,7 +853,8 @@ export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
 
 export const createGeoPrompt = Effect.fn("geo.promptsCreate")(function* (
   input: GeoScopeInput,
-  prompt: string
+  prompt: string,
+  id?: string
 ) {
   const scope = yield* requireGeoProject(input);
   const projectId = scope.projectId;
@@ -857,7 +862,7 @@ export const createGeoPrompt = Effect.fn("geo.promptsCreate")(function* (
     db
       .insert(geoPrompts)
       .values({
-        id: crypto.randomUUID(),
+        id: id ?? crypto.randomUUID(),
         organizationId: scope.organizationId,
         projectId,
         prompt,

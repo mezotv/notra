@@ -26,10 +26,8 @@ import { type FormEvent, useId, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
-import {
-  useGeoGenerateFromWebsite,
-  useGeoPromptCreate,
-} from "@/lib/hooks/use-geo";
+import { useGeoGenerateFromWebsite } from "@/lib/hooks/use-geo";
+import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import { cn } from "@/lib/utils";
 import type { PromptAddDialogProps, PromptAddMode } from "@/types/geo";
 import { normalizeWebsiteUrl, stripWebsiteProtocol } from "@/utils/geo-website";
@@ -59,17 +57,16 @@ export function PromptAddDialog({
   const [mode, setMode] = useState<PromptAddMode>("write");
   const [draft, setDraft] = useState("");
   const [url, setUrl] = useState("");
-  const create = useGeoPromptCreate(organizationId);
+  const { addPrompt } = useGeoPromptsDb(organizationId);
   const generate = useGeoGenerateFromWebsite(organizationId);
 
   const trimmed = draft.trim();
   const remainingToMin = GEO_PROMPT_MIN_LENGTH - trimmed.length;
   const canAdd =
     trimmed.length >= GEO_PROMPT_MIN_LENGTH &&
-    trimmed.length <= GEO_PROMPT_MAX_LENGTH &&
-    !create.isPending;
+    trimmed.length <= GEO_PROMPT_MAX_LENGTH;
   const normalizedUrl = normalizeWebsiteUrl(url);
-  const busy = create.isPending || generate.isPending;
+  const busy = generate.isPending;
   const canGenerate = normalizedUrl !== null && !busy;
   const writeMode = mode === "write";
 
@@ -84,7 +81,8 @@ export function PromptAddDialog({
     if (!canAdd) {
       return;
     }
-    create.mutate({ prompt: trimmed }, { onSuccess: close });
+    addPrompt(trimmed);
+    close();
   };
 
   const handleGenerate = () => {
@@ -178,7 +176,6 @@ export function PromptAddDialog({
                   <Textarea
                     aria-describedby={promptHintId}
                     autoFocus
-                    disabled={create.isPending}
                     id={promptId}
                     maxLength={GEO_PROMPT_MAX_LENGTH}
                     onChange={(event) => setDraft(event.target.value)}
@@ -263,7 +260,6 @@ export function PromptAddDialog({
               tabIndex={writeMode ? undefined : -1}
               type="submit"
             >
-              {create.isPending ? <StatusSpinner /> : null}
               Add prompt
             </Button>
             <Button

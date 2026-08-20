@@ -353,7 +353,9 @@ export const geoRouter = {
     .handler(geoHandler((input) => listGeoPrompts(input))),
   promptsCreate: authorizedProcedure
     .input(geoPromptCreateInputSchema)
-    .handler(geoHandler((input) => createGeoPrompt(input, input.prompt))),
+    .handler(
+      geoHandler((input) => createGeoPrompt(input, input.prompt, input.id))
+    ),
   promptsDelete: authorizedProcedure
     .input(geoPromptDeleteInputSchema)
     .handler(
