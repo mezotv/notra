@@ -161,14 +161,6 @@ const createWorkOSMembership = Effect.fn(
   });
 });
 
-export const syncMembershipToWorkOS = Effect.fn(
-  "organizations.sync.syncMembership"
-)(function* (organizationId: string, userId: string, roleSlug?: string) {
-  yield* createWorkOSMembership(organizationId, userId, roleSlug).pipe(
-    logSyncFailure({ organizationId, userId })
-  );
-});
-
 export const updateMembershipRoleInWorkOS = Effect.fn(
   "organizations.sync.updateWorkOSMembershipRole"
 )(function* (organizationId: string, userId: string, roleSlug: string) {

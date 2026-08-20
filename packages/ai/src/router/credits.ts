@@ -5,7 +5,6 @@ import {
 import type {
   CreditSnapshot,
   CreditTracker,
-  FallbackReason,
   GatewayId,
   UnavailableMark,
 } from "@notra/ai/types/router";

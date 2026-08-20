@@ -82,7 +82,6 @@ function generateMockLinkedInUrl(originalUrl: string): string {
 }
 
 const URL_REGEX = /(https?:\/\/[^\s]+)/g;
-const HASHTAG_REGEX = /(#\w+)/g;
 const COMBINED_REGEX = /(https?:\/\/[^\s]+|#\w+)/g;
 
 const LINKEDIN_EDITOR_TEXT_STYLE: React.CSSProperties = {

@@ -20,7 +20,6 @@ import {
 import type {
   FallbackReason,
   GatewayAdapter,
-  GatewayId,
   ResolvedRoute,
   RouteDecision,
   RoutedModelContext,

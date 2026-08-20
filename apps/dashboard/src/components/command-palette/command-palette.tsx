@@ -10,7 +10,6 @@ import {
   Loading03Icon,
   Message01Icon,
   NoteIcon,
-  PlugIcon,
   QuotesIcon,
   SearchIcon,
   SparklesIcon,

@@ -16,7 +16,6 @@ import {
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
-  useSidebar,
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -80,7 +79,6 @@ interface NavSettingsProps {
 
 export function NavSettings({ slug }: NavSettingsProps) {
   const pathname = usePathname();
-  const { open } = useSidebar();
 
   const isActive = (url: string) => pathname === `/${slug}/${url}`;
 

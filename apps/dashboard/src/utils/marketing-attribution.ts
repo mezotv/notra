@@ -1,6 +1,5 @@
 import { parseAsString, parseAsStringLiteral } from "nuqs";
 import { sessionStorageKeys } from "@/constants/storage";
-import { marketingAttributionUrlKeys } from "./marketing-attribution-keys";
 
 export const MARKETING_ATTRIBUTION_STORAGE_KEY =
   sessionStorageKeys.marketingAttribution;

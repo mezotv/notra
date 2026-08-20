@@ -36,7 +36,6 @@ export function AnalyticsShell({ children }: { children: ReactNode }) {
     accounts,
     configured,
     isPending,
-    hiddenKeys,
     toggleAccount,
     selectedKeys,
     visibleAccounts,

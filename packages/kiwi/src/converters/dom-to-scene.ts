@@ -876,7 +876,6 @@ function emitSvgSubpaths(
   const segments: Array<{ vStart: number; vEnd: number }> = [];
   const loops: Array<{ segmentIndices: number[] }> = [];
   const hasFill = Boolean(shape.fill);
-  const hasStroke = Boolean(shape.stroke);
 
   for (const sub of subpaths) {
     const startIdx = vertices.length;

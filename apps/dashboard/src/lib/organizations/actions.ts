@@ -28,7 +28,6 @@ import { runOrganizationAction } from "@/lib/organizations/run-action";
 import {
   ensureWorkOSOrganizationWithMembers,
   removeMembershipFromWorkOS,
-  syncMembershipToWorkOS,
   syncOrganizationNameToWorkOS,
   updateMembershipRoleInWorkOS,
 } from "@/lib/organizations/workos-sync";

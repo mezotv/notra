@@ -38,10 +38,7 @@ import {
 } from "@/constants/twitter";
 import { cn } from "@/lib/utils";
 import type { TextSelection } from "@/schemas/content";
-import type {
-  TwitterPostMenuItem,
-  TwitterPostProps,
-} from "@/types/content/twitter-post";
+import type { TwitterPostProps } from "@/types/content/twitter-post";
 import { formatTweetContent } from "@/utils/format-tweet-content";
 import {
   getTwitterCharLimit,

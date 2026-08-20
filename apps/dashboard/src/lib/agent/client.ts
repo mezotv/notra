@@ -18,7 +18,7 @@ import { createAgentSessionWithMapping } from "@notra/ai/utils/agent-proxy";
 import { db } from "@notra/db/drizzle";
 import { agentSessions } from "@notra/db/schema";
 import { getVercelOidcToken } from "@vercel/oidc";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { Client } from "eve/client";
 import {
   AGENT_CREATE_SESSION_PATH,

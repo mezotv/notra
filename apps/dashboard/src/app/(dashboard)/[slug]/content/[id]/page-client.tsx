@@ -27,7 +27,6 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { useSidebar } from "@notra/ui/components/ui/sidebar";
-import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import {
   Tooltip,
   TooltipContent,
@@ -56,7 +55,6 @@ import {
 } from "@/constants/content-detail";
 import { IMAGE_EXPORT_TARGETS } from "@/constants/image-export";
 import { localStorageKeys } from "@/constants/storage";
-import { TWITTER_BRAND_COLOR } from "@/constants/twitter";
 import { emitAutumnRefresh } from "@/lib/billing/autumn-refresh";
 import {
   copyImageAsFigma,
@@ -68,7 +66,6 @@ import { cn } from "@/lib/utils";
 import { sourceMetadataSchema } from "@/schemas/content";
 import type { ContentDetailPageClientProps } from "@/types/content/detail";
 import type { ImageExportTarget } from "@/types/content/image-export";
-import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import { getBrandFaviconUrl } from "@/utils/brand";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { getImageExportHtml, isHttpImageContent } from "@/utils/image-content";
@@ -491,8 +488,6 @@ export default function PageClient({
       setSelection(sel);
     }
   }, []);
-
-  const contentType = data?.content?.contentType;
 
   const [chatError, setChatError] = useState<string | null>(null);
 

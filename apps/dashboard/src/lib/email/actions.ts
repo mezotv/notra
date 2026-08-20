@@ -3,12 +3,10 @@ import "server-only";
 import { EMAIL_CONFIG } from "@notra/email/utils/config";
 import { sendDevEmail } from "@notra/email/utils/dev";
 import { getResend } from "@notra/email/utils/resend";
-import { headers } from "next/headers";
 import type {
   SendResetPasswordProps,
   SendWelcomeEmailProps,
 } from "@/types/email/actions";
-import { getServerSession } from "../auth/session";
 import { sendResetPassword, sendWelcomeEmail } from "./send";
 
 const isDevelopment = process.env.NODE_ENV === "development";

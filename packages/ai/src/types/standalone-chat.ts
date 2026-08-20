@@ -10,7 +10,6 @@ import type {
 } from "./agents";
 import type {
   IntegrationFetchers,
-  OrchestrateResult,
   ValidatedIntegration,
 } from "./orchestration";
 

@@ -14,7 +14,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
-import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import {
   Tooltip,
   TooltipContent,

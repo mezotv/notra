@@ -1,6 +1,5 @@
 import type {
   FallbackReason,
-  GatewayAdapter,
   GatewayId,
   PlanLookup,
   ResolverContext,

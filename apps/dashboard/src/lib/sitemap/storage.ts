@@ -2,7 +2,7 @@ import "server-only";
 
 import { db } from "@notra/db/drizzle";
 import { brandSitemapPages, brandSitemaps } from "@notra/db/schema";
-import { and, count, desc, eq, ilike, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import type {
   Sitemap,
   SitemapPage,

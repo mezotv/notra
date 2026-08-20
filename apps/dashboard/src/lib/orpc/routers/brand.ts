@@ -4,7 +4,7 @@ import {
   autumn,
 } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
-import { deleteQstashSchedule, getAppUrl } from "@notra/ai/qstash/triggers";
+import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import {

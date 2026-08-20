@@ -1,7 +1,7 @@
 import { acquireClaim } from "@notra/ai/autonomy/claims";
 import { calculateAiCreditCostCents } from "@notra/ai/billing/ai-credit-cost";
 import { autumn } from "@notra/ai/billing/autumn";
-import { ACTIVE_PAID_PLAN_IDS, FEATURES } from "@notra/ai/billing/features";
+import { ACTIVE_PAID_PLAN_IDS } from "@notra/ai/billing/features";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,

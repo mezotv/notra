@@ -8,7 +8,6 @@ import type {
   BestPostingSlot,
   CursorTipState,
   EngagementTimeseriesPoint,
-  FollowerGrowthPoint,
   LeaderboardDetailMetric,
   NotraAdoptionResponse,
   PostingActivityLevel,

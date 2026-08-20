@@ -632,63 +632,6 @@ export function CreateContentDialog({
     selectedLinearKeys,
   ]);
 
-  const handleToggleAll = useCallback(() => {
-    selectionsTouchedRef.current = true;
-    const allSelected = eventCounts.selected === eventCounts.total;
-    if (allSelected) {
-      setSelectedCommitKeys(new Set());
-      setSelectedPrKeys(new Set());
-      setSelectedReleaseKeys(new Set());
-      setSelectedLinearKeys(new Set());
-      return;
-    }
-    const commitKeys = new Set<string>();
-    const prKeys = new Set<string>();
-    const relKeys = new Set<string>();
-    const linearKeys = new Set<string>();
-    for (const repo of previewData ?? []) {
-      if (dataPoints.includeCommits) {
-        for (const c of repo.commits) {
-          commitKeys.add(c.sha);
-        }
-      }
-      if (dataPoints.includePullRequests) {
-        for (const pr of repo.pullRequests) {
-          prKeys.add(
-            prSelectionToKey({
-              repositoryId: repo.repositoryId,
-              number: pr.number,
-            })
-          );
-        }
-      }
-      if (dataPoints.includeReleases) {
-        for (const rel of repo.releases) {
-          relKeys.add(
-            releaseSelectionToKey({
-              repositoryId: repo.repositoryId,
-              tagName: rel.tagName,
-            })
-          );
-        }
-      }
-    }
-    for (const li of previewResponse?.linearIntegrations ?? []) {
-      for (const issue of li.issues) {
-        linearKeys.add(`${li.integrationId}:${issue.id}`);
-      }
-    }
-    setSelectedCommitKeys(commitKeys);
-    setSelectedPrKeys(prKeys);
-    setSelectedReleaseKeys(relKeys);
-    setSelectedLinearKeys(linearKeys);
-  }, [
-    previewData,
-    previewResponse?.linearIntegrations,
-    dataPoints,
-    eventCounts,
-  ]);
-
   const [attemptedAdvance, setAttemptedAdvance] = useState(false);
 
   const goNext = useCallback(() => {

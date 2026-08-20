@@ -56,7 +56,6 @@ import { clearCompletedGenerationSchema } from "@/schemas/generations";
 import type {
   CommitPreview,
   LinearIntegrationPreviewItem,
-  LinearIssuePreviewItem,
   PullRequestPreview,
   ReleasePreview,
   RepositoryPreview,

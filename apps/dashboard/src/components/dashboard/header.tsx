@@ -132,7 +132,6 @@ export function SiteHeader() {
     !isNonOrgPath &&
     breadcrumbSegments[0] === "collection" &&
     breadcrumbSegments.length >= 2;
-  const collectionDetailId = isCollectionDetail ? breadcrumbSegments[1] : null;
   const isContentDetail =
     !isNonOrgPath &&
     breadcrumbSegments[0] === "content" &&

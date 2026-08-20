@@ -9,7 +9,6 @@ import { routerProviderOptionsSchema } from "@notra/ai/schemas/router";
 import type {
   BuildProviderOptionsInput,
   GatewayId,
-  ReasoningEffort,
   RouterProviderOptions,
 } from "@notra/ai/types/router";
 import { toOpenRouterModelId, toVercelModelId } from "./model-ids";

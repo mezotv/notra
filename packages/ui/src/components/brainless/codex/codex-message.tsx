@@ -2,7 +2,6 @@ import type * as React from "react";
 import { cn } from "@notra/ui/lib/utils";
 
 const FG = "#ececec";
-const DIM = "#8a8a8a";
 const GREEN = "#2f9d63";
 
 export function CodexMessage({

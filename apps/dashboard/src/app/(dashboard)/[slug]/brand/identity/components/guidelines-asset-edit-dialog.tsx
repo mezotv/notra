@@ -191,11 +191,6 @@ export function GuidelinesAssetEditDialog({
   const { dragging, file, fileError, kind, previewUrl, saving, variant } =
     state;
 
-  const extension =
-    (file ? getBrandGuidelineAssetFormat(file) : null) ??
-    asset?.format ??
-    "svg";
-
   useEffect(() => {
     return () => {
       if (previewUrl) {

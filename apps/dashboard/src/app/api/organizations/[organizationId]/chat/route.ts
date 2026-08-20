@@ -15,7 +15,6 @@ import {
   generateChatId,
   getChatSession,
   isChatDeleted,
-  loadChatHistory,
   replaceChatHistory,
   setActiveChatStream,
 } from "@notra/ai/chat/history";
