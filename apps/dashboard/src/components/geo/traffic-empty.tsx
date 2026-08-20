@@ -6,7 +6,7 @@ import type { TrafficEmptyProps } from "@/types/geo";
 
 export function TrafficEmpty({ setup }: TrafficEmptyProps) {
   return (
-    <div className="relative h-full min-h-0 w-full overflow-hidden rounded-2xl">
+    <div className="relative w-full overflow-hidden rounded-2xl">
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 select-none px-3 pt-3 sm:px-4 sm:pt-4"
@@ -15,13 +15,13 @@ export function TrafficEmpty({ setup }: TrafficEmptyProps) {
           <EmptyStateTrafficPreview />
         </div>
       </div>
-      <div className="relative z-10 mx-auto flex h-full min-h-0 w-full max-w-2xl flex-col items-center overflow-y-auto px-6 pt-8 pb-4 text-center">
+      <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-col items-center px-6 pt-8 pb-4 text-center">
         <h3 className="text-balance font-semibold text-lg">
-          No AI traffic yet
+          No AI activity yet
         </h3>
         <p className="mt-1.5 max-w-md text-pretty text-muted-foreground text-sm leading-relaxed">
-          Install the tracker on your site. When ChatGPT, Claude, Perplexity, or
-          another agent fetches a page, the visit shows up here.
+          Install the tracker to see visits from ChatGPT, Claude, and other AI
+          agents.
         </p>
         <div className="mt-6 w-full text-left">
           <GeoIngestSetup

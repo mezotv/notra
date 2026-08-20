@@ -117,14 +117,10 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
 
   if ((traffic?.sources.length ?? 0) === 0) {
     return (
-      <PageContainer className="flex h-full min-h-0 flex-1 flex-col overflow-hidden py-4 md:py-6">
-        <div className="flex min-h-0 w-full flex-1 flex-col gap-6 px-4 lg:px-6">
+      <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <div className="flex w-full flex-col gap-6 px-4 lg:px-6">
           {header}
-          <InstrumentReveal
-            active={revealActive}
-            className="min-h-0 flex-1"
-            order={0}
-          >
+          <InstrumentReveal active={revealActive} order={0}>
             <TrafficEmpty setup={ingestSetup} />
           </InstrumentReveal>
         </div>
