@@ -32,6 +32,7 @@ export interface SearchConsoleCardProps {
 export interface SearchConsoleHeaderRowProps {
   action?: ReactNode;
   titleId: string;
+  onDismiss?: () => void;
 }
 
 export interface SearchConsoleConnectActionProps {

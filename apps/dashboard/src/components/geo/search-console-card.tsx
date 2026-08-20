@@ -1,6 +1,6 @@
 "use client";
 
-import { MoreHorizontalIcon } from "@hugeicons/core-free-icons";
+import { Cancel01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Card } from "@notra/ui/components/ui/card";
@@ -24,6 +24,7 @@ import { Button } from "@/components/button";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { GSC_OAUTH_AUTHORIZE_PATH } from "@/constants/google-search-console";
 import {
+  useGscCardDismissal,
   useGscClearSite,
   useGscDisconnect,
   useGscSelectSite,
@@ -48,7 +49,11 @@ function buildAuthorizeUrl(organizationId: string, callbackPath: string) {
   return `${GSC_OAUTH_AUTHORIZE_PATH}?${params.toString()}`;
 }
 
-function HeaderRow({ action, titleId }: SearchConsoleHeaderRowProps) {
+function HeaderRow({
+  action,
+  titleId,
+  onDismiss,
+}: SearchConsoleHeaderRowProps) {
   return (
     <div className="flex items-start gap-3 px-4 py-3">
       <div className="mt-0.5 shrink-0">
@@ -66,6 +71,17 @@ function HeaderRow({ action, titleId }: SearchConsoleHeaderRowProps) {
         </p>
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
+      {onDismiss ? (
+        <Button
+          aria-label="Dismiss Search Console card"
+          className="shrink-0 text-muted-foreground"
+          onClick={onDismiss}
+          size="icon-sm"
+          variant="ghost"
+        >
+          <HugeiconsIcon icon={Cancel01Icon} size={14} />
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -250,6 +266,13 @@ export function SearchConsoleCard({
   const headingId = useId();
   useGscConnectionToast();
   const { data: status, isPending } = useGscStatus(organizationId);
+  const { dismiss, dismissed } = useGscCardDismissal(organizationId);
+
+  const connectPromo = !isPending && status !== undefined && !status.connected;
+
+  if (dismissed && (isPending || !status || connectPromo)) {
+    return null;
+  }
 
   let body: ReactNode = null;
   let headerAction: ReactNode = null;
@@ -290,7 +313,11 @@ export function SearchConsoleCard({
       className="gap-0 py-0"
       role="region"
     >
-      <HeaderRow action={headerAction} titleId={headingId} />
+      <HeaderRow
+        action={headerAction}
+        onDismiss={connectPromo ? dismiss : undefined}
+        titleId={headingId}
+      />
       {body ? (
         <>
           <div className="mx-4 border-border/80 border-t" />

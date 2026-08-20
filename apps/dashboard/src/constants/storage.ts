@@ -14,6 +14,8 @@ export const localStorageKeys = {
     `notra:brand-identity:v1:${organizationId}`,
   onboardingAgentBannerDismissed: (organizationId: string) =>
     `notra:eve-banner-dismissed:${organizationId}`,
+  gscCardDismissed: (organizationId: string) =>
+    `notra:gsc-card-dismissed:${organizationId}`,
 } as const;
 
 export const sessionStorageKeys = {

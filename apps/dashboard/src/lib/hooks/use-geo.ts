@@ -9,7 +9,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
@@ -17,6 +17,7 @@ import {
   GEO_SCAN_POLL_INTERVAL_MS,
   GEO_START_SCAN_MUTATION_KEY,
 } from "@/constants/geo";
+import { localStorageKeys } from "@/constants/storage";
 import type {
   AiTrafficResponse,
   GeoCompetitorDeleteInput,
@@ -933,4 +934,31 @@ export function useGeoSuggestionDismiss(organizationId: string) {
       toast.error(toErrorMessage(error, "Failed to dismiss suggestion"));
     },
   });
+}
+
+const gscCardDismissListeners = new Set<() => void>();
+
+function subscribeToGscCardDismissal(callback: () => void) {
+  gscCardDismissListeners.add(callback);
+  window.addEventListener("storage", callback);
+  return () => {
+    gscCardDismissListeners.delete(callback);
+    window.removeEventListener("storage", callback);
+  };
+}
+
+export function useGscCardDismissal(organizationId: string) {
+  const storageKey = localStorageKeys.gscCardDismissed(organizationId);
+  const dismissed = useSyncExternalStore(
+    subscribeToGscCardDismissal,
+    () => localStorage.getItem(storageKey) === "true",
+    () => false
+  );
+  const dismiss = () => {
+    localStorage.setItem(storageKey, "true");
+    for (const listener of gscCardDismissListeners) {
+      listener();
+    }
+  };
+  return { dismiss, dismissed };
 }
