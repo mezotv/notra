@@ -23,6 +23,8 @@ export const CHATGPT_MODELS: readonly ChatgptModelOption[] = [
   { id: "terra", label: "GPT-5.6 Terra" },
   { id: "luna", label: "GPT-5.6 Luna" },
   { id: "gpt-5.5", label: "GPT-5.5" },
+  { id: "gpt-5.4", label: "GPT-5.4" },
+  { id: "gpt-5.4-mini", label: "GPT-5.4 mini" },
 ];
 
 export const CHATGPT_EFFORTS: readonly ChatgptEffortOption[] = [

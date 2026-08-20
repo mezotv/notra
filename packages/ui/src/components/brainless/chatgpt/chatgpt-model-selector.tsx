@@ -25,7 +25,7 @@ import {
 import type { ChatgptEffortId, ChatgptModelId } from "../../../types/chatgpt";
 
 const MENU_SURFACE =
-  "min-w-44 rounded-2xl p-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,0,0,0.4)]";
+  "min-w-44 overflow-x-visible overflow-y-visible rounded-2xl p-1.5 ring-0 shadow-[0_0_0_1px_rgba(0,0,0,0.05),0_4px_16px_rgba(0,0,0,0.08)] data-closed:overflow-x-visible data-closed:overflow-y-visible dark:ring-0 dark:shadow-[0_0_0_1px_rgba(255,255,255,0.08),0_8px_24px_rgba(0,0,0,0.4)]";
 
 const ROW_TRIGGER =
   "h-9 gap-2 rounded-lg px-2.5 py-0 text-[13px] leading-none data-highlighted:bg-muted data-open:bg-muted [&_svg]:ml-0";
