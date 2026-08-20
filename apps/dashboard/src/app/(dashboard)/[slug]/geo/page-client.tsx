@@ -15,10 +15,8 @@ import { GeoProjectProvider } from "@/components/providers/geo-project-provider"
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { GEO_DEFAULT_TAB, GEO_TAB_VALUES } from "@/constants/geo";
 import {
-  useAiTraffic,
   useGeoCompetitorShare,
   useGeoCompetitors,
-  useGeoIngestSetup,
   useGeoLanguageShare,
   useGeoOverview,
   useGeoProjects,
@@ -28,7 +26,6 @@ import {
   useGeoStartScan,
   useGeoTimeseries,
   useGeoTrafficJourneys,
-  useGeoTrafficPages,
   useIsGeoScanning,
   useModelUsage,
 } from "@/lib/hooks/use-geo";
@@ -81,9 +78,6 @@ function GeoPageContent({
   const { data: competitorList } = useGeoCompetitors(organizationId);
   const { data: languageShare } = useGeoLanguageShare(organizationId);
   const { data: modelUsage } = useModelUsage(organizationId);
-  const { data: aiTraffic } = useAiTraffic(organizationId);
-  const { data: ingestSetup } = useGeoIngestSetup(organizationId);
-  const { data: trafficPages } = useGeoTrafficPages(organizationId);
   const { data: trafficJourneys } = useGeoTrafficJourneys(organizationId);
   const startScan = useGeoStartScan(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
@@ -184,7 +178,6 @@ function GeoPageContent({
           competitorPoints={competitorShare?.points ?? []}
           competitors={competitorList?.competitors ?? []}
           engines={overview?.engines ?? []}
-          ingestSetup={ingestSetup}
           isScanning={isScanning}
           journeys={trafficJourneys?.journeys ?? []}
           languagePoints={languageShare?.points ?? []}
@@ -197,8 +190,6 @@ function GeoPageContent({
           revealActive={revealActive}
           settings={settings}
           timeseriesPoints={timeseries?.points ?? []}
-          traffic={aiTraffic}
-          trafficPages={trafficPages?.pages ?? []}
         />
 
         <GeoSettingsDialog

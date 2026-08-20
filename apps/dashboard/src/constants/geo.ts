@@ -415,9 +415,10 @@ export const COPY_FEEDBACK_MS = 2000;
 export const GEO_TAB_VALUES = [
   "visibility",
   "prompts",
-  "traffic",
   "journeys",
 ] as const satisfies readonly GeoTab[];
+
+export const GEO_TRAFFIC_REVEAL_MS = 150;
 
 export const GEO_DEFAULT_TAB: GeoTab = "visibility";
 

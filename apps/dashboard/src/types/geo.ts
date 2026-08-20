@@ -829,7 +829,7 @@ export interface EngineFamilySheetProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export type GeoTab = "visibility" | "prompts" | "traffic" | "journeys";
+export type GeoTab = "visibility" | "prompts" | "journeys";
 
 export interface GeoTabsProps {
   activeTab: GeoTab;
@@ -846,9 +846,6 @@ export interface GeoTabsProps {
   promptCount: number;
   isScanning: boolean;
   modelUsage: GeoModelUsageResponse | undefined;
-  traffic: AiTrafficResponse | undefined;
-  ingestSetup: GeoIngestSetupResponse | undefined;
-  trafficPages: GeoTrafficPage[];
   journeys: GeoJourney[];
   organizationId: string;
 }

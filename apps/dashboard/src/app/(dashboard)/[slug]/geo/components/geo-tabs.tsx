@@ -8,8 +8,6 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { AiTrafficCard } from "@/components/geo/ai-traffic-card";
-import { AiTrafficLogCard } from "@/components/geo/ai-traffic-log-card";
 import { EngineRateTable } from "@/components/geo/engine-rate-table";
 import { JourneysCard } from "@/components/geo/journeys-card";
 import { LanguagePerformanceCard } from "@/components/geo/language-performance-card";
@@ -18,8 +16,6 @@ import { ModelUsageCard } from "@/components/geo/model-usage-card";
 import { PromptFunnelCard } from "@/components/geo/prompt-funnel-card";
 import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
 import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
-import { TrafficEmpty } from "@/components/geo/traffic-empty";
-import { TrafficPagesCard } from "@/components/geo/traffic-pages-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { GEO_PROMPTS_TAB_LIMIT } from "@/constants/geo";
@@ -69,15 +65,9 @@ export function GeoTabs({
   promptCount,
   isScanning,
   modelUsage,
-  traffic,
-  ingestSetup,
-  trafficPages,
   journeys,
   organizationId,
 }: GeoTabsProps) {
-  const totals = traffic?.totals ?? { crawler: 0, aiReferral: 0, human: 0 };
-  const trafficCount = totals.crawler + totals.aiReferral;
-
   return (
     <Tabs
       onValueChange={(value) => onActiveTabChange(toGeoTab(value))}
@@ -88,10 +78,6 @@ export function GeoTabs({
         <TabsTrigger value="prompts">
           Prompts
           <TriggerCount count={promptCount} />
-        </TabsTrigger>
-        <TabsTrigger value="traffic">
-          Traffic
-          <TriggerCount count={trafficCount} />
         </TabsTrigger>
         <TabsTrigger value="journeys">
           Journeys
@@ -170,29 +156,6 @@ export function GeoTabs({
             />
           </TabSection>
         </InstrumentGrid>
-      </TabsContent>
-
-      <TabsContent className="mt-6 flex flex-col gap-6" value="traffic">
-        {(traffic?.sources.length ?? 0) === 0 ? (
-          <TabSection active={revealActive} order={0}>
-            <TrafficEmpty setup={ingestSetup} />
-          </TabSection>
-        ) : (
-          <>
-            <TabSection active={revealActive} order={0}>
-              <AiTrafficCard traffic={traffic} />
-            </TabSection>
-            <TabSection active={revealActive} order={1}>
-              <TrafficPagesCard pages={trafficPages} />
-            </TabSection>
-            <TabSection active={revealActive} order={2}>
-              <AiTrafficLogCard
-                organizationId={organizationId}
-                organizationSlug={organizationSlug}
-              />
-            </TabSection>
-          </>
-        )}
       </TabsContent>
 
       <TabsContent className="mt-6 flex flex-col gap-6" value="journeys">

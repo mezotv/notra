@@ -1,4 +1,5 @@
 import {
+  Activity01Icon,
   AiBrowserIcon,
   AiChat01Icon,
   Analytics01Icon,
@@ -89,6 +90,12 @@ export const NAV_MAIN_ITEMS: NavMainItem[] = [
     link: "/geo",
     icon: AiBrowserIcon,
     label: "Overview",
+    category: "geo",
+  },
+  {
+    link: "/geo/traffic",
+    icon: Activity01Icon,
+    label: "Traffic",
     category: "geo",
   },
   {

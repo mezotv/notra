@@ -62,6 +62,14 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     path: (slug) => `/${slug}/geo`,
   },
   {
+    id: "geo-traffic",
+    label: "GEO Traffic",
+    keywords: ["ai", "traffic", "crawlers", "referrals", "visits"],
+    icon: AiBrowserIcon,
+    section: "Navigation",
+    path: (slug) => `/${slug}/geo/traffic`,
+  },
+  {
     id: "geo-prompts",
     label: "GEO Prompts",
     keywords: ["ai", "prompts", "questions", "tracking"],
