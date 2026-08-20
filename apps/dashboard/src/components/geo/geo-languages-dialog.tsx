@@ -9,9 +9,9 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/button";
 import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import type { GeoSubDialogProps } from "@/types/geo";

@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "@notra/ui/components/ui/button";
 import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
 import { useId, useState } from "react";
+import { Button } from "@/components/button";
 import { DirectionInstrument } from "@/components/geo/directions/direction-instrument";
 import { useGeoGenerateFromWebsite } from "@/lib/hooks/use-geo";
 import type { GeoOnboardingOverlayProps } from "@/types/geo";

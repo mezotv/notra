@@ -1,9 +1,9 @@
 "use client";
 
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
+import { Button } from "@/components/button";
 import { EChartsLineChart } from "@/components/evilcharts/charts/echarts-line-chart";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { PromptResultsTable } from "@/components/geo/directions/prompt-results-table";

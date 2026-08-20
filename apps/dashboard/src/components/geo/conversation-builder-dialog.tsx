@@ -10,11 +10,11 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
 import { useId, useState } from "react";
+import { Button } from "@/components/button";
 import { GEO_PROMPT_MIN_LENGTH, GEO_SEQUENCE_MAX_TURNS } from "@/constants/geo";
 import {
   useGeoSequenceCreate,

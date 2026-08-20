@@ -15,7 +15,6 @@ import {
   ColorPickerSelection,
 } from "@notra/ui/components/kibo-ui/color-picker";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import {
@@ -34,6 +33,7 @@ import { useDebouncedCallback } from "@tanstack/react-pacer";
 import Color from "color";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+import { Button } from "@/components/button";
 import { CompetitorLogoPreview } from "@/components/geo/competitor-logo-preview";
 import { COMPETITOR_SWATCHES } from "@/constants/charts";
 import { COMPETITOR_KIND_HINT, GEO_COLOR_DEBOUNCE_MS } from "@/constants/geo";

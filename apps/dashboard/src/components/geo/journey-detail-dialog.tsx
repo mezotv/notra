@@ -9,7 +9,6 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Table,
@@ -20,6 +19,7 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import { useMemo } from "react";
+import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { CountryFlag } from "@/components/geo/twemoji";
 import { useGeoJourneyDetail } from "@/lib/hooks/use-geo";

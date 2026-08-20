@@ -2,7 +2,6 @@
 
 import { Delete02Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   Card,
   CardAction,
@@ -13,6 +12,7 @@ import {
 } from "@notra/ui/components/ui/card";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { useState } from "react";
+import { Button } from "@/components/button";
 import { ConversationBuilderDialog } from "@/components/geo/conversation-builder-dialog";
 import { ConversationResultsDialog } from "@/components/geo/conversation-results-dialog";
 import {

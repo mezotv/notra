@@ -3,10 +3,10 @@
 import { Cancel01Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import { Card } from "@notra/ui/components/ui/card";
 import { Google } from "@notra/ui/components/ui/svgs/google";
 import { useId } from "react";
+import { Button } from "@/components/button";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import {
   useGeoSuggestionAccept,

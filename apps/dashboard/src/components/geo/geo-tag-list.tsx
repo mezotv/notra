@@ -2,9 +2,9 @@
 
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Button } from "@notra/ui/components/ui/button";
 import { Label } from "@notra/ui/components/ui/label";
 import { useState } from "react";
+import { Button } from "@/components/button";
 import { addUniqueValues, removeValue } from "@/lib/geo/string-list";
 import { cn } from "@/lib/utils";
 import type { GeoTagListProps } from "@/types/geo";

@@ -3,7 +3,6 @@
 import { MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { Button } from "@notra/ui/components/ui/button";
 import { Card } from "@notra/ui/components/ui/card";
 import {
   DropdownMenu,
@@ -21,6 +20,7 @@ import {
 } from "@notra/ui/components/ui/select";
 import { Google } from "@notra/ui/components/ui/svgs/google";
 import { type ReactNode, useId, useState } from "react";
+import { Button } from "@/components/button";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { GSC_OAUTH_AUTHORIZE_PATH } from "@/constants/google-search-console";
 import {

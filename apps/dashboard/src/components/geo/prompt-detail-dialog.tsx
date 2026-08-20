@@ -9,7 +9,6 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
 import {
   AnimatePresence,
   LayoutGroup,
@@ -17,6 +16,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { useId, useState } from "react";
+import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoPromptAnswerThread } from "@/components/geo/geo-prompt-answer-thread";
 import { EASE_OUT } from "@/lib/ease";

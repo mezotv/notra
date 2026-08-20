@@ -8,7 +8,7 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { Button } from "@notra/ui/components/ui/button";
+import { Button } from "@/components/button";
 import { GeoIngestSetup } from "@/components/geo/geo-ingest-setup";
 import { useGeoIngestSetup } from "@/lib/hooks/use-geo";
 import type { GeoIngestSetupDialogProps } from "@/types/geo";
