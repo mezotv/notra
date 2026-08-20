@@ -22,7 +22,7 @@ import { useIsApplePlatform } from "@notra/ui/hooks/use-is-apple-platform";
 import { cn } from "@notra/ui/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef } from "react";
 import { useCommandPalette } from "@/components/command-palette/command-palette-context";
 import { BrandTopbarIdentitySelector } from "@/components/dashboard/brand-topbar-identity-selector";
@@ -30,7 +30,9 @@ import { ChatTopbarTitle } from "@/components/dashboard/chat-topbar-title";
 import { ContentTopbarTitle } from "@/components/dashboard/content-topbar-title";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { FeedbackForm } from "@/components/dashboard/feedback-popover";
+import { GeoTopbarProjectSwitcher } from "@/components/dashboard/geo-topbar-project-switcher";
 import { NavUser } from "@/components/dashboard/nav-user";
+import { GEO_DEFAULT_TAB, GEO_TAB_BREADCRUMB_LABELS } from "@/constants/geo";
 
 const NON_ORG_PATHS: string[] = [];
 
@@ -47,6 +49,7 @@ const SEGMENT_CONFIG: Record<string, { label?: string; href?: null }> = {
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const id = useId();
   const segments = pathname.split("/").filter(Boolean);
   const slug = segments[0];
@@ -139,6 +142,7 @@ export function SiteHeader() {
     !isNonOrgPath &&
     breadcrumbSegments[0] === "brand" &&
     breadcrumbSegments[1] === "identity";
+  const isGeo = !isNonOrgPath && breadcrumbSegments[0] === "geo";
 
   const displayBreadcrumbSegments = isCollectionDetail
     ? ["content", "collection"]
@@ -237,9 +241,62 @@ export function SiteHeader() {
     }
   );
 
-  const breadcrumbs = isBrandIdentity
-    ? brandIdentityBreadcrumbs
-    : genericBreadcrumbs;
+  const geoSectionSegments = breadcrumbSegments.slice(1);
+  const geoTabLabel =
+    GEO_TAB_BREADCRUMB_LABELS[searchParams.get("tab") ?? GEO_DEFAULT_TAB] ??
+    GEO_TAB_BREADCRUMB_LABELS[GEO_DEFAULT_TAB] ??
+    "Visibility";
+
+  const geoSectionBreadcrumbs =
+    geoSectionSegments.length > 0
+      ? geoSectionSegments.flatMap((segment, index) => {
+          const isLast = index === geoSectionSegments.length - 1;
+          const href = `/${segments.slice(0, index + 3).join("/")}`;
+          const label =
+            segment.charAt(0).toUpperCase() +
+            segment.slice(1).replace(/-/g, " ");
+          return [
+            <BreadcrumbSeparator key={`${id}-geo-sep-${segment}`}>
+              <HugeiconsIcon icon={ArrowRight01Icon} />
+            </BreadcrumbSeparator>,
+            <BreadcrumbItem
+              className={cn(!isLast && "hover:underline")}
+              key={`${id}-geo-item-${segment}`}
+            >
+              {isLast ? (
+                <BreadcrumbPage>{label}</BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink render={<Link href={href}>{label}</Link>} />
+              )}
+            </BreadcrumbItem>,
+          ];
+        })
+      : [
+          <BreadcrumbSeparator key={`${id}-geo-tab-sep`}>
+            <HugeiconsIcon icon={ArrowRight01Icon} />
+          </BreadcrumbSeparator>,
+          <BreadcrumbItem key={`${id}-geo-tab`}>
+            <BreadcrumbPage>{geoTabLabel}</BreadcrumbPage>
+          </BreadcrumbItem>,
+        ];
+
+  const geoBreadcrumbs = [
+    <BreadcrumbItem className="hover:underline" key={`${id}-geo-link`}>
+      <BreadcrumbLink render={<Link href={`/${slug}/geo`}>Geo</Link>} />
+    </BreadcrumbItem>,
+    <GeoTopbarProjectSwitcher key={`${id}-geo-project-switcher`} />,
+    ...geoSectionBreadcrumbs,
+  ];
+
+  const breadcrumbs = (() => {
+    if (isBrandIdentity) {
+      return brandIdentityBreadcrumbs;
+    }
+    if (isGeo) {
+      return geoBreadcrumbs;
+    }
+    return genericBreadcrumbs;
+  })();
 
   return (
     <header className="relative flex h-12 shrink-0 items-center gap-2 border-b bg-muted/30 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
