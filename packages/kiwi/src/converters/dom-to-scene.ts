@@ -32,6 +32,9 @@ import { TextLayoutCache } from "../utils/text-layout";
 
 export type { BuildSceneFromElementOptions } from "../types/dom-to-scene";
 
+const SVG_DASH_SEPARATOR_RE = /[\s,]+/;
+const SVG_DASH_LENGTH_RE = /^(?:\d+(?:\.\d*)?|\.\d+)(?:px)?$/i;
+
 let colorParseContext: CanvasRenderingContext2D | null | undefined;
 
 function parseColorChannel(value: string): number {
@@ -172,6 +175,28 @@ function svgStrokeJoin(value: string): string {
     default:
       return "MITER";
   }
+}
+
+export function parseSvgDasharray(value: string | null): number[] | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed || trimmed === "none") {
+    return undefined;
+  }
+
+  const values = trimmed.split(SVG_DASH_SEPARATOR_RE).map((part) => {
+    if (!SVG_DASH_LENGTH_RE.test(part)) {
+      return null;
+    }
+    const parsed = Number.parseFloat(part);
+    return Number.isFinite(parsed) ? parsed : null;
+  });
+
+  if (values.some((item) => item === null || item < 0)) {
+    return undefined;
+  }
+
+  const pattern = values as number[];
+  return pattern.some((item) => item > 0) ? pattern : undefined;
 }
 
 function svgStrokeWeight(shape: SvgShape): number | undefined {
@@ -649,6 +674,10 @@ function extractLayout(node: Node): LayoutNode | null {
         svgStroke ?? pathStyle.stroke,
         fallbackColor
       );
+      const strokeDasharray =
+        pathEl.getAttribute("stroke-dasharray") ??
+        svg.getAttribute("stroke-dasharray") ??
+        pathStyle.getPropertyValue("stroke-dasharray");
       const fill = svgPaintValue(
         pathFill,
         svgFill ?? (stroke || pathStroke || svgStroke ? null : pathStyle.fill),
@@ -669,6 +698,7 @@ function extractLayout(node: Node): LayoutNode | null {
           y: ctm.b * p.x + ctm.d * p.y + ctm.f,
         })),
       }));
+      const strokeScale = Math.hypot(ctm.a, ctm.b) || 1;
       shapes.push({
         subpaths: transformed,
         fill,
@@ -682,12 +712,16 @@ function extractLayout(node: Node): LayoutNode | null {
           pathEl.getAttribute("stroke-linejoin") ??
           svg.getAttribute("stroke-linejoin") ??
           pathStyle.strokeLinejoin,
+        strokeDasharray:
+          parseSvgDasharray(strokeDasharray)?.map(
+            (dash) => dash * strokeScale
+          ) ?? null,
         strokeWidth:
           parsePx(
             pathEl.getAttribute("stroke-width") ??
               svg.getAttribute("stroke-width") ??
               pathStyle.strokeWidth
-          ) * (Math.hypot(ctm.a, ctm.b) || 1),
+          ) * strokeScale,
       });
     }
 
@@ -920,6 +954,8 @@ function emitSvgSubpaths(
     fill,
     stroke,
     strokeCap: svgStrokeCap(shape.strokeLineCap),
+    // Figma's scene schema supports dashPattern but has no dash-offset field.
+    dashPattern: shape.strokeDasharray ?? undefined,
     strokeJoin: svgStrokeJoin(shape.strokeLineJoin),
     strokeWeight: svgStrokeWeight(shape),
     network: {

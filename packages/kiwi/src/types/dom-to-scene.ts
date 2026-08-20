@@ -61,6 +61,7 @@ export interface SvgShape {
   stroke: string | null;
   strokeLineCap: string;
   strokeLineJoin: string;
+  strokeDasharray: number[] | null;
   strokeWidth: number;
 }
 
