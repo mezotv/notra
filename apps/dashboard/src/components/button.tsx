@@ -8,8 +8,21 @@ import type { ComponentProps } from "react";
 const CTA_PRIMARY =
   "corner-squircle rounded-[1rem] shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] hover:bg-primary/90 supports-[corner-shape:round]:rounded-[1.25rem]";
 
+const CTA_OUTLINE =
+  "corner-squircle rounded-[1rem] shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.05)_inset] supports-[corner-shape:round]:rounded-[1.25rem]";
+
 function isDefaultVariant(variant: ComponentProps<typeof UiButton>["variant"]) {
   return variant === undefined || variant === "default";
+}
+
+function ctaClass(variant: ComponentProps<typeof UiButton>["variant"]) {
+  if (isDefaultVariant(variant)) {
+    return CTA_PRIMARY;
+  }
+  if (variant === "outline") {
+    return CTA_OUTLINE;
+  }
+  return null;
 }
 
 function Button({
@@ -19,7 +32,7 @@ function Button({
 }: ComponentProps<typeof UiButton>) {
   return (
     <UiButton
-      className={cn(isDefaultVariant(variant) && CTA_PRIMARY, className)}
+      className={cn(ctaClass(variant), className)}
       variant={variant}
       {...props}
     />
@@ -30,11 +43,7 @@ function buttonVariants({
   className,
   ...options
 }: Parameters<typeof uiButtonVariants>[0] = {}) {
-  return cn(
-    uiButtonVariants(options),
-    isDefaultVariant(options.variant) && CTA_PRIMARY,
-    className
-  );
+  return cn(uiButtonVariants(options), ctaClass(options.variant), className);
 }
 
 export { Button, buttonVariants };
