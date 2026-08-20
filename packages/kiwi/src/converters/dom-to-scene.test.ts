@@ -1,16 +1,28 @@
 import { describe, expect, test } from "bun:test";
-import { SceneBuilder, solidFill } from "../src/builders/scene-builder";
-import { parseSvgDasharray } from "../src/converters/dom-to-scene";
+import { SceneBuilder, solidFill } from "../builders/scene-builder";
+import { parseSvgDasharray } from "./dom-to-scene";
 
 describe("SVG stroke dashes", () => {
   test("parses supported SVG dash lengths", () => {
     expect(parseSvgDasharray("12 6")).toEqual([12, 6]);
     expect(parseSvgDasharray("12px, 6px")).toEqual([12, 6]);
+    expect(parseSvgDasharray("1e2 5E1")).toEqual([100, 50]);
+  });
+
+  test("repeats odd-length dash lists to even length", () => {
+    expect(parseSvgDasharray("4")).toEqual([4, 4]);
+    expect(parseSvgDasharray("4 2 1")).toEqual([4, 2, 1, 4, 2, 1]);
   });
 
   test("ignores unsupported or solid dash patterns", () => {
+    expect(parseSvgDasharray(null)).toBeUndefined();
+    expect(parseSvgDasharray("")).toBeUndefined();
+    expect(parseSvgDasharray("   ")).toBeUndefined();
     expect(parseSvgDasharray("none")).toBeUndefined();
     expect(parseSvgDasharray("12% 6%")).toBeUndefined();
+    expect(parseSvgDasharray("1em 0.5em")).toBeUndefined();
+    expect(parseSvgDasharray("-4 2")).toBeUndefined();
+    expect(parseSvgDasharray("12 foo")).toBeUndefined();
     expect(parseSvgDasharray("0 0")).toBeUndefined();
   });
 
