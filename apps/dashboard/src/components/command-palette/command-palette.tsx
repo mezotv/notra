@@ -82,6 +82,7 @@ const ENTITY_SECTION_ORDER = [
 const GROUPED_ROUTES = (() => {
   const groups: Record<CommandSection, typeof COMMAND_ROUTES> = {
     Navigation: [],
+    GEO: [],
     Workspace: [],
     Automation: [],
     Manage: [],

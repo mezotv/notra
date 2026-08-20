@@ -2,6 +2,7 @@ import type { IconSvgElement } from "@hugeicons/react";
 
 export type CommandSection =
   | "Navigation"
+  | "GEO"
   | "Workspace"
   | "Automation"
   | "Manage"
