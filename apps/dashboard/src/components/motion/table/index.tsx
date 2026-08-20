@@ -163,9 +163,16 @@ export function Table<T>({
     </colgroup>
   );
   const resolvedHeight = Math.max(height, minHeight ?? 0);
-  const bodyHeight = Math.max(rowHeight, resolvedHeight - rowHeight);
+  // Snap the body to a whole number of rows so separators land exactly on the
+  // bottom border instead of a partial row peeking out above it.
+  const bodyHeight =
+    Math.floor(Math.max(rowHeight, resolvedHeight - rowHeight) / rowHeight) *
+    rowHeight;
   const minBodyHeight =
-    minHeight == null ? 0 : Math.max(rowHeight, minHeight - rowHeight);
+    minHeight == null
+      ? 0
+      : Math.floor(Math.max(rowHeight, minHeight - rowHeight) / rowHeight) *
+        rowHeight;
   const contentHeight = Math.max(
     rowHeight,
     Math.min(bodyHeight, sortedRows.length * rowHeight)
@@ -194,6 +201,27 @@ export function Table<T>({
       endReachedRef.current = false;
     }
   }, [loading]);
+  // A styled ::-webkit-scrollbar is a classic scrollbar: a horizontal one eats
+  // into the fixed viewport height, so rows no longer land on the rowHeight
+  // grid against the bottom border. Grow the container by its thickness.
+  const [hScrollbarPx, setHScrollbarPx] = useState(0);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) {
+      return;
+    }
+    const measure = () => {
+      const styles = getComputedStyle(el);
+      const borders =
+        Number.parseFloat(styles.borderTopWidth) +
+        Number.parseFloat(styles.borderBottomWidth);
+      setHScrollbarPx(Math.max(0, el.offsetHeight - el.clientHeight - borders));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
   const handleScroll = useCallback(() => {
     const el = scrollRef.current;
     if (!el) {
@@ -303,16 +331,18 @@ export function Table<T>({
 
       <div
         className={cn(
-          "-mt-5 scrollbar-floating relative rounded-2xl border border-border bg-background outline-none",
-          "[&_tr:last-child_td]:border-b-0",
+          "-mt-5 scrollbar-floating relative box-content rounded-2xl border border-border bg-background outline-none",
           scrolls ? "overflow-auto" : "overflow-x-auto overflow-y-hidden"
         )}
         onScroll={handleScroll}
         ref={scrollRef}
         style={
           scrolls
-            ? { height: viewportHeight, scrollbarGutter: "stable" }
-            : { height: viewportHeight }
+            ? {
+                height: viewportHeight + hScrollbarPx,
+                scrollbarGutter: "stable",
+              }
+            : { height: viewportHeight + hScrollbarPx }
         }
       >
         <table
@@ -362,6 +392,7 @@ export function Table<T>({
                       entry={entry}
                       hasRowMenu={hasRowMenu}
                       index={vItem.index}
+                      isLastRow={vItem.index === displayRows.length - 1}
                       isSelected={selected.has(entry.id)}
                       key={entry.id}
                       onActivate={activateRow}

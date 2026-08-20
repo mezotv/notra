@@ -18,6 +18,7 @@ function isInteractiveTarget(target: EventTarget | null): boolean {
 export function TableBodyRow<T>({
   entry,
   index,
+  isLastRow,
   rowHeight,
   selectable,
   isSelected,
@@ -33,6 +34,7 @@ export function TableBodyRow<T>({
 }: {
   entry: TableRow<T>;
   index: number;
+  isLastRow: boolean;
   rowHeight: number;
   selectable: boolean;
   isSelected: boolean;
@@ -46,6 +48,9 @@ export function TableBodyRow<T>({
   onCellEdit?: (rowId: string, columnKey: string, value: string) => void;
   rowRef: (el: HTMLTableRowElement | null) => void;
 }) {
+  // The virtualizer's bottom spacer <tr> can be :last-child, so a CSS
+  // last-child rule misses the real final row; flag it explicitly instead.
+  const cellBorder = isLastRow ? "border-b-0" : "border-border/60 border-b";
   return (
     <tr
       className={cn(
@@ -94,7 +99,7 @@ export function TableBodyRow<T>({
       tabIndex={onRowClick ? 0 : undefined}
     >
       {selectable ? (
-        <td className="border-border/60 border-b text-center">
+        <td className={cn("text-center", cellBorder)}>
           <div className="flex items-center justify-center">
             <Checkbox
               aria-label={`Select row ${index + 1}`}
@@ -108,7 +113,8 @@ export function TableBodyRow<T>({
       {columns.map((column) => (
         <td
           className={cn(
-            "max-w-0 overflow-hidden border-border/60 border-b px-4 text-foreground",
+            "max-w-0 overflow-hidden px-4 text-foreground",
+            cellBorder,
             alignText(column.align)
           )}
           key={column.key}
@@ -126,7 +132,7 @@ export function TableBodyRow<T>({
           </div>
         </td>
       ))}
-      <td aria-hidden className="border-border/60 border-b" />
+      <td aria-hidden className={cellBorder} />
     </tr>
   );
 }
