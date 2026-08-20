@@ -55,3 +55,17 @@ export function downloadBlob(blob: Blob, filename: string) {
   anchor.remove();
   URL.revokeObjectURL(objectUrl);
 }
+
+export async function fetchBlobFromUrl(url: string) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch file: ${response.status}`);
+  }
+  return await response.blob();
+}
+
+export async function downloadFileFromUrl(url: string, filename: string) {
+  const blob = await fetchBlobFromUrl(url);
+  const safeName = sanitizeDownloadFilename(filename) || "download";
+  downloadBlob(blob, safeName);
+}

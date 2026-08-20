@@ -626,10 +626,11 @@ export default function BillingPage() {
                         ) : (
                           sortedInvoices.map((invoice) => (
                             <TableRow
-                              className={cn(
-                                invoice.hostedInvoiceUrl &&
-                                  "cursor-pointer transition-colors hover:bg-muted/50"
-                              )}
+                              className={
+                                invoice.hostedInvoiceUrl
+                                  ? "cursor-pointer"
+                                  : undefined
+                              }
                               key={`${invoiceListId}-${invoice.createdAt}-${invoice.total}`}
                               onClick={() => {
                                 if (invoice.hostedInvoiceUrl) {

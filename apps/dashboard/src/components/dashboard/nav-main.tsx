@@ -11,7 +11,6 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { memo } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { SOCIAL_ANALYTICS_FLAG_KEY } from "@/constants/analytics";
 import {
@@ -23,8 +22,9 @@ import type { NavMainItem } from "@/types/components/nav";
 import { isAnalyticsVisibleInNav } from "@/utils/analytics-flag";
 import { resolveActiveNavLink, resolveMainNavGroups } from "@/utils/nav";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
+import { SidebarLabel } from "./sidebar-label";
 
-const NavGroup = memo(function NavGroup({
+function NavGroup({
   items,
   slug,
   label,
@@ -51,10 +51,10 @@ const NavGroup = memo(function NavGroup({
               render={
                 <Link href={href}>
                   <HugeiconsIcon icon={item.icon} />
-                  <span>{item.label}</span>
+                  <SidebarLabel>{item.label}</SidebarLabel>
                   {item.badge && (
                     <Badge
-                      className="ml-auto h-[1.125rem] px-[0.375rem] text-[0.625rem] text-muted-foreground"
+                      className="ml-auto h-[1.125rem] px-[0.375rem] text-[0.625rem] text-muted-foreground group-data-[collapsible=icon]:hidden"
                       variant="secondary"
                     >
                       {item.badge}
@@ -81,7 +81,7 @@ const NavGroup = memo(function NavGroup({
       <SidebarGroupContent>{menu}</SidebarGroupContent>
     </SidebarGroup>
   );
-});
+}
 
 export function NavMain() {
   const { activeOrganization } = useOrganizationsContext();

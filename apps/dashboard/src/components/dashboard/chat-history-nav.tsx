@@ -57,6 +57,7 @@ import {
   useChatSessions,
 } from "@/lib/hooks/use-chat-sessions";
 import { cn } from "@/lib/utils";
+import { SidebarLabel } from "./sidebar-label";
 
 export function ChatHistoryNav() {
   const { activeOrganization } = useOrganizationsContext();
@@ -356,7 +357,7 @@ export function ChatHistoryNav() {
                     replace={isOnChatRoute}
                   >
                     <HugeiconsIcon icon={Add01Icon} />
-                    <span>New chat</span>
+                    <SidebarLabel>New chat</SidebarLabel>
                   </Link>
                 }
                 tooltip="New chat"

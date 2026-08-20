@@ -20,6 +20,7 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { SidebarLabel } from "./sidebar-label";
 
 interface NavSettingsItem {
   label: string;
@@ -86,7 +87,9 @@ export function NavSettings({ slug }: NavSettingsProps) {
   return (
     <>
       <SidebarGroup>
-        <SidebarGroupLabel>Account</SidebarGroupLabel>
+        <SidebarGroupLabel>
+          <SidebarLabel>Account</SidebarLabel>
+        </SidebarGroupLabel>
         <SidebarMenu>
           {accountItems.map((item) => (
             <SidebarMenuButton
@@ -95,7 +98,7 @@ export function NavSettings({ slug }: NavSettingsProps) {
               render={
                 <Link href={`/${slug}/${item.url}`} replace>
                   <HugeiconsIcon icon={item.icon} />
-                  <span>{item.label}</span>
+                  <SidebarLabel>{item.label}</SidebarLabel>
                 </Link>
               }
               tooltip={item.label}
@@ -105,7 +108,9 @@ export function NavSettings({ slug }: NavSettingsProps) {
       </SidebarGroup>
 
       <SidebarGroup>
-        <SidebarGroupLabel>Organization</SidebarGroupLabel>
+        <SidebarGroupLabel>
+          <SidebarLabel>Organization</SidebarLabel>
+        </SidebarGroupLabel>
         <SidebarMenu>
           {organizationItems.map((item) => (
             <SidebarMenuButton
@@ -114,7 +119,7 @@ export function NavSettings({ slug }: NavSettingsProps) {
               render={
                 <Link href={`/${slug}/${item.url}`} replace>
                   <HugeiconsIcon icon={item.icon} />
-                  <span>{item.label}</span>
+                  <SidebarLabel>{item.label}</SidebarLabel>
                 </Link>
               }
               tooltip={item.label}

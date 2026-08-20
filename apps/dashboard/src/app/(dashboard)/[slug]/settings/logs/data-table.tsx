@@ -15,9 +15,14 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import type { KeyboardEvent, MouseEvent } from "react";
 import { useState } from "react";
 import { Button } from "@/components/button";
+import { cn } from "@/lib/utils";
 import type { DataTableProps } from "@/types/logs/data-table";
+
+const INTERACTIVE_ROW_TARGET_SELECTOR =
+  "a, button, input, textarea, select, [role='menuitem'], [data-slot='dropdown-menu-trigger']";
 
 export function DataTable<TData>({
   columns,
@@ -28,8 +33,36 @@ export function DataTable<TData>({
   onPageChange,
   isLoading,
   emptyState,
+  onRowClick,
 }: DataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>([]);
+
+  function handleRowClick(event: MouseEvent<HTMLTableRowElement>, row: TData) {
+    if (!onRowClick) {
+      return;
+    }
+    if (
+      event.target instanceof Element &&
+      event.target.closest(INTERACTIVE_ROW_TARGET_SELECTOR)
+    ) {
+      return;
+    }
+    onRowClick(row);
+  }
+
+  function handleRowKeyDown(
+    event: KeyboardEvent<HTMLTableRowElement>,
+    row: TData
+  ) {
+    if (!onRowClick) {
+      return;
+    }
+    if (event.key !== "Enter" && event.key !== " ") {
+      return;
+    }
+    event.preventDefault();
+    onRowClick(row);
+  }
 
   const table = useReactTable({
     data,
@@ -88,8 +121,16 @@ export function DataTable<TData>({
               table.getRowModel().rows?.length > 0 &&
               table.getRowModel().rows.map((row) => (
                 <TableRow
+                  aria-label="View log details"
+                  className={cn(
+                    onRowClick &&
+                      "cursor-pointer hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none"
+                  )}
                   data-state={row.getIsSelected() && "selected"}
                   key={row.id}
+                  onClick={(event) => handleRowClick(event, row.original)}
+                  onKeyDown={(event) => handleRowKeyDown(event, row.original)}
+                  tabIndex={onRowClick ? 0 : undefined}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

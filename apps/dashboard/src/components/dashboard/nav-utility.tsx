@@ -12,6 +12,7 @@ import { usePathname } from "next/navigation";
 import { NAV_CATEGORY_LABELS, NAV_ITEMS_BY_CATEGORY } from "@/constants/nav";
 import type { NavUtilityProps } from "@/types/components/nav";
 import { resolveActiveNavLink } from "@/utils/nav";
+import { SidebarLabel } from "./sidebar-label";
 
 export function NavUtility({ slug }: NavUtilityProps) {
   const pathname = usePathname();
@@ -24,7 +25,9 @@ export function NavUtility({ slug }: NavUtilityProps) {
 
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{NAV_CATEGORY_LABELS.utility}</SidebarGroupLabel>
+      <SidebarGroupLabel>
+        <SidebarLabel>{NAV_CATEGORY_LABELS.utility}</SidebarLabel>
+      </SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (
           <SidebarMenuButton
@@ -33,7 +36,7 @@ export function NavUtility({ slug }: NavUtilityProps) {
             render={
               <Link href={`/${slug}${item.link}`}>
                 <HugeiconsIcon icon={item.icon} />
-                <span>{item.label}</span>
+                <SidebarLabel>{item.label}</SidebarLabel>
               </Link>
             }
             tooltip={item.label}

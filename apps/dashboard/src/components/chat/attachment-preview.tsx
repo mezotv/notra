@@ -1,6 +1,9 @@
 "use client";
 
+import { Copy01Icon, Download01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import type { ChatAttachment } from "@notra/ai/types/chat";
+import { Button } from "@notra/ui/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,12 +12,19 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
+import { toast } from "sonner";
 import { MIME_DISPLAY_LABELS } from "@/constants/upload";
 import {
   isImageMimeType,
   isPdfMimeType,
   isTextMimeType,
 } from "@/lib/upload/mime";
+import { copyImageToClipboard } from "@/utils/copy-image-to-clipboard";
+import {
+  buildImageDownloadFilename,
+  downloadFileFromUrl,
+} from "@/utils/download";
 import { formatBytes } from "@/utils/format";
 
 function TextPreview({ url }: { url: string }) {
@@ -68,28 +78,90 @@ export function AttachmentPreviewDialog({
   open,
   onOpenChange,
 }: AttachmentPreviewDialogProps) {
+  const [isCopying, setIsCopying] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
+
   if (!attachment) {
     return null;
   }
 
   const typeLabel =
     MIME_DISPLAY_LABELS[attachment.mediaType] ?? attachment.mediaType;
+  const isImage = isImageMimeType(attachment.mediaType);
+  const isPdf = isPdfMimeType(attachment.mediaType);
+  const isText = isTextMimeType(attachment.mediaType);
+  const canPreview = isImage || isPdf || isText;
+
+  async function handleCopyImage() {
+    if (!attachment) {
+      return;
+    }
+    setIsCopying(true);
+    try {
+      await copyImageToClipboard(attachment.url);
+      toast.success("Image copied");
+    } catch {
+      toast.error("Failed to copy image");
+    }
+    setIsCopying(false);
+  }
+
+  async function handleDownload() {
+    if (!attachment) {
+      return;
+    }
+    setIsDownloading(true);
+    try {
+      const filename = isImage
+        ? buildImageDownloadFilename(attachment.filename, attachment.mediaType)
+        : attachment.filename;
+      await downloadFileFromUrl(attachment.url, filename);
+      toast.success(isImage ? "Downloaded image" : "Downloaded file");
+    } catch {
+      window.open(attachment.url, "_blank", "noopener,noreferrer");
+    }
+    setIsDownloading(false);
+  }
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="flex h-[80vh] max-w-3xl flex-col gap-3 p-4 sm:max-w-3xl">
-        <div className="min-w-0 pr-8">
-          <DialogTitle className="truncate text-sm">
-            {attachment.filename}
-          </DialogTitle>
-          <p className="mt-1 text-muted-foreground text-xs">
-            {typeof attachment.size === "number"
-              ? `${typeLabel} · ${formatBytes(attachment.size)}`
-              : typeLabel}
-          </p>
+        <div className="flex min-w-0 items-start justify-between gap-3 pr-8">
+          <div className="min-w-0">
+            <DialogTitle className="truncate text-sm">
+              {attachment.filename}
+            </DialogTitle>
+            <p className="mt-1 text-muted-foreground text-xs">
+              {typeof attachment.size === "number"
+                ? `${typeLabel} · ${formatBytes(attachment.size)}`
+                : typeLabel}
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+            {isImage ? (
+              <Button
+                disabled={isCopying}
+                onClick={handleCopyImage}
+                size="sm"
+                variant="outline"
+              >
+                <HugeiconsIcon icon={Copy01Icon} />
+                Copy image
+              </Button>
+            ) : null}
+            <Button
+              disabled={isDownloading}
+              onClick={handleDownload}
+              size="sm"
+              variant="outline"
+            >
+              <HugeiconsIcon icon={Download01Icon} />
+              {isImage ? "Download image" : "Download"}
+            </Button>
+          </div>
         </div>
         <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
-          {isImageMimeType(attachment.mediaType) && (
+          {isImage ? (
             <div className="relative flex h-full w-full items-center justify-center bg-muted/20">
               <Image
                 alt={attachment.filename}
@@ -100,8 +172,8 @@ export function AttachmentPreviewDialog({
                 width={1200}
               />
             </div>
-          )}
-          {isPdfMimeType(attachment.mediaType) && (
+          ) : null}
+          {isPdf ? (
             <iframe
               className="h-full w-full"
               referrerPolicy="no-referrer"
@@ -109,9 +181,15 @@ export function AttachmentPreviewDialog({
               src={attachment.url}
               title={attachment.filename}
             />
-          )}
-          {isTextMimeType(attachment.mediaType) && (
-            <TextPreview url={attachment.url} />
+          ) : null}
+          {isText ? <TextPreview url={attachment.url} /> : null}
+          {canPreview ? null : (
+            <div className="flex h-full flex-col items-center justify-center gap-1 bg-muted/20 px-6 text-center">
+              <p className="font-medium text-sm">Preview isn't available</p>
+              <p className="text-muted-foreground text-xs">
+                Download this file to open it on your device.
+              </p>
+            </div>
           )}
         </div>
       </DialogContent>

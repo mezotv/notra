@@ -109,7 +109,11 @@ import {
   readStoredChatPreferences,
   writeStoredChatPreferences,
 } from "@/utils/chat-preferences";
-import { updateWasStoppedByUser } from "@/utils/chat-state";
+import {
+  clearPendingChatClientState,
+  resetNewChatClientState,
+  updateWasStoppedByUser,
+} from "@/utils/chat-state";
 import { formatLongDate, getGreeting } from "@/utils/dashboard-greeting";
 import { formatElapsedSeconds } from "@/utils/format-elapsed-seconds";
 import {
@@ -974,20 +978,27 @@ function StandaloneChatPageClient({
       return;
     }
 
-    setPendingMessageId(null);
-    setChatError(null);
-    setQueuedMessages([]);
-
     if (initialChatId) {
+      clearPendingChatClientState({
+        setChatError,
+        setPendingMessageId,
+        setQueuedMessages,
+      });
       return;
     }
 
-    hasUpdatedUrlRef.current = false;
-    updateWasStoppedByUser(false, wasStoppedByUserRef, setWasStoppedByUser);
-    setMessages([]);
-    setContext([]);
-    setHasCustomizedContext(false);
-    setGeneratedChatId(crypto.randomUUID());
+    resetNewChatClientState({
+      hasUpdatedUrlRef,
+      setChatError,
+      setContext,
+      setGeneratedChatId,
+      setHasCustomizedContext,
+      setMessages,
+      setPendingMessageId,
+      setQueuedMessages,
+      setWasStoppedByUser,
+      wasStoppedByUserRef,
+    });
   }, [initialChatId, setMessages]);
 
   const draftStorageKey = localStorageKeys.chatDraft(
@@ -1471,15 +1482,18 @@ function StandaloneChatPageClient({
         return;
       }
       pendingInitialQueryResetRef.current = trimmedInitialQuery;
-      setPendingMessageId(null);
-      setChatError(null);
-      setQueuedMessages([]);
-      hasUpdatedUrlRef.current = false;
-      updateWasStoppedByUser(false, wasStoppedByUserRef, setWasStoppedByUser);
-      setMessages([]);
-      setContext([]);
-      setHasCustomizedContext(false);
-      setGeneratedChatId(crypto.randomUUID());
+      resetNewChatClientState({
+        hasUpdatedUrlRef,
+        setChatError,
+        setContext,
+        setGeneratedChatId,
+        setHasCustomizedContext,
+        setMessages,
+        setPendingMessageId,
+        setQueuedMessages,
+        setWasStoppedByUser,
+        wasStoppedByUserRef,
+      });
       return;
     }
 
@@ -2160,8 +2174,8 @@ function StandaloneChatPageClient({
 
     return (
       <div className="flex flex-1 flex-col items-center justify-center px-4">
-        <div className="flex w-full max-w-2xl flex-col items-center gap-4">
-          <div className="text-center">
+        <div className="flex w-full max-w-2xl flex-col gap-4">
+          <div className="w-full space-y-1">
             <p className="text-muted-foreground text-xs">{dateStr}</p>
             <h1 className="font-semibold text-2xl tracking-tight">
               {greeting}

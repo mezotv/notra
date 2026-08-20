@@ -453,7 +453,7 @@ function SidebarGroupLabel({
 		props: mergeProps<"div">(
 			{
 				className: cn(
-					"flex h-8 shrink-0 items-center overflow-hidden whitespace-nowrap rounded-md px-2 font-medium text-sidebar-foreground/70 text-xs outline-hidden ring-sidebar-ring transition-[margin,opacity] [transition-duration:280ms,200ms] ease-(--sidebar-ease) group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:[transition-delay:80ms,60ms] group-data-[state=expanded]:[transition-delay:0ms,140ms] motion-reduce:transition-none focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0",
+					"flex h-8 shrink-0 items-center overflow-hidden whitespace-nowrap rounded-md px-2 font-medium text-sidebar-foreground/70 text-xs outline-hidden ring-sidebar-ring transition-[margin] duration-[280ms] ease-(--sidebar-ease) group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:delay-150 group-data-[state=expanded]:delay-0 motion-reduce:transition-none focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0 group-data-[collapsible=icon]:[&_svg]:opacity-0",
 					className,
 				),
 			},
@@ -528,7 +528,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-	"peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring transition-[width,height,padding] duration-(--sidebar-duration) ease-(--sidebar-ease) motion-reduce:duration-0 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-inset active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:bg-sidebar-accent data-active:font-medium data-active:text-foreground data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground data-popup-open:bg-sidebar-accent data-popup-open:text-sidebar-accent-foreground group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-1.5! group-data-[collapsible=icon]:[&>span]:opacity-0 group-data-[collapsible=icon]:[&>span]:delay-75 group-data-[state=expanded]:[&>span]:delay-150 [&>span]:transition-opacity [&>span]:duration-200 [&>span]:ease-(--sidebar-ease) [&>span]:motion-reduce:delay-0 [&>span]:motion-reduce:transition-none [&>span:last-child]:truncate [&_svg]:size-4 [&_svg]:shrink-0 group-data-[collapsible=icon]:[&_svg]:size-5",
+	"peer/menu-button group/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-hidden ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-inset active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-data-[sidebar=menu-action]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:bg-sidebar-accent data-active:font-medium data-active:text-foreground data-open:hover:bg-sidebar-accent data-open:hover:text-sidebar-accent-foreground data-popup-open:bg-sidebar-accent data-popup-open:text-sidebar-accent-foreground group-data-[collapsible=icon]:[&>span:not([data-slot=avatar]):not(:has([data-slot=sidebar-label]))]:pointer-events-none group-data-[collapsible=icon]:[&>span:not([data-slot=avatar]):not(:has([data-slot=sidebar-label]))]:w-0 group-data-[collapsible=icon]:[&>span:not([data-slot=avatar]):not(:has([data-slot=sidebar-label]))]:overflow-hidden group-data-[collapsible=icon]:[&>span:not([data-slot=avatar]):not(:has([data-slot=sidebar-label]))]:opacity-0 group-data-[collapsible=icon]:[&>span:not([data-slot=avatar]):not(:has([data-slot=sidebar-label]))]:delay-75 group-data-[state=expanded]:[&>span:not([data-slot=avatar]):not(:has([data-slot=sidebar-label]))]:delay-150 [&>span:not([data-slot=avatar])]:transition-opacity [&>span:not([data-slot=avatar])]:duration-200 [&>span:not([data-slot=avatar])]:ease-(--sidebar-ease) [&>span:not([data-slot=avatar])]:motion-reduce:delay-0 [&>span:not([data-slot=avatar])]:motion-reduce:transition-none group-data-[collapsible=icon]:[&>div:not([data-slot=avatar]):not(:first-child)]:hidden group-data-[collapsible=icon]:[&>svg:not(:first-child)]:hidden group-data-[collapsible=icon]:[&>.ml-auto]:hidden group-data-[collapsible=icon]:[&_[data-slot=badge]]:pointer-events-none group-data-[collapsible=icon]:[&_[data-slot=badge]]:opacity-0 [&>span:last-child]:truncate [&_svg]:size-4 [&_svg]:min-h-4 [&_svg]:min-w-4 [&_svg]:shrink-0",
 	{
 		variants: {
 			variant: {
@@ -539,7 +539,7 @@ const sidebarMenuButtonVariants = cva(
 			size: {
 				default: "h-8 text-sm",
 				sm: "h-7 text-xs",
-				lg: "h-12 text-sm group-data-[collapsible=icon]:p-0!",
+				lg: "h-12 text-sm group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:p-0!",
 			},
 		},
 		defaultVariants: {

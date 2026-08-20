@@ -17,4 +17,5 @@ export interface DataTableProps<TData> {
   onPageChange: (page: number) => void;
   isLoading?: boolean;
   emptyState?: DataTableEmptyState;
+  onRowClick?: (row: TData) => void;
 }
