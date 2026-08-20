@@ -118,7 +118,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
     return (
       <EmptyState
         action={
-          <Button render={<Link href={`/${organizationSlug}/content`} />}>
+          <Button
+            nativeButton={false}
+            render={<Link href={`/${organizationSlug}/content`} />}
+          >
             View content
           </Button>
         }

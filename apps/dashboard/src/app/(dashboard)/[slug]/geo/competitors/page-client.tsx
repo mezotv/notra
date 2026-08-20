@@ -65,7 +65,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           </header>
           <EmptyState
             action={
-              <Button render={<Link href={`/${organizationSlug}/geo`} />}>
+              <Button
+                nativeButton={false}
+                render={<Link href={`/${organizationSlug}/geo`} />}
+              >
                 Set up GEO tracking
               </Button>
             }
