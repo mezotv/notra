@@ -16,26 +16,25 @@ export function buildGeoIngestUrl(): string {
 }
 
 function processTokenExpr(): string {
-  return `process.env.${GEO_INGEST_TOKEN_ENV} ?? ""`;
+  return `process.env.${GEO_INGEST_TOKEN_ENV}!`;
 }
 
 function denoTokenExpr(): string {
-  return `Deno.env.get("${GEO_INGEST_TOKEN_ENV}") ?? ""`;
+  return `Deno.env.get("${GEO_INGEST_TOKEN_ENV}")!`;
 }
 
 function buildNextSnippet(appUrl: string): string {
   return [
-    "// proxy.ts on Next.js 16, middleware.ts before that",
     'import { createGeoProxy } from "@usenotra/geo/next";',
-    'import { NextResponse } from "next/server";',
+    'import { after, NextResponse } from "next/server";',
     "",
     "const geo = createGeoProxy({",
     `  token: ${processTokenExpr()},`,
     `  endpoint: "${appUrl}",`,
     "});",
     "",
-    "export function proxy(request: Request, event: { waitUntil(p: Promise<unknown>): void }) {",
-    "  geo(request, event);",
+    "export function proxy(request: Request) {",
+    "  after(() => geo(request));",
     "  return NextResponse.next();",
     "}",
   ].join("\n");
@@ -43,7 +42,6 @@ function buildNextSnippet(appUrl: string): string {
 
 function buildNuxtSnippet(appUrl: string): string {
   return [
-    "// server/middleware/geo.ts",
     'import { createGeoHandler } from "@usenotra/geo/nuxt";',
     "",
     "const geo = createGeoHandler({",
@@ -59,15 +57,15 @@ function buildNuxtSnippet(appUrl: string): string {
 
 function buildNetlifySnippet(appUrl: string): string {
   return [
-    "// netlify/edge-functions/geo.ts",
     'import { createGeoHandler } from "@usenotra/geo/netlify";',
+    'import type { Context } from "@netlify/edge-functions";',
     "",
     "const geo = createGeoHandler({",
     `  token: ${denoTokenExpr()},`,
     `  endpoint: "${appUrl}",`,
     "});",
     "",
-    "export default (request: Request, context: { waitUntil(p: Promise<unknown>): void }) => {",
+    "export default (request: Request, context: Context) => {",
     "  geo(request, context);",
     "};",
     "",
