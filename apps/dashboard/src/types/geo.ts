@@ -673,6 +673,8 @@ export interface GeoTrafficPagesResponse {
 
 export type GeoIngestFramework = "next" | "nuxt" | "netlify";
 
+export type GeoIngestPackageManager = "bun" | "pnpm" | "yarn" | "npm";
+
 export type GeoIngestSnippets = Record<GeoIngestFramework, string>;
 
 export interface GeoIngestSetupResponse {

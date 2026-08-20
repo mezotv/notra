@@ -2,6 +2,7 @@ import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
 import type {
   GeoGroundedEngine,
   GeoIngestFramework,
+  GeoIngestPackageManager,
   GeoMentionTrendRange,
   GeoTab,
   GeoTimeseriesPoint,
@@ -177,7 +178,21 @@ export const GEO_CITATIONS_LIVE_INTERVAL_MS = 5000;
 export const GEO_INGEST_PATH = "/api/geo/ingest";
 export const GEO_INGEST_SNIPPET_FALLBACK =
   "// Set GEO_INGEST_SECRET to generate your install snippet";
-export const GEO_INGEST_INSTALL_COMMAND = "bun add @usenotra/geo";
+export const GEO_INGEST_PACKAGE = "@usenotra/geo";
+export const GEO_INGEST_PACKAGE_MANAGER_OPTIONS = [
+  { value: "bun", label: "bun", command: `bun add ${GEO_INGEST_PACKAGE}` },
+  { value: "pnpm", label: "pnpm", command: `pnpm add ${GEO_INGEST_PACKAGE}` },
+  { value: "yarn", label: "yarn", command: `yarn add ${GEO_INGEST_PACKAGE}` },
+  { value: "npm", label: "npm", command: `npm install ${GEO_INGEST_PACKAGE}` },
+] as const satisfies readonly {
+  value: GeoIngestPackageManager;
+  label: string;
+  command: string;
+}[];
+export const GEO_INGEST_DEFAULT_PACKAGE_MANAGER: GeoIngestPackageManager =
+  "bun";
+export const GEO_INGEST_INSTALL_COMMAND =
+  GEO_INGEST_PACKAGE_MANAGER_OPTIONS[0].command;
 export const GEO_INGEST_TOKEN_ENV = "NOTRA_GEO_TOKEN";
 export const GEO_INGEST_DEFAULT_FRAMEWORK: GeoIngestFramework = "next";
 export const GEO_INGEST_FRAMEWORK_OPTIONS = [

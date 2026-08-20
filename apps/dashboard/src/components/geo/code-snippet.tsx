@@ -10,7 +10,7 @@ import { COPY_FEEDBACK_MS } from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { CodeSnippetProps } from "@/types/geo";
 
-function useCopyCode(code: string) {
+export function useCopyCode(code: string) {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const copied = copiedCode === code;
@@ -71,7 +71,7 @@ function CommandSnippet({
   return (
     <div
       className={cn(
-        "flex h-9 min-w-0 items-center rounded-lg bg-muted/40 ps-3 pe-1",
+        "flex h-9 min-w-0 items-center rounded-lg border border-border/60 bg-muted/40 ps-3 pe-1",
         className
       )}
     >
@@ -99,28 +99,27 @@ export function CodeSnippet({
   }
 
   return (
-    <div
-      className={cn(
-        "min-w-0 overflow-hidden rounded-lg bg-muted/40",
-        className
-      )}
-    >
-      <div className="flex h-9 min-w-0 items-center gap-2 border-border/60 border-b ps-3 pe-1">
-        {filename ? (
-          <p className="min-w-0 flex-1 truncate font-mono text-muted-foreground text-xs">
-            {filename}
-          </p>
-        ) : (
-          <span className="min-w-0 flex-1" />
-        )}
-        {headerEnd}
-        <CopyCodeButton code={code} label="snippet" />
+    <div className={cn("min-w-0", className)}>
+      <div className="overflow-hidden rounded-t-lg border border-border/60 border-b-0 bg-muted/40 pb-3">
+        <div className="flex h-9 min-w-0 items-center gap-2 ps-3 pe-1">
+          {filename ? (
+            <p className="min-w-0 flex-1 truncate font-mono text-muted-foreground text-xs">
+              {filename}
+            </p>
+          ) : (
+            <span className="min-w-0 flex-1" />
+          )}
+          {headerEnd}
+          <CopyCodeButton code={code} label="snippet" />
+        </div>
       </div>
-      <pre
-        className="m-0 overflow-x-auto p-3 font-mono text-xs leading-relaxed"
-        // biome-ignore lint/security/noDangerouslySetInnerHtml: sugar-high escapes the source before tokenizing
-        dangerouslySetInnerHTML={{ __html: highlight(code) }}
-      />
+      <div className="-mt-3 relative min-w-0 rounded-lg border border-border/60 bg-background">
+        <pre
+          className="scrollbar-floating m-0 overflow-x-auto p-3 font-mono text-xs leading-relaxed"
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: sugar-high escapes the source before tokenizing
+          dangerouslySetInnerHTML={{ __html: highlight(code) }}
+        />
+      </div>
     </div>
   );
 }
