@@ -42,7 +42,7 @@
     "apps/*",
     "packages/*"
   ],
-  "packageManager": "bun@1.4.0-canary.1",
+  "packageManager": "bun@1.4.0",
   "overrides": {
     "brace-expansion@1": "1.1.16",
     "brace-expansion@2": "2.1.2",
