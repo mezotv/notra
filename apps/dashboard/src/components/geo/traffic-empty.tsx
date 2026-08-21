@@ -16,9 +16,7 @@ export function TrafficEmpty({ setup }: TrafficEmptyProps) {
         </div>
       </div>
       <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-col items-center px-6 pt-8 pb-4 text-center">
-        <h3 className="text-balance font-semibold text-lg">
-          No AI activity yet
-        </h3>
+        <h3 className="text-balance font-semibold text-lg">No activity yet</h3>
         <p className="mt-1.5 max-w-md text-pretty text-muted-foreground text-sm leading-relaxed">
           Install the tracker to see visits from ChatGPT, Claude, and other AI
           agents.
