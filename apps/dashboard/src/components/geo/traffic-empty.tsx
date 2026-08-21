@@ -11,7 +11,7 @@ export function TrafficEmpty({ setup }: TrafficEmptyProps) {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 select-none px-3 pt-3 sm:px-4 sm:pt-4"
       >
-        <div className="opacity-[0.38] [mask-image:linear-gradient(to_bottom,black_0%,transparent_100%)]">
+        <div className="mask-[linear-gradient(to_bottom,black_0%,transparent_100%)] opacity-[0.38]">
           <EmptyStateTrafficPreview />
         </div>
       </div>
