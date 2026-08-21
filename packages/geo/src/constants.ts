@@ -45,6 +45,8 @@ export const ASSET_PATH_PREFIXES = [
   "/static/",
 ];
 
+export const LLMS_TXT_FILE = /^llms(-full)?\.txt$/i;
+
 export const ASSET_EXTENSIONS = [
   ".avif",
   ".css",

@@ -2,17 +2,20 @@
 
 Request capture SDK for AI traffic attribution. It captures every page request your
 site serves and sends a neutral request envelope to Notra. All classification, crawler
-versus AI referral versus human, happens server side at ingest, so you never ship a
-signature table to your edge and you never miss traffic a stale table would have
-dropped.
+versus AI referral versus human, happens server side at ingest, so a stale local table
+never costs you traffic. The core tracker ships no signature table. Only the optional
+Next.js `tagLinks` path bundles the matcher, because it has to decide at the edge which
+responses to rewrite for AI agents.
 
 Zero dependencies. No Node APIs in the core, so it runs on edge runtimes.
 
 ## Install
 
 ```bash
-bun add @usenotra/geo
+bun add @usenotra/geo@beta
 ```
+
+The package is in beta. Pin the `beta` tag until `0.1.0` ships.
 
 ## Next.js
 
@@ -83,6 +86,7 @@ send alive.
 Only `GET` requests that look like pages. Asset requests are skipped: anything under
 `/_next/`, `/_nuxt/`, `/_vercel/`, `/_astro/`, `/static/`, and any path ending in a
 common static extension such as `.css`, `.js`, `.png`, `.svg`, `.xml` or `.txt`.
+`llms.txt` and `llms-full.txt` are the exception: they are always captured.
 
 `exclude` entries can be:
 
@@ -282,8 +286,9 @@ Call it inside the handler that builds the markdown, as shown above.
 ## Signature table
 
 `@usenotra/geo/signatures` and `@usenotra/geo/classify` still ship the sourced AI agent
-signature table and its matcher. The tracker does not use them. They exist for the
-ingest side, which classifies each captured envelope server side. Every entry carries a
+signature table and its matcher. The tracker does not use them. The ingest side uses
+them to classify each captured envelope server side, and the Next.js `tagLinks` proxy
+uses the matcher locally to decide which responses to tag. Every entry carries a
 `source` URL and a confidence of `verified`, `reported` or `heuristic`. See
 [SOURCES.md](./SOURCES.md), which also documents agents that are deliberately absent
 because they cannot be honestly detected by user agent, including Pi, ChatGPT Atlas,
@@ -291,3 +296,7 @@ because they cannot be honestly detected by user agent, including Pi, ChatGPT At
 
 User agent matching is spoofable. The `verification` field on each signature points at
 the operator's published IP range list or reverse DNS method where one exists.
+
+## License
+
+MIT. Copyright (c) 2026 Notra, Inc. See [LICENSE](./LICENSE).

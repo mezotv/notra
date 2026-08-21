@@ -2,6 +2,7 @@ import {
   ASSET_EXTENSIONS,
   ASSET_PATH_PREFIXES,
   DEFAULT_EXCLUDE,
+  LLMS_TXT_FILE,
 } from "./constants";
 import type { GeoExcludeRule, GeoPathRule } from "./types";
 
@@ -21,6 +22,10 @@ function isAssetPath(pathname: string): boolean {
   }
 
   const lastSegment = pathname.slice(pathname.lastIndexOf("/") + 1);
+  if (LLMS_TXT_FILE.test(lastSegment)) {
+    return false;
+  }
+
   const dot = lastSegment.lastIndexOf(".");
   if (dot <= 0) {
     return false;

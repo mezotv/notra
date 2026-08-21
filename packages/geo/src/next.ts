@@ -51,6 +51,5 @@ export function createGeoProxy(options: GeoNextOptions) {
   return (
     request: Request,
     event?: WaitUntilContext
-  ): Promise<Response | undefined> | undefined =>
-    tracker.handle(request, event);
+  ): Promise<Response | undefined> => tracker.handle(request, event);
 }

@@ -122,12 +122,13 @@
       ]
     },
     "check-types": {
-      "dependsOn": ["transit"]
+      "dependsOn": ["transit", "^build"]
     },
     "knip": {
-      "dependsOn": ["transit"]
+      "dependsOn": ["transit", "^build"]
     },
     "dev": {
+      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },

@@ -91,7 +91,7 @@ function taggedHeaders(source: Headers): Headers {
     headers.delete(name);
   }
 
-  for (const [name] of headers.entries()) {
+  for (const name of Array.from(headers.keys())) {
     const isControlHeader = TAG_STRIPPED_RESPONSE_HEADER_PREFIXES.some(
       (prefix) => name.startsWith(prefix)
     );

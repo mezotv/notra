@@ -3,7 +3,7 @@ import { appendJourneyParam, isTaggableTarget } from "./link-target";
 import type { TagHtmlLinksOptions } from "./types";
 
 const ANCHOR_TAG = /<a\b[^>]*>/gi;
-const HREF_ATTRIBUTE = /(\bhref\s*=\s*)(?:"([^"]*)"|'([^']*)')/i;
+const HREF_ATTRIBUTE = /(\shref\s*=\s*)(?:"([^"]*)"|'([^']*)')/i;
 const ENCODED_AMPERSAND = "&amp;";
 
 export function tagHtmlLinks(
