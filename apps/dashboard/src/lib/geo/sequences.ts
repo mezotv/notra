@@ -1,19 +1,16 @@
-import {
-  isTinybirdConfigured,
-  queryGeoSequenceResults,
-} from "@notra/analytics/tinybird/client";
 import { db } from "@notra/db/drizzle";
 import { geoPromptSequences } from "@notra/db/schema";
+import { queryGeoCheckSequenceResults } from "@notra/db/utils/geo-checks";
 import { and, asc, eq } from "drizzle-orm";
 import { Effect } from "effect";
-import { geoDb, geoQuery } from "@/lib/geo/effect";
+import { geoDb } from "@/lib/geo/effect";
 import {
   GeoSequenceCreateFailedError,
   GeoSequenceNotFoundError,
 } from "@/lib/geo/errors";
-import { toGeoSequence, toNullableNumber } from "@/lib/geo/mappers";
+import { toGeoSequence } from "@/lib/geo/mappers";
 import {
-  geoScopeParams,
+  geoCheckScope,
   requireGeoProject,
   resolveGeoScope,
 } from "@/lib/geo/projects";
@@ -131,25 +128,23 @@ export const deleteGeoSequence = Effect.fn("geo.sequenceDelete")(function* (
 export const loadGeoSequenceResults = Effect.fn("geo.sequenceResults")(
   function* (input: GeoScopeInput, sequenceId: string | undefined) {
     const scope = yield* resolveGeoScope(input);
-    const result = yield* geoQuery("sequence results query failed", () =>
-      queryGeoSequenceResults({
-        ...geoScopeParams(scope),
-        sequence_id: sequenceId ?? "",
-      })
+    const rows = yield* geoDb("sequence results query failed", () =>
+      queryGeoCheckSequenceResults(geoCheckScope(scope), sequenceId)
     );
 
     const response: GeoSequenceResultsResponse = {
-      configured: isTinybirdConfigured(),
-      results: (result?.data ?? []).map((row) => ({
-        sequenceId: row.sequence_id,
-        turn: Number(row.turn),
+      configured: true,
+      results: rows.map((row) => ({
+        sequenceId: row.sequenceId,
+        turn: row.turn,
         engine: row.engine,
         prompt: row.prompt,
+        answer: row.answer,
         mentioned: row.mentioned,
-        position: toNullableNumber(row.position),
+        position: row.position,
         sentiment: row.sentiment,
         excerpt: row.excerpt,
-        lastCheckedAt: row.last_checked_at,
+        lastCheckedAt: row.lastCheckedAt.toISOString(),
       })),
     };
     return response;

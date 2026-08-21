@@ -1,8 +1,9 @@
 import { db } from "@notra/db/drizzle";
-import { geoSettings } from "@notra/db/schema";
+import { geoScans, geoSettings } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
-import { Effect } from "effect";
+import { Effect, Exit } from "effect";
 import { geoDb, geoSkip } from "@/lib/geo/effect";
+import type { GeoDatabaseError } from "@/lib/geo/errors";
 
 const markGeoScanStarted = Effect.fn("geo.markScanStarted")(function* (
   projectId: string
@@ -57,4 +58,62 @@ export function withGeoScanStatus<A, E, R>(
     return run.pipe(Effect.onError(() => finished));
   }
   return run.pipe(Effect.ensuring(finished));
+}
+
+interface GeoScanRunScope {
+  organizationId: string;
+  projectId: string;
+}
+
+const createGeoScanRow = Effect.fn("geo.createScanRow")(function* (
+  scope: GeoScanRunScope
+) {
+  const scanId = crypto.randomUUID();
+  yield* geoDb("scan row insert failed", () =>
+    db.insert(geoScans).values({
+      id: scanId,
+      organizationId: scope.organizationId,
+      projectId: scope.projectId,
+      status: "running",
+      startedAt: new Date(),
+    })
+  );
+  return scanId;
+});
+
+const finishGeoScanRow = Effect.fn("geo.finishScanRow")(function* (
+  scanId: string,
+  status: "completed" | "failed"
+) {
+  yield* geoDb("scan row finish failed", () =>
+    db
+      .update(geoScans)
+      .set({ status, finishedAt: new Date() })
+      .where(eq(geoScans.id, scanId))
+  );
+});
+
+/**
+ * Runs one persisted scan: inserts a `geo_scans` row, hands its id to
+ * `run`, and stamps the row `completed` on success or `failed` on error or
+ * interruption. Also maintains the `geo_settings` started/finished stamps the
+ * dashboard polls. Insert failure aborts the scan — checks FK to `geo_scans`,
+ * so a synthetic id would only waste model calls.
+ */
+export function withGeoScanRun<A, E, R>(
+  scope: GeoScanRunScope,
+  run: (scanId: string) => Effect.Effect<A, E, R>
+): Effect.Effect<A, E | GeoDatabaseError, R> {
+  const tracked = Effect.gen(function* () {
+    const scanId = yield* createGeoScanRow(scope);
+    return yield* run(scanId).pipe(
+      Effect.onExit((exit) => {
+        const status = Exit.isSuccess(exit) ? "completed" : "failed";
+        return finishGeoScanRow(scanId, status).pipe(
+          geoSkip("scan row finish failed")
+        );
+      })
+    );
+  });
+  return withGeoScanStatus(scope.projectId, tracked);
 }

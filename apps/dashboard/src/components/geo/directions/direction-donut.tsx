@@ -25,6 +25,7 @@ export function DirectionDonut({
   return (
     <div className={cn("flex items-center gap-4", className)}>
       <EChartsPieChart
+        animation={false}
         className="h-48 w-1/2 min-w-0"
         config={GEO_DIRECTIONS_SHARE_CONFIG}
         data={GEO_DIRECTIONS_SHARE_SLICES}

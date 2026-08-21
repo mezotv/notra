@@ -203,32 +203,6 @@ export const socialPostSources = defineDatasource("social_post_sources", {
   }),
 });
 
-export const geoMentionChecks = defineDatasource("geo_mention_checks", {
-  description:
-    "AI engine mention checks: one row per prompt x engine per scan, with extracted mention data",
-  schema: {
-    organization_id: t.string(),
-    project_id: t.string().lowCardinality(),
-    scan_id: t.string(),
-    engine: t.string().lowCardinality(),
-    prompt_id: t.string().lowCardinality(),
-    sequence_id: t.string().lowCardinality(),
-    turn: t.uint8(),
-    prompt: t.string(),
-    captured_at: t.dateTime(),
-    mentioned: t.bool(),
-    position: t.uint64().nullable(),
-    sentiment: t.string().lowCardinality().nullable(),
-    competitors: t.array(t.string()).jsonPath("$.competitors[:]"),
-    excerpt: t.string(),
-    language: t.string().lowCardinality(),
-  },
-  engine: engine.mergeTree({
-    sortingKey: ["organization_id", "engine", "prompt_id", "captured_at"],
-    partitionKey: "toYYYYMM(captured_at)",
-  }),
-});
-
 export const modelUsageShare = defineDatasource("model_usage_share", {
   description:
     "Industry-wide AI model usage snapshots. Intentionally has no organization_id: model usage share is global market data, identical for every organization",
@@ -362,7 +336,6 @@ export type SocialAccountStatsRow = InferRow<typeof socialAccountStats>;
 export type SocialPostRow = InferRow<typeof socialPosts>;
 export type SocialPostStatsRow = InferRow<typeof socialPostStats>;
 export type SocialPostSourceRow = InferRow<typeof socialPostSources>;
-export type GeoMentionCheckRow = InferRow<typeof geoMentionChecks>;
 export type ModelUsageShareRow = InferRow<typeof modelUsageShare>;
 export type AiTrafficEventRow = InferRow<typeof aiTrafficEvents>;
 export type GeoTrafficEventRow = InferRow<typeof geoTrafficEvents>;

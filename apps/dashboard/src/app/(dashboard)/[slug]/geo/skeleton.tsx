@@ -1,7 +1,5 @@
 "use client";
 
-import { Settings01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
@@ -21,15 +19,12 @@ export function GeoPageSkeleton() {
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <h1 className="font-bold text-3xl tracking-tight">GEO</h1>
-            <div className="flex h-5 items-center">
-              <Skeleton className="h-3.5 w-72" />
-            </div>
+            <p className="text-muted-foreground text-sm">
+              How AI engines talk about your brand
+            </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button size="sm" variant="outline">
-              <HugeiconsIcon icon={Settings01Icon} size={16} />
-              Settings
-            </Button>
+            <Skeleton className="h-7 w-16 rounded-full" />
             <Button className="w-fit gap-2" size="sm">
               Run Scan
               <Kbd className="hidden sm:inline-flex">R</Kbd>
@@ -44,12 +39,7 @@ export function GeoPageSkeleton() {
           </TabsList>
           <div className="mt-6 flex flex-col gap-6">
             <GeoSectionSkeleton
-              action={
-                <div className="flex items-center gap-1.5">
-                  <Skeleton className="h-7 w-16 rounded-lg" />
-                  <Skeleton className="h-7 w-20 rounded-lg" />
-                </div>
-              }
+              action={<Skeleton className="h-7 w-20 rounded-full" />}
               eyebrow="Mention trend"
             >
               <Skeleton className="h-80 w-full rounded-xl" />

@@ -18,6 +18,7 @@ export function GeoTagList({
   placeholder,
   max,
   disabled = false,
+  labeled = true,
 }: GeoTagListProps) {
   const [draft, setDraft] = useState("");
   const atLimit = values.length >= max;
@@ -36,15 +37,19 @@ export function GeoTagList({
 
   return (
     <div className="w-full min-w-0 space-y-2">
-      <div className="space-y-1">
-        <Label className="flex items-center gap-2" htmlFor={id}>
-          {label}
-          <span className="font-normal text-muted-foreground tabular-nums">
-            {values.length}/{max}
-          </span>
-        </Label>
-        <p className="text-muted-foreground text-xs">{description}</p>
-      </div>
+      {labeled ? (
+        <div className="space-y-1">
+          <Label className="flex items-center gap-2" htmlFor={id}>
+            {label}
+            <span className="font-normal text-muted-foreground tabular-nums">
+              {values.length}/{max}
+            </span>
+          </Label>
+          {description ? (
+            <p className="text-muted-foreground text-xs">{description}</p>
+          ) : null}
+        </div>
+      ) : null}
       <div
         className={cn(
           "w-full min-w-0 rounded-lg border border-input bg-transparent bg-clip-padding text-sm transition-colors",
@@ -53,7 +58,7 @@ export function GeoTagList({
           disabled && "pointer-events-none opacity-50"
         )}
       >
-        <div className="flex max-h-28 min-h-8 flex-wrap items-center gap-1 overflow-y-auto px-2.5 py-1">
+        <div className="flex max-h-40 min-h-8 flex-wrap items-center gap-1 overflow-y-auto px-2.5 py-1">
           {values.map((value) => (
             <span
               className="flex h-[calc(--spacing(5.25))] w-fit min-w-0 max-w-full items-center gap-1 rounded-sm bg-muted px-1.5 font-medium text-foreground text-xs"
@@ -77,6 +82,7 @@ export function GeoTagList({
             </span>
           ))}
           <input
+            aria-label={labeled ? undefined : label}
             className="min-w-16 flex-1 bg-transparent py-0.5 outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed"
             disabled={disabled || atLimit}
             id={id}

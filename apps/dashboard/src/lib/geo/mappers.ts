@@ -16,6 +16,7 @@ import type {
   GeoTrafficLogEntry,
 } from "@/types/geo";
 import { toGeoVisitorType } from "@/utils/ai-traffic";
+import { resolveTrackedEngines } from "@/utils/geo-engines";
 import { formatModelLabel } from "@/utils/geo-model-display";
 import { isGeoScanRunning } from "@/utils/geo-scan";
 
@@ -39,6 +40,9 @@ export function toGeoSettings(row: GeoSettingsRow): GeoSettings {
     aliases: row.aliases,
     competitors: row.competitors,
     languages: row.languages ?? [],
+    engines: resolveTrackedEngines(row.engines),
+    enforceZdr: row.enforceZdr,
+    nonZdrApprovedEngines: row.nonZdrApprovedEngines,
     enabled: row.enabled,
     scanStartedAt,
     lastScanAt,

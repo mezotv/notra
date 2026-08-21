@@ -38,6 +38,7 @@ export interface ChartSparklineProps {
   color: ChartColorPair;
   className?: string;
   markIncompleteTail?: boolean;
+  tooltipValueFormatter?: TooltipValueFormatter;
 }
 
 export interface ChartMarker {
@@ -48,6 +49,10 @@ export interface ChartMarker {
 export type TooltipLayout = "rows" | "bars";
 
 export type TooltipValueFormatter = (value: number) => string;
+
+export type TooltipEmptyLabel =
+  | string
+  | ((row: Record<string, unknown> | undefined) => string);
 
 export interface TooltipBodyItem {
   key: string;

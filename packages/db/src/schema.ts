@@ -1316,6 +1316,15 @@ export const geoSettings = pgTable(
       .notNull()
       .default(sql`ARRAY[]::text[]`),
     languages: text("languages").array(),
+    // null = track the default engine set; otherwise a subset of GEO_ENGINES.
+    engines: text("engines").array(),
+    // Pro feature: ask every model host for zero data retention.
+    enforceZdr: boolean("enforce_zdr").notNull().default(true),
+    // Engines without a ZDR host the user explicitly approved anyway.
+    nonZdrApprovedEngines: text("non_zdr_approved_engines")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     enabled: boolean("enabled").notNull().default(true),
     scanStartedAt: timestamp("scan_started_at"),
     lastScanAt: timestamp("last_scan_at"),

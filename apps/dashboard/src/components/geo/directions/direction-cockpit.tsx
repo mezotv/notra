@@ -192,6 +192,7 @@ export function DirectionCockpit() {
           readout={`${GEO_SEARCH_LABEL} vs ${GEO_WITHOUT_SEARCH_LABEL}`}
         >
           <EChartsLineChart
+            animation={false}
             className="h-64 w-full"
             config={GEO_DIRECTIONS_TREND_CONFIG}
             curveType="monotone"

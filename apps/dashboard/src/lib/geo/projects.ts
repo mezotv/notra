@@ -1,5 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings, projects } from "@notra/db/schema";
+import type { GeoCheckScope } from "@notra/db/types/geo-checks";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { geoDb } from "@/lib/geo/effect";
@@ -156,6 +157,13 @@ export const resolveGeoScope = Effect.fn("geo.resolveScope")(function* (
   };
   return scope;
 });
+
+export function geoCheckScope(scope: GeoProjectScope): GeoCheckScope {
+  return {
+    organizationId: scope.organizationId,
+    projectId: scope.projectId ?? null,
+  };
+}
 
 export function geoScopeParams(scope: GeoProjectScope): {
   organization_id: string;

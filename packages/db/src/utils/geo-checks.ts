@@ -187,7 +187,7 @@ export async function queryGeoCheckTimeseries(
       sql`(${geoMentionChecks.capturedAt})::date`,
       geoMentionChecks.engine
     )
-    .orderBy(sql`day asc`);
+    .orderBy(sql`(${geoMentionChecks.capturedAt})::date asc`);
 
   return rows.map((row) => ({
     day: toDay(row.day),
@@ -198,43 +198,48 @@ export async function queryGeoCheckTimeseries(
 }
 
 export async function queryGeoCheckPromptResults(
-  scope: GeoCheckScope
+  scope: GeoCheckScope,
+  days: number | undefined
 ): Promise<GeoCheckPromptResultRow[]> {
   const rows = await db
-    .selectDistinctOn([geoMentionChecks.promptId, geoMentionChecks.engine], {
+    .select({
       promptId: geoMentionChecks.promptId,
       engine: geoMentionChecks.engine,
-      prompt: geoMentionChecks.prompt,
-      answer: geoMentionChecks.answer,
-      mentioned: geoMentionChecks.mentioned,
-      position: geoMentionChecks.position,
-      sentiment: geoMentionChecks.sentiment,
-      excerpt: geoMentionChecks.excerpt,
-      lastCheckedAt: geoMentionChecks.capturedAt,
+      prompt: sql<string>`(array_agg(${geoMentionChecks.prompt} order by ${geoMentionChecks.capturedAt} desc))[1]`,
+      answer: sql<string>`(array_agg(${geoMentionChecks.answer} order by ${geoMentionChecks.capturedAt} desc))[1]`,
+      mentioned: sql<boolean>`bool_or(${geoMentionChecks.mentioned})`,
+      position: sql<
+        number | null
+      >`min(${geoMentionChecks.position}) filter (where ${geoMentionChecks.mentioned} and ${geoMentionChecks.position} is not null)`,
+      sentiment: sql<
+        string | null
+      >`(array_agg(${geoMentionChecks.sentiment} order by ${geoMentionChecks.capturedAt} desc))[1]`,
+      excerpt: sql<string>`(array_agg(${geoMentionChecks.excerpt} order by ${geoMentionChecks.capturedAt} desc))[1]`,
+      lastCheckedAt: sql<Date>`max(${geoMentionChecks.capturedAt})`,
     })
     .from(geoMentionChecks)
     .where(
-      mentionFilters(scope, undefined, {
+      mentionFilters(scope, days, {
         sequences: "single",
         englishOnly: true,
       })
     )
-    .orderBy(
-      geoMentionChecks.promptId,
-      geoMentionChecks.engine,
-      desc(geoMentionChecks.capturedAt)
-    );
+    .groupBy(geoMentionChecks.promptId, geoMentionChecks.engine)
+    .orderBy(desc(sql`max(${geoMentionChecks.capturedAt})`));
 
   return rows.map((row) => ({
     promptId: row.promptId,
     engine: row.engine,
-    prompt: row.prompt,
-    answer: row.answer,
-    mentioned: row.mentioned,
-    position: row.position,
-    sentiment: row.sentiment,
-    excerpt: row.excerpt,
-    lastCheckedAt: row.lastCheckedAt,
+    prompt: String(row.prompt ?? ""),
+    answer: String(row.answer ?? ""),
+    mentioned: row.mentioned === true,
+    position: toNullableNumber(row.position),
+    sentiment:
+      row.sentiment === null || row.sentiment === undefined
+        ? null
+        : String(row.sentiment),
+    excerpt: String(row.excerpt ?? ""),
+    lastCheckedAt: toDate(row.lastCheckedAt),
   }));
 }
 
@@ -247,9 +252,7 @@ export async function queryGeoCheckCompetitorShare(
   const projectFilter = scope.projectId
     ? sql`and ${geoMentionChecks.projectId} = ${scope.projectId}`
     : sql``;
-  const sinceFilter = since
-    ? sql`and ${geoMentionChecks.capturedAt} >= ${since}`
-    : sql``;
+  const sinceFilter = since ? sql`and ${since}` : sql``;
 
   const result = await db.execute<{ brand: string; mentions: number }>(sql`
     select brand, count(*)::int as mentions
@@ -289,7 +292,7 @@ export async function queryGeoCheckCompetitorTimeseries(
     .from(geoMentionChecks)
     .where(and(...filters))
     .groupBy(sql`(${geoMentionChecks.capturedAt})::date`)
-    .orderBy(sql`day asc`);
+    .orderBy(sql`(${geoMentionChecks.capturedAt})::date asc`);
 
   return rows.map((row) => ({
     day: toDay(row.day),

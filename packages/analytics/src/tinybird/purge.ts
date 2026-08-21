@@ -13,7 +13,7 @@ const ACCOUNT_SCOPED_DATASOURCES = [
   "social_post_stats_latest",
   "social_account_stats_latest",
 ];
-const GEO_DATASOURCES = ["geo_mention_checks", "geo_traffic_events"];
+const GEO_DATASOURCES = ["geo_traffic_events"];
 
 const JOB_POLL_INTERVAL_MS = 1000;
 const JOB_POLL_MAX_ATTEMPTS = 60;

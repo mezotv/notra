@@ -1,12 +1,8 @@
 import {
-  ingestGeoMentionChecks,
   ingestGeoTrafficEvents,
   isTinybirdConfigured,
 } from "@notra/analytics/tinybird/client";
-import type {
-  GeoMentionCheckRow,
-  GeoTrafficEventRow,
-} from "@notra/analytics/tinybird/datasources";
+import type { GeoTrafficEventRow } from "@notra/analytics/tinybird/datasources";
 import { purgeGeoProjectData } from "@notra/analytics/tinybird/purge";
 import { toClickHouseDateTime } from "@notra/analytics/utils/datetime";
 import { db } from "@notra/db/drizzle";
@@ -15,10 +11,13 @@ import {
   geoCompetitors,
   geoPromptSequences,
   geoPrompts,
+  geoScans,
   geoSettings,
   organizations,
   projects,
 } from "@notra/db/schema";
+import type { GeoCheckWrite } from "@notra/db/types/geo-checks";
+import { insertGeoMentionChecks } from "@notra/db/utils/geo-checks";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import {
@@ -55,6 +54,12 @@ import type {
 } from "@/types/geo";
 
 const INGEST_CHUNK_SIZE = 250;
+
+interface GeoSampleScan {
+  id: string;
+  startedAt: Date;
+  finishedAt: Date;
+}
 const SENTIMENTS = ["positive", "neutral", "negative"] as const;
 const COUNTRIES = ["US", "DE", "GB", "FR"] as const;
 const MAX_JUDGE_COMPETITORS = 4;
@@ -138,34 +143,38 @@ function buildMentionRow(input: {
   sequenceId: string;
   turn: number;
   prompt: string;
-  capturedAt: string;
+  capturedAt: Date;
   companyName: string;
   language: string;
   mentionRate: number;
-}): GeoMentionCheckRow {
+}): GeoCheckWrite {
   const seed = `${input.scanId}:${input.engine}:${input.promptId}:${input.turn}:${input.language}`;
   const mentioned = unit(seed) < input.mentionRate;
   const position = mentioned ? 1 + (hashInt(`${seed}-pos`) % 5) : null;
   const sentiment = mentioned ? pick(SENTIMENTS, `${seed}-sentiment`) : null;
 
+  const excerpt = buildExcerpt(
+    input.companyName,
+    mentioned,
+    input.language
+  ).slice(0, GEO_EXCERPT_MAX_LENGTH);
+
   return {
-    organization_id: input.organizationId,
-    project_id: input.projectId,
-    scan_id: input.scanId,
+    organizationId: input.organizationId,
+    projectId: input.projectId,
+    scanId: input.scanId,
     engine: input.engine,
-    prompt_id: input.promptId,
-    sequence_id: input.sequenceId,
+    promptId: input.promptId,
+    sequenceId: input.sequenceId || null,
     turn: input.turn,
     prompt: input.prompt,
-    captured_at: input.capturedAt,
+    answer: excerpt,
+    capturedAt: input.capturedAt,
     mentioned,
     position,
     sentiment,
     competitors: mentionedCompetitors(seed, input.companyName),
-    excerpt: buildExcerpt(input.companyName, mentioned, input.language).slice(
-      0,
-      GEO_EXCERPT_MAX_LENGTH
-    ),
+    excerpt,
     language: input.language,
   };
 }
@@ -180,14 +189,20 @@ function buildMentionChecks(input: {
     steps: readonly string[];
   }[];
   now: Date;
-}): GeoMentionCheckRow[] {
-  const rows: GeoMentionCheckRow[] = [];
+}): { scans: GeoSampleScan[]; checks: GeoCheckWrite[] } {
+  const rows: GeoCheckWrite[] = [];
+  const scans: GeoSampleScan[] = [];
 
   for (let daysAgo = GEO_SAMPLE_DAYS - 1; daysAgo >= 0; daysAgo--) {
     const dayIndex = GEO_SAMPLE_DAYS - 1 - daysAgo;
     const captured = utcDay(input.now, daysAgo, 9, 41);
-    const capturedAt = toClickHouseDateTime(captured);
-    const scanId = `sample-${captured.toISOString().slice(0, 10)}`;
+    const capturedAt = captured;
+    const scanId = crypto.randomUUID();
+    scans.push({
+      id: scanId,
+      startedAt: new Date(captured.getTime() - SCAN_DURATION_MS),
+      finishedAt: captured,
+    });
 
     for (const engine of GEO_SAMPLE_ENGINES) {
       const rate = mentionRateFor(engine.mentionRate, dayIndex);
@@ -255,7 +270,7 @@ function buildMentionChecks(input: {
     }
   }
 
-  return rows;
+  return { scans, checks: rows };
 }
 
 function buildTrafficEvents(input: {
@@ -586,7 +601,7 @@ export const seedGeoSampleData = Effect.fn("geo.sampleData")(function* (
     return sequence ? [{ id: row.id, steps: sequence.steps }] : [];
   });
 
-  const mentionChecks = buildMentionChecks({
+  const { scans, checks: mentionChecks } = buildMentionChecks({
     organizationId: input.organizationId,
     projectId,
     companyName: existingSettings?.companyName ?? companyName,
@@ -594,6 +609,22 @@ export const seedGeoSampleData = Effect.fn("geo.sampleData")(function* (
     sequences: sequencesForChecks,
     now,
   });
+
+  yield* geoDb("sample scans insert failed", () =>
+    db.insert(geoScans).values(
+      scans.map((scan) => ({
+        id: scan.id,
+        organizationId: input.organizationId,
+        projectId,
+        status: "completed" as const,
+        startedAt: scan.startedAt,
+        finishedAt: scan.finishedAt,
+      }))
+    )
+  );
+  yield* geoDb("sample checks insert failed", () =>
+    insertGeoMentionChecks(mentionChecks)
+  );
   const trafficEvents = buildTrafficEvents({
     organizationId: input.organizationId,
     projectId,
@@ -604,10 +635,7 @@ export const seedGeoSampleData = Effect.fn("geo.sampleData")(function* (
   const analyticsIngested = isTinybirdConfigured();
   if (analyticsIngested) {
     yield* Effect.tryPromise({
-      try: () =>
-        ingestChunks(mentionChecks, ingestGeoMentionChecks).then(() =>
-          ingestChunks(trafficEvents, ingestGeoTrafficEvents)
-        ),
+      try: () => ingestChunks(trafficEvents, ingestGeoTrafficEvents),
       catch: (cause) =>
         new GeoTinybirdError({ label: "sample ingest failed", cause }),
     });

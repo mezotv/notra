@@ -29,7 +29,6 @@ export function ShareOfVoiceCard({
       bodyClassName="flex min-h-0 flex-1 flex-col"
       className="h-full"
       eyebrow="Share of voice"
-      readout={points.length > 0 ? "30D" : undefined}
     >
       <ShareOfVoiceTable
         aliases={aliases}

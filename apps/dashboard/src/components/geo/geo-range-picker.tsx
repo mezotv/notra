@@ -9,35 +9,19 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import {
-  GEO_MENTION_TREND_RANGE_DAYS,
-  GEO_MENTION_TREND_RANGES,
-} from "@/constants/geo";
-import type {
-  GeoMentionTrendRange,
-  MentionTrendRangePickerProps,
-} from "@/types/geo";
+import { GEO_FILTER_TRIGGER_CLASS, GEO_RANGES } from "@/constants/geo";
+import type { GeoRangePickerProps } from "@/types/geo";
+import { isGeoRange } from "@/utils/geo-range";
 
-export const MENTION_TREND_FILTER_TRIGGER_CLASS =
-  "flex h-7 items-center gap-1.5 rounded-full border bg-background px-2.5 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring";
-
-function isMentionTrendRange(value: string): value is GeoMentionTrendRange {
-  return value in GEO_MENTION_TREND_RANGE_DAYS;
-}
-
-export function MentionTrendRangePicker({
-  value,
-  onChange,
-}: MentionTrendRangePickerProps) {
+export function GeoRangePicker({ value, onChange }: GeoRangePickerProps) {
   const selected =
-    GEO_MENTION_TREND_RANGES.find((range) => range.value === value) ??
-    GEO_MENTION_TREND_RANGES.at(-1);
+    GEO_RANGES.find((range) => range.value === value) ?? GEO_RANGES.at(-1);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        aria-label="Mention trend time range"
-        className={MENTION_TREND_FILTER_TRIGGER_CLASS}
+        aria-label="Time range"
+        className={GEO_FILTER_TRIGGER_CLASS}
       >
         <span className="tabular-nums">{selected?.label ?? value}</span>
         <HugeiconsIcon
@@ -49,14 +33,18 @@ export function MentionTrendRangePicker({
       <DropdownMenuContent align="end" className="w-44">
         <DropdownMenuRadioGroup
           onValueChange={(next) => {
-            if (isMentionTrendRange(next)) {
+            if (isGeoRange(next)) {
               onChange(next);
             }
           }}
           value={value}
         >
-          {GEO_MENTION_TREND_RANGES.map((range) => (
-            <DropdownMenuRadioItem key={range.value} value={range.value}>
+          {GEO_RANGES.map((range) => (
+            <DropdownMenuRadioItem
+              closeOnClick
+              key={range.value}
+              value={range.value}
+            >
               {range.description}
             </DropdownMenuRadioItem>
           ))}

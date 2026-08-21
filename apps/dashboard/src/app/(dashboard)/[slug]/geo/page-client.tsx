@@ -1,7 +1,5 @@
 "use client";
 
-import { Settings01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Loader2Icon } from "lucide-react";
@@ -10,7 +8,7 @@ import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/button";
 import { GeoOnboardingOverlay } from "@/components/geo/geo-onboarding-overlay";
-import { GeoSettingsDialog } from "@/components/geo/geo-settings-dialog";
+import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { PageContainer } from "@/components/layout/container";
 import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -29,6 +27,7 @@ import {
   useIsGeoScanning,
   useModelUsage,
 } from "@/lib/hooks/use-geo";
+import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
 import { GeoTabs } from "./components/geo-tabs";
 import { GeoPageSkeleton } from "./skeleton";
@@ -53,20 +52,19 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       ? activeOrganization
       : orgFromList;
   const organizationId = organization?.id ?? "";
-
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { range, days, setRange } = useGeoRange();
 
   const { data: settingsData, isPending: isSettingsPending } =
     useGeoSettings(organizationId);
-  const { data: overview } = useGeoOverview(organizationId);
-  const { data: timeseries } = useGeoTimeseries(organizationId);
+  const { data: overview } = useGeoOverview(organizationId, days);
+  const { data: timeseries } = useGeoTimeseries(organizationId, days);
   const { data: prompts } = useGeoPrompts(organizationId);
-  const { data: promptResults } = useGeoPromptResults(organizationId);
-  const { data: competitorShare } = useGeoCompetitorShare(organizationId);
+  const { data: promptResults } = useGeoPromptResults(organizationId, days);
+  const { data: competitorShare } = useGeoCompetitorShare(organizationId, days);
   const { data: competitorList } = useGeoCompetitors(organizationId);
-  const { data: languageShare } = useGeoLanguageShare(organizationId);
-  const { data: modelUsage } = useModelUsage(organizationId);
-  const { data: trafficJourneys } = useGeoTrafficJourneys(organizationId);
+  const { data: languageShare } = useGeoLanguageShare(organizationId, days);
+  const { data: modelUsage } = useModelUsage(organizationId, days);
+  const { data: trafficJourneys } = useGeoTrafficJourneys(organizationId, days);
   const startScan = useGeoStartScan(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
 
@@ -101,14 +99,8 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       <PageContainer className="flex h-full min-h-0 flex-1 flex-col overflow-hidden py-4 md:py-6">
         <div className="flex min-h-0 w-full flex-1 flex-col gap-4 px-4 lg:px-6">
           <GeoOnboardingOverlay
-            onManualSetup={() => setSettingsOpen(true)}
+            manualHref={`/${organizationSlug}/geo/settings`}
             organizationId={organizationId}
-          />
-          <GeoSettingsDialog
-            onOpenChange={setSettingsOpen}
-            open={settingsOpen}
-            organizationId={organizationId}
-            settings={null}
           />
         </div>
       </PageContainer>
@@ -126,14 +118,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              onClick={() => setSettingsOpen(true)}
-              size="sm"
-              variant="outline"
-            >
-              <HugeiconsIcon icon={Settings01Icon} size={16} />
-              Settings
-            </Button>
+            <GeoRangePicker onChange={setRange} value={range} />
             <Button
               className="w-fit gap-2"
               disabled={isScanning}
@@ -163,16 +148,10 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
           organizationSlug={organizationSlug}
           promptCount={prompts?.prompts.length ?? 0}
           promptResults={promptResults?.results ?? []}
+          rangeDays={days}
           revealActive={revealActive}
           settings={settings}
           timeseriesPoints={timeseries?.points ?? []}
-        />
-
-        <GeoSettingsDialog
-          onOpenChange={setSettingsOpen}
-          open={settingsOpen}
-          organizationId={organizationId}
-          settings={settings}
         />
       </div>
     </PageContainer>

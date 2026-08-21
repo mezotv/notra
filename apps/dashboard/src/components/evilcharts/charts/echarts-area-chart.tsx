@@ -64,6 +64,7 @@ import {
   configIndicatorHtml,
   formatTooltipValue,
   tooltipBaseOption,
+  tooltipEmptyBody,
   tooltipItemsFromRow,
   tooltipShell,
 } from "@/components/evilcharts/ui/echarts-tooltip";
@@ -71,6 +72,7 @@ import type {
   ChartConfig,
   ChartMarker,
   TooltipBodyItem,
+  TooltipEmptyLabel,
   TooltipLayout,
   TooltipValueFormatter,
 } from "@/types/charts";
@@ -279,6 +281,7 @@ export interface TooltipProps {
   rowKeys?: readonly string[];
   hideZeros?: boolean; // drop series whose hovered value is 0 / empty
   excludeKeys?: readonly string[]; // series drawn on the chart but omitted from the tooltip
+  emptyLabel?: TooltipEmptyLabel; // shown when hideZeros / missing values leave no rows
 }
 
 /** Presence enables the hover tooltip. Renders nothing. */
@@ -342,6 +345,7 @@ type TooltipSlot = {
   rowKeys?: readonly string[];
   hideZeros: boolean;
   excludeKeys: readonly string[];
+  emptyLabel?: TooltipEmptyLabel;
 };
 type LegendSlot = {
   present: boolean;
@@ -457,6 +461,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
         rowKeys: props.rowKeys,
         hideZeros: props.hideZeros ?? false,
         excludeKeys: props.excludeKeys ?? [],
+        emptyLabel: props.emptyLabel,
       };
     } else if (type === Legend) {
       const props = child.props as LegendProps;
@@ -980,6 +985,21 @@ function buildMainAxes(ctx: OptionBuildContext): {
 // Tooltip HTML builder, closed over the build context. `getHoveredKey` is read
 // per invocation — ECharts calls the formatter at hover time, and syncing hover
 // through an option push instead would reset the native blur state mid-hover.
+function tooltipBodyHtml(
+  items: readonly TooltipBodyItem[],
+  tooltipSlot: TooltipSlot,
+  row: Record<string, unknown> | undefined
+): string {
+  if (items.length > 0) {
+    return composeTooltipBody(items, tooltipSlot.layout, tooltipSlot.barMax);
+  }
+  const emptyLabel =
+    typeof tooltipSlot.emptyLabel === "function"
+      ? tooltipSlot.emptyLabel(row)
+      : (tooltipSlot.emptyLabel ?? "");
+  return emptyLabel.length > 0 ? tooltipEmptyBody(emptyLabel) : "";
+}
+
 function createTooltipFormatter(ctx: OptionBuildContext) {
   const { config, data, selectedDataKey, tooltipSlot, getHoveredKey } = ctx;
 
@@ -995,21 +1015,19 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
     // Label shows the RAW axis value — matches ChartTooltipContent (no tick formatter).
     const axisValue = first.axisValue ?? first.name ?? "";
     const label = String(axisValue);
+    const hoveredRow =
+      typeof first.dataIndex === "number" ? data[first.dataIndex] : undefined;
     const rowKeys = tooltipSlot.rowKeys;
     if (rowKeys && rowKeys.length > 0 && typeof first.dataIndex === "number") {
       const items = tooltipItemsFromRow(
-        data[first.dataIndex],
+        hoveredRow,
         rowKeys,
         config,
         tooltipSlot.valueFormatter
       );
       return tooltipShell({
         label,
-        body: composeTooltipBody(
-          items,
-          tooltipSlot.layout,
-          tooltipSlot.barMax
-        ),
+        body: tooltipBodyHtml(items, tooltipSlot, hoveredRow),
         roundness: tooltipSlot.roundness,
         variant: tooltipSlot.variant,
         layout: tooltipSlot.layout,
@@ -1080,11 +1098,7 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
 
     return tooltipShell({
       label,
-      body: composeTooltipBody(
-        items,
-        tooltipSlot.layout,
-        tooltipSlot.barMax
-      ),
+      body: tooltipBodyHtml(items, tooltipSlot, hoveredRow),
       roundness: tooltipSlot.roundness,
       variant: tooltipSlot.variant,
       layout: tooltipSlot.layout,

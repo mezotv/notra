@@ -97,6 +97,22 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     path: (slug) => `/${slug}/geo/competitors`,
   },
   {
+    id: "geo-settings",
+    label: "Settings",
+    keywords: [
+      "geo",
+      "ai",
+      "settings",
+      "tracking",
+      "models",
+      "languages",
+      "aliases",
+    ],
+    icon: Settings01Icon,
+    section: "GEO",
+    path: (slug) => `/${slug}/geo/settings`,
+  },
+  {
     id: "content",
     label: "Content",
     keywords: ["posts", "drafts", "notes", "articles"],

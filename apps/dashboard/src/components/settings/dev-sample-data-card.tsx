@@ -30,9 +30,8 @@ export function DevSampleDataCard({ organizationId }: DevSampleDataCardProps) {
         queryKey: dashboardOrpc.geo.key(),
       });
       if (!result.analyticsIngested) {
-        toast.success("GEO sample records saved", {
-          description:
-            "Tinybird is not configured, so charts stay empty until TINYBIRD_TOKEN is set.",
+        toast.success("GEO sample data reset", {
+          description: `${result.mentionChecks} mention checks added. Tinybird is not configured, so AI traffic stays empty until TINYBIRD_TOKEN is set.`,
         });
         return;
       }

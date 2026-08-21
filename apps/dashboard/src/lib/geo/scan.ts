@@ -1,7 +1,4 @@
 import { gateway } from "@notra/ai/gateway";
-import { ingestGeoMentionChecks } from "@notra/analytics/tinybird/client";
-import type { GeoMentionCheckRow } from "@notra/analytics/tinybird/datasources";
-import { toClickHouseDateTime } from "@notra/analytics/utils/datetime";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
@@ -9,13 +6,14 @@ import {
   geoPrompts,
   geoSettings,
 } from "@notra/db/schema";
+import type { GeoCheckWrite } from "@notra/db/types/geo-checks";
+import { insertGeoMentionChecks } from "@notra/db/utils/geo-checks";
 import { generateText, type ModelMessage, Output, stepCountIs } from "ai";
 import { and, asc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import {
   GEO_ANSWER_MAX_TOKENS,
   GEO_ANSWER_SYSTEM_PROMPT,
-  GEO_ENGINES,
   GEO_EXCERPT_MAX_LENGTH,
   GEO_GROUNDED_ANSWER_MAX_TOKENS,
   GEO_GROUNDED_MAX_PROMPTS,
@@ -36,9 +34,10 @@ import {
   resolveGroundedEngines,
 } from "@/lib/geo/engines";
 import { GeoScanError } from "@/lib/geo/errors";
+import { toGeoSettings } from "@/lib/geo/mappers";
 import { captureModelUsageShare } from "@/lib/geo/model-usage";
 import { buildGeoPrompts, customPromptScanId } from "@/lib/geo/prompts";
-import { markGeoScanFinished, withGeoScanStatus } from "@/lib/geo/scan-status";
+import { markGeoScanFinished, withGeoScanRun } from "@/lib/geo/scan-status";
 import {
   geoJudgeResultSchema,
   geoTranslationResultSchema,
@@ -51,9 +50,14 @@ import type {
   GeoPromptDefinition,
   GeoScanResult,
   GeoSequenceDefinition,
-  GeoSettings,
   GeoSettingsRow,
+  GeoZdrMode,
 } from "@/types/geo";
+import {
+  resolveGeoEngineGateway,
+  resolveGeoScanEngine,
+  resolveGeoZdrMode,
+} from "@/utils/geo-engines";
 import { isGeoScanRunning } from "@/utils/geo-scan";
 
 const MAX_JUDGE_COMPETITORS = 10;
@@ -100,12 +104,17 @@ The answer may be written in any language or script; count mentions of the compa
 const askEngine = Effect.fn("geo.askEngine")(function* (
   organizationId: string,
   engine: string,
-  promptText: string
+  promptText: string,
+  zdr: GeoZdrMode
 ) {
   const result = yield* Effect.tryPromise({
     try: () =>
       generateText({
-        model: gateway(engine, { organizationId }),
+        model: gateway(engine, {
+          organizationId,
+          zdr,
+          gateway: resolveGeoEngineGateway(engine),
+        }),
         prompt: promptText,
         system: GEO_ANSWER_SYSTEM_PROMPT,
         maxOutputTokens: GEO_ANSWER_MAX_TOKENS,
@@ -123,11 +132,15 @@ const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
   function* (
     organizationId: string,
     engine: GeoGroundedEngine,
-    messages: ModelMessage[]
+    messages: ModelMessage[],
+    zdr: GeoZdrMode
   ) {
     const result = yield* Effect.tryPromise({
       try: () => {
-        const invocation = buildGroundedInvocation(engine, { organizationId });
+        const invocation = buildGroundedInvocation(engine, {
+          organizationId,
+          zdr,
+        });
         return generateText({
           model: invocation.model,
           tools: invocation.tools,
@@ -211,22 +224,31 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
   task: GeoCheckTask
 ) {
   const answer = task.grounded
-    ? yield* askGroundedConversation(context.organizationId, task.grounded, [
-        { role: "user", content: task.prompt.text },
-      ])
-    : yield* askEngine(context.organizationId, task.engine, task.prompt.text);
+    ? yield* askGroundedConversation(
+        context.organizationId,
+        task.grounded,
+        [{ role: "user", content: task.prompt.text }],
+        task.zdr
+      )
+    : yield* askEngine(
+        context.organizationId,
+        task.engine,
+        task.prompt.text,
+        task.zdr
+      );
   const judged = yield* judgeAnswer(context, task.prompt.text, answer);
 
-  const row: GeoMentionCheckRow = {
-    organization_id: context.organizationId,
-    project_id: context.projectId,
-    scan_id: context.scanId,
+  const row: GeoCheckWrite = {
+    organizationId: context.organizationId,
+    projectId: context.projectId,
+    scanId: context.scanId,
     engine: task.engine,
-    prompt_id: task.prompt.id,
-    sequence_id: "",
+    promptId: task.prompt.id,
+    sequenceId: null,
     turn: 0,
     prompt: task.prompt.text,
-    captured_at: context.capturedAt,
+    answer,
+    capturedAt: context.capturedAt,
     mentioned: judged.mentioned,
     position: normalizePosition(judged.position),
     sentiment: judged.sentiment,
@@ -239,25 +261,12 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
 });
 
 const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
-  settingsRow: GeoSettingsRow
+  settingsRow: GeoSettingsRow,
+  scanId: string
 ) {
   const organizationId = settingsRow.organizationId;
 
-  const settings: GeoSettings = {
-    id: settingsRow.id,
-    organizationId: settingsRow.organizationId,
-    projectId: settingsRow.projectId,
-    companyName: settingsRow.companyName,
-    aliases: settingsRow.aliases,
-    competitors: settingsRow.competitors,
-    languages: settingsRow.languages ?? [],
-    enabled: settingsRow.enabled,
-    scanStartedAt: settingsRow.scanStartedAt?.toISOString() ?? null,
-    lastScanAt: settingsRow.lastScanAt?.toISOString() ?? null,
-    isScanning: true,
-    createdAt: settingsRow.createdAt.toISOString(),
-    updatedAt: settingsRow.updatedAt.toISOString(),
-  };
+  const settings = toGeoSettings(settingsRow);
 
   const brand = yield* Effect.tryPromise({
     try: () =>
@@ -307,28 +316,65 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
   const context: GeoCheckContext = {
     organizationId,
     projectId: settingsRow.projectId,
-    scanId: crypto.randomUUID(),
-    capturedAt: toClickHouseDateTime(new Date()),
+    scanId,
+    capturedAt: new Date(),
     companyName: settings.companyName,
     aliases: settings.aliases,
   };
 
+  const zdrPolicy = {
+    enforceZdr: settings.enforceZdr,
+    nonZdrApprovedEngines: settings.nonZdrApprovedEngines,
+  };
+  const trackedEngines: { engine: string; zdr: GeoZdrMode }[] = [];
+  const occupied = new Set<string>();
+  for (const engine of settings.engines) {
+    const resolved = resolveGeoScanEngine(engine, zdrPolicy, occupied);
+    if (resolved === null) {
+      yield* Effect.logWarning(
+        `geo: skipping ${engine} — no zero-data-retention host and not approved`
+      );
+      continue;
+    }
+    if (resolved.engine !== engine) {
+      yield* Effect.logWarning(
+        `geo: falling back from ${engine} to ${resolved.engine} — no zero-data-retention host`
+      );
+    }
+    if (occupied.has(resolved.engine)) {
+      continue;
+    }
+    occupied.add(resolved.engine);
+    trackedEngines.push(resolved);
+  }
   const tasks: GeoCheckTask[] = [];
-  for (const engine of GEO_ENGINES) {
+  for (const { engine, zdr } of trackedEngines) {
     for (const prompt of prompts) {
-      tasks.push({ engine, grounded: null, prompt, language: "English" });
+      tasks.push({ engine, grounded: null, prompt, language: "English", zdr });
     }
   }
 
-  const groundedEngines = resolveGroundedEngines();
+  const groundedEngines: { grounded: GeoGroundedEngine; zdr: GeoZdrMode }[] =
+    [];
+  for (const grounded of resolveGroundedEngines()) {
+    const zdr = resolveGeoZdrMode(grounded.model, zdrPolicy);
+    if (zdr === null) {
+      yield* Effect.logWarning(
+        `geo: skipping ${grounded.key} — no zero-data-retention host and not approved`
+      );
+      continue;
+    }
+    groundedEngines.push({ grounded, zdr });
+  }
   const groundedPrompts = prompts.slice(0, GEO_GROUNDED_MAX_PROMPTS);
-  for (const grounded of groundedEngines) {
+  for (const { grounded, zdr } of groundedEngines) {
     for (const prompt of groundedPrompts) {
       tasks.push({
         engine: grounded.key,
         grounded,
         prompt,
         language: "English",
+        zdr,
       });
     }
   }
@@ -357,18 +403,18 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
       continue;
     }
     const { language, localized } = entry;
-    for (const engine of GEO_ENGINES) {
+    for (const { engine, zdr } of trackedEngines) {
       for (const prompt of localized) {
-        tasks.push({ engine, grounded: null, prompt, language });
+        tasks.push({ engine, grounded: null, prompt, language, zdr });
       }
     }
     const localizedGrounded = localized.slice(
       0,
       GEO_LANGUAGE_GROUNDED_MAX_PROMPTS
     );
-    for (const grounded of groundedEngines) {
+    for (const { grounded, zdr } of groundedEngines) {
       for (const prompt of localizedGrounded) {
-        tasks.push({ engine: grounded.key, grounded, prompt, language });
+        tasks.push({ engine: grounded.key, grounded, prompt, language, zdr });
       }
     }
   }
@@ -382,8 +428,8 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
     { concurrency: GEO_SCAN_CONCURRENCY }
   );
 
-  const rows: GeoMentionCheckRow[] = results.filter(
-    (result): result is GeoMentionCheckRow => result !== null
+  const rows: GeoCheckWrite[] = results.filter(
+    (result): result is GeoCheckWrite => result !== null
   );
 
   const sequenceRows = yield* Effect.tryPromise({
@@ -402,12 +448,12 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
   });
 
   const sequencePairs = sequenceRows.flatMap((sequence) =>
-    groundedEngines.map((grounded) => ({ sequence, grounded }))
+    groundedEngines.map(({ grounded, zdr }) => ({ sequence, grounded, zdr }))
   );
   const sequenceResults = yield* Effect.forEach(
     sequencePairs,
     (pair) =>
-      runGeoSequenceCheck(context, pair.sequence, pair.grounded).pipe(
+      runGeoSequenceCheck(context, pair.sequence, pair.grounded, pair.zdr).pipe(
         geoSkip(`sequence failed for ${pair.grounded.key}/${pair.sequence.id}`)
       ),
     { concurrency: GEO_SCAN_CONCURRENCY }
@@ -415,9 +461,9 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
   rows.push(...sequenceResults.filter((result) => result !== null).flat());
 
   yield* Effect.tryPromise({
-    try: () => ingestGeoMentionChecks(rows),
+    try: () => insertGeoMentionChecks(rows),
     catch: (cause) =>
-      new GeoScanError({ message: "Failed to ingest GEO checks", cause }),
+      new GeoScanError({ message: "Failed to store GEO checks", cause }),
   });
 
   const completed: GeoScanResult = {
@@ -431,9 +477,10 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
 const runGeoSequenceCheck = Effect.fn("geo.runSequenceCheck")(function* (
   context: GeoCheckContext,
   sequence: GeoSequenceDefinition,
-  grounded: GeoGroundedEngine
+  grounded: GeoGroundedEngine,
+  zdr: GeoZdrMode
 ) {
-  const rows: GeoMentionCheckRow[] = [];
+  const rows: GeoCheckWrite[] = [];
   const messages: ModelMessage[] = [];
   const steps = sequence.steps.slice(0, GEO_SEQUENCE_MAX_TURNS);
 
@@ -442,21 +489,23 @@ const runGeoSequenceCheck = Effect.fn("geo.runSequenceCheck")(function* (
     const answer = yield* askGroundedConversation(
       context.organizationId,
       grounded,
-      messages
+      messages,
+      zdr
     );
     messages.push({ role: "assistant", content: answer });
     const judged = yield* judgeAnswer(context, step, answer);
 
     rows.push({
-      organization_id: context.organizationId,
-      project_id: context.projectId,
-      scan_id: context.scanId,
+      organizationId: context.organizationId,
+      projectId: context.projectId,
+      scanId: context.scanId,
       engine: grounded.key,
-      prompt_id: `sequence-${sequence.id}`,
-      sequence_id: sequence.id,
+      promptId: `sequence-${sequence.id}`,
+      sequenceId: sequence.id,
       turn: index + 1,
       prompt: step,
-      captured_at: context.capturedAt,
+      answer,
+      capturedAt: context.capturedAt,
       mentioned: judged.mentioned,
       position: normalizePosition(judged.position),
       sentiment: judged.sentiment,
@@ -510,9 +559,12 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
   let checks = 0;
   let mentions = 0;
   for (const settingsRow of enabledRows) {
-    const result = yield* withGeoScanStatus(
-      settingsRow.projectId,
-      runGeoScanForProject(settingsRow)
+    const result = yield* withGeoScanRun(
+      {
+        organizationId: settingsRow.organizationId,
+        projectId: settingsRow.projectId,
+      },
+      (scanId) => runGeoScanForProject(settingsRow, scanId)
     );
     checks += result.checks ?? 0;
     mentions += result.mentions ?? 0;

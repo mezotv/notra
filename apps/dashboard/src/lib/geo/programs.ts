@@ -1,13 +1,6 @@
 import {
   isTinybirdConfigured,
-  queryGeoCompetitorPrompts,
-  queryGeoCompetitorShare,
-  queryGeoCompetitorTimeseries,
   queryGeoJourneyDetail,
-  queryGeoLanguageShare,
-  queryGeoOverview,
-  queryGeoPromptResults,
-  queryGeoTimeseries,
   queryGeoTrafficJourneys,
   queryGeoTrafficLog,
   queryGeoTrafficOverview,
@@ -23,6 +16,15 @@ import {
   geoPrompts,
   geoSettings,
 } from "@notra/db/schema";
+import {
+  queryGeoCheckCompetitorPrompts,
+  queryGeoCheckCompetitorShare,
+  queryGeoCheckCompetitorTimeseries,
+  queryGeoCheckLanguageShare,
+  queryGeoCheckOverview,
+  queryGeoCheckPromptResults,
+  queryGeoCheckTimeseries,
+} from "@notra/db/utils/geo-checks";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
 import {
@@ -38,8 +40,9 @@ import {
   GEO_MODEL_USAGE_SOURCE,
   GEO_MODEL_USAGE_TREND_WEEKS,
 } from "@/constants/geo";
+import { hasProSubscription } from "@/lib/billing/subscription";
 import { competitorKey } from "@/lib/geo/domain";
-import { geoDb, geoQuery } from "@/lib/geo/effect";
+import { geoDb, geoQuery, geoSkip } from "@/lib/geo/effect";
 import {
   GeoPromptCreateFailedError,
   GeoPromptNotFoundError,
@@ -58,6 +61,7 @@ import {
 } from "@/lib/geo/mappers";
 import {
   ensureGeoProject,
+  geoCheckScope,
   geoScopeParams,
   requireGeoProject,
   resolveGeoScope,
@@ -331,6 +335,17 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
     input.companyName
   );
 
+  // Zero data retention is a Pro feature: below Pro the flag is forced off
+  // regardless of what the client sent.
+  // hasProSubscription never throws; billing outages count as "not Pro".
+  const isPro = yield* Effect.promise(() =>
+    hasProSubscription(input.organizationId)
+  );
+  const enforceZdr = isPro && input.enforceZdr;
+  const nonZdrApprovedEngines = input.nonZdrApprovedEngines.filter((engine) =>
+    input.engines.includes(engine)
+  );
+
   yield* geoDb("settings upsert failed", () =>
     db
       .insert(geoSettings)
@@ -342,6 +357,9 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
         aliases: input.aliases,
         competitors: input.competitors,
         languages: input.languages,
+        engines: input.engines,
+        enforceZdr,
+        nonZdrApprovedEngines,
         enabled: input.enabled,
       })
       .onConflictDoUpdate({
@@ -351,6 +369,9 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
           aliases: input.aliases,
           competitors: input.competitors,
           languages: input.languages,
+          engines: input.engines,
+          enforceZdr,
+          nonZdrApprovedEngines,
           enabled: input.enabled,
         },
       })
@@ -379,21 +400,18 @@ export const loadGeoLanguageShare = Effect.fn("geo.languageShare")(function* (
   days: number | undefined
 ) {
   const scope = yield* resolveGeoScope(input);
-  const result = yield* geoQuery("language share query failed", () =>
-    queryGeoLanguageShare({
-      ...geoScopeParams(scope),
-      days,
-    })
+  const rows = yield* geoDb("language share query failed", () =>
+    queryGeoCheckLanguageShare(geoCheckScope(scope), days)
   );
 
   const response: GeoLanguageShareResponse = {
-    configured: isTinybirdConfigured(),
-    points: (result?.data ?? []).map((row) => ({
-      language: row.language_name,
-      checks: Number(row.checks),
-      mentions: Number(row.mentions),
-      mentionRate: Number(row.mention_rate),
-      avgPosition: toNullableNumber(row.avg_position),
+    configured: true,
+    points: rows.map((row) => ({
+      language: row.language,
+      checks: row.checks,
+      mentions: row.mentions,
+      mentionRate: row.mentionRate,
+      avgPosition: row.avgPosition,
     })),
   };
   return response;
@@ -404,26 +422,21 @@ export const loadGeoOverview = Effect.fn("geo.overview")(function* (
   days: number | undefined
 ) {
   const scope = yield* resolveGeoScope(input);
-  const result = yield* geoQuery("overview query failed", () =>
-    queryGeoOverview({
-      ...geoScopeParams(scope),
-      days,
-    })
+  const rows = yield* geoDb("overview query failed", () =>
+    queryGeoCheckOverview(geoCheckScope(scope), days)
   );
 
-  const engines: GeoOverviewResponse["engines"] = (result?.data ?? []).map(
-    (row) => ({
-      engine: row.engine,
-      checks: Number(row.checks),
-      mentions: Number(row.mentions),
-      mentionRate: Number(row.mention_rate),
-      avgPosition: toNullableNumber(row.avg_position),
-      lastCheckedAt: row.last_checked_at,
-    })
-  );
+  const engines: GeoOverviewResponse["engines"] = rows.map((row) => ({
+    engine: row.engine,
+    checks: row.checks,
+    mentions: row.mentions,
+    mentionRate: row.mentionRate,
+    avgPosition: row.avgPosition,
+    lastCheckedAt: row.lastCheckedAt.toISOString(),
+  }));
 
   const response: GeoOverviewResponse = {
-    configured: isTinybirdConfigured(),
+    configured: true,
     engines,
   };
   return response;
@@ -434,46 +447,43 @@ export const loadGeoTimeseries = Effect.fn("geo.timeseries")(function* (
   days: number | undefined
 ) {
   const scope = yield* resolveGeoScope(input);
-  const result = yield* geoQuery("timeseries query failed", () =>
-    queryGeoTimeseries({
-      ...geoScopeParams(scope),
-      days,
-    })
+  const rows = yield* geoDb("timeseries query failed", () =>
+    queryGeoCheckTimeseries(geoCheckScope(scope), days)
   );
 
   const response: GeoTimeseriesResponse = {
-    configured: isTinybirdConfigured(),
-    points: (result?.data ?? []).map((row) => ({
+    configured: true,
+    points: rows.map((row) => ({
       day: row.day,
       engine: row.engine,
-      checks: Number(row.checks),
-      mentions: Number(row.mentions),
+      checks: row.checks,
+      mentions: row.mentions,
     })),
   };
   return response;
 });
 
 export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
-  input: GeoScopeInput
+  input: GeoScopeInput,
+  days: number | undefined
 ) {
   const scope = yield* resolveGeoScope(input);
-  const result = yield* geoQuery("prompt results query failed", () =>
-    queryGeoPromptResults({
-      ...geoScopeParams(scope),
-    })
+  const rows = yield* geoDb("prompt results query failed", () =>
+    queryGeoCheckPromptResults(geoCheckScope(scope), days)
   );
 
   const response: GeoPromptResultsResponse = {
-    configured: isTinybirdConfigured(),
-    results: (result?.data ?? []).map((row) => ({
-      promptId: row.prompt_id,
+    configured: true,
+    results: rows.map((row) => ({
+      promptId: row.promptId,
       engine: row.engine,
       prompt: row.prompt,
+      answer: row.answer,
       mentioned: row.mentioned,
-      position: toNullableNumber(row.position),
+      position: row.position,
       sentiment: row.sentiment,
       excerpt: row.excerpt,
-      lastCheckedAt: row.last_checked_at,
+      lastCheckedAt: row.lastCheckedAt.toISOString(),
     })),
   };
   return response;
@@ -482,19 +492,19 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
 export const loadGeoCompetitorShare = Effect.fn("geo.competitorShare")(
   function* (input: GeoScopeInput, days: number | undefined) {
     const scope = yield* resolveGeoScope(input);
-    const result = yield* geoQuery("competitor share query failed", () =>
-      queryGeoCompetitorShare({
-        ...geoScopeParams(scope),
+    const rows = yield* geoDb("competitor share query failed", () =>
+      queryGeoCheckCompetitorShare(
+        geoCheckScope(scope),
         days,
-        limit: GEO_COMPETITOR_SHARE_LIMIT,
-      })
+        GEO_COMPETITOR_SHARE_LIMIT
+      )
     );
 
     const response: GeoCompetitorShareResponse = {
-      configured: isTinybirdConfigured(),
-      points: (result?.data ?? []).map((row) => ({
+      configured: true,
+      points: rows.map((row) => ({
         brand: row.brand,
-        mentions: Number(row.mentions),
+        mentions: row.mentions,
       })),
     };
     return response;
@@ -506,40 +516,33 @@ export const loadGeoCompetitorDetail = Effect.fn("geo.competitorDetail")(
     const scope = yield* resolveGeoScope(input);
     const resolvedDays = days ?? GEO_COMPETITOR_DETAIL_DAYS;
 
+    const checkScope = geoCheckScope(scope);
     const [timeseries, prompts] = yield* Effect.all(
       [
-        geoQuery("competitor timeseries query failed", () =>
-          queryGeoCompetitorTimeseries({
-            ...geoScopeParams(scope),
-            brand,
-            days: resolvedDays,
-          })
+        geoDb("competitor timeseries query failed", () =>
+          queryGeoCheckCompetitorTimeseries(checkScope, brand, resolvedDays)
         ),
-        geoQuery("competitor prompts query failed", () =>
-          queryGeoCompetitorPrompts({
-            ...geoScopeParams(scope),
-            brand,
-            days: resolvedDays,
-          })
+        geoDb("competitor prompts query failed", () =>
+          queryGeoCheckCompetitorPrompts(checkScope, brand, resolvedDays)
         ),
       ],
       { concurrency: "unbounded" }
     );
 
     const response: GeoCompetitorDetailResponse = {
-      configured: isTinybirdConfigured(),
-      points: (timeseries?.data ?? []).map((row) => ({
+      configured: true,
+      points: timeseries.map((row) => ({
         day: row.day,
-        mentions: Number(row.mentions),
-        checks: Number(row.checks),
+        mentions: row.mentions,
+        checks: row.checks,
       })),
-      prompts: (prompts?.data ?? []).map((row) => ({
-        promptId: row.prompt_id,
+      prompts: prompts.map((row) => ({
+        promptId: row.promptId,
         prompt: row.prompt,
         engine: row.engine,
-        capturedAt: row.captured_at,
+        capturedAt: row.capturedAt.toISOString(),
         mentioned: row.mentioned,
-        position: toNullableNumber(row.position),
+        position: row.position,
       })),
     };
     return response;
@@ -567,17 +570,14 @@ export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
           weeks: GEO_MODEL_USAGE_TREND_WEEKS,
         })
       ),
-      geoQuery("overview query failed", () =>
-        queryGeoOverview({
-          ...geoScopeParams(scope),
-          days,
-        })
-      ),
+      geoDb("overview query failed", () =>
+        queryGeoCheckOverview(geoCheckScope(scope), days)
+      ).pipe(geoSkip("overview query failed")),
     ],
     { concurrency: "unbounded" }
   );
 
-  const coverage = buildCoverageByModel(overview?.data ?? []);
+  const coverage = buildCoverageByModel(overview ?? []);
   const rows = usage?.data ?? [];
 
   const response: GeoModelUsageResponse = {

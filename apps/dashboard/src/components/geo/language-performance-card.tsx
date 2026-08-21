@@ -2,7 +2,16 @@
 
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { DEFAULT_LANGUAGE } from "@notra/ai/constants/languages";
+import {
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { GeoBar } from "@/components/geo/geo-bar";
@@ -30,16 +39,6 @@ import {
   withAddedGeoLanguage,
 } from "@/utils/geo-language-rows";
 import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
-
-function languageNameClass(language: string, muted?: boolean) {
-  if (muted) {
-    return undefined;
-  }
-  if (language === DEFAULT_LANGUAGE) {
-    return "text-foreground/70";
-  }
-  return "font-medium";
-}
 
 function trackedChecksLabel(
   mentions: number,
@@ -74,9 +73,7 @@ function LanguageNameCell({
         emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
         label={language}
       />
-      <span
-        className={cn("min-w-0 truncate", languageNameClass(language, muted))}
-      >
+      <span className={cn("min-w-0 truncate", !muted && "font-medium")}>
         {language}
       </span>
     </span>
@@ -154,11 +151,7 @@ function languagePerformanceColumns({
           <span className="flex items-center gap-2">
             <GeoBar
               className="h-2 max-w-40"
-              fillClassName={
-                row.language === DEFAULT_LANGUAGE
-                  ? "bg-muted-foreground/40"
-                  : "bg-geo-search"
-              }
+              fillClassName="bg-geo-search"
               value={row.mentionRate}
             />
             <span className="shrink-0 text-xs tabular-nums">
@@ -198,6 +191,7 @@ export function LanguagePerformanceCard({
   isScanning = false,
 }: LanguagePerformanceCardProps) {
   const [languagesOpen, setLanguagesOpen] = useState(false);
+  const [languageToAdd, setLanguageToAdd] = useState<string>();
   const upsert = useGeoSettingsUpsert(organizationId);
   const savedExtras = extraGeoLanguages(settings.languages);
   const savedExtraSet = new Set(savedExtras);
@@ -230,7 +224,10 @@ export function LanguagePerformanceCard({
         companyName,
         competitors: settings.competitors,
         enabled: settings.enabled,
+        enforceZdr: settings.enforceZdr,
+        engines: settings.engines,
         languages: next,
+        nonZdrApprovedEngines: settings.nonZdrApprovedEngines,
         organizationId,
       });
     },
@@ -240,16 +237,20 @@ export function LanguagePerformanceCard({
       settings.companyName,
       settings.competitors,
       settings.enabled,
+      settings.enforceZdr,
+      settings.engines,
+      settings.nonZdrApprovedEngines,
       upsert,
     ]
   );
 
-  const handleAddLanguage = useCallback(
-    (language: string) => {
-      persistLanguages(withAddedGeoLanguage(configuredLanguages, language));
-    },
-    [configuredLanguages, persistLanguages]
-  );
+  const handleConfirmAddLanguage = useCallback(() => {
+    if (!languageToAdd) {
+      return;
+    }
+    persistLanguages(withAddedGeoLanguage(configuredLanguages, languageToAdd));
+    setLanguageToAdd(undefined);
+  }, [configuredLanguages, languageToAdd, persistLanguages]);
 
   const columns = useMemo(
     () =>
@@ -257,10 +258,10 @@ export function LanguagePerformanceCard({
         adding: upsert.isPending,
         atLimit,
         isScanning,
-        onAddLanguage: handleAddLanguage,
+        onAddLanguage: setLanguageToAdd,
         pendingLanguage,
       }),
-    [atLimit, handleAddLanguage, isScanning, pendingLanguage, upsert.isPending]
+    [atLimit, isScanning, pendingLanguage, upsert.isPending]
   );
 
   return (
@@ -278,7 +279,6 @@ export function LanguagePerformanceCard({
         bodyClassName="flex min-h-0 flex-1 flex-col"
         className="h-full"
         eyebrow="Performance by language"
-        readout={points.length > 0 ? "30D" : undefined}
       >
         <Table
           className="rounded-2xl"
@@ -293,6 +293,32 @@ export function LanguagePerformanceCard({
           rowHeight={TABLE_ROW_HEIGHT}
         />
       </InstrumentSection>
+      <ResponsiveAlertDialog
+        onOpenChange={(open) => {
+          if (!open) {
+            setLanguageToAdd(undefined);
+          }
+        }}
+        open={Boolean(languageToAdd)}
+      >
+        <ResponsiveAlertDialogContent>
+          <ResponsiveAlertDialogHeader>
+            <ResponsiveAlertDialogTitle>
+              Add {languageToAdd}?
+            </ResponsiveAlertDialogTitle>
+            <ResponsiveAlertDialogDescription>
+              This will run the same prompts in {languageToAdd} so you can track
+              performance in this language.
+            </ResponsiveAlertDialogDescription>
+          </ResponsiveAlertDialogHeader>
+          <ResponsiveAlertDialogFooter>
+            <ResponsiveAlertDialogCancel>Cancel</ResponsiveAlertDialogCancel>
+            <ResponsiveAlertDialogAction onClick={handleConfirmAddLanguage}>
+              Add language
+            </ResponsiveAlertDialogAction>
+          </ResponsiveAlertDialogFooter>
+        </ResponsiveAlertDialogContent>
+      </ResponsiveAlertDialog>
       <GeoLanguagesDialog
         companyName={settings.companyName}
         enabled={settings.enabled}

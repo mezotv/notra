@@ -1,23 +1,34 @@
 import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
+import {
+  GEO_MODEL_CATALOG,
+  type GeoEngineId,
+} from "@/constants/geo-model-catalog";
 import type {
   GeoGroundedEngine,
   GeoIngestFramework,
   GeoIngestPackageManager,
-  GeoMentionTrendRange,
+  GeoRange,
   GeoTab,
   GeoTimeseriesPoint,
   GeoTrafficLogPurposeOption,
   GeoTrafficLogVisitorOption,
 } from "@/types/geo";
 
-export const GEO_ENGINES = [
-  "openai/gpt-5.4",
-  "anthropic/claude-sonnet-4.6",
-  "google/gemini-3-flash",
-  "anthropic/claude-opus-5",
-  "anthropic/claude-haiku-4.5",
-  "openai/gpt-5.4-mini",
-] as const;
+export type { GeoEngineId } from "@/constants/geo-model-catalog";
+
+/** All engines a project may track, in catalog (provider) order. */
+export const GEO_ENGINES: readonly GeoEngineId[] = GEO_MODEL_CATALOG.map(
+  (entry) => entry.id
+);
+
+export const GEO_ENGINE_SET: ReadonlySet<string> = new Set(GEO_ENGINES);
+
+/** Engines scanned when a project has not picked its own set. */
+export const GEO_DEFAULT_ENGINES: readonly GeoEngineId[] =
+  GEO_MODEL_CATALOG.filter((entry) => entry.default).map((entry) => entry.id);
+
+/** Projects below Pro cannot enforce ZDR; the server forces it off. */
+export const GEO_ZDR_FEATURE_LABEL = "Zero data retention";
 
 export const GEO_JUDGE_MODEL = "openai/gpt-5.4-nano";
 
@@ -85,13 +96,12 @@ const groundedEngineLabels = Object.fromEntries(
   GEO_GROUNDED_ENGINES.map((engine) => [engine.key, engine.label])
 );
 
+const catalogEngineLabels = Object.fromEntries(
+  GEO_MODEL_CATALOG.map((entry) => [entry.id, entry.label])
+);
+
 export const GEO_ENGINE_LABELS: Record<string, string> = {
-  "openai/gpt-5.4": "ChatGPT",
-  "anthropic/claude-sonnet-4.6": "Claude Sonnet",
-  "google/gemini-3-flash": "Gemini",
-  "anthropic/claude-opus-5": "Claude Opus",
-  "anthropic/claude-haiku-4.5": "Claude Haiku",
-  "openai/gpt-5.4-mini": "GPT-5.4 mini",
+  ...catalogEngineLabels,
   ...groundedEngineLabels,
 };
 
@@ -103,8 +113,10 @@ export const GEO_BRAND_LABELS: Record<string, string> = {
   copilot: "Copilot",
   mistral: "Mistral",
   deepseek: "DeepSeek",
-  meta: "Llama",
+  meta: "Meta",
   grok: "Grok",
+  moonshot: "Kimi",
+  zai: "GLM",
   qwen: "Qwen",
   tencent: "Hunyuan",
   xiaomi: "Xiaomi",
@@ -384,36 +396,40 @@ export const GEO_SENTIMENT_LABELS: Record<string, string> = {
 export const GEO_TREND_MIN_DAYS = 5;
 export const GEO_MENTION_TREND_TOTAL_KEY = "total";
 export const GEO_MENTION_TREND_TOTAL_LABEL = "All engines";
-export const GEO_MENTION_TREND_DEFAULT_RANGE: GeoMentionTrendRange = "30d";
+export const GEO_DEFAULT_RANGE: GeoRange = "30d";
+export const GEO_RANGE_VALUES = [
+  "24h",
+  "7d",
+  "14d",
+  "30d",
+] as const satisfies readonly GeoRange[];
 export const GEO_MENTION_TREND_AVERAGE_KEY = "average";
 export const GEO_MENTION_TREND_AVERAGE_LABEL = "Average";
 export const GEO_MENTION_TREND_AGENT_ICON_LIMIT = 4;
-export const GEO_MENTION_TREND_RANGES = [
+export const GEO_RANGES = [
   { value: "24h", label: "24h", description: "Last 24 hours", days: 1 },
   { value: "7d", label: "7d", description: "Last 7 days", days: 7 },
   { value: "14d", label: "14d", description: "Last 14 days", days: 14 },
   { value: "30d", label: "30d", description: "Last 30 days", days: 30 },
 ] as const satisfies readonly {
-  value: GeoMentionTrendRange;
+  value: GeoRange;
   label: string;
   description: string;
   days: number;
 }[];
-export const GEO_MENTION_TREND_RANGE_DAYS: Record<
-  GeoMentionTrendRange,
-  number
-> = {
-  "24h": 1,
-  "7d": 7,
-  "14d": 14,
-  "30d": 30,
-};
+export const GEO_RANGE_DAYS = Object.fromEntries(
+  GEO_RANGES.map((range) => [range.value, range.days])
+) as { readonly [K in GeoRange]: number };
+export const GEO_FILTER_TRIGGER_CLASS =
+  "flex h-7 items-center gap-1.5 rounded-full border bg-background px-2.5 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring";
 export const GEO_MENTION_RATE_LABEL = "Mention rate";
 export const GEO_SPARKLINE_MIN_POINTS = 2;
 export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
 
 export const GEO_MAX_ALIASES = 10;
 export const GEO_MAX_COMPETITORS = 25;
+/** Debounce before persisting GEO settings. Short enough for toggles. */
+export const GEO_SETTINGS_AUTO_SAVE_MS = 800;
 export const GEO_MAX_LANGUAGES = 3;
 export const GEO_LANGUAGE_MAX_PROMPTS = 5;
 export const GEO_LANGUAGE_GROUNDED_MAX_PROMPTS = 3;

@@ -15,6 +15,7 @@ import { Button } from "@/components/button";
 import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import type { GeoSubDialogProps } from "@/types/geo";
+import { resolveTrackedEngines } from "@/utils/geo-engines";
 import { extraGeoLanguages } from "@/utils/geo-language-rows";
 
 export function GeoLanguagesDialog({
@@ -53,6 +54,9 @@ function GeoLanguagesDialogBody({
         aliases: settings?.aliases ?? [],
         competitors: settings?.competitors ?? [],
         languages: selected,
+        engines: resolveTrackedEngines(settings?.engines),
+        enforceZdr: settings?.enforceZdr ?? true,
+        nonZdrApprovedEngines: settings?.nonZdrApprovedEngines ?? [],
         enabled,
       },
       { onSuccess: () => onOpenChange(false) }

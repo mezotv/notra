@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import {
+  GEO_DEFAULT_RANGE,
+  GEO_RANGE_DAYS,
   GEO_SCAN_POLL_INTERVAL_MS,
   GEO_START_SCAN_MUTATION_KEY,
 } from "@/constants/geo";
@@ -38,6 +40,7 @@ import type {
   GeoSequenceResultsResponse,
   GeoSettingsResponse,
   GeoSettingsUpsertInput,
+  GeoSettingsUpsertOptions,
   GeoSuggestionIdInput,
   GeoTimeseriesResponse,
   GeoTrackedPromptsResponse,
@@ -60,8 +63,7 @@ import { toErrorMessage } from "@/utils/error-message";
 import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
 import { dashboardOrpc } from "../orpc/query";
 
-const DEFAULT_GEO_DAYS = 30;
-const DEFAULT_COMPETITOR_DAYS = 30;
+const DEFAULT_GEO_DAYS = GEO_RANGE_DAYS[GEO_DEFAULT_RANGE];
 const GSC_ANALYZE_MUTATION_KEY = "gsc-analyze" as const;
 
 function gscAnalyzeMutationKey(organizationId: string) {
@@ -107,40 +109,25 @@ async function invalidatePromptQueries(
   ]);
 }
 
-async function invalidateGeoScanResultQueries(
-  queryClient: QueryClient,
-  organizationId: string,
-  projectId: string | undefined
-) {
-  const input = { organizationId, projectId };
+async function invalidateGeoScanResultQueries(queryClient: QueryClient) {
   await Promise.all([
     queryClient.invalidateQueries({
-      queryKey: dashboardOrpc.geo.overview.queryKey({
-        input: { ...input, days: DEFAULT_GEO_DAYS },
-      }),
+      queryKey: dashboardOrpc.geo.overview.key(),
     }),
     queryClient.invalidateQueries({
-      queryKey: dashboardOrpc.geo.timeseries.queryKey({
-        input: { ...input, days: DEFAULT_GEO_DAYS },
-      }),
+      queryKey: dashboardOrpc.geo.timeseries.key(),
     }),
     queryClient.invalidateQueries({
-      queryKey: dashboardOrpc.geo.promptResults.queryKey({ input }),
+      queryKey: dashboardOrpc.geo.promptResults.key(),
     }),
     queryClient.invalidateQueries({
-      queryKey: dashboardOrpc.geo.competitorShare.queryKey({
-        input: { ...input, days: DEFAULT_COMPETITOR_DAYS },
-      }),
+      queryKey: dashboardOrpc.geo.competitorShare.key(),
     }),
     queryClient.invalidateQueries({
-      queryKey: dashboardOrpc.geo.languageShare.queryKey({
-        input: { ...input, days: DEFAULT_GEO_DAYS },
-      }),
+      queryKey: dashboardOrpc.geo.languageShare.key(),
     }),
     queryClient.invalidateQueries({
-      queryKey: dashboardOrpc.geo.modelUsage.queryKey({
-        input: { ...input, days: DEFAULT_GEO_DAYS },
-      }),
+      queryKey: dashboardOrpc.geo.modelUsage.key(),
     }),
   ]);
 }
@@ -175,18 +162,17 @@ export function useGeoSettings(organizationId: string) {
     const wasScanning = wasScanningRef.current;
     wasScanningRef.current = isScanning;
     if (wasScanning === true && !isScanning) {
-      invalidateGeoScanResultQueries(
-        queryClient,
-        organizationId,
-        projectId
-      ).catch(() => undefined);
+      invalidateGeoScanResultQueries(queryClient).catch(() => undefined);
     }
-  }, [isScanning, organizationId, projectId, queryClient]);
+  }, [isScanning, queryClient]);
 
   return query;
 }
 
-export function useGeoSettingsUpsert(organizationId: string) {
+export function useGeoSettingsUpsert(
+  organizationId: string,
+  options?: GeoSettingsUpsertOptions
+) {
   const { projectId } = useGeoProjectScope();
   const queryClient = useQueryClient();
   return useMutation({
@@ -198,7 +184,9 @@ export function useGeoSettingsUpsert(organizationId: string) {
       }),
     onSuccess: async () => {
       await invalidateCompetitorQueries(queryClient, organizationId, projectId);
-      toast.success("AI visibility settings saved");
+      if (!options?.silentSuccess) {
+        toast.success("AI visibility settings saved");
+      }
     },
     onError: (error) => {
       toast.error(toErrorMessage(error, "Failed to save settings"));
@@ -213,6 +201,7 @@ export function useGeoOverview(organizationId: string, days?: number) {
       input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
+    placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load AI visibility overview" },
   });
 }
@@ -224,17 +213,19 @@ export function useGeoTimeseries(organizationId: string, days?: number) {
       input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
+    placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load AI visibility trend" },
   });
 }
 
-export function useGeoPromptResults(organizationId: string) {
+export function useGeoPromptResults(organizationId: string, days?: number) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoPromptResultsResponse>({
     ...dashboardOrpc.geo.promptResults.queryOptions({
-      input: { organizationId, projectId },
+      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
+    placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load prompt results" },
   });
 }
@@ -246,10 +237,11 @@ export function useGeoCompetitorShare(organizationId: string, days?: number) {
       input: {
         organizationId,
         projectId,
-        days: days ?? DEFAULT_COMPETITOR_DAYS,
+        days: days ?? DEFAULT_GEO_DAYS,
       },
     }),
     enabled: !!organizationId,
+    placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load competitor share" },
   });
 }
@@ -266,7 +258,7 @@ export function useGeoCompetitorDetail(
         organizationId,
         projectId,
         brand: brand ?? "",
-        days: days ?? DEFAULT_COMPETITOR_DAYS,
+        days: days ?? DEFAULT_GEO_DAYS,
       },
     }),
     enabled: !!organizationId && !!brand,
@@ -288,7 +280,7 @@ export function usePrefetchGeoCompetitorDetail(organizationId: string) {
           organizationId,
           projectId,
           brand,
-          days: DEFAULT_COMPETITOR_DAYS,
+          days: DEFAULT_GEO_DAYS,
         },
       })
     );
@@ -352,6 +344,7 @@ export function useGeoLanguageShare(organizationId: string, days?: number) {
       input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
+    placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load language performance" },
   });
 }
@@ -363,6 +356,7 @@ export function useModelUsage(organizationId: string, days?: number) {
       input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
+    placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load model usage share" },
   });
 }
@@ -483,6 +477,7 @@ export function useGeoTrafficJourneys(organizationId: string, days?: number) {
       input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
     }),
     enabled: !!organizationId,
+    placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load AI journeys" },
   });
 }

@@ -41,6 +41,7 @@ export function buildGroundedInvocation(
   const groundedGateway = {
     organizationId: options.organizationId,
     gateway: "vercel",
+    zdr: options.zdr,
   } as const;
   switch (engine.provider) {
     case "gateway-openai":

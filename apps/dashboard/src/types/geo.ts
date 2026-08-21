@@ -88,6 +88,11 @@ export interface GeoSettings {
   aliases: string[];
   competitors: string[];
   languages: string[];
+  engines: string[];
+  /** Pro feature: request zero data retention from every model host. */
+  enforceZdr: boolean;
+  /** Models without a ZDR host the user approved to run anyway. */
+  nonZdrApprovedEngines: string[];
   enabled: boolean;
   scanStartedAt: string | null;
   lastScanAt: string | null;
@@ -109,6 +114,9 @@ export interface GeoSettingsRow {
   aliases: string[];
   competitors: string[];
   languages: string[] | null;
+  engines: string[] | null;
+  enforceZdr: boolean;
+  nonZdrApprovedEngines: string[];
   enabled: boolean;
   scanStartedAt: Date | null;
   lastScanAt: Date | null;
@@ -165,6 +173,7 @@ export interface GeoPromptResult {
   promptId: string;
   engine: string;
   prompt: string;
+  answer: string;
   mentioned: boolean;
   position: number | null;
   sentiment: string | null;
@@ -194,7 +203,14 @@ export interface GeoSettingsUpsertInput {
   aliases: string[];
   competitors: string[];
   languages: string[];
+  engines: string[];
+  enforceZdr: boolean;
+  nonZdrApprovedEngines: string[];
   enabled: boolean;
+}
+
+export interface GeoSettingsUpsertOptions {
+  silentSuccess?: boolean;
 }
 
 export interface GeoSampleDataResponse {
@@ -288,6 +304,7 @@ export interface GeoSequenceTurnResult {
   turn: number;
   engine: string;
   prompt: string;
+  answer: string;
   mentioned: boolean;
   position: number | null;
   sentiment: string | null;
@@ -344,13 +361,26 @@ export interface GeoCheckTask {
   grounded: GeoGroundedEngine | null;
   prompt: GeoPromptDefinition;
   language: string;
+  zdr: GeoZdrMode;
+}
+
+/** Per-project ZDR inputs needed to decide how an engine may run. */
+export interface GeoZdrPolicy {
+  enforceZdr: boolean;
+  nonZdrApprovedEngines: readonly string[];
+}
+
+/** Engine a scan will actually call after ZDR skip/fallback. */
+export interface GeoResolvedScanEngine {
+  engine: string;
+  zdr: GeoZdrMode;
 }
 
 export interface GeoCheckContext {
   organizationId: string;
   projectId: string;
   scanId: string;
-  capturedAt: string;
+  capturedAt: Date;
   companyName: string;
   aliases: string[];
 }
@@ -400,6 +430,7 @@ export interface GeoGroundedInvocation {
 
 export interface GeoGroundedInvocationOptions {
   organizationId?: string;
+  zdr?: GeoZdrMode;
 }
 
 export interface GeoWebsiteDiscovery {
@@ -830,9 +861,16 @@ export interface GeoTabsProps {
   modelUsage: GeoModelUsageResponse | undefined;
   journeys: GeoJourney[];
   organizationId: string;
+  rangeDays: number;
 }
 
-export type GeoMentionTrendRange = "24h" | "7d" | "14d" | "30d";
+export type GeoRange = "24h" | "7d" | "14d" | "30d";
+
+export interface GeoRangeControl {
+  range: GeoRange;
+  days: number;
+  setRange: (range: GeoRange) => void;
+}
 
 export interface MentionTrendSeries {
   key: string;
@@ -842,11 +880,12 @@ export interface MentionTrendSeries {
 
 export interface MentionTrendCardProps {
   points: GeoTimeseriesPoint[];
+  rangeDays?: number;
 }
 
-export interface MentionTrendRangePickerProps {
-  value: GeoMentionTrendRange;
-  onChange: (range: GeoMentionTrendRange) => void;
+export interface GeoRangePickerProps {
+  value: GeoRange;
+  onChange: (range: GeoRange) => void;
 }
 
 export interface MentionTrendAgentsPickerProps {
@@ -921,13 +960,12 @@ export interface CodeSnippetProps {
 
 export interface GeoOnboardingOverlayProps {
   organizationId: string;
-  onManualSetup: () => void;
+  manualHref: string;
 }
 
-export interface GeoSettingsDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+export interface GeoSettingsFormProps {
   organizationId: string;
+  organizationSlug: string;
   settings: GeoSettings | null;
 }
 
@@ -943,13 +981,72 @@ export interface GeoSubDialogProps {
 export interface GeoTagListProps {
   id: string;
   label: string;
-  description: string;
+  description?: ReactNode;
   values: string[];
   onChange: (values: string[]) => void;
   placeholder: string;
   max: number;
   disabled?: boolean;
+  /** When false, the field still has an accessible name via `label`. */
+  labeled?: boolean;
 }
+
+export interface GeoEnginePickerProps {
+  selected: string[];
+  onChange: (values: string[]) => void;
+  enforceZdr: boolean;
+  onEnforceZdrChange: (value: boolean) => void;
+  nonZdrApproved: string[];
+  onNonZdrApprovedChange: (values: string[]) => void;
+  /** Whether the organization may enforce ZDR (Pro plan). */
+  canEnforceZdr: boolean;
+  /** True while the plan is still loading; keeps the ZDR toggle inert. */
+  planLoading?: boolean;
+  disabled?: boolean;
+  labeled?: boolean;
+}
+
+export type GeoModelProviderId =
+  | "anthropic"
+  | "openai"
+  | "google"
+  | "moonshotai"
+  | "meta"
+  | "zai"
+  | "spacexai"
+  | "deepseek";
+
+/** Zero-data-retention coverage as reported by the Vercel AI Gateway feed. */
+export type GeoModelZdr = "all" | "some" | "none";
+
+export type GeoModelGateway = "vercel" | "openrouter";
+
+export interface GeoModelProvider {
+  id: GeoModelProviderId;
+  label: string;
+  /** Short example list shown under the provider name. */
+  hint: string;
+  /** Key into GEO_BRAND_LABELS / icon rules. */
+  brand: string;
+  /** Featured providers are visible without expanding "more providers". */
+  featured: boolean;
+}
+
+export interface GeoModelCatalogEntry {
+  id: string;
+  provider: GeoModelProviderId;
+  label: string;
+  zdr: GeoModelZdr;
+  /** ISO date (YYYY-MM-DD). */
+  released: string;
+  /** Part of the default engine set for new projects. */
+  default: boolean;
+  /** Gateways that serve the model; OpenRouter-only models are pinned. */
+  gateways: readonly GeoModelGateway[];
+}
+
+/** How strictly a scan asks the router for zero data retention. */
+export type GeoZdrMode = "required" | "preferred";
 
 export interface GeoLanguagePickerProps {
   selected: string[];

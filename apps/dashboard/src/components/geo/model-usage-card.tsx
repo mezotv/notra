@@ -111,6 +111,7 @@ export function ModelUsageCard({
       ) : (
         <div>
           <EChartsBarChart
+            animation={false}
             barRadius={0}
             className={cn("w-full", GEO_MODEL_USAGE_CHART_HEIGHT_CLASS)}
             config={config}

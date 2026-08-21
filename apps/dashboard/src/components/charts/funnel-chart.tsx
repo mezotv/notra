@@ -634,6 +634,12 @@ function SegmentLabel({
   align?: "center" | "start" | "end";
 }) {
   const display = stage.displayValue ?? formatValue(stage.value);
+  const instant = staggerDelay === 0;
+  const labelTransition = {
+    delay: instant ? 0 : index * staggerDelay + 0.25,
+    duration: instant ? 0 : 0.35,
+    ease: "easeOut" as const,
+  };
 
   const valueEl = showValues && (
     <span className="whitespace-nowrap font-semibold text-foreground text-sm">
@@ -660,12 +666,8 @@ function SegmentLabel({
           "absolute inset-0 flex",
           isHorizontal ? "flex-col items-center" : "flex-row items-center"
         )}
-        initial={{ opacity: 0 }}
-        transition={{
-          delay: index * staggerDelay + 0.25,
-          duration: 0.35,
-          ease: "easeOut",
-        }}
+        initial={{ opacity: instant ? 1 : 0 }}
+        transition={labelTransition}
       >
         {isHorizontal ? (
           <>
@@ -714,15 +716,11 @@ function SegmentLabel({
           ? cn("flex-col items-center", justifyMap[align])
           : cn("flex-row items-center", justifyMap[align])
       )}
-      initial={{ opacity: 0 }}
+      initial={{ opacity: instant ? 1 : 0 }}
       style={{
         padding: isHorizontal ? "8% 0" : "0 8%",
       }}
-      transition={{
-        delay: index * staggerDelay + 0.25,
-        duration: 0.35,
-        ease: "easeOut",
-      }}
+      transition={labelTransition}
     >
       <div
         className={cn(

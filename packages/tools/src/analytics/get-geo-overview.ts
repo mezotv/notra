@@ -1,15 +1,13 @@
 import {
-  isTinybirdConfigured,
-  queryGeoCompetitorShare,
-  queryGeoOverview,
-} from "@notra/analytics/tinybird/client";
+  queryGeoCheckCompetitorShare,
+  queryGeoCheckOverview,
+} from "@notra/db/utils/geo-checks";
 import { defineTool } from "eve/tools";
-import {
-  ANALYTICS_NOT_CONFIGURED_MESSAGE,
-  ANALYTICS_QUERY_FAILED_MESSAGE,
-} from "../constants/analytics";
+import { ANALYTICS_QUERY_FAILED_MESSAGE } from "../constants/analytics";
 import { getGeoOverviewInputSchema } from "../schemas/analytics-tools";
 import { requireOrganizationId } from "../utils/organization";
+
+const COMPETITOR_LIMIT = 10;
 
 export function createGetGeoOverviewTool() {
   return defineTool({
@@ -18,36 +16,26 @@ export function createGetGeoOverviewTool() {
     inputSchema: getGeoOverviewInputSchema,
     async execute({ days }, ctx) {
       const organizationId = requireOrganizationId(ctx);
-
-      if (!isTinybirdConfigured()) {
-        return ANALYTICS_NOT_CONFIGURED_MESSAGE;
-      }
+      // GEO mention checks live in Postgres (all projects of the org).
+      const scope = { organizationId, projectId: null };
 
       try {
         const [overview, competitors] = await Promise.all([
-          queryGeoOverview({ organization_id: organizationId, days }),
-          queryGeoCompetitorShare({
-            organization_id: organizationId,
-            days,
-            limit: 10,
-          }),
+          queryGeoCheckOverview(scope, days),
+          queryGeoCheckCompetitorShare(scope, days, COMPETITOR_LIMIT),
         ]);
 
-        if (!overview) {
-          return ANALYTICS_NOT_CONFIGURED_MESSAGE;
-        }
-
         return {
-          engines: overview.data.map((row) => ({
+          engines: overview.map((row) => ({
             engine: row.engine,
-            checks: Number(row.checks),
-            mentions: Number(row.mentions),
-            mention_rate: row.mention_rate,
-            avg_position: row.avg_position,
+            checks: row.checks,
+            mentions: row.mentions,
+            mention_rate: row.mentionRate,
+            avg_position: row.avgPosition,
           })),
-          competitor_share: (competitors?.data ?? []).map((row) => ({
+          competitor_share: competitors.map((row) => ({
             brand: row.brand,
-            mentions: Number(row.mentions),
+            mentions: row.mentions,
           })),
         };
       } catch (error) {

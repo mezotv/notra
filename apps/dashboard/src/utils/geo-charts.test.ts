@@ -4,26 +4,11 @@ import { chartKey } from "./chart-keys";
 import {
   buildMentionTrendRows,
   engineFamilyTotals,
-  filterTimeseriesByDays,
+  engineVariantLabel,
   fitMentionTrendAverage,
   groupEngineFamilies,
+  mentionTrendEmptyLabel,
 } from "./geo-charts";
-
-describe("filterTimeseriesByDays", () => {
-  test("keeps only points inside the inclusive trailing window", () => {
-    const points = [
-      { day: "2026-08-12", engine: "openai/gpt-5.4", checks: 4, mentions: 1 },
-      { day: "2026-08-14", engine: "openai/gpt-5.4", checks: 4, mentions: 2 },
-      { day: "2026-08-20", engine: "openai/gpt-5.4", checks: 4, mentions: 3 },
-      { day: "2026-08-21", engine: "openai/gpt-5.4", checks: 4, mentions: 9 },
-    ];
-
-    assert.deepEqual(
-      filterTimeseriesByDays(points, 7, "2026-08-20").map((point) => point.day),
-      ["2026-08-14", "2026-08-20"]
-    );
-  });
-});
 
 describe("fitMentionTrendAverage", () => {
   test("is the mean of the engines in the tooltip, not their sum", () => {
@@ -53,6 +38,26 @@ describe("fitMentionTrendAverage", () => {
       ]),
       [33 / 4]
     );
+  });
+});
+
+describe("mentionTrendEmptyLabel", () => {
+  test("says no mentions when every visible engine is zero", () => {
+    assert.equal(
+      mentionTrendEmptyLabel({ chatgpt: 0, claude: 0 }, ["chatgpt", "claude"]),
+      "No mentions"
+    );
+  });
+
+  test("says not scanned when the day has no engine values", () => {
+    assert.equal(
+      mentionTrendEmptyLabel({ chatgpt: null, claude: null }, [
+        "chatgpt",
+        "claude",
+      ]),
+      "Not scanned"
+    );
+    assert.equal(mentionTrendEmptyLabel(undefined, ["chatgpt"]), "Not scanned");
   });
 });
 
@@ -96,6 +101,23 @@ describe("buildMentionTrendRows", () => {
     assert.equal(rows[0]?.[chartKey("anthropic/claude-opus-5")], 1);
     assert.equal(rows[0]?.[chartKey("anthropic/claude-haiku-4.5")], 1);
     assert.equal(rows[0]?.claude, undefined);
+  });
+});
+
+describe("engineVariantLabel", () => {
+  test("strips the family prefix from Claude model names", () => {
+    assert.equal(
+      engineVariantLabel("anthropic/claude-sonnet-4.6", "Claude"),
+      "Sonnet"
+    );
+  });
+
+  test("names the ChatGPT flagship by model so it does not repeat the family", () => {
+    assert.equal(engineVariantLabel("openai/gpt-5.4", "ChatGPT"), "GPT-5.4");
+    assert.equal(
+      engineVariantLabel("openai/gpt-5.4-mini", "ChatGPT"),
+      "GPT-5.4 mini"
+    );
   });
 });
 

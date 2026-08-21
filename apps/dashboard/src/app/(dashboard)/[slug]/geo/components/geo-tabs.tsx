@@ -18,7 +18,8 @@ import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
 import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
-import { GEO_PROMPTS_TAB_LIMIT } from "@/constants/geo";
+import { GEO_DEFAULT_RANGE, GEO_PROMPTS_TAB_LIMIT } from "@/constants/geo";
+import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoTabsProps } from "@/types/geo";
 import { toGeoTab } from "@/utils/geo-tabs";
 
@@ -67,7 +68,14 @@ export function GeoTabs({
   modelUsage,
   journeys,
   organizationId,
+  rangeDays,
 }: GeoTabsProps) {
+  const { range } = useGeoRange();
+  const promptsHref =
+    range === GEO_DEFAULT_RANGE
+      ? `/${organizationSlug}/geo/prompts`
+      : `/${organizationSlug}/geo/prompts?range=${range}`;
+
   return (
     <Tabs
       onValueChange={(value) => onActiveTabChange(toGeoTab(value))}
@@ -87,7 +95,7 @@ export function GeoTabs({
 
       <TabsContent className="mt-6 flex flex-col gap-6" value="visibility">
         <TabSection active={revealActive} order={0}>
-          <MentionTrendCard points={timeseriesPoints} />
+          <MentionTrendCard points={timeseriesPoints} rangeDays={rangeDays} />
         </TabSection>
         <TabSection active={revealActive} order={1}>
           <EngineRateTable
@@ -145,7 +153,7 @@ export function GeoTabs({
               action={
                 <Link
                   className={TAB_LINK_CLASS}
-                  href={`/${organizationSlug}/geo/prompts`}
+                  href={promptsHref}
                   prefetch={true}
                 >
                   All prompts

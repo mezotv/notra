@@ -269,8 +269,8 @@ export const geoRouter = {
     .input(geoTimeseriesInputSchema)
     .handler(geoHandler((input) => loadGeoTimeseries(input, input.days))),
   promptResults: authorizedProcedure
-    .input(geoOrganizationInputSchema)
-    .handler(geoHandler((input) => loadGeoPromptResults(input))),
+    .input(geoTimeseriesInputSchema)
+    .handler(geoHandler((input) => loadGeoPromptResults(input, input.days))),
   competitorShare: authorizedProcedure
     .input(geoTimeseriesInputSchema)
     .handler(geoHandler((input) => loadGeoCompetitorShare(input, input.days))),

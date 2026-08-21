@@ -14,6 +14,8 @@ import {
   GEO_DISCOVERY_MAX_PROMPTS,
   GEO_DISCOVERY_MIN_COMPETITORS,
   GEO_DISCOVERY_MIN_PROMPTS,
+  GEO_ENGINE_SET,
+  GEO_ENGINES,
   GEO_MAX_ALIASES,
   GEO_MAX_COMPETITORS,
   GEO_MAX_LANGUAGES,
@@ -60,6 +62,18 @@ export const geoSettingsUpsertInputSchema = geoOrganizationInputSchema.extend({
         message: "Unsupported language",
       }
     ),
+  engines: array(string().min(1))
+    .min(1)
+    .max(GEO_ENGINES.length)
+    .refine((values) => values.every((value) => GEO_ENGINE_SET.has(value)), {
+      message: "Unsupported engine",
+    }),
+  enforceZdr: boolean(),
+  nonZdrApprovedEngines: array(string().min(1))
+    .max(GEO_ENGINES.length)
+    .refine((values) => values.every((value) => GEO_ENGINE_SET.has(value)), {
+      message: "Unsupported engine",
+    }),
   enabled: boolean(),
 });
 

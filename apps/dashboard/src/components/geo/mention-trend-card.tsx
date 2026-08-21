@@ -4,22 +4,20 @@ import { useCallback, useMemo, useState } from "react";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { engineIconHtml } from "@/components/geo/engine-icon";
 import { MentionTrendAgentsPicker } from "@/components/geo/mention-trend-agents";
-import { MentionTrendRangePicker } from "@/components/geo/mention-trend-range";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { CHART_MUTED_COLOR } from "@/constants/charts";
 import {
+  GEO_DEFAULT_RANGE,
   GEO_MENTION_TREND_AVERAGE_KEY,
   GEO_MENTION_TREND_AVERAGE_LABEL,
-  GEO_MENTION_TREND_DEFAULT_RANGE,
-  GEO_MENTION_TREND_RANGE_DAYS,
+  GEO_RANGE_DAYS,
   GEO_TREND_MIN_DAYS,
 } from "@/constants/geo";
 import type { ChartConfig } from "@/types/charts";
 import type {
-  GeoMentionTrendRange,
   MentionTrendCardProps,
   MentionTrendRow,
   MentionTrendSeries,
@@ -29,10 +27,10 @@ import { accountSeriesColors, seriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";
 import {
   buildMentionTrendRows,
-  filterTimeseriesByDays,
   fitMentionTrendAverage,
   formatChartInteger,
   formatEngineFamily,
+  mentionTrendEmptyLabel,
 } from "@/utils/geo-charts";
 
 const ENGINE_STROKE_WIDTH = 1.5;
@@ -81,31 +79,18 @@ function toggleHiddenSeries(
   return next;
 }
 
-export function MentionTrendCard({ points }: MentionTrendCardProps) {
-  const [range, setRange] = useState<GeoMentionTrendRange>(
-    GEO_MENTION_TREND_DEFAULT_RANGE
-  );
+export function MentionTrendCard({
+  points,
+  rangeDays = GEO_RANGE_DAYS[GEO_DEFAULT_RANGE],
+}: MentionTrendCardProps) {
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set());
-  const rangeDays = GEO_MENTION_TREND_RANGE_DAYS[range];
 
-  const fullTrend = useMemo(() => buildMentionTrendRows(points), [points]);
-  const windowedPoints = useMemo(
-    () => filterTimeseriesByDays(points, rangeDays),
-    [points, rangeDays]
-  );
   const { rows, engines } = useMemo(
-    () => buildMentionTrendRows(windowedPoints),
-    [windowedPoints]
-  );
-  const pickerSeries = useMemo(
-    () => mentionTrendSeries(fullTrend.engines),
-    [fullTrend.engines]
+    () => buildMentionTrendRows(points),
+    [points]
   );
   const series = useMemo(() => mentionTrendSeries(engines), [engines]);
-  const allKeys = useMemo(
-    () => pickerSeries.map((entry) => entry.key),
-    [pickerSeries]
-  );
+  const allKeys = useMemo(() => series.map((entry) => entry.key), [series]);
   const effectiveHiddenKeys = useMemo(() => {
     const current = new Set(allKeys);
     const hidden = new Set([...hiddenKeys].filter((key) => current.has(key)));
@@ -136,7 +121,7 @@ export function MentionTrendCard({ points }: MentionTrendCardProps) {
         colors: seriesColors(CHART_MUTED_COLOR),
       },
     };
-    for (const [index, entry] of pickerSeries.entries()) {
+    for (const [index, entry] of series.entries()) {
       trendConfig[entry.key] = {
         label: entry.label,
         colors: accountSeriesColors(index),
@@ -144,10 +129,11 @@ export function MentionTrendCard({ points }: MentionTrendCardProps) {
       };
     }
     return trendConfig;
-  }, [pickerSeries]);
+  }, [series]);
   const markIncompleteTail = hasIncompleteTail(rows);
-  const fullSampledDays = sampledDayCount(fullTrend.rows, fullTrend.engines);
-  const windowSampledDays = sampledDayCount(rows, engines);
+  const sampledDays = sampledDayCount(rows, engines);
+  const tooFewDays =
+    sampledDays < GEO_TREND_MIN_DAYS && rangeDays >= GEO_TREND_MIN_DAYS;
 
   const handleToggle = useCallback(
     (key: string) => {
@@ -157,24 +143,21 @@ export function MentionTrendCard({ points }: MentionTrendCardProps) {
   );
 
   let emptyMessage: string | null = null;
-  if (fullSampledDays < GEO_TREND_MIN_DAYS) {
+  if (tooFewDays) {
     emptyMessage = `Trend appears after ${GEO_TREND_MIN_DAYS} days of scans`;
-  } else if (windowSampledDays === 0 || visibleSeries.length === 0) {
+  } else if (sampledDays === 0 || visibleSeries.length === 0) {
     emptyMessage = "No mention data in this range";
   }
 
   return (
     <InstrumentSection
       action={
-        <div className="flex items-center gap-1.5">
-          <MentionTrendRangePicker onChange={setRange} value={range} />
-          <MentionTrendAgentsPicker
-            disabled={emptyMessage !== null}
-            hiddenKeys={effectiveHiddenKeys}
-            onToggle={handleToggle}
-            series={pickerSeries}
-          />
-        </div>
+        <MentionTrendAgentsPicker
+          disabled={emptyMessage !== null}
+          hiddenKeys={effectiveHiddenKeys}
+          onToggle={handleToggle}
+          series={series}
+        />
       }
       bodyClassName="flex flex-col"
       eyebrow="Mention trend"
@@ -187,6 +170,7 @@ export function MentionTrendCard({ points }: MentionTrendCardProps) {
         />
       ) : (
         <EChartsAreaChart
+          animation={false}
           className="h-80 w-full"
           config={config}
           curveType="monotone"
@@ -216,6 +200,7 @@ export function MentionTrendCard({ points }: MentionTrendCardProps) {
             variant="none"
           />
           <EChartsAreaChart.Tooltip
+            emptyLabel={(row) => mentionTrendEmptyLabel(row, visibleKeys)}
             hideZeros
             layout="bars"
             position="fixed"

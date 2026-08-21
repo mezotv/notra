@@ -54,9 +54,11 @@ export function PromptFunnelCard({
           <FunnelChart
             className="h-40 w-full"
             data={stages}
+            enterTransition={{ duration: 0 }}
             orientation="horizontal"
             showPercentage
             showValues
+            staggerDelay={0}
           />
         </div>
       )}

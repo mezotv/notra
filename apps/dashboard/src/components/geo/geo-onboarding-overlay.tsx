@@ -4,6 +4,7 @@ import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
+import Link from "next/link";
 import { useId, useState } from "react";
 import { Button } from "@/components/button";
 import { DirectionInstrument } from "@/components/geo/directions/direction-instrument";
@@ -13,7 +14,7 @@ import { normalizeWebsiteUrl } from "@/utils/geo-website";
 
 export function GeoOnboardingOverlay({
   organizationId,
-  onManualSetup,
+  manualHref,
 }: GeoOnboardingOverlayProps) {
   const id = useId();
   const [url, setUrl] = useState("");
@@ -90,7 +91,8 @@ export function GeoOnboardingOverlay({
             <div className="text-center">
               <Button
                 className="text-muted-foreground"
-                onClick={onManualSetup}
+                nativeButton={false}
+                render={<Link href={manualHref} />}
                 size="sm"
                 variant="link"
               >

@@ -9,8 +9,10 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { MENTION_TREND_FILTER_TRIGGER_CLASS } from "@/components/geo/mention-trend-range";
-import { GEO_MENTION_TREND_AGENT_ICON_LIMIT } from "@/constants/geo";
+import {
+  GEO_FILTER_TRIGGER_CLASS,
+  GEO_MENTION_TREND_AGENT_ICON_LIMIT,
+} from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { MentionTrendAgentsPickerProps } from "@/types/geo";
 
@@ -30,7 +32,7 @@ export function MentionTrendAgentsPicker({
       <DropdownMenuTrigger
         aria-label="Mention trend agents"
         className={cn(
-          MENTION_TREND_FILTER_TRIGGER_CLASS,
+          GEO_FILTER_TRIGGER_CLASS,
           disabled && "pointer-events-none opacity-50"
         )}
         disabled={disabled}

@@ -66,6 +66,11 @@ export function tooltipIndicatorHtml(key: string, colorsCount: number): string {
   return `<div class="h-2.5 w-2.5 shrink-0 rounded-[2px]" style="background:${indicatorBackground(key, colorsCount)}"></div>`;
 }
 
+/** Swatch for tooltips mounted outside `[data-chart]`, where series CSS vars do not resolve. */
+export function tooltipColorSwatchHtml(color: string): string {
+  return `<div class="h-2.5 w-2.5 shrink-0 rounded-[2px]" style="background:${escapeHtml(color)}"></div>`;
+}
+
 // One tooltip row: indicator swatch + label/value pair. `dimmed` is a class
 // fragment (e.g. " opacity-30") appended to the row so the selection/hover dim
 // stays byte-identical to the inlined markup.
@@ -186,6 +191,10 @@ export function tooltipItemsFromRow(
   return items;
 }
 
+export function tooltipEmptyBody(label: string): string {
+  return `<span class="text-muted-foreground">${escapeHtml(label)}</span>`;
+}
+
 export function composeTooltipBody(
   items: readonly TooltipBodyItem[],
   layout: TooltipLayout,
@@ -260,7 +269,8 @@ export function tooltipShell({
 // Maps the TooltipPosition prop onto the ECharts tooltip `position` field.
 // "variable" + confine → undefined (ECharts default, stays inside the chart).
 // "variable" without confine → follow the pointer, clamp X so a left-edge flip
-// cannot paint outside the chart (sparklines sit in overflow-hidden cards).
+// cannot paint outside the chart. Pair with appendTo:"body" so overflow-hidden
+// ancestors (sheet cards, rounded groups) cannot clip the box.
 // "fixed" → center on the pointer's X, pin near the top, still clamp X.
 export function resolveTooltipPosition(
   position: TooltipPosition,
@@ -326,6 +336,9 @@ export function tooltipBaseOption(params: {
     show: present,
     trigger: "axis",
     confine,
+    // Sparklines sit in overflow-hidden cards; appending to body is what
+    // actually lets confine:false paint above a 40–48px plot.
+    ...(confine ? {} : { appendTo: "body" as const }),
     backgroundColor: "transparent",
     borderWidth: 0,
     padding: 0,

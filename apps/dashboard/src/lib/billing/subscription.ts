@@ -2,7 +2,11 @@ import {
   allowUnmeteredAiInDevelopment,
   autumn,
 } from "@notra/ai/billing/autumn";
-import { FEATURES, PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
+import {
+  FEATURES,
+  PAID_OR_LEGACY_PLAN_IDS,
+  PRO_PLAN_IDS,
+} from "@notra/ai/billing/features";
 import { ORPCError } from "@orpc/server";
 import { internalServerError, paymentRequired } from "@/lib/orpc/utils/errors";
 
@@ -31,6 +35,35 @@ async function hasAiCreditsGrant(organizationId: string): Promise<boolean> {
   });
 
   return data.balance != null;
+}
+
+/**
+ * Non-throwing Pro check used to gate Pro-only settings (e.g. GEO zero data
+ * retention). Development without billing counts as Pro; a billing outage
+ * counts as not Pro so gated settings fail closed.
+ */
+export async function hasProSubscription(
+  organizationId: string
+): Promise<boolean> {
+  if (allowUnmeteredAiInDevelopment) {
+    return true;
+  }
+  if (!autumn) {
+    return process.env.NODE_ENV !== "production";
+  }
+  try {
+    const customer = await autumn.customers.getOrCreate({
+      customerId: organizationId,
+    });
+    return customer.subscriptions.some(
+      (subscription) =>
+        !subscription.addOn &&
+        subscription.status === "active" &&
+        PRO_PLAN_IDS.has(subscription.planId)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export async function assertActiveSubscription(

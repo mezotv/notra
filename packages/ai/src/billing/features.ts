@@ -17,18 +17,18 @@ export const PLANS = {
   PRO_YEARLY: "pro_yearly",
 } as const;
 
+export const PRO_PLAN_IDS: Set<string> = new Set([PLANS.PRO, PLANS.PRO_YEARLY]);
+
 export const PAID_OR_LEGACY_PLAN_IDS: Set<string> = new Set([
   PLANS.BASIC,
   PLANS.BASIC_YEARLY,
-  PLANS.PRO,
-  PLANS.PRO_YEARLY,
+  ...PRO_PLAN_IDS,
 ]);
 
 export const ACTIVE_PAID_PLAN_IDS: Set<string> = new Set([
   PLANS.BASIC,
   PLANS.BASIC_YEARLY,
-  PLANS.PRO,
-  PLANS.PRO_YEARLY,
+  ...PRO_PLAN_IDS,
 ]);
 
 export const ADDONS = {

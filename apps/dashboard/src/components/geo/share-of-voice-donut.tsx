@@ -144,6 +144,7 @@ export function ShareOfVoiceDonut({
       <div className="flex flex-col">
         <div className="flex flex-1 flex-col items-stretch gap-4 sm:flex-row sm:items-center">
           <EChartsPieChart
+            animation={false}
             className="h-56 w-full min-w-0 sm:w-1/2"
             config={config}
             data={slices}

@@ -39,11 +39,11 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
   },
   {
     key: "meta",
-    patterns: ["meta-", "meta/", "llama", "facebook"],
+    patterns: ["meta-", "meta/", "llama", "facebook", "muse-spark"],
   },
   {
     key: "grok",
-    patterns: ["grok", "x-ai", "xai"],
+    patterns: ["grok", "x-ai", "xai", "spacexai"],
   },
   {
     key: "qwen",

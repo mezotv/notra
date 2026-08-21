@@ -10,6 +10,7 @@ import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { ConversationsCard } from "@/components/geo/conversations-card";
+import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { PromptAddDialog } from "@/components/geo/prompt-add-dialog";
 import { PromptSuggestions } from "@/components/geo/prompt-suggestions";
 import { PromptsTable } from "@/components/geo/prompts-table";
@@ -26,6 +27,7 @@ import {
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
 import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
+import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import { GeoPromptsSkeleton } from "./skeleton";
 
 interface PageClientProps {
@@ -41,9 +43,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       : orgFromList;
   const organizationId = organization?.id ?? "";
 
+  const { range, days, setRange } = useGeoRange();
   const { data: settingsData, isPending } = useGeoSettings(organizationId);
   const { prompts } = useGeoPromptsDb(organizationId);
-  const { data: promptResults } = useGeoPromptResults(organizationId);
+  const { data: promptResults } = useGeoPromptResults(organizationId, days);
   const isScanning = useIsGeoScanning(organizationId);
   const [addOpen, setAddOpen] = useState(false);
 
@@ -96,11 +99,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               The questions we ask AI engines on your behalf
             </p>
           </div>
-          <Button className="gap-1.5" onClick={() => setAddOpen(true)}>
-            <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            Add Prompt
-            <Kbd className="ml-1 hidden sm:inline-flex">P</Kbd>
-          </Button>
+          <div className="flex items-center gap-2">
+            <GeoRangePicker onChange={setRange} value={range} />
+            <Button className="gap-1.5" onClick={() => setAddOpen(true)}>
+              <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+              Add Prompt
+              <Kbd className="ml-1 hidden sm:inline-flex">P</Kbd>
+            </Button>
+          </div>
         </header>
         <PromptSuggestions organizationId={organizationId} />
         <SearchConsoleCard

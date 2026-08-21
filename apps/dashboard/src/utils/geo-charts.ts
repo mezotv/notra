@@ -34,6 +34,9 @@ import {
   isGroundedEngine,
 } from "@/utils/geo-presence";
 
+const GPT_PREFIX_PATTERN = /^gpt-/i;
+const MINI_SUFFIX_PATTERN = /-mini$/i;
+
 export function buildShareOfVoiceRows(
   points: readonly GeoCompetitorSharePoint[],
   options?: {
@@ -120,21 +123,6 @@ export function listDaysThrough(firstDay: string, lastDay: string): string[] {
   return days;
 }
 
-function isoDateDaysAgo(days: number, today = todayIsoDate()): string {
-  const start = new Date(`${today}T00:00:00Z`);
-  start.setUTCDate(start.getUTCDate() - (days - 1));
-  return start.toISOString().slice(0, 10);
-}
-
-export function filterTimeseriesByDays(
-  points: readonly GeoTimeseriesPoint[],
-  days: number,
-  today = todayIsoDate()
-): GeoTimeseriesPoint[] {
-  const start = isoDateDaysAgo(days, today);
-  return points.filter((point) => point.day >= start && point.day <= today);
-}
-
 function visibleEngineStats(
   row: MentionTrendRow,
   keys: readonly string[]
@@ -164,6 +152,15 @@ export function fitMentionTrendAverage(
   keys: readonly string[]
 ): (number | null)[] {
   return rows.map((row) => rowVisibleAverage(row, keys));
+}
+
+export function mentionTrendEmptyLabel(
+  row: Record<string, unknown> | undefined,
+  keys: readonly string[]
+): string {
+  const scanned =
+    row != null && keys.some((key) => typeof row[key] === "number");
+  return scanned ? "No mentions" : "Not scanned";
 }
 
 export function latestChartDay(
@@ -305,7 +302,19 @@ export function engineFamilyLabel(family: string): string {
 export function engineVariantLabel(model: string, brandLabel: string): string {
   const label = engineFamilyLabel(model);
   const prefix = `${brandLabel} `;
-  return label.startsWith(prefix) ? label.slice(prefix.length) : label;
+  if (label.startsWith(prefix)) {
+    return label.slice(prefix.length);
+  }
+  if (label !== brandLabel) {
+    return label;
+  }
+  const slug = engineModelOf(model).split("/").at(-1);
+  if (slug?.toLowerCase().startsWith("gpt-")) {
+    return slug
+      .replace(GPT_PREFIX_PATTERN, "GPT-")
+      .replace(MINI_SUFFIX_PATTERN, " mini");
+  }
+  return label;
 }
 
 export function formatEngineFamily(engine: string): string {

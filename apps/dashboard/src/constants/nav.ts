@@ -14,6 +14,7 @@ import {
   PaintBoardIcon,
   PlugIcon,
   RainbowIcon,
+  Settings01Icon,
   WorkflowSquare01Icon,
 } from "@hugeicons/core-free-icons";
 import { IRIS_NAV_LINK } from "@/constants/iris";
@@ -107,6 +108,12 @@ export const NAV_MAIN_ITEMS: NavMainItem[] = [
     link: "/geo/competitors",
     icon: ChartAnalysisIcon,
     label: "Competitors",
+    category: "geo",
+  },
+  {
+    link: "/geo/settings",
+    icon: Settings01Icon,
+    label: "Settings",
     category: "geo",
   },
   {
