@@ -1,6 +1,10 @@
 "use client";
 
-import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import {
+  ArrowDown01Icon,
+  InformationCircleIcon,
+  SearchIcon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   AlertDialog,
@@ -13,6 +17,13 @@ import {
   AlertDialogTitle,
 } from "@notra/ui/components/ui/alert-dialog";
 import { Badge } from "@notra/ui/components/ui/badge";
+import { Button } from "@notra/ui/components/ui/button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@notra/ui/components/ui/collapsible";
+import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Switch } from "@notra/ui/components/ui/switch";
 import {
@@ -24,12 +35,13 @@ import Link from "next/link";
 import { useId, useState } from "react";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { GEO_ENGINE_SET, GEO_ZDR_FEATURE_LABEL } from "@/constants/geo";
+import { GEO_DEFAULT_ENGINES, GEO_ZDR_FEATURE_LABEL } from "@/constants/geo";
 import {
+  GEO_MODEL_CATALOG,
   GEO_MODEL_PROVIDERS,
   geoModelsForProvider,
+  getGeoModelCatalogEntry,
 } from "@/constants/geo-model-catalog";
-import { cn } from "@/lib/utils";
 import type {
   GeoEnginePickerProps,
   GeoModelCatalogEntry,
@@ -42,33 +54,6 @@ import {
 } from "@/utils/geo-engines";
 
 const ROW_CLASS = "flex items-center justify-between gap-3 px-3 py-2";
-
-/**
- * True when the selection is exactly what the provider switches would
- * produce; otherwise the user picked individual models and needs Advanced.
- */
-function isProviderLevelSelection(selected: readonly string[]): boolean {
-  const selectedSet = new Set(selected);
-  const expected = new Set<string>();
-  for (const provider of GEO_MODEL_PROVIDERS) {
-    const models = geoModelsForProvider(provider.id);
-    if (models.some((model) => selectedSet.has(model.id))) {
-      for (const id of enginesForProviderToggle(provider.id, false)) {
-        expected.add(id);
-      }
-    }
-  }
-  const chosen = new Set(selected.filter((id) => GEO_ENGINE_SET.has(id)));
-  if (chosen.size !== expected.size) {
-    return false;
-  }
-  for (const id of chosen) {
-    if (!expected.has(id)) {
-      return false;
-    }
-  }
-  return true;
-}
 
 export function GeoEnginePicker({
   selected,
@@ -84,23 +69,17 @@ export function GeoEnginePicker({
 }: GeoEnginePickerProps) {
   const id = useId();
   const { activeOrganization } = useOrganizationsContext();
-  const [advanced, setAdvanced] = useState(
-    () => !isProviderLevelSelection(selected)
+  const [expandedProviders, setExpandedProviders] = useState<Set<string>>(
+    () => new Set()
   );
-  const [showMore, setShowMore] = useState(() =>
-    GEO_MODEL_PROVIDERS.some(
-      (provider) =>
-        !provider.featured &&
-        geoModelsForProvider(provider.id).some((model) =>
-          selected.includes(model.id)
-        )
-    )
-  );
+  const [search, setSearch] = useState("");
   const [pendingApproval, setPendingApproval] =
     useState<GeoModelCatalogEntry | null>(null);
 
   const lastSelected = selected.length <= 1;
   const zdrActive = enforceZdr && canEnforceZdr;
+  const selectedSet = new Set(selected);
+  const approvedSet = new Set(nonZdrApproved);
 
   const select = (ids: readonly string[]) => {
     onChange(sortKnownEngines([...selected, ...ids]));
@@ -167,10 +146,18 @@ export function GeoEnginePicker({
     }
   };
 
-  const visibleProviders = GEO_MODEL_PROVIDERS.filter(
-    (provider) => provider.featured || showMore
-  );
-  const hiddenCount = GEO_MODEL_PROVIDERS.length - visibleProviders.length;
+  const normalizedSearch = search.trim().toLocaleLowerCase();
+  const visibleProviders = GEO_MODEL_PROVIDERS.filter((provider) => {
+    if (!normalizedSearch) {
+      return true;
+    }
+    return (
+      provider.label.toLocaleLowerCase().includes(normalizedSearch) ||
+      geoModelsForProvider(provider.id).some((model) =>
+        model.label.toLocaleLowerCase().includes(normalizedSearch)
+      )
+    );
+  });
   const billingHref = activeOrganization
     ? `/${activeOrganization.slug}/settings/billing`
     : null;
@@ -187,130 +174,211 @@ export function GeoEnginePicker({
         </div>
       ) : null}
 
-      <ul className="overflow-hidden rounded-md border">
-        {visibleProviders.map((provider) => {
-          const models = geoModelsForProvider(provider.id);
-          const selectedModels = models.filter((model) =>
-            selected.includes(model.id)
-          );
-          const providerOn = selectedModels.length > 0;
-          const providerLocked =
-            providerOn && selectedModels.length === selected.length;
-          const switchId = `${id}-${provider.id}`;
-          let subtitle = provider.hint;
-          if (advanced) {
-            subtitle =
-              selectedModels.length > 0
-                ? selectedModels.map((model) => model.label).join(", ")
-                : "No models selected";
-          }
-          return (
-            <li
-              className="border-border/60 border-b last:border-b-0"
-              key={provider.id}
-            >
-              <div className={ROW_CLASS}>
-                <Label
-                  className="flex min-w-0 flex-1 items-center gap-2.5 font-normal"
-                  htmlFor={switchId}
-                >
-                  <span className="flex size-7 shrink-0 items-center justify-center overflow-visible">
-                    <EngineIcon
-                      className="size-4 overflow-visible"
-                      engine={models[0]?.id ?? provider.id}
-                    />
-                  </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block">{provider.label}</span>
-                    <span className="block text-pretty text-[11px] text-muted-foreground leading-snug">
-                      {subtitle}
-                    </span>
-                  </span>
-                </Label>
-                <Switch
-                  checked={providerOn}
-                  disabled={disabled || providerLocked}
-                  id={switchId}
-                  onCheckedChange={(next) => toggleProvider(provider, next)}
-                />
-              </div>
-              <div
-                className={cn(
-                  "grid transition-[grid-template-rows] duration-200 ease-out",
-                  advanced ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-                )}
-              >
-                <ul
-                  className="min-h-0 overflow-hidden bg-muted/25"
-                  inert={advanced ? undefined : true}
-                >
-                  {models.map((model) => {
-                    const checked = selected.includes(model.id);
-                    const modelId = `${id}-${model.id}`;
-                    const approved = nonZdrApproved.includes(model.id);
-                    const noZdr = model.zdr === "none";
-                    return (
-                      <li
-                        className="flex items-center justify-between gap-3 py-2 ps-12 pe-3"
-                        key={model.id}
-                      >
-                        <Label
-                          className="flex min-w-0 flex-1 items-center gap-2 font-normal"
-                          htmlFor={modelId}
-                        >
-                          <span className="min-w-0 text-sm">{model.label}</span>
-                          {noZdr ? (
-                            <span className="shrink-0 text-[11px] text-muted-foreground">
-                              {approved
-                                ? "Approved without ZDR"
-                                : "No ZDR host"}
-                            </span>
-                          ) : null}
-                        </Label>
-                        <Switch
-                          checked={checked}
-                          disabled={disabled || (checked && lastSelected)}
-                          id={modelId}
-                          onCheckedChange={(next) => toggleModel(model, next)}
-                          size="sm"
-                        />
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            </li>
-          );
-        })}
-        {hiddenCount > 0 ? (
-          <li className="px-3 py-2">
-            <button
-              className="text-muted-foreground text-xs underline-offset-4 hover:text-foreground hover:underline"
+      <div className="overflow-hidden rounded-lg border">
+        <div className="flex flex-col gap-2 border-border/60 border-b p-2 sm:flex-row">
+          <div className="relative min-w-0 flex-1">
+            <HugeiconsIcon
+              aria-hidden="true"
+              className="-translate-y-1/2 absolute top-1/2 left-2.5 text-muted-foreground"
+              icon={SearchIcon}
+              size={15}
+            />
+            <Input
+              aria-label="Search model makers and models"
+              className="pl-8"
               disabled={disabled}
-              onClick={() => setShowMore(true)}
-              type="button"
-            >
-              Show {hiddenCount} more providers
-            </button>
-          </li>
-        ) : null}
-      </ul>
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search models"
+              type="search"
+              value={search}
+            />
+          </div>
+          <Button
+            disabled={disabled}
+            onClick={() => {
+              const selectable: string[] = [];
+              for (const model of GEO_MODEL_CATALOG) {
+                if (
+                  !zdrActive ||
+                  model.zdr !== "none" ||
+                  approvedSet.has(model.id)
+                ) {
+                  selectable.push(model.id);
+                }
+              }
+              onChange(sortKnownEngines(selectable));
+            }}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Select all
+          </Button>
+          <Button
+            disabled={disabled}
+            onClick={() => {
+              const defaults = zdrActive
+                ? GEO_DEFAULT_ENGINES.filter(
+                    (engine) => getGeoModelCatalogEntry(engine)?.zdr !== "none"
+                  )
+                : GEO_DEFAULT_ENGINES;
+              const defaultSet = new Set<string>(defaults);
+              onChange(sortKnownEngines(defaults));
+              onNonZdrApprovedChange(
+                nonZdrApproved.filter((engine) => defaultSet.has(engine))
+              );
+            }}
+            size="sm"
+            type="button"
+            variant="outline"
+          >
+            Use defaults
+          </Button>
+        </div>
+        <ul>
+          {visibleProviders.map((provider) => {
+            const models = geoModelsForProvider(provider.id);
+            const providerMatches = provider.label
+              .toLocaleLowerCase()
+              .includes(normalizedSearch);
+            const visibleModels =
+              normalizedSearch && !providerMatches
+                ? models.filter((model) =>
+                    model.label.toLocaleLowerCase().includes(normalizedSearch)
+                  )
+                : models;
+            const selectedModels = models.filter((model) =>
+              selectedSet.has(model.id)
+            );
+            const providerOn = selectedModels.length > 0;
+            const providerLocked =
+              providerOn && selectedModels.length === selected.length;
+            const isOpen =
+              normalizedSearch.length > 0 || expandedProviders.has(provider.id);
+            return (
+              <Collapsible
+                key={provider.id}
+                onOpenChange={(open) => {
+                  setExpandedProviders((current) => {
+                    const next = new Set(current);
+                    if (open) {
+                      next.add(provider.id);
+                    } else {
+                      next.delete(provider.id);
+                    }
+                    return next;
+                  });
+                }}
+                open={isOpen}
+                render={
+                  <li className="border-border/60 border-b last:border-b-0" />
+                }
+              >
+                <div className={ROW_CLASS}>
+                  <CollapsibleTrigger
+                    className="group flex min-h-8 min-w-0 flex-1 items-center gap-2.5 rounded-md text-start outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    disabled={disabled}
+                  >
+                    <HugeiconsIcon
+                      aria-hidden="true"
+                      className="-rotate-90 size-3.5 shrink-0 text-muted-foreground transition-transform duration-150 group-aria-expanded:rotate-0"
+                      icon={ArrowDown01Icon}
+                      strokeWidth={2}
+                    />
+                    <span className="flex size-8 shrink-0 items-center justify-center overflow-visible">
+                      <EngineIcon
+                        className="size-4 overflow-visible"
+                        engine={models[0]?.id ?? provider.id}
+                      />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-medium text-sm">
+                        {provider.label}
+                      </span>
+                      {selectedModels.length > 0 ? (
+                        <span className="block text-pretty text-[11px] text-muted-foreground leading-snug">
+                          {selectedModels
+                            .map((model) => model.label)
+                            .join(", ")}
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
+                      {selectedModels.length}/{models.length}
+                    </span>
+                  </CollapsibleTrigger>
+                  <Switch
+                    aria-label={`Enable ${provider.label} models`}
+                    checked={providerOn}
+                    disabled={disabled || providerLocked}
+                    onCheckedChange={(next) => toggleProvider(provider, next)}
+                  />
+                </div>
+                <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden transition-[height] duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0">
+                  <ul className="border-border/60 border-t bg-muted/25">
+                    {visibleModels.map((model) => {
+                      const checked = selectedSet.has(model.id);
+                      const modelId = `${id}-${model.id}`;
+                      const approved = approvedSet.has(model.id);
+                      const noZdr = model.zdr === "none";
+                      return (
+                        <li
+                          className="flex min-h-10 items-center justify-between gap-3 border-border/40 border-b py-2 ps-[4.375rem] pe-3 last:border-b-0"
+                          key={model.id}
+                        >
+                          <div className="flex min-w-0 flex-1 items-center gap-2">
+                            <Label
+                              className="min-w-0 font-normal text-sm"
+                              htmlFor={modelId}
+                            >
+                              {model.label}
+                            </Label>
+                            {noZdr ? (
+                              <Tooltip>
+                                <TooltipTrigger
+                                  aria-label={`${model.label} zero-data-retention information`}
+                                  className="shrink-0 cursor-help text-muted-foreground hover:text-foreground"
+                                  type="button"
+                                >
+                                  <HugeiconsIcon
+                                    aria-hidden="true"
+                                    className="size-3.5"
+                                    icon={InformationCircleIcon}
+                                    strokeWidth={2}
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent side="top">
+                                  {approved
+                                    ? "Approved to run without zero data retention."
+                                    : "No zero-data-retention host is available for this model."}
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : null}
+                          </div>
+                          <Switch
+                            checked={checked}
+                            disabled={disabled || (checked && lastSelected)}
+                            id={modelId}
+                            onCheckedChange={(next) => toggleModel(model, next)}
+                            size="sm"
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </CollapsibleContent>
+              </Collapsible>
+            );
+          })}
+          {visibleProviders.length === 0 ? (
+            <li className="px-3 py-8 text-center text-muted-foreground text-sm">
+              No model makers or models match “{search.trim()}”.
+            </li>
+          ) : null}
+        </ul>
+      </div>
 
       <div className="divide-y rounded-lg ring-1 ring-foreground/10">
-        <div className={`${ROW_CLASS} py-2.5`}>
-          <div className="space-y-0.5">
-            <Label htmlFor={`${id}-advanced`}>Advanced</Label>
-            <p className="text-muted-foreground text-xs">
-              Pick individual models per provider.
-            </p>
-          </div>
-          <Switch
-            checked={advanced}
-            disabled={disabled}
-            id={`${id}-advanced`}
-            onCheckedChange={setAdvanced}
-          />
-        </div>
         <div className={`${ROW_CLASS} py-2.5`}>
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5">

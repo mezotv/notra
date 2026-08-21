@@ -63,11 +63,7 @@ export function GeoSettingsForm({
     {
       wait: GEO_SETTINGS_AUTO_SAVE_MS,
       throwOnError: false,
-    },
-    (state) => ({
-      isExecuting: state.isExecuting,
-      isPending: state.isPending,
-    })
+    }
   );
   const debouncerRef = useRef(debouncer);
   debouncerRef.current = debouncer;
@@ -141,103 +137,74 @@ export function GeoSettingsForm({
     };
   }, []);
 
-  const isSaving = debouncer.state.isPending || debouncer.state.isExecuting;
-  let saveStatus: string | null = null;
-  if (nameMissing && savedAt) {
-    saveStatus = "Add a company name to save";
-  } else if (isSaving) {
-    saveStatus = "Saving...";
-  } else if (savedAt) {
-    saveStatus = "Saved";
-  }
-
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-8">
-      <header className="flex items-start justify-between gap-3">
-        <div className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">Settings</h1>
-          <p className="text-muted-foreground">
-            How your brand is identified and where prompts are scanned.
-          </p>
-        </div>
-        {saveStatus ? (
-          <p
-            aria-live="polite"
-            className="pt-2 text-muted-foreground text-xs tabular-nums"
-          >
-            {saveStatus}
-          </p>
-        ) : null}
+    <div className="mx-auto w-full max-w-5xl space-y-8">
+      <header className="space-y-1">
+        <h1 className="font-bold text-3xl tracking-tight">Settings</h1>
+        <p className="text-muted-foreground">
+          How your brand is identified and where prompts are scanned.
+        </p>
       </header>
-      <div className="space-y-10">
-        <SettingsSection
-          description="Names that count as you in AI answers."
-          title="Brand"
-        >
-          <div className="space-y-4">
-            <div className="space-y-2">
+      <div className="space-y-8">
+        <div className="grid items-start gap-x-8 gap-y-6 md:grid-cols-2">
+          <div className="min-w-0 space-y-3">
+            <div className="space-y-1">
               <Label htmlFor={`${id}-name`}>Company name</Label>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-muted-foreground text-sm">
                 The primary name we match in answers.
               </p>
-              <Input
-                aria-invalid={nameMissing && savedAt !== null}
-                id={`${id}-name`}
-                onChange={(event) => setCompanyName(event.target.value)}
-                placeholder="Notra"
-                value={companyName}
-              />
             </div>
-            <GeoTagList
-              description="Other spellings, product names, or the bare domain."
-              id={`${id}-aliases`}
-              label="Aliases"
-              max={GEO_MAX_ALIASES}
-              onChange={setAliases}
-              placeholder="usenotra"
-              values={aliases}
+            <Input
+              aria-invalid={nameMissing && savedAt !== null}
+              id={`${id}-name`}
+              onChange={(event) => setCompanyName(event.target.value)}
+              placeholder="Notra"
+              value={companyName}
             />
           </div>
-        </SettingsSection>
-        <SettingsSection
-          description={
-            <>
-              Names to track against yours. Websites and colors live on the{" "}
-              <Link
-                className="font-medium text-foreground underline-offset-4 hover:underline"
-                href={`/${organizationSlug}/geo/competitors`}
-                prefetch={true}
-              >
-                Competitors
-              </Link>{" "}
-              page.
-            </>
-          }
-          meta={`${competitors.length}/${GEO_MAX_COMPETITORS}`}
-          title="Competitors"
-        >
+          <SettingsSection
+            description="English is always scanned. Add markets you want to measure beyond that."
+            title="Languages"
+          >
+            <GeoLanguagePicker
+              labeled={false}
+              onChange={setLanguages}
+              selected={languages}
+            />
+          </SettingsSection>
           <GeoTagList
+            description="Other spellings, product names, or the bare domain."
+            id={`${id}-aliases`}
+            label="Aliases"
+            max={GEO_MAX_ALIASES}
+            onChange={setAliases}
+            placeholder="usenotra"
+            values={aliases}
+          />
+          <GeoTagList
+            description={
+              <>
+                Names to track against yours. Manage websites and colors on the{" "}
+                <Link
+                  className="font-medium text-foreground underline-offset-4 hover:underline"
+                  href={`/${organizationSlug}/geo/competitors`}
+                  prefetch={true}
+                >
+                  Competitors
+                </Link>{" "}
+                page.
+              </>
+            }
             id={`${id}-competitors`}
             label="Competitors"
-            labeled={false}
             max={GEO_MAX_COMPETITORS}
             onChange={setCompetitors}
             placeholder="Competitor name"
             values={competitors}
           />
-        </SettingsSection>
+        </div>
         <SettingsSection
-          description="English is always scanned. Add markets you want to measure beyond that."
-          title="Languages"
-        >
-          <GeoLanguagePicker
-            labeled={false}
-            onChange={setLanguages}
-            selected={languages}
-          />
-        </SettingsSection>
-        <SettingsSection
-          description="Each enabled provider runs on every prompt."
+          description="Each enabled model runs on every prompt, grouped by its maker."
           title="Models"
         >
           <GeoEnginePicker
@@ -293,7 +260,7 @@ function SettingsSection({
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 space-y-4">
+    <section className="min-w-0 space-y-3">
       <div className="space-y-1">
         <h2 className="flex items-center gap-2 font-medium text-sm">
           {title}

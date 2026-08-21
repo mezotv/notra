@@ -137,7 +137,7 @@ describe("applyGeoZdrEngineFallback", () => {
       ["anthropic/claude-fable-5"],
       policy
     );
-    assert.ok(next.includes("anthropic/claude-opus-5"));
+    assert.ok(next.includes("anthropic/claude-sonnet-5"));
     assert.ok(!next.includes("anthropic/claude-fable-5"));
   });
 
@@ -167,7 +167,7 @@ describe("resolveGeoScanEngine", () => {
       policy,
       new Set()
     );
-    assert.equal(resolved?.engine, "anthropic/claude-opus-5");
+    assert.equal(resolved?.engine, "anthropic/claude-sonnet-5");
     assert.equal(resolved?.zdr, "required");
   });
 
@@ -177,7 +177,7 @@ describe("resolveGeoScanEngine", () => {
       policy,
       new Set([
         "anthropic/claude-opus-5",
-        "anthropic/claude-sonnet-4.6",
+        "anthropic/claude-sonnet-5",
         "anthropic/claude-haiku-4.5",
       ])
     );
