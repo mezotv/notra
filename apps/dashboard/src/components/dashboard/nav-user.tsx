@@ -88,11 +88,7 @@ export function NavUser() {
                 src={user.image ?? undefined}
               />
               <AvatarFallback className="flex items-center justify-center rounded-lg bg-foreground/10 font-medium text-[0.6875rem] text-foreground leading-none">
-                <span
-                  className={cn(userInitial === "J" && "-translate-x-[0.5px]")}
-                >
-                  {userInitial}
-                </span>
+                <span className="-translate-y-px">{userInitial}</span>
               </AvatarFallback>
             </Avatar>
           </button>
@@ -114,13 +110,7 @@ export function NavUser() {
                   src={user.image ?? undefined}
                 />
                 <AvatarFallback className="flex items-center justify-center rounded-lg bg-foreground/10 font-medium text-foreground text-xs leading-none">
-                  <span
-                    className={cn(
-                      userInitial === "J" && "-translate-x-[0.5px]"
-                    )}
-                  >
-                    {userInitial}
-                  </span>
+                  <span className="-translate-y-px">{userInitial}</span>
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">

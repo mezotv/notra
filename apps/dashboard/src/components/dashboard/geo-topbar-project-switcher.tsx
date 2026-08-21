@@ -67,7 +67,7 @@ export function GeoTopbarProjectSwitcher() {
           <DropdownMenuTrigger
             render={
               <button
-                className="-mx-1.5 flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-0.5 font-normal text-foreground outline-none transition-colors hover:bg-accent data-popup-open:bg-accent"
+                className="-mx-2 flex min-w-0 cursor-pointer items-center gap-2 rounded-md px-2 py-0.5 font-normal text-foreground outline-none transition-colors hover:bg-accent data-popup-open:bg-accent"
                 type="button"
               >
                 <ProjectLogo

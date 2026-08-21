@@ -13,7 +13,10 @@ import { AttachmentsSection } from "@/components/settings/attachments/attachment
 
 export default function SettingsAttachmentsPage() {
   return (
-    <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <PageContainer
+      className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6"
+      variant="default"
+    >
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">

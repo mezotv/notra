@@ -300,10 +300,10 @@ export function SiteHeader() {
   return (
     <header className="relative flex h-12 shrink-0 items-center gap-2 bg-muted transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
       <div className="flex h-full w-full items-center gap-1 px-4 lg:gap-2">
-        <div className="flex h-full min-w-0 flex-1 items-center gap-1 lg:gap-2">
-          <SidebarTrigger />
+        <div className="flex h-full min-w-0 flex-1 items-center gap-2">
+          <SidebarTrigger className="-mx-1.5" />
           <Breadcrumb className="min-w-0">
-            <BreadcrumbList className="min-w-0 flex-nowrap">
+            <BreadcrumbList className="min-w-0 flex-nowrap gap-2">
               {breadcrumbs}
             </BreadcrumbList>
           </Breadcrumb>
