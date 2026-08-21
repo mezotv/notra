@@ -27,7 +27,7 @@ import {
   useGeoTrafficPages,
 } from "@/lib/hooks/use-geo";
 import type { GeoPageClientProps } from "@/types/geo";
-import { GeoPageSkeleton } from "../skeleton";
+import { GeoTrafficSkeleton } from "./skeleton";
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
   const [projectParam] = useQueryState("project", parseAsString);
@@ -70,7 +70,7 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
   }, [ready, reduceMotion]);
 
   if (isPending) {
-    return <GeoPageSkeleton />;
+    return <GeoTrafficSkeleton />;
   }
 
   if (!settingsData?.settings) {

@@ -1,5 +1,5 @@
-import { GeoPageSkeleton } from "../skeleton";
+import { GeoTrafficSkeleton } from "./skeleton";
 
 export default function Loading() {
-  return <GeoPageSkeleton />;
+  return <GeoTrafficSkeleton />;
 }

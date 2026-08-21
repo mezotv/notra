@@ -1242,3 +1242,13 @@ export interface GeoPromptSuggestionsResponse {
 export interface GeoSuggestionIdInput {
   suggestionId: string;
 }
+
+export interface GeoSectionSkeletonProps {
+  eyebrow: string;
+  action?: ReactNode;
+  children: ReactNode;
+}
+
+export interface GeoTableSkeletonProps {
+  rows: number;
+}

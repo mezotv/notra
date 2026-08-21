@@ -26,7 +26,7 @@ import {
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
 import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
-import { GeoPageSkeleton } from "../skeleton";
+import { GeoPromptsSkeleton } from "./skeleton";
 
 interface PageClientProps {
   organizationSlug: string;
@@ -50,7 +50,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
   useHotkey("P", () => setAddOpen(true), { enabled: !addOpen });
 
   if (isPending) {
-    return <GeoPageSkeleton />;
+    return <GeoPromptsSkeleton />;
   }
 
   if (!settingsData?.settings) {
