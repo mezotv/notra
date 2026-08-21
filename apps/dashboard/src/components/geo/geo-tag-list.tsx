@@ -114,7 +114,7 @@ export function GeoTagList({
               onChange(addUniqueValues(values, `${draft} ${text}`, max));
               setDraft("");
             }}
-            placeholder={atLimit ? undefined : placeholder}
+            placeholder={atLimit || values.length > 0 ? undefined : placeholder}
             value={draft}
           />
         </div>

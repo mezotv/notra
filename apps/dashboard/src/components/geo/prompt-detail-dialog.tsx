@@ -15,7 +15,7 @@ import {
   motion,
   useReducedMotion,
 } from "motion/react";
-import { useId, useState } from "react";
+import { type KeyboardEvent, useId, useState } from "react";
 import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoPromptAnswerThread } from "@/components/geo/geo-prompt-answer-thread";
@@ -202,10 +202,40 @@ function PromptAnswerPage({
     setEngine(next);
   }
 
+  function handleArrowNavigation(event: KeyboardEvent<HTMLElement>) {
+    if (
+      results.length < 2 ||
+      (event.key !== "ArrowLeft" && event.key !== "ArrowRight") ||
+      event.altKey ||
+      event.ctrlKey ||
+      event.metaKey ||
+      event.shiftKey
+    ) {
+      return;
+    }
+
+    const target = event.target;
+    if (
+      target instanceof HTMLElement &&
+      (target.isContentEditable ||
+        target.closest("input, textarea, select, [contenteditable='true']"))
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    const delta = event.key === "ArrowLeft" ? -1 : 1;
+    selectEngine(
+      adjacentEngine(engines, active?.engine ?? engine, delta),
+      delta
+    );
+  }
+
   return (
     <ResponsiveDialogContent
       className="flex h-[min(calc(100vh-2rem),900px)] max-h-[calc(100vh-2rem)] w-full max-w-[min(calc(100vw-2rem),72rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-[min(calc(100vw-2rem),72rem)]"
       drawerClassName="h-[94svh] max-h-[94svh]"
+      onKeyDown={handleArrowNavigation}
     >
       <ResponsiveDialogHeader className="shrink-0 gap-3 overflow-x-hidden px-6 pt-5 pr-12 pb-3">
         <ResponsiveDialogTitle className="text-balance font-semibold text-xl leading-snug">

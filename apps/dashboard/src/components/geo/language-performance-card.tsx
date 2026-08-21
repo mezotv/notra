@@ -12,6 +12,11 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { GeoBar } from "@/components/geo/geo-bar";
@@ -83,14 +88,49 @@ function LanguageNameCell({
 function LanguageAddButton({
   language,
   disabled,
+  limitReached,
   pending,
   onAdd,
 }: {
   language: string;
   disabled: boolean;
+  limitReached: boolean;
   pending: boolean;
   onAdd: (language: string) => void;
 }) {
+  const content = pending ? (
+    <StatusSpinner />
+  ) : (
+    <HugeiconsIcon className="size-3.5" icon={PlusSignIcon} />
+  );
+
+  if (limitReached) {
+    return (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-disabled="true"
+              aria-label={`Add ${language}`}
+              className="shrink-0 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:active:scale-100"
+              onClick={(event) => event.preventDefault()}
+              size="sm"
+              type="button"
+              variant="outline"
+            />
+          }
+        >
+          {content}
+          Add
+        </TooltipTrigger>
+        <TooltipContent className="max-w-64">
+          You can track up to {GEO_MAX_LANGUAGES} additional languages. Remove
+          one in Languages to add {language}.
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
   return (
     <Button
       aria-label={`Add ${language}`}
@@ -101,11 +141,7 @@ function LanguageAddButton({
       type="button"
       variant="outline"
     >
-      {pending ? (
-        <StatusSpinner />
-      ) : (
-        <HugeiconsIcon className="size-3.5" icon={PlusSignIcon} />
-      )}
+      {content}
       Add
     </Button>
   );
@@ -172,6 +208,7 @@ function languagePerformanceColumns({
           <LanguageAddButton
             disabled={adding || atLimit}
             language={row.language}
+            limitReached={atLimit}
             onAdd={onAddLanguage}
             pending={pendingLanguage === row.language}
           />

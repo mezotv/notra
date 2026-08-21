@@ -110,12 +110,14 @@ export function CodeSnippet({
             <span className="min-w-0 flex-1" />
           )}
           {headerEnd}
-          <CopyCodeButton code={code} label="snippet" />
         </div>
       </div>
       <div className="-mt-3 relative min-w-0 rounded-lg border border-border/60 bg-background">
+        <div className="absolute end-1 top-1 z-10">
+          <CopyCodeButton code={code} label="snippet" />
+        </div>
         <pre
-          className="scrollbar-floating m-0 overflow-x-auto p-3 font-mono text-xs leading-relaxed"
+          className="scrollbar-floating m-0 overflow-x-auto p-3 pe-10 font-mono text-xs leading-relaxed"
           // biome-ignore lint/security/noDangerouslySetInnerHtml: sugar-high escapes the source before tokenizing
           dangerouslySetInnerHTML={{ __html: highlight(code) }}
         />

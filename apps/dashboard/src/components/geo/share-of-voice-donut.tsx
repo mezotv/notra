@@ -47,7 +47,9 @@ function ShareOfVoiceLegendRow({
         className="size-2 shrink-0 rounded-[0.0625rem]"
         style={{ backgroundColor: `var(--color-${row.slice}-0)` }}
       />
-      {row.brand === CHART_OTHER_SLICE_LABEL ? null : (
+      {row.brand === CHART_OTHER_SLICE_LABEL ? (
+        <span aria-hidden="true" className="size-4 shrink-0" />
+      ) : (
         <CompetitorLogo
           className="size-4 shrink-0"
           domain={findCompetitorDomain(competitors, row.brand)}
@@ -66,7 +68,7 @@ function ShareOfVoiceLegendRow({
     </>
   );
 
-  const className = "flex w-full items-center gap-1.5 text-xs";
+  const className = "flex w-full items-center gap-1.5 px-1 py-0.5 text-xs";
 
   if (!onClick) {
     return <div className={className}>{content}</div>;
@@ -76,7 +78,7 @@ function ShareOfVoiceLegendRow({
     <button
       className={cn(
         className,
-        "rounded-md px-1 py-0.5 text-left transition-colors hover:bg-muted/60"
+        "rounded-md text-left transition-colors hover:bg-muted/60"
       )}
       onClick={onClick}
       onPointerEnter={onPointerEnter}
