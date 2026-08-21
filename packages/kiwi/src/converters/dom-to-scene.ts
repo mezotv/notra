@@ -33,6 +33,9 @@ import { TextLayoutCache } from "../utils/text-layout";
 
 export type { BuildSceneFromElementOptions } from "../types/dom-to-scene";
 
+const SVG_DASH_SEPARATOR_RE = /[\s,]+/;
+const SVG_DASH_LENGTH_RE = /^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?(?:px)?$/i;
+
 let colorParseContext: CanvasRenderingContext2D | null | undefined;
 
 function parseColorChannel(value: string): number {
@@ -173,6 +176,31 @@ function svgStrokeJoin(value: string): string {
     default:
       return "MITER";
   }
+}
+
+export function parseSvgDasharray(value: string | null): number[] | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed || trimmed === "none") {
+    return undefined;
+  }
+
+  const pattern: number[] = [];
+  for (const part of trimmed.split(SVG_DASH_SEPARATOR_RE)) {
+    if (!SVG_DASH_LENGTH_RE.test(part)) {
+      return undefined;
+    }
+    const parsed = Number.parseFloat(part);
+    if (!Number.isFinite(parsed)) {
+      return undefined;
+    }
+    pattern.push(parsed);
+  }
+
+  if (!pattern.some((item) => item > 0)) {
+    return undefined;
+  }
+
+  return pattern.length % 2 === 0 ? pattern : [...pattern, ...pattern];
 }
 
 function svgStrokeWeight(shape: SvgShape): number | undefined {
@@ -665,6 +693,10 @@ function extractLayout(node: Node): LayoutNode | null {
         svgStroke ?? geomStyle.stroke,
         fallbackColor
       );
+      const strokeDasharray =
+        parseSvgDasharray(pathEl.getAttribute("stroke-dasharray")) ??
+        parseSvgDasharray(svg.getAttribute("stroke-dasharray")) ??
+        parseSvgDasharray(pathStyle.getPropertyValue("stroke-dasharray"));
       const fill = svgPaintValue(
         geomFill,
         svgFill ?? (stroke || geomStroke || svgStroke ? null : geomStyle.fill),
@@ -685,6 +717,7 @@ function extractLayout(node: Node): LayoutNode | null {
           y: ctm.b * p.x + ctm.d * p.y + ctm.f,
         })),
       }));
+      const strokeScale = Math.hypot(ctm.a, ctm.b) || 1;
       shapes.push({
         subpaths: transformed,
         fill,
@@ -936,6 +969,7 @@ function emitSvgSubpaths(
     fill,
     stroke,
     strokeCap: svgStrokeCap(shape.strokeLineCap),
+    dashPattern: shape.strokeDasharray ?? undefined,
     strokeJoin: svgStrokeJoin(shape.strokeLineJoin),
     strokeWeight: svgStrokeWeight(shape),
     network: {

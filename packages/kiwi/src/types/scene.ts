@@ -119,6 +119,7 @@ export interface AddVectorOptions {
   fill?: SolidFill | null;
   stroke?: SolidFill | null;
   strokeCap?: string;
+  dashPattern?: number[];
   strokeJoin?: string;
   strokeWeight?: number;
   network: VectorNetwork;
