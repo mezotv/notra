@@ -1,27 +1,24 @@
 "use client";
 
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   DEFAULT_LANGUAGE,
   SUPPORTED_LANGUAGES,
 } from "@notra/ai/constants/languages";
+import { Badge } from "@notra/ui/components/ui/badge";
 import {
   Combobox,
-  ComboboxChip,
-  ComboboxChips,
-  ComboboxChipsInput,
   ComboboxContent,
   ComboboxEmpty,
+  ComboboxInput,
   ComboboxItem,
   ComboboxList,
-  useComboboxAnchor,
 } from "@notra/ui/components/ui/combobox";
+import { useState } from "react";
 import { Twemoji } from "@/components/geo/twemoji";
 import { GEO_LANGUAGE_FLAGS, GEO_MAX_LANGUAGES } from "@/constants/geo";
 import type { GeoLanguagePickerProps } from "@/types/geo";
-
-const EXTRA_LANGUAGES = SUPPORTED_LANGUAGES.filter(
-  (language) => language !== DEFAULT_LANGUAGE
-);
 
 function LanguageLabel({ language }: { language: string }) {
   return (
@@ -42,9 +39,12 @@ export function GeoLanguagePicker({
   disabled = false,
   labeled = true,
 }: GeoLanguagePickerProps) {
-  const anchor = useComboboxAnchor();
   const atLimit = selected.length >= GEO_MAX_LANGUAGES;
-  const items = atLimit ? selected : EXTRA_LANGUAGES;
+  const available = SUPPORTED_LANGUAGES.filter(
+    (language) => !selected.includes(language)
+  );
+  const lastLanguage = selected.length <= 1;
+  const [draft, setDraft] = useState<string | null>(null);
 
   return (
     <div className="w-full min-w-0 space-y-2">
@@ -52,49 +52,59 @@ export function GeoLanguagePicker({
         <div className="space-y-1">
           <p className="font-medium text-sm">Languages</p>
           <p className="text-muted-foreground text-xs">
-            {DEFAULT_LANGUAGE} is always scanned. Add up to {GEO_MAX_LANGUAGES}{" "}
-            more.
+            {DEFAULT_LANGUAGE} is on by default. Scan up to {GEO_MAX_LANGUAGES}{" "}
+            languages.
           </p>
         </div>
       ) : null}
-      <div className="w-full min-w-0" ref={anchor}>
-        <Combobox
-          disabled={disabled}
-          items={items}
-          multiple
-          onValueChange={(value) => {
-            const next = Array.isArray(value) ? value : [];
-            onChange(next.slice(0, GEO_MAX_LANGUAGES));
-          }}
-          value={selected}
-        >
-          <ComboboxChips className="w-full min-w-0 has-data-[slot=combobox-chip]:px-2.5">
-            {selected.map((language) => (
-              <ComboboxChip key={language}>
+      <Combobox
+        disabled={disabled || atLimit}
+        items={available}
+        onValueChange={(value) => {
+          setDraft(null);
+          if (!value) {
+            return;
+          }
+          onChange([...selected, value].slice(0, GEO_MAX_LANGUAGES));
+        }}
+        value={draft}
+      >
+        <ComboboxInput
+          aria-label="Add a language"
+          className="w-full"
+          placeholder={atLimit ? "Language limit reached" : "Add a language"}
+        />
+        <ComboboxContent>
+          <ComboboxEmpty>No languages match</ComboboxEmpty>
+          <ComboboxList>
+            {available.map((language) => (
+              <ComboboxItem key={language} value={language}>
                 <LanguageLabel language={language} />
-              </ComboboxChip>
+              </ComboboxItem>
             ))}
-            {atLimit ? null : (
-              <ComboboxChipsInput
-                aria-label="Add a language"
-                placeholder="Add a language"
-              />
-            )}
-          </ComboboxChips>
-          {atLimit ? null : (
-            <ComboboxContent anchor={anchor.current}>
-              <ComboboxEmpty>No languages match</ComboboxEmpty>
-              <ComboboxList>
-                {EXTRA_LANGUAGES.map((language) => (
-                  <ComboboxItem key={language} value={language}>
-                    <LanguageLabel language={language} />
-                  </ComboboxItem>
-                ))}
-              </ComboboxList>
-            </ComboboxContent>
-          )}
-        </Combobox>
-      </div>
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
+      {selected.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {selected.map((language) => (
+            <Badge className="gap-1 pr-1" key={language} variant="secondary">
+              <LanguageLabel language={language} />
+              <button
+                aria-label={`Remove ${language}`}
+                className="cursor-pointer rounded-sm p-0.5 hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={disabled || lastLanguage}
+                onClick={() =>
+                  onChange(selected.filter((item) => item !== language))
+                }
+                type="button"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} size={12} />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

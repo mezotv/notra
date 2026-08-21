@@ -60,6 +60,7 @@ import {
   toNullableNumber,
   toTrackedPrompt,
 } from "@/lib/geo/mappers";
+import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
 import {
   ensureGeoProject,
   geoCheckScope,
@@ -136,9 +137,10 @@ export const loadGeoSettings = Effect.fn("geo.settings")(function* (
       )
     : null;
 
+  const catalog = yield* Effect.promise(() => loadGeoModelCatalog());
   const response: GeoSettingsResponse = {
     configured: isTinybirdConfigured(),
-    settings: row ? toGeoSettings(row) : null,
+    settings: row ? toGeoSettings(row, catalog) : null,
   };
   return response;
 });
@@ -391,9 +393,10 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
   );
 
   const row = rows.at(0);
+  const catalog = yield* Effect.promise(() => loadGeoModelCatalog());
   const response: GeoSettingsResponse = {
     configured: isTinybirdConfigured(),
-    settings: row ? toGeoSettings(row) : null,
+    settings: row ? toGeoSettings(row, catalog) : null,
   };
   return response;
 });
@@ -829,8 +832,9 @@ export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
     return emptyResponse;
   }
 
+  const catalog = yield* Effect.promise(() => loadGeoModelCatalog());
   const autoPrompts = buildGeoPrompts(
-    toGeoSettings(settingsRow),
+    toGeoSettings(settingsRow, catalog),
     brand
       ? {
           companyDescription: brand.companyDescription,

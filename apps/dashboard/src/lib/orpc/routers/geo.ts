@@ -26,6 +26,7 @@ import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { generateGeoFromWebsite } from "@/lib/geo/discover";
 import type { GeoRouterError } from "@/lib/geo/errors";
 import { toTrackedPrompt } from "@/lib/geo/mappers";
+import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
 import {
   createGeoPrompt,
   deleteGeoCompetitor,
@@ -254,6 +255,7 @@ async function acceptSuggestionInTx(
   return toTrackedPrompt(promptRow);
 }
 export const geoRouter = {
+  modelCatalog: authorizedProcedure.handler(() => loadGeoModelCatalog()),
   settings: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => loadGeoSettings(input))),

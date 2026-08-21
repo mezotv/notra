@@ -1,3 +1,4 @@
+import { DEFAULT_LANGUAGE } from "@notra/ai/constants/languages";
 import { gateway } from "@notra/ai/gateway";
 import { db } from "@notra/db/drizzle";
 import {
@@ -35,6 +36,7 @@ import {
 } from "@/lib/geo/engines";
 import { GeoScanError } from "@/lib/geo/errors";
 import { toGeoSettings } from "@/lib/geo/mappers";
+import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
 import { captureModelUsageShare } from "@/lib/geo/model-usage";
 import { buildGeoPrompts, customPromptScanId } from "@/lib/geo/prompts";
 import { markGeoScanFinished, withGeoScanRun } from "@/lib/geo/scan-status";
@@ -47,6 +49,7 @@ import type {
   GeoCheckTask,
   GeoGroundedEngine,
   GeoJudgeResult,
+  GeoModelGateway,
   GeoPromptDefinition,
   GeoScanResult,
   GeoSequenceDefinition,
@@ -55,7 +58,6 @@ import type {
 } from "@/types/geo";
 import {
   resolveGeoEngineGateway,
-  resolveGeoScanEngine,
   resolveGeoZdrMode,
 } from "@/utils/geo-engines";
 import { isGeoScanRunning } from "@/utils/geo-scan";
@@ -105,7 +107,8 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
   organizationId: string,
   engine: string,
   promptText: string,
-  zdr: GeoZdrMode
+  zdr: GeoZdrMode,
+  gatewayPin: GeoModelGateway | undefined
 ) {
   const result = yield* Effect.tryPromise({
     try: () =>
@@ -113,7 +116,7 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
         model: gateway(engine, {
           organizationId,
           zdr,
-          gateway: resolveGeoEngineGateway(engine),
+          gateway: gatewayPin,
         }),
         prompt: promptText,
         system: GEO_ANSWER_SYSTEM_PROMPT,
@@ -234,7 +237,8 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
         context.organizationId,
         task.engine,
         task.prompt.text,
-        task.zdr
+        task.zdr,
+        resolveGeoEngineGateway(context.catalog, task.engine)
       );
   const judged = yield* judgeAnswer(context, task.prompt.text, answer);
 
@@ -265,8 +269,9 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
   scanId: string
 ) {
   const organizationId = settingsRow.organizationId;
+  const catalog = yield* Effect.promise(() => loadGeoModelCatalog());
 
-  const settings = toGeoSettings(settingsRow);
+  const settings = toGeoSettings(settingsRow, catalog);
 
   const brand = yield* Effect.tryPromise({
     try: () =>
@@ -317,6 +322,7 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
     organizationId,
     projectId: settingsRow.projectId,
     scanId,
+    catalog,
     capturedAt: new Date(),
     companyName: settings.companyName,
     aliases: settings.aliases,
@@ -327,37 +333,36 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
     nonZdrApprovedEngines: settings.nonZdrApprovedEngines,
   };
   const trackedEngines: { engine: string; zdr: GeoZdrMode }[] = [];
-  const occupied = new Set<string>();
-  for (const engine of settings.engines) {
-    const resolved = resolveGeoScanEngine(engine, zdrPolicy, occupied);
-    if (resolved === null) {
+  for (const engine of new Set(settings.engines)) {
+    const zdr = resolveGeoZdrMode(catalog, engine, zdrPolicy);
+    if (zdr === null) {
       yield* Effect.logWarning(
         `geo: skipping ${engine} — no zero-data-retention host and not approved`
       );
       continue;
     }
-    if (resolved.engine !== engine) {
-      yield* Effect.logWarning(
-        `geo: falling back from ${engine} to ${resolved.engine} — no zero-data-retention host`
-      );
-    }
-    if (occupied.has(resolved.engine)) {
-      continue;
-    }
-    occupied.add(resolved.engine);
-    trackedEngines.push(resolved);
+    trackedEngines.push({ engine, zdr });
   }
+  const scanEnglish = settings.languages.includes(DEFAULT_LANGUAGE);
   const tasks: GeoCheckTask[] = [];
-  for (const { engine, zdr } of trackedEngines) {
-    for (const prompt of prompts) {
-      tasks.push({ engine, grounded: null, prompt, language: "English", zdr });
+  if (scanEnglish) {
+    for (const { engine, zdr } of trackedEngines) {
+      for (const prompt of prompts) {
+        tasks.push({
+          engine,
+          grounded: null,
+          prompt,
+          language: DEFAULT_LANGUAGE,
+          zdr,
+        });
+      }
     }
   }
 
   const groundedEngines: { grounded: GeoGroundedEngine; zdr: GeoZdrMode }[] =
     [];
   for (const grounded of resolveGroundedEngines()) {
-    const zdr = resolveGeoZdrMode(grounded.model, zdrPolicy);
+    const zdr = resolveGeoZdrMode(catalog, grounded.model, zdrPolicy);
     if (zdr === null) {
       yield* Effect.logWarning(
         `geo: skipping ${grounded.key} — no zero-data-retention host and not approved`
@@ -366,21 +371,23 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
     }
     groundedEngines.push({ grounded, zdr });
   }
-  const groundedPrompts = prompts.slice(0, GEO_GROUNDED_MAX_PROMPTS);
+  const groundedPrompts = scanEnglish
+    ? prompts.slice(0, GEO_GROUNDED_MAX_PROMPTS)
+    : [];
   for (const { grounded, zdr } of groundedEngines) {
     for (const prompt of groundedPrompts) {
       tasks.push({
         engine: grounded.key,
         grounded,
         prompt,
-        language: "English",
+        language: DEFAULT_LANGUAGE,
         zdr,
       });
     }
   }
 
   const extraLanguages = settings.languages
-    .filter((language) => language !== "English")
+    .filter((language) => language !== DEFAULT_LANGUAGE)
     .slice(0, GEO_MAX_LANGUAGES);
   const localizedByLanguage = yield* Effect.forEach(
     extraLanguages,
@@ -447,9 +454,15 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
       new GeoScanError({ message: "Failed to load GEO sequences", cause }),
   });
 
-  const sequencePairs = sequenceRows.flatMap((sequence) =>
-    groundedEngines.map(({ grounded, zdr }) => ({ sequence, grounded, zdr }))
-  );
+  const sequencePairs = scanEnglish
+    ? sequenceRows.flatMap((sequence) =>
+        groundedEngines.map(({ grounded, zdr }) => ({
+          sequence,
+          grounded,
+          zdr,
+        }))
+      )
+    : [];
   const sequenceResults = yield* Effect.forEach(
     sequencePairs,
     (pair) =>

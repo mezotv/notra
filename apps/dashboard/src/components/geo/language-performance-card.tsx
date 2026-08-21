@@ -40,7 +40,7 @@ import type {
 import { formatMentionRate } from "@/utils/geo-charts";
 import {
   buildLanguagePerformanceRows,
-  extraGeoLanguages,
+  trackedGeoLanguages,
   withAddedGeoLanguage,
 } from "@/utils/geo-language-rows";
 import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
@@ -230,11 +230,11 @@ export function LanguagePerformanceCard({
   const [languagesOpen, setLanguagesOpen] = useState(false);
   const [languageToAdd, setLanguageToAdd] = useState<string>();
   const upsert = useGeoSettingsUpsert(organizationId);
-  const savedExtras = extraGeoLanguages(settings.languages);
+  const savedExtras = trackedGeoLanguages(settings.languages);
   const savedExtraSet = new Set(savedExtras);
   const configuredLanguages =
     upsert.isPending && upsert.variables
-      ? extraGeoLanguages(upsert.variables.languages)
+      ? trackedGeoLanguages(upsert.variables.languages)
       : savedExtras;
   const pendingLanguage =
     configuredLanguages.find((language) => !savedExtraSet.has(language)) ??

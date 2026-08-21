@@ -13,10 +13,10 @@ import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/button";
 import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
+import { GEO_DEFAULT_ENGINE_IDS } from "@/constants/geo-model-catalog";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import type { GeoSubDialogProps } from "@/types/geo";
-import { resolveTrackedEngines } from "@/utils/geo-engines";
-import { extraGeoLanguages } from "@/utils/geo-language-rows";
+import { trackedGeoLanguages } from "@/utils/geo-language-rows";
 
 export function GeoLanguagesDialog({
   open,
@@ -43,7 +43,7 @@ function GeoLanguagesDialogBody({
 }: Omit<GeoSubDialogProps, "open">) {
   const upsert = useGeoSettingsUpsert(organizationId);
   const [selected, setSelected] = useState<string[]>(() =>
-    extraGeoLanguages(settings?.languages ?? [])
+    trackedGeoLanguages(settings?.languages ?? [])
   );
 
   const handleSave = () => {
@@ -54,7 +54,7 @@ function GeoLanguagesDialogBody({
         aliases: settings?.aliases ?? [],
         competitors: settings?.competitors ?? [],
         languages: selected,
-        engines: resolveTrackedEngines(settings?.engines),
+        engines: settings?.engines ?? [...GEO_DEFAULT_ENGINE_IDS],
         enforceZdr: settings?.enforceZdr ?? true,
         nonZdrApprovedEngines: settings?.nonZdrApprovedEngines ?? [],
         enabled,

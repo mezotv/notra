@@ -371,12 +371,9 @@ export interface GeoZdrPolicy {
 }
 
 /** Engine a scan will actually call after ZDR skip/fallback. */
-export interface GeoResolvedScanEngine {
-  engine: string;
-  zdr: GeoZdrMode;
-}
 
 export interface GeoCheckContext {
+  catalog: GeoModelCatalog;
   organizationId: string;
   projectId: string;
   scanId: string;
@@ -995,8 +992,8 @@ export interface GeoOnboardingOverlayProps {
 
 export interface GeoSettingsFormProps {
   organizationId: string;
-  organizationSlug: string;
   settings: GeoSettings | null;
+  catalog: GeoModelCatalog;
 }
 
 export interface GeoSubDialogProps {
@@ -1022,6 +1019,7 @@ export interface GeoTagListProps {
 }
 
 export interface GeoEnginePickerProps {
+  catalog: GeoModelCatalog;
   selected: string[];
   onChange: (values: string[]) => void;
   enforceZdr: boolean;
@@ -1054,8 +1052,6 @@ export type GeoModelGateway = "vercel" | "openrouter";
 export interface GeoModelProvider {
   id: GeoModelProviderId;
   label: string;
-  /** Short example list shown under the provider name. */
-  hint: string;
   /** Key into GEO_BRAND_LABELS / icon rules. */
   brand: string;
   /** Featured providers are visible without expanding "more providers". */
@@ -1073,6 +1069,24 @@ export interface GeoModelCatalogEntry {
   default: boolean;
   /** Gateways that serve the model; OpenRouter-only models are pinned. */
   gateways: readonly GeoModelGateway[];
+}
+
+export interface GeoModelCatalog {
+  providers: GeoModelProvider[];
+  models: GeoModelCatalogEntry[];
+}
+
+/** One model as published by the Vercel AI Gateway feed. */
+export interface GeoGatewayModel {
+  id: string;
+  name: string;
+  owned_by: string;
+  type: string;
+  zdr: GeoModelZdr;
+  /** Unix seconds. */
+  released: number;
+  deprecated_at?: number | string | null;
+  tags?: string[];
 }
 
 /** How strictly a scan asks the router for zero data retention. */
@@ -1383,4 +1397,10 @@ export interface GeoSectionSkeletonProps {
 
 export interface GeoTableSkeletonProps {
   rows: number;
+}
+
+export interface GeoSettingsSkeletonSectionProps {
+  title: string;
+  description: string;
+  children: ReactNode;
 }

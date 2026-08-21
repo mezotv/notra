@@ -1,84 +1,63 @@
-import type {
-  GeoModelCatalogEntry,
-  GeoModelProvider,
-  GeoModelProviderId,
-} from "@/types/geo";
+import type { GeoModelCatalogEntry, GeoModelProvider } from "@/types/geo";
 
 /**
- * Curated model catalog for GEO scans.
- *
- * Ids, `zdr` and `released` mirror the Vercel AI Gateway feed
- * (https://ai-gateway.vercel.sh/v1/models). `zdr` means "has at least one
- * zero-data-retention host": `all` = every host, `some` = some hosts (the
- * gateway routes to them when ZDR is requested), `none` = no ZDR host — the
- * model can only run when the project explicitly approves it.
- *
- * TODO(geo): replace with a synced DB catalog (Vercel feed + OpenRouter for
- * OpenRouter-only models), admin UI in the console and "new model dropped"
- * notifications. When adding an OpenRouter-only model set
- * `gateways: ["openrouter"]` and mirror it in `VERCEL_UNSUPPORTED_MODELS`
- * (`@notra/ai/constants/router`).
+ * Providers surfaced in the GEO model picker. The live model list comes from
+ * the Vercel AI Gateway feed (see `lib/geo/model-catalog.ts`); this file only
+ * holds presentation config plus a seed snapshot used when the feed is
+ * unreachable.
  */
 export const GEO_MODEL_PROVIDERS: readonly GeoModelProvider[] = [
   {
     id: "anthropic",
     label: "Anthropic",
-    hint: "Claude Opus 5, Sonnet 5, Haiku 4.5",
     brand: "claude",
     featured: true,
   },
   {
     id: "openai",
     label: "OpenAI",
-    hint: "GPT-5.6 Sol, Terra, Luna",
     brand: "openai",
     featured: true,
   },
   {
     id: "google",
     label: "Google",
-    hint: "Gemini 3 Flash, 3.1 Pro",
     brand: "gemini",
     featured: true,
   },
   {
     id: "moonshotai",
     label: "Moonshot AI",
-    hint: "Kimi K3, K2.6",
     brand: "moonshot",
     featured: true,
   },
   {
     id: "meta",
     label: "Meta",
-    hint: "Muse Spark 1.1, 1.2",
     brand: "meta",
     featured: false,
   },
   {
     id: "zai",
     label: "Z.AI",
-    hint: "GLM 5.1, 5.2, 5.3",
     brand: "zai",
     featured: false,
   },
   {
     id: "spacexai",
     label: "xAI",
-    hint: "Grok 4.5, 4.6",
     brand: "grok",
     featured: false,
   },
   {
     id: "deepseek",
     label: "DeepSeek",
-    hint: "V4 Pro, V4 Flash",
     brand: "deepseek",
     featured: false,
   },
 ];
 
-export const GEO_MODEL_CATALOG = [
+export const GEO_MODEL_CATALOG_SEED: readonly GeoModelCatalogEntry[] = [
   // Anthropic
   {
     id: "anthropic/claude-opus-5",
@@ -303,38 +282,23 @@ export const GEO_MODEL_CATALOG = [
     default: false,
     gateways: ["vercel", "openrouter"],
   },
-] as const satisfies readonly GeoModelCatalogEntry[];
+];
 
-export type GeoEngineId = (typeof GEO_MODEL_CATALOG)[number]["id"];
+/** Engines scanned when a project has not picked its own set. */
+export const GEO_DEFAULT_ENGINE_IDS: readonly string[] =
+  GEO_MODEL_CATALOG_SEED.filter((entry) => entry.default).map(
+    (entry) => entry.id
+  );
 
-const catalogById = new Map<string, GeoModelCatalogEntry>(
-  GEO_MODEL_CATALOG.map((entry) => [entry.id, entry])
-);
-
-const catalogByProvider = new Map<GeoModelProviderId, GeoModelCatalogEntry[]>();
-for (const entry of GEO_MODEL_CATALOG) {
-  const models = catalogByProvider.get(entry.provider);
-  if (models) {
-    models.push(entry);
-  } else {
-    catalogByProvider.set(entry.provider, [entry]);
-  }
-}
-
-export function getGeoModelCatalogEntry(
-  engine: string
-): GeoModelCatalogEntry | undefined {
-  return catalogById.get(engine);
-}
-
-/** True when the model has at least one zero-data-retention host. */
-export function isGeoEngineZdrCapable(engine: string): boolean {
-  const entry = catalogById.get(engine);
-  return entry ? entry.zdr !== "none" : true;
-}
-
-export function geoModelsForProvider(
-  providerId: GeoModelProviderId
-): readonly GeoModelCatalogEntry[] {
-  return catalogByProvider.get(providerId) ?? [];
-}
+export const GEO_MODEL_FEED_URL = "https://ai-gateway.vercel.sh/v1/models";
+export const GEO_MODEL_FEED_REVALIDATE_SECONDS = 3600;
+/** Models shown per provider before "Show x other models". */
+export const GEO_PICKER_VISIBLE_MODELS = 3;
+/** Newest models kept per provider; defaults are always included. */
+export const GEO_MODELS_PER_PROVIDER = 10;
+export const GEO_MODEL_EXCLUDED_TAGS: ReadonlySet<string> = new Set([
+  "image-generation",
+  "video-generation",
+]);
+/** Host-speed variants and previews duplicate a model's answers. */
+export const GEO_MODEL_EXCLUDED_ID_PATTERN = /(-fast|-beta|-contributor)$/;

@@ -19,31 +19,32 @@ const EMPTY_LANGUAGE_POINT = {
   avgPosition: null,
 } as const;
 
-export function extraGeoLanguages(languages: readonly string[]): string[] {
-  const extras: string[] = [];
+/** Languages a project scans, deduped and capped. Empty falls back to English. */
+export function trackedGeoLanguages(languages: readonly string[]): string[] {
+  const tracked: string[] = [];
   const seen = new Set<string>();
   for (const language of languages) {
-    if (language === DEFAULT_LANGUAGE || seen.has(language)) {
+    if (seen.has(language) || !SUPPORTED_LANGUAGE_SET.has(language)) {
       continue;
     }
     seen.add(language);
-    extras.push(language);
-    if (extras.length >= GEO_MAX_LANGUAGES) {
+    tracked.push(language);
+    if (tracked.length >= GEO_MAX_LANGUAGES) {
       break;
     }
   }
-  return extras;
+  return tracked.length > 0 ? tracked : [DEFAULT_LANGUAGE];
 }
 
 function canAddGeoLanguage(
   configuredLanguages: readonly string[],
   language: string
 ): boolean {
-  if (language === DEFAULT_LANGUAGE || !SUPPORTED_LANGUAGE_SET.has(language)) {
+  if (!SUPPORTED_LANGUAGE_SET.has(language)) {
     return false;
   }
-  const extras = extraGeoLanguages(configuredLanguages);
-  return extras.length < GEO_MAX_LANGUAGES && !extras.includes(language);
+  const tracked = trackedGeoLanguages(configuredLanguages);
+  return tracked.length < GEO_MAX_LANGUAGES && !tracked.includes(language);
 }
 
 export function withAddedGeoLanguage(
@@ -53,21 +54,19 @@ export function withAddedGeoLanguage(
   if (!canAddGeoLanguage(configuredLanguages, language)) {
     return null;
   }
-  return [...extraGeoLanguages(configuredLanguages), language];
+  return [...trackedGeoLanguages(configuredLanguages), language];
 }
 
+/** Null when the language is not tracked or is the last one left. */
 export function withRemovedGeoLanguage(
   configuredLanguages: readonly string[],
   language: string
 ): string[] | null {
-  if (language === DEFAULT_LANGUAGE) {
+  const tracked = trackedGeoLanguages(configuredLanguages);
+  if (!tracked.includes(language) || tracked.length <= 1) {
     return null;
   }
-  const extras = extraGeoLanguages(configuredLanguages);
-  if (!extras.includes(language)) {
-    return null;
-  }
-  return extras.filter((item) => item !== language);
+  return tracked.filter((item) => item !== language);
 }
 
 function toTrackedRow(
@@ -93,19 +92,17 @@ export function buildLanguagePerformanceRows({
   configuredLanguages: readonly string[];
   slotCount: number;
 }): LanguagePerformanceRow[] {
-  const extras = extraGeoLanguages(configuredLanguages);
+  const configured = trackedGeoLanguages(configuredLanguages);
   const tracked: LanguagePerformanceTrackedRow[] = points.map(toTrackedRow);
   const seen = new Set(tracked.map((row) => row.language));
 
-  for (const language of extras) {
+  for (const language of configured) {
     if (seen.has(language)) {
       continue;
     }
     seen.add(language);
     tracked.push(emptyTrackedRow(language));
   }
-
-  seen.add(DEFAULT_LANGUAGE);
 
   const remainingSlots = Math.max(0, slotCount - tracked.length);
   if (remainingSlots === 0) {

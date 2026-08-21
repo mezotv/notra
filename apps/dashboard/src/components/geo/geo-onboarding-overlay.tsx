@@ -92,7 +92,7 @@ export function GeoOnboardingOverlay({
               <Button
                 className="text-muted-foreground"
                 nativeButton={false}
-                render={<Link href={manualHref} />}
+                render={<Link href={manualHref} prefetch={true} />}
                 size="sm"
                 variant="link"
               >

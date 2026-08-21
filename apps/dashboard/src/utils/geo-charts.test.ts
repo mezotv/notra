@@ -107,8 +107,8 @@ describe("buildMentionTrendRows", () => {
 describe("engineVariantLabel", () => {
   test("strips the family prefix from Claude model names", () => {
     assert.equal(
-      engineVariantLabel("anthropic/claude-sonnet-4.6", "Claude"),
-      "Sonnet"
+      engineVariantLabel("anthropic/claude-sonnet-5", "Claude"),
+      "Sonnet 5"
     );
   });
 

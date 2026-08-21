@@ -1,8 +1,5 @@
 import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
-import {
-  GEO_MODEL_CATALOG,
-  type GeoEngineId,
-} from "@/constants/geo-model-catalog";
+import { GEO_MODEL_CATALOG_SEED } from "@/constants/geo-model-catalog";
 import type {
   GeoGroundedEngine,
   GeoIngestFramework,
@@ -14,18 +11,8 @@ import type {
   GeoTrafficLogVisitorOption,
 } from "@/types/geo";
 
-export type { GeoEngineId } from "@/constants/geo-model-catalog";
-
-/** All engines a project may track, in catalog (provider) order. */
-export const GEO_ENGINES: readonly GeoEngineId[] = GEO_MODEL_CATALOG.map(
-  (entry) => entry.id
-);
-
-export const GEO_ENGINE_SET: ReadonlySet<string> = new Set(GEO_ENGINES);
-
-/** Engines scanned when a project has not picked its own set. */
-export const GEO_DEFAULT_ENGINES: readonly GeoEngineId[] =
-  GEO_MODEL_CATALOG.filter((entry) => entry.default).map((entry) => entry.id);
+export const GEO_MAX_ENGINES = 64;
+export const GEO_MODEL_CATALOG_STALE_MS = 60 * 60 * 1000;
 
 /** Projects below Pro cannot enforce ZDR; the server forces it off. */
 export const GEO_ZDR_FEATURE_LABEL = "Zero data retention";
@@ -97,7 +84,7 @@ const groundedEngineLabels = Object.fromEntries(
 );
 
 const catalogEngineLabels = Object.fromEntries(
-  GEO_MODEL_CATALOG.map((entry) => [entry.id, entry.label])
+  GEO_MODEL_CATALOG_SEED.map((entry) => [entry.id, entry.label])
 );
 
 export const GEO_ENGINE_LABELS: Record<string, string> = {
@@ -431,7 +418,7 @@ export const GEO_MAX_ALIASES = 10;
 export const GEO_MAX_COMPETITORS = 25;
 /** Debounce before persisting GEO settings. Short enough for toggles. */
 export const GEO_SETTINGS_AUTO_SAVE_MS = 800;
-export const GEO_MAX_LANGUAGES = 3;
+export const GEO_MAX_LANGUAGES = 4;
 export const GEO_LANGUAGE_MAX_PROMPTS = 5;
 export const GEO_LANGUAGE_GROUNDED_MAX_PROMPTS = 3;
 export const GEO_TRANSLATION_MAX_TOKENS = 2000;

@@ -4,6 +4,7 @@ import type {
   GeoCompetitor,
   GeoCompetitorRow,
   GeoEngineCoverage,
+  GeoModelCatalog,
   GeoModelUsageRow,
   GeoProject,
   GeoProjectRow,
@@ -17,6 +18,7 @@ import type {
 } from "@/types/geo";
 import { toGeoVisitorType } from "@/utils/ai-traffic";
 import { resolveTrackedEngines } from "@/utils/geo-engines";
+import { trackedGeoLanguages } from "@/utils/geo-language-rows";
 import { formatModelLabel } from "@/utils/geo-model-display";
 import { isGeoScanRunning } from "@/utils/geo-scan";
 
@@ -29,7 +31,10 @@ export function toGeoProject(row: GeoProjectRow): GeoProject {
   };
 }
 
-export function toGeoSettings(row: GeoSettingsRow): GeoSettings {
+export function toGeoSettings(
+  row: GeoSettingsRow,
+  catalog: GeoModelCatalog
+): GeoSettings {
   const scanStartedAt = row.scanStartedAt?.toISOString() ?? null;
   const lastScanAt = row.lastScanAt?.toISOString() ?? null;
   return {
@@ -39,8 +44,8 @@ export function toGeoSettings(row: GeoSettingsRow): GeoSettings {
     companyName: row.companyName,
     aliases: row.aliases,
     competitors: row.competitors,
-    languages: row.languages ?? [],
-    engines: resolveTrackedEngines(row.engines),
+    languages: trackedGeoLanguages(row.languages ?? []),
+    engines: resolveTrackedEngines(catalog, row.engines),
     enforceZdr: row.enforceZdr,
     nonZdrApprovedEngines: row.nonZdrApprovedEngines,
     enabled: row.enabled,

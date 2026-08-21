@@ -11,16 +11,16 @@ describe("formatModelLabel", () => {
   });
 
   test("prefers curated engine labels for tracked engines", () => {
-    assert.equal(formatModelLabel("openai/gpt-5.4"), "ChatGPT");
+    assert.equal(formatModelLabel("openai/gpt-5.4"), "GPT-5.4");
     assert.equal(formatModelLabel("openai/gpt-5.4-mini"), "GPT-5.4 mini");
     assert.equal(
-      formatModelLabel("anthropic/claude-sonnet-4.6"),
-      "Claude Sonnet"
+      formatModelLabel("anthropic/claude-sonnet-5"),
+      "Claude Sonnet 5"
     );
-    assert.equal(formatModelLabel("anthropic/claude-opus-5"), "Claude Opus");
+    assert.equal(formatModelLabel("anthropic/claude-opus-5"), "Claude Opus 5");
     assert.equal(
       formatModelLabel("anthropic/claude-haiku-4.5"),
-      "Claude Haiku"
+      "Claude Haiku 4.5"
     );
     assert.equal(
       formatModelLabel("anthropic/claude-sonnet-4.6-grounded"),

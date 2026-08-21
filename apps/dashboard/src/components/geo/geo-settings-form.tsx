@@ -4,40 +4,33 @@ import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { useAsyncDebouncer } from "@tanstack/react-pacer";
-import Link from "next/link";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { GeoEnginePicker } from "@/components/geo/geo-engine-picker";
 import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
 import { GeoTagList } from "@/components/geo/geo-tag-list";
-import {
-  GEO_MAX_ALIASES,
-  GEO_MAX_COMPETITORS,
-  GEO_SETTINGS_AUTO_SAVE_MS,
-} from "@/constants/geo";
+import { GEO_MAX_ALIASES, GEO_SETTINGS_AUTO_SAVE_MS } from "@/constants/geo";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { useIsProPlan } from "@/lib/hooks/use-plan";
 import type { GeoSettingsFormProps, GeoSettingsUpsertInput } from "@/types/geo";
 import { resolveTrackedEngines } from "@/utils/geo-engines";
-import { extraGeoLanguages } from "@/utils/geo-language-rows";
+import { trackedGeoLanguages } from "@/utils/geo-language-rows";
 
 export function GeoSettingsForm({
   organizationId,
-  organizationSlug,
   settings,
+  catalog,
 }: GeoSettingsFormProps) {
   const id = useId();
   const [companyName, setCompanyName] = useState(
     () => settings?.companyName ?? ""
   );
   const [aliases, setAliases] = useState(() => settings?.aliases ?? []);
-  const [competitors, setCompetitors] = useState(
-    () => settings?.competitors ?? []
-  );
+  const [competitors] = useState(() => settings?.competitors ?? []);
   const [languages, setLanguages] = useState(() =>
-    extraGeoLanguages(settings?.languages ?? [])
+    trackedGeoLanguages(settings?.languages ?? [])
   );
   const [engines, setEngines] = useState<string[]>(() =>
-    resolveTrackedEngines(settings?.engines)
+    resolveTrackedEngines(catalog, settings?.engines)
   );
   const [enforceZdr, setEnforceZdr] = useState(
     () => settings?.enforceZdr ?? true
@@ -63,7 +56,11 @@ export function GeoSettingsForm({
     {
       wait: GEO_SETTINGS_AUTO_SAVE_MS,
       throwOnError: false,
-    }
+    },
+    (state) => ({
+      isExecuting: state.isExecuting,
+      isPending: state.isPending,
+    })
   );
   const debouncerRef = useRef(debouncer);
   debouncerRef.current = debouncer;
@@ -95,8 +92,8 @@ export function GeoSettingsForm({
           companyName: settings?.companyName ?? "",
           aliases: settings?.aliases ?? [],
           competitors: settings?.competitors ?? [],
-          languages: extraGeoLanguages(settings?.languages ?? []),
-          engines: resolveTrackedEngines(settings?.engines),
+          languages: trackedGeoLanguages(settings?.languages ?? []),
+          engines: resolveTrackedEngines(catalog, settings?.engines),
           enforceZdr: settings?.enforceZdr ?? true,
           nonZdrApprovedEngines: settings?.nonZdrApprovedEngines ?? [],
           enabled: settings?.enabled ?? true,
@@ -118,6 +115,7 @@ export function GeoSettingsForm({
     runner.maybeExecute(input).catch(() => undefined);
   }, [
     aliases,
+    catalog,
     companyName,
     competitors,
     enabled,
@@ -137,78 +135,78 @@ export function GeoSettingsForm({
     };
   }, []);
 
+  const isSaving = debouncer.state.isPending || debouncer.state.isExecuting;
+  let saveStatus: string | null = null;
+  if (nameMissing && savedAt) {
+    saveStatus = "Add a company name to save";
+  } else if (isSaving) {
+    saveStatus = "Saving...";
+  } else if (savedAt) {
+    saveStatus = "Saved";
+  }
+
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-8">
-      <header className="space-y-1">
-        <h1 className="font-bold text-3xl tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          How your brand is identified and where prompts are scanned.
-        </p>
+    <div className="w-full space-y-8">
+      <header className="flex items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h1 className="font-bold text-3xl tracking-tight">Settings</h1>
+          <p className="text-muted-foreground">
+            How your brand is identified and where prompts are scanned.
+          </p>
+        </div>
+        {saveStatus ? (
+          <p
+            aria-live="polite"
+            className="pt-2 text-muted-foreground text-xs tabular-nums"
+          >
+            {saveStatus}
+          </p>
+        ) : null}
       </header>
-      <div className="space-y-8">
-        <div className="grid items-start gap-x-8 gap-y-6 md:grid-cols-2">
-          <div className="min-w-0 space-y-3">
-            <div className="space-y-1">
+      <div className="space-y-10">
+        <section className="min-w-0">
+          <div className="space-y-4">
+            <div className="space-y-2">
               <Label htmlFor={`${id}-name`}>Company name</Label>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-xs">
                 The primary name we match in answers.
               </p>
+              <Input
+                aria-invalid={nameMissing && savedAt !== null}
+                id={`${id}-name`}
+                onChange={(event) => setCompanyName(event.target.value)}
+                placeholder="Notra"
+                value={companyName}
+              />
             </div>
-            <Input
-              aria-invalid={nameMissing && savedAt !== null}
-              id={`${id}-name`}
-              onChange={(event) => setCompanyName(event.target.value)}
-              placeholder="Notra"
-              value={companyName}
+            <GeoTagList
+              description="Other spellings, product names, or the bare domain."
+              id={`${id}-aliases`}
+              label="Aliases"
+              max={GEO_MAX_ALIASES}
+              onChange={setAliases}
+              placeholder="usenotra"
+              values={aliases}
             />
           </div>
-          <SettingsSection
-            description="English is always scanned. Add markets you want to measure beyond that."
-            title="Languages"
-          >
-            <GeoLanguagePicker
-              labeled={false}
-              onChange={setLanguages}
-              selected={languages}
-            />
-          </SettingsSection>
-          <GeoTagList
-            description="Other spellings, product names, or the bare domain."
-            id={`${id}-aliases`}
-            label="Aliases"
-            max={GEO_MAX_ALIASES}
-            onChange={setAliases}
-            placeholder="usenotra"
-            values={aliases}
-          />
-          <GeoTagList
-            description={
-              <>
-                Names to track against yours. Manage websites and colors on the{" "}
-                <Link
-                  className="font-medium text-foreground underline-offset-4 hover:underline"
-                  href={`/${organizationSlug}/geo/competitors`}
-                  prefetch={true}
-                >
-                  Competitors
-                </Link>{" "}
-                page.
-              </>
-            }
-            id={`${id}-competitors`}
-            label="Competitors"
-            max={GEO_MAX_COMPETITORS}
-            onChange={setCompetitors}
-            placeholder="Competitor name"
-            values={competitors}
-          />
-        </div>
+        </section>
         <SettingsSection
-          description="Each enabled model runs on every prompt, grouped by its maker."
+          description="Languages your prompts are scanned in. English is on by default."
+          title="Languages"
+        >
+          <GeoLanguagePicker
+            labeled={false}
+            onChange={setLanguages}
+            selected={languages}
+          />
+        </SettingsSection>
+        <SettingsSection
+          description="Each enabled provider runs on every prompt."
           title="Models"
         >
           <GeoEnginePicker
             canEnforceZdr={isPro}
+            catalog={catalog}
             enforceZdr={enforceZdr}
             labeled={false}
             nonZdrApproved={nonZdrApproved}
@@ -260,7 +258,7 @@ function SettingsSection({
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 space-y-3">
+    <section className="min-w-0 space-y-4">
       <div className="space-y-1">
         <h2 className="flex items-center gap-2 font-medium text-sm">
           {title}

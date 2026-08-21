@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import {
+  GEO_MODEL_CATALOG_STALE_MS,
   GEO_SCAN_POLL_INTERVAL_MS,
   GEO_START_SCAN_MUTATION_KEY,
 } from "@/constants/geo";
@@ -28,6 +29,7 @@ import type {
   GeoIngestSetupResponse,
   GeoJourneyDetailResponse,
   GeoLanguageShareResponse,
+  GeoModelCatalog,
   GeoModelUsageResponse,
   GeoOverviewResponse,
   GeoProject,
@@ -136,6 +138,14 @@ function geoStartScanMutationKey(
   projectId: string | undefined
 ) {
   return [GEO_START_SCAN_MUTATION_KEY, organizationId, projectId] as const;
+}
+
+export function useGeoModelCatalog() {
+  return useQuery<GeoModelCatalog>({
+    ...dashboardOrpc.geo.modelCatalog.queryOptions(),
+    staleTime: GEO_MODEL_CATALOG_STALE_MS,
+    meta: { errorMessage: "Failed to load the model catalog" },
+  });
 }
 
 export function useGeoSettings(organizationId: string) {

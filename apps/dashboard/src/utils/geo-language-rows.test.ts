@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import {
   buildLanguagePerformanceRows,
+  trackedGeoLanguages,
   withAddedGeoLanguage,
   withRemovedGeoLanguage,
 } from "./geo-language-rows";
@@ -25,7 +26,7 @@ describe("buildLanguagePerformanceRows", () => {
           avgPosition: 2,
         },
       ],
-      configuredLanguages: ["German", "Spanish", "French"],
+      configuredLanguages: ["English", "German", "Spanish", "French"],
       slotCount: 6,
     });
 
@@ -43,17 +44,47 @@ describe("buildLanguagePerformanceRows", () => {
   });
 });
 
+describe("trackedGeoLanguages", () => {
+  test("keeps English as a regular, removable language", () => {
+    assert.deepEqual(trackedGeoLanguages(["German", "English"]), [
+      "German",
+      "English",
+    ]);
+    assert.deepEqual(trackedGeoLanguages(["German"]), ["German"]);
+  });
+
+  test("falls back to English when nothing is configured", () => {
+    assert.deepEqual(trackedGeoLanguages([]), ["English"]);
+  });
+});
+
 describe("withAddedGeoLanguage", () => {
-  test("returns null at the extra-language cap", () => {
+  test("returns null at the language cap", () => {
     assert.equal(
-      withAddedGeoLanguage(["German", "Spanish", "French"], "Portuguese"),
+      withAddedGeoLanguage(
+        ["English", "German", "Spanish", "French"],
+        "Portuguese"
+      ),
       null
     );
+  });
+
+  test("can add English back", () => {
+    assert.deepEqual(withAddedGeoLanguage(["German"], "English"), [
+      "German",
+      "English",
+    ]);
   });
 });
 
 describe("withRemovedGeoLanguage", () => {
-  test("refuses to drop English", () => {
-    assert.equal(withRemovedGeoLanguage(["German"], "English"), null);
+  test("can drop English when another language remains", () => {
+    assert.deepEqual(withRemovedGeoLanguage(["English", "German"], "English"), [
+      "German",
+    ]);
+  });
+
+  test("refuses to drop the last language", () => {
+    assert.equal(withRemovedGeoLanguage(["English"], "English"), null);
   });
 });

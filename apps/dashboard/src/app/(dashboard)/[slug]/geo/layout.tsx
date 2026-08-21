@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
+import { GeoCatalogWarmer } from "@/components/geo/geo-catalog-warmer";
 
-export default function CompetitorsLayout({
+export default function GeoLayout({
   children,
   modal,
 }: {
@@ -9,6 +10,7 @@ export default function CompetitorsLayout({
 }) {
   return (
     <>
+      <GeoCatalogWarmer />
       {children}
       {modal}
     </>
