@@ -5,6 +5,8 @@ import "@/styles/globals.css";
 import { Providers } from "@/utils/providers";
 import { SITE_CONFIG } from "../utils/site";
 
+export const instant = false;
+
 const notoSans = Noto_Sans({
   variable: "--font-noto-sans",
   subsets: ["latin"],

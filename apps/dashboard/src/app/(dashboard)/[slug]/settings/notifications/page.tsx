@@ -3,7 +3,7 @@
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { use, useMemo } from "react";
+import { Suspense, use, useMemo } from "react";
 import { toast } from "sonner";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -16,6 +16,7 @@ import { authClient } from "@/lib/auth/client";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { NOTIFICATION_TOGGLE_GROUPS } from "@/lib/settings/notification-toggles";
 import type { NotificationSettings } from "@/types/settings/notifications";
+import { DashboardPageSkeleton } from "../../skeleton";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -27,7 +28,7 @@ interface MemberRow {
   user?: { email?: string | null };
 }
 
-export default function NotificationsSettingsPage({ params }: PageProps) {
+function NotificationsSettingsPageContent({ params }: PageProps) {
   const { slug } = use(params);
   const queryClient = useQueryClient();
   const { getOrganization, activeOrganization } = useOrganizationsContext();
@@ -162,5 +163,13 @@ export default function NotificationsSettingsPage({ params }: PageProps) {
         {!isLoadingMembers && <NotificationFooter emails={ownerEmails} />}
       </div>
     </PageContainer>
+  );
+}
+
+export default function NotificationsSettingsPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<DashboardPageSkeleton />}>
+      <NotificationsSettingsPageContent params={params} />
+    </Suspense>
   );
 }

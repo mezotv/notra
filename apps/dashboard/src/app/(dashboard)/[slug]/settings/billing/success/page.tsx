@@ -7,10 +7,11 @@ import { cn } from "@notra/ui/lib/utils";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Suspense } from "react";
 import { toast } from "sonner";
 import { buttonVariants } from "@/components/button";
 
-export default function BillingSuccessPage() {
+function BillingSuccessPageContent() {
   const { slug } = useParams<{ slug: string }>();
   const { openCustomerPortal, data: customer } = useCustomer({
     expand: ["subscriptions.plan"],
@@ -98,5 +99,13 @@ export default function BillingSuccessPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function BillingSuccessPage() {
+  return (
+    <Suspense fallback={null}>
+      <BillingSuccessPageContent />
+    </Suspense>
   );
 }

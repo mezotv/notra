@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 import { DashboardClientWrapper } from "@/components/dashboard/dashboard-client-wrapper";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 
+export const instant = false;
+
 interface OrganizationLayoutProps {
   children: React.ReactNode;
   modal: React.ReactNode;

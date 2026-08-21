@@ -103,6 +103,7 @@ export function GeoTabs({
                 <Link
                   className={TAB_LINK_CLASS}
                   href={`/${organizationSlug}/geo/competitors`}
+                  prefetch={true}
                 >
                   All competitors
                 </Link>
@@ -145,6 +146,7 @@ export function GeoTabs({
                 <Link
                   className={TAB_LINK_CLASS}
                   href={`/${organizationSlug}/geo/prompts`}
+                  prefetch={true}
                 >
                   All prompts
                 </Link>

@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   title: "Credits",
 };
 
+export const instant = true;
+
 export default function CreditsPage() {
   return (
     <Suspense fallback={<Loading />}>

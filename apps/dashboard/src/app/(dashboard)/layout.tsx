@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { requireAuth } from "@/lib/auth/actions";
 
+export const instant = false;
+
 export const metadata: Metadata = {
   title: {
     template: "%s - Notra",

@@ -4,14 +4,16 @@ import { withWorkflow } from "workflow/next";
 
 const nextConfig: NextConfig = {
   reactCompiler: true,
+  cacheComponents: true,
+  partialPrefetching: true,
   outputFileTracingIncludes: {
     "/*": ["./src/lib/ai/skills/**/*", "../../packages/ai/src/skills/**/*"],
   },
   experimental: {
     optimizePackageImports: ["@hugeicons/core-free-icons", "lucide-react"],
-    staleTimes: {
-      dynamic: 30,
-      static: 180,
+    hideLogsAfterAbort: true,
+    instantInsights: {
+      validationLevel: "manual-warning",
     },
   },
   turbopack: {

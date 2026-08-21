@@ -33,7 +33,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { useCustomer, useListPlans } from "autumn-js/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useEffect, useId, useMemo, useState } from "react";
+import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { UsageSection } from "@/components/billing/usage-section";
 import { Button } from "@/components/button";
@@ -41,6 +41,7 @@ import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import type { BillingPlan } from "@/types/billing/plan";
 import type { ProductFeature } from "@/types/hooks/billing";
+import { DashboardPageSkeleton } from "../../skeleton";
 
 const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
 
@@ -164,7 +165,7 @@ function getProductFeatures(plan: BillingPlan | undefined): ProductFeature[] {
     .filter((f): f is ProductFeature => f !== null);
 }
 
-export default function BillingPage() {
+function BillingPageContent() {
   const { activeOrganization } = useOrganizationsContext();
   const { data: plans, isLoading: plansLoading } = useListPlans();
   const {
@@ -691,5 +692,13 @@ export default function BillingPage() {
         </Tabs>
       </div>
     </PageContainer>
+  );
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense fallback={<DashboardPageSkeleton />}>
+      <BillingPageContent />
+    </Suspense>
   );
 }

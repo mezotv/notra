@@ -7,7 +7,9 @@ export const metadata: Metadata = {
   title: "Webhook Logs",
 };
 
-async function Page({
+export const instant = true;
+
+async function PageContent({
   params,
 }: {
   params: Promise<{
@@ -15,10 +17,19 @@ async function Page({
   }>;
 }) {
   const { slug } = await params;
+  return <PageClient organizationSlug={slug} />;
+}
 
+function Page({
+  params,
+}: {
+  params: Promise<{
+    slug: string;
+  }>;
+}) {
   return (
     <Suspense fallback={<Loading />}>
-      <PageClient organizationSlug={slug} />
+      <PageContent params={params} />
     </Suspense>
   );
 }

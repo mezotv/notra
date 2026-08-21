@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { cookies } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
+import { connection } from "next/server";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { isUserBanned } from "@/lib/auth/banned";
 import { AuthSessionError } from "@/lib/auth/errors";
@@ -103,6 +104,8 @@ const buildAuthSession = Effect.fn("auth.session.build")(function* (
 });
 
 export async function getAuthSession(): Promise<AuthSessionData | null> {
+  await connection();
+
   let authResult: Awaited<ReturnType<typeof withAuth>>;
 
   try {

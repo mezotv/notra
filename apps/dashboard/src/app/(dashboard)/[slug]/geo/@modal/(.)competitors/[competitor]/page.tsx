@@ -1,10 +1,11 @@
 "use client";
 
 import { useParams } from "next/navigation";
+import { Suspense } from "react";
 import { CompetitorDetailView } from "@/components/geo/competitor-detail-view";
 import { CompetitorModal } from "@/components/geo/competitor-modal";
 
-export default function Page() {
+function PageContent() {
   const { slug, competitor } = useParams<{
     slug: string;
     competitor: string;
@@ -15,5 +16,13 @@ export default function Page() {
     <CompetitorModal title={name}>
       <CompetitorDetailView competitor={name} organizationSlug={slug ?? ""} />
     </CompetitorModal>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <PageContent />
+    </Suspense>
   );
 }

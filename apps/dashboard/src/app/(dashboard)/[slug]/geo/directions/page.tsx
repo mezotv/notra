@@ -5,6 +5,8 @@ export const metadata: Metadata = {
   title: "GEO directions",
 };
 
+export const instant = true;
+
 function Page() {
   return <PageClient />;
 }

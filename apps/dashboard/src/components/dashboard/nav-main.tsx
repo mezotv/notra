@@ -49,7 +49,10 @@ function NavGroup({
             <SidebarMenuButton
               isActive={isActive}
               render={
-                <Link href={href}>
+                <Link
+                  href={href}
+                  prefetch={item.link.startsWith("/geo") ? true : undefined}
+                >
                   <HugeiconsIcon icon={item.icon} />
                   <SidebarLabel>{item.label}</SidebarLabel>
                   {item.badge && (

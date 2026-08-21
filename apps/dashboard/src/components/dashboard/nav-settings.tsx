@@ -94,7 +94,7 @@ export function NavSettings({ slug }: NavSettingsProps) {
               isActive={isActive(item.url)}
               key={item.label}
               render={
-                <Link href={`/${slug}/${item.url}`} replace>
+                <Link href={`/${slug}/${item.url}`} prefetch={true} replace>
                   <HugeiconsIcon icon={item.icon} />
                   <SidebarLabel>{item.label}</SidebarLabel>
                 </Link>
@@ -115,7 +115,7 @@ export function NavSettings({ slug }: NavSettingsProps) {
               isActive={isActive(item.url)}
               key={item.label}
               render={
-                <Link href={`/${slug}/${item.url}`} replace>
+                <Link href={`/${slug}/${item.url}`} prefetch={true} replace>
                   <HugeiconsIcon icon={item.icon} />
                   <SidebarLabel>{item.label}</SidebarLabel>
                 </Link>

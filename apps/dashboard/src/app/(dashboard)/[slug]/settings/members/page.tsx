@@ -11,7 +11,7 @@ import {
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import { use, useState } from "react";
+import { Suspense, use, useState } from "react";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { columns } from "@/components/members/columns";
@@ -20,12 +20,13 @@ import { invitationColumns } from "@/components/members/invitation-columns";
 import { InviteMemberModal } from "@/components/members/invite-member-modal";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
+import { DashboardPageSkeleton } from "../../skeleton";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export default function MembersPage({ params }: PageProps) {
+function MembersPageContent({ params }: PageProps) {
   const { slug } = use(params);
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const organization =
@@ -154,5 +155,13 @@ export default function MembersPage({ params }: PageProps) {
         organizationId={organization.id}
       />
     </PageContainer>
+  );
+}
+
+export default function MembersPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<DashboardPageSkeleton />}>
+      <MembersPageContent params={params} />
+    </Suspense>
   );
 }
