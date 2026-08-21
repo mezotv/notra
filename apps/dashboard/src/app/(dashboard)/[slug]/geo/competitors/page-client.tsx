@@ -12,6 +12,7 @@ import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorShareCard } from "@/components/geo/competitor-share-card";
 import { CompetitorsTable } from "@/components/geo/competitors-table";
+import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
@@ -24,6 +25,7 @@ import {
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
+import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import { GeoPageSkeleton } from "../skeleton";
 
 interface PageClientProps {
@@ -39,8 +41,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       : orgFromList;
   const organizationId = organization?.id ?? "";
 
+  const geoRange = useGeoRange();
   const { data: settingsData, isPending } = useGeoSettings(organizationId);
-  const { data: competitorShare } = useGeoCompetitorShare(organizationId);
+  const { data: competitorShare } = useGeoCompetitorShare(
+    organizationId,
+    geoRange.query
+  );
   const { competitors } = useGeoCompetitorsDb(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
   const [managerOpen, setManagerOpen] = useState(false);
@@ -96,11 +102,14 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               Who AI engines recommend instead of you
             </p>
           </div>
-          <Button className="gap-1.5" onClick={() => setManagerOpen(true)}>
-            <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            Add Competitor
-            <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
-          </Button>
+          <div className="flex items-center gap-2">
+            <GeoRangePicker control={geoRange} />
+            <Button className="gap-1.5" onClick={() => setManagerOpen(true)}>
+              <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+              Add Competitor
+              <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+            </Button>
+          </div>
         </header>
         <CompetitorsTable
           aliases={settings.aliases}

@@ -225,6 +225,7 @@ import { Button, buttonVariants } from "@/components/button";
 import ChatInput from "@/components/chat-input";
 import { DesignSystemFrame } from "@/components/design-system/design-system-frame";
 import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
+import { GeoRangePickerDemo } from "@/components/design-system/geo-range-picker-demo";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LinkedInPost } from "@/components/linkedin-post";
 
@@ -1511,6 +1512,27 @@ export default function DesignSystemClientPage() {
           </OnboardingChecklist>
         </div>
       </section>
+
+      <section className="scroll-mt-10 space-y-6" id="geo-range-picker">
+        <DesignSystemSectionHeader
+          description="Preset rail plus a two-month calendar range, as used on the GEO pages."
+          id="geo-range-picker"
+          title="GEO Range Picker"
+        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Date range</CardTitle>
+            <CardDescription>
+              Presets (Today through Year to date) and custom calendar ranges.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GeoRangePickerDemo />
+          </CardContent>
+        </Card>
+      </section>
+
+      <Separator />
 
       <section className="scroll-mt-10 space-y-6" id="braille-loader">
         <DesignSystemSectionHeader

@@ -43,10 +43,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       : orgFromList;
   const organizationId = organization?.id ?? "";
 
-  const { range, days, setRange } = useGeoRange();
+  const geoRange = useGeoRange();
   const { data: settingsData, isPending } = useGeoSettings(organizationId);
   const { prompts } = useGeoPromptsDb(organizationId);
-  const { data: promptResults } = useGeoPromptResults(organizationId, days);
+  const { data: promptResults } = useGeoPromptResults(
+    organizationId,
+    geoRange.query
+  );
   const isScanning = useIsGeoScanning(organizationId);
   const [addOpen, setAddOpen] = useState(false);
 
@@ -100,7 +103,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <GeoRangePicker onChange={setRange} value={range} />
+            <GeoRangePicker control={geoRange} />
             <Button className="gap-1.5" onClick={() => setAddOpen(true)}>
               <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
               Add Prompt

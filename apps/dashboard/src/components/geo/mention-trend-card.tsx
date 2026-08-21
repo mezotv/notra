@@ -10,10 +10,9 @@ import {
 } from "@/components/instrument/instrument-module";
 import { CHART_MUTED_COLOR } from "@/constants/charts";
 import {
-  GEO_DEFAULT_RANGE,
+  GEO_DEFAULT_QUERY_DAYS,
   GEO_MENTION_TREND_AVERAGE_KEY,
   GEO_MENTION_TREND_AVERAGE_LABEL,
-  GEO_RANGE_DAYS,
   GEO_TREND_MIN_DAYS,
 } from "@/constants/geo";
 import type { ChartConfig } from "@/types/charts";
@@ -81,7 +80,7 @@ function toggleHiddenSeries(
 
 export function MentionTrendCard({
   points,
-  rangeDays = GEO_RANGE_DAYS[GEO_DEFAULT_RANGE],
+  rangeDays = GEO_DEFAULT_QUERY_DAYS,
 }: MentionTrendCardProps) {
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set());
 

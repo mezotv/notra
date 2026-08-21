@@ -5,6 +5,7 @@ import {
   gte,
   inArray,
   isNull,
+  lt,
   type SQL,
   sql,
 } from "drizzle-orm";
@@ -20,6 +21,8 @@ import type {
   GeoCheckScope,
   GeoCheckSequenceResultRow,
   GeoCheckTimeseriesRow,
+  GeoCheckWindow,
+  GeoCheckWindowInput,
   GeoCheckWrite,
 } from "../types/geo-checks";
 
@@ -62,25 +65,49 @@ function scopeWhere(scope: GeoCheckScope): SQL {
   return eq(geoMentionChecks.organizationId, scope.organizationId);
 }
 
-function capturedSince(days: number | undefined): SQL | undefined {
-  if (days === undefined) {
+const DAY_MS = 86_400_000;
+
+export function toGeoCheckWindow(
+  input: GeoCheckWindowInput | undefined
+): GeoCheckWindow | undefined {
+  if (!input) {
     return;
   }
-  const since = new Date();
-  since.setUTCDate(since.getUTCDate() - days);
-  return gte(geoMentionChecks.capturedAt, since);
+  if (input.from) {
+    const from = new Date(`${input.from}T00:00:00.000Z`);
+    const toExclusive = input.to
+      ? new Date(new Date(`${input.to}T00:00:00.000Z`).getTime() + DAY_MS)
+      : undefined;
+    return { from, toExclusive };
+  }
+  if (input.days === undefined) {
+    return;
+  }
+  const from = new Date();
+  from.setUTCDate(from.getUTCDate() - input.days);
+  return { from };
+}
+
+function capturedWithin(window: GeoCheckWindow | undefined): SQL[] {
+  if (!window) {
+    return [];
+  }
+  const parts: SQL[] = [];
+  if (window.from) {
+    parts.push(gte(geoMentionChecks.capturedAt, window.from));
+  }
+  if (window.toExclusive) {
+    parts.push(lt(geoMentionChecks.capturedAt, window.toExclusive));
+  }
+  return parts;
 }
 
 function mentionFilters(
   scope: GeoCheckScope,
-  days: number | undefined,
+  window: GeoCheckWindow | undefined,
   options?: { sequences?: "single"; englishOnly?: boolean }
 ): SQL {
-  const parts: SQL[] = [scopeWhere(scope)];
-  const since = capturedSince(days);
-  if (since) {
-    parts.push(since);
-  }
+  const parts: SQL[] = [scopeWhere(scope), ...capturedWithin(window)];
   if (options?.sequences === "single") {
     parts.push(isNull(geoMentionChecks.sequenceId));
   }
@@ -138,7 +165,7 @@ export async function insertGeoMentionChecks(
 
 export async function queryGeoCheckOverview(
   scope: GeoCheckScope,
-  days: number | undefined
+  window: GeoCheckWindow | undefined
 ): Promise<GeoCheckOverviewRow[]> {
   const rows = await db
     .select({
@@ -153,7 +180,7 @@ export async function queryGeoCheckOverview(
     })
     .from(geoMentionChecks)
     .where(
-      mentionFilters(scope, days, { sequences: "single", englishOnly: true })
+      mentionFilters(scope, window, { sequences: "single", englishOnly: true })
     )
     .groupBy(geoMentionChecks.engine)
     .orderBy(
@@ -172,7 +199,7 @@ export async function queryGeoCheckOverview(
 
 export async function queryGeoCheckTimeseries(
   scope: GeoCheckScope,
-  days: number | undefined
+  window: GeoCheckWindow | undefined
 ): Promise<GeoCheckTimeseriesRow[]> {
   const rows = await db
     .select({
@@ -182,7 +209,7 @@ export async function queryGeoCheckTimeseries(
       mentions: sql<number>`count(*) filter (where ${geoMentionChecks.mentioned})::int`,
     })
     .from(geoMentionChecks)
-    .where(mentionFilters(scope, days, { englishOnly: true }))
+    .where(mentionFilters(scope, window, { englishOnly: true }))
     .groupBy(
       sql`(${geoMentionChecks.capturedAt})::date`,
       geoMentionChecks.engine
@@ -199,7 +226,7 @@ export async function queryGeoCheckTimeseries(
 
 export async function queryGeoCheckPromptResults(
   scope: GeoCheckScope,
-  days: number | undefined
+  window: GeoCheckWindow | undefined
 ): Promise<GeoCheckPromptResultRow[]> {
   const rows = await db
     .select({
@@ -219,7 +246,7 @@ export async function queryGeoCheckPromptResults(
     })
     .from(geoMentionChecks)
     .where(
-      mentionFilters(scope, days, {
+      mentionFilters(scope, window, {
         sequences: "single",
         englishOnly: true,
       })
@@ -245,14 +272,15 @@ export async function queryGeoCheckPromptResults(
 
 export async function queryGeoCheckCompetitorShare(
   scope: GeoCheckScope,
-  days: number | undefined,
+  window: GeoCheckWindow | undefined,
   limit: number
 ): Promise<GeoCheckCompetitorShareRow[]> {
-  const since = capturedSince(days);
+  const withinParts = capturedWithin(window);
   const projectFilter = scope.projectId
     ? sql`and ${geoMentionChecks.projectId} = ${scope.projectId}`
     : sql``;
-  const sinceFilter = since ? sql`and ${since}` : sql``;
+  const windowFilter =
+    withinParts.length > 0 ? sql`and ${and(...withinParts)}` : sql``;
 
   const result = await db.execute<{ brand: string; mentions: number }>(sql`
     select brand, count(*)::int as mentions
@@ -260,7 +288,7 @@ export async function queryGeoCheckCompetitorShare(
     cross join lateral unnest(${geoMentionChecks.competitors}) as brand
     where ${geoMentionChecks.organizationId} = ${scope.organizationId}
       ${projectFilter}
-      ${sinceFilter}
+      ${windowFilter}
     group by brand
     order by mentions desc
     limit ${limit}
@@ -275,13 +303,9 @@ export async function queryGeoCheckCompetitorShare(
 export async function queryGeoCheckCompetitorTimeseries(
   scope: GeoCheckScope,
   brand: string,
-  days: number | undefined
+  window: GeoCheckWindow | undefined
 ): Promise<GeoCheckCompetitorTimeseriesRow[]> {
-  const filters = [scopeWhere(scope)];
-  const since = capturedSince(days);
-  if (since) {
-    filters.push(since);
-  }
+  const filters = [scopeWhere(scope), ...capturedWithin(window)];
 
   const rows = await db
     .select({
@@ -304,16 +328,13 @@ export async function queryGeoCheckCompetitorTimeseries(
 export async function queryGeoCheckCompetitorPrompts(
   scope: GeoCheckScope,
   brand: string,
-  days: number | undefined
+  window: GeoCheckWindow | undefined
 ): Promise<GeoCheckCompetitorPromptRow[]> {
   const filters = [
     scopeWhere(scope),
     sql`${geoMentionChecks.competitors} @> array[${brand}]::text[]`,
+    ...capturedWithin(window),
   ];
-  const since = capturedSince(days);
-  if (since) {
-    filters.push(since);
-  }
 
   const rows = await db
     .selectDistinctOn([geoMentionChecks.promptId, geoMentionChecks.engine], {
@@ -348,13 +369,9 @@ export async function queryGeoCheckCompetitorPrompts(
 
 export async function queryGeoCheckLanguageShare(
   scope: GeoCheckScope,
-  days: number | undefined
+  window: GeoCheckWindow | undefined
 ): Promise<GeoCheckLanguageShareRow[]> {
-  const filters = [scopeWhere(scope)];
-  const since = capturedSince(days);
-  if (since) {
-    filters.push(since);
-  }
+  const filters = [scopeWhere(scope), ...capturedWithin(window)];
 
   const rows = await db
     .select({

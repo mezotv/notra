@@ -864,12 +864,43 @@ export interface GeoTabsProps {
   rangeDays: number;
 }
 
-export type GeoRange = "24h" | "7d" | "14d" | "30d";
+export type GeoRangePreset =
+  | "today"
+  | "yesterday"
+  | "7d"
+  | "14d"
+  | "30d"
+  | "90d"
+  | "ytd";
 
-export interface GeoRangeControl {
-  range: GeoRange;
+export interface GeoDateRange {
+  dateFrom: string;
+  dateTo: string;
+}
+
+export interface GeoRangeState {
+  preset: GeoRangePreset | "custom";
+  range: GeoDateRange;
+}
+
+export interface GeoRangeQuery {
+  from: string;
+  to: string;
+}
+
+export interface GeoWindowInput {
+  days?: number;
+  from?: string;
+  to?: string;
+}
+
+export interface GeoRangeControl extends GeoRangeState {
+  label: string;
   days: number;
-  setRange: (range: GeoRange) => void;
+  query: GeoRangeQuery;
+  param: string | null;
+  setPreset: (preset: GeoRangePreset) => void;
+  setCustom: (range: GeoDateRange) => void;
 }
 
 export interface MentionTrendSeries {
@@ -884,8 +915,7 @@ export interface MentionTrendCardProps {
 }
 
 export interface GeoRangePickerProps {
-  value: GeoRange;
-  onChange: (range: GeoRange) => void;
+  control: GeoRangeControl;
 }
 
 export interface MentionTrendAgentsPickerProps {

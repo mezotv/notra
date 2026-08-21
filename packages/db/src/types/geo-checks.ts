@@ -80,6 +80,17 @@ export interface GeoCheckLanguageShareRow {
   lastCheckedAt: Date;
 }
 
+export interface GeoCheckWindow {
+  from?: Date;
+  toExclusive?: Date;
+}
+
+export interface GeoCheckWindowInput {
+  days?: number;
+  from?: string;
+  to?: string;
+}
+
 export interface GeoCheckSequenceResultRow {
   sequenceId: string;
   turn: number;

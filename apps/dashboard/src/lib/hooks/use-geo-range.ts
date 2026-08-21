@@ -1,28 +1,41 @@
 "use client";
 
-import { parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsString, useQueryState } from "nuqs";
 import { useMemo } from "react";
+import { GEO_DEFAULT_RANGE } from "@/constants/geo";
+import type {
+  GeoDateRange,
+  GeoRangeControl,
+  GeoRangePreset,
+} from "@/types/geo";
 import {
-  GEO_DEFAULT_RANGE,
-  GEO_RANGE_DAYS,
-  GEO_RANGE_VALUES,
-} from "@/constants/geo";
-import type { GeoRange, GeoRangeControl } from "@/types/geo";
+  geoRangeLabel,
+  geoRangeSpanDays,
+  parseGeoRangeParam,
+  serializeGeoCustomRange,
+  serializeGeoRangeState,
+} from "@/utils/geo-range";
 
 export function useGeoRange(): GeoRangeControl {
-  const [range, setRange] = useQueryState(
+  const [raw, setRaw] = useQueryState(
     "range",
-    parseAsStringLiteral(GEO_RANGE_VALUES).withDefault(GEO_DEFAULT_RANGE)
+    parseAsString.withDefault(GEO_DEFAULT_RANGE)
   );
 
-  return useMemo(
-    () => ({
-      range,
-      days: GEO_RANGE_DAYS[range],
-      setRange: (next: GeoRange) => {
-        setRange(next === GEO_DEFAULT_RANGE ? null : next);
+  return useMemo(() => {
+    const state = parseGeoRangeParam(raw);
+    return {
+      ...state,
+      label: geoRangeLabel(state),
+      days: geoRangeSpanDays(state.range),
+      query: { from: state.range.dateFrom, to: state.range.dateTo },
+      param: serializeGeoRangeState(state),
+      setPreset: (preset: GeoRangePreset) => {
+        setRaw(preset === GEO_DEFAULT_RANGE ? null : preset);
       },
-    }),
-    [range, setRange]
-  );
+      setCustom: (range: GeoDateRange) => {
+        setRaw(serializeGeoCustomRange(range));
+      },
+    };
+  }, [raw, setRaw]);
 }

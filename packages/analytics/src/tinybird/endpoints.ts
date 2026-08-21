@@ -34,6 +34,32 @@ const GEO_DAYS_PARAM = {
   days: p.int32().optional(30).describe("Number of trailing days"),
 };
 
+const GEO_WINDOW_PARAMS = {
+  ...GEO_DAYS_PARAM,
+  date_from: p
+    .string()
+    .optional("")
+    .describe("Inclusive first day (YYYY-MM-DD); empty for days window"),
+  date_to: p
+    .string()
+    .optional("")
+    .describe("Inclusive last day (YYYY-MM-DD); empty for open end"),
+};
+
+const GEO_DAY_WINDOW_SQL = `AND if(
+            {{String(date_from, '')}} = '',
+            day >= toDate(now() - toIntervalDay({{Int32(days, 30)}})),
+            day >= toDateOrNull({{String(date_from, '')}})
+          )
+          AND ({{String(date_to, '')}} = '' OR day <= toDateOrNull({{String(date_to, '')}}))`;
+
+const GEO_CAPTURED_WINDOW_SQL = `AND if(
+            {{String(date_from, '')}} = '',
+            captured_at >= now() - toIntervalDay({{Int32(days, 30)}}),
+            toDate(captured_at) >= toDateOrNull({{String(date_from, '')}})
+          )
+          AND ({{String(date_to, '')}} = '' OR toDate(captured_at) <= toDateOrNull({{String(date_to, '')}}))`;
+
 const GEO_PROJECT_SCOPE_SQL = `AND (
             {{String(project_id, '')}} = ''
             OR project_id = {{String(project_id, '')}}
@@ -1014,7 +1040,7 @@ export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
-    ...GEO_DAYS_PARAM,
+    ...GEO_WINDOW_PARAMS,
   },
   nodes: [
     node({
@@ -1033,7 +1059,7 @@ export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
         FROM geo_traffic_daily
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
-          AND day >= toDate(now() - toIntervalDay({{Int32(days, 30)}}))
+          ${GEO_DAY_WINDOW_SQL}
         GROUP BY source, visitor_type
         ORDER BY visits DESC, source ASC
       `,
@@ -1057,7 +1083,7 @@ export const geoTrafficTimeseries = defineEndpoint("geo_traffic_timeseries", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
-    ...GEO_DAYS_PARAM,
+    ...GEO_WINDOW_PARAMS,
   },
   nodes: [
     node({
@@ -1070,7 +1096,7 @@ export const geoTrafficTimeseries = defineEndpoint("geo_traffic_timeseries", {
         FROM geo_traffic_daily
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
-          AND day >= toDate(now() - toIntervalDay({{Int32(days, 30)}}))
+          ${GEO_DAY_WINDOW_SQL}
         GROUP BY day, visitor_type
         ORDER BY day ASC, visitor_type ASC
       `,
@@ -1089,7 +1115,7 @@ export const geoTrafficPages = defineEndpoint("geo_traffic_pages", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
-    ...GEO_DAYS_PARAM,
+    ...GEO_WINDOW_PARAMS,
     visitor: p
       .string()
       .optional("")
@@ -1109,7 +1135,7 @@ export const geoTrafficPages = defineEndpoint("geo_traffic_pages", {
         FROM geo_traffic_pages_daily
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
-          AND day >= toDate(now() - toIntervalDay({{Int32(days, 30)}}))
+          ${GEO_DAY_WINDOW_SQL}
           AND visitor_type IN ('crawler', 'ai_referral')
           AND ({{String(visitor, '')}} = '' OR visitor_type = {{String(visitor, '')}})
         GROUP BY path, source, visitor_type
@@ -1201,7 +1227,7 @@ export const geoTrafficJourneys = defineEndpoint("geo_traffic_journeys", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
-    ...GEO_DAYS_PARAM,
+    ...GEO_WINDOW_PARAMS,
     limit: p.int32().optional(25).describe("Max journeys"),
   },
   nodes: [
@@ -1217,7 +1243,7 @@ export const geoTrafficJourneys = defineEndpoint("geo_traffic_journeys", {
         FROM geo_traffic_events
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
-          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+          ${GEO_CAPTURED_WINDOW_SQL}
           AND visitor_type IN ('crawler', 'ai_referral')
           AND journey_id != ''
       `,
@@ -1259,7 +1285,7 @@ export const geoJourneyDetail = defineEndpoint("geo_journey_detail", {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
     journey_id: p.string().describe("Journey id"),
-    ...GEO_DAYS_PARAM,
+    ...GEO_WINDOW_PARAMS,
     limit: p.int32().optional(200).describe("Max events"),
   },
   nodes: [
@@ -1279,7 +1305,7 @@ export const geoJourneyDetail = defineEndpoint("geo_journey_detail", {
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
           AND journey_id = {{String(journey_id)}}
-          AND captured_at >= now() - toIntervalDay({{Int32(days, 30)}})
+          ${GEO_CAPTURED_WINDOW_SQL}
         ORDER BY captured_at ASC
         LIMIT {{Int32(limit, 200)}}
       `,

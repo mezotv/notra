@@ -7,7 +7,7 @@ import type {
   GeoGroundedEngine,
   GeoIngestFramework,
   GeoIngestPackageManager,
-  GeoRange,
+  GeoRangePreset,
   GeoTab,
   GeoTimeseriesPoint,
   GeoTrafficLogPurposeOption,
@@ -396,30 +396,31 @@ export const GEO_SENTIMENT_LABELS: Record<string, string> = {
 export const GEO_TREND_MIN_DAYS = 5;
 export const GEO_MENTION_TREND_TOTAL_KEY = "total";
 export const GEO_MENTION_TREND_TOTAL_LABEL = "All engines";
-export const GEO_DEFAULT_RANGE: GeoRange = "30d";
-export const GEO_RANGE_VALUES = [
-  "24h",
-  "7d",
-  "14d",
-  "30d",
-] as const satisfies readonly GeoRange[];
+export const GEO_DEFAULT_RANGE: GeoRangePreset = "30d";
 export const GEO_MENTION_TREND_AVERAGE_KEY = "average";
 export const GEO_MENTION_TREND_AVERAGE_LABEL = "Average";
 export const GEO_MENTION_TREND_AGENT_ICON_LIMIT = 4;
-export const GEO_RANGES = [
-  { value: "24h", label: "24h", description: "Last 24 hours", days: 1 },
-  { value: "7d", label: "7d", description: "Last 7 days", days: 7 },
-  { value: "14d", label: "14d", description: "Last 14 days", days: 14 },
-  { value: "30d", label: "30d", description: "Last 30 days", days: 30 },
+export const GEO_RANGE_PRESETS = [
+  { value: "today", label: "Today" },
+  { value: "yesterday", label: "Yesterday" },
+  { value: "7d", label: "Last 7 days" },
+  { value: "14d", label: "Last 14 days" },
+  { value: "30d", label: "Last 30 days" },
+  { value: "90d", label: "Last 90 days" },
+  { value: "ytd", label: "Year to date" },
 ] as const satisfies readonly {
-  value: GeoRange;
+  value: GeoRangePreset;
   label: string;
-  description: string;
-  days: number;
 }[];
-export const GEO_RANGE_DAYS = Object.fromEntries(
-  GEO_RANGES.map((range) => [range.value, range.days])
-) as { readonly [K in GeoRange]: number };
+export const GEO_RANGE_PRESET_DAYS = {
+  today: 0,
+  yesterday: 1,
+  "7d": 6,
+  "14d": 13,
+  "30d": 29,
+  "90d": 89,
+} as const;
+export const GEO_DEFAULT_QUERY_DAYS = 30;
 export const GEO_FILTER_TRIGGER_CLASS =
   "flex h-7 items-center gap-1.5 rounded-full border bg-background px-2.5 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring";
 export const GEO_MENTION_RATE_LABEL = "Mention rate";

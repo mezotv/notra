@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { AiTrafficCard } from "@/components/geo/ai-traffic-card";
 import { AiTrafficLogCard } from "@/components/geo/ai-traffic-log-card";
+import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { TrafficEmpty } from "@/components/geo/traffic-empty";
 import { TrafficPagesCard } from "@/components/geo/traffic-pages-card";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
@@ -26,6 +27,7 @@ import {
   useGeoSettings,
   useGeoTrafficPages,
 } from "@/lib/hooks/use-geo";
+import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps } from "@/types/geo";
 import { GeoTrafficSkeleton } from "./skeleton";
 
@@ -48,10 +50,14 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
       : orgFromList;
   const organizationId = organization?.id ?? "";
 
+  const geoRange = useGeoRange();
   const { data: settingsData, isPending } = useGeoSettings(organizationId);
-  const { data: traffic } = useAiTraffic(organizationId);
+  const { data: traffic } = useAiTraffic(organizationId, geoRange.query);
   const { data: ingestSetup } = useGeoIngestSetup(organizationId);
-  const { data: trafficPages } = useGeoTrafficPages(organizationId);
+  const { data: trafficPages } = useGeoTrafficPages(
+    organizationId,
+    geoRange.query
+  );
 
   const reduceMotion = useReducedMotion();
   const [modulesVisible, setModulesVisible] = useState(false);
@@ -107,11 +113,14 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
   }
 
   const header = (
-    <header className="space-y-1">
-      <h1 className="font-bold text-3xl tracking-tight">AI Traffic</h1>
-      <p className="text-muted-foreground">
-        AI crawlers and referrals visiting your site
-      </p>
+    <header className="flex flex-wrap items-start justify-between gap-3">
+      <div className="space-y-1">
+        <h1 className="font-bold text-3xl tracking-tight">AI Traffic</h1>
+        <p className="text-muted-foreground">
+          AI crawlers and referrals visiting your site
+        </p>
+      </div>
+      <GeoRangePicker control={geoRange} />
     </header>
   );
 

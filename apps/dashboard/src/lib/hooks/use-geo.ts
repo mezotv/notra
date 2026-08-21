@@ -14,8 +14,6 @@ import { toast } from "sonner";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import {
-  GEO_DEFAULT_RANGE,
-  GEO_RANGE_DAYS,
   GEO_SCAN_POLL_INTERVAL_MS,
   GEO_START_SCAN_MUTATION_KEY,
 } from "@/constants/geo";
@@ -37,6 +35,7 @@ import type {
   GeoProjectsResponse,
   GeoPromptResultsResponse,
   GeoPromptSuggestionsResponse,
+  GeoRangeQuery,
   GeoSequenceResultsResponse,
   GeoSettingsResponse,
   GeoSettingsUpsertInput,
@@ -61,9 +60,9 @@ import {
 } from "@/utils/ai-traffic";
 import { toErrorMessage } from "@/utils/error-message";
 import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
+import { toGeoWindowInput } from "@/utils/geo-range";
 import { dashboardOrpc } from "../orpc/query";
 
-const DEFAULT_GEO_DAYS = GEO_RANGE_DAYS[GEO_DEFAULT_RANGE];
 const GSC_ANALYZE_MUTATION_KEY = "gsc-analyze" as const;
 
 function gscAnalyzeMutationKey(organizationId: string) {
@@ -194,11 +193,11 @@ export function useGeoSettingsUpsert(
   });
 }
 
-export function useGeoOverview(organizationId: string, days?: number) {
+export function useGeoOverview(organizationId: string, range?: GeoRangeQuery) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoOverviewResponse>({
     ...dashboardOrpc.geo.overview.queryOptions({
-      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
@@ -206,11 +205,14 @@ export function useGeoOverview(organizationId: string, days?: number) {
   });
 }
 
-export function useGeoTimeseries(organizationId: string, days?: number) {
+export function useGeoTimeseries(
+  organizationId: string,
+  range?: GeoRangeQuery
+) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoTimeseriesResponse>({
     ...dashboardOrpc.geo.timeseries.queryOptions({
-      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
@@ -218,11 +220,14 @@ export function useGeoTimeseries(organizationId: string, days?: number) {
   });
 }
 
-export function useGeoPromptResults(organizationId: string, days?: number) {
+export function useGeoPromptResults(
+  organizationId: string,
+  range?: GeoRangeQuery
+) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoPromptResultsResponse>({
     ...dashboardOrpc.geo.promptResults.queryOptions({
-      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
@@ -230,15 +235,14 @@ export function useGeoPromptResults(organizationId: string, days?: number) {
   });
 }
 
-export function useGeoCompetitorShare(organizationId: string, days?: number) {
+export function useGeoCompetitorShare(
+  organizationId: string,
+  range?: GeoRangeQuery
+) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoCompetitorShareResponse>({
     ...dashboardOrpc.geo.competitorShare.queryOptions({
-      input: {
-        organizationId,
-        projectId,
-        days: days ?? DEFAULT_GEO_DAYS,
-      },
+      input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
@@ -249,7 +253,7 @@ export function useGeoCompetitorShare(organizationId: string, days?: number) {
 export function useGeoCompetitorDetail(
   organizationId: string,
   brand: string | null,
-  days?: number
+  range?: GeoRangeQuery
 ) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoCompetitorDetailResponse>({
@@ -258,7 +262,7 @@ export function useGeoCompetitorDetail(
         organizationId,
         projectId,
         brand: brand ?? "",
-        days: days ?? DEFAULT_GEO_DAYS,
+        ...toGeoWindowInput(range),
       },
     }),
     enabled: !!organizationId && !!brand,
@@ -280,7 +284,7 @@ export function usePrefetchGeoCompetitorDetail(organizationId: string) {
           organizationId,
           projectId,
           brand,
-          days: DEFAULT_GEO_DAYS,
+          ...toGeoWindowInput(undefined),
         },
       })
     );
@@ -337,11 +341,14 @@ export function useGeoCompetitors(organizationId: string) {
   });
 }
 
-export function useGeoLanguageShare(organizationId: string, days?: number) {
+export function useGeoLanguageShare(
+  organizationId: string,
+  range?: GeoRangeQuery
+) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoLanguageShareResponse>({
     ...dashboardOrpc.geo.languageShare.queryOptions({
-      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
@@ -349,11 +356,11 @@ export function useGeoLanguageShare(organizationId: string, days?: number) {
   });
 }
 
-export function useModelUsage(organizationId: string, days?: number) {
+export function useModelUsage(organizationId: string, range?: GeoRangeQuery) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoModelUsageResponse>({
     ...dashboardOrpc.geo.modelUsage.queryOptions({
-      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
@@ -426,11 +433,11 @@ export function useIsGeoScanning(organizationId: string) {
   return pendingCount > 0 || Boolean(data?.settings?.isScanning);
 }
 
-export function useAiTraffic(organizationId: string, days?: number) {
+export function useAiTraffic(organizationId: string, range?: GeoRangeQuery) {
   const { projectId } = useGeoProjectScope();
   return useQuery<AiTrafficResponse>({
     ...dashboardOrpc.geo.aiTraffic.queryOptions({
-      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load AI traffic" },
@@ -459,22 +466,28 @@ export function useGeoTrafficLog(
   });
 }
 
-export function useGeoTrafficPages(organizationId: string, days?: number) {
+export function useGeoTrafficPages(
+  organizationId: string,
+  range?: GeoRangeQuery
+) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrafficPagesResponse>({
     ...dashboardOrpc.geo.trafficPages.queryOptions({
-      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load top AI pages" },
   });
 }
 
-export function useGeoTrafficJourneys(organizationId: string, days?: number) {
+export function useGeoTrafficJourneys(
+  organizationId: string,
+  range?: GeoRangeQuery
+) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrafficJourneysResponse>({
     ...dashboardOrpc.geo.trafficJourneys.queryOptions({
-      input: { organizationId, projectId, days: days ?? DEFAULT_GEO_DAYS },
+      input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
@@ -485,7 +498,7 @@ export function useGeoTrafficJourneys(organizationId: string, days?: number) {
 export function useGeoJourneyDetail(
   organizationId: string,
   journeyId: string | null,
-  days?: number
+  range?: GeoRangeQuery
 ) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoJourneyDetailResponse>({
@@ -494,7 +507,7 @@ export function useGeoJourneyDetail(
         organizationId,
         projectId,
         journeyId: journeyId ?? "",
-        days: days ?? DEFAULT_GEO_DAYS,
+        ...toGeoWindowInput(range),
       },
     }),
     enabled: !!organizationId && !!journeyId,

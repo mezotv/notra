@@ -52,19 +52,31 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       ? activeOrganization
       : orgFromList;
   const organizationId = organization?.id ?? "";
-  const { range, days, setRange } = useGeoRange();
+  const geoRange = useGeoRange();
 
   const { data: settingsData, isPending: isSettingsPending } =
     useGeoSettings(organizationId);
-  const { data: overview } = useGeoOverview(organizationId, days);
-  const { data: timeseries } = useGeoTimeseries(organizationId, days);
+  const { data: overview } = useGeoOverview(organizationId, geoRange.query);
+  const { data: timeseries } = useGeoTimeseries(organizationId, geoRange.query);
   const { data: prompts } = useGeoPrompts(organizationId);
-  const { data: promptResults } = useGeoPromptResults(organizationId, days);
-  const { data: competitorShare } = useGeoCompetitorShare(organizationId, days);
+  const { data: promptResults } = useGeoPromptResults(
+    organizationId,
+    geoRange.query
+  );
+  const { data: competitorShare } = useGeoCompetitorShare(
+    organizationId,
+    geoRange.query
+  );
   const { data: competitorList } = useGeoCompetitors(organizationId);
-  const { data: languageShare } = useGeoLanguageShare(organizationId, days);
-  const { data: modelUsage } = useModelUsage(organizationId, days);
-  const { data: trafficJourneys } = useGeoTrafficJourneys(organizationId, days);
+  const { data: languageShare } = useGeoLanguageShare(
+    organizationId,
+    geoRange.query
+  );
+  const { data: modelUsage } = useModelUsage(organizationId, geoRange.query);
+  const { data: trafficJourneys } = useGeoTrafficJourneys(
+    organizationId,
+    geoRange.query
+  );
   const startScan = useGeoStartScan(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
 
@@ -118,7 +130,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <GeoRangePicker onChange={setRange} value={range} />
+            <GeoRangePicker control={geoRange} />
             <Button
               className="w-fit gap-2"
               disabled={isScanning}
@@ -148,7 +160,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
           organizationSlug={organizationSlug}
           promptCount={prompts?.prompts.length ?? 0}
           promptResults={promptResults?.results ?? []}
-          rangeDays={days}
+          rangeDays={geoRange.days}
           revealActive={revealActive}
           settings={settings}
           timeseriesPoints={timeseries?.points ?? []}

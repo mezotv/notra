@@ -1,6 +1,7 @@
 import {
   queryGeoCheckCompetitorShare,
   queryGeoCheckOverview,
+  toGeoCheckWindow,
 } from "@notra/db/utils/geo-checks";
 import { defineTool } from "eve/tools";
 import { ANALYTICS_QUERY_FAILED_MESSAGE } from "../constants/analytics";
@@ -20,9 +21,10 @@ export function createGetGeoOverviewTool() {
       const scope = { organizationId, projectId: null };
 
       try {
+        const window = toGeoCheckWindow({ days });
         const [overview, competitors] = await Promise.all([
-          queryGeoCheckOverview(scope, days),
-          queryGeoCheckCompetitorShare(scope, days, COMPETITOR_LIMIT),
+          queryGeoCheckOverview(scope, window),
+          queryGeoCheckCompetitorShare(scope, window, COMPETITOR_LIMIT),
         ]);
 
         return {

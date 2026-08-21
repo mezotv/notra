@@ -18,7 +18,7 @@ import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
 import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
-import { GEO_DEFAULT_RANGE, GEO_PROMPTS_TAB_LIMIT } from "@/constants/geo";
+import { GEO_PROMPTS_TAB_LIMIT } from "@/constants/geo";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoTabsProps } from "@/types/geo";
 import { toGeoTab } from "@/utils/geo-tabs";
@@ -70,11 +70,10 @@ export function GeoTabs({
   organizationId,
   rangeDays,
 }: GeoTabsProps) {
-  const { range } = useGeoRange();
-  const promptsHref =
-    range === GEO_DEFAULT_RANGE
-      ? `/${organizationSlug}/geo/prompts`
-      : `/${organizationSlug}/geo/prompts?range=${range}`;
+  const { param } = useGeoRange();
+  const promptsHref = param
+    ? `/${organizationSlug}/geo/prompts?range=${param}`
+    : `/${organizationSlug}/geo/prompts`;
 
   return (
     <Tabs

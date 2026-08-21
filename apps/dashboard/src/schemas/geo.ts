@@ -31,6 +31,12 @@ const MAX_GEO_TRAFFIC_LOG_FILTER_VALUES = 3;
 const MAX_JUDGE_COMPETITORS = 15;
 const MAX_EXCERPT_LENGTH = 300;
 const MAX_DAYS = 365;
+const GEO_DAY_STRING_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const geoWindowFields = {
+  days: number().int().min(1).max(MAX_DAYS).optional(),
+  from: string().regex(GEO_DAY_STRING_REGEX).optional(),
+  to: string().regex(GEO_DAY_STRING_REGEX).optional(),
+};
 const MAX_MODEL_USAGE_LIMIT = 50;
 const MAX_AI_TRAFFIC_LOG_LIMIT = 200;
 const MAX_AI_TRAFFIC_PAGES_LIMIT = 100;
@@ -115,7 +121,7 @@ export const geoCompetitorDeleteInputSchema = geoOrganizationInputSchema.extend(
 export const geoCompetitorDetailInputSchema = geoOrganizationInputSchema.extend(
   {
     brand: string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
-    days: number().int().min(1).max(MAX_DAYS).optional(),
+    ...geoWindowFields,
   }
 );
 
@@ -156,7 +162,7 @@ export const geoProjectCreateInputSchema = object({
 });
 
 export const geoTimeseriesInputSchema = geoOrganizationInputSchema.extend({
-  days: number().int().min(1).max(MAX_DAYS).optional(),
+  ...geoWindowFields,
 });
 
 export const geoPromptCreateInputSchema = geoOrganizationInputSchema.extend({
@@ -195,7 +201,7 @@ export const geoWebsiteDiscoverySchema = object({
 });
 
 export const geoModelUsageInputSchema = geoOrganizationInputSchema.extend({
-  days: number().int().min(1).max(MAX_DAYS).optional(),
+  ...geoWindowFields,
   limit: number().int().min(1).max(MAX_MODEL_USAGE_LIMIT).optional(),
 });
 
@@ -243,7 +249,7 @@ export const geoJudgeResultSchema = object({
 });
 
 export const aiTrafficInputSchema = geoOrganizationInputSchema.extend({
-  days: number().int().min(1).max(MAX_DAYS).optional(),
+  ...geoWindowFields,
   limit: number().int().min(1).max(MAX_AI_TRAFFIC_LOG_LIMIT).optional(),
 });
 
@@ -280,17 +286,17 @@ export const geoRequestPayloadSchema = object({
 });
 
 export const geoTrafficJourneysInputSchema = geoOrganizationInputSchema.extend({
-  days: number().int().min(1).max(MAX_DAYS).optional(),
+  ...geoWindowFields,
   limit: number().int().min(1).max(MAX_AI_TRAFFIC_JOURNEYS_LIMIT).optional(),
 });
 
 export const geoJourneyDetailInputSchema = geoOrganizationInputSchema.extend({
   journeyId: string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
-  days: number().int().min(1).max(MAX_DAYS).optional(),
+  ...geoWindowFields,
 });
 
 export const geoTrafficPagesInputSchema = geoOrganizationInputSchema.extend({
-  days: number().int().min(1).max(MAX_DAYS).optional(),
+  ...geoWindowFields,
   limit: number().int().min(1).max(MAX_AI_TRAFFIC_PAGES_LIMIT).optional(),
   visitorType: enumType(["crawler", "ai_referral"]).optional(),
 });

@@ -24,6 +24,7 @@ import {
   queryGeoCheckOverview,
   queryGeoCheckPromptResults,
   queryGeoCheckTimeseries,
+  toGeoCheckWindow,
 } from "@notra/db/utils/geo-checks";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
@@ -68,6 +69,7 @@ import {
 } from "@/lib/geo/projects";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
 import { withGeoScanStatus } from "@/lib/geo/scan-status";
+import { geoTrafficWindowParams } from "@/lib/geo/window";
 import { startGeoScanRun } from "@/lib/workflows/start";
 import type {
   AiTrafficResponse,
@@ -92,6 +94,7 @@ import type {
   GeoTrafficLogResponse,
   GeoTrafficPagesResponse,
   GeoTrafficSource,
+  GeoWindowInput,
 } from "@/types/geo";
 import { toGeoTrafficTotals, toGeoVisitorType } from "@/utils/ai-traffic";
 
@@ -397,11 +400,11 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
 
 export const loadGeoLanguageShare = Effect.fn("geo.languageShare")(function* (
   input: GeoScopeInput,
-  days: number | undefined
+  window: GeoWindowInput
 ) {
   const scope = yield* resolveGeoScope(input);
   const rows = yield* geoDb("language share query failed", () =>
-    queryGeoCheckLanguageShare(geoCheckScope(scope), days)
+    queryGeoCheckLanguageShare(geoCheckScope(scope), toGeoCheckWindow(window))
   );
 
   const response: GeoLanguageShareResponse = {
@@ -419,11 +422,11 @@ export const loadGeoLanguageShare = Effect.fn("geo.languageShare")(function* (
 
 export const loadGeoOverview = Effect.fn("geo.overview")(function* (
   input: GeoScopeInput,
-  days: number | undefined
+  window: GeoWindowInput
 ) {
   const scope = yield* resolveGeoScope(input);
   const rows = yield* geoDb("overview query failed", () =>
-    queryGeoCheckOverview(geoCheckScope(scope), days)
+    queryGeoCheckOverview(geoCheckScope(scope), toGeoCheckWindow(window))
   );
 
   const engines: GeoOverviewResponse["engines"] = rows.map((row) => ({
@@ -444,11 +447,11 @@ export const loadGeoOverview = Effect.fn("geo.overview")(function* (
 
 export const loadGeoTimeseries = Effect.fn("geo.timeseries")(function* (
   input: GeoScopeInput,
-  days: number | undefined
+  window: GeoWindowInput
 ) {
   const scope = yield* resolveGeoScope(input);
   const rows = yield* geoDb("timeseries query failed", () =>
-    queryGeoCheckTimeseries(geoCheckScope(scope), days)
+    queryGeoCheckTimeseries(geoCheckScope(scope), toGeoCheckWindow(window))
   );
 
   const response: GeoTimeseriesResponse = {
@@ -465,11 +468,11 @@ export const loadGeoTimeseries = Effect.fn("geo.timeseries")(function* (
 
 export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
   input: GeoScopeInput,
-  days: number | undefined
+  window: GeoWindowInput
 ) {
   const scope = yield* resolveGeoScope(input);
   const rows = yield* geoDb("prompt results query failed", () =>
-    queryGeoCheckPromptResults(geoCheckScope(scope), days)
+    queryGeoCheckPromptResults(geoCheckScope(scope), toGeoCheckWindow(window))
   );
 
   const response: GeoPromptResultsResponse = {
@@ -490,12 +493,12 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
 });
 
 export const loadGeoCompetitorShare = Effect.fn("geo.competitorShare")(
-  function* (input: GeoScopeInput, days: number | undefined) {
+  function* (input: GeoScopeInput, window: GeoWindowInput) {
     const scope = yield* resolveGeoScope(input);
     const rows = yield* geoDb("competitor share query failed", () =>
       queryGeoCheckCompetitorShare(
         geoCheckScope(scope),
-        days,
+        toGeoCheckWindow(window),
         GEO_COMPETITOR_SHARE_LIMIT
       )
     );
@@ -512,18 +515,20 @@ export const loadGeoCompetitorShare = Effect.fn("geo.competitorShare")(
 );
 
 export const loadGeoCompetitorDetail = Effect.fn("geo.competitorDetail")(
-  function* (input: GeoScopeInput, brand: string, days: number | undefined) {
+  function* (input: GeoScopeInput, brand: string, window: GeoWindowInput) {
     const scope = yield* resolveGeoScope(input);
-    const resolvedDays = days ?? GEO_COMPETITOR_DETAIL_DAYS;
+    const resolvedWindow =
+      toGeoCheckWindow(window) ??
+      toGeoCheckWindow({ days: GEO_COMPETITOR_DETAIL_DAYS });
 
     const checkScope = geoCheckScope(scope);
     const [timeseries, prompts] = yield* Effect.all(
       [
         geoDb("competitor timeseries query failed", () =>
-          queryGeoCheckCompetitorTimeseries(checkScope, brand, resolvedDays)
+          queryGeoCheckCompetitorTimeseries(checkScope, brand, resolvedWindow)
         ),
         geoDb("competitor prompts query failed", () =>
-          queryGeoCheckCompetitorPrompts(checkScope, brand, resolvedDays)
+          queryGeoCheckCompetitorPrompts(checkScope, brand, resolvedWindow)
         ),
       ],
       { concurrency: "unbounded" }
@@ -551,7 +556,7 @@ export const loadGeoCompetitorDetail = Effect.fn("geo.competitorDetail")(
 
 export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
   input: GeoScopeInput,
-  days: number | undefined,
+  window: GeoWindowInput,
   limit: number | undefined
 ) {
   const scope = yield* resolveGeoScope(input);
@@ -571,7 +576,7 @@ export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
         })
       ),
       geoDb("overview query failed", () =>
-        queryGeoCheckOverview(geoCheckScope(scope), days)
+        queryGeoCheckOverview(geoCheckScope(scope), toGeoCheckWindow(window))
       ).pipe(geoSkip("overview query failed")),
     ],
     { concurrency: "unbounded" }
@@ -606,23 +611,23 @@ export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
 
 export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
   input: GeoScopeInput,
-  days: number | undefined
+  window: GeoWindowInput
 ) {
   const scope = yield* resolveGeoScope(input);
-  const resolvedDays = days ?? AI_TRAFFIC_DEFAULT_DAYS;
+  const windowParams = geoTrafficWindowParams(window, AI_TRAFFIC_DEFAULT_DAYS);
 
   const [overview, timeseries] = yield* Effect.all(
     [
       geoQuery("traffic overview query failed", () =>
         queryGeoTrafficOverview({
           ...geoScopeParams(scope),
-          days: resolvedDays,
+          ...windowParams,
         })
       ),
       geoQuery("traffic timeseries query failed", () =>
         queryGeoTrafficTimeseries({
           ...geoScopeParams(scope),
-          days: resolvedDays,
+          ...windowParams,
         })
       ),
     ],
@@ -686,14 +691,14 @@ export const loadGeoTrafficLog = Effect.fn("geo.trafficLog")(function* (
 export const loadGeoTrafficJourneys = Effect.fn("geo.trafficJourneys")(
   function* (
     input: GeoScopeInput,
-    days: number | undefined,
+    window: GeoWindowInput,
     limit: number | undefined
   ) {
     const scope = yield* resolveGeoScope(input);
     const journeys = yield* geoQuery("traffic journeys query failed", () =>
       queryGeoTrafficJourneys({
         ...geoScopeParams(scope),
-        days: days ?? AI_TRAFFIC_DEFAULT_DAYS,
+        ...geoTrafficWindowParams(window, AI_TRAFFIC_DEFAULT_DAYS),
         limit: limit ?? AI_TRAFFIC_DEFAULT_JOURNEYS_LIMIT,
       })
     );
@@ -718,14 +723,14 @@ export const loadGeoTrafficJourneys = Effect.fn("geo.trafficJourneys")(
 export const loadGeoJourneyDetail = Effect.fn("geo.journeyDetail")(function* (
   input: GeoScopeInput,
   journeyId: string,
-  days: number | undefined
+  window: GeoWindowInput
 ) {
   const scope = yield* resolveGeoScope(input);
   const detail = yield* geoQuery("journey detail query failed", () =>
     queryGeoJourneyDetail({
       ...geoScopeParams(scope),
       journey_id: journeyId,
-      days: days ?? AI_TRAFFIC_DEFAULT_DAYS,
+      ...geoTrafficWindowParams(window, AI_TRAFFIC_DEFAULT_DAYS),
       limit: GEO_JOURNEY_DETAIL_LIMIT,
     })
   );
@@ -748,7 +753,7 @@ export const loadGeoJourneyDetail = Effect.fn("geo.journeyDetail")(function* (
 
 export const loadGeoTrafficPages = Effect.fn("geo.trafficPages")(function* (
   input: GeoScopeInput,
-  days: number | undefined,
+  window: GeoWindowInput,
   limit: number | undefined,
   visitorType: string | undefined
 ) {
@@ -756,7 +761,7 @@ export const loadGeoTrafficPages = Effect.fn("geo.trafficPages")(function* (
   const pages = yield* geoQuery("traffic pages query failed", () =>
     queryGeoTrafficPages({
       ...geoScopeParams(scope),
-      days: days ?? AI_TRAFFIC_DEFAULT_DAYS,
+      ...geoTrafficWindowParams(window, AI_TRAFFIC_DEFAULT_DAYS),
       limit: limit ?? AI_TRAFFIC_DEFAULT_PAGES_LIMIT,
       visitor: visitorType ?? "",
     })

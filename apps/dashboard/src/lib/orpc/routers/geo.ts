@@ -60,6 +60,7 @@ import {
   loadGeoSequenceResults,
   updateGeoSequence,
 } from "@/lib/geo/sequences";
+import { geoWindow } from "@/lib/geo/window";
 import {
   buildGeoAppUrl,
   buildGeoIngestUrl,
@@ -261,19 +262,25 @@ export const geoRouter = {
     .handler(geoHandler((input) => upsertGeoSettings(input))),
   languageShare: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(geoHandler((input) => loadGeoLanguageShare(input, input.days))),
+    .handler(
+      geoHandler((input) => loadGeoLanguageShare(input, geoWindow(input)))
+    ),
   overview: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(geoHandler((input) => loadGeoOverview(input, input.days))),
+    .handler(geoHandler((input) => loadGeoOverview(input, geoWindow(input)))),
   timeseries: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(geoHandler((input) => loadGeoTimeseries(input, input.days))),
+    .handler(geoHandler((input) => loadGeoTimeseries(input, geoWindow(input)))),
   promptResults: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(geoHandler((input) => loadGeoPromptResults(input, input.days))),
+    .handler(
+      geoHandler((input) => loadGeoPromptResults(input, geoWindow(input)))
+    ),
   competitorShare: authorizedProcedure
     .input(geoTimeseriesInputSchema)
-    .handler(geoHandler((input) => loadGeoCompetitorShare(input, input.days))),
+    .handler(
+      geoHandler((input) => loadGeoCompetitorShare(input, geoWindow(input)))
+    ),
   competitors: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => loadGeoCompetitors(input))),
@@ -287,17 +294,19 @@ export const geoRouter = {
     .input(geoCompetitorDetailInputSchema)
     .handler(
       geoHandler((input) =>
-        loadGeoCompetitorDetail(input, input.brand, input.days)
+        loadGeoCompetitorDetail(input, input.brand, geoWindow(input))
       )
     ),
   modelUsage: authorizedProcedure
     .input(geoModelUsageInputSchema)
     .handler(
-      geoHandler((input) => loadGeoModelUsage(input, input.days, input.limit))
+      geoHandler((input) =>
+        loadGeoModelUsage(input, geoWindow(input), input.limit)
+      )
     ),
   aiTraffic: authorizedProcedure
     .input(aiTrafficInputSchema)
-    .handler(geoHandler((input) => loadAiTraffic(input, input.days))),
+    .handler(geoHandler((input) => loadAiTraffic(input, geoWindow(input)))),
   trafficLog: authorizedProcedure
     .input(geoTrafficLogInputSchema)
     .handler(
@@ -314,21 +323,26 @@ export const geoRouter = {
     .input(geoTrafficJourneysInputSchema)
     .handler(
       geoHandler((input) =>
-        loadGeoTrafficJourneys(input, input.days, input.limit)
+        loadGeoTrafficJourneys(input, geoWindow(input), input.limit)
       )
     ),
   journeyDetail: authorizedProcedure
     .input(geoJourneyDetailInputSchema)
     .handler(
       geoHandler((input) =>
-        loadGeoJourneyDetail(input, input.journeyId, input.days)
+        loadGeoJourneyDetail(input, input.journeyId, geoWindow(input))
       )
     ),
   trafficPages: authorizedProcedure
     .input(geoTrafficPagesInputSchema)
     .handler(
       geoHandler((input) =>
-        loadGeoTrafficPages(input, input.days, input.limit, input.visitorType)
+        loadGeoTrafficPages(
+          input,
+          geoWindow(input),
+          input.limit,
+          input.visitorType
+        )
       )
     ),
   ingestSetup: authorizedProcedure
