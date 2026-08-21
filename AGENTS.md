@@ -8,7 +8,7 @@ platform). See `README.md` and `CONTRIBUTING.md` for the standard workflow and
 non-obvious, durable gotchas for working in the Cursor Cloud environment.
 
 ### Toolchain
-- Runtime/package manager is **Bun `1.3.9`** (installed at `~/.bun`); tooling uses
+- Runtime/package manager is **Bun `1.4.0`** (installed at `~/.bun`); tooling uses
   **Node `24.11.1`** (installed via `nvm`, set as the default alias). Both are baked
   into the VM snapshot and on `PATH` in a login shell. `bun install` is the startup
   update script — do not run it manually unless deps changed.

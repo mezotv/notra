@@ -5,7 +5,7 @@
 type: monorepo  
 langs: TypeScript, JavaScript  
 runtimes: Node.js 24.11.1, Bun  
-pkgManager: Bun 1.3.9  
+pkgManager: Bun 1.4.0  
 deliverables: web (Next.js marketing), dashboard (Next.js app), api (Hono/Workers), docs (Mint), shared libs  
 rootConfigs: `turbo.json`, `package.json`, `biome.jsonc`  
 
