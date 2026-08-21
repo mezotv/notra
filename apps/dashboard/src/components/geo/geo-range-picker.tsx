@@ -8,10 +8,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@notra/ui/components/ui/popover";
+import { LazyMotion, m, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { Calendar } from "@/components/calendar";
 import { GEO_FILTER_TRIGGER_CLASS, GEO_RANGE_PRESETS } from "@/constants/geo";
+import { useAnimatedSize } from "@/lib/hooks/use-animated-size";
 import type { GeoRangePickerProps } from "@/types/geo";
 import {
   geoCalendarDefaultMonth,
@@ -19,9 +21,14 @@ import {
   parseLocalDay,
 } from "@/utils/geo-range";
 
+const loadMotionFeatures = () =>
+  import("@/lib/motion-features").then((mod) => mod.default);
+
 export function GeoRangePicker({ control }: GeoRangePickerProps) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<DateRange | undefined>();
+  const reduceMotion = useReducedMotion();
+  const { ref: contentRef, size } = useAnimatedSize();
 
   const selected =
     draft ??
@@ -57,43 +64,58 @@ export function GeoRangePicker({ control }: GeoRangePickerProps) {
           size={12}
         />
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-auto p-0">
-        <div className="flex">
-          <div className="flex flex-col gap-1 border-border border-r p-2">
-            {GEO_RANGE_PRESETS.map((preset) => (
-              <Button
-                className="justify-start"
-                key={preset.value}
-                onClick={() => {
-                  control.setPreset(preset.value);
-                  handleOpenChange(false);
+      <PopoverContent align="end" className="w-auto overflow-hidden p-0">
+        <LazyMotion features={loadMotionFeatures} strict>
+          <m.div
+            animate={
+              size ? { width: size.width, height: size.height } : undefined
+            }
+            className="overflow-hidden"
+            initial={false}
+            transition={
+              reduceMotion
+                ? { duration: 0 }
+                : { duration: 0.3, ease: "easeInOut" }
+            }
+          >
+            <div className="flex w-max" ref={contentRef}>
+              <div className="flex min-w-44 flex-col gap-1 border-border border-r p-2">
+                {GEO_RANGE_PRESETS.map((preset) => (
+                  <Button
+                    className="justify-start"
+                    key={preset.value}
+                    onClick={() => {
+                      control.setPreset(preset.value);
+                      handleOpenChange(false);
+                    }}
+                    size="sm"
+                    variant={
+                      control.preset === preset.value ? "secondary" : "ghost"
+                    }
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+              <Calendar
+                defaultMonth={geoCalendarDefaultMonth(selected?.from)}
+                disabled={{ after: new Date() }}
+                mode="range"
+                numberOfMonths={2}
+                onSelect={(next) => {
+                  setDraft(next);
+                  if (next?.from && next.to) {
+                    control.setCustom({
+                      dateFrom: localDayString(next.from),
+                      dateTo: localDayString(next.to),
+                    });
+                  }
                 }}
-                size="sm"
-                variant={
-                  control.preset === preset.value ? "secondary" : "ghost"
-                }
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </div>
-          <Calendar
-            defaultMonth={geoCalendarDefaultMonth(selected?.from)}
-            disabled={{ after: new Date() }}
-            mode="range"
-            numberOfMonths={2}
-            onSelect={(next) => {
-              setDraft(next);
-              if (next?.from && next.to) {
-                control.setCustom({
-                  dateFrom: localDayString(next.from),
-                  dateTo: localDayString(next.to),
-                });
-              }
-            }}
-            selected={selected}
-          />
-        </div>
+                selected={selected}
+              />
+            </div>
+          </m.div>
+        </LazyMotion>
       </PopoverContent>
     </Popover>
   );
