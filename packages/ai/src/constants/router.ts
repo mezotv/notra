@@ -27,6 +27,13 @@ export const OPENROUTER_MODEL_ALIASES: Readonly<Record<string, string>> = {
 export const OPENROUTER_UNSUPPORTED_MODELS: ReadonlySet<string> =
   new Set<string>();
 
+/**
+ * Models that only exist on OpenRouter (stealth/preview models, community
+ * hosts). The router skips Vercel for them instead of discovering the 404
+ * at call time. Keep in sync with catalog entries that pin `openrouter`.
+ */
+export const VERCEL_UNSUPPORTED_MODELS: ReadonlySet<string> = new Set<string>();
+
 export const VERCEL_OPTIONS_KEY = "gateway";
 export const OPENROUTER_OPTIONS_KEY = "openrouter";
 
@@ -48,6 +55,13 @@ export const HTTP_TOO_EARLY = 425;
 export const HTTP_TOO_MANY_REQUESTS = 429;
 export const HTTP_SERVER_ERROR_MIN = 500;
 export const ZDR_ERROR_PATTERN = /zero data retention|\bzdr\b/i;
+/**
+ * OpenRouter answers 404 "No endpoints found matching your data policy" when
+ * `provider.zdr` filters every host away. That is a ZDR rejection, not an
+ * unknown model.
+ */
+export const OPENROUTER_NO_ZDR_ENDPOINT_PATTERN =
+  /no endpoints found.*(data policy|zero data retention|\bzdr\b)/i;
 
 export const RETRYABLE_STATUS_CODES: ReadonlySet<number> = new Set([
   HTTP_REQUEST_TIMEOUT,

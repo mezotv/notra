@@ -34,11 +34,20 @@ export type RouterErrorCode =
   | "credit_balance"
   | "gateway_unavailable";
 
+/**
+ * How strictly zero data retention is required for a request.
+ * - `required` (default): fail closed, never send a non-ZDR request.
+ * - `preferred`: try with ZDR; when the gateway rejects the ZDR requirement
+ *   for this model, retry the same route without it (no-training stays on).
+ */
+export type ZdrMode = "required" | "preferred";
+
 export interface RouteRequest {
   modelId: string;
   organizationId?: string;
   /** Pin the request to a specific gateway (e.g. provider-defined tools). */
   gateway?: GatewayId;
+  zdr?: ZdrMode;
 }
 
 export interface RouteDecision {
@@ -118,6 +127,12 @@ export interface BuildProviderOptionsInput {
   router: RouterProviderOptions;
   /** When true privacy flags may be relaxed by the caller (dev only). */
   allowNonZdr: boolean;
+  /**
+   * When true the ZDR flag is dropped for this call because the caller
+   * requested `zdr: "preferred"` and the gateway rejected ZDR for the model.
+   * No-training stays enforced.
+   */
+  relaxZdr?: boolean;
 }
 
 /** Neutral provider options translated by the router for each gateway. */
@@ -189,6 +204,7 @@ export interface ModelRouterConfig {
 export interface RoutedModelOptions {
   organizationId?: string;
   gateway?: GatewayId;
+  zdr?: ZdrMode;
 }
 
 export interface ModelRouter {

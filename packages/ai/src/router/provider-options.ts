@@ -39,6 +39,21 @@ function resolveFallbackModels(
 }
 
 /**
+ * Production forces ZDR on. A relaxed call (caller accepted a non-ZDR route)
+ * drops it; the development bypass only sends it when the caller asks.
+ */
+function resolveZdrFlag(
+  relaxZdr: boolean,
+  allowNonZdr: boolean,
+  requested: unknown
+): boolean {
+  if (relaxZdr) {
+    return false;
+  }
+  return allowNonZdr ? requested === true : true;
+}
+
+/**
  * Split the neutral router block from the caller's provider options.
  */
 export function splitRouterOptions(providerOptions?: SharedV3ProviderOptions): {
@@ -75,7 +90,7 @@ export function stripForeignGatewayOptions(
 export function buildVercelProviderOptions(
   input: BuildProviderOptionsInput
 ): SharedV3ProviderOptions {
-  const { providerOptions, router, allowNonZdr } = input;
+  const { providerOptions, router, allowNonZdr, relaxZdr = false } = input;
   const existing = asObject(providerOptions[VERCEL_OPTIONS_KEY]);
   const fallbackModels = resolveFallbackModels(
     router,
@@ -85,10 +100,13 @@ export function buildVercelProviderOptions(
 
   // Production: ZDR + no-training are always forced. Development bypass
   // (allowNonZdr): ZDR is only sent when the caller asks for it explicitly,
-  // no-training stays on unless the caller opts out.
-  const zeroDataRetention = allowNonZdr
-    ? existing.zeroDataRetention === true
-    : true;
+  // no-training stays on unless the caller opts out. relaxZdr (caller asked
+  // for zdr: "preferred" and the gateway rejected ZDR) drops only the ZDR flag.
+  const zeroDataRetention = resolveZdrFlag(
+    relaxZdr,
+    allowNonZdr,
+    existing.zeroDataRetention
+  );
   const disallowPromptTraining = !(
     allowNonZdr && existing.disallowPromptTraining === false
   );
@@ -151,11 +169,11 @@ function deriveOpenRouterReasoning(
 export function buildOpenRouterProviderOptions(
   input: BuildProviderOptionsInput
 ): SharedV3ProviderOptions {
-  const { providerOptions, router, allowNonZdr } = input;
+  const { providerOptions, router, allowNonZdr, relaxZdr = false } = input;
   const existing = asObject(providerOptions[OPENROUTER_OPTIONS_KEY]);
   const existingProvider = asObject(existing.provider);
 
-  const zdr = allowNonZdr ? existingProvider.zdr === true : true;
+  const zdr = resolveZdrFlag(relaxZdr, allowNonZdr, existingProvider.zdr);
   const dataCollection =
     allowNonZdr && existingProvider.data_collection === "allow"
       ? "allow"

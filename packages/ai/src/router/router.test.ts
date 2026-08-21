@@ -634,6 +634,101 @@ describe("ZDR rejection by a gateway", () => {
   });
 });
 
+describe("zdr: preferred", () => {
+  const ZDR_REJECTION =
+    "Zero Data Retention (ZDR) is only available for Pro and Enterprise plans.";
+
+  test("retries on the same gateway without the ZDR flag and keeps no-training", async () => {
+    let rejected = false;
+    const vercel = createFakeAdapter({
+      id: "vercel",
+      onCall: (call) => {
+        const gatewayBlock = call.options.providerOptions?.gateway as
+          | Record<string, unknown>
+          | undefined;
+        if (gatewayBlock?.zeroDataRetention === true) {
+          rejected = true;
+          throw httpError(HTTP_FORBIDDEN, ZDR_REJECTION);
+        }
+      },
+    });
+    const { router, openrouter, logger } = createTestRouter({ plans, vercel });
+    const result = await router
+      .model(MODEL, { organizationId: PAID_ORG, zdr: "preferred" })
+      .doGenerate(callOptions());
+
+    assert.equal(rejected, true);
+    assert.equal(vercel.calls.length, 2);
+    assert.equal(openrouter?.calls.length, 0);
+    const retry = vercel.calls[1]?.options.providerOptions?.gateway as Record<
+      string,
+      unknown
+    >;
+    assert.equal(retry.zeroDataRetention, undefined);
+    assert.equal(retry.disallowPromptTraining, true);
+    assert.equal(metadataOf(result)?.gateway, "vercel");
+    const bypass = logger.entries.find(
+      (entry) => entry.event === "ai.router.zdr_bypassed"
+    );
+    assert.equal(bypass?.fields?.bypassReason, "caller-preferred");
+    assert.equal(bypass?.fields?.zdrEnforced, false);
+
+    // Strict requests are unaffected: the gateway was not marked unavailable.
+    const strict = await router.resolveRoute({
+      modelId: MODEL,
+      organizationId: PAID_ORG,
+    });
+    assert.equal(strict.gateway, "vercel");
+    assert.equal(strict.zdrEnforced, true);
+  });
+
+  test("openrouter 'no endpoints matching your data policy' is a ZDR rejection", async () => {
+    const openrouter = createFakeAdapter({
+      id: "openrouter",
+      onCall: (call) => {
+        const block = call.options.providerOptions?.openrouter as
+          | { provider?: Record<string, unknown> }
+          | undefined;
+        if (block?.provider?.zdr === true) {
+          throw httpError(
+            HTTP_NOT_FOUND,
+            "No endpoints found matching your data policy (Zero data retention)."
+          );
+        }
+      },
+    });
+    const { router, vercel } = createTestRouter({ plans, openrouter });
+    const result = await router
+      .model(MODEL, { organizationId: FREE_ORG, zdr: "preferred" })
+      .doGenerate(callOptions());
+
+    assert.equal(openrouter.calls.length, 2);
+    assert.equal(vercel?.calls.length, 0);
+    const retry = openrouter.calls[1]?.options.providerOptions?.openrouter as {
+      provider: Record<string, unknown>;
+    };
+    assert.equal(retry.provider.zdr, undefined);
+    assert.equal(retry.provider.data_collection, "deny");
+    assert.equal(metadataOf(result)?.gateway, "openrouter");
+  });
+
+  test("strict requests still fall back instead of relaxing", async () => {
+    const vercel = createFakeAdapter({
+      id: "vercel",
+      onCall: () => {
+        throw httpError(HTTP_FORBIDDEN, ZDR_REJECTION);
+      },
+    });
+    const { router, openrouter } = createTestRouter({ plans, vercel });
+    const result = await router
+      .model(MODEL, { organizationId: PAID_ORG, zdr: "required" })
+      .doGenerate(callOptions());
+    assert.equal(vercel.calls.length, 1);
+    assert.equal(openrouter?.calls.length, 1);
+    assert.equal(metadataOf(result)?.gateway, "openrouter");
+  });
+});
+
 describe("assertRouteHasCredits", () => {
   test("passes when the selected gateway has credits and caches the lookup", async () => {
     let now = 0;
@@ -723,6 +818,15 @@ describe("classifyUpstreamFailure", () => {
     assert.equal(
       classifyUpstreamFailure(httpError(HTTP_NOT_FOUND)),
       "unsupported-model"
+    );
+    assert.equal(
+      classifyUpstreamFailure(
+        httpError(
+          HTTP_NOT_FOUND,
+          "No endpoints found matching your data policy"
+        )
+      ),
+      "non-compliant"
     );
     assert.equal(
       classifyUpstreamFailure(httpError(HTTP_SERVICE_UNAVAILABLE)),

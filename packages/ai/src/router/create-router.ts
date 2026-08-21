@@ -121,6 +121,7 @@ export function createModelRouter(config: ModelRouterConfig): ModelRouter {
           modelId,
           organizationId: options?.organizationId,
           gateway: options?.gateway,
+          zdr: options?.zdr,
         },
         policy: config.policy,
         adapters: config.adapters,

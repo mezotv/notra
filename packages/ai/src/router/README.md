@@ -45,6 +45,31 @@ the ZDR requirement — Vercel ZDR is Pro/Enterprise only) the router retries on
 the other gateway **with the same privacy flags**. When no compliant route is
 left it throws `NoCompliantRouteError` instead of downgrading.
 
+Callers that may run without ZDR (e.g. GEO scans of a project that disabled
+"Enforce ZDR", or a model the user explicitly approved without a ZDR host)
+pass `zdr: "preferred"`:
+
+```ts
+gateway("meta/muse-spark-1.2", { organizationId, zdr: "preferred" });
+```
+
+The first attempt still carries the ZDR flags. Only when the gateway rejects
+ZDR for that model (Vercel 403, OpenRouter 404 "no endpoints matching your
+data policy") the same route is retried without the ZDR flag — no-training
+stays on, the gateway is not marked unavailable for strict requests, and the
+result is logged as `ai.router.zdr_bypassed` (`bypassReason: caller-preferred`)
+with `zdrEnforced: false` in the route metadata.
+
+## Gateway coverage
+
+`isModelSupported()` (`router/model-ids.ts`) consults
+`VERCEL_UNSUPPORTED_MODELS` / `OPENROUTER_UNSUPPORTED_MODELS`
+(`@notra/ai/constants/router`). A model that only exists on OpenRouter goes
+there directly (`fallbackReason: unsupported-model`) instead of burning a
+request on Vercel first. Add OpenRouter-only ids (and an alias in
+`OPENROUTER_MODEL_ALIASES` when the OpenRouter id differs) when you add them
+to a catalog.
+
 ## Provider options
 
 Call sites use `withRouterDefaults()` from `@notra/ai/provider-options`, which
