@@ -1284,13 +1284,19 @@ export const projects = pgTable(
     brandSettingsId: text("brand_settings_id")
       .notNull()
       .references(() => brandSettings.id),
+    isSample: boolean("is_sample").notNull().default(false),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
       .$onUpdate(() => /* @__PURE__ */ new Date())
       .notNull(),
   },
-  (table) => [index("projects_organizationId_idx").on(table.organizationId)]
+  (table) => [
+    index("projects_organizationId_idx").on(table.organizationId),
+    uniqueIndex("projects_organizationId_sample_uidx")
+      .on(table.organizationId)
+      .where(sql`${table.isSample} = true`),
+  ]
 );
 
 export const geoSettings = pgTable(
@@ -1403,6 +1409,89 @@ export const geoCompetitors = pgTable(
     uniqueIndex("geoCompetitors_projectId_name_uidx").on(
       table.projectId,
       table.name
+    ),
+  ]
+);
+
+export const geoScans = pgTable(
+  "geo_scans",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["running", "completed", "failed"] })
+      .notNull()
+      .default("running"),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    finishedAt: timestamp("finished_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("geoScans_organizationId_idx").on(table.organizationId),
+    index("geoScans_projectId_startedAt_idx").on(
+      table.projectId,
+      table.startedAt
+    ),
+  ]
+);
+
+export const geoMentionChecks = pgTable(
+  "geo_mention_checks",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    scanId: text("scan_id")
+      .notNull()
+      .references(() => geoScans.id, { onDelete: "cascade" }),
+    engine: text("engine").notNull(),
+    promptId: text("prompt_id").notNull(),
+    sequenceId: text("sequence_id"),
+    turn: integer("turn").notNull().default(0),
+    prompt: text("prompt").notNull(),
+    answer: text("answer").notNull(),
+    mentioned: boolean("mentioned").notNull(),
+    position: integer("position"),
+    sentiment: text("sentiment"),
+    competitors: text("competitors")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    excerpt: text("excerpt").notNull().default(""),
+    language: text("language").notNull().default("English"),
+    capturedAt: timestamp("captured_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("geoMentionChecks_organizationId_capturedAt_idx").on(
+      table.organizationId,
+      table.capturedAt
+    ),
+    index("geoMentionChecks_projectId_capturedAt_idx").on(
+      table.projectId,
+      table.capturedAt
+    ),
+    index("geoMentionChecks_projectEnginePrompt_idx").on(
+      table.projectId,
+      table.engine,
+      table.promptId,
+      table.capturedAt
+    ),
+    index("geoMentionChecks_scanId_idx").on(table.scanId),
+    uniqueIndex("geoMentionChecks_scanEnginePromptTurnLanguage_uidx").on(
+      table.scanId,
+      table.engine,
+      table.promptId,
+      table.turn,
+      table.language
     ),
   ]
 );
@@ -2153,6 +2242,8 @@ export const organizationsRelations = relations(
     googleSearchConsoleIntegration: one(googleSearchConsoleIntegrations),
     geoPromptSequences: many(geoPromptSequences),
     geoCompetitors: many(geoCompetitors),
+    geoScans: many(geoScans),
+    geoMentionChecks: many(geoMentionChecks),
     connectedSocialAccounts: many(connectedSocialAccounts),
     postCollections: many(postCollections),
     posts: many(posts),
@@ -2542,6 +2633,8 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   geoPrompts: many(geoPrompts),
   geoPromptSequences: many(geoPromptSequences),
   geoCompetitors: many(geoCompetitors),
+  geoScans: many(geoScans),
+  geoMentionChecks: many(geoMentionChecks),
 }));
 
 export const geoPromptSequencesRelations = relations(
@@ -2589,6 +2682,36 @@ export const geoCompetitorsRelations = relations(geoCompetitors, ({ one }) => ({
     references: [projects.id],
   }),
 }));
+
+export const geoScansRelations = relations(geoScans, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [geoScans.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [geoScans.projectId],
+    references: [projects.id],
+  }),
+  checks: many(geoMentionChecks),
+}));
+
+export const geoMentionChecksRelations = relations(
+  geoMentionChecks,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoMentionChecks.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [geoMentionChecks.projectId],
+      references: [projects.id],
+    }),
+    scan: one(geoScans, {
+      fields: [geoMentionChecks.scanId],
+      references: [geoScans.id],
+    }),
+  })
+);
 
 export const geoPromptSuggestionsRelations = relations(
   geoPromptSuggestions,

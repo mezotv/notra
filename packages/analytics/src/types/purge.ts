@@ -3,3 +3,8 @@ export interface PurgeSocialAccountInput {
   provider: string;
   providerAccountId: string;
 }
+
+export interface PurgeGeoProjectInput {
+  organizationId: string;
+  projectId: string;
+}

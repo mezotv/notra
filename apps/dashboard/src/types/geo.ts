@@ -207,6 +207,11 @@ export interface GeoSampleDataResponse {
   analyticsIngested: boolean;
 }
 
+export interface GeoSampleDataClearResponse {
+  cleared: boolean;
+  analyticsCleared: boolean;
+}
+
 export interface GeoTrackedPrompt {
   id: string;
   prompt: string;

@@ -51,7 +51,7 @@ import {
   upsertGeoSettings,
 } from "@/lib/geo/programs";
 import { createGeoProject, listGeoProjects } from "@/lib/geo/projects";
-import { seedGeoSampleData } from "@/lib/geo/sample-data";
+import { clearGeoSampleData, seedGeoSampleData } from "@/lib/geo/sample-data";
 import { syncGscSuggestions } from "@/lib/geo/search-console";
 import {
   createGeoSequence,
@@ -414,6 +414,14 @@ export const geoRouter = {
         throw notFound();
       }
       return geoHandler((input) => seedGeoSampleData(input))(options);
+    }),
+  sampleDataClear: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async (options) => {
+      if (!GEO_SAMPLE_DATA_ENABLED) {
+        throw notFound();
+      }
+      return geoHandler((input) => clearGeoSampleData(input))(options);
     }),
   searchConsoleStatus: authorizedProcedure
     .input(geoOrganizationInputSchema)

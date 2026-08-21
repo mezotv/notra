@@ -40,7 +40,8 @@ export function PromptResultsPreview({
       {
         key: "prompt",
         header: "Prompt",
-        width: "2.4fr",
+        width: "1fr",
+        minWidth: "10rem",
         sortable: true,
         cell: (row) => (
           <Tooltip>
@@ -57,39 +58,25 @@ export function PromptResultsPreview({
       },
     ];
 
-    if (languages.length > 0) {
-      base.push({
-        key: "languages",
-        header: "Languages",
-        width: "7.5rem",
-        cell: () => (
-          <span className="flex items-center gap-0.5 text-xs">
-            {languages.map((language) => (
-              <Twemoji
-                className="size-4 shrink-0"
-                emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
-                key={language}
-                label={`Also scanned in ${language}`}
-              />
-            ))}
-          </span>
-        ),
-      });
-    }
-
     base.push(
       {
         key: "presence",
         header: "Presence",
-        width: "9.375rem",
+        width: "7rem",
         sortable: true,
-        cell: (row) => <PresenceBadge status={row.presence} />,
+        cell: (row) =>
+          row.presence === "retrieval-only" || row.presence === "invisible" ? (
+            <PresenceBadge status={row.presence} />
+          ) : (
+            <span className="text-muted-foreground text-xs">-</span>
+          ),
         sortValue: (row) => row.presence ?? "",
       },
       {
         key: "bestPosition",
-        header: "Best position",
-        width: "9.75rem",
+        header: "Best",
+        width: "5rem",
+        align: "center",
         sortable: true,
         cell: (row) =>
           row.bestPosition === null ? (
@@ -104,7 +91,8 @@ export function PromptResultsPreview({
       {
         key: "engines",
         header: "Engines",
-        width: "6.875rem",
+        width: "5.5rem",
+        align: "right",
         sortable: true,
         cell: (row) => (
           <span className="text-muted-foreground text-xs tabular-nums">
@@ -116,7 +104,7 @@ export function PromptResultsPreview({
     );
 
     return base;
-  }, [languages]);
+  }, []);
 
   return (
     <InstrumentSection
@@ -137,9 +125,25 @@ export function PromptResultsPreview({
         />
       ) : (
         <div className="flex flex-col gap-2">
-          <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
+          <div className="flex min-h-5 items-center justify-between gap-3 px-1 text-muted-foreground text-xs">
             <span>{rows.length.toLocaleString()} prompts</span>
-            <span>{summaries.length.toLocaleString()} tracked</span>
+            <div className="flex min-w-0 items-center gap-3">
+              {languages.length > 0 ? (
+                <span className="flex shrink-0 items-center gap-1">
+                  {languages.map((language) => (
+                    <Twemoji
+                      className="size-3.5 shrink-0"
+                      emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+                      key={language}
+                      label={language}
+                    />
+                  ))}
+                </span>
+              ) : null}
+              <span className="shrink-0 tabular-nums">
+                {summaries.length.toLocaleString()} tracked
+              </span>
+            </div>
           </div>
           <Table
             className="rounded-2xl"
@@ -151,7 +155,6 @@ export function PromptResultsPreview({
             )}
             getRowId={(row) => row.promptId}
             height={tableHeightFor(rows.length)}
-            resizable
             rowHeight={TABLE_ROW_HEIGHT}
           />
         </div>

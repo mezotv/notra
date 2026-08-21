@@ -2,6 +2,7 @@
 
 import { AiMagicIcon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { useState } from "react";
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { Button } from "@/components/button";
@@ -14,7 +15,11 @@ import {
   GEO_INGEST_TOKEN_ENV,
 } from "@/constants/geo";
 import { cn } from "@/lib/utils";
-import type { GeoIngestSetupPanelProps } from "@/types/geo";
+import type {
+  GeoIngestFramework,
+  GeoIngestPackageManager,
+  GeoIngestSetupPanelProps,
+} from "@/types/geo";
 import {
   geoIngestAgentPrompt,
   geoIngestInstallCommand,
@@ -40,28 +45,25 @@ export function GeoIngestSetup({ setup, className }: GeoIngestSetupPanelProps) {
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="font-medium text-sm">Install the package</h3>
-          <fieldset className="m-0 flex shrink-0 items-center border-0 p-0">
-            <legend className="sr-only">Package manager</legend>
-            {GEO_INGEST_PACKAGE_MANAGER_OPTIONS.map((option) => {
-              const selected = option.value === packageManager;
-              return (
-                <button
-                  aria-pressed={selected}
-                  className={cn(
-                    "rounded-md px-1.5 py-0.5 font-medium text-xs transition-colors",
-                    selected
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
+          <Tabs
+            className="shrink-0 gap-0"
+            onValueChange={(value) =>
+              setPackageManager(value as GeoIngestPackageManager)
+            }
+            value={packageManager}
+          >
+            <TabsList aria-label="Package manager">
+              {GEO_INGEST_PACKAGE_MANAGER_OPTIONS.map((option) => (
+                <TabsTrigger
+                  className="px-2 text-xs"
                   key={option.value}
-                  onClick={() => setPackageManager(option.value)}
-                  type="button"
+                  value={option.value}
                 >
                   {option.label}
-                </button>
-              );
-            })}
-          </fieldset>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
         </div>
         <CodeSnippet code={installCommand} variant="command" />
       </section>
@@ -71,28 +73,25 @@ export function GeoIngestSetup({ setup, className }: GeoIngestSetupPanelProps) {
           code={snippet}
           filename={file}
           headerEnd={
-            <fieldset className="m-0 flex shrink-0 items-center border-0 p-0">
-              <legend className="sr-only">Framework</legend>
-              {GEO_INGEST_FRAMEWORK_OPTIONS.map((option) => {
-                const selected = option.value === framework;
-                return (
-                  <button
-                    aria-pressed={selected}
-                    className={cn(
-                      "rounded-md px-1.5 py-0.5 font-medium text-xs transition-colors",
-                      selected
-                        ? "text-foreground"
-                        : "text-muted-foreground hover:text-foreground"
-                    )}
+            <Tabs
+              className="shrink-0 gap-0"
+              onValueChange={(value) =>
+                setFramework(value as GeoIngestFramework)
+              }
+              value={framework}
+            >
+              <TabsList aria-label="Framework">
+                {GEO_INGEST_FRAMEWORK_OPTIONS.map((option) => (
+                  <TabsTrigger
+                    className="px-2 text-xs"
                     key={option.value}
-                    onClick={() => setFramework(option.value)}
-                    type="button"
+                    value={option.value}
                   >
                     {option.label}
-                  </button>
-                );
-              })}
-            </fieldset>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
           }
         />
         <div aria-hidden className="flex items-center gap-3 py-1">

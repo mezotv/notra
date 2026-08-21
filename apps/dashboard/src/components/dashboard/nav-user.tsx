@@ -69,6 +69,8 @@ export function NavUser() {
     return null;
   }
 
+  const userInitial = user.name.charAt(0).toUpperCase();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -85,8 +87,12 @@ export function NavUser() {
                 className="rounded-lg"
                 src={user.image ?? undefined}
               />
-              <AvatarFallback className="flex items-center justify-center rounded-lg font-medium text-[0.6875rem] leading-none">
-                {user.name.charAt(0).toUpperCase()}
+              <AvatarFallback className="flex items-center justify-center rounded-lg bg-foreground/10 font-medium text-[0.6875rem] text-foreground leading-none">
+                <span
+                  className={cn(userInitial === "J" && "-translate-x-[0.5px]")}
+                >
+                  {userInitial}
+                </span>
               </AvatarFallback>
             </Avatar>
           </button>
@@ -107,8 +113,14 @@ export function NavUser() {
                   className="rounded-lg"
                   src={user.image ?? undefined}
                 />
-                <AvatarFallback className="flex items-center justify-center rounded-lg font-medium text-xs leading-none">
-                  {user.name.charAt(0).toUpperCase()}
+                <AvatarFallback className="flex items-center justify-center rounded-lg bg-foreground/10 font-medium text-foreground text-xs leading-none">
+                  <span
+                    className={cn(
+                      userInitial === "J" && "-translate-x-[0.5px]"
+                    )}
+                  >
+                    {userInitial}
+                  </span>
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">

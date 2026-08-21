@@ -1,6 +1,7 @@
 import type { GeoCompetitorSeed } from "@/types/geo";
 
-export const GEO_SAMPLE_DAYS = 14;
+export const GEO_SAMPLE_DAYS = 30;
+export const GEO_SAMPLE_PROJECT_NAME = "Notra demo";
 export const GEO_SAMPLE_LANGUAGES = ["English", "German"] as const;
 
 export const GEO_SAMPLE_ENGINES: readonly {
@@ -53,6 +54,18 @@ export const GEO_SAMPLE_COMPETITORS: readonly GeoCompetitorSeed[] = [
     synonyms: [],
     kind: "indirect",
   },
+  {
+    name: "Profound",
+    domain: "tryprofound.com",
+    synonyms: [],
+    kind: "direct",
+  },
+  {
+    name: "Peec AI",
+    domain: "peec.ai",
+    synonyms: ["Peec"],
+    kind: "direct",
+  },
 ];
 
 export const GEO_SAMPLE_PROMPTS: readonly {
@@ -84,22 +97,51 @@ export const GEO_SAMPLE_PROMPTS: readonly {
     german:
       "Wie sollte ich ein Tool für generative engine optimization wählen?",
   },
+  {
+    english: "Which brands lead the AI content platform market?",
+    german: "Welche Marken führen den Markt für KI-Content-Plattformen an?",
+  },
+  {
+    english: "What GEO metrics should a marketing team track?",
+    german: "Welche GEO-Kennzahlen sollte ein Marketingteam verfolgen?",
+  },
+  {
+    english: "How do I monitor traffic from AI assistants?",
+    german: "Wie messe ich Traffic von KI-Assistenten?",
+  },
+  {
+    english: "Which AI visibility tool is best for agencies?",
+    german: "Welches Tool für KI-Sichtbarkeit eignet sich für Agenturen?",
+  },
 ];
 
-export const GEO_SAMPLE_SEQUENCE = {
-  name: "Buyer research",
-  steps: [
-    "I need a tool for AI content and GEO tracking. What should I look at?",
-    "How do those options compare on AI search visibility?",
-    "Which one would you pick for a small marketing team?",
-  ],
-} as const;
+export const GEO_SAMPLE_SEQUENCES = [
+  {
+    name: "Buyer research",
+    steps: [
+      "I need a tool for AI content and GEO tracking. What should I look at?",
+      "How do those options compare on AI search visibility?",
+      "Which one would you pick for a small marketing team?",
+    ],
+  },
+  {
+    name: "Agency evaluation",
+    steps: [
+      "Which AI visibility platforms support multiple client brands?",
+      "Which of those also tracks AI referrals and crawler traffic?",
+      "Recommend one for a growing content agency.",
+    ],
+  },
+] as const;
 
 export const GEO_SAMPLE_TRAFFIC_PATHS: readonly string[] = [
   "/changelog",
   "/blog/geo-guide",
   "/docs/sdk",
   "/docs/sdk/quickstart",
+  "/blog/ai-search-visibility",
+  "/customers/saas",
+  "/integrations",
   "/pricing",
 ];
 
@@ -111,6 +153,8 @@ export const GEO_SAMPLE_CRAWLERS: readonly {
   { agent: "OAI-SearchBot", category: "search-index" },
   { agent: "ClaudeBot", category: "training-crawler" },
   { agent: "PerplexityBot", category: "search-index" },
+  { agent: "Google-Extended", category: "training-crawler" },
+  { agent: "Bytespider", category: "training-crawler" },
 ];
 
 export const GEO_SAMPLE_REFERRALS: readonly {
@@ -121,4 +165,6 @@ export const GEO_SAMPLE_REFERRALS: readonly {
   { source: "perplexity", referer: "https://www.perplexity.ai/" },
   { source: "claude", referer: "https://claude.ai/" },
   { source: "gemini", referer: "https://gemini.google.com/" },
+  { source: "copilot", referer: "https://copilot.microsoft.com/" },
+  { source: "you.com", referer: "https://you.com/" },
 ];

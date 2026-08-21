@@ -7,16 +7,19 @@ import type {
   GeoMentionCheckRow,
   GeoTrafficEventRow,
 } from "@notra/analytics/tinybird/datasources";
+import { purgeGeoProjectData } from "@notra/analytics/tinybird/purge";
 import { toClickHouseDateTime } from "@notra/analytics/utils/datetime";
 import { db } from "@notra/db/drizzle";
 import {
+  brandSettings,
   geoCompetitors,
   geoPromptSequences,
   geoPrompts,
   geoSettings,
   organizations,
+  projects,
 } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import {
   GEO_EXCERPT_MAX_LENGTH,
@@ -29,18 +32,24 @@ import {
   GEO_SAMPLE_ENGINES,
   GEO_SAMPLE_GROUNDED_ENGINES,
   GEO_SAMPLE_LANGUAGES,
+  GEO_SAMPLE_PROJECT_NAME,
   GEO_SAMPLE_PROMPTS,
   GEO_SAMPLE_REFERRALS,
-  GEO_SAMPLE_SEQUENCE,
+  GEO_SAMPLE_SEQUENCES,
   GEO_SAMPLE_TRAFFIC_PATHS,
 } from "@/constants/geo-sample";
 import { competitorKey } from "@/lib/geo/domain";
 import { geoDb } from "@/lib/geo/effect";
-import { GeoSampleDataDisabledError, GeoTinybirdError } from "@/lib/geo/errors";
-import { ensureGeoProject } from "@/lib/geo/projects";
+import {
+  GeoBrandIdentityMissingError,
+  GeoProjectCreateFailedError,
+  GeoSampleDataDisabledError,
+  GeoTinybirdError,
+} from "@/lib/geo/errors";
 import { customPromptScanId } from "@/lib/geo/prompts";
 import type {
   GeoCompetitorSeed,
+  GeoSampleDataClearResponse,
   GeoSampleDataResponse,
   GeoScopeInput,
 } from "@/types/geo";
@@ -166,7 +175,10 @@ function buildMentionChecks(input: {
   projectId: string;
   companyName: string;
   prompts: readonly { id: string; english: string; german: string }[];
-  sequenceId: string | null;
+  sequences: readonly {
+    id: string;
+    steps: readonly string[];
+  }[];
   now: Date;
 }): GeoMentionCheckRow[] {
   const rows: GeoMentionCheckRow[] = [];
@@ -218,30 +230,28 @@ function buildMentionChecks(input: {
       }
     }
 
-    if (!input.sequenceId) {
-      continue;
-    }
-
-    for (const engine of GEO_SAMPLE_GROUNDED_ENGINES) {
-      const rate = mentionRateFor(0.55, dayIndex);
-      GEO_SAMPLE_SEQUENCE.steps.forEach((step, index) => {
-        rows.push(
-          buildMentionRow({
-            organizationId: input.organizationId,
-            projectId: input.projectId,
-            scanId,
-            engine,
-            promptId: `sequence-${input.sequenceId}`,
-            sequenceId: input.sequenceId ?? "",
-            turn: index + 1,
-            prompt: step,
-            capturedAt,
-            companyName: input.companyName,
-            language: "English",
-            mentionRate: rate,
-          })
-        );
-      });
+    for (const sequence of input.sequences) {
+      for (const engine of GEO_SAMPLE_GROUNDED_ENGINES) {
+        const rate = mentionRateFor(0.55, dayIndex);
+        sequence.steps.forEach((step, index) => {
+          rows.push(
+            buildMentionRow({
+              organizationId: input.organizationId,
+              projectId: input.projectId,
+              scanId,
+              engine,
+              promptId: `sequence-${sequence.id}`,
+              sequenceId: sequence.id,
+              turn: index + 1,
+              prompt: step,
+              capturedAt,
+              companyName: input.companyName,
+              language: "English",
+              mentionRate: rate,
+            })
+          );
+        });
+      }
     }
   }
 
@@ -331,6 +341,57 @@ async function ingestChunks<T>(
   }
 }
 
+export const clearGeoSampleData = Effect.fn("geo.sampleDataClear")(function* (
+  input: GeoScopeInput
+) {
+  if (!GEO_SAMPLE_DATA_ENABLED) {
+    return yield* Effect.fail(new GeoSampleDataDisabledError({}));
+  }
+
+  const sampleProject = yield* geoDb("sample project lookup failed", () =>
+    db.query.projects.findFirst({
+      columns: { id: true },
+      where: and(
+        eq(projects.organizationId, input.organizationId),
+        eq(projects.isSample, true)
+      ),
+    })
+  );
+  const analyticsCleared = Boolean(sampleProject) && isTinybirdConfigured();
+
+  if (sampleProject && analyticsCleared) {
+    yield* Effect.tryPromise({
+      try: () =>
+        purgeGeoProjectData({
+          organizationId: input.organizationId,
+          projectId: sampleProject.id,
+        }),
+      catch: (cause) =>
+        new GeoTinybirdError({ label: "sample purge failed", cause }),
+    });
+  }
+
+  if (sampleProject) {
+    yield* geoDb("sample project delete failed", () =>
+      db
+        .delete(projects)
+        .where(
+          and(
+            eq(projects.id, sampleProject.id),
+            eq(projects.organizationId, input.organizationId),
+            eq(projects.isSample, true)
+          )
+        )
+    );
+  }
+
+  const response: GeoSampleDataClearResponse = {
+    cleared: Boolean(sampleProject),
+    analyticsCleared,
+  };
+  return response;
+});
+
 export const seedGeoSampleData = Effect.fn("geo.sampleData")(function* (
   input: GeoScopeInput
 ) {
@@ -346,7 +407,36 @@ export const seedGeoSampleData = Effect.fn("geo.sampleData")(function* (
   );
 
   const companyName = org?.name?.trim() || "Acme";
-  const projectId = yield* ensureGeoProject(input, companyName);
+  const identity = yield* geoDb("brand identity lookup failed", () =>
+    db.query.brandSettings.findFirst({
+      columns: { id: true },
+      where: eq(brandSettings.organizationId, input.organizationId),
+      orderBy: [desc(brandSettings.isDefault), asc(brandSettings.createdAt)],
+    })
+  );
+  if (!identity) {
+    return yield* Effect.fail(
+      new GeoBrandIdentityMissingError({ organizationId: input.organizationId })
+    );
+  }
+
+  yield* clearGeoSampleData(input);
+  const insertedProjects = yield* geoDb("sample project create failed", () =>
+    db
+      .insert(projects)
+      .values({
+        id: crypto.randomUUID(),
+        organizationId: input.organizationId,
+        name: GEO_SAMPLE_PROJECT_NAME,
+        brandSettingsId: identity.id,
+        isSample: true,
+      })
+      .returning({ id: projects.id })
+  );
+  const projectId = insertedProjects.at(0)?.id;
+  if (!projectId) {
+    return yield* Effect.fail(new GeoProjectCreateFailedError({}));
+  }
   const now = new Date();
   const scanFinishedAt = now;
   const scanStartedAt = new Date(now.getTime() - SCAN_DURATION_MS);
@@ -475,40 +565,33 @@ export const seedGeoSampleData = Effect.fn("geo.sampleData")(function* (
     }),
   ];
 
-  const existingSequences = yield* geoDb("sequences lookup failed", () =>
-    db.query.geoPromptSequences.findMany({
-      where: and(
-        eq(geoPromptSequences.projectId, projectId),
-        eq(geoPromptSequences.name, GEO_SAMPLE_SEQUENCE.name)
-      ),
-    })
-  );
-
-  let sequencesAdded = 0;
-  let sequenceId = existingSequences.at(0)?.id ?? null;
-  if (!sequenceId) {
-    const insertedSequence = yield* geoDb("sequence insert failed", () =>
-      db
-        .insert(geoPromptSequences)
-        .values({
+  const insertedSequences = yield* geoDb("sequences insert failed", () =>
+    db
+      .insert(geoPromptSequences)
+      .values(
+        GEO_SAMPLE_SEQUENCES.map((sequence) => ({
           id: crypto.randomUUID(),
           organizationId: input.organizationId,
           projectId,
-          name: GEO_SAMPLE_SEQUENCE.name,
-          steps: [...GEO_SAMPLE_SEQUENCE.steps],
-        })
-        .returning({ id: geoPromptSequences.id })
+          name: sequence.name,
+          steps: [...sequence.steps],
+        }))
+      )
+      .returning({ id: geoPromptSequences.id, name: geoPromptSequences.name })
+  );
+  const sequencesForChecks = insertedSequences.flatMap((row) => {
+    const sequence = GEO_SAMPLE_SEQUENCES.find(
+      (candidate) => candidate.name === row.name
     );
-    sequenceId = insertedSequence.at(0)?.id ?? null;
-    sequencesAdded = sequenceId ? 1 : 0;
-  }
+    return sequence ? [{ id: row.id, steps: sequence.steps }] : [];
+  });
 
   const mentionChecks = buildMentionChecks({
     organizationId: input.organizationId,
     projectId,
     companyName: existingSettings?.companyName ?? companyName,
     prompts: promptRowsForChecks,
-    sequenceId,
+    sequences: sequencesForChecks,
     now,
   });
   const trafficEvents = buildTrafficEvents({
@@ -534,7 +617,7 @@ export const seedGeoSampleData = Effect.fn("geo.sampleData")(function* (
     projectId,
     promptsAdded: insertedPrompts.length,
     competitorsAdded: competitorsToAdd.length,
-    sequencesAdded,
+    sequencesAdded: insertedSequences.length,
     mentionChecks: mentionChecks.length,
     trafficEvents: trafficEvents.length,
     analyticsIngested,
