@@ -86,7 +86,7 @@ export function DashboardShell({
         >
           <SiteHeader />
           <div className="flex min-h-0 flex-1 flex-col bg-muted">
-            <div className="@container/main -mx-px scrollbar-floating flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain rounded-t-2xl border border-sidebar-border border-b-0 bg-background">
+            <div className="@container/main -mx-px scrollbar-stable flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain rounded-t-2xl border border-sidebar-border border-b-0 bg-background">
               <SubscriptionGate>{children}</SubscriptionGate>
             </div>
           </div>
