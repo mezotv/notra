@@ -546,7 +546,6 @@ export interface GeoTrafficLogFilters {
 }
 
 export interface GeoTrafficLogQueryOptions {
-  limit?: number;
   refetchInterval?: number | false;
 }
 
@@ -671,12 +670,6 @@ export interface GeoIngestSetupResponse {
 export interface GeoIngestSetupPanelProps {
   setup: GeoIngestSetupResponse | undefined;
   className?: string;
-}
-
-export interface GeoIngestSetupDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  organizationId: string;
 }
 
 export interface TrafficEmptyProps {
@@ -860,17 +853,12 @@ export interface MentionTrendAgentsPickerProps {
 
 export interface AiTrafficLogCardProps {
   organizationId: string;
-  organizationSlug: string;
 }
 
 export interface CitationsTableProps {
   entries: GeoTrafficLogEntry[];
   height: number;
   loading?: boolean;
-}
-
-export interface CitationsEmptyProps {
-  organizationId: string;
 }
 
 export interface PurposeBadgeProps {

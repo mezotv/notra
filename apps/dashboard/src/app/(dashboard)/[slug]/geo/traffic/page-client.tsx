@@ -140,10 +140,7 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
             <TrafficPagesCard pages={trafficPages?.pages ?? []} />
           </InstrumentReveal>
           <InstrumentReveal active={revealActive} order={2}>
-            <AiTrafficLogCard
-              organizationId={organizationId}
-              organizationSlug={organizationSlug}
-            />
+            <AiTrafficLogCard organizationId={organizationId} />
           </InstrumentReveal>
         </div>
       </div>

@@ -454,7 +454,6 @@ export function useGeoTrafficLog(
       input: {
         organizationId,
         projectId,
-        limit: options?.limit,
         visitorTypes: toGeoTrafficLogVisitorFilter(filters.visitorTypes),
         categories: toGeoTrafficLogPurposeFilter(filters.categories),
       },

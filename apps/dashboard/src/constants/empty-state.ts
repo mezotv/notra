@@ -7,7 +7,6 @@ export const EMPTY_STATE_TABLE_COLUMNS = {
   sitemap: [220, 72, 96],
   prompts: [240, 72, 56],
   competitors: [160, 120, 72, 88],
-  citations: [108, 140, 160, 96, 88],
   traffic: [128, 96, 72, 80, 88],
 } as const;
 

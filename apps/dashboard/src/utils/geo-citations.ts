@@ -27,50 +27,6 @@ export function formatCitationProvider(
   return formatGeoSource(source, visitorType);
 }
 
-function citationPageOffset(page: number, pageSize: number): number {
-  return Math.max(0, page - 1) * pageSize;
-}
-
-export function citationPageCount(total: number, pageSize: number): number {
-  if (pageSize <= 0 || total <= 0) {
-    return 1;
-  }
-  return Math.ceil(total / pageSize);
-}
-
-export function formatCitationRange(
-  page: number,
-  pageSize: number,
-  total: number
-): string {
-  if (total === 0) {
-    return "Showing 0 of 0 requests";
-  }
-  const start = citationPageOffset(page, pageSize) + 1;
-  const end = Math.min(page * pageSize, total);
-  return `Showing ${start.toLocaleString()}–${end.toLocaleString()} of ${total.toLocaleString()} requests`;
-}
-
-export function citationPageRows<T>(
-  rows: readonly T[],
-  page: number,
-  pageSize: number
-): T[] {
-  const start = citationPageOffset(page, pageSize);
-  return rows.slice(start, start + pageSize);
-}
-
-export function geoCitationsHref(
-  organizationSlug: string,
-  projectId?: string
-): string {
-  const path = `/${organizationSlug}/geo/citations`;
-  if (!projectId) {
-    return path;
-  }
-  return `${path}?project=${encodeURIComponent(projectId)}`;
-}
-
 export function citationRowId(
   entry: GeoTrafficLogEntry,
   index: number

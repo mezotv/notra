@@ -1,20 +1,21 @@
 "use client";
 
+import { PauseIcon, PlayIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import Link from "next/link";
 import { useState } from "react";
 import { CitationsTable } from "@/components/geo/citations-table";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
-import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import {
+  GEO_CITATIONS_LIVE_INTERVAL_MS,
   GEO_TRAFFIC_LOG_PURPOSE_OPTIONS,
   GEO_TRAFFIC_LOG_VISITOR_OPTIONS,
 } from "@/constants/geo";
@@ -24,26 +25,21 @@ import {
   formatGeoTrafficFilterLabel,
   toggleGeoTrafficFilterValue,
 } from "@/utils/ai-traffic";
-import { geoCitationsHref } from "@/utils/geo-citations";
 
 const TRAFFIC_LOG_HEIGHT = 416;
 
 const FILTER_TRIGGER_CLASS =
   "flex h-6 items-center gap-1 rounded-sm border border-border bg-background px-2 text-xs hover:bg-muted";
 
-const ALL_CITATIONS_CLASS =
-  "text-muted-foreground text-xs capitalize underline-offset-4 hover:text-foreground hover:underline";
-
-export function AiTrafficLogCard({
-  organizationId,
-  organizationSlug,
-}: AiTrafficLogCardProps) {
-  const { projectId } = useGeoProjectScope();
+export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
   const [filters, setFilters] = useState<GeoTrafficLogFilters>({
     visitorTypes: [],
     categories: [],
   });
-  const { data } = useGeoTrafficLog(organizationId, filters);
+  const [live, setLive] = useState(true);
+  const { data } = useGeoTrafficLog(organizationId, filters, {
+    refetchInterval: live ? GEO_CITATIONS_LIVE_INTERVAL_MS : false,
+  });
   const log = data?.log ?? [];
   const total = data?.total ?? log.length;
 
@@ -107,12 +103,20 @@ export function AiTrafficLogCard({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      <Link
-        className={ALL_CITATIONS_CLASS}
-        href={geoCitationsHref(organizationSlug, projectId)}
-      >
-        All citations
-      </Link>
+      {total > 0 && (
+        <button
+          className={FILTER_TRIGGER_CLASS}
+          onClick={() => setLive((current) => !current)}
+          type="button"
+        >
+          <HugeiconsIcon
+            icon={live ? PauseIcon : PlayIcon}
+            size={12}
+            strokeWidth={2}
+          />
+          {live ? "Pause live updates" : "Resume live updates"}
+        </button>
+      )}
     </div>
   );
 
