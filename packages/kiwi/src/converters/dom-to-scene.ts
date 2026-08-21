@@ -10,6 +10,7 @@ import {
   LAYER_WORD_SPLIT_RE,
   MAX_LAYER_NAME_LENGTH,
   RGB_RE,
+  SVG_GEOMETRY_SELECTOR,
   TEXT_ALIGN_MAP,
   WEIGHT_TO_STYLE,
   WHITESPACE_GLOBAL_RE,
@@ -27,7 +28,7 @@ import type {
 } from "../types/dom-to-scene";
 import type { Guid, Transform } from "../types/scene";
 import type { PathSubpath } from "../types/svg-path";
-import { parseSvgPath } from "../utils/svg-path";
+import { svgPrimitiveToSubpaths } from "../utils/svg-primitive";
 import { TextLayoutCache } from "../utils/text-layout";
 
 export type { BuildSceneFromElementOptions } from "../types/dom-to-scene";
@@ -627,39 +628,54 @@ function extractLayout(node: Node): LayoutNode | null {
     const fallbackColor = style.color;
 
     const shapes: SvgShape[] = [];
-    const pathEls = svg.querySelectorAll("path");
-    for (const pathEl of pathEls) {
-      const d = pathEl.getAttribute("d");
-      if (!d) {
-        continue;
-      }
-      const ctm = pathEl.getScreenCTM();
-      if (!ctm) {
-        continue;
-      }
-      const subpaths = parseSvgPath(d);
+    const geomEls = svg.querySelectorAll(SVG_GEOMETRY_SELECTOR);
+    for (const geomEl of geomEls) {
+      const subpaths = svgPrimitiveToSubpaths(geomEl.tagName.toLowerCase(), {
+        d: geomEl.getAttribute("d"),
+        cx: geomEl.getAttribute("cx"),
+        cy: geomEl.getAttribute("cy"),
+        r: geomEl.getAttribute("r"),
+        rx: geomEl.getAttribute("rx"),
+        ry: geomEl.getAttribute("ry"),
+        x: geomEl.getAttribute("x"),
+        y: geomEl.getAttribute("y"),
+        width: geomEl.getAttribute("width"),
+        height: geomEl.getAttribute("height"),
+        x1: geomEl.getAttribute("x1"),
+        y1: geomEl.getAttribute("y1"),
+        x2: geomEl.getAttribute("x2"),
+        y2: geomEl.getAttribute("y2"),
+        points: geomEl.getAttribute("points"),
+      });
       if (subpaths.length === 0) {
         continue;
       }
-      const pathStyle = getComputedStyle(pathEl);
-      const pathFill = pathEl.getAttribute("fill");
-      const pathStroke = pathEl.getAttribute("stroke");
+      if (!(geomEl instanceof SVGGraphicsElement)) {
+        continue;
+      }
+      const ctm = geomEl.getScreenCTM();
+      if (!ctm) {
+        continue;
+      }
+      const geomStyle = getComputedStyle(geomEl);
+      const geomFill = geomEl.getAttribute("fill");
+      const geomStroke = geomEl.getAttribute("stroke");
       const stroke = svgPaintValue(
-        pathStroke,
-        svgStroke ?? pathStyle.stroke,
+        geomStroke,
+        svgStroke ?? geomStyle.stroke,
         fallbackColor
       );
       const fill = svgPaintValue(
-        pathFill,
-        svgFill ?? (stroke || pathStroke || svgStroke ? null : pathStyle.fill),
+        geomFill,
+        svgFill ?? (stroke || geomStroke || svgStroke ? null : geomStyle.fill),
         fallbackColor
       );
       if (!fill && !stroke) {
         continue;
       }
       const fillRule: "nonzero" | "evenodd" =
-        pathEl.getAttribute("fill-rule") === "evenodd" ||
-        pathEl.getAttribute("clip-rule") === "evenodd"
+        geomEl.getAttribute("fill-rule") === "evenodd" ||
+        geomEl.getAttribute("clip-rule") === "evenodd"
           ? "evenodd"
           : "nonzero";
       const transformed: PathSubpath[] = subpaths.map((sub) => ({
@@ -675,18 +691,18 @@ function extractLayout(node: Node): LayoutNode | null {
         fillRule,
         stroke,
         strokeLineCap:
-          pathEl.getAttribute("stroke-linecap") ??
+          geomEl.getAttribute("stroke-linecap") ??
           svg.getAttribute("stroke-linecap") ??
-          pathStyle.strokeLinecap,
+          geomStyle.strokeLinecap,
         strokeLineJoin:
-          pathEl.getAttribute("stroke-linejoin") ??
+          geomEl.getAttribute("stroke-linejoin") ??
           svg.getAttribute("stroke-linejoin") ??
-          pathStyle.strokeLinejoin,
+          geomStyle.strokeLinejoin,
         strokeWidth:
           parsePx(
-            pathEl.getAttribute("stroke-width") ??
+            geomEl.getAttribute("stroke-width") ??
               svg.getAttribute("stroke-width") ??
-              pathStyle.strokeWidth
+              geomStyle.strokeWidth
           ) * (Math.hypot(ctm.a, ctm.b) || 1),
       });
     }
