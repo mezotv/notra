@@ -41,6 +41,7 @@ import {
   GEO_MODEL_USAGE_SOURCE,
   GEO_MODEL_USAGE_TREND_WEEKS,
 } from "@/constants/geo";
+import { GEO_MODEL_CATALOG_STATIC } from "@/constants/geo-model-catalog";
 import { hasProSubscription } from "@/lib/billing/subscription";
 import { competitorKey } from "@/lib/geo/domain";
 import { geoDb, geoQuery, geoSkip } from "@/lib/geo/effect";
@@ -98,6 +99,7 @@ import type {
   GeoWindowInput,
 } from "@/types/geo";
 import { toGeoTrafficTotals, toGeoVisitorType } from "@/utils/ai-traffic";
+import { isGeoStaticEngineAvailable } from "@/utils/geo-model-catalog";
 
 function mergeLegacyCompetitors(
   competitors: GeoCompetitor[],
@@ -347,9 +349,32 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
     hasProSubscription(input.organizationId)
   );
   const enforceZdr = isPro && input.enforceZdr;
-  const nonZdrApprovedEngines = input.nonZdrApprovedEngines.filter((engine) =>
-    input.engines.includes(engine)
+  const unavailableStaticEngines = new Set(
+    GEO_MODEL_CATALOG_STATIC.filter(
+      (entry) => !isGeoStaticEngineAvailable(entry)
+    ).map((entry) => entry.id)
   );
+  const existingSettings =
+    unavailableStaticEngines.size === 0
+      ? undefined
+      : yield* geoDb("settings lookup failed", () =>
+          db.query.geoSettings.findFirst({
+            columns: { engines: true, nonZdrApprovedEngines: true },
+            where: eq(geoSettings.projectId, projectId),
+          })
+        );
+  const preservedEngines = (existingSettings?.engines ?? []).filter((engine) =>
+    unavailableStaticEngines.has(engine)
+  );
+  const engines = [...new Set([...input.engines, ...preservedEngines])];
+  const nonZdrApprovedEngines = [
+    ...new Set([
+      ...input.nonZdrApprovedEngines,
+      ...(existingSettings?.nonZdrApprovedEngines ?? []).filter((engine) =>
+        preservedEngines.includes(engine)
+      ),
+    ]),
+  ].filter((engine) => engines.includes(engine));
 
   yield* geoDb("settings upsert failed", () =>
     db
@@ -362,7 +387,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
         aliases: input.aliases,
         competitors: input.competitors,
         languages: input.languages,
-        engines: input.engines,
+        engines,
         enforceZdr,
         nonZdrApprovedEngines,
         enabled: input.enabled,
@@ -374,7 +399,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
           aliases: input.aliases,
           competitors: input.competitors,
           languages: input.languages,
-          engines: input.engines,
+          engines,
           enforceZdr,
           nonZdrApprovedEngines,
           enabled: input.enabled,

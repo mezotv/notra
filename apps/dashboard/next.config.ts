@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
     "@notra/utils",
     "@usenotra/geo",
   ],
-  serverExternalPackages: ["@resvg/resvg-js"],
+  serverExternalPackages: ["@resvg/resvg-js", "@cursor/sdk"],
   async rewrites() {
     if (process.env.NODE_ENV === "production") {
       return [];

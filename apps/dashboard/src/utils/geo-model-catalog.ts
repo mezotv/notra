@@ -1,10 +1,13 @@
 import {
   GEO_DEFAULT_ENGINE_IDS,
   GEO_MODEL_CATALOG_SEED,
+  GEO_MODEL_CATALOG_STATIC,
   GEO_MODEL_EXCLUDED_ID_PATTERN,
+  GEO_MODEL_EXCLUDED_SLUG_PATTERN,
   GEO_MODEL_EXCLUDED_TAGS,
   GEO_MODEL_PROVIDERS,
   GEO_MODELS_PER_PROVIDER,
+  GEO_STATIC_ENGINE_ENV,
 } from "@/constants/geo-model-catalog";
 import type {
   GeoGatewayModel,
@@ -21,7 +24,10 @@ function isEligibleFeedModel(model: GeoGatewayModel): boolean {
   if (model.type !== "language" || model.deprecated_at) {
     return false;
   }
-  if (GEO_MODEL_EXCLUDED_ID_PATTERN.test(model.id)) {
+  if (
+    GEO_MODEL_EXCLUDED_ID_PATTERN.test(model.id) ||
+    GEO_MODEL_EXCLUDED_SLUG_PATTERN.test(model.id)
+  ) {
     return false;
   }
   return !(model.tags ?? []).some((tag) => GEO_MODEL_EXCLUDED_TAGS.has(tag));
@@ -46,6 +52,30 @@ function toDayString(seconds: number): string {
   return new Date(seconds * MS_PER_SECOND).toISOString().slice(0, DAY_LENGTH);
 }
 
+/**
+ * True when a static (non-gateway) engine can actually run, i.e. its provider
+ * credential is configured. Server-side only — the catalog is built in the
+ * oRPC `modelCatalog` handler and in `lib/geo/programs.ts`.
+ */
+export function isGeoStaticEngineAvailable(
+  entry: GeoModelCatalogEntry
+): boolean {
+  const envKey = GEO_STATIC_ENGINE_ENV[entry.id];
+  if (!envKey) {
+    return true;
+  }
+  return (process.env[envKey] ?? "").trim().length > 0;
+}
+
+function staticEntriesForProvider(
+  providerId: GeoModelProviderId
+): GeoModelCatalogEntry[] {
+  return GEO_MODEL_CATALOG_STATIC.filter(
+    (entry) =>
+      entry.provider === providerId && isGeoStaticEngineAvailable(entry)
+  );
+}
+
 export function buildGeoModelCatalogFromFeed(
   feed: readonly GeoGatewayModel[]
 ): GeoModelCatalog {
@@ -61,7 +91,11 @@ export function buildGeoModelCatalogFromFeed(
     const olderDefaults = entries
       .slice(GEO_MODELS_PER_PROVIDER)
       .filter((entry) => entry.default);
-    models.push(...newest, ...olderDefaults);
+    models.push(
+      ...newest,
+      ...olderDefaults,
+      ...staticEntriesForProvider(provider.id)
+    );
   }
   const providers = GEO_MODEL_PROVIDERS.filter((provider) =>
     models.some((model) => model.provider === provider.id)
@@ -70,10 +104,19 @@ export function buildGeoModelCatalogFromFeed(
 }
 
 export function seedGeoModelCatalog(): GeoModelCatalog {
-  return {
-    providers: [...GEO_MODEL_PROVIDERS],
-    models: [...GEO_MODEL_CATALOG_SEED],
-  };
+  const models: GeoModelCatalogEntry[] = [];
+  for (const provider of GEO_MODEL_PROVIDERS) {
+    models.push(
+      ...GEO_MODEL_CATALOG_SEED.filter(
+        (entry) => entry.provider === provider.id
+      ),
+      ...staticEntriesForProvider(provider.id)
+    );
+  }
+  const providers = GEO_MODEL_PROVIDERS.filter((provider) =>
+    models.some((model) => model.provider === provider.id)
+  );
+  return { providers, models };
 }
 
 export function getGeoModelCatalogEntry(

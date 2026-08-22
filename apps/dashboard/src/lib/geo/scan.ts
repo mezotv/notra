@@ -15,6 +15,7 @@ import { Effect } from "effect";
 import {
   GEO_ANSWER_MAX_TOKENS,
   GEO_ANSWER_SYSTEM_PROMPT,
+  GEO_CURSOR_TIMEOUT_MS,
   GEO_EXCERPT_MAX_LENGTH,
   GEO_GROUNDED_ANSWER_MAX_TOKENS,
   GEO_GROUNDED_MAX_PROMPTS,
@@ -29,6 +30,7 @@ import {
   GEO_SEQUENCE_MAX_TURNS,
   GEO_TRANSLATION_MAX_TOKENS,
 } from "@/constants/geo";
+import { askCursorEngine } from "@/lib/geo/cursor";
 import { geoSkip } from "@/lib/geo/effect";
 import {
   buildGroundedInvocation,
@@ -103,12 +105,12 @@ Analyze the answer and report:
 The answer may be written in any language or script; count mentions of the company or its aliases regardless of language.`;
 }
 
-const askEngine = Effect.fn("geo.askEngine")(function* (
+const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
   organizationId: string,
   engine: string,
   promptText: string,
   zdr: GeoZdrMode,
-  gatewayPin: GeoModelGateway | undefined
+  gatewayPin: Exclude<GeoModelGateway, "cursor"> | undefined
 ) {
   const result = yield* Effect.tryPromise({
     try: () =>
@@ -129,6 +131,54 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
       }),
   });
   return result.text;
+});
+
+/**
+ * Cursor is not hosted on any AI gateway, so it runs through the local Cursor
+ * SDK instead of `generateText`. Zero data retention is irrelevant here: the
+ * catalog marks the engine as non-ZDR and approval is handled upstream.
+ */
+const askCursorEngineEffect = Effect.fn("geo.askCursorEngine")(function* (
+  engine: string,
+  promptText: string
+) {
+  return yield* askCursorEngine(promptText).pipe(
+    Effect.mapError(
+      (cause) =>
+        new GeoScanError({
+          message: `Engine ${engine} failed to answer`,
+          cause,
+        })
+    ),
+    Effect.timeoutOrElse({
+      duration: GEO_CURSOR_TIMEOUT_MS,
+      orElse: () =>
+        Effect.fail(
+          new GeoScanError({
+            message: `Engine ${engine} timed out after ${GEO_CURSOR_TIMEOUT_MS}ms`,
+          })
+        ),
+    })
+  );
+});
+
+const askEngine = Effect.fn("geo.askEngine")(function* (
+  organizationId: string,
+  engine: string,
+  promptText: string,
+  zdr: GeoZdrMode,
+  gatewayPin: GeoModelGateway | undefined
+) {
+  if (gatewayPin === "cursor") {
+    return yield* askCursorEngineEffect(engine, promptText);
+  }
+  return yield* askGatewayEngine(
+    organizationId,
+    engine,
+    promptText,
+    zdr,
+    gatewayPin
+  );
 });
 
 const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(

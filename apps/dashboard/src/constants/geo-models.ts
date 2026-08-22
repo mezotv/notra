@@ -19,6 +19,7 @@ export const MODEL_HYPHEN_PREFIXES = new Set(["glm", "gpt", "hy3", "mimo"]);
 export const MODEL_TOKEN_LABELS: Record<string, string> = {
   claude: "Claude",
   coder: "Coder",
+  composer: "Composer",
   deepseek: "DeepSeek",
   flash: "Flash",
   gemini: "Gemini",
@@ -33,6 +34,7 @@ export const MODEL_TOKEN_LABELS: Record<string, string> = {
   llama: "Llama",
   lite: "Lite",
   luna: "Luna",
+  magistral: "Magistral",
   max: "Max",
   mimo: "MiMo",
   mini: "mini",

@@ -148,7 +148,7 @@ ci: `.github/workflows/code-quality.yml` → bun install, ultracite check on pus
 
 envFiles: `.env`, `.env.example`  
 
-envPrefixes: `DATABASE_URL`, `UPSTASH_REDIS_REST_*`, `GITHUB_CLIENT_*`, `GOOGLE_CLIENT_*`, `BETTER_AUTH_*`, `OPENROUTER_API_KEY`, `CONTEXT_DEV_API_KEY`, `RESEND_API_KEY`, `UNKEY_*`, `CLOUDFLARE_*`, `QSTASH_*`  
+envPrefixes: `DATABASE_URL`, `UPSTASH_REDIS_REST_*`, `GITHUB_CLIENT_*`, `GOOGLE_CLIENT_*`, `BETTER_AUTH_*`, `OPENROUTER_API_KEY`, `CONTEXT_DEV_API_KEY`, `RESEND_API_KEY`, `UNKEY_*`, `CLOUDFLARE_*`, `QSTASH_*`, `PERPLEXITY_API_KEY`, `CURSOR_API_KEY`
 
 ---
 

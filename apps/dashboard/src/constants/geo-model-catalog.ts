@@ -1,10 +1,11 @@
 import type { GeoModelCatalogEntry, GeoModelProvider } from "@/types/geo";
 
 /**
- * Providers surfaced in the GEO model picker. The live model list comes from
- * the Vercel AI Gateway feed (see `lib/geo/model-catalog.ts`); this file only
- * holds presentation config plus a seed snapshot used when the feed is
- * unreachable.
+ * Providers surfaced in the GEO model picker, in display order. The live model
+ * list comes from the Vercel AI Gateway feed (see `lib/geo/model-catalog.ts`);
+ * this file only holds presentation config plus a seed snapshot used when the
+ * feed is unreachable. A provider is dropped from the catalog when neither the
+ * feed nor `GEO_MODEL_CATALOG_STATIC` yields a model for it.
  */
 export const GEO_MODEL_PROVIDERS: readonly GeoModelProvider[] = [
   {
@@ -53,6 +54,18 @@ export const GEO_MODEL_PROVIDERS: readonly GeoModelProvider[] = [
     id: "deepseek",
     label: "DeepSeek",
     brand: "deepseek",
+    featured: false,
+  },
+  {
+    id: "mistral",
+    label: "Mistral AI",
+    brand: "mistral",
+    featured: false,
+  },
+  {
+    id: "cursor",
+    label: "Cursor",
+    brand: "cursor",
     featured: false,
   },
 ];
@@ -282,7 +295,71 @@ export const GEO_MODEL_CATALOG_SEED: readonly GeoModelCatalogEntry[] = [
     default: false,
     gateways: ["vercel", "openrouter"],
   },
+  // Mistral
+  {
+    id: "mistral/mistral-medium-3.5",
+    provider: "mistral",
+    label: "Mistral Medium 3.5",
+    zdr: "all",
+    released: "2026-04-29",
+    default: false,
+    gateways: ["vercel"],
+  },
+  {
+    id: "mistral/mistral-large-3",
+    provider: "mistral",
+    label: "Mistral Large 3",
+    zdr: "all",
+    released: "2025-12-02",
+    default: false,
+    gateways: ["vercel"],
+  },
+  {
+    id: "mistral/magistral-medium",
+    provider: "mistral",
+    label: "Magistral Medium",
+    zdr: "all",
+    released: "2025-06-10",
+    default: false,
+    gateways: ["vercel"],
+  },
+  {
+    id: "mistral/mistral-small",
+    provider: "mistral",
+    label: "Mistral Small",
+    zdr: "all",
+    released: "2024-09-17",
+    default: false,
+    gateways: ["vercel"],
+  },
 ];
+
+/**
+ * Models that no gateway serves. Cursor's Composer runs through the Cursor SDK
+ * (`lib/geo/cursor.ts`) with its own API key, so it is appended to the catalog
+ * instead of coming from the feed. `zdr: "none"` because Cursor publishes no
+ * zero-data-retention guarantee for API runs — under enforced ZDR the engine
+ * therefore needs explicit approval before it is scanned.
+ */
+export const GEO_MODEL_CATALOG_STATIC: readonly GeoModelCatalogEntry[] = [
+  {
+    id: "cursor/composer-2.5",
+    provider: "cursor",
+    label: "Composer 2.5",
+    zdr: "none",
+    released: "2026-08-01",
+    default: false,
+    gateways: ["cursor"],
+  },
+];
+
+/**
+ * Environment variable that has to be set for a static engine to be runnable.
+ * Static entries are hidden from the catalog while their key is missing.
+ */
+export const GEO_STATIC_ENGINE_ENV: Readonly<Record<string, string>> = {
+  "cursor/composer-2.5": "CURSOR_API_KEY",
+};
 
 /** Engines scanned when a project has not picked its own set. */
 export const GEO_DEFAULT_ENGINE_IDS: readonly string[] =
@@ -302,3 +379,10 @@ export const GEO_MODEL_EXCLUDED_TAGS: ReadonlySet<string> = new Set([
 ]);
 /** Host-speed variants and previews duplicate a model's answers. */
 export const GEO_MODEL_EXCLUDED_ID_PATTERN = /(-fast|-beta|-contributor)$/;
+/**
+ * Coding, vision and edge-sized specialities. They are never used to answer
+ * the prompts we scan, so they would only crowd out a provider's general
+ * chat models in the per-provider slots.
+ */
+export const GEO_MODEL_EXCLUDED_SLUG_PATTERN =
+  /(codestral|devstral|pixtral|ministral|mistral-nemo)/;

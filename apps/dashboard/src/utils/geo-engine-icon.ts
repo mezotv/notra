@@ -14,6 +14,10 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
     patterns: ["copilot", "bingbot", "microsoft", "bing/"],
   },
   {
+    key: "cursor",
+    patterns: ["cursor", "composer", "anysphere"],
+  },
+  {
     key: "openai",
     patterns: ["openai", "gpt", "chatgpt", "oai-"],
   },

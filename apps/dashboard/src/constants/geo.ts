@@ -22,6 +22,13 @@ export const GEO_JUDGE_MODEL = "openai/gpt-5.4-nano";
 export const GEO_OPENAI_API_KEY_ENV = "OPENAI_API_KEY";
 export const GEO_ANTHROPIC_API_KEY_ENV = "ANTHROPIC_API_KEY";
 export const GEO_PERPLEXITY_API_KEY_ENV = "PERPLEXITY_API_KEY";
+export const GEO_CURSOR_API_KEY_ENV = "CURSOR_API_KEY";
+
+/** Catalog id of the Cursor engine; the SDK model id is the slug part. */
+export const GEO_CURSOR_ENGINE_ID = "cursor/composer-2.5";
+export const GEO_CURSOR_MODEL_ID = "composer-2.5";
+/** Local Cursor runs took ~8s in testing; cold starts can be slower. */
+export const GEO_CURSOR_TIMEOUT_MS = 90_000;
 
 const hasEnv = (name: string): boolean => {
   const value = process.env[name];
@@ -97,6 +104,7 @@ export const GEO_BRAND_LABELS: Record<string, string> = {
   claude: "Claude",
   gemini: "Gemini",
   perplexity: "Perplexity",
+  cursor: "Cursor",
   copilot: "Copilot",
   mistral: "Mistral",
   deepseek: "DeepSeek",

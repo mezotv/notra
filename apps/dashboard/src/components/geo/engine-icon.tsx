@@ -1,6 +1,7 @@
 "use client";
 
 import { ClaudeAiIcon } from "@notra/ui/components/ui/svgs/claudeAiIcon";
+import { Cursor } from "@notra/ui/components/ui/svgs/cursor";
 import { Deepseek } from "@notra/ui/components/ui/svgs/deepseek";
 import { Gemini } from "@notra/ui/components/ui/svgs/gemini";
 import { Grok } from "@notra/ui/components/ui/svgs/grok";
@@ -83,6 +84,9 @@ export function EngineIcon({ engine, className }: EngineIconProps) {
   }
   if (key === "xiaomi") {
     return <Xiaomi className={iconClass} />;
+  }
+  if (key === "cursor") {
+    return <Cursor className={iconClass} />;
   }
   return <MicrosoftCopilot className={iconClass} />;
 }

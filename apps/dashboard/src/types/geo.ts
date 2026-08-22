@@ -948,7 +948,8 @@ export type EngineIconKey =
   | "qwen"
   | "copilot"
   | "tencent"
-  | "xiaomi";
+  | "xiaomi"
+  | "cursor";
 
 export type GeoChatSkin = "claude" | "chatgpt" | "gemini";
 
@@ -1042,12 +1043,18 @@ export type GeoModelProviderId =
   | "meta"
   | "zai"
   | "spacexai"
-  | "deepseek";
+  | "deepseek"
+  | "mistral"
+  | "cursor";
 
 /** Zero-data-retention coverage as reported by the Vercel AI Gateway feed. */
 export type GeoModelZdr = "all" | "some" | "none";
 
-export type GeoModelGateway = "vercel" | "openrouter";
+/**
+ * Where a model is served. `cursor` runs through the Cursor SDK instead of
+ * the AI router (see `lib/geo/cursor.ts`).
+ */
+export type GeoModelGateway = "vercel" | "openrouter" | "cursor";
 
 export interface GeoModelProvider {
   id: GeoModelProviderId;
