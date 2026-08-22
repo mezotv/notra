@@ -82,7 +82,7 @@ export function GeoTagList({
           onChange(addUniqueValues(values, `${draft} ${text}`, max));
           setDraft("");
         }}
-        placeholder={atLimit || values.length > 0 ? undefined : placeholder}
+        placeholder={atLimit ? undefined : placeholder}
         value={draft}
       />
       {values.length > 0 ? (
