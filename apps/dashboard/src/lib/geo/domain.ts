@@ -22,16 +22,23 @@ export function competitorKey(name: string): string {
   return name.trim().toLowerCase();
 }
 
-export function findCompetitorDomain(
+export function findCompetitor(
   competitors: GeoCompetitor[] | undefined,
   name: string
-): string | null {
+): GeoCompetitor | null {
   if (!competitors) {
     return null;
   }
   const key = competitorKey(name);
-  const match = competitors.find(
-    (competitor) => competitorKey(competitor.name) === key
+  return (
+    competitors.find((competitor) => competitorKey(competitor.name) === key) ??
+    null
   );
-  return match?.domain ?? null;
+}
+
+export function findCompetitorDomain(
+  competitors: GeoCompetitor[] | undefined,
+  name: string
+): string | null {
+  return findCompetitor(competitors, name)?.domain ?? null;
 }

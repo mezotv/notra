@@ -6,7 +6,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import Link from "next/link";
-import { type ReactNode, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
@@ -19,6 +19,7 @@ import {
   EMPTY_STATE_TABLE_ROWS,
 } from "@/constants/empty-state";
 import {
+  GEO_COMPETITOR_KIND_DETAIL,
   GEO_GAPS_EMPTY,
   GEO_GAPS_LOGO_STACK_LIMIT,
   GEO_GAPS_METER_STEPS,
@@ -26,10 +27,12 @@ import {
   GEO_GAPS_TABLE_HEIGHT,
   GEO_PROMPTS_NAV_LINK,
 } from "@/constants/geo";
-import { findCompetitorDomain } from "@/lib/geo/domain";
+import { findCompetitor } from "@/lib/geo/domain";
 import { cn } from "@/lib/utils";
 import type {
   GeoGapsEmptyProps,
+  GeoGapsLogoStackItem,
+  GeoGapsLogoStackProps,
   GeoGapsTab,
   GeoGapsTableProps,
   GeoGapsTabsProps,
@@ -59,6 +62,7 @@ function WriteCell({
 }) {
   return (
     <Button
+      className="opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
       onClick={(event) => {
         event.stopPropagation();
         if (
@@ -124,37 +128,63 @@ function ContentCell({
   );
 }
 
-function LogoStack({
-  items,
-}: {
-  items: Array<{ key: string; label: string; node: ReactNode }>;
-}) {
+function LogoStackItemDetail({ item }: { item: GeoGapsLogoStackItem }) {
+  return (
+    <span className="flex items-center gap-2">
+      <span className="inline-flex shrink-0">{item.renderIcon("size-5")}</span>
+      <span className="min-w-0">
+        <span className="block font-medium">{item.label}</span>
+        {item.detail ? (
+          <span className="block text-muted-foreground text-xs">
+            {item.detail}
+          </span>
+        ) : null}
+      </span>
+    </span>
+  );
+}
+
+function LogoStack({ items }: GeoGapsLogoStackProps) {
   if (items.length === 0) {
     return <span className="text-muted-foreground">—</span>;
   }
 
   const visible = items.slice(0, GEO_GAPS_LOGO_STACK_LIMIT);
-  const overflow = items.length - visible.length;
-  const allLabels = items.map((item) => item.label).join(", ");
+  const hidden = items.slice(GEO_GAPS_LOGO_STACK_LIMIT);
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span className="inline-flex cursor-default items-center gap-1" />
-        }
-      >
-        {visible.map((item) => (
-          <span className="inline-flex shrink-0" key={item.key}>
-            {item.node}
-          </span>
-        ))}
-        {overflow > 0 ? (
-          <span className="text-muted-foreground text-xs">+{overflow}</span>
-        ) : null}
-      </TooltipTrigger>
-      <TooltipContent className="max-w-xs">{allLabels}</TooltipContent>
-    </Tooltip>
+    <span className="inline-flex items-center gap-1">
+      {visible.map((item) => (
+        <Tooltip key={item.key}>
+          <TooltipTrigger
+            render={<span className="inline-flex shrink-0 cursor-default" />}
+          >
+            {item.renderIcon("size-4")}
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <LogoStackItemDetail item={item} />
+          </TooltipContent>
+        </Tooltip>
+      ))}
+      {hidden.length > 0 ? (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span className="cursor-default text-muted-foreground text-xs" />
+            }
+          >
+            +{hidden.length}
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <span className="flex flex-col gap-1.5">
+              {hidden.map((item) => (
+                <LogoStackItemDetail item={item} key={item.key} />
+              ))}
+            </span>
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
+    </span>
   );
 }
 
@@ -165,7 +195,9 @@ function MissingEnginesCell({ engines }: { engines: string[] }) {
       items={families.map((family) => ({
         key: family,
         label: engineFamilyLabel(family),
-        node: <EngineIcon className="size-4" engine={family} />,
+        renderIcon: (className) => (
+          <EngineIcon className={className} engine={family} />
+        ),
       }))}
     />
   );
@@ -251,17 +283,23 @@ function BrandMentionsCell({
       : matchTrackedCompetitorNames(names, competitors);
   return (
     <LogoStack
-      items={tracked.map((name) => ({
-        key: name,
-        label: name,
-        node: (
-          <CompetitorLogo
-            className="size-4"
-            domain={findCompetitorDomain(competitors, name)}
-            name={name}
-          />
-        ),
-      }))}
+      items={tracked.map((name) => {
+        const competitor = findCompetitor(competitors, name);
+        return {
+          key: name,
+          label: name,
+          detail: competitor
+            ? GEO_COMPETITOR_KIND_DETAIL[competitor.kind]
+            : null,
+          renderIcon: (className) => (
+            <CompetitorLogo
+              className={className}
+              domain={competitor?.domain ?? null}
+              name={name}
+            />
+          ),
+        };
+      })}
     />
   );
 }

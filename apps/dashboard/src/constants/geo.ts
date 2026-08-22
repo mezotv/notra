@@ -11,6 +11,7 @@ import {
 import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
 import { GEO_MODEL_CATALOG_SEED } from "@/constants/geo-model-catalog";
 import type {
+  GeoCompetitorKind,
   GeoGroundedEngine,
   GeoIngestFramework,
   GeoIngestPackageManager,
@@ -378,6 +379,11 @@ export const COMPETITOR_TYPE_FILTERS = [
     description: "Solves the same problem differently",
   },
 ] as const;
+
+export const GEO_COMPETITOR_KIND_DETAIL: Record<GeoCompetitorKind, string> = {
+  direct: "Direct competitor",
+  indirect: "Indirect competitor",
+};
 
 export const COMPETITORS_TABLE_HEIGHT = 420;
 export const COMPETITOR_PROMPTS_TABLE_HEIGHT = 288;
