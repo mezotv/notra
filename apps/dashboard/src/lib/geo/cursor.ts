@@ -14,16 +14,9 @@ import {
   GEO_CURSOR_API_KEY_ENV,
   GEO_CURSOR_MODEL_ID,
 } from "@/constants/geo";
+import { requireApiKey } from "@/utils/require-api-key";
 
 const CURSOR_TEMP_DIR_PREFIX = "geo-cursor-";
-
-function requireApiKey(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} is not configured`);
-  }
-  return value;
-}
 
 async function cancelRun(run: Run): Promise<void> {
   try {

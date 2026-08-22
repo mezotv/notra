@@ -16,6 +16,7 @@ import type {
   GeoGroundedInvocation,
   GeoGroundedInvocationOptions,
 } from "@/types/geo";
+import { requireApiKey } from "@/utils/require-api-key";
 
 const googleSearchTool = tool({
   type: "provider",
@@ -23,14 +24,6 @@ const googleSearchTool = tool({
   args: {},
   inputSchema: z.object({}),
 });
-
-const requireApiKey = (name: string): string => {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`${name} is not configured`);
-  }
-  return value;
-};
 
 export function buildGroundedInvocation(
   engine: GeoGroundedEngine,
