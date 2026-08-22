@@ -28,7 +28,7 @@ export function geoBriefToMarkdown(brief: GeoContentBrief): string {
   return [
     `Target prompt: ${brief.targetPrompt}`,
     `Intent: ${brief.intent}`,
-    `Type: ${brief.contentType}`,
+    `Type: blog post (${brief.contentSubtype})`,
     `Audience: ${brief.audience}`,
     `Job to be done: ${brief.jobToBeDone}`,
     "",

@@ -43,7 +43,7 @@ function formatBrief(input: GeoWriterPromptInput): string {
   return dedent`
     Target prompt: ${brief.targetPrompt}
     Intent: ${brief.intent}
-    Content type: ${brief.contentType}
+    Content type: blog post (${brief.contentSubtype})
     Working title: ${brief.workingTitle}
     Audience: ${brief.audience}
     Job to be done: ${brief.jobToBeDone}

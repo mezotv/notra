@@ -27,7 +27,7 @@ export function buildGeoPlannerSystem(): string {
 
     How to build the brief:
     - Pick ONE target prompt: the exact question a buyer would type into an AI assistant. Prefer a provided content gap prompt when the topic matches one.
-    - Pick the content type that matches the intent: guide, comparison, listicle, how-to, faq, or alternatives. If the user already chose a content type, use that type. Do not substitute another type.
+    - Every article is a blog post. Choose the subtype that fits the intent: guide, comparison, listicle, how-to, faq, or alternatives. If the user already chose one, keep it.
     - Write 3 to 6 sections. Each section gets a heading, a one-sentence goal, and 1 to 3 concrete, checkable claims the writer must support.
     - List the questions the FAQ must answer directly.
     - Choose internal links ONLY from the provided sitemap pages. Copy each URL exactly as listed. If no sitemap pages are provided, return an empty internalLinks array. Never invent paths, subdomains, or query strings.
@@ -110,11 +110,11 @@ export function buildGeoPlannerPrompt(input: GeoPlannerPromptInput): string {
     ${topic}
     </topic>
 ${
-  input.contentType
+  input.contentSubtype
     ? `
-    <content-type>
-    Use this content type exactly: ${input.contentType}
-    </content-type>
+    <content-subtype>
+    Use this blog post subtype exactly: ${input.contentSubtype}
+    </content-subtype>
 `
     : ""
 }

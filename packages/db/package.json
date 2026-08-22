@@ -10,6 +10,7 @@
     "backfill:geo-languages": "bun run src/scripts/backfill-geo-languages.ts"
   },
   "exports": {
+    "./constants/*": "./src/constants/*.ts",
     "./drizzle": "./src/drizzle.ts",
     "./drizzle-http": "./src/drizzle-http.ts",
     "./schema": "./src/schema.ts",

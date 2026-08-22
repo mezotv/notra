@@ -16,6 +16,7 @@ import { createOctokit } from "@notra/ai/utils/octokit";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
 import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
+import type { BlogPostSubtype } from "@notra/db/types/content";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import type { CheckResponse } from "autumn-js";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
@@ -83,6 +84,7 @@ const postReadColumns = {
   markdown: true,
   recommendations: true,
   contentType: true,
+  contentSubtype: true,
   createdAt: true,
   sourceMetadata: true,
   status: true,
@@ -92,6 +94,7 @@ const postReadColumns = {
 function serializePost(post: {
   content: string;
   contentType: string;
+  contentSubtype: BlogPostSubtype | null;
   createdAt: Date;
   htmlUrl: string | null;
   id: string;
@@ -114,6 +117,7 @@ function serializePost(post: {
     recommendations: post.recommendations,
     contentType:
       post.contentType as PostsResponse["posts"][number]["contentType"],
+    contentSubtype: post.contentSubtype,
     status: post.status,
     createdAt: post.createdAt.toISOString(),
     updatedAt: post.updatedAt.toISOString(),
@@ -807,6 +811,7 @@ export const contentRouter = {
                 content: true,
                 markdown: true,
                 contentType: true,
+                contentSubtype: true,
                 status: true,
                 createdAt: true,
                 updatedAt: true,
@@ -853,6 +858,7 @@ export const contentRouter = {
               content: post.content,
               markdown: post.markdown,
               contentType: normalizeContentType(post.contentType),
+              contentSubtype: post.contentSubtype,
               status: post.status,
               createdAt: post.createdAt.toISOString(),
               updatedAt: post.updatedAt.toISOString(),

@@ -124,6 +124,7 @@ const createBriefDraftPost = Effect.fn("geo.writer.draftPost")(
           organizationId: input.organizationId,
           collectionId,
           contentType: BLOG_POST_CONTENT_TYPE,
+          contentSubtype: input.brief.contentSubtype,
           title: input.brief.workingTitle,
           slug: toArticleSlug(input.brief.workingTitle),
           markdown: geoBriefToMarkdown(input.brief),
@@ -559,7 +560,7 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
           organizationId: scope.organizationId,
           input: {
             topic,
-            contentType: input.contentType,
+            contentSubtype: input.contentSubtype,
             brand: {
               companyName,
               aliases: settings?.aliases ?? [],
@@ -605,8 +606,8 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
       }),
   });
 
-  const brief = input.contentType
-    ? { ...generated.brief, contentType: input.contentType }
+  const brief = input.contentSubtype
+    ? { ...generated.brief, contentSubtype: input.contentSubtype }
     : generated.brief;
 
   const briefId = crypto.randomUUID();

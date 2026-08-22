@@ -13,6 +13,7 @@ export interface ContentCardProps {
   title: string;
   preview: string;
   contentType: string;
+  contentSubtype?: string | null;
   status: PostStatus;
   organizationId: string;
   className?: string;

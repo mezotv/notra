@@ -1,6 +1,6 @@
 import type {
   GeoContentBrief,
-  GeoContentType,
+  GeoContentSubtype,
 } from "@notra/ai/types/geo-writer";
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 import type { GeoRequestPayload } from "@usenotra/geo";
@@ -1480,7 +1480,7 @@ export type GeoWriterSourceKind =
 export interface GeoWriterPlanInput {
   topic: string;
   autoApprove: boolean;
-  contentType?: GeoContentType;
+  contentSubtype?: GeoContentSubtype;
   brandVoiceIds?: string[];
   competitorIds?: string[];
   sourceKind?: GeoWriterSourceKind;

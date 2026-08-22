@@ -1,5 +1,5 @@
 import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
-import { geoContentTypeSchema } from "@notra/ai/schemas/geo-writer";
+import { geoContentSubtypeSchema } from "@notra/ai/schemas/geo-writer";
 import {
   array,
   boolean,
@@ -314,7 +314,7 @@ export const geoWriterPlanInputSchema = geoOrganizationInputSchema.extend({
     .min(GEO_WRITER_TOPIC_MIN_LENGTH)
     .max(GEO_WRITER_TOPIC_MAX_LENGTH),
   autoApprove: boolean().default(false),
-  contentType: geoContentTypeSchema.optional(),
+  contentSubtype: geoContentSubtypeSchema.optional(),
   brandVoiceIds: array(string().min(1)).max(8).optional(),
   competitorIds: array(string().min(1)).max(GEO_MAX_COMPETITORS).optional(),
   sourceKind: enumType([

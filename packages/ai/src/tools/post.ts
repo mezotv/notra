@@ -131,6 +131,7 @@ export function createCreatePostTool(
       organizationId: config.organizationId,
       collectionId: config.collectionId,
       contentType,
+      contentSubtype: config.contentSubtype ?? null,
       title: input.title,
       slug: withSlug ? (input.slug ?? null) : null,
       markdown: input.markdown,

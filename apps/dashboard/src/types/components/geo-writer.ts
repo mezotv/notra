@@ -1,4 +1,4 @@
-import type { GeoContentType } from "@notra/ai/types/geo-writer";
+import type { GeoContentSubtype } from "@notra/ai/types/geo-writer";
 import type { ReactNode } from "react";
 import type {
   GeoContentBriefDetail,
@@ -45,7 +45,7 @@ export interface WriteDialogInitialState {
   sourceKind: WriteDialogSourceKind;
   sourceId?: string;
   topic?: string;
-  contentType?: GeoContentType;
+  contentSubtype?: GeoContentSubtype;
   brandVoiceId?: string;
   competitorIds?: string[];
 }

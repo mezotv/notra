@@ -6,6 +6,7 @@ import {
 } from "@notra/ai/schemas/limits";
 import { POST_SLUG_MAX_LENGTH } from "@notra/ai/schemas/post";
 import { createContentGenerationRequestSchema } from "@notra/content-generation/schemas";
+import { BLOG_POST_SUBTYPES } from "@notra/db/constants/content";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 import {
@@ -87,6 +88,7 @@ export const postSchema = z.object({
   rawHtml: z.string().nullable(),
   recommendations: z.string().nullable(),
   contentType: contentTypeSchema,
+  contentSubtype: z.enum(BLOG_POST_SUBTYPES).nullable(),
   status: postStatusSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -193,6 +195,7 @@ export const groupPostSchema = z.object({
   content: z.string(),
   markdown: z.string().nullable(),
   contentType: contentTypeSchema,
+  contentSubtype: z.enum(BLOG_POST_SUBTYPES).nullable(),
   status: postStatusSchema,
   createdAt: z.string(),
   updatedAt: z.string(),

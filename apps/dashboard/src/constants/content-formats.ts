@@ -1,6 +1,16 @@
+import type { BlogPostSubtype } from "@notra/db/types/content";
 import type { OnDemandContentType } from "@/schemas/content";
 import type { ScheduleOutputType } from "@/schemas/integrations";
 import type { FormatCardMeta } from "@/types/content/formats";
+
+export const BLOG_POST_SUBTYPE_LABELS: Record<BlogPostSubtype, string> = {
+  guide: "Guide",
+  comparison: "Comparison",
+  listicle: "Listicle",
+  "how-to": "How-to",
+  faq: "FAQ",
+  alternatives: "Alternatives",
+};
 
 export const FORMAT_CARD_META: Record<OnDemandContentType, FormatCardMeta> = {
   changelog: {

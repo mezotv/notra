@@ -7,17 +7,11 @@ import {
   GEO_BRIEF_MAX_TITLE_LENGTH,
   GEO_BRIEF_MIN_SECTIONS,
 } from "@notra/ai/constants/geo-writer";
+import { BLOG_POST_SUBTYPES } from "@notra/db/constants/content";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 
-export const geoContentTypeSchema = z.enum([
-  "guide",
-  "comparison",
-  "listicle",
-  "how-to",
-  "faq",
-  "alternatives",
-]);
+export const geoContentSubtypeSchema = z.enum(BLOG_POST_SUBTYPES);
 
 export const geoBriefSectionSchema = z.object({
   heading: z.string().min(1).describe("H2 heading for this section"),
@@ -43,7 +37,9 @@ export const geoContentBriefSchema = z.object({
     .min(1)
     .describe("The question a buyer would ask an AI assistant"),
   intent: z.string().min(1).describe("Search intent behind the target prompt"),
-  contentType: geoContentTypeSchema,
+  contentSubtype: geoContentSubtypeSchema.describe(
+    "The kind of blog post to write"
+  ),
   workingTitle: z.string().min(1).max(GEO_BRIEF_MAX_TITLE_LENGTH),
   audience: z.string().min(1),
   jobToBeDone: z.string().min(1),

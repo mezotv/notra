@@ -2,14 +2,7 @@ import type {
   GEO_CONTENT_BRIEF_STATUSES,
   GEO_WRITER_SOURCE_KINDS,
 } from "../constants/geo-writer";
-
-export type GeoContentBriefContentType =
-  | "guide"
-  | "comparison"
-  | "listicle"
-  | "how-to"
-  | "faq"
-  | "alternatives";
+import type { BlogPostSubtype } from "./content";
 
 export interface GeoContentBriefSectionJson {
   heading: string;
@@ -31,7 +24,7 @@ export interface GeoContentBriefInternalLinkJson {
 export interface GeoContentBriefJson {
   targetPrompt: string;
   intent: string;
-  contentType: GeoContentBriefContentType;
+  contentSubtype: BlogPostSubtype;
   workingTitle: string;
   audience: string;
   jobToBeDone: string;

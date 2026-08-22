@@ -384,6 +384,7 @@ export async function runGeoWriter(
     organizationId,
     collectionId,
     contentType: "blog_post",
+    contentSubtype: brief.contentSubtype,
     sourceMetadata,
     autoPublish: false,
     targetPostId: postId ?? undefined,

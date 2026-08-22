@@ -13,6 +13,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { BLOG_POST_SUBTYPES } from "./constants/content";
 import {
   GEO_CONTENT_BRIEF_STATUSES,
   GEO_WRITER_SOURCE_KINDS,
@@ -1740,6 +1741,7 @@ export const posts = pgTable(
     markdown: text("markdown"),
     recommendations: text("recommendations"),
     contentType: text("content_type").notNull(),
+    contentSubtype: text("content_subtype", { enum: BLOG_POST_SUBTYPES }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     sourceMetadata: jsonb("source_metadata"),
     status: postStatusEnum("status").default("draft").notNull(),

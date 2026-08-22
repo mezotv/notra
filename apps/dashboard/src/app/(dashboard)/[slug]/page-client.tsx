@@ -78,6 +78,7 @@ export default function PageClient({
             <div className="w-full max-w-[340px] sm:max-w-none" key={post.id}>
               <ContentCard
                 className="min-h-35"
+                contentSubtype={post.contentSubtype}
                 contentType={post.contentType as ContentType}
                 href={`/${organizationSlug}/content/${post.id}`}
                 id={post.id}

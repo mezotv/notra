@@ -3,14 +3,14 @@ import type {
   geoBriefInternalLinkSchema,
   geoBriefSectionSchema,
   geoContentBriefSchema,
-  geoContentTypeSchema,
+  geoContentSubtypeSchema,
 } from "@notra/ai/schemas/geo-writer";
 import type { AgentTokenUsage } from "@notra/ai/types/agents";
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { z } from "zod";
 
-export type GeoContentType = z.infer<typeof geoContentTypeSchema>;
+export type GeoContentSubtype = z.infer<typeof geoContentSubtypeSchema>;
 export type GeoBriefSection = z.infer<typeof geoBriefSectionSchema>;
 export type GeoBriefInternalLink = z.infer<typeof geoBriefInternalLinkSchema>;
 export type GeoContentBrief = z.infer<typeof geoContentBriefSchema>;
@@ -44,7 +44,7 @@ export interface GeoPlannerPromptInput {
   competitors: GeoPlannerCompetitor[];
   gapPrompts: GeoPlannerGapPrompt[];
   sitemapPages: GeoPlannerSitemapPage[];
-  contentType?: GeoContentType;
+  contentSubtype?: GeoContentSubtype;
 }
 
 export interface GenerateGeoContentBriefOptions {

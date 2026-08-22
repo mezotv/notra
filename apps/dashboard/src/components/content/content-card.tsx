@@ -31,9 +31,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { memo, useState } from "react";
 import { toast } from "sonner";
+import { BLOG_POST_SUBTYPE_LABELS } from "@/constants/content-formats";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { cn } from "@/lib/utils";
 import type { ContentCardProps, ContentCardType } from "@/types/content/card";
+import { isBlogPostSubtype } from "@/utils/content-subtype";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { OutputTypeIcon } from "@/utils/output-types";
 
@@ -45,6 +47,17 @@ const CONTENT_TYPES = [
   "investor_update",
   "image",
 ] as const satisfies readonly ContentCardType[];
+
+function getContentSubtypeLabel(
+  contentSubtype: string | null | undefined
+): string | null {
+  if (!contentSubtype) {
+    return null;
+  }
+  return isBlogPostSubtype(contentSubtype)
+    ? BLOG_POST_SUBTYPE_LABELS[contentSubtype]
+    : formatSnakeCaseLabel(contentSubtype);
+}
 
 function getContentTypeLabel(contentType: string): string {
   if (contentType === "twitter_post") {
@@ -59,12 +72,14 @@ const ContentCard = memo(function ContentCard({
   title,
   preview,
   contentType,
+  contentSubtype,
   status,
   organizationId,
   className,
   href,
   imagePreviewSrc,
 }: ContentCardProps) {
+  const subtypeLabel = getContentSubtypeLabel(contentSubtype);
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -226,6 +241,7 @@ const ContentCard = memo(function ContentCard({
           <OutputTypeIcon className="size-3" outputType={contentType} />
           {getContentTypeLabel(contentType)}
         </Badge>
+        {subtypeLabel ? <Badge variant="outline">{subtypeLabel}</Badge> : null}
       </div>
     </div>
   );

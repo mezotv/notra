@@ -98,25 +98,25 @@ export const GEO_GAPS_EMPTY = {
 export const GEO_WRITER_TRIGGER_ID = "geo_writer";
 export const GEO_WRITER_TRIGGER_NAME = "GEO Writer";
 
-export const GEO_WRITE_CONTENT_TYPES = [
+export const GEO_WRITE_CONTENT_SUBTYPES = [
   {
     id: "guide" as const,
-    label: "Blog post",
-    description: "A longer article that answers the prompt directly.",
+    label: "Guide",
+    description: "A long article that answers the prompt directly.",
     icon: BookOpen01Icon,
     iconClass: "text-emerald-500 dark:text-emerald-300",
   },
   {
     id: "listicle" as const,
     label: "Listicle",
-    description: "A ranked or numbered list buyers can scan and cite.",
+    description: "A numbered list that buyers can scan and cite.",
     icon: LeftToRightListNumberIcon,
     iconClass: "text-violet-500 dark:text-violet-300",
   },
   {
     id: "comparison" as const,
     label: "Comparison",
-    description: "A side-by-side look at the brand versus alternatives.",
+    description: "Compares the brand with its alternatives.",
     icon: GitCompareIcon,
     iconClass: "text-amber-500 dark:text-amber-300",
   },
@@ -144,7 +144,7 @@ export const GEO_WRITE_DIALOG_SECTIONS = [
   },
   {
     id: "type" as const,
-    label: "Content type",
+    label: "Format",
     required: true,
     icon: Layers01Icon,
   },

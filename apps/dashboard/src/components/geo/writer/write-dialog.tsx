@@ -12,7 +12,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
  * After plan, go to `geoContentPath`. Do not send users to
  * `/geo/write?brief=`.
  */
-import type { GeoContentType } from "@notra/ai/types/geo-writer";
+import type { GeoContentSubtype } from "@notra/ai/types/geo-writer";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -35,7 +35,7 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import {
-  GEO_WRITE_CONTENT_TYPES,
+  GEO_WRITE_CONTENT_SUBTYPES,
   GEO_WRITE_DIALOG_SECTIONS,
   GEO_WRITE_PANEL_FOOTER_CLASS,
   GEO_WRITE_PANEL_FOOTER_ROW_CLASS,
@@ -59,7 +59,7 @@ import { WriteBrandOption } from "./write-brand-option";
 import { WriteOptionCard } from "./write-option-card";
 import { WriteSectionSidebar } from "./write-section-sidebar";
 
-const DEFAULT_CONTENT_TYPE: GeoContentType = "guide";
+const DEFAULT_CONTENT_SUBTYPE: GeoContentSubtype = "guide";
 const MANUAL_PROMPT_VALUE = "manual";
 
 export function WriteDialog({
@@ -128,8 +128,8 @@ function WriteDialogForm({
     return () => window.removeEventListener("keydown", handleKeyDown, true);
   }, [open]);
   const [topic, setTopic] = useState(initial?.topic ?? "");
-  const [contentType, setContentType] = useState<GeoContentType>(
-    initial?.contentType ?? DEFAULT_CONTENT_TYPE
+  const [contentSubtype, setContentSubtype] = useState<GeoContentSubtype>(
+    initial?.contentSubtype ?? DEFAULT_CONTENT_SUBTYPE
   );
   const [brandVoiceId, setBrandVoiceId] = useState<string | null>(
     initial?.brandVoiceId ?? null
@@ -247,7 +247,7 @@ function WriteDialogForm({
     const result = await planMutation.mutateAsync({
       topic: trimmed,
       autoApprove,
-      contentType,
+      contentSubtype,
       brandVoiceIds: brandVoiceId ? [brandVoiceId] : [],
       competitorIds,
       sourceKind,
@@ -380,7 +380,7 @@ function WriteDialogForm({
               >
                 {renderSectionHeader(
                   "prompt",
-                  "Select a tracked prompt or write your own. The article answers this question.",
+                  "Pick a tracked prompt or write your own. The article answers this question.",
                   `${fieldId}-topic`
                 )}
                 {prompts.length > 0 ? (
@@ -447,10 +447,10 @@ function WriteDialogForm({
               >
                 {renderSectionHeader(
                   "type",
-                  "Select the type of content you want to generate."
+                  "Choose what kind of blog post to write."
                 )}
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {GEO_WRITE_CONTENT_TYPES.map((option) => (
+                  {GEO_WRITE_CONTENT_SUBTYPES.map((option) => (
                     <WriteOptionCard
                       description={option.description}
                       icon={
@@ -462,8 +462,8 @@ function WriteDialogForm({
                       }
                       key={option.id}
                       label={option.label}
-                      onToggle={() => setContentType(option.id)}
-                      selected={contentType === option.id}
+                      onToggle={() => setContentSubtype(option.id)}
+                      selected={contentSubtype === option.id}
                     />
                   ))}
                 </div>
@@ -475,7 +475,7 @@ function WriteDialogForm({
               >
                 {renderSectionHeader(
                   "brand",
-                  "Whose voice and facts the article should use.",
+                  "The brand whose voice and facts the article uses.",
                   voices.length > 0 ? `${fieldId}-brand` : undefined
                 )}
                 {voices.length === 0 ? (
@@ -520,7 +520,7 @@ function WriteDialogForm({
                 <div className="flex items-start justify-between gap-3">
                   {renderSectionHeader(
                     "competitors",
-                    "Names the writer may mention in a fair comparison."
+                    "Competitors the article can mention when it compares options."
                   )}
                   {competitors.length > 0 ? (
                     <button
