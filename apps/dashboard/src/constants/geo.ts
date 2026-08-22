@@ -417,7 +417,7 @@ export const GEO_RANGE_PRESET_DAYS = {
 } as const;
 export const GEO_DEFAULT_QUERY_DAYS = 30;
 export const GEO_FILTER_TRIGGER_CLASS =
-  "flex h-7 items-center gap-1.5 rounded-full border bg-background px-2.5 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring";
+  "corner-squircle flex h-7 items-center gap-1.5 rounded-lg border bg-background px-2.5 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring";
 export const GEO_MENTION_RATE_LABEL = "Mention rate";
 export const GEO_SPARKLINE_MIN_POINTS = 2;
 export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
