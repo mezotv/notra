@@ -28,12 +28,13 @@ const grounded = gateway("openai/gpt-5.4", { organizationId, gateway: "vercel" }
 
 The plan is resolved once per organization through `resolvePlan`
 (`@notra/ai/billing/plan` → Autumn) and cached for 60 s.
-The policy is fixed in `@notra/ai/constants/router` and applies to all
-organizations immediately; there is no environment-controlled rollout.
+The policy is defined in `@notra/ai/constants/router` and applies to all
+organizations immediately. Development omits ZDR flags unless a caller sets
+one explicitly; other environments enforce ZDR.
 
 ## Privacy
 
-Every request forces zero data retention and no training:
+Outside development, every request forces zero data retention and no training:
 
 - OpenRouter: `provider: { zdr: true, data_collection: "deny" }` — set on the
   provider, on the model and on every call (`providerOptions.openrouter`).

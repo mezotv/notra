@@ -74,6 +74,6 @@ export const ROUTER_POLICY = {
   defaultGateway: "openrouter",
   paidGateway: "vercel",
   freeGateway: "openrouter",
-  allowNonZdr: false,
+  allowNonZdr: process.env.NODE_ENV === "development",
   crossGatewayFallback: true,
 } satisfies RouterPolicyConfig;
