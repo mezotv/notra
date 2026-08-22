@@ -254,7 +254,7 @@ function GapsTabs({
         size="sm"
         variant={tab === "prompt" ? "secondary" : "ghost"}
       >
-        Prompt gaps
+        Prompt Gaps
         <span className="text-muted-foreground">({promptCount})</span>
       </Button>
       <Button
@@ -263,7 +263,7 @@ function GapsTabs({
         size="sm"
         variant={tab === "search" ? "secondary" : "ghost"}
       >
-        Search gaps
+        Search Gaps
         <span className="text-muted-foreground">({searchCount})</span>
       </Button>
     </div>

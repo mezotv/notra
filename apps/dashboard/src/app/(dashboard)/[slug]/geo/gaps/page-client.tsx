@@ -1,12 +1,9 @@
 "use client";
 
 import { useFlag } from "@databuddy/sdk/react";
-import { PencilEdit01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { useRouter } from "next/navigation";
 import { parseAsString, useQueryState } from "nuqs";
 import { useCallback, useState } from "react";
-import { Button } from "@/components/button";
 import { GeoGapsTable } from "@/components/geo/gaps-table";
 import {
   GeoWriterNeedsSetup,
@@ -69,7 +66,6 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
   const [dialogInitial, setDialogInitial] =
     useState<WriteDialogInitialState | null>(null);
 
-
   const openDialog = useCallback((initial?: WriteDialogInitialState) => {
     setDialogInitial(initial ?? emptyWriteDialogState());
     setDialogOpen(true);
@@ -103,10 +99,6 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
               Questions engines answer without mentioning you
             </p>
           </div>
-          <Button className="gap-1.5" onClick={() => openDialog()}>
-            <HugeiconsIcon className="size-4" icon={PencilEdit01Icon} />
-            Custom topic
-          </Button>
         </header>
 
         {gapsQuery.isPending ? (
