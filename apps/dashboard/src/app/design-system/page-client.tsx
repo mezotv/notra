@@ -228,6 +228,7 @@ import { DesignSystemSectionHeader } from "@/components/design-system/design-sys
 import { GeoRangePickerDemo } from "@/components/design-system/geo-range-picker-demo";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LinkedInPost } from "@/components/linkedin-post";
+import { DesignSystemWriteDialogDemo } from "./write-dialog-demo";
 
 const colorGroups = [
   {
@@ -1568,6 +1569,7 @@ export default function DesignSystemClientPage() {
         </div>
       </section>
 
+      <DesignSystemWriteDialogDemo />
       <DesignSystemClaudeCatalog />
       <DesignSystemCodexCatalog />
       <DesignSystemChatgptCatalog />

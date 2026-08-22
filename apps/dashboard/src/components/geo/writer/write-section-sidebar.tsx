@@ -1,0 +1,81 @@
+"use client";
+
+import { HugeiconsIcon } from "@hugeicons/react";
+import { cn } from "@notra/ui/lib/utils";
+import { motion, useReducedMotion } from "motion/react";
+import {
+  GEO_WRITE_DIALOG_SECTIONS,
+  GEO_WRITE_PANEL_HEADER_CLASS,
+  GEO_WRITE_PANEL_HEADER_ROW_CLASS,
+  GEO_WRITE_SIDEBAR_TRANSITION,
+  GEO_WRITE_SIDEBAR_WIDTH,
+} from "@/constants/geo";
+import type { WriteSectionSidebarProps } from "@/types/components/geo-writer";
+
+export function WriteSectionSidebar({
+  activeSection,
+  collapsed,
+  onJump,
+}: WriteSectionSidebarProps) {
+  const reducedMotion = useReducedMotion();
+
+  return (
+    <motion.nav
+      animate={{
+        width: collapsed ? "0rem" : GEO_WRITE_SIDEBAR_WIDTH,
+        opacity: collapsed ? 0 : 1,
+        marginRight: collapsed ? "-0.75rem" : "0rem",
+      }}
+      aria-hidden={collapsed}
+      aria-label="Write sections"
+      className="hidden shrink-0 flex-col overflow-hidden md:flex"
+      initial={false}
+      transition={
+        reducedMotion ? { duration: 0 } : GEO_WRITE_SIDEBAR_TRANSITION
+      }
+    >
+      <div
+        className="flex min-h-0 flex-1 flex-col"
+        style={{ width: GEO_WRITE_SIDEBAR_WIDTH }}
+      >
+        <div className={GEO_WRITE_PANEL_HEADER_CLASS}>
+          <p
+            className={cn(
+              GEO_WRITE_PANEL_HEADER_ROW_CLASS,
+              "px-4 text-muted-foreground text-xs"
+            )}
+          >
+            Overview
+          </p>
+        </div>
+        <div className="-mt-5 flex min-h-0 flex-1 flex-col gap-0.5 rounded-2xl border border-border bg-background p-2">
+          {GEO_WRITE_DIALOG_SECTIONS.map((item) => {
+            const active = activeSection === item.id;
+            return (
+              <button
+                aria-current={active ? "location" : undefined}
+                className={cn(
+                  "flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
+                  active
+                    ? "bg-muted font-medium text-primary"
+                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                )}
+                key={item.id}
+                onClick={() => onJump(item.id)}
+                tabIndex={collapsed ? -1 : undefined}
+                type="button"
+              >
+                <HugeiconsIcon
+                  className="size-4"
+                  icon={item.icon}
+                  strokeWidth={1.8}
+                />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </motion.nav>
+  );
+}

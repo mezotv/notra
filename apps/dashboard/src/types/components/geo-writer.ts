@@ -24,6 +24,21 @@ export interface GeoWriterPageContentProps {
 
 export type WriteDialogSectionId = "prompt" | "type" | "brand" | "competitors";
 
+export interface WriteBrandOptionProps {
+  name: string;
+  websiteUrl: string | null;
+  isDefault: boolean;
+}
+
+export interface WriteOptionCardProps {
+  icon: ReactNode;
+  label: string;
+  description?: string | null;
+  selected: boolean;
+  onToggle: () => void;
+  compact?: boolean;
+}
+
 export type WriteDialogSourceKind = GeoWriterSourceKind;
 
 export interface WriteDialogInitialState {
@@ -69,4 +84,10 @@ export interface WriterExecuteState {
 
 export interface WriterExecuteActions {
   execute: () => void;
+}
+
+export interface WriteSectionSidebarProps {
+  activeSection: WriteDialogSectionId;
+  collapsed: boolean;
+  onJump: (section: WriteDialogSectionId) => void;
 }

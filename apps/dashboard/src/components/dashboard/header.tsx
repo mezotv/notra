@@ -17,7 +17,6 @@ import {
   BreadcrumbSeparator,
 } from "@notra/ui/components/ui/breadcrumb";
 import { Kbd, KbdGroup } from "@notra/ui/components/ui/kbd";
-import { SidebarTrigger } from "@notra/ui/components/ui/sidebar";
 import { useIsApplePlatform } from "@notra/ui/hooks/use-is-apple-platform";
 import { cn } from "@notra/ui/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
@@ -32,6 +31,7 @@ import { useFeedback } from "@/components/dashboard/feedback-context";
 import { FeedbackForm } from "@/components/dashboard/feedback-popover";
 import { GeoTopbarProjectSwitcher } from "@/components/dashboard/geo-topbar-project-switcher";
 import { NavUser } from "@/components/dashboard/nav-user";
+import { SidebarToggle } from "@/components/dashboard/sidebar-toggle";
 import { GEO_DEFAULT_TAB, GEO_TAB_BREADCRUMB_LABELS } from "@/constants/geo";
 
 const NON_ORG_PATHS: string[] = [];
@@ -301,7 +301,7 @@ export function SiteHeader() {
     <header className="flex h-12 shrink-0 items-center gap-2 bg-muted transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
       <div className="grid h-full w-full min-w-0 grid-cols-[minmax(8rem,1fr)_minmax(2rem,20rem)_minmax(2.5rem,1fr)] items-center gap-2 px-4 lg:gap-2">
         <div className="flex h-full min-w-0 items-center gap-2 overflow-hidden">
-          <SidebarTrigger className="-mx-1.5" />
+          <SidebarToggle className="-mx-1.5" />
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="min-w-0 flex-nowrap gap-2">
               {breadcrumbs}

@@ -104,20 +104,36 @@ export const GEO_WRITE_CONTENT_TYPES = [
     label: "Blog post",
     description: "A longer article that answers the prompt directly.",
     icon: BookOpen01Icon,
+    iconClass: "text-emerald-500 dark:text-emerald-300",
   },
   {
     id: "listicle" as const,
     label: "Listicle",
     description: "A ranked or numbered list buyers can scan and cite.",
     icon: LeftToRightListNumberIcon,
+    iconClass: "text-violet-500 dark:text-violet-300",
   },
   {
     id: "comparison" as const,
     label: "Comparison",
     description: "A side-by-side look at the brand versus alternatives.",
     icon: GitCompareIcon,
+    iconClass: "text-amber-500 dark:text-amber-300",
   },
 ];
+
+export const GEO_WRITE_SIDEBAR_SHORTCUT = "b";
+export const GEO_WRITE_PANEL_HEADER_CLASS =
+  "overflow-hidden rounded-t-2xl border border-border border-b-0 bg-muted pb-5";
+export const GEO_WRITE_PANEL_HEADER_ROW_CLASS = "flex h-10 items-center";
+export const GEO_WRITE_PANEL_FOOTER_CLASS =
+  "-mt-5 overflow-hidden rounded-b-2xl border border-border border-t-0 bg-muted pt-5";
+export const GEO_WRITE_PANEL_FOOTER_ROW_CLASS = "flex min-h-12 items-center";
+export const GEO_WRITE_SIDEBAR_WIDTH = "13rem";
+export const GEO_WRITE_SIDEBAR_TRANSITION = {
+  duration: 0.28,
+  ease: [0.22, 1, 0.36, 1],
+} as const;
 
 export const GEO_WRITE_DIALOG_SECTIONS = [
   {
