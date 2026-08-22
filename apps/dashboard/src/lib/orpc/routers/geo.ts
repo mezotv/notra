@@ -79,6 +79,7 @@ import {
   geoCompetitorUpsertInputSchema,
   geoGenerateFromWebsiteInputSchema,
   geoJourneyDetailInputSchema,
+  geoModelCatalogInputSchema,
   geoModelUsageInputSchema,
   geoOrganizationInputSchema,
   geoProjectCreateInputSchema,
@@ -255,7 +256,9 @@ async function acceptSuggestionInTx(
   return toTrackedPrompt(promptRow);
 }
 export const geoRouter = {
-  modelCatalog: authorizedProcedure.handler(() => loadGeoModelCatalog()),
+  modelCatalog: authorizedProcedure
+    .input(geoModelCatalogInputSchema)
+    .handler(({ input }) => loadGeoModelCatalog(input.organizationId)),
   settings: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => loadGeoSettings(input))),

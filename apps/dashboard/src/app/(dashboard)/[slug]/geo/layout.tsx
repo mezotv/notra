@@ -1,16 +1,15 @@
-import type { ReactNode } from "react";
 import { GeoCatalogWarmer } from "@/components/geo/geo-catalog-warmer";
+import type { GeoLayoutProps } from "@/types/geo";
 
-export default function GeoLayout({
+export default async function GeoLayout({
   children,
   modal,
-}: {
-  children: ReactNode;
-  modal: ReactNode;
-}) {
+  params,
+}: GeoLayoutProps) {
+  const { slug } = await params;
   return (
     <>
-      <GeoCatalogWarmer />
+      <GeoCatalogWarmer organizationSlug={slug} />
       {children}
       {modal}
     </>

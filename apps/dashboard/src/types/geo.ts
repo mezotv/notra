@@ -70,6 +70,12 @@ export interface GeoPageClientProps {
   organizationSlug: string;
 }
 
+export interface GeoLayoutProps {
+  children: ReactNode;
+  modal: ReactNode;
+  params: Promise<{ slug: string }>;
+}
+
 export interface PromptFunnelCardProps {
   promptCount: number;
   results: GeoPromptResult[];
@@ -1055,6 +1061,8 @@ export type GeoModelZdr = "all" | "some" | "none";
  * the AI router (see `lib/geo/cursor.ts`).
  */
 export type GeoModelGateway = "vercel" | "openrouter" | "cursor";
+
+export type GeoCursorFlagState = "enabled" | "disabled" | "unavailable";
 
 export interface GeoModelProvider {
   id: GeoModelProviderId;

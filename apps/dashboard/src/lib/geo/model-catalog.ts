@@ -1,12 +1,15 @@
+import { GEO_CURSOR_ENGINE_ID } from "@/constants/geo";
 import {
   GEO_MODEL_FEED_REVALIDATE_SECONDS,
   GEO_MODEL_FEED_URL,
 } from "@/constants/geo-model-catalog";
+import { isCursorEngineEnabledForOrganization } from "@/lib/geo/cursor-flag";
 import { geoModelFeedSchema } from "@/schemas/geo-model-feed";
 import type { GeoModelCatalog } from "@/types/geo";
 import {
   buildGeoModelCatalogFromFeed,
   seedGeoModelCatalog,
+  withoutGeoModelCatalogEntries,
 } from "@/utils/geo-model-catalog";
 
 const MS_PER_SECOND = 1000;
@@ -28,7 +31,7 @@ async function fetchGeoModelCatalog(): Promise<GeoModelCatalog> {
   return catalog;
 }
 
-export async function loadGeoModelCatalog(): Promise<GeoModelCatalog> {
+async function loadSharedGeoModelCatalog(): Promise<GeoModelCatalog> {
   if (cached && cached.expiresAt > Date.now()) {
     return cached.catalog;
   }
@@ -43,4 +46,21 @@ export async function loadGeoModelCatalog(): Promise<GeoModelCatalog> {
     console.error("[geo] model feed unavailable, using seed catalog", error);
     return cached?.catalog ?? seedGeoModelCatalog();
   }
+}
+
+/**
+ * The shared catalog narrowed to what one organization may see. Cursor is
+ * flag-gated per organization on top of its credential check.
+ */
+export async function loadGeoModelCatalog(
+  organizationId: string
+): Promise<GeoModelCatalog> {
+  const [catalog, cursorEnabled] = await Promise.all([
+    loadSharedGeoModelCatalog(),
+    isCursorEngineEnabledForOrganization(organizationId),
+  ]);
+  if (cursorEnabled) {
+    return catalog;
+  }
+  return withoutGeoModelCatalogEntries(catalog, [GEO_CURSOR_ENGINE_ID]);
 }

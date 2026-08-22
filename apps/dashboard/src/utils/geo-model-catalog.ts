@@ -54,12 +54,11 @@ function toDayString(seconds: number): string {
 
 /**
  * True when a static (non-gateway) engine can actually run, i.e. its provider
- * credential is configured. Server-side only — the catalog is built in the
- * oRPC `modelCatalog` handler and in `lib/geo/programs.ts`.
+ * credential is configured. Server-side only — the catalog is built in
+ * `lib/geo/model-catalog.ts`. Per-organization exposure (feature flags) is
+ * applied on top of this by `withoutGeoModelCatalogEntries`.
  */
-export function isGeoStaticEngineAvailable(
-  entry: GeoModelCatalogEntry
-): boolean {
+function isGeoStaticEngineAvailable(entry: GeoModelCatalogEntry): boolean {
   const envKey = GEO_STATIC_ENGINE_ENV[entry.id];
   if (!envKey) {
     return true;
@@ -114,6 +113,19 @@ export function seedGeoModelCatalog(): GeoModelCatalog {
     );
   }
   const providers = GEO_MODEL_PROVIDERS.filter((provider) =>
+    models.some((model) => model.provider === provider.id)
+  );
+  return { providers, models };
+}
+
+/** Catalog without the given engine ids; providers left empty are dropped. */
+export function withoutGeoModelCatalogEntries(
+  catalog: GeoModelCatalog,
+  engineIds: readonly string[]
+): GeoModelCatalog {
+  const removed = new Set(engineIds);
+  const models = catalog.models.filter((model) => !removed.has(model.id));
+  const providers = catalog.providers.filter((provider) =>
     models.some((model) => model.provider === provider.id)
   );
   return { providers, models };

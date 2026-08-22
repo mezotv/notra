@@ -54,6 +54,10 @@ export const geoOrganizationInputSchema = object({
   projectId: string().min(1).optional(),
 });
 
+export const geoModelCatalogInputSchema = object({
+  organizationId: string().min(1),
+});
+
 export const geoSettingsUpsertInputSchema = geoOrganizationInputSchema.extend({
   companyName: string().min(1),
   aliases: array(string().min(1)).max(GEO_MAX_ALIASES),

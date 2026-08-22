@@ -319,7 +319,9 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
   scanId: string
 ) {
   const organizationId = settingsRow.organizationId;
-  const catalog = yield* Effect.promise(() => loadGeoModelCatalog());
+  const catalog = yield* Effect.promise(() =>
+    loadGeoModelCatalog(organizationId)
+  );
 
   const settings = toGeoSettings(settingsRow, catalog);
 

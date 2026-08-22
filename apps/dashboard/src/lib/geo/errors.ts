@@ -82,6 +82,13 @@ export class GeoSampleDataDisabledError extends Data.TaggedError(
   "GeoSampleDataDisabledError"
 )<Record<string, never>> {}
 
+export class GeoCursorFlagEvaluationError extends Data.TaggedError(
+  "GeoCursorFlagEvaluationError"
+)<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
 export type GeoRouterError =
   | GeoBrandIdentityMissingError
   | GeoBrandIdentityNotFoundError

@@ -99,7 +99,7 @@ import type {
   GeoWindowInput,
 } from "@/types/geo";
 import { toGeoTrafficTotals, toGeoVisitorType } from "@/utils/ai-traffic";
-import { isGeoStaticEngineAvailable } from "@/utils/geo-model-catalog";
+import { getGeoModelCatalogEntry } from "@/utils/geo-model-catalog";
 
 function mergeLegacyCompetitors(
   competitors: GeoCompetitor[],
@@ -139,7 +139,9 @@ export const loadGeoSettings = Effect.fn("geo.settings")(function* (
       )
     : null;
 
-  const catalog = yield* Effect.promise(() => loadGeoModelCatalog());
+  const catalog = yield* Effect.promise(() =>
+    loadGeoModelCatalog(scope.organizationId)
+  );
   const response: GeoSettingsResponse = {
     configured: isTinybirdConfigured(),
     settings: row ? toGeoSettings(row, catalog) : null,
@@ -349,9 +351,14 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
     hasProSubscription(input.organizationId)
   );
   const enforceZdr = isPro && input.enforceZdr;
+  const catalog = yield* Effect.promise(() =>
+    loadGeoModelCatalog(input.organizationId)
+  );
+  // Static engines hidden from this organization (missing credential or flag
+  // off) keep their stored selection so a re-save doesn't silently drop them.
   const unavailableStaticEngines = new Set(
     GEO_MODEL_CATALOG_STATIC.filter(
-      (entry) => !isGeoStaticEngineAvailable(entry)
+      (entry) => !getGeoModelCatalogEntry(catalog, entry.id)
     ).map((entry) => entry.id)
   );
   const existingSettings =
@@ -418,7 +425,6 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
   );
 
   const row = rows.at(0);
-  const catalog = yield* Effect.promise(() => loadGeoModelCatalog());
   const response: GeoSettingsResponse = {
     configured: isTinybirdConfigured(),
     settings: row ? toGeoSettings(row, catalog) : null,
@@ -857,7 +863,9 @@ export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
     return emptyResponse;
   }
 
-  const catalog = yield* Effect.promise(() => loadGeoModelCatalog());
+  const catalog = yield* Effect.promise(() =>
+    loadGeoModelCatalog(scope.organizationId)
+  );
   const autoPrompts = buildGeoPrompts(
     toGeoSettings(settingsRow, catalog),
     brand

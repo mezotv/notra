@@ -140,9 +140,12 @@ function geoStartScanMutationKey(
   return [GEO_START_SCAN_MUTATION_KEY, organizationId, projectId] as const;
 }
 
-export function useGeoModelCatalog() {
+export function useGeoModelCatalog(organizationId: string) {
   return useQuery<GeoModelCatalog>({
-    ...dashboardOrpc.geo.modelCatalog.queryOptions(),
+    ...dashboardOrpc.geo.modelCatalog.queryOptions({
+      input: { organizationId },
+    }),
+    enabled: !!organizationId,
     staleTime: GEO_MODEL_CATALOG_STALE_MS,
     meta: { errorMessage: "Failed to load the model catalog" },
   });

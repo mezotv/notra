@@ -29,7 +29,7 @@ function SettingsPageContent({ organizationSlug }: GeoPageClientProps) {
   const organizationId = organization?.id ?? "";
 
   const { data: settingsData, isPending } = useGeoSettings(organizationId);
-  const { data: catalog } = useGeoModelCatalog();
+  const { data: catalog } = useGeoModelCatalog(organizationId);
 
   if (isPending || !catalog) {
     return <GeoSettingsSkeleton />;

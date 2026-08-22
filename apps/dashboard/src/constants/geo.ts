@@ -29,6 +29,11 @@ export const GEO_CURSOR_ENGINE_ID = "cursor/composer-2.5";
 export const GEO_CURSOR_MODEL_ID = "composer-2.5";
 /** Local Cursor runs took ~8s in testing; cold starts can be slower. */
 export const GEO_CURSOR_TIMEOUT_MS = 90_000;
+/** Databuddy flag that exposes the Cursor engine to an organization. */
+export const GEO_CURSOR_FLAG_KEY = "geo-cursor";
+export const GEO_CURSOR_FLAG_CACHE_TTL_MS = 60_000;
+export const GEO_CURSOR_FLAG_STALE_TIME_MS = 30_000;
+export const GEO_CURSOR_FLAG_ERROR_REASON = "ERROR";
 
 const hasEnv = (name: string): boolean => {
   const value = process.env[name];
