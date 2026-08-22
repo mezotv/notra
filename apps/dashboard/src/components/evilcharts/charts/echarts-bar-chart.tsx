@@ -1597,11 +1597,9 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
   const mountRef = useRef<HTMLDivElement>(null);
   const echartsRef = useRef<EChartsInstance | null>(null);
 
-  // The single imperative surface (see LiveState). `resolved` lives here rather
-  // than in state: as state it forced an extra render pass and an effect whose
-  // only job was to trigger the option push. The object identity is stable for
-  // the component's lifetime.
-  const live = useRef<LiveState>({
+  // The single imperative surface (see LiveState). Its object identity is stable
+  // for the component's lifetime, while field updates remain non-rendering.
+  const [live] = useState<LiveState>(() => ({
     resolved: null,
     hasRevealed: false,
     revealEndsAt: 0,
@@ -1635,7 +1633,7 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     hoverClearRaf: 0,
     repush: () => {},
     patchStrippedCaps: () => {},
-  }).current;
+  }));
 
   // Skeleton rows roll lazily on first use — an impure useRef initializer would
   // re-roll Math.random() on every render.

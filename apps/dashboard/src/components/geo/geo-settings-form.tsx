@@ -63,7 +63,10 @@ export function GeoSettingsForm({
     })
   );
   const debouncerRef = useRef(debouncer);
-  debouncerRef.current = debouncer;
+
+  useEffect(() => {
+    debouncerRef.current = debouncer;
+  }, [debouncer]);
 
   useEffect(() => {
     if (planLoading) {
