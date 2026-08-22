@@ -332,10 +332,6 @@ export const GEO_INGEST_SECRET_FALLBACK_ENV = "BEACON_INGEST_SECRET";
 export const GEO_INGEST_TOKEN_SEPARATOR = ".";
 export const GEO_INGEST_BEARER_PREFIX = "Bearer ";
 export const GEO_MAX_STORED_UA_LENGTH = 512;
-export const GEO_MARKDOWN_ACCEPT_MATCHERS: readonly string[] = [
-  "text/markdown",
-  "text/x-markdown",
-];
 export const AI_TRAFFIC_DEFAULT_JOURNEYS_LIMIT = 25;
 
 export const OWN_BRAND_ROW_ID = "own-brand";

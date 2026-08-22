@@ -522,9 +522,28 @@ export interface GeoJudgeResult {
 
 export type GeoVisitorType = "crawler" | "ai_referral" | "human" | "unknown";
 
+export interface GeoVisitorSignals {
+  clientHints: boolean;
+  fetchMode: string | null;
+  tracing: boolean;
+}
+
 export interface GeoVisitorInput {
   userAgent: string | undefined;
   referer: string | undefined;
+  accept: string | undefined;
+  signals?: GeoVisitorSignals;
+}
+
+export interface GeoCliClientPattern {
+  pattern: string;
+  agent: string;
+}
+
+export interface GeoAcceptFingerprint {
+  agent: string;
+  userAgentPattern: string;
+  accept: string;
 }
 
 export interface GeoVisitorClassification {
@@ -952,6 +971,7 @@ export type EngineIconKey =
   | "openai"
   | "claude"
   | "gemini"
+  | "google"
   | "perplexity"
   | "mistral"
   | "deepseek"
@@ -961,7 +981,30 @@ export type EngineIconKey =
   | "copilot"
   | "tencent"
   | "xiaomi"
-  | "cursor";
+  | "cursor"
+  | "apple"
+  | "duckduckgo"
+  | "cloudflare"
+  | "tiktok"
+  | "mozilla"
+  | "manus"
+  | "firecrawl"
+  | "cohere"
+  | "opencode"
+  | "kimi"
+  | "exa"
+  | "commoncrawl"
+  | "youcom"
+  | "liner"
+  | "cline"
+  | "devin"
+  | "diffbot"
+  | "tavily"
+  | "timpi"
+  | "huawei"
+  | "kagi"
+  | "agent"
+  | "cli";
 
 export type GeoChatSkin = "claude" | "chatgpt" | "gemini";
 

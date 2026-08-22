@@ -5,11 +5,14 @@ export type AiAgentCategory =
 
 export type AiAgentConfidence = "verified" | "reported" | "heuristic";
 
+type AiAgentMatchMode = "contains" | "exact";
+
 export interface AiAgentSignature {
   agent: string;
   vendor: string;
   category: AiAgentCategory;
   userAgents: string[];
+  match?: AiAgentMatchMode;
   confidence: AiAgentConfidence;
   verification: string | null;
   source: string;
@@ -31,6 +34,12 @@ export interface GeoLocation {
   longitude?: string;
 }
 
+export interface GeoRequestSignals {
+  clientHints: boolean;
+  fetchMode: string | null;
+  tracing: boolean;
+}
+
 export interface GeoRequestPayload {
   timestamp?: string;
   method: string;
@@ -42,6 +51,7 @@ export interface GeoRequestPayload {
   accept?: string;
   acceptLanguage?: string;
   requestId?: string;
+  signals?: GeoRequestSignals;
 }
 
 export interface TagMarkdownLinksOptions {

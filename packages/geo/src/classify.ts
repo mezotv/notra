@@ -7,9 +7,15 @@ export function classifyUserAgent(userAgent: string): AiAgentMatch | null {
     return null;
   }
 
+  const exact = haystack.trim();
   for (const signature of AI_AGENT_SIGNATURES) {
     for (const token of signature.userAgents) {
-      if (haystack.includes(token.toLowerCase())) {
+      const needle = token.toLowerCase();
+      const matched =
+        signature.match === "exact"
+          ? exact === needle
+          : haystack.includes(needle);
+      if (matched) {
         return {
           agent: signature.agent,
           vendor: signature.vendor,

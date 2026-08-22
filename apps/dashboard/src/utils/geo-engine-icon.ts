@@ -18,6 +18,10 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
     patterns: ["cursor", "composer", "anysphere"],
   },
   {
+    key: "opencode",
+    patterns: ["opencode"],
+  },
+  {
     key: "openai",
     patterns: ["openai", "gpt", "chatgpt", "oai-"],
   },
@@ -26,8 +30,97 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
     patterns: ["anthropic", "claude"],
   },
   {
+    key: "google",
+    patterns: [
+      "google-agent",
+      "google-cloudvertex",
+      "googleother",
+      "googlebot",
+    ],
+  },
+  {
     key: "gemini",
     patterns: ["gemini", "google", "bard", "palm"],
+  },
+  {
+    key: "apple",
+    patterns: ["applebot", "apple"],
+  },
+  {
+    key: "duckduckgo",
+    patterns: ["duckassist", "duckduckgo"],
+  },
+  {
+    key: "cloudflare",
+    patterns: ["cloudflare"],
+  },
+  {
+    key: "tiktok",
+    patterns: ["tiktok", "bytespider", "bytedance", "trae"],
+  },
+  {
+    key: "mozilla",
+    patterns: ["tabstack"],
+  },
+  {
+    key: "manus",
+    patterns: ["manus"],
+  },
+  {
+    key: "firecrawl",
+    patterns: ["firecrawl"],
+  },
+  {
+    key: "cohere",
+    patterns: ["cohere"],
+  },
+  {
+    key: "kimi",
+    patterns: ["kimi", "moonshot"],
+  },
+  {
+    key: "exa",
+    patterns: ["exabot", "exasearchbot", "exa"],
+  },
+  {
+    key: "commoncrawl",
+    patterns: ["ccbot", "common crawl", "commoncrawl"],
+  },
+  {
+    key: "youcom",
+    patterns: ["youbot", "you.com"],
+  },
+  {
+    key: "liner",
+    patterns: ["linerbot", "liner"],
+  },
+  {
+    key: "cline",
+    patterns: ["cline", "agentbot", "vscodeextension"],
+  },
+  {
+    key: "devin",
+    patterns: ["devin", "cognition"],
+  },
+  {
+    key: "diffbot",
+    patterns: ["diffbot"],
+  },
+  {
+    key: "tavily",
+    patterns: ["tavily"],
+  },
+  {
+    key: "timpi",
+    patterns: ["timpi"],
+  },
+  {
+    key: "huawei",
+    patterns: ["pangubot", "huawei", "petalbot"],
+  },
+  {
+    key: "kagi",
+    patterns: ["kagi"],
   },
   {
     key: "perplexity",
@@ -51,7 +144,42 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
   },
   {
     key: "qwen",
-    patterns: ["qwen", "qwq", "alibaba"],
+    patterns: ["qwen", "qwq", "alibaba", "tongyi"],
+  },
+  {
+    key: "cli",
+    patterns: [
+      "curl",
+      "wget",
+      "python-",
+      "aiohttp",
+      "go-http-client",
+      "node-fetch",
+      "node.js fetch",
+      "undici",
+      "axios",
+      "bun",
+      "deno",
+      "java http",
+      "okhttp",
+      "libwww",
+      "postman",
+      "insomnia",
+      "httpie",
+    ],
+  },
+  {
+    key: "agent",
+    patterns: [
+      "amazonbot",
+      "amzn-",
+      "ai2bot",
+      "omgili",
+      "yiyanbot",
+      "baidu",
+      "browser-imitating",
+      "markdown-negotiating",
+    ],
   },
 ];
 

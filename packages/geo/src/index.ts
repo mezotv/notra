@@ -28,6 +28,7 @@ export type {
   GeoNextOptions,
   GeoPathRule,
   GeoRequestPayload,
+  GeoRequestSignals,
   GeoTagLinksConfig,
   GeoTagLinksOption,
   GeoTagMode,

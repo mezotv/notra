@@ -120,12 +120,79 @@ describe("tagHtmlLinks", () => {
   });
 });
 
+describe("serializeRequest signals", () => {
+  test("reports client hints, fetch metadata and tracing headers", () => {
+    const browser = serializeRequest(
+      request("/", {
+        "sec-ch-ua": '"Chromium";v="151"',
+        "sec-fetch-mode": "navigate",
+      })
+    );
+    expect(browser.signals).toEqual({
+      clientHints: true,
+      fetchMode: "navigate",
+      tracing: false,
+    });
+    const agent = serializeRequest(
+      request("/", { traceparent: "00-abc-def-01" })
+    );
+    expect(agent.signals).toEqual({
+      clientHints: false,
+      fetchMode: null,
+      tracing: true,
+    });
+  });
+});
+
 describe("classifyUserAgent", () => {
   test("matches known agents and ignores browsers", () => {
     expect(
       classifyUserAgent("Mozilla/5.0 (compatible; GPTBot/1.2)")?.agent
     ).toBe("GPTBot");
     expect(classifyUserAgent("Mozilla/5.0 Chrome/120")).toBeNull();
+  });
+
+  test("matches the bare Google user agent used by the Gemini app exactly", () => {
+    expect(classifyUserAgent("Google")?.agent).toBe("Gemini");
+    expect(classifyUserAgent(" google ")?.agent).toBe("Gemini");
+    expect(
+      classifyUserAgent("Mozilla/5.0 (compatible; Googlebot/2.1)")?.agent
+    ).not.toBe("Gemini");
+    expect(classifyUserAgent("Mozilla/5.0 Google")).toBeNull();
+  });
+
+  test("matches vendor-documented assistant fetchers added in the 2026-08-22 audit", () => {
+    expect(classifyUserAgent("meta-webindexer/1.1")?.agent).toBe(
+      "meta-webindexer"
+    );
+    expect(classifyUserAgent("meta-externalads/1.1")?.agent).toBe(
+      "meta-externalads"
+    );
+    expect(
+      classifyUserAgent(
+        "Mozilla/5.0 AppleWebKit/537.36 (KHTML, like Gecko; compatible; Amzn-User/0.1)"
+      )?.agent
+    ).toBe("Amzn-User");
+    expect(
+      classifyUserAgent("Mozilla/5.0 (compatible; Google-Agent)")?.agent
+    ).toBe("Google-Agent");
+    expect(classifyUserAgent("Google-GeminiNotebook")?.agent).toBe(
+      "Google-GeminiNotebook"
+    );
+    expect(
+      classifyUserAgent("Mozilla-Tabstack/1.0 (+https://tabstack.ai)")?.agent
+    ).toBe("Mozilla Tabstack");
+    expect(
+      classifyUserAgent(
+        "Mozilla/5.0 (compatible) AI2Bot (+https://www.allenai.org/crawler)"
+      )?.agent
+    ).toBe("AI2Bot");
+    expect(classifyUserAgent("Kimi-User/1.0")?.agent).toBe("Kimi-User");
+  });
+
+  test("matches OpenCode's bare fallback user agent exactly", () => {
+    expect(classifyUserAgent("opencode")?.agent).toBe("OpenCode");
+    expect(classifyUserAgent("Mozilla/5.0 opencode-extension")).toBeNull();
   });
 });
 

@@ -285,6 +285,11 @@ export const geoRequestPayloadSchema = object({
   accept: string().max(MAX_GEO_FIELD_LENGTH).optional(),
   acceptLanguage: string().max(MAX_GEO_FIELD_LENGTH).optional(),
   requestId: string().max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
+  signals: object({
+    clientHints: boolean(),
+    fetchMode: string().max(MAX_GEO_SHORT_FIELD_LENGTH).nullable(),
+    tracing: boolean(),
+  }).optional(),
 });
 
 export const geoTrafficJourneysInputSchema = geoOrganizationInputSchema.extend({

@@ -1,4 +1,8 @@
-import type { GeoLocation, GeoRequestPayload } from "./types";
+import type {
+  GeoLocation,
+  GeoRequestPayload,
+  GeoRequestSignals,
+} from "./types";
 
 function header(headers: Headers, name: string): string | undefined {
   return headers.get(name) ?? undefined;
@@ -41,6 +45,16 @@ function readGeo(headers: Headers): GeoLocation | undefined {
   return hasValue ? location : undefined;
 }
 
+const TRACING_HEADERS = ["traceparent", "b3", "x-b3-traceid"];
+
+function readSignals(headers: Headers): GeoRequestSignals {
+  return {
+    clientHints: headers.has("sec-ch-ua"),
+    fetchMode: header(headers, "sec-fetch-mode") ?? null,
+    tracing: TRACING_HEADERS.some((name) => headers.has(name)),
+  };
+}
+
 export function serializeRequest(request: Request): GeoRequestPayload {
   const { headers } = request;
 
@@ -56,5 +70,6 @@ export function serializeRequest(request: Request): GeoRequestPayload {
     acceptLanguage: header(headers, "accept-language"),
     requestId:
       header(headers, "x-request-id") ?? header(headers, "x-vercel-id"),
+    signals: readSignals(headers),
   };
 }

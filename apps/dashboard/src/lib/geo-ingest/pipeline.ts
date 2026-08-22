@@ -81,6 +81,8 @@ const buildEvent = Effect.fn("geoIngest.buildEvent")(function* (
   const classification = classifyVisitor({
     userAgent: payload.userAgent,
     referer: payload.referer,
+    accept: payload.accept,
+    signals: payload.signals,
   });
   const capturedAt = toCapturedDate(payload.timestamp);
   const journey = resolveJourneyId({

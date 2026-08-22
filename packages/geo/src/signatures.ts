@@ -178,6 +178,25 @@ export const AI_AGENT_SIGNATURES: readonly AiAgentSignature[] = [
     source: "https://developer.amazon.com/amazonbot",
   },
   {
+    agent: "Amzn-SearchBot",
+    vendor: "Amazon",
+    category: "search-index",
+    userAgents: ["Amzn-SearchBot"],
+    confidence: "verified",
+    verification:
+      "https://developer.amazon.com/amazonbot/searchbot-ip-addresses/",
+    source: "https://developer.amazon.com/amazonbot",
+  },
+  {
+    agent: "Amzn-User",
+    vendor: "Amazon",
+    category: "assistant-browse",
+    userAgents: ["Amzn-User"],
+    confidence: "verified",
+    verification: "https://developer.amazon.com/amazonbot/live-ip-addresses/",
+    source: "https://developer.amazon.com/amazonbot",
+  },
+  {
     agent: "Applebot",
     vendor: "Apple",
     category: "search-index",
@@ -225,6 +244,26 @@ export const AI_AGENT_SIGNATURES: readonly AiAgentSignature[] = [
     verification: null,
     source:
       "https://developers.facebook.com/documentation/sharing/webmasters/web-crawlers",
+  },
+  {
+    agent: "meta-webindexer",
+    vendor: "Meta",
+    category: "search-index",
+    userAgents: ["meta-webindexer"],
+    confidence: "verified",
+    verification: null,
+    source:
+      "https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/",
+  },
+  {
+    agent: "meta-externalads",
+    vendor: "Meta",
+    category: "search-index",
+    userAgents: ["meta-externalads"],
+    confidence: "verified",
+    verification: null,
+    source:
+      "https://developers.facebook.com/docs/sharing/webmasters/web-crawlers/",
   },
   {
     agent: "FacebookBot",
@@ -312,6 +351,28 @@ export const AI_AGENT_SIGNATURES: readonly AiAgentSignature[] = [
     source: "https://radar.cloudflare.com/bots/directory/devin",
   },
   {
+    agent: "Google-Agent",
+    vendor: "Google",
+    category: "assistant-browse",
+    userAgents: ["Google-Agent"],
+    confidence: "verified",
+    verification:
+      "https://developers.google.com/static/crawling/ipranges/user-triggered-agents.json",
+    source:
+      "https://developers.google.com/crawling/docs/crawlers-fetchers/google-user-triggered-fetchers",
+  },
+  {
+    agent: "Google-GeminiNotebook",
+    vendor: "Google",
+    category: "assistant-browse",
+    userAgents: ["Google-GeminiNotebook"],
+    confidence: "verified",
+    verification:
+      "https://developers.google.com/static/crawling/ipranges/user-triggered-fetchers-google.json",
+    source:
+      "https://developers.google.com/crawling/docs/crawlers-fetchers/google-user-triggered-fetchers",
+  },
+  {
     agent: "Gemini CLI",
     vendor: "Google",
     category: "assistant-browse",
@@ -329,6 +390,27 @@ export const AI_AGENT_SIGNATURES: readonly AiAgentSignature[] = [
     confidence: "reported",
     verification: null,
     source: "https://knownagents.com/agents/google-gemini-cli",
+  },
+  {
+    agent: "Gemini",
+    vendor: "Google",
+    category: "assistant-browse",
+    userAgents: ["Google"],
+    match: "exact",
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://developers.google.com/crawling/docs/crawlers-fetchers/google-user-triggered-fetchers",
+  },
+  {
+    agent: "OpenCode",
+    vendor: "OpenCode",
+    category: "assistant-browse",
+    userAgents: ["opencode"],
+    match: "exact",
+    confidence: "reported",
+    verification: null,
+    source: "https://github.com/sst/opencode",
   },
   {
     agent: "Cursor",
@@ -370,5 +452,143 @@ export const AI_AGENT_SIGNATURES: readonly AiAgentSignature[] = [
     verification: null,
     source:
       "https://webz.io/blog/web-data/what-is-the-omgili-bot-and-why-is-it-crawling-your-website/",
+  },
+  {
+    agent: "Mozilla Tabstack",
+    vendor: "Mozilla",
+    category: "assistant-browse",
+    userAgents: ["Mozilla-Tabstack"],
+    confidence: "verified",
+    verification: null,
+    source: "https://docs.tabstack.ai/trust/controlling-access",
+  },
+  {
+    agent: "AI2Bot",
+    vendor: "Ai2",
+    category: "training-crawler",
+    userAgents: ["AI2Bot"],
+    confidence: "verified",
+    verification: null,
+    source: "https://allenai.org/crawler",
+  },
+  {
+    agent: "Kimi-User",
+    vendor: "Moonshot AI",
+    category: "assistant-browse",
+    userAgents: ["Kimi-User"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "TongyiBot",
+    vendor: "Alibaba",
+    category: "assistant-browse",
+    userAgents: ["TongyiBot"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "YiyanBot",
+    vendor: "Baidu",
+    category: "assistant-browse",
+    userAgents: ["YiyanBot"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "Manus-User",
+    vendor: "Butterfly Effect",
+    category: "assistant-browse",
+    userAgents: ["Manus-User"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "kagi-fetcher",
+    vendor: "Kagi",
+    category: "assistant-browse",
+    userAgents: ["kagi-fetcher"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "DeepSeekBot",
+    vendor: "DeepSeek",
+    category: "training-crawler",
+    userAgents: ["DeepSeekBot"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "TikTokSpider",
+    vendor: "ByteDance",
+    category: "training-crawler",
+    userAgents: ["TikTokSpider"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "PanguBot",
+    vendor: "Huawei",
+    category: "training-crawler",
+    userAgents: ["PanguBot"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "Cloudflare-AutoRAG",
+    vendor: "Cloudflare",
+    category: "search-index",
+    userAgents: ["Cloudflare-AutoRAG"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://developers.cloudflare.com/autorag/configuration/data-source/website/",
+  },
+  {
+    agent: "ExaBot",
+    vendor: "Exa",
+    category: "search-index",
+    userAgents: ["ExaBot", "ExaSearchBot"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "TavilyBot",
+    vendor: "Tavily",
+    category: "search-index",
+    userAgents: ["TavilyBot"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "FirecrawlAgent",
+    vendor: "Firecrawl",
+    category: "search-index",
+    userAgents: ["FirecrawlAgent"],
+    confidence: "reported",
+    verification: null,
+    source:
+      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
   },
 ];
