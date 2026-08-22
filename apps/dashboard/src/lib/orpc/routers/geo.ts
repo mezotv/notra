@@ -23,8 +23,10 @@ import {
   GSC_SYNC_WORKFLOW_PATH,
 } from "@/constants/google-search-console";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { generateGeoFromWebsite } from "@/lib/geo/discover";
 import type { GeoRouterError } from "@/lib/geo/errors";
+import { loadGeoContentGaps } from "@/lib/geo/gaps";
 import { toTrackedPrompt } from "@/lib/geo/mappers";
 import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
 import {
@@ -63,6 +65,12 @@ import {
 } from "@/lib/geo/sequences";
 import { geoWindow } from "@/lib/geo/window";
 import {
+  approveAndStartGeoWriter,
+  getGeoContentBrief,
+  listGeoContentBriefs,
+  planGeoContentBrief,
+} from "@/lib/geo/writer";
+import {
   buildGeoAppUrl,
   buildGeoIngestUrl,
   buildGeoSnippets,
@@ -96,6 +104,8 @@ import {
   geoTrafficJourneysInputSchema,
   geoTrafficLogInputSchema,
   geoTrafficPagesInputSchema,
+  geoWriterBriefIdInputSchema,
+  geoWriterPlanInputSchema,
 } from "@/schemas/geo";
 import { gscSelectSiteInputSchema } from "@/schemas/google-search-console";
 import type { AuthenticatedUser } from "@/types/auth/organization";
@@ -426,6 +436,57 @@ export const geoRouter = {
   startScan: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => startGeoScan(input))),
+  writerGaps: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(geoHandler((input) => loadGeoContentGaps(input))),
+  writerBriefsList: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(geoHandler((input) => listGeoContentBriefs(input))),
+  writerBrief: authorizedProcedure
+    .input(geoWriterBriefIdInputSchema)
+    .handler(
+      geoHandler((input) =>
+        getGeoContentBrief(input.organizationId, input.briefId)
+      )
+    ),
+  writerPlan: authorizedProcedure
+    .input(geoWriterPlanInputSchema)
+    .handler(async ({ context, input }) => {
+      const [, , rate] = await Promise.all([
+        assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+          user: context.user,
+        }),
+        assertActiveSubscription(input.organizationId),
+        ratelimit.geoWriterPlan.limit(input.organizationId),
+      ]);
+      if (!rate.success) {
+        throw badRequest("Too many briefs. Please wait a few minutes.");
+      }
+
+      return await runOrpcEffect(
+        planGeoContentBrief(input, context.user?.id),
+        toGeoOrpcError
+      );
+    }),
+  writerStart: authorizedProcedure
+    .input(geoWriterBriefIdInputSchema)
+    .handler(async ({ context, input }) => {
+      await Promise.all([
+        assertOrganizationAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+          user: context.user,
+        }),
+        assertActiveSubscription(input.organizationId),
+      ]);
+
+      return await runOrpcEffect(
+        approveAndStartGeoWriter(input.organizationId, input.briefId),
+        toGeoOrpcError
+      );
+    }),
   sampleData: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async (options) => {

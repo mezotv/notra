@@ -42,6 +42,8 @@ export const sourceMetadataSchema = z
       .optional(),
     type: z.literal("generated_image").optional(),
     chatId: z.string().nullable().optional(),
+    briefId: z.string().optional(),
+    projectId: z.string().optional(),
     sandbox: z
       .object({
         boxId: z.string().optional(),
@@ -239,12 +241,19 @@ export const editContentSchema = z.object({
 
 export type EditContentInput = z.infer<typeof editContentSchema>;
 
-export const contextItemSchema = z.object({
-  type: z.literal("github-repo"),
-  owner: z.string(),
-  repo: z.string(),
-  integrationId: z.string(),
-});
+export const contextItemSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("github-repo"),
+    owner: z.string(),
+    repo: z.string(),
+    integrationId: z.string(),
+  }),
+  z.object({
+    type: z.literal("linear-team"),
+    integrationId: z.string(),
+    teamName: z.string().optional(),
+  }),
+]);
 
 export type ContextItem = z.infer<typeof contextItemSchema>;
 

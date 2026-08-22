@@ -1,3 +1,8 @@
+import type {
+  GeoContentBrief,
+  GeoContentType,
+} from "@notra/ai/types/geo-writer";
+import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 import type { GeoRequestPayload } from "@usenotra/geo";
 import type { LanguageModel, ToolSet } from "ai";
 import type { ReactNode } from "react";
@@ -31,6 +36,7 @@ export interface GeoProjectCreateInput {
 export interface GeoProjectScope {
   organizationId: string;
   projectId: string | null;
+  brandSettingsId: string | null;
   includeUnassigned: boolean;
 }
 
@@ -1419,3 +1425,122 @@ export interface GeoSettingsSkeletonSectionProps {
   description: string;
   children: ReactNode;
 }
+
+// --- GEO writer ---
+
+export type GeoWriterSourceKind =
+  | "manual"
+  | "gap"
+  | "prompt"
+  | "search_console";
+
+export interface GeoWriterPlanInput {
+  topic: string;
+  autoApprove: boolean;
+  contentType?: GeoContentType;
+  brandVoiceIds?: string[];
+  competitorIds?: string[];
+  sourceKind?: GeoWriterSourceKind;
+  sourceId?: string;
+}
+
+export interface GeoWriterPlanResponse {
+  briefId: string;
+  brief: GeoContentBrief;
+  status: GeoContentBriefStatus;
+  runId: string | null;
+  postId: string | null;
+}
+
+export type GeoGapWriteAction = "write" | "review" | "writing" | "open";
+
+export interface GeoGapBriefRef {
+  briefId: string;
+  status: GeoContentBriefStatus;
+  postId: string | null;
+  workingTitle: string | null;
+}
+
+export interface GeoPromptGapRow {
+  id: string;
+  prompt: string;
+  engines: string[];
+  competitors: string[];
+  ownMentionRate: number;
+  engineCoverage: number;
+  opportunity: number;
+  brief: GeoGapBriefRef | null;
+}
+
+export interface GeoSearchGapRow {
+  id: string;
+  prompt: string;
+  impressions: number | null;
+  brief: GeoGapBriefRef | null;
+}
+
+export interface GeoContentGapsResponse {
+  promptGaps: GeoPromptGapRow[];
+  searchGaps: GeoSearchGapRow[];
+  hasScanData: boolean;
+}
+
+export interface GeoWriterStartResponse {
+  runId: string;
+}
+
+export interface GeoContentBriefDetail {
+  id: string;
+  topic: string;
+  brief: GeoContentBrief;
+  status: GeoContentBriefStatus;
+  autoApproved: boolean;
+  runId: string | null;
+  postId: string | null;
+  humanized: boolean;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}
+
+export interface GeoContentBriefSummary {
+  id: string;
+  topic: string;
+  workingTitle: string;
+  status: GeoContentBriefStatus;
+  postId: string | null;
+  createdAt: string;
+}
+
+export interface GeoContentBriefsResponse {
+  briefs: GeoContentBriefSummary[];
+}
+
+export interface GeoWriterPayload {
+  organizationId: string;
+  projectId: string;
+  briefId: string;
+  runId: string;
+}
+
+export interface GeoWriterContext {
+  organizationId: string;
+  projectId: string;
+  briefId: string;
+  brandSettingsId: string;
+  collectionId: string;
+  postId: string | null;
+  brandName: string;
+  language: string | null;
+  topic: string;
+  brief: GeoContentBrief;
+}
+
+export type GeoWriterWorkflowResult =
+  | { status: "success"; postId: string; humanized: boolean }
+  | { status: "failed"; reason: string }
+  | { status: "credits_exhausted" }
+  | { status: "duplicate_execution" }
+  | { status: "invalid_state" }
+  | { status: "invalid_payload" };

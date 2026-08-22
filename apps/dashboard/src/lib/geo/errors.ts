@@ -89,9 +89,45 @@ export class GeoCursorFlagEvaluationError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
+export class GeoWriterDisabledError extends Data.TaggedError(
+  "GeoWriterDisabledError"
+)<{
+  readonly organizationId: string;
+}> {}
+
+export class GeoWriterCreditsExhaustedError extends Data.TaggedError(
+  "GeoWriterCreditsExhaustedError"
+)<Record<string, never>> {}
+
+export class GeoContentBriefNotFoundError extends Data.TaggedError(
+  "GeoContentBriefNotFoundError"
+)<{
+  readonly briefId: string;
+}> {}
+
+export class GeoContentBriefStateError extends Data.TaggedError(
+  "GeoContentBriefStateError"
+)<{
+  readonly briefId: string;
+  readonly status: string;
+}> {}
+
+export class GeoWriterPlanError extends Data.TaggedError("GeoWriterPlanError")<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+
+export class GeoWriterStartError extends Data.TaggedError(
+  "GeoWriterStartError"
+)<{
+  readonly cause: unknown;
+}> {}
+
 export type GeoRouterError =
   | GeoBrandIdentityMissingError
   | GeoBrandIdentityNotFoundError
+  | GeoContentBriefNotFoundError
+  | GeoContentBriefStateError
   | GeoDatabaseError
   | GeoDiscoveryError
   | GeoProjectCreateFailedError
@@ -104,4 +140,8 @@ export type GeoRouterError =
   | GeoSequenceNotFoundError
   | GeoSettingsDisabledError
   | GeoSettingsMissingError
-  | GeoTinybirdError;
+  | GeoTinybirdError
+  | GeoWriterCreditsExhaustedError
+  | GeoWriterDisabledError
+  | GeoWriterPlanError
+  | GeoWriterStartError;

@@ -45,6 +45,7 @@ export interface ContentEditorProps {
   content: ContentData;
   state: EditorState;
   actions: EditorActions;
+  readOnly?: boolean;
   editorRef: React.RefObject<EditorRefHandle | null>;
   editorKey: number;
   organization?: OrganizationInfo;

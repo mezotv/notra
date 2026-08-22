@@ -1,30 +1,22 @@
 "use client";
 
-import { AtIcon } from "@hugeicons/core-free-icons";
+import { ArrowUp02Icon, AtIcon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FEATURES } from "@notra/ai/billing/features";
-import { Alert, AlertDescription } from "@notra/ui/components/ui/alert";
+import type { ContextItem } from "@notra/ai/types/chat";
 import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@notra/ui/components/ui/card";
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@notra/ui/components/ui/command";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@notra/ui/components/ui/dropdown-menu";
-import { Github } from "@notra/ui/components/ui/svgs/github";
-import { Linear } from "@notra/ui/components/ui/svgs/linear";
-import { Slack } from "@notra/ui/components/ui/svgs/slack";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@notra/ui/components/ui/popover";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import {
   Tooltip,
@@ -34,50 +26,36 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { BrailleLoader } from "@/components/braille-loader";
-import { Button } from "@/components/button";
+import { ChatContextConnectSuggestions } from "@/components/chat/chat-context-connect-suggestions";
+import { ChatContextOptionContent } from "@/components/chat/chat-context-option-content";
 import { ChatInputContextRow } from "@/components/chat/chat-input-context-row";
+import { Composer } from "@/components/composer/composer-shell";
 import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
-import { ALL_INTEGRATIONS } from "@/lib/integrations/catalog";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   ChatInputProps,
+  EnabledLinear,
   EnabledRepo,
 } from "@/types/components/chat-input";
 import {
+  buildContentChatContextOptions,
   CHAT_INPUT_LIMIT_MESSAGE,
-  toGithubContextItem,
+  contextItemsEqual,
 } from "@/utils/chat-input";
-
-function GitHubMenuItem({
-  repo,
-  inContext,
-  onToggle,
-}: {
-  repo: EnabledRepo;
-  inContext: boolean;
-  onToggle: (repo: EnabledRepo, inContext: boolean) => void;
-}) {
-  return (
-    <DropdownMenuItem onClick={() => onToggle(repo, inContext)}>
-      <Github className="size-4" />
-      <span className="truncate">
-        {repo.owner}/{repo.repo}
-      </span>
-      {inContext && (
-        <span className="ml-auto text-emerald-600 text-xs dark:text-emerald-400">
-          Added
-        </span>
-      )}
-    </DropdownMenuItem>
-  );
-}
 
 const ChatInput = ({
   onSend,
   isLoading = false,
+  disabled = false,
   statusText,
   completionMessage,
   selection,
@@ -92,7 +70,9 @@ const ChatInput = ({
   error: externalError,
   onClearError,
 }: ChatInputProps) => {
+  const contextPickerId = useId();
   const [isFocused, setIsFocused] = useState(false);
+  const [isContextPickerOpen, setIsContextPickerOpen] = useState(false);
   const [internalValue, setInternalValue] = useState("");
   const [internalError, setInternalError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -161,16 +141,39 @@ const ChatInput = ({
     return result;
   }, [integrationsData?.integrations]);
 
-  const isRepoInContext = useCallback(
-    (repo: EnabledRepo) =>
-      context.some(
-        (c) =>
-          c.type === "github-repo" &&
-          c.owner === repo.owner &&
-          c.repo === repo.repo
-      ),
+  const enabledLinear = useMemo(() => {
+    const result: EnabledLinear[] = [];
+    for (const integration of integrationsData?.integrations ?? []) {
+      if (integration.type === "linear" && integration.enabled) {
+        result.push({
+          id: integration.id,
+          displayName: integration.displayName,
+          integrationId: integration.id,
+          teamName:
+            "linearTeamName" in integration
+              ? (integration.linearTeamName as string | null)
+              : null,
+        });
+      }
+    }
+    return result;
+  }, [integrationsData?.integrations]);
+
+  const contextOptions = useMemo(
+    () =>
+      buildContentChatContextOptions({
+        enabledLinear,
+        enabledRepos,
+      }),
+    [enabledLinear, enabledRepos]
+  );
+
+  const isInContext = useCallback(
+    (item: ContextItem) =>
+      context.some((contextItem) => contextItemsEqual(contextItem, item)),
     [context]
   );
+
   const resizeTextarea = useCallback(() => {
     const element = textareaRef.current;
     if (!element) {
@@ -186,10 +189,8 @@ const ChatInput = ({
       element.scrollHeight > maxHeightPx ? "auto" : "hidden";
   }, []);
 
-  const toggleRepoContext = useCallback(
-    (repo: EnabledRepo, inContext: boolean) => {
-      const item = toGithubContextItem(repo);
-
+  const toggleContextItem = useCallback(
+    (item: ContextItem, inContext: boolean) => {
       if (inContext) {
         onRemoveContext?.(item);
         return;
@@ -208,7 +209,7 @@ const ChatInput = ({
 
   const handleSend = useCallback(async () => {
     const trimmed = value.trim();
-    if (!trimmed || isLoading) {
+    if (!trimmed || disabled || isLoading) {
       return;
     }
 
@@ -220,12 +221,12 @@ const ChatInput = ({
     }
 
     if (customer) {
-      const checkResult = check({
+      const sendCheckResult = check({
         featureId: FEATURES.AI_CREDITS,
         requiredBalance: 1,
       });
 
-      if (checkResult?.allowed === false) {
+      if (sendCheckResult?.allowed === false) {
         setInternalError(CHAT_INPUT_LIMIT_MESSAGE);
         return;
       }
@@ -238,6 +239,7 @@ const ChatInput = ({
     onSend,
     resizeTextarea,
     value,
+    disabled,
     isLoading,
     check,
     customer,
@@ -262,268 +264,215 @@ const ChatInput = ({
     [handleSend, isFocused]
   );
 
+  const isInputLocked = disabled || isLoading || isUsageBlocked;
+  let contextPickerDisabledReason: string | null = null;
+  if (isLoading) {
+    contextPickerDisabledReason =
+      "Wait for the current response before changing tools or context.";
+  } else if (isInputLocked) {
+    contextPickerDisabledReason = "Context is unavailable right now.";
+  }
+  const hasContextChips = context.length > 0 || Boolean(selection);
+  const statusMessage = isLoading ? statusText : (completionMessage ?? null);
+  const showComposerNudge = hasContextChips || shouldShowLowCredits;
+
   return (
-    <Card
-      className="w-full gap-0 rounded-[14px] border-0 bg-background py-0 shadow-none transition-shadow duration-200 ease-out-expo"
-      data-focused={isFocused ? "true" : "false"}
+    <Composer.Frame
+      nudge={
+        showComposerNudge ? (
+          <Composer.Nudge
+            title={
+              shouldShowLowCredits && !hasContextChips
+                ? `${remainingChatCredits} chat messages left`
+                : undefined
+            }
+          >
+            {hasContextChips ? (
+              <>
+                <ChatInputContextRow
+                  context={context}
+                  onClearSelection={onClearSelection}
+                  onRemoveContext={onRemoveContext}
+                  selection={selection}
+                />
+                {shouldShowLowCredits ? (
+                  <span className="text-muted-foreground text-xs">
+                    {remainingChatCredits} chat messages left
+                  </span>
+                ) : null}
+              </>
+            ) : null}
+          </Composer.Nudge>
+        ) : null
+      }
     >
-      <CardHeader className="sr-only">
-        <span>Chat input</span>
-      </CardHeader>
-      <CardContent className="p-0">
-        <div
-          className="overflow-hidden rounded-[14px] border border-border bg-background shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none"
-          tabIndex={-1}
-        >
-          <div className="p-0.5">
-            {isLoading && statusText && (
-              <div className="flex items-start gap-2 rounded-t-xl border-border border-b bg-muted/40 px-3 py-2">
-                <p className="text-muted-foreground text-sm leading-5">
-                  {statusText}
-                </p>
-              </div>
-            )}
-            {!isLoading && completionMessage && (
-              <div className="flex items-start gap-2 rounded-t-xl border-border border-b bg-muted/40 px-3 py-2">
-                <p className="text-muted-foreground text-sm leading-5">
-                  {completionMessage}
-                </p>
-              </div>
-            )}
-            {usageLimitError && (
-              <Alert className="mx-2 mt-2 mb-1" variant="destructive">
-                <AlertDescription className="wrap-break-word flex flex-wrap items-center gap-1 text-sm">
-                  <span>{usageLimitError}</span>
-                  {organizationSlug && (
-                    <Link
-                      className="font-medium underline underline-offset-2"
-                      href={`/${organizationSlug}/settings/billing`}
-                    >
-                      Upgrade
-                    </Link>
-                  )}
-                </AlertDescription>
-              </Alert>
-            )}
-            <ChatInputContextRow
-              context={context}
-              onClearSelection={onClearSelection}
-              onRemoveContext={onRemoveContext}
-              selection={selection}
+      {usageLimitError ? (
+        <div className="mx-2 mt-2 mb-1 flex w-fit max-w-full flex-wrap items-center gap-1 rounded-md bg-destructive/10 px-2 py-1 text-destructive text-xs">
+          <span>{usageLimitError}</span>
+          {organizationSlug ? (
+            <Link
+              className="font-medium underline underline-offset-2"
+              href={`/${organizationSlug}/settings/billing`}
+            >
+              Upgrade
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+      {statusMessage ? (
+        <p className="line-clamp-1 px-3 pt-2 text-muted-foreground text-xs">
+          {statusMessage}
+        </p>
+      ) : null}
+      <div className="relative flex min-w-0 flex-col rounded-t-[13px] bg-background">
+        <div className="flex w-full min-w-0 items-center rounded-t-[12px]">
+          <div className="relative flex min-w-0 flex-1 cursor-text transition-colors [--lh:1lh]">
+            <Textarea
+              aria-label="Send a message"
+              className="max-h-50 min-h-12 w-full resize-none whitespace-pre-wrap rounded-none border-0 bg-transparent px-3 py-2 text-foreground text-sm leading-6 caret-foreground shadow-none outline-none ring-0 focus-visible:border-transparent focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+              disabled={isInputLocked}
+              onBlur={() => setIsFocused(false)}
+              onChange={(event) => {
+                setValue(event.target.value);
+              }}
+              onFocus={() => setIsFocused(true)}
+              onInput={resizeTextarea}
+              placeholder={isLoading ? "AI is working..." : "Send a message..."}
+              ref={textareaRef}
+              rows={1}
+              value={value}
             />
-            <div className="flex flex-col bg-background">
-              <div className="flex w-full items-center">
-                <div className="relative flex flex-1 cursor-text transition-colors [--lh:1lh]">
-                  <Textarea
-                    aria-label="Send a message"
-                    className="max-h-50 min-h-8 w-full resize-none whitespace-pre-wrap rounded-none border-0 bg-transparent py-0 pr-2 pl-3.5 text-foreground text-sm leading-8 caret-foreground shadow-none outline-none ring-0 focus-visible:border-transparent focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={isLoading || isUsageBlocked}
-                    onBlur={() => setIsFocused(false)}
-                    onChange={(event) => {
-                      setValue(event.target.value);
-                    }}
-                    onFocus={() => setIsFocused(true)}
-                    onInput={resizeTextarea}
-                    placeholder={
-                      isLoading ? "AI is working..." : "Send a message..."
-                    }
-                    ref={textareaRef}
-                    rows={1}
-                    value={value}
-                  />
-                </div>
-              </div>
-            </div>
-            {shouldShowLowCredits && (
-              <div className="px-3 pb-1 text-muted-foreground text-xs">
-                {remainingChatCredits} chat messages left
-              </div>
-            )}
-            <CardFooter className="flex items-center justify-between overflow-hidden p-2">
-              <div className="flex items-center gap-1 sm:gap-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        className="bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={isLoading}
-                        size="sm"
-                        variant="outline"
-                      />
-                    }
-                  >
-                    <div className="flex items-center gap-1.5 text-sm">
-                      <HugeiconsIcon className="size-4" icon={AtIcon} />
-                      <span className="hidden min-[400px]:inline">
-                        Add Context
-                      </span>
-                      <div className="flex items-center pr-1 sm:pr-2">
-                        <span className="-mr-1.5 rounded-md bg-background p-0.5 ring-2 ring-white dark:ring-black [&_svg]:size-4">
-                          <Slack />
-                        </span>
-                        <span className="-mr-1.5 rounded-md bg-background p-0.5 ring-2 ring-white dark:ring-black [&_svg]:size-4">
-                          <Github />
-                        </span>
-                        <span className="rounded-md bg-background p-0.5 ring-2 ring-white dark:ring-black [&_svg]:size-4">
-                          <Linear />
-                        </span>
-                      </div>
-                    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-56">
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel>Integrations</DropdownMenuLabel>
-                    </DropdownMenuGroup>
-                    {ALL_INTEGRATIONS.map((integration) => {
-                      const isGitHub = integration.id === "github";
-                      const isAvailable = integration.available;
-
-                      if (isGitHub && isAvailable && enabledRepos.length > 0) {
-                        return (
-                          <DropdownMenuSub key={integration.id}>
-                            <DropdownMenuSubTrigger>
-                              <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
-                                {integration.icon}
-                              </span>
-                              <span className="text-foreground">
-                                {integration.name}
-                              </span>
-                              <span className="ml-auto text-emerald-600 text-xs dark:text-emerald-400">
-                                {enabledRepos.length}
-                              </span>
-                            </DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
-                              <DropdownMenuGroup>
-                                <DropdownMenuLabel>
-                                  Select Repository
-                                </DropdownMenuLabel>
-                              </DropdownMenuGroup>
-                              {enabledRepos.map((repo) => {
-                                const inContext = isRepoInContext(repo);
-                                return (
-                                  <GitHubMenuItem
-                                    inContext={inContext}
-                                    key={repo.id}
-                                    onToggle={toggleRepoContext}
-                                    repo={repo}
-                                  />
-                                );
-                              })}
-                              {organizationSlug && (
-                                <>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem
-                                    render={
-                                      <Link
-                                        href={`/${organizationSlug}/integrations/github`}
-                                      />
-                                    }
-                                  >
-                                    Manage repositories
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                            </DropdownMenuSubContent>
-                          </DropdownMenuSub>
-                        );
-                      }
-
-                      if (isGitHub && isAvailable && organizationSlug) {
-                        return (
-                          <DropdownMenuItem
-                            key={integration.id}
-                            render={
-                              <Link
-                                href={`/${organizationSlug}/integrations/github`}
-                              />
-                            }
-                          >
-                            <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
-                              {integration.icon}
-                            </span>
-                            <span className="text-foreground">
-                              {integration.name}
-                            </span>
-                            <span className="ml-auto text-muted-foreground text-xs">
-                              Setup
-                            </span>
-                          </DropdownMenuItem>
-                        );
-                      }
-
-                      return (
-                        <DropdownMenuItem
-                          className="opacity-60"
-                          disabled
-                          key={integration.id}
-                        >
-                          <span className="size-4 shrink-0 text-foreground [&_svg]:size-4">
-                            {integration.icon}
-                          </span>
-                          <span className="text-foreground">
-                            {integration.name}
-                          </span>
-                          <span className="ml-auto text-muted-foreground text-xs">
-                            Soon
-                          </span>
-                        </DropdownMenuItem>
-                      );
-                    })}
-                    {organizationSlug && (
-                      <>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          render={
-                            <Link href={`/${organizationSlug}/integrations`} />
-                          }
-                        >
-                          Manage integrations
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      className="group/button h-7 shrink-0 rounded-lg bg-muted px-1.5 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-                      disabled={isLoading || isUsageBlocked}
-                      onClick={handleSend}
-                      size="sm"
-                      tabIndex={0}
-                      type="button"
-                      variant="outline"
-                    />
-                  }
-                >
-                  <div className="flex items-center gap-1 text-foreground text-sm">
-                    {isLoading ? (
-                      <BrailleLoader className="text-xs" />
-                    ) : (
-                      <>
-                        <div className="px-0.5 text-sm leading-0 transition-transform">
-                          Go
-                        </div>
-                        <div className="hidden h-4 items-center rounded border border-border bg-background px-1 text-[10px] text-muted-foreground shadow-xs sm:inline-flex md:inline-flex">
-                          ↵
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {isLoading
-                    ? "AI is thinking..."
-                    : "Enter to send. Shift+Enter for a new line."}
-                </TooltipContent>
-              </Tooltip>
-            </CardFooter>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      <Composer.Toolbar>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              contextPickerDisabledReason ? (
+                // biome-ignore lint/a11y/useSemanticElements: a real button would illegally nest the disabled popover trigger button.
+                <span
+                  aria-disabled="true"
+                  aria-label="Add tools or context"
+                  className="inline-flex cursor-not-allowed"
+                  role="button"
+                  tabIndex={0}
+                />
+              ) : (
+                <span className="inline-flex" />
+              )
+            }
+          >
+            <Popover
+              modal
+              onOpenChange={setIsContextPickerOpen}
+              open={isContextPickerOpen}
+            >
+              <PopoverTrigger
+                render={
+                  <Composer.ToolbarButton
+                    aria-controls={contextPickerId}
+                    aria-expanded={isContextPickerOpen}
+                    aria-haspopup="listbox"
+                    aria-label="Add tools or context"
+                    className="size-7 justify-center px-0"
+                    disabled={isInputLocked}
+                    role="combobox"
+                  />
+                }
+              >
+                <HugeiconsIcon className="size-4" icon={AtIcon} />
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                className="w-80 p-0"
+                id={contextPickerId}
+                showBackdrop
+                sideOffset={6}
+              >
+                <Command>
+                  <CommandInput placeholder="Search tools and context..." />
+                  <CommandList>
+                    <CommandEmpty>
+                      {contextOptions.length === 0
+                        ? "No matching integrations."
+                        : "No matching tools or context found."}
+                    </CommandEmpty>
+                    {contextOptions.length === 0 && organizationSlug ? (
+                      <ChatContextConnectSuggestions
+                        onSelect={() => setIsContextPickerOpen(false)}
+                        organizationSlug={organizationSlug}
+                      />
+                    ) : null}
+                    {contextOptions.length > 0 ? (
+                      <CommandGroup heading="Context">
+                        {contextOptions.map((option) => {
+                          const inContext = isInContext(option.contextItem);
+                          return (
+                            <CommandItem
+                              data-checked={inContext}
+                              key={option.id}
+                              keywords={[option.searchText]}
+                              onSelect={() => {
+                                toggleContextItem(
+                                  option.contextItem,
+                                  inContext
+                                );
+                                setIsContextPickerOpen(false);
+                              }}
+                              value={option.id}
+                            >
+                              <ChatContextOptionContent option={option} />
+                              {inContext ? (
+                                <HugeiconsIcon
+                                  className="ml-auto size-3.5 text-primary"
+                                  icon={Tick02Icon}
+                                />
+                              ) : null}
+                            </CommandItem>
+                          );
+                        })}
+                      </CommandGroup>
+                    ) : null}
+                  </CommandList>
+                  {organizationSlug ? (
+                    <div className="border-border border-t p-1">
+                      <Link
+                        className="flex items-center rounded-sm px-2 py-1.5 text-muted-foreground text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        href={`/${organizationSlug}/integrations`}
+                        onClick={() => setIsContextPickerOpen(false)}
+                      >
+                        Manage integrations
+                      </Link>
+                    </div>
+                  ) : null}
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </TooltipTrigger>
+          <TooltipContent>
+            {contextPickerDisabledReason ?? "Tools and context"}
+          </TooltipContent>
+        </Tooltip>
+        <Composer.Send
+          busy={isLoading}
+          disabled={isInputLocked || value.trim().length === 0}
+          label="Send message"
+          onClick={handleSend}
+          tooltip={
+            isLoading
+              ? "AI is thinking..."
+              : "Enter to send. Shift+Enter for a new line."
+          }
+        >
+          <HugeiconsIcon
+            className="size-4"
+            icon={ArrowUp02Icon}
+            strokeWidth={2}
+          />
+        </Composer.Send>
+      </Composer.Toolbar>
+    </Composer.Frame>
   );
 };
 

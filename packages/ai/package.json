@@ -25,6 +25,7 @@
     "./prompts/linkedin/*": "./src/prompts/linkedin/*.ts",
     "./prompts/blog_post/*": "./src/prompts/blog_post/*.ts",
     "./prompts/changelog/*": "./src/prompts/changelog/*.ts",
+    "./prompts/geo_writer/*": "./src/prompts/geo_writer/*.ts",
     "./types/*": "./src/types/*.ts",
     "./schemas/*": "./src/schemas/*.ts",
     "./skills/*": "./src/skills/*.ts",

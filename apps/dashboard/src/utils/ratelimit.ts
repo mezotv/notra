@@ -119,6 +119,12 @@ export const ratelimit = {
     prefix: "ratelimit:gsc-oauth",
     limiter: Ratelimit.slidingWindow(10, "10m"),
   }),
+  geoWriterPlan: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:geo-writer-plan",
+    limiter: Ratelimit.slidingWindow(10, "10m"),
+  }),
   gscSync: new Ratelimit({
     redis,
     analytics: true,

@@ -1,3 +1,12 @@
+import {
+  BookOpen01Icon,
+  BubbleChatQuestionIcon,
+  GitCompareIcon,
+  Layers01Icon,
+  LeftToRightListNumberIcon,
+  PaintBrush01Icon,
+  UserMultiple02Icon,
+} from "@hugeicons/core-free-icons";
 import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
 import { GEO_MODEL_CATALOG_SEED } from "@/constants/geo-model-catalog";
 import type {
@@ -34,6 +43,108 @@ export const GEO_CURSOR_FLAG_KEY = "geo-cursor";
 export const GEO_CURSOR_FLAG_CACHE_TTL_MS = 60_000;
 export const GEO_CURSOR_FLAG_STALE_TIME_MS = 30_000;
 export const GEO_CURSOR_FLAG_ERROR_REASON = "ERROR";
+
+/** Databuddy flag that exposes the GEO writer to an organization. */
+export const GEO_WRITER_FLAG_KEY = "geo-writer";
+export const GEO_WRITER_NAV_LINK = "/geo/write";
+export const GEO_GAPS_NAV_LINK = "/geo/gaps";
+export const GEO_PROMPTS_NAV_LINK = "/geo/prompts";
+export const GEO_WRITER_TOPIC_MIN_LENGTH = 3;
+export const GEO_WRITER_TOPIC_MAX_LENGTH = 8000;
+export const GEO_WRITER_GAP_LOOKBACK_DAYS = 30;
+export const GEO_WRITER_PLANNER_GAP_LIMIT = 20;
+export const GEO_WRITER_SITEMAP_PAGE_LIMIT = 60;
+export const GEO_WRITER_BRIEF_POLL_INTERVAL_MS = 3000;
+export const GEO_WRITER_BRIEFS_LIMIT = 20;
+export const GEO_GAPS_MAX_CHECKS = 400;
+export const GEO_GAPS_SEARCH_LIMIT = 100;
+export const GEO_GAPS_TABLE_HEIGHT = 420;
+export const GEO_GAPS_METER_STEPS = 5;
+export const GEO_GAPS_METER_TONE_CLASS = {
+  empty: "bg-muted",
+  low: "bg-rose-500",
+  mid: "bg-amber-500",
+  high: "bg-emerald-500",
+} as const;
+export const GEO_GAPS_LOGO_STACK_LIMIT = 4;
+export const GEO_GAPS_WRITE_LABELS = {
+  write: "Write",
+  review: "Review",
+  writing: "Writing",
+  open: "Open post",
+} as const;
+export const GEO_GAPS_EMPTY = {
+  scanning: {
+    title: "Scanning engines",
+    description: "Gaps appear here once the scan finishes.",
+  },
+  "no-scan": {
+    title: "No scan yet",
+    description:
+      "Run a scan to see which questions AI engines answer without mentioning you.",
+    action: "Run scan",
+  },
+  "no-prompt-gaps": {
+    title: "No prompt gaps",
+    description: "Engines already mention you on the questions you track.",
+  },
+  "no-search-gaps": {
+    title: "No search gaps",
+    description:
+      "Connect Search Console on Prompts to pull queries you don't cover yet.",
+    action: "Open Prompts",
+  },
+} as const;
+export const GEO_WRITER_TRIGGER_ID = "geo_writer";
+export const GEO_WRITER_TRIGGER_NAME = "GEO Writer";
+
+export const GEO_WRITE_CONTENT_TYPES = [
+  {
+    id: "guide" as const,
+    label: "Blog post",
+    description: "A longer article that answers the prompt directly.",
+    icon: BookOpen01Icon,
+  },
+  {
+    id: "listicle" as const,
+    label: "Listicle",
+    description: "A ranked or numbered list buyers can scan and cite.",
+    icon: LeftToRightListNumberIcon,
+  },
+  {
+    id: "comparison" as const,
+    label: "Comparison",
+    description: "A side-by-side look at the brand versus alternatives.",
+    icon: GitCompareIcon,
+  },
+];
+
+export const GEO_WRITE_DIALOG_SECTIONS = [
+  {
+    id: "prompt" as const,
+    label: "Prompt",
+    required: true,
+    icon: BubbleChatQuestionIcon,
+  },
+  {
+    id: "type" as const,
+    label: "Content type",
+    required: true,
+    icon: Layers01Icon,
+  },
+  {
+    id: "brand" as const,
+    label: "Brand identity",
+    required: false,
+    icon: PaintBrush01Icon,
+  },
+  {
+    id: "competitors" as const,
+    label: "Competitors",
+    required: false,
+    icon: UserMultiple02Icon,
+  },
+];
 
 const hasEnv = (name: string): boolean => {
   const value = process.env[name];

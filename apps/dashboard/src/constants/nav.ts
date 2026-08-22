@@ -12,8 +12,10 @@ import {
   NoteIcon,
   Notification03Icon,
   PaintBoardIcon,
+  PencilEdit01Icon,
   PlugIcon,
   RainbowIcon,
+  SearchList01Icon,
   Settings01Icon,
   WorkflowSquare01Icon,
 } from "@hugeicons/core-free-icons";
@@ -105,9 +107,21 @@ export const NAV_MAIN_ITEMS: NavMainItem[] = [
     category: "geo",
   },
   {
+    link: "/geo/gaps",
+    icon: SearchList01Icon,
+    label: "Content Gaps",
+    category: "geo",
+  },
+  {
     link: "/geo/competitors",
     icon: ChartAnalysisIcon,
     label: "Competitors",
+    category: "geo",
+  },
+  {
+    link: "/geo/write",
+    icon: PencilEdit01Icon,
+    label: "Write",
     category: "geo",
   },
   {

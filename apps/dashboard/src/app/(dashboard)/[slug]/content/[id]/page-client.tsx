@@ -48,6 +48,7 @@ import { ImageExportTargetIcon } from "@/components/content/image-export-target-
 import { PostSocialButton } from "@/components/content/post-social-button";
 import { RecommendationsSection } from "@/components/content/recommendations-section";
 import { RightPanelPortal } from "@/components/dashboard/right-panel-portal";
+import { WriterExecute } from "@/components/geo/writer/writer-execute";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   CONTENT_TITLE_REGEX,
@@ -61,6 +62,7 @@ import {
   copyImageAsPaper,
   downloadImage,
 } from "@/lib/content/image-export";
+import { useGeoWriterBrief } from "@/lib/hooks/use-geo-writer";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { cn } from "@/lib/utils";
 import { sourceMetadataSchema } from "@/schemas/content";
@@ -68,12 +70,12 @@ import type { ContentDetailPageClientProps } from "@/types/content/detail";
 import type { ImageExportTarget } from "@/types/content/image-export";
 import { getBrandFaviconUrl } from "@/utils/brand";
 import { formatSnakeCaseLabel } from "@/utils/format";
+import { parseGeoWriterDraft } from "@/utils/geo-write-entry";
 import { getImageExportHtml, isHttpImageContent } from "@/utils/image-content";
 import {
   getImageExportTargetLabel,
   isImageExportTarget,
 } from "@/utils/image-export";
-
 import { shakeElements } from "@/utils/shake-element";
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
@@ -133,6 +135,14 @@ export default function PageClient({
   const { state: sidebarState } = useSidebar();
   const queryClient = useQueryClient();
   const { data, isPending, error } = useContent(organizationId, contentId);
+  const geoWriterDraft = parseGeoWriterDraft(data?.content?.sourceMetadata);
+  const geoWriterBriefQuery = useGeoWriterBrief(
+    organizationId,
+    geoWriterDraft?.briefId ?? null
+  );
+  const isGeoWriterPlanLocked = Boolean(
+    geoWriterDraft && geoWriterBriefQuery.data?.status !== "completed"
+  );
   const { data: brandResponse } = useQuery(
     dashboardOrpc.brand.voices.list.queryOptions({
       input: { organizationId },
@@ -227,6 +237,23 @@ export default function PageClient({
   const hasChanges = hasMarkdownChanges || hasTitleChanges || hasSlugChanges;
 
   const [isSaving, setIsSaving] = useState(false);
+
+  const handleGeoArticleReady = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.content.get.queryKey({
+          input: { organizationId, contentId },
+        }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.content.list.key(),
+      }),
+    ]);
+    setEditedMarkdown(null);
+    setPersistedSlug(null);
+    setEditingTitle(null);
+    setEditingSlug(null);
+  }, [contentId, organizationId, queryClient]);
 
   useEffect(() => {
     if (!hasChanges) {
@@ -726,6 +753,7 @@ export default function PageClient({
       <ChatInput
         completionMessage={completionMessage}
         context={context}
+        disabled={isGeoWriterPlanLocked}
         error={chatError}
         isLoading={status === "streaming" || status === "submitted"}
         onAddContext={handleAddContext}
@@ -821,7 +849,6 @@ export default function PageClient({
     ? `/${organizationSlug}/collection/${collection.id}`
     : `/${organizationSlug}/content`;
   const backLabel = collection ? "Back to collection" : "Back to Content";
-
   return (
     <>
       <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -833,281 +860,300 @@ export default function PageClient({
             <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
             {backLabel}
           </Link>
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-1 flex-col gap-1">
-              <div className="flex items-center gap-3">
-                <time
-                  className="text-muted-foreground text-sm"
-                  dateTime={content.date}
-                >
-                  {formatDate(new Date(content.date))}
-                </time>
-                <Badge className="capitalize" variant="secondary">
-                  {getContentTypeLabel(content.contentType)}
-                </Badge>
-                {content.contentType !== "image" && (
-                  <Badge
-                    className="capitalize"
-                    variant={
-                      content.status === "published" ? "default" : "outline"
-                    }
+          <WriterExecute.Root
+            briefId={geoWriterDraft?.briefId ?? null}
+            hasUnsavedChanges={hasChanges}
+            onArticleReady={handleGeoArticleReady}
+            organizationId={organizationId}
+          >
+            {geoWriterDraft ? <WriterExecute.Banner /> : null}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-1 flex-col gap-1">
+                <div className="flex items-center gap-3">
+                  <time
+                    className="text-muted-foreground text-sm"
+                    dateTime={content.date}
                   >
-                    {content.status}
+                    {formatDate(new Date(content.date))}
+                  </time>
+                  <Badge className="capitalize" variant="secondary">
+                    {getContentTypeLabel(content.contentType)}
                   </Badge>
-                )}
-              </div>
-              {content.sourceMetadata &&
-                (() => {
-                  const parsed = sourceMetadataSchema.safeParse(
-                    content.sourceMetadata
-                  );
-                  if (!parsed.success || !parsed.data) {
-                    return null;
-                  }
-                  const meta = parsed.data;
-                  const repositories = meta.repositories ?? [];
-                  if (
-                    repositories.length === 0 ||
-                    !meta.triggerSourceType ||
-                    !meta.lookbackWindow ||
-                    !meta.lookbackRange
-                  ) {
-                    return null;
-                  }
-
-                  const triggerSourceType = meta.triggerSourceType;
-                  const lookbackWindow = meta.lookbackWindow;
-                  const lookbackRange = meta.lookbackRange;
-                  const repoLabel = formatRepos(repositories);
-                  const needsTooltip = repositories.length > 1;
-                  return (
-                    <p className="text-muted-foreground text-xs">
-                      <span className="capitalize">
-                        {formatTriggerType(triggerSourceType)}
-                      </span>
-                      {" \u00B7 "}
-                      {needsTooltip ? (
-                        <Tooltip>
-                          <TooltipTrigger
-                            render={
-                              <span className="cursor-help underline decoration-dotted underline-offset-2">
-                                {repoLabel}
-                              </span>
-                            }
-                          />
-                          <TooltipContent>
-                            <ul>
-                              {repositories.map((r) => (
-                                <li key={`${r.owner}/${r.repo}`}>
-                                  {r.owner}/{r.repo}
-                                </li>
-                              ))}
-                            </ul>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        repoLabel
-                      )}
-                      {" \u00B7 "}
-                      <span className="capitalize">
-                        {formatLookbackWindow(lookbackWindow)}
-                      </span>{" "}
-                      ({formatDateRange(lookbackRange.start, lookbackRange.end)}
-                      )
-                      {meta.brandVoiceName &&
-                        (() => {
-                          const voice = meta.brandVoiceId
-                            ? brandResponse?.voices.find(
-                                (v) => v.id === meta.brandVoiceId
-                              )
-                            : brandResponse?.voices.find(
-                                (v) => v.name === meta.brandVoiceName
-                              );
-                          return (
-                            <>
-                              {" \u00B7 "}
-                              {voice ? (
-                                <Tooltip>
-                                  <TooltipTrigger
-                                    render={
-                                      <span className="cursor-help underline decoration-dotted underline-offset-2">
-                                        {meta.brandVoiceName}
-                                      </span>
-                                    }
-                                  />
-                                  <TooltipContent
-                                    className="flex items-start gap-3"
-                                    side="top"
-                                  >
-                                    <Avatar
-                                      className="mt-0.5 size-8 shrink-0 rounded-full after:rounded-full"
-                                      size="sm"
-                                    >
-                                      <AvatarImage
-                                        src={getBrandFaviconUrl(
-                                          voice.websiteUrl
-                                        )}
-                                      />
-                                      <AvatarFallback className="text-xs">
-                                        {voice.name.slice(0, 2).toUpperCase()}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <div className="space-y-0.5">
-                                      <p className="font-medium">
-                                        {voice.name}
-                                      </p>
-                                      {voice.toneProfile && (
-                                        <p>Tone: {voice.toneProfile}</p>
-                                      )}
-                                      {voice.language && (
-                                        <p>Language: {voice.language}</p>
-                                      )}
-                                      {voice.companyName && (
-                                        <p>Company: {voice.companyName}</p>
-                                      )}
-                                    </div>
-                                  </TooltipContent>
-                                </Tooltip>
-                              ) : (
-                                meta.brandVoiceName
-                              )}
-                            </>
-                          );
-                        })()}
-                    </p>
-                  );
-                })()}
-            </div>
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              <Tooltip>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      className="hidden lg:inline-flex"
-                      onClick={() => setIsActivityPanelOpen((open) => !open)}
-                      size="icon-sm"
-                      variant={isActivityPanelOpen ? "secondary" : "outline"}
-                    />
-                  }
-                >
-                  <span className="sr-only">Toggle agent activity</span>
-                  <HugeiconsIcon className="size-4" icon={SidebarRight01Icon} />
-                </TooltipTrigger>
-                <TooltipContent>Agent activity</TooltipContent>
-              </Tooltip>
-              {content.contentType !== "image" && (
-                <Button
-                  disabled={isTogglingStatus}
-                  onClick={handleToggleStatus}
-                  size="sm"
-                  variant={content.status === "draft" ? "default" : "outline"}
-                >
-                  <HugeiconsIcon
-                    className="size-4"
-                    icon={content.status === "published" ? TextIcon : SentIcon}
-                  />
-                  {(() => {
-                    if (isTogglingStatus) {
-                      return "Updating...";
+                  {content.contentType !== "image" && (
+                    <Badge
+                      className="capitalize"
+                      variant={
+                        content.status === "published" ? "default" : "outline"
+                      }
+                    >
+                      {content.status}
+                    </Badge>
+                  )}
+                </div>
+                {content.sourceMetadata &&
+                  (() => {
+                    const parsed = sourceMetadataSchema.safeParse(
+                      content.sourceMetadata
+                    );
+                    if (!parsed.success || !parsed.data) {
+                      return null;
                     }
-                    return content.status === "published"
-                      ? "Move to draft"
-                      : "Publish";
+                    const meta = parsed.data;
+                    const repositories = meta.repositories ?? [];
+                    if (
+                      repositories.length === 0 ||
+                      !meta.triggerSourceType ||
+                      !meta.lookbackWindow ||
+                      !meta.lookbackRange
+                    ) {
+                      return null;
+                    }
+
+                    const triggerSourceType = meta.triggerSourceType;
+                    const lookbackWindow = meta.lookbackWindow;
+                    const lookbackRange = meta.lookbackRange;
+                    const repoLabel = formatRepos(repositories);
+                    const needsTooltip = repositories.length > 1;
+                    return (
+                      <p className="text-muted-foreground text-xs">
+                        <span className="capitalize">
+                          {formatTriggerType(triggerSourceType)}
+                        </span>
+                        {" \u00B7 "}
+                        {needsTooltip ? (
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <span className="cursor-help underline decoration-dotted underline-offset-2">
+                                  {repoLabel}
+                                </span>
+                              }
+                            />
+                            <TooltipContent>
+                              <ul>
+                                {repositories.map((r) => (
+                                  <li key={`${r.owner}/${r.repo}`}>
+                                    {r.owner}/{r.repo}
+                                  </li>
+                                ))}
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          repoLabel
+                        )}
+                        {" \u00B7 "}
+                        <span className="capitalize">
+                          {formatLookbackWindow(lookbackWindow)}
+                        </span>{" "}
+                        (
+                        {formatDateRange(
+                          lookbackRange.start,
+                          lookbackRange.end
+                        )}
+                        )
+                        {meta.brandVoiceName &&
+                          (() => {
+                            const voice = meta.brandVoiceId
+                              ? brandResponse?.voices.find(
+                                  (v) => v.id === meta.brandVoiceId
+                                )
+                              : brandResponse?.voices.find(
+                                  (v) => v.name === meta.brandVoiceName
+                                );
+                            return (
+                              <>
+                                {" \u00B7 "}
+                                {voice ? (
+                                  <Tooltip>
+                                    <TooltipTrigger
+                                      render={
+                                        <span className="cursor-help underline decoration-dotted underline-offset-2">
+                                          {meta.brandVoiceName}
+                                        </span>
+                                      }
+                                    />
+                                    <TooltipContent
+                                      className="flex items-start gap-3"
+                                      side="top"
+                                    >
+                                      <Avatar
+                                        className="mt-0.5 size-8 shrink-0 rounded-full after:rounded-full"
+                                        size="sm"
+                                      >
+                                        <AvatarImage
+                                          src={getBrandFaviconUrl(
+                                            voice.websiteUrl
+                                          )}
+                                        />
+                                        <AvatarFallback className="text-xs">
+                                          {voice.name.slice(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div className="space-y-0.5">
+                                        <p className="font-medium">
+                                          {voice.name}
+                                        </p>
+                                        {voice.toneProfile && (
+                                          <p>Tone: {voice.toneProfile}</p>
+                                        )}
+                                        {voice.language && (
+                                          <p>Language: {voice.language}</p>
+                                        )}
+                                        {voice.companyName && (
+                                          <p>Company: {voice.companyName}</p>
+                                        )}
+                                      </div>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                ) : (
+                                  meta.brandVoiceName
+                                )}
+                              </>
+                            );
+                          })()}
+                      </p>
+                    );
                   })()}
-                </Button>
-              )}
-              {content.contentType === "linkedin_post" && (
-                <PostSocialButton
-                  content={currentMarkdown}
-                  onContentChange={setEditedMarkdown}
-                  organizationId={organizationId}
-                  platform="linkedin"
-                />
-              )}
-              {content.contentType === "twitter_post" && (
-                <PostSocialButton
-                  content={currentMarkdown}
-                  onContentChange={setEditedMarkdown}
-                  organizationId={organizationId}
-                  platform="twitter"
-                />
-              )}
-              {content.contentType === "image" && (
-                <>
-                  <Button
-                    onClick={() => downloadImage(imageDownloadUrl, title)}
-                    size="sm"
-                    variant="outline"
+              </div>
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                {geoWriterDraft ? <WriterExecute.Button /> : null}
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Button
+                        className="hidden lg:inline-flex"
+                        onClick={() => setIsActivityPanelOpen((open) => !open)}
+                        size="icon-sm"
+                        variant={isActivityPanelOpen ? "secondary" : "outline"}
+                      />
+                    }
                   >
-                    <HugeiconsIcon className="size-4" icon={Download01Icon} />
-                    Download image
+                    <span className="sr-only">Toggle agent activity</span>
+                    <HugeiconsIcon
+                      className="size-4"
+                      icon={SidebarRight01Icon}
+                    />
+                  </TooltipTrigger>
+                  <TooltipContent>Agent activity</TooltipContent>
+                </Tooltip>
+                {content.contentType !== "image" && (
+                  <Button
+                    disabled={isGeoWriterPlanLocked || isTogglingStatus}
+                    onClick={handleToggleStatus}
+                    size="sm"
+                    variant={content.status === "draft" ? "default" : "outline"}
+                  >
+                    <HugeiconsIcon
+                      className="size-4"
+                      icon={
+                        content.status === "published" ? TextIcon : SentIcon
+                      }
+                    />
+                    {(() => {
+                      if (isTogglingStatus) {
+                        return "Updating...";
+                      }
+                      return content.status === "published"
+                        ? "Move to draft"
+                        : "Publish";
+                    })()}
                   </Button>
-                  <ButtonGroup>
+                )}
+                {content.contentType === "linkedin_post" && (
+                  <PostSocialButton
+                    content={currentMarkdown}
+                    onContentChange={setEditedMarkdown}
+                    organizationId={organizationId}
+                    platform="linkedin"
+                  />
+                )}
+                {content.contentType === "twitter_post" && (
+                  <PostSocialButton
+                    content={currentMarkdown}
+                    onContentChange={setEditedMarkdown}
+                    organizationId={organizationId}
+                    platform="twitter"
+                  />
+                )}
+                {content.contentType === "image" && (
+                  <>
                     <Button
-                      onClick={handleCopyImageExport}
+                      onClick={() => downloadImage(imageDownloadUrl, title)}
                       size="sm"
                       variant="outline"
                     >
-                      <ImageExportTargetIcon
-                        className="size-4"
-                        target={imageExportTarget}
-                      />
-                      Copy for {getImageExportTargetLabel(imageExportTarget)}
+                      <HugeiconsIcon className="size-4" icon={Download01Icon} />
+                      Download image
                     </Button>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={<Button size="icon-sm" variant="outline" />}
+                    <ButtonGroup>
+                      <Button
+                        onClick={handleCopyImageExport}
+                        size="sm"
+                        variant="outline"
                       >
-                        <span className="sr-only">Select export target</span>
-                        <HugeiconsIcon
+                        <ImageExportTargetIcon
                           className="size-4"
-                          icon={ArrowDown01Icon}
+                          target={imageExportTarget}
                         />
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-52">
-                        <DropdownMenuRadioGroup
-                          onValueChange={handleImageExportTargetSelect}
-                          value={imageExportTarget}
+                        Copy for {getImageExportTargetLabel(imageExportTarget)}
+                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          render={<Button size="icon-sm" variant="outline" />}
                         >
-                          {IMAGE_EXPORT_TARGETS.map((target) => {
-                            const isWonder = target === "wonder";
+                          <span className="sr-only">Select export target</span>
+                          <HugeiconsIcon
+                            className="size-4"
+                            icon={ArrowDown01Icon}
+                          />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuRadioGroup
+                            onValueChange={handleImageExportTargetSelect}
+                            value={imageExportTarget}
+                          >
+                            {IMAGE_EXPORT_TARGETS.map((target) => {
+                              const isWonder = target === "wonder";
 
-                            return (
-                              <DropdownMenuRadioItem
-                                className={cn(
-                                  "gap-2",
-                                  isWonder && "items-start"
-                                )}
-                                closeOnClick
-                                disabled={isWonder}
-                                key={target}
-                                value={target}
-                              >
-                                <ImageExportTargetIcon
-                                  className="mt-0.5 size-4"
-                                  target={target}
-                                />
-                                <span className="flex flex-col">
-                                  <span>
-                                    Copy for {getImageExportTargetLabel(target)}
-                                  </span>
-                                  {isWonder && (
-                                    <span className="text-muted-foreground text-xs">
-                                      Coming soon
-                                    </span>
+                              return (
+                                <DropdownMenuRadioItem
+                                  className={cn(
+                                    "gap-2",
+                                    isWonder && "items-start"
                                   )}
-                                </span>
-                              </DropdownMenuRadioItem>
-                            );
-                          })}
-                        </DropdownMenuRadioGroup>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </ButtonGroup>
-                </>
-              )}
+                                  closeOnClick
+                                  disabled={isWonder}
+                                  key={target}
+                                  value={target}
+                                >
+                                  <ImageExportTargetIcon
+                                    className="mt-0.5 size-4"
+                                    target={target}
+                                  />
+                                  <span className="flex flex-col">
+                                    <span>
+                                      Copy for{" "}
+                                      {getImageExportTargetLabel(target)}
+                                    </span>
+                                    {isWonder && (
+                                      <span className="text-muted-foreground text-xs">
+                                        Coming soon
+                                      </span>
+                                    )}
+                                  </span>
+                                </DropdownMenuRadioItem>
+                              );
+                            })}
+                          </DropdownMenuRadioGroup>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </ButtonGroup>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
+          </WriterExecute.Root>
 
           <ContentEditorSwitch
             actions={{
@@ -1144,6 +1190,7 @@ export default function PageClient({
               logo: activeOrganization?.logo ?? null,
             }}
             organizationId={organizationId}
+            readOnly={isGeoWriterPlanLocked}
             state={{
               editedMarkdown,
               originalMarkdown,

@@ -1,0 +1,189 @@
+"use client";
+
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import type { ComponentProps } from "react";
+import { StatusSpinner } from "@/components/geo/status-spinner";
+import {
+  COMPOSER_SEND_BUTTON,
+  COMPOSER_TOOLBAR_BUTTON,
+} from "@/constants/composer";
+import { cn } from "@/lib/utils";
+import type {
+  ComposerChipProps,
+  ComposerFrameProps,
+  ComposerNudgeProps,
+  ComposerSendProps,
+  ComposerToolbarProps,
+} from "@/types/components/composer";
+
+function ComposerFrame({
+  children,
+  nudge,
+  connectedTop = false,
+  className,
+}: ComposerFrameProps) {
+  const hasNudge = Boolean(nudge);
+
+  return (
+    <div
+      className={cn(
+        "w-full min-w-0 rounded-2xl",
+        hasNudge
+          ? "bg-muted p-1"
+          : "overflow-hidden border border-border bg-background shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none",
+        connectedTop ? "rounded-t-none" : null,
+        connectedTop && !hasNudge ? "border-t-0" : null,
+        className
+      )}
+    >
+      {nudge}
+      <div
+        className={cn(
+          hasNudge
+            ? "min-w-0 overflow-hidden rounded-xl border border-border bg-background shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none"
+            : "min-w-0"
+        )}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ComposerNudge({ title, action, children }: ComposerNudgeProps) {
+  const hasChips = Boolean(children);
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 px-2.5 pt-1 pb-1.5",
+        hasChips ? "flex-wrap" : null
+      )}
+    >
+      {title && !hasChips ? (
+        <p className="min-w-0 flex-1 font-medium text-sm">{title}</p>
+      ) : null}
+      {hasChips ? (
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
+          {children}
+        </div>
+      ) : null}
+      {action ? <div className="ml-auto shrink-0">{action}</div> : null}
+    </div>
+  );
+}
+
+function ComposerChip({
+  icon,
+  label,
+  onRemove,
+  removeLabel,
+  onClick,
+  pending = false,
+}: ComposerChipProps) {
+  return (
+    <span
+      className={cn(
+        "inline-flex max-w-full items-center gap-1.5 rounded-md border border-foreground/25 border-dashed bg-background py-1 pr-1 pl-1.5 text-foreground text-xs",
+        pending ? "border-foreground/15 text-muted-foreground" : null
+      )}
+    >
+      {onClick ? (
+        <button
+          aria-label={`Preview ${label}`}
+          className="flex min-w-0 items-center gap-1.5 rounded-sm text-left transition-colors hover:text-foreground"
+          onClick={onClick}
+          type="button"
+        >
+          {icon}
+          <span className="max-w-[12rem] truncate">{label}</span>
+        </button>
+      ) : (
+        <>
+          {icon}
+          <span className="max-w-[12rem] truncate">{label}</span>
+        </>
+      )}
+      {onRemove ? (
+        <button
+          aria-label={removeLabel ?? `Remove ${label}`}
+          className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          onClick={onRemove}
+          type="button"
+        >
+          <HugeiconsIcon className="size-3" icon={Cancel01Icon} />
+        </button>
+      ) : null}
+    </span>
+  );
+}
+
+function ComposerToolbar({ children, className }: ComposerToolbarProps) {
+  return (
+    <div className={cn("flex items-center gap-1 px-2.5 pb-2.5", className)}>
+      {children}
+    </div>
+  );
+}
+
+function ComposerToolbarButton({
+  className,
+  type = "button",
+  ...props
+}: ComponentProps<"button">) {
+  return (
+    <button
+      className={cn(COMPOSER_TOOLBAR_BUTTON, className)}
+      type={type}
+      {...props}
+    />
+  );
+}
+
+function ComposerSend({
+  children,
+  busy = false,
+  disabled = false,
+  tooltip,
+  label,
+  onClick,
+}: ComposerSendProps) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <button
+            aria-busy={busy}
+            aria-disabled={disabled}
+            aria-label={label}
+            className={cn(
+              COMPOSER_SEND_BUTTON,
+              disabled ? "pointer-events-none" : null,
+              disabled && !busy ? "opacity-30" : null
+            )}
+            onClick={disabled ? undefined : onClick}
+            type="button"
+          />
+        }
+      >
+        {busy ? <StatusSpinner /> : children}
+      </TooltipTrigger>
+      <TooltipContent>{tooltip}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+export const Composer = {
+  Frame: ComposerFrame,
+  Nudge: ComposerNudge,
+  Chip: ComposerChip,
+  Toolbar: ComposerToolbar,
+  ToolbarButton: ComposerToolbarButton,
+  Send: ComposerSend,
+};

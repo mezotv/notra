@@ -298,9 +298,9 @@ export function SiteHeader() {
   })();
 
   return (
-    <header className="relative flex h-12 shrink-0 items-center gap-2 bg-muted transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="flex h-full w-full items-center gap-1 px-4 lg:gap-2">
-        <div className="flex h-full min-w-0 flex-1 items-center gap-2">
+    <header className="flex h-12 shrink-0 items-center gap-2 bg-muted transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+      <div className="grid h-full w-full min-w-0 grid-cols-[minmax(8rem,1fr)_minmax(2rem,20rem)_minmax(2.5rem,1fr)] items-center gap-2 px-4 lg:gap-2">
+        <div className="flex h-full min-w-0 items-center gap-2 overflow-hidden">
           <SidebarTrigger className="-mx-1.5" />
           <Breadcrumb className="min-w-0">
             <BreadcrumbList className="min-w-0 flex-nowrap gap-2">
@@ -309,13 +309,16 @@ export function SiteHeader() {
           </Breadcrumb>
         </div>
         <button
-          className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 hidden w-80 cursor-pointer items-center gap-2 rounded-lg border bg-background/60 px-3 py-1.5 text-muted-foreground text-sm transition-colors hover:bg-muted/60 md:flex"
+          aria-label="Search"
+          className="@container/search hidden h-8 w-full cursor-pointer items-center @[8rem]/search:justify-start justify-center gap-2 rounded-lg border bg-background/60 @[8rem]/search:px-3 px-2 text-muted-foreground text-sm transition-colors hover:bg-muted/60 md:flex"
           onClick={() => setCommandPaletteOpen(true)}
           type="button"
         >
-          <HugeiconsIcon icon={SearchIcon} size={16} />
-          <span className="flex-1 text-left">Search</span>
-          <KbdGroup>
+          <HugeiconsIcon className="shrink-0" icon={SearchIcon} size={16} />
+          <span className="@[8rem]/search:block hidden min-w-0 flex-1 truncate text-left">
+            Search
+          </span>
+          <KbdGroup className="@[14rem]/search:flex hidden shrink-0">
             <Kbd>{isApplePlatform ? "⌘" : "Ctrl"}</Kbd>
             <Kbd>K</Kbd>
           </KbdGroup>

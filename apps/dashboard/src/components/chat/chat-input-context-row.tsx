@@ -1,8 +1,4 @@
-import {
-  Cancel01Icon,
-  CpuIcon,
-  TextSelectionIcon,
-} from "@hugeicons/core-free-icons";
+import { CpuIcon, TextSelectionIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { ContextItem, TextSelection } from "@notra/ai/types/chat";
 import { Github } from "@notra/ui/components/ui/svgs/github";
@@ -12,47 +8,23 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { getSelectionPreview } from "@/utils/chat-input";
+import { Composer } from "@/components/composer/composer-shell";
+import { McpIcon } from "@/components/integrations/mcp-icon";
+import type { ChatInputContextRowProps } from "@/types/components/chat-input";
+import { contextItemKey, getSelectionPreview } from "@/utils/chat-input";
+import { getReferenceDisplay } from "@/utils/integration-reference";
 
-function ContextBadge({
-  item,
-  onRemove,
-}: {
-  item: ContextItem;
-  onRemove?: (item: ContextItem) => void;
-}) {
-  const label =
-    item.type === "github-repo"
-      ? `${item.owner}/${item.repo}`
-      : item.type === "linear-team"
-        ? item.teamName || "Linear"
-        : item.name;
-  const icon =
-    item.type === "github-repo" ? (
-      <Github className="size-3.5" />
-    ) : item.type === "linear-team" ? (
-      <Linear className="size-3.5" />
-    ) : (
-      <HugeiconsIcon className="size-3.5" icon={CpuIcon} />
-    );
-
-  return (
-    <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-foreground text-xs">
-      {icon}
-      <span className="font-medium">{label}</span>
-      <button
-        aria-label={`Remove ${label} from context`}
-        className="ml-0.5 cursor-pointer rounded p-0.5 transition-colors hover:bg-accent"
-        onClick={() => onRemove?.(item)}
-        type="button"
-      >
-        <HugeiconsIcon className="size-3" icon={Cancel01Icon} />
-      </button>
-    </div>
-  );
+function ContextChipIcon({ item }: { item: ContextItem }) {
+  if (item.type === "github-repo") {
+    return <Github className="size-3.5 shrink-0" />;
+  }
+  if (item.type === "linear-team") {
+    return <Linear className="size-3.5 shrink-0" />;
+  }
+  return <McpIcon className="size-3.5" />;
 }
 
-function SelectionBadge({
+function SelectionChip({
   selection,
   onClearSelection,
 }: {
@@ -60,34 +32,26 @@ function SelectionBadge({
   onClearSelection?: () => void;
 }) {
   const previewText = getSelectionPreview(selection);
+  const label = `L${selection.startLine}:${selection.startChar} → L${selection.endLine}:${selection.endChar}`;
 
   return (
     <Tooltip>
-      <TooltipTrigger
-        render={
-          <div className="flex shrink-0 items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-foreground text-xs" />
-        }
-      >
-        <HugeiconsIcon
-          className="size-3.5 text-muted-foreground"
-          icon={TextSelectionIcon}
+      <TooltipTrigger render={<span className="inline-flex max-w-full" />}>
+        <Composer.Chip
+          icon={
+            <HugeiconsIcon
+              className="size-3.5 shrink-0 text-muted-foreground"
+              icon={TextSelectionIcon}
+            />
+          }
+          label={label}
+          onRemove={onClearSelection}
+          removeLabel="Remove selection"
         />
-        <span className="font-medium">
-          L{selection.startLine}:{selection.startChar} → L{selection.endLine}:
-          {selection.endChar}
-        </span>
-        <button
-          aria-label="Remove selection"
-          className="ml-0.5 cursor-pointer rounded p-0.5 transition-colors hover:bg-accent"
-          onClick={onClearSelection}
-          type="button"
-        >
-          <HugeiconsIcon className="size-3" icon={Cancel01Icon} />
-        </button>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs">
         <div className="space-y-1">
-          <p className="font-medium">Selected Text</p>
+          <p className="font-medium">Selected text</p>
           <p className="text-xs opacity-70">
             From line {selection.startLine}, character {selection.startChar} to
             line {selection.endLine}, character {selection.endChar}
@@ -106,31 +70,37 @@ export function ChatInputContextRow({
   selection,
   onRemoveContext,
   onClearSelection,
-}: {
-  context: ContextItem[];
-  selection?: TextSelection | null;
-  onRemoveContext?: (item: ContextItem) => void;
-  onClearSelection?: () => void;
-}) {
+}: ChatInputContextRowProps) {
   if (context.length === 0 && !selection) {
     return null;
   }
 
   return (
-    <div className="flex items-center gap-2 overflow-x-auto px-3 pt-2 pb-1">
-      {context.map((item) => (
-        <ContextBadge
-          item={item}
-          key={`${item.type}-${item.integrationId}`}
-          onRemove={onRemoveContext}
-        />
-      ))}
-      {selection && (
-        <SelectionBadge
+    <>
+      {context.map((item) => {
+        const label = getReferenceDisplay(item);
+        return (
+          <Composer.Chip
+            icon={<ContextChipIcon item={item} />}
+            key={contextItemKey(item)}
+            label={label}
+            onRemove={
+              onRemoveContext
+                ? () => {
+                    onRemoveContext(item);
+                  }
+                : undefined
+            }
+            removeLabel={`Remove ${label}`}
+          />
+        );
+      })}
+      {selection ? (
+        <SelectionChip
           onClearSelection={onClearSelection}
           selection={selection}
         />
-      )}
-    </div>
+      ) : null}
+    </>
   );
 }

@@ -27,6 +27,7 @@ export function ChangelogEditor({
   content,
   state,
   actions,
+  readOnly = false,
   editorRef,
   editorKey,
 }: ContentEditorProps) {
@@ -125,6 +126,7 @@ export function ChangelogEditor({
                     titleInputRef.current?.blur();
                   }
                 }}
+                readOnly={readOnly}
                 ref={titleInputRef}
                 type="text"
                 value={title}
@@ -167,6 +169,7 @@ export function ChangelogEditor({
                     }
                   }}
                   placeholder="add-a-slug"
+                  readOnly={readOnly}
                   ref={slugInputRef}
                   type="text"
                   value={slug}
@@ -193,6 +196,7 @@ export function ChangelogEditor({
                   titleInputRef.current?.blur();
                 }
               }}
+              readOnly={readOnly}
               ref={titleInputRef}
               type="text"
               value={title}
@@ -206,6 +210,7 @@ export function ChangelogEditor({
         >
           {currentMarkdown && (
             <LexicalEditor
+              editable={!readOnly}
               editorRef={editorRef}
               initialMarkdown={currentMarkdown}
               key={editorKey}
@@ -223,6 +228,7 @@ export function ChangelogEditor({
             }}
             onMouseUp={handleTextareaSelect}
             onSelect={handleTextareaSelect}
+            readOnly={readOnly}
             ref={textareaRef}
             value={currentMarkdown}
           />

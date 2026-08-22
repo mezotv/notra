@@ -1,6 +1,6 @@
 import type { GeoRouterError } from "@/lib/geo/errors";
 import { toUnexpectedError } from "@/lib/orpc/effect";
-import { badRequest, notFound } from "@/lib/orpc/utils/errors";
+import { badRequest, notFound, paymentRequired } from "@/lib/orpc/utils/errors";
 
 export function toGeoOrpcError(failure: GeoRouterError): Error {
   switch (failure._tag) {
@@ -31,6 +31,21 @@ export function toGeoOrpcError(failure: GeoRouterError): Error {
       return badRequest(failure.message);
     case "GeoScanStartError":
       return toUnexpectedError(failure.cause, "Failed to start the scan");
+    case "GeoWriterDisabledError":
+      return notFound();
+    case "GeoWriterCreditsExhaustedError":
+      return paymentRequired("AI credit limit reached");
+    case "GeoContentBriefNotFoundError":
+      return notFound("Brief not found");
+    case "GeoContentBriefStateError":
+      return badRequest(
+        `This brief is already ${failure.status}. Start a new one.`
+      );
+    case "GeoWriterPlanError":
+      console.error("[GEO] writer planning failed:", failure);
+      return badRequest(failure.message);
+    case "GeoWriterStartError":
+      return toUnexpectedError(failure.cause, "Failed to start the writer");
     default:
       return toUnexpectedError(failure.cause, `[GEO] ${failure.label}`);
   }

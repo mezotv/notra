@@ -9,6 +9,7 @@ export interface PostToolsConfig {
   sourceMetadata?: PostSourceMetadata;
   autoPublish?: boolean;
   needsApproval?: boolean;
+  targetPostId?: string;
 }
 
 export interface PostToolsResult {

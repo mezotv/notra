@@ -19,6 +19,7 @@ export interface ChatModelOption {
 export interface ChatInputProps {
   onSend?: (value: string) => void;
   isLoading?: boolean;
+  disabled?: boolean;
   statusText?: string;
   completionMessage?: string | null;
   selection?: TextSelection | null;
@@ -35,6 +36,20 @@ export interface ChatInputProps {
 }
 
 export type EnabledRepo = GitHubRepository & { integrationId: string };
+
+export interface EnabledLinear {
+  id: string;
+  displayName: string;
+  integrationId: string;
+  teamName?: string | null;
+}
+
+export interface ChatInputContextRowProps {
+  context: ContextItem[];
+  selection?: TextSelection | null;
+  onRemoveContext?: (item: ContextItem) => void;
+  onClearSelection?: () => void;
+}
 
 export type ChatContextOptionKind = "github" | "linear" | "mcp";
 

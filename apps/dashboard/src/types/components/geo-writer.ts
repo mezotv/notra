@@ -1,0 +1,72 @@
+import type { GeoContentType } from "@notra/ai/types/geo-writer";
+import type { ReactNode } from "react";
+import type {
+  GeoContentBriefDetail,
+  GeoContentBriefSummary,
+  GeoWriterSourceKind,
+} from "@/types/geo";
+
+export interface BriefHistoryProps {
+  briefs: GeoContentBriefSummary[];
+  activeBriefId?: string;
+  onOpen: (briefId: string) => void;
+}
+
+export interface GeoWriterNeedsSetupProps {
+  organizationSlug: string;
+  title: string;
+  description: string;
+}
+
+export interface GeoWriterPageContentProps {
+  organizationSlug: string;
+}
+
+export type WriteDialogSectionId = "prompt" | "type" | "brand" | "competitors";
+
+export type WriteDialogSourceKind = GeoWriterSourceKind;
+
+export interface WriteDialogInitialState {
+  sourceKind: WriteDialogSourceKind;
+  sourceId?: string;
+  topic?: string;
+  contentType?: GeoContentType;
+  brandVoiceId?: string;
+  competitorIds?: string[];
+}
+
+export interface WriteDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  organizationId: string;
+  organizationSlug: string;
+  brandSitemapHref: string;
+  initial?: WriteDialogInitialState | null;
+}
+
+/** Input for opening WriteDialog from a GEO gap row. */
+export interface GeoGapsWriteEntry {
+  promptId: string;
+  prompt: string;
+}
+
+export interface WriterExecuteRootProps {
+  organizationId: string;
+  briefId: string | null;
+  hasUnsavedChanges: boolean;
+  onArticleReady: () => void | Promise<void>;
+  children: ReactNode;
+}
+
+export interface WriterExecuteState {
+  status: GeoContentBriefDetail["status"] | undefined;
+  error: string | null;
+  isStarting: boolean;
+  isBusy: boolean;
+  isPending: boolean;
+  hasUnsavedChanges: boolean;
+}
+
+export interface WriterExecuteActions {
+  execute: () => void;
+}

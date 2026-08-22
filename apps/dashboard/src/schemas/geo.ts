@@ -1,4 +1,5 @@
 import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
+import { geoContentTypeSchema } from "@notra/ai/schemas/geo-writer";
 import {
   array,
   boolean,
@@ -21,6 +22,8 @@ import {
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
   GEO_SEQUENCE_MAX_TURNS,
+  GEO_WRITER_TOPIC_MAX_LENGTH,
+  GEO_WRITER_TOPIC_MIN_LENGTH,
 } from "@/constants/geo";
 import { normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { publicWebsiteUrlSchema } from "@/schemas/url";
@@ -298,6 +301,35 @@ export const geoTrafficPagesInputSchema = geoOrganizationInputSchema.extend({
   ...geoWindowFields,
   limit: number().int().min(1).max(MAX_AI_TRAFFIC_PAGES_LIMIT).optional(),
   visitorType: enumType(["crawler", "ai_referral"]).optional(),
+});
+
+export const geoWriterPlanInputSchema = geoOrganizationInputSchema.extend({
+  topic: string()
+    .trim()
+    .min(GEO_WRITER_TOPIC_MIN_LENGTH)
+    .max(GEO_WRITER_TOPIC_MAX_LENGTH),
+  autoApprove: boolean().default(false),
+  contentType: geoContentTypeSchema.optional(),
+  brandVoiceIds: array(string().min(1)).max(8).optional(),
+  competitorIds: array(string().min(1)).max(GEO_MAX_COMPETITORS).optional(),
+  sourceKind: enumType([
+    "manual",
+    "gap",
+    "prompt",
+    "search_console",
+  ]).optional(),
+  sourceId: string().min(1).optional(),
+});
+
+export const geoWriterBriefIdInputSchema = geoOrganizationInputSchema.extend({
+  briefId: string().min(1),
+});
+
+export const geoWriterWorkflowPayloadSchema = object({
+  organizationId: string().min(1),
+  projectId: string().min(1),
+  briefId: string().min(1),
+  runId: string().min(1),
 });
 
 export const geoSuggestionIdInputSchema = object({

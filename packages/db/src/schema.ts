@@ -13,6 +13,11 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import {
+  GEO_CONTENT_BRIEF_STATUSES,
+  GEO_WRITER_SOURCE_KINDS,
+} from "./constants/geo-writer";
+import type { GeoContentBriefJson } from "./types/geo-writer";
 
 export const lookbackWindowEnum = pgEnum("lookback_window", [
   "current_day",
@@ -1589,6 +1594,67 @@ export const geoPromptSuggestions = pgTable(
   ]
 );
 
+export const geoContentBriefs = pgTable(
+  "geo_content_briefs",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    brandSettingsId: text("brand_settings_id")
+      .notNull()
+      .references(() => brandSettings.id, { onDelete: "restrict" }),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    topic: text("topic").notNull(),
+    brief: jsonb("brief").$type<GeoContentBriefJson>().notNull(),
+    status: text("status", { enum: GEO_CONTENT_BRIEF_STATUSES })
+      .notNull()
+      .default("draft"),
+    autoApproved: boolean("auto_approved").notNull().default(false),
+    runId: text("run_id"),
+    collectionId: text("collection_id").references(() => postCollections.id, {
+      onDelete: "set null",
+    }),
+    postId: text("post_id").references(() => posts.id, {
+      onDelete: "set null",
+    }),
+    humanized: boolean("humanized").notNull().default(false),
+    sourceKind: text("source_kind", { enum: GEO_WRITER_SOURCE_KINDS })
+      .notNull()
+      .default("manual"),
+    sourceId: text("source_id"),
+    error: text("error"),
+    approvedAt: timestamp("approved_at"),
+    startedAt: timestamp("started_at"),
+    completedAt: timestamp("completed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoContentBriefs_organizationId_createdAt_idx").on(
+      table.organizationId,
+      table.createdAt
+    ),
+    index("geoContentBriefs_projectId_status_idx").on(
+      table.projectId,
+      table.status
+    ),
+    uniqueIndex("geoContentBriefs_open_source_uidx")
+      .on(table.projectId, table.sourceKind, table.sourceId)
+      .where(
+        sql`${table.sourceKind} <> 'manual' AND ${table.sourceId} IS NOT NULL AND ${table.status} IN ('draft', 'approved', 'writing', 'failed')`
+      ),
+  ]
+);
+
 export const socialExperiments = pgTable(
   "social_experiments",
   {
@@ -2177,6 +2243,8 @@ export interface PostSourceMetadata {
   prNumber?: number | null;
   commitSha?: string | null;
   sourcePostId?: string | null;
+  briefId?: string;
+  projectId?: string;
   sandbox?: {
     boxId?: string;
     snapshotId?: string;

@@ -8,6 +8,8 @@ export const EMPTY_STATE_TABLE_COLUMNS = {
   prompts: [240, 72, 56],
   competitors: [160, 120, 72, 88],
   traffic: [128, 96, 72, 80, 88],
+  write: [220, 72, 88],
+  gaps: [220, 72, 96, 88],
 } as const;
 
 export const EMPTY_STATE_TABLE_ROWS = 6;

@@ -2,11 +2,13 @@
 
 import {
   AiBrain01Icon,
+  ArrowDown01Icon,
+  ArrowUp02Icon,
   AtIcon,
-  Attachment01Icon,
-  Cancel01Icon,
   File02Icon,
+  PlusSignIcon,
   StopIcon,
+  Tick02Icon,
   Upload04Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -16,12 +18,6 @@ import type {
   ChatInputHandle,
   ContextItem,
 } from "@notra/ai/types/chat";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@notra/ui/components/ui/card";
 import {
   Command,
   CommandEmpty,
@@ -71,7 +67,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { Button } from "@/components/button";
+import { Composer } from "@/components/composer/composer-shell";
 import { McpIcon } from "@/components/integrations/mcp-icon";
 import {
   MAX_CHAT_ATTACHMENTS,
@@ -95,13 +91,12 @@ import {
   isAllowedChatMimeType,
   isImageMimeType,
 } from "@/lib/upload/mime";
-import type {
-  ChatContextOption,
-  ChatContextOptionContentProps,
-} from "@/types/components/chat-input";
+import type { ChatContextOption } from "@/types/components/chat-input";
 import type { GitHubRepository } from "@/types/integrations";
+import { getReferenceDisplay } from "@/utils/integration-reference";
 import { AttachmentPreviewDialog } from "./attachment-preview";
 import { ChatContextConnectSuggestions } from "./chat-context-connect-suggestions";
+import { ChatContextOptionContent } from "./chat-context-option-content";
 import type { QueuedMessage } from "./chat-queue";
 import {
   buildFragmentFromReferencedText,
@@ -203,58 +198,6 @@ export function ModelIcon({
 const THINKING_LEVELS = ["off", "low", "medium", "high"] as const;
 export type ThinkingLevel = (typeof THINKING_LEVELS)[number];
 
-function SubmitButtonContent({
-  isEmpty,
-  isLoading,
-  isQueued,
-  isStopping,
-  canQueue,
-}: {
-  isEmpty: boolean;
-  isLoading: boolean;
-  isQueued: boolean;
-  isStopping: boolean;
-  canQueue: boolean;
-}) {
-  if (isLoading && isStopping) {
-    return <Loader2Icon className="size-4 animate-spin" />;
-  }
-  if (isQueued) {
-    return (
-      <>
-        <Loader2Icon className="size-3.5 animate-spin" />
-        <div className="px-0.5 text-sm leading-0">Sending…</div>
-      </>
-    );
-  }
-  if (isLoading && isEmpty) {
-    return (
-      <>
-        <HugeiconsIcon className="size-3.5" icon={StopIcon} />
-        <div className="px-0.5 text-sm leading-0">Stop</div>
-      </>
-    );
-  }
-  if (canQueue) {
-    return (
-      <>
-        <div className="px-0.5 text-sm leading-0">Queue</div>
-        <div className="hidden h-4 items-center rounded border border-border bg-background px-1 text-[10px] text-muted-foreground shadow-xs sm:inline-flex">
-          ↵
-        </div>
-      </>
-    );
-  }
-  return (
-    <>
-      <div className="px-0.5 text-sm leading-0">Send</div>
-      <div className="hidden h-4 items-center rounded border border-border bg-background px-1 text-[10px] text-muted-foreground shadow-xs sm:inline-flex">
-        ↵
-      </div>
-    </>
-  );
-}
-
 function getSubmitTooltipText({
   canQueue,
   isEmpty,
@@ -317,22 +260,21 @@ function contextItemsEqual(a: ContextItem, b: ContextItem): boolean {
   return false;
 }
 
-function ChatContextOptionContent({ option }: ChatContextOptionContentProps) {
-  return (
-    <>
-      {option.kind === "github" && <Github className="size-4 shrink-0" />}
-      {option.kind === "linear" && <Linear className="size-4 shrink-0" />}
-      {option.kind === "mcp" && (
-        <McpIcon darkUrl={option.logoDarkUrl} lightUrl={option.logoLightUrl} />
-      )}
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-sm">{option.label}</span>
-        <span className="truncate text-muted-foreground text-xs">
-          {option.description}
-        </span>
-      </span>
-    </>
-  );
+function contextItemKey(item: ContextItem): string {
+  if (item.type === "github-repo") {
+    return `github:${item.integrationId}:${item.owner}/${item.repo}`;
+  }
+  return `${item.type}:${item.integrationId}`;
+}
+
+function ContextChipIcon({ item }: { item: ContextItem }) {
+  if (item.type === "github-repo") {
+    return <Github className="size-3.5 shrink-0" />;
+  }
+  if (item.type === "linear-team") {
+    return <Linear className="size-3.5 shrink-0" />;
+  }
+  return <McpIcon className="size-3.5" />;
 }
 
 interface ChatInputAdvancedProps {
@@ -406,7 +348,6 @@ export function ChatInputAdvanced({
     AVAILABLE_MODELS[0];
   const [isModelPickerOpen, setIsModelPickerOpen] = useState(false);
   const [isContextPickerOpen, setIsContextPickerOpen] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
   const [internalError, setInternalError] = useState<string | null>(null);
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
@@ -1697,6 +1638,12 @@ export function ChatInputAdvanced({
     ]
   );
 
+  const hasContextChips = context.length > 0;
+  const hasAttachmentChips =
+    attachments.length > 0 || pendingUploads.length > 0;
+  const showComposerNudge =
+    hasContextChips || hasAttachmentChips || shouldShowLowCredits;
+
   return (
     <>
       {isDraggingFile &&
@@ -1729,601 +1676,580 @@ export function ChatInputAdvanced({
           </div>,
           document.body
         )}
-      <Card
-        className={`w-full gap-0 overflow-visible rounded-[14px] border-0 bg-background py-0 shadow-none ring-0 transition-shadow duration-200 ease-out-expo ${connectedTop ? "rounded-t-none" : ""}`}
-        data-focused={isFocused ? "true" : "false"}
-      >
-        <CardHeader className="sr-only">
-          <span>Chat input</span>
-        </CardHeader>
-        <CardContent className="p-0">
+      <div className="relative w-full min-w-0">
+        {mentionQuery !== null && (
           <div
-            className={`rounded-[14px] border border-border bg-background shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none ${connectedTop ? "rounded-t-none border-t-0" : ""}`}
-            tabIndex={-1}
+            className="absolute bottom-full left-1 z-50 mb-1 w-72"
+            ref={mentionListRef}
           >
-            <section
-              aria-label="Chat input drop area"
-              className={`p-0.5 ${connectedTop ? "rounded-b-[13px]" : "rounded-[13px]"}`}
-            >
-              <input
-                accept={allowedChatMimeTypes.join(",")}
-                className="hidden"
-                multiple
-                onChange={onFileInputChange}
-                ref={fileInputRef}
-                type="file"
-              />
-              {(attachments.length > 0 || pendingUploads.length > 0) && (
-                <div className="flex flex-wrap items-center gap-1.5 px-2 pt-2">
-                  {attachments.map((attachment) => {
-                    const isImage = isImageMimeType(attachment.mediaType);
-                    const openAttachment = () => {
-                      setPreviewAttachment(attachment);
-                    };
+            <div className="max-h-64 overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md">
+              {filteredMentionItems.length > 0 ? (
+                <>
+                  {filteredMentionItems.map((option, idx) => {
+                    const inContext = isInContext(option.contextItem);
+                    const previousOption = filteredMentionItems[idx - 1];
+                    const startsGroup =
+                      idx === 0 ||
+                      (previousOption?.kind === "mcp") !==
+                        (option.kind === "mcp");
                     return (
-                      <div
-                        className="group/attachment relative flex items-center gap-1 rounded-md border border-border bg-muted/40 py-1 pr-1 pl-1 text-xs"
-                        key={attachment.key}
-                      >
+                      <div key={option.id}>
+                        {startsGroup && (
+                          <div className="px-2 py-1.5 font-semibold text-xs">
+                            {option.kind === "mcp" ? "MCP tools" : "Context"}
+                          </div>
+                        )}
                         <button
-                          aria-label={`Preview ${attachment.filename}`}
-                          className="flex items-center gap-1.5 rounded px-0.5 transition-colors hover:bg-accent/50"
-                          onClick={openAttachment}
+                          className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors ${
+                            idx === mentionIndex
+                              ? "bg-accent text-accent-foreground"
+                              : "text-popover-foreground hover:bg-accent hover:text-accent-foreground"
+                          }`}
+                          onMouseDown={(event) => {
+                            event.preventDefault();
+                            insertMention(option);
+                          }}
                           type="button"
                         >
-                          {isImage ? (
-                            <Image
-                              alt={attachment.filename}
-                              className="size-5 rounded object-cover"
-                              height={20}
-                              src={attachment.url}
-                              width={20}
-                            />
-                          ) : (
-                            <HugeiconsIcon
-                              className="size-3.5 text-muted-foreground"
-                              icon={File02Icon}
-                            />
+                          <ChatContextOptionContent option={option} />
+                          {inContext && (
+                            <span className="shrink-0 text-emerald-600 text-xs dark:text-emerald-400">
+                              Added
+                            </span>
                           )}
-                          <span className="max-w-[10rem] truncate text-foreground">
-                            {attachment.filename}
-                          </span>
-                        </button>
-                        <button
-                          aria-label={`Remove ${attachment.filename}`}
-                          className="flex size-4 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                          disabled={isQueued}
-                          onClick={() => removeAttachment(attachment.key)}
-                          type="button"
-                        >
-                          <HugeiconsIcon
-                            className="size-3"
-                            icon={Cancel01Icon}
-                          />
                         </button>
                       </div>
                     );
                   })}
-                  {pendingUploads.map((pending) => (
-                    <div
-                      className="flex items-center gap-1.5 rounded-md border border-border border-dashed bg-muted/20 px-1.5 py-1 text-muted-foreground text-xs"
-                      key={pending.id}
-                    >
-                      <Loader2Icon className="size-3 animate-spin" />
-                      <span className="max-w-[10rem] truncate">
-                        {pending.filename}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {usageLimitError && (
-                <div className="mx-2 mt-2 mb-1 flex w-fit max-w-full flex-wrap items-center gap-1 rounded-md bg-destructive/10 px-2 py-1 text-destructive text-xs">
-                  <span>{usageLimitError}</span>
                   {organizationSlug && (
+                    <>
+                      <div className="-mx-1 my-1 h-px bg-border" />
+                      <Link
+                        className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        href={`/${organizationSlug}/integrations`}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        Manage integrations
+                      </Link>
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="flex flex-col items-center gap-1 px-3 py-4 text-center">
+                  <span className="text-muted-foreground text-xs">
+                    {contextOptions.length === 0
+                      ? "No context or MCP tools connected"
+                      : "No matches found"}
+                  </span>
+                  {contextOptions.length === 0 && organizationSlug && (
                     <Link
-                      className="font-medium underline underline-offset-2"
-                      href={`/${organizationSlug}/settings/billing`}
+                      className="text-primary text-xs hover:underline"
+                      href={`/${organizationSlug}/integrations`}
                     >
-                      Upgrade
+                      Connect integrations
                     </Link>
                   )}
                 </div>
               )}
-              <div className="relative flex min-w-0 flex-col rounded-t-[13px] bg-background">
-                <div className="flex w-full min-w-0 items-center rounded-t-[12px]">
-                  <div className="relative flex min-w-0 flex-1 cursor-text transition-colors [--lh:1lh]">
-                    {/* biome-ignore lint/a11y/useSemanticElements: rich mention editor requires a contentEditable host instead of a native textarea. */}
-                    <div
-                      aria-disabled={isQueued}
-                      aria-label="Send a message"
-                      aria-multiline="true"
-                      className="wrap-anywhere relative max-h-50 min-h-12 w-full min-w-0 overflow-y-auto whitespace-pre-wrap rounded-t-[12px] px-3 py-2 text-foreground text-sm leading-6 caret-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[empty=true]:before:pointer-events-none data-[empty=true]:before:absolute data-[empty=true]:before:top-2 data-[empty=true]:before:left-3 data-[empty=true]:before:text-muted-foreground data-[empty=true]:before:content-[attr(data-placeholder)]"
-                      contentEditable={!isQueued}
-                      data-empty={isEmpty ? "true" : "false"}
-                      data-placeholder={
-                        isLoading
-                          ? "Queue a message while AI is working..."
-                          : "Send a message... (type @ for tools and context)"
-                      }
-                      onBlur={() => {
-                        setIsFocused(false);
-                        setTimeout(() => {
-                          if (
-                            !mentionListRef.current?.contains(
-                              document.activeElement
-                            )
-                          ) {
-                            setMentionQuery(null);
-                            mentionAnchorRef.current = null;
+            </div>
+          </div>
+        )}
+        <Composer.Frame
+          connectedTop={connectedTop}
+          nudge={
+            showComposerNudge ? (
+              <Composer.Nudge
+                title={
+                  shouldShowLowCredits &&
+                  !hasContextChips &&
+                  !hasAttachmentChips
+                    ? `${remainingChatCredits} chat messages left`
+                    : undefined
+                }
+              >
+                {hasContextChips || hasAttachmentChips ? (
+                  <>
+                    {context.map((item) => {
+                      const label = getReferenceDisplay(item);
+                      return (
+                        <Composer.Chip
+                          icon={<ContextChipIcon item={item} />}
+                          key={contextItemKey(item)}
+                          label={label}
+                          onRemove={
+                            isQueued
+                              ? undefined
+                              : () => {
+                                  removeChipForItem(item);
+                                }
                           }
-                        }, 150);
-                      }}
-                      onCopy={handleCopy}
-                      onCut={handleCut}
-                      onFocus={() => setIsFocused(true)}
-                      onInput={handleInput}
-                      onKeyDown={handleKeyDown}
-                      onPaste={handlePaste}
-                      ref={editorRef}
-                      role="textbox"
-                      suppressContentEditableWarning
-                      tabIndex={isLoading || isQueued ? -1 : 0}
-                    />
-                  </div>
-                </div>
-                {mentionQuery !== null && (
-                  <div
-                    className="absolute bottom-full left-1 z-50 mb-1 w-72"
-                    ref={mentionListRef}
+                          removeLabel={`Remove ${label}`}
+                        />
+                      );
+                    })}
+                    {attachments.map((attachment) => {
+                      const isImage = isImageMimeType(attachment.mediaType);
+                      return (
+                        <Composer.Chip
+                          icon={
+                            isImage ? (
+                              <Image
+                                alt={attachment.filename}
+                                className="size-4 rounded object-cover"
+                                height={16}
+                                src={attachment.url}
+                                width={16}
+                              />
+                            ) : (
+                              <HugeiconsIcon
+                                className="size-3.5 text-muted-foreground"
+                                icon={File02Icon}
+                              />
+                            )
+                          }
+                          key={attachment.key}
+                          label={attachment.filename}
+                          onClick={() => {
+                            setPreviewAttachment(attachment);
+                          }}
+                          onRemove={
+                            isQueued
+                              ? undefined
+                              : () => {
+                                  removeAttachment(attachment.key);
+                                }
+                          }
+                        />
+                      );
+                    })}
+                    {pendingUploads.map((pending) => (
+                      <Composer.Chip
+                        icon={<Loader2Icon className="size-3 animate-spin" />}
+                        key={pending.id}
+                        label={pending.filename}
+                        pending
+                      />
+                    ))}
+                    {shouldShowLowCredits ? (
+                      <span className="text-muted-foreground text-xs">
+                        {remainingChatCredits} chat messages left
+                      </span>
+                    ) : null}
+                  </>
+                ) : null}
+              </Composer.Nudge>
+            ) : null
+          }
+        >
+          <section aria-label="Chat input drop area">
+            <input
+              accept={allowedChatMimeTypes.join(",")}
+              className="hidden"
+              multiple
+              onChange={onFileInputChange}
+              ref={fileInputRef}
+              type="file"
+            />
+            {usageLimitError && (
+              <div className="mx-2 mt-2 mb-1 flex w-fit max-w-full flex-wrap items-center gap-1 rounded-md bg-destructive/10 px-2 py-1 text-destructive text-xs">
+                <span>{usageLimitError}</span>
+                {organizationSlug && (
+                  <Link
+                    className="font-medium underline underline-offset-2"
+                    href={`/${organizationSlug}/settings/billing`}
                   >
-                    <div className="max-h-64 overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md">
-                      {filteredMentionItems.length > 0 ? (
-                        <>
-                          {filteredMentionItems.map((option, idx) => {
-                            const inContext = isInContext(option.contextItem);
-                            const previousOption =
-                              filteredMentionItems[idx - 1];
-                            const startsGroup =
-                              idx === 0 ||
-                              (previousOption?.kind === "mcp") !==
-                                (option.kind === "mcp");
-                            return (
-                              <div key={option.id}>
-                                {startsGroup && (
-                                  <div className="px-2 py-1.5 font-semibold text-xs">
-                                    {option.kind === "mcp"
-                                      ? "MCP tools"
-                                      : "Context"}
-                                  </div>
-                                )}
-                                <button
-                                  className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors ${
-                                    idx === mentionIndex
-                                      ? "bg-accent text-accent-foreground"
-                                      : "text-popover-foreground hover:bg-accent hover:text-accent-foreground"
-                                  }`}
-                                  onMouseDown={(event) => {
-                                    event.preventDefault();
-                                    insertMention(option);
-                                  }}
-                                  type="button"
-                                >
-                                  <ChatContextOptionContent option={option} />
-                                  {inContext && (
-                                    <span className="shrink-0 text-emerald-600 text-xs dark:text-emerald-400">
-                                      Added
-                                    </span>
-                                  )}
-                                </button>
-                              </div>
-                            );
-                          })}
-                          {organizationSlug && (
-                            <>
-                              <div className="-mx-1 my-1 h-px bg-border" />
-                              <Link
-                                className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                                href={`/${organizationSlug}/integrations`}
-                                onMouseDown={(e) => {
-                                  e.stopPropagation();
-                                }}
-                              >
-                                Manage integrations
-                              </Link>
-                            </>
-                          )}
-                        </>
-                      ) : (
-                        <div className="flex flex-col items-center gap-1 px-3 py-4 text-center">
-                          <span className="text-muted-foreground text-xs">
-                            {contextOptions.length === 0
-                              ? "No context or MCP tools connected"
-                              : "No matches found"}
-                          </span>
-                          {contextOptions.length === 0 && organizationSlug && (
-                            <Link
-                              className="text-primary text-xs hover:underline"
-                              href={`/${organizationSlug}/integrations`}
-                            >
-                              Connect integrations
-                            </Link>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    Upgrade
+                  </Link>
                 )}
               </div>
-              {shouldShowLowCredits && (
-                <div className="px-3 pb-1 text-muted-foreground text-xs">
-                  {remainingChatCredits} chat messages left
-                </div>
-              )}
-              <CardFooter className="flex items-center gap-1.5 overflow-hidden rounded-b-[12px] border-t-0 bg-transparent p-2">
-                <DropdownMenu>
-                  <DropdownMenuTrigger
-                    render={
-                      <Button
-                        className="bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={isLoading || isQueued}
-                        size="sm"
-                        variant="outline"
-                      />
+            )}
+            <div className="relative flex min-w-0 flex-col rounded-t-[13px] bg-background">
+              <div className="flex w-full min-w-0 items-center rounded-t-[12px]">
+                <div className="relative flex min-w-0 flex-1 cursor-text transition-colors [--lh:1lh]">
+                  {/* biome-ignore lint/a11y/useSemanticElements: rich mention editor requires a contentEditable host instead of a native textarea. */}
+                  <div
+                    aria-disabled={isQueued}
+                    aria-label="Send a message"
+                    aria-multiline="true"
+                    className="wrap-anywhere relative max-h-50 min-h-12 w-full min-w-0 overflow-y-auto whitespace-pre-wrap rounded-t-[12px] px-3 py-2 text-foreground text-sm leading-6 caret-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[empty=true]:before:pointer-events-none data-[empty=true]:before:absolute data-[empty=true]:before:top-2 data-[empty=true]:before:left-3 data-[empty=true]:before:text-muted-foreground data-[empty=true]:before:content-[attr(data-placeholder)]"
+                    contentEditable={!isQueued}
+                    data-empty={isEmpty ? "true" : "false"}
+                    data-placeholder={
+                      isLoading
+                        ? "Queue a message while AI is working..."
+                        : "Send a message... (type @ for tools and context)"
                     }
-                  >
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <HugeiconsIcon
-                        className="size-3.5"
-                        icon={AiBrain01Icon}
-                      />
-                      {THINKING_LABELS[thinkingLevel]}
-                    </div>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="start" className="w-44">
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel>Thinking effort</DropdownMenuLabel>
-                    </DropdownMenuGroup>
-                    {THINKING_LEVELS.map((level) => (
-                      <DropdownMenuItem
-                        key={level}
-                        onClick={() => onThinkingLevelChange?.(level)}
-                      >
-                        <span className="text-sm capitalize">
-                          {level === "off" ? "Off" : THINKING_LABELS[level]}
-                        </span>
-                        {thinkingLevel === level && (
-                          <span className="ml-auto text-primary text-xs">
-                            ✓
-                          </span>
-                        )}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-
-                <Popover
-                  modal
-                  onOpenChange={setIsModelPickerOpen}
-                  open={isModelPickerOpen}
-                >
-                  <PopoverTrigger
-                    render={
-                      <Button
-                        className="bg-muted hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={isLoading || isQueued}
-                        size="sm"
-                        variant="outline"
-                      />
-                    }
-                  >
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <ModelIcon
-                        className="size-3.5"
-                        provider={currentModel.provider}
-                      />
-                      {currentModel.label}
-                    </div>
-                  </PopoverTrigger>
-                  <PopoverContent
-                    align="start"
-                    className="w-72 p-0"
-                    showBackdrop
-                    sideOffset={6}
-                  >
-                    <Command>
-                      <CommandInput placeholder="Search models..." />
-                      <CommandList>
-                        <CommandEmpty>No models found.</CommandEmpty>
-                        <CommandGroup>
-                          {AVAILABLE_MODELS.map((m) => (
-                            <CommandItem
-                              data-checked={model === m.id}
-                              key={m.id}
-                              keywords={[m.label, m.provider, m.description]}
-                              onSelect={() => {
-                                if (
-                                  m.id === "openai/gpt-5.4" &&
-                                  attachmentsRef.current.some(
-                                    (attachment) =>
-                                      !isAllowedChatMimeType(
-                                        attachment.mediaType,
-                                        m.id
-                                      )
-                                  )
-                                ) {
-                                  toast.error(
-                                    getUnsupportedAttachmentMessage(m.label)
-                                  );
-                                  return;
-                                }
-                                onModelChange?.(m.id);
-                                setIsModelPickerOpen(false);
-                              }}
-                              value={m.id}
-                            >
-                              <ModelIcon
-                                className="size-4 shrink-0"
-                                provider={m.provider}
-                              />
-                              <div className="flex min-w-0 flex-col">
-                                <span className="text-sm">{m.label}</span>
-                                <span className="text-muted-foreground text-xs">
-                                  {m.description}
-                                </span>
-                                <span className="text-[0.625rem] text-muted-foreground/70">
-                                  {m.pricing}
-                                </span>
-                              </div>
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      contextPickerDisabledReason ? (
-                        // biome-ignore lint/a11y/useSemanticElements: a real button would illegally nest the disabled popover trigger button.
-                        <span
-                          aria-disabled="true"
-                          aria-label="Add tools or context"
-                          className="inline-flex cursor-not-allowed"
-                          role="button"
-                          tabIndex={0}
-                        />
-                      ) : (
-                        <span className="inline-flex" />
-                      )
-                    }
-                  >
-                    <Popover
-                      modal
-                      onOpenChange={setIsContextPickerOpen}
-                      open={isContextPickerOpen}
-                    >
-                      <PopoverTrigger
-                        render={
-                          <button
-                            aria-controls={contextPickerId}
-                            aria-expanded={isContextPickerOpen}
-                            aria-haspopup="listbox"
-                            aria-label="Add tools or context"
-                            className="flex items-center gap-1.5 rounded-lg border border-border border-dashed px-2.5 py-1.5 font-medium text-muted-foreground text-xs transition-colors hover:bg-accent hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
-                            disabled={isLoading || isQueued}
-                            role="combobox"
-                            type="button"
-                          />
+                    onBlur={() => {
+                      setTimeout(() => {
+                        if (
+                          !mentionListRef.current?.contains(
+                            document.activeElement
+                          )
+                        ) {
+                          setMentionQuery(null);
+                          mentionAnchorRef.current = null;
                         }
-                      >
-                        <HugeiconsIcon className="size-3.5" icon={AtIcon} />
-                        Tools & context
-                      </PopoverTrigger>
-                      <PopoverContent
-                        align="start"
-                        className="w-80 p-0"
-                        id={contextPickerId}
-                        showBackdrop
-                        sideOffset={6}
-                      >
-                        <Command>
-                          <CommandInput placeholder="Search tools and context..." />
-                          <CommandList>
-                            <CommandEmpty>
-                              {contextOptions.length === 0
-                                ? "No matching integrations."
-                                : "No matching tools or context found."}
-                            </CommandEmpty>
-                            {contextOptions.length === 0 && organizationSlug ? (
-                              <ChatContextConnectSuggestions
-                                onSelect={() => setIsContextPickerOpen(false)}
-                                organizationSlug={organizationSlug}
+                      }, 150);
+                    }}
+                    onCopy={handleCopy}
+                    onCut={handleCut}
+                    onInput={handleInput}
+                    onKeyDown={handleKeyDown}
+                    onPaste={handlePaste}
+                    ref={editorRef}
+                    role="textbox"
+                    suppressContentEditableWarning
+                    tabIndex={isLoading || isQueued ? -1 : 0}
+                  />
+                </div>
+              </div>
+            </div>
+            <Composer.Toolbar>
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <Composer.ToolbarButton
+                      aria-label="Attach files"
+                      className="size-7 justify-center px-0"
+                      disabled={
+                        isLoading ||
+                        isQueued ||
+                        attachments.length + pendingUploads.length >=
+                          MAX_CHAT_ATTACHMENTS
+                      }
+                      onClick={() => fileInputRef.current?.click()}
+                    />
+                  }
+                >
+                  <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+                </TooltipTrigger>
+                <TooltipContent>{attachmentTooltipText}</TooltipContent>
+              </Tooltip>
+
+              <Popover
+                modal
+                onOpenChange={setIsModelPickerOpen}
+                open={isModelPickerOpen}
+              >
+                <PopoverTrigger
+                  render={
+                    <Composer.ToolbarButton disabled={isLoading || isQueued} />
+                  }
+                >
+                  <ModelIcon
+                    className="size-3.5"
+                    provider={currentModel.provider}
+                  />
+                  {currentModel.label}
+                  <HugeiconsIcon className="size-3" icon={ArrowDown01Icon} />
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="w-72 p-0"
+                  showBackdrop
+                  sideOffset={6}
+                >
+                  <Command>
+                    <CommandInput placeholder="Search models..." />
+                    <CommandList>
+                      <CommandEmpty>No models found.</CommandEmpty>
+                      <CommandGroup>
+                        {AVAILABLE_MODELS.map((m) => (
+                          <CommandItem
+                            data-checked={model === m.id}
+                            key={m.id}
+                            keywords={[m.label, m.provider, m.description]}
+                            onSelect={() => {
+                              if (
+                                m.id === "openai/gpt-5.4" &&
+                                attachmentsRef.current.some(
+                                  (attachment) =>
+                                    !isAllowedChatMimeType(
+                                      attachment.mediaType,
+                                      m.id
+                                    )
+                                )
+                              ) {
+                                toast.error(
+                                  getUnsupportedAttachmentMessage(m.label)
+                                );
+                                return;
+                              }
+                              onModelChange?.(m.id);
+                              setIsModelPickerOpen(false);
+                            }}
+                            value={m.id}
+                          >
+                            <ModelIcon
+                              className="size-4 shrink-0"
+                              provider={m.provider}
+                            />
+                            <div className="flex min-w-0 flex-col">
+                              <span className="text-sm">{m.label}</span>
+                              <span className="text-muted-foreground text-xs">
+                                {m.description}
+                              </span>
+                              <span className="text-[0.625rem] text-muted-foreground/70">
+                                {m.pricing}
+                              </span>
+                            </div>
+                            {model === m.id ? (
+                              <HugeiconsIcon
+                                className="ml-auto size-3.5 text-primary"
+                                icon={Tick02Icon}
                               />
                             ) : null}
-                            {integrationContextOptions.length > 0 && (
-                              <CommandGroup heading="Context">
-                                {integrationContextOptions.map((option) => {
-                                  const inContext = isInContext(
-                                    option.contextItem
-                                  );
-                                  return (
-                                    <CommandItem
-                                      data-checked={inContext}
-                                      key={option.id}
-                                      keywords={[option.searchText]}
-                                      onSelect={() => {
-                                        if (inContext) {
-                                          removeChipForItem(option.contextItem);
-                                        } else {
-                                          insertChipAtCursor(option);
-                                        }
-                                        setIsContextPickerOpen(false);
-                                      }}
-                                      value={option.id}
-                                    >
-                                      <ChatContextOptionContent
-                                        option={option}
-                                      />
-                                    </CommandItem>
-                                  );
-                                })}
-                              </CommandGroup>
-                            )}
-                            {mcpToolOptions.length > 0 && (
-                              <CommandGroup heading="MCP tools">
-                                {mcpToolOptions.map((option) => {
-                                  const inContext = isInContext(
-                                    option.contextItem
-                                  );
-                                  return (
-                                    <CommandItem
-                                      data-checked={inContext}
-                                      key={option.id}
-                                      keywords={[option.searchText]}
-                                      onSelect={() => {
-                                        if (inContext) {
-                                          removeChipForItem(option.contextItem);
-                                        } else {
-                                          insertChipAtCursor(option);
-                                        }
-                                        setIsContextPickerOpen(false);
-                                      }}
-                                      value={option.id}
-                                    >
-                                      <ChatContextOptionContent
-                                        option={option}
-                                      />
-                                    </CommandItem>
-                                  );
-                                })}
-                              </CommandGroup>
-                            )}
-                          </CommandList>
-                          {organizationSlug && (
-                            <div className="border-border border-t p-1">
-                              <Link
-                                className="flex items-center rounded-sm px-2 py-1.5 text-muted-foreground text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                                href={`/${organizationSlug}/integrations`}
-                                onClick={() => setIsContextPickerOpen(false)}
-                              >
-                                Manage integrations
-                              </Link>
-                            </div>
-                          )}
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </TooltipTrigger>
-                  {contextPickerDisabledReason && (
-                    <TooltipContent>
-                      {contextPickerDisabledReason}
-                    </TooltipContent>
-                  )}
-                </Tooltip>
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
 
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <Button
-                        aria-label="Attach files"
-                        className="ml-auto size-7 bg-muted p-0 hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
-                        disabled={
-                          isLoading ||
-                          isQueued ||
-                          attachments.length + pendingUploads.length >=
-                            MAX_CHAT_ATTACHMENTS
-                        }
-                        onClick={() => fileInputRef.current?.click()}
-                        size="sm"
-                        type="button"
-                        variant="outline"
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  render={
+                    <Composer.ToolbarButton disabled={isLoading || isQueued} />
+                  }
+                >
+                  <HugeiconsIcon className="size-3.5" icon={AiBrain01Icon} />
+                  {THINKING_LABELS[thinkingLevel]}
+                  <HugeiconsIcon className="size-3" icon={ArrowDown01Icon} />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-44">
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>Thinking effort</DropdownMenuLabel>
+                  </DropdownMenuGroup>
+                  {THINKING_LEVELS.map((level) => (
+                    <DropdownMenuItem
+                      key={level}
+                      onClick={() => onThinkingLevelChange?.(level)}
+                    >
+                      <span className="text-sm capitalize">
+                        {level === "off" ? "Off" : THINKING_LABELS[level]}
+                      </span>
+                      {thinkingLevel === level ? (
+                        <HugeiconsIcon
+                          className="ml-auto size-3.5 text-primary"
+                          icon={Tick02Icon}
+                        />
+                      ) : null}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    contextPickerDisabledReason ? (
+                      // biome-ignore lint/a11y/useSemanticElements: a real button would illegally nest the disabled popover trigger button.
+                      <span
+                        aria-disabled="true"
+                        aria-label="Add tools or context"
+                        className="inline-flex cursor-not-allowed"
+                        role="button"
+                        tabIndex={0}
                       />
-                    }
+                    ) : (
+                      <span className="inline-flex" />
+                    )
+                  }
+                >
+                  <Popover
+                    modal
+                    onOpenChange={setIsContextPickerOpen}
+                    open={isContextPickerOpen}
                   >
-                    <HugeiconsIcon
-                      className="size-3.5"
-                      icon={Attachment01Icon}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent>{attachmentTooltipText}</TooltipContent>
-                </Tooltip>
+                    <PopoverTrigger
+                      render={
+                        <Composer.ToolbarButton
+                          aria-controls={contextPickerId}
+                          aria-expanded={isContextPickerOpen}
+                          aria-haspopup="listbox"
+                          aria-label="Add tools or context"
+                          className="size-7 justify-center px-0"
+                          disabled={isLoading || isQueued}
+                          role="combobox"
+                        />
+                      }
+                    >
+                      <HugeiconsIcon className="size-4" icon={AtIcon} />
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="start"
+                      className="w-80 p-0"
+                      id={contextPickerId}
+                      showBackdrop
+                      sideOffset={6}
+                    >
+                      <Command>
+                        <CommandInput placeholder="Search tools and context..." />
+                        <CommandList>
+                          <CommandEmpty>
+                            {contextOptions.length === 0
+                              ? "No matching integrations."
+                              : "No matching tools or context found."}
+                          </CommandEmpty>
+                          {contextOptions.length === 0 && organizationSlug ? (
+                            <ChatContextConnectSuggestions
+                              onSelect={() => setIsContextPickerOpen(false)}
+                              organizationSlug={organizationSlug}
+                            />
+                          ) : null}
+                          {integrationContextOptions.length > 0 && (
+                            <CommandGroup heading="Context">
+                              {integrationContextOptions.map((option) => {
+                                const inContext = isInContext(
+                                  option.contextItem
+                                );
+                                return (
+                                  <CommandItem
+                                    data-checked={inContext}
+                                    key={option.id}
+                                    keywords={[option.searchText]}
+                                    onSelect={() => {
+                                      if (inContext) {
+                                        removeChipForItem(option.contextItem);
+                                      } else {
+                                        insertChipAtCursor(option);
+                                      }
+                                      setIsContextPickerOpen(false);
+                                    }}
+                                    value={option.id}
+                                  >
+                                    <ChatContextOptionContent option={option} />
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          )}
+                          {mcpToolOptions.length > 0 && (
+                            <CommandGroup heading="MCP tools">
+                              {mcpToolOptions.map((option) => {
+                                const inContext = isInContext(
+                                  option.contextItem
+                                );
+                                return (
+                                  <CommandItem
+                                    data-checked={inContext}
+                                    key={option.id}
+                                    keywords={[option.searchText]}
+                                    onSelect={() => {
+                                      if (inContext) {
+                                        removeChipForItem(option.contextItem);
+                                      } else {
+                                        insertChipAtCursor(option);
+                                      }
+                                      setIsContextPickerOpen(false);
+                                    }}
+                                    value={option.id}
+                                  >
+                                    <ChatContextOptionContent option={option} />
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          )}
+                        </CommandList>
+                        {organizationSlug && (
+                          <div className="border-border border-t p-1">
+                            <Link
+                              className="flex items-center rounded-sm px-2 py-1.5 text-muted-foreground text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                              href={`/${organizationSlug}/integrations`}
+                              onClick={() => setIsContextPickerOpen(false)}
+                            >
+                              Manage integrations
+                            </Link>
+                          </div>
+                        )}
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {contextPickerDisabledReason ?? "Tools and context"}
+                </TooltipContent>
+              </Tooltip>
 
-                {(() => {
-                  const hasAnyContent =
-                    !isEmpty ||
-                    attachments.length > 0 ||
-                    pendingUploads.length > 0;
-                  const canQueue =
-                    isLoading &&
-                    !isEmpty &&
-                    attachments.length === 0 &&
-                    pendingUploads.length === 0;
-                  let submitDisabled: boolean;
-                  if (isQueued) {
-                    submitDisabled = false;
-                  } else if (isLoading && isEmpty) {
-                    submitDisabled = !onStop || isStopping;
-                  } else if (isUsageBlocked) {
-                    submitDisabled = true;
-                  } else if (canQueue) {
-                    submitDisabled = false;
-                  } else {
-                    submitDisabled =
-                      hasUnsupportedAttachmentsForModel || !hasAnyContent;
-                  }
-                  let submitOnClick: (() => void) | undefined;
-                  if (isQueued) {
-                    submitOnClick = () => setPendingSend(null);
-                  } else if (isLoading && isEmpty) {
-                    submitOnClick = onStop;
-                  } else {
-                    submitOnClick = handleSend;
-                  }
-                  return (
-                    <Tooltip>
-                      <TooltipTrigger
-                        render={
-                          <Button
-                            aria-disabled={submitDisabled}
-                            className="group/button h-7 shrink-0 rounded-lg bg-muted px-1.5 transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring aria-disabled:cursor-not-allowed aria-disabled:opacity-50 aria-disabled:active:scale-100 aria-disabled:hover:bg-muted dark:aria-disabled:hover:bg-input/30"
-                            onClick={submitDisabled ? undefined : submitOnClick}
-                            size="sm"
-                            type="button"
-                            variant="outline"
-                          />
-                        }
-                      >
-                        <div className="flex items-center gap-1 text-foreground text-sm">
-                          <SubmitButtonContent
-                            canQueue={canQueue}
-                            isEmpty={isEmpty}
-                            isLoading={isLoading}
-                            isQueued={isQueued}
-                            isStopping={isStopping}
-                          />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        {getSubmitTooltipText({
-                          canQueue,
-                          isEmpty,
-                          isLoading,
-                          isQueued,
-                          isStopping,
-                          isUsageBlocked,
-                        })}
-                      </TooltipContent>
-                    </Tooltip>
+              {(() => {
+                const hasAnyContent =
+                  !isEmpty ||
+                  attachments.length > 0 ||
+                  pendingUploads.length > 0;
+                const canQueue =
+                  isLoading &&
+                  !isEmpty &&
+                  attachments.length === 0 &&
+                  pendingUploads.length === 0;
+                let submitDisabled: boolean;
+                if (isQueued) {
+                  submitDisabled = false;
+                } else if (isLoading && isEmpty) {
+                  submitDisabled = !onStop || isStopping;
+                } else if (isUsageBlocked) {
+                  submitDisabled = true;
+                } else if (canQueue) {
+                  submitDisabled = false;
+                } else {
+                  submitDisabled =
+                    hasUnsupportedAttachmentsForModel || !hasAnyContent;
+                }
+                let submitOnClick: (() => void) | undefined;
+                if (isQueued) {
+                  submitOnClick = () => setPendingSend(null);
+                } else if (isLoading && isEmpty) {
+                  submitOnClick = onStop;
+                } else {
+                  submitOnClick = handleSend;
+                }
+                const sendBusy = Boolean(isLoading && isStopping);
+                let sendIcon = (
+                  <HugeiconsIcon
+                    className="size-4"
+                    icon={ArrowUp02Icon}
+                    strokeWidth={2}
+                  />
+                );
+                if (isQueued) {
+                  sendIcon = <Loader2Icon className="size-4 animate-spin" />;
+                } else if (isLoading && isEmpty) {
+                  sendIcon = (
+                    <HugeiconsIcon className="size-4" icon={StopIcon} />
                   );
-                })()}
-              </CardFooter>
-            </section>
-          </div>
-        </CardContent>
-      </Card>
+                }
+                return (
+                  <Composer.Send
+                    busy={sendBusy}
+                    disabled={submitDisabled}
+                    label={
+                      isLoading && isEmpty
+                        ? "Stop generating"
+                        : canQueue
+                          ? "Queue message"
+                          : "Send message"
+                    }
+                    onClick={submitOnClick}
+                    tooltip={getSubmitTooltipText({
+                      canQueue,
+                      isEmpty,
+                      isLoading,
+                      isQueued,
+                      isStopping,
+                      isUsageBlocked,
+                    })}
+                  >
+                    {sendIcon}
+                  </Composer.Send>
+                );
+              })()}
+            </Composer.Toolbar>
+          </section>
+        </Composer.Frame>
+      </div>
       <AttachmentPreviewDialog
         attachment={previewAttachment}
         onOpenChange={(open) => {

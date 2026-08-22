@@ -2159,8 +2159,8 @@ function StandaloneChatPageClient({
   if (!(hasMessages || isPendingAutoSubmit || isLoading)) {
     if (isSlackMirrored) {
       return (
-        <div className="flex flex-1 items-center justify-center px-4">
-          <div className="w-full max-w-2xl">
+        <div className="flex min-h-0 w-full min-w-0 flex-1 items-center justify-center px-4">
+          <div className="mx-auto w-full min-w-0 max-w-2xl">
             <SlackMirrorNotice />
           </div>
         </div>
@@ -2173,8 +2173,8 @@ function StandaloneChatPageClient({
     const dateStr = now ? formatLongDate(now) : "\u00A0";
 
     return (
-      <div className="flex flex-1 flex-col items-center justify-center px-4">
-        <div className="flex w-full max-w-2xl flex-col gap-4">
+      <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col items-center justify-center px-4">
+        <div className="mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-4">
           <div className="w-full space-y-1">
             <p className="text-muted-foreground text-xs">{dateStr}</p>
             <h1 className="font-semibold text-2xl tracking-tight">
@@ -2182,7 +2182,7 @@ function StandaloneChatPageClient({
               {userName ? `, ${userName}` : ""}
             </h1>
           </div>
-          <div className="w-full">
+          <div className="w-full min-w-0">
             <ChatInputAdvanced
               context={context}
               draftStorageKey={draftStorageKey}
@@ -2453,7 +2453,7 @@ function StandaloneChatPageClient({
               isFirstMessageTransition && "chat-input-slide-down"
             )}
           >
-            <div className="mx-auto w-full max-w-2xl">
+            <div className="mx-auto w-full min-w-0 max-w-2xl">
               <ChatQueue
                 messages={queuedMessages}
                 onEdit={handleEditQueued}

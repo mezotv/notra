@@ -7,6 +7,7 @@ import type {
 } from "@/types/geo";
 
 const CUSTOM_PROMPT_SCAN_ID_PREFIX = "custom-";
+const SEQUENCE_PROMPT_SCAN_ID_PREFIX = "sequence-";
 
 /**
  * Scan results are recorded under a namespaced prompt id for custom prompts
@@ -21,6 +22,31 @@ export function trackedPromptScanId(
   prompt: Pick<GeoTrackedPrompt, "id" | "source">
 ): string {
   return prompt.source === "custom" ? customPromptScanId(prompt.id) : prompt.id;
+}
+
+export function isCustomPromptScanId(promptId: string): boolean {
+  return promptId.startsWith(CUSTOM_PROMPT_SCAN_ID_PREFIX);
+}
+
+export function isConversationScanPromptId(promptId: string): boolean {
+  return promptId.startsWith(SEQUENCE_PROMPT_SCAN_ID_PREFIX);
+}
+
+export function promptIdFromScanId(scanId: string): string {
+  return scanId.startsWith(CUSTOM_PROMPT_SCAN_ID_PREFIX)
+    ? scanId.slice(CUSTOM_PROMPT_SCAN_ID_PREFIX.length)
+    : scanId;
+}
+
+/**
+ * Mention checks for custom prompts are keyed by `custom-<uuid>`. Fall back to
+ * the raw id so auto-generated slugs (`best-tools`) and legacy rows still match.
+ */
+export function findPromptMentionEntry<T>(
+  byPrompt: Map<string, T>,
+  promptId: string
+): T | undefined {
+  return byPrompt.get(customPromptScanId(promptId)) ?? byPrompt.get(promptId);
 }
 
 const SENTENCE_SPLIT_REGEX = /[.!?]/;

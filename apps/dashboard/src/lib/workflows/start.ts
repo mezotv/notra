@@ -9,7 +9,10 @@ import {
 } from "@/constants/iris";
 import { socialAnalyticsSyncPayloadSchema } from "@/schemas/analytics";
 import { brandGuidelinesWorkflowPayloadSchema } from "@/schemas/brand-guidelines";
-import { geoOrganizationInputSchema } from "@/schemas/geo";
+import {
+  geoOrganizationInputSchema,
+  geoWriterWorkflowPayloadSchema,
+} from "@/schemas/geo";
 import { gscSyncPayloadSchema } from "@/schemas/google-search-console";
 import {
   eventWorkflowPayloadSchema,
@@ -21,6 +24,7 @@ import {
 } from "@/schemas/workflows/iris";
 import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/workflows/onboarding-agent-payload";
 import type { BrandAnalysisPayload } from "@/types/brand-analysis";
+import type { GeoWriterPayload } from "@/types/geo";
 import type { GscSyncPayload } from "@/types/google-search-console";
 import {
   brandAnalysisPayloadSchema,
@@ -29,6 +33,7 @@ import {
 import { brandGuidelinesWorkflow } from "@/workflows/brand-guidelines";
 import { eventContentWorkflow } from "@/workflows/event-content";
 import { geoScanWorkflow } from "@/workflows/geo-scan";
+import { geoWriterWorkflow } from "@/workflows/geo-writer";
 import { gscSyncWorkflow } from "@/workflows/gsc-sync";
 import { irisControllerRun } from "@/workflows/iris-controller";
 import { onDemandContentWorkflow } from "@/workflows/on-demand-content";
@@ -127,6 +132,14 @@ export async function startGeoScanRun(payload: {
 }): Promise<{ runId: string }> {
   const parsed = geoOrganizationInputSchema.parse(payload);
   const run = await start(geoScanWorkflow, [parsed]);
+  return { runId: run.runId };
+}
+
+export async function startGeoWriterRun(
+  payload: GeoWriterPayload
+): Promise<{ runId: string }> {
+  const parsed = geoWriterWorkflowPayloadSchema.parse(payload);
+  const run = await start(geoWriterWorkflow, [parsed]);
   return { runId: run.runId };
 }
 

@@ -153,20 +153,56 @@ export function rivalMentionShare(
   return rival.mentions / total;
 }
 
+export function competitorCanonicalMap(
+  competitors: readonly {
+    name: string;
+    synonyms?: readonly string[];
+  }[]
+): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const competitor of competitors) {
+    const nameKey = competitorKey(competitor.name);
+    if (nameKey.length === 0) {
+      continue;
+    }
+    map.set(nameKey, competitor.name);
+    for (const synonym of competitor.synonyms ?? []) {
+      const key = competitorKey(synonym);
+      if (key.length > 0 && !map.has(key)) {
+        map.set(key, competitor.name);
+      }
+    }
+  }
+  return map;
+}
+
+/** Keep mention-check names that match a tracked competitor or synonym. */
+export function matchTrackedCompetitorNames(
+  mentioned: readonly string[],
+  competitors: readonly {
+    name: string;
+    synonyms?: readonly string[];
+  }[]
+): string[] {
+  const aliases = competitorCanonicalMap(competitors);
+  const matched: string[] = [];
+  const seen = new Set<string>();
+  for (const name of mentioned) {
+    const canonical = aliases.get(competitorKey(name));
+    if (!canonical || seen.has(canonical)) {
+      continue;
+    }
+    seen.add(canonical);
+    matched.push(canonical);
+  }
+  return matched;
+}
+
 export function mergeCompetitorSharePoints(
   points: readonly GeoCompetitorSharePoint[],
   competitors: readonly GeoCompetitor[] | undefined
 ): GeoCompetitorSharePoint[] {
-  const canonicalByKey = new Map<string, string>();
-  for (const competitor of competitors ?? []) {
-    canonicalByKey.set(competitorKey(competitor.name), competitor.name);
-    for (const synonym of competitor.synonyms) {
-      const key = competitorKey(synonym);
-      if (!canonicalByKey.has(key)) {
-        canonicalByKey.set(key, competitor.name);
-      }
-    }
-  }
+  const canonicalByKey = competitorCanonicalMap(competitors ?? []);
 
   const merged = new Map<string, GeoCompetitorSharePoint>();
   for (const point of points) {
