@@ -66,7 +66,6 @@ function GeoWriterPageContent({ organizationSlug }: GeoWriterPageContentProps) {
   const [dialogInitial, setDialogInitial] =
     useState<WriteDialogInitialState | null>(null);
 
-  const brandSitemapHref = `/${organizationSlug}/brand/identity`;
   const gapsHref = `/${organizationSlug}${GEO_GAPS_NAV_LINK}`;
 
   const openDialog = useCallback((initial?: WriteDialogInitialState) => {
@@ -158,7 +157,6 @@ function GeoWriterPageContent({ organizationSlug }: GeoWriterPageContentProps) {
 
       {organizationId ? (
         <WriteDialog
-          brandSitemapHref={brandSitemapHref}
           initial={dialogInitial}
           onOpenChange={setDialogOpen}
           open={dialogOpen}

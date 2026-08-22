@@ -69,7 +69,6 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
   const [dialogInitial, setDialogInitial] =
     useState<WriteDialogInitialState | null>(null);
 
-  const brandSitemapHref = `/${organizationSlug}/brand/identity`;
 
   const openDialog = useCallback((initial?: WriteDialogInitialState) => {
     setDialogInitial(initial ?? emptyWriteDialogState());
@@ -145,7 +144,6 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
 
       {organizationId ? (
         <WriteDialog
-          brandSitemapHref={brandSitemapHref}
           initial={dialogInitial}
           onOpenChange={setDialogOpen}
           open={dialogOpen}

@@ -210,13 +210,21 @@ function toPlanResponse(row: BriefRow): GeoWriterPlanResponse {
 }
 
 const loadSitemapPages = Effect.fn("geo.writer.sitemap")(function* (
-  brandSettingsId: string
+  brandSettingsId: string,
+  sitemapId: string | undefined
 ) {
   const sitemaps = yield* geoDb("sitemaps lookup failed", () =>
     db
       .select({ id: brandSitemaps.id })
       .from(brandSitemaps)
-      .where(eq(brandSitemaps.brandSettingsId, brandSettingsId))
+      .where(
+        sitemapId
+          ? and(
+              eq(brandSitemaps.brandSettingsId, brandSettingsId),
+              eq(brandSitemaps.id, sitemapId)
+            )
+          : eq(brandSitemaps.brandSettingsId, brandSettingsId)
+      )
   );
   if (sitemaps.length === 0) {
     return { pages: [] as GeoPlannerSitemapPage[] };
@@ -530,7 +538,7 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
         )
     ),
     loadPlannerGapPrompts(scope.projectId),
-    loadSitemapPages(brandSettingsId),
+    loadSitemapPages(brandSettingsId, input.sitemapId),
   ]);
 
   const companyName =

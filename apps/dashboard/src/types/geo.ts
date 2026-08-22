@@ -1483,6 +1483,7 @@ export interface GeoWriterPlanInput {
   contentSubtype?: GeoContentSubtype;
   brandVoiceIds?: string[];
   competitorIds?: string[];
+  sitemapId?: string;
   sourceKind?: GeoWriterSourceKind;
   sourceId?: string;
 }

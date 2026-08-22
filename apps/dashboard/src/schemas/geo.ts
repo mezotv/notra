@@ -317,6 +317,7 @@ export const geoWriterPlanInputSchema = geoOrganizationInputSchema.extend({
   contentSubtype: geoContentSubtypeSchema.optional(),
   brandVoiceIds: array(string().min(1)).max(8).optional(),
   competitorIds: array(string().min(1)).max(GEO_MAX_COMPETITORS).optional(),
+  sitemapId: string().min(1).optional(),
   sourceKind: enumType([
     "manual",
     "gap",

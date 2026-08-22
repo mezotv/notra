@@ -5,6 +5,7 @@ import type {
   GeoContentBriefSummary,
   GeoWriterSourceKind,
 } from "@/types/geo";
+import type { Sitemap } from "@/types/hooks/brand-sitemaps";
 
 export interface BriefHistoryProps {
   briefs: GeoContentBriefSummary[];
@@ -22,7 +23,24 @@ export interface GeoWriterPageContentProps {
   organizationSlug: string;
 }
 
-export type WriteDialogSectionId = "prompt" | "type" | "brand" | "competitors";
+export type WriteDialogSectionId =
+  | "prompt"
+  | "type"
+  | "brand"
+  | "sitemap"
+  | "competitors";
+
+export interface WriteSitemapSectionProps {
+  organizationId: string;
+  brandVoiceId: string | null;
+  voiceName: string | null;
+  voiceWebsiteUrl: string | null;
+  brandIdentityHref: string;
+  sitemaps: Sitemap[];
+  isPending: boolean;
+  selectedSitemapId: string | null;
+  onSelect: (sitemapId: string) => void;
+}
 
 export interface WriteBrandOptionProps {
   name: string;
@@ -55,7 +73,6 @@ export interface WriteDialogProps {
   onOpenChange: (open: boolean) => void;
   organizationId: string;
   organizationSlug: string;
-  brandSitemapHref: string;
   initial?: WriteDialogInitialState | null;
 }
 

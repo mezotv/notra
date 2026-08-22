@@ -2,6 +2,7 @@ import {
   BookOpen01Icon,
   BubbleChatQuestionIcon,
   GitCompareIcon,
+  GlobalIcon,
   Layers01Icon,
   LeftToRightListNumberIcon,
   PaintBrush01Icon,
@@ -155,12 +156,19 @@ export const GEO_WRITE_DIALOG_SECTIONS = [
     icon: PaintBrush01Icon,
   },
   {
+    id: "sitemap" as const,
+    label: "Sitemap",
+    required: false,
+    icon: GlobalIcon,
+  },
+  {
     id: "competitors" as const,
     label: "Competitors",
     required: false,
     icon: UserMultiple02Icon,
   },
 ];
+export const GEO_WRITE_SITEMAP_SKELETON_KEYS = ["sitemap-1", "sitemap-2"];
 
 const hasEnv = (name: string): boolean => {
   const value = process.env[name];

@@ -28,7 +28,6 @@ export function DesignSystemWriteDialogDemo() {
         </span>
       </div>
       <WriteDialog
-        brandSitemapHref="#"
         initial={null}
         onOpenChange={(next) => {
           setEvents((current) => [...current, String(next)]);

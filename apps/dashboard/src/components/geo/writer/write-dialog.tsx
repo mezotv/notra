@@ -29,7 +29,6 @@ import {
 } from "@notra/ui/components/ui/select";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { cn } from "@notra/ui/lib/utils";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/button";
@@ -58,6 +57,7 @@ import { geoContentPath } from "@/utils/geo-write-entry";
 import { WriteBrandOption } from "./write-brand-option";
 import { WriteOptionCard } from "./write-option-card";
 import { WriteSectionSidebar } from "./write-section-sidebar";
+import { WriteSitemapSection } from "./write-sitemap-section";
 
 const DEFAULT_CONTENT_SUBTYPE: GeoContentSubtype = "guide";
 const MANUAL_PROMPT_VALUE = "manual";
@@ -67,7 +67,6 @@ export function WriteDialog({
   onOpenChange,
   organizationId,
   organizationSlug,
-  brandSitemapHref,
   initial,
 }: WriteDialogProps) {
   const [previousOpen, setPreviousOpen] = useState(open);
@@ -82,7 +81,6 @@ export function WriteDialog({
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
       <WriteDialogForm
-        brandSitemapHref={brandSitemapHref}
         initial={initial}
         key={`${session}:${initial?.sourceKind ?? "manual"}:${initial?.sourceId ?? ""}`}
         onOpenChange={onOpenChange}
@@ -99,7 +97,6 @@ function WriteDialogForm({
   onOpenChange,
   organizationId,
   organizationSlug,
-  brandSitemapHref,
   initial,
 }: WriteDialogProps) {
   const router = useRouter();
@@ -134,6 +131,7 @@ function WriteDialogForm({
   const [brandVoiceId, setBrandVoiceId] = useState<string | null>(
     initial?.brandVoiceId ?? null
   );
+  const [sitemapId, setSitemapId] = useState<string | null>(null);
   const [competitorIds, setCompetitorIds] = useState<string[]>(
     initial?.competitorIds ?? []
   );
@@ -156,10 +154,13 @@ function WriteDialogForm({
   const voices = brandData?.voices ?? [];
   const competitors = competitorData?.competitors ?? [];
   const prompts = promptsData?.prompts ?? [];
-  const hasSitemap =
-    !brandVoiceId ||
-    sitemapQuery.isPending ||
-    (sitemapQuery.data?.sitemaps.length ?? 0) > 0;
+  const sitemaps = sitemapQuery.data?.sitemaps ?? [];
+  const selectedVoice = voices.find((voice) => voice.id === brandVoiceId);
+  const effectiveSitemapId = sitemaps.some(
+    (sitemap) => sitemap.id === sitemapId
+  )
+    ? sitemapId
+    : (sitemaps[0]?.id ?? null);
 
   useEffect(() => {
     if (brandVoiceId || voices.length === 0) {
@@ -250,6 +251,7 @@ function WriteDialogForm({
       contentSubtype,
       brandVoiceIds: brandVoiceId ? [brandVoiceId] : [],
       competitorIds,
+      sitemapId: effectiveSitemapId ?? undefined,
       sourceKind,
       sourceId,
     });
@@ -515,6 +517,27 @@ function WriteDialogForm({
 
               <section
                 className="scroll-mt-2 space-y-4 px-6 py-6"
+                data-section="sitemap"
+              >
+                {renderSectionHeader(
+                  "sitemap",
+                  "The writer links to real pages from the brand identity's sitemap."
+                )}
+                <WriteSitemapSection
+                  brandIdentityHref={`/${organizationSlug}/brand/identity`}
+                  brandVoiceId={brandVoiceId}
+                  isPending={Boolean(brandVoiceId) && sitemapQuery.isPending}
+                  onSelect={setSitemapId}
+                  organizationId={organizationId}
+                  selectedSitemapId={effectiveSitemapId}
+                  sitemaps={sitemaps}
+                  voiceName={selectedVoice?.name ?? null}
+                  voiceWebsiteUrl={selectedVoice?.websiteUrl ?? null}
+                />
+              </section>
+
+              <section
+                className="scroll-mt-2 space-y-4 px-6 py-6"
                 data-section="competitors"
               >
                 <div className="flex items-start justify-between gap-3">
@@ -583,22 +606,9 @@ function WriteDialogForm({
             <div
               className={cn(
                 GEO_WRITE_PANEL_FOOTER_ROW_CLASS,
-                "justify-between gap-3 px-4"
+                "justify-end gap-3 px-4"
               )}
             >
-              {hasSitemap ? (
-                <span />
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  Add a sitemap so the writer can link to real pages.{" "}
-                  <Link
-                    className="font-medium text-foreground underline underline-offset-2"
-                    href={brandSitemapHref}
-                  >
-                    Add sitemap
-                  </Link>
-                </p>
-              )}
               <div className="flex shrink-0 gap-2">
                 <Button
                   disabled={!canSubmit}
