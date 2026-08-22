@@ -6,7 +6,11 @@ import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { useState } from "react";
-import { addUniqueValues, removeValue } from "@/lib/geo/string-list";
+import {
+  addUniqueValues,
+  LINE_BREAK_REGEX,
+  removeValue,
+} from "@/lib/geo/string-list";
 import type { GeoTagListProps } from "@/types/geo";
 
 export function GeoTagList({
@@ -57,7 +61,7 @@ export function GeoTagList({
         onBlur={commitDraft}
         onChange={(event) => setDraft(event.target.value)}
         onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === ",") {
+          if (event.key === "Enter") {
             event.preventDefault();
             commitDraft();
           }
@@ -75,11 +79,11 @@ export function GeoTagList({
         }}
         onPaste={(event) => {
           const text = event.clipboardData.getData("text");
-          if (!text.includes(",")) {
+          if (!LINE_BREAK_REGEX.test(text)) {
             return;
           }
           event.preventDefault();
-          onChange(addUniqueValues(values, `${draft} ${text}`, max));
+          onChange(addUniqueValues(values, `${draft}${text}`, max));
           setDraft("");
         }}
         placeholder={atLimit ? undefined : placeholder}

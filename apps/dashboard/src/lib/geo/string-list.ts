@@ -8,12 +8,14 @@ function addUniqueValue(values: string[], candidate: string): string[] {
   return exists ? values : [...values, trimmed];
 }
 
+export const LINE_BREAK_REGEX = /\r?\n/;
+
 export function addUniqueValues(
   values: string[],
   candidate: string,
   max = Number.POSITIVE_INFINITY
 ): string[] {
-  const parts = candidate.split(",").map((part) => part.trim());
+  const parts = candidate.split(LINE_BREAK_REGEX).map((part) => part.trim());
   let next = values;
   for (const part of parts) {
     if (next.length >= max) {
