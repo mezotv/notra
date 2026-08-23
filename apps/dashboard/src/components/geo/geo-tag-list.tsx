@@ -23,6 +23,7 @@ export function GeoTagList({
   max,
   disabled = false,
   labeled = true,
+  inputClassName,
 }: GeoTagListProps) {
   const [draft, setDraft] = useState("");
   const atLimit = values.length >= max;
@@ -56,6 +57,7 @@ export function GeoTagList({
       ) : null}
       <Input
         aria-label={labeled ? undefined : label}
+        className={inputClassName}
         disabled={disabled || atLimit}
         id={id}
         onBlur={commitDraft}

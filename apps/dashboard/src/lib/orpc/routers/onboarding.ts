@@ -3,6 +3,7 @@ import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
   contentTriggers,
+  geoSettings,
   githubIntegrations,
   onboardingSuggestions,
   organizations,
@@ -62,7 +63,7 @@ export const onboardingRouter = {
         user: context.user,
       });
 
-      const [org, brand, integration, schedule] = await Promise.all([
+      const [org, brand, integration, schedule, geo] = await Promise.all([
         db.query.organizations.findFirst({
           columns: { onboardingCompleted: true, onboardingDismissed: true },
           where: eq(organizations.id, input.organizationId),
@@ -82,11 +83,16 @@ export const onboardingRouter = {
             eq(contentTriggers.sourceType, "cron")
           ),
         }),
+        db.query.geoSettings.findFirst({
+          columns: { id: true },
+          where: eq(geoSettings.organizationId, input.organizationId),
+        }),
       ]);
 
       const hasBrandIdentity = !!brand;
       const hasIntegration = !!integration;
       const hasSchedule = !!schedule;
+      const hasGeoTracking = !!geo;
       const onboardingCompleted = org?.onboardingCompleted ?? false;
       const onboardingDismissed = org?.onboardingDismissed ?? false;
 
@@ -106,6 +112,7 @@ export const onboardingRouter = {
         hasBrandIdentity,
         hasIntegration,
         hasSchedule,
+        hasGeoTracking,
         onboardingCompleted:
           hasBrandIdentity && hasIntegration && hasSchedule
             ? true

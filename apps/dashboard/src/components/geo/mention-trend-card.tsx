@@ -10,10 +10,8 @@ import {
 } from "@/components/instrument/instrument-module";
 import { CHART_MUTED_COLOR } from "@/constants/charts";
 import {
-  GEO_DEFAULT_QUERY_DAYS,
   GEO_MENTION_TREND_AVERAGE_KEY,
   GEO_MENTION_TREND_AVERAGE_LABEL,
-  GEO_TREND_MIN_DAYS,
 } from "@/constants/geo";
 import type { ChartConfig } from "@/types/charts";
 import type {
@@ -31,6 +29,7 @@ import {
   formatEngineFamily,
   mentionTrendEmptyLabel,
 } from "@/utils/geo-charts";
+import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 const ENGINE_STROKE_WIDTH = 1.5;
 const AVERAGE_STROKE_WIDTH = 2;
@@ -80,7 +79,7 @@ function toggleHiddenSeries(
 
 export function MentionTrendCard({
   points,
-  rangeDays = GEO_DEFAULT_QUERY_DAYS,
+  isScanning = false,
 }: MentionTrendCardProps) {
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set());
 
@@ -131,8 +130,6 @@ export function MentionTrendCard({
   }, [series]);
   const markIncompleteTail = hasIncompleteTail(rows);
   const sampledDays = sampledDayCount(rows, engines);
-  const tooFewDays =
-    sampledDays < GEO_TREND_MIN_DAYS && rangeDays >= GEO_TREND_MIN_DAYS;
 
   const handleToggle = useCallback(
     (key: string) => {
@@ -141,12 +138,10 @@ export function MentionTrendCard({
     [allKeys]
   );
 
-  let emptyMessage: string | null = null;
-  if (tooFewDays) {
-    emptyMessage = `Trend appears after ${GEO_TREND_MIN_DAYS} days of scans`;
-  } else if (sampledDays === 0 || visibleSeries.length === 0) {
-    emptyMessage = "No mention data in this range";
-  }
+  const emptyMessage =
+    sampledDays === 0 || visibleSeries.length === 0
+      ? geoScanEmptyMessage(isScanning, "Run a scan to see your mention trend")
+      : null;
 
   return (
     <InstrumentSection
@@ -163,6 +158,7 @@ export function MentionTrendCard({
     >
       {emptyMessage ? (
         <InstrumentEmpty
+          busy={isScanning}
           className="h-80"
           message={emptyMessage}
           seed="Mention trend"

@@ -7,6 +7,8 @@ import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import {
   GEO_DISCOVERY_ALIAS_LIMIT,
+  GEO_DISCOVERY_CACHE_PREFIX,
+  GEO_DISCOVERY_CACHE_TTL_SECONDS,
   GEO_DISCOVERY_COMPETITOR_LIMIT,
   GEO_DISCOVERY_MAX_ALIASES,
   GEO_DISCOVERY_MAX_BRANDED_PROMPTS,
@@ -21,6 +23,7 @@ import {
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
 } from "@/constants/geo";
+import { readGeoCache, writeGeoCache } from "@/lib/geo/cache";
 import { competitorKey, normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { GeoDiscoveryError } from "@/lib/geo/errors";
 import { syncGeoCompetitors } from "@/lib/geo/programs";
@@ -30,6 +33,7 @@ import { startGeoScanRun } from "@/lib/workflows/start";
 import { geoWebsiteDiscoverySchema } from "@/schemas/geo";
 import type {
   GeoCompetitorSeed,
+  GeoDiscoverWebsiteResult,
   GeoGenerateFromWebsiteResult,
   GeoScopeInput,
   GeoWebsiteDiscovery,
@@ -144,11 +148,31 @@ const extractDiscovery = Effect.fn("geo.discover.extract")(function* (
   return discovery;
 });
 
+function discoveryCacheKey(organizationId: string, url: string): string {
+  return `${GEO_DISCOVERY_CACHE_PREFIX}:${organizationId}:${url}`;
+}
+
+export const discoverGeoWebsite = Effect.fn("geo.discoverWebsite")(function* (
+  organizationId: string,
+  url: string
+) {
+  const cacheKey = discoveryCacheKey(organizationId, url);
+  const cached = yield* readGeoCache(cacheKey, geoWebsiteDiscoverySchema);
+  if (cached) {
+    const result: GeoDiscoverWebsiteResult = { url, discovery: cached };
+    return result;
+  }
+  const content = yield* scrapeWebsite(url);
+  const discovery = yield* extractDiscovery(organizationId, url, content);
+  yield* writeGeoCache(cacheKey, discovery, GEO_DISCOVERY_CACHE_TTL_SECONDS);
+  const result: GeoDiscoverWebsiteResult = { url, discovery };
+  return result;
+});
+
 export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
   function* (scopeInput: GeoScopeInput, url: string) {
     const organizationId = scopeInput.organizationId;
-    const content = yield* scrapeWebsite(url);
-    const discovery = yield* extractDiscovery(organizationId, url, content);
+    const { discovery } = yield* discoverGeoWebsite(organizationId, url);
 
     const projectId = yield* ensureGeoProject(
       scopeInput,

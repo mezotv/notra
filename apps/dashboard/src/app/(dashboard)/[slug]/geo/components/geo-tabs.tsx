@@ -68,7 +68,6 @@ export function GeoTabs({
   modelUsage,
   journeys,
   organizationId,
-  rangeDays,
 }: GeoTabsProps) {
   const { param } = useGeoRange();
   const promptsHref = param
@@ -94,7 +93,7 @@ export function GeoTabs({
 
       <TabsContent className="mt-6 flex flex-col gap-6" value="visibility">
         <TabSection active={revealActive} order={0}>
-          <MentionTrendCard points={timeseriesPoints} rangeDays={rangeDays} />
+          <MentionTrendCard isScanning={isScanning} points={timeseriesPoints} />
         </TabSection>
         <TabSection active={revealActive} order={1}>
           <EngineRateTable

@@ -317,6 +317,16 @@ export const GEO_DISCOVERY_MAX_PROMPTS = 14;
 export const GEO_DISCOVERY_MAX_BRANDED_PROMPTS = 3;
 export const GEO_DISCOVERY_ALIAS_LIMIT = 8;
 export const GEO_DISCOVERY_COMPETITOR_LIMIT = 12;
+export const GEO_DISCOVERY_CACHE_PREFIX = "geo:discovery:v1";
+export const GEO_DISCOVERY_CACHE_TTL_SECONDS = 60 * 60;
+export const GEO_COMPETITOR_SUGGESTIONS_CACHE_PREFIX =
+  "geo:competitor-suggestions:v1";
+export const GEO_ONBOARDING_MAX_PROMPTS = 30;
+export const GEO_ONBOARDING_SUGGESTED_COMPETITORS = 10;
+export const GEO_BRAND_SEARCH_MIN_QUERY_LENGTH = 2;
+export const GEO_BRAND_SEARCH_MAX_QUERY_LENGTH = 100;
+export const GEO_BRAND_SEARCH_DEBOUNCE_MS = 300;
+export const GEO_BRAND_SEARCH_STALE_MS = 5 * 60 * 1000;
 export const GEO_DISCOVERY_SYSTEM_PROMPT =
   "You are a search visibility analyst and content strategist. You read a company's website and derive the brand identity and the buyer questions that decide whether an AI assistant recommends this company. Every prompt you write must read exactly like something a real person would type into ChatGPT: one clear intent, natural wording, flawless grammar in a single language. Never string keywords together. Respond only with the requested structured data.";
 export const GEO_ANSWER_SYSTEM_PROMPT =
@@ -538,7 +548,6 @@ export const GEO_SENTIMENT_LABELS: Record<string, string> = {
   negative: "Negative",
 };
 
-export const GEO_TREND_MIN_DAYS = 5;
 export const GEO_MENTION_TREND_TOTAL_KEY = "total";
 export const GEO_MENTION_TREND_TOTAL_LABEL = "All engines";
 export const GEO_DEFAULT_RANGE: GeoRangePreset = "30d";

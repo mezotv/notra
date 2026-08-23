@@ -125,6 +125,18 @@ export const ratelimit = {
     prefix: "ratelimit:geo-writer-plan",
     limiter: Ratelimit.slidingWindow(10, "10m"),
   }),
+  geoCompetitorSuggestions: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:geo-competitor-suggestions",
+    limiter: Ratelimit.slidingWindow(10, "10m"),
+  }),
+  geoBrandSearch: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:geo-brand-search",
+    limiter: Ratelimit.slidingWindow(60, "1m"),
+  }),
   gscSync: new Ratelimit({
     redis,
     analytics: true,

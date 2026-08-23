@@ -1,10 +1,11 @@
+import { ONBOARDING_STEP_COUNT } from "@/constants/onboarding";
 import { cn } from "@/lib/utils";
+import type { OnboardingProgressProps } from "@/types/onboarding";
 
-interface OnboardingProgressProps {
-  current: 1 | 2;
-}
-
-const STEPS = [1, 2] as const;
+const STEPS = Array.from(
+  { length: ONBOARDING_STEP_COUNT },
+  (_, index) => index + 1
+);
 
 function getStepClasses(step: number, current: number) {
   if (step === current) {

@@ -24,11 +24,16 @@ import {
 } from "@/constants/google-search-console";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
-import { generateGeoFromWebsite } from "@/lib/geo/discover";
+import { discoverGeoWebsite, generateGeoFromWebsite } from "@/lib/geo/discover";
 import type { GeoRouterError } from "@/lib/geo/errors";
 import { loadGeoContentGaps } from "@/lib/geo/gaps";
 import { toTrackedPrompt } from "@/lib/geo/mappers";
 import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
+import {
+  saveGeoOnboardingBrand,
+  searchGeoBrands,
+  suggestGeoCompetitors,
+} from "@/lib/geo/onboarding";
 import {
   createGeoPrompt,
   deleteGeoCompetitor,
@@ -82,13 +87,16 @@ import { badRequest, notFound } from "@/lib/orpc/utils/errors";
 import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
 import {
   aiTrafficInputSchema,
+  geoBrandSearchInputSchema,
   geoCompetitorDeleteInputSchema,
   geoCompetitorDetailInputSchema,
+  geoCompetitorSuggestionsInputSchema,
   geoCompetitorUpsertInputSchema,
   geoGenerateFromWebsiteInputSchema,
   geoJourneyDetailInputSchema,
   geoModelCatalogInputSchema,
   geoModelUsageInputSchema,
+  geoOnboardingBrandInputSchema,
   geoOrganizationInputSchema,
   geoProjectCreateInputSchema,
   geoPromptCreateInputSchema,
@@ -110,6 +118,8 @@ import {
 import { gscSelectSiteInputSchema } from "@/schemas/google-search-console";
 import type { AuthenticatedUser } from "@/types/auth/organization";
 import type {
+  GeoBrandSearchHandlerInput,
+  GeoCompetitorSuggestionsHandlerInput,
   GeoIngestSetupResponse,
   GeoPromptSuggestion,
   GeoPromptSuggestionRow,
@@ -434,6 +444,40 @@ export const geoRouter = {
   generateFromWebsite: authorizedProcedure
     .input(geoGenerateFromWebsiteInputSchema)
     .handler(geoHandler((input) => generateGeoFromWebsite(input, input.url))),
+  discoverWebsite: authorizedProcedure
+    .input(geoGenerateFromWebsiteInputSchema)
+    .handler(
+      geoHandler((input) => discoverGeoWebsite(input.organizationId, input.url))
+    ),
+  onboardingBrand: authorizedProcedure
+    .input(geoOnboardingBrandInputSchema)
+    .handler(geoHandler((input) => saveGeoOnboardingBrand(input))),
+  competitorSuggestions: authorizedProcedure
+    .input(geoCompetitorSuggestionsInputSchema)
+    .handler(async (options) => {
+      const rate = await ratelimit.geoCompetitorSuggestions.limit(
+        options.input.organizationId
+      );
+      if (!rate.success) {
+        throw badRequest("Too many lookups. Please wait a minute.");
+      }
+      return geoHandler((input: GeoCompetitorSuggestionsHandlerInput) =>
+        suggestGeoCompetitors(input, input.domain)
+      )(options);
+    }),
+  brandSearch: authorizedProcedure
+    .input(geoBrandSearchInputSchema)
+    .handler(async (options) => {
+      const rate = await ratelimit.geoBrandSearch.limit(
+        options.input.organizationId
+      );
+      if (!rate.success) {
+        throw badRequest("Too many searches. Please wait a minute.");
+      }
+      return geoHandler((input: GeoBrandSearchHandlerInput) =>
+        searchGeoBrands(input, input.query)
+      )(options);
+    }),
   startScan: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => startGeoScan(input))),

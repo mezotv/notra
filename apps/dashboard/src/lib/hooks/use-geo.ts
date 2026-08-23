@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import {
+  GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
+  GEO_BRAND_SEARCH_STALE_MS,
   GEO_MODEL_CATALOG_STALE_MS,
   GEO_SCAN_POLL_INTERVAL_MS,
   GEO_START_SCAN_MUTATION_KEY,
@@ -22,15 +24,20 @@ import { localStorageKeys } from "@/constants/storage";
 import { geoDbOrgQueryKey, geoDbQueryKey } from "@/lib/db/geo-collections";
 import type {
   AiTrafficResponse,
+  GeoBrandSearchResponse,
   GeoCompetitorDetailResponse,
   GeoCompetitorShareResponse,
+  GeoCompetitorSuggestionsResponse,
   GeoCompetitorsResponse,
+  GeoDiscoverWebsiteResult,
   GeoGenerateFromWebsiteInput,
   GeoIngestSetupResponse,
   GeoJourneyDetailResponse,
   GeoLanguageShareResponse,
   GeoModelCatalog,
   GeoModelUsageResponse,
+  GeoOnboardingBrandInput,
+  GeoOnboardingBrandResult,
   GeoOverviewResponse,
   GeoProject,
   GeoProjectCreateInput,
@@ -414,6 +421,67 @@ export function useGeoGenerateFromWebsite(organizationId: string) {
         toErrorMessage(error, "Failed to generate GEO tracking from website")
       );
     },
+  });
+}
+
+export function useGeoDiscoverWebsite(
+  organizationId: string,
+  url: string | null
+) {
+  return useQuery<GeoDiscoverWebsiteResult>({
+    ...dashboardOrpc.geo.discoverWebsite.queryOptions({
+      input: { organizationId, url: url ?? "" },
+    }),
+    enabled: !!organizationId && url !== null,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  });
+}
+
+export function useGeoOnboardingBrand(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  return useMutation({
+    mutationFn: (
+      input: Omit<GeoOnboardingBrandInput, "organizationId" | "projectId">
+    ): Promise<GeoOnboardingBrandResult> =>
+      dashboardOrpc.geo.onboardingBrand.call({
+        ...input,
+        organizationId,
+        projectId,
+      }),
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to save your brand"));
+    },
+  });
+}
+
+export function useGeoCompetitorSuggestions(
+  organizationId: string,
+  domain: string | null
+) {
+  const { projectId } = useGeoProjectScope();
+  return useQuery<GeoCompetitorSuggestionsResponse>({
+    ...dashboardOrpc.geo.competitorSuggestions.queryOptions({
+      input: { organizationId, projectId, domain: domain ?? "" },
+    }),
+    enabled: !!organizationId && domain !== null,
+    staleTime: Number.POSITIVE_INFINITY,
+    retry: false,
+  });
+}
+
+export function useGeoBrandSearch(organizationId: string, query: string) {
+  const { projectId } = useGeoProjectScope();
+  const trimmed = query.trim();
+  return useQuery<GeoBrandSearchResponse>({
+    ...dashboardOrpc.geo.brandSearch.queryOptions({
+      input: { organizationId, projectId, query: trimmed },
+    }),
+    enabled:
+      !!organizationId && trimmed.length >= GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
+    staleTime: GEO_BRAND_SEARCH_STALE_MS,
+    placeholderData: keepPreviousData,
+    retry: false,
   });
 }
 

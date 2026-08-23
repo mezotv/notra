@@ -4,13 +4,16 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Loader2Icon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
+import { redirect } from "next/navigation";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/button";
-import { GeoOnboardingOverlay } from "@/components/geo/geo-onboarding-overlay";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { PageContainer } from "@/components/layout/container";
-import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
+import {
+  GeoProjectProvider,
+  useGeoProjectScope,
+} from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { GEO_DEFAULT_TAB, GEO_TAB_VALUES } from "@/constants/geo";
 import {
@@ -29,6 +32,7 @@ import {
 } from "@/lib/hooks/use-geo";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
+import { geoOnboardingPath } from "@/utils/geo-paths";
 import { GeoTabs } from "./components/geo-tabs";
 import { GeoPageSkeleton } from "./skeleton";
 
@@ -52,6 +56,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       ? activeOrganization
       : orgFromList;
   const organizationId = organization?.id ?? "";
+  const { projectId } = useGeoProjectScope();
   const geoRange = useGeoRange();
 
   const { data: settingsData, isPending: isSettingsPending } =
@@ -107,16 +112,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
   const settings = settingsData?.settings ?? null;
 
   if (!settings) {
-    return (
-      <PageContainer className="flex h-full min-h-0 flex-1 flex-col overflow-hidden py-4 md:py-6">
-        <div className="flex min-h-0 w-full flex-1 flex-col gap-4 px-4 lg:px-6">
-          <GeoOnboardingOverlay
-            manualHref={`/${organizationSlug}/geo/settings`}
-            organizationId={organizationId}
-          />
-        </div>
-      </PageContainer>
-    );
+    redirect(geoOnboardingPath(projectId));
   }
 
   return (
@@ -160,7 +156,6 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
           organizationSlug={organizationSlug}
           promptCount={prompts?.prompts.length ?? 0}
           promptResults={promptResults?.results ?? []}
-          rangeDays={geoRange.days}
           revealActive={revealActive}
           settings={settings}
           timeseriesPoints={timeseries?.points ?? []}

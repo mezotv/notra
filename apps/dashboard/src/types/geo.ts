@@ -465,6 +465,67 @@ export interface GeoGenerateFromWebsiteInput {
   url: string;
 }
 
+export interface GeoDiscoverWebsiteResult {
+  url: string;
+  discovery: GeoWebsiteDiscovery;
+}
+
+export type GeoOnboardingStage = "brand" | "competitors" | "complete";
+
+export interface GeoOnboardingBrandInput {
+  organizationId: string;
+  projectId?: string;
+  companyName: string;
+  aliases: string[];
+  prompts: string[];
+  languages?: string[];
+  engines?: string[];
+  enforceZdr?: boolean;
+  nonZdrApprovedEngines?: string[];
+}
+
+export interface GeoOnboardingBrandResult {
+  projectId: string;
+  companyName: string;
+  promptsAdded: number;
+}
+
+export interface GeoCompetitorSuggestion {
+  name: string;
+  domain: string | null;
+  description: string | null;
+  confidence: "high" | "medium" | null;
+}
+
+export interface GeoCompetitorSuggestionsResponse {
+  domain: string;
+  field: string | null;
+  competitors: GeoCompetitorSuggestion[];
+}
+
+export interface GeoCompetitorSuggestionsInput {
+  domain: string;
+}
+
+export interface GeoBrandSearchInput {
+  query: string;
+}
+
+export type GeoCompetitorSuggestionsHandlerInput = GeoScopeInput &
+  GeoCompetitorSuggestionsInput;
+
+export type GeoBrandSearchHandlerInput = GeoScopeInput & GeoBrandSearchInput;
+
+export interface GeoBrandSearchResult {
+  domain: string;
+  name: string;
+  logo: string | null;
+}
+
+export interface GeoBrandSearchResponse {
+  results: GeoBrandSearchResult[];
+}
+
 export interface GeoModelUsageRow {
   model: string;
   label: string;
@@ -893,7 +954,6 @@ export interface GeoTabsProps {
   modelUsage: GeoModelUsageResponse | undefined;
   journeys: GeoJourney[];
   organizationId: string;
-  rangeDays: number;
 }
 
 export type GeoRangePreset =
@@ -943,7 +1003,7 @@ export interface MentionTrendSeries {
 
 export interface MentionTrendCardProps {
   points: GeoTimeseriesPoint[];
-  rangeDays?: number;
+  isScanning?: boolean;
 }
 
 export interface GeoRangePickerProps {
@@ -1053,11 +1113,6 @@ export interface CodeSnippetProps {
   variant?: "command" | "panel";
 }
 
-export interface GeoOnboardingOverlayProps {
-  organizationId: string;
-  manualHref: string;
-}
-
 export interface GeoSettingsFormProps {
   organizationId: string;
   settings: GeoSettings | null;
@@ -1084,6 +1139,7 @@ export interface GeoTagListProps {
   disabled?: boolean;
   /** When false, the field still has an accessible name via `label`. */
   labeled?: boolean;
+  inputClassName?: string;
 }
 
 export interface GeoEnginePickerProps {

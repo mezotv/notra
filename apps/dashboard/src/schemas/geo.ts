@@ -10,6 +10,8 @@ import {
   string,
 } from "zod";
 import {
+  GEO_BRAND_SEARCH_MAX_QUERY_LENGTH,
+  GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
   GEO_DISCOVERY_MAX_ALIASES,
   GEO_DISCOVERY_MAX_COMPETITORS,
   GEO_DISCOVERY_MAX_PROMPTS,
@@ -20,6 +22,7 @@ import {
   GEO_MAX_COMPETITORS,
   GEO_MAX_ENGINES,
   GEO_MAX_LANGUAGES,
+  GEO_ONBOARDING_MAX_PROMPTS,
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
   GEO_SEQUENCE_MAX_TURNS,
@@ -186,6 +189,62 @@ export const geoGenerateFromWebsiteInputSchema =
   geoOrganizationInputSchema.extend({
     url: publicWebsiteUrlSchema,
   });
+
+const geoTrackingLanguagesSchema = array(string().min(1))
+  .min(1)
+  .max(GEO_MAX_LANGUAGES)
+  .refine(
+    (values) => values.every((value) => GEO_SUPPORTED_LANGUAGE_SET.has(value)),
+    {
+      message: "Unsupported language",
+    }
+  );
+
+export const geoOnboardingBrandInputSchema = geoOrganizationInputSchema.extend({
+  companyName: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
+  aliases: array(string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH)).max(
+    GEO_MAX_ALIASES
+  ),
+  prompts: array(
+    string().trim().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH)
+  ).max(GEO_ONBOARDING_MAX_PROMPTS),
+  languages: geoTrackingLanguagesSchema.optional(),
+  engines: array(string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH))
+    .min(1)
+    .max(GEO_MAX_ENGINES)
+    .optional(),
+  enforceZdr: boolean().optional(),
+  nonZdrApprovedEngines: array(string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH))
+    .max(GEO_MAX_ENGINES)
+    .optional(),
+});
+
+export const geoCompetitorSuggestionsInputSchema =
+  geoOrganizationInputSchema.extend({
+    domain: geoCompetitorDomainSchema.refine((value) => value !== null, {
+      message: "Enter a domain like example.com",
+    }),
+  });
+
+export const geoCompetitorSuggestionsResponseSchema = object({
+  domain: string().min(1),
+  field: string().nullable(),
+  competitors: array(
+    object({
+      name: string().min(1),
+      domain: string().nullable(),
+      description: string().nullable(),
+      confidence: enumType(["high", "medium"]).nullable(),
+    })
+  ),
+});
+
+export const geoBrandSearchInputSchema = geoOrganizationInputSchema.extend({
+  query: string()
+    .trim()
+    .min(GEO_BRAND_SEARCH_MIN_QUERY_LENGTH)
+    .max(GEO_BRAND_SEARCH_MAX_QUERY_LENGTH),
+});
 
 export const geoWebsiteDiscoverySchema = object({
   companyName: string().min(1),

@@ -12,6 +12,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { OnboardingProgress } from "@/components/onboarding/progress";
+import { ONBOARDING_STEP_PRICING } from "@/constants/onboarding";
 import type { BillingPlan } from "@/types/billing/plan";
 import type { ProductFeature } from "@/types/hooks/billing";
 
@@ -128,7 +129,7 @@ export function PricingClient({ slug }: PricingClientProps) {
   return (
     <div className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-12">
       <div className="mb-6 flex justify-center">
-        <OnboardingProgress current={2} />
+        <OnboardingProgress current={ONBOARDING_STEP_PRICING} />
       </div>
       <div className="space-y-3 text-center">
         <h1 className="font-bold text-3xl tracking-tight md:text-4xl">

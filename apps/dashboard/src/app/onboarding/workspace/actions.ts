@@ -12,6 +12,7 @@ import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getAuthSession } from "@/lib/auth/server";
 import { queueBrandAnalysisForOnboarding } from "@/lib/brand-analysis";
+import { warmGeoOnboardingCache } from "@/lib/geo/onboarding";
 import {
   resolveCompanyDomain,
   resolveReachableWebsiteUrl,
@@ -145,6 +146,8 @@ export async function triggerOnboardingBrandAnalysis(
   if (existingBrand) {
     throw new Error("Onboarding brand analysis has already been requested.");
   }
+
+  after(() => warmGeoOnboardingCache(input.organizationId, input.websiteUrl));
 
   try {
     await queueBrandAnalysisForOnboarding({

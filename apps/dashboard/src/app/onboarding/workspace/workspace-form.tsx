@@ -23,7 +23,10 @@ import { Button } from "@/components/button";
 import { OrgLogoField } from "@/components/onboarding/org-logo-field";
 import { OnboardingProgress } from "@/components/onboarding/progress";
 import { COMPANY_LOGO_DEBOUNCE_MS } from "@/constants/company-logo";
-import { ONBOARDING_HEARD_ABOUT_NOTRA_OPTIONS } from "@/constants/onboarding";
+import {
+  ONBOARDING_HEARD_ABOUT_NOTRA_OPTIONS,
+  ONBOARDING_STEP_WORKSPACE,
+} from "@/constants/onboarding";
 import { useCompanyLogo } from "@/lib/hooks/use-onboarding";
 import { extractDomain } from "@/lib/onboarding/company-logo";
 import {
@@ -128,7 +131,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
           logoSourceUrl: matchesSubmittedDomain ? fetchedLogoUrl : null,
           value,
         });
-        window.location.assign("/onboarding/pricing");
+        window.location.assign("/onboarding/visibility");
       } catch (err) {
         toast.error(
           err instanceof Error ? err.message : "Failed to create workspace"
@@ -141,7 +144,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
   return (
     <div className="flex w-full flex-col gap-5">
       <div className="flex justify-center">
-        <OnboardingProgress current={1} />
+        <OnboardingProgress current={ONBOARDING_STEP_WORKSPACE} />
       </div>
 
       <AuthFormHeader

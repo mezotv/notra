@@ -3,6 +3,7 @@ import { brandSettings } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
+import { getGeoOnboardingStage } from "@/lib/geo/onboarding-status";
 import { redirectIfAnyOrganizationHasPaidHistory } from "@/lib/onboarding/billing-gate";
 
 export default async function OnboardingPage() {
@@ -27,6 +28,14 @@ export default async function OnboardingPage() {
 
   if (!brand) {
     redirect("/onboarding/workspace");
+  }
+
+  const stage = await getGeoOnboardingStage(organization.id);
+  if (stage === "brand") {
+    redirect("/onboarding/visibility");
+  }
+  if (stage === "competitors") {
+    redirect("/onboarding/competitors");
   }
 
   redirect("/onboarding/pricing");

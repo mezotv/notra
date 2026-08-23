@@ -1,5 +1,7 @@
 import type {
   ContextDevBrandRetrieveResponse,
+  ContextDevBrandSearchResponse,
+  ContextDevCompetitorsResponse,
   ContextDevCrawlSitemapInput,
   ContextDevCrawlSitemapResponse,
   ContextDevErrorResponse,
@@ -23,6 +25,8 @@ import {
   BRAND_ANALYSIS_SITEMAP_MAX_LINKS,
   BRAND_ANALYSIS_SITEMAP_TIMEOUT_MS,
   BRAND_ANALYSIS_WWW_PREFIX,
+  BRAND_SEARCH_TYPO_TOLERANCE,
+  COMPETITORS_TIMEOUT_MS,
 } from "../constants/context-dev";
 
 const CONTEXT_DEV_API_BASE_URL = "https://api.context.dev/v1";
@@ -420,6 +424,37 @@ export async function retrieveBrand(
 
   return requestContextDev<ContextDevBrandRetrieveResponse>(
     `/brand/retrieve?${params.toString()}`,
+    { method: "GET" }
+  );
+}
+
+export async function extractCompetitors(
+  domain: string,
+  numCompetitors: number
+): Promise<ContextDevCompetitorsResponse> {
+  const params = new URLSearchParams({
+    domain,
+    numCompetitors: String(numCompetitors),
+    timeoutMS: String(COMPETITORS_TIMEOUT_MS),
+  });
+
+  return requestContextDev<ContextDevCompetitorsResponse>(
+    `/web/competitors?${params.toString()}`,
+    { method: "GET" }
+  );
+}
+
+export async function searchBrands(
+  query: string
+): Promise<ContextDevBrandSearchResponse> {
+  const params = new URLSearchParams({
+    query,
+    autocomplete: "true",
+    typoTolerance: String(BRAND_SEARCH_TYPO_TOLERANCE),
+  });
+
+  return requestContextDev<ContextDevBrandSearchResponse>(
+    `/brand/search?${params.toString()}`,
     { method: "GET" }
   );
 }

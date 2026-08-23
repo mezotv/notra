@@ -23,6 +23,7 @@ import {
   useOnboardingAgentRun,
   useOnboardingStatus,
 } from "@/lib/hooks/use-onboarding";
+import { geoOnboardingPath } from "@/utils/geo-paths";
 
 const MORPH_TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] } as const;
 
@@ -65,7 +66,10 @@ export function SidebarOnboarding() {
     () => null
   );
   const hasCompletedStep =
-    data?.hasBrandIdentity || data?.hasIntegration || data?.hasSchedule;
+    data?.hasBrandIdentity ||
+    data?.hasIntegration ||
+    data?.hasSchedule ||
+    data?.hasGeoTracking;
   const collapsed =
     storedCollapsed === null ? !!hasCompletedStep : storedCollapsed === "true";
 
@@ -100,6 +104,11 @@ export function SidebarOnboarding() {
       label: "Create a schedule",
       href: `/${slug}/automation/schedules`,
       completed: data.hasSchedule,
+    },
+    {
+      label: "Track AI visibility",
+      href: geoOnboardingPath(),
+      completed: data.hasGeoTracking,
     },
   ];
 
