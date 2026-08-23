@@ -281,6 +281,41 @@ export const DESIGN_SYSTEM_CATALOG: DesignSystemCatalogItem[] = [
     href: "/design-system#gemini-playground",
     level: "section",
   },
+  {
+    id: "perplexity-thread",
+    number: "41",
+    label: "Perplexity · Thread",
+    href: "/design-system#perplexity-thread",
+    level: "group",
+  },
+  {
+    id: "perplexity-user",
+    number: "42",
+    label: "Perplexity · User",
+    href: "/design-system#perplexity-user",
+    level: "section",
+  },
+  {
+    id: "perplexity-assistant",
+    number: "43",
+    label: "Perplexity · Assistant",
+    href: "/design-system#perplexity-assistant",
+    level: "section",
+  },
+  {
+    id: "perplexity-models",
+    number: "44",
+    label: "Perplexity · Composer",
+    href: "/design-system#perplexity-models",
+    level: "section",
+  },
+  {
+    id: "perplexity-playground",
+    number: "45",
+    label: "Perplexity · Playground",
+    href: "/design-system#perplexity-playground",
+    level: "section",
+  },
 ];
 
 export const DESIGN_SYSTEM_CATALOG_BY_ID = Object.fromEntries(
