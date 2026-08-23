@@ -32,4 +32,19 @@ describe("perplexitySourcesFromExcerpt", () => {
       },
     ]);
   });
+
+  test("ignores javascript and data URLs", () => {
+    const sources = perplexitySourcesFromExcerpt(
+      "See [xss](javascript:alert(1)) and data:text/html,hi and https://example.com/ok"
+    );
+
+    assert.deepEqual(sources, [
+      {
+        title: "example.com",
+        domain: "example.com",
+        url: "https://example.com/ok",
+        verified: true,
+      },
+    ]);
+  });
 });

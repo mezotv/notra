@@ -1,20 +1,8 @@
 import type { PerplexitySearchSource } from "@notra/ui/components/brainless/perplexity/perplexity-search";
+import { getReferenceDomain } from "@/utils/reference-display";
 
 const MARKDOWN_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
 const BARE_URL = /\bhttps?:\/\/[^\s)]+/g;
-const WWW_PREFIX = /^www\./;
-
-function domainFromHref(href: string): string | null {
-  try {
-    const url = new URL(href);
-    if (url.protocol !== "http:" && url.protocol !== "https:") {
-      return null;
-    }
-    return url.hostname.replace(WWW_PREFIX, "");
-  } catch {
-    return null;
-  }
-}
 
 export function perplexitySourcesFromExcerpt(
   excerpt: string
@@ -24,7 +12,7 @@ export function perplexitySourcesFromExcerpt(
 
   for (const match of excerpt.matchAll(MARKDOWN_LINK)) {
     const href = match[2] ?? "";
-    const domain = domainFromHref(href);
+    const domain = getReferenceDomain(href);
     if (!domain || seen.has(domain)) {
       continue;
     }
@@ -35,7 +23,7 @@ export function perplexitySourcesFromExcerpt(
 
   for (const match of excerpt.matchAll(BARE_URL)) {
     const href = match[0] ?? "";
-    const domain = domainFromHref(href);
+    const domain = getReferenceDomain(href);
     if (!domain || seen.has(domain)) {
       continue;
     }
