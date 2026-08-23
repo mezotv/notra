@@ -306,6 +306,7 @@ export const GEO_START_SCAN_MUTATION_KEY = "geo-start-scan";
 export const GEO_EXCERPT_MAX_LENGTH = 300;
 export const GEO_PROMPT_MIN_LENGTH = 8;
 export const GEO_PROMPT_MAX_LENGTH = 300;
+export const GEO_GAP_TITLE_MAX_LENGTH = 160;
 export const GEO_DISCOVERY_MODEL = "anthropic/claude-sonnet-4.6";
 export const GEO_DISCOVERY_MAX_TOKENS = 4000;
 export const GEO_DISCOVERY_MAX_ALIASES = 6;
@@ -317,7 +318,7 @@ export const GEO_DISCOVERY_MAX_BRANDED_PROMPTS = 3;
 export const GEO_DISCOVERY_ALIAS_LIMIT = 8;
 export const GEO_DISCOVERY_COMPETITOR_LIMIT = 12;
 export const GEO_DISCOVERY_SYSTEM_PROMPT =
-  "You are a search visibility analyst. You read a company's website and derive the brand identity and the buyer questions that decide whether an AI assistant recommends this company. Respond only with the requested structured data.";
+  "You are a search visibility analyst and content strategist. You read a company's website and derive the brand identity and the buyer questions that decide whether an AI assistant recommends this company. Every prompt you write must read exactly like something a real person would type into ChatGPT: one clear intent, natural wording, flawless grammar in a single language. Never string keywords together. Respond only with the requested structured data.";
 export const GEO_ANSWER_SYSTEM_PROMPT =
   "You are a helpful AI assistant. Answer the user's question directly and concretely, naming specific products or companies where relevant.";
 

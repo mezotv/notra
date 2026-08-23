@@ -442,11 +442,16 @@ export interface GeoGroundedInvocationOptions {
   zdr?: GeoZdrMode;
 }
 
+export interface GeoDiscoveredPrompt {
+  prompt: string;
+  title: string;
+}
+
 export interface GeoWebsiteDiscovery {
   companyName: string;
   aliases: string[];
   competitors: GeoCompetitorSeed[];
-  prompts: string[];
+  prompts: GeoDiscoveredPrompt[];
 }
 
 export interface GeoGenerateFromWebsiteResult {
@@ -1439,6 +1444,7 @@ export interface GeoSuggestionKeyword {
 export interface GeoPromptSuggestionRow {
   id: string;
   prompt: string;
+  title: string | null;
   source: "search_console";
   sourceKeywords: GeoSuggestionKeyword[];
   createdAt: Date;
@@ -1515,6 +1521,7 @@ export interface GeoGapBriefRef {
 export interface GeoPromptGapRow {
   id: string;
   prompt: string;
+  title: string | null;
   engines: string[];
   competitors: string[];
   ownMentionRate: number;
@@ -1526,6 +1533,7 @@ export interface GeoPromptGapRow {
 export interface GeoSearchGapRow {
   id: string;
   prompt: string;
+  title: string | null;
   impressions: number | null;
   brief: GeoGapBriefRef | null;
 }

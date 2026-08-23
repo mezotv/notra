@@ -15,7 +15,11 @@ import {
 } from "@notra/db/schema";
 import { generateText, Output } from "ai";
 import { and, eq, ne } from "drizzle-orm";
-import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
+import {
+  GEO_GAP_TITLE_MAX_LENGTH,
+  GEO_PROMPT_MAX_LENGTH,
+  GEO_PROMPT_MIN_LENGTH,
+} from "@/constants/geo";
 import {
   GSC_SUGGESTION_MAX_TOKENS,
   GSC_SUGGESTION_MODEL,
@@ -162,11 +166,13 @@ async function runSync(
     if (sourceKeywords.length === 0) {
       continue;
     }
+    const title = item.title.trim().slice(0, GEO_GAP_TITLE_MAX_LENGTH);
     seen.add(key);
     values.push({
       id: crypto.randomUUID(),
       organizationId,
       prompt,
+      title: title.length > 0 ? title : null,
       source: "search_console",
       sourceKeywords,
       status: "pending",

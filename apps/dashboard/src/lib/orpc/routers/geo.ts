@@ -233,7 +233,7 @@ async function acceptSuggestionInTx(
   tx: GeoTransaction,
   organizationId: string,
   projectId: string,
-  suggestion: Pick<GeoPromptSuggestionRow, "id" | "prompt">
+  suggestion: Pick<GeoPromptSuggestionRow, "id" | "prompt" | "title">
 ): Promise<GeoTrackedPrompt> {
   // Reuse an identical tracked prompt instead of creating a duplicate.
   const existing = await tx.query.geoPrompts.findFirst({
@@ -253,6 +253,7 @@ async function acceptSuggestionInTx(
           organizationId,
           projectId,
           prompt: suggestion.prompt,
+          title: suggestion.title,
         })
         .returning()
     )[0];

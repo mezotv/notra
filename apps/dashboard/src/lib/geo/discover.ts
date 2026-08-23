@@ -17,6 +17,7 @@ import {
   GEO_DISCOVERY_MIN_PROMPTS,
   GEO_DISCOVERY_MODEL,
   GEO_DISCOVERY_SYSTEM_PROMPT,
+  GEO_GAP_TITLE_MAX_LENGTH,
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
 } from "@/constants/geo";
@@ -38,6 +39,7 @@ const MIN_PROMPT_LENGTH = GEO_PROMPT_MIN_LENGTH;
 const MAX_PROMPT_LENGTH = GEO_PROMPT_MAX_LENGTH;
 
 function buildDiscoveryPrompt(url: string, content: string): string {
+  const year = new Date().getFullYear();
   return `Website: ${url}
 
 Website content:
@@ -50,7 +52,17 @@ Derive the brand tracking configuration for this company:
 1. companyName: the company or product name exactly as it brands itself.
 2. aliases: up to ${GEO_DISCOVERY_MAX_ALIASES} alternative spellings that identify this company - product names, the bare domain, and common misspellings. Never include generic words that could refer to anything else.
 3. competitors: between ${GEO_DISCOVERY_MIN_COMPETITORS} and ${GEO_DISCOVERY_MAX_COMPETITORS} real, named companies or products that compete in the same category. For each one give its name and its bare website domain (for example "stripe.com"), or null for domain when you are not sure.
-4. prompts: between ${GEO_DISCOVERY_MIN_PROMPTS} and ${GEO_DISCOVERY_MAX_PROMPTS} questions a real buyer would type into an AI assistant while researching this category. At most ${GEO_DISCOVERY_MAX_BRANDED_PROMPTS} of them may contain the company name; every other question must be unbranded and framed around the category, the problem or the buying decision, so the answer reveals whether an assistant recommends this company unprompted. Each question must be between ${MIN_PROMPT_LENGTH} and ${MAX_PROMPT_LENGTH} characters.`;
+4. prompts: between ${GEO_DISCOVERY_MIN_PROMPTS} and ${GEO_DISCOVERY_MAX_PROMPTS} entries, each with a "prompt" and a "title".
+
+Prompt rules:
+- A prompt is the exact text a real buyer would type into an AI assistant (ChatGPT, Claude, Perplexity) while researching this category. Write it as one natural, grammatically correct question or search phrase with a single clear intent - for example "What tools should I use to automate my marketing", "Best Hootsuite alternative for small teams ${year}", or "How much does LinkedIn Premium cost".
+- Never concatenate keywords, never mix languages within a prompt, and never write anything you would not plausibly type yourself. Read each prompt aloud before keeping it; if it sounds off, rewrite it.
+- Cover different intents across the set: category recommendations ("best X for Y"), competitor alternatives, comparisons, pricing questions, and how-to or definition questions buyers ask on the way to a purchase. Append "${year}" only where a real person would (best-of, alternatives, pricing) - not on definitions or how-tos.
+- At most ${GEO_DISCOVERY_MAX_BRANDED_PROMPTS} prompts may contain the company name; every other prompt must be unbranded and framed around the category, the problem or the buying decision, so the answer reveals whether an assistant recommends this company unprompted. Each prompt must be between ${MIN_PROMPT_LENGTH} and ${MAX_PROMPT_LENGTH} characters.
+
+Title rules:
+- The title is the headline of the article that would win this prompt: specific, publishable and in Title Case, following proven formats such as "Best {Category} Tools in ${year}: {Facets} Compared", "Best {Competitor} Alternatives for {Use Case} in ${year}", "{A} vs {B}: Features, Pricing & Which to Choose in ${year}", "{Product} Pricing: Plans & Cost Breakdown for ${year}", "How to {Task} (Step-by-Step ${year})", or "What Is {Term}? Definition, Examples & How to Measure It".
+- Write titles in the same language as the prompt and keep each under ${GEO_GAP_TITLE_MAX_LENGTH} characters.`;
 }
 
 function normalizeKey(value: string): string {
@@ -239,9 +251,11 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
       organizationId: string;
       projectId: string;
       prompt: string;
+      title: string | null;
     }[] = [];
-    for (const prompt of discovery.prompts) {
-      const trimmed = prompt.trim();
+    for (const entry of discovery.prompts) {
+      const trimmed = entry.prompt.trim();
+      const title = entry.title.trim().slice(0, GEO_GAP_TITLE_MAX_LENGTH);
       const key = normalizeKey(trimmed);
       if (
         trimmed.length < MIN_PROMPT_LENGTH ||
@@ -256,6 +270,7 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
         organizationId,
         projectId,
         prompt: trimmed,
+        title: title.length > 0 ? title : null,
       });
     }
 

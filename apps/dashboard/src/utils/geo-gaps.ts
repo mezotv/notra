@@ -151,13 +151,18 @@ export function geoGapsEmptyKind({
 
 function gapSearchValues(row: {
   prompt: string;
+  title: string | null;
   brief: GeoGapBriefRef | null;
 }): string[] {
-  return [row.prompt, row.brief?.workingTitle ?? ""];
+  return [row.prompt, row.title ?? "", row.brief?.workingTitle ?? ""];
 }
 
 function filterGapsByQuery<
-  T extends { prompt: string; brief: GeoGapBriefRef | null },
+  T extends {
+    prompt: string;
+    title: string | null;
+    brief: GeoGapBriefRef | null;
+  },
 >(rows: readonly T[], query: string): T[] {
   const trimmed = query.trim();
   const matched = rows.filter((row) =>

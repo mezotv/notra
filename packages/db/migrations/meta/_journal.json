@@ -547,6 +547,13 @@
       "when": 1787489444276,
       "tag": "0077_secret_hardball",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1787494273932,
+      "tag": "0078_huge_penance",
+      "breakpoints": true
     }
   ]
 }

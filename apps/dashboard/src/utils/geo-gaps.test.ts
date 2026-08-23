@@ -17,6 +17,7 @@ function promptGap(
   overrides: Partial<GeoPromptGapRow> & Pick<GeoPromptGapRow, "id" | "prompt">
 ): GeoPromptGapRow {
   return {
+    title: null,
     engines: [OPENAI],
     competitors: [],
     ownMentionRate: 0,
@@ -31,6 +32,7 @@ function searchGap(
   overrides: Partial<GeoSearchGapRow> & Pick<GeoSearchGapRow, "id" | "prompt">
 ): GeoSearchGapRow {
   return {
+    title: null,
     impressions: 100,
     brief: null,
     ...overrides,

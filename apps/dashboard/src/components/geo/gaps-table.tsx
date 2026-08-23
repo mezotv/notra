@@ -438,15 +438,15 @@ export function GeoGapsTable({
         header: "Content",
         width: "2.4fr",
         cell: (row) => {
-          const workingTitle = row.brief?.workingTitle;
+          const headline = row.brief?.workingTitle ?? row.title;
           return (
             <ContentCell
-              subtitle={workingTitle ? row.prompt : null}
-              title={workingTitle ?? row.prompt}
+              subtitle={headline ? row.prompt : null}
+              title={headline ?? row.prompt}
             />
           );
         },
-        sortValue: (row) => row.brief?.workingTitle ?? row.prompt,
+        sortValue: (row) => row.brief?.workingTitle ?? row.title ?? row.prompt,
         sortable: true,
       },
       {
@@ -514,15 +514,15 @@ export function GeoGapsTable({
         header: "Content",
         width: "2.4fr",
         cell: (row) => {
-          const workingTitle = row.brief?.workingTitle;
+          const headline = row.brief?.workingTitle ?? row.title;
           return (
             <ContentCell
-              subtitle={workingTitle ? row.prompt : null}
-              title={workingTitle ?? row.prompt}
+              subtitle={headline ? row.prompt : null}
+              title={headline ?? row.prompt}
             />
           );
         },
-        sortValue: (row) => row.brief?.workingTitle ?? row.prompt,
+        sortValue: (row) => row.brief?.workingTitle ?? row.title ?? row.prompt,
         sortable: true,
       },
       {

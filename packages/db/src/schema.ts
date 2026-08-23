@@ -1366,6 +1366,7 @@ export const geoPrompts = pgTable(
       .notNull()
       .references(() => projects.id, { onDelete: "cascade" }),
     prompt: text("prompt").notNull(),
+    title: text("title"),
     enabled: boolean("enabled").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -1565,6 +1566,7 @@ export const geoPromptSuggestions = pgTable(
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
     prompt: text("prompt").notNull(),
+    title: text("title"),
     source: text("source", { enum: ["search_console"] })
       .notNull()
       .default("search_console"),

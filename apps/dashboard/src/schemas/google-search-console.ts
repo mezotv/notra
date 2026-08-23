@@ -35,6 +35,7 @@ export const geoSearchConsoleSuggestionSchema = object({
   prompts: array(
     object({
       prompt: string().min(1),
+      title: string().min(1),
       keywords: array(string().min(1)).transform((keywords) =>
         keywords.slice(0, GSC_MAX_KEYWORDS_PER_SUGGESTION)
       ),

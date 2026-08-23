@@ -114,7 +114,11 @@ const loadMentionGapInputs = Effect.fn("geo.mentionGapInputs")(function* (
     ),
     geoDb("prompts lookup failed", () =>
       db
-        .select({ id: geoPrompts.id, prompt: geoPrompts.prompt })
+        .select({
+          id: geoPrompts.id,
+          prompt: geoPrompts.prompt,
+          title: geoPrompts.title,
+        })
         .from(geoPrompts)
         .where(
           and(eq(geoPrompts.projectId, projectId), eq(geoPrompts.enabled, true))
@@ -155,9 +159,14 @@ function aggregateMentionChecks(
 }
 
 function forEachMissingMajorityGap(
-  prompts: Array<{ id: string; prompt: string }>,
+  prompts: Array<{ id: string; prompt: string; title: string | null }>,
   byPrompt: Map<string, PromptGapAgg>,
-  onGap: (id: string, prompt: string, entry: PromptGapAgg) => void
+  onGap: (
+    id: string,
+    prompt: string,
+    title: string | null,
+    entry: PromptGapAgg
+  ) => void
 ) {
   const matchedScanIds = new Set<string>();
   for (const prompt of prompts) {
@@ -168,7 +177,7 @@ function forEachMissingMajorityGap(
     matchedScanIds.add(prompt.id);
     matchedScanIds.add(customPromptScanId(prompt.id));
     if (isMissingMajority(entry.missing.length, entry.total)) {
-      onGap(prompt.id, prompt.prompt, entry);
+      onGap(prompt.id, prompt.prompt, prompt.title, entry);
     }
   }
   for (const [scanId, entry] of byPrompt) {
@@ -180,7 +189,7 @@ function forEachMissingMajorityGap(
       continue;
     }
     if (isMissingMajority(entry.missing.length, entry.total)) {
-      onGap(scanId, entry.promptText, entry);
+      onGap(scanId, entry.promptText, null, entry);
     }
   }
 }
@@ -191,7 +200,7 @@ export const loadPlannerGapPrompts = Effect.fn("geo.plannerGaps")(function* (
   const [checks, prompts] = yield* loadMentionGapInputs(projectId);
   const byPrompt = aggregateMentionChecks(checks);
   const gaps: GeoPlannerGapPrompt[] = [];
-  forEachMissingMajorityGap(prompts, byPrompt, (_id, prompt, entry) => {
+  forEachMissingMajorityGap(prompts, byPrompt, (_id, prompt, _title, entry) => {
     if (gaps.length >= GEO_WRITER_PLANNER_GAP_LIMIT) {
       return;
     }
@@ -215,6 +224,7 @@ export const loadGeoContentGaps = Effect.fn("geo.gaps")(function* (
           .select({
             id: geoPromptSuggestions.id,
             prompt: geoPromptSuggestions.prompt,
+            title: geoPromptSuggestions.title,
             sourceKeywords: geoPromptSuggestions.sourceKeywords,
           })
           .from(geoPromptSuggestions)
@@ -291,7 +301,7 @@ export const loadGeoContentGaps = Effect.fn("geo.gaps")(function* (
   const byPrompt = aggregateMentionChecks(checks);
   const promptGaps: GeoPromptGapRow[] = [];
 
-  forEachMissingMajorityGap(prompts, byPrompt, (id, prompt, entry) => {
+  forEachMissingMajorityGap(prompts, byPrompt, (id, prompt, title, entry) => {
     const competitorNames = [
       ...new Set(
         entry.competitors.flatMap((name) => {
@@ -304,6 +314,7 @@ export const loadGeoContentGaps = Effect.fn("geo.gaps")(function* (
     promptGaps.push({
       id,
       prompt,
+      title,
       engines: entry.missing,
       competitors: competitorNames,
       ownMentionRate,
@@ -321,6 +332,7 @@ export const loadGeoContentGaps = Effect.fn("geo.gaps")(function* (
   const searchGaps: GeoSearchGapRow[] = pending.map((suggestion) => ({
     id: suggestion.id,
     prompt: suggestion.prompt,
+    title: suggestion.title,
     impressions: searchGapImpressions(suggestion.sourceKeywords),
     brief: toBriefRef(
       briefBySource.get(sourceKey("search_console", suggestion.id))

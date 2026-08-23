@@ -15,6 +15,7 @@ import {
   GEO_DISCOVERY_MAX_PROMPTS,
   GEO_DISCOVERY_MIN_COMPETITORS,
   GEO_DISCOVERY_MIN_PROMPTS,
+  GEO_GAP_TITLE_MAX_LENGTH,
   GEO_MAX_ALIASES,
   GEO_MAX_COMPETITORS,
   GEO_MAX_ENGINES,
@@ -197,7 +198,12 @@ export const geoWebsiteDiscoverySchema = object({
   )
     .min(GEO_DISCOVERY_MIN_COMPETITORS)
     .max(GEO_DISCOVERY_MAX_COMPETITORS),
-  prompts: array(string().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH))
+  prompts: array(
+    object({
+      prompt: string().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH),
+      title: string().min(1).max(GEO_GAP_TITLE_MAX_LENGTH),
+    })
+  )
     .min(GEO_DISCOVERY_MIN_PROMPTS)
     .max(GEO_DISCOVERY_MAX_PROMPTS),
 });
