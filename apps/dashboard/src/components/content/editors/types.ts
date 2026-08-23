@@ -11,6 +11,7 @@ interface ContentData {
   rawHtml: string | null;
   contentType: string;
   date: string;
+  status: "draft" | "published";
   sourceMetadata: unknown;
 }
 

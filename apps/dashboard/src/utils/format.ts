@@ -22,6 +22,14 @@ export function formatFullDate(timestamp: number): string {
   }).format(new Date(timestamp));
 }
 
+export function formatArticleDate(date: Date): string {
+  return new Intl.DateTimeFormat(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }).format(date);
+}
+
 export function usageBarColor(percent: number): string {
   return percent > 70 ? "bg-amber-500" : "bg-emerald-500";
 }
