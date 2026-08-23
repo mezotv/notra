@@ -104,6 +104,30 @@ describe("tagMarkdownLinks", () => {
   test("returns input untouched for an invalid journey id", () => {
     expect(tagMarkdownLinks("[a](/b)", "no", {})).toBe("[a](/b)");
   });
+
+  test("preserves link titles while normalizing surrounding whitespace", () => {
+    expect(tagMarkdownLinks('[a](  /docs  "Title"  )', ID)).toBe(
+      `[a](/docs?ntr=${ID}  "Title")`
+    );
+  });
+
+  test("handles long malformed links without blocking later valid links", () => {
+    const unmatchedLabels = "[".repeat(50_000);
+    const malformedTarget = `[label](${"a".repeat(50_000)}(`;
+
+    expect(tagMarkdownLinks(unmatchedLabels, ID)).toBe(unmatchedLabels);
+    expect(tagMarkdownLinks(`${malformedTarget}[a](/b)`, ID)).toBe(
+      `${malformedTarget}[a](/b?ntr=${ID})`
+    );
+  });
+
+  test("continues after malformed titles and accepts Unicode whitespace", () => {
+    const input = '[broken](/x "unterminated [a](\u00a0/b\u00a0)';
+
+    expect(tagMarkdownLinks(input, ID)).toBe(
+      `[broken](/x "unterminated [a](/b?ntr=${ID})`
+    );
+  });
 });
 
 describe("tagHtmlLinks", () => {

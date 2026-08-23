@@ -1,10 +1,13 @@
 import { DEFAULT_ENDPOINT, INGEST_PATH, INGEST_TIMEOUT_MS } from "./constants";
 import type { GeoRequestPayload, GeoTrackerOptions } from "./types";
 
-const TRAILING_SLASHES = /\/+$/;
-
 function ingestUrl(endpoint: string | undefined): string {
-  const base = (endpoint ?? DEFAULT_ENDPOINT).replace(TRAILING_SLASHES, "");
+  const value = endpoint ?? DEFAULT_ENDPOINT;
+  let end = value.length;
+  while (end > 0 && value[end - 1] === "/") {
+    end -= 1;
+  }
+  const base = value.slice(0, end);
   return `${base}${INGEST_PATH}`;
 }
 
