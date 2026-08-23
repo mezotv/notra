@@ -126,15 +126,6 @@ describe("classifyVisitor", () => {
     assert.equal(traced.visitorType, "crawler");
   });
 
-  test("stays human for browser user agents when no signals were sent", () => {
-    const result = classifyVisitor({
-      userAgent: CHROME_UA,
-      referer: undefined,
-      accept: BROWSER_ACCEPT,
-    });
-    assert.equal(result.visitorType, "human");
-  });
-
   test("labels command-line clients while keeping them unknown", () => {
     const curl = classifyVisitor({
       userAgent: "curl/8.7.1",

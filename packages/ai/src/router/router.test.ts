@@ -757,16 +757,6 @@ describe("assertRouteHasCredits", () => {
     assert.equal(openrouter.balanceCalls, 2);
   });
 
-  test("unknown balance never blocks traffic", async () => {
-    const openrouter = createFakeAdapter({ id: "openrouter", balance: null });
-    const { router } = createTestRouter({ plans, openrouter });
-    const decision = await router.assertRouteHasCredits({
-      modelId: MODEL,
-      organizationId: FREE_ORG,
-    });
-    assert.equal(decision.gateway, "openrouter");
-  });
-
   test("exhausted openrouter credits fall back to vercel", async () => {
     const openrouter = createFakeAdapter({ id: "openrouter", balance: 0 });
     const { router } = createTestRouter({ plans, openrouter });

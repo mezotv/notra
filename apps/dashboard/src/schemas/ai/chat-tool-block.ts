@@ -173,6 +173,18 @@ export const memoryIdentifierOutputSchema = z
   })
   .passthrough();
 
+export const editMarkdownOutputSchema = z
+  .object({
+    filename: optionalStringSchema,
+    previousMarkdown: optionalStringSchema,
+    updatedMarkdown: optionalStringSchema,
+    success: z.preprocess(
+      (value) => (typeof value === "boolean" ? value : undefined),
+      z.boolean().optional()
+    ),
+  })
+  .passthrough();
+
 export const mcpToolMetadataSchema = z
   .object({
     notra: z.preprocess(
