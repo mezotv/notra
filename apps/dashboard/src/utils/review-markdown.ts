@@ -1,6 +1,7 @@
 import type { ReviewDiffSegment } from "@/types/content/review-markdown";
 
 const TOKEN_SPLIT_RE = /(\s+|[^\w\s]+)/;
+const WORD_CHAR_RE = /\w/;
 const MAX_LCS_CELLS = 4_000_000;
 const ADD_MARK = "==";
 const REMOVE_MARK = "~~";
@@ -137,14 +138,14 @@ function diffReviewMarkdown(
 }
 
 function wrapChanged(kind: "add" | "remove", value: string): string {
-  if (!/\w/.test(value)) {
+  if (!WORD_CHAR_RE.test(value)) {
     return value;
   }
 
   const mark = kind === "add" ? ADD_MARK : REMOVE_MARK;
   return value
     .split("\n")
-    .map((line) => (/\w/.test(line) ? `${mark}${line}${mark}` : line))
+    .map((line) => (WORD_CHAR_RE.test(line) ? `${mark}${line}${mark}` : line))
     .join("\n");
 }
 

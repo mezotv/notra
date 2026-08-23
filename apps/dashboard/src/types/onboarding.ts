@@ -4,6 +4,7 @@ import type { onboardingWorkspaceSchema } from "@/schemas/onboarding/workspace";
 import type {
   GeoBrandSearchResult,
   GeoCompetitor,
+  GeoDiscoveredPrompt,
   GeoWebsiteDiscovery,
 } from "@/types/geo";
 
@@ -100,7 +101,7 @@ export interface CompetitorSearchProps {
 export interface VisibilityBrandDraft {
   companyName: string;
   aliases: readonly string[];
-  prompts: readonly string[];
+  prompts: readonly GeoDiscoveredPrompt[];
 }
 
 export interface OnboardingGeoPageProps {

@@ -206,7 +206,10 @@ export const geoOnboardingBrandInputSchema = geoOrganizationInputSchema.extend({
     GEO_MAX_ALIASES
   ),
   prompts: array(
-    string().trim().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH)
+    object({
+      prompt: string().trim().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH),
+      title: string().trim().min(1).max(GEO_GAP_TITLE_MAX_LENGTH),
+    })
   ).max(GEO_ONBOARDING_MAX_PROMPTS),
   languages: geoTrackingLanguagesSchema.optional(),
   engines: array(string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH))

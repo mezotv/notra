@@ -477,7 +477,7 @@ export interface GeoOnboardingBrandInput {
   projectId?: string;
   companyName: string;
   aliases: string[];
-  prompts: string[];
+  prompts: GeoDiscoveredPrompt[];
   languages?: string[];
   engines?: string[];
   enforceZdr?: boolean;

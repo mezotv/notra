@@ -6,6 +6,7 @@ import { Effect } from "effect";
 import {
   GEO_COMPETITOR_SUGGESTIONS_CACHE_PREFIX,
   GEO_DISCOVERY_CACHE_TTL_SECONDS,
+  GEO_GAP_TITLE_MAX_LENGTH,
   GEO_ONBOARDING_SUGGESTED_COMPETITORS,
 } from "@/constants/geo";
 import { readGeoCache, writeGeoCache } from "@/lib/geo/cache";
@@ -64,9 +65,10 @@ export const saveGeoOnboardingBrand = Effect.fn("geo.onboardingBrand")(
       })
     );
     const seen = new Set(existingPrompts.map((row) => promptKey(row.prompt)));
-    const values = input.prompts.flatMap((prompt) => {
-      const trimmed = prompt.trim();
-      const key = promptKey(trimmed);
+    const values = input.prompts.flatMap((entry) => {
+      const prompt = entry.prompt.trim();
+      const title = entry.title.trim().slice(0, GEO_GAP_TITLE_MAX_LENGTH);
+      const key = promptKey(prompt);
       if (seen.has(key)) {
         return [];
       }
@@ -76,7 +78,8 @@ export const saveGeoOnboardingBrand = Effect.fn("geo.onboardingBrand")(
           id: crypto.randomUUID(),
           organizationId,
           projectId,
-          prompt: trimmed,
+          prompt,
+          title: title.length > 0 ? title : null,
         },
       ];
     });
