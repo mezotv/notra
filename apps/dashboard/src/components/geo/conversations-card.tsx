@@ -11,6 +11,11 @@ import {
   CardTitle,
 } from "@notra/ui/components/ui/card";
 import { Switch } from "@notra/ui/components/ui/switch";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useState } from "react";
 import { Button } from "@/components/button";
 import { ConversationBuilderDialog } from "@/components/geo/conversation-builder-dialog";
@@ -83,28 +88,46 @@ export function ConversationsCard({ organizationId }: ConversationsCardProps) {
                   >
                     Edit
                   </Button>
-                  <Switch
-                    aria-label={
-                      sequence.enabled
-                        ? `Pause ${sequence.name}`
-                        : `Enable ${sequence.name}`
-                    }
-                    checked={sequence.enabled}
-                    disabled={pendingSequenceIds.has(sequence.id)}
-                    onCheckedChange={(enabled) =>
-                      updateSequence(sequence.id, { enabled })
-                    }
-                    size="sm"
-                  />
-                  <Button
-                    aria-label={`Delete ${sequence.name}`}
-                    disabled={pendingSequenceIds.has(sequence.id)}
-                    onClick={() => removeSequence(sequence.id)}
-                    size="icon"
-                    variant="ghost"
-                  >
-                    <HugeiconsIcon icon={Delete02Icon} size={14} />
-                  </Button>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Switch
+                          aria-label={
+                            sequence.enabled
+                              ? `Pause ${sequence.name}`
+                              : `Enable ${sequence.name}`
+                          }
+                          checked={sequence.enabled}
+                          disabled={pendingSequenceIds.has(sequence.id)}
+                          onCheckedChange={(enabled) =>
+                            updateSequence(sequence.id, { enabled })
+                          }
+                          size="sm"
+                        />
+                      }
+                    />
+                    <TooltipContent>
+                      {sequence.enabled
+                        ? "Included in scans"
+                        : "Paused — skipped in scans"}
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          aria-label={`Delete ${sequence.name}`}
+                          disabled={pendingSequenceIds.has(sequence.id)}
+                          onClick={() => removeSequence(sequence.id)}
+                          size="icon"
+                          variant="ghost"
+                        />
+                      }
+                    >
+                      <HugeiconsIcon icon={Delete02Icon} size={14} />
+                    </TooltipTrigger>
+                    <TooltipContent>Delete</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             ))}

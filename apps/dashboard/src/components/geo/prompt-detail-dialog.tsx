@@ -1,6 +1,10 @@
 "use client";
 
-import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowLeft01Icon,
+  ArrowRight01Icon,
+  Search01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveDialog,
@@ -9,6 +13,11 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import {
   AnimatePresence,
   LayoutGroup,
@@ -28,6 +37,7 @@ import type {
 } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import {
+  engineAnswerMode,
   formatEngineFamily,
   formatEngineWithMode,
   sharedEngineAnswerMode,
@@ -111,6 +121,9 @@ function EngineSwitcher({
           {results.map((result, index) => {
             const selected = result.engine === active.engine;
             const label = engineLabel(result.engine, answerMode);
+            const family = formatEngineFamily(result.engine);
+            const showSearchIcon =
+              answerMode === null && engineAnswerMode(result.engine) !== null;
             return (
               <button
                 aria-label={label}
@@ -137,7 +150,26 @@ function EngineSwitcher({
                 ) : null}
                 <span className="relative z-10 inline-flex items-center gap-1.5">
                   <EngineIcon className="size-3.5" engine={result.engine} />
-                  <span>{label}</span>
+                  <span className="inline-flex items-center gap-1">
+                    <span>{family}</span>
+                    {showSearchIcon ? (
+                      <Tooltip>
+                        <TooltipTrigger
+                          render={
+                            <span className="inline-flex shrink-0 cursor-default" />
+                          }
+                        >
+                          <HugeiconsIcon
+                            aria-hidden="true"
+                            className="size-3 shrink-0"
+                            icon={Search01Icon}
+                            strokeWidth={2}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>Search</TooltipContent>
+                      </Tooltip>
+                    ) : null}
+                  </span>
                 </span>
               </button>
             );

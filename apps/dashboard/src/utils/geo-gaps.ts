@@ -1,12 +1,22 @@
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
-import { GEO_GAPS_METER_STEPS, GEO_GAPS_WRITE_LABELS } from "@/constants/geo";
+import {
+  GEO_GAPS_ENGINE_FILTER_ALL,
+  GEO_GAPS_METER_STEPS,
+  GEO_GAPS_WRITE_LABELS,
+} from "@/constants/geo";
 import type {
   GeoGapsEmptyKind,
   GeoGapsMeterTone,
   GeoGapsTab,
 } from "@/types/components/geo-gaps";
-import type { GeoGapBriefRef, GeoGapWriteAction } from "@/types/geo";
-import { engineFamilyOf } from "@/utils/geo-charts";
+import type {
+  GeoGapBriefRef,
+  GeoGapWriteAction,
+  GeoPromptGapRow,
+  GeoSearchGapRow,
+} from "@/types/geo";
+import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
+import { engineFamilyLabel, engineFamilyOf } from "@/utils/geo-charts";
 
 export const REUSABLE_BRIEF_STATUSES = [
   "draft",
@@ -115,11 +125,18 @@ export function geoGapsEmptyKind({
   tab,
   hasScanData,
   isScanning,
+  hasSourceRows = false,
+  hasMatches = true,
 }: {
   tab: GeoGapsTab;
   hasScanData: boolean;
   isScanning: boolean;
+  hasSourceRows?: boolean;
+  hasMatches?: boolean;
 }): GeoGapsEmptyKind {
+  if (hasSourceRows && !hasMatches) {
+    return "no-matches";
+  }
   if (tab === "search") {
     return "no-search-gaps";
   }
@@ -130,4 +147,65 @@ export function geoGapsEmptyKind({
     return "no-scan";
   }
   return "no-prompt-gaps";
+}
+
+function gapSearchValues(row: {
+  prompt: string;
+  brief: GeoGapBriefRef | null;
+}): string[] {
+  return [row.prompt, row.brief?.workingTitle ?? ""];
+}
+
+function filterGapsByQuery<
+  T extends { prompt: string; brief: GeoGapBriefRef | null },
+>(rows: readonly T[], query: string): T[] {
+  const trimmed = query.trim();
+  const matched = rows.filter((row) =>
+    fuzzyMatches(gapSearchValues(row), trimmed)
+  );
+  if (trimmed.length === 0) {
+    return matched;
+  }
+  return matched
+    .map((row) => ({
+      row,
+      score: bestFuzzyScore(gapSearchValues(row), trimmed),
+    }))
+    .sort((left, right) => right.score - left.score)
+    .map((entry) => entry.row);
+}
+
+export function filterPromptGaps(
+  rows: readonly GeoPromptGapRow[],
+  query: string,
+  engineFamily: string
+): GeoPromptGapRow[] {
+  const byEngine =
+    engineFamily === GEO_GAPS_ENGINE_FILTER_ALL
+      ? rows
+      : rows.filter((row) =>
+          gapMissingEngineFamilies(row.engines).includes(engineFamily)
+        );
+  return filterGapsByQuery(byEngine, query);
+}
+
+export function filterSearchGaps(
+  rows: readonly GeoSearchGapRow[],
+  query: string
+): GeoSearchGapRow[] {
+  return filterGapsByQuery(rows, query);
+}
+
+export function uniqueGapEngineFamilies(
+  rows: readonly GeoPromptGapRow[]
+): string[] {
+  const seen = new Set<string>();
+  for (const row of rows) {
+    for (const family of gapMissingEngineFamilies(row.engines)) {
+      seen.add(family);
+    }
+  }
+  return [...seen].sort((left, right) =>
+    engineFamilyLabel(left).localeCompare(engineFamilyLabel(right))
+  );
 }

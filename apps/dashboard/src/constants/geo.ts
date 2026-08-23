@@ -60,6 +60,7 @@ export const GEO_WRITER_BRIEF_POLL_INTERVAL_MS = 3000;
 export const GEO_WRITER_BRIEFS_LIMIT = 20;
 export const GEO_GAPS_MAX_CHECKS = 400;
 export const GEO_GAPS_SEARCH_LIMIT = 100;
+/** Fallback before the gaps table measures remaining viewport height. */
 export const GEO_GAPS_TABLE_HEIGHT = 420;
 export const GEO_GAPS_METER_STEPS = 5;
 export const GEO_GAPS_METER_TONE_CLASS = {
@@ -96,7 +97,13 @@ export const GEO_GAPS_EMPTY = {
       "Connect Search Console on Prompts to pull queries you don't cover yet.",
     action: "Open Prompts",
   },
+  "no-matches": {
+    title: "No matching gaps",
+    description:
+      "Nothing matches these filters. Try a different search or engine.",
+  },
 } as const;
+export const GEO_GAPS_ENGINE_FILTER_ALL = "all";
 export const GEO_WRITER_TRIGGER_ID = "geo_writer";
 export const GEO_WRITER_TRIGGER_NAME = "GEO Writer";
 

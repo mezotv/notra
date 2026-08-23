@@ -13,7 +13,8 @@ export type GeoGapsEmptyKind =
   | "scanning"
   | "no-scan"
   | "no-prompt-gaps"
-  | "no-search-gaps";
+  | "no-search-gaps"
+  | "no-matches";
 
 export interface GeoGapsLogoStackItem {
   key: string;
@@ -51,6 +52,14 @@ export interface GeoGapsTabsProps {
   onTabChange: (tab: GeoGapsTab) => void;
   promptCount: number;
   searchCount: number;
+}
+
+export interface GeoGapsFiltersProps {
+  query: string;
+  onQueryChange: (value: string) => void;
+  engine: string;
+  onEngineChange: (value: string) => void;
+  engineFamilies: readonly string[];
 }
 
 export interface GeoGapsPageContentProps {

@@ -90,9 +90,12 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
   }
 
   return (
-    <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="w-full space-y-6 px-4 lg:px-6">
-        <header className="flex flex-wrap items-start justify-between gap-3">
+    <PageContainer
+      className="flex h-full min-h-full flex-1 flex-col overflow-hidden py-4 md:py-6"
+      data-geo-gaps-page=""
+    >
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-6 px-4 lg:px-6">
+        <header className="flex shrink-0 flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <h1 className="font-bold text-3xl tracking-tight">Content Gaps</h1>
             <p className="text-muted-foreground">

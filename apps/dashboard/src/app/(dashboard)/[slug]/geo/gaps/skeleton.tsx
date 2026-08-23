@@ -8,10 +8,16 @@ const GAP_ROW_COUNT = 6;
 
 export function GeoGapsSkeleton({ embedded = false }: { embedded?: boolean }) {
   const table = (
-    <div className="space-y-3">
-      <div className="flex gap-2">
-        <Skeleton className="h-8 w-32 rounded-md" />
-        <Skeleton className="h-8 w-32 rounded-md" />
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex h-8 shrink-0 flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-8 w-48 rounded-md" />
+          <Skeleton className="h-8 w-36 rounded-md" />
+        </div>
       </div>
       <GeoTableSkeleton rows={GAP_ROW_COUNT} />
     </div>
@@ -22,9 +28,12 @@ export function GeoGapsSkeleton({ embedded = false }: { embedded?: boolean }) {
   }
 
   return (
-    <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="w-full space-y-6 px-4 lg:px-6">
-        <header className="flex flex-wrap items-start justify-between gap-3">
+    <PageContainer
+      className="flex h-full min-h-full flex-1 flex-col overflow-hidden py-4 md:py-6"
+      data-geo-gaps-page=""
+    >
+      <div className="flex min-h-0 w-full flex-1 flex-col gap-6 px-4 lg:px-6">
+        <header className="flex shrink-0 flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
             <h1 className="font-bold text-3xl tracking-tight">Content Gaps</h1>
             <p className="text-muted-foreground">

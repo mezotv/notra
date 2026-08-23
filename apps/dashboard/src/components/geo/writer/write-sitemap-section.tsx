@@ -168,13 +168,7 @@ export function WriteSitemapSection({
               ? `URLs must stay on ${brandHost} or its subdomains.`
               : "Set a website on this brand identity first."}
           </p>
-        ) : (
-          <p className="text-muted-foreground text-xs">
-            {brandHost
-              ? `Adds a sitemap to ${ownerName}, scoped to ${brandHost} and its subdomains.`
-              : `Adds a sitemap to ${ownerName}. Set its website first.`}
-          </p>
-        )}
+        ) : null}
       </div>
     </div>
   );
