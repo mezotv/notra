@@ -1,6 +1,11 @@
 "use client";
 
-import { ArrowUp02Icon, AtIcon, Tick02Icon } from "@hugeicons/core-free-icons";
+import {
+  ArrowUp02Icon,
+  AtIcon,
+  StopIcon,
+  Tick02Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FEATURES } from "@notra/ai/billing/features";
 import type { ContextItem } from "@notra/ai/types/chat";
@@ -54,10 +59,9 @@ import {
 
 const ChatInput = ({
   onSend,
+  onStop,
   isLoading = false,
   disabled = false,
-  statusText,
-  completionMessage,
   selection,
   onClearSelection,
   organizationSlug,
@@ -69,6 +73,7 @@ const ChatInput = ({
   onValueChange,
   error: externalError,
   onClearError,
+  connectedTop = false,
 }: ChatInputProps) => {
   const contextPickerId = useId();
   const [isFocused, setIsFocused] = useState(false);
@@ -179,12 +184,14 @@ const ChatInput = ({
     if (!element) {
       return;
     }
-    element.style.height = "0";
+    element.style.height = "auto";
     const maxHeightRem = 12.5;
-    const maxHeightPx =
-      maxHeightRem *
-      Number.parseFloat(getComputedStyle(document.documentElement).fontSize);
-    element.style.height = `${Math.min(element.scrollHeight / Number.parseFloat(getComputedStyle(document.documentElement).fontSize), maxHeightRem)}rem`;
+    const rootFontSize = Number.parseFloat(
+      getComputedStyle(document.documentElement).fontSize
+    );
+    const maxHeightPx = maxHeightRem * rootFontSize;
+    const nextHeightPx = Math.min(element.scrollHeight, maxHeightPx);
+    element.style.height = `${nextHeightPx / rootFontSize}rem`;
     element.style.overflowY =
       element.scrollHeight > maxHeightPx ? "auto" : "hidden";
   }, []);
@@ -209,7 +216,7 @@ const ChatInput = ({
 
   const handleSend = useCallback(async () => {
     const trimmed = value.trim();
-    if (!trimmed || disabled || isLoading) {
+    if (!trimmed || disabled) {
       return;
     }
 
@@ -240,7 +247,6 @@ const ChatInput = ({
     resizeTextarea,
     value,
     disabled,
-    isLoading,
     check,
     customer,
     isUsageBlocked,
@@ -264,20 +270,27 @@ const ChatInput = ({
     [handleSend, isFocused]
   );
 
-  const isInputLocked = disabled || isLoading || isUsageBlocked;
+  const isInputLocked = disabled || isUsageBlocked;
+  const isEmpty = value.trim().length === 0;
+  const canQueue = isLoading && !isEmpty;
+  const showStop = isLoading && isEmpty && Boolean(onStop);
   let contextPickerDisabledReason: string | null = null;
-  if (isLoading) {
-    contextPickerDisabledReason =
-      "Wait for the current response before changing tools or context.";
-  } else if (isInputLocked) {
+  if (isInputLocked) {
     contextPickerDisabledReason = "Context is unavailable right now.";
   }
   const hasContextChips = context.length > 0 || Boolean(selection);
-  const statusMessage = isLoading ? statusText : (completionMessage ?? null);
   const showComposerNudge = hasContextChips || shouldShowLowCredits;
+  let sendTooltip = "Enter to send. Shift+Enter for a new line.";
+  if (showStop) {
+    sendTooltip = "Stop generating";
+  } else if (canQueue) {
+    sendTooltip =
+      "Enter to queue this message. It will send once the AI finishes.";
+  }
 
   return (
     <Composer.Frame
+      connectedTop={connectedTop}
       nudge={
         showComposerNudge ? (
           <Composer.Nudge
@@ -319,33 +332,7 @@ const ChatInput = ({
           ) : null}
         </div>
       ) : null}
-      {statusMessage ? (
-        <p className="line-clamp-1 px-3 pt-2 text-muted-foreground text-xs">
-          {statusMessage}
-        </p>
-      ) : null}
-      <div className="relative flex min-w-0 flex-col rounded-t-[13px] bg-background">
-        <div className="flex w-full min-w-0 items-center rounded-t-[12px]">
-          <div className="relative flex min-w-0 flex-1 cursor-text transition-colors [--lh:1lh]">
-            <Textarea
-              aria-label="Send a message"
-              className="max-h-50 min-h-12 w-full resize-none whitespace-pre-wrap rounded-none border-0 bg-transparent px-3 py-2 text-foreground text-sm leading-6 caret-foreground shadow-none outline-none ring-0 focus-visible:border-transparent focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={isInputLocked}
-              onBlur={() => setIsFocused(false)}
-              onChange={(event) => {
-                setValue(event.target.value);
-              }}
-              onFocus={() => setIsFocused(true)}
-              onInput={resizeTextarea}
-              placeholder={isLoading ? "AI is working..." : "Send a message..."}
-              ref={textareaRef}
-              rows={1}
-              value={value}
-            />
-          </div>
-        </div>
-      </div>
-      <Composer.Toolbar>
+      <div className="flex min-w-0 items-end gap-1 p-1.5">
         <Tooltip>
           <TooltipTrigger
             render={
@@ -354,12 +341,12 @@ const ChatInput = ({
                 <span
                   aria-disabled="true"
                   aria-label="Add tools or context"
-                  className="inline-flex cursor-not-allowed"
+                  className="inline-flex size-7 shrink-0 cursor-not-allowed items-center justify-center"
                   role="button"
                   tabIndex={0}
                 />
               ) : (
-                <span className="inline-flex" />
+                <span className="inline-flex size-7 shrink-0 items-center justify-center" />
               )
             }
           >
@@ -454,24 +441,40 @@ const ChatInput = ({
             {contextPickerDisabledReason ?? "Tools and context"}
           </TooltipContent>
         </Tooltip>
+        <Textarea
+          aria-label="Send a message"
+          className="field-sizing-fixed block max-h-50 min-h-7 w-full min-w-0 flex-1 resize-none overflow-hidden whitespace-pre-wrap rounded-none border-0 bg-transparent px-1 py-1 text-foreground text-sm leading-5 caret-foreground shadow-none outline-none ring-0 focus-visible:border-transparent focus-visible:ring-0 disabled:cursor-not-allowed disabled:bg-transparent disabled:opacity-50"
+          disabled={isInputLocked}
+          onBlur={() => setIsFocused(false)}
+          onChange={(event) => {
+            setValue(event.target.value);
+          }}
+          onFocus={() => setIsFocused(true)}
+          onInput={resizeTextarea}
+          placeholder={isLoading ? "Queue a message..." : "Send a message..."}
+          ref={textareaRef}
+          rows={1}
+          value={value}
+        />
         <Composer.Send
-          busy={isLoading}
-          disabled={isInputLocked || value.trim().length === 0}
-          label="Send message"
-          onClick={handleSend}
-          tooltip={
-            isLoading
-              ? "AI is thinking..."
-              : "Enter to send. Shift+Enter for a new line."
+          disabled={isInputLocked || (!showStop && isEmpty)}
+          label={
+            showStop
+              ? "Stop generating"
+              : canQueue
+                ? "Queue message"
+                : "Send message"
           }
+          onClick={showStop ? onStop : handleSend}
+          tooltip={sendTooltip}
         >
           <HugeiconsIcon
             className="size-4"
-            icon={ArrowUp02Icon}
+            icon={showStop ? StopIcon : ArrowUp02Icon}
             strokeWidth={2}
           />
         </Composer.Send>
-      </Composer.Toolbar>
+      </div>
     </Composer.Frame>
   );
 };

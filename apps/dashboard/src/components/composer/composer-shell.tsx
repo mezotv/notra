@@ -1,6 +1,6 @@
 "use client";
 
-import { Cancel01Icon } from "@hugeicons/core-free-icons";
+import { Cancel01Icon, Edit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Tooltip,
@@ -10,6 +10,11 @@ import {
 import type { ComponentProps } from "react";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import {
+  COMPOSER_FRAME_NUDGE_PADDING,
+  COMPOSER_FRAME_TRANSITION,
+  COMPOSER_INNER_FRAME,
+  COMPOSER_NUDGE_ENTER,
+  COMPOSER_NUDGE_GRID_TRANSITION,
   COMPOSER_SEND_BUTTON,
   COMPOSER_TOOLBAR_BUTTON,
 } from "@/constants/composer";
@@ -34,20 +39,26 @@ function ComposerFrame({
     <div
       className={cn(
         "w-full min-w-0 rounded-2xl",
-        hasNudge
-          ? "bg-muted p-1"
-          : "overflow-hidden border border-border bg-background shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none",
+        COMPOSER_FRAME_TRANSITION,
+        hasNudge ? COMPOSER_FRAME_NUDGE_PADDING : "bg-transparent p-0",
         connectedTop ? "rounded-t-none" : null,
-        connectedTop && !hasNudge ? "border-t-0" : null,
         className
       )}
     >
-      {nudge}
       <div
         className={cn(
-          hasNudge
-            ? "min-w-0 overflow-hidden rounded-xl border border-border bg-background shadow-[0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none"
-            : "min-w-0"
+          "grid",
+          COMPOSER_NUDGE_GRID_TRANSITION,
+          hasNudge ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        )}
+      >
+        <div className="min-h-0 overflow-hidden">{nudge}</div>
+      </div>
+      <div
+        className={cn(
+          COMPOSER_INNER_FRAME,
+          hasNudge ? "rounded-t-xl rounded-b-2xl" : "rounded-2xl",
+          connectedTop && !hasNudge ? "rounded-t-none border-t-0" : null
         )}
       >
         {children}
@@ -63,6 +74,7 @@ function ComposerNudge({ title, action, children }: ComposerNudgeProps) {
     <div
       className={cn(
         "flex items-center gap-2 px-2.5 pt-1 pb-1.5",
+        COMPOSER_NUDGE_ENTER,
         hasChips ? "flex-wrap" : null
       )}
     >
@@ -84,6 +96,8 @@ function ComposerChip({
   label,
   onRemove,
   removeLabel,
+  onEdit,
+  editLabel,
   onClick,
   pending = false,
 }: ComposerChipProps) {
@@ -110,6 +124,16 @@ function ComposerChip({
           <span className="max-w-[12rem] truncate">{label}</span>
         </>
       )}
+      {onEdit ? (
+        <button
+          aria-label={editLabel ?? `Edit ${label}`}
+          className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          onClick={onEdit}
+          type="button"
+        >
+          <HugeiconsIcon className="size-3" icon={Edit02Icon} />
+        </button>
+      ) : null}
       {onRemove ? (
         <button
           aria-label={removeLabel ?? `Remove ${label}`}

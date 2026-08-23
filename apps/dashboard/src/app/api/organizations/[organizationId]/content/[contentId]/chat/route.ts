@@ -5,6 +5,10 @@ import {
 } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
+import {
+  listContentChatSessions,
+  replaceContentChatHistory,
+} from "@notra/ai/chat/history";
 import { useLogger, withEvlog } from "@notra/ai/evlog";
 import {
   getGitHubIntegrationById,
@@ -29,6 +33,21 @@ import type { RouteContext } from "@/types/api/routes";
 import { enforceChatGenerationRatelimit } from "@/utils/chat-ratelimit";
 
 export const maxDuration = 60;
+
+export async function GET(
+  request: NextRequest,
+  { params }: RouteContext<{ organizationId: string; contentId: string }>
+) {
+  const { organizationId, contentId } = await params;
+  const auth = await withOrganizationAuth(request, organizationId);
+
+  if (!auth.success) {
+    return auth.response;
+  }
+
+  const sessions = await listContentChatSessions(organizationId, contentId);
+  return NextResponse.json({ sessions });
+}
 
 export const POST = withEvlog(async function POST(
   request: NextRequest,
@@ -130,6 +149,7 @@ export const POST = withEvlog(async function POST(
     }
 
     const {
+      chatId,
       messages,
       currentMarkdown,
       contentType,
@@ -137,6 +157,27 @@ export const POST = withEvlog(async function POST(
       context,
       timezone,
     } = parseResult.data;
+
+    const contentExists = await db.query.posts.findFirst({
+      where: and(
+        eq(posts.id, contentId),
+        eq(posts.organizationId, organizationId)
+      ),
+      columns: { id: true },
+    });
+    if (!contentExists) {
+      return NextResponse.json({ error: "Content not found" }, { status: 404 });
+    }
+
+    const historySaved = await replaceContentChatHistory(
+      organizationId,
+      contentId,
+      chatId,
+      messages
+    );
+    if (!historySaved) {
+      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+    }
 
     const autumnClient = autumn;
     const imageDefaults =
@@ -244,7 +285,26 @@ export const POST = withEvlog(async function POST(
     });
 
     return stream.toUIMessageStreamResponse({
+      originalMessages: messages as never,
+      generateMessageId: nanoid,
       sendReasoning: true,
+      headers: { "X-Chat-Id": chatId },
+      onFinish: async ({ messages: responseMessages }) => {
+        const saved = await replaceContentChatHistory(
+          organizationId,
+          contentId,
+          chatId,
+          responseMessages
+        );
+        if (!saved) {
+          console.warn("[Content Chat] Skipped saving response", {
+            requestId,
+            organizationId,
+            contentId,
+            chatId,
+          });
+        }
+      },
       onError: (error) => {
         console.error("[Content Chat] Stream error:", { requestId, error });
         return "An error occurred while processing your request.";

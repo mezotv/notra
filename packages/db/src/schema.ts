@@ -71,6 +71,9 @@ export const chatSessions = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    contentId: text("content_id").references(() => posts.id, {
+      onDelete: "cascade",
+    }),
     title: text("title").notNull(),
     messages: jsonb("messages").notNull().default(sql`'[]'::jsonb`),
     pinnedAt: timestamp("pinned_at"),
@@ -88,6 +91,12 @@ export const chatSessions = pgTable(
     index("chatSessions_organizationId_deletedAt_idx").on(
       table.organizationId,
       table.deletedAt
+    ),
+    index("chatSessions_org_content_deleted_updated_idx").on(
+      table.organizationId,
+      table.contentId,
+      table.deletedAt,
+      table.updatedAt
     ),
     uniqueIndex("chatSessions_org_externalChannel_uidx")
       .on(
@@ -2274,6 +2283,10 @@ export const chatSessionsRelations = relations(chatSessions, ({ one }) => ({
     fields: [chatSessions.organizationId],
     references: [organizations.id],
   }),
+  content: one(posts, {
+    fields: [chatSessions.contentId],
+    references: [posts.id],
+  }),
 }));
 
 export const chatAttachmentsRelations = relations(
@@ -2831,7 +2844,7 @@ export const postCollectionsRelations = relations(
   })
 );
 
-export const postsRelations = relations(posts, ({ one }) => ({
+export const postsRelations = relations(posts, ({ many, one }) => ({
   organization: one(organizations, {
     fields: [posts.organizationId],
     references: [organizations.id],
@@ -2840,6 +2853,7 @@ export const postsRelations = relations(posts, ({ one }) => ({
     fields: [posts.collectionId],
     references: [postCollections.id],
   }),
+  chatSessions: many(chatSessions),
 }));
 
 export const skillsRelations = relations(skills, ({ one }) => ({

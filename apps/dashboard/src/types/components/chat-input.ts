@@ -18,10 +18,9 @@ export interface ChatModelOption {
 
 export interface ChatInputProps {
   onSend?: (value: string) => void;
+  onStop?: () => void;
   isLoading?: boolean;
   disabled?: boolean;
-  statusText?: string;
-  completionMessage?: string | null;
   selection?: TextSelection | null;
   onClearSelection?: () => void;
   organizationSlug?: string;
@@ -33,6 +32,7 @@ export interface ChatInputProps {
   onValueChange?: (value: string) => void;
   error?: string | null;
   onClearError?: () => void;
+  connectedTop?: boolean;
 }
 
 export type EnabledRepo = GitHubRepository & { integrationId: string };

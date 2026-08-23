@@ -99,7 +99,8 @@ export async function isChatDeleted(
     .where(
       and(
         eq(chatSessions.id, chatId),
-        eq(chatSessions.organizationId, organizationId)
+        eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.contentId)
       )
     )
     .limit(1)
@@ -118,7 +119,8 @@ async function upsertChatSession(
   messages: UIMessage[],
   mode: "append" | "replace",
   externalChannelId?: ExternalChannelId | null,
-  expectedLastMessageId?: string
+  expectedLastMessageId?: string,
+  contentId?: string
 ) {
   if (mode === "append") {
     const insertedOrUpdated = await db
@@ -126,6 +128,7 @@ async function upsertChatSession(
       .values({
         id: chatId,
         organizationId,
+        contentId,
         title: normalizeChatTitle(getChatTitle(messages) ?? "New chat"),
         messages: sql`${JSON.stringify(messages)}::jsonb`,
         externalChannelSource: externalChannelId?.source ?? null,
@@ -138,7 +141,8 @@ async function upsertChatSession(
         },
         setWhere: and(
           eq(chatSessions.organizationId, organizationId),
-          isNull(chatSessions.deletedAt)
+          isNull(chatSessions.deletedAt),
+          isNull(chatSessions.contentId)
         ),
       })
       .returning({ id: chatSessions.id });
@@ -151,6 +155,7 @@ async function upsertChatSession(
       messages: chatSessions.messages,
       title: chatSessions.title,
       deletedAt: chatSessions.deletedAt,
+      contentId: chatSessions.contentId,
     })
     .from(chatSessions)
     .where(
@@ -163,6 +168,10 @@ async function upsertChatSession(
     .then((rows) => rows[0]);
 
   if (existingRow?.deletedAt !== undefined && existingRow.deletedAt !== null) {
+    return false;
+  }
+
+  if (existingRow && existingRow.contentId !== (contentId ?? null)) {
     return false;
   }
 
@@ -191,6 +200,9 @@ async function upsertChatSession(
           eq(chatSessions.id, chatId),
           eq(chatSessions.organizationId, organizationId),
           isNull(chatSessions.deletedAt),
+          contentId
+            ? eq(chatSessions.contentId, contentId)
+            : isNull(chatSessions.contentId),
           expectedLastMessageId
             ? sql`${chatSessions.messages}->-1->>'id' = ${expectedLastMessageId}`
             : undefined
@@ -205,6 +217,7 @@ async function upsertChatSession(
     await db.insert(chatSessions).values({
       id: chatId,
       organizationId,
+      contentId,
       title,
       messages: messages as unknown as Record<string, unknown>,
       externalChannelSource: externalChannelId?.source ?? null,
@@ -239,6 +252,7 @@ export async function appendChatMessageIfMissing(
       and(
         eq(chatSessions.id, chatId),
         eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt),
         sql`NOT (${chatSessions.messages} @> ${serializedMessageId}::jsonb)`
       )
@@ -260,6 +274,7 @@ export async function getChatMessageById(
       and(
         eq(chatSessions.id, chatId),
         eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt)
       )
     )
@@ -309,6 +324,7 @@ export async function upsertChatMessageById(
       and(
         eq(chatSessions.id, chatId),
         eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt)
       )
     )
@@ -342,6 +358,23 @@ export async function replaceChatHistory(
   );
 }
 
+export async function replaceContentChatHistory(
+  organizationId: string,
+  contentId: string,
+  chatId: string,
+  messages: UIMessage[]
+): Promise<boolean> {
+  return upsertChatSession(
+    organizationId,
+    chatId,
+    messages,
+    "replace",
+    undefined,
+    undefined,
+    contentId
+  );
+}
+
 export async function loadChatHistory(
   organizationId: string,
   chatId: string
@@ -355,7 +388,8 @@ export async function loadChatHistory(
     .where(
       and(
         eq(chatSessions.id, chatId),
-        eq(chatSessions.organizationId, organizationId)
+        eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.contentId)
       )
     )
     .limit(1)
@@ -363,6 +397,34 @@ export async function loadChatHistory(
 
   if (!row || row.deletedAt !== null) {
     return [];
+  }
+
+  return row.messages as UIMessage[];
+}
+
+export async function loadContentChatHistory(
+  organizationId: string,
+  contentId: string,
+  chatId: string
+): Promise<UIMessage[] | null> {
+  const row = await db
+    .select({
+      messages: chatSessions.messages,
+      deletedAt: chatSessions.deletedAt,
+    })
+    .from(chatSessions)
+    .where(
+      and(
+        eq(chatSessions.id, chatId),
+        eq(chatSessions.organizationId, organizationId),
+        eq(chatSessions.contentId, contentId)
+      )
+    )
+    .limit(1)
+    .then((rows) => rows[0]);
+
+  if (!row || row.deletedAt !== null) {
+    return null;
   }
 
   return row.messages as UIMessage[];
@@ -417,6 +479,7 @@ export async function getChatSession(
       and(
         eq(chatSessions.id, chatId),
         eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt)
       )
     )
@@ -491,6 +554,7 @@ export async function getChatSessionByExternalChannel(
         eq(chatSessions.organizationId, organizationId),
         eq(chatSessions.externalChannelSource, source),
         eq(chatSessions.externalChannelId, id),
+        isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt)
       )
     )
@@ -513,12 +577,31 @@ export async function listChatSessions(
     .where(
       and(
         eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt)
       )
     );
 
   const sessions = rows.map(toSessionSummary);
   return sortChatSessions(sessions);
+}
+
+export async function listContentChatSessions(
+  organizationId: string,
+  contentId: string
+): Promise<ChatSessionSummary[]> {
+  const rows = await db
+    .select()
+    .from(chatSessions)
+    .where(
+      and(
+        eq(chatSessions.organizationId, organizationId),
+        eq(chatSessions.contentId, contentId),
+        isNull(chatSessions.deletedAt)
+      )
+    );
+
+  return sortChatSessions(rows.map(toSessionSummary));
 }
 
 export async function getActiveChatStream(
@@ -702,6 +785,7 @@ export async function renameChatSession(
       and(
         eq(chatSessions.id, chatId),
         eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt)
       )
     )
@@ -727,6 +811,7 @@ export async function setChatSessionPinned(
       and(
         eq(chatSessions.id, chatId),
         eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt)
       )
     )
@@ -790,6 +875,7 @@ export async function deleteChatSession(
       and(
         eq(chatSessions.id, chatId),
         eq(chatSessions.organizationId, organizationId),
+        isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt)
       )
     )
@@ -887,6 +973,7 @@ export async function generateAndSetChatTitle(
           and(
             eq(chatSessions.id, chatId),
             eq(chatSessions.organizationId, organizationId),
+            isNull(chatSessions.contentId),
             isNull(chatSessions.deletedAt)
           )
         );
@@ -918,6 +1005,7 @@ export async function generateAndSetChatTitle(
         and(
           eq(chatSessions.id, chatId),
           eq(chatSessions.organizationId, organizationId),
+          isNull(chatSessions.contentId),
           isNull(chatSessions.deletedAt)
         )
       );

@@ -791,7 +791,7 @@ export function ChatToolBlock({
         />
       </CollapsibleTrigger>
       <ToolOutputImages images={outputImages} />
-      <CollapsibleContent className="h-[var(--collapsible-panel-height)] overflow-hidden outline-none transition-[height,opacity] duration-300 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0">
+      <CollapsibleContent className="h-[var(--collapsible-panel-height)] overflow-hidden outline-none transition-[height,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none">
         <div className="mt-3 space-y-4">
           {hasInput ? <ToolDataSection label="Input" value={input} /> : null}
           {hasOutput ? <ToolDataSection label="Output" value={output} /> : null}

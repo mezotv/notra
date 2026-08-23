@@ -1878,7 +1878,7 @@ export function ChatInputAdvanced({
                     data-empty={isEmpty ? "true" : "false"}
                     data-placeholder={
                       isLoading
-                        ? "Queue a message while AI is working..."
+                        ? "Queue a message..."
                         : "Send a message... (type @ for tools and context)"
                     }
                     onBlur={() => {
