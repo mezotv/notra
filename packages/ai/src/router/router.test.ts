@@ -550,6 +550,7 @@ describe("RoutedLanguageModel", () => {
   test("a 402 marks the gateway exhausted so later routes avoid it", async () => {
     const openrouter = createFakeAdapter({
       id: "openrouter",
+      balance: 0,
       onCall: () => {
         throw httpError(HTTP_PAYMENT_REQUIRED, "insufficient credits");
       },
@@ -565,6 +566,26 @@ describe("RoutedLanguageModel", () => {
     });
     assert.equal(next.gateway, "vercel");
     assert.equal(next.fallbackReason, "no-credits");
+  });
+
+  test("a spurious 402 heals once the balance check reports credits", async () => {
+    const openrouter = createFakeAdapter({
+      id: "openrouter",
+      onCall: () => {
+        throw httpError(HTTP_PAYMENT_REQUIRED, "insufficient credits");
+      },
+    });
+    const { router } = createTestRouter({ plans, openrouter });
+    await router
+      .model(MODEL, { organizationId: FREE_ORG })
+      .doGenerate(callOptions());
+    assert.equal(openrouter.balanceCalls, 1);
+    const next = await router.resolveRoute({
+      modelId: MODEL,
+      organizationId: FREE_ORG,
+    });
+    assert.equal(next.gateway, "openrouter");
+    assert.equal(next.fallbackReason, undefined);
   });
 });
 

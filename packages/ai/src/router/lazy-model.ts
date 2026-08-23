@@ -21,6 +21,7 @@ import {
 import type {
   FallbackReason,
   GatewayAdapter,
+  GatewayId,
   ResolvedRoute,
   RouteDecision,
   RoutedModelContext,
@@ -329,6 +330,28 @@ export class RoutedLanguageModel implements LanguageModelV3 {
     return relaxedRoute;
   }
 
+  // A single 402 marks the shared gateway account exhausted for every request
+  // in this process. Confirm with the gateway's balance endpoint so a spurious
+  // 402 heals within one round-trip instead of blocking traffic for the TTL.
+  private verifyExhaustion(gateway: GatewayId): void {
+    const adapter = this.context.adapters[gateway];
+    if (!adapter) {
+      return;
+    }
+    adapter
+      .getBalance()
+      .then(({ balance }) => {
+        this.context.credits.record(gateway, balance);
+        this.context.logger.info("ai.router.credits_verified", {
+          gateway,
+          balance,
+        });
+      })
+      .catch(() => {
+        // Verification is best effort; keep the pessimistic mark.
+      });
+  }
+
   private async tryFallbackRoute(
     route: ResolvedRoute,
     error: unknown
@@ -342,6 +365,7 @@ export class RoutedLanguageModel implements LanguageModelV3 {
     }
     if (reason === "no-credits") {
       this.context.credits.markExhausted(route.decision.gateway);
+      this.verifyExhaustion(route.decision.gateway);
     } else if (reason === "non-compliant") {
       this.context.credits.markUnavailable(route.decision.gateway, reason);
       this.context.logger.error("ai.router.zdr_rejected", {
