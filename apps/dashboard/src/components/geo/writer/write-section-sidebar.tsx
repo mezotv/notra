@@ -2,12 +2,10 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "@notra/ui/lib/utils";
-import { motion, useReducedMotion } from "motion/react";
 import {
   GEO_WRITE_DIALOG_SECTIONS,
   GEO_WRITE_PANEL_HEADER_CLASS,
   GEO_WRITE_PANEL_HEADER_ROW_CLASS,
-  GEO_WRITE_SIDEBAR_TRANSITION,
   GEO_WRITE_SIDEBAR_WIDTH,
 } from "@/constants/geo";
 import type { WriteSectionSidebarProps } from "@/types/components/geo-writer";
@@ -17,22 +15,15 @@ export function WriteSectionSidebar({
   collapsed,
   onJump,
 }: WriteSectionSidebarProps) {
-  const reducedMotion = useReducedMotion();
-
   return (
-    <motion.nav
-      animate={{
-        width: collapsed ? "0rem" : GEO_WRITE_SIDEBAR_WIDTH,
-        opacity: collapsed ? 0 : 1,
-        marginRight: collapsed ? "-0.75rem" : "0rem",
-      }}
+    <nav
       aria-hidden={collapsed}
       aria-label="Write sections"
-      className="hidden shrink-0 flex-col overflow-hidden md:flex"
-      initial={false}
-      transition={
-        reducedMotion ? { duration: 0 } : GEO_WRITE_SIDEBAR_TRANSITION
-      }
+      className={cn(
+        "hidden shrink-0 flex-col overflow-hidden transition-[width,margin-right,opacity] duration-300 ease-out will-change-[width] motion-reduce:transition-none md:flex",
+        collapsed ? "-mr-3 w-0 opacity-0" : "mr-0 opacity-100"
+      )}
+      style={{ width: collapsed ? undefined : GEO_WRITE_SIDEBAR_WIDTH }}
     >
       <div
         className="flex min-h-0 flex-1 flex-col"
@@ -76,6 +67,6 @@ export function WriteSectionSidebar({
           })}
         </div>
       </div>
-    </motion.nav>
+    </nav>
   );
 }

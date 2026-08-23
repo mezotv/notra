@@ -701,9 +701,11 @@ export default function PageClient({
     },
   });
 
-  messagesRef.current = messages;
   const isAgentBusy = status === "streaming" || status === "submitted";
-  isAgentBusyRef.current = isAgentBusy;
+  useLayoutEffect(() => {
+    messagesRef.current = messages;
+    isAgentBusyRef.current = isAgentBusy;
+  }, [messages, isAgentBusy]);
 
   useLayoutEffect(() => {
     if (chatIdToHydrate !== activeChatId) {
@@ -914,19 +916,17 @@ export default function PageClient({
       setIsActivityPanelOpen(true);
       const attachments = snapshotContentChatAttachments(selection, context);
       if (isAgentBusyRef.current) {
-        setQueuedMessages((prev) => {
-          const next = [
-            ...prev,
-            {
-              id: nanoid(10),
-              text: instruction,
-              selection: attachments.selection,
-              context: attachments.context,
-            },
-          ];
-          queuedMessagesRef.current = next;
-          return next;
-        });
+        const next = [
+          ...queuedMessagesRef.current,
+          {
+            id: nanoid(10),
+            text: instruction,
+            selection: attachments.selection,
+            context: attachments.context,
+          },
+        ];
+        queuedMessagesRef.current = next;
+        setQueuedMessages(next);
         return;
       }
       wasStoppedByUserRef.current = false;
@@ -942,19 +942,19 @@ export default function PageClient({
   }, [stop]);
 
   const handleRemoveQueued = useCallback((id: string) => {
-    setQueuedMessages((prev) => {
-      const next = prev.filter((message) => message.id !== id);
-      queuedMessagesRef.current = next;
-      return next;
-    });
+    const next = queuedMessagesRef.current.filter(
+      (message) => message.id !== id
+    );
+    queuedMessagesRef.current = next;
+    setQueuedMessages(next);
   }, []);
 
   const handleEditQueued = useCallback((message: QueuedMessage) => {
-    setQueuedMessages((prev) => {
-      const next = prev.filter((queued) => queued.id !== message.id);
-      queuedMessagesRef.current = next;
-      return next;
-    });
+    const next = queuedMessagesRef.current.filter(
+      (queued) => queued.id !== message.id
+    );
+    queuedMessagesRef.current = next;
+    setQueuedMessages(next);
     setChatInputValue(message.text);
     if (message.selection) {
       setSelection(message.selection);
@@ -964,8 +964,7 @@ export default function PageClient({
     }
   }, []);
 
-  queuedMessagesRef.current = queuedMessages;
-  drainQueueRef.current = () => {
+  const drainQueue = useCallback(() => {
     if (isDrainingRef.current) {
       return;
     }
@@ -984,13 +983,15 @@ export default function PageClient({
     }).catch((error) => {
       console.error("[Content] Failed to drain queued message:", error);
       isDrainingRef.current = false;
-      setQueuedMessages((prev) => {
-        const restored = [next, ...prev];
-        queuedMessagesRef.current = restored;
-        return restored;
-      });
+      const restored = [next, ...queuedMessagesRef.current];
+      queuedMessagesRef.current = restored;
+      setQueuedMessages(restored);
     });
-  };
+  }, [dispatchContentEdit]);
+
+  useLayoutEffect(() => {
+    drainQueueRef.current = drainQueue;
+  }, [drainQueue]);
 
   const saveBarSection =
     hasChanges && isActivityPanelOpen ? (

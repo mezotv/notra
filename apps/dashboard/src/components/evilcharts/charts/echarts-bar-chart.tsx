@@ -23,6 +23,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -1553,6 +1554,45 @@ type LiveState = {
   patchStrippedCaps: () => void;
 };
 
+function createInitialLiveState(): LiveState {
+  return ({
+    resolved: null,
+    hasRevealed: false,
+    revealEndsAt: 0,
+    valuePxPerUnit: null,
+    barWidthPx: null,
+    expand: { key: null, hovered: null, progress: new Map<number, number>() },
+    expandRaf: 0,
+    animateExpand: () => {},
+    loadingRows: null,
+    categories: [],
+    dataLength: 0,
+    brushRange: { start: 0, end: 100 },
+    brushGeom: null,
+    brushOverlay: null,
+    brushHover: { inside: false, left: false, right: false },
+    handlers: {
+      onBrushChange: undefined, // set per-render from the <Brush> child's onChange
+      clickableKeys: new Set<string>(),
+      brushFormatLabel: undefined, // set per-render from the <Brush> child's formatLabel
+      seriesKeys: [],
+      hasStripped: false,
+      hasBlocks: false,
+      hasStackGap: false,
+      expandableKey: null,
+      isHorizontal: false,
+      enableHoverHighlight: false,
+      selectedDataKey: null,
+    },
+    applyHoverKey: () => {},
+    hoveredKey: null,
+    hoverClearRaf: 0,
+    repush: () => {},
+    patchStrippedCaps: () => {},
+  });
+}
+
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Component
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1599,41 +1639,12 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
 
   // The single imperative surface (see LiveState). Its object identity is stable
   // for the component's lifetime, while field updates remain non-rendering.
-  const [live] = useState<LiveState>(() => ({
-    resolved: null,
-    hasRevealed: false,
-    revealEndsAt: 0,
-    valuePxPerUnit: null,
-    barWidthPx: null,
-    expand: { key: null, hovered: null, progress: new Map<number, number>() },
-    expandRaf: 0,
-    animateExpand: () => {},
-    loadingRows: null,
-    categories: [],
-    dataLength: 0,
-    brushRange: { start: 0, end: 100 },
-    brushGeom: null,
-    brushOverlay: null,
-    brushHover: { inside: false, left: false, right: false },
-    handlers: {
-      onBrushChange: undefined, // set per-render from the <Brush> child's onChange
-      clickableKeys: new Set<string>(),
-      brushFormatLabel: undefined, // set per-render from the <Brush> child's formatLabel
-      seriesKeys: [],
-      hasStripped: false,
-      hasBlocks: false,
-      hasStackGap: false,
-      expandableKey: null,
-      isHorizontal: false,
-      enableHoverHighlight: false,
-      selectedDataKey: null,
-    },
-    applyHoverKey: () => {},
-    hoveredKey: null,
-    hoverClearRaf: 0,
-    repush: () => {},
-    patchStrippedCaps: () => {},
-  }));
+  // Lazy ref init per the React docs pattern: guarded so the object is built once.
+  const liveRef = useRef<LiveState | null>(null);
+  if (liveRef.current === null) {
+    liveRef.current = createInitialLiveState();
+  }
+  const live = liveRef.current;
 
   // Skeleton rows roll lazily on first use — an impure useRef initializer would
   // re-roll Math.random() on every render.
@@ -1727,24 +1738,27 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     !isLoading && bars.some((bar) => bar.variant === "stripped");
 
   // Refresh the handlers' snapshot of the latest callbacks/flags every render.
-  live.handlers = {
-    onBrushChange: brushSlot.onChange,
-    clickableKeys,
-    brushFormatLabel: brushSlot.formatLabel,
-    seriesKeys,
-    hasStripped: hasStrippedBars,
-    hasBlocks: bars.some((bar) => bar.variant === "blocks"),
-    hasStackGap:
-      (stackType === "stacked" || stackType === "percent") && bars.length > 1,
-    expandableKey:
-      bars.find((bar) => bar.variant === "expandable")?.dataKey ?? null,
-    barCategoryGap,
-    isHorizontal,
-    enableHoverHighlight: bars.some((bar) => bar.enableHoverHighlight),
-    selectedDataKey,
-    onHoverChange,
-  };
-  live.dataLength = data.length;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs after every render to snapshot the latest values.
+  useLayoutEffect(() => {
+    live.handlers = {
+      onBrushChange: brushSlot.onChange,
+      clickableKeys,
+      brushFormatLabel: brushSlot.formatLabel,
+      seriesKeys,
+      hasStripped: hasStrippedBars,
+      hasBlocks: bars.some((bar) => bar.variant === "blocks"),
+      hasStackGap:
+        (stackType === "stacked" || stackType === "percent") && bars.length > 1,
+      expandableKey:
+        bars.find((bar) => bar.variant === "expandable")?.dataKey ?? null,
+      barCategoryGap,
+      isHorizontal,
+      enableHoverHighlight: bars.some((bar) => bar.enableHoverHighlight),
+      selectedDataKey,
+      onHoverChange,
+    };
+    live.dataLength = data.length;
+  });
 
   const toggleSelection = useCallback(
     (key: string) => {
@@ -1945,32 +1959,32 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     // matching what the tooltip already does. Registered ONCE here rather than in
     // the sync effect, which re-runs on every prop/theme change and would stack
     // duplicate listeners; it calls through live.animateExpand, always the current one.
-    chart
-      .getZr()
-      .on("mousemove", (event: { offsetX: number; offsetY: number }) => {
-        const { expandableKey } = live.handlers;
-        if (!expandableKey) return;
-        const point = [event.offsetX, event.offsetY];
-        if (!chart.containPixel({ gridIndex: 0 }, point)) {
-          live.animateExpand(expandableKey, null);
-          return;
-        }
-        // A grid finder returns [xValue, yValue]; on a category axis the x value IS
-        // the index. An xAxisIndex finder returns null for a 2D point.
-        const converted = chart.convertFromPixel({ gridIndex: 0 }, point);
-        const index = Array.isArray(converted) ? converted[0] : converted;
-        live.animateExpand(
-          expandableKey,
-          typeof index === "number" ? Math.round(index) : null
-        );
-      });
-    chart.getZr().on("globalout", () => {
+    const onExpandMove = (event: { offsetX: number; offsetY: number }) => {
+      const { expandableKey } = live.handlers;
+      if (!expandableKey) return;
+      const point = [event.offsetX, event.offsetY];
+      if (!chart.containPixel({ gridIndex: 0 }, point)) {
+        live.animateExpand(expandableKey, null);
+        return;
+      }
+      // A grid finder returns [xValue, yValue]; on a category axis the x value IS
+      // the index. An xAxisIndex finder returns null for a 2D point.
+      const converted = chart.convertFromPixel({ gridIndex: 0 }, point);
+      const index = Array.isArray(converted) ? converted[0] : converted;
+      live.animateExpand(
+        expandableKey,
+        typeof index === "number" ? Math.round(index) : null
+      );
+    };
+    const onExpandOut = () => {
       const { expandableKey } = live.handlers;
       if (expandableKey) live.animateExpand(expandableKey, null);
       if (live.handlers.enableHoverHighlight) {
         live.applyHoverKey(null);
       }
-    });
+    };
+    chart.getZr().on("mousemove", onExpandMove);
+    chart.getZr().on("globalout", onExpandOut);
 
     chart.on("mouseover", (params) => {
       if (!live.handlers.enableHoverHighlight) {
@@ -2106,8 +2120,15 @@ export function EChartsBarChart<TData extends Record<string, unknown>>({
     zr.on("globalout", onZrOut);
 
     return () => {
+      zr.off("mousemove", onExpandMove);
+      zr.off("globalout", onExpandOut);
       zr.off("mousemove", onZrMove);
       zr.off("globalout", onZrOut);
+      chart.off("mouseover");
+      chart.off("mouseout");
+      chart.off("click");
+      chart.off("datazoom");
+      chart.off("finished");
       resizeObserver.disconnect();
       themeObserver.disconnect();
       chart.dispose();

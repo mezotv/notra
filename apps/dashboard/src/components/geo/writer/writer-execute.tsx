@@ -8,7 +8,7 @@ import {
   AlertTitle,
 } from "@notra/ui/components/ui/alert";
 import { Button } from "@notra/ui/components/ui/button";
-import { createContext, use, useEffect, useRef } from "react";
+import { createContext, use, useEffect, useLayoutEffect, useRef } from "react";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import {
   useGeoWriterBrief,
@@ -53,7 +53,9 @@ function WriterExecuteProvider({
   const isBusy = isStarting || status === "writing" || status === "approved";
 
   const onArticleReadyRef = useRef(onArticleReady);
-  onArticleReadyRef.current = onArticleReady;
+  useLayoutEffect(() => {
+    onArticleReadyRef.current = onArticleReady;
+  }, [onArticleReady]);
   const notifiedCompletionRef = useRef(false);
 
   useEffect(() => {

@@ -1,16 +1,14 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export function useAnimatedSize() {
-  const observerRef = useRef<ResizeObserver | null>(null);
+  const [element, setElement] = useState<HTMLElement | null>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(
     null
   );
 
-  const ref = useCallback((element: HTMLElement | null) => {
-    observerRef.current?.disconnect();
-    observerRef.current = null;
+  useEffect(() => {
     if (!element) {
       setSize(null);
       return;
@@ -19,8 +17,10 @@ export function useAnimatedSize() {
       setSize({ width: element.offsetWidth, height: element.offsetHeight });
     });
     observer.observe(element);
-    observerRef.current = observer;
-  }, []);
+    return () => {
+      observer.disconnect();
+    };
+  }, [element]);
 
-  return { ref, size };
+  return { ref: setElement, size };
 }

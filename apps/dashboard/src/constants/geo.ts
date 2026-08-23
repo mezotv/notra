@@ -139,11 +139,6 @@ export const GEO_WRITE_PANEL_FOOTER_CLASS =
   "-mt-5 overflow-hidden rounded-b-2xl border border-border border-t-0 bg-muted pt-5";
 export const GEO_WRITE_PANEL_FOOTER_ROW_CLASS = "flex min-h-12 items-center";
 export const GEO_WRITE_SIDEBAR_WIDTH = "13rem";
-export const GEO_WRITE_SIDEBAR_TRANSITION = {
-  duration: 0.28,
-  ease: [0.22, 1, 0.36, 1],
-} as const;
-
 export const GEO_WRITE_DIALOG_SECTIONS = [
   {
     id: "prompt" as const,
