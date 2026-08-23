@@ -1,7 +1,7 @@
 "use client";
 
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { DiffView } from "@/components/content/diff-view";
 import { blogEditorTheme } from "@/components/content/editor/blog-editor-theme";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
@@ -18,6 +18,15 @@ const VIEW_LABELS: Record<ContentEditorView, string> = {
   markdown: "Markdown",
   diff: "Diff",
 };
+
+function fitTextareaHeight(element: HTMLTextAreaElement | null) {
+  if (!element) {
+    return;
+  }
+
+  element.style.height = "0px";
+  element.style.height = `${element.scrollHeight}px`;
+}
 
 export function BlogEditor({
   content,
@@ -39,6 +48,24 @@ export function BlogEditor({
   const currentMarkdown = state.editedMarkdown ?? content.markdown ?? "";
   const title = state.editingTitle ?? state.serverTitle;
   const slug = state.editingSlug ?? state.serverSlug ?? "";
+
+  useLayoutEffect(() => {
+    fitTextareaHeight(titleInputRef.current);
+  }, [title]);
+
+  useLayoutEffect(() => {
+    fitTextareaHeight(slugInputRef.current);
+  }, [slug]);
+
+  useEffect(() => {
+    const resizeTextareas = () => {
+      fitTextareaHeight(titleInputRef.current);
+      fitTextareaHeight(slugInputRef.current);
+    };
+
+    window.addEventListener("resize", resizeTextareas);
+    return () => window.removeEventListener("resize", resizeTextareas);
+  }, []);
 
   const handleTextareaSelect = useCallback(() => {
     const textarea = textareaRef.current;
@@ -75,7 +102,7 @@ export function BlogEditor({
     <div className="w-full">
       <textarea
         aria-label="Post title"
-        className="field-sizing-content block w-full resize-none overflow-hidden bg-transparent font-semibold text-3xl leading-tight tracking-tight outline-none placeholder:text-muted-foreground/40 focus:ring-0 md:text-4xl"
+        className="block h-auto min-h-0 w-full resize-none overflow-hidden bg-transparent p-0 font-semibold text-3xl leading-tight tracking-tight outline-none placeholder:text-muted-foreground/40 focus:ring-0 md:text-4xl"
         onChange={(e) => actions.setEditingTitle(e.target.value)}
         onFocus={(e) => {
           if (state.editingTitle === null) {
@@ -102,7 +129,7 @@ export function BlogEditor({
         <span className="shrink-0 leading-5">/</span>
         <textarea
           aria-label="Post slug"
-          className="field-sizing-content min-w-0 flex-1 resize-none overflow-hidden break-all bg-transparent leading-5 outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus:ring-0"
+          className="min-h-0 min-w-0 flex-1 resize-none overflow-hidden break-all bg-transparent p-0 leading-5 outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus:ring-0"
           onBlur={() => {
             if (state.editingSlug !== null) {
               actions.setEditingSlug(state.editingSlug.replace(/^-+|-+$/g, ""));
