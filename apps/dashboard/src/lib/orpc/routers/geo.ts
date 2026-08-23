@@ -76,6 +76,10 @@ import {
   planGeoContentBrief,
 } from "@/lib/geo/writer";
 import {
+  getGeoIngestTokenGeneration,
+  rotateGeoIngestTokenGeneration,
+} from "@/lib/geo-ingest/generation";
+import {
   buildGeoAppUrl,
   buildGeoIngestUrl,
   buildGeoSnippets,
@@ -135,6 +139,20 @@ import { ratelimit } from "@/utils/ratelimit";
 interface GeoHandlerOptions<TInput> {
   context: { headers: Headers; user?: AuthenticatedUser };
   input: TInput;
+}
+
+async function buildGeoIngestSetupResponse(
+  organizationId: string,
+  projectId: string | undefined
+): Promise<GeoIngestSetupResponse> {
+  const generation = (await getGeoIngestTokenGeneration(organizationId)) ?? 1;
+  const snippets = buildGeoSnippets(buildGeoAppUrl());
+  return {
+    ingestUrl: buildGeoIngestUrl(),
+    token: buildGeoIngestToken(organizationId, projectId, generation) ?? "",
+    snippet: snippets.next,
+    snippets,
+  };
 }
 
 function geoHandler<
@@ -380,13 +398,31 @@ export const geoRouter = {
         user: context.user,
       });
 
-      const snippets = buildGeoSnippets(buildGeoAppUrl());
-      return {
-        ingestUrl: buildGeoIngestUrl(),
-        token: buildGeoIngestToken(input.organizationId, input.projectId) ?? "",
-        snippet: snippets.next,
-        snippets,
-      };
+      return await buildGeoIngestSetupResponse(
+        input.organizationId,
+        input.projectId
+      );
+    }),
+  ingestTokenRotate: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async ({ context, input }): Promise<GeoIngestSetupResponse> => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const generation = await rotateGeoIngestTokenGeneration(
+        input.organizationId
+      );
+      if (generation === null) {
+        throw notFound("Organization not found");
+      }
+
+      return await buildGeoIngestSetupResponse(
+        input.organizationId,
+        input.projectId
+      );
     }),
   promptsList: authorizedProcedure
     .input(geoOrganizationInputSchema)

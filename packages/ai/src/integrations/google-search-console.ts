@@ -217,6 +217,23 @@ export async function upsertGscIntegration(
   const encryptedAccessToken = encryptToken(params.accessToken);
   const encryptedRefreshToken = encryptToken(params.refreshToken);
 
+  // Tear the old account's schedule down before the upsert clears its id: if
+  // QStash deletion fails, keeping the (deterministic, per-organization) id on
+  // the row lets the next site selection reuse or replace the schedule instead
+  // of orphaning one that keeps firing.
+  let oldScheduleDeleted = true;
+  if (googleAccountChanged && existing) {
+    await revokeGscToken(existing);
+    if (existing.qstashScheduleId) {
+      try {
+        await deleteQstashSchedule(existing.qstashScheduleId);
+      } catch (error) {
+        console.error("[GSC] Failed to delete QStash schedule:", error);
+        oldScheduleDeleted = false;
+      }
+    }
+  }
+
   const [row] = await db
     .insert(googleSearchConsoleIntegrations)
     .values({
@@ -241,7 +258,10 @@ export async function upsertGscIntegration(
         status: "active",
         lastError: null,
         ...(googleAccountChanged
-          ? { siteUrl: null, qstashScheduleId: null }
+          ? {
+              siteUrl: null,
+              ...(oldScheduleDeleted ? { qstashScheduleId: null } : {}),
+            }
           : {}),
       },
     })
@@ -249,17 +269,6 @@ export async function upsertGscIntegration(
 
   if (!row) {
     throw new Error("Failed to save Google Search Console integration");
-  }
-
-  if (googleAccountChanged && existing) {
-    await revokeGscToken(existing);
-    if (existing.qstashScheduleId) {
-      try {
-        await deleteQstashSchedule(existing.qstashScheduleId);
-      } catch (error) {
-        console.error("[GSC] Failed to delete QStash schedule:", error);
-      }
-    }
   }
 
   return row;

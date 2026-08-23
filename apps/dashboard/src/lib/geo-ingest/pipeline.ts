@@ -14,6 +14,7 @@ import {
   GeoIngestUnparseableUrlError,
 } from "@/lib/geo-ingest/errors";
 import { buildGeoTrafficEvent, toCapturedDate } from "@/lib/geo-ingest/event";
+import { isGeoIngestIdentityActive } from "@/lib/geo-ingest/identity";
 import { resolveJourneyId } from "@/lib/geo-ingest/journey";
 import { verifyGeoIngestToken } from "@/lib/geo-ingest/token";
 import { geoRequestPayloadSchema } from "@/schemas/geo";
@@ -34,6 +35,13 @@ const authenticate = Effect.fn("geoIngest.authenticate")(function* (
 
   const identity = verifyGeoIngestToken(token);
   if (!identity) {
+    return yield* Effect.fail(new GeoIngestInvalidTokenError({}));
+  }
+
+  const active = yield* Effect.promise(() =>
+    isGeoIngestIdentityActive(identity)
+  );
+  if (!active) {
     return yield* Effect.fail(new GeoIngestInvalidTokenError({}));
   }
 

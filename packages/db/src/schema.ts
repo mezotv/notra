@@ -205,6 +205,9 @@ export const organizations = pgTable(
     metadata: text("metadata"),
     heardAboutNotraSource: text("heard_about_notra_source"),
     heardAboutNotraOther: text("heard_about_notra_other"),
+    geoIngestTokenGeneration: integer("geo_ingest_token_generation")
+      .notNull()
+      .default(1),
     onboardingCompleted: boolean("onboarding_completed")
       .default(false)
       .notNull(),

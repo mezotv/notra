@@ -607,6 +607,32 @@ export function useGeoIngestSetup(organizationId: string) {
   });
 }
 
+export function useGeoIngestTokenRotate(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (): Promise<GeoIngestSetupResponse> =>
+      dashboardOrpc.geo.ingestTokenRotate.call({ organizationId, projectId }),
+    onSuccess: async (setup) => {
+      queryClient.setQueryData(
+        dashboardOrpc.geo.ingestSetup.queryKey({
+          input: { organizationId, projectId },
+        }),
+        setup
+      );
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.ingestSetup.queryKey({
+          input: { organizationId, projectId },
+        }),
+      });
+      toast.success("Tracking token rotated");
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to rotate the token"));
+    },
+  });
+}
+
 export function useGeoProjects(organizationId: string) {
   return useQuery<GeoProjectsResponse>({
     ...dashboardOrpc.geo.projectsList.queryOptions({

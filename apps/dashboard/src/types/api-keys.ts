@@ -39,6 +39,10 @@ export interface ApiKeyScopeGroup {
   levels: ApiKeyScopeLevel[];
 }
 
+export interface TrackingTokenCardProps {
+  organizationId: string;
+}
+
 export interface ApiKeyRevealFieldProps {
   value: string;
   className?: string;

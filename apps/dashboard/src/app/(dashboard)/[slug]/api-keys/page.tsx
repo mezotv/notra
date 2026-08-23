@@ -88,6 +88,7 @@ import {
 import { toast } from "sonner";
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { ApiKeyPermissionSelector } from "@/components/api-keys/permission-selector";
+import { TrackingTokenCard } from "@/components/api-keys/tracking-token-card";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -1055,6 +1056,10 @@ export default function ApiKeysPage() {
         />
 
         <ApiKeyQuickStart onSelect={handlePresetSelect} />
+
+        {organizationId ? (
+          <TrackingTokenCard organizationId={organizationId} />
+        ) : null}
       </div>
 
       <CreateApiKeyDialog

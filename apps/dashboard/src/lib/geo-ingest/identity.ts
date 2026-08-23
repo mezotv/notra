@@ -1,0 +1,82 @@
+import { redis } from "@notra/ai/utils/redis";
+import { db } from "@notra/db/drizzle";
+import { projects } from "@notra/db/schema";
+import { and, eq } from "drizzle-orm";
+import {
+  GEO_INGEST_IDENTITY_ACTIVE_TTL_SECONDS,
+  GEO_INGEST_IDENTITY_CACHE_PREFIX,
+  GEO_INGEST_IDENTITY_INACTIVE_TTL_SECONDS,
+} from "@/constants/geo";
+import { getGeoIngestTokenGeneration } from "@/lib/geo-ingest/generation";
+import type { GeoIngestIdentity } from "@/types/geo";
+
+function identityCacheKey(identity: GeoIngestIdentity): string {
+  return `${GEO_INGEST_IDENTITY_CACHE_PREFIX}:${identity.organizationId}:${identity.projectId ?? "-"}`;
+}
+
+async function lookupProject(identity: GeoIngestIdentity): Promise<boolean> {
+  if (!identity.projectId) {
+    return true;
+  }
+  const project = await db.query.projects.findFirst({
+    columns: { id: true },
+    where: and(
+      eq(projects.id, identity.projectId),
+      eq(projects.organizationId, identity.organizationId)
+    ),
+  });
+  return project !== undefined;
+}
+
+/**
+ * A valid signature is not enough: the token's generation must match the
+ * organization's current one (rotation revokes older generations), and the
+ * organization (and project, when the token is project-scoped) must still
+ * exist so leaked tokens die with the resources they were minted for. Lookups
+ * are cached briefly and fail open on infrastructure errors so an outage
+ * never drops real traffic.
+ */
+export async function isGeoIngestIdentityActive(
+  identity: GeoIngestIdentity
+): Promise<boolean> {
+  try {
+    const generation = await getGeoIngestTokenGeneration(
+      identity.organizationId
+    );
+    if (generation === null || generation !== identity.generation) {
+      return false;
+    }
+  } catch {
+    return true;
+  }
+
+  const key = identityCacheKey(identity);
+  const client = redis;
+  if (client) {
+    const cached = await client.get<string>(key).catch(() => null);
+    if (cached === "1") {
+      return true;
+    }
+    if (cached === "0") {
+      return false;
+    }
+  }
+
+  let active: boolean;
+  try {
+    active = await lookupProject(identity);
+  } catch {
+    return true;
+  }
+
+  if (client) {
+    await client
+      .set(key, active ? "1" : "0", {
+        ex: active
+          ? GEO_INGEST_IDENTITY_ACTIVE_TTL_SECONDS
+          : GEO_INGEST_IDENTITY_INACTIVE_TTL_SECONDS,
+      })
+      .catch(() => null);
+  }
+  return active;
+}

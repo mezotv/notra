@@ -1,0 +1,1 @@
+ALTER TABLE "organizations" ADD COLUMN "geo_ingest_token_generation" integer DEFAULT 1 NOT NULL;

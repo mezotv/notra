@@ -48,6 +48,7 @@ export interface GeoScopeInput {
 export interface GeoIngestIdentity {
   organizationId: string;
   projectId: string | null;
+  generation: number;
 }
 
 export interface GeoProjectContextValue {
