@@ -1,5 +1,4 @@
 import {
-  deleteRepoImageSnapshot,
   type generateRepoImage,
   RepoImageError,
 } from "@notra/ai/agents/repo-image";

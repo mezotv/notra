@@ -1,10 +1,6 @@
 import { Body, Head, Html, Link, Preview, Text } from "@react-email/components";
 
-import { EMAIL_CONFIG } from "../utils/config";
-
 export const WelcomeEmail = () => {
-  const appUrl = EMAIL_CONFIG.getAppUrl();
-
   return (
     <Html>
       <Head />

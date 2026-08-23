@@ -203,29 +203,6 @@ export const socialPostSources = defineDatasource("social_post_sources", {
   }),
 });
 
-export const geoMentionChecks = defineDatasource("geo_mention_checks", {
-  description:
-    "AI engine mention checks: one row per prompt x engine per scan, with extracted mention data",
-  schema: {
-    organization_id: t.string(),
-    scan_id: t.string(),
-    engine: t.string().lowCardinality(),
-    prompt_id: t.string().lowCardinality(),
-    prompt: t.string(),
-    captured_at: t.dateTime(),
-    mentioned: t.bool(),
-    position: t.uint64().nullable(),
-    sentiment: t.string().lowCardinality().nullable(),
-    competitors: t.array(t.string()).jsonPath("$.competitors[:]"),
-    excerpt: t.string(),
-    language: t.string().lowCardinality(),
-  },
-  engine: engine.mergeTree({
-    sortingKey: ["organization_id", "engine", "prompt_id", "captured_at"],
-    partitionKey: "toYYYYMM(captured_at)",
-  }),
-});
-
 export const modelUsageShare = defineDatasource("model_usage_share", {
   description:
     "Industry-wide AI model usage snapshots. Intentionally has no organization_id: model usage share is global market data, identical for every organization",
@@ -268,6 +245,7 @@ export const geoTrafficEvents = defineDatasource("geo_traffic_events", {
     "Append-only log of every request captured by the geo SDK, classified into AI crawlers, AI assistant referrals and humans",
   schema: {
     organization_id: t.string(),
+    project_id: t.string().lowCardinality(),
     captured_at: t.dateTime(),
     visitor_type: t.string().lowCardinality(),
     source: t.string().lowCardinality(),
@@ -299,6 +277,7 @@ export const geoTrafficDaily = defineDatasource("geo_traffic_daily", {
   schema: {
     day: t.date(),
     organization_id: t.string(),
+    project_id: t.string().lowCardinality(),
     visitor_type: t.string().lowCardinality(),
     source: t.string().lowCardinality(),
     visits_state: t.aggregateFunction("count"),
@@ -310,7 +289,13 @@ export const geoTrafficDaily = defineDatasource("geo_traffic_daily", {
     confidence_state: t.aggregateFunction("any", t.string().lowCardinality()),
   },
   engine: engine.aggregatingMergeTree({
-    sortingKey: ["organization_id", "visitor_type", "source", "day"],
+    sortingKey: [
+      "organization_id",
+      "project_id",
+      "visitor_type",
+      "source",
+      "day",
+    ],
     partitionKey: "toYYYYMM(day)",
   }),
   jsonPaths: false,
@@ -324,6 +309,7 @@ export const geoTrafficPagesDaily = defineDatasource(
     schema: {
       day: t.date(),
       organization_id: t.string(),
+      project_id: t.string().lowCardinality(),
       visitor_type: t.string().lowCardinality(),
       source: t.string().lowCardinality(),
       path: t.string(),
@@ -331,7 +317,14 @@ export const geoTrafficPagesDaily = defineDatasource(
       last_seen_state: t.aggregateFunction("max", t.dateTime()),
     },
     engine: engine.aggregatingMergeTree({
-      sortingKey: ["organization_id", "visitor_type", "source", "day", "path"],
+      sortingKey: [
+        "organization_id",
+        "project_id",
+        "visitor_type",
+        "source",
+        "day",
+        "path",
+      ],
       partitionKey: "toYYYYMM(day)",
     }),
     jsonPaths: false,
@@ -343,7 +336,6 @@ export type SocialAccountStatsRow = InferRow<typeof socialAccountStats>;
 export type SocialPostRow = InferRow<typeof socialPosts>;
 export type SocialPostStatsRow = InferRow<typeof socialPostStats>;
 export type SocialPostSourceRow = InferRow<typeof socialPostSources>;
-export type GeoMentionCheckRow = InferRow<typeof geoMentionChecks>;
 export type ModelUsageShareRow = InferRow<typeof modelUsageShare>;
 export type AiTrafficEventRow = InferRow<typeof aiTrafficEvents>;
 export type GeoTrafficEventRow = InferRow<typeof geoTrafficEvents>;

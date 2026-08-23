@@ -100,10 +100,38 @@ export function createCreatePostTool(
       throw new Error("Post collection is required to create a post.");
     }
 
+    if (config.targetPostId) {
+      const { status } = await updatePostRecord({
+        organizationId: config.organizationId,
+        postId: config.targetPostId,
+        title: input.title,
+        slug: withSlug ? (input.slug ?? null) : undefined,
+        markdown: input.markdown,
+        recommendations: input.recommendations ?? null,
+      });
+      if (status === "not_found") {
+        throw new Error("The draft post to update was not found.");
+      }
+      result.posts ??= [];
+      result.posts.push({
+        postId: config.targetPostId,
+        title: input.title,
+        recommendations: input.recommendations ?? null,
+      });
+      result.postId ??= config.targetPostId;
+      result.title ??= input.title;
+      return {
+        postId: config.targetPostId,
+        status,
+        totalCreated: result.posts.length,
+      };
+    }
+
     const { postId } = await createPostRecord({
       organizationId: config.organizationId,
       collectionId: config.collectionId,
       contentType,
+      contentSubtype: config.contentSubtype ?? null,
       title: input.title,
       slug: withSlug ? (input.slug ?? null) : null,
       markdown: input.markdown,

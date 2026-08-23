@@ -60,6 +60,7 @@ export function createMarkdownTools(context: EditMarkdownContext) {
       try {
         console.log("[editMarkdown] Received:", JSON.stringify(operations));
 
+        const previousMarkdown = currentLines.join("\n");
         const sortedOps = [...operations].sort(
           (a, b) => getOperationLineNumber(b) - getOperationLineNumber(a)
         );
@@ -76,6 +77,8 @@ export function createMarkdownTools(context: EditMarkdownContext) {
         return {
           success: true,
           lineCount: currentLines.length,
+          filename: context.filename ?? "document.md",
+          previousMarkdown,
           updatedMarkdown,
         };
       } catch (err) {

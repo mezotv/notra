@@ -1,5 +1,5 @@
 import { AGENT_DEFAULT_MODEL } from "@notra/ai/constants/models";
-import { assertGatewayHasCredits } from "@notra/ai/gateway";
+import { assertRouteHasCredits } from "@notra/ai/gateway";
 import { createModel } from "@notra/ai/model";
 import { getUserPrompt } from "@notra/ai/prompts/user";
 import { withGatewayDefaults } from "@notra/ai/provider-options";
@@ -25,6 +25,7 @@ import type {
   PostToolsConfig,
   PostToolsResult,
 } from "@notra/ai/types/post-tools";
+import { summarizeRouteUsage } from "@notra/ai/utils/route-usage";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { stepCountIs, ToolLoopAgent } from "ai";
 
@@ -105,7 +106,7 @@ export async function runBackgroundGen(
     primarySkillName: skillName,
   });
 
-  await assertGatewayHasCredits();
+  await assertRouteHasCredits({ organizationId, modelId: AGENT_DEFAULT_MODEL });
 
   const model = createModel(
     organizationId,
@@ -210,10 +211,11 @@ export async function runBackgroundGen(
   }
 
   const primaryPost = postToolsResult.posts[0];
-
   if (!primaryPost) {
     throw new Error(`${contentLabel} agent did not return a primary post.`);
   }
+
+  const routeUsage = await summarizeRouteUsage(result.steps);
 
   return {
     postId: primaryPost.postId,
@@ -227,6 +229,7 @@ export async function runBackgroundGen(
         result.totalUsage.inputTokenDetails?.cacheReadTokens ?? 0,
       cacheWriteTokens:
         result.totalUsage.inputTokenDetails?.cacheWriteTokens ?? 0,
+      route: routeUsage.route,
       raw: result.totalUsage,
     },
   };

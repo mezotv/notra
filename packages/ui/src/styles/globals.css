@@ -3,6 +3,8 @@
 @import "shadcn/tailwind.css";
 @import "./cta-button.css";
 
+@source "../../node_modules/streamdown/dist/*.js";
+
 @plugin "@toolwind/corner-shape";
 @plugin "@tailwindcss/typography";
 

@@ -7,6 +7,7 @@ export const FEATURES = {
   LOG_RETENTION_7_DAYS: "log_retention_7_days",
   LOG_RETENTION_14_DAYS: "log_retention_14_days",
   LOG_RETENTION_30_DAYS: "log_retention_30_days",
+  ZDR: "zdr",
 } as const;
 
 export const PLANS = {
@@ -17,22 +18,25 @@ export const PLANS = {
   PRO_YEARLY: "pro_yearly",
 } as const;
 
+export const PRO_PLAN_IDS: Set<string> = new Set([PLANS.PRO, PLANS.PRO_YEARLY]);
+
 export const PAID_OR_LEGACY_PLAN_IDS: Set<string> = new Set([
   PLANS.BASIC,
   PLANS.BASIC_YEARLY,
-  PLANS.PRO,
-  PLANS.PRO_YEARLY,
+  ...PRO_PLAN_IDS,
 ]);
 
 export const ACTIVE_PAID_PLAN_IDS: Set<string> = new Set([
   PLANS.BASIC,
   PLANS.BASIC_YEARLY,
-  PLANS.PRO,
-  PLANS.PRO_YEARLY,
+  ...PRO_PLAN_IDS,
 ]);
 
 export const ADDONS = {
   AI_CREDITS_TOPUP: "ai_credits_top_up",
+  ZDR_STARTER: "zdr_starter",
+  ZDR_PRO: "zdr_pro",
+  ZDR_SCALE: "zdr_scale",
 } as const;
 
 export const TOPUP_MIN_DOLLARS = 5;

@@ -1,0 +1,82 @@
+{
+  "name": "@usenotra/geo",
+  "version": "0.1.0-beta.1",
+  "private": false,
+  "type": "module",
+  "description": "Request capture SDK for AI traffic attribution",
+  "license": "MIT",
+  "homepage": "https://github.com/usenotra/notra/tree/main/packages/geo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/usenotra/notra.git",
+    "directory": "packages/geo"
+  },
+  "keywords": [
+    "ai",
+    "geo",
+    "crawler",
+    "llms.txt",
+    "analytics",
+    "attribution",
+    "nextjs",
+    "nuxt",
+    "netlify",
+    "edge"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./next": {
+      "types": "./dist/next.d.ts",
+      "default": "./dist/next.js"
+    },
+    "./nuxt": {
+      "types": "./dist/nuxt.d.ts",
+      "default": "./dist/nuxt.js"
+    },
+    "./netlify": {
+      "types": "./dist/netlify.d.ts",
+      "default": "./dist/netlify.js"
+    },
+    "./signatures": {
+      "types": "./dist/signatures.d.ts",
+      "default": "./dist/signatures.js"
+    },
+    "./classify": {
+      "types": "./dist/classify.d.ts",
+      "default": "./dist/classify.js"
+    },
+    "./markdown": {
+      "types": "./dist/markdown.d.ts",
+      "default": "./dist/markdown.js"
+    },
+    "./html": {
+      "types": "./dist/html.d.ts",
+      "default": "./dist/html.js"
+    }
+  },
+  "publishConfig": {
+    "access": "public",
+    "tag": "beta"
+  },
+  "scripts": {
+    "build": "tsup",
+    "check-types": "tsc --noEmit",
+    "test": "bun test test",
+    "prepublishOnly": "bun run build && bun run test"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
+    "tsup": "^8.5.1",
+    "typescript": "5.9.2"
+  }
+}

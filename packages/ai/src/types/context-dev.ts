@@ -105,6 +105,37 @@ export interface ContextDevBrandRetrieveResponse {
   code?: number;
 }
 
+export interface ContextDevCompetitor {
+  name: string;
+  domain: string;
+  url?: string;
+  description?: string;
+  confidence?: "high" | "medium";
+  sourceUrls?: string[];
+}
+
+export interface ContextDevCompetitorsResponse {
+  status: "ok";
+  domain: string;
+  target?: {
+    companyName?: string;
+    field?: string;
+    fieldDescription?: string;
+    websiteUrl?: string;
+  };
+  competitors: ContextDevCompetitor[];
+}
+
+export interface ContextDevBrandSearchResult {
+  domain: string;
+  name: string;
+  logo: string;
+}
+
+export interface ContextDevBrandSearchResponse {
+  results: ContextDevBrandSearchResult[];
+}
+
 export interface ContextDevStyleguideResponse {
   status: "ok";
   domain?: string;

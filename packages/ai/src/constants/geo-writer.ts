@@ -1,0 +1,12 @@
+export const GEO_CONTEXT_LOOKBACK_DAYS = 30;
+export const GEO_CONTEXT_MAX_CHECKS = 200;
+export const GEO_CONTEXT_MAX_EXCERPT_CHARS = 240;
+export const GEO_CONTEXT_MAX_ANSWER_CHARS = 1200;
+
+export const GEO_BRIEF_MAX_TITLE_LENGTH = 120;
+export const GEO_BRIEF_MIN_SECTIONS = 3;
+export const GEO_BRIEF_MAX_SECTIONS = 8;
+export const GEO_BRIEF_MAX_CLAIMS = 5;
+export const GEO_BRIEF_MAX_QUESTIONS = 8;
+export const GEO_BRIEF_MAX_LINKS = 6;
+export const GEO_BRIEF_MAX_CHECKLIST = 8;

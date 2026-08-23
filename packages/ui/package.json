@@ -10,6 +10,8 @@
     "./cta-button.css": "./src/styles/cta-button.css",
     "./postcss.config": "./postcss.config.mjs",
     "./lib/*": "./src/lib/*.ts",
+    "./constants/*": "./src/constants/*.ts",
+    "./types/*": "./src/types/*.ts",
     "./components/*": "./src/components/*.tsx",
     "./components/shared/*": "./src/components/shared/*.tsx",
     "./components/kibo-ui/*": "./src/components/kibo-ui/*/index.tsx",

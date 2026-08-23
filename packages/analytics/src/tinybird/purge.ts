@@ -1,6 +1,9 @@
 import { Effect } from "effect";
 import { bumpAnalyticsVersions } from "../cache/query-cache";
-import type { PurgeSocialAccountInput } from "../types/purge";
+import type {
+  PurgeGeoProjectInput,
+  PurgeSocialAccountInput,
+} from "../types/purge";
 
 const ACCOUNT_SCOPED_DATASOURCES = [
   "social_accounts",
@@ -10,6 +13,7 @@ const ACCOUNT_SCOPED_DATASOURCES = [
   "social_post_stats_latest",
   "social_account_stats_latest",
 ];
+const GEO_DATASOURCES = ["geo_traffic_events"];
 
 const JOB_POLL_INTERVAL_MS = 1000;
 const JOB_POLL_MAX_ATTEMPTS = 60;
@@ -95,6 +99,24 @@ export function purgeSocialAccountData(
     }
     yield* Effect.tryPromise(() =>
       bumpAnalyticsVersions("social", [input.organizationId])
+    );
+  });
+  return Effect.runPromise(program);
+}
+
+export function purgeGeoProjectData(
+  input: PurgeGeoProjectInput
+): Promise<void> {
+  if (!process.env.TINYBIRD_TOKEN) {
+    return Promise.resolve();
+  }
+  const condition = `organization_id = '${sanitize(input.organizationId)}' AND project_id = '${sanitize(input.projectId)}'`;
+  const program = Effect.gen(function* () {
+    for (const datasource of GEO_DATASOURCES) {
+      yield* deleteFromDatasource(datasource, condition);
+    }
+    yield* Effect.tryPromise(() =>
+      bumpAnalyticsVersions("geo", [input.organizationId])
     );
   });
   return Effect.runPromise(program);

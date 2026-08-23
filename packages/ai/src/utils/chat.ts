@@ -75,6 +75,36 @@ export function chatSessionsPath(organizationId: string) {
   return `/api/organizations/${organizationId}/chat/sessions`;
 }
 
+export function contentChatSessionsQueryKey(
+  organizationId: string,
+  contentId: string
+) {
+  return ["content-chat-sessions", organizationId, contentId] as const;
+}
+
+export function contentChatHistoryQueryKey(
+  organizationId: string,
+  contentId: string,
+  chatId: string | null
+) {
+  return ["content-chat-history", organizationId, contentId, chatId] as const;
+}
+
+export function contentChatSessionsPath(
+  organizationId: string,
+  contentId: string
+) {
+  return `/api/organizations/${organizationId}/content/${contentId}/chat`;
+}
+
+export function contentChatHistoryPath(
+  organizationId: string,
+  contentId: string,
+  chatId: string
+) {
+  return `/api/organizations/${organizationId}/content/${contentId}/chat/${encodeURIComponent(chatId)}`;
+}
+
 export function sortChatSessions(sessions: ChatSessionSummary[]) {
   return [...sessions].sort((left, right) => {
     const leftPinnedAt = left.pinnedAt ? Date.parse(left.pinnedAt) : Number.NaN;

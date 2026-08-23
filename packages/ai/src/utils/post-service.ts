@@ -38,6 +38,7 @@ export async function createPostRecord(
         markdown: params.markdown,
         recommendations: params.recommendations ?? null,
         contentType: params.contentType,
+        contentSubtype: params.contentSubtype ?? null,
         status: params.autoPublish ? "published" : "draft",
         sourceMetadata: params.sourceMetadata ?? null,
       })

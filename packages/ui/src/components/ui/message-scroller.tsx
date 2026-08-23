@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
+import { ArrowDown02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   MessageScroller as MessageScrollerPrimitive,
@@ -10,7 +10,6 @@ import {
 } from "@shadcn/react/message-scroller";
 import type * as React from "react";
 
-import { Button } from "@notra/ui/components/ui/button";
 import { cn } from "@notra/ui/lib/utils";
 
 function MessageScrollerProvider(
@@ -42,7 +41,7 @@ function MessageScrollerViewport({
   return (
     <MessageScrollerPrimitive.Viewport
       className={cn(
-        "scrollbar-thin scrollbar-stable data-autoscrolling:scrollbar-none size-full min-h-0 min-w-0 scroll-fade-b overflow-y-auto overscroll-contain contain-content",
+        "scrollbar-thin scrollbar-stable size-full min-h-0 min-w-0 scroll-fade-b overflow-y-auto overscroll-contain contain-content",
         className
       )}
       data-slot="message-scroller-viewport"
@@ -87,28 +86,23 @@ function MessageScrollerButton({
   className,
   children,
   render,
-  variant = "secondary",
-  size = "icon-sm",
   ...props
-}: React.ComponentProps<typeof MessageScrollerPrimitive.Button> &
-  Pick<React.ComponentProps<typeof Button>, "variant" | "size">) {
+}: React.ComponentProps<typeof MessageScrollerPrimitive.Button>) {
   return (
     <MessageScrollerPrimitive.Button
       className={cn(
-        "-translate-x-1/2 absolute inset-s-1/2 border-border bg-background text-foreground transition-[translate,scale,opacity] duration-200 hover:bg-muted hover:text-foreground data-[active=false]:pointer-events-none data-[active=false]:scale-95 data-[active=false]:opacity-0 data-[active=false]:duration-400 data-[active=false]:ease-[cubic-bezier(0.7,0,0.84,0)] data-[active=true]:translate-y-0 data-[active=true]:scale-100 data-[active=true]:opacity-100 data-[active=true]:ease-[cubic-bezier(0.23,1,0.32,1)] data-[direction=end]:bottom-4 data-[direction=end]:data-[active=false]:translate-y-full data-[direction=start]:top-4 data-[direction=start]:data-[active=false]:-translate-y-full rtl:translate-x-1/2 data-[direction=start]:[&_svg]:rotate-180",
+        "-translate-x-1/2 absolute inset-s-1/2 z-10 flex size-8 shrink-0 aspect-square cursor-pointer items-center justify-center rounded-full border border-black/10 bg-background/70 p-0 text-foreground shadow-[0_1px_4px_rgba(0,0,0,0.08)] backdrop-blur-sm transition-[translate,scale,opacity] duration-200 hover:bg-background/90 hover:text-foreground data-[active=false]:pointer-events-none data-[active=false]:scale-95 data-[active=false]:opacity-0 data-[active=false]:duration-400 data-[active=false]:ease-[cubic-bezier(0.7,0,0.84,0)] data-[active=true]:translate-y-0 data-[active=true]:scale-100 data-[active=true]:opacity-100 data-[active=true]:ease-[cubic-bezier(0.23,1,0.32,1)] data-[direction=end]:bottom-4 data-[direction=end]:data-[active=false]:translate-y-full data-[direction=start]:top-4 data-[direction=start]:data-[active=false]:-translate-y-full rtl:translate-x-1/2 data-[direction=start]:[&_svg]:rotate-180 dark:border-white/15",
         className
       )}
       data-direction={direction}
-      data-size={size}
       data-slot="message-scroller-button"
-      data-variant={variant}
       direction={direction}
-      render={render ?? <Button size={size} variant={variant} />}
+      render={render ?? <button type="button" />}
       {...props}
     >
       {children ?? (
         <>
-          <HugeiconsIcon icon={ArrowDown01Icon} />
+          <HugeiconsIcon icon={ArrowDown02Icon} size={16} strokeWidth={2} />
           <span className="sr-only">
             {direction === "end" ? "Scroll to end" : "Scroll to start"}
           </span>
