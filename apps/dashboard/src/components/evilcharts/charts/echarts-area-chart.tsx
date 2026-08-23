@@ -42,6 +42,7 @@ import {
   getColorsCount,
   type ResolvedColors,
   resolveColors,
+  resolvedIndicatorBackground,
   seriesPaint,
   withAlpha,
 } from "@/components/evilcharts/ui/echarts-chart";
@@ -136,7 +137,7 @@ const BUFFER_DASH: [number, number] = [4, 3];
 // perceived intensity. Using the border token's full alpha lands both engines at
 // the same apparent brightness.
 const GRID_LINE_OPACITY = 1; // dashed y-axis split lines, × border alpha
-const AXIS_POINTER_OPACITY = 0.45; // tooltip cursor line alpha
+const AXIS_POINTER_OPACITY = 0.28; // tooltip cursor line alpha
 const AXIS_POINTER_WIDTH = 1; // tooltip cursor line thickness
 // The skeleton is CLIPPED to a small sweeping window — only the wave section
 // inside it exists (stroke + fill), everything outside is fully transparent,
@@ -270,7 +271,7 @@ export interface TooltipProps {
   roundness?: TooltipRoundness; // border-radius of the tooltip
   cursor?: boolean; // whether the vertical cursor line follows the pointer
   crosshair?: boolean; // also draw the horizontal line to the value axis
-  position?: TooltipPosition; // "variable" follows both axes (default); "fixed" pins the tooltip near the top and tracks the pointer's X
+  position?: TooltipPosition; // "variable" follows both axes (default); "fixed" pins the tooltip near the top and sits beside the pointer's X
   layout?: TooltipLayout; // "rows" is the default swatch list; "bars" ranks series as a mini bar chart
   valueFormatter?: TooltipValueFormatter;
   barMax?: number; // bar layout: scale tracks to this ceiling (e.g. 100 for percents); omit to scale to the hovered max
@@ -1001,7 +1002,8 @@ function tooltipBodyHtml(
 }
 
 function createTooltipFormatter(ctx: OptionBuildContext) {
-  const { config, data, selectedDataKey, tooltipSlot, getHoveredKey } = ctx;
+  const { config, data, selectedDataKey, tooltipSlot, getHoveredKey, resolved } =
+    ctx;
 
   return (params: unknown): string => {
     const rows = Array.isArray(params) ? params : [params];
@@ -1023,7 +1025,8 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
         hoveredRow,
         rowKeys,
         config,
-        tooltipSlot.valueFormatter
+        tooltipSlot.valueFormatter,
+        resolved.series
       );
       return tooltipShell({
         label,
@@ -1093,6 +1096,9 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
         valueText: formatted.text,
         dimmed,
         indicatorHtml: configIndicatorHtml(item),
+        paint: resolvedIndicatorBackground(
+          resolved.series[key] ?? ["rgba(120, 120, 120, 1)"]
+        ),
       });
     }
 
@@ -2380,8 +2386,10 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
         live.resolved?.tokens.background ?? "rgba(255, 255, 255, 1)"
       );
       Object.assign(merged, {
-        animation: withEntrance,
-        animationDuration: REVEAL_DURATION,
+        // Keep animation on so the hover cursor can ease between categories.
+        // Duration 0 still skips the intro draw-in when withEntrance is false.
+        animation: true,
+        animationDuration: withEntrance ? REVEAL_DURATION : 0,
         animationDurationUpdate: 0,
       });
       // chartOptions is an untyped escape hatch — the spread erases the option's

@@ -9,5 +9,8 @@ export function geoChatSkin(engine: string): GeoChatSkin {
   if (key === "gemini") {
     return "gemini";
   }
+  if (key === "perplexity") {
+    return "perplexity";
+  }
   return "chatgpt";
 }

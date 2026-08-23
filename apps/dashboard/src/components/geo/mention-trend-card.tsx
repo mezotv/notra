@@ -199,6 +199,7 @@ export function MentionTrendCard({
             variant="none"
           />
           <EChartsAreaChart.Tooltip
+            confine={false}
             emptyLabel={(row) => mentionTrendEmptyLabel(row, visibleKeys)}
             hideZeros
             layout="bars"

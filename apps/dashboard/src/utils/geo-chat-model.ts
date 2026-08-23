@@ -1,6 +1,7 @@
 import type { ChatgptModelId } from "@notra/ui/types/chatgpt";
 import type { ClaudeChatModelId } from "@notra/ui/types/claude-chat";
 import type { GeminiModelId } from "@notra/ui/types/gemini";
+import type { PerplexityModelId } from "@notra/ui/types/perplexity";
 
 const GROUNDED_SUFFIX = /-grounded$/;
 
@@ -39,4 +40,15 @@ export function geminiModelForEngine(engine: string): GeminiModelId {
     return "pro";
   }
   return "flash";
+}
+
+export function perplexityModelForEngine(engine: string): PerplexityModelId {
+  const key = engineKey(engine);
+  if (key.includes("sonar-pro")) {
+    return "sonar-pro";
+  }
+  if (key.includes("reasoning") || key.includes("research")) {
+    return "reasoning";
+  }
+  return "sonar";
 }

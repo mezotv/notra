@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type {
   GeoCompetitor,
   GeoPromptGapRow,
@@ -15,17 +14,6 @@ export type GeoGapsEmptyKind =
   | "no-prompt-gaps"
   | "no-search-gaps"
   | "no-matches";
-
-export interface GeoGapsLogoStackItem {
-  key: string;
-  label: string;
-  detail?: string | null;
-  renderIcon: (className: string) => ReactNode;
-}
-
-export interface GeoGapsLogoStackProps {
-  items: GeoGapsLogoStackItem[];
-}
 
 export interface GeoGapsTableProps {
   promptGaps: GeoPromptGapRow[];

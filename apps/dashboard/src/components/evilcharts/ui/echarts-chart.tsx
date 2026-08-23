@@ -180,6 +180,18 @@ export function indicatorBackground(key: string, colorsCount: number): string {
   return `linear-gradient(to right, ${stops})`;
 }
 
+/** Same fill as `indicatorBackground`, from resolved color strings instead of CSS vars. */
+export function resolvedIndicatorBackground(slots: readonly string[]): string {
+  if (slots.length <= 1) {
+    return slots[0] ?? "rgba(120, 120, 120, 1)";
+  }
+  const stops = slots.map((color, index) => {
+    const offset = (index / (slots.length - 1)) * 100;
+    return `${color} ${offset}%`;
+  });
+  return `linear-gradient(to right, ${stops.join(", ")})`;
+}
+
 // Composites a translucent color over an opaque base into a FLAT color. The
 // tick dots need this: a translucent stroke double-paints where its round caps
 // overlap the line body, which reads as two stacked colors.

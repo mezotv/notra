@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { LogoStack } from "@/components/geo/logo-stack";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Table, type TableColumn } from "@/components/motion/table";
 import {
@@ -34,7 +35,6 @@ import {
   GEO_COMPETITOR_KIND_DETAIL,
   GEO_GAPS_EMPTY,
   GEO_GAPS_ENGINE_FILTER_ALL,
-  GEO_GAPS_LOGO_STACK_LIMIT,
   GEO_GAPS_METER_STEPS,
   GEO_GAPS_METER_TONE_CLASS,
   GEO_GAPS_TABLE_HEIGHT,
@@ -45,8 +45,6 @@ import { cn } from "@/lib/utils";
 import type {
   GeoGapsEmptyProps,
   GeoGapsFiltersProps,
-  GeoGapsLogoStackItem,
-  GeoGapsLogoStackProps,
   GeoGapsTab,
   GeoGapsTableProps,
   GeoGapsTabsProps,
@@ -203,66 +201,6 @@ function ContentCell({
         <span className="truncate text-muted-foreground text-xs">
           {subtitle}
         </span>
-      ) : null}
-    </span>
-  );
-}
-
-function LogoStackItemDetail({ item }: { item: GeoGapsLogoStackItem }) {
-  return (
-    <span className="flex items-center gap-2">
-      <span className="inline-flex shrink-0">{item.renderIcon("size-5")}</span>
-      <span className="min-w-0">
-        <span className="block font-medium">{item.label}</span>
-        {item.detail ? (
-          <span className="block text-muted-foreground text-xs">
-            {item.detail}
-          </span>
-        ) : null}
-      </span>
-    </span>
-  );
-}
-
-function LogoStack({ items }: GeoGapsLogoStackProps) {
-  if (items.length === 0) {
-    return <span className="text-muted-foreground">—</span>;
-  }
-
-  const visible = items.slice(0, GEO_GAPS_LOGO_STACK_LIMIT);
-  const hidden = items.slice(GEO_GAPS_LOGO_STACK_LIMIT);
-
-  return (
-    <span className="inline-flex items-center gap-1">
-      {visible.map((item) => (
-        <Tooltip key={item.key}>
-          <TooltipTrigger
-            render={<span className="inline-flex shrink-0 cursor-default" />}
-          >
-            {item.renderIcon("size-4")}
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            <LogoStackItemDetail item={item} />
-          </TooltipContent>
-        </Tooltip>
-      ))}
-      {hidden.length > 0 ? (
-        <Tooltip>
-          <TooltipTrigger
-            render={
-              <span className="cursor-default text-muted-foreground text-xs" />
-            }
-          >
-            +{hidden.length}
-          </TooltipTrigger>
-          <TooltipContent className="max-w-xs">
-            <span className="flex flex-col gap-1.5">
-              {hidden.map((item) => (
-                <LogoStackItemDetail item={item} key={item.key} />
-              ))}
-            </span>
-          </TooltipContent>
-        </Tooltip>
       ) : null}
     </span>
   );

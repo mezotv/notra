@@ -7,41 +7,44 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
-import { PresenceBadge } from "@/components/geo/presence-badge";
-import { Twemoji } from "@/components/geo/twemoji";
+import { EngineIcon } from "@/components/geo/engine-icon";
+import { LogoStack } from "@/components/geo/logo-stack";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { GEO_LANGUAGE_FLAGS } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { GeoPromptSummary, PromptResultsPreviewProps } from "@/types/geo";
-import { summarizePromptResults } from "@/utils/geo-presence";
+import { engineFamilyLabel } from "@/utils/geo-charts";
+import {
+  mentionedEngineFamilies,
+  sortWinningPromptSummaries,
+  summarizePromptResults,
+} from "@/utils/geo-presence";
 import { geoScanEmptyMessage } from "@/utils/geo-scan";
 import { tableHeightFor } from "@/utils/table";
 
-const DEFAULT_LIMIT = 3;
-
-const NO_LANGUAGES: string[] = [];
+const DEFAULT_LIMIT = 6;
 
 export function PromptResultsPreview({
   results,
   limit = DEFAULT_LIMIT,
   action,
-  languages = NO_LANGUAGES,
   isScanning = false,
 }: PromptResultsPreviewProps) {
-  const summaries = useMemo(() => summarizePromptResults(results), [results]);
-  const rows = useMemo(() => summaries.slice(0, limit), [summaries, limit]);
+  const rows = useMemo(() => {
+    const summaries = summarizePromptResults(results);
+    return sortWinningPromptSummaries(summaries).slice(0, limit);
+  }, [results, limit]);
 
-  const columns = useMemo<TableColumn<GeoPromptSummary>[]>(() => {
-    const base: TableColumn<GeoPromptSummary>[] = [
+  const columns = useMemo<TableColumn<GeoPromptSummary>[]>(
+    () => [
       {
         key: "prompt",
         header: "Prompt",
         width: "1fr",
-        minWidth: "10rem",
+        minWidth: "12rem",
         sortable: true,
         cell: (row) => (
           <Tooltip>
@@ -56,26 +59,10 @@ export function PromptResultsPreview({
           </Tooltip>
         ),
       },
-    ];
-
-    base.push(
-      {
-        key: "presence",
-        header: "Presence",
-        width: "7rem",
-        sortable: true,
-        cell: (row) =>
-          row.presence === "retrieval-only" || row.presence === "invisible" ? (
-            <PresenceBadge status={row.presence} />
-          ) : (
-            <span className="text-muted-foreground text-xs">-</span>
-          ),
-        sortValue: (row) => row.presence ?? "",
-      },
       {
         key: "bestPosition",
         header: "Best",
-        width: "5rem",
+        width: "4.5rem",
         align: "center",
         sortable: true,
         cell: (row) =>
@@ -91,32 +78,36 @@ export function PromptResultsPreview({
       {
         key: "engines",
         header: "Engines",
-        width: "5.5rem",
-        align: "right",
+        width: "7rem",
         sortable: true,
         cell: (row) => (
-          <span className="text-muted-foreground text-xs tabular-nums">
-            {row.mentioned}/{row.total}
-          </span>
+          <LogoStack
+            items={mentionedEngineFamilies(row).map((family) => ({
+              key: family,
+              label: engineFamilyLabel(family),
+              renderIcon: (className) => (
+                <EngineIcon className={className} engine={family} />
+              ),
+            }))}
+          />
         ),
         sortValue: (row) => row.mentioned / row.total,
-      }
-    );
-
-    return base;
-  }, []);
+      },
+    ],
+    []
+  );
 
   return (
     <InstrumentSection
       action={action}
+      bodyClassName="flex min-h-0 flex-1 flex-col"
       className="h-full"
       eyebrow="Winning prompts"
-      readout="best surfacing first"
     >
       {rows.length === 0 ? (
         <InstrumentEmpty
           busy={isScanning}
-          className="h-24"
+          className="min-h-48"
           message={geoScanEmptyMessage(
             isScanning,
             "Run a scan to see which prompts surface you"
@@ -124,40 +115,19 @@ export function PromptResultsPreview({
           seed="Winning prompts"
         />
       ) : (
-        <div className="flex flex-col gap-2">
-          <div className="flex min-h-5 items-center justify-between gap-3 px-1 text-muted-foreground text-xs">
-            <span>{rows.length.toLocaleString()} prompts</span>
-            <div className="flex min-w-0 items-center gap-3">
-              {languages.length > 0 ? (
-                <span className="flex shrink-0 items-center gap-1">
-                  {languages.map((language) => (
-                    <Twemoji
-                      className="size-3.5 shrink-0"
-                      emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
-                      key={language}
-                      label={language}
-                    />
-                  ))}
-                </span>
-              ) : null}
-              <span className="shrink-0 tabular-nums">
-                {summaries.length.toLocaleString()} tracked
-              </span>
-            </div>
-          </div>
-          <Table
-            className="rounded-2xl"
-            columns={columns}
-            data={rows}
-            emptyState={geoScanEmptyMessage(
-              isScanning,
-              "Run a scan to see which prompts surface you"
-            )}
-            getRowId={(row) => row.promptId}
-            height={tableHeightFor(rows.length)}
-            rowHeight={TABLE_ROW_HEIGHT}
-          />
-        </div>
+        <Table
+          className="rounded-2xl"
+          columns={columns}
+          data={rows}
+          defaultSort={{ direction: "asc", key: "bestPosition" }}
+          emptyState={geoScanEmptyMessage(
+            isScanning,
+            "Run a scan to see which prompts surface you"
+          )}
+          getRowId={(row) => row.promptId}
+          height={tableHeightFor(rows.length)}
+          rowHeight={TABLE_ROW_HEIGHT}
+        />
       )}
     </InstrumentSection>
   );

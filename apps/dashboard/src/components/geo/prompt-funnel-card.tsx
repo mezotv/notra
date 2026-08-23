@@ -10,16 +10,6 @@ import type { PromptFunnelCardProps } from "@/types/geo";
 import { buildPromptVisibilityFunnel } from "@/utils/geo-prompts";
 import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
-function promptFunnelReadout(isScanning: boolean, promptCount: number): string {
-  if (isScanning) {
-    return "scanning now";
-  }
-  if (promptCount > 0) {
-    return `${promptCount.toLocaleString()} prompts tracked`;
-  }
-  return "no prompts yet";
-}
-
 export function PromptFunnelCard({
   promptCount,
   results,
@@ -32,9 +22,10 @@ export function PromptFunnelCard({
 
   return (
     <InstrumentSection
+      bodyClassName="flex min-h-0 flex-1 flex-col justify-center"
       className="h-full"
+      description="How many tracked prompts get you mentioned, and how many rank you near the top"
       eyebrow="Prompt funnel"
-      readout={promptFunnelReadout(isScanning, promptCount)}
     >
       {promptCount === 0 || results.length === 0 ? (
         <InstrumentEmpty
@@ -46,21 +37,15 @@ export function PromptFunnelCard({
           seed="geo-prompt-funnel"
         />
       ) : (
-        <div className="space-y-2">
-          <p className="text-muted-foreground text-xs">
-            How many tracked prompts get you mentioned, and how many rank you
-            near the top
-          </p>
-          <FunnelChart
-            className="h-40 w-full"
-            data={stages}
-            enterTransition={{ duration: 0 }}
-            orientation="horizontal"
-            showPercentage
-            showValues
-            staggerDelay={0}
-          />
-        </div>
+        <FunnelChart
+          className="h-48 w-full"
+          data={stages}
+          enterTransition={{ duration: 0 }}
+          orientation="horizontal"
+          showPercentage
+          showValues
+          staggerDelay={0}
+        />
       )}
     </InstrumentSection>
   );

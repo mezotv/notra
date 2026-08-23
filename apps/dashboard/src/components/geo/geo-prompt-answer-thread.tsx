@@ -10,6 +10,10 @@ import { ClaudeChatMessage } from "@notra/ui/components/brainless/claude-chat/cl
 import { GeminiActions } from "@notra/ui/components/brainless/gemini/gemini-actions";
 import { GeminiComposer } from "@notra/ui/components/brainless/gemini/gemini-composer";
 import { GeminiMessage } from "@notra/ui/components/brainless/gemini/gemini-message";
+import { PerplexityActions } from "@notra/ui/components/brainless/perplexity/perplexity-actions";
+import { PerplexityComposer } from "@notra/ui/components/brainless/perplexity/perplexity-composer";
+import { PerplexityMessage } from "@notra/ui/components/brainless/perplexity/perplexity-message";
+import { PerplexitySearch } from "@notra/ui/components/brainless/perplexity/perplexity-search";
 import { cn } from "@/lib/utils";
 import type { GeoChatSkin, GeoPromptAnswerThreadProps } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
@@ -17,8 +21,10 @@ import {
   chatgptModelForEngine,
   claudeModelForEngine,
   geminiModelForEngine,
+  perplexityModelForEngine,
 } from "@/utils/geo-chat-model";
 import { geoChatSkin } from "@/utils/geo-chat-skin";
+import { perplexitySourcesFromExcerpt } from "@/utils/geo-perplexity-sources";
 
 const ANSWER_MARKDOWN_CLASS =
   "[&_h1]:mt-0 [&_h1]:mb-2 [&_h1]:text-[1.15em] [&_h1]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:text-[1.05em] [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_h3]:text-[1em] [&_h3]:font-semibold [&_p]:my-2.5 [&_ul]:my-2.5 [&_ol]:my-2.5";
@@ -27,6 +33,7 @@ const SKIN_SURFACE: Record<GeoChatSkin, string> = {
   claude: "bg-[#faf9f5] dark:bg-[#1c1b18]",
   chatgpt: "bg-background",
   gemini: "bg-white dark:bg-[#1f1f1f]",
+  perplexity: "bg-white dark:bg-[#111]",
 };
 
 function ignoreFollowUp(_text: string): void {
@@ -39,13 +46,25 @@ function emptyAnswerCopy(mentioned: boolean): string {
     : "This engine did not mention you.";
 }
 
+function emptyAnswerClassName(skin: GeoChatSkin): string {
+  if (skin === "perplexity") {
+    return "font-serif text-[17.5px] leading-[1.75]";
+  }
+  if (skin === "claude") {
+    return "font-sans text-[15px] leading-6";
+  }
+  return "text-[15px] leading-7";
+}
+
 function AnswerMarkdown({ text, skin }: { text: string; skin: GeoChatSkin }) {
   return (
     <MessageResponse
       className={cn(
         ANSWER_MARKDOWN_CLASS,
         skin === "claude" &&
-          "[&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif"
+          "[&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif",
+        skin === "perplexity" &&
+          "font-serif [&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif"
       )}
     >
       {text}
@@ -67,14 +86,7 @@ function AssistantBody({
   }
 
   return (
-    <p
-      className={cn(
-        "text-muted-foreground",
-        skin === "claude"
-          ? "font-sans text-[15px] leading-6"
-          : "text-[15px] leading-7"
-      )}
-    >
+    <p className={cn("text-muted-foreground", emptyAnswerClassName(skin))}>
       {emptyAnswerCopy(mentioned)}
     </p>
   );
@@ -156,6 +168,45 @@ function GeminiAnswerThread({
   );
 }
 
+function PerplexityAnswerThread({
+  prompt,
+  excerpt,
+  mentioned,
+}: {
+  prompt: string;
+  excerpt: string;
+  mentioned: boolean;
+}) {
+  const sources = perplexitySourcesFromExcerpt(excerpt);
+
+  return (
+    <>
+      <PerplexityMessage from="user">{prompt}</PerplexityMessage>
+      <PerplexityMessage
+        actions={
+          excerpt.length > 0 ? (
+            <PerplexityActions sources={sources} text={excerpt} />
+          ) : undefined
+        }
+        from="assistant"
+        search={
+          <PerplexitySearch
+            queries={[prompt]}
+            sources={sources}
+            title="Web search"
+          />
+        }
+      >
+        <AssistantBody
+          excerpt={excerpt}
+          mentioned={mentioned}
+          skin="perplexity"
+        />
+      </PerplexityMessage>
+    </>
+  );
+}
+
 function SkinComposer({ engine, skin }: { engine: string; skin: GeoChatSkin }) {
   if (skin === "claude") {
     return (
@@ -175,6 +226,15 @@ function SkinComposer({ engine, skin }: { engine: string; skin: GeoChatSkin }) {
         onSend={ignoreFollowUp}
         placeholder="Ask Gemini"
         privacyLabel="Privacy and Gemini"
+      />
+    );
+  }
+  if (skin === "perplexity") {
+    return (
+      <PerplexityComposer
+        defaultModel={perplexityModelForEngine(engine)}
+        onSend={ignoreFollowUp}
+        placeholder="Ask a follow-up"
       />
     );
   }
@@ -213,6 +273,15 @@ function ThreadMessages({
   if (skin === "gemini") {
     return (
       <GeminiAnswerThread
+        excerpt={excerpt}
+        mentioned={mentioned}
+        prompt={prompt}
+      />
+    );
+  }
+  if (skin === "perplexity") {
+    return (
+      <PerplexityAnswerThread
         excerpt={excerpt}
         mentioned={mentioned}
         prompt={prompt}

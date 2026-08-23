@@ -62,4 +62,6 @@ export interface TooltipBodyItem {
   valueText: string;
   dimmed: string;
   indicatorHtml?: string;
+  /** Resolved CSS background. Required when the tooltip mounts outside `[data-chart]`. */
+  paint?: string;
 }

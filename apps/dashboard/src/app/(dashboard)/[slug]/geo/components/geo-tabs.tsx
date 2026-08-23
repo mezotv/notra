@@ -18,7 +18,7 @@ import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
 import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
-import { GEO_PROMPTS_TAB_LIMIT } from "@/constants/geo";
+import { GEO_PROMPTS_TAB_PREVIEW_LIMIT } from "@/constants/geo";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoTabsProps } from "@/types/geo";
 import { toGeoTab } from "@/utils/geo-tabs";
@@ -139,7 +139,7 @@ export function GeoTabs({
       </TabsContent>
 
       <TabsContent className="mt-6 flex flex-col gap-6" value="prompts">
-        <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-2">
+        <InstrumentGrid className="auto-rows-fr grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
           <TabSection active={revealActive} order={0}>
             <PromptFunnelCard
               isScanning={isScanning}
@@ -159,8 +159,7 @@ export function GeoTabs({
                 </Link>
               }
               isScanning={isScanning}
-              languages={settings.languages}
-              limit={GEO_PROMPTS_TAB_LIMIT}
+              limit={GEO_PROMPTS_TAB_PREVIEW_LIMIT}
               results={promptResults}
             />
           </TabSection>

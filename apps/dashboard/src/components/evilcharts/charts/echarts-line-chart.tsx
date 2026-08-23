@@ -2040,8 +2040,8 @@ export function EChartsLineChart<TData extends Record<string, unknown>>({
         live.resolved?.tokens.background ?? "rgba(255, 255, 255, 1)"
       );
       Object.assign(merged, {
-        animation: withEntrance,
-        animationDuration: REVEAL_DURATION,
+        animation: true,
+        animationDuration: withEntrance ? REVEAL_DURATION : 0,
         animationDurationUpdate: 0,
       });
       // chartOptions is an untyped escape hatch — the spread erases the option's

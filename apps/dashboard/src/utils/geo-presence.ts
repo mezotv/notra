@@ -3,6 +3,7 @@ import type {
   GeoPromptResult,
   GeoPromptSummary,
 } from "@/types/geo";
+import { engineFamilyLabel, engineFamilyOf } from "@/utils/geo-charts";
 
 export const GROUNDED_SUFFIX_PATTERN = /(-direct)?-grounded$/;
 
@@ -72,4 +73,32 @@ export function summarizePromptResults(
       presence: classifyPromptPresence(group.results),
     }))
     .sort((a, b) => b.mentioned / b.total - a.mentioned / a.total);
+}
+
+export function sortWinningPromptSummaries(
+  summaries: readonly GeoPromptSummary[]
+): GeoPromptSummary[] {
+  return summaries
+    .filter((summary) => summary.mentioned > 0)
+    .sort((a, b) => {
+      const aRank = a.bestPosition ?? Number.MAX_SAFE_INTEGER;
+      const bRank = b.bestPosition ?? Number.MAX_SAFE_INTEGER;
+      if (aRank !== bRank) {
+        return aRank - bRank;
+      }
+      return b.mentioned / b.total - a.mentioned / a.total;
+    });
+}
+
+export function mentionedEngineFamilies(summary: GeoPromptSummary): string[] {
+  const families = new Set<string>();
+  for (const result of summary.results) {
+    if (!result.mentioned) {
+      continue;
+    }
+    families.add(engineFamilyOf(result.engine));
+  }
+  return [...families].sort((a, b) =>
+    engineFamilyLabel(a).localeCompare(engineFamilyLabel(b))
+  );
 }

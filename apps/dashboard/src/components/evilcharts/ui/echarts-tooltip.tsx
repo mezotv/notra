@@ -2,6 +2,7 @@ import type { TooltipComponentOption } from "echarts/components";
 import {
   getColorsCount,
   indicatorBackground,
+  resolvedIndicatorBackground,
   type ResolvedColors,
 } from "@/components/evilcharts/ui/echarts-chart";
 import type {
@@ -26,10 +27,15 @@ import { echartsDatumValue } from "@/utils/echarts-datum";
 export type TooltipVariant = "default" | "frosted-glass";
 export type TooltipRoundness = "sm" | "md" | "lg" | "xl";
 // Tooltip anchoring: "variable" follows both axes (ECharts default, current
-// behavior); "fixed" tracks the pointer's X (centered) but stays pinned near
-// the top (fixed Y).
+// behavior); "fixed" sits beside the pointer's X so the hover line stays
+// visible, and stays pinned near the top (fixed Y).
 export type TooltipPosition = "fixed" | "variable";
 export type TooltipAxisPointer = "none" | "line" | "shadow" | "cross";
+
+// Hover motion — keep the cursor line and tooltip sliding between categories
+// even when the chart itself skips its intro animation.
+const TOOLTIP_MOVE_DURATION_S = 0.14;
+const AXIS_POINTER_MOVE_MS = 180;
 
 const HTML_ESCAPE_PATTERN = /[&<>"']/g;
 const HTML_ESCAPES: Record<string, string> = {
@@ -142,6 +148,7 @@ export function tooltipBarRow({
   widthPercent,
   dimmed,
   indicatorHtml,
+  paint,
 }: {
   key: string;
   colorsCount: number;
@@ -150,13 +157,15 @@ export function tooltipBarRow({
   widthPercent: number;
   dimmed: string;
   indicatorHtml?: string;
+  paint?: string;
 }): string {
+  const fill = paint ?? indicatorBackground(key, colorsCount);
   return `<div class="grid w-full grid-cols-[1rem_minmax(0,1fr)_auto] gap-x-2 gap-y-1${dimmed}">
           <span class="flex size-4 items-center justify-center self-center">${indicatorHtml ?? ""}</span>
           <span class="self-center truncate text-muted-foreground leading-none">${escapeHtml(labelText)}</span>
           <span class="self-center font-mono font-medium text-foreground tabular-nums leading-none">${escapeHtml(valueText)}</span>
           <div class="col-span-2 col-start-2 h-1.5 overflow-hidden rounded-full bg-muted">
-            <div class="h-full rounded-full" style="width:${widthPercent}%;background:${indicatorBackground(key, colorsCount)}"></div>
+            <div class="h-full rounded-full" style="width:${widthPercent}%;background:${escapeHtml(fill)}"></div>
           </div>
         </div>`;
 }
@@ -165,7 +174,8 @@ export function tooltipItemsFromRow(
   row: Record<string, unknown> | undefined,
   keys: readonly string[],
   config: ChartConfig,
-  valueFormatter?: TooltipValueFormatter
+  valueFormatter?: TooltipValueFormatter,
+  seriesSlots?: ResolvedColors["series"]
 ): TooltipBodyItem[] {
   if (!row) {
     return [];
@@ -178,6 +188,7 @@ export function tooltipItemsFromRow(
     }
     const item = config[key];
     const formatted = formatTooltipValue(raw, valueFormatter);
+    const slots = seriesSlots?.[key];
     items.push({
       key,
       colorsCount: item ? getColorsCount(item) : 1,
@@ -186,6 +197,7 @@ export function tooltipItemsFromRow(
       valueText: formatted.text,
       dimmed: "",
       indicatorHtml: configIndicatorHtml(item),
+      paint: slots ? resolvedIndicatorBackground(slots) : undefined,
     });
   }
   return items;
@@ -235,6 +247,7 @@ export function composeTooltipBody(
         widthPercent: tooltipBarWidth(item.value ?? 0, max),
         dimmed: item.dimmed,
         indicatorHtml: item.indicatorHtml,
+        paint: item.paint,
       })
     )
     .join("");
@@ -271,7 +284,8 @@ export function tooltipShell({
 // "variable" without confine → follow the pointer, clamp X so a left-edge flip
 // cannot paint outside the chart. Pair with appendTo:"body" so overflow-hidden
 // ancestors (sheet cards, rounded groups) cannot clip the box.
-// "fixed" → center on the pointer's X, pin near the top, still clamp X.
+// "fixed" → sit beside the pointer's X (right, or left if it does not fit),
+// pin near the top, still clamp X so the hover line stays visible.
 export function resolveTooltipPosition(
   position: TooltipPosition,
   confine = true
@@ -319,30 +333,41 @@ export function tooltipBaseOption(params: {
 
   const linePointer = {
     type: pointer === "cross" ? ("cross" as const) : ("line" as const),
+    animation: true,
+    animationDurationUpdate: AXIS_POINTER_MOVE_MS,
+    animationEasingUpdate: "cubicOut" as const,
     label: { show: false },
     lineStyle: {
       color: axisPointerColor,
       width: strokeWidth,
-      type: [3, 3] as [number, number],
+      type: "solid" as const,
     },
     crossStyle: {
       color: axisPointerColor,
       width: strokeWidth,
-      type: [3, 3] as [number, number],
+      type: "solid" as const,
     },
   };
+
+  // Custom `position` normally disables ECharts' transform transition — keep
+  // one anyway so the box eases between days instead of teleporting.
+  const tooltipMotionCss = `box-shadow:none;pointer-events:none;transition:transform ${TOOLTIP_MOVE_DURATION_S}s cubic-bezier(0.22, 1, 0.36, 1),opacity 120ms ease;`;
 
   return {
     show: present,
     trigger: "axis",
     confine,
+    enterable: false,
+    showDelay: 0,
+    hideDelay: 50,
+    transitionDuration: TOOLTIP_MOVE_DURATION_S,
     // Sparklines sit in overflow-hidden cards; appending to body is what
     // actually lets confine:false paint above a 40–48px plot.
     ...(confine ? {} : { appendTo: "body" as const }),
     backgroundColor: "transparent",
     borderWidth: 0,
     padding: 0,
-    extraCssText: "box-shadow:none;",
+    extraCssText: tooltipMotionCss,
     axisPointer:
       pointer === "none"
         ? { type: "none" }

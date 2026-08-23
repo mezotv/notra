@@ -853,7 +853,6 @@ export interface PromptResultsPreviewProps {
   results: GeoPromptResult[];
   limit?: number;
   action?: ReactNode;
-  languages?: string[];
   isScanning?: boolean;
 }
 
@@ -1006,7 +1005,7 @@ export type EngineIconKey =
   | "agent"
   | "cli";
 
-export type GeoChatSkin = "claude" | "chatgpt" | "gemini";
+export type GeoChatSkin = "claude" | "chatgpt" | "gemini" | "perplexity";
 
 export interface EngineIconProps {
   engine: string;

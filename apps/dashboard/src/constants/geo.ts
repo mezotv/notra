@@ -600,7 +600,7 @@ export const GEO_TAB_BREADCRUMB_LABELS: Record<string, string> = {
   journeys: "Journeys",
 };
 
-export const GEO_PROMPTS_TAB_LIMIT = 12;
+export const GEO_PROMPTS_TAB_PREVIEW_LIMIT = 6;
 
 export const GEO_LOGO_LINK_BASE = "https://logos.context.dev/";
 export const GEO_LOGO_LINK_CLIENT_ID_ENV = "NEXT_PUBLIC_LOGOLINK_CLIENT_ID";

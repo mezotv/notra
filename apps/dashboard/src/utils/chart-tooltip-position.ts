@@ -1,5 +1,5 @@
-// Match ECharts' default tooltip offset (`refixTooltipPosition` uses 20).
-const TOOLTIP_POINTER_GAP = 20;
+// Tight offset so the box tracks the cursor without sitting on the hover line.
+const TOOLTIP_POINTER_GAP = 12;
 const FIXED_TOOLTIP_Y = 8;
 
 function clamp(value: number, min: number, max: number): number {
@@ -17,14 +17,38 @@ function clampTooltipX(
   return clamp(x, 0, Math.max(0, viewWidth - tooltipWidth));
 }
 
-/** Pin near the top and center on the pointer X, without leaving the chart. */
+/**
+ * Sit beside the hover line. Prefer the side with more room so the box does
+ * not flip back and forth near the edge — it only switches at the midpoint.
+ */
+function sideOffsetTooltipX(
+  pointerX: number,
+  tooltipWidth: number,
+  viewWidth: number
+): number {
+  const rightX = pointerX + TOOLTIP_POINTER_GAP;
+  const leftX = pointerX - tooltipWidth - TOOLTIP_POINTER_GAP;
+  const rightFits = rightX + tooltipWidth <= viewWidth;
+  const leftFits = leftX >= 0;
+
+  let x = rightX;
+  if (rightFits && leftFits) {
+    x = viewWidth - pointerX >= pointerX ? rightX : leftX;
+  } else if (leftFits && !rightFits) {
+    x = leftX;
+  }
+
+  return clampTooltipX(x, tooltipWidth, viewWidth);
+}
+
+/** Pin near the top and sit beside the pointer X, without covering the hover line. */
 export function fixedTooltipPosition(
   pointerX: number,
   tooltipWidth: number,
   viewWidth: number
 ): [number, number] {
   return [
-    clampTooltipX(pointerX - tooltipWidth / 2, tooltipWidth, viewWidth),
+    sideOffsetTooltipX(pointerX, tooltipWidth, viewWidth),
     FIXED_TOOLTIP_Y,
   ];
 }
@@ -40,16 +64,9 @@ export function overflowTooltipPosition(
 ): [number, number] {
   const [pointerX, pointerY] = pointer;
   const [tooltipWidth, tooltipHeight] = contentSize;
-  const viewWidth = viewSize[0];
-
-  let x = pointerX + TOOLTIP_POINTER_GAP;
-  // ECharts adds 2px so a right-edge box does not wrap its value column.
-  if (pointerX + tooltipWidth + TOOLTIP_POINTER_GAP + 2 > viewWidth) {
-    x = pointerX - tooltipWidth - TOOLTIP_POINTER_GAP;
-  }
 
   return [
-    clampTooltipX(x, tooltipWidth, viewWidth),
+    sideOffsetTooltipX(pointerX, tooltipWidth, viewSize[0]),
     pointerY - tooltipHeight - TOOLTIP_POINTER_GAP,
   ];
 }
