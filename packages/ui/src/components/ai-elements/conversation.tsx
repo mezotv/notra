@@ -4,7 +4,7 @@ import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon, IconSvgElement } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import type { ComponentProps } from "react";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { StickToBottom, useStickToBottomContext } from "use-stick-to-bottom";
 import { cn } from "@notra/ui/lib/utils";
 
@@ -72,6 +72,22 @@ export const ConversationEmptyState = ({
     )}
   </div>
 );
+
+export type ConversationScrollToBottomOnChangeProps = {
+  scrollKey: string;
+};
+
+export function ConversationScrollToBottomOnChange({
+  scrollKey,
+}: ConversationScrollToBottomOnChangeProps) {
+  const { scrollToBottom } = useStickToBottomContext();
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [scrollKey, scrollToBottom]);
+
+  return null;
+}
 
 export type ConversationScrollButtonProps = ComponentProps<typeof Button>;
 

@@ -8,14 +8,13 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useRef } from "react";
-import { DiffView } from "@/components/content/diff-view";
+import { useEffect, useRef } from "react";
 import { LinkedInPost } from "@/components/linkedin-post";
 import { useSelectedSocialAccount } from "@/lib/hooks/use-selected-social-account";
 import { linkedInAuthorFromAccount } from "@/utils/linkedin";
 import type { ContentEditorProps } from "./types";
 
-const VIEW_OPTIONS = ["preview", "raw", "diff"] as const;
+const VIEW_OPTIONS = ["preview", "raw"] as const;
 type ViewOption = (typeof VIEW_OPTIONS)[number];
 
 const VIEW_OPTIONS_SET = new Set<string>(VIEW_OPTIONS);
@@ -30,6 +29,7 @@ export function LinkedInEditor({
   actions,
   organization,
   organizationId,
+  writeFocusNonce = 0,
 }: ContentEditorProps) {
   const [view, setView] = useQueryState(
     "view",
@@ -49,6 +49,13 @@ export function LinkedInEditor({
         avatar: organization?.logo ?? undefined,
       };
 
+  useEffect(() => {
+    if (writeFocusNonce === 0) {
+      return;
+    }
+    setView("preview").catch(() => undefined);
+  }, [setView, writeFocusNonce]);
+
   const currentMarkdown = state.editedMarkdown ?? content.markdown ?? "";
   const title = state.editingTitle ?? state.serverTitle;
 
@@ -56,9 +63,10 @@ export function LinkedInEditor({
     <Tabs
       className="w-full"
       onValueChange={(value) => {
-        if (isViewOption(value)) {
-          setView(value);
+        if (!isViewOption(value)) {
+          return;
         }
+        setView(value);
       }}
       value={view}
     >
@@ -67,12 +75,6 @@ export function LinkedInEditor({
           <TabsList variant="line">
             <TabsTrigger value="preview">Preview</TabsTrigger>
             <TabsTrigger value="raw">Raw</TabsTrigger>
-            <TabsTrigger value="diff">
-              Diff
-              {state.hasChanges && (
-                <span className="ml-1.5 size-2 rounded-full bg-primary" />
-              )}
-            </TabsTrigger>
           </TabsList>
         }
         heading={
@@ -126,38 +128,6 @@ export function LinkedInEditor({
             }}
             value={currentMarkdown}
           />
-        </TabsContent>
-        <TabsContent className="mt-0 space-y-4" value="diff">
-          {state.hasTitleChanges && (
-            <div className="space-y-2">
-              <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-                Title
-              </p>
-              <div className="grid grid-cols-2 gap-4 rounded-lg border p-3 text-sm">
-                <div className="min-w-0">
-                  <p className="mb-1 text-muted-foreground text-xs">Original</p>
-                  <p className="wrap-break-word rounded bg-red-500/10 px-2 py-1">
-                    {state.serverTitle}
-                  </p>
-                </div>
-                <div className="min-w-0">
-                  <p className="mb-1 text-muted-foreground text-xs">Current</p>
-                  <p className="wrap-break-word rounded bg-green-500/10 px-2 py-1">
-                    {title}
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="space-y-2">
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-              Content
-            </p>
-            <DiffView
-              currentMarkdown={currentMarkdown}
-              originalMarkdown={state.originalMarkdown}
-            />
-          </div>
         </TabsContent>
       </TitleCard>
     </Tabs>

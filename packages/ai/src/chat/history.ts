@@ -73,9 +73,27 @@ function toExternalChannelId(
   return null;
 }
 
-function toSessionSummary(
-  row: typeof chatSessions.$inferSelect
-): ChatSessionSummary {
+const chatSessionSummaryColumns = {
+  id: chatSessions.id,
+  title: chatSessions.title,
+  createdAt: chatSessions.createdAt,
+  updatedAt: chatSessions.updatedAt,
+  pinnedAt: chatSessions.pinnedAt,
+  externalChannelSource: chatSessions.externalChannelSource,
+  externalChannelId: chatSessions.externalChannelId,
+} as const;
+
+interface ChatSessionSummaryRow {
+  id: string;
+  title: string;
+  createdAt: Date;
+  updatedAt: Date;
+  pinnedAt: Date | null;
+  externalChannelSource: string | null;
+  externalChannelId: string | null;
+}
+
+function toSessionSummary(row: ChatSessionSummaryRow): ChatSessionSummary {
   return {
     chatId: row.id,
     title: row.title,
@@ -465,15 +483,7 @@ export async function getChatSession(
   chatId: string
 ): Promise<ChatSessionSummary | null> {
   const row = await db
-    .select({
-      id: chatSessions.id,
-      title: chatSessions.title,
-      createdAt: chatSessions.createdAt,
-      updatedAt: chatSessions.updatedAt,
-      pinnedAt: chatSessions.pinnedAt,
-      externalChannelSource: chatSessions.externalChannelSource,
-      externalChannelId: chatSessions.externalChannelId,
-    })
+    .select(chatSessionSummaryColumns)
     .from(chatSessions)
     .where(
       and(
@@ -490,17 +500,7 @@ export async function getChatSession(
     return null;
   }
 
-  return {
-    chatId: row.id,
-    title: row.title,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-    pinnedAt: row.pinnedAt?.toISOString() ?? null,
-    externalChannelId: toExternalChannelId(
-      row.externalChannelSource,
-      row.externalChannelId
-    ),
-  };
+  return toSessionSummary(row);
 }
 
 export async function claimChatSessionForExternalChannel(
@@ -591,7 +591,7 @@ export async function listContentChatSessions(
   contentId: string
 ): Promise<ChatSessionSummary[]> {
   const rows = await db
-    .select()
+    .select(chatSessionSummaryColumns)
     .from(chatSessions)
     .where(
       and(

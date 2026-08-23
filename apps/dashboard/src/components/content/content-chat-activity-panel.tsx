@@ -7,6 +7,12 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  Conversation,
+  ConversationContent,
+  ConversationScrollButton,
+  ConversationScrollToBottomOnChange,
+} from "@notra/ui/components/ai-elements/conversation";
+import {
   Message,
   MessageContent,
   MessageResponse,
@@ -22,7 +28,7 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { getToolName, isToolUIPart } from "ai";
-import { Fragment, type ReactNode, useEffect, useRef } from "react";
+import { Fragment, type ReactNode } from "react";
 import { ChatReasoningBlock } from "@/components/ai/chat-reasoning-block";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
 import { BrailleLoader } from "@/components/braille-loader";
@@ -40,33 +46,24 @@ import { getContentChatHistoryGroups } from "@/utils/content-chat-history";
 const ACTIVITY_MESSAGE_CLASSNAME =
   "translate-y-0 opacity-100 transition-[opacity,translate] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] starting:translate-y-1 starting:opacity-0 motion-reduce:transition-none motion-reduce:starting:translate-y-0 motion-reduce:starting:opacity-100";
 
-const ACTIVITY_FEED_CLASSNAME =
-  "min-h-0 min-w-0 flex-1 overflow-x-clip overflow-y-auto overscroll-contain scrollbar-thin scrollbar-stable [overflow-anchor:none]";
-
 function ContentChatActivityFeed({
   children,
-  stickToBottom,
+  scrollKey,
 }: {
   children: ReactNode;
-  stickToBottom: boolean;
+  scrollKey: string;
 }) {
-  const viewportRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!stickToBottom) {
-      return;
-    }
-    const viewport = viewportRef.current;
-    if (!viewport) {
-      return;
-    }
-    viewport.scrollTop = viewport.scrollHeight;
-  }, [children, stickToBottom]);
-
   return (
-    <div className={ACTIVITY_FEED_CLASSNAME} ref={viewportRef}>
-      {children}
-    </div>
+    <Conversation className="min-h-0 min-w-0 flex-1 overflow-x-clip">
+      <ConversationScrollToBottomOnChange scrollKey={scrollKey} />
+      <ConversationContent className="flex min-w-0 flex-col gap-4 px-4 py-4">
+        {children}
+      </ConversationContent>
+      <ConversationScrollButton
+        aria-label="Scroll to latest messages"
+        className="bottom-3 z-10 shadow-sm"
+      />
+    </Conversation>
   );
 }
 
@@ -161,7 +158,7 @@ export function ContentChatActivityPanel({
     <div className="flex h-full min-h-0 flex-col">
       <header className="flex h-12 shrink-0 items-center justify-between gap-2 rounded-t-[calc(0.75rem-1px)] bg-muted px-4">
         <h2 className="flex h-full min-w-0 items-center truncate text-foreground text-sm leading-none">
-          Agent activity
+          Content Agent
         </h2>
         <div className="-mr-1.5 flex h-full items-center gap-0.5">
           <Button
@@ -234,8 +231,12 @@ export function ContentChatActivityPanel({
                 disabled={isAgentBusy}
                 onClick={onNewChat}
               >
-                <HugeiconsIcon className="size-3.5" icon={PlusSignIcon} />
-                New chat
+                <HugeiconsIcon
+                  className="size-4 shrink-0"
+                  icon={PlusSignIcon}
+                  strokeWidth={1.8}
+                />
+                <span>New chat</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -245,7 +246,7 @@ export function ContentChatActivityPanel({
             size="icon-sm"
             variant="ghost"
           >
-            <span className="sr-only">Close agent activity</span>
+            <span className="sr-only">Close Content Agent</span>
             <HugeiconsIcon
               className="size-4"
               icon={Cancel01Icon}
@@ -256,8 +257,8 @@ export function ContentChatActivityPanel({
       </header>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-[calc(0.75rem-1px)] bg-muted">
         <div className="flex min-h-0 flex-1 flex-col rounded-t-xl bg-background">
-          <ContentChatActivityFeed stickToBottom={isAgentBusy}>
-            <div className="flex min-w-0 flex-col gap-4 px-4 py-4">
+          <ContentChatActivityFeed scrollKey={activeChatId ?? ""}>
+            <div className="flex min-w-0 flex-col gap-4">
               {messages.map((message) => (
                 <ContentChatActivityMessage
                   key={message.id}

@@ -20,6 +20,12 @@ import type {
   TextSelection,
 } from "@notra/ai/types/chat";
 import {
+  contentChatHistoryPath,
+  contentChatHistoryQueryKey,
+  contentChatSessionsPath,
+  contentChatSessionsQueryKey,
+} from "@notra/ai/utils/chat";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -88,6 +94,8 @@ import type { ContentChatMessageMetadata } from "@/types/content/chat";
 import type { ContentDetailPageClientProps } from "@/types/content/detail";
 import type { ImageExportTarget } from "@/types/content/image-export";
 import { getBrandFaviconUrl } from "@/utils/brand";
+import { getEditMarkdownDiff } from "@/utils/chat-document-diff";
+import { handleStandaloneChatError } from "@/utils/chat-error";
 import { snapshotContentChatAttachments } from "@/utils/content-chat-attachments";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { parseGeoWriterDraft } from "@/utils/geo-write-entry";
@@ -183,6 +191,10 @@ export default function PageClient({
 
   const [isActivityPanelOpen, setIsActivityPanelOpen] = useState(false);
   const [hasOpenedActivityPanel, setHasOpenedActivityPanel] = useState(false);
+  const [writeFocusNonce, setWriteFocusNonce] = useState(0);
+  const [reviewPreviousMarkdown, setReviewPreviousMarkdown] = useState<
+    string | null
+  >(null);
   if (isActivityPanelOpen && !hasOpenedActivityPanel) {
     setHasOpenedActivityPanel(true);
   }
@@ -277,6 +289,7 @@ export default function PageClient({
     setPersistedSlug(null);
     setEditingTitle(null);
     setEditingSlug(null);
+    setReviewPreviousMarkdown(null);
   }, [contentId, organizationId, queryClient]);
 
   useEffect(() => {
@@ -327,6 +340,10 @@ export default function PageClient({
         setOriginalMarkdown(editedMarkdown);
         originalMarkdownRef.current = editedMarkdown;
       }
+      if (reviewPreviousMarkdown) {
+        setEditorKey((key) => key + 1);
+      }
+      setReviewPreviousMarkdown(null);
       setPersistedTitle(responseData.content?.title ?? title.trim());
       setEditingTitle(null);
       setPersistedSlug(responseData.content?.slug ?? null);
@@ -359,6 +376,7 @@ export default function PageClient({
     editingSlug,
     title,
     editedMarkdown,
+    reviewPreviousMarkdown,
     organizationId,
     contentId,
     queryClient,
@@ -370,6 +388,8 @@ export default function PageClient({
     editorRef.current?.setMarkdown(originalMarkdown);
     setEditingTitle(null);
     setEditingSlug(null);
+    setReviewPreviousMarkdown(null);
+    setEditorKey((key) => key + 1);
   }, [originalMarkdown]);
 
   const [isTogglingStatus, setIsTogglingStatus] = useState(false);
@@ -547,13 +567,15 @@ export default function PageClient({
   const isDrainingRef = useRef(false);
   const wasStoppedByUserRef = useRef(false);
   const queuedMessagesRef = useRef<QueuedMessage[]>([]);
+  const messagesRef = useRef<UIMessage[]>([]);
+  const isAgentBusyRef = useRef(false);
   const processedToolCallsRef = useRef<Set<string>>(new Set());
 
   const contentChatSessionsQuery = useQuery<ChatSessionSummary[]>({
-    queryKey: ["content-chat-sessions", organizationId, contentId],
+    queryKey: contentChatSessionsQueryKey(organizationId, contentId),
     queryFn: async () => {
       const response = await fetch(
-        `/api/organizations/${organizationId}/content/${contentId}/chat`
+        contentChatSessionsPath(organizationId, contentId)
       );
       if (!response.ok) {
         throw new Error("Failed to load content chat sessions");
@@ -570,13 +592,17 @@ export default function PageClient({
   });
   const contentChatSessions = contentChatSessionsQuery.data ?? [];
   const contentChatHistoryQuery = useQuery<UIMessage[] | null>({
-    queryKey: ["content-chat-history", organizationId, contentId, activeChatId],
+    queryKey: contentChatHistoryQueryKey(
+      organizationId,
+      contentId,
+      activeChatId
+    ),
     queryFn: async () => {
       if (!activeChatId) {
         return null;
       }
       const response = await fetch(
-        `/api/organizations/${organizationId}/content/${contentId}/chat/${encodeURIComponent(activeChatId)}`
+        contentChatHistoryPath(organizationId, contentId, activeChatId)
       );
       if (!response.ok) {
         throw new Error("Failed to load content chat history");
@@ -590,6 +616,7 @@ export default function PageClient({
     },
     enabled: Boolean(activeChatId && chatIdToHydrate === activeChatId),
     staleTime: 5 * 60_000,
+    refetchOnWindowFocus: false,
   });
 
   useEffect(() => {
@@ -612,9 +639,15 @@ export default function PageClient({
     onFinish: () => {
       clearSelection();
       emitAutumnRefresh();
+      if (activeChatId) {
+        queryClient.setQueryData(
+          contentChatHistoryQueryKey(organizationId, contentId, activeChatId),
+          messagesRef.current
+        );
+      }
       queryClient
         .invalidateQueries({
-          queryKey: ["content-chat-sessions", organizationId, contentId],
+          queryKey: contentChatSessionsQueryKey(organizationId, contentId),
         })
         .catch((invalidateError) => {
           console.error(
@@ -623,6 +656,7 @@ export default function PageClient({
           );
         });
       isDrainingRef.current = false;
+      isAgentBusyRef.current = false;
       if (wasStoppedByUserRef.current) {
         wasStoppedByUserRef.current = false;
         return;
@@ -630,10 +664,11 @@ export default function PageClient({
       drainQueueRef.current();
     },
     onError: (err) => {
-      console.error("Error editing content:", err);
+      isDrainingRef.current = false;
+      isAgentBusyRef.current = false;
       queryClient
         .invalidateQueries({
-          queryKey: ["content-chat-sessions", organizationId, contentId],
+          queryKey: contentChatSessionsQueryKey(organizationId, contentId),
         })
         .catch((invalidateError) => {
           console.error(
@@ -641,43 +676,42 @@ export default function PageClient({
             invalidateError
           );
         });
-
-      const errorMessage = err.message || String(err);
-
-      if (
-        errorMessage.includes("USAGE_LIMIT_REACHED") ||
-        errorMessage.includes("Usage limit reached")
-      ) {
-        setChatError(
-          "You've used all your chat messages this month. Upgrade for more."
-        );
-        return;
-      }
-
-      try {
-        const errorData = JSON.parse(errorMessage);
-        if (errorData.code === "USAGE_LIMIT_REACHED") {
-          setChatError(
-            "You've used all your chat messages this month. Upgrade for more."
+      queryClient
+        .invalidateQueries({
+          queryKey: contentChatHistoryQueryKey(
+            organizationId,
+            contentId,
+            activeChatId
+          ),
+        })
+        .catch((invalidateError) => {
+          console.error(
+            "Failed to refresh content chat history",
+            invalidateError
           );
-          return;
-        }
-      } catch {
-        // Ignore non-JSON error payloads.
-      }
+        });
 
-      toast.error("Failed to edit content");
-      isDrainingRef.current = false;
+      const { isUsageLimit } = handleStandaloneChatError(err, {
+        setChatError,
+      });
+      if (!isUsageLimit) {
+        toast.error("Failed to edit content");
+        drainQueueRef.current();
+      }
     },
   });
 
+  messagesRef.current = messages;
   const isAgentBusy = status === "streaming" || status === "submitted";
-  const isAgentBusyRef = useRef(isAgentBusy);
-  useEffect(() => {
-    isAgentBusyRef.current = isAgentBusy;
-  }, [isAgentBusy]);
+  isAgentBusyRef.current = isAgentBusy;
 
   useLayoutEffect(() => {
+    if (chatIdToHydrate !== activeChatId) {
+      return;
+    }
+    if (status === "submitted" || status === "streaming") {
+      return;
+    }
     const history = contentChatHistoryQuery.data;
     if (!history) {
       return;
@@ -692,7 +726,14 @@ export default function PageClient({
       }
     }
     setMessages(history);
-  }, [contentChatHistoryQuery.data, setMessages]);
+    setChatIdToHydrate(null);
+  }, [
+    activeChatId,
+    chatIdToHydrate,
+    contentChatHistoryQuery.data,
+    setMessages,
+    status,
+  ]);
 
   const handleSelectChat = useCallback(
     (chatId: string) => {
@@ -700,6 +741,7 @@ export default function PageClient({
         return;
       }
       setQueuedMessages([]);
+      queuedMessagesRef.current = [];
       processedToolCallsRef.current.clear();
       setMessages([]);
       setActiveChatId(chatId);
@@ -713,6 +755,7 @@ export default function PageClient({
       return;
     }
     setQueuedMessages([]);
+    queuedMessagesRef.current = [];
     setChatInputValue("");
     processedToolCallsRef.current.clear();
     setMessages([]);
@@ -736,65 +779,86 @@ export default function PageClient({
   );
 
   useEffect(() => {
-    for (const message of messages) {
-      if (message.role === "assistant" && message.parts) {
-        for (const part of message.parts) {
-          if (
-            part.type === "tool-editMarkdown" ||
-            part.type === "tool-reviseImage"
-          ) {
-            const toolPart = part as {
-              toolCallId: string;
-              state: string;
-              output?: {
-                markdown?: string;
-                status?: string;
-                updatedMarkdown?: string;
-              };
-            };
+    let lastAssistantMessage: (typeof messages)[number] | undefined;
+    for (let index = messages.length - 1; index >= 0; index -= 1) {
+      const message = messages[index];
+      if (message?.role === "assistant") {
+        lastAssistantMessage = message;
+        break;
+      }
+    }
+    if (!lastAssistantMessage?.parts) {
+      return;
+    }
 
-            if (processedToolCallsRef.current.has(toolPart.toolCallId)) {
-              continue;
-            }
+    for (const part of lastAssistantMessage.parts) {
+      if (
+        part.type !== "tool-editMarkdown" &&
+        part.type !== "tool-reviseImage"
+      ) {
+        continue;
+      }
 
-            if (
-              part.type === "tool-reviseImage" &&
-              toolPart.state === "output-available" &&
-              toolPart.output?.status === "updated"
-            ) {
-              processedToolCallsRef.current.add(toolPart.toolCallId);
-              invalidateContentQueries().catch((error) => {
-                console.error("Failed to refresh revised image content", error);
-              });
-              continue;
-            }
+      const toolPart = part as {
+        toolCallId: string;
+        state: string;
+        output?: {
+          markdown?: string;
+          status?: string;
+          updatedMarkdown?: string;
+        };
+      };
 
-            if (
-              toolPart.state === "output-available" &&
-              (toolPart.output?.updatedMarkdown || toolPart.output?.markdown)
-            ) {
-              processedToolCallsRef.current.add(toolPart.toolCallId);
-              const nextMarkdown =
-                toolPart.output.updatedMarkdown || toolPart.output.markdown;
-              if (!nextMarkdown) {
-                continue;
-              }
-              const fixedMarkdown =
-                part.type === "tool-reviseImage"
-                  ? nextMarkdown
-                  : remend(nextMarkdown);
-              console.log(
-                `[Tool] ${part.type} result applied, toolCallId=${toolPart.toolCallId}`
-              );
-              setEditedMarkdown(fixedMarkdown);
-              editedMarkdownRef.current = fixedMarkdown;
-              editorRef.current?.setMarkdown(fixedMarkdown);
-              invalidateContentQueries().catch((error) => {
-                console.error("Failed to refresh edited content", error);
-              });
-            }
-          }
+      if (processedToolCallsRef.current.has(toolPart.toolCallId)) {
+        continue;
+      }
+
+      if (
+        part.type === "tool-reviseImage" &&
+        toolPart.state === "output-available" &&
+        toolPart.output?.status === "updated"
+      ) {
+        processedToolCallsRef.current.add(toolPart.toolCallId);
+        invalidateContentQueries().catch((error) => {
+          console.error("Failed to refresh revised image content", error);
+        });
+        continue;
+      }
+
+      if (
+        toolPart.state === "output-available" &&
+        (toolPart.output?.updatedMarkdown || toolPart.output?.markdown)
+      ) {
+        processedToolCallsRef.current.add(toolPart.toolCallId);
+        const nextMarkdown =
+          toolPart.output.updatedMarkdown || toolPart.output.markdown;
+        if (!nextMarkdown) {
+          continue;
         }
+        const fixedMarkdown =
+          part.type === "tool-reviseImage"
+            ? nextMarkdown
+            : remend(nextMarkdown);
+        const previousMarkdown =
+          getEditMarkdownDiff(toolPart.output)?.previousMarkdown ??
+          editedMarkdownRef.current ??
+          "";
+        setEditedMarkdown(fixedMarkdown);
+        editedMarkdownRef.current = fixedMarkdown;
+        if (part.type === "tool-editMarkdown") {
+          setReviewPreviousMarkdown(
+            previousMarkdown && previousMarkdown !== fixedMarkdown
+              ? previousMarkdown
+              : null
+          );
+          setWriteFocusNonce((value) => value + 1);
+          setEditorKey((key) => key + 1);
+        } else {
+          editorRef.current?.setMarkdown(fixedMarkdown);
+        }
+        invalidateContentQueries().catch((error) => {
+          console.error("Failed to refresh edited content", error);
+        });
       }
     }
   }, [invalidateContentQueries, messages]);
@@ -846,18 +910,23 @@ export default function PageClient({
       setIsActivityPanelOpen(true);
       const attachments = snapshotContentChatAttachments(selection, context);
       if (isAgentBusyRef.current) {
-        setQueuedMessages((prev) => [
-          ...prev,
-          {
-            id: nanoid(10),
-            text: instruction,
-            selection: attachments.selection,
-            context: attachments.context,
-          },
-        ]);
+        setQueuedMessages((prev) => {
+          const next = [
+            ...prev,
+            {
+              id: nanoid(10),
+              text: instruction,
+              selection: attachments.selection,
+              context: attachments.context,
+            },
+          ];
+          queuedMessagesRef.current = next;
+          return next;
+        });
         return;
       }
       wasStoppedByUserRef.current = false;
+      isAgentBusyRef.current = true;
       await dispatchContentEdit(instruction, attachments);
     },
     [context, dispatchContentEdit, selection]
@@ -869,13 +938,19 @@ export default function PageClient({
   }, [stop]);
 
   const handleRemoveQueued = useCallback((id: string) => {
-    setQueuedMessages((prev) => prev.filter((message) => message.id !== id));
+    setQueuedMessages((prev) => {
+      const next = prev.filter((message) => message.id !== id);
+      queuedMessagesRef.current = next;
+      return next;
+    });
   }, []);
 
   const handleEditQueued = useCallback((message: QueuedMessage) => {
-    setQueuedMessages((prev) =>
-      prev.filter((queued) => queued.id !== message.id)
-    );
+    setQueuedMessages((prev) => {
+      const next = prev.filter((queued) => queued.id !== message.id);
+      queuedMessagesRef.current = next;
+      return next;
+    });
     setChatInputValue(message.text);
     if (message.selection) {
       setSelection(message.selection);
@@ -885,33 +960,33 @@ export default function PageClient({
     }
   }, []);
 
-  useEffect(() => {
-    queuedMessagesRef.current = queuedMessages;
-  }, [queuedMessages]);
+  queuedMessagesRef.current = queuedMessages;
+  drainQueueRef.current = () => {
+    if (isDrainingRef.current) {
+      return;
+    }
+    const queue = queuedMessagesRef.current;
+    const next = queue[0];
+    if (!next) {
+      return;
+    }
 
-  useEffect(() => {
-    drainQueueRef.current = () => {
-      if (isDrainingRef.current) {
-        return;
-      }
-      const queue = queuedMessagesRef.current;
-      const next = queue[0];
-      if (!next) {
-        return;
-      }
-
-      isDrainingRef.current = true;
-      setQueuedMessages(queue.slice(1));
-      dispatchContentEdit(next.text, {
-        selection: next.selection,
-        context: next.context,
-      }).catch((error) => {
-        console.error("[Content] Failed to drain queued message:", error);
-        isDrainingRef.current = false;
-        setQueuedMessages((prev) => [next, ...prev]);
+    isDrainingRef.current = true;
+    queuedMessagesRef.current = queue.slice(1);
+    setQueuedMessages(queue.slice(1));
+    dispatchContentEdit(next.text, {
+      selection: next.selection,
+      context: next.context,
+    }).catch((error) => {
+      console.error("[Content] Failed to drain queued message:", error);
+      isDrainingRef.current = false;
+      setQueuedMessages((prev) => {
+        const restored = [next, ...prev];
+        queuedMessagesRef.current = restored;
+        return restored;
       });
-    };
-  }, [dispatchContentEdit]);
+    });
+  };
 
   const saveBarSection =
     hasChanges && isActivityPanelOpen ? (
@@ -939,10 +1014,15 @@ export default function PageClient({
       </div>
     ) : null;
 
-  const chatInputSection = (
-    <div
-      className={`fixed right-0 bottom-0 left-0 mx-auto w-full max-w-2xl px-4 pb-4 md:w-auto ${sidebarState === "collapsed" ? "md:left-14" : "md:left-64"} ${isActivityPanelOpen ? "lg:hidden" : ""}`}
-    >
+  const isChatDisabled =
+    isGeoWriterPlanLocked ||
+    !activeChatId ||
+    contentChatSessionsQuery.isPending ||
+    contentChatHistoryQuery.isFetching ||
+    contentChatHistoryQuery.isError;
+
+  const renderChatComposer = () => (
+    <>
       <ChatQueue
         messages={queuedMessages}
         onEdit={handleEditQueued}
@@ -951,12 +1031,7 @@ export default function PageClient({
       <ChatInput
         connectedTop={queuedMessages.length > 0}
         context={context}
-        disabled={
-          isGeoWriterPlanLocked ||
-          !activeChatId ||
-          contentChatSessionsQuery.isPending ||
-          contentChatHistoryQuery.isFetching
-        }
+        disabled={isChatDisabled}
         error={chatError}
         isLoading={isAgentBusy}
         onAddContext={handleAddContext}
@@ -971,6 +1046,14 @@ export default function PageClient({
         selection={selection}
         value={chatInputValue}
       />
+    </>
+  );
+
+  const chatInputSection = (
+    <div
+      className={`fixed right-0 bottom-0 left-0 mx-auto w-full max-w-2xl px-4 pb-4 md:w-auto ${sidebarState === "collapsed" ? "md:left-14" : "md:left-64"} ${isActivityPanelOpen ? "lg:hidden" : ""}`}
+    >
+      {renderChatComposer()}
     </div>
   );
 
@@ -1244,13 +1327,13 @@ export default function PageClient({
                       />
                     }
                   >
-                    <span className="sr-only">Toggle agent activity</span>
+                    <span className="sr-only">Toggle Content Agent</span>
                     <HugeiconsIcon
                       className="size-4"
                       icon={SidebarRight01Icon}
                     />
                   </TooltipTrigger>
-                  <TooltipContent>Agent activity</TooltipContent>
+                  <TooltipContent>Content Agent</TooltipContent>
                 </Tooltip>
                 {content.contentType !== "image" && (
                   <Button
@@ -1407,6 +1490,7 @@ export default function PageClient({
             }}
             organizationId={organizationId}
             readOnly={isGeoWriterPlanLocked}
+            reviewPreviousMarkdown={reviewPreviousMarkdown}
             state={{
               editedMarkdown,
               originalMarkdown,
@@ -1419,6 +1503,7 @@ export default function PageClient({
               hasTitleChanges,
               hasSlugChanges,
             }}
+            writeFocusNonce={writeFocusNonce}
           />
 
           <RecommendationsSection value={content.recommendations} />
@@ -1450,36 +1535,7 @@ export default function PageClient({
                 sessions={contentChatSessions}
                 status={status}
               >
-                <div className="shrink-0 p-2 pt-1">
-                  <ChatQueue
-                    messages={queuedMessages}
-                    onEdit={handleEditQueued}
-                    onRemove={handleRemoveQueued}
-                  />
-                  <ChatInput
-                    connectedTop={queuedMessages.length > 0}
-                    context={context}
-                    disabled={
-                      isGeoWriterPlanLocked ||
-                      !activeChatId ||
-                      contentChatSessionsQuery.isPending ||
-                      contentChatHistoryQuery.isFetching
-                    }
-                    error={chatError}
-                    isLoading={isAgentBusy}
-                    onAddContext={handleAddContext}
-                    onClearError={() => setChatError(null)}
-                    onClearSelection={clearSelection}
-                    onRemoveContext={handleRemoveContext}
-                    onSend={handleAiEdit}
-                    onStop={handleStop}
-                    onValueChange={setChatInputValue}
-                    organizationId={organizationId}
-                    organizationSlug={organizationSlug}
-                    selection={selection}
-                    value={chatInputValue}
-                  />
-                </div>
+                <div className="shrink-0 p-2 pt-1">{renderChatComposer()}</div>
               </ContentChatActivityPanel>
             </div>
           ) : null}

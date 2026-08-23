@@ -44,6 +44,7 @@ interface LexicalEditorProps {
   editorRef?: RefObject<EditorRefHandle | null>;
   theme?: EditorThemeClasses;
   className?: string;
+  cleanReviewMarks?: boolean;
 }
 
 export function LexicalEditor({
@@ -54,6 +55,7 @@ export function LexicalEditor({
   editorRef,
   theme = editorTheme,
   className,
+  cleanReviewMarks = false,
 }: LexicalEditorProps) {
   const isProgrammaticUpdateRef = useRef(false);
   const [floatingAnchorElem, setFloatingAnchorElem] =
@@ -131,6 +133,7 @@ export function LexicalEditor({
         <ClickableLinkPlugin newTab />
         <TabFocusPlugin />
         <MarkdownSyncPlugin
+          cleanReviewMarks={cleanReviewMarks}
           onChange={handleChange}
           transformers={EDITOR_TRANSFORMERS}
         />

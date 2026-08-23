@@ -46,6 +46,9 @@ import { ToolOutputImages } from "./chat-tool-block/tool-output-images";
 import { collectToolOutputImages } from "./chat-tool-block/tool-output-images/utils";
 import type { ChatToolBlockProps, ToolCopy } from "./chat-tool-block/types";
 
+const TOOL_DETAILS_PANEL_CLASSNAME =
+  "h-[var(--collapsible-panel-height)] overflow-hidden outline-none transition-[height,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none";
+
 function firstStringValue<T extends object>(
   values: T,
   keys: readonly (keyof T)[]
@@ -722,7 +725,10 @@ export function ChatToolBlock({
   const hasInput = input != null;
   const hasOutput = output != null;
   const hasApprovalActions = isAwaitingApproval && (onApprove || onDeny);
-  const hasDetails = hasInput || hasOutput || hasApprovalActions;
+  const hideDocumentPayload =
+    toolName === "editMarkdown" && !isStreaming && !isError;
+  const showJsonDetails = !hideDocumentPayload && (hasInput || hasOutput);
+  const hasDetails = showJsonDetails || hasApprovalActions;
   const outputImages =
     hasOutput && !isError && !isStreaming
       ? collectToolOutputImages(output)
@@ -791,10 +797,14 @@ export function ChatToolBlock({
         />
       </CollapsibleTrigger>
       <ToolOutputImages images={outputImages} />
-      <CollapsibleContent className="h-[var(--collapsible-panel-height)] overflow-hidden outline-none transition-[height,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none">
+      <CollapsibleContent className={TOOL_DETAILS_PANEL_CLASSNAME}>
         <div className="mt-3 space-y-4">
-          {hasInput ? <ToolDataSection label="Input" value={input} /> : null}
-          {hasOutput ? <ToolDataSection label="Output" value={output} /> : null}
+          {showJsonDetails && hasInput ? (
+            <ToolDataSection label="Input" value={input} />
+          ) : null}
+          {showJsonDetails && hasOutput ? (
+            <ToolDataSection label="Output" value={output} />
+          ) : null}
           {hasApprovalActions ? (
             <div className="flex flex-wrap items-center gap-2">
               {onApprove ? (

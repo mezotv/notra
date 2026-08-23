@@ -49,6 +49,8 @@ export interface ContentEditorProps {
   readOnly?: boolean;
   editorRef: React.RefObject<EditorRefHandle | null>;
   editorKey: number;
+  writeFocusNonce?: number;
+  reviewPreviousMarkdown?: string | null;
   organization?: OrganizationInfo;
   organizationId?: string;
   imageExportRef?: React.RefObject<HTMLDivElement | null>;

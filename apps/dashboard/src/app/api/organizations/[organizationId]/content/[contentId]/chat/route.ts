@@ -45,6 +45,17 @@ export async function GET(
     return auth.response;
   }
 
+  const contentExists = await db.query.posts.findFirst({
+    where: and(
+      eq(posts.id, contentId),
+      eq(posts.organizationId, organizationId)
+    ),
+    columns: { id: true },
+  });
+  if (!contentExists) {
+    return NextResponse.json({ error: "Content not found" }, { status: 404 });
+  }
+
   const sessions = await listContentChatSessions(organizationId, contentId);
   return NextResponse.json({ sessions });
 }
