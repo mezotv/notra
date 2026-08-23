@@ -12,7 +12,6 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: [
       "@hugeicons/core-free-icons",
-      "@pierre/diffs",
       "lucide-react",
     ],
     hideLogsAfterAbort: true,
