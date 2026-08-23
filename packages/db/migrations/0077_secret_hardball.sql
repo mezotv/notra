@@ -1,3 +1,0 @@
-ALTER TABLE "chat_sessions" ADD COLUMN "content_id" text;--> statement-breakpoint
-ALTER TABLE "chat_sessions" ADD CONSTRAINT "chat_sessions_content_id_posts_id_fk" FOREIGN KEY ("content_id") REFERENCES "public"."posts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "chatSessions_org_content_deleted_updated_idx" ON "chat_sessions" USING btree ("organization_id","content_id","deleted_at","updated_at");

@@ -1,2 +1,0 @@
-ALTER TABLE "geo_settings" ADD COLUMN "enforce_zdr" boolean DEFAULT true NOT NULL;--> statement-breakpoint
-ALTER TABLE "geo_settings" ADD COLUMN "non_zdr_approved_engines" text[] DEFAULT ARRAY[]::text[] NOT NULL;
