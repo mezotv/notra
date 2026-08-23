@@ -24,7 +24,7 @@ function fitTextareaHeight(element: HTMLTextAreaElement | null) {
     return;
   }
 
-  element.style.height = "0px";
+  element.style.height = "auto";
   element.style.height = `${element.scrollHeight}px`;
 }
 
