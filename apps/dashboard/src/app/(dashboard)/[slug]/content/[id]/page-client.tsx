@@ -835,20 +835,24 @@ export default function PageClient({
         if (!nextMarkdown) {
           continue;
         }
-        const fixedMarkdown =
-          part.type === "tool-reviseImage"
-            ? nextMarkdown
-            : remend(nextMarkdown);
         const previousMarkdown =
           getEditMarkdownDiff(toolPart.output)?.previousMarkdown ??
           editedMarkdownRef.current ??
           "";
+        const fixedMarkdown =
+          part.type === "tool-reviseImage"
+            ? nextMarkdown
+            : remend(nextMarkdown);
+        const reviewPrevious =
+          part.type === "tool-editMarkdown" && previousMarkdown
+            ? remend(previousMarkdown)
+            : previousMarkdown;
         setEditedMarkdown(fixedMarkdown);
         editedMarkdownRef.current = fixedMarkdown;
         if (part.type === "tool-editMarkdown") {
           setReviewPreviousMarkdown(
-            previousMarkdown && previousMarkdown !== fixedMarkdown
-              ? previousMarkdown
+            reviewPrevious && reviewPrevious !== fixedMarkdown
+              ? reviewPrevious
               : null
           );
           setWriteFocusNonce((value) => value + 1);

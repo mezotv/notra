@@ -725,10 +725,19 @@ export function ChatToolBlock({
   const hasInput = input != null;
   const hasOutput = output != null;
   const hasApprovalActions = isAwaitingApproval && (onApprove || onDeny);
-  const hideDocumentPayload =
-    toolName === "editMarkdown" && !isStreaming && !isError;
-  const showJsonDetails = !hideDocumentPayload && (hasInput || hasOutput);
+  const showJsonDetails = hasInput || hasOutput;
   const hasDetails = showJsonDetails || hasApprovalActions;
+  const detailsOutput =
+    toolName === "editMarkdown" &&
+    output !== null &&
+    typeof output === "object" &&
+    !Array.isArray(output)
+      ? Object.fromEntries(
+          Object.entries(output as Record<string, unknown>).filter(
+            ([key]) => key !== "previousMarkdown" && key !== "updatedMarkdown"
+          )
+        )
+      : output;
   const outputImages =
     hasOutput && !isError && !isStreaming
       ? collectToolOutputImages(output)
@@ -803,7 +812,7 @@ export function ChatToolBlock({
             <ToolDataSection label="Input" value={input} />
           ) : null}
           {showJsonDetails && hasOutput ? (
-            <ToolDataSection label="Output" value={output} />
+            <ToolDataSection label="Output" value={detailsOutput} />
           ) : null}
           {hasApprovalActions ? (
             <div className="flex flex-wrap items-center gap-2">

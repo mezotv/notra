@@ -16,8 +16,8 @@ export const editorTheme: EditorThemeClasses = {
     italic: "italic",
     underline: "underline",
     strikethrough:
-      "rounded-sm bg-red-500/15 text-foreground line-through decoration-red-700/50",
-    highlight: "rounded-sm bg-emerald-500/15 text-foreground",
+      "rounded-sm bg-red-500/12 text-inherit line-through decoration-red-600/55 dark:bg-red-400/20 dark:decoration-red-400/65",
+    highlight: "text-inherit",
     code: "font-mono bg-muted px-1.5 py-0.5 rounded text-sm",
   },
   list: {

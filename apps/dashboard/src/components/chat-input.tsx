@@ -443,7 +443,7 @@ const ChatInput = ({
         </Tooltip>
         <Textarea
           aria-label="Send a message"
-          className="field-sizing-fixed block max-h-50 min-h-7 w-full min-w-0 flex-1 resize-none overflow-hidden whitespace-pre-wrap rounded-none border-0 bg-transparent px-1 py-1 text-foreground text-sm leading-5 caret-foreground shadow-none outline-none ring-0 focus-visible:border-transparent focus-visible:ring-0 disabled:cursor-not-allowed disabled:bg-transparent disabled:opacity-50"
+          className="field-sizing-fixed block max-h-50 min-h-7 w-full min-w-0 flex-1 resize-none overflow-hidden whitespace-pre-wrap rounded-none border-0 bg-transparent px-1 py-1 text-foreground text-sm leading-5 caret-foreground shadow-none outline-none ring-0 focus-visible:border-transparent focus-visible:ring-0 disabled:cursor-not-allowed disabled:bg-transparent disabled:opacity-50 dark:bg-transparent dark:disabled:bg-transparent"
           disabled={isInputLocked}
           onBlur={() => setIsFocused(false)}
           onChange={(event) => {

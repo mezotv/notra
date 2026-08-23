@@ -82,6 +82,40 @@ function lcsDiff(
   return mergeSegments(segments.reverse());
 }
 
+function splitCommonLineEnds(previous: string, updated: string) {
+  const oldLines = previous.split("\n");
+  const newLines = updated.split("\n");
+
+  let prefixCount = 0;
+  while (
+    prefixCount < oldLines.length &&
+    prefixCount < newLines.length &&
+    oldLines[prefixCount] === newLines[prefixCount]
+  ) {
+    prefixCount += 1;
+  }
+
+  let oldSuffix = oldLines.length;
+  let newSuffix = newLines.length;
+  while (
+    oldSuffix > prefixCount &&
+    newSuffix > prefixCount &&
+    oldLines[oldSuffix - 1] === newLines[newSuffix - 1]
+  ) {
+    oldSuffix -= 1;
+    newSuffix -= 1;
+  }
+
+  return {
+    prefix: oldLines.slice(0, prefixCount).join("\n"),
+    oldMid: oldLines.slice(prefixCount, oldSuffix).join("\n"),
+    newMid: newLines.slice(prefixCount, newSuffix).join("\n"),
+    suffix: oldLines.slice(oldSuffix).join("\n"),
+    hasPrefix: prefixCount > 0,
+    hasSuffix: oldSuffix < oldLines.length,
+  };
+}
+
 function diffReviewMarkdown(
   previous: string,
   updated: string
@@ -114,11 +148,11 @@ function wrapChanged(kind: "add" | "remove", value: string): string {
     .join("\n");
 }
 
-export function buildReviewMarkdown(previous: string, updated: string): string {
-  if (!previous || previous === updated) {
-    return updated;
-  }
+function joinReviewParts(parts: string[]): string {
+  return parts.join("\n");
+}
 
+function markHunk(previous: string, updated: string): string {
   return diffReviewMarkdown(previous, updated)
     .map((segment) => {
       if (segment.kind === "equal") {
@@ -127,6 +161,31 @@ export function buildReviewMarkdown(previous: string, updated: string): string {
       return wrapChanged(segment.kind, segment.value);
     })
     .join("");
+}
+
+export function buildReviewMarkdown(previous: string, updated: string): string {
+  if (!previous || previous === updated) {
+    return updated;
+  }
+
+  const { prefix, oldMid, newMid, suffix, hasPrefix, hasSuffix } =
+    splitCommonLineEnds(previous, updated);
+
+  if (!oldMid && !newMid) {
+    return updated;
+  }
+
+  const markedMid = markHunk(oldMid, newMid);
+  const parts: string[] = [];
+  if (hasPrefix) {
+    parts.push(prefix);
+  }
+  parts.push(markedMid);
+  if (hasSuffix) {
+    parts.push(suffix);
+  }
+
+  return joinReviewParts(parts);
 }
 
 export function stripReviewMarks(markdown: string): string {

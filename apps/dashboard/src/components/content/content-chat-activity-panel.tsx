@@ -56,13 +56,10 @@ function ContentChatActivityFeed({
   return (
     <Conversation className="min-h-0 min-w-0 flex-1 overflow-x-clip">
       <ConversationScrollToBottomOnChange scrollKey={scrollKey} />
-      <ConversationContent className="flex min-w-0 flex-col gap-4 px-4 py-4">
+      <ConversationContent className="flex min-w-0 flex-col gap-4 px-4 pt-4 pb-14">
         {children}
       </ConversationContent>
-      <ConversationScrollButton
-        aria-label="Scroll to latest messages"
-        className="bottom-3 z-10 shadow-sm"
-      />
+      <ConversationScrollButton aria-label="Scroll to latest messages" />
     </Conversation>
   );
 }

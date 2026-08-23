@@ -29,6 +29,27 @@
 }
 
 @layer components {
+  /* Lexical highlight uses <mark>; UA + color-scheme:dark paint neon yellow. */
+  .lexical-editor mark {
+    color: inherit;
+    background-color: color-mix(
+      in oklab,
+      var(--color-emerald-600) 14%,
+      transparent
+    );
+    border-radius: 0.125rem;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  .dark .lexical-editor mark {
+    background-color: color-mix(
+      in oklab,
+      var(--color-emerald-400) 22%,
+      transparent
+    );
+  }
+
   /* Container variants using container queries */
   .page-container {
     width: 100%;
