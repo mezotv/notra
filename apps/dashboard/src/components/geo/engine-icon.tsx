@@ -23,8 +23,6 @@ import { FirecrawlDark } from "@notra/ui/components/ui/svgs/firecrawlDark";
 import { Firefox } from "@notra/ui/components/ui/svgs/firefox";
 import { Gemini } from "@notra/ui/components/ui/svgs/gemini";
 import { Google } from "@notra/ui/components/ui/svgs/google";
-import { Grok } from "@notra/ui/components/ui/svgs/grok";
-import { GrokDark } from "@notra/ui/components/ui/svgs/grokDark";
 import { Huawei } from "@notra/ui/components/ui/svgs/huawei";
 import { Kagi } from "@notra/ui/components/ui/svgs/kagi";
 import { Kimi } from "@notra/ui/components/ui/svgs/kimi";
@@ -41,6 +39,8 @@ import { OpencodeDark } from "@notra/ui/components/ui/svgs/opencodeDark";
 import { Perplexity } from "@notra/ui/components/ui/svgs/perplexity";
 import { Qwen } from "@notra/ui/components/ui/svgs/qwen";
 import { QwenDark } from "@notra/ui/components/ui/svgs/qwenDark";
+import { SpaceXai } from "@notra/ui/components/ui/svgs/spacexai";
+import { SpaceXaiDark } from "@notra/ui/components/ui/svgs/spacexaiDark";
 import { Tavily } from "@notra/ui/components/ui/svgs/tavily";
 import { Tencent } from "@notra/ui/components/ui/svgs/tencent";
 import { TikTok } from "@notra/ui/components/ui/svgs/tikTok";
@@ -79,12 +79,7 @@ export function EngineIcon({ engine, className }: EngineIconProps) {
     );
   }
   if (key === "grok") {
-    return (
-      <>
-        <Grok className={cn(iconClass, "block dark:hidden")} />
-        <GrokDark className={cn(iconClass, "hidden dark:block")} />
-      </>
-    );
+    return themedIcon(SpaceXai, SpaceXaiDark, iconClass);
   }
   if (key === "qwen") {
     return (

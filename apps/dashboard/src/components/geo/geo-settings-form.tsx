@@ -10,7 +10,7 @@ import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
 import { GeoTagList } from "@/components/geo/geo-tag-list";
 import { GEO_MAX_ALIASES, GEO_SETTINGS_AUTO_SAVE_MS } from "@/constants/geo";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
-import { useIsProPlan } from "@/lib/hooks/use-plan";
+import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import type { GeoSettingsFormProps, GeoSettingsUpsertInput } from "@/types/geo";
 import { resolveTrackedEngines } from "@/utils/geo-engines";
 import { trackedGeoLanguages } from "@/utils/geo-language-rows";
@@ -39,7 +39,8 @@ export function GeoSettingsForm({
     () => settings?.nonZdrApprovedEngines ?? []
   );
   const [enabled, setEnabled] = useState(() => settings?.enabled ?? true);
-  const { isPro, isLoading: planLoading } = useIsProPlan();
+  const { hasZdr: canEnforceZdr, isLoading: planLoading } =
+    useHasZdrEntitlement();
   const upsert = useGeoSettingsUpsert(organizationId, { silentSuccess: true });
   const [savedAt, setSavedAt] = useState<Date | null>(() =>
     settings?.updatedAt ? new Date(settings.updatedAt) : null
@@ -83,7 +84,7 @@ export function GeoSettingsForm({
       enforceZdr,
       nonZdrApprovedEngines: nonZdrApproved,
       enabled,
-      isPro,
+      canEnforceZdr,
     });
     const serialized = JSON.stringify(input);
     const runner = debouncerRef.current;
@@ -100,7 +101,7 @@ export function GeoSettingsForm({
           enforceZdr: settings?.enforceZdr ?? true,
           nonZdrApprovedEngines: settings?.nonZdrApprovedEngines ?? [],
           enabled: settings?.enabled ?? true,
-          isPro,
+          canEnforceZdr,
         })
       );
     }
@@ -124,7 +125,7 @@ export function GeoSettingsForm({
     enabled,
     engines,
     enforceZdr,
-    isPro,
+    canEnforceZdr,
     languages,
     nonZdrApproved,
     organizationId,
@@ -208,7 +209,7 @@ export function GeoSettingsForm({
           title="Models"
         >
           <GeoEnginePicker
-            canEnforceZdr={isPro}
+            canEnforceZdr={canEnforceZdr}
             catalog={catalog}
             enforceZdr={enforceZdr}
             labeled={false}
@@ -239,13 +240,15 @@ export function GeoSettingsForm({
 }
 
 function toGeoSettingsPayload({
-  isPro,
+  canEnforceZdr,
   ...input
-}: GeoSettingsUpsertInput & { isPro: boolean }): GeoSettingsUpsertInput {
+}: GeoSettingsUpsertInput & {
+  canEnforceZdr: boolean;
+}): GeoSettingsUpsertInput {
   return {
     ...input,
     companyName: input.companyName.trim(),
-    enforceZdr: isPro && input.enforceZdr,
+    enforceZdr: canEnforceZdr && input.enforceZdr,
   };
 }
 

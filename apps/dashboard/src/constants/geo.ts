@@ -25,7 +25,7 @@ import type {
 export const GEO_MAX_ENGINES = 64;
 export const GEO_MODEL_CATALOG_STALE_MS = 60 * 60 * 1000;
 
-/** Projects below Pro cannot enforce ZDR; the server forces it off. */
+/** Projects without the ZDR add-on cannot enforce ZDR; the server forces it off. */
 export const GEO_ZDR_FEATURE_LABEL = "Zero data retention";
 
 export const GEO_JUDGE_MODEL = "openai/gpt-5.4-nano";

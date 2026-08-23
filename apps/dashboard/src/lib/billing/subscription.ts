@@ -38,11 +38,11 @@ async function hasAiCreditsGrant(organizationId: string): Promise<boolean> {
 }
 
 /**
- * Non-throwing Pro check used to gate Pro-only settings (e.g. GEO zero data
- * retention). Development without billing counts as Pro; a billing outage
- * counts as not Pro so gated settings fail closed.
+ * Non-throwing check for the zero data retention entitlement, granted by the
+ * ZDR add-on on any plan. Development without billing counts as entitled; a
+ * billing outage counts as not entitled so gated settings fail closed.
  */
-export async function hasProSubscription(
+export async function hasZdrEntitlement(
   organizationId: string
 ): Promise<boolean> {
   if (allowUnmeteredAiInDevelopment) {
@@ -52,15 +52,11 @@ export async function hasProSubscription(
     return process.env.NODE_ENV !== "production";
   }
   try {
-    const customer = await autumn.customers.getOrCreate({
+    const data = await autumn.check({
       customerId: organizationId,
+      featureId: FEATURES.ZDR,
     });
-    return customer.subscriptions.some(
-      (subscription) =>
-        !subscription.addOn &&
-        subscription.status === "active" &&
-        PRO_PLAN_IDS.has(subscription.planId)
-    );
+    return data.allowed === true;
   } catch {
     return false;
   }

@@ -46,7 +46,7 @@ export const GEO_MODEL_PROVIDERS: readonly GeoModelProvider[] = [
   },
   {
     id: "spacexai",
-    label: "xAI",
+    label: "SpaceXAI",
     brand: "grok",
     featured: false,
   },

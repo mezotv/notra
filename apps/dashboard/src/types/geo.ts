@@ -1013,6 +1013,12 @@ export interface EngineIconProps {
   className?: string;
 }
 
+export interface GeoProviderWordmarkProps {
+  provider: string;
+  label: string;
+  className?: string;
+}
+
 export interface GeoModeIconProps {
   mode: GeoSparklineMode;
   className?: string;
@@ -1021,6 +1027,8 @@ export interface GeoModeIconProps {
 export interface EngineIconRule {
   key: EngineIconKey;
   patterns: readonly string[];
+  /** Values that must equal the whole engine string, for short vendor names. */
+  exact?: readonly string[];
 }
 
 export interface ParsedModelId {
@@ -1082,7 +1090,7 @@ export interface GeoEnginePickerProps {
   onEnforceZdrChange: (value: boolean) => void;
   nonZdrApproved: string[];
   onNonZdrApprovedChange: (values: string[]) => void;
-  /** Whether the organization may enforce ZDR (Pro plan). */
+  /** Whether the organization may enforce ZDR (ZDR add-on). */
   canEnforceZdr: boolean;
   /** True while the plan is still loading; keeps the ZDR toggle inert. */
   planLoading?: boolean;

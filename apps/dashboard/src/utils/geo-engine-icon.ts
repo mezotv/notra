@@ -80,7 +80,8 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
   },
   {
     key: "exa",
-    patterns: ["exabot", "exasearchbot", "exa"],
+    patterns: ["exabot", "exasearchbot"],
+    exact: ["exa"],
   },
   {
     key: "commoncrawl",
@@ -187,6 +188,11 @@ export function resolveEngineIconKey(engine: string): EngineIconKey | null {
   const value = engine.trim().toLowerCase();
   if (value.length === 0) {
     return null;
+  }
+  for (const rule of ENGINE_ICON_RULES) {
+    if (rule.exact?.includes(value)) {
+      return rule.key;
+    }
   }
   for (const rule of ENGINE_ICON_RULES) {
     if (rule.patterns.some((pattern) => value.includes(pattern))) {

@@ -24,6 +24,10 @@ import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useId, useState } from "react";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import {
+  hasProviderWordmark,
+  ProviderWordmark,
+} from "@/components/geo/provider-wordmark";
 import { Checkbox } from "@/components/motion/checkbox";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { GEO_PICKER_VISIBLE_MODELS } from "@/constants/geo-model-catalog";
@@ -63,6 +67,7 @@ function GeoModelRow({
   id,
   model,
   onCheckedChange,
+  showZdrState,
 }: {
   approved: boolean;
   checked: boolean;
@@ -70,6 +75,7 @@ function GeoModelRow({
   id: string;
   model: GeoModelCatalogEntry;
   onCheckedChange: (checked: boolean) => void;
+  showZdrState: boolean;
 }) {
   const reduceMotion = useReducedMotion();
 
@@ -90,7 +96,7 @@ function GeoModelRow({
         htmlFor={id}
       >
         <span className="min-w-0 text-xs">{model.label}</span>
-        {model.zdr === "none" ? (
+        {showZdrState && model.zdr === "none" ? (
           <span className="shrink-0 text-muted-foreground text-xs">
             {approved ? "Approved without ZDR" : "No ZDR host"}
           </span>
@@ -306,13 +312,25 @@ export function GeoEnginePicker({
                   onClick={() => toggleExpanded(provider.id)}
                   type="button"
                 >
-                  <span className="flex size-7 shrink-0 items-center justify-center overflow-visible">
-                    <EngineIcon
-                      className="size-4 overflow-visible"
-                      engine={models[0]?.id ?? provider.id}
+                  {hasProviderWordmark(provider.id) ? (
+                    <ProviderWordmark
+                      className="h-2.5 w-auto"
+                      label={provider.label}
+                      provider={provider.id}
                     />
-                  </span>
-                  <span className="truncate font-medium">{provider.label}</span>
+                  ) : (
+                    <>
+                      <span className="flex size-7 shrink-0 items-center justify-center overflow-visible">
+                        <EngineIcon
+                          className="size-4 overflow-visible"
+                          engine={models[0]?.id ?? provider.id}
+                        />
+                      </span>
+                      <span className="truncate font-medium">
+                        {provider.label}
+                      </span>
+                    </>
+                  )}
                   <HugeiconsIcon
                     className={cn(
                       "size-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
@@ -360,6 +378,7 @@ export function GeoEnginePicker({
                             key={model.id}
                             model={model}
                             onCheckedChange={(next) => toggleModel(model, next)}
+                            showZdrState={zdrActive}
                           />
                         );
                       })}
@@ -401,6 +420,7 @@ export function GeoEnginePicker({
                                     onCheckedChange={(next) =>
                                       toggleModel(model, next)
                                     }
+                                    showZdrState={zdrActive}
                                   />
                                 );
                               })}
@@ -464,22 +484,24 @@ export function GeoEnginePicker({
               <Label htmlFor={`${id}-zdr`}>Enforce ZDR</Label>
               {canEnforceZdr ? null : (
                 <Badge className="h-4 px-1.5 text-[0.625rem]" variant="outline">
-                  Pro
+                  Add-on
                 </Badge>
               )}
             </div>
             <p className="text-muted-foreground text-xs">
               {canEnforceZdr ? (
-                "Only run models on zero-data-retention hosts."
+                "Only run models on zero-data-retention hosts. Not every model has one; those are marked in the list."
               ) : (
                 <>
-                  Zero data retention is included in Pro.{" "}
+                  Zero data retention is an add-on for every plan, 20% on top of
+                  the plan price. Not every model has a zero-data-retention
+                  host; those are marked in the list.{" "}
                   {billingHref ? (
                     <Link
                       className="text-foreground underline underline-offset-4"
                       href={billingHref}
                     >
-                      Upgrade to Pro
+                      Add it in billing
                     </Link>
                   ) : null}
                 </>
@@ -511,7 +533,7 @@ export function GeoEnginePicker({
               <TooltipContent side="top">
                 {planLoading
                   ? "Checking your plan…"
-                  : "Upgrade to Pro to enforce zero data retention."}
+                  : "Add the zero data retention add-on to enforce it."}
               </TooltipContent>
             </Tooltip>
           )}

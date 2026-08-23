@@ -42,7 +42,7 @@ import {
   GEO_MODEL_USAGE_TREND_WEEKS,
 } from "@/constants/geo";
 import { GEO_MODEL_CATALOG_STATIC } from "@/constants/geo-model-catalog";
-import { hasProSubscription } from "@/lib/billing/subscription";
+import { hasZdrEntitlement } from "@/lib/billing/subscription";
 import { competitorKey } from "@/lib/geo/domain";
 import { geoDb, geoQuery, geoSkip } from "@/lib/geo/effect";
 import {
@@ -344,13 +344,13 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
     input.companyName
   );
 
-  // Zero data retention is a Pro feature: below Pro the flag is forced off
-  // regardless of what the client sent.
-  // hasProSubscription never throws; billing outages count as "not Pro".
-  const isPro = yield* Effect.promise(() =>
-    hasProSubscription(input.organizationId)
+  // Zero data retention needs the ZDR add-on: without the entitlement the
+  // flag is forced off regardless of what the client sent.
+  // hasZdrEntitlement never throws; billing outages count as not entitled.
+  const canEnforceZdr = yield* Effect.promise(() =>
+    hasZdrEntitlement(input.organizationId)
   );
-  const enforceZdr = isPro && input.enforceZdr;
+  const enforceZdr = canEnforceZdr && input.enforceZdr;
   const catalog = yield* Effect.promise(() =>
     loadGeoModelCatalog(input.organizationId)
   );
