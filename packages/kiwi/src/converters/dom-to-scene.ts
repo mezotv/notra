@@ -658,6 +658,13 @@ function extractLayout(node: Node): LayoutNode | null {
     const shapes: SvgShape[] = [];
     const geomEls = svg.querySelectorAll(SVG_GEOMETRY_SELECTOR);
     for (const geomEl of geomEls) {
+      if (!(geomEl instanceof SVGGraphicsElement)) {
+        continue;
+      }
+      const ctm = geomEl.getScreenCTM();
+      if (!ctm) {
+        continue;
+      }
       const subpaths = svgPrimitiveToSubpaths(geomEl.tagName.toLowerCase(), {
         d: geomEl.getAttribute("d"),
         cx: geomEl.getAttribute("cx"),
@@ -678,13 +685,6 @@ function extractLayout(node: Node): LayoutNode | null {
       if (subpaths.length === 0) {
         continue;
       }
-      if (!(geomEl instanceof SVGGraphicsElement)) {
-        continue;
-      }
-      const ctm = geomEl.getScreenCTM();
-      if (!ctm) {
-        continue;
-      }
       const geomStyle = getComputedStyle(geomEl);
       const geomFill = geomEl.getAttribute("fill");
       const geomStroke = geomEl.getAttribute("stroke");
@@ -694,9 +694,9 @@ function extractLayout(node: Node): LayoutNode | null {
         fallbackColor
       );
       const strokeDasharray =
-        parseSvgDasharray(pathEl.getAttribute("stroke-dasharray")) ??
+        parseSvgDasharray(geomEl.getAttribute("stroke-dasharray")) ??
         parseSvgDasharray(svg.getAttribute("stroke-dasharray")) ??
-        parseSvgDasharray(pathStyle.getPropertyValue("stroke-dasharray"));
+        parseSvgDasharray(geomStyle.getPropertyValue("stroke-dasharray"));
       const fill = svgPaintValue(
         geomFill,
         svgFill ?? (stroke || geomStroke || svgStroke ? null : geomStyle.fill),
@@ -731,12 +731,14 @@ function extractLayout(node: Node): LayoutNode | null {
           geomEl.getAttribute("stroke-linejoin") ??
           svg.getAttribute("stroke-linejoin") ??
           geomStyle.strokeLinejoin,
+        strokeDasharray:
+          strokeDasharray?.map((dash) => dash * strokeScale) ?? null,
         strokeWidth:
           parsePx(
             geomEl.getAttribute("stroke-width") ??
               svg.getAttribute("stroke-width") ??
               geomStyle.strokeWidth
-          ) * (Math.hypot(ctm.a, ctm.b) || 1),
+          ) * strokeScale,
       });
     }
 
