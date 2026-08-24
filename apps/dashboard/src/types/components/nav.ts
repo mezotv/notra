@@ -42,3 +42,8 @@ export interface NavSettingsItem {
 export interface NavSettingsProps {
   slug: string;
 }
+
+export interface NavLockHintProps {
+  message: string;
+  className?: string;
+}

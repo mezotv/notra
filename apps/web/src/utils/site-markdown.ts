@@ -136,11 +136,11 @@ export function buildPricingMarkdown() {
       category,
       features.map((feature) => {
         const starter = renderComparisonValue(feature.starter);
-        const pro = renderComparisonValue(feature.pro);
+        const growth = renderComparisonValue(feature.growth);
         const scale = renderComparisonValue(feature.scale);
         const enterprise = renderComparisonValue(feature.enterprise);
 
-        return `- ${feature.name}: Starter ${starter}, Pro ${pro}, Scale ${scale}, Enterprise ${enterprise}`;
+        return `- ${feature.name}: Starter ${starter}, Growth ${growth}, Scale ${scale}, Enterprise ${enterprise}`;
       })
     )
   ).join("\n");

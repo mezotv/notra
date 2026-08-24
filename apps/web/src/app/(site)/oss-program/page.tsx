@@ -7,7 +7,7 @@ import { SITE_URL } from "@/utils/urls";
 
 const title = "Notra for Open Source";
 const description =
-  "Notra is free for open source builders. Get the Pro plan at no cost in exchange for feedback, and turn your shipped work into changelogs, launch posts, and marketing assets.";
+  "Notra is free for open source builders. Get the Growth plan at no cost in exchange for feedback, and turn your shipped work into changelogs, launch posts, and marketing assets.";
 const url = `${SITE_URL}/oss-program`;
 
 export const metadata: Metadata = {
@@ -34,9 +34,9 @@ export const metadata: Metadata = {
 
 const BENEFITS = [
   {
-    label: "Free Notra Pro plan",
+    label: "Free Notra Growth plan",
     detail:
-      "Full access to the $50/mo Pro plan for as long as you're in the program. No credit card needed.",
+      "Full access to the $250/mo Growth plan for as long as you're in the program. No credit card needed.",
   },
   {
     label: "Content from your shipped work",
@@ -98,7 +98,7 @@ export default function OssProgramPage() {
     <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
       <MarketingHeroWash
         className="mb-4"
-        subtitle="Notra is free for open source builders. Get the Pro plan at no cost in exchange for honest feedback, and let your shipped work do the marketing."
+        subtitle="Notra is free for open source builders. Get the Growth plan at no cost in exchange for honest feedback, and let your shipped work do the marketing."
         title={
           <>
             Notra for <span className="text-primary">Open Source</span>

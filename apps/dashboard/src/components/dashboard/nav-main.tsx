@@ -13,17 +13,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { SOCIAL_ANALYTICS_FLAG_KEY } from "@/constants/analytics";
+import { GEO_UPGRADE_TOOLTIP } from "@/constants/geo";
 import {
   NAV_CATEGORY_LABELS,
   NAV_DRILLDOWN_ITEMS,
   NAV_MAIN_ITEMS,
 } from "@/constants/nav";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
+import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import type { NavMainItem } from "@/types/components/nav";
 import { isAnalyticsVisibleInNav } from "@/utils/analytics-flag";
-import { geoNavHref } from "@/utils/geo-paths";
+import { geoNavHref, isGeoDashboardPath } from "@/utils/geo-paths";
 import { resolveActiveNavLink, resolveMainNavGroups } from "@/utils/nav";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
+import { NavLockHint } from "./nav-lock-hint";
 import { SidebarLabel } from "./sidebar-label";
 
 function NavGroup({
@@ -32,12 +35,14 @@ function NavGroup({
   label,
   activeLink,
   projectId,
+  geoLocked,
 }: {
   items: NavMainItem[];
   slug: string;
   label?: string;
   activeLink: string | null;
   projectId?: string;
+  geoLocked: boolean;
 }) {
   if (items.length === 0) {
     return null;
@@ -48,6 +53,7 @@ function NavGroup({
       {items.map((item) => {
         const href = geoNavHref(slug, item.link, projectId);
         const isActive = item.link === activeLink;
+        const showLock = geoLocked && isGeoDashboardPath(item.link);
         return (
           <SidebarMenuItem key={`${item.link}:${projectId ?? ""}`}>
             <SidebarMenuButton
@@ -67,6 +73,7 @@ function NavGroup({
                       {item.badge}
                     </Badge>
                   )}
+                  {showLock && <NavLockHint message={GEO_UPGRADE_TOOLTIP} />}
                 </Link>
               }
               tooltip={item.label}
@@ -96,6 +103,7 @@ export function NavMain() {
   const [projectParam] = useGeoProjectQueryState();
   const analyticsFlag = useFlag(SOCIAL_ANALYTICS_FLAG_KEY);
   const analyticsVisible = isAnalyticsVisibleInNav(analyticsFlag.on);
+  const { isLocked: geoLocked } = useHasGeoFeature();
 
   if (!activeOrganization?.slug) {
     return null;
@@ -114,12 +122,14 @@ export function NavMain() {
     <>
       <NavGroup
         activeLink={activeLink}
+        geoLocked={geoLocked}
         items={rootItems}
         projectId={projectId}
         slug={slug}
       />
       <NavGroup
         activeLink={activeLink}
+        geoLocked={geoLocked}
         items={workspaceItems}
         label={NAV_CATEGORY_LABELS.workspace}
         projectId={projectId}
@@ -127,6 +137,7 @@ export function NavMain() {
       />
       <NavGroup
         activeLink={null}
+        geoLocked={geoLocked}
         items={NAV_DRILLDOWN_ITEMS}
         projectId={projectId}
         slug={slug}

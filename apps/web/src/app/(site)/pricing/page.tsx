@@ -40,6 +40,17 @@ const offers: OfferLike[] = Object.values(PRICING_PLANS).flatMap((plan) => {
       itemCondition: "https://schema.org/NewCondition",
       category: plan.name,
     },
+    {
+      "@type": "Offer",
+      name: `${plan.name} annual plan`,
+      description: plan.description,
+      price: plan.pricing.annually,
+      priceCurrency: "USD",
+      url,
+      availability: "https://schema.org/OnlineOnly",
+      itemCondition: "https://schema.org/NewCondition",
+      category: plan.name,
+    },
   ];
 });
 

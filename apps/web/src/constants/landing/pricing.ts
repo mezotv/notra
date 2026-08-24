@@ -1,4 +1,9 @@
-import type { PricingPlan, TrackedEngine } from "@/types/landing/pricing";
+import type {
+  BillingPeriod,
+  BillingToggleOption,
+  PricingPlan,
+  TrackedEngine,
+} from "@/types/landing/pricing";
 
 export const TRACKED_ENGINES_CAPTION =
   "Track your brand visibility across every major AI engine";
@@ -29,6 +34,15 @@ export const TRACKED_ENGINES: TrackedEngine[] = [
   { name: "Copilot", src: `${ENGINE_LOGO_BASE}/copilot.svg`, width: 31 },
 ];
 
+export const PRICING_ANNUAL_BADGE = "2 months free";
+
+export const PRICING_DEFAULT_BILLING: BillingPeriod = "yearly";
+
+export const PRICING_BILLING_OPTIONS: BillingToggleOption[] = [
+  { value: "monthly", label: "Monthly" },
+  { value: "yearly", label: "Yearly" },
+];
+
 export const PRICING_HEADING = "Simple pricing that scales with what you ship.";
 
 export const PRICING_SUBHEADING =
@@ -44,6 +58,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     description: "For founders shipping their first content engine.",
     price: { monthly: "$100", yearly: "$1,000" },
     priceSuffix: { monthly: "/month", yearly: "/year" },
+    hasAnnualBadge: true,
     variant: "default",
     cta: {
       label: "Get started",
@@ -68,17 +83,18 @@ export const PRICING_PLANS: PricingPlan[] = [
     ],
   },
   {
-    id: "pro",
+    id: "growth",
     name: "Growth",
     description: "For teams publishing across channels every week.",
     price: { monthly: "$250", yearly: "$2,500" },
     priceSuffix: { monthly: "/month", yearly: "/year" },
+    hasAnnualBadge: true,
     variant: "featured",
     cta: {
       label: "Get started",
       kind: "signup",
       href: SIGNUP_URL,
-      source: "pricing_pro",
+      source: "pricing_growth",
       showArrow: true,
     },
     features: [
@@ -102,6 +118,7 @@ export const PRICING_PLANS: PricingPlan[] = [
     description: "For content teams running multiple brands at volume.",
     price: { monthly: "$550", yearly: "$5,500" },
     priceSuffix: { monthly: "/month", yearly: "/year" },
+    hasAnnualBadge: true,
     variant: "default",
     cta: {
       label: "Get started",
@@ -117,7 +134,7 @@ export const PRICING_PLANS: PricingPlan[] = [
       { label: "Unlimited social posts", icon: "social" },
       { label: "10 projects", icon: "projects" },
       {
-        label: "2,000 references",
+        label: "1,000 references",
         subtitle: "then $0.03 per ref / mo",
         icon: "references",
       },

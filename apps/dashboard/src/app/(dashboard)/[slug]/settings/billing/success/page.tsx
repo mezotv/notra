@@ -10,6 +10,7 @@ import { useParams } from "next/navigation";
 import { Suspense } from "react";
 import { toast } from "sonner";
 import { buttonVariants } from "@/components/button";
+import { planDisplayName } from "@/utils/billing-plans";
 
 function BillingSuccessPageContent() {
   const { slug } = useParams<{ slug: string }>();
@@ -20,13 +21,8 @@ function BillingSuccessPageContent() {
   const activeSubscription = customer?.subscriptions?.find(
     (sub) => !sub.addOn && sub.status === "active"
   );
-  const planId = activeSubscription?.plan?.id ?? activeSubscription?.planId;
-  let planName = "your new plan";
-  if (planId === "pro" || planId === "pro_yearly") {
-    planName = "Pro";
-  } else if (planId === "basic" || planId === "basic_yearly") {
-    planName = "Basic";
-  }
+  const planName =
+    planDisplayName(activeSubscription?.plan?.name) ?? "your new plan";
 
   async function handleManageBilling() {
     try {

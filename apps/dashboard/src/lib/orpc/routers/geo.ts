@@ -23,7 +23,10 @@ import {
   GSC_SYNC_WORKFLOW_PATH,
 } from "@/constants/google-search-console";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { assertActiveSubscription } from "@/lib/billing/subscription";
+import {
+  assertActiveSubscription,
+  assertGeoEntitlement,
+} from "@/lib/billing/subscription";
 import { discoverGeoWebsite, generateGeoFromWebsite } from "@/lib/geo/discover";
 import type { GeoRouterError } from "@/lib/geo/errors";
 import { loadGeoContentGaps } from "@/lib/geo/gaps";
@@ -155,7 +158,14 @@ async function buildGeoIngestSetupResponse(
   };
 }
 
-function geoHandler<
+async function assertGeoAccess(
+  params: Parameters<typeof assertOrganizationAccess>[0]
+): Promise<void> {
+  await assertOrganizationAccess(params);
+  await assertGeoEntitlement(params.organizationId);
+}
+
+function geoOpenHandler<
   TInput extends { organizationId: string },
   TOutput,
   TError extends GeoRouterError,
@@ -165,6 +175,25 @@ function geoHandler<
     input,
   }: GeoHandlerOptions<TInput>): Promise<TOutput> => {
     await assertOrganizationAccess({
+      headers: context.headers,
+      organizationId: input.organizationId,
+      user: context.user,
+    });
+
+    return await runOrpcEffect(run(input), toGeoOrpcError);
+  };
+}
+
+function geoHandler<
+  TInput extends { organizationId: string },
+  TOutput,
+  TError extends GeoRouterError,
+>(run: (input: TInput) => Effect.Effect<TOutput, TError>) {
+  return async ({
+    context,
+    input,
+  }: GeoHandlerOptions<TInput>): Promise<TOutput> => {
+    await assertGeoAccess({
       headers: context.headers,
       organizationId: input.organizationId,
       user: context.user,
@@ -300,7 +329,7 @@ export const geoRouter = {
     .handler(({ input }) => loadGeoModelCatalog(input.organizationId)),
   settings: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(geoHandler((input) => loadGeoSettings(input))),
+    .handler(geoOpenHandler((input) => loadGeoSettings(input))),
   settingsUpsert: authorizedProcedure
     .input(geoSettingsUpsertInputSchema)
     .handler(geoHandler((input) => upsertGeoSettings(input))),
@@ -323,17 +352,17 @@ export const geoRouter = {
   competitorShare: authorizedProcedure
     .input(geoTimeseriesInputSchema)
     .handler(
-      geoHandler((input) => loadGeoCompetitorShare(input, geoWindow(input)))
+      geoOpenHandler((input) => loadGeoCompetitorShare(input, geoWindow(input)))
     ),
   competitors: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(geoHandler((input) => loadGeoCompetitors(input))),
+    .handler(geoOpenHandler((input) => loadGeoCompetitors(input))),
   competitorUpsert: authorizedProcedure
     .input(geoCompetitorUpsertInputSchema)
-    .handler(geoHandler((input) => upsertGeoCompetitor(input, input))),
+    .handler(geoOpenHandler((input) => upsertGeoCompetitor(input, input))),
   competitorDelete: authorizedProcedure
     .input(geoCompetitorDeleteInputSchema)
-    .handler(geoHandler((input) => deleteGeoCompetitor(input, input.name))),
+    .handler(geoOpenHandler((input) => deleteGeoCompetitor(input, input.name))),
   competitorDetail: authorizedProcedure
     .input(geoCompetitorDetailInputSchema)
     .handler(
@@ -465,7 +494,7 @@ export const geoRouter = {
     ),
   projectsList: authorizedProcedure
     .input(geoOrganizationInputSchema)
-    .handler(geoHandler((input) => listGeoProjects(input.organizationId))),
+    .handler(geoOpenHandler((input) => listGeoProjects(input.organizationId))),
   projectsCreate: authorizedProcedure
     .input(geoProjectCreateInputSchema)
     .handler(
@@ -483,11 +512,13 @@ export const geoRouter = {
   discoverWebsite: authorizedProcedure
     .input(geoGenerateFromWebsiteInputSchema)
     .handler(
-      geoHandler((input) => discoverGeoWebsite(input.organizationId, input.url))
+      geoOpenHandler((input) =>
+        discoverGeoWebsite(input.organizationId, input.url)
+      )
     ),
   onboardingBrand: authorizedProcedure
     .input(geoOnboardingBrandInputSchema)
-    .handler(geoHandler((input) => saveGeoOnboardingBrand(input))),
+    .handler(geoOpenHandler((input) => saveGeoOnboardingBrand(input))),
   competitorSuggestions: authorizedProcedure
     .input(geoCompetitorSuggestionsInputSchema)
     .handler(async (options) => {
@@ -497,7 +528,7 @@ export const geoRouter = {
       if (!rate.success) {
         throw badRequest("Too many lookups. Please wait a minute.");
       }
-      return geoHandler((input: GeoCompetitorSuggestionsHandlerInput) =>
+      return geoOpenHandler((input: GeoCompetitorSuggestionsHandlerInput) =>
         suggestGeoCompetitors(input, input.domain)
       )(options);
     }),
@@ -510,7 +541,7 @@ export const geoRouter = {
       if (!rate.success) {
         throw badRequest("Too many searches. Please wait a minute.");
       }
-      return geoHandler((input: GeoBrandSearchHandlerInput) =>
+      return geoOpenHandler((input: GeoBrandSearchHandlerInput) =>
         searchGeoBrands(input, input.query)
       )(options);
     }),
@@ -534,7 +565,7 @@ export const geoRouter = {
     .input(geoWriterPlanInputSchema)
     .handler(async ({ context, input }) => {
       const [, , rate] = await Promise.all([
-        assertOrganizationAccess({
+        assertGeoAccess({
           headers: context.headers,
           organizationId: input.organizationId,
           user: context.user,
@@ -555,7 +586,7 @@ export const geoRouter = {
     .input(geoWriterBriefIdInputSchema)
     .handler(async ({ context, input }) => {
       await Promise.all([
-        assertOrganizationAccess({
+        assertGeoAccess({
           headers: context.headers,
           organizationId: input.organizationId,
           user: context.user,
@@ -587,7 +618,7 @@ export const geoRouter = {
   searchConsoleStatus: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async ({ context, input }): Promise<GeoSearchConsoleStatus> => {
-      await assertOrganizationAccess({
+      await assertGeoAccess({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
@@ -643,7 +674,7 @@ export const geoRouter = {
   searchConsoleSelectSite: authorizedProcedure
     .input(gscSelectSiteInputSchema)
     .handler(async ({ context, input }): Promise<GscSyncResult> => {
-      await assertOrganizationAccess({
+      await assertGeoAccess({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
@@ -690,7 +721,7 @@ export const geoRouter = {
   searchConsoleSync: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async ({ context, input }): Promise<GscSyncResult> => {
-      await assertOrganizationAccess({
+      await assertGeoAccess({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
@@ -729,7 +760,7 @@ export const geoRouter = {
   searchConsoleClearSite: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async ({ context, input }): Promise<{ cleared: boolean }> => {
-      await assertOrganizationAccess({
+      await assertGeoAccess({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
@@ -750,7 +781,7 @@ export const geoRouter = {
   searchConsoleDisconnect: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async ({ context, input }): Promise<{ disconnected: boolean }> => {
-      await assertOrganizationAccess({
+      await assertGeoAccess({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
@@ -770,7 +801,7 @@ export const geoRouter = {
     .input(geoOrganizationInputSchema)
     .handler(
       async ({ context, input }): Promise<GeoPromptSuggestionsResponse> => {
-        await assertOrganizationAccess({
+        await assertGeoAccess({
           headers: context.headers,
           organizationId: input.organizationId,
           user: context.user,
@@ -790,7 +821,7 @@ export const geoRouter = {
   suggestionAccept: authorizedProcedure
     .input(geoSuggestionIdInputSchema)
     .handler(async ({ context, input }): Promise<GeoTrackedPrompt> => {
-      await assertOrganizationAccess({
+      await assertGeoAccess({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
@@ -815,7 +846,7 @@ export const geoRouter = {
   suggestionsAcceptAll: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async ({ context, input }): Promise<{ accepted: number }> => {
-      await assertOrganizationAccess({
+      await assertGeoAccess({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,
@@ -843,7 +874,7 @@ export const geoRouter = {
   suggestionDismiss: authorizedProcedure
     .input(geoSuggestionIdInputSchema)
     .handler(async ({ context, input }): Promise<{ dismissed: boolean }> => {
-      await assertOrganizationAccess({
+      await assertGeoAccess({
         headers: context.headers,
         organizationId: input.organizationId,
         user: context.user,

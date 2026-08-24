@@ -12,6 +12,7 @@ import {
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import {
   Avatar,
   AvatarFallback,
@@ -49,6 +50,7 @@ import { useFeedback } from "@/components/dashboard/feedback-context";
 import { authClient } from "@/lib/auth/client";
 import { cn, errorMessageOr } from "@/lib/utils";
 import type { OrganizationOptionsListProps } from "@/types/dashboard";
+import { planDisplayName } from "@/utils/billing-plans";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import {
@@ -136,7 +138,7 @@ function OrgSelectorTrigger({
 }: {
   isSwitching: boolean;
   activeOrganization: Organization | null;
-  planBadge: "pro" | "basic" | null;
+  planBadge: string | null;
 }) {
   return (
     <DropdownMenuTrigger
@@ -161,14 +163,9 @@ function OrgSelectorTrigger({
               className="font-medium text-sm"
               text={activeOrganization?.name}
             />
-            {planBadge === "pro" ? (
-              <Badge className="shrink-0 bg-purple-500/15 px-1.5 py-0 font-semibold text-[10px] text-purple-600 hover:bg-purple-500/15 dark:text-purple-400">
-                PRO
-              </Badge>
-            ) : null}
-            {planBadge === "basic" ? (
-              <Badge className="shrink-0 bg-blue-500/15 px-1.5 py-0 font-semibold text-[10px] text-blue-600 hover:bg-blue-500/15 dark:text-blue-400">
-                BASIC
+            {planBadge ? (
+              <Badge className="shrink-0 bg-purple-500/15 px-1.5 py-0 font-semibold text-[10px] text-purple-600 uppercase hover:bg-purple-500/15 dark:text-purple-400">
+                {planBadge}
               </Badge>
             ) : null}
           </div>
@@ -299,16 +296,11 @@ export function OrgSelector() {
   );
   const activePlanId =
     activeSubscription?.plan?.id ?? activeSubscription?.planId;
-  const isPro = activePlanId === "pro" || activePlanId === "pro_yearly";
-  const isBasic = activePlanId === "basic" || activePlanId === "basic_yearly";
-  const hasActivePaidPlan = isPro || isBasic;
-  let planBadge: "pro" | "basic" | null = null;
-
-  if (isPro) {
-    planBadge = "pro";
-  } else if (isBasic) {
-    planBadge = "basic";
-  }
+  const hasActivePaidPlan =
+    !!activePlanId && PAID_OR_LEGACY_PLAN_IDS.has(activePlanId);
+  const planBadge = hasActivePaidPlan
+    ? planDisplayName(activeSubscription?.plan?.name)
+    : null;
 
   async function switchOrganization(org: Organization) {
     if (org.slug === activeOrganization?.slug) {
@@ -450,7 +442,7 @@ export function OrgSelector() {
                 }
               >
                 <HugeiconsIcon icon={SparklesIcon} />
-                Upgrade to Pro
+                Upgrade to Growth
               </DropdownMenuItem>
             )}
 

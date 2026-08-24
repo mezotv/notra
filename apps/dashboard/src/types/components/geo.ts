@@ -51,3 +51,14 @@ export interface SearchConsoleConnectedStateProps {
   organizationId: string;
   status: GeoSearchConsoleStatus;
 }
+
+export interface GeoUpgradeGateProps {
+  slug: string;
+  children: ReactNode;
+}
+
+export interface GeoUpgradeDialogProps {
+  slug: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}

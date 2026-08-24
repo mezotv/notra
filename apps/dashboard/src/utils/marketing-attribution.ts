@@ -1,5 +1,6 @@
 import { parseAsString, parseAsStringLiteral } from "nuqs";
 import { sessionStorageKeys } from "@/constants/storage";
+import { isAnnualPlanId, planTierId } from "@/utils/billing-plans";
 
 export const MARKETING_ATTRIBUTION_STORAGE_KEY =
   sessionStorageKeys.marketingAttribution;
@@ -103,25 +104,12 @@ export function normalizeSignupMethod(
   return undefined;
 }
 
-const planSelectionMetadataByPlanId = {
-  basic: { billingPeriod: "monthly", selectedProduct: "basic" },
-  basic_yearly: { billingPeriod: "yearly", selectedProduct: "basic" },
-  pro: { billingPeriod: "monthly", selectedProduct: "pro" },
-  pro_yearly: { billingPeriod: "yearly", selectedProduct: "pro" },
-} as const;
-
 export function getPlanSelectionMetadata(planId: string): {
   billingPeriod: "monthly" | "yearly";
-  selectedProduct: "basic" | "pro" | "other";
+  selectedProduct: string;
 } {
-  const selection =
-    planSelectionMetadataByPlanId[
-      planId as keyof typeof planSelectionMetadataByPlanId
-    ];
-
-  if (selection) {
-    return selection;
-  }
-
-  return { billingPeriod: "monthly", selectedProduct: "other" };
+  return {
+    billingPeriod: isAnnualPlanId(planId) ? "yearly" : "monthly",
+    selectedProduct: planTierId(planId) ?? "other",
+  };
 }

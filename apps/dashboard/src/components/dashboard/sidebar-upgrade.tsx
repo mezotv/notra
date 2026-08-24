@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
+import { groupBillingPlans, nextPlanGroup } from "@/utils/billing-plans";
 
 export function SidebarUpgrade() {
   const { activeOrganization } = useOrganizationsContext();
@@ -31,50 +32,53 @@ export function SidebarUpgrade() {
   );
   const activePlanId =
     activeSubscription?.plan?.id ?? activeSubscription?.planId;
-  const isPro = activePlanId === "pro" || activePlanId === "pro_yearly";
-  const isBasic = activePlanId === "basic" || activePlanId === "basic_yearly";
   const hasNoPlan = !activePlanId;
 
-  const basicPlan = plans?.find((plan) => plan.id === "basic");
-  const proPlan = plans?.find((plan) => plan.id === "pro");
+  const targetGroup = nextPlanGroup(groupBillingPlans(plans), activePlanId);
+  const targetPlan = targetGroup?.monthly ?? targetGroup?.annual ?? null;
 
-  const showBasicTrial =
+  const showTrial =
     hasNoPlan &&
-    !!basicPlan?.freeTrial &&
-    !!basicPlan.customerEligibility?.trialAvailable;
+    !!targetPlan?.freeTrial &&
+    !!targetPlan.customerEligibility?.trialAvailable;
 
-  const targetPlan = hasNoPlan ? basicPlan : proPlan;
-  const targetPlanId = targetPlan?.id ?? (hasNoPlan ? "basic" : "pro");
+  let buttonLabel = hasNoPlan
+    ? "Get started"
+    : `Upgrade to ${targetGroup?.name}`;
+  if (showTrial) {
+    buttonLabel = "Start free trial";
+  }
+  if (loading) {
+    buttonLabel = "Loading...";
+  }
 
-  const buttonLabel = loading
-    ? "Loading..."
-    : showBasicTrial
-      ? "Start 3 day free trial"
-      : isBasic
-        ? "Upgrade to Pro"
-        : "Upgrade";
-
-  const heading = isBasic ? "Upgrade to Pro" : "Get Started";
-  const description = isBasic
-    ? "Get more team seats, unlimited integrations, and higher usage limits."
-    : "Start your 3 day free trial and unlock AI-powered workflows.";
+  const heading = hasNoPlan ? "Get Started" : `Upgrade to ${targetGroup?.name}`;
+  let description = "Get more AI answers, projects, and higher usage limits.";
+  if (hasNoPlan) {
+    description = showTrial
+      ? "Start your free trial and unlock AI-powered workflows."
+      : "Pick a plan to unlock AI-powered workflows.";
+  }
 
   if (
     process.env.NEXT_PUBLIC_SHOW_UPGRADE_BUTTON !== "true" ||
     !isOnboardingDone ||
-    isPro
+    !targetPlan
   ) {
     return null;
   }
 
   async function handleUpgrade() {
+    if (!targetPlan) {
+      return;
+    }
     setLoading(true);
     const successUrl = activeOrganization?.slug
       ? `${window.location.origin}/${activeOrganization.slug}/settings/billing/success`
       : undefined;
     try {
       const result = await attach({
-        planId: targetPlanId,
+        planId: targetPlan.id,
         redirectMode: "if_required",
         successUrl,
       });

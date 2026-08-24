@@ -1,85 +1,26 @@
 "use client";
 
-import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { FEATURES, PLANS } from "@notra/ai/billing/features";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
-import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useCustomer, useListPlans } from "autumn-js/react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Button } from "@/components/button";
+import { PlanCard } from "@/components/billing/plan-card";
 import { OnboardingProgress } from "@/components/onboarding/progress";
+import { FEATURED_PLAN_TIER } from "@/constants/billing";
 import { ONBOARDING_STEP_PRICING } from "@/constants/onboarding";
-import type { BillingPlan } from "@/types/billing/plan";
-import type { ProductFeature } from "@/types/hooks/billing";
+import type { BillingPlanGroup } from "@/types/billing/plan";
+import type { PricingClientProps } from "@/types/onboarding";
+import {
+  getProductFeatures,
+  getProductPrice,
+  groupBillingPlans,
+  planGroupDescription,
+  selectPlanVariant,
+} from "@/utils/billing-plans";
 
-interface PricingClientProps {
-  slug: string;
-}
-
-const PRICE_REGEX = /^\d+([.,]\d+)?$/;
-
-function getProductPrice(plan: BillingPlan | undefined): number {
-  return plan?.price?.amount ?? 0;
-}
-
-function getProductFeatures(plan: BillingPlan | undefined): ProductFeature[] {
-  if (!plan?.items) {
-    return [];
-  }
-
-  return plan.items
-    .map((item): ProductFeature | null => {
-      const displayText = item.display?.primaryText ?? "";
-      if (displayText.startsWith("$") || PRICE_REGEX.test(displayText)) {
-        return null;
-      }
-
-      const overageText = item.display?.secondaryText;
-
-      if (item.featureId === FEATURES.AI_CREDITS) {
-        const cents = item.included ?? 0;
-        if (cents > 0) {
-          const dollars = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
-          }).format(cents / 100);
-          return { text: `${dollars} AI Credits` };
-        }
-        return null;
-      }
-
-      if (displayText) {
-        return { text: displayText, overageText };
-      }
-
-      const featureName = item.feature?.name ?? item.featureId;
-      if (!featureName) {
-        return null;
-      }
-
-      if (item.unlimited) {
-        return { text: `Unlimited ${featureName.toLowerCase()}` };
-      }
-
-      const includedUsage = item.included;
-      if (includedUsage > 0) {
-        const interval = item.reset?.interval
-          ? `per ${item.reset.interval}`
-          : "";
-        return {
-          text: `${includedUsage} ${featureName} ${interval}`.trim(),
-          overageText,
-        };
-      }
-
-      return null;
-    })
-    .filter((f): f is ProductFeature => f !== null);
-}
+const noop = () => undefined;
 
 export function PricingClient({ slug }: PricingClientProps) {
   const { data: plans, isLoading: plansLoading } = useListPlans();
@@ -87,21 +28,10 @@ export function PricingClient({ slug }: PricingClientProps) {
   const [isYearly, setIsYearly] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
 
-  const basicMonthly = plans?.find((p) => p.id === PLANS.BASIC);
-  const basicYearly = plans?.find((p) => p.id === PLANS.BASIC_YEARLY);
-  const proMonthly = plans?.find((p) => p.id === PLANS.PRO);
-  const proYearly = plans?.find((p) => p.id === PLANS.PRO_YEARLY);
+  const planGroups = groupBillingPlans(plans);
+  const intervalLabel = isYearly ? "year" : "month";
 
-  const basicPlan = isYearly ? (basicYearly ?? basicMonthly) : basicMonthly;
-  const proPlan = isYearly ? (proYearly ?? proMonthly) : proMonthly;
-
-  const basicFeatures = getProductFeatures(basicPlan);
-  const proFeatures = getProductFeatures(proPlan);
-
-  async function handleSelectPlan(planId: string | undefined) {
-    if (!planId) {
-      return;
-    }
+  async function handleSelectPlan(planId: string) {
     setLoading(planId);
     try {
       const successUrl = `${window.location.origin}/${slug}/settings/billing/success`;
@@ -126,8 +56,45 @@ export function PricingClient({ slug }: PricingClientProps) {
     }
   }
 
+  function renderPlanCard(group: BillingPlanGroup) {
+    const plan = selectPlanVariant(group, isYearly);
+    const featured = group.id === FEATURED_PLAN_TIER;
+    const hasTrial = Boolean(
+      plan?.freeTrial && plan.customerEligibility?.trialAvailable
+    );
+    let action: React.ReactNode;
+    if (hasTrial) {
+      action = <Badge variant="outline">Free trial</Badge>;
+    } else if (featured) {
+      action = <Badge>Most popular</Badge>;
+    }
+    let label = hasTrial ? "Start free trial" : "Get started";
+    if (plan && loading === plan.id) {
+      label = "Loading...";
+    }
+    return (
+      <PlanCard
+        action={action}
+        button={{
+          label,
+          disabled: loading !== null || !plan,
+          variant: featured ? "default" : "outline",
+          onClick: plan ? () => handleSelectPlan(plan.id) : noop,
+        }}
+        description={planGroupDescription(group)}
+        featured={featured}
+        features={getProductFeatures(plan)}
+        highlighted={false}
+        intervalLabel={intervalLabel}
+        key={group.id}
+        name={group.name}
+        price={getProductPrice(plan).amount}
+      />
+    );
+  }
+
   return (
-    <div className="relative mx-auto flex min-h-screen w-full max-w-5xl flex-col justify-center px-4 py-12">
+    <div className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col justify-center px-4 py-12">
       <div className="mb-6 flex justify-center">
         <OnboardingProgress current={ONBOARDING_STEP_PRICING} />
       </div>
@@ -158,123 +125,18 @@ export function PricingClient({ slug }: PricingClientProps) {
       </div>
 
       <p className="mt-3 text-center text-muted-foreground text-xs">
-        Your plan renews automatically every {isYearly ? "year" : "month"} until
-        you cancel.
+        Your plan renews automatically every {intervalLabel} until you cancel.
       </p>
 
       {plansLoading ? (
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+          <Skeleton className="h-[28rem] rounded-lg" />
           <Skeleton className="h-[28rem] rounded-lg" />
           <Skeleton className="h-[28rem] rounded-lg" />
         </div>
       ) : (
-        <div className="mt-8 grid gap-6 lg:grid-cols-2">
-          <TitleCard
-            action={<Badge variant="outline">3-day free trial</Badge>}
-            className="transition-all hover:ring-2 hover:ring-muted-foreground/20"
-            heading="Basic"
-          >
-            <div className="space-y-4">
-              <div>
-                <p className="text-muted-foreground text-sm">
-                  {basicPlan?.description ?? "For solo devs and small teams"}
-                </p>
-                <div className="mt-3 flex items-end gap-1">
-                  <span className="font-bold text-4xl leading-none">
-                    ${getProductPrice(basicPlan)}
-                  </span>
-                  <span className="mb-1 text-muted-foreground text-sm">
-                    /{isYearly ? "year" : "month"}
-                  </span>
-                </div>
-              </div>
-
-              <Button
-                className="w-full"
-                disabled={loading !== null || !basicPlan}
-                onClick={() => handleSelectPlan(basicPlan?.id)}
-                variant="outline"
-              >
-                {loading === basicPlan?.id
-                  ? "Loading..."
-                  : "Start 3-day free trial"}
-              </Button>
-
-              <ul className="space-y-2.5 pt-2">
-                {basicFeatures.map((feature) => (
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    key={feature.text}
-                  >
-                    <HugeiconsIcon
-                      className="mt-0.5 size-4 shrink-0 text-emerald-500"
-                      icon={CheckmarkCircle02Icon}
-                    />
-                    <div>
-                      <span>{feature.text}</span>
-                      {feature.overageText && (
-                        <p className="text-muted-foreground text-xs">
-                          {feature.overageText}
-                        </p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </TitleCard>
-
-          <TitleCard
-            action={<Badge>Most popular</Badge>}
-            className="ring-2 ring-primary transition-all hover:ring-primary/80"
-            heading="Pro"
-          >
-            <div className="space-y-4">
-              <div>
-                <p className="text-muted-foreground text-sm">
-                  {proPlan?.description ?? "For growing teams that need more"}
-                </p>
-                <div className="mt-3 flex items-end gap-1">
-                  <span className="font-bold text-4xl leading-none">
-                    ${getProductPrice(proPlan)}
-                  </span>
-                  <span className="mb-1 text-muted-foreground text-sm">
-                    /{isYearly ? "year" : "month"}
-                  </span>
-                </div>
-              </div>
-
-              <Button
-                className="w-full"
-                disabled={loading !== null || !proPlan}
-                onClick={() => handleSelectPlan(proPlan?.id)}
-              >
-                {loading === proPlan?.id ? "Loading..." : "Get started"}
-              </Button>
-
-              <ul className="space-y-2.5 pt-2">
-                {proFeatures.map((feature) => (
-                  <li
-                    className="flex items-start gap-2 text-sm"
-                    key={feature.text}
-                  >
-                    <HugeiconsIcon
-                      className="mt-0.5 size-4 shrink-0 text-emerald-500"
-                      icon={CheckmarkCircle02Icon}
-                    />
-                    <div>
-                      <span>{feature.text}</span>
-                      {feature.overageText && (
-                        <p className="text-muted-foreground text-xs">
-                          {feature.overageText}
-                        </p>
-                      )}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </TitleCard>
+        <div className="mt-8 grid gap-6 lg:grid-cols-3">
+          {planGroups.map(renderPlanCard)}
         </div>
       )}
     </div>

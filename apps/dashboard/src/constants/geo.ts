@@ -675,3 +675,9 @@ export const GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS = "h-56";
 
 /** Dev-only: enables seeding GEO sample data from the settings page. */
 export const GEO_SAMPLE_DATA_ENABLED = process.env.NODE_ENV === "development";
+
+export const GEO_UPGRADE_TITLE = "Upgrade required";
+export const GEO_UPGRADE_DESCRIPTION =
+  "AI visibility tracking is included in Starter, Growth, and Scale. Pick a plan to unlock GEO for this workspace.";
+export const GEO_UPGRADE_TOOLTIP = "Upgrade your plan to unlock GEO";
+export const GEO_LOCKED_TITLE = "GEO is locked on your current plan";

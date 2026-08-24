@@ -10,9 +10,10 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { GEO_WRITER_FLAG_KEY } from "@/constants/geo";
+import { GEO_UPGRADE_TOOLTIP, GEO_WRITER_FLAG_KEY } from "@/constants/geo";
 import { IRIS_FLAG_KEY } from "@/constants/iris";
 import { NAV_CATEGORY_LABELS, NAV_ITEMS_BY_CATEGORY } from "@/constants/nav";
+import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import type { NavCategoryProps } from "@/types/components/nav";
 import {
   filterGeoWriterNavItems,
@@ -20,6 +21,7 @@ import {
 } from "@/utils/geo-writer-flag";
 import { filterIrisNavItems, isIrisVisibleInNav } from "@/utils/iris-flag";
 import { resolveActiveNavLink } from "@/utils/nav";
+import { NavLockHint } from "./nav-lock-hint";
 import { SidebarLabel } from "./sidebar-label";
 
 export function NavCategory({ category, slug }: NavCategoryProps) {
@@ -29,6 +31,8 @@ export function NavCategory({ category, slug }: NavCategoryProps) {
 
   const writerFlag = useFlag(GEO_WRITER_FLAG_KEY);
   const writerVisible = isGeoWriterVisibleInNav(writerFlag.on);
+  const { isLocked: geoLocked } = useHasGeoFeature();
+  const showLock = geoLocked && category === "geo";
 
   const items = filterGeoWriterNavItems(
     filterIrisNavItems(NAV_ITEMS_BY_CATEGORY[category], irisVisible),
@@ -44,6 +48,7 @@ export function NavCategory({ category, slug }: NavCategoryProps) {
     <SidebarGroup>
       <SidebarGroupLabel>
         <SidebarLabel>{NAV_CATEGORY_LABELS[category]}</SidebarLabel>
+        {showLock && <NavLockHint message={GEO_UPGRADE_TOOLTIP} />}
       </SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (

@@ -18,3 +18,10 @@ export function useHasAiCreditsFeature() {
   const hasAiCredits = Boolean(customer?.balances?.[FEATURES.AI_CREDITS]);
   return { hasAiCredits, isLoading };
 }
+
+export function useHasGeoFeature() {
+  const { data: customer, isLoading } = useCustomer();
+  const hasGeo = Boolean(customer?.balances?.[FEATURES.AI_ANSWERS]);
+  const isLocked = !isLoading && !!customer && !hasGeo;
+  return { hasGeo, isLocked, isLoading };
+}

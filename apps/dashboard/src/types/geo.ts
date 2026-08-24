@@ -102,7 +102,7 @@ export interface GeoSettings {
   competitors: string[];
   languages: string[];
   engines: string[];
-  /** Pro feature: request zero data retention from every model host. */
+  /** ZDR add-on: request zero data retention from every model host. */
   enforceZdr: boolean;
   /** Models without a ZDR host the user approved to run anyway. */
   nonZdrApprovedEngines: string[];

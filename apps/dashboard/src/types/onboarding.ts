@@ -20,6 +20,10 @@ export type OnboardingWorkspaceInput = z.infer<
   typeof onboardingWorkspaceSchema
 >;
 
+export interface PricingClientProps {
+  slug: string;
+}
+
 export interface OnboardingExistingOrg {
   heardAboutNotraOther: string | null;
   heardAboutNotraSource: string | null;

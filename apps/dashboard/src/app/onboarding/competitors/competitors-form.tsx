@@ -25,6 +25,7 @@ import {
   useGeoStartScan,
 } from "@/lib/hooks/use-geo";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
+import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import { cn } from "@/lib/utils";
 import type { GeoCompetitor } from "@/types/geo";
 import type {
@@ -47,6 +48,8 @@ function CompetitorsPicker({
   const { competitors, saveCompetitor, removeCompetitor } =
     useGeoCompetitorsDb(organizationId);
   const startScan = useGeoStartScan(organizationId);
+  const { isLocked: geoLocked } = useHasGeoFeature();
+  const submitLabel = geoLocked ? "Continue" : "Start tracking";
   const [isLeaving, setIsLeaving] = useState(false);
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const busy = startScan.isPending || isLeaving;
@@ -78,6 +81,11 @@ function CompetitorsPicker({
   };
 
   const launch = () => {
+    if (geoLocked) {
+      setIsLeaving(true);
+      router.push(nextHref);
+      return;
+    }
     startScan.mutate(undefined, {
       onSuccess: () => {
         setIsLeaving(true);
@@ -222,10 +230,10 @@ function CompetitorsPicker({
         {busy ? (
           <>
             <Loader2Icon className="size-4 animate-spin" />
-            Running your first scan
+            {geoLocked ? "Saving" : "Running your first scan"}
           </>
         ) : (
-          "Start tracking"
+          submitLabel
         )}
       </CtaButton>
     </form>

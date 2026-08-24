@@ -1,13 +1,7 @@
 "use client";
 
-import {
-  ArrowDown01Icon,
-  ArrowUp01Icon,
-  CheckmarkCircle02Icon,
-} from "@hugeicons/core-free-icons";
+import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { FEATURES } from "@notra/ai/billing/features";
-import Counter from "@notra/ui/components/Counter";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
@@ -24,146 +18,36 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
-import { TitleCard } from "@notra/ui/components/ui/title-card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
 import { cn } from "@notra/ui/lib/utils";
 import { useCustomer, useListPlans } from "autumn-js/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { PlanCard } from "@/components/billing/plan-card";
 import { UsageSection } from "@/components/billing/usage-section";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import type { BillingPlan } from "@/types/billing/plan";
-import type { ProductFeature } from "@/types/hooks/billing";
+import {
+  BILLING_SECTION_VALUES,
+  FEATURED_PLAN_TIER,
+  INVOICE_TABLE_COLUMN_COUNT,
+} from "@/constants/billing";
+import type { BillingPlanGroup, PlanCardButton } from "@/types/billing/plan";
+import {
+  getInvoiceDescription,
+  getPricingButtonText,
+  getProductFeatures,
+  getProductPrice,
+  groupBillingPlans,
+  isAnnualPlanId,
+  isPlanInGroup,
+  planGroupDescription,
+  selectPlanVariant,
+} from "@/utils/billing-plans";
 import { DashboardPageSkeleton } from "../../skeleton";
 
-const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
-
-const PRICE_REGEX = /^\d+([.,]\d+)?$/;
-
-const SCENARIO_TEXT: Record<string, string> = {
-  scheduled: "Plan Scheduled",
-  active: "Current Plan",
-  renew: "Renew",
-  upgrade: "Upgrade",
-  new: "Get Started",
-  downgrade: "Downgrade",
-  cancel: "Cancel Plan",
-};
-
-const INVOICE_PRODUCT_NAME_MAP: Record<string, string> = {
-  free: "Free",
-  basic: "Basic",
-  basic_yearly: "Basic",
-  pro: "Pro",
-  pro_yearly: "Pro",
-  ai_credits_top_up: "AI Credits Top-up",
-};
-
-const INVOICE_TABLE_COLUMN_COUNT = 4;
-
-function formatInvoiceProductName(productId: string): string {
-  return INVOICE_PRODUCT_NAME_MAP[productId] ?? productId;
-}
-
-function getInvoiceDescription(productIds?: string[]): string {
-  if (!productIds?.length) {
-    return "Subscription";
-  }
-
-  return productIds.map(formatInvoiceProductName).join(", ");
-}
-
-function getPricingButtonText(plan: BillingPlan): string {
-  const attachAction = plan.customerEligibility?.attachAction;
-
-  if (plan.freeTrial && plan.customerEligibility?.trialAvailable) {
-    return "Start Free Trial";
-  }
-  if (attachAction === "purchase") {
-    return "Purchase";
-  }
-
-  return SCENARIO_TEXT[attachAction ?? ""] ?? "Get Started";
-}
-
-function getProductPrice(plan: BillingPlan): {
-  amount: number;
-  interval: string;
-} {
-  if (!plan.price) {
-    return { amount: 0, interval: "month" };
-  }
-
-  return {
-    amount: plan.price.amount,
-    interval: plan.price.interval ?? "month",
-  };
-}
-
-function getProductFeatures(plan: BillingPlan | undefined): ProductFeature[] {
-  if (!plan?.items) {
-    return [];
-  }
-
-  return plan.items
-    .map((item): ProductFeature | null => {
-      const displayText = item.display?.primaryText ?? "";
-      if (displayText.startsWith("$") || PRICE_REGEX.test(displayText)) {
-        return null;
-      }
-
-      const overageText = item.display?.secondaryText;
-
-      const isAiCredits = item.featureId === FEATURES.AI_CREDITS;
-
-      if (isAiCredits) {
-        const cents = item.included ?? 0;
-        if (cents > 0) {
-          const dollars = new Intl.NumberFormat("en-US", {
-            style: "currency",
-            currency: "USD",
-          }).format(cents / 100);
-          return { text: `${dollars} AI Credits` };
-        }
-        return null;
-      }
-
-      if (displayText) {
-        return { text: displayText, overageText };
-      }
-
-      const featureName = item.feature?.name ?? item.featureId;
-      if (!featureName) {
-        return null;
-      }
-
-      if (item.unlimited) {
-        return { text: `Unlimited ${featureName.toLowerCase()}` };
-      }
-
-      const includedUsage = item.included;
-
-      if (includedUsage > 0) {
-        const interval = item.reset?.interval
-          ? `per ${item.reset.interval}`
-          : "";
-        return {
-          text: `${includedUsage} ${featureName} ${interval}`.trim(),
-          overageText,
-        };
-      }
-
-      return null;
-    })
-    .filter((f): f is ProductFeature => f !== null);
-}
+const noop = () => undefined;
 
 function BillingPageContent() {
   const { activeOrganization } = useOrganizationsContext();
@@ -187,8 +71,6 @@ function BillingPageContent() {
   const [dateSortOrder, setDateSortOrder] = useState<"asc" | "desc">("desc");
   const [now] = useState(() => Date.now());
   const invoiceListId = useId();
-  const freeFeatureListId = useId();
-  const proFeatureListId = useId();
 
   const invoices = customer?.invoices ?? [];
 
@@ -207,15 +89,11 @@ function BillingPageContent() {
     activeSubscription?.plan?.id ?? activeSubscription?.planId;
 
   useEffect(() => {
-    if (activePlanId === "pro_yearly" || activePlanId === "basic_yearly") {
-      setIsYearly(true);
-    } else if (activePlanId === "pro" || activePlanId === "basic") {
-      setIsYearly(false);
+    if (activePlanId) {
+      setIsYearly(isAnnualPlanId(activePlanId));
     }
   }, [activePlanId]);
 
-  const isBasic = activePlanId === "basic" || activePlanId === "basic_yearly";
-  const isPro = activePlanId === "pro" || activePlanId === "pro_yearly";
   const isTrialing =
     activeSubscription?.trialEndsAt != null &&
     activeSubscription.trialEndsAt > now;
@@ -267,86 +145,63 @@ function BillingPageContent() {
 
   const isBillingLoading = plansLoading || customerLoading;
 
-  const basicMonthlyPlan = plans?.find((plan) => plan.id === "basic");
-  const basicYearlyPlan = plans?.find((plan) => plan.id === "basic_yearly");
-  const basicPlan = isYearly
-    ? (basicYearlyPlan ?? basicMonthlyPlan)
-    : basicMonthlyPlan;
-  const basicPrice = basicPlan
-    ? getProductPrice(basicPlan)
-    : { amount: 0, interval: isYearly ? "year" : "month" };
-
-  const proMonthlyPlan = plans?.find((plan) => plan.id === "pro");
-  const proYearlyPlan = plans?.find((plan) => plan.id === "pro_yearly");
-  const proPlan = isYearly ? proYearlyPlan : proMonthlyPlan;
-  const proPrice = proPlan
-    ? getProductPrice(proPlan)
-    : { amount: 0, interval: isYearly ? "year" : "month" };
-
-  const basicFeatures = getProductFeatures(basicPlan);
-  const proFeatures = getProductFeatures(proPlan);
+  const planGroups = groupBillingPlans(plans);
+  const trialPlan = planGroups
+    .map((group) => group.monthly ?? group.annual)
+    .find((plan) => plan?.freeTrial);
+  const plansDescription = trialPlan
+    ? `Upgrade or change your plan. ${trialPlan.name} includes a free trial.`
+    : "Upgrade or change your plan.";
+  const intervalLabel = isYearly ? "year" : "month";
 
   function handleSectionChange(value: string) {
     setActiveSection(value === "usage" ? "usage" : "billing");
   }
 
-  function renderBasicPlanButton() {
-    if (basicPlan && isBasic) {
-      return (
-        <Button className="w-full" disabled variant="outline">
-          {isTrialing ? "Trial Active" : "Current Plan"}
-        </Button>
-      );
+  function planButton(group: BillingPlanGroup): PlanCardButton {
+    const plan = selectPlanVariant(group, isYearly);
+    const variant = group.id === FEATURED_PLAN_TIER ? "default" : "outline";
+    if (!plan) {
+      return { label: group.name, disabled: true, variant, onClick: noop };
     }
-
-    if (basicPlan) {
-      return (
-        <Button
-          className="w-full"
-          disabled={loading !== null}
-          onClick={() => handleCheckout(basicPlan.id)}
-          variant="outline"
-        >
-          {loading === basicPlan.id
-            ? "Loading..."
-            : getPricingButtonText(basicPlan)}
-        </Button>
-      );
+    if (plan.id === activePlanId) {
+      return {
+        label: isTrialing ? "Trial Active" : "Current Plan",
+        disabled: true,
+        variant,
+        onClick: noop,
+      };
     }
-
-    return (
-      <Button className="w-full" disabled variant="outline">
-        Basic
-      </Button>
-    );
+    return {
+      label: loading === plan.id ? "Loading..." : getPricingButtonText(plan),
+      disabled: loading !== null,
+      variant,
+      onClick: () => handleCheckout(plan.id),
+    };
   }
 
-  function renderProPlanButton() {
-    if (proPlan && isPro) {
-      return (
-        <Button className="w-full" disabled>
-          {isTrialing ? "Trial Active" : "Current Plan"}
-        </Button>
-      );
-    }
-
-    if (proPlan) {
-      const proButtonText = isBasic ? "Upgrade" : getPricingButtonText(proPlan);
-      return (
-        <Button
-          className="w-full"
-          disabled={loading !== null}
-          onClick={() => handleCheckout(proPlan.id)}
-        >
-          {loading === proPlan.id ? "Loading..." : proButtonText}
-        </Button>
-      );
-    }
-
+  function renderPlanCard(group: BillingPlanGroup) {
+    const plan = selectPlanVariant(group, isYearly);
+    const isCurrent = isPlanInGroup(group, activePlanId);
     return (
-      <Button className="w-full" disabled>
-        Upgrade to Pro
-      </Button>
+      <PlanCard
+        action={
+          isCurrent ? (
+            <Badge variant={isTrialing ? "outline" : "default"}>
+              {isTrialing ? "Trial" : "Current"}
+            </Badge>
+          ) : undefined
+        }
+        button={planButton(group)}
+        description={planGroupDescription(group)}
+        featured={group.id === FEATURED_PLAN_TIER}
+        features={getProductFeatures(plan)}
+        highlighted={isCurrent}
+        intervalLabel={intervalLabel}
+        key={group.id}
+        name={group.name}
+        price={getProductPrice(plan).amount}
+      />
     );
   }
 
@@ -386,7 +241,8 @@ function BillingPageContent() {
           <TabsContent className="mt-6" value="billing">
             {isBillingLoading ? (
               <div className="space-y-6">
-                <div className="grid gap-6 lg:grid-cols-2">
+                <div className="grid gap-6 lg:grid-cols-3">
+                  <Skeleton className="h-96 rounded-lg" />
                   <Skeleton className="h-96 rounded-lg" />
                   <Skeleton className="h-96 rounded-lg" />
                 </div>
@@ -399,8 +255,7 @@ function BillingPageContent() {
                     <div>
                       <h2 className="font-semibold text-lg">Plans</h2>
                       <p className="text-muted-foreground text-sm">
-                        Upgrade or change your plan. Basic includes a 3 day free
-                        trial.
+                        {plansDescription}
                       </p>
                     </div>
                     <Tabs
@@ -422,167 +277,8 @@ function BillingPageContent() {
                     </Tabs>
                   </div>
 
-                  <div className="grid gap-6 lg:grid-cols-2">
-                    <TitleCard
-                      action={
-                        <div className="flex items-center gap-2">
-                          {isBasic && (
-                            <Badge variant={isTrialing ? "outline" : "default"}>
-                              {isTrialing ? "Trial" : "Current"}
-                            </Badge>
-                          )}
-                        </div>
-                      }
-                      className={cn(
-                        isBasic && "ring-2 ring-primary",
-                        !isBasic &&
-                          basicPlan &&
-                          "transition-all hover:ring-2 hover:ring-muted-foreground/20"
-                      )}
-                      heading="Basic"
-                    >
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-muted-foreground text-sm">
-                            {basicPlan?.description ??
-                              "For solo devs and small teams"}
-                          </p>
-                          <div className="mt-2 flex items-end">
-                            <span className="font-bold text-3xl leading-none">
-                              $
-                            </span>
-                            <Counter
-                              fontSize={30}
-                              fontWeight={700}
-                              gap={0}
-                              gradientHeight={0}
-                              padding={0}
-                              value={basicPrice.amount}
-                            />
-                            <span className="mb-0.5 ml-1 font-normal text-muted-foreground text-sm">
-                              /{isYearly ? "year" : "month"}
-                            </span>
-                          </div>
-                        </div>
-
-                        {renderBasicPlanButton()}
-
-                        <ul className="space-y-2.5 pt-2">
-                          {basicFeatures.map((feature) => (
-                            <li
-                              className="flex items-start gap-2 text-sm"
-                              key={`${freeFeatureListId}-${feature.text}`}
-                            >
-                              <HugeiconsIcon
-                                className="mt-0.5 size-4 shrink-0 text-emerald-500"
-                                icon={CheckmarkCircle02Icon}
-                              />
-                              <div>
-                                <span>{feature.text}</span>
-                                {feature.overageText &&
-                                  (feature.overageTooltip ? (
-                                    <Tooltip>
-                                      <TooltipTrigger
-                                        className="cursor-help border-muted-foreground/30 border-b border-dashed text-muted-foreground text-xs"
-                                        render={<p />}
-                                      >
-                                        {feature.overageText}
-                                      </TooltipTrigger>
-                                      <TooltipContent className="max-w-56">
-                                        {feature.overageTooltip}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  ) : (
-                                    <p className="text-muted-foreground text-xs">
-                                      {feature.overageText}
-                                    </p>
-                                  ))}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </TitleCard>
-
-                    <TitleCard
-                      action={
-                        <div className="flex items-center gap-2">
-                          {isPro && (
-                            <Badge variant={isTrialing ? "outline" : "default"}>
-                              {isTrialing ? "Trial" : "Current"}
-                            </Badge>
-                          )}
-                        </div>
-                      }
-                      className={cn(
-                        isPro && "ring-2 ring-primary",
-                        !isPro &&
-                          proPlan &&
-                          "transition-all hover:ring-2 hover:ring-primary/50"
-                      )}
-                      heading="Pro"
-                    >
-                      <div className="space-y-4">
-                        <div>
-                          <p className="text-muted-foreground text-sm">
-                            {proPlan?.description ?? "For Small Teams"}
-                          </p>
-                          <div className="mt-2 flex items-end">
-                            <span className="font-bold text-3xl leading-none">
-                              $
-                            </span>
-                            <Counter
-                              fontSize={30}
-                              fontWeight={700}
-                              gap={0}
-                              gradientHeight={0}
-                              padding={0}
-                              value={proPrice.amount}
-                            />
-                            <span className="mb-0.5 ml-1 font-normal text-muted-foreground text-sm">
-                              /{isYearly ? "year" : "month"}
-                            </span>
-                          </div>
-                        </div>
-
-                        {renderProPlanButton()}
-
-                        <ul className="space-y-2.5 pt-2">
-                          {proFeatures.map((feature) => (
-                            <li
-                              className="flex items-start gap-2 text-sm"
-                              key={`${proFeatureListId}-${feature.text}`}
-                            >
-                              <HugeiconsIcon
-                                className="mt-0.5 size-4 shrink-0 text-emerald-500"
-                                icon={CheckmarkCircle02Icon}
-                              />
-                              <div>
-                                <span>{feature.text}</span>
-                                {feature.overageText &&
-                                  (feature.overageTooltip ? (
-                                    <Tooltip>
-                                      <TooltipTrigger
-                                        className="cursor-help border-muted-foreground/30 border-b border-dashed text-muted-foreground text-xs"
-                                        render={<p />}
-                                      >
-                                        {feature.overageText}
-                                      </TooltipTrigger>
-                                      <TooltipContent className="max-w-56">
-                                        {feature.overageTooltip}
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  ) : (
-                                    <p className="text-muted-foreground text-xs">
-                                      {feature.overageText}
-                                    </p>
-                                  ))}
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </TitleCard>
+                  <div className="grid gap-6 lg:grid-cols-3">
+                    {planGroups.map(renderPlanCard)}
                   </div>
                 </div>
 
@@ -653,7 +349,7 @@ function BillingPageContent() {
                                   : "-"}
                               </TableCell>
                               <TableCell className="wrap-break-word whitespace-normal">
-                                {getInvoiceDescription(invoice.planIds)}
+                                {getInvoiceDescription(invoice.planIds, plans)}
                               </TableCell>
                               <TableCell className="w-[120px] tabular-nums">
                                 {invoice.total !== undefined

@@ -1,6 +1,6 @@
 type PricingComparisonValue = boolean | string;
 
-type PricingComparisonPlanKey = "starter" | "pro" | "scale" | "enterprise";
+type PricingComparisonPlanKey = "starter" | "growth" | "scale" | "enterprise";
 
 export interface PricingComparisonPlan {
   key: PricingComparisonPlanKey;
