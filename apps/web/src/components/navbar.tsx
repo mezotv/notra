@@ -620,12 +620,9 @@ export function Navbar({ variant }: NavbarProps = {}) {
                 </AnimatePresence>
               </nav>
 
-              <div className="flex flex-1 items-center justify-end gap-2">
-                <div className="lg:hidden">
-                  <ThemeToggle />
-                </div>
+              <div className="flex flex-1 items-center justify-end gap-2 lg:gap-3">
+                <ThemeToggle />
                 <div className="hidden items-center gap-3 lg:flex">
-                  <ThemeToggle />
                   {isAuthenticated ? (
                     <Link
                       className="font-display font-semibold text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"

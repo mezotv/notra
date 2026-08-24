@@ -18,7 +18,7 @@ export const TRACKED_ENGINES: TrackedEngine[] = [
   {
     name: "Google AI Overviews",
     src: `${ENGINE_LOGO_BASE}/google.svg`,
-    width: 28,
+    width: 27,
   },
   {
     name: "Grok",
