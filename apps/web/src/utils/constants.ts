@@ -88,7 +88,7 @@ export const PRICING_PLANS = {
     ],
   },
   pro: {
-    name: "Pro",
+    name: "Growth",
     description: "For teams publishing across channels every week.",
     pricing: { monthly: 250, annually: 2500 },
     cta: {

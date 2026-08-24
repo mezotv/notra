@@ -69,7 +69,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   },
   {
     id: "pro",
-    name: "Pro",
+    name: "Growth",
     description: "For teams publishing across channels every week.",
     price: { monthly: "$250", yearly: "$2,500" },
     priceSuffix: { monthly: "/month", yearly: "/year" },
