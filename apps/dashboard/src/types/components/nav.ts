@@ -31,3 +31,14 @@ export interface NavMainItem extends NavItem {
   category: NavMainCategory;
   badge?: string;
 }
+
+export interface NavSettingsItem {
+  label: string;
+  url: string;
+  icon: IconSvgElement;
+  requiresAiCredits?: boolean;
+}
+
+export interface NavSettingsProps {
+  slug: string;
+}

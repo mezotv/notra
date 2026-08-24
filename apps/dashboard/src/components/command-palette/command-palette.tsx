@@ -39,6 +39,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
+import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   AiResult,
@@ -48,7 +49,11 @@ import type {
 import { truncateSnippet } from "@/utils/format";
 import { isGeoDashboardPath, withGeoProject } from "@/utils/geo-paths";
 import { useCommandPalette } from "./command-palette-context";
-import { COMMAND_ROUTES, COMMAND_SECTIONS } from "./registry";
+import {
+  COMMAND_ROUTES,
+  COMMAND_SECTIONS,
+  isCommandRouteAvailable,
+} from "./registry";
 
 const APPLE_PLATFORM_PATTERN = /Mac|iPhone|iPad|iPod/i;
 const SEARCH_DEBOUNCE_MS = 150;
@@ -133,6 +138,7 @@ function BrailleSpinner({ className }: { className?: string }) {
 export function CommandPalette() {
   const { open, setOpen } = useCommandPalette();
   const { activeOrganization } = useOrganizationsContext();
+  const { hasAiCredits } = useHasAiCreditsFeature();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const isApplePlatform = useSyncExternalStore(
@@ -570,7 +576,9 @@ export function CommandPalette() {
               </CommandPrimitive.Empty>
 
               {COMMAND_SECTIONS.map((section) => {
-                const items = GROUPED_ROUTES[section];
+                const items = GROUPED_ROUTES[section].filter((route) =>
+                  isCommandRouteAvailable(route, hasAiCredits)
+                );
                 if (items.length === 0) {
                   return null;
                 }

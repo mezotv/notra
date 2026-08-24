@@ -1,16 +1,6 @@
 "use client";
 
-import {
-  AnalyticsUpIcon,
-  Attachment01Icon,
-  CreditCardIcon,
-  Notification03Icon,
-  Settings01Icon,
-  UserCircleIcon,
-  UserGroupIcon,
-  Wallet01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -19,68 +9,22 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  SETTINGS_ACCOUNT_NAV_ITEMS,
+  SETTINGS_ORGANIZATION_NAV_ITEMS,
+} from "@/constants/nav";
+import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
+import type { NavSettingsProps } from "@/types/components/nav";
 import { SidebarLabel } from "./sidebar-label";
-
-interface NavSettingsItem {
-  label: string;
-  url: string;
-  icon: IconSvgElement;
-}
-
-const accountItems: NavSettingsItem[] = [
-  {
-    label: "Account",
-    url: "settings/account",
-    icon: UserCircleIcon,
-  },
-];
-
-const organizationItems: NavSettingsItem[] = [
-  {
-    label: "General",
-    url: "settings/general",
-    icon: Settings01Icon,
-  },
-  {
-    label: "Members",
-    url: "settings/members",
-    icon: UserGroupIcon,
-  },
-  {
-    label: "Notifications",
-    url: "settings/notifications",
-    icon: Notification03Icon,
-  },
-  {
-    label: "Attachments",
-    url: "settings/attachments",
-    icon: Attachment01Icon,
-  },
-  {
-    label: "Billing & Usage",
-    url: "settings/billing",
-    icon: CreditCardIcon,
-  },
-  {
-    label: "Credits",
-    url: "settings/credits",
-    icon: Wallet01Icon,
-  },
-  {
-    label: "Logs",
-    url: "settings/logs",
-    icon: AnalyticsUpIcon,
-  },
-];
-
-interface NavSettingsProps {
-  slug: string;
-}
 
 export function NavSettings({ slug }: NavSettingsProps) {
   const pathname = usePathname();
+  const { hasAiCredits } = useHasAiCreditsFeature();
 
   const isActive = (url: string) => pathname === `/${slug}/${url}`;
+  const organizationItems = SETTINGS_ORGANIZATION_NAV_ITEMS.filter(
+    (item) => !item.requiresAiCredits || hasAiCredits
+  );
 
   return (
     <>
@@ -89,7 +33,7 @@ export function NavSettings({ slug }: NavSettingsProps) {
           <SidebarLabel>Account</SidebarLabel>
         </SidebarGroupLabel>
         <SidebarMenu>
-          {accountItems.map((item) => (
+          {SETTINGS_ACCOUNT_NAV_ITEMS.map((item) => (
             <SidebarMenuButton
               isActive={isActive(item.url)}
               key={item.label}

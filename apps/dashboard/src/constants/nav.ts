@@ -3,8 +3,11 @@ import {
   AiBrowserIcon,
   AiChat01Icon,
   Analytics01Icon,
+  AnalyticsUpIcon,
+  Attachment01Icon,
   Calendar03Icon,
   ChartAnalysisIcon,
+  CreditCardIcon,
   Home01Icon,
   Key01Icon,
   MagicWand01Icon,
@@ -17,6 +20,9 @@ import {
   RainbowIcon,
   SearchList01Icon,
   Settings01Icon,
+  UserCircleIcon,
+  UserGroupIcon,
+  Wallet01Icon,
   WorkflowSquare01Icon,
 } from "@hugeicons/core-free-icons";
 import { IRIS_NAV_LINK } from "@/constants/iris";
@@ -24,6 +30,7 @@ import type {
   NavDrilldownCategory,
   NavMainCategory,
   NavMainItem,
+  NavSettingsItem,
 } from "@/types/components/nav";
 
 export const CONTENT_NAV_LINK = "/content";
@@ -179,4 +186,31 @@ export const NAV_DRILLDOWN_ITEMS: NavMainItem[] = [
     label: NAV_CATEGORY_LABELS.geo,
     category: "none",
   },
+];
+
+export const SETTINGS_ACCOUNT_NAV_ITEMS: NavSettingsItem[] = [
+  { label: "Account", url: "settings/account", icon: UserCircleIcon },
+];
+
+export const SETTINGS_ORGANIZATION_NAV_ITEMS: NavSettingsItem[] = [
+  { label: "General", url: "settings/general", icon: Settings01Icon },
+  { label: "Members", url: "settings/members", icon: UserGroupIcon },
+  {
+    label: "Notifications",
+    url: "settings/notifications",
+    icon: Notification03Icon,
+  },
+  {
+    label: "Attachments",
+    url: "settings/attachments",
+    icon: Attachment01Icon,
+  },
+  { label: "Billing & Usage", url: "settings/billing", icon: CreditCardIcon },
+  {
+    label: "Credits",
+    url: "settings/credits",
+    icon: Wallet01Icon,
+    requiresAiCredits: true,
+  },
+  { label: "Logs", url: "settings/logs", icon: AnalyticsUpIcon },
 ];

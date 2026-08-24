@@ -15,6 +15,7 @@ export interface CommandRoute {
   icon: IconSvgElement;
   section: CommandSection;
   path: (slug: string) => string;
+  requiresAiCredits?: boolean;
 }
 
 export type AiResult =

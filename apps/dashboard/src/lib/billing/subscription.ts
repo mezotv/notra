@@ -24,7 +24,9 @@ async function hasAiCreditsBalance(organizationId: string): Promise<boolean> {
   return data.allowed === true;
 }
 
-async function hasAiCreditsGrant(organizationId: string): Promise<boolean> {
+export async function hasAiCreditsGrant(
+  organizationId: string
+): Promise<boolean> {
   if (!autumn) {
     return false;
   }

@@ -12,3 +12,9 @@ export function useHasZdrEntitlement() {
   const hasZdr = check({ featureId: FEATURES.ZDR }).allowed === true;
   return { hasZdr, isLoading };
 }
+
+export function useHasAiCreditsFeature() {
+  const { data: customer, isLoading } = useCustomer();
+  const hasAiCredits = Boolean(customer?.balances?.[FEATURES.AI_CREDITS]);
+  return { hasAiCredits, isLoading };
+}

@@ -43,8 +43,10 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
+import { NotFoundContent } from "@/components/not-found-content";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
+import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
 import {
   CREDIT_RANGE_LABELS,
   CREDIT_RANGES,
@@ -140,6 +142,8 @@ export default function CreditsPageClient() {
   const { data: customer, isLoading: customerLoading } = useCustomer({
     expand: ["balances.feature"],
   });
+  const { hasAiCredits, isLoading: aiCreditsLoading } =
+    useHasAiCreditsFeature();
 
   const { list: aggregatedList, total } = useAggregateEvents({
     featureId: FEATURES.AI_CREDITS,
@@ -220,6 +224,14 @@ export default function CreditsPageClient() {
       };
     });
   }, [aggregatedList]);
+
+  if (!(aiCreditsLoading || hasAiCredits)) {
+    return (
+      <PageContainer className="flex flex-1 flex-col">
+        <NotFoundContent className="flex-1" />
+      </PageContainer>
+    );
+  }
 
   if (success) {
     return (

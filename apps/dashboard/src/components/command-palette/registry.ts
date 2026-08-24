@@ -249,6 +249,7 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     icon: Wallet01Icon,
     section: "Settings",
     path: (slug) => `/${slug}/settings/credits`,
+    requiresAiCredits: true,
   },
 ];
 
@@ -261,8 +262,17 @@ export const COMMAND_SECTIONS: CommandSection[] = [
   "Settings",
 ];
 
-export function commandRoutesForAI(slug: string) {
-  return COMMAND_ROUTES.map((r) => ({
+export function isCommandRouteAvailable(
+  route: CommandRoute,
+  hasAiCredits: boolean
+): boolean {
+  return !route.requiresAiCredits || hasAiCredits;
+}
+
+export function commandRoutesForAI(slug: string, hasAiCredits: boolean) {
+  return COMMAND_ROUTES.filter((r) =>
+    isCommandRouteAvailable(r, hasAiCredits)
+  ).map((r) => ({
     id: r.id,
     label: r.label,
     path: r.path(slug),
