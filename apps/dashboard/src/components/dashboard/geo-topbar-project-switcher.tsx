@@ -20,22 +20,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import { parseAsString, useQueryState } from "nuqs";
 import { useState } from "react";
 import { GeoProjectCreateDialog } from "@/components/geo/project-create-dialog";
 import { ProjectLogo } from "@/components/geo/project-logo";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useGeoProjects } from "@/lib/hooks/use-geo";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { getWebsiteDomain } from "@/utils/brand";
 
 export function GeoTopbarProjectSwitcher() {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id ?? "";
-  const [projectParam, setProjectParam] = useQueryState(
-    "project",
-    parseAsString
-  );
+  const [projectParam, setProjectParam] = useGeoProjectQueryState();
   const [createOpen, setCreateOpen] = useState(false);
 
   const { data } = useGeoProjects(organizationId);

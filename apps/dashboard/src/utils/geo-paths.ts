@@ -1,9 +1,33 @@
+const GEO_DASHBOARD_PATH_PATTERN = /(?:^|\/)geo(?:\/|\?|$)/;
+
 export function geoDashboardPath(
   organizationSlug: string,
   projectId?: string
 ): string {
   const base = `/${organizationSlug}/geo`;
-  return projectId ? `${base}?project=${encodeURIComponent(projectId)}` : base;
+  return withGeoProject(base, projectId);
+}
+
+export function withGeoProject(path: string, projectId?: string): string {
+  if (!projectId) {
+    return path;
+  }
+
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}project=${encodeURIComponent(projectId)}`;
+}
+
+export function isGeoDashboardPath(path: string): boolean {
+  return GEO_DASHBOARD_PATH_PATTERN.test(path);
+}
+
+export function geoNavHref(
+  organizationSlug: string,
+  link: string,
+  projectId?: string
+): string {
+  const path = `/${organizationSlug}${link}`;
+  return isGeoDashboardPath(path) ? withGeoProject(path, projectId) : path;
 }
 
 export function geoOnboardingPath(projectId?: string): string {

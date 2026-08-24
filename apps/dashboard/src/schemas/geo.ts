@@ -25,6 +25,7 @@ import {
   GEO_ONBOARDING_MAX_PROMPTS,
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
+  GEO_SCAN_INTERVAL_HOURS,
   GEO_SEQUENCE_MAX_TURNS,
   GEO_WRITER_TOPIC_MAX_LENGTH,
   GEO_WRITER_TOPIC_MIN_LENGTH,
@@ -87,6 +88,10 @@ export const geoSettingsUpsertInputSchema = geoOrganizationInputSchema.extend({
     string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH)
   ).max(GEO_MAX_ENGINES),
   enabled: boolean(),
+  scanIntervalHours: number().refine(
+    (value) => GEO_SCAN_INTERVAL_HOURS.some((interval) => interval === value),
+    { message: "Unsupported scan interval" }
+  ),
 });
 
 export const geoCompetitorDomainSchema = string()

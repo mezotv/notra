@@ -16,6 +16,10 @@ import { PromptSuggestions } from "@/components/geo/prompt-suggestions";
 import { PromptsTable } from "@/components/geo/prompts-table";
 import { SearchConsoleCard } from "@/components/geo/search-console-card";
 import { PageContainer } from "@/components/layout/container";
+import {
+  GeoProjectProvider,
+  useGeoProjectScope,
+} from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
@@ -27,7 +31,9 @@ import {
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
 import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
+import { withGeoProject } from "@/utils/geo-paths";
 import { GeoPromptsSkeleton } from "./skeleton";
 
 interface PageClientProps {
@@ -35,6 +41,17 @@ interface PageClientProps {
 }
 
 export default function PageClient({ organizationSlug }: PageClientProps) {
+  const [projectParam] = useGeoProjectQueryState();
+
+  return (
+    <GeoProjectProvider projectId={projectParam ?? undefined}>
+      <GeoPromptsPageContent organizationSlug={organizationSlug} />
+    </GeoProjectProvider>
+  );
+}
+
+function GeoPromptsPageContent({ organizationSlug }: PageClientProps) {
+  const { projectId } = useGeoProjectScope();
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
   const organization =
@@ -73,7 +90,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             action={
               <Button
                 nativeButton={false}
-                render={<Link href={`/${organizationSlug}/geo`} />}
+                render={
+                  <Link
+                    href={withGeoProject(`/${organizationSlug}/geo`, projectId)}
+                  />
+                }
               >
                 Set up GEO tracking
               </Button>
@@ -113,7 +134,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         </header>
         <PromptSuggestions organizationId={organizationId} />
         <SearchConsoleCard
-          callbackPath={`/${organizationSlug}/geo/prompts`}
+          callbackPath={withGeoProject(
+            `/${organizationSlug}/geo/prompts`,
+            projectId
+          )}
           organizationId={organizationId}
         />
         <PromptsTable

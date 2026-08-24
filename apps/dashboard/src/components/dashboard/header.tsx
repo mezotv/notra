@@ -33,6 +33,8 @@ import { GeoTopbarProjectSwitcher } from "@/components/dashboard/geo-topbar-proj
 import { NavUser } from "@/components/dashboard/nav-user";
 import { SidebarToggle } from "@/components/dashboard/sidebar-toggle";
 import { GEO_DEFAULT_TAB, GEO_TAB_BREADCRUMB_LABELS } from "@/constants/geo";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
+import { withGeoProject } from "@/utils/geo-paths";
 
 const NON_ORG_PATHS: string[] = [];
 
@@ -50,6 +52,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [geoProjectParam] = useGeoProjectQueryState();
   const id = useId();
   const segments = pathname.split("/").filter(Boolean);
   const slug = segments[0];
@@ -241,6 +244,7 @@ export function SiteHeader() {
   );
 
   const geoSectionSegments = breadcrumbSegments.slice(1);
+  const geoProjectId = geoProjectParam ?? undefined;
   const geoTabLabel =
     GEO_TAB_BREADCRUMB_LABELS[searchParams.get("tab") ?? GEO_DEFAULT_TAB] ??
     GEO_TAB_BREADCRUMB_LABELS[GEO_DEFAULT_TAB] ??
@@ -250,7 +254,10 @@ export function SiteHeader() {
     geoSectionSegments.length > 0
       ? geoSectionSegments.flatMap((segment, index) => {
           const isLast = index === geoSectionSegments.length - 1;
-          const href = `/${segments.slice(0, index + 3).join("/")}`;
+          const href = withGeoProject(
+            `/${segments.slice(0, index + 3).join("/")}`,
+            geoProjectId
+          );
           const label =
             segment.charAt(0).toUpperCase() +
             segment.slice(1).replace(/-/g, " ");
@@ -281,7 +288,11 @@ export function SiteHeader() {
 
   const geoBreadcrumbs = [
     <BreadcrumbItem className="hover:underline" key={`${id}-geo-link`}>
-      <BreadcrumbLink render={<Link href={`/${slug}/geo`}>Geo</Link>} />
+      <BreadcrumbLink
+        render={
+          <Link href={withGeoProject(`/${slug}/geo`, geoProjectId)}>Geo</Link>
+        }
+      />
     </BreadcrumbItem>,
     <GeoTopbarProjectSwitcher key={`${id}-geo-project-switcher`} />,
     ...geoSectionBreadcrumbs,

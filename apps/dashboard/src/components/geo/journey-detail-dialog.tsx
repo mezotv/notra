@@ -33,6 +33,44 @@ import {
   hasGeoJourneyReferers,
 } from "@/utils/geo-journey";
 
+const JOURNEY_EVENT_SKELETON_ROW_KEYS = [
+  "a",
+  "b",
+  "c",
+  "d",
+  "e",
+  "f",
+  "g",
+  "h",
+] as const;
+
+function JourneyEventSkeletonRows({
+  rows,
+  showReferer,
+}: {
+  rows: number;
+  showReferer: boolean;
+}) {
+  return JOURNEY_EVENT_SKELETON_ROW_KEYS.slice(0, rows).map((key) => (
+    <TableRow key={key}>
+      <TableCell>
+        <Skeleton className="h-4 w-16" />
+      </TableCell>
+      <TableCell>
+        <Skeleton className="h-4 w-40" />
+      </TableCell>
+      {showReferer ? (
+        <TableCell>
+          <Skeleton className="h-4 w-24" />
+        </TableCell>
+      ) : null}
+      <TableCell>
+        <Skeleton className="h-4 w-20" />
+      </TableCell>
+    </TableRow>
+  ));
+}
+
 export function JourneyDetailDialog({
   open,
   onOpenChange,
@@ -45,11 +83,18 @@ export function JourneyDetailDialog({
   );
 
   const events = useMemo(() => data?.events ?? [], [data]);
-  const showReferer = useMemo(() => hasGeoJourneyReferers(events), [events]);
 
   if (!journey) {
     return null;
   }
+
+  const showReferer = isLoading
+    ? journey.visitorType !== "crawler"
+    : hasGeoJourneyReferers(events);
+  const skeletonRows = Math.min(
+    Math.max(journey.pages, 1),
+    JOURNEY_EVENT_SKELETON_ROW_KEYS.length
+  );
 
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
@@ -100,8 +145,7 @@ export function JourneyDetailDialog({
               <dd className="text-sm tabular-nums">{journey.distinctPaths}</dd>
             </div>
           </dl>
-          {isLoading && <Skeleton className="h-40 w-full" />}
-          <div className="max-h-96 overflow-auto">
+          <div aria-busy={isLoading} className="max-h-96 overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -112,13 +156,12 @@ export function JourneyDetailDialog({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading && (
-                  <TableRow>
-                    <TableCell colSpan={showReferer ? 4 : 3}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
-                  </TableRow>
-                )}
+                {isLoading ? (
+                  <JourneyEventSkeletonRows
+                    rows={skeletonRows}
+                    showReferer={showReferer}
+                  />
+                ) : null}
                 {!isLoading && events.length === 0 && (
                   <TableRow>
                     <TableCell

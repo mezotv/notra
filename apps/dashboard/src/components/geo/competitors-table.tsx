@@ -125,7 +125,7 @@ export function CompetitorsTable({
           </span>
         ),
         sortable: true,
-        width: "1.6fr",
+        width: "1.4fr",
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2.5">
             <CompetitorLogo
@@ -145,7 +145,7 @@ export function CompetitorsTable({
       {
         key: "domain",
         header: "Domain",
-        width: "1.4fr",
+        width: "1.2fr",
         cell: (row) =>
           row.domain ? (
             <a
@@ -164,7 +164,7 @@ export function CompetitorsTable({
       {
         key: "color",
         header: "Color",
-        width: "5.625rem",
+        width: "5rem",
         cell: (row) => (
           <span
             aria-hidden="true"
@@ -176,7 +176,7 @@ export function CompetitorsTable({
       {
         key: "kind",
         header: "Type",
-        width: "7.5rem",
+        width: "7rem",
         sortable: true,
         cell: (row) =>
           row.isOwnBrand ? (
@@ -190,7 +190,7 @@ export function CompetitorsTable({
       {
         key: "synonyms",
         header: "Synonyms",
-        width: "1.2fr",
+        width: "1fr",
         cell: (row) =>
           row.synonyms.length > 0 ? (
             <span

@@ -44,7 +44,7 @@ export function ShareOfVoiceTable({
       {
         key: "brand",
         header: "Brand",
-        width: "1.2fr",
+        width: "1fr",
         sortable: true,
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2 text-sm">
@@ -62,7 +62,7 @@ export function ShareOfVoiceTable({
       {
         key: "share",
         header: "Share",
-        width: "1.6fr",
+        width: "1.3fr",
         sortable: true,
         sortValue: (row) => row.share,
         cell: (row) => {
@@ -92,7 +92,7 @@ export function ShareOfVoiceTable({
       {
         key: "mentions",
         header: "Mentions",
-        width: "8.75rem",
+        width: "7.5rem",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">

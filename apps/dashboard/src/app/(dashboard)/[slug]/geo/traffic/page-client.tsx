@@ -2,7 +2,6 @@
 
 import { useReducedMotion } from "motion/react";
 import Link from "next/link";
-import { parseAsString, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -14,7 +13,10 @@ import { TrafficEmpty } from "@/components/geo/traffic-empty";
 import { TrafficPagesCard } from "@/components/geo/traffic-pages-card";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { PageContainer } from "@/components/layout/container";
-import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
+import {
+  GeoProjectProvider,
+  useGeoProjectScope,
+} from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
@@ -27,12 +29,15 @@ import {
   useGeoSettings,
   useGeoTrafficPages,
 } from "@/lib/hooks/use-geo";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps } from "@/types/geo";
+import { isTrafficPagePending } from "@/utils/ai-traffic";
+import { withGeoProject } from "@/utils/geo-paths";
 import { GeoTrafficSkeleton } from "./skeleton";
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
-  const [projectParam] = useQueryState("project", parseAsString);
+  const [projectParam] = useGeoProjectQueryState();
 
   return (
     <GeoProjectProvider projectId={projectParam ?? undefined}>
@@ -42,6 +47,7 @@ export default function PageClient({ organizationSlug }: GeoPageClientProps) {
 }
 
 function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
+  const { projectId } = useGeoProjectScope();
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
   const organization =
@@ -51,17 +57,33 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
   const organizationId = organization?.id ?? "";
 
   const geoRange = useGeoRange();
-  const { data: settingsData, isPending } = useGeoSettings(organizationId);
-  const { data: traffic } = useAiTraffic(organizationId, geoRange.query);
-  const { data: ingestSetup } = useGeoIngestSetup(organizationId);
-  const { data: trafficPages } = useGeoTrafficPages(
+  const { data: settingsData, isPending: isSettingsPending } =
+    useGeoSettings(organizationId);
+  const { data: traffic, isPending: isTrafficPending } = useAiTraffic(
+    organizationId,
+    geoRange.query
+  );
+  const { data: ingestSetup, isPending: isIngestPending } =
+    useGeoIngestSetup(organizationId);
+  const { data: trafficPages, isPending: isPagesPending } = useGeoTrafficPages(
     organizationId,
     geoRange.query
   );
 
+  const settings = settingsData?.settings ?? null;
+  const sources = traffic?.sources ?? [];
+  const isEmptyTraffic = !isTrafficPending && sources.length === 0;
+  const showSkeleton = isTrafficPagePending({
+    isSettingsPending,
+    hasSettings: settings !== null,
+    isTrafficPending,
+    isEmptyTraffic,
+    isIngestPending,
+  });
+
   const reduceMotion = useReducedMotion();
   const [modulesVisible, setModulesVisible] = useState(false);
-  const ready = !isPending;
+  const ready = !showSkeleton;
   const revealActive = ready && (Boolean(reduceMotion) || modulesVisible);
 
   useEffect(() => {
@@ -75,17 +97,17 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
     return () => clearTimeout(timer);
   }, [ready, reduceMotion]);
 
-  if (isPending) {
+  if (showSkeleton) {
     return <GeoTrafficSkeleton />;
   }
 
-  if (!settingsData?.settings) {
+  if (!settings) {
     return (
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full space-y-6 px-4 lg:px-6">
           <header className="space-y-1">
             <h1 className="font-bold text-3xl tracking-tight">AI Traffic</h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               AI crawlers and referrals visiting your site
             </p>
           </header>
@@ -93,7 +115,11 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
             action={
               <Button
                 nativeButton={false}
-                render={<Link href={`/${organizationSlug}/geo`} />}
+                render={
+                  <Link
+                    href={withGeoProject(`/${organizationSlug}/geo`, projectId)}
+                  />
+                }
               >
                 Set up GEO tracking
               </Button>
@@ -116,7 +142,7 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
     <header className="flex flex-wrap items-start justify-between gap-3">
       <div className="space-y-1">
         <h1 className="font-bold text-3xl tracking-tight">AI Traffic</h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           AI crawlers and referrals visiting your site
         </p>
       </div>
@@ -124,7 +150,7 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
     </header>
   );
 
-  if ((traffic?.sources.length ?? 0) === 0) {
+  if (isEmptyTraffic) {
     return (
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="flex w-full flex-col gap-6 px-4 lg:px-6">
@@ -146,7 +172,10 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
             <AiTrafficCard traffic={traffic} />
           </InstrumentReveal>
           <InstrumentReveal active={revealActive} order={1}>
-            <TrafficPagesCard pages={trafficPages?.pages ?? []} />
+            <TrafficPagesCard
+              isPending={isPagesPending}
+              pages={trafficPages?.pages ?? []}
+            />
           </InstrumentReveal>
           <InstrumentReveal active={revealActive} order={2}>
             <AiTrafficLogCard organizationId={organizationId} />

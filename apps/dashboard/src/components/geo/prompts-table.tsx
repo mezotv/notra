@@ -155,7 +155,7 @@ export function PromptsTable({
           </span>
         ),
         sortable: true,
-        width: "2.4fr",
+        width: "1fr",
         cell: (row) => (
           <Tooltip>
             <TooltipTrigger
@@ -172,7 +172,7 @@ export function PromptsTable({
       {
         key: "presence",
         header: "Presence",
-        width: "9.375rem",
+        width: "8.5rem",
         sortable: true,
         cell: (row) =>
           row.presence ? (
@@ -185,7 +185,7 @@ export function PromptsTable({
       {
         key: "engines",
         header: "Engines",
-        width: "8rem",
+        width: "7rem",
         sortable: true,
         cell: (row) =>
           row.total === 0 ? (
@@ -200,7 +200,7 @@ export function PromptsTable({
       {
         key: "bestPosition",
         header: "Best",
-        width: "6.5rem",
+        width: "5.5rem",
         sortable: true,
         cell: (row) =>
           row.bestPosition === null ? (

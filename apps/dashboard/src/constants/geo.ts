@@ -65,9 +65,9 @@ export const GEO_GAPS_TABLE_HEIGHT = 420;
 export const GEO_GAPS_METER_STEPS = 5;
 export const GEO_GAPS_METER_TONE_CLASS = {
   empty: "bg-muted",
-  low: "bg-rose-500",
-  mid: "bg-amber-500",
-  high: "bg-emerald-500",
+  low: "bg-geo-down",
+  mid: "bg-geo-mid",
+  high: "bg-geo-up",
 } as const;
 export const GEO_GAPS_LOGO_STACK_LIMIT = 4;
 export const GEO_GAPS_WRITE_LABELS = {
@@ -113,21 +113,21 @@ export const GEO_WRITE_CONTENT_SUBTYPES = [
     label: "Guide",
     description: "A long article that answers the prompt directly.",
     icon: BookOpen01Icon,
-    iconClass: "text-emerald-500 dark:text-emerald-300",
+    iconClass: "text-muted-foreground",
   },
   {
     id: "listicle" as const,
     label: "Listicle",
     description: "A numbered list that buyers can scan and cite.",
     icon: LeftToRightListNumberIcon,
-    iconClass: "text-violet-500 dark:text-violet-300",
+    iconClass: "text-muted-foreground",
   },
   {
     id: "comparison" as const,
     label: "Comparison",
     description: "Compares the brand with its alternatives.",
     icon: GitCompareIcon,
-    iconClass: "text-amber-500 dark:text-amber-300",
+    iconClass: "text-muted-foreground",
   },
 ];
 
@@ -172,6 +172,16 @@ export const GEO_WRITE_DIALOG_SECTIONS = [
   },
 ];
 export const GEO_WRITE_SITEMAP_SKELETON_KEYS = ["sitemap-1", "sitemap-2"];
+export const GEO_WRITE_TABLE_HEIGHT = 420;
+export const GEO_WRITE_TABLE_ROW_HEIGHT = 56;
+export const GEO_WRITE_TABLE_MIN_ROWS = 4;
+export const GEO_WRITE_BRIEF_STATUS_LABELS = {
+  draft: "Draft",
+  approved: "Queued",
+  writing: "Writing",
+  completed: "Done",
+  failed: "Failed",
+} as const;
 
 const hasEnv = (name: string): boolean => {
   const value = process.env[name];
@@ -189,7 +199,7 @@ export const GEO_GROUNDED_ENGINES: readonly GeoGroundedEngine[] = [
   },
   {
     key: "anthropic/claude-sonnet-4.6-grounded",
-    label: "Claude",
+    label: "Claude Sonnet",
     model: "anthropic/claude-sonnet-4.6",
     provider: "gateway-anthropic",
     envVar: null,
@@ -213,7 +223,7 @@ export const GEO_GROUNDED_ENGINES: readonly GeoGroundedEngine[] = [
   },
   {
     key: "anthropic-direct-grounded",
-    label: "Claude",
+    label: "Claude Sonnet",
     model: "claude-sonnet-4-6",
     provider: "direct-anthropic",
     envVar: GEO_ANTHROPIC_API_KEY_ENV,
@@ -295,6 +305,19 @@ export const GEO_ANSWER_MAX_TOKENS = 600;
 export const GEO_GROUNDED_ANSWER_MAX_TOKENS = 1200;
 export const GEO_JUDGE_MAX_TOKENS = 800;
 export const GEO_SCAN_CONCURRENCY = 4;
+export const GEO_SCAN_DEFAULT_INTERVAL_HOURS = 48;
+export const GEO_SCAN_INTERVAL_OPTIONS = [
+  { value: 24, label: "Every day" },
+  { value: GEO_SCAN_DEFAULT_INTERVAL_HOURS, label: "Default (every 48 hours)" },
+  { value: 3 * 24, label: "Every 3 days" },
+  { value: 7 * 24, label: "Every week" },
+  { value: 14 * 24, label: "Every 2 weeks" },
+  { value: 30 * 24, label: "Every 30 days" },
+] as const;
+export const GEO_SCAN_INTERVAL_HOURS = GEO_SCAN_INTERVAL_OPTIONS.map(
+  (option) => option.value
+);
+export const GEO_SCAN_WORKFLOW_PATH = "/api/workflows/geo-scan";
 export const GEO_SCAN_STALE_MS = 2 * 60 * 60 * 1000;
 export const GEO_SCAN_POLL_INTERVAL_MS = 3000;
 export const GEO_START_SCAN_MUTATION_KEY = "geo-start-scan";
@@ -511,6 +534,15 @@ export const AI_TRAFFIC_PURPOSE_DESCRIPTIONS: Record<string, string> = {
     "A person clicked through to your site from an AI answer",
 };
 
+export const GEO_TRAFFIC_TREND_CRAWLER_KEY = "crawler";
+export const GEO_TRAFFIC_TREND_REFERRAL_KEY = "aiReferral";
+export const GEO_TRAFFIC_TREND_CRAWLER_LABEL = "Crawlers";
+export const GEO_TRAFFIC_TREND_REFERRAL_LABEL = "Referrals";
+export const GEO_TRAFFIC_CRAWLER_HINT =
+  "Bots fetching your pages to train models or build a search index";
+export const GEO_TRAFFIC_REFERRAL_HINT =
+  "People who clicked through to your site from an AI answer";
+
 export const GEO_TRAFFIC_LOG_VISITOR_OPTIONS: readonly GeoTrafficLogVisitorOption[] =
   [
     { value: "crawler", label: "AI crawler" },
@@ -578,6 +610,9 @@ export const GEO_FILTER_TRIGGER_CLASS =
   "corner-squircle flex h-7 items-center gap-1.5 rounded-lg border bg-background px-2.5 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring";
 export const GEO_MENTION_RATE_LABEL = "Mention rate";
 export const GEO_SPARKLINE_MIN_POINTS = 2;
+export const GEO_RATE_SPARKLINE_WIDTH = 56;
+export const GEO_RATE_SPARKLINE_HEIGHT = 20;
+export const GEO_RATE_SPARKLINE_PADDING = 2;
 export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
 
 export const GEO_MAX_ALIASES = 10;

@@ -2,16 +2,19 @@
 
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { StatusSpinner } from "@/components/geo/status-spinner";
+import { Table, type TableColumn } from "@/components/motion/table";
+import {
+  GEO_WRITE_BRIEF_STATUS_LABELS,
+  GEO_WRITE_TABLE_HEIGHT,
+  GEO_WRITE_TABLE_MIN_ROWS,
+  GEO_WRITE_TABLE_ROW_HEIGHT,
+} from "@/constants/geo";
 import type { BriefHistoryProps } from "@/types/components/geo-writer";
-
-const STATUS_LABELS: Record<GeoContentBriefStatus, string> = {
-  draft: "Draft plan",
-  approved: "Queued",
-  writing: "Writing",
-  completed: "Done",
-  failed: "Failed",
-};
+import type { GeoContentBriefSummary } from "@/types/geo";
+import { formatRelativeDate } from "@/utils/content-preview";
+import { briefDisplayTitle } from "@/utils/geo-write-entry";
 
 function statusVariant(
   status: GeoContentBriefStatus
@@ -25,47 +28,150 @@ function statusVariant(
   return "outline";
 }
 
-const dateFormatter = new Intl.DateTimeFormat("en", {
-  month: "short",
-  day: "numeric",
-});
+function BriefStatusBadge({ status }: { status: GeoContentBriefStatus }) {
+  return (
+    <Badge
+      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm text-[0.6875rem]"
+      variant={statusVariant(status)}
+    >
+      {status === "writing" ? <StatusSpinner /> : null}
+      {GEO_WRITE_BRIEF_STATUS_LABELS[status]}
+    </Badge>
+  );
+}
+
+function remainingTableHeight(element: HTMLElement): number {
+  const elementTop = element.getBoundingClientRect().top;
+  const page = element.closest("[data-geo-write-page]");
+  const pagePadding =
+    page instanceof HTMLElement
+      ? Number.parseFloat(getComputedStyle(page).paddingBottom)
+      : Number.NaN;
+  const inset = Number.isFinite(pagePadding) ? pagePadding : 24;
+
+  if (!(page instanceof HTMLElement)) {
+    return 0;
+  }
+
+  return page.getBoundingClientRect().bottom - inset - elementTop;
+}
+
+function useFillHeight(fallback: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(fallback);
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) {
+      return;
+    }
+
+    const update = () => {
+      const next = Math.floor(remainingTableHeight(element));
+      if (next > 0) {
+        setHeight((current) => (current === next ? current : next));
+      }
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    const page = element.closest("[data-geo-write-page]");
+    if (page instanceof HTMLElement) {
+      observer.observe(page);
+    }
+    window.addEventListener("resize", update);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, []);
+
+  return [ref, height] as const;
+}
 
 export function BriefHistory({
   briefs,
   activeBriefId,
   onOpen,
+  onHover,
 }: BriefHistoryProps) {
+  const [tableRef, tableHeight] = useFillHeight(GEO_WRITE_TABLE_HEIGHT);
+  const tableBodyHeight = Math.min(
+    tableHeight,
+    Math.max(
+      briefs.length * GEO_WRITE_TABLE_ROW_HEIGHT,
+      GEO_WRITE_TABLE_ROW_HEIGHT * GEO_WRITE_TABLE_MIN_ROWS
+    )
+  );
+
+  const columns = useMemo<TableColumn<GeoContentBriefSummary>[]>(
+    () => [
+      {
+        key: "article",
+        header: "Article",
+        width: "1fr",
+        sortable: true,
+        sortValue: (brief) => briefDisplayTitle(brief),
+        cell: (brief) => {
+          const title = briefDisplayTitle(brief);
+          const subtitle = brief.topic !== title ? brief.topic : null;
+          return (
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="truncate font-medium text-sm leading-snug">
+                {title}
+              </span>
+              {subtitle ? (
+                <span className="truncate text-muted-foreground text-xs">
+                  {subtitle}
+                </span>
+              ) : null}
+            </span>
+          );
+        },
+      },
+      {
+        key: "status",
+        header: "Status",
+        width: "7.5rem",
+        sortable: true,
+        sortValue: (brief) => GEO_WRITE_BRIEF_STATUS_LABELS[brief.status],
+        cell: (brief) => <BriefStatusBadge status={brief.status} />,
+      },
+      {
+        key: "createdAt",
+        header: "Created",
+        width: "8rem",
+        sortable: true,
+        sortValue: (brief) => brief.createdAt,
+        cell: (brief) => (
+          <span className="whitespace-nowrap text-muted-foreground tabular-nums">
+            {formatRelativeDate(brief.createdAt)}
+          </span>
+        ),
+      },
+    ],
+    []
+  );
+
   if (briefs.length === 0) {
     return null;
   }
 
   return (
-    <section className="space-y-2">
-      <h2 className="px-1 font-medium text-muted-foreground text-xs">Recent</h2>
-      <ul className="divide-y divide-border border-y">
-        {briefs.map((brief) => (
-          <li key={brief.id}>
-            <button
-              className={cn(
-                "flex w-full items-center justify-between gap-3 px-1 py-2.5 text-left text-sm transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
-                activeBriefId && brief.id === activeBriefId && "bg-muted/40"
-              )}
-              onClick={() => onOpen(brief.id)}
-              type="button"
-            >
-              <span className="min-w-0 flex-1 truncate">
-                {brief.workingTitle || brief.topic}
-              </span>
-              <span className="shrink-0 text-muted-foreground text-xs">
-                {dateFormatter.format(new Date(brief.createdAt))}
-              </span>
-              <Badge className="shrink-0" variant={statusVariant(brief.status)}>
-                {STATUS_LABELS[brief.status]}
-              </Badge>
-            </button>
-          </li>
-        ))}
-      </ul>
-    </section>
+    <div className="min-h-0 w-full" ref={tableRef}>
+      <Table
+        className="rounded-2xl"
+        columns={columns}
+        data={briefs}
+        defaultSort={{ key: "createdAt", direction: "desc" }}
+        getRowId={(brief) => brief.id}
+        height={tableBodyHeight}
+        onRowClick={(brief) => onOpen(brief.id)}
+        onRowPointerEnter={(brief) => onHover?.(brief.id)}
+        rowHeight={GEO_WRITE_TABLE_ROW_HEIGHT}
+        selectedRowIds={activeBriefId ? [activeBriefId] : undefined}
+      />
+    </div>
   );
 }

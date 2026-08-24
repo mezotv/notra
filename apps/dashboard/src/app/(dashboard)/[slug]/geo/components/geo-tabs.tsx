@@ -18,9 +18,11 @@ import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
 import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
+import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { GEO_PROMPTS_TAB_PREVIEW_LIMIT } from "@/constants/geo";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoTabsProps } from "@/types/geo";
+import { withGeoProject } from "@/utils/geo-paths";
 import { toGeoTab } from "@/utils/geo-tabs";
 
 const TAB_LINK_CLASS =
@@ -69,10 +71,12 @@ export function GeoTabs({
   journeys,
   organizationId,
 }: GeoTabsProps) {
+  const { projectId } = useGeoProjectScope();
   const { param } = useGeoRange();
-  const promptsHref = param
+  const promptsPath = param
     ? `/${organizationSlug}/geo/prompts?range=${param}`
     : `/${organizationSlug}/geo/prompts`;
+  const promptsHref = withGeoProject(promptsPath, projectId);
 
   return (
     <Tabs
@@ -99,6 +103,7 @@ export function GeoTabs({
           <EngineRateTable
             engines={engines}
             isScanning={isScanning}
+            promptResults={promptResults}
             timeseriesPoints={timeseriesPoints}
           />
         </TabSection>
@@ -108,7 +113,10 @@ export function GeoTabs({
               action={
                 <Link
                   className={TAB_LINK_CLASS}
-                  href={`/${organizationSlug}/geo/competitors`}
+                  href={withGeoProject(
+                    `/${organizationSlug}/geo/competitors`,
+                    projectId
+                  )}
                   prefetch={true}
                 >
                   All competitors

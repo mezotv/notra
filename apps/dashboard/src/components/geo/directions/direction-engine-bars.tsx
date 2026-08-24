@@ -23,7 +23,7 @@ export function DirectionEngineBars({ className }: DirectionBlockProps) {
       {
         key: "label",
         header: "Engine",
-        width: "1.2fr",
+        width: "1fr",
         sortable: true,
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2 font-medium text-sm">
@@ -35,14 +35,14 @@ export function DirectionEngineBars({ className }: DirectionBlockProps) {
       {
         key: "bar",
         header: "Mention rate",
-        width: "2fr",
+        width: "1.4fr",
         cell: (row) => <GeoBar max={MAX_RATE} value={row.rate} />,
         sortValue: (row) => row.rate,
       },
       {
         key: "rate",
         header: "Rate",
-        width: "6.25rem",
+        width: "6rem",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">

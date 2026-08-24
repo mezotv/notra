@@ -1,6 +1,17 @@
 import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
+import {
+  AI_TRAFFIC_CONFIDENCE_LABELS,
+  AI_TRAFFIC_PURPOSE_LABELS,
+} from "@/constants/geo";
 import type { GeoTrafficLogEntry, GeoVisitorType } from "@/types/geo";
 import { formatGeoSource } from "@/utils/ai-traffic";
+
+export interface CitationProviderTooltip {
+  title: string;
+  raw: string | null;
+  purpose: string;
+  confidence: string;
+}
 
 export function formatCitationTimestamp(value: string): string {
   const date = parseClickHouseDateTime(value);
@@ -25,6 +36,29 @@ export function formatCitationProvider(
     return trimmed;
   }
   return formatGeoSource(source, visitorType);
+}
+
+export function citationProviderTooltip(
+  entry: Pick<
+    GeoTrafficLogEntry,
+    "agent" | "source" | "visitorType" | "category" | "confidence"
+  >
+): CitationProviderTooltip {
+  const title = formatCitationProvider(
+    entry.agent,
+    entry.source,
+    entry.visitorType
+  );
+  const raw = (entry.agent || entry.source).trim();
+  const showRaw = raw.length > 0 && raw.toLowerCase() !== title.toLowerCase();
+
+  return {
+    title,
+    raw: showRaw ? raw : null,
+    purpose: AI_TRAFFIC_PURPOSE_LABELS[entry.category] ?? entry.category,
+    confidence:
+      AI_TRAFFIC_CONFIDENCE_LABELS[entry.confidence] ?? entry.confidence,
+  };
 }
 
 export function citationRowId(

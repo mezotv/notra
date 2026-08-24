@@ -2,13 +2,25 @@
 
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@notra/ui/components/ui/select";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { useAsyncDebouncer } from "@tanstack/react-pacer";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { GeoEnginePicker } from "@/components/geo/geo-engine-picker";
 import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
 import { GeoTagList } from "@/components/geo/geo-tag-list";
-import { GEO_MAX_ALIASES, GEO_SETTINGS_AUTO_SAVE_MS } from "@/constants/geo";
+import {
+  GEO_MAX_ALIASES,
+  GEO_SCAN_DEFAULT_INTERVAL_HOURS,
+  GEO_SCAN_INTERVAL_OPTIONS,
+  GEO_SETTINGS_AUTO_SAVE_MS,
+} from "@/constants/geo";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import type { GeoSettingsFormProps, GeoSettingsUpsertInput } from "@/types/geo";
@@ -39,6 +51,9 @@ export function GeoSettingsForm({
     () => settings?.nonZdrApprovedEngines ?? []
   );
   const [enabled, setEnabled] = useState(() => settings?.enabled ?? true);
+  const [scanIntervalHours, setScanIntervalHours] = useState(
+    () => settings?.scanIntervalHours ?? GEO_SCAN_DEFAULT_INTERVAL_HOURS
+  );
   const { hasZdr: canEnforceZdr, isLoading: planLoading } =
     useHasZdrEntitlement();
   const upsert = useGeoSettingsUpsert(organizationId, { silentSuccess: true });
@@ -84,6 +99,7 @@ export function GeoSettingsForm({
       enforceZdr,
       nonZdrApprovedEngines: nonZdrApproved,
       enabled,
+      scanIntervalHours,
       canEnforceZdr,
     });
     const serialized = JSON.stringify(input);
@@ -101,6 +117,8 @@ export function GeoSettingsForm({
           enforceZdr: settings?.enforceZdr ?? true,
           nonZdrApprovedEngines: settings?.nonZdrApprovedEngines ?? [],
           enabled: settings?.enabled ?? true,
+          scanIntervalHours:
+            settings?.scanIntervalHours ?? GEO_SCAN_DEFAULT_INTERVAL_HOURS,
           canEnforceZdr,
         })
       );
@@ -130,6 +148,7 @@ export function GeoSettingsForm({
     nonZdrApproved,
     organizationId,
     planLoading,
+    scanIntervalHours,
     settings,
   ]);
 
@@ -232,6 +251,31 @@ export function GeoSettingsForm({
               id={`${id}-enabled`}
               onCheckedChange={setEnabled}
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor={`${id}-scan-interval`}>Scan frequency</Label>
+            <p className="text-muted-foreground text-xs">
+              Choose how often enabled models are checked automatically.
+            </p>
+            <Select
+              disabled={!enabled}
+              onValueChange={(value) => setScanIntervalHours(Number(value))}
+              value={String(scanIntervalHours)}
+            >
+              <SelectTrigger
+                className="w-full sm:max-w-xs"
+                id={`${id}-scan-interval`}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent align="start" alignItemWithTrigger={false}>
+                {GEO_SCAN_INTERVAL_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={String(option.value)}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </SettingsSection>
       </div>

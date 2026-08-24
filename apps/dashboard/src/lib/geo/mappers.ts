@@ -1,4 +1,4 @@
-import type { GeoTrafficLogRow } from "@notra/analytics/tinybird/endpoints";
+import type { GeoTrafficLogRow } from "@notra/analytics/types/tinybird-endpoints";
 import { normalizeModelId } from "@/lib/geo/model-usage";
 import type {
   GeoCompetitor,
@@ -49,6 +49,7 @@ export function toGeoSettings(
     enforceZdr: row.enforceZdr,
     nonZdrApprovedEngines: row.nonZdrApprovedEngines,
     enabled: row.enabled,
+    scanIntervalHours: row.scanIntervalHours,
     scanStartedAt,
     lastScanAt,
     isScanning: isGeoScanRunning(row.scanStartedAt, row.lastScanAt),

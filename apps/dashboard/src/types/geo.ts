@@ -107,6 +107,7 @@ export interface GeoSettings {
   /** Models without a ZDR host the user approved to run anyway. */
   nonZdrApprovedEngines: string[];
   enabled: boolean;
+  scanIntervalHours: number;
   scanStartedAt: string | null;
   lastScanAt: string | null;
   isScanning: boolean;
@@ -131,6 +132,8 @@ export interface GeoSettingsRow {
   enforceZdr: boolean;
   nonZdrApprovedEngines: string[];
   enabled: boolean;
+  scanIntervalHours: number;
+  qstashMessageId: string | null;
   scanStartedAt: Date | null;
   lastScanAt: Date | null;
   createdAt: Date;
@@ -182,6 +185,14 @@ export interface GeoSparklinePoint {
   value: number;
 }
 
+export interface EngineFamilyModeTrendRow {
+  day: string;
+  rawDay: string;
+  search: number | null;
+  memory: number | null;
+  [key: string]: string | number | null;
+}
+
 export interface GeoPromptResult {
   promptId: string;
   engine: string;
@@ -192,6 +203,12 @@ export interface GeoPromptResult {
   sentiment: string | null;
   excerpt: string;
   lastCheckedAt: string;
+}
+
+export interface PromptEngineSwitcherProps {
+  results: GeoPromptResult[];
+  active: GeoPromptResult;
+  onChange: (engine: string, direction: number) => void;
 }
 
 export interface GeoPromptResultsResponse {
@@ -220,10 +237,20 @@ export interface GeoSettingsUpsertInput {
   enforceZdr: boolean;
   nonZdrApprovedEngines: string[];
   enabled: boolean;
+  scanIntervalHours: number;
 }
 
 export interface GeoSettingsUpsertOptions {
   silentSuccess?: boolean;
+}
+
+export interface SyncGeoScanScheduleInput {
+  organizationId: string;
+  projectId: string;
+  enabled: boolean;
+  scanIntervalHours: number;
+  existingMessageId: string | null;
+  reschedule?: boolean;
 }
 
 export interface GeoSampleDataResponse {
@@ -636,7 +663,16 @@ export interface GeoTrafficSource {
 export interface GeoTrafficPoint {
   day: string;
   visitorType: GeoVisitorType;
+  source: string;
   visits: number;
+}
+
+export interface GeoTrafficTrendRow {
+  day: string;
+  rawDay: string;
+  crawler: number;
+  aiReferral: number;
+  [key: string]: string | number;
 }
 
 export interface GeoTrafficLogEntry {
@@ -777,6 +813,7 @@ export interface GeoTrafficPage {
   source: string;
   visitorType: GeoVisitorType;
   visits: number;
+  previousVisits?: number;
   lastSeenAt: string;
 }
 
@@ -813,6 +850,7 @@ export interface AiTrafficCardProps {
 
 export interface TrafficPagesCardProps {
   pages: GeoTrafficPage[];
+  isPending?: boolean;
 }
 
 export type GeoPresenceStatus =
@@ -847,6 +885,11 @@ export interface GeoBarProps {
   className?: string;
   fillClassName?: string;
   fillColor?: string;
+}
+
+export interface GeoRateSparklineProps {
+  points: readonly GeoSparklinePoint[];
+  className?: string;
 }
 
 export interface GeoPromptCoverage {
@@ -903,6 +946,7 @@ export interface LanguagePerformanceCardProps {
 export interface MentionRateCardProps {
   engines: GeoOverviewEngine[];
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
+  promptResults?: readonly GeoPromptResult[];
   isScanning?: boolean;
 }
 
@@ -926,12 +970,21 @@ export interface PromptResultsPreviewProps {
 export interface EngineRateTableProps {
   engines: GeoOverviewEngine[];
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
+  promptResults?: readonly GeoPromptResult[];
   isScanning?: boolean;
+}
+
+export interface EngineFamilyPromptHit {
+  promptId: string;
+  prompt: string;
+  mentioned: boolean;
+  position: number | null;
 }
 
 export interface EngineFamilySheetProps {
   family: GeoEngineFamily | null;
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
+  promptResults?: readonly GeoPromptResult[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }

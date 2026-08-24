@@ -90,6 +90,7 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
   {
     key: "youcom",
     patterns: ["youbot", "you.com"],
+    exact: ["you"],
   },
   {
     key: "liner",

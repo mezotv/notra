@@ -1,16 +1,16 @@
 "use client";
 
-import { parseAsString, useQueryState } from "nuqs";
 import { GeoSettingsForm } from "@/components/geo/geo-settings-form";
 import { PageContainer } from "@/components/layout/container";
 import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useGeoModelCatalog, useGeoSettings } from "@/lib/hooks/use-geo";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import type { GeoPageClientProps } from "@/types/geo";
 import { GeoSettingsSkeleton } from "./skeleton";
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
-  const [projectParam] = useQueryState("project", parseAsString);
+  const [projectParam] = useGeoProjectQueryState();
 
   return (
     <GeoProjectProvider projectId={projectParam ?? undefined}>

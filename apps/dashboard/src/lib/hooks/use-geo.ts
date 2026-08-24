@@ -69,6 +69,7 @@ import {
 } from "@/utils/ai-traffic";
 import { toErrorMessage } from "@/utils/error-message";
 import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
+import { withGeoProject } from "@/utils/geo-paths";
 import { toGeoWindowInput } from "@/utils/geo-range";
 import { dashboardOrpc } from "../orpc/query";
 
@@ -311,11 +312,18 @@ export function usePrefetchGeoCompetitorDetail(organizationId: string) {
   };
 }
 
-function geoCompetitorRowHref(organizationSlug: string, brand: string): string {
+function geoCompetitorRowHref(
+  organizationSlug: string,
+  brand: string,
+  projectId?: string
+): string {
   if (brand === CHART_OTHER_SLICE_LABEL) {
-    return `/${organizationSlug}/geo/competitors`;
+    return withGeoProject(`/${organizationSlug}/geo/competitors`, projectId);
   }
-  return geoCompetitorDetailPath(organizationSlug, brand);
+  return withGeoProject(
+    geoCompetitorDetailPath(organizationSlug, brand),
+    projectId
+  );
 }
 
 /**
@@ -328,20 +336,21 @@ export function useGeoCompetitorRowNavigation(
   organizationId: string | undefined
 ) {
   const router = useRouter();
+  const { projectId } = useGeoProjectScope();
   const prefetchDetail = usePrefetchGeoCompetitorDetail(organizationId ?? "");
 
   const openRow = (brand: string) => {
     if (!organizationSlug) {
       return;
     }
-    router.push(geoCompetitorRowHref(organizationSlug, brand));
+    router.push(geoCompetitorRowHref(organizationSlug, brand, projectId));
   };
 
   const prefetchRow = (brand: string) => {
     if (!organizationSlug) {
       return;
     }
-    router.prefetch(geoCompetitorRowHref(organizationSlug, brand));
+    router.prefetch(geoCompetitorRowHref(organizationSlug, brand, projectId));
     if (brand !== CHART_OTHER_SLICE_LABEL) {
       prefetchDetail(brand);
     }

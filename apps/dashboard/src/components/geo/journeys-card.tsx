@@ -32,7 +32,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
       {
         key: "journeyId",
         header: "Journey",
-        width: "8.75rem",
+        width: "7.5rem",
         cell: (row) => (
           <span
             className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs"
@@ -45,7 +45,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
       {
         key: "source",
         header: "Source",
-        width: "1.2fr",
+        width: "1fr",
         sortable: true,
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2 text-sm">
@@ -78,7 +78,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
       {
         key: "span",
         header: "Span",
-        width: "10.625rem",
+        width: "9.5rem",
         cell: (row) => (
           <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
             {formatGeoJourneySpan(row.firstSeenAt, row.lastSeenAt)}
@@ -99,7 +99,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
       {
         key: "entryPath",
         header: "Entry path",
-        width: "1.6fr",
+        width: "1.2fr",
         cell: (row) => (
           <span
             className="block w-full min-w-0 truncate font-mono text-xs"

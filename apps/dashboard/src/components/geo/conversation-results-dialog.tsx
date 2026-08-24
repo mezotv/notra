@@ -28,7 +28,7 @@ function EngineResult({ result }: { result: GeoSequenceTurnResult }) {
       <EngineIcon className="size-3.5" engine={result.engine} />
       {label}
       {result.mentioned ? (
-        <span className="font-medium text-emerald-600 tabular-nums dark:text-emerald-400">
+        <span className="font-medium text-geo-up tabular-nums">
           {result.position !== null ? `#${result.position}` : "Mentioned"}
         </span>
       ) : (

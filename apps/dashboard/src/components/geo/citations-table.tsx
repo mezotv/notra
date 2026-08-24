@@ -9,18 +9,42 @@ import { EngineIcon } from "@/components/geo/engine-icon";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
 import { CountryFlag } from "@/components/geo/twemoji";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import {
-  AI_TRAFFIC_CONFIDENCE_LABELS,
   AI_TRAFFIC_PURPOSE_LABELS,
   GEO_CITATIONS_ROW_HEIGHT,
 } from "@/constants/geo";
 import type { CitationsTableProps, GeoTrafficLogEntry } from "@/types/geo";
 import { countryName } from "@/utils/country";
 import {
+  citationProviderTooltip,
   citationRowId,
   formatCitationProvider,
   formatCitationTimestamp,
 } from "@/utils/geo-citations";
+
+function ProviderTooltip({ entry }: { entry: GeoTrafficLogEntry }) {
+  const detail = citationProviderTooltip(entry);
+
+  return (
+    <div className="flex flex-col gap-2 text-left">
+      <div className="flex flex-col gap-0.5">
+        <p className="font-medium">{detail.title}</p>
+        {detail.raw ? (
+          <p className="font-mono text-[0.6875rem] text-muted-foreground">
+            {detail.raw}
+          </p>
+        ) : null}
+      </div>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+        <dt className="text-muted-foreground">Purpose</dt>
+        <dd className="m-0">{detail.purpose}</dd>
+        <dt className="text-muted-foreground">Confidence</dt>
+        <dd className="m-0">{detail.confidence}</dd>
+      </dl>
+    </div>
+  );
+}
 
 function ProviderCell({ entry }: { entry: GeoTrafficLogEntry }) {
   const label = formatCitationProvider(
@@ -38,14 +62,8 @@ function ProviderCell({ entry }: { entry: GeoTrafficLogEntry }) {
         <EngineIcon engine={entry.agent || entry.source} />
         <span className="truncate">{label}</span>
       </TooltipTrigger>
-      <TooltipContent>
-        <span className="block font-mono">{entry.agent || entry.source}</span>
-        <span className="block text-muted-foreground">
-          {AI_TRAFFIC_PURPOSE_LABELS[entry.category] ?? entry.category}
-        </span>
-        <span className="block text-muted-foreground">
-          {AI_TRAFFIC_CONFIDENCE_LABELS[entry.confidence] ?? entry.confidence}
-        </span>
+      <TooltipContent align="start" className="max-w-xs">
+        <ProviderTooltip entry={entry} />
       </TooltipContent>
     </Tooltip>
   );
@@ -65,7 +83,9 @@ function MarkdownFlag({ wantsMarkdown }: { wantsMarkdown: boolean }) {
       >
         MD
       </TooltipTrigger>
-      <TooltipContent>Requested markdown (Accept header)</TooltipContent>
+      <TooltipContent align="start" className="max-w-xs text-pretty">
+        Requested markdown (Accept header)
+      </TooltipContent>
     </Tooltip>
   );
 }
@@ -86,7 +106,7 @@ const CITATIONS_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
   {
     key: "source",
     header: "Provider",
-    width: "12rem",
+    width: "11rem",
     sortable: true,
     sortValue: (entry) =>
       formatCitationProvider(entry.agent, entry.source, entry.visitorType),
@@ -99,11 +119,13 @@ const CITATIONS_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
   {
     key: "path",
     header: "Path",
-    width: "18rem",
+    width: "1fr",
     cell: (entry) => (
       <span className="flex min-w-0 items-center gap-2">
-        <span className="truncate font-mono text-xs" title={entry.path}>
-          {entry.path}
+        <span className="min-w-0 flex-1">
+          <TruncateWithTooltip className="font-mono text-xs">
+            {entry.path}
+          </TruncateWithTooltip>
         </span>
         <MarkdownFlag wantsMarkdown={entry.wantsMarkdown} />
       </span>
@@ -121,6 +143,7 @@ const CITATIONS_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
   {
     key: "country",
     header: "Country",
+    width: "9rem",
     sortable: true,
     sortValue: (row) => countryName(row.country),
     cell: (row) =>

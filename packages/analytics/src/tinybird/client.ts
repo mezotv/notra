@@ -6,6 +6,37 @@ import {
 } from "@tinybirdco/sdk";
 import { bumpAnalyticsVersions, cachedQuery } from "../cache/query-cache";
 import type { AnalyticsCacheScope } from "../types/cache";
+import type {
+  AccountLeaderboardParams,
+  AccountLeaderboardRow,
+  AiTrafficLogRow,
+  AiTrafficOverviewRow,
+  AiTrafficTimeseriesRow,
+  EngagementTimeseriesParams,
+  EngagementTimeseriesRow,
+  FollowerGrowthParams,
+  FollowerGrowthRow,
+  GeoJourneyDetailRow,
+  GeoTrafficJourneysRow,
+  GeoTrafficLogParams,
+  GeoTrafficLogRow,
+  GeoTrafficOverviewRow,
+  GeoTrafficPagesParams,
+  GeoTrafficPagesRow,
+  GeoTrafficTimeseriesRow,
+  ModelUsageLatestParams,
+  ModelUsageLatestRow,
+  ModelUsageTrendParams,
+  ModelUsageTrendRow,
+  NotraAdoptionRow,
+  PostingPerformanceParams,
+  PostingPerformanceRow,
+  PostMetricsLookupRow,
+  SocialOverviewParams,
+  SocialOverviewRow,
+  TopPostsParams,
+  TopPostsRow,
+} from "../types/tinybird-endpoints";
 import {
   type AiTrafficEventRow,
   aiTrafficEvents,
@@ -25,55 +56,29 @@ import {
   socialPosts,
 } from "./datasources";
 import {
-  type AccountLeaderboardParams,
-  type AccountLeaderboardRow,
-  type AiTrafficLogRow,
-  type AiTrafficOverviewRow,
-  type AiTrafficTimeseriesRow,
-  accountLeaderboard,
   aiTrafficLog,
   aiTrafficOverview,
   aiTrafficTimeseries,
-  type EngagementTimeseriesParams,
-  type EngagementTimeseriesRow,
-  engagementTimeseries,
-  type FollowerGrowthParams,
-  type FollowerGrowthRow,
-  followerGrowth,
-  type GeoJourneyDetailRow,
-  type GeoTrafficJourneysRow,
-  type GeoTrafficLogParams,
-  type GeoTrafficLogRow,
-  type GeoTrafficOverviewRow,
-  type GeoTrafficPagesParams,
-  type GeoTrafficPagesRow,
-  type GeoTrafficTimeseriesRow,
+} from "./pipes/ai-traffic";
+import {
   geoJourneyDetail,
   geoTrafficJourneys,
   geoTrafficLog,
   geoTrafficOverview,
   geoTrafficPages,
   geoTrafficTimeseries,
-  type ModelUsageLatestParams,
-  type ModelUsageLatestRow,
-  type ModelUsageTrendParams,
-  type ModelUsageTrendRow,
-  modelUsageLatest,
-  modelUsageTrend,
-  type NotraAdoptionRow,
+} from "./pipes/geo-traffic";
+import { modelUsageLatest, modelUsageTrend } from "./pipes/model-usage";
+import {
+  accountLeaderboard,
+  engagementTimeseries,
+  followerGrowth,
   notraAdoption,
-  type PostingPerformanceParams,
-  type PostingPerformanceRow,
-  type PostMetricsLookupRow,
   postingPerformance,
   postMetricsLookup,
-  type SocialOverviewParams,
-  type SocialOverviewRow,
   socialOverview,
-  type TopPostsParams,
-  type TopPostsRow,
   topPosts,
-} from "./endpoints";
+} from "./pipes/social";
 
 export function isTinybirdConfigured(): boolean {
   return Boolean(process.env.TINYBIRD_TOKEN);

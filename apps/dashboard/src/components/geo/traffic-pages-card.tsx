@@ -1,47 +1,46 @@
 "use client";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
+import { TrafficDeltaBadge } from "@/components/geo/traffic-delta-badge";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { GeoTrafficPage, TrafficPagesCardProps } from "@/types/geo";
-import { formatGeoSource } from "@/utils/ai-traffic";
+import { formatGeoSource, trafficVisitDelta } from "@/utils/ai-traffic";
 import { tableHeightFor } from "@/utils/table";
 
-export function TrafficPagesCard({ pages }: TrafficPagesCardProps) {
+const PAGE_SKELETON_ROWS = 4;
+const PAGE_COLUMN_WIDTH = "1fr";
+const SOURCE_COLUMN_WIDTH = "12rem";
+const VISITS_COLUMN_WIDTH = "9.5rem";
+
+export function TrafficPagesCard({
+  pages,
+  isPending = false,
+}: TrafficPagesCardProps) {
   const columns = useMemo<TableColumn<GeoTrafficPage>[]>(
     () => [
       {
         key: "path",
         header: "Page",
-        width: "2fr",
+        width: PAGE_COLUMN_WIDTH,
         sortable: true,
         cell: (row) => (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="block w-full min-w-0 truncate font-mono text-xs">
-                  {row.path}
-                </span>
-              }
-            />
-            <TooltipContent className="max-w-sm">{row.path}</TooltipContent>
-          </Tooltip>
+          <TruncateWithTooltip className="font-mono text-xs">
+            {row.path}
+          </TruncateWithTooltip>
         ),
       },
       {
         key: "source",
         header: "Source",
-        width: "1.2fr",
+        width: SOURCE_COLUMN_WIDTH,
         sortable: true,
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2 text-sm">
@@ -56,15 +55,56 @@ export function TrafficPagesCard({ pages }: TrafficPagesCardProps) {
       {
         key: "visits",
         header: "Visits",
-        width: "6.25rem",
+        width: VISITS_COLUMN_WIDTH,
+        align: "right",
         sortable: true,
-        cell: (row) => (
-          <span className="text-sm tabular-nums">{row.visits}</span>
-        ),
+        cell: (row) => {
+          const delta =
+            row.previousVisits === undefined
+              ? null
+              : trafficVisitDelta(row.visits, row.previousVisits);
+
+          return (
+            <span className="flex items-center justify-end gap-2">
+              <TrafficDeltaBadge delta={delta} />
+              <span className="text-sm tabular-nums">
+                {row.visits.toLocaleString()}
+              </span>
+            </span>
+          );
+        },
       },
     ],
     []
   );
+
+  let body: ReactNode;
+  if (isPending) {
+    body = <GeoTableSkeleton rows={PAGE_SKELETON_ROWS} />;
+  } else if (pages.length === 0) {
+    body = (
+      <InstrumentEmpty
+        message="No AI visits captured yet"
+        seed="geo-traffic-pages"
+      />
+    );
+  } else {
+    body = (
+      <div className="flex flex-col gap-2">
+        <Table
+          className="rounded-2xl"
+          columns={columns}
+          data={pages}
+          defaultSort={{ key: "visits", direction: "desc" }}
+          emptyState="No AI visits captured yet"
+          getRowId={(row) => `${row.path}-${row.visitorType}-${row.source}`}
+          height={tableHeightFor(pages.length)}
+          resizable
+          rowHeight={TABLE_ROW_HEIGHT}
+        />
+      </div>
+    );
+  }
 
   return (
     <InstrumentSection
@@ -73,28 +113,8 @@ export function TrafficPagesCard({ pages }: TrafficPagesCardProps) {
           ? `Top pages by AI source (${pages.length.toLocaleString()})`
           : "Top pages by AI source"
       }
-      readout={pages.length > 0 ? "30D" : "no AI visits yet"}
     >
-      {pages.length === 0 ? (
-        <InstrumentEmpty
-          message="No AI visits captured yet"
-          seed="geo-traffic-pages"
-        />
-      ) : (
-        <div className="flex flex-col gap-2">
-          <Table
-            className="rounded-2xl"
-            columns={columns}
-            data={pages}
-            defaultSort={{ key: "visits", direction: "desc" }}
-            emptyState="No AI visits captured yet"
-            getRowId={(row) => `${row.path}-${row.visitorType}-${row.source}`}
-            height={tableHeightFor(pages.length)}
-            resizable
-            rowHeight={TABLE_ROW_HEIGHT}
-          />
-        </div>
-      )}
+      {body}
     </InstrumentSection>
   );
 }

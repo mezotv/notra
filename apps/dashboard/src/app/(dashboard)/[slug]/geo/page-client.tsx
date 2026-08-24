@@ -5,7 +5,7 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { Loader2Icon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { redirect } from "next/navigation";
-import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
+import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/button";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
@@ -30,6 +30,7 @@ import {
   useIsGeoScanning,
   useModelUsage,
 } from "@/lib/hooks/use-geo";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
 import { geoOnboardingPath } from "@/utils/geo-paths";
@@ -39,7 +40,7 @@ import { GeoPageSkeleton } from "./skeleton";
 const MODULES_REVEAL_MS = 150;
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
-  const [projectParam] = useQueryState("project", parseAsString);
+  const [projectParam] = useGeoProjectQueryState();
 
   return (
     <GeoProjectProvider projectId={projectParam ?? undefined}>

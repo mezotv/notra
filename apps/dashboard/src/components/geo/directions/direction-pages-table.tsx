@@ -1,13 +1,9 @@
 "use client";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { GEO_DIRECTIONS_PAGES } from "@/constants/geo-directions";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { cn } from "@/lib/utils";
@@ -23,25 +19,18 @@ export function DirectionPagesTable({ className }: DirectionBlockProps) {
       {
         key: "path",
         header: "Page",
-        width: "2fr",
+        width: "1.5fr",
         sortable: true,
         cell: (row) => (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="block w-full min-w-0 truncate font-mono text-xs">
-                  {row.path}
-                </span>
-              }
-            />
-            <TooltipContent className="max-w-sm">{row.path}</TooltipContent>
-          </Tooltip>
+          <TruncateWithTooltip className="font-mono text-xs">
+            {row.path}
+          </TruncateWithTooltip>
         ),
       },
       {
         key: "source",
         header: "Source",
-        width: "1.2fr",
+        width: "1fr",
         sortable: true,
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2 text-sm">
@@ -56,7 +45,7 @@ export function DirectionPagesTable({ className }: DirectionBlockProps) {
       {
         key: "visits",
         header: "Visits",
-        width: "6.875rem",
+        width: "6.5rem",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">

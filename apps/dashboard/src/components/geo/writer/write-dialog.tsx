@@ -33,6 +33,7 @@ import { useRouter } from "next/navigation";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
+import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import {
   GEO_WRITE_CONTENT_SUBTYPES,
   GEO_WRITE_DIALOG_SECTIONS,
@@ -53,6 +54,7 @@ import type {
   WriteDialogSectionId,
   WriteDialogSourceKind,
 } from "@/types/components/geo-writer";
+import { withGeoProject } from "@/utils/geo-paths";
 import { geoContentPath } from "@/utils/geo-write-entry";
 import { WriteBrandOption } from "./write-brand-option";
 import { WriteOptionCard } from "./write-option-card";
@@ -100,6 +102,7 @@ function WriteDialogForm({
   initial,
 }: WriteDialogProps) {
   const router = useRouter();
+  const { projectId } = useGeoProjectScope();
   const fieldId = useId();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeSection, setActiveSection] =
@@ -260,7 +263,7 @@ function WriteDialogForm({
       router.push(geoContentPath(organizationSlug, result.postId));
       return;
     }
-    router.push(`/${organizationSlug}/geo/gaps`);
+    router.push(withGeoProject(`/${organizationSlug}/geo/gaps`, projectId));
   };
 
   const sectionMeta = (id: WriteDialogSectionId) =>

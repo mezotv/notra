@@ -113,6 +113,8 @@ CREATE TABLE "geo_settings" (
 	"enforce_zdr" boolean DEFAULT true NOT NULL,
 	"non_zdr_approved_engines" text[] DEFAULT ARRAY[]::text[] NOT NULL,
 	"enabled" boolean DEFAULT true NOT NULL,
+	"scan_interval_hours" integer DEFAULT 48 NOT NULL,
+	"qstash_message_id" text,
 	"scan_started_at" timestamp,
 	"last_scan_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
@@ -163,6 +165,7 @@ CREATE TABLE "social_experiments" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "organizations" ADD COLUMN "geo_ingest_token_generation" integer DEFAULT 1 NOT NULL;--> statement-breakpoint
 ALTER TABLE "chat_sessions" ADD COLUMN "content_id" text;--> statement-breakpoint
 ALTER TABLE "posts" ADD COLUMN "content_subtype" text;--> statement-breakpoint
 ALTER TABLE "geo_competitors" ADD CONSTRAINT "geo_competitors_organization_id_organizations_id_fk" FOREIGN KEY ("organization_id") REFERENCES "public"."organizations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

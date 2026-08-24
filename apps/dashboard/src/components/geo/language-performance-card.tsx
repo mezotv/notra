@@ -164,7 +164,7 @@ function languagePerformanceColumns({
     {
       key: "language",
       header: "Language",
-      width: "1.2fr",
+      width: "1fr",
       sortable: true,
       cell: (row) => (
         <LanguageNameCell
@@ -176,7 +176,7 @@ function languagePerformanceColumns({
     {
       key: "mentionRate",
       header: "Mention rate",
-      width: "1.6fr",
+      width: "1.3fr",
       sortable: true,
       sortValue: (row) =>
         row.kind === "tracked" ? row.mentionRate : Number.NEGATIVE_INFINITY,
@@ -199,7 +199,7 @@ function languagePerformanceColumns({
     {
       key: "checks",
       header: "Checks",
-      width: "8.75rem",
+      width: "7.5rem",
       sortable: true,
       sortValue: (row) =>
         row.kind === "tracked" ? row.checks : Number.NEGATIVE_INFINITY,
@@ -266,6 +266,7 @@ export function LanguagePerformanceCard({
         languages: next,
         nonZdrApprovedEngines: settings.nonZdrApprovedEngines,
         organizationId,
+        scanIntervalHours: settings.scanIntervalHours,
       });
     },
     [
@@ -277,6 +278,7 @@ export function LanguagePerformanceCard({
       settings.enforceZdr,
       settings.engines,
       settings.nonZdrApprovedEngines,
+      settings.scanIntervalHours,
       upsert,
     ]
   );

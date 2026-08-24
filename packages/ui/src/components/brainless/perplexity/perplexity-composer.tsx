@@ -3,7 +3,6 @@
 import {
   ArrowDown01Icon,
   ArrowUp02Icon,
-  ComputerIcon,
   Mic01Icon,
   PlusSignIcon,
   Search01Icon,
@@ -33,38 +32,6 @@ import type {
 
 const CHIP_CLASS =
   "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 font-sans text-[13px] leading-none outline-none transition-[background-color,color,transform] duration-150 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-black/15";
-
-function Chip({
-  active = false,
-  label,
-  onClick,
-  className,
-  children,
-}: {
-  active?: boolean;
-  label: string;
-  onClick?: () => void;
-  className?: string;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      aria-label={label}
-      aria-pressed={active}
-      className={cn(
-        CHIP_CLASS,
-        active
-          ? "bg-[#1a1a1a] text-white hover:bg-black dark:bg-white dark:text-[#1a1a1a] dark:hover:bg-white/90"
-          : "text-[#3d3d3d] hover:bg-[#f3f3f3] dark:text-foreground dark:hover:bg-white/10",
-        className
-      )}
-      onClick={onClick}
-      type="button"
-    >
-      {children}
-    </button>
-  );
-}
 
 function IconButton({
   label,
@@ -157,7 +124,6 @@ export function PerplexityComposer({
   const [value, setValue] = useState("");
   const [uncontrolledModel, setUncontrolledModel] = useState(defaultModel);
   const [uncontrolledFocus, setUncontrolledFocus] = useState(defaultFocus);
-  const [computer, setComputer] = useState(false);
   const [focusOpen, setFocusOpen] = useState(false);
   const model = modelProp ?? uncontrolledModel;
   const focus = focusProp ?? uncontrolledFocus;
@@ -263,14 +229,6 @@ export function PerplexityComposer({
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
-          <Chip
-            active={computer}
-            label="Computer"
-            onClick={() => setComputer((current) => !current)}
-          >
-            <HugeiconsIcon icon={ComputerIcon} size={14} strokeWidth={1.75} />
-            <span>Computer</span>
-          </Chip>
         </div>
         <div className="flex shrink-0 items-center gap-0.5">
           <PerplexityModelSelector

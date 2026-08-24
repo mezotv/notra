@@ -27,6 +27,7 @@ import { EngineIcon } from "@/components/geo/engine-icon";
 import { LogoStack } from "@/components/geo/logo-stack";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
@@ -63,6 +64,7 @@ import {
   geoGapsEmptyKind,
   uniqueGapEngineFamilies,
 } from "@/utils/geo-gaps";
+import { withGeoProject } from "@/utils/geo-paths";
 
 function remainingTableHeight(element: HTMLElement): number {
   const elementTop = element.getBoundingClientRect().top;
@@ -227,6 +229,7 @@ function GapsEmpty({
   organizationSlug,
   onRunScan,
 }: GeoGapsEmptyProps) {
+  const { projectId } = useGeoProjectScope();
   const copy = GEO_GAPS_EMPTY[kind];
   const action =
     kind === "no-scan" ? (
@@ -237,7 +240,14 @@ function GapsEmpty({
     ) : kind === "no-search-gaps" ? (
       <Button
         nativeButton={false}
-        render={<Link href={`/${organizationSlug}${GEO_PROMPTS_NAV_LINK}`} />}
+        render={
+          <Link
+            href={withGeoProject(
+              `/${organizationSlug}${GEO_PROMPTS_NAV_LINK}`,
+              projectId
+            )}
+          />
+        }
       >
         {GEO_GAPS_EMPTY["no-search-gaps"].action}
       </Button>
@@ -436,7 +446,7 @@ export function GeoGapsTable({
       {
         key: "prompt",
         header: "Content",
-        width: "2.4fr",
+        width: "1fr",
         cell: (row) => {
           const headline = row.brief?.workingTitle ?? row.title;
           return (
@@ -452,7 +462,7 @@ export function GeoGapsTable({
       {
         key: "opportunity",
         header: "Opportunity",
-        width: "8rem",
+        width: "7.5rem",
         cell: (row) => {
           const intensity =
             maxOpportunity <= 0 ? 0 : row.opportunity / maxOpportunity;
@@ -470,7 +480,7 @@ export function GeoGapsTable({
       {
         key: "engines",
         header: "Missing engines",
-        width: "10rem",
+        width: "9.5rem",
         cell: (row) => <MissingEnginesCell engines={row.engines} />,
         sortValue: (row) => gapMissingEngineFamilies(row.engines).length,
         sortable: true,
@@ -478,7 +488,7 @@ export function GeoGapsTable({
       {
         key: "competitors",
         header: "Brand mentions",
-        width: "9.5rem",
+        width: "9rem",
         cell: (row) => (
           <BrandMentionsCell
             competitors={competitors}
@@ -492,8 +502,8 @@ export function GeoGapsTable({
         key: "write",
         header: "",
         align: "right",
-        width: "7.5rem",
-        minWidth: "7.5rem",
+        width: "7rem",
+        minWidth: "7rem",
         cell: (row) => (
           <WriteCell
             action={gapWriteAction(row.brief)}
@@ -512,7 +522,7 @@ export function GeoGapsTable({
       {
         key: "prompt",
         header: "Content",
-        width: "2.4fr",
+        width: "1fr",
         cell: (row) => {
           const headline = row.brief?.workingTitle ?? row.title;
           return (
@@ -528,7 +538,7 @@ export function GeoGapsTable({
       {
         key: "impressions",
         header: "Impressions",
-        width: "8rem",
+        width: "7.5rem",
         cell: (row) =>
           row.impressions === null ? (
             <span className="text-muted-foreground">—</span>
@@ -544,8 +554,8 @@ export function GeoGapsTable({
         key: "write",
         header: "",
         align: "right",
-        width: "7.5rem",
-        minWidth: "7.5rem",
+        width: "7rem",
+        minWidth: "7rem",
         cell: (row) => (
           <WriteCell
             action={gapWriteAction(row.brief)}

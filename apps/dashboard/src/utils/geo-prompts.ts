@@ -2,6 +2,7 @@ import type { FunnelStage } from "@/components/charts/funnel-chart";
 import { GEO_PROMPT_FUNNEL_TOP_POSITION } from "@/constants/geo";
 import { trackedPromptScanId } from "@/lib/geo/prompts";
 import type {
+  EngineFamilyPromptHit,
   GeoPresenceStatus,
   GeoPromptCoverage,
   GeoPromptResult,
@@ -9,6 +10,7 @@ import type {
   GeoTrackedPrompt,
 } from "@/types/geo";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
+import { engineFamilyOf } from "@/utils/geo-charts";
 import { summarizePromptResults } from "@/utils/geo-presence";
 
 function promptMentionSets(results: readonly GeoPromptResult[]): {
@@ -128,4 +130,93 @@ export function buildPromptTableRows(
     .map((row) => ({ row, score: bestFuzzyScore([row.prompt], query) }))
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.row);
+}
+
+function bestMentionedResult(
+  results: readonly GeoPromptResult[]
+): GeoPromptResult | null {
+  let best: GeoPromptResult | null = null;
+  for (const result of results) {
+    if (!result.mentioned) {
+      continue;
+    }
+    if (
+      best === null ||
+      (result.position ?? Number.MAX_SAFE_INTEGER) <
+        (best.position ?? Number.MAX_SAFE_INTEGER)
+    ) {
+      best = result;
+    }
+  }
+  return best;
+}
+
+export function engineFamilyPromptHits(
+  family: string,
+  results: readonly GeoPromptResult[]
+): EngineFamilyPromptHit[] {
+  const byPrompt = new Map<string, GeoPromptResult[]>();
+  for (const result of results) {
+    if (engineFamilyOf(result.engine) !== family) {
+      continue;
+    }
+    const group = byPrompt.get(result.promptId) ?? [];
+    group.push(result);
+    byPrompt.set(result.promptId, group);
+  }
+
+  const rows: EngineFamilyPromptHit[] = [];
+  for (const [promptId, group] of byPrompt) {
+    const mentioned = bestMentionedResult(group);
+    const first = group[0];
+    if (!first) {
+      continue;
+    }
+    rows.push({
+      promptId,
+      prompt: first.prompt,
+      mentioned: mentioned !== null,
+      position: mentioned?.position ?? null,
+    });
+  }
+
+  return rows.sort((left, right) => {
+    if (left.mentioned !== right.mentioned) {
+      return left.mentioned ? 1 : -1;
+    }
+    if (left.position === null && right.position === null) {
+      return left.prompt.localeCompare(right.prompt);
+    }
+    if (left.position === null) {
+      return 1;
+    }
+    if (right.position === null) {
+      return -1;
+    }
+    return left.position - right.position;
+  });
+}
+
+export function promptTableRowForId(
+  promptId: string,
+  results: readonly GeoPromptResult[]
+): GeoPromptTableRow | null {
+  const group = results.filter((result) => result.promptId === promptId);
+  const first = group[0];
+  if (!first) {
+    return null;
+  }
+  const mentioned = group.filter((result) => result.mentioned);
+  const best = bestMentionedResult(group);
+  return {
+    id: promptId,
+    prompt: first.prompt,
+    enabled: true,
+    source: "auto",
+    mentioned: mentioned.length,
+    total: group.length,
+    bestPosition: best?.position ?? null,
+    presence: null,
+    results: group,
+  };
 }

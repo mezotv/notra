@@ -108,7 +108,7 @@ function SourcesTable() {
       {
         key: "label",
         header: "Source",
-        width: "1.4fr",
+        width: "1fr",
         sortable: true,
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2 text-sm">
@@ -120,7 +120,7 @@ function SourcesTable() {
       {
         key: "kind",
         header: "Type",
-        width: "7.5rem",
+        width: "7rem",
         sortable: true,
         cell: (row) => (
           <Badge className="rounded-sm capitalize" variant="outline">
@@ -131,7 +131,7 @@ function SourcesTable() {
       {
         key: "visits",
         header: "Visits",
-        width: "6.875rem",
+        width: "6.5rem",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">
@@ -142,7 +142,7 @@ function SourcesTable() {
       {
         key: "share",
         header: "Share",
-        width: "6.25rem",
+        width: "6rem",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">
@@ -153,7 +153,7 @@ function SourcesTable() {
       {
         key: "weight",
         header: "Weight",
-        width: "1.6fr",
+        width: "1.2fr",
         cell: (row) => <GeoBar max={MAX_SHARE} value={row.share} />,
         sortValue: (row) => row.share,
       },

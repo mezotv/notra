@@ -41,6 +41,13 @@ export interface ChartSparklineProps {
   tooltipValueFormatter?: TooltipValueFormatter;
 }
 
+export interface SparklinePathInput {
+  values: readonly number[];
+  width: number;
+  height: number;
+  padding?: number;
+}
+
 export interface ChartMarker {
   value: string;
   label: string;

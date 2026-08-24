@@ -5401,6 +5401,19 @@
           "notNull": true,
           "default": true
         },
+        "scan_interval_hours": {
+          "name": "scan_interval_hours",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 48
+        },
+        "qstash_message_id": {
+          "name": "qstash_message_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "scan_started_at": {
           "name": "scan_started_at",
           "type": "timestamp",
@@ -8106,6 +8119,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "geo_ingest_token_generation": {
+          "name": "geo_ingest_token_generation",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
         },
         "heard_about_notra_source": {
           "name": "heard_about_notra_source",

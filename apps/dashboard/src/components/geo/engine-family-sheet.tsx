@@ -7,11 +7,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@notra/ui/components/ui/sheet";
-import { useMemo } from "react";
-import { ChartSparkline } from "@/components/charts/chart-sparkline";
+import { useEffect, useMemo, useState } from "react";
+import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoBar } from "@/components/geo/geo-bar";
 import { GeoModeIcon } from "@/components/geo/geo-mode-icon";
+import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
+import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
+import { CHART_PERCENT_SCALE } from "@/constants/charts";
 import {
   GEO_EMPTY_TIMESERIES,
   GEO_SEARCH_LABEL,
@@ -19,87 +21,168 @@ import {
   GEO_WITHOUT_SEARCH_LABEL,
 } from "@/constants/geo";
 import { cn } from "@/lib/utils";
+import type { ChartConfig } from "@/types/charts";
 import type {
+  EngineFamilyPromptHit,
   EngineFamilySheetProps,
   GeoEngineFamily,
+  GeoEngineFamilyTotals,
   GeoEngineMode,
-  GeoEngineVariant,
-  GeoOverviewEngine,
-  GeoSparklinePoint,
+  GeoPromptResult,
   GeoTimeseriesPoint,
 } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
-import { formatSparklineDayLabel } from "@/utils/analytics-charts";
-import { geoModeColor, geoModeFillClass } from "@/utils/chart-colors";
+import { todayIsoDate } from "@/utils/analytics-charts";
+import { geoModeColor, seriesColors } from "@/utils/chart-colors";
 import {
+  buildEngineFamilyModeTrendRows,
   engineFamilyAvgPosition,
   engineFamilyLabel,
   engineFamilyLastCheckedAt,
+  engineFamilyModeTotals,
   engineFamilyTotals,
-  engineVariantLabel,
   formatChartPercent,
   formatMentionRate,
-  mentionRateSparkline,
+  mentionTrendEmptyLabel,
 } from "@/utils/geo-charts";
+import {
+  engineFamilyPromptHits,
+  promptTableRowForId,
+} from "@/utils/geo-prompts";
 
-function ModeBlock({
-  label,
+const FAMILY_TREND_STROKE_WIDTH = 1.5;
+
+function ModeLegend({
   mode,
-  engine,
-  data,
-  hint,
+  label,
+  totals,
 }: {
-  label: string;
   mode: GeoEngineMode;
-  engine: GeoOverviewEngine | null;
-  data: GeoSparklinePoint[];
-  hint: string;
+  label: string;
+  totals: GeoEngineFamilyTotals;
 }) {
-  const values = useMemo(() => data.map((point) => point.value), [data]);
-  const labels = useMemo(
-    () => data.map((point) => formatSparklineDayLabel(point.day)),
-    [data]
+  return (
+    <div className="min-w-0">
+      <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+        <GeoModeIcon mode={mode} />
+        {label}
+      </p>
+      <p className="mt-0.5 text-sm tabular-nums">
+        {formatMentionRate(totals.rate)}
+        <span className="text-muted-foreground">
+          {" "}
+          · {totals.mentions}/{totals.checks}
+        </span>
+      </p>
+    </div>
   );
+}
 
-  if (!engine) {
+function FamilyTrend({
+  family,
+  points,
+}: {
+  family: GeoEngineFamily;
+  points: readonly GeoTimeseriesPoint[];
+}) {
+  const searchTotals = engineFamilyModeTotals(family, "search");
+  const memoryTotals = engineFamilyModeTotals(family, "memory");
+  const rows = useMemo(
+    () => buildEngineFamilyModeTrendRows(points, family.family),
+    [family.family, points]
+  );
+  const showSearch = searchTotals !== null;
+  const showMemory = memoryTotals !== null;
+  const visibleKeys = [
+    ...(showSearch ? (["search"] as const) : []),
+    ...(showMemory ? (["memory"] as const) : []),
+  ];
+  const showTrend = rows.length >= GEO_SPARKLINE_MIN_POINTS;
+  const markIncompleteTail = rows.at(-1)?.rawDay === todayIsoDate();
+  const chartConfig = useMemo<ChartConfig>(() => {
+    const config: ChartConfig = {};
+    if (showSearch) {
+      config.search = {
+        label: GEO_SEARCH_LABEL,
+        colors: seriesColors(geoModeColor("web")),
+      };
+    }
+    if (showMemory) {
+      config.memory = {
+        label: GEO_WITHOUT_SEARCH_LABEL,
+        colors: seriesColors(geoModeColor("raw")),
+      };
+    }
+    return config;
+  }, [showMemory, showSearch]);
+
+  if (!(showSearch || showMemory)) {
     return null;
   }
 
-  const showSparkline = values.length >= GEO_SPARKLINE_MIN_POINTS;
-  const variant = mode === "search" ? "web" : "raw";
-
   return (
-    <section className="space-y-2.5 p-3">
-      <div className="flex items-center justify-between gap-3">
-        <span
-          className="flex items-center gap-1.5 font-medium text-sm"
-          title={hint}
-        >
-          <GeoModeIcon mode={mode} />
-          {label}
-        </span>
-        <span className="text-sm tabular-nums">
-          {formatMentionRate(engine.mentionRate)}
-          <span className="text-muted-foreground">
-            {" "}
-            · {engine.mentions}/{engine.checks}
-          </span>
-        </span>
+    <section className="space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        {searchTotals ? (
+          <ModeLegend
+            label={GEO_SEARCH_LABEL}
+            mode="search"
+            totals={searchTotals}
+          />
+        ) : null}
+        {memoryTotals ? (
+          <ModeLegend
+            label={GEO_WITHOUT_SEARCH_LABEL}
+            mode="memory"
+            totals={memoryTotals}
+          />
+        ) : null}
       </div>
-      {showSparkline ? (
-        <ChartSparkline
-          className="h-12 w-full"
-          color={geoModeColor(variant)}
-          data={values}
-          labels={labels}
-          tooltipValueFormatter={formatChartPercent}
-        />
-      ) : (
-        <GeoBar
-          fillClassName={cn("rounded-full", geoModeFillClass(variant))}
-          value={engine.mentionRate}
-        />
-      )}
+      {showTrend ? (
+        <EChartsAreaChart
+          animation={false}
+          className="h-80 w-full"
+          config={chartConfig}
+          curveType="monotone"
+          data={rows}
+          xDataKey="day"
+        >
+          <EChartsAreaChart.Grid />
+          <EChartsAreaChart.XAxis dataKey="day" />
+          <EChartsAreaChart.YAxis tickFormatter={formatChartPercent} />
+          {showSearch ? (
+            <EChartsAreaChart.Area
+              dataKey="search"
+              enableBufferLine={markIncompleteTail}
+              strokeVariant="solid"
+              strokeWidth={FAMILY_TREND_STROKE_WIDTH}
+              variant="gradient"
+            >
+              <EChartsAreaChart.ActiveDot variant="border" />
+            </EChartsAreaChart.Area>
+          ) : null}
+          {showMemory ? (
+            <EChartsAreaChart.Area
+              dataKey="memory"
+              enableBufferLine={markIncompleteTail}
+              strokeVariant="solid"
+              strokeWidth={FAMILY_TREND_STROKE_WIDTH}
+              variant="gradient"
+            >
+              <EChartsAreaChart.ActiveDot variant="border" />
+            </EChartsAreaChart.Area>
+          ) : null}
+          <EChartsAreaChart.Tooltip
+            barMax={CHART_PERCENT_SCALE}
+            confine={false}
+            emptyLabel={(row) => mentionTrendEmptyLabel(row, visibleKeys)}
+            layout="bars"
+            position="fixed"
+            rowKeys={visibleKeys}
+            valueFormatter={formatChartPercent}
+          />
+        </EChartsAreaChart>
+      ) : null}
     </section>
   );
 }
@@ -132,73 +215,88 @@ function FamilyStats({ family }: { family: GeoEngineFamily }) {
   );
 }
 
-function VariantModes({
+function PromptHits({
   familyKey,
-  familyName,
-  variant,
-  timeseriesPoints,
-  heading,
+  results,
+  onOpen,
 }: {
   familyKey: string;
-  familyName: string;
-  variant: GeoEngineVariant;
-  timeseriesPoints: readonly GeoTimeseriesPoint[];
-  heading: string | null;
+  results: readonly GeoPromptResult[];
+  onOpen: (promptId: string) => void;
 }) {
-  const searchSparkline = mentionRateSparkline(timeseriesPoints, {
-    family: familyKey,
-    model: variant.model,
-    mode: "search",
-  });
-  const plainSparkline = mentionRateSparkline(timeseriesPoints, {
-    family: familyKey,
-    model: variant.model,
-    mode: "memory",
-  });
-  const memoryLabel = heading ? GEO_WITHOUT_SEARCH_LABEL : familyName;
-  const searchOnlyNote =
-    variant.web && !variant.raw
-      ? `${heading ?? familyName} only answers with search, so there is no second mode.`
-      : null;
+  const hits = useMemo(
+    () => engineFamilyPromptHits(familyKey, results),
+    [familyKey, results]
+  );
+  if (hits.length === 0) {
+    return null;
+  }
+
+  const mentioned = hits.filter((hit) => hit.mentioned).length;
+  const missed = hits.length - mentioned;
 
   return (
     <section className="space-y-2">
-      {heading ? (
-        <h3 className="px-0.5 font-medium text-muted-foreground text-xs uppercase tracking-wider">
-          {heading}
-        </h3>
-      ) : null}
-      <div className="divide-y overflow-hidden rounded-lg border">
-        <ModeBlock
-          data={searchSparkline}
-          engine={variant.web}
-          hint="Answers with live web"
-          label={GEO_SEARCH_LABEL}
-          mode="search"
-        />
-        <ModeBlock
-          data={plainSparkline}
-          engine={variant.raw}
-          hint="Answers without search"
-          label={memoryLabel}
-          mode="memory"
-        />
-        {searchOnlyNote ? (
-          <p className="px-3 py-2.5 text-muted-foreground text-xs">
-            {searchOnlyNote}
-          </p>
-        ) : null}
+      <div className="flex items-baseline justify-between gap-2 px-0.5">
+        <h3 className="font-medium text-sm">Prompts</h3>
+        <p className="text-muted-foreground text-xs tabular-nums">
+          {mentioned.toLocaleString()} mentioned · {missed.toLocaleString()}{" "}
+          missed
+        </p>
       </div>
+      <ul className="divide-y overflow-hidden rounded-lg border">
+        {hits.map((hit) => (
+          <PromptHitRow hit={hit} key={hit.promptId} onOpen={onOpen} />
+        ))}
+      </ul>
     </section>
+  );
+}
+
+function PromptHitRow({
+  hit,
+  onOpen,
+}: {
+  hit: EngineFamilyPromptHit;
+  onOpen: (promptId: string) => void;
+}) {
+  return (
+    <li>
+      <button
+        className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
+        onClick={() => onOpen(hit.promptId)}
+        type="button"
+      >
+        <span className="min-w-0 flex-1">
+          <TruncateWithTooltip className="text-sm">
+            {hit.prompt}
+          </TruncateWithTooltip>
+        </span>
+        <span
+          className={cn(
+            "shrink-0 text-xs tabular-nums",
+            hit.mentioned ? "text-foreground" : "text-muted-foreground"
+          )}
+        >
+          {hit.mentioned
+            ? hit.position === null
+              ? "Mentioned"
+              : `#${hit.position}`
+            : "Miss"}
+        </span>
+      </button>
+    </li>
   );
 }
 
 export function EngineFamilySheet({
   family,
   timeseriesPoints = GEO_EMPTY_TIMESERIES,
+  promptResults = [],
   open,
   onOpenChange,
 }: EngineFamilySheetProps) {
+  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
   const name = family ? engineFamilyLabel(family.family) : "";
   const showVariantHeadings = (family?.variants.length ?? 0) > 1;
   const lastChecked = family ? engineFamilyLastCheckedAt(family) : null;
@@ -208,41 +306,60 @@ export function EngineFamilySheet({
   if (lastChecked) {
     description = `Last checked ${formatAiTrafficTimestamp(lastChecked)}`;
   }
+  const selectedRow = selectedPromptId
+    ? promptTableRowForId(selectedPromptId, promptResults)
+    : null;
+  const familyKey = family?.family;
+
+  useEffect(() => {
+    setSelectedPromptId(null);
+  }, [familyKey]);
 
   return (
-    <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent className="gap-0 overflow-hidden rounded-xl data-[side=right]:inset-y-2 data-[side=right]:right-2 data-[side=right]:h-auto data-[side=right]:border sm:max-w-md">
-        {family ? (
-          <>
-            <SheetHeader className="border-b bg-muted/50 pr-14">
-              <SheetTitle className="flex items-center gap-2">
-                <EngineIcon className="size-5" engine={family.family} />
-                {name}
-              </SheetTitle>
-              <SheetDescription className="tabular-nums">
-                {description}
-              </SheetDescription>
-            </SheetHeader>
-            <FamilyStats family={family} />
-            <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
-              {family.variants.map((variant) => (
-                <VariantModes
+    <>
+      <Sheet
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setSelectedPromptId(null);
+          }
+          onOpenChange(nextOpen);
+        }}
+        open={open}
+      >
+        <SheetContent className="gap-0 overflow-hidden rounded-xl data-[side=right]:inset-y-2 data-[side=right]:right-2 data-[side=right]:h-auto data-[side=right]:border data-[side=right]:sm:max-w-2xl">
+          {family ? (
+            <>
+              <SheetHeader className="border-b bg-muted/50 pr-14">
+                <SheetTitle className="flex items-center gap-2">
+                  <EngineIcon className="size-5" engine={family.family} />
+                  {name}
+                </SheetTitle>
+                <SheetDescription className="tabular-nums">
+                  {description}
+                </SheetDescription>
+              </SheetHeader>
+              <FamilyStats family={family} />
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+                <FamilyTrend family={family} points={timeseriesPoints} />
+                <PromptHits
                   familyKey={family.family}
-                  familyName={name}
-                  heading={
-                    showVariantHeadings
-                      ? engineVariantLabel(variant.model, name)
-                      : null
-                  }
-                  key={variant.model}
-                  timeseriesPoints={timeseriesPoints}
-                  variant={variant}
+                  onOpen={setSelectedPromptId}
+                  results={promptResults}
                 />
-              ))}
-            </div>
-          </>
-        ) : null}
-      </SheetContent>
-    </Sheet>
+              </div>
+            </>
+          ) : null}
+        </SheetContent>
+      </Sheet>
+      <PromptDetailDialog
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setSelectedPromptId(null);
+          }
+        }}
+        open={selectedRow !== null}
+        row={selectedRow}
+      />
+    </>
   );
 }

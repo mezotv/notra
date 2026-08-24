@@ -1,50 +1,27 @@
 "use client";
 
 import {
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
-  Search01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
-import {
-  AnimatePresence,
-  LayoutGroup,
-  motion,
-  useReducedMotion,
-} from "motion/react";
-import { type KeyboardEvent, useId, useState } from "react";
-import { Button } from "@/components/button";
-import { EngineIcon } from "@/components/geo/engine-icon";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { type KeyboardEvent, useState } from "react";
 import { GeoPromptAnswerThread } from "@/components/geo/geo-prompt-answer-thread";
+import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
 import { EASE_OUT } from "@/lib/ease";
-import { cn } from "@/lib/utils";
 import type {
   GeoPromptResult,
   GeoPromptTableRow,
   PromptDetailDialogProps,
 } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
-import {
-  engineAnswerMode,
-  formatEngineFamily,
-  formatEngineWithMode,
-  sharedEngineAnswerMode,
-} from "@/utils/geo-charts";
+import { sharedEngineAnswerMode } from "@/utils/geo-charts";
+import { adjacentPromptEngine } from "@/utils/geo-prompt-engines";
 import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
-const PILL_TRANSITION = { type: "spring", bounce: 0, duration: 0.3 } as const;
 const INSTANT = { duration: 0 } as const;
 const SLIDE_PX = 18;
 
@@ -62,25 +39,6 @@ function threadVariants(reduceMotion: boolean) {
   };
 }
 
-function engineLabel(engine: string, answerMode: string | null): string {
-  return answerMode ? formatEngineFamily(engine) : formatEngineWithMode(engine);
-}
-
-function adjacentEngine(
-  engines: readonly string[],
-  current: string,
-  delta: number
-): string {
-  if (engines.length === 0) {
-    return current;
-  }
-  const index = engines.indexOf(current);
-  const from = index === -1 ? 0 : index;
-  const next = (from + delta) % engines.length;
-  const wrapped = next < 0 ? next + engines.length : next;
-  return engines[wrapped] ?? current;
-}
-
 function latestPromptCheckAt(
   results: readonly GeoPromptResult[]
 ): string | null {
@@ -91,119 +49,6 @@ function latestPromptCheckAt(
     }
   }
   return latest;
-}
-
-function EngineSwitcher({
-  results,
-  active,
-  answerMode,
-  onChange,
-}: {
-  results: GeoPromptResult[];
-  active: GeoPromptResult;
-  answerMode: string | null;
-  onChange: (engine: string, direction: number) => void;
-}) {
-  const engines = results.map((result) => result.engine);
-  const layoutId = useId();
-  const reduceMotion = useReducedMotion();
-  const pillTransition = reduceMotion ? INSTANT : PILL_TRANSITION;
-  const activeIndex = engines.indexOf(active.engine);
-
-  return (
-    <div className="flex items-center gap-3">
-      <LayoutGroup id={layoutId}>
-        <div
-          aria-label="Engines"
-          className="flex min-w-0 flex-1 flex-wrap items-center gap-1"
-          role="tablist"
-        >
-          {results.map((result, index) => {
-            const selected = result.engine === active.engine;
-            const label = engineLabel(result.engine, answerMode);
-            const family = formatEngineFamily(result.engine);
-            const showSearchIcon =
-              answerMode === null && engineAnswerMode(result.engine) !== null;
-            return (
-              <button
-                aria-label={label}
-                aria-selected={selected}
-                className={cn(
-                  "relative inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-sm transition-[color,transform] duration-150 ease-out active:scale-[0.96]",
-                  selected
-                    ? "font-medium text-foreground"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                )}
-                key={result.engine}
-                onClick={() =>
-                  onChange(result.engine, index >= activeIndex ? 1 : -1)
-                }
-                role="tab"
-                type="button"
-              >
-                {selected ? (
-                  <motion.span
-                    className="absolute inset-0 rounded-full bg-muted"
-                    layoutId="geo-engine-pill"
-                    transition={pillTransition}
-                  />
-                ) : null}
-                <span className="relative z-10 inline-flex items-center gap-1.5">
-                  <EngineIcon className="size-3.5" engine={result.engine} />
-                  <span className="inline-flex items-center gap-1">
-                    <span>{family}</span>
-                    {showSearchIcon ? (
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <span className="inline-flex shrink-0 cursor-default" />
-                          }
-                        >
-                          <HugeiconsIcon
-                            aria-hidden="true"
-                            className="size-3 shrink-0"
-                            icon={Search01Icon}
-                            strokeWidth={2}
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent>Search</TooltipContent>
-                      </Tooltip>
-                    ) : null}
-                  </span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </LayoutGroup>
-      {results.length > 1 ? (
-        <div className="flex shrink-0 items-center gap-0.5">
-          <Button
-            aria-label="Previous engine"
-            onClick={() =>
-              onChange(adjacentEngine(engines, active.engine, -1), -1)
-            }
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
-          </Button>
-          <Button
-            aria-label="Next engine"
-            onClick={() =>
-              onChange(adjacentEngine(engines, active.engine, 1), 1)
-            }
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
-          </Button>
-        </div>
-      ) : null}
-    </div>
-  );
 }
 
 function PromptAnswerPage({
@@ -258,7 +103,7 @@ function PromptAnswerPage({
     event.preventDefault();
     const delta = event.key === "ArrowLeft" ? -1 : 1;
     selectEngine(
-      adjacentEngine(engines, active?.engine ?? engine, delta),
+      adjacentPromptEngine(engines, active?.engine ?? engine, delta),
       delta
     );
   }
@@ -269,7 +114,7 @@ function PromptAnswerPage({
       drawerClassName="h-[94svh] max-h-[94svh]"
       onKeyDown={handleArrowNavigation}
     >
-      <ResponsiveDialogHeader className="shrink-0 gap-3 overflow-x-hidden px-6 pt-5 pr-12 pb-3">
+      <ResponsiveDialogHeader className="shrink-0 gap-3 overflow-visible px-6 pt-5 pr-12 pb-3">
         <ResponsiveDialogTitle className="text-balance font-semibold text-xl leading-snug">
           {row.prompt}
         </ResponsiveDialogTitle>
@@ -284,9 +129,8 @@ function PromptAnswerPage({
           </p>
         ) : null}
         {results.length > 0 && active ? (
-          <EngineSwitcher
+          <PromptEngineSwitcher
             active={active}
-            answerMode={answerMode}
             onChange={selectEngine}
             results={results}
           />

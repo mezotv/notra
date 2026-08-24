@@ -3,15 +3,20 @@ import {
   GEO_AI_REFERRER_LABELS,
   GEO_JOURNEY_CHIP_LENGTH,
   GEO_JOURNEY_EXPLICIT_PREFIX,
+  GEO_TRAFFIC_TREND_CRAWLER_KEY,
+  GEO_TRAFFIC_TREND_REFERRAL_KEY,
 } from "@/constants/geo";
 import type {
   GeoTrafficLogFilters,
   GeoTrafficLogPurposeFilter,
   GeoTrafficLogVisitorFilter,
+  GeoTrafficPoint,
   GeoTrafficSource,
   GeoTrafficTotals,
+  GeoTrafficTrendRow,
   GeoVisitorType,
 } from "@/types/geo";
+import { formatDayLabel } from "@/utils/analytics-charts";
 
 const VISITOR_TYPES: readonly GeoVisitorType[] = [
   "crawler",
@@ -149,4 +154,133 @@ export function formatMarkdownShare(markdown: number, visits: number): string {
     return "-";
   }
   return `${Math.round((markdown / visits) * 100)}%`;
+}
+
+export function trafficDayKey(day: string): string {
+  return String(day).slice(0, 10);
+}
+
+export function trafficSourceKey(
+  source: string,
+  visitorType: GeoVisitorType
+): string {
+  return `${visitorType}:${source}`;
+}
+
+export function hasTrafficSourceSeries(
+  points: readonly GeoTrafficPoint[]
+): boolean {
+  return points.some((point) => point.source.length > 0);
+}
+
+export function trafficSparklineDays(
+  points: readonly GeoTrafficPoint[]
+): string[] {
+  return [...new Set(points.map((point) => trafficDayKey(point.day)))].sort();
+}
+
+export function buildTrafficTrendRows(
+  points: readonly GeoTrafficPoint[]
+): GeoTrafficTrendRow[] {
+  const byDay = new Map<string, { crawler: number; aiReferral: number }>();
+
+  for (const point of points) {
+    if (
+      point.visitorType !== "crawler" &&
+      point.visitorType !== "ai_referral"
+    ) {
+      continue;
+    }
+
+    const day = trafficDayKey(point.day);
+    const current = byDay.get(day) ?? { crawler: 0, aiReferral: 0 };
+    if (point.visitorType === "crawler") {
+      current.crawler += point.visits;
+    } else {
+      current.aiReferral += point.visits;
+    }
+    byDay.set(day, current);
+  }
+
+  return [...byDay.entries()]
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([day, values]) => ({
+      day: formatDayLabel(day),
+      rawDay: day,
+      [GEO_TRAFFIC_TREND_CRAWLER_KEY]: values.crawler,
+      [GEO_TRAFFIC_TREND_REFERRAL_KEY]: values.aiReferral,
+    }));
+}
+
+export function buildTrafficSourceSeries(
+  points: readonly GeoTrafficPoint[],
+  source: string,
+  visitorType: GeoVisitorType,
+  days: readonly string[]
+): number[] {
+  const byDay = new Map<string, number>();
+  for (const point of points) {
+    if (point.source !== source || point.visitorType !== visitorType) {
+      continue;
+    }
+    const day = trafficDayKey(point.day);
+    byDay.set(day, (byDay.get(day) ?? 0) + point.visits);
+  }
+  return days.map((day) => byDay.get(day) ?? 0);
+}
+
+export type TrafficDeltaTone = "up" | "down" | "flat";
+
+export function trafficDeltaTone(delta: number): TrafficDeltaTone {
+  const rounded = Math.round(delta);
+  if (rounded > 0) {
+    return "up";
+  }
+  if (rounded < 0) {
+    return "down";
+  }
+  return "flat";
+}
+
+export function formatTrafficDelta(delta: number): string {
+  const rounded = Math.round(Math.abs(delta));
+  return `${delta >= 0 ? "+" : "-"}${rounded}%`;
+}
+
+export function isTrafficPagePending({
+  isSettingsPending,
+  hasSettings,
+  isTrafficPending,
+  isEmptyTraffic,
+  isIngestPending,
+}: {
+  isSettingsPending: boolean;
+  hasSettings: boolean;
+  isTrafficPending: boolean;
+  isEmptyTraffic: boolean;
+  isIngestPending: boolean;
+}): boolean {
+  if (isSettingsPending) {
+    return true;
+  }
+  if (!hasSettings) {
+    return false;
+  }
+  if (isTrafficPending) {
+    return true;
+  }
+  return isEmptyTraffic && isIngestPending;
+}
+
+export function trafficVisitDelta(
+  current: number,
+  previous: number
+): number | null {
+  if (current === 0 && previous === 0) {
+    return null;
+  }
+  if (previous === 0) {
+    return current > 0 ? 100 : null;
+  }
+  return ((current - previous) / previous) * 100;
 }

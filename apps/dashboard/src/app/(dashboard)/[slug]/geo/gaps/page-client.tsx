@@ -2,7 +2,6 @@
 
 import { useFlag } from "@databuddy/sdk/react";
 import { useRouter } from "next/navigation";
-import { parseAsString, useQueryState } from "nuqs";
 import { useCallback, useState } from "react";
 import { GeoGapsTable } from "@/components/geo/gaps-table";
 import {
@@ -20,6 +19,7 @@ import {
   useGeoStartScan,
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoWriterGaps } from "@/lib/hooks/use-geo-writer";
 import type { GeoGapsPageContentProps } from "@/types/components/geo-gaps";
 import type { WriteDialogInitialState } from "@/types/components/geo-writer";
@@ -33,7 +33,7 @@ import { isGeoWriterVisibleInNav } from "@/utils/geo-writer-flag";
 import { GeoGapsSkeleton } from "./skeleton";
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
-  const [projectParam] = useQueryState("project", parseAsString);
+  const [projectParam] = useGeoProjectQueryState();
 
   return (
     <GeoProjectProvider projectId={projectParam ?? undefined}>

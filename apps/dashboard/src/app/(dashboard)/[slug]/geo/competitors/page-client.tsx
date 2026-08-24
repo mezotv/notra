@@ -14,6 +14,10 @@ import { CompetitorShareCard } from "@/components/geo/competitor-share-card";
 import { CompetitorsTable } from "@/components/geo/competitors-table";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { PageContainer } from "@/components/layout/container";
+import {
+  GeoProjectProvider,
+  useGeoProjectScope,
+} from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
@@ -25,7 +29,9 @@ import {
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
+import { withGeoProject } from "@/utils/geo-paths";
 import { GeoPageSkeleton } from "../skeleton";
 
 interface PageClientProps {
@@ -33,6 +39,17 @@ interface PageClientProps {
 }
 
 export default function PageClient({ organizationSlug }: PageClientProps) {
+  const [projectParam] = useGeoProjectQueryState();
+
+  return (
+    <GeoProjectProvider projectId={projectParam ?? undefined}>
+      <GeoCompetitorsPageContent organizationSlug={organizationSlug} />
+    </GeoProjectProvider>
+  );
+}
+
+function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
+  const { projectId } = useGeoProjectScope();
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
   const organization =
@@ -73,7 +90,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             action={
               <Button
                 nativeButton={false}
-                render={<Link href={`/${organizationSlug}/geo`} />}
+                render={
+                  <Link
+                    href={withGeoProject(`/${organizationSlug}/geo`, projectId)}
+                  />
+                }
               >
                 Set up GEO tracking
               </Button>

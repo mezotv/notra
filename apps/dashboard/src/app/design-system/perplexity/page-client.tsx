@@ -423,7 +423,7 @@ export function DesignSystemPerplexityCatalog() {
 
       <section className="scroll-mt-10 space-y-6" id="perplexity-models">
         <DesignSystemSectionHeader
-          description="Search / Research on the left, Model on the right. Computer is a toggle."
+          description="Search / Research on the left, Model on the right."
           id="perplexity-models"
           title="Composer"
         />

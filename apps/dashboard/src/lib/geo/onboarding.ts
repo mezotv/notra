@@ -8,6 +8,7 @@ import {
   GEO_DISCOVERY_CACHE_TTL_SECONDS,
   GEO_GAP_TITLE_MAX_LENGTH,
   GEO_ONBOARDING_SUGGESTED_COMPETITORS,
+  GEO_SCAN_DEFAULT_INTERVAL_HOURS,
 } from "@/constants/geo";
 import { readGeoCache, writeGeoCache } from "@/lib/geo/cache";
 import { discoverGeoWebsite } from "@/lib/geo/discover";
@@ -47,6 +48,7 @@ export const saveGeoOnboardingBrand = Effect.fn("geo.onboardingBrand")(
       enforceZdr: input.enforceZdr ?? true,
       nonZdrApprovedEngines: input.nonZdrApprovedEngines ?? [],
       enabled: true,
+      scanIntervalHours: GEO_SCAN_DEFAULT_INTERVAL_HOURS,
     });
 
     const settings = saved.settings;

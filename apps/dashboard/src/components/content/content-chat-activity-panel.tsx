@@ -147,9 +147,24 @@ export function ContentChatActivityPanel({
   onSelectChat,
   onClose,
 }: ContentChatActivityPanelProps) {
-  const showThinkingIndicator = status === "submitted";
   const historyGroups = getContentChatHistoryGroups(sessions);
   const isAgentBusy = status === "streaming" || status === "submitted";
+  const lastMessage = messages.at(-1);
+  const lastAssistantHasNoVisibleContent =
+    lastMessage?.role === "assistant" &&
+    !lastMessage.parts.some(
+      (part) =>
+        (part.type === "text" && Boolean(part.text.trim())) ||
+        (part.type === "reasoning" && Boolean(part.text.trim())) ||
+        isToolUIPart(part)
+    );
+  const showThinkingIndicator =
+    isAgentBusy &&
+    (lastMessage?.role === "user" || lastAssistantHasNoVisibleContent);
+  const visibleMessages =
+    showThinkingIndicator && lastAssistantHasNoVisibleContent
+      ? messages.slice(0, -1)
+      : messages;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -256,7 +271,7 @@ export function ContentChatActivityPanel({
         <div className="flex min-h-0 flex-1 flex-col rounded-t-xl bg-background">
           <ContentChatActivityFeed scrollKey={activeChatId ?? ""}>
             <div className="flex min-w-0 flex-col gap-4">
-              {messages.map((message) => (
+              {visibleMessages.map((message) => (
                 <ContentChatActivityMessage
                   key={message.id}
                   message={message}

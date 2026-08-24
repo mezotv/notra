@@ -54,14 +54,14 @@ export const GEO_DIRECTIONS_DELTA_GLYPH: Record<GeoDirectionTone, string> = {
 };
 
 export const GEO_DIRECTIONS_DELTA_CLASS: Record<GeoDirectionTone, string> = {
-  up: "text-emerald-600 dark:text-emerald-400",
+  up: "text-geo-up",
   flat: "text-muted-foreground",
-  down: "text-red-600 dark:text-red-400",
+  down: "text-geo-down",
 };
 
 export const GEO_DIRECTIONS_POSITION_CLASS: Record<string, string> = {
-  top: "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  mid: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  top: "border-geo-up/40 bg-geo-up/10 text-geo-up",
+  mid: "border-geo-mid/40 bg-geo-mid/10 text-geo-mid",
   low: "border-border bg-muted text-muted-foreground",
 };
 
@@ -287,6 +287,7 @@ export const GEO_DIRECTIONS_PAGES: readonly GeoTrafficPage[] = [
     source: "chatgpt",
     visitorType: "ai_referral",
     visits: 10_412,
+    previousVisits: 8320,
     lastSeenAt: "2026-08-04T08:12:00Z",
   },
   {
@@ -294,6 +295,7 @@ export const GEO_DIRECTIONS_PAGES: readonly GeoTrafficPage[] = [
     source: "perplexity",
     visitorType: "ai_referral",
     visits: 4209,
+    previousVisits: 3900,
     lastSeenAt: "2026-08-04T07:48:00Z",
   },
   {
@@ -301,6 +303,7 @@ export const GEO_DIRECTIONS_PAGES: readonly GeoTrafficPage[] = [
     source: "claude",
     visitorType: "ai_referral",
     visits: 2138,
+    previousVisits: 1800,
     lastSeenAt: "2026-08-03T22:05:00Z",
   },
   {
@@ -308,6 +311,7 @@ export const GEO_DIRECTIONS_PAGES: readonly GeoTrafficPage[] = [
     source: "chatgpt",
     visitorType: "ai_referral",
     visits: 1904,
+    previousVisits: 2100,
     lastSeenAt: "2026-08-03T19:33:00Z",
   },
 ];

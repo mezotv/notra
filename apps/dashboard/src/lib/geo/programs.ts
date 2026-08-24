@@ -1,3 +1,4 @@
+import { deleteQstashMessage } from "@notra/ai/qstash/triggers";
 import {
   isTinybirdConfigured,
   queryGeoJourneyDetail,
@@ -71,6 +72,7 @@ import {
 } from "@/lib/geo/projects";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
 import { withGeoScanStatus } from "@/lib/geo/scan-status";
+import { syncGeoScanSchedule } from "@/lib/geo/schedule";
 import { geoTrafficWindowParams } from "@/lib/geo/window";
 import { startGeoScanRun } from "@/lib/workflows/start";
 import type {
@@ -361,17 +363,21 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
       (entry) => !getGeoModelCatalogEntry(catalog, entry.id)
     ).map((entry) => entry.id)
   );
-  const existingSettings =
-    unavailableStaticEngines.size === 0
-      ? undefined
-      : yield* geoDb("settings lookup failed", () =>
-          db.query.geoSettings.findFirst({
-            columns: { engines: true, nonZdrApprovedEngines: true },
-            where: eq(geoSettings.projectId, projectId),
-          })
-        );
-  const preservedEngines = (existingSettings?.engines ?? []).filter((engine) =>
-    unavailableStaticEngines.has(engine)
+  const existingSettings = yield* geoDb("settings lookup failed", () =>
+    db.query.geoSettings.findFirst({
+      columns: {
+        engines: true,
+        nonZdrApprovedEngines: true,
+        enabled: true,
+        qstashMessageId: true,
+        scanIntervalHours: true,
+      },
+      where: eq(geoSettings.projectId, projectId),
+    })
+  );
+  const preservedEngines = (existingSettings?.engines ?? []).filter(
+    (engine) =>
+      unavailableStaticEngines.size > 0 && unavailableStaticEngines.has(engine)
   );
   const engines = [...new Set([...input.engines, ...preservedEngines])];
   const nonZdrApprovedEngines = [
@@ -398,6 +404,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
         enforceZdr,
         nonZdrApprovedEngines,
         enabled: input.enabled,
+        scanIntervalHours: input.scanIntervalHours,
       })
       .onConflictDoUpdate({
         target: geoSettings.projectId,
@@ -410,6 +417,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
           enforceZdr,
           nonZdrApprovedEngines,
           enabled: input.enabled,
+          scanIntervalHours: input.scanIntervalHours,
         },
       })
   );
@@ -419,6 +427,41 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
     projectId,
     input.competitors.map((name) => ({ name, domain: null }))
   );
+
+  const existingMessageId = existingSettings?.qstashMessageId ?? null;
+  const qstashMessageId = yield* Effect.promise(() =>
+    syncGeoScanSchedule({
+      organizationId: input.organizationId,
+      projectId,
+      enabled: input.enabled,
+      scanIntervalHours: input.scanIntervalHours,
+      existingMessageId,
+      reschedule:
+        existingSettings?.enabled === false ||
+        existingSettings?.scanIntervalHours !== input.scanIntervalHours,
+    })
+  );
+  if (qstashMessageId !== existingMessageId) {
+    yield* geoDb("scan schedule update failed", () =>
+      db
+        .update(geoSettings)
+        .set({ qstashMessageId })
+        .where(eq(geoSettings.projectId, projectId))
+    );
+  }
+  if (
+    existingMessageId &&
+    qstashMessageId &&
+    qstashMessageId !== existingMessageId
+  ) {
+    yield* Effect.promise(async () => {
+      try {
+        await deleteQstashMessage(existingMessageId);
+      } catch (error) {
+        console.warn("[GEO] Failed to cancel previous pending scan:", error);
+      }
+    });
+  }
 
   const rows = yield* geoDb("settings lookup failed", () =>
     db.select().from(geoSettings).where(eq(geoSettings.projectId, projectId))
@@ -690,6 +733,7 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
     points: (timeseries?.data ?? []).map((row) => ({
       day: row.day,
       visitorType: toGeoVisitorType(row.visitor_type),
+      source: row.source ?? "",
       visits: Number(row.visits),
     })),
   };
@@ -808,6 +852,9 @@ export const loadGeoTrafficPages = Effect.fn("geo.trafficPages")(function* (
       source: row.source,
       visitorType: toGeoVisitorType(row.visitor_type),
       visits: Number(row.visits),
+      ...(row.previous_visits != null
+        ? { previousVisits: Number(row.previous_visits) }
+        : {}),
       lastSeenAt: row.last_seen_at,
     })),
   };

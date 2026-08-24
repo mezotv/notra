@@ -1,6 +1,12 @@
 {
-  "include": ["src/tinybird/datasources.ts", "src/tinybird/endpoints.ts"],
+  "include": [
+    "src/tinybird/datasources.ts",
+    "src/tinybird/pipes/social.ts",
+    "src/tinybird/pipes/model-usage.ts",
+    "src/tinybird/pipes/ai-traffic.ts",
+    "src/tinybird/pipes/geo-traffic.ts"
+  ],
   "token": "${TINYBIRD_TOKEN}",
-  "baseUrl": "https://api.us-east.aws.tinybird.co",
-  "devMode": "branch"
+  "baseUrl": "${TINYBIRD_BASE_URL}",
+  "devMode": "local"
 }

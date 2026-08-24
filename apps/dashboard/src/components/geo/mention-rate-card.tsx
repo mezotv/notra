@@ -69,6 +69,7 @@ function FamilyRate({
 export function MentionRateCard({
   engines,
   timeseriesPoints = GEO_EMPTY_TIMESERIES,
+  promptResults = [],
   isScanning = false,
 }: MentionRateCardProps) {
   const families = useMemo(() => groupEngineFamilies(engines), [engines]);
@@ -102,6 +103,7 @@ export function MentionRateCard({
           }
         }}
         open={selected !== null}
+        promptResults={promptResults}
         timeseriesPoints={timeseriesPoints}
       />
     </InstrumentModule>

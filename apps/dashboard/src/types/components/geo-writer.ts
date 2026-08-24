@@ -11,6 +11,7 @@ export interface BriefHistoryProps {
   briefs: GeoContentBriefSummary[];
   activeBriefId?: string;
   onOpen: (briefId: string) => void;
+  onHover?: (briefId: string) => void;
 }
 
 export interface GeoWriterNeedsSetupProps {

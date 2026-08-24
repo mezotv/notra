@@ -1,15 +1,21 @@
 import type { ChartColorPair } from "@/types/charts";
 
-/** Matches `--primary` / `--geo-search` (Search, own brand, visibility). */
+/** Matches `--geo-search`. Light stays on `--primary`; dark is lifted. */
 export const CHART_PRIMARY_COLOR: ChartColorPair = {
   light: "#8B5CF6",
-  dark: "#8B5CF6",
+  dark: "#9C87E3",
 };
 
-/** Matches `--geo-memory` (ungrounded / without-search mode). */
+/** Matches `--geo-memory`. Same lightness as Search; teal near sRGB max. */
 export const CHART_SECONDARY_COLOR: ChartColorPair = {
-  light: "#0D9DAB",
-  dark: "#17A0AE",
+  light: "#18929F",
+  dark: "#20ABBA",
+};
+
+/** Series gold: 3:1 on white. Not a Search or Memory hue. */
+const SERIES_GOLD: ChartColorPair = {
+  light: "#B68F3C",
+  dark: "#DAB15E",
 };
 
 export const CHART_SEARCH_FILL_CLASS = "bg-geo-search";
@@ -26,7 +32,7 @@ export const ACCOUNT_SERIES_COLORS: readonly ChartColorPair[] = [
   { light: "#E07B1A", dark: "#FF9F45" },
   { light: "#DB3FA3", dark: "#F062BE" },
   { light: "#DC4343", dark: "#F06A6A" },
-  { light: "#C9971B", dark: "#E0B03A" },
+  SERIES_GOLD,
   { light: "#6B6B75", dark: "#9A9AA4" },
 ];
 
@@ -35,11 +41,9 @@ export const MODEL_USAGE_SERIES_COLORS: readonly ChartColorPair[] = [
   { light: "#358FF3", dark: "#5AA6F6" },
   { light: "#1FA85B", dark: "#3ED187" },
   { light: "#E07B1A", dark: "#FF9F45" },
-  { light: "#8B5CF6", dark: "#8B5CF6" },
   { light: "#DB3FA3", dark: "#F062BE" },
   { light: "#DC4343", dark: "#F06A6A" },
-  { light: "#0D9DAB", dark: "#17A0AE" },
-  { light: "#C9971B", dark: "#E0B03A" },
+  SERIES_GOLD,
   { light: "#3A6FF0", dark: "#5B8AF5" },
   { light: "#2E9E5B", dark: "#4BC87A" },
   { light: "#D4348B", dark: "#E85BA6" },
@@ -66,7 +70,7 @@ export const COMPETITOR_SWATCHES: readonly string[] = [
   "#E0632F",
   "#2E9E5B",
   "#D4348B",
-  "#C9971B",
+  SERIES_GOLD.light,
   "#3A6FF0",
   "#6B6B75",
 ];

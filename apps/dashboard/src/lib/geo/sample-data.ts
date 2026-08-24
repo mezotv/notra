@@ -316,31 +316,37 @@ function buildTrafficEvents(input: {
     });
 
     GEO_SAMPLE_REFERRALS.forEach((referral, referralIndex) => {
-      const captured = utcDay(input.now, daysAgo, 14, referralIndex * 7);
-      const path = pick(
-        GEO_SAMPLE_TRAFFIC_PATHS,
-        `${daysAgo}-${referral.source}`
-      );
-      rows.push({
-        organization_id: input.organizationId,
-        project_id: input.projectId,
-        captured_at: toClickHouseDateTime(captured),
-        visitor_type: "ai_referral",
-        source: referral.source,
-        agent: "",
-        category: "assistant-referral",
-        confidence: "reported",
-        path,
-        host: input.host,
-        method: "GET",
-        referer: referral.referer,
-        ua: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-        country: pick(COUNTRIES, `${daysAgo}-${referral.source}`),
-        language: "en-US",
-        request_id: `sample-ref-${daysAgo}-${referral.source}`,
-        journey_id: `sample-ref-${daysAgo}-${referral.source}`,
-        wants_markdown: false,
-      });
+      const seed = `${daysAgo}-${referral.source}`;
+      const visits = 1 + (hashInt(seed) % 3);
+      for (let visitIndex = 0; visitIndex < visits; visitIndex++) {
+        const captured = utcDay(
+          input.now,
+          daysAgo,
+          14 + (visitIndex % 5),
+          referralIndex * 7 + visitIndex * 3
+        );
+        const path = pick(GEO_SAMPLE_TRAFFIC_PATHS, `${seed}-${visitIndex}`);
+        rows.push({
+          organization_id: input.organizationId,
+          project_id: input.projectId,
+          captured_at: toClickHouseDateTime(captured),
+          visitor_type: "ai_referral",
+          source: referral.source,
+          agent: "",
+          category: "assistant-referral",
+          confidence: "reported",
+          path,
+          host: input.host,
+          method: "GET",
+          referer: referral.referer,
+          ua: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+          country: pick(COUNTRIES, `${seed}-country`),
+          language: "en-US",
+          request_id: `sample-ref-${daysAgo}-${referral.source}-${visitIndex}`,
+          journey_id: `sample-ref-${daysAgo}-${referral.source}-${visitIndex}`,
+          wants_markdown: false,
+        });
+      }
     });
   }
 

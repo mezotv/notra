@@ -18,8 +18,10 @@ import {
   NAV_DRILLDOWN_ITEMS,
   NAV_MAIN_ITEMS,
 } from "@/constants/nav";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import type { NavMainItem } from "@/types/components/nav";
 import { isAnalyticsVisibleInNav } from "@/utils/analytics-flag";
+import { geoNavHref } from "@/utils/geo-paths";
 import { resolveActiveNavLink, resolveMainNavGroups } from "@/utils/nav";
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
 import { SidebarLabel } from "./sidebar-label";
@@ -29,11 +31,13 @@ function NavGroup({
   slug,
   label,
   activeLink,
+  projectId,
 }: {
   items: NavMainItem[];
   slug: string;
   label?: string;
   activeLink: string | null;
+  projectId?: string;
 }) {
   if (items.length === 0) {
     return null;
@@ -42,10 +46,10 @@ function NavGroup({
   const menu = (
     <SidebarMenu>
       {items.map((item) => {
-        const href = `/${slug}${item.link}`;
+        const href = geoNavHref(slug, item.link, projectId);
         const isActive = item.link === activeLink;
         return (
-          <SidebarMenuItem key={item.link}>
+          <SidebarMenuItem key={`${item.link}:${projectId ?? ""}`}>
             <SidebarMenuButton
               isActive={isActive}
               render={
@@ -89,6 +93,7 @@ function NavGroup({
 export function NavMain() {
   const { activeOrganization } = useOrganizationsContext();
   const pathname = usePathname();
+  const [projectParam] = useGeoProjectQueryState();
   const analyticsFlag = useFlag(SOCIAL_ANALYTICS_FLAG_KEY);
   const analyticsVisible = isAnalyticsVisibleInNav(analyticsFlag.on);
 
@@ -97,6 +102,7 @@ export function NavMain() {
   }
 
   const slug = activeOrganization.slug;
+  const projectId = projectParam ?? undefined;
   const { rootItems, workspaceItems } = resolveMainNavGroups(analyticsVisible);
   const activeLink = resolveActiveNavLink(
     pathname,
@@ -106,14 +112,25 @@ export function NavMain() {
 
   return (
     <>
-      <NavGroup activeLink={activeLink} items={rootItems} slug={slug} />
+      <NavGroup
+        activeLink={activeLink}
+        items={rootItems}
+        projectId={projectId}
+        slug={slug}
+      />
       <NavGroup
         activeLink={activeLink}
         items={workspaceItems}
         label={NAV_CATEGORY_LABELS.workspace}
+        projectId={projectId}
         slug={slug}
       />
-      <NavGroup activeLink={null} items={NAV_DRILLDOWN_ITEMS} slug={slug} />
+      <NavGroup
+        activeLink={null}
+        items={NAV_DRILLDOWN_ITEMS}
+        projectId={projectId}
+        slug={slug}
+      />
     </>
   );
 }

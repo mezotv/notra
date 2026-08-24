@@ -262,7 +262,7 @@ export function CompetitorDetailView({
       {
         key: "capturedAt",
         header: "Last seen",
-        width: "8.5rem",
+        width: "9.375rem",
         sortable: true,
         cell: (row) => (
           <span className="text-muted-foreground text-xs tabular-nums">

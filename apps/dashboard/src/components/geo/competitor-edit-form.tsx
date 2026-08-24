@@ -5,6 +5,7 @@ import {
   Cancel01Icon,
   InformationCircleIcon,
   PlusSignIcon,
+  Tick01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -18,11 +19,6 @@ import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import {
-  PermissionOption,
-  PermissionRow,
-  PermissionSelector,
-} from "@notra/ui/components/ui/permission-selector";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -31,7 +27,8 @@ import { TooltipContent } from "@notra/ui/components/ui/tooltip";
 import { useForm } from "@tanstack/react-form";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import Color from "color";
-import { useEffect, useId, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { type ComponentProps, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { CompetitorLogoPreview } from "@/components/geo/competitor-logo-preview";
 import { COMPETITOR_SWATCHES } from "@/constants/charts";
@@ -40,6 +37,127 @@ import { normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { cn } from "@/lib/utils";
 import type { CompetitorEditFormProps, GeoCompetitorKind } from "@/types/geo";
+
+const COMPOSER_TRANSITION = {
+  type: "spring",
+  duration: 0.3,
+  bounce: 0,
+} as const;
+
+const INSTANT_TRANSITION = { duration: 0 } as const;
+
+const COMPETITOR_KIND_OPTIONS = [
+  { value: "direct", label: "Direct competitor" },
+  { value: "indirect", label: "Indirect competitor" },
+] as const;
+
+function swatchInk(hex: string): string {
+  try {
+    return Color(hex).luminosity() > 0.58 ? "oklch(0.2 0 0)" : "oklch(1 0 0)";
+  } catch {
+    return "oklch(1 0 0)";
+  }
+}
+
+function CompetitorKindToggle({
+  value,
+  onChange,
+}: {
+  value: GeoCompetitorKind;
+  onChange: (next: GeoCompetitorKind) => void;
+}) {
+  const layoutId = useId();
+  const reduceMotion = useReducedMotion();
+
+  return (
+    <div
+      aria-label="Competitor type"
+      className="grid grid-cols-2 rounded-lg bg-muted p-[3px]"
+      onKeyDown={(event) => {
+        if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") {
+          return;
+        }
+        event.preventDefault();
+        onChange(value === "direct" ? "indirect" : "direct");
+      }}
+      role="radiogroup"
+    >
+      {COMPETITOR_KIND_OPTIONS.map((option) => {
+        const active = value === option.value;
+        return (
+          // biome-ignore lint/a11y/useSemanticElements: segmented control uses the radiogroup pattern; native radios cannot host the sliding pill.
+          <button
+            aria-checked={active}
+            className={cn(
+              "relative isolate h-7 rounded-md px-2.5 font-medium text-sm",
+              "transition-colors duration-150 ease-out",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+              active
+                ? "text-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            key={option.value}
+            onClick={() => onChange(option.value)}
+            role="radio"
+            tabIndex={active ? 0 : -1}
+            type="button"
+          >
+            {active ? (
+              <motion.span
+                className="absolute inset-0 rounded-md bg-background shadow-sm"
+                layoutId={layoutId}
+                transition={
+                  reduceMotion ? INSTANT_TRANSITION : COMPOSER_TRANSITION
+                }
+              />
+            ) : null}
+            <span className="relative z-10">{option.label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function CompetitorSwatch({
+  color,
+  label,
+  selected,
+  className,
+  style,
+  ...props
+}: {
+  color: string;
+  label: string;
+  selected: boolean;
+} & ComponentProps<"button">) {
+  return (
+    <button
+      aria-label={label}
+      aria-pressed={selected}
+      className={cn(
+        "-outline-offset-1 relative size-6 rounded-full outline outline-1 outline-black/10 transition-transform duration-150 ease-out dark:outline-white/10",
+        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/70 focus-visible:ring-inset",
+        "active:scale-[0.96]",
+        !selected && "hover:scale-105",
+        className
+      )}
+      style={{ backgroundColor: color, ...style }}
+      type="button"
+      {...props}
+    >
+      {selected ? (
+        <HugeiconsIcon
+          className="absolute inset-0 m-auto"
+          color={swatchInk(color)}
+          icon={Tick01Icon}
+          size={11}
+          strokeWidth={2.4}
+        />
+      ) : null}
+    </button>
+  );
+}
 
 function CompetitorSynonymsField({
   id,
@@ -56,9 +174,19 @@ function CompetitorSynonymsField({
   const skipCommitRef = useRef(false);
   const restoreFocusRef = useRef(false);
   const addButtonRef = useRef<HTMLButtonElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const reduceMotion = useReducedMotion();
+  const composerTransition = reduceMotion
+    ? INSTANT_TRANSITION
+    : COMPOSER_TRANSITION;
   useEffect(() => {
     draftRef.current = draft;
   }, [draft]);
+  useEffect(() => {
+    if (adding) {
+      inputRef.current?.focus();
+    }
+  }, [adding]);
 
   useEffect(() => {
     if (adding || !restoreFocusRef.current) {
@@ -95,66 +223,81 @@ function CompetitorSynonymsField({
       <Label htmlFor={adding ? id : undefined}>
         Synonyms <span className="text-muted-foreground">(Optional)</span>
       </Label>
-      {adding ? (
-        <Input
-          autoFocus
-          id={id}
-          onBlur={() => {
-            if (!skipCommitRef.current) {
-              commitDraft();
-            }
-            skipCommitRef.current = false;
-            draftRef.current = "";
-            setDraft("");
-            setAdding(false);
-          }}
-          onChange={(event) => setDraft(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              commitDraft();
-            }
-            if (event.key === "Escape") {
-              event.preventDefault();
-              event.stopPropagation();
-              skipCommitRef.current = true;
-              stopAdding(true);
-            }
-          }}
-          placeholder="Another name"
-          value={draft}
-        />
-      ) : (
-        <button
-          aria-label="Add synonym"
-          className="inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-4xl border border-border border-dashed px-2.5 text-muted-foreground text-xs transition-colors hover:border-foreground/40 hover:text-foreground"
-          onClick={() => setAdding(true)}
-          ref={addButtonRef}
-          type="button"
-        >
-          <HugeiconsIcon icon={PlusSignIcon} size={12} strokeWidth={2} />
-          Add
-        </button>
-      )}
-      {synonyms.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          {synonyms.map((synonym) => (
-            <Badge className="gap-1 pr-1" key={synonym} variant="secondary">
-              {synonym}
-              <button
-                aria-label={`Remove ${synonym}`}
-                className="rounded-sm p-0.5 hover:bg-background"
-                onClick={() =>
-                  onChange(synonyms.filter((item) => item !== synonym))
-                }
-                type="button"
-              >
-                <HugeiconsIcon icon={Cancel01Icon} size={12} />
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap items-center gap-1.5">
+        {synonyms.map((synonym) => (
+          <Badge className="gap-1 pr-1" key={synonym} variant="secondary">
+            {synonym}
+            <button
+              aria-label={`Remove ${synonym}`}
+              className="rounded-sm p-0.5 hover:bg-background"
+              onClick={() =>
+                onChange(synonyms.filter((item) => item !== synonym))
+              }
+              type="button"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} size={12} />
+            </button>
+          </Badge>
+        ))}
+        <AnimatePresence initial={false} mode="popLayout">
+          {adding ? (
+            <motion.div
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              className="w-48 origin-left"
+              exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
+              initial={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+              key="synonym-draft"
+              transition={composerTransition}
+            >
+              <Input
+                className="h-8"
+                id={id}
+                onBlur={() => {
+                  if (!skipCommitRef.current) {
+                    commitDraft();
+                  }
+                  skipCommitRef.current = false;
+                  draftRef.current = "";
+                  setDraft("");
+                  setAdding(false);
+                }}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    commitDraft();
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    skipCommitRef.current = true;
+                    stopAdding(true);
+                  }
+                }}
+                placeholder="Another name"
+                ref={inputRef}
+                value={draft}
+              />
+            </motion.div>
+          ) : (
+            <motion.button
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              aria-label="Add synonym"
+              className="inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-lg border border-border border-dashed px-2.5 text-muted-foreground text-xs transition-colors hover:border-foreground/40 hover:text-foreground active:scale-[0.96]"
+              exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+              initial={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+              key="synonym-add"
+              onClick={() => setAdding(true)}
+              ref={addButtonRef}
+              transition={composerTransition}
+              type="button"
+            >
+              <HugeiconsIcon icon={PlusSignIcon} size={12} strokeWidth={2} />
+              Add
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }
@@ -261,39 +404,21 @@ export function CompetitorEditForm({
               <Label>Chart color</Label>
               <div className="flex flex-wrap items-center gap-1.5">
                 {COMPETITOR_SWATCHES.map((swatch) => (
-                  <button
-                    aria-label={`Use ${swatch}`}
-                    aria-pressed={field.state.value === swatch}
-                    className={cn(
-                      "size-6 rounded-full ring-offset-2 ring-offset-background transition-all",
-                      field.state.value === swatch
-                        ? "ring-2 ring-foreground"
-                        : "hover:scale-110"
-                    )}
+                  <CompetitorSwatch
+                    color={swatch}
                     key={swatch}
+                    label={`Use ${swatch}`}
                     onClick={() => field.handleChange(swatch)}
-                    style={{ backgroundColor: swatch }}
-                    type="button"
+                    selected={field.state.value === swatch}
                   />
                 ))}
                 <Popover>
                   <PopoverTrigger
                     render={
-                      <button
-                        aria-label="Pick a custom color"
-                        aria-pressed={isCustom}
-                        className={cn(
-                          "size-6 rounded-full border border-border ring-offset-2 ring-offset-background transition-colors",
-                          isCustom
-                            ? "ring-2 ring-foreground"
-                            : "hover:border-foreground/40"
-                        )}
-                        style={{
-                          backgroundColor: isCustom
-                            ? field.state.value
-                            : "#ffffff",
-                        }}
-                        type="button"
+                      <CompetitorSwatch
+                        color={isCustom ? field.state.value : "#ffffff"}
+                        label="Pick a custom color"
+                        selected={isCustom}
                       />
                     }
                   />
@@ -350,28 +475,10 @@ export function CompetitorEditForm({
               />
               <TooltipContent>{COMPETITOR_KIND_HINT}</TooltipContent>
             </TooltipPrimitive.Root>
-            <PermissionSelector
-              className="w-fit overflow-visible border-0 bg-transparent"
-              label="Competitor type"
-            >
-              <PermissionRow
-                className="justify-start gap-0 p-0"
-                label=""
-                onValueChange={(value) =>
-                  field.handleChange(
-                    value === "indirect" ? "indirect" : "direct"
-                  )
-                }
-                value={field.state.value satisfies GeoCompetitorKind}
-              >
-                <PermissionOption tone="success" value="direct">
-                  Direct competitor
-                </PermissionOption>
-                <PermissionOption tone="warning" value="indirect">
-                  Indirect competitor
-                </PermissionOption>
-              </PermissionRow>
-            </PermissionSelector>
+            <CompetitorKindToggle
+              onChange={field.handleChange}
+              value={field.state.value}
+            />
           </div>
         )}
       </form.Field>

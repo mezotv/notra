@@ -11,10 +11,12 @@ import {
   GEO_SHARE_OF_VOICE_TOP_BRANDS,
 } from "@/constants/geo";
 import type {
+  EngineFamilyModeTrendRow,
   GeoCompetitor,
   GeoCompetitorSharePoint,
   GeoEngineFamily,
   GeoEngineFamilyTotals,
+  GeoEngineMode,
   GeoEngineVariant,
   GeoOverviewEngine,
   GeoSparklinePoint,
@@ -211,6 +213,25 @@ export function mentionRateSparkline(
     const value = ratePercent(bucket.mentions, bucket.checks);
     return value === null ? [] : [{ day, value }];
   });
+}
+
+export function mentionRateSparklineLabel(
+  points: readonly GeoSparklinePoint[]
+): string {
+  const first = points[0];
+  const last = points.at(-1);
+  if (!(first && last)) {
+    return "Mention rate trend";
+  }
+  const from = formatChartPercent(first.value);
+  const to = formatChartPercent(last.value);
+  if (points.length === 1) {
+    return `Mention rate ${from}`;
+  }
+  if (from === to) {
+    return `Mention rate held at ${to} over ${points.length} days`;
+  }
+  return `Mention rate ${from} to ${to} over ${points.length} days`;
 }
 
 function daysWithSettledUsage(knownDays: readonly string[]): string[] {
@@ -422,13 +443,55 @@ export function groupEngineFamilies(
 export function engineFamilyTotals(
   family: GeoEngineFamily
 ): GeoEngineFamilyTotals | null {
-  const sources = engineFamilySources(family);
+  return totalsForEngines(engineFamilySources(family));
+}
+
+export function engineFamilyModeTotals(
+  family: GeoEngineFamily,
+  mode: GeoEngineMode
+): GeoEngineFamilyTotals | null {
+  return totalsForEngines(
+    engineFamilySources(family).filter((engine) =>
+      mode === "search"
+        ? isGroundedEngine(engine.engine)
+        : !isGroundedEngine(engine.engine)
+    )
+  );
+}
+
+function totalsForEngines(
+  sources: readonly GeoOverviewEngine[]
+): GeoEngineFamilyTotals | null {
   if (sources.length === 0) {
     return null;
   }
   const mentions = sources.reduce((sum, engine) => sum + engine.mentions, 0);
   const checks = sources.reduce((sum, engine) => sum + engine.checks, 0);
   return { mentions, checks, rate: checks === 0 ? 0 : mentions / checks };
+}
+
+export function buildEngineFamilyModeTrendRows(
+  points: readonly GeoTimeseriesPoint[],
+  family: string
+): EngineFamilyModeTrendRow[] {
+  const search = mentionRateSparkline(points, { family, mode: "search" });
+  const memory = mentionRateSparkline(points, { family, mode: "memory" });
+  const searchByDay = new Map(search.map((point) => [point.day, point.value]));
+  const memoryByDay = new Map(memory.map((point) => [point.day, point.value]));
+  const knownDays = [
+    ...new Set([...searchByDay.keys(), ...memoryByDay.keys()]),
+  ].sort();
+  const firstDay = knownDays.at(0);
+  const lastDay = knownDays.at(-1);
+  const days =
+    firstDay && lastDay ? listDaysThrough(firstDay, lastDay) : knownDays;
+
+  return days.map((day) => ({
+    day: formatDayLabel(day),
+    rawDay: day,
+    search: searchByDay.get(day) ?? null,
+    memory: memoryByDay.get(day) ?? null,
+  }));
 }
 
 function familySortRate(family: GeoEngineFamily): number {

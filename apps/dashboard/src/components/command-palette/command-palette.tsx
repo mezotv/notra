@@ -38,6 +38,7 @@ import {
 import { useHotkeys } from "react-hotkeys-hook";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   AiResult,
@@ -45,6 +46,7 @@ import type {
   EntityHit,
 } from "@/types/components/command-palette";
 import { truncateSnippet } from "@/utils/format";
+import { isGeoDashboardPath, withGeoProject } from "@/utils/geo-paths";
 import { useCommandPalette } from "./command-palette-context";
 import { COMMAND_ROUTES, COMMAND_SECTIONS } from "./registry";
 
@@ -150,6 +152,7 @@ export function CommandPalette() {
 
   const slug = activeOrganization?.slug ?? "";
   const organizationId = activeOrganization?.id ?? "";
+  const [projectParam] = useGeoProjectQueryState();
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
   useEffect(() => {
@@ -329,15 +332,20 @@ export function CommandPalette() {
     };
   }, []);
 
+  const scopedPath = (path: string) =>
+    isGeoDashboardPath(path)
+      ? withGeoProject(path, projectParam ?? undefined)
+      : path;
+
   const navigate = (path: string) => {
     handleOpenChange(false);
-    router.push(path);
+    router.push(scopedPath(path));
   };
 
   const navigateFromAi = (path: string, label: string) => {
     setAiState({ status: "navigating", label });
     startNavigation(() => {
-      router.push(path);
+      router.push(scopedPath(path));
     });
     handleOpenChange(false);
   };

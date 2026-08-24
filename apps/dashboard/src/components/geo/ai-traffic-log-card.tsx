@@ -8,8 +8,9 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { CitationsTable } from "@/components/geo/citations-table";
+import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
 import {
   InstrumentEmpty,
   InstrumentSection,
@@ -27,6 +28,7 @@ import {
 } from "@/utils/ai-traffic";
 
 const TRAFFIC_LOG_HEIGHT = 416;
+const LOG_SKELETON_ROWS = 6;
 
 const FILTER_TRIGGER_CLASS =
   "flex h-6 items-center gap-1 rounded-sm border border-border bg-background px-2 text-xs hover:bg-muted";
@@ -37,11 +39,30 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
     categories: [],
   });
   const [live, setLive] = useState(true);
-  const { data } = useGeoTrafficLog(organizationId, filters, {
+  const { data, isPending } = useGeoTrafficLog(organizationId, filters, {
     refetchInterval: live ? GEO_CITATIONS_LIVE_INTERVAL_MS : false,
   });
   const log = data?.log ?? [];
   const total = data?.total ?? log.length;
+  let readout: string | undefined;
+  if (!isPending) {
+    readout =
+      total === 0 ? "no visits yet" : `${total.toLocaleString()} requests`;
+  }
+
+  let body: ReactNode;
+  if (isPending) {
+    body = <GeoTableSkeleton rows={LOG_SKELETON_ROWS} />;
+  } else if (log.length === 0) {
+    body = (
+      <InstrumentEmpty
+        message="No visits match these filters"
+        seed="geo-traffic-log"
+      />
+    );
+  } else {
+    body = <CitationsTable entries={log} height={TRAFFIC_LOG_HEIGHT} />;
+  }
 
   const filterRow = (
     <div className="flex items-center gap-2">
@@ -124,18 +145,9 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
     <InstrumentSection
       action={filterRow}
       eyebrow="Recent citations"
-      readout={
-        total === 0 ? "no visits yet" : `${total.toLocaleString()} requests`
-      }
+      readout={readout}
     >
-      {log.length === 0 ? (
-        <InstrumentEmpty
-          message="No visits match these filters"
-          seed="geo-traffic-log"
-        />
-      ) : (
-        <CitationsTable entries={log} height={TRAFFIC_LOG_HEIGHT} />
-      )}
+      {body}
     </InstrumentSection>
   );
 }

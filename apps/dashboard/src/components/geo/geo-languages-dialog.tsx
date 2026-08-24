@@ -13,6 +13,7 @@ import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/button";
 import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
+import { GEO_SCAN_DEFAULT_INTERVAL_HOURS } from "@/constants/geo";
 import { GEO_DEFAULT_ENGINE_IDS } from "@/constants/geo-model-catalog";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import type { GeoSubDialogProps } from "@/types/geo";
@@ -58,6 +59,8 @@ function GeoLanguagesDialogBody({
         enforceZdr: settings?.enforceZdr ?? true,
         nonZdrApprovedEngines: settings?.nonZdrApprovedEngines ?? [],
         enabled,
+        scanIntervalHours:
+          settings?.scanIntervalHours ?? GEO_SCAN_DEFAULT_INTERVAL_HOURS,
       },
       { onSuccess: () => onOpenChange(false) }
     );

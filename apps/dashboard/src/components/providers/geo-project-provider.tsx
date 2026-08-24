@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo } from "react";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import type {
   GeoProjectContextValue,
   GeoProjectProviderProps,
@@ -19,6 +20,18 @@ export function GeoProjectProvider({
     <GeoProjectContext.Provider value={value}>
       {children}
     </GeoProjectContext.Provider>
+  );
+}
+
+export function GeoProjectQueryProvider({
+  children,
+}: Pick<GeoProjectProviderProps, "children">) {
+  const [projectId] = useGeoProjectQueryState();
+
+  return (
+    <GeoProjectProvider projectId={projectId ?? undefined}>
+      {children}
+    </GeoProjectProvider>
   );
 }
 

@@ -17,53 +17,32 @@ export function GeoTrafficSkeleton() {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <header className="space-y-1">
           <h1 className="font-bold text-3xl tracking-tight">AI Traffic</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             AI crawlers and referrals visiting your site
           </p>
         </header>
         <div className="flex flex-col gap-6">
-          <GeoSectionSkeleton
-            action={<Skeleton className="h-3.5 w-24" />}
-            eyebrow="AI traffic to your site"
-          >
-            <div className="space-y-4">
-              <div className="grid gap-6 sm:grid-cols-3">
-                <div className="space-y-1">
-                  <p className="font-medium text-muted-foreground text-sm">
-                    AI crawlers
-                  </p>
-                  <div className="flex h-9 items-center">
-                    <Skeleton className="h-7 w-16" />
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+              {["Crawlers", "Referrals", "Total"].map((label) => (
+                <div className="space-y-2 px-5 py-4" key={label}>
+                  <Skeleton className="h-3 w-16" />
+                  <div className="flex items-baseline gap-2">
+                    <Skeleton className="h-9 w-16" />
+                    <Skeleton className="h-5 w-10 rounded-full" />
                   </div>
-                  <p className="text-muted-foreground text-xs">
-                    bots fetching your pages
-                  </p>
                 </div>
-                <div className="space-y-1">
-                  <p className="font-medium text-muted-foreground text-sm">
-                    AI referrals
-                  </p>
-                  <div className="flex h-9 items-center">
-                    <Skeleton className="h-7 w-16" />
-                  </div>
-                  <p className="text-muted-foreground text-xs">
-                    people arriving from an AI answer
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="font-medium text-muted-foreground text-sm">
-                    Markdown requests
-                  </p>
-                  <div className="flex h-9 items-center">
-                    <Skeleton className="h-7 w-16" />
-                  </div>
-                  <p className="text-muted-foreground text-xs">
-                    agents asking for text/markdown
-                  </p>
-                </div>
-              </div>
-              <GeoTableSkeleton rows={SOURCE_ROW_COUNT} />
+              ))}
             </div>
+            <div className="border-border border-t p-4">
+              <Skeleton className="h-52 w-full rounded-xl" />
+            </div>
+          </div>
+          <GeoSectionSkeleton
+            action={<Skeleton className="h-3.5 w-36" />}
+            eyebrow="Sources"
+          >
+            <GeoTableSkeleton rows={SOURCE_ROW_COUNT} />
           </GeoSectionSkeleton>
           <GeoSectionSkeleton
             action={<Skeleton className="h-3.5 w-8" />}

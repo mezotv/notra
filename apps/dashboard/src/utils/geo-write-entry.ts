@@ -4,6 +4,7 @@ import type {
   GeoGapsWriteEntry,
   WriteDialogInitialState,
 } from "@/types/components/geo-writer";
+import type { GeoContentBriefSummary } from "@/types/geo";
 
 /**
  * GEO write entry helpers.
@@ -32,6 +33,13 @@ export function writeDialogStateFromGap(
 
 export function emptyWriteDialogState(): WriteDialogInitialState {
   return { sourceKind: "manual" };
+}
+
+export function briefDisplayTitle(
+  brief: Pick<GeoContentBriefSummary, "workingTitle" | "topic">
+): string {
+  const title = brief.workingTitle.trim();
+  return title || brief.topic;
 }
 
 export function parseGeoWriterDraft(sourceMetadata: unknown): {

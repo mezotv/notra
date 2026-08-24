@@ -7,7 +7,8 @@
     "check-types": "tsc --noEmit",
     "tinybird:dev": "tinybird dev",
     "tinybird:build": "tinybird build",
-    "tinybird:deploy": "tinybird deploy"
+    "tinybird:deploy": "tinybird deploy",
+    "tinybird:push": "tinybird build"
   },
   "exports": {
     "./*": "./src/*.ts"

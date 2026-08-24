@@ -54,7 +54,7 @@ export function PromptResultsTable({ className }: PromptResultsTableProps) {
       {
         key: "prompt",
         header: "Prompt",
-        width: "2.4fr",
+        width: "1fr",
         sortable: true,
         cell: (row) => (
           <Tooltip>
@@ -78,7 +78,7 @@ export function PromptResultsTable({ className }: PromptResultsTableProps) {
               {engine.label}
             </span>
           ),
-          width: "9.375rem",
+          width: "8.5rem",
           align: "center",
           sortable: true,
           cell: (row) => (

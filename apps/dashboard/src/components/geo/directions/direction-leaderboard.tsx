@@ -49,7 +49,7 @@ function EngineRank() {
       {
         key: "label",
         header: "Engine",
-        width: "1.2fr",
+        width: "1fr",
         sortable: true,
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2 text-sm">
@@ -61,14 +61,14 @@ function EngineRank() {
       {
         key: "bar",
         header: "Mention rate",
-        width: "2fr",
+        width: "1.4fr",
         cell: (row) => <GeoBar max={MAX_RATE} value={row.rate} />,
         sortValue: (row) => row.rate,
       },
       {
         key: "rate",
         header: "Rate",
-        width: "6.25rem",
+        width: "6rem",
         sortable: true,
         cell: (row) => (
           <span className="font-semibold text-sm tabular-nums">
@@ -79,7 +79,7 @@ function EngineRank() {
       {
         key: "delta",
         header: "\u0394",
-        width: "5.625rem",
+        width: "5.5rem",
         sortable: true,
         cell: (row) => <DirectionDelta delta={row.delta} />,
       },
@@ -113,7 +113,7 @@ function JourneysTable() {
       {
         key: "journeyId",
         header: "Journey",
-        width: "8.75rem",
+        width: "7.5rem",
         cell: (row) => (
           <span className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
             {formatGeoJourneyChip(row.journeyId)}
@@ -123,7 +123,7 @@ function JourneysTable() {
       {
         key: "source",
         header: "Source",
-        width: "1.2fr",
+        width: "1fr",
         sortable: true,
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2 text-sm">
@@ -156,7 +156,7 @@ function JourneysTable() {
       {
         key: "span",
         header: "Span",
-        width: "10.625rem",
+        width: "9.5rem",
         cell: (row) => (
           <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
             {formatGeoJourneySpan(row.firstSeenAt, row.lastSeenAt)}
@@ -177,7 +177,7 @@ function JourneysTable() {
       {
         key: "entryPath",
         header: "Entry path",
-        width: "1.6fr",
+        width: "1.2fr",
         cell: (row) => (
           <span className="block w-full min-w-0 truncate font-mono text-xs">
             {row.samplePaths[0] ?? ""}

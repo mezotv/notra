@@ -29,7 +29,7 @@ export function DirectionReport() {
         <h1 className="font-semibold text-2xl leading-snug tracking-tight">
           AI engines mention {GEO_DIRECTIONS_COMPANY} in{" "}
           {formatMentionRate(GEO_DIRECTIONS_VISIBILITY)} of answers,{" "}
-          <span className="text-emerald-600 dark:text-emerald-400">
+          <span className="text-geo-up">
             up {GEO_DIRECTIONS_VISIBILITY_DELTA} points
           </span>{" "}
           this week.

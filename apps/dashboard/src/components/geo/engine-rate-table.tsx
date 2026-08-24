@@ -55,6 +55,7 @@ function avgPositionOf(family: GeoEngineFamily): string {
 export function EngineRateTable({
   engines,
   timeseriesPoints = GEO_EMPTY_TIMESERIES,
+  promptResults = [],
   isScanning = false,
 }: EngineRateTableProps) {
   const families = useMemo(() => groupEngineFamilies(engines), [engines]);
@@ -68,7 +69,7 @@ export function EngineRateTable({
           families.length > 0
             ? `Engine (${families.length.toLocaleString()})`
             : "Engine",
-        width: "1.2fr",
+        width: "1fr",
         sortable: true,
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2 font-medium">
@@ -81,7 +82,7 @@ export function EngineRateTable({
       {
         key: "rate",
         header: "Mention rate",
-        width: "2fr",
+        width: "1.4fr",
         sortable: true,
         cell: (row) => <RateCell family={row} />,
         sortValue: (row) => engineFamilyTotals(row)?.rate ?? NOT_SCANNED_RATE,
@@ -89,7 +90,7 @@ export function EngineRateTable({
       {
         key: "avgPosition",
         header: "Avg position",
-        width: "9.5rem",
+        width: "8.5rem",
         sortable: true,
         cell: (row) => (
           <span className="text-sm tabular-nums">{avgPositionOf(row)}</span>
@@ -154,6 +155,7 @@ export function EngineRateTable({
           }
         }}
         open={selected !== null}
+        promptResults={promptResults}
         timeseriesPoints={timeseriesPoints}
       />
     </InstrumentSection>
