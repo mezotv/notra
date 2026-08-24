@@ -1,4 +1,9 @@
-import { GEO_SCAN_STALE_MS } from "@/constants/geo";
+import {
+  GEO_SCAN_INTERVAL_FALLBACK_NOUN,
+  GEO_SCAN_INTERVAL_LABEL_PREFIX,
+  GEO_SCAN_INTERVAL_OPTIONS,
+  GEO_SCAN_STALE_MS,
+} from "@/constants/geo";
 
 function toTimestamp(value: Date | string | null | undefined): number | null {
   if (!value) {
@@ -27,4 +32,14 @@ export function geoScanEmptyMessage(
   idleMessage: string
 ): string {
   return isScanning ? "Scanning engines…" : idleMessage;
+}
+
+export function geoScanIntervalNoun(intervalHours: number): string {
+  const option = GEO_SCAN_INTERVAL_OPTIONS.find(
+    (entry) => entry.value === intervalHours
+  );
+  if (!option) {
+    return GEO_SCAN_INTERVAL_FALLBACK_NOUN;
+  }
+  return option.label.replace(GEO_SCAN_INTERVAL_LABEL_PREFIX, "").toLowerCase();
 }

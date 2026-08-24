@@ -2,23 +2,15 @@
 
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@notra/ui/components/ui/select";
-import { Switch } from "@notra/ui/components/ui/switch";
 import { useAsyncDebouncer } from "@tanstack/react-pacer";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { GeoEnginePicker } from "@/components/geo/geo-engine-picker";
 import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
+import { GeoScanSchedule } from "@/components/geo/geo-scan-schedule";
 import { GeoTagList } from "@/components/geo/geo-tag-list";
 import {
   GEO_MAX_ALIASES,
   GEO_SCAN_DEFAULT_INTERVAL_HOURS,
-  GEO_SCAN_INTERVAL_OPTIONS,
   GEO_SETTINGS_AUTO_SAVE_MS,
 } from "@/constants/geo";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
@@ -214,6 +206,18 @@ export function GeoSettingsForm({
           </div>
         </section>
         <SettingsSection
+          description="When enabled models are checked automatically. Manual scans always work."
+          title="Scan schedule"
+        >
+          <GeoScanSchedule
+            enabled={enabled}
+            id={id}
+            intervalHours={scanIntervalHours}
+            onEnabledChange={setEnabled}
+            onIntervalChange={setScanIntervalHours}
+          />
+        </SettingsSection>
+        <SettingsSection
           description="Languages your prompts are scanned in. English is on by default."
           title="Languages"
         >
@@ -239,44 +243,6 @@ export function GeoSettingsForm({
             planLoading={planLoading}
             selected={engines}
           />
-          <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ring-1 ring-foreground/10">
-            <div className="space-y-0.5">
-              <Label htmlFor={`${id}-enabled`}>Scheduled scans</Label>
-              <p className="text-muted-foreground text-xs">
-                Pause to stop automatic engine checks.
-              </p>
-            </div>
-            <Switch
-              checked={enabled}
-              id={`${id}-enabled`}
-              onCheckedChange={setEnabled}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={`${id}-scan-interval`}>Scan frequency</Label>
-            <p className="text-muted-foreground text-xs">
-              Choose how often enabled models are checked automatically.
-            </p>
-            <Select
-              disabled={!enabled}
-              onValueChange={(value) => setScanIntervalHours(Number(value))}
-              value={String(scanIntervalHours)}
-            >
-              <SelectTrigger
-                className="w-full sm:max-w-xs"
-                id={`${id}-scan-interval`}
-              >
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent align="start" alignItemWithTrigger={false}>
-                {GEO_SCAN_INTERVAL_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={String(option.value)}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </SettingsSection>
       </div>
     </div>

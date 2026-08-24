@@ -848,6 +848,14 @@ export interface GeoSetupEmptyProps {
   settingsHref: string;
 }
 
+export interface GeoScanScheduleProps {
+  id: string;
+  enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
+  intervalHours: number;
+  onIntervalChange: (hours: number) => void;
+}
+
 export interface AiTrafficCardProps {
   traffic: AiTrafficResponse | undefined;
 }

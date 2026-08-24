@@ -309,16 +309,22 @@ export const GEO_JUDGE_MAX_TOKENS = 800;
 export const GEO_SCAN_CONCURRENCY = 4;
 export const GEO_SCAN_DEFAULT_INTERVAL_HOURS = 48;
 export const GEO_SCAN_INTERVAL_OPTIONS = [
-  { value: 24, label: "Every day" },
-  { value: GEO_SCAN_DEFAULT_INTERVAL_HOURS, label: "Default (every 48 hours)" },
-  { value: 3 * 24, label: "Every 3 days" },
-  { value: 7 * 24, label: "Every week" },
-  { value: 14 * 24, label: "Every 2 weeks" },
-  { value: 30 * 24, label: "Every 30 days" },
+  { value: 24, label: "Every day", short: "Daily" },
+  {
+    value: GEO_SCAN_DEFAULT_INTERVAL_HOURS,
+    label: "Every 48 hours",
+    short: "48 hours",
+  },
+  { value: 3 * 24, label: "Every 3 days", short: "3 days" },
+  { value: 7 * 24, label: "Every week", short: "Weekly" },
+  { value: 14 * 24, label: "Every 2 weeks", short: "2 weeks" },
+  { value: 30 * 24, label: "Every 30 days", short: "30 days" },
 ] as const;
 export const GEO_SCAN_INTERVAL_HOURS = GEO_SCAN_INTERVAL_OPTIONS.map(
   (option) => option.value
 );
+export const GEO_SCAN_INTERVAL_LABEL_PREFIX = /^Every\s+/;
+export const GEO_SCAN_INTERVAL_FALLBACK_NOUN = "scan interval";
 export const GEO_SCAN_WORKFLOW_PATH = "/api/workflows/geo-scan";
 export const GEO_SCAN_STALE_MS = 2 * 60 * 60 * 1000;
 export const GEO_SCAN_POLL_INTERVAL_MS = 3000;

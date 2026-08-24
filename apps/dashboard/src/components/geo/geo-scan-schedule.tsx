@@ -1,0 +1,99 @@
+"use client";
+
+import { Label } from "@notra/ui/components/ui/label";
+import { Switch } from "@notra/ui/components/ui/switch";
+import {
+  GEO_SCAN_DEFAULT_INTERVAL_HOURS,
+  GEO_SCAN_INTERVAL_OPTIONS,
+} from "@/constants/geo";
+import { cn } from "@/lib/utils";
+import type { GeoScanScheduleProps } from "@/types/geo";
+import { geoScanIntervalNoun } from "@/utils/geo-scan";
+
+export function GeoScanSchedule({
+  id,
+  enabled,
+  onEnabledChange,
+  intervalHours,
+  onIntervalChange,
+}: GeoScanScheduleProps) {
+  const summary = enabled ? (
+    <>
+      Enabled models are checked every{" "}
+      <strong className="font-semibold text-foreground">
+        {geoScanIntervalNoun(intervalHours)}
+      </strong>
+      .
+    </>
+  ) : (
+    "Automatic checks are paused. You can still run scans manually."
+  );
+
+  return (
+    <div className="divide-y rounded-lg ring-1 ring-foreground/10">
+      <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+        <div className="space-y-0.5">
+          <Label htmlFor={`${id}-enabled`}>Automatic scans</Label>
+          <p className="text-muted-foreground text-xs">{summary}</p>
+        </div>
+        <Switch
+          checked={enabled}
+          id={`${id}-enabled`}
+          onCheckedChange={onEnabledChange}
+        />
+      </div>
+      <div
+        className={cn(
+          "space-y-2 px-3 py-2.5 transition-opacity",
+          !enabled && "opacity-50"
+        )}
+      >
+        <fieldset className="space-y-2" disabled={!enabled}>
+          <legend className="space-y-0.5">
+            <span className="font-medium text-sm">Frequency</span>
+            <p className="text-muted-foreground text-xs">
+              How often every enabled model is checked.
+            </p>
+          </legend>
+          <div className="flex flex-wrap gap-1.5">
+            {GEO_SCAN_INTERVAL_OPTIONS.map((option) => {
+              const selected = option.value === intervalHours;
+              const isDefault =
+                option.value === GEO_SCAN_DEFAULT_INTERVAL_HOURS;
+              return (
+                <button
+                  aria-pressed={selected}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1 rounded-md px-3 font-medium text-sm ring-1 transition-colors",
+                    selected
+                      ? "bg-primary text-primary-foreground ring-primary"
+                      : "bg-background text-muted-foreground ring-foreground/10 hover:text-foreground",
+                    "disabled:cursor-not-allowed"
+                  )}
+                  key={option.value}
+                  onClick={() => onIntervalChange(option.value)}
+                  title={option.label}
+                  type="button"
+                >
+                  {option.short}
+                  {isDefault ? (
+                    <span
+                      className={cn(
+                        "text-xs",
+                        selected
+                          ? "text-primary-foreground/70"
+                          : "text-muted-foreground/70"
+                      )}
+                    >
+                      default
+                    </span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      </div>
+    </div>
+  );
+}
