@@ -8,7 +8,10 @@ import {
   InstrumentEmpty,
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
-import { GEO_EMPTY_TIMESERIES } from "@/constants/geo";
+import {
+  GEO_EMPTY_PROMPT_RESULTS,
+  GEO_EMPTY_TIMESERIES,
+} from "@/constants/geo";
 import type { GeoEngineFamily, MentionRateCardProps } from "@/types/geo";
 import {
   engineFamilyAvgPosition,
@@ -69,7 +72,7 @@ function FamilyRate({
 export function MentionRateCard({
   engines,
   timeseriesPoints = GEO_EMPTY_TIMESERIES,
-  promptResults = [],
+  promptResults = GEO_EMPTY_PROMPT_RESULTS,
   isScanning = false,
 }: MentionRateCardProps) {
   const families = useMemo(() => groupEngineFamilies(engines), [engines]);

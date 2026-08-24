@@ -17,6 +17,7 @@ import {
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_PRIMARY_COLOR, CHART_SECONDARY_COLOR } from "@/constants/charts";
 import {
+  GEO_EMPTY_TRAFFIC_RESPONSE,
   GEO_SPARKLINE_MIN_POINTS,
   GEO_TRAFFIC_TREND_CRAWLER_KEY,
   GEO_TRAFFIC_TREND_CRAWLER_LABEL,
@@ -175,9 +176,7 @@ function TrafficHero({
 }
 
 export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
-  const sources = traffic?.sources ?? [];
-  const totals = traffic?.totals ?? { crawler: 0, aiReferral: 0, human: 0 };
-  const points = traffic?.points ?? [];
+  const { sources, totals, points } = traffic ?? GEO_EMPTY_TRAFFIC_RESPONSE;
   const trendRows = useMemo(() => buildTrafficTrendRows(points), [points]);
   const sparklineDays = useMemo(() => trafficSparklineDays(points), [points]);
   const canSparkline = hasTrafficSourceSeries(points);

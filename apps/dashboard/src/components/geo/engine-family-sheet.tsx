@@ -15,6 +15,7 @@ import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { CHART_PERCENT_SCALE } from "@/constants/charts";
 import {
+  GEO_EMPTY_PROMPT_RESULTS,
   GEO_EMPTY_TIMESERIES,
   GEO_SEARCH_LABEL,
   GEO_SPARKLINE_MIN_POINTS,
@@ -292,7 +293,7 @@ function PromptHitRow({
 export function EngineFamilySheet({
   family,
   timeseriesPoints = GEO_EMPTY_TIMESERIES,
-  promptResults = [],
+  promptResults = GEO_EMPTY_PROMPT_RESULTS,
   open,
   onOpenChange,
 }: EngineFamilySheetProps) {

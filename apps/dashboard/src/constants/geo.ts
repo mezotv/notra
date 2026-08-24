@@ -11,10 +11,12 @@ import {
 import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
 import { GEO_MODEL_CATALOG_SEED } from "@/constants/geo-model-catalog";
 import type {
+  AiTrafficResponse,
   GeoCompetitorKind,
   GeoGroundedEngine,
   GeoIngestFramework,
   GeoIngestPackageManager,
+  GeoPromptResult,
   GeoRangePreset,
   GeoTab,
   GeoTimeseriesPoint,
@@ -614,6 +616,13 @@ export const GEO_RATE_SPARKLINE_WIDTH = 56;
 export const GEO_RATE_SPARKLINE_HEIGHT = 20;
 export const GEO_RATE_SPARKLINE_PADDING = 2;
 export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
+export const GEO_EMPTY_PROMPT_RESULTS: readonly GeoPromptResult[] = [];
+export const GEO_EMPTY_TRAFFIC_RESPONSE: AiTrafficResponse = {
+  configured: false,
+  totals: { crawler: 0, aiReferral: 0, human: 0 },
+  sources: [],
+  points: [],
+};
 
 export const GEO_MAX_ALIASES = 10;
 export const GEO_MAX_COMPETITORS = 25;

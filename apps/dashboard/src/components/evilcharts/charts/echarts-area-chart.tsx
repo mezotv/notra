@@ -1041,6 +1041,7 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
     // (id=key) and its dashed overlay (id=`__buffer-{key}`) at the shared
     // second-to-last point. Keep the first non-null value seen per key so the
     // final point (only the overlay has data there) still shows its number.
+    const excludedKeys = new Set(tooltipSlot.excludeKeys);
     const seen = new Set<string>();
     const items: TooltipBodyItem[] = [];
     for (const param of rows) {
@@ -1057,7 +1058,7 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
         : rawId.startsWith("__")
           ? ""
           : (p.seriesId ?? p.seriesName ?? "");
-      if (!key || tooltipSlot.excludeKeys.includes(key)) continue;
+      if (!key || excludedKeys.has(key)) continue;
       // A null value means this series does not reach the hovered x (a buffer
       // area's solid part stops before the last point, a revealed series stops
       // at the cursor) — skip it, letting another row for the key stand in.

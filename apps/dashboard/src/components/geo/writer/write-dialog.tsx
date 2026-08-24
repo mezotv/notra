@@ -30,7 +30,14 @@ import {
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { cn } from "@notra/ui/lib/utils";
 import { useRouter } from "next/navigation";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "@/components/button";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
@@ -154,10 +161,19 @@ function WriteDialogForm({
   const { data: promptsData } = useGeoPrompts(organizationId);
   const sitemapQuery = useSitemaps(organizationId, brandVoiceId ?? "");
 
-  const voices = brandData?.voices ?? [];
-  const competitors = competitorData?.competitors ?? [];
-  const prompts = promptsData?.prompts ?? [];
-  const sitemaps = sitemapQuery.data?.sitemaps ?? [];
+  const voices = useMemo(() => brandData?.voices ?? [], [brandData?.voices]);
+  const competitors = useMemo(
+    () => competitorData?.competitors ?? [],
+    [competitorData?.competitors]
+  );
+  const prompts = useMemo(
+    () => promptsData?.prompts ?? [],
+    [promptsData?.prompts]
+  );
+  const sitemaps = useMemo(
+    () => sitemapQuery.data?.sitemaps ?? [],
+    [sitemapQuery.data?.sitemaps]
+  );
   const selectedVoice = voices.find((voice) => voice.id === brandVoiceId);
   const effectiveSitemapId = sitemaps.some(
     (sitemap) => sitemap.id === sitemapId

@@ -9,7 +9,10 @@ import {
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { GEO_EMPTY_TIMESERIES } from "@/constants/geo";
+import {
+  GEO_EMPTY_PROMPT_RESULTS,
+  GEO_EMPTY_TIMESERIES,
+} from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { EngineRateTableProps, GeoEngineFamily } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
@@ -55,7 +58,7 @@ function avgPositionOf(family: GeoEngineFamily): string {
 export function EngineRateTable({
   engines,
   timeseriesPoints = GEO_EMPTY_TIMESERIES,
-  promptResults = [],
+  promptResults = GEO_EMPTY_PROMPT_RESULTS,
   isScanning = false,
 }: EngineRateTableProps) {
   const families = useMemo(() => groupEngineFamilies(engines), [engines]);
