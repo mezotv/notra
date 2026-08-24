@@ -844,6 +844,10 @@ export interface TrafficEmptyProps {
   setup: GeoIngestSetupResponse | undefined;
 }
 
+export interface GeoSetupEmptyProps {
+  settingsHref: string;
+}
+
 export interface AiTrafficCardProps {
   traffic: AiTrafficResponse | undefined;
 }

@@ -4,11 +4,11 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Loader2Icon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
-import { redirect } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/button";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
+import { GeoSetupEmpty } from "@/components/geo/geo-setup-empty";
 import { PageContainer } from "@/components/layout/container";
 import {
   GeoProjectProvider,
@@ -33,7 +33,7 @@ import {
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
-import { geoOnboardingPath } from "@/utils/geo-paths";
+import { geoNavHref } from "@/utils/geo-paths";
 import { GeoTabs } from "./components/geo-tabs";
 import { GeoPageSkeleton } from "./skeleton";
 
@@ -113,7 +113,19 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
   const settings = settingsData?.settings ?? null;
 
   if (!settings) {
-    redirect(geoOnboardingPath(projectId));
+    return (
+      <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <div className="w-full px-4 lg:px-6">
+          <GeoSetupEmpty
+            settingsHref={geoNavHref(
+              organizationSlug,
+              "/geo/settings",
+              projectId
+            )}
+          />
+        </div>
+      </PageContainer>
+    );
   }
 
   return (
