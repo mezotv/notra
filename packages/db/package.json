@@ -5,9 +5,7 @@
   "type": "module",
   "scripts": {
     "check-types": "tsc --noEmit",
-    "seed:brand-identity": "bun run src/scripts/seed-brand-identity.ts",
-    "backfill:geo-checks": "bun run src/scripts/backfill-geo-checks.ts",
-    "backfill:geo-languages": "bun run src/scripts/backfill-geo-languages.ts"
+    "seed:brand-identity": "bun run src/scripts/seed-brand-identity.ts"
   },
   "exports": {
     "./constants/*": "./src/constants/*.ts",
