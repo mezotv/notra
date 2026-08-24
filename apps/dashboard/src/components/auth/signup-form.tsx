@@ -21,6 +21,7 @@ import { useQueryStates } from "nuqs";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
+import { SHOW_SIGNUP_CREDITS_BANNER } from "@/constants/signup-credits";
 import {
   signUpWithPasswordAction,
   verifyEmailCodeAction,
@@ -205,7 +206,7 @@ export function SignupForm({
     <div className="flex w-full flex-col gap-5">
       <AuthFormHeader description={description} title={title} />
 
-      <SignupCreditsBanner />
+      {SHOW_SIGNUP_CREDITS_BANNER && <SignupCreditsBanner />}
 
       <div className="grid gap-4">
         <AuthSocialButtons
