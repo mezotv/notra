@@ -16,15 +16,18 @@ import { toast } from "sonner";
 import { PlanCard } from "@/components/billing/plan-card";
 import { FEATURED_PLAN_TIER } from "@/constants/billing";
 import { GEO_UPGRADE_DESCRIPTION, GEO_UPGRADE_TITLE } from "@/constants/geo";
+import { attachPlanWithAddons } from "@/lib/billing/attach-plan";
 import type { BillingPlanGroup } from "@/types/billing/plan";
 import type { GeoUpgradeDialogProps } from "@/types/components/geo";
 import {
+  findZdrAddonPlan,
   getPricingButtonText,
   getProductFeatures,
   getProductPrice,
   groupBillingPlans,
   planGroupDescription,
   selectPlanVariant,
+  zdrAddonToggle,
 } from "@/utils/billing-plans";
 
 const noop = () => undefined;
@@ -35,9 +38,10 @@ export function GeoUpgradeDialog({
   onOpenChange,
 }: GeoUpgradeDialogProps) {
   const { data: plans, isLoading: plansLoading } = useListPlans();
-  const { attach, refetch } = useCustomer();
+  const { attach, multiAttach, refetch } = useCustomer();
   const [isYearly, setIsYearly] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const [includeZdr, setIncludeZdr] = useState(false);
 
   const planGroups = groupBillingPlans(plans);
   const intervalLabel = isYearly ? "year" : "month";
@@ -45,9 +49,11 @@ export function GeoUpgradeDialog({
   async function handleSelectPlan(planId: string) {
     setLoading(planId);
     try {
-      const result = await attach({
+      const result = await attachPlanWithAddons({
+        attach,
+        multiAttach,
         planId,
-        redirectMode: "if_required",
+        includeZdr,
         successUrl: `${window.location.origin}/${slug}/geo`,
       });
       if (result.paymentUrl) {
@@ -75,6 +81,11 @@ export function GeoUpgradeDialog({
     return (
       <PlanCard
         action={featured ? <Badge>Most popular</Badge> : undefined}
+        addon={zdrAddonToggle(
+          findZdrAddonPlan(plans, plan?.id),
+          includeZdr,
+          setIncludeZdr
+        )}
         button={{
           label,
           disabled: loading !== null || !plan,

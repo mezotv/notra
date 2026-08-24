@@ -10,23 +10,27 @@ import { PlanCard } from "@/components/billing/plan-card";
 import { OnboardingProgress } from "@/components/onboarding/progress";
 import { FEATURED_PLAN_TIER } from "@/constants/billing";
 import { ONBOARDING_STEP_PRICING } from "@/constants/onboarding";
+import { attachPlanWithAddons } from "@/lib/billing/attach-plan";
 import type { BillingPlanGroup } from "@/types/billing/plan";
 import type { PricingClientProps } from "@/types/onboarding";
 import {
+  findZdrAddonPlan,
   getProductFeatures,
   getProductPrice,
   groupBillingPlans,
   planGroupDescription,
   selectPlanVariant,
+  zdrAddonToggle,
 } from "@/utils/billing-plans";
 
 const noop = () => undefined;
 
 export function PricingClient({ slug }: PricingClientProps) {
   const { data: plans, isLoading: plansLoading } = useListPlans();
-  const { attach } = useCustomer();
+  const { attach, multiAttach } = useCustomer();
   const [isYearly, setIsYearly] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const [includeZdr, setIncludeZdr] = useState(false);
 
   const planGroups = groupBillingPlans(plans);
   const intervalLabel = isYearly ? "year" : "month";
@@ -35,9 +39,11 @@ export function PricingClient({ slug }: PricingClientProps) {
     setLoading(planId);
     try {
       const successUrl = `${window.location.origin}/${slug}/settings/billing/success`;
-      const result = await attach({
+      const result = await attachPlanWithAddons({
+        attach,
+        multiAttach,
         planId,
-        redirectMode: "if_required",
+        includeZdr,
         successUrl,
       });
 
@@ -75,6 +81,11 @@ export function PricingClient({ slug }: PricingClientProps) {
     return (
       <PlanCard
         action={action}
+        addon={zdrAddonToggle(
+          findZdrAddonPlan(plans, plan?.id),
+          includeZdr,
+          setIncludeZdr
+        )}
         button={{
           label,
           disabled: loading !== null || !plan,

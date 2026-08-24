@@ -1,4 +1,4 @@
-import { LEGACY_PLANS, PLANS } from "@notra/ai/billing/features";
+import { ADDONS, LEGACY_PLANS, PLANS } from "@notra/ai/billing/features";
 
 export const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
 
@@ -46,3 +46,37 @@ export const INVOICE_TABLE_COLUMN_COUNT = 4;
 
 export const GEO_PLAN_REQUIRED_MESSAGE =
   "GEO requires a Starter, Growth, or Scale plan";
+
+export const ZDR_ADDON_BY_TIER: Record<string, string> = {
+  [PLANS.STARTER]: ADDONS.ZDR_STARTER,
+  [PLANS.GROWTH]: ADDONS.ZDR_GROWTH,
+  [PLANS.SCALE]: ADDONS.ZDR_SCALE,
+};
+
+export const ZDR_ADDON_PREFIX = "zdr_";
+export const ANNUAL_ADDON_SUFFIX = "_annual";
+export const ZDR_ADDON_ANCHOR = "zdr";
+export const PLANS_ANCHOR = "plans";
+export const ZDR_ADDON_TITLE = "Zero data retention";
+export const ZDR_ADDON_DESCRIPTION =
+  "Only run models on hosts that keep no prompt or answer data. Priced at 20% of your plan.";
+export const ZDR_ADDON_UNAVAILABLE =
+  "Available as an add-on once you're on Starter, Growth, or Scale.";
+export const ZDR_ADDON_REMOVE_SUCCESS =
+  "Zero data retention will be removed at the end of your billing cycle.";
+export const ZDR_ADDON_ADD_SUCCESS = "Zero data retention is now active.";
+
+export const ZDR_ADDON_HINT = "Not every model offers a ZDR host.";
+export const ZDR_CONSENT_TITLE = "Enable zero data retention?";
+export const ZDR_CONSENT_BODY =
+  "Zero data retention routes your prompts and answers only through model hosts covered by a zero-data-retention agreement. Notra routes requests through third-party AI gateways, and it is their agreements with each model provider that enforce ZDR. Before you enable it, please read the following:";
+export const ZDR_CONSENT_POINTS = [
+  "Availability is not guaranteed for every model. ZDR exists only where the gateway we route through holds a zero-data-retention agreement with that model's provider. Notra does not hold these agreements directly and cannot extend them to models they do not cover.",
+  "New models usually launch without ZDR. Recently released models are often excluded until the provider and gateway add a zero-data-retention option.",
+  "Models without a ZDR host are skipped. They are marked in GEO settings and will not run unless you explicitly approve each one, in which case that provider may retain request data under its own policy.",
+  "Gateway and provider terms can change. If a ZDR agreement is withdrawn for a model, that model is excluded from your scans until an alternative is available.",
+] as const;
+export const ZDR_CONSENT_FOOTNOTE =
+  "By enabling, you acknowledge that zero data retention is provided under third-party gateway agreements and applies only to models covered by one at the time of each request.";
+export const ZDR_CONSENT_CONFIRM = "Enable";
+export const ZDR_CONSENT_CANCEL = "Not now";

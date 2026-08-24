@@ -25,6 +25,7 @@ import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PlanCard } from "@/components/billing/plan-card";
 import { UsageSection } from "@/components/billing/usage-section";
+import { ZdrAddonCard } from "@/components/billing/zdr-addon-card";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -32,9 +33,13 @@ import {
   BILLING_SECTION_VALUES,
   FEATURED_PLAN_TIER,
   INVOICE_TABLE_COLUMN_COUNT,
+  PLANS_ANCHOR,
 } from "@/constants/billing";
+import { attachPlanWithAddons } from "@/lib/billing/attach-plan";
+import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import type { BillingPlanGroup, PlanCardButton } from "@/types/billing/plan";
 import {
+  findZdrAddonPlan,
   getInvoiceDescription,
   getPricingButtonText,
   getProductFeatures,
@@ -44,6 +49,7 @@ import {
   isPlanInGroup,
   planGroupDescription,
   selectPlanVariant,
+  zdrAddonToggle,
 } from "@/utils/billing-plans";
 import { DashboardPageSkeleton } from "../../skeleton";
 
@@ -54,6 +60,7 @@ function BillingPageContent() {
   const { data: plans, isLoading: plansLoading } = useListPlans();
   const {
     attach,
+    multiAttach,
     openCustomerPortal,
     data: customer,
     isLoading: customerLoading,
@@ -68,6 +75,8 @@ function BillingPageContent() {
   const [loading, setLoading] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [isYearly, setIsYearly] = useState(false);
+  const [includeZdr, setIncludeZdr] = useState(false);
+  const { hasZdr } = useHasZdrEntitlement();
   const [dateSortOrder, setDateSortOrder] = useState<"asc" | "desc">("desc");
   const [now] = useState(() => Date.now());
   const invoiceListId = useId();
@@ -104,9 +113,11 @@ function BillingPageContent() {
       ? `${window.location.origin}/${activeOrganization.slug}/settings/billing/success`
       : undefined;
     try {
-      const result = await attach({
+      const result = await attachPlanWithAddons({
+        attach,
+        multiAttach,
         planId,
-        redirectMode: "if_required",
+        includeZdr,
         successUrl,
       });
 
@@ -183,6 +194,7 @@ function BillingPageContent() {
   function renderPlanCard(group: BillingPlanGroup) {
     const plan = selectPlanVariant(group, isYearly);
     const isCurrent = isPlanInGroup(group, activePlanId);
+    const addonPlan = hasZdr ? null : findZdrAddonPlan(plans, plan?.id);
     return (
       <PlanCard
         action={
@@ -192,6 +204,7 @@ function BillingPageContent() {
             </Badge>
           ) : undefined
         }
+        addon={zdrAddonToggle(addonPlan, includeZdr, setIncludeZdr)}
         button={planButton(group)}
         description={planGroupDescription(group)}
         featured={group.id === FEATURED_PLAN_TIER}
@@ -253,7 +266,12 @@ function BillingPageContent() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="font-semibold text-lg">Plans</h2>
+                      <h2
+                        className="scroll-mt-24 font-semibold text-lg"
+                        id={PLANS_ANCHOR}
+                      >
+                        Plans
+                      </h2>
                       <p className="text-muted-foreground text-sm">
                         {plansDescription}
                       </p>
@@ -280,6 +298,11 @@ function BillingPageContent() {
                   <div className="grid gap-6 lg:grid-cols-3">
                     {planGroups.map(renderPlanCard)}
                   </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h2 className="font-semibold text-lg">Add-ons</h2>
+                  <ZdrAddonCard />
                 </div>
 
                 <div className="space-y-3">

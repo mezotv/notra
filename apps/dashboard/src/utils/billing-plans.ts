@@ -1,5 +1,6 @@
 import { FEATURES } from "@notra/ai/billing/features";
 import {
+  ANNUAL_ADDON_SUFFIX,
   ANNUAL_PLAN_NAME_SUFFIX,
   ANNUAL_PLAN_SUFFIXES,
   BILLING_PRICE_REGEX,
@@ -7,11 +8,17 @@ import {
   INVOICE_PRODUCT_NAME_FALLBACKS,
   LEGACY_PLAN_TIERS,
   PLAN_TIER_DESCRIPTIONS,
+  ZDR_ADDON_BY_TIER,
+  ZDR_ADDON_HINT,
+  ZDR_ADDON_PREFIX,
+  ZDR_ADDON_TITLE,
 } from "@/constants/billing";
 import type {
   BillingPlan,
   BillingPlanGroup,
   BillingPlanPrice,
+  BillingSubscription,
+  PlanCardAddon,
 } from "@/types/billing/plan";
 import type { ProductFeature } from "@/types/hooks/billing";
 
@@ -250,4 +257,91 @@ export function getInvoiceDescription(
   return productIds
     .map((productId) => formatInvoiceProductName(productId, plans))
     .join(", ");
+}
+
+export function zdrAddonPlanId(
+  activePlanId: string | undefined
+): string | null {
+  const tier = planTierId(activePlanId);
+  const base = tier ? ZDR_ADDON_BY_TIER[tier] : undefined;
+  if (!base) {
+    return null;
+  }
+  return isAnnualPlanId(activePlanId) ? `${base}${ANNUAL_ADDON_SUFFIX}` : base;
+}
+
+export function isZdrAddonPlanId(planId: string | undefined): boolean {
+  return Boolean(planId?.startsWith(ZDR_ADDON_PREFIX));
+}
+
+export function formatUsd(amount: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  }).format(amount);
+}
+
+export function findZdrAddonPlan(
+  plans: BillingPlan[] | undefined,
+  planId: string | undefined
+): BillingPlan | null {
+  const addonId = zdrAddonPlanId(planId);
+  if (!addonId) {
+    return null;
+  }
+  return plans?.find((plan) => plan.id === addonId) ?? null;
+}
+
+export function zdrAddonToggle(
+  addonPlan: BillingPlan | null,
+  checked: boolean,
+  onCheckedChange: (checked: boolean) => void
+): PlanCardAddon | undefined {
+  if (!addonPlan) {
+    return undefined;
+  }
+  const price = getProductPrice(addonPlan);
+  return {
+    label: ZDR_ADDON_TITLE,
+    description: `+${formatUsd(price.amount)}/${price.interval}`,
+    hint: ZDR_ADDON_HINT,
+    checked,
+    onCheckedChange,
+  };
+}
+
+export function zdrAddonPriceSummary(
+  groups: BillingPlanGroup[],
+  plans: BillingPlan[] | undefined
+): string | null {
+  const parts = groups.flatMap((group) => {
+    const addon = findZdrAddonPlan(plans, group.monthly?.id);
+    if (!addon) {
+      return [];
+    }
+    return [
+      `${formatUsd(getProductPrice(addon).amount)}/month on ${group.name}`,
+    ];
+  });
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
+export function findActivePlanSubscription(
+  subscriptions: BillingSubscription[] | undefined
+): BillingSubscription | undefined {
+  return subscriptions?.find(
+    (subscription) => !subscription.addOn && subscription.status === "active"
+  );
+}
+
+export function findZdrSubscription(
+  subscriptions: BillingSubscription[] | undefined
+): BillingSubscription | undefined {
+  return subscriptions?.find(
+    (subscription) =>
+      subscription.addOn &&
+      subscription.status === "active" &&
+      isZdrAddonPlanId(subscription.planId)
+  );
 }

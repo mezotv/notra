@@ -30,6 +30,7 @@ import {
 } from "@/components/geo/provider-wordmark";
 import { Checkbox } from "@/components/motion/checkbox";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { ZDR_ADDON_ANCHOR } from "@/constants/billing";
 import { GEO_PICKER_VISIBLE_MODELS } from "@/constants/geo-model-catalog";
 import { cn } from "@/lib/utils";
 import type {
@@ -250,7 +251,7 @@ export function GeoEnginePicker({
   );
   const hiddenCount = catalog.providers.length - visibleProviders.length;
   const billingHref = activeOrganization
-    ? `/${activeOrganization.slug}/settings/billing`
+    ? `/${activeOrganization.slug}/settings/billing#${ZDR_ADDON_ANCHOR}`
     : null;
 
   return (

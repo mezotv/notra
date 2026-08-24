@@ -3,13 +3,16 @@
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Counter from "@notra/ui/components/Counter";
+import { Label } from "@notra/ui/components/ui/label";
+import { Switch } from "@notra/ui/components/ui/switch";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { useId } from "react";
+import { useId, useState } from "react";
+import { ZdrConsentDialog } from "@/components/billing/zdr-consent-dialog";
 import { Button } from "@/components/button";
 import type { PlanCardProps } from "@/types/billing/plan";
 import { planCardClassName } from "@/utils/billing-plans";
@@ -23,9 +26,23 @@ export function PlanCard({
   featured,
   highlighted,
   action,
+  addon,
   button,
 }: PlanCardProps) {
   const listId = useId();
+  const addonId = `${listId}-addon`;
+  const [consentOpen, setConsentOpen] = useState(false);
+
+  const handleAddonChange = (checked: boolean) => {
+    if (!addon) {
+      return;
+    }
+    if (checked) {
+      setConsentOpen(true);
+      return;
+    }
+    addon.onCheckedChange(false);
+  };
 
   return (
     <TitleCard
@@ -35,7 +52,9 @@ export function PlanCard({
     >
       <div className="space-y-4">
         <div>
-          <p className="text-muted-foreground text-sm">{description}</p>
+          <p className="line-clamp-2 min-h-10 text-muted-foreground text-sm">
+            {description}
+          </p>
           <div className="mt-2 flex items-end">
             <span className="font-bold text-3xl leading-none">$</span>
             <Counter
@@ -51,6 +70,35 @@ export function PlanCard({
             </span>
           </div>
         </div>
+
+        {addon ? (
+          <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 ring-1 ring-foreground/10">
+            <div className="space-y-0.5">
+              <Label className="text-sm" htmlFor={addonId}>
+                {addon.label}
+              </Label>
+              <p className="text-muted-foreground text-xs">
+                {addon.description}
+                {addon.hint ? (
+                  <span className="text-muted-foreground/70">
+                    {" "}
+                    · {addon.hint}
+                  </span>
+                ) : null}
+              </p>
+            </div>
+            <Switch
+              checked={addon.checked}
+              id={addonId}
+              onCheckedChange={handleAddonChange}
+            />
+            <ZdrConsentDialog
+              onConfirm={() => addon.onCheckedChange(true)}
+              onOpenChange={setConsentOpen}
+              open={consentOpen}
+            />
+          </div>
+        ) : null}
 
         <Button
           className="w-full"
