@@ -311,22 +311,6 @@ export function zdrAddonToggle(
   };
 }
 
-export function zdrAddonPriceSummary(
-  groups: BillingPlanGroup[],
-  plans: BillingPlan[] | undefined
-): string | null {
-  const parts = groups.flatMap((group) => {
-    const addon = findZdrAddonPlan(plans, group.monthly?.id);
-    if (!addon) {
-      return [];
-    }
-    return [
-      `${formatUsd(getProductPrice(addon).amount)}/month on ${group.name}`,
-    ];
-  });
-  return parts.length > 0 ? parts.join(", ") : null;
-}
-
 export function findActivePlanSubscription(
   subscriptions: BillingSubscription[] | undefined
 ): BillingSubscription | undefined {

@@ -26,9 +26,7 @@ import {
   findZdrSubscription,
   formatUsd,
   getProductPrice,
-  groupBillingPlans,
   zdrAddonPlanId,
-  zdrAddonPriceSummary,
 } from "@/utils/billing-plans";
 
 export function ZdrAddonCard() {
@@ -55,7 +53,6 @@ export function ZdrAddonCard() {
   const zdrSubscription = findZdrSubscription(customer?.subscriptions);
   const price = getProductPrice(addonPlan);
   const priceLabel = formatUsd(price.amount);
-  const priceSummary = zdrAddonPriceSummary(groupBillingPlans(plans), plans);
   const isLoading = customerLoading || plansLoading || zdrLoading;
 
   async function handleAdd() {
@@ -168,11 +165,6 @@ export function ZdrAddonCard() {
               : ZDR_ADDON_UNAVAILABLE}
             <span className="text-muted-foreground/70"> {ZDR_ADDON_HINT}</span>
           </p>
-          {!(addonPlanId || hasZdr || isLoading) && priceSummary ? (
-            <p className="text-muted-foreground text-xs">
-              {priceSummary}. Include it when you pick a plan below.
-            </p>
-          ) : null}
         </div>
         {renderAction()}
       </div>
