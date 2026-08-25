@@ -7,7 +7,7 @@ export const BILLING_PRICE_REGEX = /^\d+([.,]\d+)?$/;
 export const ANNUAL_PLAN_SUFFIXES = ["_annual", "_yearly"] as const;
 
 export const PLAN_NAME_BILLING_INTERVAL_SUFFIX =
-  /\s*(?:\((?:monthly|annual|yearly)\)|(?:monthly|annual|yearly))\s*$/i;
+  /(?<=\S)(?:\s*\((?:monthly|annual|yearly)\)|\s+(?:monthly|annual|yearly))\s*$/i;
 
 export const FEATURED_PLAN_TIER: string = PLANS.GROWTH;
 
