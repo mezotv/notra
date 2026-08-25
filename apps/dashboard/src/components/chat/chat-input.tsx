@@ -76,7 +76,6 @@ import {
   PASTE_TO_ATTACHMENT_THRESHOLD,
 } from "@/constants/upload";
 import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
-import { getMcpIconUrls } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   dragEventHasFiles,
@@ -93,19 +92,15 @@ import {
 } from "@/lib/upload/mime";
 import type { ChatContextOption } from "@/types/components/chat-input";
 import type { GitHubRepository } from "@/types/integrations";
-import { getReferenceDisplay } from "@/utils/integration-reference";
+import {
+  extractIntegrationReferences,
+  getReferenceDisplay,
+} from "@/utils/integration-reference";
 import { AttachmentPreviewDialog } from "./attachment-preview";
 import { ChatContextConnectSuggestions } from "./chat-context-connect-suggestions";
 import { ChatContextOptionContent } from "./chat-context-option-content";
 import type { QueuedMessage } from "./chat-queue";
 import {
-  buildFragmentFromReferencedText,
-  buildIntegrationReferenceElement,
-  hydrateLinearReferenceTeamNames,
-  hydrateMcpReferenceIcons,
-  INTEGRATION_REFERENCE_SELECTOR,
-  isIntegrationReferenceElement,
-  parseIntegrationReferenceElement,
   serializeEditorWithReferences,
   serializeFragmentWithReferences,
 } from "./integration-reference";
@@ -818,19 +813,6 @@ export function ChatInputAdvanced({
     () => contextOptions.filter((option) => option.kind === "mcp"),
     [contextOptions]
   );
-  const mcpIconsByIntegrationId = useMemo(
-    () =>
-      new Map(
-        mcpToolOptions.map((option) => [
-          option.contextItem.integrationId,
-          getMcpIconUrls({
-            lightUrl: option.logoLightUrl,
-            darkUrl: option.logoDarkUrl,
-          }),
-        ])
-      ),
-    [mcpToolOptions]
-  );
 
   const isInContext = useCallback(
     (item: ContextItem) =>
@@ -887,58 +869,6 @@ export function ChatInputAdvanced({
     []
   );
 
-  const syncContextFromDOM = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor) {
-      return;
-    }
-    const chips = Array.from(
-      editor.querySelectorAll<HTMLElement>(INTEGRATION_REFERENCE_SELECTOR)
-    );
-    const editorItems = chips
-      .map(parseIntegrationReferenceElement)
-      .filter((x): x is ContextItem => x !== null);
-
-    const current = contextRef.current;
-    for (const existing of current) {
-      if (!editorItems.some((e) => contextItemsEqual(e, existing))) {
-        onRemoveContext?.(existing);
-      }
-    }
-    for (const next of editorItems) {
-      if (!current.some((c) => contextItemsEqual(c, next))) {
-        onAddContext?.(next);
-      }
-    }
-  }, [onAddContext, onRemoveContext]);
-
-  const insertChipAndSpace = useCallback(
-    (chip: HTMLSpanElement, replaceRange: Range) => {
-      const editor = editorRef.current;
-      if (!editor) {
-        return;
-      }
-      replaceRange.deleteContents();
-      replaceRange.insertNode(chip);
-      const space = document.createTextNode("\u00A0");
-      const afterChip = document.createRange();
-      afterChip.setStartAfter(chip);
-      afterChip.collapse(true);
-      afterChip.insertNode(space);
-
-      const cursor = document.createRange();
-      cursor.setStartAfter(space);
-      cursor.collapse(true);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(cursor);
-
-      setIsEmpty(readEditorText().trim().length === 0);
-      syncContextFromDOM();
-    },
-    [readEditorText, syncContextFromDOM]
-  );
-
   const handleInput = useCallback(() => {
     const editor = editorRef.current;
     if (!editor) {
@@ -963,14 +893,12 @@ export function ChatInputAdvanced({
     if (!sel || sel.rangeCount === 0) {
       setMentionQuery(null);
       mentionAnchorRef.current = null;
-      syncContextFromDOM();
       return;
     }
     const range = sel.getRangeAt(0);
     if (!editor.contains(range.startContainer)) {
       setMentionQuery(null);
       mentionAnchorRef.current = null;
-      syncContextFromDOM();
       return;
     }
 
@@ -1001,7 +929,6 @@ export function ChatInputAdvanced({
             };
             setMentionQuery(query);
             setMentionIndex(0);
-            syncContextFromDOM();
             return;
           }
         }
@@ -1010,8 +937,7 @@ export function ChatInputAdvanced({
 
     mentionAnchorRef.current = null;
     setMentionQuery(null);
-    syncContextFromDOM();
-  }, [draftStorageKey, readEditorText, syncContextFromDOM]);
+  }, [draftStorageKey, readEditorText]);
 
   const restoredDraftKeyRef = useRef<string | null>(null);
 
@@ -1029,39 +955,17 @@ export function ChatInputAdvanced({
       if (!draft) {
         return;
       }
-      editor.append(
-        buildFragmentFromReferencedText(draft, mcpIconsByIntegrationId)
-      );
-      setIsEmpty(draft.trim().length === 0);
-      syncContextFromDOM();
+      const restoredDraft = extractIntegrationReferences(draft);
+      for (const referencedItem of restoredDraft.items) {
+        onAddContext?.(referencedItem);
+      }
+      const restoredText = restoredDraft.text.trim();
+      editor.textContent = restoredText;
+      setIsEmpty(restoredText.length === 0);
     } catch {
       // noop
     }
-  }, [
-    draftStorageKey,
-    initialValue,
-    mcpIconsByIntegrationId,
-    readEditorText,
-    syncContextFromDOM,
-  ]);
-
-  useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor || enabledLinearIntegrations.length === 0) {
-      return;
-    }
-    if (hydrateLinearReferenceTeamNames(editor, enabledLinearIntegrations)) {
-      syncContextFromDOM();
-    }
-  }, [enabledLinearIntegrations, syncContextFromDOM]);
-
-  useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor || mcpIconsByIntegrationId.size === 0) {
-      return;
-    }
-    hydrateMcpReferenceIcons(editor, mcpIconsByIntegrationId);
-  }, [mcpIconsByIntegrationId]);
+  }, [draftStorageKey, initialValue, onAddContext, readEditorText]);
 
   useEffect(() => {
     const editor = editorRef.current;
@@ -1113,85 +1017,43 @@ export function ChatInputAdvanced({
       replaceRange.setStart(anchor.node, anchor.offset);
       replaceRange.setEnd(cursor.startContainer, cursor.startOffset);
 
-      const chip = buildIntegrationReferenceElement(
-        option.contextItem,
-        getMcpIconUrls({
-          lightUrl: option.logoLightUrl,
-          darkUrl: option.logoDarkUrl,
-        })
-      );
-      insertChipAndSpace(chip, replaceRange);
+      replaceRange.deleteContents();
+      const selection = window.getSelection();
+      selection?.removeAllRanges();
+      selection?.addRange(replaceRange);
+      if (
+        !contextRef.current.some((item) =>
+          contextItemsEqual(item, option.contextItem)
+        )
+      ) {
+        onAddContext?.(option.contextItem);
+      }
+      editor.dispatchEvent(new Event("input", { bubbles: true }));
 
       mentionAnchorRef.current = null;
       setMentionQuery(null);
       editor.focus();
     },
-    [insertChipAndSpace]
+    [onAddContext]
   );
 
-  const insertChipAtCursor = useCallback(
+  const addContext = useCallback(
     (option: ChatContextOption) => {
-      const editor = editorRef.current;
-      if (!editor) {
-        return;
-      }
       const item = option.contextItem;
       if (contextRef.current.some((c) => contextItemsEqual(c, item))) {
         return;
       }
-      editor.focus();
-      const sel = window.getSelection();
-      let range: Range;
-      if (
-        sel &&
-        sel.rangeCount > 0 &&
-        editor.contains(sel.getRangeAt(0).startContainer)
-      ) {
-        range = sel.getRangeAt(0);
-      } else {
-        range = document.createRange();
-        range.selectNodeContents(editor);
-        range.collapse(false);
-      }
-      const chip = buildIntegrationReferenceElement(
-        item,
-        getMcpIconUrls({
-          lightUrl: option.logoLightUrl,
-          darkUrl: option.logoDarkUrl,
-        })
-      );
-      insertChipAndSpace(chip, range);
+      onAddContext?.(item);
+      editorRef.current?.focus();
     },
-    [insertChipAndSpace]
+    [onAddContext]
   );
 
-  const removeChipForItem = useCallback(
+  const removeContext = useCallback(
     (item: ContextItem) => {
-      const editor = editorRef.current;
-      if (editor) {
-        const chips = Array.from(
-          editor.querySelectorAll<HTMLElement>(INTEGRATION_REFERENCE_SELECTOR)
-        );
-        for (const chip of chips) {
-          const parsed = parseIntegrationReferenceElement(chip);
-          if (parsed && contextItemsEqual(parsed, item)) {
-            const next = chip.nextSibling;
-            chip.remove();
-            if (
-              next &&
-              next.nodeType === Node.TEXT_NODE &&
-              next.textContent === "\u00A0"
-            ) {
-              next.parentNode?.removeChild(next);
-            }
-            break;
-          }
-        }
-        setIsEmpty(readEditorText().trim().length === 0);
-      }
       onRemoveContext?.(item);
     },
-    [onRemoveContext, readEditorText]
+    [onRemoveContext]
   );
 
   const insertTextAtRange = useCallback(
@@ -1219,25 +1081,27 @@ export function ChatInputAdvanced({
 
       range.deleteContents();
 
-      const fragment = buildFragmentFromReferencedText(
-        text,
-        mcpIconsByIntegrationId
-      );
-      const lastNode = fragment.lastChild;
-      range.insertNode(fragment);
+      const pastedContent = extractIntegrationReferences(text);
+      for (const referencedItem of pastedContent.items) {
+        if (
+          !contextRef.current.some((item) =>
+            contextItemsEqual(item, referencedItem)
+          )
+        ) {
+          onAddContext?.(referencedItem);
+        }
+      }
+      const textNode = document.createTextNode(pastedContent.text);
+      range.insertNode(textNode);
 
       const after = document.createRange();
-      if (lastNode) {
-        after.setStartAfter(lastNode);
-      } else {
-        after.setStart(range.endContainer, range.endOffset);
-      }
+      after.setStartAfter(textNode);
       after.collapse(true);
       selection?.removeAllRanges();
       selection?.addRange(after);
       editor.dispatchEvent(new Event("input", { bubbles: true }));
     },
-    [mcpIconsByIntegrationId]
+    [onAddContext]
   );
 
   const clearComposer = useCallback(() => {
@@ -1591,43 +1455,6 @@ export function ChatInputAdvanced({
         editorRef.current?.dispatchEvent(new Event("input", { bubbles: true }));
         return;
       }
-
-      if (event.key === "Backspace") {
-        const sel = window.getSelection();
-        if (!sel || sel.rangeCount === 0 || !sel.getRangeAt(0).collapsed) {
-          return;
-        }
-        const range = sel.getRangeAt(0);
-        const node = range.startContainer;
-        let prev: ChildNode | null = null;
-        if (node.nodeType === Node.TEXT_NODE && range.startOffset === 0) {
-          prev = node.previousSibling;
-        } else if (node.nodeType === Node.ELEMENT_NODE) {
-          prev = (node as Element).childNodes[range.startOffset - 1] ?? null;
-        }
-        if (
-          prev &&
-          prev.nodeType === Node.TEXT_NODE &&
-          prev.textContent === "\u00A0"
-        ) {
-          prev = prev.previousSibling;
-        }
-        if (isIntegrationReferenceElement(prev)) {
-          event.preventDefault();
-          const nextOfChip = prev.nextSibling;
-          prev.remove();
-          if (
-            nextOfChip &&
-            nextOfChip.nodeType === Node.TEXT_NODE &&
-            nextOfChip.textContent === "\u00A0"
-          ) {
-            nextOfChip.parentNode?.removeChild(nextOfChip);
-          }
-          editorRef.current?.dispatchEvent(
-            new Event("input", { bubbles: true })
-          );
-        }
-      }
     },
     [
       mentionQuery,
@@ -1782,7 +1609,7 @@ export function ChatInputAdvanced({
                             isQueued
                               ? undefined
                               : () => {
-                                  removeChipForItem(item);
+                                  removeContext(item);
                                 }
                           }
                           removeLabel={`Remove ${label}`}
@@ -2107,9 +1934,9 @@ export function ChatInputAdvanced({
                                     keywords={[option.searchText]}
                                     onSelect={() => {
                                       if (inContext) {
-                                        removeChipForItem(option.contextItem);
+                                        removeContext(option.contextItem);
                                       } else {
-                                        insertChipAtCursor(option);
+                                        addContext(option);
                                       }
                                       setIsContextPickerOpen(false);
                                     }}
@@ -2134,9 +1961,9 @@ export function ChatInputAdvanced({
                                     keywords={[option.searchText]}
                                     onSelect={() => {
                                       if (inContext) {
-                                        removeChipForItem(option.contextItem);
+                                        removeContext(option.contextItem);
                                       } else {
-                                        insertChipAtCursor(option);
+                                        addContext(option);
                                       }
                                       setIsContextPickerOpen(false);
                                     }}

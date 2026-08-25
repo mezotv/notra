@@ -1,6 +1,7 @@
 import type { ContextItem } from "@notra/ai/types/chat";
 import {
   GITHUB_REFERENCE_VALUE_PATTERN,
+  INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX,
   LINEAR_REFERENCE_VALUE_PATTERN,
   MCP_REFERENCE_VALUE_PATTERN,
 } from "@/constants/integration-reference";
@@ -60,4 +61,20 @@ export function parseReferenceValue(value: string): ContextItem | null {
   }
 
   return null;
+}
+
+export function extractIntegrationReferences(value: string) {
+  const items: ContextItem[] = [];
+  const textSegments: string[] = [];
+
+  for (const segment of value.split(INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX)) {
+    const item = parseReferenceValue(segment);
+    if (item) {
+      items.push(item);
+    } else {
+      textSegments.push(segment);
+    }
+  }
+
+  return { items, text: textSegments.join("") };
 }
