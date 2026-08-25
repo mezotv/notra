@@ -1,6 +1,6 @@
 {
   "name": "@usenotra/geo",
-  "version": "0.1.0-beta.2",
+  "version": "0.2.0",
   "private": false,
   "type": "module",
   "description": "Request capture SDK for AI traffic attribution and agent feedback collection",
@@ -73,7 +73,7 @@
   },
   "publishConfig": {
     "access": "public",
-    "tag": "beta"
+    "tag": "latest"
   },
   "scripts": {
     "build": "tsup",
