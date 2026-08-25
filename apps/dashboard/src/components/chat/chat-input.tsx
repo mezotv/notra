@@ -94,6 +94,7 @@ import type { ChatContextOption } from "@/types/components/chat-input";
 import type { GitHubRepository } from "@/types/integrations";
 import {
   extractIntegrationReferences,
+  getIntegrationReferenceValue,
   getReferenceDisplay,
 } from "@/utils/integration-reference";
 import { AttachmentPreviewDialog } from "./attachment-preview";
@@ -869,16 +870,19 @@ export function ChatInputAdvanced({
     []
   );
 
-  const handleInput = useCallback(() => {
-    const editor = editorRef.current;
-    if (!editor) {
-      return;
-    }
-    setIsEmpty(readEditorText().trim().length === 0);
+  const persistDraft = useCallback(
+    (draftContext: readonly ContextItem[]) => {
+      const editor = editorRef.current;
+      if (!(editor && draftStorageKey)) {
+        return;
+      }
 
-    if (draftStorageKey) {
       try {
-        const draft = serializeEditorWithReferences(editor).trim();
+        const text = serializeEditorWithReferences(editor).trim();
+        const references = draftContext
+          .map(getIntegrationReferenceValue)
+          .join("\n");
+        const draft = [text, references].filter(Boolean).join("\n");
         if (draft) {
           window.localStorage.setItem(draftStorageKey, draft);
         } else {
@@ -887,7 +891,17 @@ export function ChatInputAdvanced({
       } catch {
         // noop
       }
+    },
+    [draftStorageKey]
+  );
+
+  const handleInput = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) {
+      return;
     }
+    setIsEmpty(readEditorText().trim().length === 0);
+    persistDraft(contextRef.current);
 
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) {
@@ -937,7 +951,7 @@ export function ChatInputAdvanced({
 
     mentionAnchorRef.current = null;
     setMentionQuery(null);
-  }, [draftStorageKey, readEditorText]);
+  }, [persistDraft, readEditorText]);
 
   const restoredDraftKeyRef = useRef<string | null>(null);
 
@@ -1021,20 +1035,23 @@ export function ChatInputAdvanced({
       const selection = window.getSelection();
       selection?.removeAllRanges();
       selection?.addRange(replaceRange);
+      let nextContext = contextRef.current;
       if (
         !contextRef.current.some((item) =>
           contextItemsEqual(item, option.contextItem)
         )
       ) {
+        nextContext = [...contextRef.current, option.contextItem];
         onAddContext?.(option.contextItem);
       }
       editor.dispatchEvent(new Event("input", { bubbles: true }));
+      persistDraft(nextContext);
 
       mentionAnchorRef.current = null;
       setMentionQuery(null);
       editor.focus();
     },
-    [onAddContext]
+    [onAddContext, persistDraft]
   );
 
   const addContext = useCallback(
@@ -1044,16 +1061,22 @@ export function ChatInputAdvanced({
         return;
       }
       onAddContext?.(item);
+      persistDraft([...contextRef.current, item]);
       editorRef.current?.focus();
     },
-    [onAddContext]
+    [onAddContext, persistDraft]
   );
 
   const removeContext = useCallback(
     (item: ContextItem) => {
       onRemoveContext?.(item);
+      persistDraft(
+        contextRef.current.filter(
+          (contextItem) => !contextItemsEqual(contextItem, item)
+        )
+      );
     },
-    [onRemoveContext]
+    [onRemoveContext, persistDraft]
   );
 
   const insertTextAtRange = useCallback(
