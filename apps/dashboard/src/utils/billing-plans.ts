@@ -1,12 +1,12 @@
 import { ACTIVE_PAID_PLAN_IDS, FEATURES } from "@notra/ai/billing/features";
 import {
   ANNUAL_ADDON_SUFFIX,
-  ANNUAL_PLAN_NAME_SUFFIX,
   ANNUAL_PLAN_SUFFIXES,
   BILLING_PRICE_REGEX,
   BILLING_SCENARIO_TEXT,
   INVOICE_PRODUCT_NAME_FALLBACKS,
   LEGACY_PLAN_TIERS,
+  PLAN_NAME_BILLING_INTERVAL_SUFFIX,
   PLAN_TIER_DESCRIPTIONS,
   ZDR_ADDON_BY_TIER,
   ZDR_ADDON_HINT,
@@ -53,7 +53,7 @@ export function planDisplayName(
   if (!name) {
     return null;
   }
-  return name.replace(ANNUAL_PLAN_NAME_SUFFIX, "");
+  return name.replace(PLAN_NAME_BILLING_INTERVAL_SUFFIX, "");
 }
 
 export function getProductPrice(
