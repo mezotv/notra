@@ -58,6 +58,7 @@ async function getTokenGeneration(
             generation === null
               ? AGENT_FEEDBACK_TOKEN_MISSING_CACHE_TTL_SECONDS
               : AGENT_FEEDBACK_TOKEN_GENERATION_CACHE_TTL_SECONDS,
+          nx: true,
         }
       )
       .catch(() => null);
