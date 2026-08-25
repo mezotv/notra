@@ -13,6 +13,7 @@ import {
 } from "@/constants/nav";
 import {
   isSidebarMode,
+  isStaleGeoProjectParam,
   resolveActiveNavLink,
   resolveGeoImproveLinks,
   resolveNavItems,
@@ -126,5 +127,14 @@ describe("resolveActiveNavLink", () => {
       ]),
       CONTENT_NAV_LINK
     );
+  });
+});
+
+describe("isStaleGeoProjectParam", () => {
+  test("is stale only when a param is set and missing from the list", () => {
+    assert.equal(isStaleGeoProjectParam(["a", "b"], "c"), true);
+    assert.equal(isStaleGeoProjectParam(["a", "b"], "b"), false);
+    assert.equal(isStaleGeoProjectParam(["a", "b"], null), false);
+    assert.equal(isStaleGeoProjectParam([], null), false);
   });
 });

@@ -69,6 +69,16 @@ export function resolveGeoImproveLinks(
   return NAV_GEO_IMPROVE_LINKS.filter((link) => link !== GEO_WRITER_NAV_LINK);
 }
 
+export function isStaleGeoProjectParam(
+  projectIds: readonly string[],
+  projectParam: string | null
+): boolean {
+  if (projectParam === null) {
+    return false;
+  }
+  return !projectIds.includes(projectParam);
+}
+
 export function resolveActiveNavLink(
   pathname: string,
   slug: string,

@@ -23,7 +23,7 @@ import {
   SidebarMenuSkeleton,
 } from "@notra/ui/components/ui/sidebar";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GeoProjectCreateDialog } from "@/components/geo/project-create-dialog";
 import { ProjectLogo } from "@/components/geo/project-logo";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -37,7 +37,7 @@ import { useGeoProjects } from "@/lib/hooks/use-geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { getWebsiteDomain } from "@/utils/brand";
 import { geoNavHref } from "@/utils/geo-paths";
-import { resolveNavItems } from "@/utils/nav";
+import { isStaleGeoProjectParam, resolveNavItems } from "@/utils/nav";
 import { SidebarBrandHeader } from "./sidebar-brand-header";
 import { SidebarLabel } from "./sidebar-label";
 
@@ -60,6 +60,18 @@ export function SidebarProjectSwitcher() {
     projects.find((project) => project.id === projectParam) ??
     projects.at(0) ??
     null;
+  const staleProjectParam =
+    data !== undefined &&
+    isStaleGeoProjectParam(
+      projects.map((project) => project.id),
+      projectParam
+    );
+
+  useEffect(() => {
+    if (staleProjectParam) {
+      setProjectParam(null);
+    }
+  }, [staleProjectParam, setProjectParam]);
 
   const projectDomain = (brandSettingsId: string) =>
     getWebsiteDomain(
