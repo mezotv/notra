@@ -1105,12 +1105,12 @@ export function ChatInputAdvanced({
       range.deleteContents();
 
       const pastedContent = extractIntegrationReferences(text);
+      let nextContext = contextRef.current;
       for (const referencedItem of pastedContent.items) {
         if (
-          !contextRef.current.some((item) =>
-            contextItemsEqual(item, referencedItem)
-          )
+          !nextContext.some((item) => contextItemsEqual(item, referencedItem))
         ) {
+          nextContext = [...nextContext, referencedItem];
           onAddContext?.(referencedItem);
         }
       }
@@ -1123,8 +1123,9 @@ export function ChatInputAdvanced({
       selection?.removeAllRanges();
       selection?.addRange(after);
       editor.dispatchEvent(new Event("input", { bubbles: true }));
+      persistDraft(nextContext);
     },
-    [onAddContext]
+    [onAddContext, persistDraft]
   );
 
   const clearComposer = useCallback(() => {
