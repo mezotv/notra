@@ -2,14 +2,12 @@
 
 import {
   SidebarGroup,
-  SidebarGroupContent,
   SidebarGroupLabel,
 } from "@notra/ui/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import { GEO_UPGRADE_TOOLTIP, GEO_WRITER_NAV_LINK } from "@/constants/geo";
 import {
   NAV_CATEGORY_LABELS,
-  NAV_GEO_INTEGRATIONS_LINKS,
   NAV_GEO_LINKS,
   NAV_GEO_VISIBILITY_LINKS,
   NAV_PRIMARY_ACTIONS,
@@ -68,17 +66,6 @@ export function NavGeo({ slug, projectId }: NavGeoProps) {
           slug={slug}
           visibility={visibility}
         />
-      </SidebarGroup>
-      <SidebarGroup>
-        <SidebarGroupContent>
-          <NavList
-            activeLink={activeLink}
-            links={NAV_GEO_INTEGRATIONS_LINKS}
-            projectId={projectId}
-            slug={slug}
-            visibility={visibility}
-          />
-        </SidebarGroupContent>
       </SidebarGroup>
     </>
   );

@@ -131,14 +131,9 @@ export const NAV_GEO_IMPROVE_LINKS: readonly string[] = [
   SCHEDULES_NAV_LINK,
 ];
 
-export const NAV_GEO_INTEGRATIONS_LINKS: readonly string[] = [
-  INTEGRATIONS_NAV_LINK,
-];
-
 export const NAV_GEO_LINKS: readonly string[] = [
   ...NAV_GEO_VISIBILITY_LINKS,
   ...NAV_GEO_IMPROVE_LINKS,
-  ...NAV_GEO_INTEGRATIONS_LINKS,
 ];
 
 export const NAV_STUDIO_LINKS: readonly string[] = [
@@ -153,7 +148,6 @@ export const NAV_AUTOMATION_LINKS: readonly string[] = [
   IRIS_NAV_LINK,
   SCHEDULES_NAV_LINK,
   EVENTS_NAV_LINK,
-  INTEGRATIONS_NAV_LINK,
 ];
 
 export const NAV_STUDIO_ALL_LINKS: readonly string[] = [
@@ -162,6 +156,7 @@ export const NAV_STUDIO_ALL_LINKS: readonly string[] = [
 ];
 
 export const NAV_UTILITY_LINKS: readonly string[] = [
+  INTEGRATIONS_NAV_LINK,
   SKILLS_NAV_LINK,
   API_KEYS_NAV_LINK,
 ];
