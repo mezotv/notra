@@ -68,6 +68,9 @@ function GeoModelRow({
   id,
   model,
   onCheckedChange,
+  revealIndex,
+  revealTotal,
+  revealed,
   showZdrState,
 }: {
   approved: boolean;
@@ -76,21 +79,44 @@ function GeoModelRow({
   id: string;
   model: GeoModelCatalogEntry;
   onCheckedChange: (checked: boolean) => void;
+  revealIndex?: number;
+  revealTotal?: number;
+  revealed?: boolean;
   showZdrState: boolean;
 }) {
   const reduceMotion = useReducedMotion();
+  const hasRevealAnimation = revealed !== undefined;
+  const staggerDelay = revealed
+    ? (revealIndex ?? 0) * 0.045
+    : ((revealTotal ?? 1) - (revealIndex ?? 0) - 1) * 0.035;
+  const revealAnimation = revealed
+    ? { filter: "blur(0px)", opacity: 1, y: 0 }
+    : { filter: "blur(5px)", opacity: 0, y: -5 };
 
   return (
     <motion.li
+      animate={hasRevealAnimation ? revealAnimation : undefined}
       className="flex items-center justify-between gap-3 py-1.5 ps-10 pe-3"
+      initial={false}
       layout={reduceMotion ? false : "position"}
       layoutId={reduceMotion ? undefined : `geo-model-${id}`}
-      transition={{
-        layout: {
-          duration: 0.24,
-          ease: [0.77, 0, 0.175, 1],
-        },
-      }}
+      transition={
+        reduceMotion
+          ? { duration: 0 }
+          : {
+              delay: hasRevealAnimation ? staggerDelay : 0,
+              filter: { duration: 0.18 },
+              layout: {
+                duration: 0.24,
+                ease: [0.77, 0, 0.175, 1],
+              },
+              opacity: { duration: 0.16 },
+              y: {
+                duration: 0.2,
+                ease: [0.23, 1, 0.32, 1],
+              },
+            }
+      }
     >
       <Label
         className="flex min-w-0 flex-1 items-center gap-2 font-normal"
@@ -128,6 +154,7 @@ export function GeoEnginePicker({
   labeled = true,
 }: GeoEnginePickerProps) {
   const id = useId();
+  const reduceMotion = useReducedMotion();
   const { activeOrganization } = useOrganizationsContext();
   const [expanded, setExpanded] = useState<Set<string>>(() =>
     partiallySelectedProviders(catalog, selected)
@@ -246,10 +273,13 @@ export function GeoEnginePicker({
     }
   };
 
-  const visibleProviders = catalog.providers.filter(
-    (provider) => provider.featured || showMore
+  const hiddenProviders = catalog.providers.filter(
+    (provider) => !provider.featured
   );
-  const hiddenCount = catalog.providers.length - visibleProviders.length;
+  const hiddenProviderIndex = new Map(
+    hiddenProviders.map((provider, index) => [provider.id, index])
+  );
+  const hiddenCount = hiddenProviders.length;
   const billingHref = activeOrganization
     ? `/${activeOrganization.slug}/settings/billing#${ZDR_ADDON_ANCHOR}`
     : null;
@@ -267,7 +297,12 @@ export function GeoEnginePicker({
       ) : null}
 
       <ul className="overflow-hidden rounded-xl border bg-card">
-        {visibleProviders.map((provider) => {
+        {catalog.providers.map((provider) => {
+          const isVisible = provider.featured || showMore;
+          const revealIndex = hiddenProviderIndex.get(provider.id) ?? 0;
+          const staggerDelay = showMore
+            ? revealIndex * 0.045
+            : (hiddenCount - revealIndex - 1) * 0.035;
           const models = geoModelsForProvider(catalog, provider.id);
           const isExpanded = expanded.has(provider.id);
           const allModelsShown = showAllModels.has(provider.id);
@@ -296,9 +331,44 @@ export function GeoEnginePicker({
           const providerLocked = allOn && selectedCount === selected.length;
           const checkboxId = `${id}-${provider.id}`;
           return (
-            <li
-              className="relative border-border/60 border-b last:border-b-0"
+            <motion.li
+              animate={
+                isVisible
+                  ? {
+                      filter: "blur(0px)",
+                      height: "auto",
+                      opacity: 1,
+                      y: 0,
+                    }
+                  : {
+                      filter: "blur(5px)",
+                      height: 0,
+                      opacity: 0,
+                      y: -5,
+                    }
+              }
+              aria-hidden={!isVisible}
+              className="relative overflow-hidden border-border/60 border-b last:border-b-0"
+              inert={isVisible ? undefined : true}
+              initial={false}
               key={provider.id}
+              transition={
+                reduceMotion
+                  ? { duration: 0 }
+                  : {
+                      delay: provider.featured ? 0 : staggerDelay,
+                      filter: { duration: 0.18 },
+                      height: {
+                        duration: 0.24,
+                        ease: [0.23, 1, 0.32, 1],
+                      },
+                      opacity: { duration: 0.16 },
+                      y: {
+                        duration: 0.2,
+                        ease: [0.23, 1, 0.32, 1],
+                      },
+                    }
+              }
             >
               <div
                 className={cn(
@@ -387,7 +457,7 @@ export function GeoEnginePicker({
                         <li
                           aria-hidden={!allModelsShown}
                           className={cn(
-                            "grid transition-[grid-template-rows] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
+                            "grid transition-[grid-template-rows] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
                             allModelsShown
                               ? "grid-rows-[1fr]"
                               : "grid-rows-[0fr]"
@@ -397,15 +467,8 @@ export function GeoEnginePicker({
                             className="min-h-0 overflow-hidden"
                             inert={allModelsShown ? undefined : true}
                           >
-                            <ul
-                              className={cn(
-                                "motion-reduce:translate-none transition-[opacity,translate] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:duration-150",
-                                allModelsShown
-                                  ? "translate-y-0 opacity-100"
-                                  : "-translate-y-1 opacity-0"
-                              )}
-                            >
-                              {additionalModels.map((model) => {
+                            <ul>
+                              {additionalModels.map((model, modelIndex) => {
                                 const checked = selected.includes(model.id);
                                 const modelId = `${id}-${model.id}`;
                                 return (
@@ -421,6 +484,9 @@ export function GeoEnginePicker({
                                     onCheckedChange={(next) =>
                                       toggleModel(model, next)
                                     }
+                                    revealed={allModelsShown}
+                                    revealIndex={modelIndex}
+                                    revealTotal={additionalModels.length}
                                     showZdrState={zdrActive}
                                   />
                                 );
@@ -447,7 +513,7 @@ export function GeoEnginePicker({
                   </div>
                 </div>
               </div>
-            </li>
+            </motion.li>
           );
         })}
         {catalog.providers.some((provider) => !provider.featured) ? (
