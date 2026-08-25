@@ -3,7 +3,7 @@
 #   docker build -f apps/api/Dockerfile -t notra-api .
 
 # ─── Stage 1: install dependencies ───────────────────────────────────────────
-FROM oven/bun:1.3.14-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765aec90b47bdbf2152d2196383c0 AS deps
+FROM oven/bun:1.4.0-alpine@sha256:07235578f79ef8c6f97d94aee7938e76f5cdba5f21ae5dbfdd3d3d38058437eb AS deps
 
 WORKDIR /app
 
@@ -14,9 +14,11 @@ COPY apps/dashboard/package.json ./apps/dashboard/package.json
 COPY apps/docs/package.json ./apps/docs/package.json
 COPY apps/web/package.json ./apps/web/package.json
 COPY packages/ai/package.json ./packages/ai/package.json
+COPY packages/analytics/package.json ./packages/analytics/package.json
 COPY packages/content-generation/package.json ./packages/content-generation/package.json
 COPY packages/db/package.json ./packages/db/package.json
 COPY packages/email/package.json ./packages/email/package.json
+COPY packages/geo/package.json ./packages/geo/package.json
 COPY packages/kiwi/package.json ./packages/kiwi/package.json
 COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
@@ -30,6 +32,7 @@ FROM deps AS builder
 
 # Copy source for all packages the API depends on
 COPY packages/ai ./packages/ai
+COPY packages/analytics ./packages/analytics
 COPY packages/content-generation ./packages/content-generation
 COPY packages/typescript-config ./packages/typescript-config
 COPY packages/db ./packages/db
@@ -40,7 +43,7 @@ WORKDIR /app/apps/api
 RUN bun run build
 
 # ─── Stage 3: production image ───────────────────────────────────────────────
-FROM oven/bun:1.3.14-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765aec90b47bdbf2152d2196383c0 AS runner
+FROM oven/bun:1.4.0-alpine@sha256:07235578f79ef8c6f97d94aee7938e76f5cdba5f21ae5dbfdd3d3d38058437eb AS runner
 
 WORKDIR /app
 

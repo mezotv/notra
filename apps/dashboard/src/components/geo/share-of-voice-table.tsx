@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo } from "react";
+import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { GeoBar } from "@/components/geo/geo-bar";
 import { InstrumentEmpty } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
+import { EMPTY_STATE_TABLE_COLUMNS } from "@/constants/empty-state";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { findCompetitorDomain } from "@/lib/geo/domain";
 import type { ShareOfVoiceRow, ShareOfVoiceTableProps } from "@/types/geo";
@@ -109,7 +111,18 @@ export function ShareOfVoiceTable({
       <InstrumentEmpty
         busy={isScanning}
         className="h-full"
-        message={geoScanEmptyMessage(isScanning, "No competitor data yet")}
+        message={geoScanEmptyMessage(
+          isScanning,
+          "Run a scan to see your share of voice"
+        )}
+        preview={
+          <div className="px-4 pt-2">
+            <EmptyStateTablePreview
+              columns={EMPTY_STATE_TABLE_COLUMNS.shareOfVoice}
+              rows={4}
+            />
+          </div>
+        }
         seed="Share of voice"
       />
     );

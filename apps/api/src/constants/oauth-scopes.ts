@@ -41,6 +41,12 @@ export const PUBLIC_API_SCOPE_RESOURCES = [
     readScope: "skills.read",
     writeScope: "skills.write",
   },
+  {
+    id: "feedback",
+    paths: ["/feedback"],
+    readScope: "feedback.read",
+    writeScope: "feedback.write",
+  },
 ] as const;
 
 export const PUBLIC_API_SCOPES = [

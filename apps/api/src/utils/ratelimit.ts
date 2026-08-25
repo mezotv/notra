@@ -15,6 +15,8 @@ export const RATE_LIMITS = {
   },
   integrationCreate: { requests: 20, window: "1 minute" },
   postUpdate: { requests: 60, window: "1 minute" },
+  feedbackIngest: { requests: 120, window: "1 minute" },
+  feedbackIngestIp: { requests: 60, window: "1 minute" },
 } as const;
 
 export const ratelimit = {
@@ -57,11 +59,36 @@ export const ratelimit = {
     prefix: "ratelimit:api:post-update",
     limiter: Ratelimit.slidingWindow(RATE_LIMITS.postUpdate.requests, "1m"),
   }),
+  feedbackIngest: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:api:feedback-ingest",
+    limiter: Ratelimit.slidingWindow(RATE_LIMITS.feedbackIngest.requests, "1m"),
+  }),
+  feedbackIngestIp: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:api:feedback-ingest-ip",
+    limiter: Ratelimit.slidingWindow(
+      RATE_LIMITS.feedbackIngestIp.requests,
+      "1m"
+    ),
+  }),
 };
 
-type RatelimitScope = "credential" | "organization";
+type RatelimitScope = "credential" | "organization" | "ip";
+
+function getClientIp(c: Context): string {
+  const forwardedFor = c.req.header("x-forwarded-for");
+  const ip = forwardedFor?.split(",")[0]?.trim() || c.req.header("x-real-ip");
+  return ip || "unknown";
+}
 
 function getRatelimitKey(c: Context, scope: RatelimitScope): string {
+  if (scope === "ip") {
+    return getClientIp(c);
+  }
+
   const auth = c.get("auth");
   if (auth) {
     if (scope === "organization") {
@@ -76,9 +103,7 @@ function getRatelimitKey(c: Context, scope: RatelimitScope): string {
     }
   }
 
-  const forwardedFor = c.req.header("x-forwarded-for");
-  const ip = forwardedFor?.split(",")[0]?.trim() || c.req.header("x-real-ip");
-  return ip || "unknown";
+  return getClientIp(c);
 }
 
 function setRatelimitHeaders(

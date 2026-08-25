@@ -16,7 +16,6 @@ import { formatMetric } from "@/utils/analytics-charts";
 import { modelUsageSeriesColors } from "@/utils/chart-colors";
 import { formatUsageShare } from "@/utils/geo-charts";
 import { buildModelUsageChart } from "@/utils/geo-model-usage";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 function ModelUsageLegend({
   series,
@@ -63,10 +62,7 @@ function ModelUsageLegend({
   );
 }
 
-export function ModelUsageCard({
-  usage,
-  isScanning = false,
-}: ModelUsageCardProps) {
+export function ModelUsageCard({ usage }: ModelUsageCardProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
   const chart = useMemo(
     () =>
@@ -100,12 +96,8 @@ export function ModelUsageCard({
     >
       {chart.rows.length === 0 ? (
         <InstrumentEmpty
-          busy={isScanning}
           className={GEO_MODEL_USAGE_CHART_HEIGHT_CLASS}
-          message={geoScanEmptyMessage(
-            isScanning,
-            "Run a scan to capture model usage share"
-          )}
+          message="Model usage data is currently unavailable"
           seed="Where AI usage actually happens"
         />
       ) : (

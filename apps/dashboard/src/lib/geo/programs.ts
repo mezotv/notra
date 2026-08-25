@@ -54,7 +54,6 @@ import {
   GeoSettingsMissingError,
 } from "@/lib/geo/errors";
 import {
-  buildCoverageByModel,
   toGeoCompetitor,
   toGeoSettings,
   toGeoTrafficLogEntry,
@@ -63,6 +62,7 @@ import {
   toTrackedPrompt,
 } from "@/lib/geo/mappers";
 import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
+import { loadModelUsageRows } from "@/lib/geo/model-usage";
 import {
   ensureGeoProject,
   geoCheckScope,
@@ -633,55 +633,90 @@ export const loadGeoCompetitorDetail = Effect.fn("geo.competitorDetail")(
 
 export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
   input: GeoScopeInput,
-  window: GeoWindowInput,
+  _window: GeoWindowInput,
   limit: number | undefined
 ) {
-  const scope = yield* resolveGeoScope(input);
+  yield* resolveGeoScope(input);
   const resolvedLimit = limit ?? GEO_MODEL_USAGE_DEFAULT_LIMIT;
-  const [usage, trend, overview] = yield* Effect.all(
-    [
-      geoQuery("model usage query failed", () =>
-        queryModelUsageLatest({
-          source: GEO_MODEL_USAGE_SOURCE,
-          limit: resolvedLimit,
-        })
-      ),
-      geoQuery("model usage trend query failed", () =>
-        queryModelUsageTrend({
-          source: GEO_MODEL_USAGE_SOURCE,
-          weeks: GEO_MODEL_USAGE_TREND_WEEKS,
-        })
-      ),
-      geoDb("overview query failed", () =>
-        queryGeoCheckOverview(geoCheckScope(scope), toGeoCheckWindow(window))
-      ).pipe(geoSkip("overview query failed")),
-    ],
-    { concurrency: "unbounded" }
+  const liveRows = yield* loadModelUsageRows().pipe(
+    geoSkip("model usage source unavailable")
   );
 
-  const coverage = buildCoverageByModel(overview ?? []);
-  const rows = usage?.data ?? [];
+  if (!liveRows || liveRows.length === 0) {
+    const [usage, trend] = yield* Effect.all(
+      [
+        geoQuery("model usage fallback query failed", () =>
+          queryModelUsageLatest({
+            source: GEO_MODEL_USAGE_SOURCE,
+            limit: resolvedLimit,
+          })
+        ),
+        geoQuery("model usage trend fallback query failed", () =>
+          queryModelUsageTrend({
+            source: GEO_MODEL_USAGE_SOURCE,
+            weeks: GEO_MODEL_USAGE_TREND_WEEKS,
+          })
+        ),
+      ],
+      { concurrency: "unbounded" }
+    );
+    const rows = usage?.data ?? [];
+
+    const fallback: GeoModelUsageResponse = {
+      configured: isTinybirdConfigured(),
+      source: GEO_MODEL_USAGE_SOURCE,
+      attribution: GEO_MODEL_USAGE_ATTRIBUTION,
+      capturedAt: rows[0]?.captured_at ?? null,
+      models: rows.map((row) =>
+        toModelUsageRow(row.model, row.rank, Number(row.share), row.raw_tokens)
+      ),
+      points: (trend?.data ?? []).map((row) => ({
+        week: String(row.week).slice(0, 10),
+        model: row.model,
+        share: Number(row.avg_share),
+        tokens: row.peak_tokens === null ? null : Number(row.peak_tokens),
+      })),
+    };
+    return fallback;
+  }
+
+  const rows = liveRows;
+  const capturedAt = rows.reduce<string | null>(
+    (latest, row) =>
+      latest === null || row.captured_at > latest ? row.captured_at : latest,
+    null
+  );
+  const latestRows = rows
+    .filter((row) => row.captured_at === capturedAt)
+    .sort((left, right) => Number(left.rank) - Number(right.rank))
+    .slice(0, resolvedLimit);
+  const featuredModels = new Set(latestRows.map((row) => row.model));
+  const visibleWeeks = new Set(
+    [...new Set(rows.map((row) => row.captured_at))]
+      .sort()
+      .slice(-GEO_MODEL_USAGE_TREND_WEEKS)
+  );
+  const points = rows.reduce<GeoModelUsageResponse["points"]>((result, row) => {
+    if (visibleWeeks.has(row.captured_at) && featuredModels.has(row.model)) {
+      result.push({
+        week: row.captured_at.slice(0, 10),
+        model: row.model,
+        share: Number(row.share),
+        tokens: row.raw_tokens === null ? null : Number(row.raw_tokens),
+      });
+    }
+    return result;
+  }, []);
 
   const response: GeoModelUsageResponse = {
-    configured: isTinybirdConfigured(),
+    configured: rows.length > 0,
     source: GEO_MODEL_USAGE_SOURCE,
     attribution: GEO_MODEL_USAGE_ATTRIBUTION,
-    capturedAt: rows[0]?.captured_at ?? null,
-    models: rows.map((row) =>
-      toModelUsageRow(
-        row.model,
-        row.rank,
-        Number(row.share),
-        row.raw_tokens,
-        coverage.get(row.model)
-      )
+    capturedAt,
+    models: latestRows.map((row) =>
+      toModelUsageRow(row.model, row.rank, Number(row.share), row.raw_tokens)
     ),
-    points: (trend?.data ?? []).map((row) => ({
-      week: String(row.week).slice(0, 10),
-      model: row.model,
-      share: Number(row.avg_share),
-      tokens: row.peak_tokens === null ? null : Number(row.peak_tokens),
-    })),
+    points,
   };
   return response;
 });

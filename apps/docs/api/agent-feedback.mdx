@@ -1,0 +1,107 @@
+---
+title: "Agent Feedback"
+description: "Add a submit_feedback tool to your MCP server so AI agents using your product can report bugs, request features and leave praise in your Notra inbox."
+authors:
+  - handle: dominik
+
+docolin:
+  schema_version: 1
+  kind: tools/notra/api/agent-feedback
+  type: how-to
+  applies_to:
+    - notra-api
+    - mcp
+    - typescript
+  language: en
+  difficulty: beginner
+  time_estimate: 5m
+  status: beta
+  aliases:
+    - agent feedback
+    - feedback token
+    - feedback inbox
+    - submit_feedback
+    - "@usenotra/geo/feedback"
+  prev: ./pagination.mdx
+  next: ./types.mdx
+---
+
+AI agents such as Claude Code, Cursor and ChatGPT increasingly use your product through your MCP server. Agent Feedback gives those agents a `submit_feedback` tool inside your server, and gives you an inbox in the Notra dashboard to triage what comes in.
+
+## How it works
+
+1. Copy the **feedback token** from the Feedback page in your dashboard.
+2. Register the feedback tool in your MCP server with `@usenotra/geo/feedback`, or call the REST endpoint from your own tool implementation.
+3. Feedback shows up in the Feedback inbox, where you can filter by status and kind and mark items as triaged, resolved or archived.
+
+## The feedback token
+
+The feedback token starts with `nfb_` and is **write-only**: it can submit feedback and nothing else. Keep it in your server's environment as `NOTRA_FEEDBACK_TOKEN`. It can be rotated from the dashboard at any time, which revokes every existing copy immediately.
+
+If you would rather use a regular API key, create one with the `feedback.write` scope. Reading and triaging feedback through the API requires an API key with `feedback.read` or `feedback.write`.
+
+## Add the tool to your MCP server
+
+```bash
+npm install @usenotra/geo
+```
+
+```ts server.ts
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { registerFeedbackTool } from "@usenotra/geo/feedback";
+
+const server = new McpServer({ name: "acme", version: "1.0.0" });
+
+registerFeedbackTool(server, {
+  token: process.env.NOTRA_FEEDBACK_TOKEN!,
+  productName: "Acme",
+});
+```
+
+`registerFeedbackTool` adds a `submit_feedback` tool that accepts `message`, `title`, `kind`, `sentiment` and `contextUrl`, posts it to Notra and returns a short confirmation the agent can relay to the user. Options:
+
+| Option | Notes |
+| --- | --- |
+| `productName` | Used in the tool description so agents know what the feedback is about. |
+| `toolName`, `description` | Override the default name and description. |
+| `defaults` | Values merged into every submission, for example `{ agentClient: "acme-mcp", projectId: "..." }`. |
+| `endpoint`, `fetch`, `timeoutMs` | Transport overrides for self-hosted setups and tests. |
+| `onError` | Called with the error when a submission fails. The tool still returns an `isError` result to the agent. |
+
+Outside of MCP, `submitFeedback(input, { token })` from `@usenotra/geo/feedback` posts a single entry and resolves with `{ id, deduplicated }`.
+
+## REST endpoint
+
+```bash
+curl -X POST https://api.usenotra.com/v1/feedback \
+  -H "Authorization: Bearer nfb_YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "The search tool times out when the query has quotes.",
+    "contextUrl": "https://docs.example.com/api/search"
+  }'
+```
+
+The endpoint returns `202 Accepted` with the stored feedback. Pass an `idempotencyKey` to make retries safe: submitting the same key twice returns the original entry with `deduplicated: true`.
+
+### Automatic classification
+
+Only `message` is required. When `title`, `kind` or `sentiment` are omitted, Notra fills them in with a small model before storing the feedback, so the inbox stays readable and filterable even if the agent only sends free text. Values you pass explicitly are always kept. Classification respects your organization's zero data retention setting: ZDR organizations are only ever routed to zero-retention providers, and if none is available the feedback is stored without a sentiment rather than sent elsewhere.
+
+### Fields
+
+| Field | Required | Notes |
+| --- | --- | --- |
+| `message` | yes | Up to 4000 characters. |
+| `kind` | no | `bug`, `feature`, `praise`, `question` or `other`. Classified automatically when omitted. |
+| `sentiment` | no | `negative`, `neutral` or `positive`. Classified automatically when omitted. |
+| `title` | no | Short summary, up to 200 characters. Written automatically when omitted. |
+| `agentClient`, `agentModel`, `toolVersion` | no | Identify the agent that submitted the feedback. |
+| `contextUrl` | no | The page or resource the feedback is about. |
+| `externalId` | no | Your own identifier for the user or session. |
+| `projectId` | no | File the feedback under a project. Ignored for project-scoped tokens. |
+| `metadata` | no | Arbitrary JSON, up to 8 KB. |
+
+## Rate limits
+
+Submissions are limited to 120 requests per minute per token and 60 requests per minute per IP address. Responses include the standard `RateLimit-*` headers described in [Rate limits](/api/rate-limits).

@@ -30,4 +30,5 @@ export interface InstrumentEmptyProps {
   className?: string;
   busy?: boolean;
   action?: ReactNode;
+  preview?: ReactNode;
 }

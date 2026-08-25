@@ -58,3 +58,11 @@ export function geoIngestAgentPrompt(
     `3. Add ${GEO_INGEST_TOKEN_ENV} to the site's environment variables (local env file and hosting provider). Ask me for the value - never hardcode or commit it.`,
   ].join("\n");
 }
+
+export function isGeoIngestPackageManager(
+  value: string
+): value is GeoIngestPackageManager {
+  return GEO_INGEST_PACKAGE_MANAGER_OPTIONS.some(
+    (option) => option.value === value
+  );
+}

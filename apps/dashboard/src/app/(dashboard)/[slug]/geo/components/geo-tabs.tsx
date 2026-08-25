@@ -141,7 +141,7 @@ export function GeoTabs({
           </TabSection>
         </InstrumentGrid>
         <TabSection active={revealActive} order={4}>
-          <ModelUsageCard isScanning={isScanning} usage={modelUsage} />
+          <ModelUsageCard usage={modelUsage} />
         </TabSection>
       </TabsContent>
 

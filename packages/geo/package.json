@@ -1,9 +1,9 @@
 {
   "name": "@usenotra/geo",
-  "version": "0.1.0-beta.1",
+  "version": "0.2.0",
   "private": false,
   "type": "module",
-  "description": "Request capture SDK for AI traffic attribution",
+  "description": "Request capture SDK for AI traffic attribution and agent feedback collection",
   "license": "MIT",
   "homepage": "https://github.com/usenotra/notra/tree/main/packages/geo",
   "repository": {
@@ -21,7 +21,10 @@
     "nextjs",
     "nuxt",
     "netlify",
-    "edge"
+    "edge",
+    "mcp",
+    "feedback",
+    "agents"
   ],
   "sideEffects": false,
   "engines": {
@@ -62,11 +65,15 @@
     "./html": {
       "types": "./dist/html.d.ts",
       "default": "./dist/html.js"
+    },
+    "./feedback": {
+      "types": "./dist/feedback.d.ts",
+      "default": "./dist/feedback.js"
     }
   },
   "publishConfig": {
     "access": "public",
-    "tag": "beta"
+    "tag": "latest"
   },
   "scripts": {
     "build": "tsup",
@@ -77,6 +84,15 @@
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
-    "typescript": "5.9.2"
+    "typescript": "5.9.2",
+    "zod": "^4.1.5"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
   }
 }

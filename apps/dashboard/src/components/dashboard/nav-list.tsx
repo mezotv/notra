@@ -8,6 +8,7 @@ import {
   SidebarMenuItem,
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
+import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import { GEO_UPGRADE_TOOLTIP } from "@/constants/geo";
 import type { NavListProps } from "@/types/components/nav";
 import { geoNavHref, isGeoDashboardPath } from "@/utils/geo-paths";
@@ -33,6 +34,8 @@ export function NavList({
     <SidebarMenu>
       {items.map((item) => {
         const isGeoItem = isGeoDashboardPath(item.link);
+        const prefetch =
+          isGeoItem || item.link === AGENT_FEEDBACK_NAV_LINK ? true : undefined;
         return (
           <SidebarMenuItem key={item.link}>
             <SidebarMenuButton
@@ -40,7 +43,7 @@ export function NavList({
               render={
                 <Link
                   href={geoNavHref(slug, item.link, projectId)}
-                  prefetch={isGeoItem ? true : undefined}
+                  prefetch={prefetch}
                 >
                   <HugeiconsIcon icon={item.icon} />
                   <SidebarLabel>{item.label}</SidebarLabel>

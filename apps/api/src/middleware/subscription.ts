@@ -1,6 +1,7 @@
 import { PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import { Autumn } from "autumn-js";
 import type { Context, Next } from "hono";
+import { isIngestAuth } from "../types/auth";
 import { getOrganizationId } from "../utils/auth";
 
 // DELETE and GET are intentionally unrestricted so lapsed/unsubscribed orgs
@@ -12,6 +13,10 @@ const AI_CREDITS_FEATURE_ID = "ai_credits";
 export function subscriptionMiddleware() {
   return async (c: Context, next: Next) => {
     if (!RESTRICTED_METHODS.has(c.req.method)) {
+      return next();
+    }
+
+    if (isIngestAuth(c.get("auth"))) {
       return next();
     }
 

@@ -10,6 +10,7 @@ export default defineConfig({
     "src/classify.ts",
     "src/markdown.ts",
     "src/html.ts",
+    "src/feedback.ts",
   ],
   format: ["esm"],
   outDir: "dist",

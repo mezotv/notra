@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { EmptyStateTrendPreview } from "@/components/empty-state-preview";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { engineIconHtml } from "@/components/geo/engine-icon";
 import { MentionTrendAgentsPicker } from "@/components/geo/mention-trend-agents";
@@ -161,6 +162,7 @@ export function MentionTrendCard({
           busy={isScanning}
           className="h-80"
           message={emptyMessage}
+          preview={<EmptyStateTrendPreview />}
           seed="Mention trend"
         />
       ) : (

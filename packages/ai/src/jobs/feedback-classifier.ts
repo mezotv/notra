@@ -1,0 +1,65 @@
+import { hasZdrEntitlement } from "@notra/ai/billing/zdr";
+import {
+  FEEDBACK_CLASSIFIER_FEATURE,
+  FEEDBACK_CLASSIFIER_MAX_MESSAGE_CHARS,
+  FEEDBACK_CLASSIFIER_MODEL_ID,
+  FEEDBACK_CLASSIFIER_REASONING_EFFORT,
+  FEEDBACK_CLASSIFIER_TIMEOUT_MS,
+} from "@notra/ai/constants/feedback-classifier";
+import { gateway } from "@notra/ai/gateway";
+import { FEEDBACK_CLASSIFIER_SYSTEM_PROMPT } from "@notra/ai/prompts/feedback-classifier";
+import { withRouterDefaults } from "@notra/ai/provider-options";
+import { feedbackClassificationSchema } from "@notra/ai/schemas/feedback-classifier";
+import type {
+  AgentFeedbackClassification,
+  ClassifyAgentFeedbackParams,
+} from "@notra/ai/types/feedback-classifier";
+import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
+import { generateObject } from "ai";
+
+function buildPrompt(params: ClassifyAgentFeedbackParams): string {
+  const lines = [
+    params.title ? `Title: ${params.title}` : null,
+    params.contextUrl ? `Context URL: ${params.contextUrl}` : null,
+    params.agentClient ? `Submitted by: ${params.agentClient}` : null,
+    "",
+    "Feedback:",
+    params.message.slice(0, FEEDBACK_CLASSIFIER_MAX_MESSAGE_CHARS),
+  ];
+  return lines.filter((line) => line !== null).join("\n");
+}
+
+export async function classifyAgentFeedback(
+  params: ClassifyAgentFeedbackParams
+): Promise<AgentFeedbackClassification | null> {
+  try {
+    const zdr = await hasZdrEntitlement(params.organizationId);
+    const { object } = await generateObject({
+      model: gateway(FEEDBACK_CLASSIFIER_MODEL_ID, {
+        organizationId: params.organizationId,
+        zdr: zdr ? "required" : "preferred",
+      }),
+      schema: feedbackClassificationSchema,
+      system: FEEDBACK_CLASSIFIER_SYSTEM_PROMPT,
+      prompt: buildPrompt(params),
+      abortSignal: AbortSignal.timeout(FEEDBACK_CLASSIFIER_TIMEOUT_MS),
+      providerOptions: withRouterDefaults(
+        { openai: { reasoningEffort: FEEDBACK_CLASSIFIER_REASONING_EFFORT } },
+        { modelId: FEEDBACK_CLASSIFIER_MODEL_ID }
+      ),
+      experimental_telemetry: buildExperimentalTelemetry({
+        feature: FEEDBACK_CLASSIFIER_FEATURE,
+        organizationId: params.organizationId,
+        feedbackId: params.feedbackId,
+      }),
+    });
+    return object;
+  } catch (error) {
+    console.error("[AgentFeedback] Classification failed", {
+      organizationId: params.organizationId,
+      feedbackId: params.feedbackId,
+      error,
+    });
+    return null;
+  }
+}

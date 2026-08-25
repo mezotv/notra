@@ -1,9 +1,7 @@
 import type { GeoTrafficLogRow } from "@notra/analytics/types/tinybird-endpoints";
-import { normalizeModelId } from "@/lib/geo/model-usage";
 import type {
   GeoCompetitor,
   GeoCompetitorRow,
-  GeoEngineCoverage,
   GeoModelCatalog,
   GeoModelUsageRow,
   GeoProject,
@@ -115,36 +113,20 @@ export function toNullableNumber(value: number | bigint | null): number | null {
   return Number(value);
 }
 
-export function buildCoverageByModel(
-  rows: { engine: string; mentions: number | bigint; checks: number | bigint }[]
-): Map<string, GeoEngineCoverage> {
-  const coverage = new Map<string, GeoEngineCoverage>();
-  for (const row of rows) {
-    const model = normalizeModelId(row.engine);
-    const entry = coverage.get(model) ?? { mentions: 0, checks: 0 };
-    entry.mentions += Number(row.mentions);
-    entry.checks += Number(row.checks);
-    coverage.set(model, entry);
-  }
-  return coverage;
-}
-
 export function toModelUsageRow(
   model: string,
   rank: number | bigint,
   share: number,
-  rawTokens: number | bigint | null,
-  coverage: GeoEngineCoverage | undefined
+  rawTokens: number | bigint | null
 ): GeoModelUsageRow {
-  const checks = coverage?.checks ?? 0;
   return {
     model,
     label: formatModelLabel(model),
     rank: Number(rank),
     share,
     rawTokens: rawTokens === null ? null : Number(rawTokens),
-    scanned: checks > 0,
-    mentionRate: checks > 0 ? (coverage?.mentions ?? 0) / checks : null,
-    checks,
+    scanned: false,
+    mentionRate: null,
+    checks: 0,
   };
 }

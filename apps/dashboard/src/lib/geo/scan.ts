@@ -39,7 +39,6 @@ import {
 import { GeoScanError } from "@/lib/geo/errors";
 import { toGeoSettings } from "@/lib/geo/mappers";
 import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
-import { captureModelUsageShare } from "@/lib/geo/model-usage";
 import { buildGeoPrompts, customPromptScanId } from "@/lib/geo/prompts";
 import { markGeoScanFinished, withGeoScanRun } from "@/lib/geo/scan-status";
 import {
@@ -634,8 +633,6 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
     checks += result.checks ?? 0;
     mentions += result.mentions ?? 0;
   }
-
-  yield* captureModelUsageShare().pipe(geoSkip("model usage snapshot failed"));
 
   const completed: GeoScanResult = {
     status: "completed",

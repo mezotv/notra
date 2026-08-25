@@ -7,6 +7,7 @@ import {
   Attachment01Icon,
   Calendar03Icon,
   ChartAnalysisIcon,
+  Comment01Icon,
   CreditCardIcon,
   Home01Icon,
   Key01Icon,
@@ -25,6 +26,7 @@ import {
   UserGroupIcon,
   Wallet01Icon,
 } from "@hugeicons/core-free-icons";
+import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import {
   GEO_GAPS_NAV_LINK,
   GEO_PROMPTS_NAV_LINK,
@@ -69,7 +71,10 @@ export const SIDEBAR_MODE_HOME_LINKS: Record<SidebarMode, string> = {
   studio: HOME_NAV_LINK,
 };
 
-export const GEO_ROUTE_SECTIONS: ReadonlySet<string> = new Set(["geo"]);
+export const GEO_ROUTE_SECTIONS: ReadonlySet<string> = new Set([
+  "geo",
+  "feedback",
+]);
 
 export const STUDIO_ROUTE_SECTIONS: ReadonlySet<string> = new Set([
   "chat",
@@ -93,6 +98,12 @@ export const NAV_MAIN_ITEMS: NavMainItem[] = [
   { link: CHAT_NAV_LINK, icon: Message01Icon, label: "Chat", badge: "Beta" },
   { link: CONTENT_NAV_LINK, icon: NoteIcon, label: "Content" },
   { link: ANALYTICS_NAV_LINK, icon: Analytics01Icon, label: "Analytics" },
+  {
+    link: AGENT_FEEDBACK_NAV_LINK,
+    icon: Comment01Icon,
+    label: "Feedback",
+    badge: "Beta",
+  },
   {
     link: BRAND_IDENTITY_NAV_LINK,
     icon: PaintBoardIcon,
@@ -122,6 +133,7 @@ export const NAV_GEO_VISIBILITY_LINKS: readonly string[] = [
   GEO_PROMPTS_NAV_LINK,
   GEO_COMPETITORS_NAV_LINK,
   GEO_TRAFFIC_NAV_LINK,
+  AGENT_FEEDBACK_NAV_LINK,
 ];
 
 export const NAV_GEO_IMPROVE_LINKS: readonly string[] = [

@@ -265,11 +265,13 @@ export function SiteHeader() {
               <HugeiconsIcon icon={ArrowRight01Icon} />
             </BreadcrumbSeparator>,
             <BreadcrumbItem
-              className={cn(!isLast && "hover:underline")}
+              className={cn(isLast && "min-w-0", !isLast && "hover:underline")}
               key={`${id}-geo-item-${segment}`}
             >
               {isLast ? (
-                <BreadcrumbPage>{label}</BreadcrumbPage>
+                <BreadcrumbPage className="block truncate">
+                  {label}
+                </BreadcrumbPage>
               ) : (
                 <BreadcrumbLink render={<Link href={href}>{label}</Link>} />
               )}
@@ -280,8 +282,10 @@ export function SiteHeader() {
           <BreadcrumbSeparator key={`${id}-geo-tab-sep`}>
             <HugeiconsIcon icon={ArrowRight01Icon} />
           </BreadcrumbSeparator>,
-          <BreadcrumbItem key={`${id}-geo-tab`}>
-            <BreadcrumbPage>{geoTabLabel}</BreadcrumbPage>
+          <BreadcrumbItem className="min-w-0" key={`${id}-geo-tab`}>
+            <BreadcrumbPage className="block truncate">
+              {geoTabLabel}
+            </BreadcrumbPage>
           </BreadcrumbItem>,
         ];
 
@@ -308,7 +312,7 @@ export function SiteHeader() {
 
   return (
     <header className="flex h-12 shrink-0 items-center gap-2 bg-muted transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="grid h-full w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 md:grid-cols-[minmax(8rem,1fr)_minmax(2rem,20rem)_minmax(2.5rem,1fr)] lg:gap-2">
+      <div className="grid h-full w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
         <div className="flex h-full min-w-0 items-center gap-2 overflow-hidden">
           <SidebarToggle className="-mx-1.5" />
           <Breadcrumb className="min-w-0">
@@ -319,7 +323,7 @@ export function SiteHeader() {
         </div>
         <button
           aria-label="Search"
-          className="@container/search hidden h-8 w-full cursor-pointer items-center @[8rem]/search:justify-start justify-center gap-2 rounded-lg border bg-background/60 @[8rem]/search:px-3 px-2 text-muted-foreground text-sm transition-colors hover:bg-muted/60 md:flex"
+          className="@container/search hidden h-8 w-48 cursor-pointer items-center @[8rem]/search:justify-start justify-center gap-2 rounded-lg border bg-background/60 @[8rem]/search:px-3 px-2 text-muted-foreground text-sm transition-colors hover:bg-muted/60 md:flex lg:w-64 xl:w-80"
           onClick={() => setCommandPaletteOpen(true)}
           type="button"
         >
