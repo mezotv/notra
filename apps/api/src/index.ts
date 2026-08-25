@@ -15,6 +15,7 @@ import { brandIdentitiesRoutes } from "./routes/brand-identities";
 import { chatWorkflowRoutes } from "./routes/chat-workflow";
 import { chatsRoutes } from "./routes/chats";
 import { eventTriggersRoutes } from "./routes/event-triggers";
+import { feedbackRoutes } from "./routes/feedback";
 import { integrationsRoutes } from "./routes/integrations";
 import { legacyRedirectRoutes } from "./routes/legacy-redirects";
 import { postsRoutes } from "./routes/posts";
@@ -106,6 +107,7 @@ interface Bindings {
   APP_URL?: string;
   WORKOS_AUTHKIT_DOMAIN?: string;
   WORKOS_CLIENT_ID?: string;
+  FEEDBACK_INGEST_SECRET?: string;
 }
 
 interface AppEnv {
@@ -256,6 +258,7 @@ app.route("/v1", schedulesRoutes);
 app.route("/v1", eventTriggersRoutes);
 app.route("/v1", chatsRoutes);
 app.route("/v1", skillsRoutes);
+app.route("/v1", feedbackRoutes);
 app.route("/v2", agentChatsRoutes);
 app.route("/", chatWorkflowRoutes);
 
@@ -307,6 +310,11 @@ app.doc31("/openapi.json", (_c) => ({
       name: "Skills",
       description:
         "Manage reusable writing skills. Organization is inferred from the API key (identity.externalId).",
+    },
+    {
+      name: "Feedback",
+      description:
+        "Collect and triage feedback submitted by AI agents. Submission accepts a write-only feedback token (nfb_...) or an API key with feedback.write; reading and triage require an API key.",
     },
   ],
 }));

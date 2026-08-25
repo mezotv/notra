@@ -1,3 +1,4 @@
+import { agentFeedbackRouter } from "./routers/agent-feedback";
 import { analyticsRouter } from "./routers/analytics";
 import { apiKeysRouter } from "./routers/api-keys";
 import { attachmentsRouter } from "./routers/attachments";
@@ -19,6 +20,7 @@ import { uploadRouter } from "./routers/upload";
 import { userRouter } from "./routers/user";
 
 export const dashboardRouter = {
+  agentFeedback: agentFeedbackRouter,
   analytics: analyticsRouter,
   apiKeys: apiKeysRouter,
   attachments: attachmentsRouter,

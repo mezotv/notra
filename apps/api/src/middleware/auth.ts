@@ -19,6 +19,7 @@ import {
   AUTH_GUIDE_URL,
   RESOURCE_METADATA_URL,
 } from "../utils/agent-discovery";
+import { isFeedbackToken, verifyFeedbackToken } from "../utils/feedback-token";
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -357,6 +358,27 @@ async function verifyRequestAuth(
 
   if (!apiKey) {
     return { success: false, error: "Missing API key", status: 401 };
+  }
+
+  if (isFeedbackToken(apiKey)) {
+    const tokenResult = await verifyFeedbackToken(
+      c,
+      apiKey,
+      options.permissions
+    );
+    if (!tokenResult.success) {
+      return tokenResult;
+    }
+    const { identity } = tokenResult;
+    const auth: AuthData = {
+      type: "ingest",
+      keyId: `feedback:${identity.organizationId}:${identity.projectId ?? "-"}`,
+      scopes: ["feedback.write"],
+      projectId: identity.projectId,
+      identity: { externalId: identity.organizationId },
+    };
+    c.set("auth", auth);
+    return { success: true, auth };
   }
 
   if (looksLikeJwt(apiKey)) {

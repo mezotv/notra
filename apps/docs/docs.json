@@ -145,7 +145,8 @@
               "api/caching",
               "api/common-tasks",
               "api/pagination",
-              "api/types"
+              "api/types",
+              "api/agent-feedback"
             ]
           },
           {

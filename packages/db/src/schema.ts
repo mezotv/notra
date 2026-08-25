@@ -13,11 +13,18 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import {
+  AGENT_FEEDBACK_KINDS,
+  AGENT_FEEDBACK_SENTIMENTS,
+  AGENT_FEEDBACK_SOURCES,
+  AGENT_FEEDBACK_STATUSES,
+} from "./constants/agent-feedback";
 import { BLOG_POST_SUBTYPES } from "./constants/content";
 import {
   GEO_CONTENT_BRIEF_STATUSES,
   GEO_WRITER_SOURCE_KINDS,
 } from "./constants/geo-writer";
+import type { AgentFeedbackMetadata } from "./types/agent-feedback";
 import type { GeoContentBriefJson } from "./types/geo-writer";
 
 export const lookbackWindowEnum = pgEnum("lookback_window", [
@@ -206,6 +213,9 @@ export const organizations = pgTable(
     heardAboutNotraSource: text("heard_about_notra_source"),
     heardAboutNotraOther: text("heard_about_notra_other"),
     geoIngestTokenGeneration: integer("geo_ingest_token_generation")
+      .notNull()
+      .default(1),
+    feedbackIngestTokenGeneration: integer("feedback_ingest_token_generation")
       .notNull()
       .default(1),
     onboardingCompleted: boolean("onboarding_completed")
@@ -1317,6 +1327,60 @@ export const projects = pgTable(
   ]
 );
 
+export const agentFeedback = pgTable(
+  "agent_feedback",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
+    source: text("source", { enum: AGENT_FEEDBACK_SOURCES })
+      .notNull()
+      .default("api"),
+    kind: text("kind", { enum: AGENT_FEEDBACK_KINDS })
+      .notNull()
+      .default("other"),
+    sentiment: text("sentiment", { enum: AGENT_FEEDBACK_SENTIMENTS }),
+    status: text("status", { enum: AGENT_FEEDBACK_STATUSES })
+      .notNull()
+      .default("new"),
+    title: text("title"),
+    message: text("message").notNull(),
+    agentClient: text("agent_client"),
+    agentModel: text("agent_model"),
+    toolVersion: text("tool_version"),
+    userAgent: text("user_agent"),
+    contextUrl: text("context_url"),
+    externalId: text("external_id"),
+    idempotencyKey: text("idempotency_key"),
+    metadata: jsonb("metadata").$type<AgentFeedbackMetadata>(),
+    resolvedAt: timestamp("resolved_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("agentFeedback_organizationId_createdAt_idx").on(
+      table.organizationId,
+      table.createdAt
+    ),
+    index("agentFeedback_organizationId_status_idx").on(
+      table.organizationId,
+      table.status
+    ),
+    index("agentFeedback_projectId_idx").on(table.projectId),
+    uniqueIndex("agentFeedback_organizationId_idempotencyKey_uidx").on(
+      table.organizationId,
+      table.idempotencyKey
+    ),
+  ]
+);
+
 export const geoSettings = pgTable(
   "geo_settings",
   {
@@ -2335,6 +2399,7 @@ export const organizationsRelations = relations(
     brandSettings: many(brandSettings),
     notificationSettings: one(organizationNotificationSettings),
     projects: many(projects),
+    agentFeedback: many(agentFeedback),
     geoSettings: many(geoSettings),
     geoPrompts: many(geoPrompts),
     geoPromptSuggestions: many(geoPromptSuggestions),
@@ -2734,6 +2799,18 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   geoCompetitors: many(geoCompetitors),
   geoScans: many(geoScans),
   geoMentionChecks: many(geoMentionChecks),
+  agentFeedback: many(agentFeedback),
+}));
+
+export const agentFeedbackRelations = relations(agentFeedback, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [agentFeedback.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [agentFeedback.projectId],
+    references: [projects.id],
+  }),
 }));
 
 export const geoPromptSequencesRelations = relations(

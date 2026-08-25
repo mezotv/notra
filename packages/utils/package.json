@@ -11,7 +11,9 @@
     "./callback-url": "./src/callback-url.ts",
     "./oauth-popup": "./src/oauth-popup.ts",
     "./slugify": "./src/slugify.ts",
-    "./color": "./src/color.ts"
+    "./color": "./src/color.ts",
+    "./ingest-token": "./src/ingest-token.ts",
+    "./types/*": "./src/types/*.ts"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",

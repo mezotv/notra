@@ -12,6 +12,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import { SOCIAL_ANALYTICS_FLAG_KEY } from "@/constants/analytics";
 import { GEO_UPGRADE_TOOLTIP } from "@/constants/geo";
 import {
@@ -61,7 +62,12 @@ function NavGroup({
               render={
                 <Link
                   href={href}
-                  prefetch={item.link.startsWith("/geo") ? true : undefined}
+                  prefetch={
+                    item.link.startsWith("/geo") ||
+                    item.link === AGENT_FEEDBACK_NAV_LINK
+                      ? true
+                      : undefined
+                  }
                 >
                   <HugeiconsIcon icon={item.icon} />
                   <SidebarLabel>{item.label}</SidebarLabel>

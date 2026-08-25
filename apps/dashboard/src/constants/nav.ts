@@ -7,6 +7,7 @@ import {
   Attachment01Icon,
   Calendar03Icon,
   ChartAnalysisIcon,
+  Comment01Icon,
   CreditCardIcon,
   Home01Icon,
   Key01Icon,
@@ -25,6 +26,7 @@ import {
   Wallet01Icon,
   WorkflowSquare01Icon,
 } from "@hugeicons/core-free-icons";
+import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import { IRIS_NAV_LINK } from "@/constants/iris";
 import type {
   NavDrilldownCategory,
@@ -70,6 +72,13 @@ export const NAV_MAIN_ITEMS: NavMainItem[] = [
     icon: Analytics01Icon,
     label: "Analytics",
     category: "workspace",
+  },
+  {
+    link: AGENT_FEEDBACK_NAV_LINK,
+    icon: Comment01Icon,
+    label: "Feedback",
+    category: "workspace",
+    badge: "Beta",
   },
   {
     link: IRIS_NAV_LINK,

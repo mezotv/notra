@@ -67,33 +67,40 @@ export function GeoIngestSetup({ setup, className }: GeoIngestSetupPanelProps) {
         </div>
         <CodeSnippet code={installCommand} variant="command" />
       </section>
+      {token ? (
+        <section className="space-y-2">
+          <h3 className="font-medium text-sm">Set your token</h3>
+          <p className="text-muted-foreground text-xs">
+            Add this as {GEO_INGEST_TOKEN_ENV} in your site's environment
+            variables.
+          </p>
+          <ApiKeyRevealField value={token} />
+        </section>
+      ) : null}
       <section className="space-y-2">
-        <h3 className="font-medium text-sm">Add the proxy</h3>
-        <CodeSnippet
-          code={snippet}
-          filename={file}
-          headerEnd={
-            <Tabs
-              className="shrink-0 gap-0"
-              onValueChange={(value) =>
-                setFramework(value as GeoIngestFramework)
-              }
-              value={framework}
-            >
-              <TabsList aria-label="Framework">
-                {GEO_INGEST_FRAMEWORK_OPTIONS.map((option) => (
-                  <TabsTrigger
-                    className="px-2 text-xs dark:data-active:bg-background"
-                    key={option.value}
-                    value={option.value}
-                  >
-                    {option.label}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-          }
-        />
+        <div className="flex flex-wrap items-center justify-between gap-2 pe-1">
+          <h3 className="font-medium text-sm">Add the proxy</h3>
+          <Tabs
+            className="shrink-0 gap-0"
+            onValueChange={(value) => setFramework(value as GeoIngestFramework)}
+            value={framework}
+          >
+            <TabsList aria-label="Framework">
+              {GEO_INGEST_FRAMEWORK_OPTIONS.map((option) => (
+                <TabsTrigger
+                  className="px-2 text-xs dark:data-active:bg-background"
+                  key={option.value}
+                  value={option.value}
+                >
+                  {option.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+        <CodeSnippet code={snippet} filename={file} />
+      </section>
+      <div className="space-y-2">
         <div aria-hidden className="flex items-center gap-3 py-1">
           <span className="h-px flex-1 bg-border/80" />
           <span className="text-muted-foreground text-xs">or</span>
@@ -108,17 +115,7 @@ export function GeoIngestSetup({ setup, className }: GeoIngestSetupPanelProps) {
           <HugeiconsIcon icon={copied ? Tick01Icon : AiMagicIcon} size={14} />
           {copied ? "Prompt copied" : "Copy agent prompt"}
         </Button>
-      </section>
-      {token ? (
-        <section className="space-y-2">
-          <h3 className="font-medium text-sm">Set your token</h3>
-          <p className="text-muted-foreground text-xs">
-            Add this as {GEO_INGEST_TOKEN_ENV} in your site's environment
-            variables.
-          </p>
-          <ApiKeyRevealField value={token} />
-        </section>
-      ) : null}
+      </div>
     </div>
   );
 }

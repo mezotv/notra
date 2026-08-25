@@ -1,0 +1,6 @@
+export const FEEDBACK_CLASSIFIER_MODEL_ID = "openai/gpt-5.6-luna";
+export const FEEDBACK_CLASSIFIER_TIMEOUT_MS = 6000;
+export const FEEDBACK_CLASSIFIER_MAX_MESSAGE_CHARS = 4000;
+export const FEEDBACK_CLASSIFIER_FEATURE = "agent_feedback_classifier";
+export const FEEDBACK_CLASSIFIER_REASONING_EFFORT = "low";
+export const FEEDBACK_CLASSIFIER_TITLE_MAX_LENGTH = 80;

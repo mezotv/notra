@@ -12,8 +12,22 @@ interface OAuthAuthData {
   };
 }
 
-export type AuthData = ApiKeyAuthData | OAuthAuthData;
+export interface IngestAuthData {
+  type: "ingest";
+  keyId: string;
+  scopes: string[];
+  projectId: string | null;
+  identity: {
+    externalId: string;
+  };
+}
+
+export type AuthData = ApiKeyAuthData | OAuthAuthData | IngestAuthData;
 
 export function getOrganizationIdFromAuth(auth: AuthData): string | null {
   return auth.identity?.externalId ?? null;
+}
+
+export function isIngestAuth(auth: AuthData): auth is IngestAuthData {
+  return "type" in auth && auth.type === "ingest";
 }

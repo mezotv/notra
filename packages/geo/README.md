@@ -297,6 +297,24 @@ because they cannot be honestly detected by user agent, including Pi, ChatGPT At
 User agent matching is spoofable. The `verification` field on each signature points at
 the operator's published IP range list or reverse DNS method where one exists.
 
+## Agent feedback
+
+`@usenotra/geo/feedback` adds a `submit_feedback` tool to your MCP server so the agents using your product can report bugs, request features and leave praise in your Notra inbox. Copy the write-only feedback token from the Feedback page in your dashboard.
+
+```ts
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { registerFeedbackTool } from "@usenotra/geo/feedback";
+
+const server = new McpServer({ name: "acme", version: "1.0.0" });
+
+registerFeedbackTool(server, {
+  token: process.env.NOTRA_FEEDBACK_TOKEN!,
+  productName: "Acme",
+});
+```
+
+Outside of MCP, `submitFeedback(input, { token })` posts a single entry and resolves with `{ id, deduplicated }`. The MCP helper needs `zod` (already required by the MCP SDK); the plain client has no dependencies.
+
 ## License
 
 MIT. Copyright (c) 2026 Notra, Inc. See [LICENSE](./LICENSE).

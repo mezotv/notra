@@ -8,6 +8,7 @@ export const API_KEY_GRANULAR_READ_PERMISSIONS = [
   "event-triggers.read",
   "chats.read",
   "skills.read",
+  "feedback.read",
 ] as const;
 
 export const API_KEY_GRANULAR_WRITE_PERMISSIONS = [
@@ -18,6 +19,7 @@ export const API_KEY_GRANULAR_WRITE_PERMISSIONS = [
   "event-triggers.write",
   "chats.write",
   "skills.write",
+  "feedback.write",
 ] as const;
 
 export const API_KEY_GRANULAR_PERMISSIONS = [
@@ -91,6 +93,13 @@ export const API_KEY_SCOPE_RESOURCES = [
     description: "Read and manage your skills",
     readScope: "skills.read",
     writeScope: "skills.write",
+  },
+  {
+    id: "feedback",
+    label: "Agent feedback",
+    description: "Read and triage feedback submitted by AI agents",
+    readScope: "feedback.read",
+    writeScope: "feedback.write",
   },
 ] as const;
 

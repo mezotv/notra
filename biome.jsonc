@@ -72,8 +72,8 @@
   },
   "overrides": [
     {
-      /* Published package entry point */
-      "includes": ["packages/geo/src/index.ts"],
+      /* Published package entry points */
+      "includes": ["packages/geo/src/index.ts", "packages/geo/src/feedback.ts"],
       "linter": {
         "rules": {
           "performance": {
