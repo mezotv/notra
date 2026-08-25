@@ -193,8 +193,11 @@ function BillingPageContent() {
 
   function renderPlanCard(group: BillingPlanGroup) {
     const plan = selectPlanVariant(group, isYearly);
+    if (!plan) {
+      return null;
+    }
     const isCurrent = isPlanInGroup(group, activePlanId);
-    const addonPlan = hasZdr ? null : findZdrAddonPlan(plans, plan?.id);
+    const addonPlan = hasZdr ? null : findZdrAddonPlan(plans, plan.id);
     return (
       <PlanCard
         action={

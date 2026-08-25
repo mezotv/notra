@@ -30,8 +30,6 @@ import {
   zdrAddonToggle,
 } from "@/utils/billing-plans";
 
-const noop = () => undefined;
-
 export function GeoUpgradeDialog({
   slug,
   open,
@@ -73,24 +71,27 @@ export function GeoUpgradeDialog({
 
   function renderPlanCard(group: BillingPlanGroup) {
     const plan = selectPlanVariant(group, isYearly);
+    if (!plan) {
+      return null;
+    }
     const featured = group.id === FEATURED_PLAN_TIER;
-    let label = plan ? getPricingButtonText(plan) : group.name;
-    if (plan && loading === plan.id) {
+    let label = getPricingButtonText(plan);
+    if (loading === plan.id) {
       label = "Loading...";
     }
     return (
       <PlanCard
         action={featured ? <Badge>Most popular</Badge> : undefined}
         addon={zdrAddonToggle(
-          findZdrAddonPlan(plans, plan?.id),
+          findZdrAddonPlan(plans, plan.id),
           includeZdr,
           setIncludeZdr
         )}
         button={{
           label,
-          disabled: loading !== null || !plan,
+          disabled: loading !== null,
           variant: featured ? "default" : "outline",
-          onClick: plan ? () => handleSelectPlan(plan.id) : noop,
+          onClick: () => handleSelectPlan(plan.id),
         }}
         description={planGroupDescription(group)}
         featured={featured}
@@ -106,7 +107,7 @@ export function GeoUpgradeDialog({
 
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
-      <ResponsiveDialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-5xl">
+      <ResponsiveDialogContent className="flex max-h-[90svh] flex-col overflow-hidden sm:max-w-5xl">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>{GEO_UPGRADE_TITLE}</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
@@ -129,17 +130,19 @@ export function GeoUpgradeDialog({
             </TabsList>
           </Tabs>
         </div>
-        {plansLoading ? (
-          <div className="grid gap-4 lg:grid-cols-3">
-            <Skeleton className="h-96 rounded-lg" />
-            <Skeleton className="h-96 rounded-lg" />
-            <Skeleton className="h-96 rounded-lg" />
-          </div>
-        ) : (
-          <div className="grid gap-4 lg:grid-cols-3">
-            {planGroups.map(renderPlanCard)}
-          </div>
-        )}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-1">
+          {plansLoading ? (
+            <div className="grid gap-4 lg:grid-cols-3">
+              <Skeleton className="h-96 rounded-lg" />
+              <Skeleton className="h-96 rounded-lg" />
+              <Skeleton className="h-96 rounded-lg" />
+            </div>
+          ) : (
+            <div className="grid gap-4 lg:grid-cols-3">
+              {planGroups.map(renderPlanCard)}
+            </div>
+          )}
+        </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>
   );

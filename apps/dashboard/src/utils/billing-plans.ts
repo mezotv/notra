@@ -1,4 +1,4 @@
-import { FEATURES } from "@notra/ai/billing/features";
+import { ACTIVE_PAID_PLAN_IDS, FEATURES } from "@notra/ai/billing/features";
 import {
   ANNUAL_ADDON_SUFFIX,
   ANNUAL_PLAN_NAME_SUFFIX,
@@ -157,10 +157,15 @@ export function groupBillingPlans(
   const groups = new Map<string, BillingPlanGroup>();
 
   for (const plan of plans ?? []) {
-    if (plan.addOn || plan.archived || !plan.price) {
+    if (
+      plan.addOn ||
+      plan.archived ||
+      !plan.price ||
+      !ACTIVE_PAID_PLAN_IDS.has(plan.id)
+    ) {
       continue;
     }
-    const id = plan.baseVariantId ?? plan.id;
+    const id = planTierId(plan.id) ?? plan.id;
     const group = groups.get(id) ?? {
       id,
       name: planDisplayName(plan.name) ?? id,
@@ -188,9 +193,9 @@ export function selectPlanVariant(
   isYearly: boolean
 ): BillingPlan | null {
   if (isYearly) {
-    return group.annual ?? group.monthly;
+    return group.annual;
   }
-  return group.monthly ?? group.annual;
+  return group.monthly;
 }
 
 export function planGroupDescription(group: BillingPlanGroup): string {

@@ -23,8 +23,6 @@ import {
   zdrAddonToggle,
 } from "@/utils/billing-plans";
 
-const noop = () => undefined;
-
 export function PricingClient({ slug }: PricingClientProps) {
   const { data: plans, isLoading: plansLoading } = useListPlans();
   const { attach, multiAttach } = useCustomer();
@@ -64,9 +62,12 @@ export function PricingClient({ slug }: PricingClientProps) {
 
   function renderPlanCard(group: BillingPlanGroup) {
     const plan = selectPlanVariant(group, isYearly);
+    if (!plan) {
+      return null;
+    }
     const featured = group.id === FEATURED_PLAN_TIER;
     const hasTrial = Boolean(
-      plan?.freeTrial && plan.customerEligibility?.trialAvailable
+      plan.freeTrial && plan.customerEligibility?.trialAvailable
     );
     let action: React.ReactNode;
     if (hasTrial) {
@@ -75,22 +76,22 @@ export function PricingClient({ slug }: PricingClientProps) {
       action = <Badge>Most popular</Badge>;
     }
     let label = hasTrial ? "Start free trial" : "Get started";
-    if (plan && loading === plan.id) {
+    if (loading === plan.id) {
       label = "Loading...";
     }
     return (
       <PlanCard
         action={action}
         addon={zdrAddonToggle(
-          findZdrAddonPlan(plans, plan?.id),
+          findZdrAddonPlan(plans, plan.id),
           includeZdr,
           setIncludeZdr
         )}
         button={{
           label,
-          disabled: loading !== null || !plan,
+          disabled: loading !== null,
           variant: featured ? "default" : "outline",
-          onClick: plan ? () => handleSelectPlan(plan.id) : noop,
+          onClick: () => handleSelectPlan(plan.id),
         }}
         description={planGroupDescription(group)}
         featured={featured}
