@@ -40,19 +40,18 @@ async function cacheGeneration(
   if (!redis) {
     return;
   }
-  await redis
-    .set(
-      generationCacheKey(organizationId),
-      value === null ? AGENT_FEEDBACK_TOKEN_GENERATION_MISSING : value,
-      {
-        ex:
-          value === null
-            ? AGENT_FEEDBACK_TOKEN_MISSING_CACHE_TTL_SECONDS
-            : AGENT_FEEDBACK_TOKEN_GENERATION_CACHE_TTL_SECONDS,
-        ...(mode === "fill" ? { nx: true } : {}),
-      }
-    )
-    .catch(() => null);
+  const key = generationCacheKey(organizationId);
+  const cached =
+    value === null ? AGENT_FEEDBACK_TOKEN_GENERATION_MISSING : value;
+  const ex =
+    value === null
+      ? AGENT_FEEDBACK_TOKEN_MISSING_CACHE_TTL_SECONDS
+      : AGENT_FEEDBACK_TOKEN_GENERATION_CACHE_TTL_SECONDS;
+  const write =
+    mode === "fill"
+      ? redis.set(key, cached, { ex, nx: true })
+      : redis.set(key, cached, { ex });
+  await write.catch(() => null);
 }
 
 async function readOrganization(
