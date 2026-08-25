@@ -16,6 +16,7 @@ import {
   UserCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Shimmer } from "@notra/ui/components/ai-elements/shimmer";
 import {
   Dialog,
   DialogContent,
@@ -27,6 +28,7 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { cn } from "@notra/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { Command as CommandPrimitive } from "cmdk";
+import { domAnimation, LazyMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import {
   useEffect,
@@ -487,16 +489,24 @@ export function CommandPalette() {
 
           <div className="overflow-hidden">
             {isLoading ? (
-              <div className="flex h-[14rem] flex-col items-center justify-center gap-3 px-6 text-center">
-                <div className="flex items-center gap-2 text-foreground text-sm">
+              <div className="flex h-[14rem] flex-col items-center justify-center px-6 text-center">
+                <div className="grid grid-cols-[1.125rem_auto_1.125rem] items-center gap-2 text-foreground text-sm">
                   <BrailleSpinner className="text-[18px] leading-none" />
-                  <span className="font-medium">
-                    {isNavigatingAi
-                      ? `${(aiState as { status: "navigating"; label: string }).label}…`
-                      : "Thinking…"}
-                  </span>
+                  <LazyMotion features={domAnimation}>
+                    <Shimmer
+                      as="span"
+                      className="font-medium"
+                      duration={1.6}
+                      spread={1.4}
+                    >
+                      {isNavigatingAi
+                        ? `${(aiState as { status: "navigating"; label: string }).label}…`
+                        : "Thinking…"}
+                    </Shimmer>
+                  </LazyMotion>
+                  <span aria-hidden="true" />
                 </div>
-                <p className="max-w-xs text-muted-foreground text-xs">
+                <p className="mt-3 max-w-xs text-muted-foreground text-xs">
                   {isNavigatingAi
                     ? "Hang tight, almost there."
                     : `Figuring out where to take you for “${trimmedQuery}”.`}
