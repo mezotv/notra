@@ -7,6 +7,8 @@ import {
   queryGeoTrafficOverview,
   queryGeoTrafficPages,
   queryGeoTrafficTimeseries,
+  queryModelUsageLatest,
+  queryModelUsageTrend,
 } from "@notra/analytics/tinybird/client";
 import { db } from "@notra/db/drizzle";
 import {
@@ -636,10 +638,49 @@ export const loadGeoModelUsage = Effect.fn("geo.modelUsage")(function* (
 ) {
   yield* resolveGeoScope(input);
   const resolvedLimit = limit ?? GEO_MODEL_USAGE_DEFAULT_LIMIT;
-  const rows =
-    (yield* loadModelUsageRows().pipe(
-      geoSkip("model usage source unavailable")
-    )) ?? [];
+  const liveRows = yield* loadModelUsageRows().pipe(
+    geoSkip("model usage source unavailable")
+  );
+
+  if (!liveRows || liveRows.length === 0) {
+    const [usage, trend] = yield* Effect.all(
+      [
+        geoQuery("model usage fallback query failed", () =>
+          queryModelUsageLatest({
+            source: GEO_MODEL_USAGE_SOURCE,
+            limit: resolvedLimit,
+          })
+        ),
+        geoQuery("model usage trend fallback query failed", () =>
+          queryModelUsageTrend({
+            source: GEO_MODEL_USAGE_SOURCE,
+            weeks: GEO_MODEL_USAGE_TREND_WEEKS,
+          })
+        ),
+      ],
+      { concurrency: "unbounded" }
+    );
+    const rows = usage?.data ?? [];
+
+    const fallback: GeoModelUsageResponse = {
+      configured: isTinybirdConfigured(),
+      source: GEO_MODEL_USAGE_SOURCE,
+      attribution: GEO_MODEL_USAGE_ATTRIBUTION,
+      capturedAt: rows[0]?.captured_at ?? null,
+      models: rows.map((row) =>
+        toModelUsageRow(row.model, row.rank, Number(row.share), row.raw_tokens)
+      ),
+      points: (trend?.data ?? []).map((row) => ({
+        week: String(row.week).slice(0, 10),
+        model: row.model,
+        share: Number(row.avg_share),
+        tokens: row.peak_tokens === null ? null : Number(row.peak_tokens),
+      })),
+    };
+    return fallback;
+  }
+
+  const rows = liveRows;
   const capturedAt = rows.reduce<string | null>(
     (latest, row) =>
       latest === null || row.captured_at > latest ? row.captured_at : latest,
