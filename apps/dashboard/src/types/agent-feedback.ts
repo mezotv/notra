@@ -127,3 +127,5 @@ export interface AgentFeedbackDetailFieldProps {
 export interface AgentFeedbackSetupDialogProps {
   organizationId: string;
 }
+
+export type AgentFeedbackGenerationCacheMode = "fill" | "overwrite";

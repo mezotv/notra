@@ -71,7 +71,7 @@ function buildFetchSnippet(productName: string): string {
     "server.registerTool(",
     '  "submit_feedback",',
     "  {",
-    `    description: "Send feedback about ${productName} to the team: bugs, feature requests, questions or praise.",`,
+    `    description: ${JSON.stringify(`Send feedback about ${productName} to the team: bugs, feature requests, questions or praise.`)},`,
     "    inputSchema: {",
     "      message: z.string().min(1).max(4000),",
     '      kind: z.enum(["bug", "feature", "praise", "question", "other"]).optional(),',

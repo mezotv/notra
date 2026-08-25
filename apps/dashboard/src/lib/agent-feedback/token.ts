@@ -18,6 +18,7 @@ import {
   AgentFeedbackTokenUnavailableError,
 } from "@/lib/agent-feedback/errors";
 import type {
+  AgentFeedbackGenerationCacheMode,
   AgentFeedbackOrganizationTokenState,
   AgentFeedbackTokenResult,
 } from "@/types/agent-feedback";
@@ -33,7 +34,8 @@ function getFeedbackIngestSecret(): string | null {
 
 async function cacheGeneration(
   organizationId: string,
-  value: number | null
+  value: number | null,
+  mode: AgentFeedbackGenerationCacheMode
 ): Promise<void> {
   if (!redis) {
     return;
@@ -47,6 +49,7 @@ async function cacheGeneration(
           value === null
             ? AGENT_FEEDBACK_TOKEN_MISSING_CACHE_TTL_SECONDS
             : AGENT_FEEDBACK_TOKEN_GENERATION_CACHE_TTL_SECONDS,
+        ...(mode === "fill" ? { nx: true } : {}),
       }
     )
     .catch(() => null);
@@ -61,7 +64,8 @@ async function readOrganization(
   });
   await cacheGeneration(
     organizationId,
-    row?.feedbackIngestTokenGeneration ?? null
+    row?.feedbackIngestTokenGeneration ?? null,
+    "fill"
   );
   return row
     ? { generation: row.feedbackIngestTokenGeneration, name: row.name }
@@ -81,7 +85,7 @@ async function bumpGeneration(
       generation: organizations.feedbackIngestTokenGeneration,
       name: organizations.name,
     });
-  await cacheGeneration(organizationId, row?.generation ?? null);
+  await cacheGeneration(organizationId, row?.generation ?? null, "overwrite");
   return row ?? null;
 }
 
