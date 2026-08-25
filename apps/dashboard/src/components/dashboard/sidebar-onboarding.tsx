@@ -1,19 +1,13 @@
 "use client";
 
 import {
-  OnboardingChecklist,
-  OnboardingChecklistContent,
-  OnboardingChecklistHeader,
   OnboardingChecklistItem,
   OnboardingChecklistItems,
-  OnboardingChecklistProgress,
-  OnboardingChecklistTitle,
 } from "@notra/ui/components/ui/onboarding-checklist";
 import { Progress } from "@notra/ui/components/ui/progress";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
+import { cn } from "@notra/ui/lib/utils";
 import { useCustomer } from "autumn-js/react";
-import { AnimatePresence, domMax, LazyMotion } from "motion/react";
-import { div as MotionDiv, span as MotionSpan } from "motion/react-m";
 import { useSyncExternalStore } from "react";
 import { BrailleLoader } from "@/components/braille-loader";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -24,8 +18,6 @@ import {
   useOnboardingStatus,
 } from "@/lib/hooks/use-onboarding";
 import { geoOnboardingPath } from "@/utils/geo-paths";
-
-const MORPH_TRANSITION = { duration: 0.28, ease: [0.22, 1, 0.36, 1] } as const;
 
 const collapsedListeners = new Set<() => void>();
 
@@ -117,105 +109,97 @@ export function SidebarOnboarding() {
 
   return (
     <SidebarGroup className="px-3 pb-2 group-data-[collapsible=icon]:hidden">
-      <LazyMotion features={domMax}>
-        <MotionDiv
-          layout
-          style={{ transformOrigin: "bottom" }}
-          transition={MORPH_TRANSITION}
+      <div
+        className={cn(
+          "overflow-hidden transition-[background-color,border-color,border-radius] duration-[250ms] ease-out",
+          collapsed ? "bg-transparent" : "rounded-xl bg-sidebar-accent/40"
+        )}
+      >
+        <button
+          aria-label={collapsed ? "Expand Getting Started" : "Close"}
+          className={cn(
+            "flex w-full cursor-pointer items-center gap-2 text-left transition-[padding,background-color,border-color,border-radius,color] duration-[250ms] ease-out",
+            collapsed
+              ? "rounded-md px-2 py-1.5 text-muted-foreground text-xs hover:bg-muted"
+              : "rounded-t-xl border-b bg-muted/50 px-3 py-3 text-foreground text-sm"
+          )}
+          onClick={toggleCollapsed}
+          type="button"
         >
-          <AnimatePresence initial={false} mode="popLayout">
+          <span className="flex-1 truncate font-medium">
+            Getting Started
+            {collapsed && ` (${completedCount}/${steps.length})`}
+          </span>
+          {agentRunning && <BrailleLoader className="text-xs" />}
+          <svg
+            aria-hidden="true"
+            className="size-3.5 shrink-0"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <title>{collapsed ? "Expand" : "Close"}</title>
             {collapsed ? (
-              <MotionDiv
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                initial={{ opacity: 0 }}
-                key="collapsed"
-                layout
-                transition={MORPH_TRANSITION}
-              >
-                <button
-                  className="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-muted-foreground text-xs transition-colors hover:bg-muted"
-                  onClick={toggleCollapsed}
-                  type="button"
-                >
-                  <MotionSpan
-                    className="flex-1 truncate font-medium"
-                    layoutId="onboarding-title"
-                    transition={MORPH_TRANSITION}
-                  >
-                    Getting Started ({completedCount}/{steps.length})
-                  </MotionSpan>
-                  {agentRunning && <BrailleLoader className="text-xs" />}
-                  <svg
-                    aria-hidden="true"
-                    className="size-3 shrink-0"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <title>Expand</title>
-                    <path d="m18 15-6-6-6 6" />
-                  </svg>
-                </button>
-                <MotionDiv
-                  className="mt-1"
-                  layoutId="onboarding-progress"
-                  transition={MORPH_TRANSITION}
-                >
-                  <Progress className="h-1" value={progress} />
-                </MotionDiv>
-              </MotionDiv>
+              <path d="m18 15-6-6-6 6" />
             ) : (
-              <MotionDiv
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                initial={{ opacity: 0 }}
-                key="expanded"
-                layout
-                transition={MORPH_TRANSITION}
-              >
-                <OnboardingChecklist
-                  className="bg-sidebar-accent/40 py-2 ring-0"
-                  onClose={toggleCollapsed}
-                >
-                  <OnboardingChecklistHeader>
-                    <MotionDiv
-                      layoutId="onboarding-title"
-                      transition={MORPH_TRANSITION}
-                    >
-                      <OnboardingChecklistTitle>
-                        Getting Started
-                      </OnboardingChecklistTitle>
-                    </MotionDiv>
-                  </OnboardingChecklistHeader>
-                  <OnboardingChecklistContent title="Complete these steps to get the most out of Notra.">
-                    <MotionDiv
-                      layoutId="onboarding-progress"
-                      transition={MORPH_TRANSITION}
-                    >
-                      <OnboardingChecklistProgress value={progress} />
-                    </MotionDiv>
-                    <OnboardingChecklistItems>
-                      {steps.map((step) => (
-                        <OnboardingChecklistItem
-                          completed={step.completed}
-                          href={step.href}
-                          key={step.href}
-                        >
-                          {step.label}
-                        </OnboardingChecklistItem>
-                      ))}
-                    </OnboardingChecklistItems>
-                  </OnboardingChecklistContent>
-                </OnboardingChecklist>
-              </MotionDiv>
+              <path d="M18 6 6 18M6 6l12 12" />
             )}
-          </AnimatePresence>
-        </MotionDiv>
-      </LazyMotion>
+          </svg>
+        </button>
+
+        <div
+          aria-hidden={collapsed}
+          className={cn(
+            "grid transition-[grid-template-rows] duration-[250ms] ease-out",
+            collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+          )}
+          inert={collapsed}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="px-3 pt-3 font-medium text-sm">
+              Complete these steps to get the most out of Notra.
+            </div>
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            "transition-[margin] duration-[250ms] ease-out",
+            collapsed ? "mt-1" : "mx-3 mt-3"
+          )}
+        >
+          <Progress className={cn(collapsed && "h-1")} value={progress} />
+        </div>
+
+        <div
+          aria-hidden={collapsed}
+          className={cn(
+            "grid transition-[grid-template-rows] duration-[250ms] ease-out",
+            collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
+          )}
+          inert={collapsed}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <p className="px-3 pt-1 text-muted-foreground text-xs tabular-nums">
+              {Math.round(progress)}% Completed
+            </p>
+            <OnboardingChecklistItems className="px-3 pt-3 pb-3">
+              {steps.map((step) => (
+                <OnboardingChecklistItem
+                  completed={step.completed}
+                  href={step.href}
+                  key={step.href}
+                >
+                  {step.label}
+                </OnboardingChecklistItem>
+              ))}
+            </OnboardingChecklistItems>
+          </div>
+        </div>
+      </div>
     </SidebarGroup>
   );
 }
