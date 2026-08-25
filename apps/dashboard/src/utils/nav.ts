@@ -1,47 +1,72 @@
+import { GEO_WRITER_NAV_LINK } from "@/constants/geo";
 import {
-  CONTENT_NAV_LINK,
-  NAV_DRILLDOWN_CATEGORIES,
-  NAV_ITEMS_BY_CATEGORY,
+  ANALYTICS_NAV_LINK,
+  DEFAULT_NAV_VISIBILITY,
+  GEO_ROUTE_SECTIONS,
+  NAV_GEO_IMPROVE_LINKS,
+  NAV_MAIN_ITEMS,
+  SIDEBAR_DEFAULT_MODE,
+  STUDIO_ROUTE_SECTIONS,
 } from "@/constants/nav";
-import type { NavDrilldownCategory, NavMainItem } from "@/types/components/nav";
+import type {
+  NavMainItem,
+  NavVisibility,
+  SidebarMode,
+} from "@/types/components/nav";
+import { filterGeoWriterNavItems } from "./geo-writer-flag";
+import { filterIrisNavItems } from "./iris-flag";
 
-export function resolveMainNavGroups(analyticsVisible: boolean): {
-  rootItems: NavMainItem[];
-  workspaceItems: NavMainItem[];
-} {
-  if (analyticsVisible) {
-    return {
-      rootItems: NAV_ITEMS_BY_CATEGORY.none,
-      workspaceItems: NAV_ITEMS_BY_CATEGORY.workspace,
-    };
-  }
-  const contentItem = NAV_ITEMS_BY_CATEGORY.workspace.find(
-    (item) => item.link === CONTENT_NAV_LINK
-  );
-  if (!contentItem) {
-    return { rootItems: NAV_ITEMS_BY_CATEGORY.none, workspaceItems: [] };
-  }
-  return {
-    rootItems: [...NAV_ITEMS_BY_CATEGORY.none, contentItem],
-    workspaceItems: [],
-  };
+const NAV_ITEMS_BY_LINK = new Map(
+  NAV_MAIN_ITEMS.map((item) => [item.link, item])
+);
+
+export function isSidebarMode(value: unknown): value is SidebarMode {
+  return value === "geo" || value === "studio";
 }
 
-export function resolveDrilldownCategory(
-  section: string | undefined
-): NavDrilldownCategory | null {
-  if (!section) {
-    return null;
+export function resolveSidebarMode(
+  section: string | undefined,
+  storedMode: SidebarMode | null
+): SidebarMode {
+  if (section === undefined) {
+    return "studio";
   }
-  for (const category of NAV_DRILLDOWN_CATEGORIES) {
-    const matches = NAV_ITEMS_BY_CATEGORY[category].some(
-      (item) => item.link.split("/").filter(Boolean)[0] === section
-    );
-    if (matches) {
-      return category;
+  if (GEO_ROUTE_SECTIONS.has(section)) {
+    return "geo";
+  }
+  if (STUDIO_ROUTE_SECTIONS.has(section)) {
+    return "studio";
+  }
+  return storedMode ?? SIDEBAR_DEFAULT_MODE;
+}
+
+export function resolveNavItems(
+  links: readonly string[],
+  visibility: NavVisibility = DEFAULT_NAV_VISIBILITY
+): NavMainItem[] {
+  const items: NavMainItem[] = [];
+  for (const link of links) {
+    const item = NAV_ITEMS_BY_LINK.get(link);
+    if (item) {
+      items.push(item);
     }
   }
-  return null;
+  const withAnalytics = visibility.analytics
+    ? items
+    : items.filter((item) => item.link !== ANALYTICS_NAV_LINK);
+  return filterGeoWriterNavItems(
+    filterIrisNavItems(withAnalytics, visibility.iris),
+    visibility.writer
+  );
+}
+
+export function resolveGeoImproveLinks(
+  writeAsPrimaryAction: boolean
+): readonly string[] {
+  if (!writeAsPrimaryAction) {
+    return NAV_GEO_IMPROVE_LINKS;
+  }
+  return NAV_GEO_IMPROVE_LINKS.filter((link) => link !== GEO_WRITER_NAV_LINK);
 }
 
 export function resolveActiveNavLink(

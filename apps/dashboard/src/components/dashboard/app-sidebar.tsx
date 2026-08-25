@@ -11,7 +11,6 @@ import {
   SidebarMenuButton,
   useSidebar,
 } from "@notra/ui/components/ui/sidebar";
-import { Notra } from "@notra/ui/components/ui/svgs/notra";
 import { cn } from "@notra/ui/lib/utils";
 import {
   AnimatePresence,
@@ -24,16 +23,15 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type * as React from "react";
 import { useEffect, useRef } from "react";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { resolveDrilldownCategory } from "@/utils/nav";
 import { ChatHistoryNav } from "./chat-history-nav";
 import { NavBrandIdentity } from "./nav-brand-identity";
-import { NavCategory } from "./nav-category";
 import { NavMain } from "./nav-main";
 import { NavSettings } from "./nav-settings";
 import { NavUtility } from "./nav-utility";
 import { OrgSelector } from "./org-selector";
 import { SidebarLabel } from "./sidebar-label";
 import { SidebarOnboarding } from "./sidebar-onboarding";
+import { SidebarProjectSwitcher } from "./sidebar-project-switcher";
 import { SidebarTrialExpired } from "./sidebar-trial-expired";
 import { SidebarUpgrade } from "./sidebar-upgrade";
 
@@ -73,12 +71,7 @@ export function DashboardSidebar({
   const isSettingsRoute = section === "settings";
   const isChatRoute = section === "chat";
   const isBrandRoute = section === "brand";
-  const drilldownCategory = resolveDrilldownCategory(section);
-  const isSubpage =
-    isSettingsRoute ||
-    isChatRoute ||
-    isBrandRoute ||
-    drilldownCategory !== null;
+  const isSubpage = isSettingsRoute || isChatRoute || isBrandRoute;
 
   const hasVisitedMainRef = useRef(false);
   const previousNavigationKeyRef = useRef(navigationKey);
@@ -113,15 +106,8 @@ export function DashboardSidebar({
       className={cn("overflow-hidden overscroll-none border-none", className)}
     >
       <LazyMotion features={domAnimation}>
-        <SidebarHeader className="group-data-[collapsible=icon]:px-4">
-          <div className="flex h-8 items-center gap-2 px-2 group-data-[collapsible=icon]:px-0">
-            <div className="flex size-7 shrink-0 items-center justify-center rounded-lg dark:bg-[#F6F3F1]">
-              <Notra className="size-7 dark:size-5" />
-            </div>
-            <SidebarLabel className="font-semibold text-base">
-              Notra
-            </SidebarLabel>
-          </div>
+        <SidebarHeader>
+          <SidebarProjectSwitcher />
         </SidebarHeader>
         <SidebarContent>
           <AnimatePresence initial={false} mode="popLayout">
@@ -186,19 +172,6 @@ export function DashboardSidebar({
                 variants={subpageVariants}
               >
                 <NavBrandIdentity slug={slug} />
-              </m.div>
-            )}
-            {drilldownCategory !== null && (
-              <m.div
-                animate="animate"
-                className="flex flex-1 flex-col"
-                exit="exit"
-                initial="initial"
-                key={`category-${drilldownCategory}`}
-                transition={TRANSITION}
-                variants={subpageVariants}
-              >
-                <NavCategory category={drilldownCategory} slug={slug} />
               </m.div>
             )}
             {!isSubpage && (

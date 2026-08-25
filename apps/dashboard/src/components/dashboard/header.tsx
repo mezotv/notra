@@ -29,7 +29,6 @@ import { ChatTopbarTitle } from "@/components/dashboard/chat-topbar-title";
 import { ContentTopbarTitle } from "@/components/dashboard/content-topbar-title";
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { FeedbackForm } from "@/components/dashboard/feedback-popover";
-import { GeoTopbarProjectSwitcher } from "@/components/dashboard/geo-topbar-project-switcher";
 import { NavUser } from "@/components/dashboard/nav-user";
 import { SidebarToggle } from "@/components/dashboard/sidebar-toggle";
 import { GEO_DEFAULT_TAB, GEO_TAB_BREADCRUMB_LABELS } from "@/constants/geo";
@@ -294,7 +293,6 @@ export function SiteHeader() {
         }
       />
     </BreadcrumbItem>,
-    <GeoTopbarProjectSwitcher key={`${id}-geo-project-switcher`} />,
     ...geoSectionBreadcrumbs,
   ];
 
