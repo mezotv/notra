@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Alert02Icon,
   ArrowUp02Icon,
   AtIcon,
   StopIcon,
@@ -9,6 +10,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { FEATURES } from "@notra/ai/billing/features";
 import type { ContextItem } from "@notra/ai/types/chat";
+import { Button } from "@notra/ui/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -279,7 +281,8 @@ const ChatInput = ({
     contextPickerDisabledReason = "Context is unavailable right now.";
   }
   const hasContextChips = context.length > 0 || Boolean(selection);
-  const showComposerNudge = hasContextChips || shouldShowLowCredits;
+  const showComposerNudge =
+    hasContextChips || shouldShowLowCredits || Boolean(usageLimitError);
   let sendTooltip = "Enter to send. Shift+Enter for a new line.";
   if (showStop) {
     sendTooltip = "Stop generating";
@@ -294,8 +297,22 @@ const ChatInput = ({
       nudge={
         showComposerNudge ? (
           <Composer.Nudge
+            action={
+              usageLimitError && organizationSlug ? (
+                <Button
+                  nativeButton={false}
+                  render={
+                    <Link href={`/${organizationSlug}/settings/billing`} />
+                  }
+                  size="xs"
+                  variant="outline"
+                >
+                  Upgrade
+                </Button>
+              ) : null
+            }
             title={
-              shouldShowLowCredits && !hasContextChips
+              shouldShowLowCredits && !hasContextChips && !usageLimitError
                 ? `${remainingChatCredits} chat messages left`
                 : undefined
             }
@@ -315,23 +332,19 @@ const ChatInput = ({
                 ) : null}
               </>
             ) : null}
+            {usageLimitError ? (
+              <span className="flex min-w-0 items-center gap-1.5 text-sm">
+                <HugeiconsIcon
+                  className="size-4 shrink-0 text-amber-600 dark:text-amber-500"
+                  icon={Alert02Icon}
+                />
+                <span className="truncate">{usageLimitError}</span>
+              </span>
+            ) : null}
           </Composer.Nudge>
         ) : null
       }
     >
-      {usageLimitError ? (
-        <div className="mx-2 mt-2 mb-1 flex w-fit max-w-full flex-wrap items-center gap-1 rounded-md bg-destructive/10 px-2 py-1 text-destructive text-xs">
-          <span>{usageLimitError}</span>
-          {organizationSlug ? (
-            <Link
-              className="font-medium underline underline-offset-2"
-              href={`/${organizationSlug}/settings/billing`}
-            >
-              Upgrade
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
       <div className="flex min-w-0 items-end gap-1 p-1.5">
         <Tooltip>
           <TooltipTrigger

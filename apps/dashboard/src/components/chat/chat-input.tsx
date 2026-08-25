@@ -2,6 +2,7 @@
 
 import {
   AiBrain01Icon,
+  Alert02Icon,
   ArrowDown01Icon,
   ArrowUp02Icon,
   AtIcon,
@@ -18,6 +19,7 @@ import type {
   ChatInputHandle,
   ContextItem,
 } from "@notra/ai/types/chat";
+import { Button } from "@notra/ui/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -1493,7 +1495,10 @@ export function ChatInputAdvanced({
   const hasAttachmentChips =
     attachments.length > 0 || pendingUploads.length > 0;
   const showComposerNudge =
-    hasContextChips || hasAttachmentChips || shouldShowLowCredits;
+    hasContextChips ||
+    hasAttachmentChips ||
+    shouldShowLowCredits ||
+    Boolean(usageLimitError);
 
   return (
     <>
@@ -1612,10 +1617,25 @@ export function ChatInputAdvanced({
           nudge={
             showComposerNudge ? (
               <Composer.Nudge
+                action={
+                  usageLimitError && organizationSlug ? (
+                    <Button
+                      nativeButton={false}
+                      render={
+                        <Link href={`/${organizationSlug}/settings/billing`} />
+                      }
+                      size="xs"
+                      variant="outline"
+                    >
+                      Upgrade
+                    </Button>
+                  ) : null
+                }
                 title={
                   shouldShowLowCredits &&
                   !hasContextChips &&
-                  !hasAttachmentChips
+                  !hasAttachmentChips &&
+                  !usageLimitError
                     ? `${remainingChatCredits} chat messages left`
                     : undefined
                 }
@@ -1690,6 +1710,15 @@ export function ChatInputAdvanced({
                     ) : null}
                   </>
                 ) : null}
+                {usageLimitError ? (
+                  <span className="flex min-w-0 items-center gap-1.5 text-sm">
+                    <HugeiconsIcon
+                      className="size-4 shrink-0 text-amber-600 dark:text-amber-500"
+                      icon={Alert02Icon}
+                    />
+                    <span className="truncate">{usageLimitError}</span>
+                  </span>
+                ) : null}
               </Composer.Nudge>
             ) : null
           }
@@ -1703,19 +1732,6 @@ export function ChatInputAdvanced({
               ref={fileInputRef}
               type="file"
             />
-            {usageLimitError && (
-              <div className="mx-2 mt-2 mb-1 flex w-fit max-w-full flex-wrap items-center gap-1 rounded-md bg-destructive/10 px-2 py-1 text-destructive text-xs">
-                <span>{usageLimitError}</span>
-                {organizationSlug && (
-                  <Link
-                    className="font-medium underline underline-offset-2"
-                    href={`/${organizationSlug}/settings/billing`}
-                  >
-                    Upgrade
-                  </Link>
-                )}
-              </div>
-            )}
             <div className="relative flex min-w-0 flex-col rounded-t-[13px] bg-background">
               <div className="flex w-full min-w-0 items-center rounded-t-[12px]">
                 <div className="relative flex min-w-0 flex-1 cursor-text transition-colors [--lh:1lh]">
