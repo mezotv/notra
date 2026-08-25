@@ -145,17 +145,33 @@ export function InstrumentEmpty({
   className,
   busy = false,
   action,
+  preview,
 }: InstrumentEmptyProps) {
   return (
     <div
       aria-busy={busy}
       aria-live={busy ? "polite" : undefined}
       className={cn(
-        "flex h-full min-h-56 flex-col items-center justify-center gap-3 text-center",
+        "relative flex h-full min-h-56 flex-col items-center justify-center gap-3 text-center",
+        preview && "overflow-hidden",
         className
       )}
     >
-      <div className="flex items-center justify-center gap-2">
+      {preview ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 select-none opacity-40 [mask-image:linear-gradient(to_bottom,transparent_0%,black_24%,black_70%,transparent_100%)]"
+        >
+          {preview}
+        </div>
+      ) : null}
+      <div
+        className={cn(
+          "relative z-10 flex items-center justify-center gap-2",
+          preview &&
+            "rounded-full bg-background/85 px-3 py-1.5 shadow-xs backdrop-blur-[2px]"
+        )}
+      >
         {busy ? (
           <span
             aria-hidden="true"
@@ -186,7 +202,7 @@ export function InstrumentEmpty({
         ) : null}
         <p className="text-muted-foreground text-sm capitalize">{message}</p>
       </div>
-      {action && !busy ? action : null}
+      {action && !busy ? <div className="relative z-10">{action}</div> : null}
     </div>
   );
 }

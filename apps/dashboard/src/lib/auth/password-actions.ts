@@ -34,6 +34,14 @@ const DEFAULT_POST_LOGIN_PATH = "/callback";
 const RATE_LIMITED_MESSAGE = "Too many attempts. Please try again shortly.";
 
 async function isRateLimited(limiter: Ratelimit, email: string) {
+  if (
+    process.env.NODE_ENV !== "production" &&
+    (!process.env.UPSTASH_REDIS_REST_URL ||
+      !process.env.UPSTASH_REDIS_REST_TOKEN)
+  ) {
+    return false;
+  }
+
   const headersList = await headers();
   const ip = getClientIpFromHeaders(headersList);
   const { success } = await limiter.limit(`${ip}:${email.toLowerCase()}`);
@@ -61,7 +69,17 @@ const tryWorkOSAuth = <T>(run: () => Promise<T>) =>
 const completeAuthentication = Effect.fn("auth.password.completeSession")(
   function* (response: AuthenticationResponse, returnTo?: string | null) {
     yield* Effect.tryPromise({
-      try: () => saveSession(response, getAppUrl()),
+      try: () =>
+        saveSession(
+          {
+            accessToken: response.accessToken,
+            refreshToken: response.refreshToken,
+            user: response.user,
+            impersonator: response.impersonator,
+            authenticationMethod: response.authenticationMethod,
+          },
+          getAppUrl()
+        ),
       catch: (cause) =>
         new UserSyncError({ message: "Failed to persist session", cause }),
     });

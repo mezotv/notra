@@ -140,11 +140,6 @@ export interface GeoSettingsRow {
   updatedAt: Date;
 }
 
-export interface GeoEngineCoverage {
-  mentions: number;
-  checks: number;
-}
-
 export interface GeoOverviewEngine {
   engine: string;
   checks: number;
@@ -600,12 +595,6 @@ export interface ModelUsageChart {
   incompleteTail: boolean;
 }
 
-export interface GeoModelUsageSnapshot {
-  status: "captured" | "skipped";
-  models?: number;
-  capturedAt?: string;
-}
-
 export interface GeoJudgeResult {
   mentioned: boolean;
   position: number | null;
@@ -938,7 +927,6 @@ export interface GeoLanguageShareResponse {
 
 export interface ModelUsageCardProps {
   usage: GeoModelUsageResponse | undefined;
-  isScanning?: boolean;
 }
 
 export interface ModelUsageLegendProps {

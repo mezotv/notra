@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoBar } from "@/components/geo/geo-bar";
@@ -9,6 +10,7 @@ import {
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { EMPTY_STATE_TABLE_COLUMNS } from "@/constants/empty-state";
 import {
   GEO_EMPTY_PROMPT_RESULTS,
   GEO_EMPTY_TIMESERIES,
@@ -132,6 +134,14 @@ export function EngineRateTable({
             isScanning,
             "Run a scan to see engine mention rates"
           )}
+          preview={
+            <div className="px-6 pt-2">
+              <EmptyStateTablePreview
+                columns={EMPTY_STATE_TABLE_COLUMNS.engines}
+                rows={3}
+              />
+            </div>
+          }
           seed="Mention rate by engine"
         />
       ) : (

@@ -201,6 +201,69 @@ function AnalyticsChartGhost({ bars }: { bars: readonly number[] }) {
   );
 }
 
+export function EmptyStateTrendPreview() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-full w-full text-muted-foreground"
+      fill="none"
+      preserveAspectRatio="none"
+      viewBox="0 0 1200 320"
+    >
+      <g
+        className="text-border"
+        stroke="currentColor"
+        strokeDasharray="3 3"
+        strokeWidth="1"
+      >
+        <path d="M48 32H1176" />
+        <path d="M48 96H1176" />
+        <path d="M48 160H1176" />
+        <path d="M48 224H1176" />
+        <path d="M48 288H1176" />
+      </g>
+      <path
+        d="M48 237C100 224 134 188 189 196C244 204 277 173 330 181C383 189 418 139 471 151C524 163 559 128 612 137C665 146 700 97 753 112C806 127 841 91 894 102C947 113 982 69 1035 83C1088 97 1123 61 1176 72V288H48Z"
+        fill="currentColor"
+        fillOpacity="0.16"
+        stroke="none"
+      />
+      <path
+        d="M48 237C100 224 134 188 189 196C244 204 277 173 330 181C383 189 418 139 471 151C524 163 559 128 612 137C665 146 700 97 753 112C806 127 841 91 894 102C947 113 982 69 1035 83C1088 97 1123 61 1176 72"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        d="M48 273C101 266 135 240 189 247C243 254 277 224 330 232C383 240 418 204 471 215C524 226 559 195 612 202C665 209 700 175 753 184C806 193 841 160 894 171C947 182 982 147 1035 157C1088 167 1123 137 1176 145"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeOpacity="0.58"
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        d="M48 257C101 248 135 258 189 238C243 218 277 227 330 207C383 187 418 202 471 178C524 154 559 173 612 151C665 129 700 148 753 128C806 108 841 123 894 103C947 83 982 101 1035 81C1088 61 1123 76 1176 55"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeOpacity="0.34"
+        strokeWidth="1.5"
+        vectorEffect="non-scaling-stroke"
+      />
+      <path
+        className="text-border"
+        d="M48 257L1176 91"
+        stroke="currentColor"
+        strokeDasharray="5 5"
+        strokeLinecap="round"
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
 export function EmptyStateAnalyticsPreview() {
   return (
     <div className="space-y-3">

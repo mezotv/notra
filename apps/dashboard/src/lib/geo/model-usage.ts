@@ -1,5 +1,4 @@
 import { cachedExternalFetch } from "@notra/analytics/cache/query-cache";
-import { ingestModelUsageShare } from "@notra/analytics/tinybird/client";
 import type { ModelUsageShareRow } from "@notra/analytics/tinybird/datasources";
 import { Effect } from "effect";
 import {
@@ -18,7 +17,6 @@ import {
   openRouterModelsResponseSchema,
   openRouterRankingsChartSchema,
 } from "@/schemas/geo";
-import type { GeoModelUsageSnapshot } from "@/types/geo";
 import { GROUNDED_SUFFIX_PATTERN } from "@/utils/geo-presence";
 
 const VARIANT_SUFFIX = /:[a-z0-9-]+$/;
@@ -29,7 +27,7 @@ interface WeeklyTotal {
   tokens: number;
 }
 
-export function normalizeModelId(value: string): string {
+function normalizeModelId(value: string): string {
   return value
     .toLowerCase()
     .replace(GROUNDED_SUFFIX_PATTERN, "")
@@ -127,7 +125,7 @@ function buildRows(
   return rows;
 }
 
-export const captureModelUsageShare = Effect.fn("geo.captureModelUsageShare")(
+export const loadModelUsageRows = Effect.fn("geo.modelUsage.loadRows")(
   function* () {
     const payload = yield* Effect.tryPromise({
       try: () =>
@@ -166,24 +164,6 @@ export const captureModelUsageShare = Effect.fn("geo.captureModelUsageShare")(
 
     const slugs = yield* fetchSlugMap();
     const rows = buildRows(weeks, slugs);
-
-    if (rows.length === 0) {
-      const skipped: GeoModelUsageSnapshot = { status: "skipped" };
-      return skipped;
-    }
-
-    yield* Effect.tryPromise({
-      try: () => ingestModelUsageShare(rows),
-      catch: (cause) =>
-        new GeoScanError({ message: "Failed to ingest model usage", cause }),
-    });
-
-    const lastPoint = parsed.data.data.data.at(-1);
-    const captured: GeoModelUsageSnapshot = {
-      status: "captured",
-      models: rows.length,
-      capturedAt: lastPoint?.x,
-    };
-    return captured;
+    return rows;
   }
 );
