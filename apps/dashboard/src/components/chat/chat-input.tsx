@@ -1995,12 +1995,6 @@ export function ChatInputAdvanced({
                                 {m.pricing}
                               </span>
                             </div>
-                            {model === m.id ? (
-                              <HugeiconsIcon
-                                className="ml-auto size-3.5 text-primary"
-                                icon={Tick02Icon}
-                              />
-                            ) : null}
                           </CommandItem>
                         ))}
                       </CommandGroup>
