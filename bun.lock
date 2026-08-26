@@ -287,7 +287,6 @@
       "name": "web",
       "version": "0.1.0",
       "dependencies": {
-        "@bydefault/vercel": "^0.1.4",
         "@c15t/nextjs": "^2.0.4",
         "@databuddy/sdk": "^2.4.11",
         "@dnd-kit/core": "^6.3.1",
@@ -459,7 +458,7 @@
     },
     "packages/geo": {
       "name": "@usenotra/geo",
-      "version": "0.1.0-beta.2",
+      "version": "0.2.0",
       "devDependencies": {
         "@notra/typescript-config": "workspace:*",
         "tsup": "^8.5.1",
@@ -776,8 +775,6 @@
     "@braintree/sanitize-url": ["@braintree/sanitize-url@7.1.2", "", {}, "sha512-jigsZK+sMF/cuiB7sERuo9V7N9jx+dhmHHnQyDSVdpZwVutaBu7WvNYqMDLSgFgfB30n452TP3vjDAvFC973mA=="],
 
     "@bufbuild/protobuf": ["@bufbuild/protobuf@1.10.0", "", {}, "sha512-QDdVFLoN93Zjg36NoQPZfsVH9tZew7wKDKyV5qRdj8ntT4wQCOradQjRaTdwMhWUYsgKsvCINKKm87FdEk96Ag=="],
-
-    "@bydefault/vercel": ["@bydefault/vercel@0.1.4", "", {}, "sha512-sw5GSwCZ9JE8bpLd0tG8kTPWLt6iJStmRnomfB1wX65biAbu1W+Fz67IMPmHafaF7oBaLNw10+sSnvedQk6PYw=="],
 
     "@c15t/dev-tools": ["@c15t/dev-tools@2.1.0", "", { "dependencies": { "@radix-ui/react-accordion": "1.2.12", "@radix-ui/react-scroll-area": "^1.2.10", "@radix-ui/react-slot": "1.2.4", "@radix-ui/react-switch": "1.2.6", "@radix-ui/react-tooltip": "^1.2.8", "c15t": "2.1.0", "class-variance-authority": "^0.7.1", "lucide-react": "^1.7.0", "motion": "^12.38.0", "react-draggable": "^4.5.0", "tailwind-merge": "3.5.0", "tsc-alias": "^1.8.16", "usehooks-ts": "^3.1.1", "zustand": "^5.0.12" }, "peerDependencies": { "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0", "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0" } }, "sha512-1ScGlw9TgaprUVAHMTusV1mUh3dxRSlH8Lgl8uzbnw3U2CiThGINN1XjutOV4x52628b39duKdS3rdKCLLI1kw=="],
 
