@@ -9,7 +9,7 @@ import {
   Section,
   Tailwind,
   Text,
-} from "@react-email/components";
+} from "react-email";
 
 import { EmailFooter } from "../components/footer";
 import type { FeedbackEmailProps } from "../types/feedback";

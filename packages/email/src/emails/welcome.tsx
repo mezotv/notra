@@ -1,4 +1,4 @@
-import { Body, Head, Html, Link, Preview, Text } from "@react-email/components";
+import { Body, Head, Html, Link, Preview, Text } from "react-email";
 
 export const WelcomeEmail = () => {
   return (
