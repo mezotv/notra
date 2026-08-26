@@ -130,11 +130,11 @@ export const runGeoIngest = Effect.fn("geoIngest.run")(function* (
   request: NextRequest
 ) {
   const identity = yield* authenticate(request);
-  yield* enforceRateLimit(identity.organizationId);
   const payload = yield* readPayload(request);
   const event = yield* buildEvent(identity, payload);
   if (!event) {
     return;
   }
+  yield* enforceRateLimit(identity.organizationId);
   yield* ingestEvent(event);
 });
