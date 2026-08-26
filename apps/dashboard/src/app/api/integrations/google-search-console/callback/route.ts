@@ -16,11 +16,11 @@ import {
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";
 import { gscOAuthErrorParam } from "@/lib/integrations/google-search-console/oauth-errors";
+import { getGscRedirectUri } from "@/lib/integrations/google-search-console/redirect-uri";
 import type { GscOAuthState } from "@/types/google-search-console";
 
 export async function GET(request: NextRequest) {
-  const baseUrl =
-    process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   let restoreOAuthState: (() => Promise<void>) | null = null;
   let callbackPath = "/";
@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
     try {
       tokens = await exchangeGscAuthorizationCode({
         code,
-        redirectUri: `${baseUrl}${GSC_OAUTH_CALLBACK_PATH}`,
+        redirectUri: getGscRedirectUri(baseUrl),
       });
     } catch (exchangeError) {
       console.error(
