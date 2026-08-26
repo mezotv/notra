@@ -20,7 +20,7 @@ import type { GscOAuthState } from "@/types/google-search-console";
 
 export async function GET(request: NextRequest) {
   const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+    process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   let restoreOAuthState: (() => Promise<void>) | null = null;
   let callbackPath = "/";

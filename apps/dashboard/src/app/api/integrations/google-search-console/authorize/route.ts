@@ -22,7 +22,7 @@ import { ratelimit } from "@/utils/ratelimit";
 // react-doctor-disable-next-line nextjs-no-side-effect-in-get-handler
 export async function GET(request: NextRequest) {
   const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+    process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   try {
     const { searchParams } = new URL(request.url);
