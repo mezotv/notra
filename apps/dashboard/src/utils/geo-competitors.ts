@@ -240,11 +240,12 @@ export function buildShareOfVoiceMentionSparklines(
   }
 
   const allDays = [...new Set(timeseries.map((point) => point.day))].sort();
-  const topBrandKeys = new Set(
-    rows
-      .filter((row) => row.brand !== CHART_OTHER_SLICE_LABEL)
-      .map((row) => competitorKey(row.brand))
-  );
+  const topBrandKeys = new Set<string>();
+  for (const row of rows) {
+    if (row.brand !== CHART_OTHER_SLICE_LABEL) {
+      topBrandKeys.add(competitorKey(row.brand));
+    }
+  }
 
   const sparklines = new Map<string, GeoSparklinePoint[]>();
 

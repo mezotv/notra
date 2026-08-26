@@ -18,7 +18,10 @@ import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
-import { GEO_PROMPTS_TAB_PREVIEW_LIMIT } from "@/constants/geo";
+import {
+  GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
+  GEO_PROMPTS_TAB_PREVIEW_LIMIT,
+} from "@/constants/geo";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoTabsProps } from "@/types/geo";
 import { withGeoProject } from "@/utils/geo-paths";
@@ -61,7 +64,7 @@ export function GeoTabs({
   engines,
   timeseriesPoints,
   competitorPoints,
-  competitorShareTimeseries = [],
+  competitorShareTimeseries = GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
   competitors,
   languagePoints,
   promptResults,

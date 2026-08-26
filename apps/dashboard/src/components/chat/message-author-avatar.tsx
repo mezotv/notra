@@ -20,24 +20,21 @@ const AVATAR_TRANSITION = {
   ease: [0.22, 1, 0.36, 1] as const,
 };
 
-const AVATAR_SIZE_PX = {
-  default: 32,
-  sm: 16,
-} as const;
-
 export function MessageAuthorAvatar({
   author,
   size = "default",
 }: MessageAuthorAvatarProps) {
   const label = author.name ?? "Former member";
   const reduceMotion = useReducedMotion();
-  const pixelSize = AVATAR_SIZE_PX[size];
 
   return (
     <m.div
-      animate={{ opacity: 1, width: pixelSize }}
-      className={cn("shrink-0 overflow-hidden", size === "default" && "mt-1.5")}
-      initial={reduceMotion ? false : { opacity: 0, width: 0 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className={cn(
+        "shrink-0 overflow-hidden",
+        size === "sm" ? "size-4" : "mt-1.5 size-8"
+      )}
+      initial={reduceMotion ? false : { opacity: 0, scale: 0.8 }}
       transition={AVATAR_TRANSITION}
     >
       <Tooltip>

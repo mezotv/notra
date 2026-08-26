@@ -12,7 +12,9 @@ import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
 import { GEO_MODEL_CATALOG_SEED } from "@/constants/geo-model-catalog";
 import type {
   AiTrafficResponse,
+  GeoChatSkin,
   GeoCompetitorKind,
+  GeoCompetitorShareTimeseriesPoint,
   GeoGroundedEngine,
   GeoIngestFramework,
   GeoIngestPackageManager,
@@ -606,6 +608,8 @@ export const GEO_RATE_SPARKLINE_WIDTH = 56;
 export const GEO_RATE_SPARKLINE_HEIGHT = 20;
 export const GEO_RATE_SPARKLINE_PADDING = 2;
 export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
+export const GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES: readonly GeoCompetitorShareTimeseriesPoint[] =
+  [];
 export const GEO_EMPTY_PROMPT_RESULTS: readonly GeoPromptResult[] = [];
 export const GEO_EMPTY_TRAFFIC_RESPONSE: AiTrafficResponse = {
   configured: false,
@@ -636,6 +640,13 @@ export const GEO_TAB_VALUES = [
 export const GEO_TRAFFIC_REVEAL_MS = 150;
 
 export const GEO_DEFAULT_TAB: GeoTab = "visibility";
+
+export const GEO_CHAT_SKIN_SURFACE: Record<GeoChatSkin, string> = {
+  claude: "bg-[#faf9f5] dark:bg-[#1c1b18]",
+  chatgpt: "bg-background",
+  gemini: "bg-white dark:bg-[#1f1f1f]",
+  perplexity: "bg-white dark:bg-[#111]",
+};
 
 export const GEO_TAB_BREADCRUMB_LABELS: Record<string, string> = {
   visibility: "Visibility",

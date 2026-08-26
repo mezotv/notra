@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@notra/ui/lib/utils";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import {
   SIDEBAR_MODE_ENTER_CLASS,
   SIDEBAR_MODE_EXIT_LEFT_CLASS,
@@ -118,10 +118,10 @@ export function SidebarSwap({
   keepMounted = false,
   className,
 }: SidebarSwapProps) {
-  const initialIdRef = useRef(activeId);
+  const [initialId] = useState(activeId);
   const [hasSwapped, setHasSwapped] = useState(false);
 
-  if (!hasSwapped && activeId !== initialIdRef.current) {
+  if (!hasSwapped && activeId !== initialId) {
     setHasSwapped(true);
   }
 
@@ -129,7 +129,7 @@ export function SidebarSwap({
     <div className={cn("relative", className)}>
       {items.map((item) => {
         const active = item.id === activeId;
-        const skipEnter = !hasSwapped && item.id === initialIdRef.current;
+        const skipEnter = !hasSwapped && item.id === initialId;
 
         if (keepMounted) {
           return (

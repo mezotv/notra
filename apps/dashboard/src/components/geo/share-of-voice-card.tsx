@@ -2,12 +2,13 @@
 
 import { ShareOfVoiceTable } from "@/components/geo/share-of-voice-table";
 import { InstrumentSection } from "@/components/instrument/instrument-module";
+import { GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES } from "@/constants/geo";
 import { useGeoCompetitorRowNavigation } from "@/lib/hooks/use-geo";
 import type { ShareOfVoiceCardProps, ShareOfVoiceRow } from "@/types/geo";
 
 export function ShareOfVoiceCard({
   points,
-  timeseries = [],
+  timeseries = GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
   competitors,
   action,
   isScanning = false,

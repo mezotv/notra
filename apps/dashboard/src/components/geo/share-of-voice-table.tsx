@@ -9,7 +9,10 @@ import { InstrumentEmpty } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { EMPTY_STATE_TABLE_COLUMNS } from "@/constants/empty-state";
-import { GEO_SPARKLINE_MIN_POINTS } from "@/constants/geo";
+import {
+  GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
+  GEO_SPARKLINE_MIN_POINTS,
+} from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { findCompetitorDomain } from "@/lib/geo/domain";
 import type { ShareOfVoiceRow, ShareOfVoiceTableProps } from "@/types/geo";
@@ -30,7 +33,7 @@ import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
 
 export function ShareOfVoiceTable({
   points,
-  timeseries = [],
+  timeseries = GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
   competitors,
   limit,
   isScanning = false,

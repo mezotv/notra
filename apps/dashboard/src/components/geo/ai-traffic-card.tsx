@@ -69,6 +69,10 @@ interface TrafficMetricOption {
   delta: number | null;
 }
 
+function metricDelta(current: number, previous: number | null): number | null {
+  return previous === null ? null : trafficVisitDelta(current, previous);
+}
+
 function TrafficHero({
   totals,
   previousTotals,
@@ -85,8 +89,6 @@ function TrafficHero({
     previousTotals === null
       ? null
       : previousTotals.crawler + previousTotals.aiReferral;
-  const metricDelta = (current: number, previous: number | null) =>
-    previous === null ? null : trafficVisitDelta(current, previous);
 
   const metrics: TrafficMetricOption[] = [
     {

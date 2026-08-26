@@ -5,12 +5,10 @@ import {
   type PerplexitySearchSource,
 } from "@notra/ui/components/brainless/perplexity/perplexity-search";
 import { useReducedMotion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
-import {
-  AnswerMarkdown,
-  SKIN_SURFACE,
-} from "@/components/geo/geo-prompt-answer-thread";
+import { useEffect, useState } from "react";
+import { AnswerMarkdown } from "@/components/geo/geo-prompt-answer-thread";
 import { GeoSkinMessage } from "@/components/geo/geo-skin-message";
+import { GEO_CHAT_SKIN_SURFACE } from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type {
   ConversationReplayThreadProps,
@@ -57,34 +55,29 @@ function useConversationReplay(
   reducedMotion: boolean
 ) {
   const [progress, setProgress] = useState<ReplayProgress | null>(null);
-  const runRef = useRef(0);
-  const turnsRef = useRef(turns);
-  turnsRef.current = turns;
 
   useEffect(() => {
     if (playToken === 0) {
       return;
     }
-    runRef.current += 1;
-    const run = runRef.current;
-    const alive = () => runRef.current === run;
+    let cancelled = false;
     const pause = (ms: number) =>
       wait(reducedMotion ? REDUCED_MOTION_PAUSE_MS : ms);
 
     async function play() {
-      const script = turnsRef.current;
+      const script = turns;
       for (let index = 0; index < script.length; index += 1) {
-        if (!alive()) {
+        if (cancelled) {
           return;
         }
         setProgress({ index, stage: "user", typed: "" });
         await pause(USER_PAUSE_MS);
-        if (!alive()) {
+        if (cancelled) {
           return;
         }
         setProgress({ index, stage: "thinking", typed: "" });
         await pause(THINKING_MS);
-        if (!alive()) {
+        if (cancelled) {
           return;
         }
         const answer = script[index]?.answer ?? "";
@@ -96,7 +89,7 @@ function useConversationReplay(
           let typed = "";
           for (const token of tokens) {
             typed += token;
-            if (!alive()) {
+            if (cancelled) {
               return;
             }
             setProgress({ index, stage: "typing", typed });
@@ -105,16 +98,16 @@ function useConversationReplay(
         }
         await pause(TURN_PAUSE_MS);
       }
-      if (alive()) {
+      if (!cancelled) {
         setProgress(null);
       }
     }
 
     play();
     return () => {
-      runRef.current += 1;
+      cancelled = true;
     };
-  }, [playToken, reducedMotion]);
+  }, [playToken, reducedMotion, turns]);
 
   return progress;
 }
@@ -251,7 +244,7 @@ export function ConversationReplayThread({
     <div
       className={cn(
         "relative flex h-full min-h-0 flex-1 flex-col overflow-hidden",
-        SKIN_SURFACE[skin]
+        GEO_CHAT_SKIN_SURFACE[skin]
       )}
     >
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">

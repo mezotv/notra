@@ -14,6 +14,7 @@ import {
   type PerplexitySearchSource,
 } from "@notra/ui/components/brainless/perplexity/perplexity-search";
 import { GeoSkinMessage } from "@/components/geo/geo-skin-message";
+import { GEO_CHAT_SKIN_SURFACE } from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { GeoChatSkin, GeoPromptAnswerThreadProps } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
@@ -28,13 +29,6 @@ import { perplexitySourcesFromExcerpt } from "@/utils/geo-perplexity-sources";
 
 const ANSWER_MARKDOWN_CLASS =
   "[&_h1]:mt-0 [&_h1]:mb-2 [&_h1]:text-[1.15em] [&_h1]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:text-[1.05em] [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_h3]:text-[1em] [&_h3]:font-semibold [&_p]:my-2.5 [&_ul]:my-2.5 [&_ol]:my-2.5";
-
-export const SKIN_SURFACE: Record<GeoChatSkin, string> = {
-  claude: "bg-[#faf9f5] dark:bg-[#1c1b18]",
-  chatgpt: "bg-background",
-  gemini: "bg-white dark:bg-[#1f1f1f]",
-  perplexity: "bg-white dark:bg-[#111]",
-};
 
 function ignoreFollowUp(_text: string): void {
   // The composer is visual chrome; follow-ups are not sent.
@@ -217,7 +211,7 @@ export function GeoPromptAnswerThread({
     <div
       className={cn(
         "relative flex h-full min-h-0 flex-1 flex-col overflow-hidden",
-        SKIN_SURFACE[skin]
+        GEO_CHAT_SKIN_SURFACE[skin]
       )}
     >
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
