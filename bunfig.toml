@@ -28,4 +28,8 @@ minimumReleaseAgeExcludes = [
   "@tanstack/query-db-collection",
   "@tanstack/db",
   "react-email",
+  "@ai-sdk/gateway",
+  "@ai-sdk/provider",
+  "@ai-sdk/provider-utils",
+  "@tanstack/db-ivm",
 ]
