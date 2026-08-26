@@ -265,6 +265,7 @@ export const GEO_BRAND_LABELS: Record<string, string> = {
   deepseek: "DeepSeek",
   meta: "Meta",
   grok: "Grok",
+  kimi: "Kimi",
   moonshot: "Kimi",
   zai: "GLM",
   qwen: "Qwen",
