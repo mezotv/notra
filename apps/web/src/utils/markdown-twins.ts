@@ -38,6 +38,11 @@ const LEGAL_PAGES = [
     filename: "privacy.mdx",
   },
   {
+    pattern: "/dpa",
+    title: "Data Processing Agreement",
+    filename: "dpa.mdx",
+  },
+  {
     pattern: "/terms",
     title: "Terms of Service",
     filename: "terms.mdx",

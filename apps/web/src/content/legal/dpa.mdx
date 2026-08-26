@@ -1,0 +1,227 @@
+---
+title: Data Processing Agreement
+---
+
+**Last updated: August 26, 2026**
+
+## 1. Scope and Parties
+
+This Data Processing Agreement ("DPA") forms part of the [Terms of Service](/terms) between Notra, Inc. ("Notra", "we", "us", or "our") and the customer that accepted the Terms ("Customer", "you", or "your"). It applies whenever Notra processes personal data on your behalf while providing the Service, and in particular when you install the Notra GEO tracking package on your own websites and Notra ingests, stores, and displays AI agent traffic logs for you in the GEO dashboard at app.usenotra.com.
+
+For the AI agent traffic logs described in this DPA, you are the controller and Notra is the processor. For your own account data (name, email address, organization membership, billing details), Notra is the controller and our [Privacy Policy](/privacy) applies instead.
+
+If there is a conflict between this DPA and the Terms, this DPA prevails with respect to the processing of personal data.
+
+## 2. Definitions
+
+**"Applicable Data Protection Law"** means all laws that apply to the processing of personal data under this DPA, including the EU General Data Protection Regulation (GDPR), the UK GDPR and Data Protection Act 2018, and the California Consumer Privacy Act (CCPA).
+
+**"Agent Traffic Logs"** means the request events that the Notra GEO package sends from your web server to the Notra ingest endpoint and that Notra stores for you, as described in Section 3.
+
+**"GEO Package"** means the `@usenotra/geo` npm package and its Next.js, Nuxt, and Netlify adapters that you install on your own infrastructure.
+
+**"Sub-processor"** means a third party engaged by Notra to process personal data on your behalf.
+
+**"Visitor"** means any client that sends an HTTP request to a website on which you have installed the GEO Package, whether an AI crawler, an AI assistant, an automated client, or a person using a browser.
+
+Terms such as "controller", "processor", "personal data", "processing", and "data subject" have the meanings given in Applicable Data Protection Law.
+
+## 3. Description of the Processing
+
+### 3.1 Subject matter and purpose
+
+Notra processes Agent Traffic Logs solely to identify visits by AI crawlers, AI assistants, and AI referrals to your websites, to classify those visits by agent and purpose (model training, search indexing, cited in an answer), to group related requests into journeys, and to display the results to you in the GEO dashboard. Notra does not process Agent Traffic Logs for any other purpose.
+
+### 3.2 Nature of the processing
+
+The GEO Package runs as middleware on your server. For each request that passes its filters, it sends a JSON payload to `https://app.usenotra.com/api/geo/ingest` using a bearer token that is bound to your organization and project. Notra validates the token, classifies the request, discards everything that is not tracked, and writes a single row per tracked request to an append-only event store. The dashboard reads from that store to render tables and aggregates.
+
+### 3.3 What the GEO Package sends
+
+The GEO Package reads the following from the incoming request and sends it to Notra:
+
+| Field | Source |
+| --- | --- |
+| Timestamp | Server clock at the time of the request |
+| HTTP method and full URL | The request line |
+| Client IP address | First entry of `x-forwarded-for`, else `x-real-ip`, else `x-vercel-forwarded-for` |
+| Country, region, city, timezone, latitude, longitude | Edge geolocation headers set by your hosting platform (`x-vercel-ip-*`, `cf-ipcountry`, or Netlify geo context) |
+| Referer | The `referer` header |
+| User agent | The `user-agent` header |
+| Accept and Accept-Language | The `accept` and `accept-language` headers |
+| Request ID | `x-request-id` or `x-vercel-id` |
+| Browser signals | Whether `sec-ch-ua` is present, the `sec-fetch-mode` value, and whether tracing headers are present |
+
+The GEO Package never reads or sends request bodies, cookies, authorization headers, or any header not listed above. It sends only `GET` requests, skips static assets and framework internals, and skips any paths you configure in its exclude list (`/api` by default). You can additionally sample a fraction of requests.
+
+### 3.4 What Notra stores
+
+Not everything that is sent is stored. Each accepted event is reduced to the following columns before it is written:
+
+| Stored column | Content |
+| --- | --- |
+| Organization ID and project ID | Derived from your ingest token |
+| Captured at | Timestamp of the request |
+| Visitor type, source, agent, category, confidence | Classification result (for example `crawler`, `GPTBot`, `training-crawler`, `verified`) |
+| Path and host | The URL path with Notra's own `ntr` tracking parameter removed. The query string is not stored |
+| Method | The HTTP method |
+| Referer | The referer header as received |
+| User agent | The user agent, truncated to 512 characters |
+| Country | The two-letter country code only |
+| Language | The first language tag of `accept-language` |
+| Request ID | The platform request ID if present |
+| Journey ID | A pseudonymous identifier described in Section 3.5 |
+| Wants markdown | Whether the `accept` header asked for markdown |
+
+The following data is received but never stored: the client IP address, region, city, timezone, latitude, longitude, the raw `accept` header, and the browser signals. These are used in memory for classification and journey grouping and are discarded once the event row is built.
+
+Requests classified as human (ordinary browsers and conventional non-AI bots such as search engine and social preview crawlers) are dropped at ingest before any row is written and before rate limiting is applied. Only requests classified as AI crawlers, AI referrals, or unknown automated clients are stored.
+
+### 3.5 Journey identifiers
+
+To group related requests from the same AI crawler into a journey, Notra derives a pseudonymous journey ID at ingest. If the request URL carries a Notra `ntr` tag that you generated, that tag is used. Otherwise, for AI crawler requests only, Notra computes a keyed hash (HMAC-SHA256) over the crawler source, a truncated IP address (the first three octets of an IPv4 address or the first four groups of an IPv6 address), and a 30-minute time bucket. For the `assistant-browse` category the full IP address and a 10-minute bucket are used because assistant browsing sessions are short. The hash key is Notra's ingest secret combined with the current UTC date, so it rotates daily, and only the first 16 hexadecimal characters of the hash are kept. The IP address itself is not stored and cannot be recovered from the journey ID.
+
+### 3.6 Categories of data subjects
+
+Visitors to your websites. In practice these are predominantly automated AI crawlers and assistant agents operated by AI companies. Where an AI assistant browses your site on behalf of a person, or where an unrecognized automated client is operated by a person, the stored record may relate to an identifiable individual through the combination of user agent, referer, country, and timestamp.
+
+### 3.7 Categories of personal data
+
+Online identifiers and technical metadata as listed in Section 3.4. No special categories of personal data (Article 9 GDPR) are intended to be processed. You must not configure the GEO Package to track paths whose URL structure or referers would reveal special category data.
+
+### 3.8 Duration
+
+For the term of your subscription, subject to the retention periods in Section 11.
+
+## 4. Customer Instructions
+
+Notra will process Agent Traffic Logs only on your documented instructions. Your instructions are: the Terms, this DPA, your configuration of the GEO Package (tracked paths, exclusions, sampling), your project settings in the dashboard, and your use of the dashboard's features. Notra will inform you if it believes an instruction infringes Applicable Data Protection Law.
+
+Notra will not process Agent Traffic Logs for its own purposes, will not sell them, and will not use them to train AI models.
+
+## 5. Customer Obligations
+
+You are responsible for:
+
+- Having a lawful basis for collecting Agent Traffic Logs from your websites and for transferring them to Notra
+- Informing Visitors about the processing where Applicable Data Protection Law requires it, for example in your own privacy notice
+- Configuring the GEO Package so that it does not track paths that would send Notra data you are not entitled to share
+- Keeping your ingest tokens confidential and rotating them from the dashboard if they are exposed
+- Ensuring that anyone you grant access to your organization is authorized to view Agent Traffic Logs
+
+## 6. Confidentiality
+
+Notra ensures that persons authorized to process Agent Traffic Logs are bound by confidentiality obligations. Access to production data is limited to personnel who need it to operate, support, or secure the Service.
+
+## 7. Security Measures
+
+Notra implements the following technical and organizational measures for Agent Traffic Logs:
+
+**Transport and authentication.** Ingest requests are accepted only over HTTPS and only with a valid bearer token. Tokens are HMAC-SHA256 signatures bound to your organization, project, and a token generation counter. Rotating the token from the dashboard increments the counter and immediately invalidates every previously issued token.
+
+**Input validation and limits.** Every payload is validated against a strict schema with length limits (2048 characters for URLs and referers, 1024 for headers, 128 for short fields). Malformed payloads are rejected. Ingest is rate limited per organization (1,000 requests per minute, sliding window).
+
+**Data minimization at ingest.** IP addresses, precise location, raw accept headers, and browser signals are discarded before storage. Query strings are removed from paths. User agents are truncated. Human traffic is dropped entirely. Journey IDs are keyed hashes with daily key rotation.
+
+**Tenant isolation.** Every stored row carries your organization ID and project ID. Every dashboard query filters on the organization ID of the authenticated session, and query result caches are keyed by organization.
+
+**Access control.** Dashboard access requires authentication through our identity provider. Organization roles and scopes determine which members can view GEO data and manage settings.
+
+**Encryption.** Data is encrypted in transit using TLS. Our storage Sub-processors encrypt data at rest.
+
+**Automated deletion.** Raw events are automatically deleted by a storage time-to-live rule (Section 11).
+
+**Secrets management.** Signing secrets and Sub-processor credentials are stored as environment secrets in our hosting platform and are not committed to source code.
+
+## 8. Sub-processors
+
+You authorize Notra to engage the following Sub-processors. Those in the first table process Agent Traffic Logs directly. Those in the second table process other personal data needed to operate the Service, as described in the Privacy Policy.
+
+### 8.1 Sub-processors for Agent Traffic Logs
+
+| Sub-processor | Purpose |
+| --- | --- |
+| Vercel | Hosts app.usenotra.com, including the ingest endpoint and the dashboard |
+| Tinybird | Event database that stores Agent Traffic Logs and daily aggregates |
+| Upstash | Redis for rate limiting, ingest token status, and short-lived caching of dashboard query results (up to 6 hours); QStash for scheduled jobs |
+| Neon | Postgres database for organizations, projects, GEO settings, and agent feedback |
+
+### 8.2 Other platform Sub-processors
+
+| Sub-processor | Purpose |
+| --- | --- |
+| WorkOS | Authentication, sessions, and organization membership |
+| Autumn (powered by Stripe) | Subscription billing and plan entitlements |
+| Resend | Transactional email |
+| Cloudflare | Object storage for files you upload to the dashboard |
+| Databuddy | Cookie-free product analytics and feature flags |
+| PostHog | Dashboard product analytics and session replay, with all inputs and text masked, network bodies not recorded, and query strings stripped from URLs |
+| Vercel AI Gateway and OpenRouter | Routing of AI model requests for GEO prompt scans, content generation, and agent feedback classification (Section 9) |
+| Axiom | Observability logs for AI requests |
+
+Notra will publish updates to this list on this page at least 30 days before a new Sub-processor begins processing Agent Traffic Logs. If you object to a new Sub-processor on reasonable data protection grounds and Notra cannot offer an alternative, you may terminate the affected part of the Service.
+
+Notra remains responsible for the performance of its Sub-processors and imposes data protection obligations on them that are no less protective than those in this DPA.
+
+## 9. AI Model Processing and Zero Data Retention
+
+Agent Traffic Logs are never sent to AI models. Classification is performed by deterministic rules against a published signature list, not by a language model.
+
+Other GEO features do send data to AI models through the gateways listed in Section 8.2: prompt scans send your configured prompts and receive answers, and the agent feedback endpoint may send free-text feedback messages to a model for classification when the sending agent did not supply a category itself.
+
+For all such requests outside of local development, Notra instructs the gateway to disallow the use of your data for training. When the zero data retention add-on is active for your organization and enforced for a project, Notra additionally requires that requests are routed only to model hosts covered by a zero data retention agreement between the gateway and the model provider, and fails closed if no such host exists. Models without a zero data retention host are skipped unless you explicitly approve them in the project settings. Zero data retention is provided under the gateway's agreements with each model provider and applies only to models covered by such an agreement at the time of each request. The feedback classifier follows the same rule: for zero data retention organizations it uses only zero retention hosts, and if none is available the feedback is stored without a classification instead of being sent elsewhere.
+
+## 10. Assistance and Data Subject Requests
+
+If Notra receives a request from a data subject relating to Agent Traffic Logs, Notra will not respond directly except to refer the data subject to you, and will forward the request to you without undue delay.
+
+Taking into account the nature of the processing, Notra will assist you with reasonable requests to locate, export, or delete Agent Traffic Logs relating to a specific data subject, and with data protection impact assessments and consultations with supervisory authorities concerning the Service. Because Agent Traffic Logs do not contain IP addresses or direct identifiers, matching a data subject to stored rows may require you to provide the user agent, journey ID, or request ID concerned.
+
+## 11. Retention and Deletion
+
+**Raw events.** Each Agent Traffic Log row is automatically deleted 396 days after its capture timestamp by a time-to-live rule in the event database. This period covers the longest dashboard date range with a margin for timezone boundaries.
+
+**Daily aggregates.** The event database also maintains daily aggregate tables (request counts per day, project, visitor type, source, and path). These contain no per-request rows, no user agents, no referers, and no journey IDs, and are retained for the life of your organization to support long-range trend views.
+
+**Caches.** Redis caches of dashboard query results expire within 6 hours and are invalidated on every new ingest for your organization.
+
+**On termination.** When you delete your organization or your account, Notra deletes your organization's records in Postgres, your files in object storage, your identity provider records, your billing customer, and all Agent Traffic Logs and daily aggregates for your organization from the event database. Deletion from the event database runs as an asynchronous job at the time you delete the organization; if the job fails, Notra completes the deletion within 30 days. You can request written confirmation of the deletion at dominik@usenotra.com.
+
+Notra may retain personal data after termination only where required by law, and only for as long as required.
+
+## 12. Security Incidents
+
+Notra will notify you without undue delay, and in any case within 72 hours, after becoming aware of a personal data breach affecting Agent Traffic Logs. The notification will describe the nature of the breach, the categories and approximate number of records concerned, the likely consequences, and the measures taken or proposed. Notra will cooperate with you to support your own notification obligations to supervisory authorities and data subjects.
+
+Please report suspected security issues to security@usenotra.com.
+
+## 13. Audits
+
+On written request no more than once per year, Notra will make available the information reasonably necessary to demonstrate compliance with this DPA, including this DPA, the descriptions in Sections 3 and 7, and the source of the GEO Package, which is published under an open source license. Where this information is not sufficient to satisfy a legal requirement, you may conduct an audit at your own cost, on at least 30 days' written notice, during normal business hours, no more than once per year, and subject to reasonable confidentiality obligations. Audits must not disrupt the Service or access data of other customers.
+
+## 14. International Transfers
+
+Notra, Inc. is established in the United States, and its Sub-processors are primarily located in the United States. Where Agent Traffic Logs originate from the European Economic Area, the United Kingdom, or Switzerland, the transfer to Notra and its Sub-processors is governed by the Standard Contractual Clauses adopted by the European Commission under Decision (EU) 2021/914 (Module Two, controller to processor), together with the UK International Data Transfer Addendum and the Swiss amendments where applicable, which are incorporated into this DPA by reference. For the purposes of the Clauses, you are the data exporter, Notra is the data importer, the competent supervisory authority is that of your establishment, and Annexes I and II are completed by Sections 3, 7, and 8 of this DPA.
+
+## 15. Liability
+
+Each party's liability under this DPA is subject to the limitations and exclusions set out in the Terms. Nothing in this DPA limits liability that cannot be limited under Applicable Data Protection Law.
+
+## 16. Term and Governing Law
+
+This DPA takes effect when you accept the Terms or begin sending Agent Traffic Logs to Notra, whichever is earlier, and remains in effect for as long as Notra processes personal data on your behalf. It is governed by the laws of the Federal Republic of Germany, and disputes are resolved as set out in the Terms.
+
+## 17. Updates to This DPA
+
+Notra may update this DPA to reflect changes in the Service, in Sub-processors, or in Applicable Data Protection Law. Material changes will be announced by updating the "Last updated" date at the top of this page and, where the change reduces protections, by notice through the Service or by email at least 30 days before it takes effect.
+
+## 18. Contact
+
+For questions about this DPA, to request deletion of Agent Traffic Logs, or to obtain a countersigned copy for your records, contact us at:
+
+**Email:** dominik@usenotra.com
+
+Notra, Inc.<br />
+2261 Market Street STE 98632<br />
+San Francisco, CA 94114<br />
+United States

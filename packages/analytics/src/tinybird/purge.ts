@@ -1,6 +1,7 @@
 import { Effect } from "effect";
 import { bumpAnalyticsVersions } from "../cache/query-cache";
 import type {
+  PurgeGeoOrganizationInput,
   PurgeGeoProjectInput,
   PurgeSocialAccountInput,
 } from "../types/purge";
@@ -13,7 +14,12 @@ const ACCOUNT_SCOPED_DATASOURCES = [
   "social_post_stats_latest",
   "social_account_stats_latest",
 ];
-const GEO_DATASOURCES = ["geo_traffic_events"];
+const GEO_DATASOURCES = [
+  "geo_traffic_events",
+  "geo_traffic_daily",
+  "geo_traffic_pages_daily",
+];
+const GEO_ORGANIZATION_DATASOURCES = [...GEO_DATASOURCES, "ai_traffic_events"];
 
 const JOB_POLL_INTERVAL_MS = 1000;
 const JOB_POLL_MAX_ATTEMPTS = 60;
@@ -104,20 +110,39 @@ export function purgeSocialAccountData(
   return Effect.runPromise(program);
 }
 
-export function purgeGeoProjectData(
-  input: PurgeGeoProjectInput
+function purgeGeoDatasources(
+  datasources: readonly string[],
+  condition: string,
+  organizationId: string
 ): Promise<void> {
   if (!process.env.TINYBIRD_TOKEN) {
     return Promise.resolve();
   }
-  const condition = `organization_id = '${sanitize(input.organizationId)}' AND project_id = '${sanitize(input.projectId)}'`;
   const program = Effect.gen(function* () {
-    for (const datasource of GEO_DATASOURCES) {
+    for (const datasource of datasources) {
       yield* deleteFromDatasource(datasource, condition);
     }
     yield* Effect.tryPromise(() =>
-      bumpAnalyticsVersions("geo", [input.organizationId])
+      bumpAnalyticsVersions("geo", [organizationId])
     );
   });
   return Effect.runPromise(program);
+}
+
+export function purgeGeoProjectData(
+  input: PurgeGeoProjectInput
+): Promise<void> {
+  const condition = `organization_id = '${sanitize(input.organizationId)}' AND project_id = '${sanitize(input.projectId)}'`;
+  return purgeGeoDatasources(GEO_DATASOURCES, condition, input.organizationId);
+}
+
+export function purgeGeoOrganizationData(
+  input: PurgeGeoOrganizationInput
+): Promise<void> {
+  const condition = `organization_id = '${sanitize(input.organizationId)}'`;
+  return purgeGeoDatasources(
+    GEO_ORGANIZATION_DATASOURCES,
+    condition,
+    input.organizationId
+  );
 }

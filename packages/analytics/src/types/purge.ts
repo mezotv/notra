@@ -8,3 +8,7 @@ export interface PurgeGeoProjectInput {
   organizationId: string;
   projectId: string;
 }
+
+export interface PurgeGeoOrganizationInput {
+  organizationId: string;
+}

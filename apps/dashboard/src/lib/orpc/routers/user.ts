@@ -1,3 +1,4 @@
+import { purgeGeoOrganizationData } from "@notra/analytics/tinybird/purge";
 import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
 import { and, count, eq, ne } from "drizzle-orm";
@@ -222,6 +223,14 @@ export const userRouter = {
                 error
               );
             }),
+            purgeGeoOrganizationData({
+              organizationId: input.organizationId,
+            }).catch((error) => {
+              console.error(
+                `[Delete Org] Failed to purge GEO traffic data for ${input.organizationId}:`,
+                error
+              );
+            }),
           ]);
         }
 
@@ -349,6 +358,12 @@ export const userRouter = {
           deleteAutumnCustomer(orgId).catch((error) => {
             console.error(
               `[Delete Org] Failed to cancel Autumn subscription for ${orgId}:`,
+              error
+            );
+          }),
+          purgeGeoOrganizationData({ organizationId: orgId }).catch((error) => {
+            console.error(
+              `[Delete Org] Failed to purge GEO traffic data for ${orgId}:`,
               error
             );
           }),

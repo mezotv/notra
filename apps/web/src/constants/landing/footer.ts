@@ -134,6 +134,7 @@ export const FOOTER_LINK_COLUMNS: readonly FooterLinkColumn[] = [
 
 export const FOOTER_LEGAL_LINKS: readonly FooterLink[] = [
   { label: "Privacy", href: "/privacy" },
+  { label: "DPA", href: "/dpa" },
   { label: "Legal", href: "/legal" },
   { label: "Terms", href: "/terms" },
 ];
