@@ -225,7 +225,7 @@ export const aiTrafficEvents = defineDatasource("ai_traffic_events", {
 
 export const geoTrafficEvents = defineDatasource("geo_traffic_events", {
   description:
-    "Append-only log of every request captured by the geo SDK, classified into AI crawlers, AI assistant referrals and humans",
+    "Append-only log of AI requests captured by the geo SDK, classified into AI crawlers and AI assistant referrals; human requests are dropped at ingest",
   schema: {
     organization_id: t.string(),
     project_id: t.string().lowCardinality(),

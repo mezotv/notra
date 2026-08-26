@@ -6,6 +6,7 @@ import {
   buildTrafficTrendRows,
   formatTrafficDelta,
   hasTrafficSourceSeries,
+  isTrackedGeoVisitorType,
   isTrafficPagePending,
   trafficDeltaTone,
   trafficSourceKey,
@@ -79,6 +80,15 @@ describe("buildTrafficTrendRows", () => {
     assert.equal(rows.length, 1);
     assert.equal(rows[0]?.crawler, 3);
     assert.equal(rows[0]?.aiReferral, 0);
+  });
+});
+
+describe("isTrackedGeoVisitorType", () => {
+  test("drops humans and keeps AI visitors", () => {
+    assert.equal(isTrackedGeoVisitorType("human"), false);
+    assert.equal(isTrackedGeoVisitorType("crawler"), true);
+    assert.equal(isTrackedGeoVisitorType("ai_referral"), true);
+    assert.equal(isTrackedGeoVisitorType("unknown"), true);
   });
 });
 

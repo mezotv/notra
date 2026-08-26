@@ -3,7 +3,8 @@
 Request capture SDK for AI traffic attribution. It captures every page request your
 site serves and sends a neutral request envelope to Notra. All classification, crawler
 versus AI referral versus human, happens server side at ingest, so a stale local table
-never costs you traffic. The core tracker ships no signature table. Only the optional
+never costs you traffic. Requests classified as human are discarded at ingest and never
+stored. The core tracker ships no signature table. Only the optional
 Next.js `tagLinks` path bundles the matcher, because it has to decide at the edge which
 responses to rewrite for AI agents.
 

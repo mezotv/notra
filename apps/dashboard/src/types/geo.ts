@@ -633,7 +633,7 @@ export interface GeoTrafficLogEntry {
   wantsMarkdown: boolean;
 }
 
-export type GeoTrafficLogVisitorFilter = "crawler" | "ai_referral" | "human";
+export type GeoTrafficLogVisitorFilter = "crawler" | "ai_referral";
 
 export type GeoTrafficLogPurposeFilter =
   | "training-crawler"
@@ -741,7 +741,6 @@ export interface JourneyDetailDialogProps {
 export interface GeoTrafficTotals {
   crawler: number;
   aiReferral: number;
-  human: number;
 }
 
 export interface AiTrafficResponse {

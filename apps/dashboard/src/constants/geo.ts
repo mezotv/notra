@@ -22,6 +22,7 @@ import type {
   GeoTimeseriesPoint,
   GeoTrafficLogPurposeOption,
   GeoTrafficLogVisitorOption,
+  GeoVisitorType,
 } from "@/types/geo";
 
 export const GEO_MAX_ENGINES = 64;
@@ -505,7 +506,6 @@ export const GEO_BROWSER_UA_PATTERNS: readonly string[] = [
 export const GEO_VISITOR_TYPE_LABELS: Record<string, string> = {
   crawler: "AI crawler",
   ai_referral: "AI referral",
-  human: "Human",
   unknown: "Unknown",
 };
 
@@ -538,8 +538,9 @@ export const GEO_TRAFFIC_LOG_VISITOR_OPTIONS: readonly GeoTrafficLogVisitorOptio
   [
     { value: "crawler", label: "AI crawler" },
     { value: "ai_referral", label: "AI referral" },
-    { value: "human", label: "Human" },
   ];
+
+export const GEO_UNTRACKED_VISITOR_TYPES: readonly GeoVisitorType[] = ["human"];
 
 export const GEO_TRAFFIC_LOG_PURPOSE_OPTIONS: readonly GeoTrafficLogPurposeOption[] =
   [
@@ -608,7 +609,7 @@ export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
 export const GEO_EMPTY_PROMPT_RESULTS: readonly GeoPromptResult[] = [];
 export const GEO_EMPTY_TRAFFIC_RESPONSE: AiTrafficResponse = {
   configured: false,
-  totals: { crawler: 0, aiReferral: 0, human: 0 },
+  totals: { crawler: 0, aiReferral: 0 },
   sources: [],
   points: [],
 };

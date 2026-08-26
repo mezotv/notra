@@ -281,7 +281,7 @@ export const aiTrafficInputSchema = geoOrganizationInputSchema.extend({
 
 export const geoTrafficLogInputSchema = geoOrganizationInputSchema.extend({
   limit: number().int().min(1).max(MAX_AI_TRAFFIC_LOG_LIMIT).optional(),
-  visitorTypes: array(enumType(["crawler", "ai_referral", "human"]))
+  visitorTypes: array(enumType(["crawler", "ai_referral"]))
     .max(MAX_GEO_TRAFFIC_LOG_FILTER_VALUES)
     .optional(),
   categories: array(

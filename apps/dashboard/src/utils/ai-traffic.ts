@@ -5,6 +5,7 @@ import {
   GEO_JOURNEY_EXPLICIT_PREFIX,
   GEO_TRAFFIC_TREND_CRAWLER_KEY,
   GEO_TRAFFIC_TREND_REFERRAL_KEY,
+  GEO_UNTRACKED_VISITOR_TYPES,
 } from "@/constants/geo";
 import type {
   GeoTrafficLogFilters,
@@ -29,6 +30,10 @@ export function toGeoVisitorType(value: string): GeoVisitorType {
   return VISITOR_TYPES.find((type) => type === value) ?? "unknown";
 }
 
+export function isTrackedGeoVisitorType(value: GeoVisitorType): boolean {
+  return !GEO_UNTRACKED_VISITOR_TYPES.includes(value);
+}
+
 export function formatGeoSource(
   source: string,
   visitorType: GeoVisitorType
@@ -42,14 +47,12 @@ export function formatGeoSource(
 export function toGeoTrafficTotals(
   sources: readonly GeoTrafficSource[]
 ): GeoTrafficTotals {
-  const totals: GeoTrafficTotals = { crawler: 0, aiReferral: 0, human: 0 };
+  const totals: GeoTrafficTotals = { crawler: 0, aiReferral: 0 };
   for (const source of sources) {
     if (source.visitorType === "crawler") {
       totals.crawler += source.visits;
     } else if (source.visitorType === "ai_referral") {
       totals.aiReferral += source.visits;
-    } else if (source.visitorType === "human") {
-      totals.human += source.visits;
     }
   }
   return totals;

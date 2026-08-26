@@ -19,6 +19,7 @@ import { resolveJourneyId } from "@/lib/geo-ingest/journey";
 import { verifyGeoIngestToken } from "@/lib/geo-ingest/token";
 import { geoRequestPayloadSchema } from "@/schemas/geo";
 import type { GeoIngestIdentity } from "@/types/geo";
+import { isTrackedGeoVisitorType } from "@/utils/ai-traffic";
 import { ratelimit } from "@/utils/ratelimit";
 
 const authenticate = Effect.fn("geoIngest.authenticate")(function* (
@@ -92,6 +93,9 @@ const buildEvent = Effect.fn("geoIngest.buildEvent")(function* (
     accept: payload.accept,
     signals: payload.signals,
   });
+  if (!isTrackedGeoVisitorType(classification.visitorType)) {
+    return null;
+  }
   const capturedAt = toCapturedDate(payload.timestamp);
   const journey = resolveJourneyId({
     url,
@@ -129,5 +133,8 @@ export const runGeoIngest = Effect.fn("geoIngest.run")(function* (
   yield* enforceRateLimit(identity.organizationId);
   const payload = yield* readPayload(request);
   const event = yield* buildEvent(identity, payload);
+  if (!event) {
+    return;
+  }
   yield* ingestEvent(event);
 });
