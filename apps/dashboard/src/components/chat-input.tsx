@@ -346,7 +346,7 @@ const ChatInput = ({
       }
     >
       <div className="flex min-w-0 items-end gap-1 p-1.5">
-        <Tooltip>
+        <Tooltip disabled={isContextPickerOpen}>
           <TooltipTrigger
             render={
               contextPickerDisabledReason ? (

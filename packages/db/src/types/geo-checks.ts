@@ -3,6 +3,11 @@ export interface GeoCheckScope {
   projectId: string | null;
 }
 
+export interface GeoCheckSourceItem {
+  url: string;
+  title: string | null;
+}
+
 export interface GeoCheckWrite {
   id?: string;
   organizationId: string;
@@ -20,6 +25,7 @@ export interface GeoCheckWrite {
   competitors: string[];
   excerpt: string;
   language: string;
+  sources?: GeoCheckSourceItem[];
   capturedAt: Date;
 }
 
@@ -53,6 +59,12 @@ export interface GeoCheckPromptResultRow {
 
 export interface GeoCheckCompetitorShareRow {
   brand: string;
+  mentions: number;
+}
+
+export interface GeoCheckCompetitorShareTimeseriesRow {
+  brand: string;
+  day: string;
   mentions: number;
 }
 
@@ -101,5 +113,6 @@ export interface GeoCheckSequenceResultRow {
   position: number | null;
   sentiment: string | null;
   excerpt: string;
+  sources: GeoCheckSourceItem[];
   lastCheckedAt: Date;
 }

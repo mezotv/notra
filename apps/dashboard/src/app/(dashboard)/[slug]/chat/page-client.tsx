@@ -71,6 +71,7 @@ import {
 import { ChatQueue, type QueuedMessage } from "@/components/chat/chat-queue";
 import { ChatSuggestions } from "@/components/chat/chat-suggestions";
 import { renderTextWithIntegrationReferences } from "@/components/chat/integration-reference";
+import { MessageAuthorAvatar } from "@/components/chat/message-author-avatar";
 import { SlackRelayFooterNotice } from "@/components/chat/slack-relay-footer-notice";
 import {
   UserMessageActions,
@@ -94,6 +95,7 @@ import { getMcpIconUrls } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { isImageMimeType } from "@/lib/upload/mime";
 import { cn } from "@/lib/utils";
+import type { ChatMessageAuthor } from "@/types/chat";
 import type {
   CreateToolContentType,
   StandaloneChatPageClientProps,
@@ -102,6 +104,11 @@ import type {
 import type { PublishedSocialPost } from "@/types/content/post-social";
 import { handleStandaloneChatError } from "@/utils/chat-error";
 import {
+  resolveChatMessageAuthor,
+  shouldShowChatAuthorAvatars,
+  toChatMessageAuthor,
+} from "@/utils/chat-message-author";
+import {
   CHAT_PREFERENCES_STORAGE_KEY,
   DEFAULT_CHAT_PREFERENCES,
   parseStoredChatModel,
@@ -109,6 +116,7 @@ import {
   readStoredChatPreferences,
   writeStoredChatPreferences,
 } from "@/utils/chat-preferences";
+import { parseQueuedMessages } from "@/utils/chat-queue";
 import {
   clearPendingChatClientState,
   resetNewChatClientState,
@@ -453,6 +461,20 @@ function StandaloneChatPageClient({
   const organizationId = organization?.id ?? "";
   const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
+  const { data: membersData } = useQuery({
+    queryKey: ["members", organizationId],
+    queryFn: async () => {
+      const { data, error } = await authClient.organization.listMembers({
+        query: { organizationId },
+      });
+      if (error) {
+        throw new Error("Failed to fetch organization members");
+      }
+      return data;
+    },
+    enabled: Boolean(organizationId),
+    staleTime: 1000 * 60 * 5,
+  });
   const { data: customMcpData } = useQuery(
     dashboardOrpc.integrations.mcp.list.queryOptions({
       input: { organizationId },
@@ -527,6 +549,7 @@ function StandaloneChatPageClient({
   >({});
   const chatInputRef = useRef<ChatInputHandle | null>(null);
   const [isInputEmpty, setIsInputEmpty] = useState(true);
+  const reduceMotion = useReducedMotion();
 
   const handleSuggestionSelect = useCallback((text: string) => {
     chatInputRef.current?.setText(text);
@@ -803,6 +826,24 @@ function StandaloneChatPageClient({
   const isSlackMirrored =
     chatHistoryData?.externalChannelId?.source === "slack";
 
+  const messageAuthorsById = useMemo(() => {
+    const authors = new Map<string, ChatMessageAuthor>();
+    for (const member of membersData?.members ?? []) {
+      authors.set(member.user.id, toChatMessageAuthor(member.user));
+    }
+    return authors;
+  }, [membersData?.members]);
+  const showMessageAuthorAvatars = shouldShowChatAuthorAvatars({
+    isSlackMirrored,
+    memberCount: messageAuthorsById.size,
+  });
+  const currentAuthorUserId = session?.user.id;
+  const authorMetadata = useMemo(
+    () =>
+      currentAuthorUserId ? { authorUserId: currentAuthorUserId } : undefined,
+    [currentAuthorUserId]
+  );
+
   const appendMirroredMessage = useCallback(
     (message: ChatUIMessage | null) => {
       if (!message) {
@@ -1004,11 +1045,13 @@ function StandaloneChatPageClient({
   const draftStorageKey = localStorageKeys.chatDraft(
     initialChatId ?? `new:${organizationSlug}`
   );
-  const queueStorageKey = localStorageKeys.chatQueue(stableChatId);
+  const queueStorageKey = currentAuthorUserId
+    ? localStorageKeys.chatQueue(stableChatId, currentAuthorUserId)
+    : null;
   const loadedQueueKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (isSlackMirrored) {
+    if (isSlackMirrored || !queueStorageKey) {
       return;
     }
     if (loadedQueueKeyRef.current === queueStorageKey) {
@@ -1021,26 +1064,14 @@ function StandaloneChatPageClient({
         setQueuedMessages([]);
         return;
       }
-      const parsed: unknown = JSON.parse(raw);
-      if (!Array.isArray(parsed)) {
-        setQueuedMessages([]);
-        return;
-      }
-      const restored = parsed.filter(
-        (m): m is QueuedMessage =>
-          typeof m === "object" &&
-          m !== null &&
-          typeof (m as { id?: unknown }).id === "string" &&
-          typeof (m as { text?: unknown }).text === "string"
-      );
-      setQueuedMessages(restored);
+      setQueuedMessages(parseQueuedMessages(JSON.parse(raw)));
     } catch {
       setQueuedMessages([]);
     }
   }, [isSlackMirrored, queueStorageKey]);
 
   useEffect(() => {
-    if (loadedQueueKeyRef.current !== queueStorageKey) {
+    if (!queueStorageKey || loadedQueueKeyRef.current !== queueStorageKey) {
       return;
     }
     try {
@@ -1266,12 +1297,21 @@ function StandaloneChatPageClient({
           parts.push({ type: "text", text });
         }
         parts.push(...attachments);
-        await sendMessage({ role: "user", parts, messageId: userMessageId });
+        await sendMessage({
+          role: "user",
+          parts,
+          messageId: userMessageId,
+          metadata: authorMetadata,
+        });
       } else {
-        await sendMessage({ text, messageId: userMessageId });
+        await sendMessage({
+          text,
+          messageId: userMessageId,
+          metadata: authorMetadata,
+        });
       }
     },
-    [isSlackMirrored, sendMessage, setMessages]
+    [authorMetadata, isSlackMirrored, sendMessage, setMessages]
   );
 
   const handleEditMessage = useCallback(
@@ -1401,9 +1441,9 @@ function StandaloneChatPageClient({
             filename: attachment.filename,
           });
         }
-        await sendMessage({ role: "user", parts });
+        await sendMessage({ role: "user", parts, metadata: authorMetadata });
       } else {
-        await sendMessage({ text });
+        await sendMessage({ text, metadata: authorMetadata });
       }
       if (isFirstMessage) {
         queryClient.setQueryData(
@@ -1426,6 +1466,7 @@ function StandaloneChatPageClient({
     },
     [
       addToolApprovalResponse,
+      authorMetadata,
       initialChatId,
       isSlackMirrored,
       organizationId,
@@ -1451,12 +1492,25 @@ function StandaloneChatPageClient({
         if (attachments.length > 0) {
           return;
         }
-        setQueuedMessages((prev) => [...prev, { id: nanoid(10), text }]);
+        setQueuedMessages((prev) => [
+          ...prev,
+          {
+            id: nanoid(10),
+            text,
+            authorUserId: currentAuthorUserId,
+          },
+        ]);
         return;
       }
       await dispatchMessage(text, attachments);
     },
-    [dispatchMessage, isLoading, isSlackMirrored, relayMessage]
+    [
+      currentAuthorUserId,
+      dispatchMessage,
+      isLoading,
+      isSlackMirrored,
+      relayMessage,
+    ]
   );
 
   const autoSubmittedQueryRef = useRef<string | null>(null);
@@ -1971,12 +2025,16 @@ function StandaloneChatPageClient({
               });
               sendMessage({
                 text: regeneratePrompt,
+                metadata: authorMetadata,
               });
             }
           : undefined;
 
         const handlePublished = (published: PublishedSocialPost) => {
-          sendMessage({ text: buildPublishedChatMessage(published) });
+          sendMessage({
+            text: buildPublishedChatMessage(published),
+            metadata: authorMetadata,
+          });
         };
 
         if (contentType === "twitter_post") {
@@ -2304,6 +2362,14 @@ function StandaloneChatPageClient({
                       const branchFadeKey = isDownstreamOfBranchSwitch
                         ? `${message.id}-${branchSwitchSignal?.tick}`
                         : message.id;
+                      const messageAuthor =
+                        isUser && showMessageAuthorAvatars
+                          ? resolveChatMessageAuthor({
+                              metadata: message.metadata,
+                              membersById: messageAuthorsById,
+                              sessionUser: session?.user,
+                            })
+                          : null;
                       return (
                         <MessageScrollerItem
                           className="mx-auto w-full max-w-2xl"
@@ -2321,40 +2387,52 @@ function StandaloneChatPageClient({
                             from={message.role}
                           >
                             {isUser ? (
-                              <div className="ml-auto flex w-full max-w-full flex-col items-end gap-2">
-                                {userImageParts.length > 0 && (
-                                  <UserImageGrid>
-                                    {userImageParts.map((part, index) =>
-                                      renderPart(part, message.id, index)
-                                    )}
-                                  </UserImageGrid>
-                                )}
-                                {(isEditing ||
-                                  userContentParts.length > 0 ||
-                                  userFileParts.length > 0) && (
-                                  <UserMessageTextBubble
-                                    initialText={toDisplayText(
-                                      getUserMessageText(message)
-                                    )}
-                                    isEditing={isEditing}
-                                    onCancel={handleCancelEditMessage}
-                                    onSubmit={(text) =>
-                                      handleEditMessage(message.id, text)
-                                    }
-                                  >
-                                    {userContentParts.map((part, index) =>
-                                      renderPart(part, message.id, index)
-                                    )}
-                                    {userFileParts.length > 0 && (
-                                      <div className="flex max-w-full flex-wrap justify-end gap-2">
-                                        {userFileParts.map((part, index) =>
-                                          renderPart(part, message.id, index)
-                                        )}
-                                      </div>
-                                    )}
-                                  </UserMessageTextBubble>
-                                )}
-                              </div>
+                              <m.div
+                                className="ml-auto flex w-full max-w-full items-start justify-end gap-2"
+                                layout={!reduceMotion}
+                                transition={{
+                                  duration: 0.22,
+                                  ease: [0.22, 1, 0.36, 1],
+                                }}
+                              >
+                                <div className="flex w-full min-w-0 flex-col items-end gap-2">
+                                  {userImageParts.length > 0 && (
+                                    <UserImageGrid>
+                                      {userImageParts.map((part, index) =>
+                                        renderPart(part, message.id, index)
+                                      )}
+                                    </UserImageGrid>
+                                  )}
+                                  {(isEditing ||
+                                    userContentParts.length > 0 ||
+                                    userFileParts.length > 0) && (
+                                    <UserMessageTextBubble
+                                      initialText={toDisplayText(
+                                        getUserMessageText(message)
+                                      )}
+                                      isEditing={isEditing}
+                                      onCancel={handleCancelEditMessage}
+                                      onSubmit={(text) =>
+                                        handleEditMessage(message.id, text)
+                                      }
+                                    >
+                                      {userContentParts.map((part, index) =>
+                                        renderPart(part, message.id, index)
+                                      )}
+                                      {userFileParts.length > 0 && (
+                                        <div className="flex max-w-full flex-wrap justify-end gap-2">
+                                          {userFileParts.map((part, index) =>
+                                            renderPart(part, message.id, index)
+                                          )}
+                                        </div>
+                                      )}
+                                    </UserMessageTextBubble>
+                                  )}
+                                </div>
+                                {messageAuthor ? (
+                                  <MessageAuthorAvatar author={messageAuthor} />
+                                ) : null}
+                              </m.div>
                             ) : (
                               <MessageContent>
                                 {message.parts.map((part, index) =>
@@ -2371,6 +2449,7 @@ function StandaloneChatPageClient({
                                   branchTotal > 1 ? branchTotal : undefined
                                 }
                                 canInteract={!isLoading}
+                                className={messageAuthor ? "pr-10" : undefined}
                                 isEditing={isEditing}
                                 messageText={toDisplayText(
                                   getUserMessageText(message)
@@ -2455,9 +2534,11 @@ function StandaloneChatPageClient({
           >
             <div className="mx-auto w-full min-w-0 max-w-2xl">
               <ChatQueue
+                authorsById={messageAuthorsById}
                 messages={queuedMessages}
                 onEdit={handleEditQueued}
                 onRemove={handleRemoveQueued}
+                showAuthorAvatars={showMessageAuthorAvatars}
               />
               {isSlackMirrored && (
                 <div className="mb-2 flex justify-center">

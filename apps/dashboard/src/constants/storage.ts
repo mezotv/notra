@@ -2,7 +2,8 @@ const CHAT_PREFERENCES_STORAGE_VERSION = "v1";
 
 export const localStorageKeys = {
   chatPreferences: `notra_chat_preferences:${CHAT_PREFERENCES_STORAGE_VERSION}`,
-  chatQueue: (chatId: string) => `chat-queue:${chatId}`,
+  chatQueue: (chatId: string, userId: string) =>
+    `chat-queue:${userId}:${chatId}`,
   chatDraft: (draftId: string) => `chat-draft:${draftId}`,
   imageExportTarget: "notra:image-export-target",
   contentView: "notra:content-view",

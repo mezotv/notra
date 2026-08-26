@@ -16,8 +16,8 @@ import { formatGeoSource, trafficVisitDelta } from "@/utils/ai-traffic";
 import { tableHeightFor } from "@/utils/table";
 
 const PAGE_SKELETON_ROWS = 4;
-const PAGE_COLUMN_WIDTH = "1fr";
-const SOURCE_COLUMN_WIDTH = "12rem";
+const PAGE_COLUMN_WIDTH = "1.5fr";
+const SOURCE_COLUMN_WIDTH = "1fr";
 const VISITS_COLUMN_WIDTH = "9.5rem";
 
 export function TrafficPagesCard({

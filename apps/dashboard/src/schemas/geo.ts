@@ -157,6 +157,10 @@ export const geoSequenceResultsInputSchema = geoOrganizationInputSchema.extend({
   sequenceId: string().min(1).optional(),
 });
 
+export const geoSequenceRunInputSchema = geoOrganizationInputSchema.extend({
+  sequenceId: string().min(1),
+});
+
 export const geoProjectCreateInputSchema = object({
   organizationId: string().min(1),
   name: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),

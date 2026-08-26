@@ -10,6 +10,7 @@ import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-ch
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
+import { TrafficDeltaBadge } from "@/components/geo/traffic-delta-badge";
 import {
   InstrumentEmpty,
   InstrumentSection,
@@ -39,8 +40,10 @@ import {
   formatGeoSource,
   formatMarkdownShare,
   hasTrafficSourceSeries,
+  toGeoTrafficPreviousTotals,
   trafficSourceKey,
   trafficSparklineDays,
+  trafficVisitDelta,
 } from "@/utils/ai-traffic";
 import { todayIsoDate } from "@/utils/analytics-charts";
 import { seriesColors } from "@/utils/chart-colors";
@@ -63,34 +66,46 @@ interface TrafficMetricOption {
   key: TrafficMetricKey;
   label: string;
   value: number;
+  delta: number | null;
 }
 
 function TrafficHero({
   totals,
+  previousTotals,
   rows,
 }: {
   totals: GeoTrafficTotals;
+  previousTotals: GeoTrafficTotals | null;
   rows: readonly GeoTrafficTrendRow[];
 }) {
   const markIncompleteTail = rows.at(-1)?.rawDay === todayIsoDate();
   const showTrend = rows.length >= GEO_SPARKLINE_MIN_POINTS;
   const totalVisits = totals.crawler + totals.aiReferral;
+  const previousTotalVisits =
+    previousTotals === null
+      ? null
+      : previousTotals.crawler + previousTotals.aiReferral;
+  const metricDelta = (current: number, previous: number | null) =>
+    previous === null ? null : trafficVisitDelta(current, previous);
 
   const metrics: TrafficMetricOption[] = [
     {
       key: GEO_TRAFFIC_TREND_CRAWLER_KEY,
       label: GEO_TRAFFIC_TREND_CRAWLER_LABEL,
       value: totals.crawler,
+      delta: metricDelta(totals.crawler, previousTotals?.crawler ?? null),
     },
     {
       key: GEO_TRAFFIC_TREND_REFERRAL_KEY,
       label: GEO_TRAFFIC_TREND_REFERRAL_LABEL,
       value: totals.aiReferral,
+      delta: metricDelta(totals.aiReferral, previousTotals?.aiReferral ?? null),
     },
     {
       key: TRAFFIC_TREND_TOTAL_KEY,
       label: "Total",
       value: totalVisits,
+      delta: metricDelta(totalVisits, previousTotalVisits),
     },
   ];
 
@@ -124,10 +139,24 @@ function TrafficHero({
         {metrics.map((metric) => (
           <div className="px-5 py-4" key={metric.key}>
             <p className="text-muted-foreground text-xs">{metric.label}</p>
-            <div className="mt-1 flex gap-x-2">
+            <div className="mt-1 flex items-center gap-x-2">
               <span className="font-semibold text-3xl tabular-nums leading-none tracking-tight">
                 {metric.value.toLocaleString()}
               </span>
+              {metric.delta === null ? null : (
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <span className="cursor-default">
+                        <TrafficDeltaBadge delta={metric.delta} />
+                      </span>
+                    }
+                  />
+                  <TooltipContent side="top">
+                    vs. previous period
+                  </TooltipContent>
+                </Tooltip>
+              )}
             </div>
           </div>
         ))}
@@ -137,13 +166,13 @@ function TrafficHero({
           <EChartsAreaChart
             animation={false}
             chartOptions={HERO_CHART_OPTIONS}
-            className="h-52 w-full"
+            className="h-72 w-full"
             config={chartConfig}
             curveType="monotone"
             data={chartRows}
             xDataKey="day"
           >
-            <EChartsAreaChart.Grid />
+            <EChartsAreaChart.Grid variant="solid" />
             <EChartsAreaChart.XAxis dataKey="day" />
             <EChartsAreaChart.YAxis />
             <EChartsAreaChart.Area
@@ -165,7 +194,7 @@ function TrafficHero({
               <EChartsAreaChart.ActiveDot variant="border" />
             </EChartsAreaChart.Area>
             <EChartsAreaChart.Tooltip
-              confine={false}
+              position="fixed"
               valueFormatter={formatChartInteger}
             />
           </EChartsAreaChart>
@@ -177,6 +206,10 @@ function TrafficHero({
 
 export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
   const { sources, totals, points } = traffic ?? GEO_EMPTY_TRAFFIC_RESPONSE;
+  const previousTotals = useMemo(
+    () => toGeoTrafficPreviousTotals(sources),
+    [sources]
+  );
   const trendRows = useMemo(() => buildTrafficTrendRows(points), [points]);
   const sparklineDays = useMemo(() => trafficSparklineDays(points), [points]);
   const canSparkline = hasTrafficSourceSeries(points);
@@ -329,7 +362,11 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      <TrafficHero rows={trendRows} totals={totals} />
+      <TrafficHero
+        previousTotals={previousTotals}
+        rows={trendRows}
+        totals={totals}
+      />
       <InstrumentSection eyebrow="Sources">
         <Table
           className="rounded-2xl"

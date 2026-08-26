@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/button";
 import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog";
 import { authClient } from "@/lib/auth/client";
+import { getUserAvatarUrl } from "@/utils/avatar";
 
 export function OnboardingAccountMenu() {
   const router = useRouter();
@@ -77,7 +78,7 @@ export function OnboardingAccountMenu() {
                 <AvatarImage
                   alt={user.name}
                   className="rounded-full"
-                  src={user.image ?? undefined}
+                  src={getUserAvatarUrl(user.image, user.email)}
                 />
                 <AvatarFallback className="rounded-full text-sm">
                   {user.name.charAt(0).toUpperCase()}
@@ -100,7 +101,7 @@ export function OnboardingAccountMenu() {
                 <AvatarImage
                   alt={user.name}
                   className="rounded-lg"
-                  src={user.image ?? undefined}
+                  src={getUserAvatarUrl(user.image, user.email)}
                 />
                 <AvatarFallback className="rounded-lg">
                   {user.name.charAt(0).toUpperCase()}

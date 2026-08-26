@@ -14,6 +14,7 @@ import { geoMentionChecks } from "../schema";
 import type {
   GeoCheckCompetitorPromptRow,
   GeoCheckCompetitorShareRow,
+  GeoCheckCompetitorShareTimeseriesRow,
   GeoCheckCompetitorTimeseriesRow,
   GeoCheckLanguageShareRow,
   GeoCheckOverviewRow,
@@ -143,6 +144,7 @@ export async function insertGeoMentionChecks(
       competitors: row.competitors,
       excerpt: row.excerpt,
       language: row.language,
+      sources: row.sources ?? [],
       capturedAt: row.capturedAt,
     }));
     const inserted = await db
@@ -300,6 +302,44 @@ export async function queryGeoCheckCompetitorShare(
   }));
 }
 
+export async function queryGeoCheckCompetitorShareTimeseries(
+  scope: GeoCheckScope,
+  window: GeoCheckWindow | undefined
+): Promise<GeoCheckCompetitorShareTimeseriesRow[]> {
+  const withinParts = capturedWithin(window);
+  const projectFilter = scope.projectId
+    ? sql`and ${geoMentionChecks.projectId} = ${scope.projectId}`
+    : sql``;
+  const windowFilter =
+    withinParts.length > 0 ? sql`and ${and(...withinParts)}` : sql``;
+
+  const result = await db.execute<{
+    brand: string;
+    day: string;
+    mentions: number;
+  }>(sql`
+    select
+      brand,
+      (${geoMentionChecks.capturedAt})::date as day,
+      count(*)::int as mentions
+    from ${geoMentionChecks}
+    cross join lateral unnest(${geoMentionChecks.competitors}) as brand
+    where ${geoMentionChecks.organizationId} = ${scope.organizationId}
+      ${projectFilter}
+      ${windowFilter}
+    group by brand, (${geoMentionChecks.capturedAt})::date
+    order by day asc
+  `);
+
+  return (
+    result.rows as { brand: string; day: string; mentions: number }[]
+  ).map((row) => ({
+    brand: row.brand,
+    day: toDay(row.day),
+    mentions: toNumber(row.mentions),
+  }));
+}
+
 export async function queryGeoCheckCompetitorTimeseries(
   scope: GeoCheckScope,
   brand: string,
@@ -432,6 +472,7 @@ export async function queryGeoCheckSequenceResults(
         position: geoMentionChecks.position,
         sentiment: geoMentionChecks.sentiment,
         excerpt: geoMentionChecks.excerpt,
+        sources: geoMentionChecks.sources,
         lastCheckedAt: geoMentionChecks.capturedAt,
       }
     )
@@ -459,6 +500,7 @@ export async function queryGeoCheckSequenceResults(
         position: row.position,
         sentiment: row.sentiment,
         excerpt: row.excerpt,
+        sources: row.sources,
         lastCheckedAt: row.lastCheckedAt,
       },
     ];

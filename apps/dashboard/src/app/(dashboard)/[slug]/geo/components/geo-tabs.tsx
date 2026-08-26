@@ -61,6 +61,7 @@ export function GeoTabs({
   engines,
   timeseriesPoints,
   competitorPoints,
+  competitorShareTimeseries = [],
   competitors,
   languagePoints,
   promptResults,
@@ -127,6 +128,7 @@ export function GeoTabs({
               organizationId={organizationId}
               organizationSlug={organizationSlug}
               points={competitorPoints}
+              timeseries={competitorShareTimeseries}
             />
           </TabSection>
           <TabSection active={revealActive} order={3}>

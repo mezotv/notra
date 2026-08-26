@@ -24,6 +24,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { authClient } from "@/lib/auth/client";
 import { useHidePersonalData } from "@/lib/hooks/use-privacy-preferences";
 import { cn } from "@/lib/utils";
+import { getUserAvatarUrl } from "@/utils/avatar";
 
 const emptySubscribe = () => () => undefined;
 const getClientSnapshot = () => true;
@@ -85,7 +86,7 @@ export function NavUser() {
               <AvatarImage
                 alt={user.name}
                 className="rounded-lg"
-                src={user.image ?? undefined}
+                src={getUserAvatarUrl(user.image, user.email)}
               />
               <AvatarFallback className="flex items-center justify-center rounded-lg bg-foreground/10 font-medium text-[0.6875rem] text-foreground leading-none">
                 <span className="-translate-y-px">{userInitial}</span>
@@ -107,7 +108,7 @@ export function NavUser() {
                 <AvatarImage
                   alt={user.name}
                   className="rounded-lg"
-                  src={user.image ?? undefined}
+                  src={getUserAvatarUrl(user.image, user.email)}
                 />
                 <AvatarFallback className="flex items-center justify-center rounded-lg bg-foreground/10 font-medium text-foreground text-xs leading-none">
                   <span className="-translate-y-px">{userInitial}</span>

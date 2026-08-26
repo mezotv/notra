@@ -7,6 +7,7 @@ import type { ShareOfVoiceCardProps, ShareOfVoiceRow } from "@/types/geo";
 
 export function ShareOfVoiceCard({
   points,
+  timeseries = [],
   competitors,
   action,
   isScanning = false,
@@ -38,6 +39,7 @@ export function ShareOfVoiceCard({
         onRowClick={organizationSlug ? openRow : undefined}
         onRowPointerEnter={organizationSlug ? prefetchRow : undefined}
         points={points}
+        timeseries={timeseries}
       />
     </InstrumentSection>
   );

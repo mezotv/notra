@@ -16,6 +16,7 @@ import {
   NAV_RECENT_LABEL,
   NAV_RECENT_LIMIT,
   NAV_RECENT_SKELETON_IDS,
+  NAV_RECENT_TITLE_CLASS,
   POST_STATUS_DOT_CLASS,
   POST_STATUS_LABELS,
 } from "@/constants/nav";
@@ -62,7 +63,7 @@ export function NavRecentContent({
                             POST_STATUS_DOT_CLASS[post.status]
                           )}
                         />
-                        <span className="min-w-0 flex-1 truncate">
+                        <span className={NAV_RECENT_TITLE_CLASS}>
                           {post.title}
                         </span>
                         <span className="ml-auto shrink-0 text-[0.625rem] text-muted-foreground">
@@ -71,7 +72,6 @@ export function NavRecentContent({
                       </Link>
                     }
                     size="sm"
-                    tooltip={post.title}
                   />
                 </SidebarMenuItem>
               );

@@ -105,7 +105,7 @@ export function ConversationBuilderDialog({
                   <span className="mt-2 w-5 shrink-0 text-right text-muted-foreground text-xs tabular-nums">
                     {index + 1}
                   </span>
-                  <div className="min-w-0 flex-1 rounded-2xl rounded-tl-sm border border-border bg-muted/40 px-3 py-2">
+                  <div className="min-w-0 flex-1 rounded-lg border border-border bg-muted/40 px-3 py-2">
                     <textarea
                       className="block w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
                       onChange={(event) =>

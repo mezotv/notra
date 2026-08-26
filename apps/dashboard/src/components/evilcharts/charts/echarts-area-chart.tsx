@@ -117,6 +117,7 @@ type YAxisOption = ArrayItem<NonNullable<EChartsOption["yAxis"]>>;
 const STROKE_WIDTH = 0.8; // default series stroke — <Area strokeWidth> overrides it
 const LOADING_ANIMATION_DURATION = 2000; // shimmer loop, in milliseconds
 const REVEAL_DURATION = 1000; // intro draw-in length, in milliseconds
+const CHART_UPDATE_MS = 420; // opacity / layout transitions after the intro
 // NOTE: the intro draw-in runs ECharts' RAW default entrance animation. Custom
 // easing was tried and abandoned — ECharts hardcodes the line-entrance clip to
 // linear and ignores animationEasing at every level (verified empirically).
@@ -163,6 +164,7 @@ export type AreaVariant =
   | "hatched"
   | "none"; // stroke only — no fill at all
 export type StrokeVariant = "solid" | "dashed" | "animated-dashed";
+export type GridLineVariant = "dashed" | "solid";
 export type StackType = "default" | "stacked" | "expanded";
 export type AreaAnimationType =
   | "none"
@@ -221,6 +223,7 @@ export interface AreaProps {
   connectNulls?: boolean; // join segments across null/missing values
   isClickable?: boolean; // lets this area be selected by clicking it
   enableBufferLine?: boolean; // renders this area's last segment as a dashed, fill-less buffer
+  visible?: boolean; // when false, keeps the series mounted but fades it out for smooth toggles
   children?: ReactNode; // optional <Dot> and <ActiveDot> config
 }
 
@@ -263,8 +266,12 @@ export interface YAxisProps {
 /** Presence shows the y value axis. Renders nothing. */
 const YAxis: FC<YAxisProps> = () => null;
 
-/** Presence shows the dashed horizontal split lines. Renders nothing. */
-const Grid: FC = () => null;
+export interface GridProps {
+  variant?: GridLineVariant; // "dashed" (default) or unbroken "solid" split lines
+}
+
+/** Presence shows the horizontal split lines. Renders nothing. */
+const Grid: FC<GridProps> = () => null;
 
 export interface TooltipProps {
   variant?: TooltipVariant; // visual style of the tooltip surface
@@ -314,6 +321,7 @@ type AreaSeriesConfig = {
   connectNulls: boolean;
   isClickable: boolean;
   enableBufferLine: boolean;
+  visible: boolean;
   dotVariant: DotVariant; // "none" when no <Dot> child is present
   activeDotVariant: DotVariant; // "none" when no <ActiveDot> child is present
 };
@@ -367,6 +375,7 @@ type CollectedConfig = {
   xAxis: XAxisSlot;
   yAxis: YAxisSlot;
   showGrid: boolean;
+  gridVariant: GridLineVariant;
   tooltip: TooltipSlot;
   legend: LegendSlot;
   brush: BrushSlot;
@@ -377,6 +386,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
   let xAxis: XAxisSlot = { present: false, hideDots: false };
   let yAxis: YAxisSlot = { present: false, hideDots: false };
   let showGrid = false;
+  let gridVariant: GridLineVariant = "dashed";
   let tooltip: TooltipSlot = {
     present: false,
     variant: "default",
@@ -423,6 +433,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
         connectNulls: props.connectNulls ?? false,
         isClickable: props.isClickable ?? false,
         enableBufferLine: props.enableBufferLine ?? false,
+        visible: props.visible ?? true,
         dotVariant,
         activeDotVariant,
       });
@@ -446,6 +457,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
       };
     } else if (type === Grid) {
       showGrid = true;
+      gridVariant = (child.props as GridProps).variant ?? "dashed";
     } else if (type === Tooltip) {
       const props = child.props as TooltipProps;
       tooltip = {
@@ -484,7 +496,16 @@ function collectConfig(children: ReactNode): CollectedConfig {
     }
   });
 
-  return { areas, xAxis, yAxis, showGrid, tooltip, legend, brush };
+  return {
+    areas,
+    xAxis,
+    yAxis,
+    showGrid,
+    gridVariant,
+    tooltip,
+    legend,
+    brush,
+  };
 }
 
 // Color plumbing (ChartConfig, getColorsCount, distributeColors, buildChartCss,
@@ -826,6 +847,7 @@ type OptionBuildContext = {
   selectedDataKey: string | null;
   hasSelection: boolean;
   showGrid: boolean;
+  gridVariant: GridLineVariant;
   xAxisSlot: XAxisSlot;
   yAxisSlot: YAxisSlot;
   tooltipSlot: TooltipSlot;
@@ -886,6 +908,7 @@ function buildMainAxes(ctx: OptionBuildContext): {
     xAxisSlot,
     yAxisSlot,
     showGrid,
+    gridVariant,
     isLoading,
     isExpanded,
     categories,
@@ -961,7 +984,7 @@ function buildMainAxes(ctx: OptionBuildContext): {
       show: showGrid && !isLoading,
       lineStyle: {
         color: splitLineColor,
-        type: [3, 3] as [number, number],
+        type: gridVariant === "solid" ? "solid" : ([3, 3] as [number, number]),
         width: 1,
       },
     },
@@ -1417,6 +1440,11 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
 
     const z = isSelected ? 3 : hasSelection ? 1 : 2;
 
+    const isHidden = area.visible === false;
+    const strokeOpacity = isHidden ? 0 : opacity.stroke;
+    const fillOpacity = isHidden ? 0 : opacity.fill;
+    const dotVisibleOpacity = isHidden ? 0 : dotOpacity;
+
     const mainSeries: LineSeriesOption = {
       id: key,
       name: typeof config[key]?.label === "string" ? config[key]?.label : key,
@@ -1426,35 +1454,51 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
       smooth: curve.smooth,
       step: curve.step,
       connectNulls: area.connectNulls,
-      cursor: area.isClickable ? "pointer" : "default",
+      cursor: area.isClickable && !isHidden ? "pointer" : "default",
       // By default ECharts only fires mouse events on the symbols — this makes
       // the line AND the filled area clickable, like the Recharts <Area>.
       // (`true` covers both; the deprecated `triggerLineEvent` did the same.)
-      triggerEvent: area.isClickable,
+      triggerEvent: area.isClickable && !isHidden,
       // Resting dots stay on the line; ActiveDot-only series keep symbols
       // invisible until the axis pointer highlights the scrubbed index.
-      showSymbol: restingVisible || hoverSymbol,
+      showSymbol: !isHidden && (restingVisible || hoverSymbol),
       symbol: "circle",
       symbolSize: restingVisible ? restingDot.size : activeDot.size,
       z,
       lineStyle: {
         color: strokePaint,
         width: area.strokeWidth,
-        opacity: opacity.stroke,
+        opacity: strokeOpacity,
         type: mainDash,
         dashOffset: 0,
       },
       itemStyle: multiColor
-        ? { opacity: restingVisible ? dotOpacity : hoverSymbol ? 0 : dotOpacity }
+        ? {
+            opacity: isHidden
+              ? 0
+              : restingVisible
+                ? dotVisibleOpacity
+                : hoverSymbol
+                  ? 0
+                  : dotVisibleOpacity,
+          }
         : {
             ...(restingVisible ? restingDot.itemStyle : activeDot.itemStyle),
-            opacity: restingVisible ? dotOpacity : hoverSymbol ? 0 : dotOpacity,
+            opacity: isHidden
+              ? 0
+              : restingVisible
+                ? dotVisibleOpacity
+                : hoverSymbol
+                  ? 0
+                  : dotVisibleOpacity,
           },
       areaStyle: {
         color: fillPaint(area.variant, showUnselected, slots, rendererSize),
-        opacity: opacity.fill,
+        opacity: fillOpacity,
       },
-      emphasis: {
+      emphasis: isHidden
+        ? { disabled: true }
+        : {
         // focus "series" blurs every other series in this grid while one is
         // hovered — the hover twin of the click selection. Suppressed entirely
         // while a series is click-selected: the selection dim owns the canvas,
@@ -1474,12 +1518,21 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
           : { itemStyle: { ...activeDot.itemStyle, opacity: 1 } }),
       },
       // Blur styling mirrors the click-selection dim (fill 0.1 / stroke 0.3 / dot 0.3).
-      blur: {
+      blur: isHidden
+        ? {
+            lineStyle: { opacity: 0 },
+            areaStyle: { opacity: 0 },
+            itemStyle: { opacity: 0 },
+          }
+        : {
         lineStyle: { opacity: 0.3 },
         areaStyle: { opacity: 0.1 },
         itemStyle: { opacity: 0.3 },
       },
+      ...(isHidden ? { tooltip: { show: false } } : {}),
     };
+
+    if (isHidden) return [mainSeries];
 
     // Hover-reveal: a muted gray BASE layer of the FULL series sits one z below
     // the real one. It is invisible while idle (opacity 0 → the chart looks
@@ -1832,6 +1885,7 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
     xAxis: xAxisSlot,
     yAxis: yAxisSlot,
     showGrid,
+    gridVariant,
     tooltip: tooltipSlot,
     legend: legendSlot,
     brush: brushSlot,
@@ -1974,6 +2028,7 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
       selectedDataKey,
       hasSelection,
       showGrid,
+      gridVariant,
       xAxisSlot,
       yAxisSlot,
       tooltipSlot,
@@ -2064,6 +2119,7 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
     selectedDataKey,
     hasSelection,
     showGrid,
+    gridVariant,
     xAxisSlot,
     yAxisSlot,
     tooltipSlot,
@@ -2391,7 +2447,8 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
         // Duration 0 still skips the intro draw-in when withEntrance is false.
         animation: true,
         animationDuration: withEntrance ? REVEAL_DURATION : 0,
-        animationDurationUpdate: 0,
+        animationDurationUpdate: withEntrance ? 0 : CHART_UPDATE_MS,
+        animationEasingUpdate: "cubicInOut",
       });
       // chartOptions is an untyped escape hatch — the spread erases the option's
       // shape, so re-assert it. The only cast in the file.

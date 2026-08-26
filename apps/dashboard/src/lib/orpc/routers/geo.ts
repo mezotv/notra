@@ -62,6 +62,7 @@ import {
 } from "@/lib/geo/programs";
 import { createGeoProject, listGeoProjects } from "@/lib/geo/projects";
 import { clearGeoSampleData, seedGeoSampleData } from "@/lib/geo/sample-data";
+import { runGeoSequenceNow } from "@/lib/geo/scan";
 import { syncGscSuggestions } from "@/lib/geo/search-console";
 import {
   createGeoSequence,
@@ -110,6 +111,7 @@ import {
   geoSequenceCreateInputSchema,
   geoSequenceDeleteInputSchema,
   geoSequenceResultsInputSchema,
+  geoSequenceRunInputSchema,
   geoSequenceUpdateInputSchema,
   geoSettingsUpsertInputSchema,
   geoSuggestionIdInputSchema,
@@ -483,6 +485,27 @@ export const geoRouter = {
     .handler(
       geoHandler((input) => loadGeoSequenceResults(input, input.sequenceId))
     ),
+  sequenceRun: authorizedProcedure
+    .input(geoSequenceRunInputSchema)
+    .handler(async ({ context, input }) => {
+      const [, , rate] = await Promise.all([
+        assertGeoAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+          user: context.user,
+        }),
+        assertActiveSubscription(input.organizationId),
+        ratelimit.geoSequenceRun.limit(input.organizationId),
+      ]);
+      if (!rate.success) {
+        throw badRequest("Too many runs. Please wait a few minutes.");
+      }
+
+      return await runOrpcEffect(
+        runGeoSequenceNow(input, input.sequenceId),
+        toGeoOrpcError
+      );
+    }),
   projectsList: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoOpenHandler((input) => listGeoProjects(input.organizationId))),

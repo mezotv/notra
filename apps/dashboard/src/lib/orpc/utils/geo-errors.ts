@@ -18,6 +18,13 @@ export function toGeoOrpcError(failure: GeoRouterError): Error {
       return badRequest("Create a brand identity first");
     case "GeoSequenceNotFoundError":
       return notFound("Conversation not found");
+    case "GeoSequenceRunUnavailableError":
+      return badRequest(
+        "No search-grounded engines are available under your privacy settings"
+      );
+    case "GeoSequenceRunError":
+      console.error("[GEO] conversation run failed:", failure);
+      return badRequest(failure.message);
     case "GeoSequenceCreateFailedError":
       return badRequest("Failed to create conversation");
     case "GeoSettingsMissingError":

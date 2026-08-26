@@ -338,6 +338,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
 
         if (part.type === "start") {
           return {
+            authorUserId: userId,
             model: routingDecision.model,
             requestedModel: model ?? "auto",
             thinkingLevel: effectiveThinkingLevel,

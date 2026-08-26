@@ -4,16 +4,23 @@ import { useMemo } from "react";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { GeoBar } from "@/components/geo/geo-bar";
+import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { InstrumentEmpty } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { EMPTY_STATE_TABLE_COLUMNS } from "@/constants/empty-state";
+import { GEO_SPARKLINE_MIN_POINTS } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { findCompetitorDomain } from "@/lib/geo/domain";
 import type { ShareOfVoiceRow, ShareOfVoiceTableProps } from "@/types/geo";
 import { geoModeFillClass } from "@/utils/chart-colors";
-import { buildShareOfVoiceRows, formatMentionRate } from "@/utils/geo-charts";
 import {
+  buildShareOfVoiceRows,
+  formatMentionRate,
+  mentionCountSparklineLabel,
+} from "@/utils/geo-charts";
+import {
+  buildShareOfVoiceMentionSparklines,
   isOwnBrandName,
   shareOfVoiceRivalIndex,
   shareOfVoiceSliceColor,
@@ -23,6 +30,7 @@ import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
 
 export function ShareOfVoiceTable({
   points,
+  timeseries = [],
   competitors,
   limit,
   isScanning = false,
@@ -34,6 +42,10 @@ export function ShareOfVoiceTable({
   const rows = useMemo(
     () => buildShareOfVoiceRows(points, { limit, competitors }),
     [points, limit, competitors]
+  );
+  const mentionSparklines = useMemo(
+    () => buildShareOfVoiceMentionSparklines(timeseries, rows, competitors),
+    [competitors, rows, timeseries]
   );
   const ownBrand = useMemo(
     () => ({ companyName, aliases }),
@@ -94,16 +106,49 @@ export function ShareOfVoiceTable({
       {
         key: "mentions",
         header: "Mentions",
-        width: "7.5rem",
+        width: "10.5rem",
         sortable: true,
-        cell: (row) => (
-          <span className="text-sm tabular-nums">
-            {row.mentions.toLocaleString()}
-          </span>
-        ),
+        cell: (row) => {
+          const series = mentionSparklines.get(row.brand) ?? [];
+          const showSpark = series.length >= GEO_SPARKLINE_MIN_POINTS;
+          const own = isOwnBrandName(row.brand, companyName, aliases);
+          const color =
+            row.brand === CHART_OTHER_SLICE_LABEL
+              ? null
+              : shareOfVoiceSliceColor(
+                  row.brand,
+                  shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
+                  competitors,
+                  ownBrand
+                );
+
+          return (
+            <span className="flex items-center gap-2">
+              {showSpark ? (
+                <GeoRateSparkline
+                  ariaLabel={mentionCountSparklineLabel(series)}
+                  className={own ? "text-geo-search" : undefined}
+                  points={series}
+                  style={color && !own ? { color: color.light } : undefined}
+                />
+              ) : null}
+              <span className="text-sm tabular-nums">
+                {row.mentions.toLocaleString()}
+              </span>
+            </span>
+          );
+        },
       },
     ],
-    [aliases, companyName, competitors, maxShare, ownBrand, rows]
+    [
+      aliases,
+      companyName,
+      competitors,
+      maxShare,
+      mentionSparklines,
+      ownBrand,
+      rows,
+    ]
   );
 
   if (rows.length === 0) {

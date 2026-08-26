@@ -78,6 +78,17 @@ export class GeoSequenceCreateFailedError extends Data.TaggedError(
   "GeoSequenceCreateFailedError"
 )<Record<string, never>> {}
 
+export class GeoSequenceRunUnavailableError extends Data.TaggedError(
+  "GeoSequenceRunUnavailableError"
+)<Record<string, never>> {}
+
+export class GeoSequenceRunError extends Data.TaggedError(
+  "GeoSequenceRunError"
+)<{
+  readonly message: string;
+  readonly cause?: unknown;
+}> {}
+
 export class GeoSampleDataDisabledError extends Data.TaggedError(
   "GeoSampleDataDisabledError"
 )<Record<string, never>> {}
@@ -138,6 +149,8 @@ export type GeoRouterError =
   | GeoScanStartError
   | GeoSequenceCreateFailedError
   | GeoSequenceNotFoundError
+  | GeoSequenceRunError
+  | GeoSequenceRunUnavailableError
   | GeoSettingsDisabledError
   | GeoSettingsMissingError
   | GeoTinybirdError

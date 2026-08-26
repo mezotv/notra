@@ -1561,6 +1561,10 @@ export const geoMentionChecks = pgTable(
       .default(sql`ARRAY[]::text[]`),
     excerpt: text("excerpt").notNull().default(""),
     language: text("language").notNull().default("English"),
+    sources: jsonb("sources")
+      .$type<{ url: string; title: string | null }[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     capturedAt: timestamp("captured_at").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },

@@ -18,6 +18,7 @@ import {
 import {
   queryGeoCheckCompetitorPrompts,
   queryGeoCheckCompetitorShare,
+  queryGeoCheckCompetitorShareTimeseries,
   queryGeoCheckCompetitorTimeseries,
   queryGeoCheckLanguageShare,
   queryGeoCheckOverview,
@@ -563,18 +564,33 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
 export const loadGeoCompetitorShare = Effect.fn("geo.competitorShare")(
   function* (input: GeoScopeInput, window: GeoWindowInput) {
     const scope = yield* resolveGeoScope(input);
-    const rows = yield* geoDb("competitor share query failed", () =>
-      queryGeoCheckCompetitorShare(
-        geoCheckScope(scope),
-        toGeoCheckWindow(window),
-        GEO_COMPETITOR_SHARE_LIMIT
-      )
+    const checkScope = geoCheckScope(scope);
+    const checkWindow = toGeoCheckWindow(window);
+    const [rows, timeseries] = yield* Effect.all(
+      [
+        geoDb("competitor share query failed", () =>
+          queryGeoCheckCompetitorShare(
+            checkScope,
+            checkWindow,
+            GEO_COMPETITOR_SHARE_LIMIT
+          )
+        ),
+        geoDb("competitor share timeseries query failed", () =>
+          queryGeoCheckCompetitorShareTimeseries(checkScope, checkWindow)
+        ),
+      ],
+      { concurrency: "unbounded" }
     );
 
     const response: GeoCompetitorShareResponse = {
       configured: true,
       points: rows.map((row) => ({
         brand: row.brand,
+        mentions: row.mentions,
+      })),
+      timeseries: timeseries.map((row) => ({
+        brand: row.brand,
+        day: row.day,
         mentions: row.mentions,
       })),
     };
@@ -654,6 +670,9 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
     category: row.category,
     confidence: row.confidence,
     visits: Number(row.visits),
+    ...(row.previous_visits == null
+      ? {}
+      : { previousVisits: Number(row.previous_visits) }),
     markdownVisits: Number(row.markdown_visits),
     paths: Number(row.paths),
     lastSeenAt: row.last_seen_at,

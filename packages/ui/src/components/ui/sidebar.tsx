@@ -662,6 +662,14 @@ function SidebarMenuBadge({
 	);
 }
 
+function skeletonWidthFromId(id: string) {
+	let hash = 0;
+	for (let i = 0; i < id.length; i++) {
+		hash = (hash + id.charCodeAt(i) * (i + 1)) % 40;
+	}
+	return `${50 + hash}%`;
+}
+
 function SidebarMenuSkeleton({
 	className,
 	showIcon = false,
@@ -669,10 +677,8 @@ function SidebarMenuSkeleton({
 }: React.ComponentProps<"div"> & {
 	showIcon?: boolean;
 }) {
-	// Random width between 50 to 90%.
-	const [width] = React.useState(
-		() => `${Math.floor(Math.random() * 40) + 50}%`,
-	);
+	// Width between 50 and 89%, derived from useId so SSR and hydration match.
+	const width = skeletonWidthFromId(React.useId());
 
 	return (
 		<div

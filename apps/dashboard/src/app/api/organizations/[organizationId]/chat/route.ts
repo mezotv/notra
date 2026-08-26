@@ -35,7 +35,10 @@ import type {
 } from "@notra/ai/types/chat";
 import type { ValidatedIntegration } from "@notra/ai/types/orchestration";
 import type { TccMetadata } from "@notra/ai/types/tcc";
-import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
+import {
+  buildChatFinishMetadata,
+  stampUserMessageAuthors,
+} from "@notra/ai/utils/chat";
 import { signChatWorkflowPayload } from "@notra/ai/utils/chat-workflow-auth";
 import { routeUsageProperties } from "@notra/ai/utils/route-usage";
 import { InvalidToolInputError, NoSuchToolError, type UIMessage } from "ai";
@@ -85,7 +88,10 @@ export const POST = withEvlog(async function POST(
       );
     }
 
-    const { messages } = parseResult.data;
+    const messages = stampUserMessageAuthors(
+      parseResult.data.messages,
+      auth.context.user.id
+    );
     const chatId = parseResult.data.chatId ?? generateChatId();
 
     if (parseResult.data.chatId) {
@@ -500,6 +506,7 @@ async function createDirectStandaloneChatResponse({
 
         if (part.type === "start") {
           return {
+            authorUserId: userId,
             model: routingDecision.model,
             requestedModel: model ?? "auto",
             thinkingLevel: effectiveThinkingLevel,

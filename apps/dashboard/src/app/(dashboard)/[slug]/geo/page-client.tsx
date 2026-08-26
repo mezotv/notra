@@ -156,6 +156,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
         <GeoTabs
           activeTab={activeTab}
           competitorPoints={competitorShare?.points ?? []}
+          competitorShareTimeseries={competitorShare?.timeseries ?? []}
           competitors={competitorList?.competitors ?? []}
           engines={overview?.engines ?? []}
           isScanning={isScanning}

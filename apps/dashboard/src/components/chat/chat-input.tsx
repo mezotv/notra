@@ -95,6 +95,11 @@ import {
 import type { ChatContextOption } from "@/types/components/chat-input";
 import type { GitHubRepository } from "@/types/integrations";
 import {
+  CHAT_INPUT_LIMIT_MESSAGE,
+  contextItemKey,
+  contextItemsEqual,
+} from "@/utils/chat-input";
+import {
   extractIntegrationReferences,
   getIntegrationReferenceValue,
   getReferenceDisplay,
@@ -109,7 +114,6 @@ import {
 } from "./integration-reference";
 
 const GENERIC_PASTED_IMAGE_NAME_RE = /^image\.(jpe?g|png|gif|webp)$/i;
-const CHAT_CREDITS_EMPTY_MESSAGE = "No chat credits left.";
 
 export const AVAILABLE_MODELS = [
   {
@@ -221,7 +225,7 @@ function getSubmitTooltipText({
     return "Stop generating";
   }
   if (isUsageBlocked) {
-    return CHAT_CREDITS_EMPTY_MESSAGE;
+    return CHAT_INPUT_LIMIT_MESSAGE;
   }
   if (canQueue) {
     return "Enter to queue this message. It will send once the AI finishes.";
@@ -240,29 +244,6 @@ function getContextPickerDisabledReason(
     return "Wait for the current response before changing tools or context.";
   }
   return null;
-}
-
-function contextItemsEqual(a: ContextItem, b: ContextItem): boolean {
-  if (a.type !== b.type) {
-    return false;
-  }
-  if (a.type === "github-repo" && b.type === "github-repo") {
-    return a.owner === b.owner && a.repo === b.repo;
-  }
-  if (a.type === "linear-team" && b.type === "linear-team") {
-    return a.integrationId === b.integrationId;
-  }
-  if (a.type === "mcp-server" && b.type === "mcp-server") {
-    return a.integrationId === b.integrationId;
-  }
-  return false;
-}
-
-function contextItemKey(item: ContextItem): string {
-  if (item.type === "github-repo") {
-    return `github:${item.integrationId}:${item.owner}/${item.repo}`;
-  }
-  return `${item.type}:${item.integrationId}`;
 }
 
 function ContextChipIcon({ item }: { item: ContextItem }) {
@@ -661,7 +642,7 @@ export function ChatInputAdvanced({
   const usageLimitError =
     externalError ??
     internalError ??
-    (isUsageBlocked ? CHAT_CREDITS_EMPTY_MESSAGE : null);
+    (isUsageBlocked ? CHAT_INPUT_LIMIT_MESSAGE : null);
 
   const clearError = useCallback(() => {
     setInternalError(null);
@@ -1169,7 +1150,7 @@ export function ChatInputAdvanced({
         return false;
       }
       if (isUsageBlocked) {
-        setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
+        setInternalError(CHAT_INPUT_LIMIT_MESSAGE);
         return false;
       }
       if (customer) {
@@ -1178,7 +1159,7 @@ export function ChatInputAdvanced({
           requiredBalance: 1,
         });
         if (result?.allowed === false) {
-          setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
+          setInternalError(CHAT_INPUT_LIMIT_MESSAGE);
           return false;
         }
       }
@@ -1231,7 +1212,7 @@ export function ChatInputAdvanced({
       }
       clearError();
       if (isUsageBlocked) {
-        setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
+        setInternalError(CHAT_INPUT_LIMIT_MESSAGE);
         return;
       }
       if (customer) {
@@ -1240,7 +1221,7 @@ export function ChatInputAdvanced({
           requiredBalance: 1,
         });
         if (result?.allowed === false) {
-          setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
+          setInternalError(CHAT_INPUT_LIMIT_MESSAGE);
           return;
         }
       }
@@ -1261,7 +1242,7 @@ export function ChatInputAdvanced({
         return;
       }
       if (isUsageBlocked) {
-        setInternalError(CHAT_CREDITS_EMPTY_MESSAGE);
+        setInternalError(CHAT_INPUT_LIMIT_MESSAGE);
         return;
       }
       clearError();
@@ -1903,7 +1884,7 @@ export function ChatInputAdvanced({
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <Tooltip>
+              <Tooltip disabled={isContextPickerOpen}>
                 <TooltipTrigger
                   render={
                     contextPickerDisabledReason ? (

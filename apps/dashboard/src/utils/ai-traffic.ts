@@ -58,6 +58,26 @@ export function toGeoTrafficTotals(
   return totals;
 }
 
+// Previous-window totals, mirroring toGeoTrafficTotals. Returns null when the
+// endpoint sent no comparison data at all, so callers can hide their deltas
+// instead of rendering an all-zero baseline as "+100%".
+export function toGeoTrafficPreviousTotals(
+  sources: readonly GeoTrafficSource[]
+): GeoTrafficTotals | null {
+  const withPrevious = sources.filter(
+    (source) => source.previousVisits !== undefined
+  );
+  if (withPrevious.length === 0) {
+    return null;
+  }
+  return toGeoTrafficTotals(
+    withPrevious.map((source) => ({
+      ...source,
+      visits: source.previousVisits ?? 0,
+    }))
+  );
+}
+
 const timestampFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",

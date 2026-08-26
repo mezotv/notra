@@ -52,11 +52,13 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { CHAT_HISTORY_PINNED_LABEL } from "@/constants/chat-history";
 import {
   useChatSessionMutations,
   useChatSessions,
 } from "@/lib/hooks/use-chat-sessions";
 import { cn } from "@/lib/utils";
+import { getChatHistoryGroups } from "@/utils/chat-history-groups";
 import { SidebarLabel } from "./sidebar-label";
 
 export function ChatHistoryNav() {
@@ -121,7 +123,9 @@ export function ChatHistoryNav() {
   const pinnedSessions = sessions.filter((session) =>
     Boolean(session.pinnedAt)
   );
-  const recentSessions = sessions.filter((session) => !session.pinnedAt);
+  const historyGroups = getChatHistoryGroups(
+    sessions.filter((session) => !session.pinnedAt)
+  );
 
   useEffect(() => {
     if (!editingChatId) {
@@ -200,7 +204,7 @@ export function ChatHistoryNav() {
     }
 
     return (
-      <SidebarGroup>
+      <SidebarGroup key={label}>
         <SidebarGroupLabel>{label}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -378,8 +382,10 @@ export function ChatHistoryNav() {
                 key="chat-sessions"
                 transition={{ duration: 0.25, ease: "easeOut" }}
               >
-                {renderSessions("Pinned", pinnedSessions)}
-                {renderSessions("Recents", recentSessions)}
+                {renderSessions(CHAT_HISTORY_PINNED_LABEL, pinnedSessions)}
+                {historyGroups.map((group) =>
+                  renderSessions(group.label, group.sessions)
+                )}
               </motion.div>
             )}
           </AnimatePresence>

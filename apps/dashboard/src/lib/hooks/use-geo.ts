@@ -655,6 +655,31 @@ export function useGeoProjectCreate(organizationId: string) {
   });
 }
 
+export function useGeoRunSequence(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sequenceId: string) =>
+      dashboardOrpc.geo.sequenceRun.call({
+        organizationId,
+        projectId,
+        sequenceId,
+      }),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.sequenceResults.key(),
+      });
+      const engineCount = result.engines.length;
+      toast.success(
+        `Conversation played against ${engineCount} engine${engineCount === 1 ? "" : "s"}`
+      );
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to run the conversation"));
+    },
+  });
+}
+
 export function useGeoSequenceResults(
   organizationId: string,
   sequenceId?: string
@@ -664,7 +689,7 @@ export function useGeoSequenceResults(
     ...dashboardOrpc.geo.sequenceResults.queryOptions({
       input: { organizationId, projectId, sequenceId },
     }),
-    enabled: !!organizationId,
+    enabled: Boolean(organizationId && sequenceId),
     meta: { errorMessage: "Failed to load conversation results" },
   });
 }

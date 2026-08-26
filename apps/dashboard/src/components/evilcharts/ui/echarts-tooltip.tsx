@@ -34,8 +34,12 @@ export type TooltipAxisPointer = "none" | "line" | "shadow" | "cross";
 
 // Hover motion — keep the cursor line and tooltip sliding between categories
 // even when the chart itself skips its intro animation.
-const TOOLTIP_MOVE_DURATION_S = 0.14;
-const AXIS_POINTER_MOVE_MS = 180;
+export const TOOLTIP_MOVE_DURATION_S = 0.42;
+export const AXIS_POINTER_MOVE_MS = 420;
+const TOOLTIP_MOVE_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
+export const TOOLTIP_BAR_MOTION_STYLE = `transition:width ${TOOLTIP_MOVE_DURATION_S}s ${TOOLTIP_MOVE_EASING}`;
+export const TOOLTIP_VALUE_MOTION_STYLE =
+  "transition:opacity 0.24s ease,transform 0.24s ease";
 
 const HTML_ESCAPE_PATTERN = /[&<>"']/g;
 const HTML_ESCAPES: Record<string, string> = {
@@ -103,6 +107,17 @@ export function tooltipRow({
 const TOOLTIP_BAR_TRACK = 100;
 const TOOLTIP_BAR_MIN = 2;
 
+const TOOLTIP_BAR_GLOSS =
+  "linear-gradient(180deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.1) 38%, rgba(255,255,255,0) 54%, rgba(0,0,0,0.16) 100%)";
+
+/** Layered fill for tooltip bar tracks — gloss highlight over the series color. */
+export function tooltipBarFillStyle(paint: string): string {
+  const base = paint.includes("gradient")
+    ? paint
+    : `linear-gradient(180deg, ${paint} 0%, ${paint} 100%)`;
+  return `${TOOLTIP_BAR_GLOSS}, ${base}`;
+}
+
 export function formatTooltipValue(
   value: unknown,
   formatter?: TooltipValueFormatter
@@ -160,12 +175,13 @@ export function tooltipBarRow({
   paint?: string;
 }): string {
   const fill = paint ?? indicatorBackground(key, colorsCount);
-  return `<div class="grid w-full grid-cols-[1rem_minmax(0,1fr)_auto] gap-x-2 gap-y-1${dimmed}">
+  const barFill = escapeHtml(tooltipBarFillStyle(fill));
+  return `<div class="grid w-full grid-cols-[1rem_minmax(0,1fr)_auto] gap-x-2 gap-y-1.5${dimmed}">
           <span class="flex size-4 items-center justify-center self-center">${indicatorHtml ?? ""}</span>
           <span class="self-center truncate text-muted-foreground leading-none">${escapeHtml(labelText)}</span>
-          <span class="self-center font-mono font-medium text-foreground tabular-nums leading-none">${escapeHtml(valueText)}</span>
-          <div class="col-span-2 col-start-2 h-1.5 overflow-hidden rounded-full bg-muted">
-            <div class="h-full rounded-full" style="width:${widthPercent}%;background:${escapeHtml(fill)}"></div>
+          <span class="self-center font-mono font-medium text-foreground tabular-nums leading-none" style="${TOOLTIP_VALUE_MOTION_STYLE}">${escapeHtml(valueText)}</span>
+          <div class="col-span-2 col-start-2 h-2 overflow-hidden rounded-full bg-muted/45 shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)]">
+            <div class="ec-tooltip-bar-fill h-full rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.32),inset_0_-1px_1px_rgba(0,0,0,0.22)]" style="width:${widthPercent}%;background:${barFill};${TOOLTIP_BAR_MOTION_STYLE}"></div>
           </div>
         </div>`;
 }
@@ -216,8 +232,14 @@ export function composeTooltipBody(
     return items
       .map((item) =>
         tooltipRow({
+          // `paint` is the resolved color/gradient; prefer it over the
+          // `var(--color-*)` swatch, which only resolves while the tooltip DOM
+          // lives inside `[data-chart]` (appendTo:"body" tooltips do not).
           indicatorHtml:
-            item.indicatorHtml ?? tooltipIndicatorHtml(item.key, item.colorsCount),
+            item.indicatorHtml ??
+            (item.paint
+              ? tooltipColorSwatchHtml(item.paint)
+              : tooltipIndicatorHtml(item.key, item.colorsCount)),
           labelText: item.labelText,
           valueText: item.valueText,
           dimmed: item.dimmed,
@@ -273,9 +295,9 @@ export function tooltipShell({
     label.length > 0
       ? `<div class="font-medium text-foreground">${escapeHtml(label)}</div>`
       : "";
-  return `<div class="grid ${isBars ? "min-w-52 gap-2 px-2.5 py-2" : "min-w-32 gap-1.5 px-2.5 py-1.5"} items-start border border-border/50 text-xs shadow-xl ${roundnessClass[roundness]} ${tooltipVariantClass[variant]}">
+  return `<div class="grid ${isBars ? "min-w-56 gap-2.5 px-3 py-2.5" : "min-w-32 gap-1.5 px-2.5 py-1.5"} items-start border border-border/50 text-xs shadow-[0_12px_40px_-8px_rgba(0,0,0,0.45),0_0_0_1px_rgba(255,255,255,0.04)_inset] ${roundnessClass[roundness]} ${tooltipVariantClass[variant]}">
       ${header}
-      <div class="grid ${isBars ? "gap-2" : "gap-1.5"}">${body}</div>
+      <div class="grid ${isBars ? "gap-2.5" : "gap-1.5"}" style="transition:opacity 0.24s ease">${body}</div>
     </div>`;
 }
 
@@ -335,7 +357,7 @@ export function tooltipBaseOption(params: {
     type: pointer === "cross" ? ("cross" as const) : ("line" as const),
     animation: true,
     animationDurationUpdate: AXIS_POINTER_MOVE_MS,
-    animationEasingUpdate: "cubicOut" as const,
+    animationEasingUpdate: "cubicInOut" as const,
     label: { show: false },
     lineStyle: {
       color: axisPointerColor,
@@ -351,7 +373,7 @@ export function tooltipBaseOption(params: {
 
   // Custom `position` normally disables ECharts' transform transition — keep
   // one anyway so the box eases between days instead of teleporting.
-  const tooltipMotionCss = `box-shadow:none;pointer-events:none;transition:transform ${TOOLTIP_MOVE_DURATION_S}s cubic-bezier(0.22, 1, 0.36, 1),opacity 120ms ease;`;
+  const tooltipMotionCss = `box-shadow:none;pointer-events:none;will-change:transform;transition:transform ${TOOLTIP_MOVE_DURATION_S}s ${TOOLTIP_MOVE_EASING},opacity 0.28s ease;`;
 
   return {
     show: present,
@@ -359,7 +381,7 @@ export function tooltipBaseOption(params: {
     confine,
     enterable: false,
     showDelay: 0,
-    hideDelay: 50,
+    hideDelay: 80,
     transitionDuration: TOOLTIP_MOVE_DURATION_S,
     // Sparklines sit in overflow-hidden cards; appending to body is what
     // actually lets confine:false paint above a 40–48px plot.

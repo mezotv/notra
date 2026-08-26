@@ -144,6 +144,7 @@ export const loadGeoSequenceResults = Effect.fn("geo.sequenceResults")(
         position: row.position,
         sentiment: row.sentiment,
         excerpt: row.excerpt,
+        sources: row.sources,
         lastCheckedAt: row.lastCheckedAt.toISOString(),
       })),
     };

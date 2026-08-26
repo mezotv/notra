@@ -3,17 +3,17 @@
 import { MessageResponse } from "@notra/ui/components/ai-elements/message";
 import { ChatgptActions } from "@notra/ui/components/brainless/chatgpt/chatgpt-actions";
 import { ChatgptComposer } from "@notra/ui/components/brainless/chatgpt/chatgpt-composer";
-import { ChatgptMessage } from "@notra/ui/components/brainless/chatgpt/chatgpt-message";
 import { ClaudeChatActions } from "@notra/ui/components/brainless/claude-chat/claude-chat-actions";
 import { ClaudeChatComposer } from "@notra/ui/components/brainless/claude-chat/claude-chat-composer";
-import { ClaudeChatMessage } from "@notra/ui/components/brainless/claude-chat/claude-chat-message";
 import { GeminiActions } from "@notra/ui/components/brainless/gemini/gemini-actions";
 import { GeminiComposer } from "@notra/ui/components/brainless/gemini/gemini-composer";
-import { GeminiMessage } from "@notra/ui/components/brainless/gemini/gemini-message";
 import { PerplexityActions } from "@notra/ui/components/brainless/perplexity/perplexity-actions";
 import { PerplexityComposer } from "@notra/ui/components/brainless/perplexity/perplexity-composer";
-import { PerplexityMessage } from "@notra/ui/components/brainless/perplexity/perplexity-message";
-import { PerplexitySearch } from "@notra/ui/components/brainless/perplexity/perplexity-search";
+import {
+  PerplexitySearch,
+  type PerplexitySearchSource,
+} from "@notra/ui/components/brainless/perplexity/perplexity-search";
+import { GeoSkinMessage } from "@/components/geo/geo-skin-message";
 import { cn } from "@/lib/utils";
 import type { GeoChatSkin, GeoPromptAnswerThreadProps } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
@@ -29,7 +29,7 @@ import { perplexitySourcesFromExcerpt } from "@/utils/geo-perplexity-sources";
 const ANSWER_MARKDOWN_CLASS =
   "[&_h1]:mt-0 [&_h1]:mb-2 [&_h1]:text-[1.15em] [&_h1]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:text-[1.05em] [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_h3]:text-[1em] [&_h3]:font-semibold [&_p]:my-2.5 [&_ul]:my-2.5 [&_ol]:my-2.5";
 
-const SKIN_SURFACE: Record<GeoChatSkin, string> = {
+export const SKIN_SURFACE: Record<GeoChatSkin, string> = {
   claude: "bg-[#faf9f5] dark:bg-[#1c1b18]",
   chatgpt: "bg-background",
   gemini: "bg-white dark:bg-[#1f1f1f]",
@@ -56,7 +56,13 @@ function emptyAnswerClassName(skin: GeoChatSkin): string {
   return "text-[15px] leading-7";
 }
 
-function AnswerMarkdown({ text, skin }: { text: string; skin: GeoChatSkin }) {
+export function AnswerMarkdown({
+  text,
+  skin,
+}: {
+  text: string;
+  skin: GeoChatSkin;
+}) {
   return (
     <MessageResponse
       className={cn(
@@ -92,119 +98,30 @@ function AssistantBody({
   );
 }
 
-function ClaudeAnswerThread({
-  prompt,
+function assistantActions({
+  skin,
   excerpt,
-  mentioned,
   timestamp,
+  sources,
 }: {
-  prompt: string;
+  skin: GeoChatSkin;
   excerpt: string;
-  mentioned: boolean;
   timestamp: string;
+  sources: PerplexitySearchSource[];
 }) {
-  return (
-    <>
-      <ClaudeChatMessage from="user">{prompt}</ClaudeChatMessage>
-      <ClaudeChatMessage
-        actions={
-          excerpt.length > 0 ? (
-            <ClaudeChatActions text={excerpt} timestamp={timestamp} />
-          ) : undefined
-        }
-        from="assistant"
-      >
-        <AssistantBody excerpt={excerpt} mentioned={mentioned} skin="claude" />
-      </ClaudeChatMessage>
-    </>
-  );
-}
-
-function ChatgptAnswerThread({
-  prompt,
-  excerpt,
-  mentioned,
-}: {
-  prompt: string;
-  excerpt: string;
-  mentioned: boolean;
-}) {
-  return (
-    <>
-      <ChatgptMessage from="user">{prompt}</ChatgptMessage>
-      <ChatgptMessage
-        actions={
-          excerpt.length > 0 ? <ChatgptActions text={excerpt} /> : undefined
-        }
-        from="assistant"
-      >
-        <AssistantBody excerpt={excerpt} mentioned={mentioned} skin="chatgpt" />
-      </ChatgptMessage>
-    </>
-  );
-}
-
-function GeminiAnswerThread({
-  prompt,
-  excerpt,
-  mentioned,
-}: {
-  prompt: string;
-  excerpt: string;
-  mentioned: boolean;
-}) {
-  return (
-    <>
-      <GeminiMessage from="user">{prompt}</GeminiMessage>
-      <GeminiMessage
-        actions={
-          excerpt.length > 0 ? <GeminiActions text={excerpt} /> : undefined
-        }
-        from="assistant"
-      >
-        <AssistantBody excerpt={excerpt} mentioned={mentioned} skin="gemini" />
-      </GeminiMessage>
-    </>
-  );
-}
-
-function PerplexityAnswerThread({
-  prompt,
-  excerpt,
-  mentioned,
-}: {
-  prompt: string;
-  excerpt: string;
-  mentioned: boolean;
-}) {
-  const sources = perplexitySourcesFromExcerpt(excerpt);
-
-  return (
-    <>
-      <PerplexityMessage from="user">{prompt}</PerplexityMessage>
-      <PerplexityMessage
-        actions={
-          excerpt.length > 0 ? (
-            <PerplexityActions sources={sources} text={excerpt} />
-          ) : undefined
-        }
-        from="assistant"
-        search={
-          <PerplexitySearch
-            queries={[prompt]}
-            sources={sources}
-            title="Web search"
-          />
-        }
-      >
-        <AssistantBody
-          excerpt={excerpt}
-          mentioned={mentioned}
-          skin="perplexity"
-        />
-      </PerplexityMessage>
-    </>
-  );
+  if (excerpt.length === 0) {
+    return undefined;
+  }
+  if (skin === "claude") {
+    return <ClaudeChatActions text={excerpt} timestamp={timestamp} />;
+  }
+  if (skin === "gemini") {
+    return <GeminiActions text={excerpt} />;
+  }
+  if (skin === "perplexity") {
+    return <PerplexityActions sources={sources} text={excerpt} />;
+  }
+  return <ChatgptActions text={excerpt} />;
 }
 
 function SkinComposer({ engine, skin }: { engine: string; skin: GeoChatSkin }) {
@@ -260,40 +177,31 @@ function ThreadMessages({
   skin: GeoChatSkin;
   timestamp: string;
 }) {
-  if (skin === "claude") {
-    return (
-      <ClaudeAnswerThread
-        excerpt={excerpt}
-        mentioned={mentioned}
-        prompt={prompt}
-        timestamp={timestamp}
-      />
-    );
-  }
-  if (skin === "gemini") {
-    return (
-      <GeminiAnswerThread
-        excerpt={excerpt}
-        mentioned={mentioned}
-        prompt={prompt}
-      />
-    );
-  }
-  if (skin === "perplexity") {
-    return (
-      <PerplexityAnswerThread
-        excerpt={excerpt}
-        mentioned={mentioned}
-        prompt={prompt}
-      />
-    );
-  }
+  const sources =
+    skin === "perplexity" ? perplexitySourcesFromExcerpt(excerpt) : [];
+
   return (
-    <ChatgptAnswerThread
-      excerpt={excerpt}
-      mentioned={mentioned}
-      prompt={prompt}
-    />
+    <>
+      <GeoSkinMessage from="user" skin={skin}>
+        {prompt}
+      </GeoSkinMessage>
+      <GeoSkinMessage
+        actions={assistantActions({ excerpt, skin, sources, timestamp })}
+        from="assistant"
+        search={
+          skin === "perplexity" ? (
+            <PerplexitySearch
+              queries={[prompt]}
+              sources={sources}
+              title="Web search"
+            />
+          ) : undefined
+        }
+        skin={skin}
+      >
+        <AssistantBody excerpt={excerpt} mentioned={mentioned} skin={skin} />
+      </GeoSkinMessage>
+    </>
   );
 }
 

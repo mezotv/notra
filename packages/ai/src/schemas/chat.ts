@@ -52,6 +52,7 @@ export const slackRelayMetadataSchema = z.object({
 
 export const chatMessageMetadataSchema = z.object({
   chatId: z.string().min(1).optional(),
+  authorUserId: z.string().min(1).max(200).optional(),
   model: chatModelSchema.optional(),
   requestedModel: chatModelSchema.optional(),
   thinkingLevel: thinkingLevelSchema.optional(),

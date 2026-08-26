@@ -162,18 +162,6 @@ export function CompetitorsTable({
           ),
       },
       {
-        key: "color",
-        header: "Color",
-        width: "5rem",
-        cell: (row) => (
-          <span
-            aria-hidden="true"
-            className="block size-5 rounded-md"
-            style={{ backgroundColor: row.color.light }}
-          />
-        ),
-      },
-      {
         key: "kind",
         header: "Type",
         width: "7rem",

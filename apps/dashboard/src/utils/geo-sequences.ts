@@ -1,17 +1,23 @@
-import type { GeoSequenceTurnResult } from "@/types/geo";
+import type {
+  GeoSequenceEngineThread,
+  GeoSequenceTurnResult,
+} from "@/types/geo";
 
-export function buildSequenceTurnGroups(
+export function buildSequenceEngineThreads(
   results: readonly GeoSequenceTurnResult[],
   sequenceId: string | undefined
-): [number, GeoSequenceTurnResult[]][] {
-  const grouped = new Map<number, GeoSequenceTurnResult[]>();
+): GeoSequenceEngineThread[] {
+  const grouped = new Map<string, GeoSequenceTurnResult[]>();
   for (const result of results) {
     if (result.sequenceId !== sequenceId) {
       continue;
     }
-    const entries = grouped.get(result.turn) ?? [];
+    const entries = grouped.get(result.engine) ?? [];
     entries.push(result);
-    grouped.set(result.turn, entries);
+    grouped.set(result.engine, entries);
   }
-  return [...grouped.entries()].sort(([left], [right]) => left - right);
+  return [...grouped.entries()].map(([engine, turns]) => ({
+    engine,
+    turns: [...turns].sort((left, right) => left.turn - right.turn),
+  }));
 }

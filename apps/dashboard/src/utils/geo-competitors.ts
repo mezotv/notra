@@ -12,7 +12,10 @@ import type {
   GeoCompetitorKind,
   GeoCompetitorRowEntry,
   GeoCompetitorSharePoint,
+  GeoCompetitorShareTimeseriesPoint,
   GeoCompetitorTypeFilter,
+  GeoSparklinePoint,
+  ShareOfVoiceRow,
 } from "@/types/geo";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
 
@@ -217,6 +220,62 @@ export function mergeCompetitorSharePoints(
   }
 
   return [...merged.values()].sort((a, b) => b.mentions - a.mentions);
+}
+
+export function buildShareOfVoiceMentionSparklines(
+  timeseries: readonly GeoCompetitorShareTimeseriesPoint[],
+  rows: readonly ShareOfVoiceRow[],
+  competitors: readonly GeoCompetitor[] | undefined
+): Map<string, GeoSparklinePoint[]> {
+  const canonicalByKey = competitorCanonicalMap(competitors ?? []);
+  const byBrandDay = new Map<string, Map<string, number>>();
+
+  for (const point of timeseries) {
+    const rawKey = competitorKey(point.brand);
+    const brand = canonicalByKey.get(rawKey) ?? point.brand;
+    const key = competitorKey(brand);
+    const dayMap = byBrandDay.get(key) ?? new Map<string, number>();
+    dayMap.set(point.day, (dayMap.get(point.day) ?? 0) + point.mentions);
+    byBrandDay.set(key, dayMap);
+  }
+
+  const allDays = [...new Set(timeseries.map((point) => point.day))].sort();
+  const topBrandKeys = new Set(
+    rows
+      .filter((row) => row.brand !== CHART_OTHER_SLICE_LABEL)
+      .map((row) => competitorKey(row.brand))
+  );
+
+  const sparklines = new Map<string, GeoSparklinePoint[]>();
+
+  for (const row of rows) {
+    if (row.brand === CHART_OTHER_SLICE_LABEL) {
+      sparklines.set(
+        row.brand,
+        allDays.map((day) => {
+          let mentions = 0;
+          for (const [brandKey, dayMap] of byBrandDay) {
+            if (!topBrandKeys.has(brandKey)) {
+              mentions += dayMap.get(day) ?? 0;
+            }
+          }
+          return { day, value: mentions };
+        })
+      );
+      continue;
+    }
+
+    const dayMap = byBrandDay.get(competitorKey(row.brand));
+    sparklines.set(
+      row.brand,
+      allDays.map((day) => ({
+        day,
+        value: dayMap?.get(day) ?? 0,
+      }))
+    );
+  }
+
+  return sparklines;
 }
 
 export function geoCompetitorDetailPath(

@@ -1,139 +1,266 @@
 "use client";
 
-import { Delete02Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@notra/ui/components/ui/card";
+  Delete02Icon,
+  Loading03Icon,
+  PencilEdit02Icon,
+  PlayIcon,
+  PlusSignIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Switch } from "@notra/ui/components/ui/switch";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { ConversationBuilderDialog } from "@/components/geo/conversation-builder-dialog";
 import { ConversationResultsDialog } from "@/components/geo/conversation-results-dialog";
+import { Table, type TableColumn } from "@/components/motion/table";
+import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import { useGeoRunSequence } from "@/lib/hooks/use-geo";
 import { useGeoSequencesDb } from "@/lib/hooks/use-geo-db";
 import type { ConversationsCardProps, GeoPromptSequence } from "@/types/geo";
+import { tableHeightFor } from "@/utils/table";
+
+const CONVERSATION_TURNS_WIDTH = "4.5rem";
+const CONVERSATION_ACTIONS_WIDTH = "9rem";
+
+function ConversationRowActions({
+  sequence,
+  isRunning,
+  isPending,
+  isRunPending,
+  onRun,
+  onToggle,
+  onEdit,
+  onDelete,
+}: {
+  sequence: GeoPromptSequence;
+  isRunning: boolean;
+  isPending: boolean;
+  isRunPending: boolean;
+  onRun: () => void;
+  onToggle: (enabled: boolean) => void;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label={`Run ${sequence.name} now`}
+              disabled={isRunPending}
+              onClick={(event) => {
+                event.stopPropagation();
+                onRun();
+              }}
+              size="icon"
+              variant="ghost"
+            />
+          }
+        >
+          <HugeiconsIcon
+            className={isRunning ? "animate-spin" : undefined}
+            icon={isRunning ? Loading03Icon : PlayIcon}
+            size={14}
+          />
+        </TooltipTrigger>
+        <TooltipContent>
+          {isRunning
+            ? "Playing against the engines…"
+            : "Run this conversation now"}
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Switch
+              aria-label={
+                sequence.enabled
+                  ? `Pause ${sequence.name}`
+                  : `Enable ${sequence.name}`
+              }
+              checked={sequence.enabled}
+              disabled={isPending}
+              onCheckedChange={onToggle}
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+              size="sm"
+            />
+          }
+        />
+        <TooltipContent>
+          {sequence.enabled ? "Included in scans" : "Paused — skipped in scans"}
+        </TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label={`Edit ${sequence.name}`}
+              onClick={(event) => {
+                event.stopPropagation();
+                onEdit();
+              }}
+              size="icon"
+              variant="ghost"
+            />
+          }
+        >
+          <HugeiconsIcon icon={PencilEdit02Icon} size={14} />
+        </TooltipTrigger>
+        <TooltipContent>Edit</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              aria-label={`Delete ${sequence.name}`}
+              disabled={isPending}
+              onClick={(event) => {
+                event.stopPropagation();
+                onDelete();
+              }}
+              size="icon"
+              variant="ghost"
+            />
+          }
+        >
+          <HugeiconsIcon icon={Delete02Icon} size={14} />
+        </TooltipTrigger>
+        <TooltipContent>Delete</TooltipContent>
+      </Tooltip>
+    </div>
+  );
+}
 
 export function ConversationsCard({ organizationId }: ConversationsCardProps) {
   const { sequences, pendingSequenceIds, updateSequence, removeSequence } =
     useGeoSequencesDb(organizationId);
+  const runSequence = useGeoRunSequence(organizationId);
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editing, setEditing] = useState<GeoPromptSequence | null>(null);
   const [viewing, setViewing] = useState<GeoPromptSequence | null>(null);
 
-  return (
-    <Card className="overflow-visible rounded-2xl bg-transparent p-0 ring-0">
-      <CardHeader className="rounded-t-2xl border border-border border-b-0 bg-muted pt-4 pb-9">
-        <CardTitle>Conversations</CardTitle>
-        <CardDescription>
-          Multi-turn questions where buying decisions happen
-        </CardDescription>
-        <CardAction>
-          <Button
-            onClick={() => {
-              setEditing(null);
+  const runningSequenceId = runSequence.isPending
+    ? runSequence.variables
+    : null;
+
+  const columns = useMemo<TableColumn<GeoPromptSequence>[]>(
+    () => [
+      {
+        key: "name",
+        header: (
+          <span className="inline-flex items-center gap-1.5">
+            Conversation
+            <span className="font-normal text-muted-foreground tabular-nums">
+              ({sequences.length})
+            </span>
+          </span>
+        ),
+        sortable: true,
+        width: "1fr",
+        cell: (row) => (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <span className="block w-full min-w-0 truncate font-medium">
+                  {row.name}
+                </span>
+              }
+            />
+            <TooltipContent className="max-w-sm">{row.name}</TooltipContent>
+          </Tooltip>
+        ),
+        sortValue: (row) => row.name,
+      },
+      {
+        key: "turns",
+        header: "Turns",
+        width: CONVERSATION_TURNS_WIDTH,
+        minWidth: CONVERSATION_TURNS_WIDTH,
+        sortable: true,
+        align: "right",
+        cell: (row) => (
+          <span className="text-muted-foreground tabular-nums">
+            {row.steps.length}
+          </span>
+        ),
+        sortValue: (row) => row.steps.length,
+      },
+      {
+        key: "actions",
+        header: "",
+        width: CONVERSATION_ACTIONS_WIDTH,
+        minWidth: CONVERSATION_ACTIONS_WIDTH,
+        align: "right",
+        cell: (row) => (
+          <ConversationRowActions
+            isPending={pendingSequenceIds.has(row.id)}
+            isRunning={runningSequenceId === row.id}
+            isRunPending={runSequence.isPending}
+            onDelete={() => removeSequence(row.id)}
+            onEdit={() => {
+              setEditing(row);
               setBuilderOpen(true);
             }}
-            size="sm"
-            variant="outline"
-          >
-            <HugeiconsIcon icon={PlusSignIcon} size={14} />
-            New Conversation
-          </Button>
-        </CardAction>
-      </CardHeader>
-      <CardContent className="-mt-9 relative rounded-2xl border border-border bg-card pt-2 pb-2">
-        {sequences.length === 0 ? (
-          <p className="flex h-32 items-center justify-center text-center text-muted-foreground text-sm">
-            Track an opening question plus the follow-ups that close the deal
+            onRun={() => runSequence.mutate(row.id)}
+            onToggle={(enabled) => updateSequence(row.id, { enabled })}
+            sequence={row}
+          />
+        ),
+      },
+    ],
+    [
+      pendingSequenceIds,
+      removeSequence,
+      runSequence,
+      runningSequenceId,
+      sequences.length,
+      updateSequence,
+    ]
+  );
+
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-1">
+          <h2 className="font-semibold text-sm">Conversations</h2>
+          <p className="text-muted-foreground text-sm">
+            Multi-turn questions where buying decisions happen
           </p>
-        ) : (
-          <div className="divide-y divide-border/60">
-            {sequences.map((sequence) => (
-              <div
-                className="flex items-center gap-3 px-4 py-2.5"
-                key={sequence.id}
-              >
-                <button
-                  className="min-w-0 flex-1 text-left"
-                  onClick={() => setViewing(sequence)}
-                  type="button"
-                >
-                  <p className="truncate font-medium text-sm">
-                    {sequence.name}
-                  </p>
-                  <p className="truncate text-muted-foreground text-xs">
-                    {sequence.steps.length}{" "}
-                    {sequence.steps.length === 1 ? "turn" : "turns"} ·{" "}
-                    {sequence.steps[0]}
-                  </p>
-                </button>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Button
-                    onClick={() => {
-                      setEditing(sequence);
-                      setBuilderOpen(true);
-                    }}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    Edit
-                  </Button>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Switch
-                          aria-label={
-                            sequence.enabled
-                              ? `Pause ${sequence.name}`
-                              : `Enable ${sequence.name}`
-                          }
-                          checked={sequence.enabled}
-                          disabled={pendingSequenceIds.has(sequence.id)}
-                          onCheckedChange={(enabled) =>
-                            updateSequence(sequence.id, { enabled })
-                          }
-                          size="sm"
-                        />
-                      }
-                    />
-                    <TooltipContent>
-                      {sequence.enabled
-                        ? "Included in scans"
-                        : "Paused — skipped in scans"}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          aria-label={`Delete ${sequence.name}`}
-                          disabled={pendingSequenceIds.has(sequence.id)}
-                          onClick={() => removeSequence(sequence.id)}
-                          size="icon"
-                          variant="ghost"
-                        />
-                      }
-                    >
-                      <HugeiconsIcon icon={Delete02Icon} size={14} />
-                    </TooltipTrigger>
-                    <TooltipContent>Delete</TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
+        </div>
+        <Button
+          onClick={() => {
+            setEditing(null);
+            setBuilderOpen(true);
+          }}
+          size="sm"
+          variant="outline"
+        >
+          <HugeiconsIcon icon={PlusSignIcon} size={14} />
+          New Conversation
+        </Button>
+      </div>
+
+      <Table
+        className="rounded-2xl"
+        columns={columns}
+        data={sequences}
+        defaultSort={{ key: "name", direction: "asc" }}
+        emptyState="Track an opening question plus the follow-ups that close the deal"
+        getRowId={(row) => row.id}
+        height={tableHeightFor(Math.max(sequences.length, 2))}
+        onRowClick={setViewing}
+        resizable
+        rowHeight={TABLE_ROW_HEIGHT}
+      />
+
       <ConversationBuilderDialog
         key={editing?.id ?? "new"}
         onOpenChange={(next) => {
@@ -147,15 +274,21 @@ export function ConversationsCard({ organizationId }: ConversationsCardProps) {
         sequence={editing}
       />
       <ConversationResultsDialog
+        isRunning={viewing !== null && runningSequenceId === viewing.id}
         onOpenChange={(next) => {
           if (!next) {
             setViewing(null);
+          }
+        }}
+        onRun={() => {
+          if (viewing && !runSequence.isPending) {
+            runSequence.mutate(viewing.id);
           }
         }}
         open={viewing !== null}
         organizationId={organizationId}
         sequence={viewing}
       />
-    </Card>
+    </section>
   );
 }

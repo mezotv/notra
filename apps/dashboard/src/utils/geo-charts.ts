@@ -234,6 +234,25 @@ export function mentionRateSparklineLabel(
   return `Mention rate ${from} to ${to} over ${points.length} days`;
 }
 
+export function mentionCountSparklineLabel(
+  points: readonly GeoSparklinePoint[]
+): string {
+  const first = points[0];
+  const last = points.at(-1);
+  if (!(first && last)) {
+    return "Mention trend";
+  }
+  const from = formatChartInteger(first.value);
+  const to = formatChartInteger(last.value);
+  if (points.length === 1) {
+    return `${from} mentions`;
+  }
+  if (from === to) {
+    return `${to} mentions over ${points.length} days`;
+  }
+  return `${from} to ${to} mentions over ${points.length} days`;
+}
+
 function daysWithSettledUsage(knownDays: readonly string[]): string[] {
   const settled = knownDays.filter((day) => day < todayIsoDate());
   return settled.length > 0 ? [...settled] : [...knownDays];

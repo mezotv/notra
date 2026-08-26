@@ -12,13 +12,6 @@ import {
   useSidebar,
 } from "@notra/ui/components/ui/sidebar";
 import { cn } from "@notra/ui/lib/utils";
-import {
-  AnimatePresence,
-  domAnimation,
-  LazyMotion,
-  m,
-  useReducedMotion,
-} from "motion/react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type * as React from "react";
 import { useEffect, useRef } from "react";
@@ -32,26 +25,26 @@ import { OrgSelector } from "./org-selector";
 import { SidebarLabel } from "./sidebar-label";
 import { SidebarOnboarding } from "./sidebar-onboarding";
 import { SidebarProjectSwitcher } from "./sidebar-project-switcher";
+import { SidebarSwap } from "./sidebar-swap";
 import { SidebarTrialExpired } from "./sidebar-trial-expired";
 import { SidebarUpgrade } from "./sidebar-upgrade";
 
-const createMainVariants = (shouldReduceMotion: boolean | null) => ({
-  initial: shouldReduceMotion
-    ? { opacity: 1, x: 0 }
-    : { opacity: 0, x: "-100%" },
-  animate: { opacity: 1, x: 0 },
-  exit: shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: "-100%" },
-});
-
-const createSubpageVariants = (shouldReduceMotion: boolean | null) => ({
-  initial: shouldReduceMotion
-    ? { opacity: 1, x: 0 }
-    : { opacity: 0, x: "100%" },
-  animate: { opacity: 1, x: 0 },
-  exit: shouldReduceMotion ? { opacity: 1, x: 0 } : { opacity: 0, x: "100%" },
-});
-
-const TRANSITION = { duration: 0.2, type: "spring" as const, bounce: 0.1 };
+function SidebarBackButton({ onBack }: { onBack: () => void }) {
+  return (
+    <div className="sticky top-0 z-10 bg-sidebar p-2">
+      <SidebarMenu>
+        <SidebarMenuButton
+          className="[&>*]:group-data-[collapsible=icon]:-translate-x-px cursor-pointer transition-colors duration-200 hover:bg-sidebar-accent"
+          onClick={onBack}
+          tooltip="Back"
+        >
+          <HugeiconsIcon icon={ArrowLeft01Icon} />
+          <SidebarLabel>Back</SidebarLabel>
+        </SidebarMenuButton>
+      </SidebarMenu>
+    </div>
+  );
+}
 
 export function DashboardSidebar({
   className,
@@ -62,16 +55,16 @@ export function DashboardSidebar({
   const searchParams = useSearchParams();
   const { isMobile, setOpenMobile } = useSidebar();
   const { activeOrganization } = useOrganizationsContext();
-  const shouldReduceMotion = useReducedMotion();
   const navigationKey = `${pathname}?${searchParams.toString()}`;
   const pathnameSegments = pathname.split("/").filter(Boolean);
   const slug = pathnameSegments[0] ?? activeOrganization?.slug ?? "";
 
   const section = pathnameSegments[1];
-  const isSettingsRoute = section === "settings";
-  const isChatRoute = section === "chat";
-  const isBrandRoute = section === "brand";
-  const isSubpage = isSettingsRoute || isChatRoute || isBrandRoute;
+  const panelId =
+    section === "settings" || section === "chat" || section === "brand"
+      ? section
+      : "main";
+  const isSubpage = panelId !== "main";
 
   const hasVisitedMainRef = useRef(false);
   const previousNavigationKeyRef = useRef(navigationKey);
@@ -96,109 +89,71 @@ export function DashboardSidebar({
     router.push(`/${slug}`);
   }
 
-  const mainVariants = createMainVariants(shouldReduceMotion);
-  const subpageVariants = createSubpageVariants(shouldReduceMotion);
-
   return (
     <Sidebar
       collapsible="icon"
       {...props}
       className={cn("overflow-hidden overscroll-none border-none", className)}
     >
-      <LazyMotion features={domAnimation}>
-        <SidebarHeader>
-          <SidebarProjectSwitcher />
-        </SidebarHeader>
-        <SidebarContent>
-          <AnimatePresence initial={false} mode="popLayout">
-            {isSubpage && (
-              <m.div
-                animate="animate"
-                className="sticky top-0 z-10 bg-sidebar p-2"
-                exit="exit"
-                initial="initial"
-                key="back-button"
-                transition={TRANSITION}
-                variants={subpageVariants}
-              >
-                <SidebarMenu>
-                  <SidebarMenuButton
-                    className="[&>*]:group-data-[collapsible=icon]:-translate-x-px cursor-pointer transition-colors duration-200 hover:bg-sidebar-accent"
-                    onClick={handleBack}
-                    tooltip="Back"
-                  >
-                    <HugeiconsIcon icon={ArrowLeft01Icon} />
-                    <SidebarLabel>Back</SidebarLabel>
-                  </SidebarMenuButton>
-                </SidebarMenu>
-              </m.div>
-            )}
-          </AnimatePresence>
-          <AnimatePresence initial={false} mode="popLayout">
-            {isSettingsRoute && (
-              <m.div
-                animate="animate"
-                className="flex flex-1 flex-col"
-                exit="exit"
-                initial="initial"
-                key="settings"
-                transition={TRANSITION}
-                variants={subpageVariants}
-              >
-                <NavSettings slug={slug} />
-              </m.div>
-            )}
-            {!isSettingsRoute && isChatRoute && (
-              <m.div
-                animate="animate"
-                className="flex flex-1 flex-col"
-                exit="exit"
-                initial="initial"
-                key="chat"
-                transition={TRANSITION}
-                variants={subpageVariants}
-              >
-                <ChatHistoryNav />
-              </m.div>
-            )}
-            {isBrandRoute && (
-              <m.div
-                animate="animate"
-                className="flex flex-1 flex-col"
-                exit="exit"
-                initial="initial"
-                key="brand"
-                transition={TRANSITION}
-                variants={subpageVariants}
-              >
-                <NavBrandIdentity slug={slug} />
-              </m.div>
-            )}
-            {!isSubpage && (
-              <m.div
-                animate="animate"
-                className="flex flex-1 flex-col"
-                exit="exit"
-                initial="initial"
-                key="main"
-                transition={TRANSITION}
-                variants={mainVariants}
-              >
-                <NavMain />
-              </m.div>
-            )}
-          </AnimatePresence>
-          <div className="mt-auto">
-            <NavUtility slug={slug} />
-            <SidebarTrialExpired />
-            <SidebarOnboarding />
-            <SidebarUpgrade />
-          </div>
-        </SidebarContent>
-        <SidebarFooter>
-          <OrgSelector />
-        </SidebarFooter>
-      </LazyMotion>
+      <SidebarHeader>
+        <SidebarProjectSwitcher />
+      </SidebarHeader>
+      <SidebarContent>
+        <SidebarSwap
+          activeId={panelId}
+          className="flex min-h-0 flex-1 flex-col overflow-x-clip"
+          items={[
+            {
+              id: "main",
+              side: "left",
+              className: "flex-1",
+              children: <NavMain />,
+            },
+            {
+              id: "chat",
+              side: "right",
+              className: "flex-1",
+              children: (
+                <>
+                  <SidebarBackButton onBack={handleBack} />
+                  <ChatHistoryNav />
+                </>
+              ),
+            },
+            {
+              id: "settings",
+              side: "right",
+              className: "flex-1",
+              children: (
+                <>
+                  <SidebarBackButton onBack={handleBack} />
+                  <NavSettings slug={slug} />
+                </>
+              ),
+            },
+            {
+              id: "brand",
+              side: "right",
+              className: "flex-1",
+              children: (
+                <>
+                  <SidebarBackButton onBack={handleBack} />
+                  <NavBrandIdentity slug={slug} />
+                </>
+              ),
+            },
+          ]}
+        />
+        <div className="mt-auto">
+          <NavUtility slug={slug} />
+          <SidebarTrialExpired />
+          <SidebarOnboarding />
+          <SidebarUpgrade />
+        </div>
+      </SidebarContent>
+      <SidebarFooter>
+        <OrgSelector />
+      </SidebarFooter>
     </Sidebar>
   );
 }

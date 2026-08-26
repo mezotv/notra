@@ -125,6 +125,12 @@ export const ratelimit = {
     prefix: "ratelimit:geo-writer-plan",
     limiter: Ratelimit.slidingWindow(10, "10m"),
   }),
+  geoSequenceRun: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:geo-sequence-run",
+    limiter: Ratelimit.slidingWindow(10, "10m"),
+  }),
   geoCompetitorSuggestions: new Ratelimit({
     redis,
     analytics: true,

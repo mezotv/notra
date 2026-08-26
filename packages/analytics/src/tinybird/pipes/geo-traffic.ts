@@ -93,15 +93,17 @@ export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
           anyMerge(agent_state) AS agent,
           anyMerge(category_state) AS category,
           anyMerge(confidence_state) AS confidence,
-          countMerge(visits_state) AS visits,
-          countIfMerge(markdown_visits_state) AS markdown_visits,
-          uniqExactMerge(paths_state) AS paths,
-          maxMerge(last_seen_state) AS last_seen_at
+          countMergeIf(visits_state, (${GEO_DAY_CURRENT_CONDITION})) AS visits,
+          countMergeIf(visits_state, (${GEO_DAY_PREVIOUS_CONDITION})) AS previous_visits,
+          countIfMergeIf(markdown_visits_state, (${GEO_DAY_CURRENT_CONDITION})) AS markdown_visits,
+          uniqExactMergeIf(paths_state, (${GEO_DAY_CURRENT_CONDITION})) AS paths,
+          maxMergeIf(last_seen_state, (${GEO_DAY_CURRENT_CONDITION})) AS last_seen_at
         FROM geo_traffic_daily
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
-          ${GEO_DAY_WINDOW_SQL}
+          ${GEO_DAY_COMPARISON_WINDOW_SQL}
         GROUP BY source, visitor_type
+        HAVING visits > 0
         ORDER BY visits DESC, source ASC
       `,
     }),
@@ -113,6 +115,7 @@ export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
     category: t.string(),
     confidence: t.string(),
     visits: t.uint64(),
+    previous_visits: t.uint64(),
     markdown_visits: t.uint64(),
     paths: t.uint64(),
     last_seen_at: t.dateTime(),

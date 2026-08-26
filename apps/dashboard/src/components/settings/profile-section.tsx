@@ -21,6 +21,7 @@ import { authClient } from "@/lib/auth/client";
 import { uploadFile } from "@/lib/upload/client";
 import { errorMessageOr } from "@/lib/utils";
 import type { ProfileSectionProps } from "@/types/settings/account";
+import { getUserAvatarUrl } from "@/utils/avatar";
 
 const nameSchema = z.string().trim().min(1, "Name cannot be empty");
 
@@ -137,7 +138,7 @@ export function ProfileSection({
               <AvatarImage
                 alt={user.name}
                 className="rounded-lg"
-                src={user.image ?? undefined}
+                src={getUserAvatarUrl(user.image, user.email)}
               />
               <AvatarFallback className="rounded-lg text-xl">
                 {user.name.charAt(0).toUpperCase()}

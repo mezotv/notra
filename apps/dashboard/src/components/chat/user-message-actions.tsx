@@ -43,6 +43,7 @@ interface UserMessageActionsProps {
   onPreviousBranch?: () => void;
   onNextBranch?: () => void;
   isEditing?: boolean;
+  className?: string;
 }
 
 export function UserMessageActions({
@@ -55,6 +56,7 @@ export function UserMessageActions({
   onPreviousBranch,
   onNextBranch,
   isEditing,
+  className,
 }: UserMessageActionsProps) {
   const [copied, setCopied] = useState(false);
   const [retryOpen, setRetryOpen] = useState(false);
@@ -77,10 +79,11 @@ export function UserMessageActions({
   return (
     <div
       className={cn(
-        "mt-0.5 ml-auto flex items-center gap-1 text-muted-foreground transition-[opacity,height,margin] duration-200 ease-out",
+        "mt-0.5 ml-auto flex items-center gap-1 text-muted-foreground transition-[opacity,height,margin,padding] duration-200 ease-out",
         isEditing
           ? "pointer-events-none mt-0 h-0 overflow-hidden opacity-0"
-          : "opacity-0 focus-within:opacity-100 group-hover:opacity-100 data-[force-visible=true]:opacity-100"
+          : "opacity-0 focus-within:opacity-100 group-hover:opacity-100 data-[force-visible=true]:opacity-100",
+        className
       )}
       data-force-visible={retryOpen || undefined}
     >

@@ -1,0 +1,1 @@
+ALTER TABLE "geo_mention_checks" ADD COLUMN "sources" jsonb DEFAULT '[]'::jsonb NOT NULL;

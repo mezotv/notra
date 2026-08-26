@@ -7,6 +7,7 @@ import {
 } from "@notra/ui/components/ui/avatar";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { createColumnHelper } from "@tanstack/react-table";
+import { getUserAvatarUrl } from "@/utils/avatar";
 import { MemberActions } from "./member-actions";
 
 export interface Member {
@@ -45,7 +46,10 @@ export const columns = [
       return (
         <div className="flex items-center gap-3">
           <Avatar className="size-8">
-            <AvatarImage alt={user.name} src={user.image ?? undefined} />
+            <AvatarImage
+              alt={user.name}
+              src={getUserAvatarUrl(user.image, user.email)}
+            />
             <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
           </Avatar>
           <span className="font-medium">{user.name}</span>

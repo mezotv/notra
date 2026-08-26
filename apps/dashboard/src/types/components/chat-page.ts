@@ -1,4 +1,10 @@
 import type { ReactNode } from "react";
+import type { ChatMessageAuthor } from "@/types/chat";
+
+export interface MessageAuthorAvatarProps {
+  author: ChatMessageAuthor;
+  size?: "default" | "sm";
+}
 
 export interface StandaloneChatPageClientProps {
   organizationSlug: string;
