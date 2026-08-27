@@ -118,7 +118,7 @@ export function ShareOfVoiceTable({
 
           return (
             <span className="flex items-center gap-2">
-              <span className="text-sm tabular-nums">
+              <span className="w-12 shrink-0 text-right text-sm tabular-nums">
                 {row.mentions.toLocaleString()}
               </span>
               <GeoStatDelta
