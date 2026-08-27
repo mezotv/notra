@@ -2,6 +2,14 @@
 
 import { Cancel01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogDescription,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogTrigger,
+} from "@notra/ui/components/shared/responsive-dialog";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Card } from "@notra/ui/components/ui/card";
 import {
@@ -118,59 +126,94 @@ function ConnectAction({
 
 function SelectSiteState({
   organizationId,
+  callbackPath,
   status,
 }: SearchConsoleSelectSiteStateProps) {
   const id = useId();
   const [siteUrl, setSiteUrl] = useState("");
   const selectSite = useGscSelectSite(organizationId);
 
-  if (status.sites.length === 0) {
-    return (
-      <p className="text-muted-foreground px-4 py-3 text-sm">
-        {status.lastError ??
-          "No Search Console properties found for this Google account. Add a property in Search Console, then reconnect."}
-      </p>
-    );
-  }
-
   return (
-    <div className="space-y-2 px-4 py-3">
-      <Label htmlFor={`${id}-site`}>Choose the property to analyze</Label>
-      <div className="flex flex-col gap-2 sm:flex-row">
-        <Select
-          onValueChange={(value) => setSiteUrl(value ?? "")}
-          value={siteUrl}
+    <ResponsiveDialog defaultOpen>
+      <div className="flex flex-col items-start gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-muted-foreground text-sm">
+          {status.lastError ??
+            "Choose which Search Console property Notra should analyze."}
+        </p>
+        <ResponsiveDialogTrigger
+          className="shrink-0"
+          render={<Button size="sm" variant="outline" />}
         >
-          <SelectTrigger className="w-full sm:max-w-md" id={`${id}-site`}>
-            <SelectValue placeholder="Select a property">
-              {(value: string | null) =>
-                value ? formatGscSiteUrl(value) : "Select a property"
-              }
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent align="start" alignItemWithTrigger={false}>
-            {status.sites.map((site) => (
-              <SelectItem key={site.siteUrl} value={site.siteUrl}>
-                {formatGscSiteUrl(site.siteUrl)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          aria-busy={selectSite.isPending}
-          className={cn(
-            "shrink-0",
-            selectSite.isPending && "disabled:opacity-100"
-          )}
-          disabled={siteUrl.length === 0 || selectSite.isPending}
-          onClick={() => selectSite.mutate({ siteUrl })}
-          size="sm"
-        >
-          {selectSite.isPending ? <StatusSpinner /> : null}
-          {selectSite.isPending ? "Checking…" : "Use property"}
-        </Button>
+          Choose property
+        </ResponsiveDialogTrigger>
       </div>
-    </div>
+      <ResponsiveDialogContent className="sm:max-w-md">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>
+            Choose a Search Console property
+          </ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
+            Select the domain whose search queries Notra should use for prompt
+            suggestions.
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
+        {status.sites.length > 0 ? (
+          <div className="space-y-4 px-4 md:px-0">
+            <div className="space-y-2">
+              <Label htmlFor={`${id}-site`}>Property</Label>
+              <Select
+                onValueChange={(value) => setSiteUrl(value ?? "")}
+                value={siteUrl}
+              >
+                <SelectTrigger className="w-full" id={`${id}-site`}>
+                  <SelectValue placeholder="Select a property">
+                    {(value: string | null) =>
+                      value ? formatGscSiteUrl(value) : "Select a property"
+                    }
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent align="start" alignItemWithTrigger={false}>
+                  {status.sites.map((site) => (
+                    <SelectItem key={site.siteUrl} value={site.siteUrl}>
+                      {formatGscSiteUrl(site.siteUrl)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              aria-busy={selectSite.isPending}
+              className={cn(
+                "w-full",
+                selectSite.isPending && "disabled:opacity-100"
+              )}
+              disabled={siteUrl.length === 0 || selectSite.isPending}
+              onClick={() => selectSite.mutate({ siteUrl })}
+            >
+              {selectSite.isPending ? <StatusSpinner /> : null}
+              {selectSite.isPending ? "Connecting…" : "Connect property"}
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4 px-4 md:px-0">
+            <p className="text-muted-foreground text-sm">
+              {status.lastError ??
+                "No properties were found for this Google account. Add or verify a property in Search Console, then reconnect."}
+            </p>
+            <Button
+              className="w-full"
+              nativeButton={false}
+              render={
+                <a href={buildAuthorizeUrl(organizationId, callbackPath)}>
+                  Reconnect Google
+                </a>
+              }
+              variant="outline"
+            />
+          </div>
+        )}
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }
 
@@ -200,7 +243,7 @@ function ConnectedState({
   const busy = sync.isPending || clearSite.isPending || disconnect.isPending;
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3">
+    <div className="flex items-center gap-3 px-4 py-3">
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
           <p className="truncate text-sm leading-snug font-medium">
@@ -304,7 +347,13 @@ export function SearchConsoleCard({
   } else if (status.siteUrl) {
     body = <ConnectedState organizationId={organizationId} status={status} />;
   } else {
-    body = <SelectSiteState organizationId={organizationId} status={status} />;
+    body = (
+      <SelectSiteState
+        callbackPath={callbackPath}
+        organizationId={organizationId}
+        status={status}
+      />
+    );
   }
 
   return (

@@ -45,6 +45,7 @@ export interface SearchConsoleConnectActionProps {
 
 export interface SearchConsoleSelectSiteStateProps {
   organizationId: string;
+  callbackPath: string;
   status: GeoSearchConsoleStatus;
 }
 

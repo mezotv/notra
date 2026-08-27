@@ -157,6 +157,7 @@ export function PromptsTable({
         ),
         sortable: true,
         width: "1fr",
+        minWidth: "10rem",
         cell: (row) => (
           <Tooltip>
             <TooltipTrigger
