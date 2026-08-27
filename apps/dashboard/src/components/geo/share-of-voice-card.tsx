@@ -10,7 +10,6 @@ export function ShareOfVoiceCard({
   points,
   timeseries = GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
   competitors,
-  action,
   isScanning = false,
   organizationSlug,
   organizationId,
@@ -27,7 +26,6 @@ export function ShareOfVoiceCard({
 
   return (
     <InstrumentSection
-      action={action}
       bodyClassName="flex min-h-0 flex-1 flex-col"
       className="h-full"
       eyebrow="Share of voice"

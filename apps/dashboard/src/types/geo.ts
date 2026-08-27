@@ -1322,15 +1322,6 @@ export interface GeoSettingsFormProps {
   catalog: GeoModelCatalog;
 }
 
-export interface GeoSubDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  organizationId: string;
-  settings: GeoSettings | null;
-  companyName: string;
-  enabled: boolean;
-}
-
 export interface GeoTagListProps {
   id: string;
   label: string;
@@ -1450,7 +1441,6 @@ export interface ShareOfVoiceCardProps {
   points: GeoCompetitorSharePoint[];
   timeseries?: readonly GeoCompetitorShareTimeseriesPoint[];
   competitors?: GeoCompetitor[];
-  action?: ReactNode;
   isScanning?: boolean;
   organizationSlug?: string;
   organizationId?: string;
