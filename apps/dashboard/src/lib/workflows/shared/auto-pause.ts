@@ -2,7 +2,6 @@ import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers, members, organizations } from "@notra/db/schema";
 import { getResend } from "@notra/email/utils/resend";
-import type { WorkflowContext } from "@upstash/workflow";
 import { and, eq } from "drizzle-orm";
 import { Data, Effect } from "effect";
 
@@ -18,9 +17,7 @@ import {
 import type {
   AutomatedWorkflowPauseReason,
   ClearAutomatedWorkflowPauseStateParams,
-  ClearAutomatedWorkflowPauseStateStepParams,
   RecordAutomatedWorkflowPauseParams,
-  RecordAutomatedWorkflowPauseStepParams,
 } from "@/types/workflows/auto-pause";
 
 class AutomatedWorkflowFailureStateError extends Data.TaggedError(
@@ -273,24 +270,6 @@ export async function recordAutomatedWorkflowPauseSafe(
   }
 }
 
-export async function recordAutomatedWorkflowPauseStep<TPayload>(
-  context: WorkflowContext<TPayload>,
-  { manual, stepName, ...params }: RecordAutomatedWorkflowPauseStepParams
-) {
-  if (manual) {
-    return;
-  }
-
-  try {
-    await context.run(stepName, () => recordAutomatedWorkflowPauseSafe(params));
-  } catch (error) {
-    console.warn(
-      `[${params.logPrefix}] Failed to run automated workflow pause step`,
-      { triggerId: params.triggerId, reason: params.reason, error }
-    );
-  }
-}
-
 export async function clearAutomatedWorkflowPauseSafe({
   triggerId,
   logPrefix,
@@ -300,31 +279,6 @@ export async function clearAutomatedWorkflowPauseSafe({
   } catch (error) {
     console.warn(
       `[${logPrefix}] Failed to clear automated workflow pause state`,
-      { triggerId, error }
-    );
-  }
-}
-
-export async function clearAutomatedWorkflowPauseStateStep<TPayload>(
-  context: WorkflowContext<TPayload>,
-  {
-    manual,
-    stepName,
-    logPrefix,
-    triggerId,
-  }: ClearAutomatedWorkflowPauseStateStepParams
-) {
-  if (manual) {
-    return;
-  }
-
-  try {
-    await context.run(stepName, () =>
-      clearAutomatedWorkflowPauseSafe({ triggerId, logPrefix })
-    );
-  } catch (error) {
-    console.warn(
-      `[${logPrefix}] Failed to run automated workflow pause clear step`,
       { triggerId, error }
     );
   }

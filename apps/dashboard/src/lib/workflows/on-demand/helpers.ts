@@ -1,5 +1,3 @@
-import { autumn } from "@notra/ai/billing/autumn";
-import { FEATURES } from "@notra/ai/billing/features";
 import type { GitHubSelectionFilters } from "@notra/ai/types/tools";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
@@ -259,28 +257,4 @@ export function buildDataPointRestrictionInstructions(dataPoints: {
     : restrictions.length > 0
       ? `Strict data-point restrictions:\n${restrictions.join("\n")}\n\nCross-source instructions:\n${instructions.filter((i) => !restrictions.includes(i)).join("\n")}`
       : `Cross-source instructions:\n${instructions.filter((i) => !restrictions.includes(i)).join("\n")}`;
-}
-
-export async function refundReservedAiCredit(
-  organizationId: string,
-  reserved: boolean,
-  properties?: Record<string, unknown>
-) {
-  if (!reserved || !autumn) {
-    return;
-  }
-
-  try {
-    await autumn.track({
-      customerId: organizationId,
-      featureId: FEATURES.AI_CREDITS,
-      value: 0,
-      ...(properties ? { properties } : {}),
-    });
-  } catch (error) {
-    console.error("[OnDemandContent] Failed to refund AI credit", {
-      organizationId,
-      error,
-    });
-  }
 }

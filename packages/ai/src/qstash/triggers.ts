@@ -1,5 +1,4 @@
 import { Client as QStashClient } from "@upstash/qstash";
-import { Client as WorkflowClient } from "@upstash/workflow";
 
 import type {
   CreateQstashRouteScheduleProps,
@@ -10,13 +9,6 @@ import {
   getConfiguredWorkflowUrl,
   requireConfiguredAppUrl,
 } from "../utils/url";
-
-export type WorkflowDelay =
-  | number
-  | `${bigint}s`
-  | `${bigint}m`
-  | `${bigint}h`
-  | `${bigint}d`;
 
 export interface CreateQstashScheduleProps {
   triggerId: string;
@@ -30,15 +22,6 @@ export interface TriggerCronConfig {
   minute?: number;
   dayOfWeek?: number;
   dayOfMonth?: number;
-}
-
-export interface EventWorkflowPayloadInput {
-  triggerId: string;
-  eventType: string;
-  eventAction: string;
-  eventData: Record<string, unknown>;
-  repositoryId: string;
-  deliveryId?: string;
 }
 
 function getQstashToken() {
@@ -59,10 +42,6 @@ export function getBaseUrl() {
 
 function getQStashClient() {
   return new QStashClient({ token: getQstashToken() });
-}
-
-function getWorkflowClient() {
-  return new WorkflowClient({ token: getQstashToken() });
 }
 
 export function buildCronExpression(config?: TriggerCronConfig) {
@@ -197,54 +176,4 @@ export async function publishQstashRoute({
 export async function deleteQstashMessage(messageId: string) {
   const client = getQStashClient();
   await client.messages.delete(messageId);
-}
-
-export async function triggerScheduleNow(
-  triggerId: string,
-  options?: { delay?: WorkflowDelay; manual?: boolean }
-) {
-  const client = getWorkflowClient();
-  const appUrl = getAppUrl();
-
-  const destination = `${appUrl}/api/workflows/schedule`;
-
-  const result = await client.trigger({
-    url: destination,
-    body: { triggerId, ...(options?.manual && { manual: true }) },
-    ...(options?.delay && { delay: options.delay }),
-  });
-
-  return result.workflowRunId;
-}
-
-export async function triggerEventNow(
-  payload: EventWorkflowPayloadInput,
-  options?: { delay?: WorkflowDelay }
-) {
-  const client = getWorkflowClient();
-  const appUrl = getAppUrl();
-
-  const destination = `${appUrl}/api/workflows/event`;
-
-  const result = await client.trigger({
-    url: destination,
-    body: payload,
-    ...(options?.delay && { delay: options.delay }),
-  });
-
-  return result.workflowRunId;
-}
-
-export async function triggerOnDemandContent(payload: unknown) {
-  const client = getWorkflowClient();
-  const appUrl = getAppUrl();
-
-  const destination = `${appUrl}/api/workflows/on-demand-content`;
-
-  const result = await client.trigger({
-    url: destination,
-    body: payload,
-  });
-
-  return result.workflowRunId;
 }
