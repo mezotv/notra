@@ -1,0 +1,5 @@
+name: Notra CodeQL config
+
+query-filters:
+  - exclude:
+      id: js/unknown-directive
