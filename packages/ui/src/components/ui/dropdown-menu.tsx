@@ -23,24 +23,15 @@ function DropdownMenuContent({
   alignOffset = 0,
   side = "bottom",
   sideOffset = 4,
-  showBackdrop = true,
   className,
   ...props
 }: MenuPrimitive.Popup.Props &
   Pick<
     MenuPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset"
-  > & {
-    showBackdrop?: boolean;
-  }) {
+  >) {
   return (
     <MenuPrimitive.Portal>
-      {showBackdrop ? (
-        <MenuPrimitive.Backdrop
-          className="data-closed:fade-out-0 data-open:fade-in-0 fixed inset-0 z-40 bg-black/8 duration-100 data-closed:animate-out data-open:animate-in dark:bg-black/30"
-          data-slot="dropdown-menu-backdrop"
-        />
-      ) : null}
       <MenuPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
@@ -163,7 +154,6 @@ function DropdownMenuSubContent({
         className
       )}
       data-slot="dropdown-menu-sub-content"
-      showBackdrop={false}
       side={side}
       sideOffset={sideOffset}
       {...props}

@@ -539,7 +539,6 @@ function MessageMarkdownTable({
             <DropdownMenuContent
               align="end"
               className="w-44 min-w-44"
-              showBackdrop={false}
             >
               <DropdownMenuItem
                 className="whitespace-nowrap"

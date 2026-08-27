@@ -215,7 +215,6 @@ export function ChatTopbarTitle({ chatId }: ChatTopbarTitleProps) {
                 <DropdownMenuContent
                   align="start"
                   className="w-44"
-                  showBackdrop={false}
                   sideOffset={6}
                 >
                   <DropdownMenuItem

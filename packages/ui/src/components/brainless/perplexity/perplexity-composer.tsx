@@ -211,7 +211,6 @@ export function PerplexityComposer({
             <DropdownMenuContent
               align="start"
               className="min-w-52 rounded-[1.2rem] p-1.5 shadow-[0_8px_28px_rgba(0,0,0,0.12)]"
-              showBackdrop={false}
               side="top"
               sideOffset={8}
             >

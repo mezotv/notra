@@ -102,7 +102,6 @@ export function PerplexityModelSelector({
       <DropdownMenuContent
         align="end"
         className={MENU_SURFACE}
-        showBackdrop={false}
         side="top"
         sideOffset={10}
       >

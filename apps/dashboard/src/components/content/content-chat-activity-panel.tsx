@@ -203,7 +203,6 @@ export function ContentChatActivityPanel({
             <DropdownMenuContent
               align="end"
               className="max-h-72 w-52"
-              showBackdrop={false}
               sideOffset={6}
             >
               {isHistoryLoading ? (

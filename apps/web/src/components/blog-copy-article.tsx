@@ -111,7 +111,6 @@ export function BlogCopyArticle({
         <DropdownMenuContent
           align="end"
           className="w-80 p-2"
-          showBackdrop={false}
         >
           <DropdownMenuItem
             className="px-2 py-2"

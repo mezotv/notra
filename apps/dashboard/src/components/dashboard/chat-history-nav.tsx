@@ -284,7 +284,6 @@ export function ChatHistoryNav() {
                         <DropdownMenuContent
                           align="start"
                           className="w-44"
-                          showBackdrop={false}
                           side="right"
                           sideOffset={6}
                         >
