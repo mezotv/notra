@@ -51,6 +51,7 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
   const pagination = useTablePagination({
     key: GEO_TRAFFIC_LOG_PAGE_PARAM,
     totalItems: log.length,
+    isReady: !isPending,
   });
   let readout: string | undefined;
   if (!isPending) {

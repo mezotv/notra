@@ -207,6 +207,7 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
   const pagination = useTablePagination({
     key: GEO_TRAFFIC_SOURCES_PAGE_PARAM,
     totalItems: sources.length,
+    isReady: traffic !== undefined,
   });
   const previousTotals = useMemo(
     () => toGeoTrafficPreviousTotals(sources),

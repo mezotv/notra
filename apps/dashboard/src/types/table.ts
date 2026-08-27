@@ -2,6 +2,7 @@ export interface UseTablePaginationOptions {
   key: string;
   totalItems: number;
   pageSize?: number;
+  isReady?: boolean;
 }
 
 export interface TablePaginationState {

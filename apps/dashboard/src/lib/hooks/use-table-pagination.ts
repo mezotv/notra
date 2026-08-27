@@ -1,7 +1,7 @@
 "use client";
 
 import { parseAsInteger, useQueryState } from "nuqs";
-import { useCallback } from "react";
+import { useEffect } from "react";
 
 import { TABLE_PAGE_SIZE } from "@/constants/table";
 import type {
@@ -14,6 +14,7 @@ export function useTablePagination({
   key,
   totalItems,
   pageSize = TABLE_PAGE_SIZE,
+  isReady = true,
 }: UseTablePaginationOptions): TablePaginationState {
   const [rawPage, setRawPage] = useQueryState(
     key,
@@ -22,12 +23,15 @@ export function useTablePagination({
   const pageCount = Math.max(1, Math.ceil(totalItems / pageSize));
   const page = Math.min(Math.max(1, rawPage), pageCount);
 
-  const setPage = useCallback(
-    (next: number) => {
-      setRawPage(Math.min(Math.max(1, next), pageCount));
-    },
-    [pageCount, setRawPage]
-  );
+  useEffect(() => {
+    if (isReady && rawPage !== page) {
+      setRawPage(page, { history: "replace" });
+    }
+  }, [isReady, page, rawPage, setRawPage]);
+
+  const setPage = (next: number) => {
+    setRawPage(Math.min(Math.max(1, next), pageCount));
+  };
 
   return {
     page,

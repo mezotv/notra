@@ -31,6 +31,7 @@ export function TrafficPagesCard({
   const pagination = useTablePagination({
     key: GEO_TRAFFIC_PAGES_PAGE_PARAM,
     totalItems: pages.length,
+    isReady: !isPending,
   });
   const columns = useMemo<TableColumn<GeoTrafficPage>[]>(
     () => [
