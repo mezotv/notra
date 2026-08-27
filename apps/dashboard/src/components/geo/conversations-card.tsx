@@ -27,7 +27,7 @@ import type { ConversationsCardProps, GeoPromptSequence } from "@/types/geo";
 import { tableHeightFor } from "@/utils/table";
 
 const CONVERSATION_TURNS_WIDTH = "4.5rem";
-const CONVERSATION_ACTIONS_WIDTH = "9rem";
+const CONVERSATION_ACTIONS_WIDTH = "11.25rem";
 
 function ConversationRowActions({
   sequence,
@@ -87,6 +87,7 @@ function ConversationRowActions({
                   : `Enable ${sequence.name}`
               }
               checked={sequence.enabled}
+              className="mx-2"
               disabled={isPending}
               onCheckedChange={onToggle}
               onClick={(event) => event.stopPropagation()}
