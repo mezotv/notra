@@ -3,7 +3,7 @@
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PerplexityFavicon } from "@notra/ui/components/brainless/perplexity/perplexity-favicon";
-import type { PerplexitySearchSource } from "@notra/ui/components/brainless/perplexity/perplexity-search";
+import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
 import {
   Sheet,
   SheetClose,

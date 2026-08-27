@@ -9,15 +9,18 @@ import { GeminiActions } from "@notra/ui/components/brainless/gemini/gemini-acti
 import { GeminiComposer } from "@notra/ui/components/brainless/gemini/gemini-composer";
 import { PerplexityActions } from "@notra/ui/components/brainless/perplexity/perplexity-actions";
 import { PerplexityComposer } from "@notra/ui/components/brainless/perplexity/perplexity-composer";
-import {
-  PerplexitySearch,
-  type PerplexitySearchSource,
-} from "@notra/ui/components/brainless/perplexity/perplexity-search";
+import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
+import type { ReactNode } from "react";
 
+import { GeoAnswerSearch } from "@/components/geo/geo-answer-search";
 import { GeoSkinMessage } from "@/components/geo/geo-skin-message";
 import { GEO_CHAT_SKIN_SURFACE } from "@/constants/geo";
 import { cn } from "@/lib/utils";
-import type { GeoChatSkin, GeoPromptAnswerThreadProps } from "@/types/geo";
+import type {
+  GeoChatSkin,
+  GeoPromptAnswerThreadProps,
+  GeoPromptResult,
+} from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import {
   chatgptModelForEngine,
@@ -27,6 +30,7 @@ import {
 } from "@/utils/geo-chat-model";
 import { geoChatSkin } from "@/utils/geo-chat-skin";
 import { perplexitySourcesFromExcerpt } from "@/utils/geo-perplexity-sources";
+import { isGroundedEngine } from "@/utils/geo-presence";
 
 const ANSWER_MARKDOWN_CLASS =
   "[&_h1]:mt-0 [&_h1]:mb-2 [&_h1]:text-[1.15em] [&_h1]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:text-[1.05em] [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_h3]:text-[1em] [&_h3]:font-semibold [&_p]:my-2.5 [&_ul]:my-2.5 [&_ol]:my-2.5";
@@ -37,8 +41,28 @@ function ignoreFollowUp(_text: string): void {
 
 function emptyAnswerCopy(mentioned: boolean): string {
   return mentioned
-    ? "Mentioned, but no excerpt was captured."
+    ? "Mentioned, but no answer was captured."
     : "This engine did not mention you.";
+}
+
+function displayAnswer(result: { answer: string; excerpt: string }): string {
+  return result.answer.trim() || result.excerpt.trim();
+}
+
+function threadSources(
+  result: GeoPromptResult,
+  answer: string
+): PerplexitySearchSource[] {
+  if (result.sources.length > 0) {
+    return result.sources.map((source) => ({
+      title: source.title ?? source.domain ?? source.url,
+      domain: source.domain ?? "",
+      url: source.url,
+      verified: true,
+    }));
+  }
+
+  return perplexitySourcesFromExcerpt(answer);
 }
 
 function emptyAnswerClassName(skin: GeoChatSkin): string {
@@ -74,16 +98,16 @@ export function AnswerMarkdown({
 }
 
 function AssistantBody({
-  excerpt,
+  answer,
   mentioned,
   skin,
 }: {
-  excerpt: string;
+  answer: string;
   mentioned: boolean;
   skin: GeoChatSkin;
 }) {
-  if (excerpt.length > 0) {
-    return <AnswerMarkdown skin={skin} text={excerpt} />;
+  if (answer.length > 0) {
+    return <AnswerMarkdown skin={skin} text={answer} />;
   }
 
   return (
@@ -161,40 +185,38 @@ function SkinComposer({ engine, skin }: { engine: string; skin: GeoChatSkin }) {
 
 function ThreadMessages({
   prompt,
-  excerpt,
+  answer,
   mentioned,
   skin,
   timestamp,
+  search,
+  sources,
 }: {
   prompt: string;
-  excerpt: string;
+  answer: string;
   mentioned: boolean;
   skin: GeoChatSkin;
   timestamp: string;
+  search: ReactNode;
+  sources: PerplexitySearchSource[];
 }) {
-  const sources =
-    skin === "perplexity" ? perplexitySourcesFromExcerpt(excerpt) : [];
-
   return (
     <>
       <GeoSkinMessage from="user" skin={skin}>
         {prompt}
       </GeoSkinMessage>
       <GeoSkinMessage
-        actions={assistantActions({ excerpt, skin, sources, timestamp })}
+        actions={assistantActions({
+          excerpt: answer,
+          skin,
+          sources,
+          timestamp,
+        })}
         from="assistant"
-        search={
-          skin === "perplexity" ? (
-            <PerplexitySearch
-              queries={[prompt]}
-              sources={sources}
-              title="Web search"
-            />
-          ) : undefined
-        }
+        search={search}
         skin={skin}
       >
-        <AssistantBody excerpt={excerpt} mentioned={mentioned} skin={skin} />
+        <AssistantBody answer={answer} mentioned={mentioned} skin={skin} />
       </GeoSkinMessage>
     </>
   );
@@ -205,7 +227,15 @@ export function GeoPromptAnswerThread({
   result,
 }: GeoPromptAnswerThreadProps) {
   const skin = geoChatSkin(result.engine);
-  const excerpt = result.excerpt.trim();
+  const answer = displayAnswer(result);
+  const sources = threadSources(result, answer);
+  const search = isGroundedEngine(result.engine) ? (
+    <GeoAnswerSearch
+      queries={result.searchQueries}
+      skin={skin}
+      sources={sources}
+    />
+  ) : undefined;
   const timestamp = formatAiTrafficTimestamp(result.lastCheckedAt);
 
   return (
@@ -218,10 +248,12 @@ export function GeoPromptAnswerThread({
       <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
         <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-6 py-8">
           <ThreadMessages
-            excerpt={excerpt}
+            answer={answer}
             mentioned={result.mentioned}
             prompt={prompt}
+            search={search}
             skin={skin}
+            sources={sources}
             timestamp={timestamp}
           />
         </div>

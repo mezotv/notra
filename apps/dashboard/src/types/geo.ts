@@ -2,6 +2,7 @@ import type {
   GeoContentBrief,
   GeoContentSubtype,
 } from "@notra/ai/types/geo-writer";
+import type { GeoCheckGrounding } from "@notra/db/types/geo-checks";
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 import type { GeoRequestPayload } from "@usenotra/geo";
 import type { LanguageModel, ToolSet } from "ai";
@@ -86,12 +87,6 @@ export interface GeoLayoutProps {
   params: Promise<{ slug: string }>;
 }
 
-export interface PromptFunnelCardProps {
-  promptCount: number;
-  results: GeoPromptResult[];
-  isScanning?: boolean;
-}
-
 export interface GeoPageContentProps {
   organizationSlug: string;
 }
@@ -162,6 +157,37 @@ export interface GeoTimeseriesPoint {
   engine: string;
   checks: number;
   mentions: number;
+  avgPosition?: number | null;
+}
+
+export type GeoStatDeltaKind = "rate" | "mentions" | "position";
+export type GeoStatDeltaTone = "up" | "down" | "flat";
+
+export interface EngineFamilyStatTrends {
+  ratePts: number | null;
+  mentionDelta: number | null;
+  positionDelta: number | null;
+}
+
+export interface GeoStatDeltaProps {
+  delta: number | null;
+  kind?: GeoStatDeltaKind;
+  label?: string;
+  hint?: string;
+  className?: string;
+}
+
+export interface GeoGenerateTrace {
+  text?: string;
+  sources?: readonly unknown[];
+  toolCalls?: readonly unknown[];
+  toolResults?: readonly unknown[];
+  steps?: readonly unknown[];
+}
+
+export interface GeoEngineAnswer {
+  text: string;
+  grounding: GeoCheckGrounding;
 }
 
 export interface GeoTimeseriesResponse {
@@ -191,6 +217,12 @@ export interface EngineFamilyModeTrendRow {
   [key: string]: string | number | null;
 }
 
+export interface GeoAnswerSource {
+  title: string;
+  url: string;
+  domain: string;
+}
+
 export interface GeoPromptResult {
   promptId: string;
   engine: string;
@@ -200,6 +232,8 @@ export interface GeoPromptResult {
   position: number | null;
   sentiment: string | null;
   excerpt: string;
+  searchQueries: string[];
+  sources: GeoAnswerSource[];
   lastCheckedAt: string;
 }
 
@@ -217,6 +251,7 @@ export interface GeoPromptResultsResponse {
 export interface GeoCompetitorSharePoint {
   brand: string;
   mentions: number;
+  trend?: GeoSparklinePoint[];
 }
 
 export interface GeoCompetitorShareTimeseriesPoint {
@@ -344,11 +379,6 @@ export interface GeoSequenceUpdateInput {
   enabled?: boolean;
 }
 
-export interface GeoAnswerSource {
-  url: string;
-  title: string | null;
-}
-
 export interface GeoSequenceTurnResult {
   sequenceId: string;
   turn: number;
@@ -359,6 +389,7 @@ export interface GeoSequenceTurnResult {
   position: number | null;
   sentiment: string | null;
   excerpt: string;
+  searchQueries: string[];
   sources: GeoAnswerSource[];
   lastCheckedAt: string;
 }
@@ -471,6 +502,13 @@ export interface MentionTrendRow {
 export interface MentionTrend {
   rows: MentionTrendRow[];
   engines: string[];
+}
+
+export interface FamilyDayBucket {
+  mentions: number;
+  checks: number;
+  positionWeighted: number;
+  positionWeight: number;
 }
 
 export type GeoGroundedProvider =
@@ -730,6 +768,8 @@ export interface GeoJourneyResolution {
   path: string;
 }
 
+export type GeoJourneyPathKind = "home" | "docs" | "blog" | "search" | "page";
+
 export interface GeoJourney {
   journeyId: string;
   source: string;
@@ -739,6 +779,44 @@ export interface GeoJourney {
   firstSeenAt: string;
   lastSeenAt: string;
   samplePaths: string[];
+}
+
+export interface GeoJourneyPathNode {
+  path: string;
+  label: string;
+  kind: GeoJourneyPathKind;
+}
+
+export interface GeoJourneyPathRow extends GeoJourneyPathNode {
+  journeys: number;
+}
+
+export interface GeoJourneySourceRow {
+  source: string;
+  visitorType: GeoVisitorType;
+  journeys: number;
+}
+
+export interface GeoJourneyKindCount {
+  kind: GeoJourneyPathKind;
+  paths: number;
+}
+
+export interface GeoJourneyOverview {
+  total: number;
+  sources: GeoJourneySourceRow[];
+  uniqueSources: number;
+  medianPages: number;
+  singleFetchShare: number;
+  deepShare: number;
+  paths: GeoJourneyPathRow[];
+  uniquePaths: number;
+  kindCounts: GeoJourneyKindCount[];
+}
+
+export interface GeoJourneyTrail {
+  nodes: GeoJourneyPathNode[];
+  omitted: number;
 }
 
 export interface GeoTrafficJourneysResponse {
@@ -767,6 +845,25 @@ export interface JourneysCardProps {
   organizationId: string;
 }
 
+export interface JourneyOverviewCardProps {
+  journeys: GeoJourney[];
+}
+
+export interface JourneyPathsCardProps {
+  journeys: GeoJourney[];
+}
+
+export interface JourneyPathPillProps {
+  node: GeoJourneyPathNode;
+  className?: string;
+}
+
+export interface JourneyPathTrailProps {
+  paths: readonly string[];
+  limit?: number;
+  className?: string;
+}
+
 export interface JourneyDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -777,6 +874,12 @@ export interface JourneyDetailDialogProps {
 export interface GeoTrafficTotals {
   crawler: number;
   aiReferral: number;
+}
+
+export interface TrafficMetricDeltas {
+  crawler: number | null;
+  aiReferral: number | null;
+  total: number | null;
 }
 
 export interface AiTrafficResponse {
@@ -869,6 +972,12 @@ export interface GeoEngineFamilyTotals {
   rate: number;
 }
 
+export interface MentionProviderRow {
+  family: GeoEngineFamily;
+  totals: GeoEngineFamilyTotals;
+  mentionDelta: number | null;
+}
+
 export interface GeoBarProps {
   value: number;
   max?: number;
@@ -882,6 +991,8 @@ export interface GeoRateSparklineProps {
   className?: string;
   ariaLabel?: string;
   style?: React.CSSProperties;
+  color?: string;
+  label?: string;
 }
 
 export interface GeoPromptCoverage {
@@ -896,6 +1007,7 @@ export interface GeoLanguageSharePoint {
   mentions: number;
   mentionRate: number;
   avgPosition: number | null;
+  trend?: GeoSparklinePoint[];
 }
 
 export interface LanguagePerformanceTrackedRow extends GeoLanguageSharePoint {
@@ -925,9 +1037,11 @@ export interface LanguagePerformanceCardProps {
 
 export interface MentionRateCardProps {
   engines: GeoOverviewEngine[];
+  trackedEngines?: readonly string[];
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
   promptResults?: readonly GeoPromptResult[];
   isScanning?: boolean;
+  organizationSlug?: string;
 }
 
 export interface GeoPromptSummary {
@@ -947,11 +1061,29 @@ export interface PromptResultsPreviewProps {
   isScanning?: boolean;
 }
 
+export interface PromptUnseenListProps {
+  results: GeoPromptResult[];
+  isScanning?: boolean;
+  gapsHref?: string;
+}
+
+export interface GeoPromptsPanelProps {
+  results: GeoPromptResult[];
+  isScanning?: boolean;
+  action?: ReactNode;
+  gapsHref?: string;
+}
+
+export interface PromptSentimentLabelProps {
+  sentiment: string | null;
+}
+
 export interface EngineRateTableProps {
   engines: GeoOverviewEngine[];
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
   promptResults?: readonly GeoPromptResult[];
   isScanning?: boolean;
+  organizationSlug?: string;
 }
 
 export interface EngineFamilyPromptHit {
@@ -961,10 +1093,28 @@ export interface EngineFamilyPromptHit {
   position: number | null;
 }
 
+export type FamilyImproveKind =
+  | "search-ahead"
+  | "memory-ahead"
+  | "both-weak"
+  | "closing";
+
+export interface FamilyImproveInsight {
+  kind: FamilyImproveKind;
+  title: string;
+  body: string;
+}
+
+export interface FamilyImproveCardProps {
+  insight: FamilyImproveInsight;
+  gapsHref?: string;
+}
+
 export interface EngineFamilySheetProps {
   family: GeoEngineFamily | null;
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
   promptResults?: readonly GeoPromptResult[];
+  organizationSlug?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
@@ -1279,6 +1429,12 @@ export interface ShareOfVoiceRow {
   brand: string;
   mentions: number;
   share: number;
+  trend: GeoSparklinePoint[];
+}
+
+export interface ShareOfVoiceBreakdown {
+  rows: ShareOfVoiceRow[];
+  others: ShareOfVoiceRow[];
 }
 
 export interface ShareOfVoiceCardProps {
@@ -1307,7 +1463,19 @@ export interface ShareOfVoiceTableProps {
 
 export interface ShareOfVoiceDonutSlice extends ShareOfVoiceRow {
   slice: string;
-  [key: string]: string | number;
+  [key: string]: unknown;
+}
+
+export interface ShareOfVoiceOtherSheetProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  other: ShareOfVoiceRow;
+  others: readonly ShareOfVoiceRow[];
+  competitors?: GeoCompetitor[];
+  companyName?: string | null;
+  aliases?: readonly string[];
+  onBrandClick?: (row: ShareOfVoiceRow) => void;
+  onBrandPointerEnter?: (row: ShareOfVoiceRow) => void;
 }
 
 export interface ShareOfVoiceDonutProps {
@@ -1572,6 +1740,7 @@ export interface GeoSectionSkeletonProps {
   eyebrow: string;
   action?: ReactNode;
   children: ReactNode;
+  className?: string;
 }
 
 export interface GeoTableSkeletonProps {

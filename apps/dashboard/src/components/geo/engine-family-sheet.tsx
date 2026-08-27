@@ -1,5 +1,6 @@
 "use client";
 
+import { useFlag } from "@databuddy/sdk/react";
 import {
   Sheet,
   SheetContent,
@@ -7,30 +8,43 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@notra/ui/components/ui/sheet";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
+import { Button } from "@/components/button";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { FamilyImproveCard } from "@/components/geo/family-improve-card";
 import { GeoModeIcon } from "@/components/geo/geo-mode-icon";
+import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
+import { WriteDialog } from "@/components/geo/writer/write-dialog";
+import { Table, type TableColumn } from "@/components/motion/table";
+import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { CHART_PERCENT_SCALE } from "@/constants/charts";
 import {
+  GEO_AVG_POSITION_LABEL,
   GEO_EMPTY_PROMPT_RESULTS,
   GEO_EMPTY_TIMESERIES,
+  GEO_FAMILY_STAT_TREND_HINT,
+  GEO_MENTION_RATE_LABEL,
+  GEO_MENTIONS_LABEL,
   GEO_SEARCH_LABEL,
   GEO_SPARKLINE_MIN_POINTS,
   GEO_WITHOUT_SEARCH_LABEL,
+  GEO_WRITER_FLAG_KEY,
 } from "@/constants/geo";
-import { cn } from "@/lib/utils";
+import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { ChartConfig } from "@/types/charts";
+import type { WriteDialogInitialState } from "@/types/components/geo-writer";
 import type {
   EngineFamilyPromptHit,
   EngineFamilySheetProps,
   GeoEngineFamily,
   GeoEngineFamilyTotals,
   GeoEngineMode,
-  GeoPromptResult,
+  GeoStatDeltaKind,
   GeoTimeseriesPoint,
 } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
@@ -42,19 +56,58 @@ import {
   engineFamilyLabel,
   engineFamilyLastCheckedAt,
   engineFamilyModeTotals,
+  engineFamilyStatTrends,
   engineFamilyTotals,
   formatChartPercent,
   formatMentionRate,
   mentionTrendEmptyLabel,
 } from "@/utils/geo-charts";
+import { familyImproveInsight } from "@/utils/geo-family-improve";
+import { geoGapsEngineHref } from "@/utils/geo-paths";
 import {
   engineFamilyPromptHits,
   promptTableRowForId,
 } from "@/utils/geo-prompts";
+import { writeDialogStateFromGap } from "@/utils/geo-write-entry";
+import { isGeoWriterVisibleInNav } from "@/utils/geo-writer-flag";
+import { tableHeightFor } from "@/utils/table";
 
 const FAMILY_TREND_STROKE_WIDTH = 1.5;
+const FAMILY_CHART_HEIGHT_CLASS = "h-56 w-full";
+const FAMILY_SHEET_CONTENT_CLASS =
+  "gap-0 overflow-hidden rounded-xl data-[side=right]:inset-y-2 data-[side=right]:right-2 data-[side=right]:h-auto data-[side=right]:border data-[side=right]:sm:max-w-2xl";
+const TILE_CLASS = "bg-muted/50 min-w-0 rounded-2xl px-3 py-2.5";
 
-function ModeLegend({
+function StatTile({
+  label,
+  value,
+  delta,
+  kind,
+}: {
+  label: string;
+  value: string;
+  delta: number | null;
+  kind: GeoStatDeltaKind;
+}) {
+  return (
+    <div className={TILE_CLASS}>
+      <p className="text-muted-foreground text-xs">{label}</p>
+      <div className="mt-1 flex items-center justify-between gap-2">
+        <p className="text-base font-medium tracking-tight tabular-nums">
+          {value}
+        </p>
+        <GeoStatDelta
+          delta={delta}
+          hint={GEO_FAMILY_STAT_TREND_HINT}
+          kind={kind}
+          label={label}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ModeTile({
   mode,
   label,
   totals,
@@ -64,16 +117,17 @@ function ModeLegend({
   totals: GeoEngineFamilyTotals;
 }) {
   return (
-    <div className="min-w-0">
+    <div className={TILE_CLASS}>
       <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
         <GeoModeIcon mode={mode} />
         {label}
       </p>
-      <p className="mt-0.5 text-sm tabular-nums">
-        {formatMentionRate(totals.rate)}
-        <span className="text-muted-foreground">
-          {" "}
-          · {totals.mentions}/{totals.checks}
+      <p className="mt-1 flex items-baseline gap-1.5">
+        <span className="text-base font-medium tracking-tight tabular-nums">
+          {formatMentionRate(totals.rate)}
+        </span>
+        <span className="text-muted-foreground font-mono text-xs tabular-nums">
+          {totals.mentions}/{totals.checks}
         </span>
       </p>
     </div>
@@ -124,16 +178,16 @@ function FamilyTrend({
 
   return (
     <section className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2">
         {searchTotals ? (
-          <ModeLegend
+          <ModeTile
             label={GEO_SEARCH_LABEL}
             mode="search"
             totals={searchTotals}
           />
         ) : null}
         {memoryTotals ? (
-          <ModeLegend
+          <ModeTile
             label={GEO_WITHOUT_SEARCH_LABEL}
             mode="memory"
             totals={memoryTotals}
@@ -143,13 +197,13 @@ function FamilyTrend({
       {showTrend ? (
         <EChartsAreaChart
           animation={false}
-          className="h-80 w-full"
+          className={FAMILY_CHART_HEIGHT_CLASS}
           config={chartConfig}
           curveType="monotone"
           data={rows}
           xDataKey="day"
         >
-          <EChartsAreaChart.Grid />
+          <EChartsAreaChart.Grid lineType="solid" />
           <EChartsAreaChart.XAxis dataKey="day" />
           <EChartsAreaChart.YAxis tickFormatter={formatChartPercent} />
           {showSearch ? (
@@ -189,119 +243,164 @@ function FamilyTrend({
   );
 }
 
-function FamilyStats({ family }: { family: GeoEngineFamily }) {
+function FamilyStats({
+  family,
+  points,
+}: {
+  family: GeoEngineFamily;
+  points: readonly GeoTimeseriesPoint[];
+}) {
   const totals = engineFamilyTotals(family);
   const position = engineFamilyAvgPosition(family);
+  const trends = engineFamilyStatTrends(points, family.family);
 
   return (
-    <dl className="grid grid-cols-3 gap-3 border-b px-4 py-3">
-      <div className="space-y-0.5">
-        <dt className="text-muted-foreground text-xs">Mention rate</dt>
-        <dd className="text-base font-medium tracking-tight tabular-nums">
-          {totals ? formatMentionRate(totals.rate) : "—"}
-        </dd>
-      </div>
-      <div className="space-y-0.5">
-        <dt className="text-muted-foreground text-xs">Mentions</dt>
-        <dd className="text-base font-medium tracking-tight tabular-nums">
-          {totals ? `${totals.mentions}/${totals.checks}` : "—"}
-        </dd>
-      </div>
-      <div className="space-y-0.5">
-        <dt className="text-muted-foreground text-xs">Avg position</dt>
-        <dd className="text-base font-medium tracking-tight tabular-nums">
-          {position === null ? "—" : `#${position}`}
-        </dd>
-      </div>
-    </dl>
+    <div className="grid grid-cols-3 gap-2">
+      <StatTile
+        delta={trends.ratePts}
+        kind="rate"
+        label={GEO_MENTION_RATE_LABEL}
+        value={totals ? formatMentionRate(totals.rate) : "—"}
+      />
+      <StatTile
+        delta={trends.mentionDelta}
+        kind="mentions"
+        label={GEO_MENTIONS_LABEL}
+        value={totals ? `${totals.mentions}/${totals.checks}` : "—"}
+      />
+      <StatTile
+        delta={trends.positionDelta}
+        kind="position"
+        label={GEO_AVG_POSITION_LABEL}
+        value={position === null ? "—" : `#${position}`}
+      />
+    </div>
   );
 }
 
+function promptResultLabel(hit: EngineFamilyPromptHit): string {
+  if (!hit.mentioned) {
+    return "Miss";
+  }
+  return hit.position === null ? "Mentioned" : `#${hit.position}`;
+}
+
 function PromptHits({
-  familyKey,
-  results,
+  hits,
   onOpen,
+  onWrite,
 }: {
-  familyKey: string;
-  results: readonly GeoPromptResult[];
+  hits: readonly EngineFamilyPromptHit[];
   onOpen: (promptId: string) => void;
+  onWrite?: (hit: EngineFamilyPromptHit) => void;
 }) {
-  const hits = useMemo(
-    () => engineFamilyPromptHits(familyKey, results),
-    [familyKey, results]
-  );
+  const columns = useMemo<TableColumn<EngineFamilyPromptHit>[]>(() => {
+    const next: TableColumn<EngineFamilyPromptHit>[] = [
+      {
+        key: "prompt",
+        header:
+          hits.length > 0
+            ? `Prompts (${hits.length.toLocaleString()})`
+            : "Prompts",
+        width: "1fr",
+        minWidth: "12rem",
+        sortable: true,
+        cell: (row) => (
+          <TruncateWithTooltip className="text-sm">
+            {row.prompt}
+          </TruncateWithTooltip>
+        ),
+        sortValue: (row) => row.prompt,
+      },
+      {
+        key: "result",
+        header: "Result",
+        width: "6.5rem",
+        sortable: true,
+        cell: (row) => (
+          <span
+            className={
+              row.mentioned
+                ? "text-sm tabular-nums"
+                : "text-muted-foreground text-sm tabular-nums"
+            }
+          >
+            {promptResultLabel(row)}
+          </span>
+        ),
+        sortValue: (row) =>
+          row.mentioned ? (row.position ?? 0) : Number.MAX_SAFE_INTEGER,
+      },
+    ];
+    if (onWrite) {
+      next.push({
+        key: "write",
+        header: "",
+        width: "5.5rem",
+        align: "right",
+        cell: (row) =>
+          row.mentioned ? null : (
+            <Button
+              className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+              onClick={() => onWrite(row)}
+              size="sm"
+              variant="ghost"
+            >
+              Write
+            </Button>
+          ),
+      });
+    }
+    return next;
+  }, [hits.length, onWrite]);
+
   if (hits.length === 0) {
     return null;
   }
 
-  const mentioned = hits.filter((hit) => hit.mentioned).length;
-  const missed = hits.length - mentioned;
-
   return (
-    <section className="space-y-2">
-      <div className="flex items-baseline justify-between gap-2 px-0.5">
-        <h3 className="text-sm font-medium">Prompts</h3>
-        <p className="text-muted-foreground text-xs tabular-nums">
-          {mentioned.toLocaleString()} mentioned · {missed.toLocaleString()}{" "}
-          missed
-        </p>
-      </div>
-      <ul className="divide-y overflow-hidden rounded-lg border">
-        {hits.map((hit) => (
-          <PromptHitRow hit={hit} key={hit.promptId} onOpen={onOpen} />
-        ))}
-      </ul>
-    </section>
+    <Table
+      className="rounded-2xl"
+      columns={columns}
+      data={[...hits]}
+      defaultSort={{ key: "result", direction: "asc" }}
+      emptyState="No prompts scanned yet"
+      getRowId={(row) => row.promptId}
+      height={tableHeightFor(hits.length)}
+      onRowClick={(row) => onOpen(row.promptId)}
+      rowHeight={TABLE_ROW_HEIGHT}
+    />
   );
 }
 
-function PromptHitRow({
-  hit,
-  onOpen,
-}: {
-  hit: EngineFamilyPromptHit;
-  onOpen: (promptId: string) => void;
-}) {
-  return (
-    <li>
-      <button
-        className="hover:bg-muted/60 flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors"
-        onClick={() => onOpen(hit.promptId)}
-        type="button"
-      >
-        <span className="min-w-0 flex-1">
-          <TruncateWithTooltip className="text-sm">
-            {hit.prompt}
-          </TruncateWithTooltip>
-        </span>
-        <span
-          className={cn(
-            "shrink-0 text-xs tabular-nums",
-            hit.mentioned ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          {hit.mentioned
-            ? hit.position === null
-              ? "Mentioned"
-              : `#${hit.position}`
-            : "Miss"}
-        </span>
-      </button>
-    </li>
-  );
-}
-
-export function EngineFamilySheet({
+function EngineFamilySheetSession({
   family,
   timeseriesPoints = GEO_EMPTY_TIMESERIES,
   promptResults = GEO_EMPTY_PROMPT_RESULTS,
+  organizationSlug,
   open,
   onOpenChange,
-}: EngineFamilySheetProps) {
+}: Omit<EngineFamilySheetProps, "family"> & { family: GeoEngineFamily }) {
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null);
-  const name = family ? engineFamilyLabel(family.family) : "";
-  const showVariantHeadings = (family?.variants.length ?? 0) > 1;
-  const lastChecked = family ? engineFamilyLastCheckedAt(family) : null;
+  const [writeOpen, setWriteOpen] = useState(false);
+  const [writeInitial, setWriteInitial] =
+    useState<WriteDialogInitialState | null>(null);
+  const { projectId } = useGeoProjectScope();
+  const { getOrganization, activeOrganization } = useOrganizationsContext();
+  const writerFlag = useFlag(GEO_WRITER_FLAG_KEY);
+  const writerVisible = isGeoWriterVisibleInNav(writerFlag.on);
+  const organization =
+    organizationSlug && activeOrganization?.slug === organizationSlug
+      ? activeOrganization
+      : organizationSlug
+        ? getOrganization(organizationSlug)
+        : null;
+  const organizationId = organization?.id ?? "";
+  const canWrite =
+    writerVisible && Boolean(organizationSlug) && Boolean(organizationId);
+  const name = engineFamilyLabel(family.family);
+  const showVariantHeadings = family.variants.length > 1;
+  const lastChecked = engineFamilyLastCheckedAt(family);
   let description = showVariantHeadings
     ? "How each model mentions you"
     : "How this engine mentions you";
@@ -311,46 +410,57 @@ export function EngineFamilySheet({
   const selectedRow = selectedPromptId
     ? promptTableRowForId(selectedPromptId, promptResults)
     : null;
-  const familyKey = family?.family;
+  const promptHits = useMemo(
+    () => engineFamilyPromptHits(family.family, promptResults),
+    [family.family, promptResults]
+  );
+  const missedCount = promptHits.filter((hit) => !hit.mentioned).length;
+  const improveInsight = familyImproveInsight({
+    familyLabel: name,
+    search: engineFamilyModeTotals(family, "search"),
+    memory: engineFamilyModeTotals(family, "memory"),
+    missed: missedCount,
+  });
+  const gapsHref =
+    canWrite && organizationSlug
+      ? geoGapsEngineHref(organizationSlug, family.family, projectId)
+      : undefined;
 
-  useEffect(() => {
-    setSelectedPromptId(null);
-  }, [familyKey]);
+  function handleWrite(hit: EngineFamilyPromptHit) {
+    setWriteInitial(
+      writeDialogStateFromGap({
+        promptId: hit.promptId,
+        prompt: hit.prompt,
+      })
+    );
+    setWriteOpen(true);
+  }
 
   return (
     <>
-      <Sheet
-        onOpenChange={(nextOpen) => {
-          if (!nextOpen) {
-            setSelectedPromptId(null);
-          }
-          onOpenChange(nextOpen);
-        }}
-        open={open}
-      >
-        <SheetContent className="gap-0 overflow-hidden rounded-xl data-[side=right]:inset-y-2 data-[side=right]:right-2 data-[side=right]:h-auto data-[side=right]:border data-[side=right]:sm:max-w-2xl">
-          {family ? (
-            <>
-              <SheetHeader className="bg-muted/50 border-b pr-14">
-                <SheetTitle className="flex items-center gap-2">
-                  <EngineIcon className="size-5" engine={family.family} />
-                  {name}
-                </SheetTitle>
-                <SheetDescription className="tabular-nums">
-                  {description}
-                </SheetDescription>
-              </SheetHeader>
-              <FamilyStats family={family} />
-              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
-                <FamilyTrend family={family} points={timeseriesPoints} />
-                <PromptHits
-                  familyKey={family.family}
-                  onOpen={setSelectedPromptId}
-                  results={promptResults}
-                />
-              </div>
-            </>
-          ) : null}
+      <Sheet onOpenChange={onOpenChange} open={open}>
+        <SheetContent className={FAMILY_SHEET_CONTENT_CLASS}>
+          <SheetHeader className="bg-muted/50 border-b pr-14">
+            <SheetTitle className="flex items-center gap-2">
+              <EngineIcon className="size-5" engine={family.family} />
+              {name}
+            </SheetTitle>
+            <SheetDescription className="tabular-nums">
+              {description}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
+            <FamilyStats family={family} points={timeseriesPoints} />
+            <FamilyTrend family={family} points={timeseriesPoints} />
+            {improveInsight ? (
+              <FamilyImproveCard gapsHref={gapsHref} insight={improveInsight} />
+            ) : null}
+            <PromptHits
+              hits={promptHits}
+              onOpen={setSelectedPromptId}
+              onWrite={canWrite ? handleWrite : undefined}
+            />
+          </div>
         </SheetContent>
       </Sheet>
       <PromptDetailDialog
@@ -362,6 +472,44 @@ export function EngineFamilySheet({
         open={selectedRow !== null}
         row={selectedRow}
       />
+      {organizationSlug && organizationId ? (
+        <WriteDialog
+          initial={writeInitial}
+          onOpenChange={setWriteOpen}
+          open={writeOpen}
+          organizationId={organizationId}
+          organizationSlug={organizationSlug}
+        />
+      ) : null}
     </>
+  );
+}
+
+export function EngineFamilySheet({
+  family,
+  timeseriesPoints = GEO_EMPTY_TIMESERIES,
+  promptResults = GEO_EMPTY_PROMPT_RESULTS,
+  organizationSlug,
+  open,
+  onOpenChange,
+}: EngineFamilySheetProps) {
+  if (!family) {
+    return (
+      <Sheet onOpenChange={onOpenChange} open={open}>
+        <SheetContent className={FAMILY_SHEET_CONTENT_CLASS} />
+      </Sheet>
+    );
+  }
+
+  return (
+    <EngineFamilySheetSession
+      family={family}
+      key={family.family}
+      onOpenChange={onOpenChange}
+      open={open}
+      organizationSlug={organizationSlug}
+      promptResults={promptResults}
+      timeseriesPoints={timeseriesPoints}
+    />
   );
 }

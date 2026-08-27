@@ -145,7 +145,15 @@ export const loadGeoSequenceResults = Effect.fn("geo.sequenceResults")(
         position: row.position,
         sentiment: row.sentiment,
         excerpt: row.excerpt,
-        sources: row.sources,
+        searchQueries: row.grounding.queries,
+        sources:
+          row.grounding.sources.length > 0
+            ? row.grounding.sources
+            : row.sources.map((source) => ({
+                title: source.title ?? source.url,
+                url: source.url,
+                domain: "",
+              })),
         lastCheckedAt: row.lastCheckedAt.toISOString(),
       })),
     };

@@ -1,6 +1,7 @@
 import { DEFAULT_LANGUAGE } from "@notra/ai/constants/languages";
 import { gateway } from "@notra/ai/gateway";
 import type { AgentTokenUsage } from "@notra/ai/types/agents";
+import { EMPTY_GEO_CHECK_GROUNDING } from "@notra/db/constants/geo-checks";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
@@ -55,6 +56,7 @@ import {
   GeoSettingsMissingError,
   GeoWriterCreditsExhaustedError,
 } from "@/lib/geo/errors";
+import { extractGrounding } from "@/lib/geo/grounding";
 import { toGeoSettings } from "@/lib/geo/mappers";
 import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
 import { requireGeoProject } from "@/lib/geo/projects";
@@ -67,6 +69,7 @@ import {
 import type {
   GeoCheckContext,
   GeoCheckTask,
+  GeoEngineAnswer,
   GeoGroundedEngine,
   GeoJudgeResult,
   GeoModelGateway,
@@ -154,7 +157,10 @@ const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
         cause,
       }),
   });
-  return result.text;
+  return {
+    text: result.text,
+    grounding: extractGrounding(result),
+  };
 });
 
 /**
@@ -166,7 +172,7 @@ const askCursorEngineEffect = Effect.fn("geo.askCursorEngine")(function* (
   engine: string,
   promptText: string
 ) {
-  return yield* askCursorEngine(promptText).pipe(
+  const text = yield* askCursorEngine(promptText).pipe(
     Effect.mapError(
       (cause) =>
         new GeoScanError({
@@ -184,6 +190,11 @@ const askCursorEngineEffect = Effect.fn("geo.askCursorEngine")(function* (
         ),
     })
   );
+  const answer: GeoEngineAnswer = {
+    text,
+    grounding: EMPTY_GEO_CHECK_GROUNDING,
+  };
+  return answer;
 });
 
 const askEngine = Effect.fn("geo.askEngine")(function* (
@@ -207,6 +218,7 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
 
 interface GroundedAnswer {
   text: string;
+  grounding: GeoEngineAnswer["grounding"];
   sources: GeoCheckSourceItem[];
   usage: LanguageModelUsage;
 }
@@ -256,6 +268,7 @@ const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
     });
     const answer: GroundedAnswer = {
       text: result.text,
+      grounding: extractGrounding(result),
       sources: collectGroundedSources(result.sources),
       usage: result.usage,
     };
@@ -334,16 +347,16 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
         task.zdr
       )
     : null;
-  const answer = grounded
-    ? grounded.text
-    : yield* askEngine(
-        context.organizationId,
-        task.engine,
-        task.prompt.text,
-        task.zdr,
-        resolveGeoEngineGateway(context.catalog, task.engine)
-      );
-  const judged = yield* judgeAnswer(context, task.prompt.text, answer);
+  const answer =
+    grounded ??
+    (yield* askEngine(
+      context.organizationId,
+      task.engine,
+      task.prompt.text,
+      task.zdr,
+      resolveGeoEngineGateway(context.catalog, task.engine)
+    ));
+  const judged = yield* judgeAnswer(context, task.prompt.text, answer.text);
 
   const row: GeoCheckWrite = {
     organizationId: context.organizationId,
@@ -354,13 +367,14 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
     sequenceId: null,
     turn: 0,
     prompt: task.prompt.text,
-    answer,
+    answer: answer.text,
     capturedAt: context.capturedAt,
     mentioned: judged.mentioned,
     position: normalizePosition(judged.position),
     sentiment: judged.sentiment,
     competitors: judged.competitors.slice(0, MAX_JUDGE_COMPETITORS),
     excerpt: judged.excerpt.slice(0, GEO_EXCERPT_MAX_LENGTH),
+    grounding: answer.grounding,
     language: task.language,
     sources: grounded?.sources ?? [],
   };
@@ -664,6 +678,7 @@ const runGeoSequenceCheck = Effect.fn("geo.runSequenceCheck")(function* (
       sentiment: judged.sentiment,
       competitors: judged.competitors.slice(0, MAX_JUDGE_COMPETITORS),
       excerpt: judged.excerpt.slice(0, GEO_EXCERPT_MAX_LENGTH),
+      grounding: answer.grounding,
       language: "English",
       sources: answer.sources,
     });

@@ -26,6 +26,7 @@ import {
   GEO_WRITER_SOURCE_KINDS,
 } from "./constants/geo-writer";
 import type { AgentFeedbackMetadata } from "./types/agent-feedback";
+import type { GeoCheckGrounding } from "./types/geo-checks";
 import type { GeoContentBriefJson } from "./types/geo-writer";
 
 export const lookbackWindowEnum = pgEnum("lookback_window", [
@@ -1572,6 +1573,10 @@ export const geoMentionChecks = pgTable(
       .notNull()
       .default(sql`ARRAY[]::text[]`),
     excerpt: text("excerpt").notNull().default(""),
+    grounding: jsonb("grounding")
+      .$type<GeoCheckGrounding>()
+      .notNull()
+      .default(sql`'{"queries":[],"sources":[]}'::jsonb`),
     language: text("language").notNull().default("English"),
     sources: jsonb("sources")
       .$type<{ url: string; title: string | null }[]>()

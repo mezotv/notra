@@ -19,8 +19,10 @@ import {
   queryGeoCheckCompetitorPrompts,
   queryGeoCheckCompetitorShare,
   queryGeoCheckCompetitorShareTimeseries,
+  queryGeoCheckCompetitorShareTrends,
   queryGeoCheckCompetitorTimeseries,
   queryGeoCheckLanguageShare,
+  queryGeoCheckLanguageShareTrends,
   queryGeoCheckOverview,
   queryGeoCheckPromptResults,
   queryGeoCheckTimeseries,
@@ -54,7 +56,6 @@ import {
   toGeoCompetitor,
   toGeoSettings,
   toGeoTrafficLogEntry,
-  toNullableNumber,
   toTrackedPrompt,
 } from "@/lib/geo/mappers";
 import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
@@ -96,6 +97,7 @@ import type {
 } from "@/types/geo";
 import { toGeoTrafficTotals, toGeoVisitorType } from "@/utils/ai-traffic";
 import { getGeoModelCatalogEntry } from "@/utils/geo-model-catalog";
+import { groupGeoSparklinePoints } from "@/utils/geo-sparkline";
 
 function mergeLegacyCompetitors(
   competitors: GeoCompetitor[],
@@ -352,11 +354,12 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
   );
   // Static engines hidden from this organization (missing credential or flag
   // off) keep their stored selection so a re-save doesn't silently drop them.
-  const unavailableStaticEngines = new Set(
-    GEO_MODEL_CATALOG_STATIC.filter(
-      (entry) => !getGeoModelCatalogEntry(catalog, entry.id)
-    ).map((entry) => entry.id)
-  );
+  const unavailableStaticEngines = new Set<string>();
+  for (const entry of GEO_MODEL_CATALOG_STATIC) {
+    if (!getGeoModelCatalogEntry(catalog, entry.id)) {
+      unavailableStaticEngines.add(entry.id);
+    }
+  }
   const existingSettings = yield* geoDb("settings lookup failed", () =>
     db.query.geoSettings.findFirst({
       columns: {
@@ -373,15 +376,17 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
     (engine) =>
       unavailableStaticEngines.size > 0 && unavailableStaticEngines.has(engine)
   );
+  const preservedEngineSet = new Set(preservedEngines);
   const engines = [...new Set([...input.engines, ...preservedEngines])];
+  const engineSet = new Set(engines);
   const nonZdrApprovedEngines = [
     ...new Set([
       ...input.nonZdrApprovedEngines,
       ...(existingSettings?.nonZdrApprovedEngines ?? []).filter((engine) =>
-        preservedEngines.includes(engine)
+        preservedEngineSet.has(engine)
       ),
     ]),
-  ].filter((engine) => engines.includes(engine));
+  ].filter((engine) => engineSet.has(engine));
 
   yield* geoDb("settings upsert failed", () =>
     db
@@ -474,8 +479,23 @@ export const loadGeoLanguageShare = Effect.fn("geo.languageShare")(function* (
   window: GeoWindowInput
 ) {
   const scope = yield* resolveGeoScope(input);
-  const rows = yield* geoDb("language share query failed", () =>
-    queryGeoCheckLanguageShare(geoCheckScope(scope), toGeoCheckWindow(window))
+  const checkScope = geoCheckScope(scope);
+  const checkWindow = toGeoCheckWindow(window);
+  const [rows, trendRows] = yield* Effect.all(
+    [
+      geoDb("language share query failed", () =>
+        queryGeoCheckLanguageShare(checkScope, checkWindow)
+      ),
+      geoDb("language share trends query failed", () =>
+        queryGeoCheckLanguageShareTrends(checkScope, checkWindow)
+      ),
+    ],
+    { concurrency: "unbounded" }
+  );
+  const trendsByLanguage = groupGeoSparklinePoints(
+    trendRows,
+    (point) => point.language,
+    (point) => ({ day: point.day, value: point.mentionRate })
   );
 
   const response: GeoLanguageShareResponse = {
@@ -486,6 +506,7 @@ export const loadGeoLanguageShare = Effect.fn("geo.languageShare")(function* (
       mentions: row.mentions,
       mentionRate: row.mentionRate,
       avgPosition: row.avgPosition,
+      trend: trendsByLanguage.get(row.language) ?? [],
     })),
   };
   return response;
@@ -532,6 +553,7 @@ export const loadGeoTimeseries = Effect.fn("geo.timeseries")(function* (
       engine: row.engine,
       checks: row.checks,
       mentions: row.mentions,
+      avgPosition: row.avgPosition,
     })),
   };
   return response;
@@ -557,6 +579,8 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
       position: row.position,
       sentiment: row.sentiment,
       excerpt: row.excerpt,
+      searchQueries: row.grounding.queries,
+      sources: row.grounding.sources,
       lastCheckedAt: row.lastCheckedAt.toISOString(),
     })),
   };
@@ -568,7 +592,7 @@ export const loadGeoCompetitorShare = Effect.fn("geo.competitorShare")(
     const scope = yield* resolveGeoScope(input);
     const checkScope = geoCheckScope(scope);
     const checkWindow = toGeoCheckWindow(window);
-    const [rows, timeseries] = yield* Effect.all(
+    const [rows, timeseries, trendRows] = yield* Effect.all(
       [
         geoDb("competitor share query failed", () =>
           queryGeoCheckCompetitorShare(
@@ -580,8 +604,20 @@ export const loadGeoCompetitorShare = Effect.fn("geo.competitorShare")(
         geoDb("competitor share timeseries query failed", () =>
           queryGeoCheckCompetitorShareTimeseries(checkScope, checkWindow)
         ),
+        geoDb("competitor share trends query failed", () =>
+          queryGeoCheckCompetitorShareTrends(
+            checkScope,
+            checkWindow,
+            GEO_COMPETITOR_SHARE_LIMIT
+          )
+        ),
       ],
       { concurrency: "unbounded" }
+    );
+    const trendsByBrand = groupGeoSparklinePoints(
+      trendRows,
+      (point) => point.brand,
+      (point) => ({ day: point.day, value: point.share })
     );
 
     const response: GeoCompetitorShareResponse = {
@@ -589,6 +625,7 @@ export const loadGeoCompetitorShare = Effect.fn("geo.competitorShare")(
       points: rows.map((row) => ({
         brand: row.brand,
         mentions: row.mentions,
+        trend: trendsByBrand.get(row.brand) ?? [],
       })),
       timeseries: timeseries.map((row) => ({
         brand: row.brand,

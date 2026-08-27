@@ -18,33 +18,31 @@ import {
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
 import { cn } from "@notra/ui/lib/utils";
+import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 
-export interface PerplexitySearchSource {
-  title: string;
-  domain: string;
-  verified?: boolean;
-  url?: string;
+export type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
+
+function sourceHref(url: string | undefined): string | null {
+  if (!url) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed.href;
+  } catch {
+    return null;
+  }
 }
 
-function SourceRow({
-  source,
-  className,
-  style,
-}: {
-  source: PerplexitySearchSource;
-  className?: string;
-  style?: CSSProperties;
-}) {
+function SourceCells({ source }: { source: PerplexitySearchSource }) {
   return (
-    <li
-      className={cn(
-        "grid grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-2.5",
-        className
-      )}
-      style={style}
-    >
+    <>
       <PerplexityFavicon className="size-4" domain={source.domain} />
       <p className="min-w-0 truncate text-[13.5px] leading-5 text-[#6b6b6b] dark:text-[#b3b3b3]">
         {source.title}
@@ -57,6 +55,42 @@ function SourceRow({
           <ShieldMark className="size-3 text-[#8d8d8d]" />
         )}
       </span>
+    </>
+  );
+}
+
+function SourceRow({
+  source,
+  className,
+  style,
+}: {
+  source: PerplexitySearchSource;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const href = sourceHref(source.url);
+  const rowClassName =
+    "grid grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-2.5";
+
+  return (
+    <li className={className} style={style}>
+      {href ? (
+        <a
+          className={cn(
+            rowClassName,
+            "rounded-sm outline-none transition-colors hover:text-[#1a1a1a] focus-visible:ring-2 focus-visible:ring-black/15 dark:hover:text-foreground"
+          )}
+          href={href}
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <SourceCells source={source} />
+        </a>
+      ) : (
+        <div className={rowClassName}>
+          <SourceCells source={source} />
+        </div>
+      )}
     </li>
   );
 }
@@ -103,6 +137,7 @@ export function PerplexitySearch({
   previewCount = DEFAULT_PREVIEW_COUNT,
   sequential = false,
   reducedMotion = false,
+  emptyDescription,
   className,
 }: {
   title: string;
@@ -112,6 +147,7 @@ export function PerplexitySearch({
   previewCount?: number;
   sequential?: boolean;
   reducedMotion?: boolean;
+  emptyDescription?: string;
   className?: string;
 }) {
   const shouldSequence = sequential && !reducedMotion;
@@ -173,6 +209,37 @@ export function PerplexitySearch({
   }, [shouldSequence, queries, previewSources.length]);
 
   const visibleQueries = queries.slice(0, visibleQueryCount);
+  const hasBody =
+    queries.length > 0 || sources.length > 0 || Boolean(emptyDescription);
+
+  const header = (
+    <>
+      <span className="relative flex size-4 shrink-0 items-center justify-center">
+        <HugeiconsIcon
+          className={cn(
+            "text-[#6b6b6b] dark:text-[#a3a3a3]",
+            !finished && "animate-pulse"
+          )}
+          icon={GlobalIcon}
+          size={15}
+          strokeWidth={1.7}
+        />
+      </span>
+      <span className="min-w-0 flex-1 truncate text-[14px] leading-5 text-[#5c5c5c] dark:text-[#b3b3b3]">
+        {title}
+      </span>
+    </>
+  );
+
+  if (!hasBody) {
+    return (
+      <div className={cn("w-full max-w-[42rem] font-sans", className)}>
+        <div className="flex w-full items-center gap-2 py-0.5">
+          {header}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Collapsible
@@ -181,20 +248,7 @@ export function PerplexitySearch({
       open={open}
     >
       <CollapsibleTrigger className="group/search flex w-full items-center gap-2 rounded-md py-0.5 text-left outline-none transition-colors hover:text-[#1a1a1a] focus-visible:ring-2 focus-visible:ring-black/15 dark:hover:text-foreground">
-        <span className="relative flex size-4 shrink-0 items-center justify-center">
-          <HugeiconsIcon
-            className={cn(
-              "text-[#6b6b6b] dark:text-[#a3a3a3]",
-              !finished && "animate-pulse"
-            )}
-            icon={GlobalIcon}
-            size={15}
-            strokeWidth={1.7}
-          />
-        </span>
-        <span className="min-w-0 flex-1 truncate text-[14px] leading-5 text-[#5c5c5c] dark:text-[#b3b3b3]">
-          {title}
-        </span>
+        {header}
         <HugeiconsIcon
           className="shrink-0 text-[#8d8d8d] transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-data-panel-open/search:rotate-180 motion-reduce:transition-none"
           icon={ArrowDown01Icon}
@@ -280,6 +334,10 @@ export function PerplexitySearch({
                 </p>
               ) : null}
             </div>
+          ) : emptyDescription ? (
+            <p className="text-[13.5px] leading-5 text-[#8d8d8d]">
+              {emptyDescription}
+            </p>
           ) : null}
           </div>
         </div>

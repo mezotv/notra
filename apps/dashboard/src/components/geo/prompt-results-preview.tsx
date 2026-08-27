@@ -1,64 +1,164 @@
 "use client";
 
+import { SearchIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
-import { useMemo } from "react";
+import { Input } from "@notra/ui/components/ui/input";
+import { useMemo, useState } from "react";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoBar } from "@/components/geo/geo-bar";
 import { LogoStack } from "@/components/geo/logo-stack";
+import { PresenceBadge } from "@/components/geo/presence-badge";
+import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { TABLE_ROW_HEIGHT } from "@/constants/table";
-import type { GeoPromptSummary, PromptResultsPreviewProps } from "@/types/geo";
+import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
+import {
+  GEO_PROMPT_NO_MENTION,
+  GEO_PROMPT_PREVIEW_ROW_HEIGHT,
+  GEO_SENTIMENT_LABELS,
+} from "@/constants/geo";
+import type {
+  GeoPromptSummary,
+  PromptResultsPreviewProps,
+  PromptSentimentLabelProps,
+} from "@/types/geo";
+import { fuzzyMatches } from "@/utils/fuzzy";
 import { engineFamilyLabel } from "@/utils/geo-charts";
 import {
   mentionedEngineFamilies,
-  sortWinningPromptSummaries,
   summarizePromptResults,
 } from "@/utils/geo-presence";
+import { bestMentionedResult, promptTableRowForId } from "@/utils/geo-prompts";
 import { geoScanEmptyMessage } from "@/utils/geo-scan";
 import { tableHeightFor } from "@/utils/table";
 
-const DEFAULT_LIMIT = 6;
+const EMPTY_PROMPTS = "Run a scan to see how engines answer your prompts";
+const SENTIMENT_SORT: Record<string, number> = {
+  positive: 3,
+  neutral: 2,
+  negative: 1,
+};
+
+function PromptRateCell({
+  mentioned,
+  total,
+}: {
+  mentioned: number;
+  total: number;
+}) {
+  if (total === 0) {
+    return <span className="text-muted-foreground text-xs">-</span>;
+  }
+
+  return (
+    <span className="flex items-center gap-2">
+      <GeoBar className="w-16 shrink-0" value={mentioned / total} />
+      <span className="text-muted-foreground text-xs tabular-nums">
+        {mentioned}/{total}
+      </span>
+    </span>
+  );
+}
+
+function PromptSentimentLabel({ sentiment }: PromptSentimentLabelProps) {
+  if (!sentiment) {
+    return <span className="text-muted-foreground text-xs">-</span>;
+  }
+  const label = GEO_SENTIMENT_LABELS[sentiment];
+  if (!label) {
+    return <span className="text-muted-foreground text-xs">-</span>;
+  }
+  return (
+    <span
+      className={
+        sentiment === "positive"
+          ? "text-geo-up text-xs"
+          : sentiment === "negative"
+            ? "text-geo-down text-xs"
+            : "text-muted-foreground text-xs"
+      }
+    >
+      {label}
+    </span>
+  );
+}
+
+function PromptCopyCell({ row }: { row: GeoPromptSummary }) {
+  const best = bestMentionedResult(row.results);
+  const excerpt = best?.excerpt.trim() ?? "";
+
+  return (
+    <span className="flex min-w-0 flex-col gap-0.5">
+      <span className="flex min-w-0 items-center gap-1.5">
+        <TruncateWithTooltip className="text-sm font-medium">
+          {row.prompt}
+        </TruncateWithTooltip>
+        <PresenceBadge status={row.presence} />
+      </span>
+      <span className="text-muted-foreground truncate text-xs">
+        {excerpt || GEO_PROMPT_NO_MENTION}
+      </span>
+    </span>
+  );
+}
 
 export function PromptResultsPreview({
   results,
-  limit = DEFAULT_LIMIT,
+  limit,
   action,
   isScanning = false,
 }: PromptResultsPreviewProps) {
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const rows = useMemo(() => {
     const summaries = summarizePromptResults(results);
-    return sortWinningPromptSummaries(summaries).slice(0, limit);
-  }, [results, limit]);
+    const needle = query.trim();
+    const matched =
+      needle.length === 0
+        ? summaries
+        : summaries.filter((row) => fuzzyMatches([row.prompt], needle));
+    return limit ? matched.slice(0, limit) : matched;
+  }, [results, query, limit]);
+  const detailRow = detailId ? promptTableRowForId(detailId, results) : null;
 
   const columns = useMemo<TableColumn<GeoPromptSummary>[]>(
     () => [
       {
         key: "prompt",
         header: "Prompt",
-        width: "1fr",
-        minWidth: "12rem",
+        width: "1.6fr",
+        minWidth: "18rem",
+        sortable: true,
+        cell: (row) => <PromptCopyCell row={row} />,
+      },
+      {
+        key: "sentiment",
+        header: "Tone",
+        width: "6.5rem",
         sortable: true,
         cell: (row) => (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="block w-full min-w-0 truncate text-sm">
-                  {row.prompt}
-                </span>
-              }
-            />
-            <TooltipContent className="max-w-sm">{row.prompt}</TooltipContent>
-          </Tooltip>
+          <PromptSentimentLabel
+            sentiment={bestMentionedResult(row.results)?.sentiment ?? null}
+          />
         ),
+        sortValue: (row) =>
+          SENTIMENT_SORT[bestMentionedResult(row.results)?.sentiment ?? ""] ??
+          0,
+      },
+      {
+        key: "rate",
+        header: "Mentioned",
+        width: "8.5rem",
+        sortable: true,
+        cell: (row) => (
+          <PromptRateCell mentioned={row.mentioned} total={row.total} />
+        ),
+        sortValue: (row) => (row.total === 0 ? -1 : row.mentioned / row.total),
       },
       {
         key: "bestPosition",
@@ -79,57 +179,92 @@ export function PromptResultsPreview({
       {
         key: "engines",
         header: "Engines",
-        width: "7rem",
+        width: "7.5rem",
         sortable: true,
-        cell: (row) => (
-          <LogoStack
-            items={mentionedEngineFamilies(row).map((family) => ({
-              key: family,
-              label: engineFamilyLabel(family),
-              renderIcon: (className) => (
-                <EngineIcon className={className} engine={family} />
-              ),
-            }))}
-          />
-        ),
-        sortValue: (row) => row.mentioned / row.total,
+        cell: (row) => {
+          const families = mentionedEngineFamilies(row);
+          if (families.length === 0) {
+            return <span className="text-muted-foreground text-xs">-</span>;
+          }
+          return (
+            <LogoStack
+              items={families.map((family) => ({
+                key: family,
+                label: engineFamilyLabel(family),
+                renderIcon: (className) => (
+                  <EngineIcon className={className} engine={family} />
+                ),
+              }))}
+            />
+          );
+        },
+        sortValue: (row) => mentionedEngineFamilies(row).length,
       },
     ],
     []
   );
 
   return (
-    <InstrumentSection
-      action={action}
-      bodyClassName="flex min-h-0 flex-1 flex-col"
-      className="h-full"
-      eyebrow="Winning prompts"
-    >
-      {rows.length === 0 ? (
-        <InstrumentEmpty
-          busy={isScanning}
-          className="min-h-48"
-          message={geoScanEmptyMessage(
-            isScanning,
-            "Run a scan to see which prompts surface you"
-          )}
-          seed="Winning prompts"
-        />
-      ) : (
-        <Table
-          className="rounded-2xl"
-          columns={columns}
-          data={rows}
-          defaultSort={{ direction: "asc", key: "bestPosition" }}
-          emptyState={geoScanEmptyMessage(
-            isScanning,
-            "Run a scan to see which prompts surface you"
-          )}
-          getRowId={(row) => row.promptId}
-          height={tableHeightFor(rows.length)}
-          rowHeight={TABLE_ROW_HEIGHT}
-        />
-      )}
-    </InstrumentSection>
+    <>
+      <InstrumentSection
+        action={
+          results.length > 0 ? (
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="relative w-full sm:w-56">
+                <HugeiconsIcon
+                  className="text-muted-foreground absolute top-1/2 left-2.5 -translate-y-1/2"
+                  icon={SearchIcon}
+                  size={14}
+                />
+                <Input
+                  aria-label="Filter prompts"
+                  className="h-7 pr-2.5 pl-8 text-xs"
+                  onChange={(event) => setQuery(event.target.value)}
+                  placeholder="Filter prompts..."
+                  value={query}
+                />
+              </div>
+              {action}
+            </div>
+          ) : (
+            action
+          )
+        }
+        bodyClassName="flex min-h-0 flex-1 flex-col"
+        className="h-full"
+        eyebrow="Prompts"
+      >
+        {results.length === 0 ? (
+          <InstrumentEmpty
+            busy={isScanning}
+            className="min-h-48"
+            message={geoScanEmptyMessage(isScanning, EMPTY_PROMPTS)}
+            seed="Prompts"
+          />
+        ) : (
+          <Table
+            className="rounded-2xl"
+            columns={columns}
+            data={rows}
+            defaultSort={{ direction: "desc", key: "rate" }}
+            emptyState="No prompts match this filter"
+            getRowId={(row) => row.promptId}
+            height={tableHeightFor(rows.length, GEO_PROMPT_PREVIEW_ROW_HEIGHT)}
+            onRowClick={(row) => setDetailId(row.promptId)}
+            rowHeight={GEO_PROMPT_PREVIEW_ROW_HEIGHT}
+          />
+        )}
+      </InstrumentSection>
+      <PromptDetailDialog
+        isScanning={isScanning}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailId(null);
+          }
+        }}
+        open={detailRow !== null}
+        row={detailRow}
+      />
+    </>
   );
 }

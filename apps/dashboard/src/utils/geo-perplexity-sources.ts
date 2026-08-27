@@ -1,10 +1,11 @@
-import type { PerplexitySearchSource } from "@notra/ui/components/brainless/perplexity/perplexity-search";
+import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
 
 import type { GeoAnswerSource } from "@/types/geo";
 import { getReferenceDomain } from "@/utils/reference-display";
 
 const MARKDOWN_LINK = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
 const BARE_URL = /\bhttps?:\/\/[^\s)]+/g;
+const TRAILING_PUNCTUATION = /[).,;:]+$/;
 
 export function perplexitySourcesFromExcerpt(
   excerpt: string
@@ -13,7 +14,7 @@ export function perplexitySourcesFromExcerpt(
   const sources: PerplexitySearchSource[] = [];
 
   for (const match of excerpt.matchAll(MARKDOWN_LINK)) {
-    const href = match[2] ?? "";
+    const href = (match[2] ?? "").replace(TRAILING_PUNCTUATION, "");
     const domain = getReferenceDomain(href);
     if (!domain || seen.has(domain)) {
       continue;
@@ -24,7 +25,7 @@ export function perplexitySourcesFromExcerpt(
   }
 
   for (const match of excerpt.matchAll(BARE_URL)) {
-    const href = match[0] ?? "";
+    const href = (match[0] ?? "").replace(TRAILING_PUNCTUATION, "");
     const domain = getReferenceDomain(href);
     if (!domain || seen.has(domain)) {
       continue;

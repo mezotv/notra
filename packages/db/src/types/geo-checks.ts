@@ -8,6 +8,17 @@ export interface GeoCheckSourceItem {
   title: string | null;
 }
 
+export interface GeoCheckSource {
+  title: string;
+  url: string;
+  domain: string;
+}
+
+export interface GeoCheckGrounding {
+  queries: string[];
+  sources: GeoCheckSource[];
+}
+
 export interface GeoCheckWrite {
   id?: string;
   organizationId: string;
@@ -24,6 +35,7 @@ export interface GeoCheckWrite {
   sentiment: string | null;
   competitors: string[];
   excerpt: string;
+  grounding: GeoCheckGrounding;
   language: string;
   sources?: GeoCheckSourceItem[];
   capturedAt: Date;
@@ -43,6 +55,7 @@ export interface GeoCheckTimeseriesRow {
   engine: string;
   checks: number;
   mentions: number;
+  avgPosition: number | null;
 }
 
 export interface GeoCheckPromptResultRow {
@@ -54,6 +67,7 @@ export interface GeoCheckPromptResultRow {
   position: number | null;
   sentiment: string | null;
   excerpt: string;
+  grounding: GeoCheckGrounding;
   lastCheckedAt: Date;
 }
 
@@ -66,6 +80,12 @@ export interface GeoCheckCompetitorShareTimeseriesRow {
   brand: string;
   day: string;
   mentions: number;
+}
+
+export interface GeoCheckCompetitorShareTrendRow {
+  day: string;
+  brand: string;
+  share: number;
 }
 
 export interface GeoCheckCompetitorTimeseriesRow {
@@ -92,6 +112,12 @@ export interface GeoCheckLanguageShareRow {
   lastCheckedAt: Date;
 }
 
+export interface GeoCheckLanguageShareTrendRow {
+  day: string;
+  language: string;
+  mentionRate: number;
+}
+
 export interface GeoCheckWindow {
   from?: Date;
   toExclusive?: Date;
@@ -114,5 +140,6 @@ export interface GeoCheckSequenceResultRow {
   sentiment: string | null;
   excerpt: string;
   sources: GeoCheckSourceItem[];
+  grounding: GeoCheckGrounding;
   lastCheckedAt: Date;
 }

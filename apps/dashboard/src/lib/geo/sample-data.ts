@@ -5,6 +5,7 @@ import {
 import type { GeoTrafficEventRow } from "@notra/analytics/tinybird/datasources";
 import { purgeGeoProjectData } from "@notra/analytics/tinybird/purge";
 import { toClickHouseDateTime } from "@notra/analytics/utils/datetime";
+import { EMPTY_GEO_CHECK_GROUNDING } from "@notra/db/constants/geo-checks";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
@@ -176,6 +177,7 @@ function buildMentionRow(input: {
     sentiment,
     competitors: mentionedCompetitors(seed, input.companyName),
     excerpt,
+    grounding: EMPTY_GEO_CHECK_GROUNDING,
     language: input.language,
   };
 }
