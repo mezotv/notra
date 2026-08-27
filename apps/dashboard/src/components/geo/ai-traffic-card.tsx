@@ -208,17 +208,14 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
     [sources]
   );
   const trendRows = useMemo(() => buildTrafficTrendRows(points), [points]);
-  const groups = useMemo(() => groupTrafficSources(sources), [sources]);
+  const groups = groupTrafficSources(sources);
   const sparklineDays = useMemo(() => trafficSparklineDays(points), [points]);
   const canSparkline = hasTrafficSourceSeries(points);
-  const seriesByGroup = useMemo(() => {
-    if (!canSparkline) {
-      return new Map<string, { day: string; value: number }[]>();
-    }
-    const map = new Map<string, { day: string; value: number }[]>();
+  const seriesByGroup = new Map<string, { day: string; value: number }[]>();
+  if (canSparkline) {
     for (const group of groups) {
       const values = buildTrafficGroupSeries(points, group, sparklineDays);
-      map.set(
+      seriesByGroup.set(
         trafficGroupKey(group.visitorType, group.key),
         sparklineDays.map((day, index) => ({
           day,
@@ -226,130 +223,124 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         }))
       );
     }
-    return map;
-  }, [canSparkline, points, groups, sparklineDays]);
+  }
 
-  const columns = useMemo<TableColumn<GeoTrafficSourceGroup>[]>(
-    () => [
-      {
-        key: "source",
-        header: "Source",
-        width: "1fr",
-        sortable: true,
-        cell: (row) => <TrafficSourceGroupCell group={row} />,
-        sortValue: (row) => row.label,
-      },
-      {
-        key: "category",
-        header: "Purpose",
-        width: "9.5rem",
-        sortable: true,
-        cell: (row) => {
-          const [single] = row.categories;
-          if (single === undefined) {
-            return null;
-          }
-          if (row.categories.length === 1) {
-            return <PurposeBadge category={single} />;
-          }
-          return (
-            <span className="flex items-center gap-1">
-              {row.categories.map((category) => (
-                <PurposeBadge category={category} compact key={category} />
-              ))}
-            </span>
-          );
-        },
-        sortValue: (row) => row.categories.join(","),
-      },
-      {
-        key: "visits",
-        header: "Visits",
-        width: "10.5rem",
-        sortable: true,
-        cell: (row) => {
-          const series = seriesByGroup.get(
-            trafficGroupKey(row.visitorType, row.key)
-          );
-          const showSpark =
-            series !== undefined && series.length >= GEO_SPARKLINE_MIN_POINTS;
-
-          return (
-            <span className="flex items-center gap-2">
-              {showSpark ? (
-                <GeoRateSparkline
-                  className={
-                    row.visitorType === "ai_referral"
-                      ? "text-geo-memory"
-                      : "text-geo-search"
-                  }
-                  points={series}
-                />
-              ) : null}
-              <span className="text-sm tabular-nums">
-                {row.visits.toLocaleString()}
-              </span>
-            </span>
-          );
-        },
-      },
-      {
-        key: "markdownVisits",
-        header: "Markdown",
-        width: "6.75rem",
-        sortable: true,
-        cell: (row) => {
-          if (row.markdownVisits <= 0) {
-            return <span className="tabular-nums">-</span>;
-          }
-
-          return (
-            <Tooltip>
-              <TooltipTrigger
-                render={
-                  <span className="cursor-default tabular-nums">
-                    {formatMarkdownShare(row.markdownVisits, row.visits)}
-                  </span>
-                }
-              />
-              <TooltipContent
-                align="start"
-                className="max-w-xs text-pretty"
-                side="top"
-              >
-                {row.markdownVisits.toLocaleString()} of{" "}
-                {row.visits.toLocaleString()} requests asked for markdown via
-                the Accept header
-              </TooltipContent>
-            </Tooltip>
-          );
-        },
-        sortValue: (row) =>
-          row.visits === 0 ? 0 : row.markdownVisits / row.visits,
-      },
-      {
-        key: "paths",
-        header: "Pages",
-        width: "5.625rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-sm tabular-nums">{row.paths}</span>
-        ),
-      },
-      {
-        key: "lastSeenAt",
-        header: "Last seen",
-        width: "9.375rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
-            {formatAiTrafficTimestamp(row.lastSeenAt)}
+  const columns: TableColumn<GeoTrafficSourceGroup>[] = [
+    {
+      key: "source",
+      header: "Source",
+      width: "1fr",
+      sortable: true,
+      cell: (row) => <TrafficSourceGroupCell group={row} />,
+      sortValue: (row) => row.label,
+    },
+    {
+      key: "category",
+      header: "Purpose",
+      width: "9.5rem",
+      sortable: true,
+      cell: (row) => {
+        const [single] = row.categories;
+        if (single === undefined) {
+          return null;
+        }
+        if (row.categories.length === 1) {
+          return <PurposeBadge category={single} />;
+        }
+        return (
+          <span className="flex items-center gap-1">
+            {row.categories.map((category) => (
+              <PurposeBadge category={category} compact key={category} />
+            ))}
           </span>
-        ),
+        );
       },
-    ],
-    [seriesByGroup]
-  );
+      sortValue: (row) => row.categories.join(","),
+    },
+    {
+      key: "visits",
+      header: "Visits",
+      width: "10.5rem",
+      sortable: true,
+      cell: (row) => {
+        const series = seriesByGroup.get(
+          trafficGroupKey(row.visitorType, row.key)
+        );
+        const showSpark =
+          series !== undefined && series.length >= GEO_SPARKLINE_MIN_POINTS;
+
+        return (
+          <span className="flex items-center gap-2">
+            {showSpark ? (
+              <GeoRateSparkline
+                className={
+                  row.visitorType === "ai_referral"
+                    ? "text-geo-memory"
+                    : "text-geo-search"
+                }
+                points={series}
+              />
+            ) : null}
+            <span className="text-sm tabular-nums">
+              {row.visits.toLocaleString()}
+            </span>
+          </span>
+        );
+      },
+    },
+    {
+      key: "markdownVisits",
+      header: "Markdown",
+      width: "6.75rem",
+      sortable: true,
+      cell: (row) => {
+        if (row.markdownVisits <= 0) {
+          return <span className="tabular-nums">-</span>;
+        }
+
+        return (
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <span className="cursor-default tabular-nums">
+                  {formatMarkdownShare(row.markdownVisits, row.visits)}
+                </span>
+              }
+            />
+            <TooltipContent
+              align="start"
+              className="max-w-xs text-pretty"
+              side="top"
+            >
+              {row.markdownVisits.toLocaleString()} of{" "}
+              {row.visits.toLocaleString()} requests asked for markdown via the
+              Accept header
+            </TooltipContent>
+          </Tooltip>
+        );
+      },
+      sortValue: (row) =>
+        row.visits === 0 ? 0 : row.markdownVisits / row.visits,
+    },
+    {
+      key: "paths",
+      header: "Pages",
+      width: "5.625rem",
+      sortable: true,
+      cell: (row) => <span className="text-sm tabular-nums">{row.paths}</span>,
+    },
+    {
+      key: "lastSeenAt",
+      header: "Last seen",
+      width: "9.375rem",
+      sortable: true,
+      cell: (row) => (
+        <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
+          {formatAiTrafficTimestamp(row.lastSeenAt)}
+        </span>
+      ),
+    },
+  ];
 
   if (sources.length === 0) {
     return (

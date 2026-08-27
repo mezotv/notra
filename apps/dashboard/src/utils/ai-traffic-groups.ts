@@ -91,13 +91,13 @@ export function groupTrafficSources(
   const result = [...groups.values()];
   for (const group of result) {
     group.members.sort(byVisitsDesc);
-    group.categories = [
-      ...new Set(
-        group.members
-          .map((member) => member.category)
-          .filter((category) => category.length > 0)
-      ),
-    ];
+    const categories = new Set<string>();
+    for (const member of group.members) {
+      if (member.category.length > 0) {
+        categories.add(member.category);
+      }
+    }
+    group.categories = [...categories];
   }
   return result;
 }

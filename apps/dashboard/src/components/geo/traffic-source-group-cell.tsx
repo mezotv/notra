@@ -56,7 +56,11 @@ export function TrafficSourceGroupCell({ group }: TrafficSourceGroupCellProps) {
       <HoverCardTrigger
         delay={HOVER_OPEN_DELAY_MS}
         render={
-          <span className="flex max-w-full min-w-0 cursor-default items-center gap-2" />
+          <button
+            aria-label={`${group.label}: ${botCount} ${botCount === 1 ? "bot" : "bots"}, show breakdown`}
+            className="focus-visible:ring-ring/50 flex max-w-full min-w-0 cursor-default items-center gap-2 rounded-sm text-left outline-hidden focus-visible:ring-[3px]"
+            type="button"
+          />
         }
       >
         {label}
