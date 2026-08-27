@@ -230,7 +230,7 @@ export const SIDEBAR_MODE_EXIT_RIGHT_CLASS = `pointer-events-none z-0 translate-
 /** Indicator that slides between the two tabs of the mode switch. */
 export const SIDEBAR_MODE_PILL_CLASS = `pointer-events-none absolute inset-y-0 left-0 w-1/2 rounded-md bg-background ring-1 ring-border transition-[translate] will-change-[translate] duration-[320ms] ${SIDEBAR_MODE_SWOOSH_IN} motion-reduce:transition-none`;
 
-export const SIDEBAR_MODE_PANEL_CLASS = `flex w-full flex-col ${SIDEBAR_MODE_FADE_CLASS}`;
+export const SIDEBAR_MODE_PANEL_CLASS = `flex min-h-0 w-full flex-col ${SIDEBAR_MODE_FADE_CLASS}`;
 
 /** Collapses the primary-action row when the active mode has no action to offer. */
 export const SIDEBAR_MODE_SLOT_CLASS = `grid transition-[grid-template-rows,opacity] duration-[320ms] ${SIDEBAR_MODE_SWOOSH_IN} motion-reduce:transition-none`;
