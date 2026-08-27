@@ -1,0 +1,1 @@
+ALTER TABLE "geo_mention_checks" ADD COLUMN "grounding" jsonb DEFAULT '{"queries":[],"sources":[]}'::jsonb NOT NULL;
