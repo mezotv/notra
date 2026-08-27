@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import type { MarbleWebhookPayload } from "~types/marble";
+
 import {
   handleMarbleWebhookEvent,
   revalidateMarbleContent,
   verifyMarbleSignature,
 } from "@/utils/marble-webhook";
 import { getManualRevalidateParams, jsonError } from "@/utils/revalidate-route";
-import type { MarbleWebhookPayload } from "~types/marble";
 
 export const runtime = "nodejs";
 

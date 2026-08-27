@@ -8,6 +8,7 @@ import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
+
 import { Button } from "@/components/button";
 import {
   IntegrationCardDither,
@@ -16,6 +17,7 @@ import {
 import { MCP_ACCENT_COLOR } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { McpIntegrationCardProps } from "@/types/integrations/mcp";
+
 import { AddMcpServerDialog } from "./add-mcp-server-dialog";
 
 export function McpIntegrationCard({
@@ -39,7 +41,7 @@ export function McpIntegrationCard({
     <>
       <Link
         {...dither.interactionProps}
-        className="h-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="focus-visible:ring-ring h-full rounded-lg focus-visible:ring-2 focus-visible:outline-none"
         href={href}
       >
         <TitleCard
@@ -65,7 +67,7 @@ export function McpIntegrationCard({
               </Button>
             </div>
           }
-          className="h-full cursor-pointer transition-colors hover:bg-muted/80"
+          className="hover:bg-muted/80 h-full cursor-pointer transition-colors"
           heading="MCP"
           hoverBackground={
             <IntegrationCardDither
@@ -75,7 +77,7 @@ export function McpIntegrationCard({
           }
           icon={<HugeiconsIcon icon={CpuIcon} />}
         >
-          <p className="line-clamp-2 text-muted-foreground text-sm">
+          <p className="text-muted-foreground line-clamp-2 text-sm">
             Bring your own tools and context into Notra with custom Model
             Context Protocol servers
           </p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+
 import { localStorageKeys } from "@/constants/storage";
 import type {
   PendingSidebarMode,

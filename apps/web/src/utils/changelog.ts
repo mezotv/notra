@@ -1,4 +1,9 @@
 import { unstable_cache } from "next/cache";
+import type {
+  ChangelogTimelineItem,
+  NotraChangelogPost,
+} from "~types/changelog";
+
 import {
   MARBLE_CACHE_KEYS,
   MARBLE_CACHE_TAGS,
@@ -11,10 +16,6 @@ import {
   listMarblePublishedPosts,
   type MarblePublishedPost,
 } from "@/utils/marble";
-import type {
-  ChangelogTimelineItem,
-  NotraChangelogPost,
-} from "~types/changelog";
 
 const CHANGELOG_CONTENT_TYPE = "changelog";
 const FALLBACK_EXCERPT =

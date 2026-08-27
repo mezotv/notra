@@ -17,6 +17,7 @@ import {
 import { useRouter } from "next/navigation";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useMemo, useState } from "react";
+
 import { PlatformTabs } from "@/components/analytics/platform-tabs";
 import { ProviderIcon } from "@/components/analytics/provider-icon";
 import { AnalyticsRangePicker } from "@/components/analytics/range-picker";
@@ -115,7 +116,7 @@ export function LeaderboardCard({
         header: (
           <span className="inline-flex items-center gap-1.5">
             Accounts
-            <span className="font-normal text-muted-foreground tabular-nums">
+            <span className="text-muted-foreground font-normal tabular-nums">
               ({rows.length})
             </span>
           </span>
@@ -147,7 +148,7 @@ export function LeaderboardCard({
               <TooltipTrigger
                 render={
                   <span className="flex min-w-0 flex-col">
-                    <span className="flex items-center gap-1 font-medium text-sm">
+                    <span className="flex items-center gap-1 text-sm font-medium">
                       <span className="truncate">
                         {row.displayName ?? row.username}
                       </span>
@@ -157,7 +158,7 @@ export function LeaderboardCard({
                         verifiedType={row.verifiedType}
                       />
                     </span>
-                    <span className="truncate font-mono text-[0.6875rem] text-muted-foreground">
+                    <span className="text-muted-foreground truncate font-mono text-[0.6875rem]">
                       @{row.username}
                     </span>
                   </span>
@@ -190,7 +191,7 @@ export function LeaderboardCard({
         align: "right",
         sortable: true,
         cell: (row) => (
-          <span className="font-mono text-muted-foreground text-sm tabular-nums">
+          <span className="text-muted-foreground font-mono text-sm tabular-nums">
             {formatMetric(row.impressions)}
           </span>
         ),
@@ -203,7 +204,7 @@ export function LeaderboardCard({
         align: "right",
         sortable: true,
         cell: (row) => (
-          <span className="font-mono text-muted-foreground text-sm tabular-nums">
+          <span className="text-muted-foreground font-mono text-sm tabular-nums">
             {row.posts}
           </span>
         ),
@@ -251,7 +252,7 @@ export function LeaderboardCard({
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative min-w-0 flex-1 sm:max-w-72">
               <HugeiconsIcon
-                className="-translate-y-1/2 absolute top-1/2 left-3 text-muted-foreground"
+                className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2"
                 icon={SearchIcon}
                 size={15}
               />

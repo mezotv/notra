@@ -20,6 +20,7 @@ import { cn } from "@notra/ui/lib/utils";
 import { domAnimation, LazyMotion, useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useRef } from "react";
+
 import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
 import { useChatgptPlayback } from "@/components/design-system/use-chatgpt-playback";
 import {
@@ -48,14 +49,14 @@ function ChatgptFrame({
   return (
     <div
       className={cn(
-        "relative flex h-[36rem] flex-col overflow-hidden rounded-[1.25rem] border bg-background",
+        "bg-background relative flex h-[36rem] flex-col overflow-hidden rounded-[1.25rem] border",
         className
       )}
     >
       {onPlay ? (
         <button
           aria-label={playing ? "Stop playback" : "Play conversation"}
-          className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full border bg-background/90 text-muted-foreground shadow-sm backdrop-blur-sm transition-colors hover:text-foreground"
+          className="bg-background/90 text-muted-foreground hover:text-foreground absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full border shadow-sm backdrop-blur-sm transition-colors"
           onClick={onPlay}
           type="button"
         >
@@ -130,7 +131,7 @@ function ChatgptStoryBody({
             }
             seconds={message.reasoning.seconds}
           >
-            <div className="text-[15px] text-foreground leading-7">
+            <div className="text-foreground text-[15px] leading-7">
               <ChatgptStoryText text={message.reasoning.text} />
             </div>
           </ChatgptReasoning>
@@ -277,7 +278,7 @@ export function DesignSystemChatgptCatalog() {
           id="chatgpt-user"
           title="User bubbles"
         />
-        <div className="space-y-6 rounded-[1.25rem] border bg-background px-4 py-8">
+        <div className="bg-background space-y-6 rounded-[1.25rem] border px-4 py-8">
           {CHATGPT_STORY_USER_MESSAGES.map((message) => (
             <ChatgptMessage from="user" key={message.id}>
               {message.text}
@@ -292,7 +293,7 @@ export function DesignSystemChatgptCatalog() {
           id="chatgpt-assistant"
           title="Assistant + actions"
         />
-        <div className="space-y-10 rounded-[1.25rem] border bg-background px-4 py-8">
+        <div className="bg-background space-y-10 rounded-[1.25rem] border px-4 py-8">
           {CHATGPT_STORY_ASSISTANT_MESSAGES.map((message) => (
             <ChatgptStoryBody key={message.id} message={message} />
           ))}
@@ -305,7 +306,7 @@ export function DesignSystemChatgptCatalog() {
           id="chatgpt-models"
           title="Model picker"
         />
-        <div className="rounded-[1.25rem] border bg-background px-4 py-6">
+        <div className="bg-background rounded-[1.25rem] border px-4 py-6">
           <div className="mx-auto w-full max-w-3xl">
             <ChatgptComposer />
           </div>

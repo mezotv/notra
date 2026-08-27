@@ -2,6 +2,7 @@
 
 import { AutumnProvider } from "autumn-js/react";
 import { useState } from "react";
+
 import { authClient } from "@/lib/auth/client";
 import type { AutumnOrgProviderProps } from "@/types/components/providers";
 

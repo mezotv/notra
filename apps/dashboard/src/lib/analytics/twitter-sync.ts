@@ -3,6 +3,7 @@ import type {
   SocialPostRow,
   SocialPostStatsRow,
 } from "@notra/analytics/tinybird/datasources";
+
 import {
   DAY_IN_MS,
   TWITTER_TIMELINE_MAX_PAGES,

@@ -5,6 +5,7 @@ import {
   p,
   t,
 } from "@tinybirdco/sdk";
+
 import {
   GEO_CAPTURED_WINDOW_SQL,
   GEO_DAY_COMPARISON_WINDOW_SQL,

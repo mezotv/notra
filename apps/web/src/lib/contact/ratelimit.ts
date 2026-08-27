@@ -1,8 +1,10 @@
 import { createHash } from "node:crypto";
+
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { Data, Effect } from "effect";
 import type { NextRequest } from "next/server";
+
 import { CONTACT_RATE_LIMIT } from "@/constants/contact";
 
 class ContactMessageRateLimitExceeded extends Data.TaggedError(

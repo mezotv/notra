@@ -1,6 +1,7 @@
 "use client";
 
 import { type ReactNode, useMemo } from "react";
+
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
 import { TrafficDeltaBadge } from "@/components/geo/traffic-delta-badge";

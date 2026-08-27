@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+
 import { errorResponseSchema } from "../schemas/content";
 
 export function errorResponse(description: string) {

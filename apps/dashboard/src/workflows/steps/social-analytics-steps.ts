@@ -11,6 +11,7 @@ import {
   trackedSocialAccounts,
 } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
+
 import { isAnalyticsEnabledForOrganization } from "@/lib/analytics/flag";
 import { buildAccountRow } from "@/lib/analytics/rows";
 import { collectTwitterRows } from "@/lib/analytics/twitter-sync";

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { IntegrationEditClient } from "@/components/integrations/integration-edit-client";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 

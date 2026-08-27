@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+
 import { runGeoScan } from "@/lib/geo/scan";
 import type { GeoScanResult } from "@/types/geo";
 

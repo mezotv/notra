@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+
 import type { TableColumn } from "./types";
 import { alignText } from "./utils";
 
@@ -32,7 +33,7 @@ export function SkeletonRows<T>({
             >
               <div
                 className={cn(
-                  "h-3 animate-pulse rounded-full bg-muted",
+                  "bg-muted h-3 animate-pulse rounded-full",
                   column.align === "right" ? "ml-auto w-10" : "w-2/3"
                 )}
               />

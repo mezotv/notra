@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+
 import {
   GEO_INGEST_SECRET_ENV,
   GEO_INGEST_SECRET_FALLBACK_ENV,

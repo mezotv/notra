@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+
 import { PageContainer } from "@/components/layout/container";
 import { ChatSection } from "@/components/settings/chat-section";
 import { ConnectedAccountsSection } from "@/components/settings/connected-accounts-section";
@@ -11,6 +12,7 @@ import { OrganizationsSection } from "@/components/settings/organizations-sectio
 import { PrivacySection } from "@/components/settings/privacy-section";
 import { ProfileSection } from "@/components/settings/profile-section";
 import { authClient } from "@/lib/auth/client";
+
 import { AccountPageSkeleton } from "./skeleton";
 
 export default function SettingsAccountPage() {
@@ -60,7 +62,7 @@ export default function SettingsAccountPage() {
     >
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">Account</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Account</h1>
           <p className="text-muted-foreground">
             Manage your profile and account settings
           </p>

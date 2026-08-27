@@ -15,7 +15,9 @@ import { cn } from "@notra/ui/lib/utils";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type * as React from "react";
 import { useEffect, useRef } from "react";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+
 import { ChatHistoryNav } from "./chat-history-nav";
 import { NavBrandIdentity } from "./nav-brand-identity";
 import { NavMain } from "./nav-main";
@@ -31,10 +33,10 @@ import { SidebarUpgrade } from "./sidebar-upgrade";
 
 function SidebarBackButton({ onBack }: { onBack: () => void }) {
   return (
-    <div className="sticky top-0 z-10 bg-sidebar p-2">
+    <div className="bg-sidebar sticky top-0 z-10 p-2">
       <SidebarMenu>
         <SidebarMenuButton
-          className="[&>*]:group-data-[collapsible=icon]:-translate-x-px cursor-pointer transition-colors duration-200 hover:bg-sidebar-accent"
+          className="hover:bg-sidebar-accent cursor-pointer transition-colors duration-200 [&>*]:group-data-[collapsible=icon]:-translate-x-px"
           onClick={onBack}
           tooltip="Back"
         >

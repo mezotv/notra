@@ -7,6 +7,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@notra/ui/components/ui/collapsible";
+
 import { markdownToElements } from "@/utils/inline-markdown";
 
 interface RecommendationsSectionProps {
@@ -20,7 +21,7 @@ export function RecommendationsSection({ value }: RecommendationsSectionProps) {
 
   return (
     <Collapsible defaultOpen>
-      <CollapsibleTrigger className="flex items-center gap-1.5 text-muted-foreground text-sm transition-colors hover:text-foreground [&[data-panel-open]>svg]:rotate-0">
+      <CollapsibleTrigger className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition-colors [&[data-panel-open]>svg]:rotate-0">
         <HugeiconsIcon
           className="-rotate-90 transition-transform"
           icon={ArrowDown01Icon}

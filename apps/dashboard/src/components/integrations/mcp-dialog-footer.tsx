@@ -1,6 +1,7 @@
 "use client";
 
 import { ResponsiveDialogClose } from "@notra/ui/components/shared/responsive-dialog";
+
 import { Button } from "@/components/button";
 import type { McpDialogFooterProps } from "@/types/integrations/mcp";
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { BreadcrumbPage } from "@notra/ui/components/ui/breadcrumb";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useContent } from "@/lib/hooks/use-content";
 import type { ContentTopbarTitleProps } from "@/types/content/topbar";

@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { highlight } from "sugar-high";
+
 import { Button } from "@/components/button";
 import { COPY_FEEDBACK_MS } from "@/constants/geo";
 import { cn } from "@/lib/utils";
@@ -53,7 +54,7 @@ function CopyCodeButton({ code, label }: { code: string; label: string }) {
   return (
     <Button
       aria-label={copied ? `${label} copied` : `Copy ${label}`}
-      className="shrink-0 text-muted-foreground"
+      className="text-muted-foreground shrink-0"
       onClick={copy}
       size="icon-xs"
       type="button"
@@ -71,13 +72,13 @@ function CommandSnippet({
   return (
     <div
       className={cn(
-        "flex h-9 min-w-0 items-center rounded-lg border border-border/60 bg-muted/40 ps-3 pe-1",
+        "border-border/60 bg-muted/40 flex h-9 min-w-0 items-center rounded-lg border ps-3 pe-1",
         className
       )}
     >
       <input
         aria-label="Package install command"
-        className="h-full min-w-0 flex-1 cursor-text appearance-none border-0 bg-transparent p-0 font-mono text-foreground text-xs leading-none shadow-none outline-none"
+        className="text-foreground h-full min-w-0 flex-1 cursor-text appearance-none border-0 bg-transparent p-0 font-mono text-xs leading-none shadow-none outline-none"
         onFocus={(event) => event.currentTarget.select()}
         readOnly
         value={code}
@@ -100,10 +101,10 @@ export function CodeSnippet({
 
   return (
     <div className={cn("min-w-0", className)}>
-      <div className="overflow-hidden rounded-t-lg border border-border/60 border-b-0 bg-muted/40 pb-3">
+      <div className="border-border/60 bg-muted/40 overflow-hidden rounded-t-lg border border-b-0 pb-3">
         <div className="flex h-9 min-w-0 items-center gap-2 ps-3 pe-1">
           {filename ? (
-            <p className="min-w-0 flex-1 truncate font-mono text-muted-foreground text-xs">
+            <p className="text-muted-foreground min-w-0 flex-1 truncate font-mono text-xs">
               {filename}
             </p>
           ) : (
@@ -112,7 +113,7 @@ export function CodeSnippet({
           {headerEnd}
         </div>
       </div>
-      <div className="-mt-3 relative min-w-0 rounded-lg border border-border/60 bg-background">
+      <div className="border-border/60 bg-background relative -mt-3 min-w-0 rounded-lg border">
         <div className="absolute end-1 top-1 z-10">
           <CopyCodeButton code={code} label="snippet" />
         </div>

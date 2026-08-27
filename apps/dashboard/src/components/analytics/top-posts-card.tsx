@@ -12,6 +12,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
+
 import { DelayedTooltip } from "@/components/delayed-tooltip";
 import {
   InstrumentEmpty,
@@ -99,7 +100,7 @@ export function TopPostsCard({ posts, action }: TopPostsCardProps) {
         width: "7.5rem",
         sortable: true,
         cell: (row) => (
-          <span className="whitespace-nowrap font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground font-mono text-[0.6875rem] whitespace-nowrap tabular-nums">
             {formatDayLabel(row.postedAt.slice(0, 10))}
           </span>
         ),
@@ -111,7 +112,7 @@ export function TopPostsCard({ posts, action }: TopPostsCardProps) {
         align: "right",
         sortable: true,
         cell: (row) => (
-          <span className="font-mono text-muted-foreground text-sm tabular-nums">
+          <span className="text-muted-foreground font-mono text-sm tabular-nums">
             {row.impressions === null ? "-" : formatMetric(row.impressions)}
           </span>
         ),

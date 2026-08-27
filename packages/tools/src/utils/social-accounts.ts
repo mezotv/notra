@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, asc, eq } from "drizzle-orm";
+
 import type { LinkedTwitterAccount } from "../types/social";
 
 export function isTwitterPublishConfigured(): boolean {

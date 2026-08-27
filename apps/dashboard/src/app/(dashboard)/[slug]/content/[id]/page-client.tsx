@@ -59,8 +59,9 @@ import {
 } from "react";
 import remend from "remend";
 import { toast } from "sonner";
-import { ChatQueue, type QueuedMessage } from "@/components/chat/chat-queue";
+
 import ChatInput from "@/components/chat-input";
+import { ChatQueue, type QueuedMessage } from "@/components/chat/chat-queue";
 import { getContentTypeLabel } from "@/components/content/content-card";
 import { ContentChatActivityPanel } from "@/components/content/content-chat-activity-panel";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
@@ -105,6 +106,7 @@ import {
   isImageExportTarget,
 } from "@/utils/image-export";
 import { shakeElements } from "@/utils/shake-element";
+
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
@@ -451,10 +453,10 @@ export default function PageClient({
         saveToastIdRef.current = toast.custom(
           (t) => (
             <div
-              className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm"
+              className="border-border bg-background rounded-[14px] border p-0.5 shadow-sm"
               data-save-bar
             >
-              <div className="flex items-center gap-3 rounded-lg bg-background px-4 py-3">
+              <div className="bg-background flex items-center gap-3 rounded-lg px-4 py-3">
                 <span className="text-muted-foreground text-sm">
                   Unsaved changes
                 </span>
@@ -1000,11 +1002,11 @@ export default function PageClient({
       >
         <div className="pointer-events-auto mx-auto w-full max-w-xl px-4">
           <div
-            className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm"
+            className="border-border bg-background rounded-[14px] border p-0.5 shadow-sm"
             data-save-bar
           >
-            <div className="flex items-center gap-3 rounded-lg bg-background py-2 pr-2 pl-4">
-              <span className="flex-1 text-muted-foreground text-sm">
+            <div className="bg-background flex items-center gap-3 rounded-lg py-2 pr-2 pl-4">
+              <span className="text-muted-foreground flex-1 text-sm">
                 You have unsaved changes
               </span>
               <Button onClick={handleDiscard} size="sm" variant="ghost">
@@ -1077,13 +1079,13 @@ export default function PageClient({
         <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
             <div className="rounded-xl border border-dashed p-12 text-center">
-              <h3 className="font-medium text-lg">Content not found</h3>
+              <h3 className="text-lg font-medium">Content not found</h3>
               <p className="text-muted-foreground text-sm">
                 This content may have been deleted or you don't have access to
                 it.
               </p>
               <Link
-                className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="focus-visible:ring-ring rounded-sm focus-visible:ring-2 focus-visible:outline-none"
                 href={`/${organizationSlug}/content`}
               >
                 <Button className="mt-4" tabIndex={-1} variant="outline">
@@ -1145,7 +1147,7 @@ export default function PageClient({
       <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
           <Link
-            className="inline-flex w-fit items-center gap-1.5 rounded-sm text-muted-foreground text-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex w-fit items-center gap-1.5 rounded-sm text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
             href={backHref}
           >
             <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />

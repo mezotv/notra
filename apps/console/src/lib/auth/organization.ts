@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { members } from "@notra/db/schema";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
+
 import { getServerSession } from "@/lib/auth/session";
 import { badRequest, unauthorized } from "@/lib/orpc/utils/errors";
 

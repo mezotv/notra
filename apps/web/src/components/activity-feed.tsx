@@ -97,7 +97,7 @@ export function ActivityFeed() {
               heading={item.heading}
               icon={item.icon}
             >
-              <p className="truncate text-muted-foreground text-sm">
+              <p className="text-muted-foreground truncate text-sm">
                 {item.label}
               </p>
             </TitleCard>

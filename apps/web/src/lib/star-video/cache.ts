@@ -1,5 +1,6 @@
 import { Redis } from "@upstash/redis";
 import { Effect } from "effect";
+
 import type { RepoStarData } from "@/types/star-video";
 
 const CACHE_TTL_SECONDS = 60 * 60 * 24;

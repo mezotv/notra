@@ -19,6 +19,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import type React from "react";
 import { isValidElement, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseGitHubUrl } from "@/lib/utils/github";
@@ -59,7 +60,7 @@ function RepositorySelector({
     return (
       <>
         <div
-          className="w-full rounded-lg border border-border bg-background"
+          className="border-border bg-background w-full rounded-lg border"
           ref={parentRef}
           style={{
             height: "300px",
@@ -80,7 +81,7 @@ function RepositorySelector({
               }
               return (
                 <button
-                  className={`w-full px-3 py-2 text-left hover:bg-accent ${
+                  className={`hover:bg-accent w-full px-3 py-2 text-left ${
                     field.state.value === repo.fullName ? "bg-accent" : ""
                   }`}
                   disabled={mutation.isPending}
@@ -102,7 +103,7 @@ function RepositorySelector({
           </div>
         </div>
         {field.state.meta.errors.length > 0 ? (
-          <p className="mt-1 text-destructive text-sm">
+          <p className="text-destructive mt-1 text-sm">
             {typeof field.state.meta.errors[0] === "string"
               ? field.state.meta.errors[0]
               : ((field.state.meta.errors[0] as { message?: string })
@@ -116,7 +117,7 @@ function RepositorySelector({
   return (
     <>
       <select
-        className="w-full rounded-lg border border-border bg-background px-3 py-2"
+        className="border-border bg-background w-full rounded-lg border px-3 py-2"
         disabled={mutation.isPending}
         onBlur={field.handleBlur}
         onChange={(e) => field.handleChange(e.target.value)}
@@ -130,7 +131,7 @@ function RepositorySelector({
         ))}
       </select>
       {field.state.meta.errors.length > 0 ? (
-        <p className="mt-1 text-destructive text-sm">
+        <p className="text-destructive mt-1 text-sm">
           {typeof field.state.meta.errors[0] === "string"
             ? field.state.meta.errors[0]
             : ((field.state.meta.errors[0] as { message?: string })?.message ??
@@ -305,7 +306,7 @@ export function AddRepositoryDialog({
                       value={field.state.value}
                     />
                     {field.state.meta.errors.length > 0 ? (
-                      <p className="mt-1 text-destructive text-sm">
+                      <p className="text-destructive mt-1 text-sm">
                         {typeof field.state.meta.errors[0] === "string"
                           ? field.state.meta.errors[0]
                           : ((
@@ -313,7 +314,7 @@ export function AddRepositoryDialog({
                             )?.message ?? "Invalid value")}
                       </p>
                     ) : null}
-                    <p className="mt-1 text-muted-foreground text-xs">
+                    <p className="text-muted-foreground mt-1 text-xs">
                       No access token available. Enter the repository as
                       owner/repo or paste a GitHub URL.
                     </p>

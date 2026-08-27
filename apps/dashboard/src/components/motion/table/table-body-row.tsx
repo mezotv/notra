@@ -2,6 +2,7 @@
 
 import { Checkbox } from "@/components/motion/checkbox";
 import { cn } from "@/lib/utils";
+
 import { EditableCell } from "./editable-cell";
 import type { TableColumn, TableRow } from "./types";
 import { alignText, readCell, TABLE_CELL_INNER_CLASS } from "./utils";
@@ -113,7 +114,7 @@ export function TableBodyRow<T>({
       {columns.map((column) => (
         <td
           className={cn(
-            "max-w-0 overflow-hidden px-4 text-foreground",
+            "text-foreground max-w-0 overflow-hidden px-4",
             cellBorder,
             alignText(column.align)
           )}

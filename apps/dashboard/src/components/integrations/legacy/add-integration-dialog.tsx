@@ -26,6 +26,7 @@ import { useRouter } from "next/navigation";
 import type React from "react";
 import { isValidElement, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -40,6 +41,7 @@ import type {
   GitHubIntegration,
   GitHubRepoInfo,
 } from "@/types/integrations";
+
 import { WebhookSetupDialog } from "../wehook-setup-dialog";
 
 type ProbeStatus = "idle" | "loading" | "success" | "error" | "not_found";
@@ -369,7 +371,7 @@ export function LegacyAddIntegrationDialog({
                     />
                     {hasAttemptedSubmit &&
                     field.state.meta.errors.length > 0 ? (
-                      <p className="mt-1 text-destructive text-sm">
+                      <p className="text-destructive mt-1 text-sm">
                         {typeof field.state.meta.errors[0] === "string"
                           ? field.state.meta.errors[0]
                           : ((
@@ -417,12 +419,12 @@ export function LegacyAddIntegrationDialog({
               </form.Field>
 
               <Collapsible onOpenChange={setTokenOpen} open={tokenOpen}>
-                <CollapsibleTrigger className="flex w-full items-center gap-2 font-medium text-sm">
+                <CollapsibleTrigger className="flex w-full items-center gap-2 text-sm font-medium">
                   <ChevronDownIcon
                     className={`h-4 w-4 transition-transform ${tokenOpen ? "" : "-rotate-90"}`}
                   />
                   Personal Access Token
-                  <span className="font-normal text-muted-foreground text-xs">
+                  <span className="text-muted-foreground text-xs font-normal">
                     (optional)
                   </span>
                 </CollapsibleTrigger>
@@ -452,12 +454,12 @@ export function LegacyAddIntegrationDialog({
                       {(field) => (
                         <Field>
                           {probeStatus === "not_found" ? (
-                            <p className="mb-2 text-amber-600 text-xs dark:text-amber-400">
+                            <p className="mb-2 text-xs text-amber-600 dark:text-amber-400">
                               This repository appears to be private or not
                               found. A token is required to access it.
                             </p>
                           ) : (
-                            <p className="mb-2 text-muted-foreground text-xs">
+                            <p className="text-muted-foreground mb-2 text-xs">
                               Only required for private repositories. Public
                               repos work without a token.
                             </p>
@@ -496,7 +498,7 @@ export function LegacyAddIntegrationDialog({
                           />
                           {hasAttemptedSubmit &&
                           field.state.meta.errors.length > 0 ? (
-                            <p className="mt-1 text-destructive text-sm">
+                            <p className="text-destructive mt-1 text-sm">
                               {typeof field.state.meta.errors[0] === "string"
                                 ? field.state.meta.errors[0]
                                 : ((
@@ -506,7 +508,7 @@ export function LegacyAddIntegrationDialog({
                                   )?.message ?? "Invalid value")}
                             </p>
                           ) : null}
-                          <p className="mt-1 text-muted-foreground text-xs">
+                          <p className="text-muted-foreground mt-1 text-xs">
                             <a
                               className="text-primary hover:underline"
                               href="https://github.com/settings/tokens/new?scopes=repo&description=Notra%20Integration"

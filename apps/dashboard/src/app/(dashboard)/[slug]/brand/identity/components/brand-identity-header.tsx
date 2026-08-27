@@ -4,6 +4,7 @@ import { Add01Icon, RefreshIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Loader2Icon } from "lucide-react";
+
 import { Button } from "@/components/button";
 import { BRAND_TAB_HEADERS } from "@/constants/brand-identity";
 import type {
@@ -40,7 +41,7 @@ export function BrandIdentityHeader({
   return (
     <div className="flex items-start justify-between">
       <div className="space-y-1">
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {BRAND_TAB_HEADERS[activeTab].title}
         </h1>
         <p className="text-muted-foreground text-sm">

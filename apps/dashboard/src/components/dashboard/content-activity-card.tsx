@@ -17,6 +17,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { format, parseISO } from "date-fns";
+
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { ContentPublishingMetricsData } from "@/types/dashboard";
 
@@ -49,7 +50,7 @@ export const ContentActivityCard = () => {
   }
 
   return (
-    <div className="w-full overflow-x-auto rounded-lg border border-border/80 bg-background px-4 py-3">
+    <div className="border-border/80 bg-background w-full overflow-x-auto rounded-lg border px-4 py-3">
       {data?.graph?.activity ? (
         <ContributionGraph
           blockMargin={3}
@@ -85,11 +86,11 @@ export const ContentActivityCard = () => {
                     <p className="font-semibold">
                       {format(parseISO(entry.date), "MMMM d, yyyy")}
                     </p>
-                    <p className="font-medium text-sm">
+                    <p className="text-sm font-medium">
                       {entry.count} {entry.count === 1 ? "post" : "posts"}
                     </p>
                     {entry.count > 0 && (
-                      <div className="flex gap-3 text-muted-foreground text-xs">
+                      <div className="text-muted-foreground flex gap-3 text-xs">
                         <span>
                           {entry.drafts}{" "}
                           {entry.drafts === 1 ? "draft" : "drafts"}
@@ -107,15 +108,15 @@ export const ContentActivityCard = () => {
               {({ totalCount }) => (
                 <span className="text-muted-foreground text-sm">
                   This year:{" "}
-                  <span className="font-semibold text-foreground">
+                  <span className="text-foreground font-semibold">
                     {totalCount.toLocaleString()}
                   </span>{" "}
                   posts (
-                  <span className="font-semibold text-foreground">
+                  <span className="text-foreground font-semibold">
                     {numberFormatter.format(data.drafts)}
                   </span>{" "}
                   {data.drafts === 1 ? "draft" : "drafts"} /{" "}
-                  <span className="font-semibold text-foreground">
+                  <span className="text-foreground font-semibold">
                     {numberFormatter.format(data.published)}
                   </span>{" "}
                   published)
@@ -129,7 +130,7 @@ export const ContentActivityCard = () => {
                     render={
                       <div
                         className={cn(
-                          "h-3 w-3 rounded-sm border border-border",
+                          "border-border h-3 w-3 rounded-sm border",
                           level === 0 && "bg-muted dark:bg-white/5",
                           level === 1 && "bg-primary/20 dark:bg-primary/30",
                           level === 2 && "bg-primary/40 dark:bg-primary/50",
@@ -146,7 +147,7 @@ export const ContentActivityCard = () => {
           </ContributionGraphFooter>
         </ContributionGraph>
       ) : (
-        <div className="flex h-32 items-center justify-center text-muted-foreground text-sm">
+        <div className="text-muted-foreground flex h-32 items-center justify-center text-sm">
           No content activity data available
         </div>
       )}

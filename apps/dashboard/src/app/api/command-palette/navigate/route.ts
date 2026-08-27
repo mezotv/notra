@@ -17,6 +17,7 @@ import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+
 import { commandRoutesForAI } from "@/components/command-palette/registry";
 import { getServerSession } from "@/lib/auth/session";
 import { hasAiCreditsGrant } from "@/lib/billing/subscription";

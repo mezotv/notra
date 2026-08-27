@@ -15,6 +15,7 @@ import {
 } from "@notra/db/schema";
 import { generateText, Output } from "ai";
 import { and, eq, ne } from "drizzle-orm";
+
 import {
   GEO_GAP_TITLE_MAX_LENGTH,
   GEO_PROMPT_MAX_LENGTH,

@@ -14,11 +14,11 @@ export function CursorTooltip({ tip }: CursorTooltipProps) {
     >
       <div
         className={cn(
-          "grid min-w-32 translate-y-3 items-start gap-1 rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl",
+          "border-border/50 bg-background grid min-w-32 translate-y-3 items-start gap-1 rounded-lg border px-2.5 py-1.5 text-xs shadow-xl",
           tip.flip ? "-translate-x-[calc(100%+0.75rem)]" : "translate-x-3"
         )}
       >
-        <div className="font-medium font-mono text-foreground tabular-nums">
+        <div className="text-foreground font-mono font-medium tabular-nums">
           {tip.title}
         </div>
         <div className="text-muted-foreground">{tip.detail}</div>

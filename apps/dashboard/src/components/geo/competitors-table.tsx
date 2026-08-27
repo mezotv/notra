@@ -13,6 +13,7 @@ import {
 } from "@notra/ui/components/ui/select";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useCallback, useMemo, useState } from "react";
+
 import { Button } from "@/components/button";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { GeoRemoveDialog } from "@/components/geo/geo-remove-dialog";
@@ -119,7 +120,7 @@ export function CompetitorsTable({
         header: (
           <span className="inline-flex items-center gap-1.5">
             Brand
-            <span className="font-normal text-muted-foreground tabular-nums">
+            <span className="text-muted-foreground font-normal tabular-nums">
               ({rows.length})
             </span>
           </span>
@@ -136,7 +137,7 @@ export function CompetitorsTable({
             <span className="truncate font-medium">
               {row.name}
               {row.isOwnBrand && (
-                <span className="ml-1 text-muted-foreground">(You)</span>
+                <span className="text-muted-foreground ml-1">(You)</span>
               )}
             </span>
           </span>
@@ -182,7 +183,7 @@ export function CompetitorsTable({
         cell: (row) =>
           row.synonyms.length > 0 ? (
             <span
-              className="truncate text-muted-foreground"
+              className="text-muted-foreground truncate"
               title={row.synonyms.join(", ")}
             >
               {row.synonyms.join(", ")}
@@ -222,7 +223,7 @@ export function CompetitorsTable({
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1 sm:max-w-72">
           <HugeiconsIcon
-            className="-translate-y-1/2 absolute top-1/2 left-3 text-muted-foreground"
+            className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2"
             icon={SearchIcon}
             size={15}
           />
@@ -254,7 +255,7 @@ export function CompetitorsTable({
               >
                 <span className="flex min-w-0 flex-col gap-0.5">
                   <span>{option.label}</span>
-                  <span className="whitespace-normal text-muted-foreground text-xs">
+                  <span className="text-muted-foreground text-xs whitespace-normal">
                     {option.description}
                   </span>
                 </span>

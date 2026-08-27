@@ -20,6 +20,7 @@ import type { GeoCheckWrite } from "@notra/db/types/geo-checks";
 import { insertGeoMentionChecks } from "@notra/db/utils/geo-checks";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import {
   GEO_EXCERPT_MAX_LENGTH,
   GEO_SAMPLE_DATA_ENABLED,

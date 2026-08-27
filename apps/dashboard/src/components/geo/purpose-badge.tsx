@@ -12,6 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+
 import {
   AI_TRAFFIC_PURPOSE_DESCRIPTIONS,
   AI_TRAFFIC_PURPOSE_LABELS,

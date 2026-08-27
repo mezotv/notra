@@ -11,6 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
+
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import {
@@ -70,6 +71,7 @@ import { toErrorMessage } from "@/utils/error-message";
 import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
 import { withGeoProject } from "@/utils/geo-paths";
 import { toGeoWindowInput } from "@/utils/geo-range";
+
 import { dashboardOrpc } from "../orpc/query";
 
 const GSC_ANALYZE_MUTATION_KEY = "gsc-analyze" as const;

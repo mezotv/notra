@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+
 import { GEO_DEFAULT_RANGE } from "@/constants/geo";
 import type {
   GeoDateRange,

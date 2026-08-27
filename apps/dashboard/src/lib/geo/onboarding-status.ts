@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { geoSettings, projects } from "@notra/db/schema";
 import { and, asc, eq } from "drizzle-orm";
+
 import type { GeoOnboardingStage } from "@/types/geo";
 
 export async function getGeoOnboardingStage(

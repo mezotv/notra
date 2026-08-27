@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+
 import { CreateWorkspace } from "@/components/auth/create-workspace";
 import { getOrganizationsForUser, requireAuth } from "@/lib/auth/actions";
 

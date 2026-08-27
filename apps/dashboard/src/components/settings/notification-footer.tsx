@@ -2,11 +2,12 @@
 
 import { Mail01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+
 import type { NotificationFooterProps } from "@/types/settings/notifications";
 
 export function NotificationFooter({ emails }: NotificationFooterProps) {
   return (
-    <div className="flex items-center gap-2 border-border/60 border-t pt-4 text-muted-foreground text-xs">
+    <div className="border-border/60 text-muted-foreground flex items-center gap-2 border-t pt-4 text-xs">
       <HugeiconsIcon className="size-3.5 shrink-0" icon={Mail01Icon} />
       <span className="flex min-w-0 items-center gap-1.5 truncate">
         <RecipientLine emails={emails} />
@@ -24,7 +25,7 @@ function RecipientLine({ emails }: { emails: string[] }) {
     return (
       <>
         Notifications are sent to{" "}
-        <span className="truncate text-foreground">{emails[0]}</span>
+        <span className="text-foreground truncate">{emails[0]}</span>
       </>
     );
   }
@@ -35,7 +36,7 @@ function RecipientLine({ emails }: { emails: string[] }) {
   return (
     <>
       Notifications are sent to{" "}
-      <span className="truncate text-foreground">{first}</span> and {others}
+      <span className="text-foreground truncate">{first}</span> and {others}
     </>
   );
 }

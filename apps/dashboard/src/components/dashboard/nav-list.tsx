@@ -8,11 +8,13 @@ import {
   SidebarMenuItem,
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
+
 import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import { GEO_UPGRADE_TOOLTIP } from "@/constants/geo";
 import type { NavListProps } from "@/types/components/nav";
 import { geoNavHref, isGeoDashboardPath } from "@/utils/geo-paths";
 import { resolveNavItems } from "@/utils/nav";
+
 import { NavLockHint } from "./nav-lock-hint";
 import { SidebarLabel } from "./sidebar-label";
 
@@ -49,7 +51,7 @@ export function NavList({
                   <SidebarLabel>{item.label}</SidebarLabel>
                   {item.badge && (
                     <Badge
-                      className="ml-auto h-[1.125rem] px-[0.375rem] text-[0.625rem] text-muted-foreground group-data-[collapsible=icon]:hidden"
+                      className="text-muted-foreground ml-auto h-[1.125rem] px-[0.375rem] text-[0.625rem] group-data-[collapsible=icon]:hidden"
                       variant="secondary"
                     >
                       {item.badge}

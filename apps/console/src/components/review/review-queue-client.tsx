@@ -23,6 +23,7 @@ import { Loader2Icon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { getMcpFaviconUrl } from "@/lib/integrations/chat-preview";
 import { getIntegrationInitials } from "@/lib/integrations/form";
@@ -73,7 +74,7 @@ function ReviewIntegrationLogo({
     return (
       <Image
         alt={`${integration.name} logo`}
-        className="size-10 shrink-0 rounded-lg border bg-muted object-contain p-1.5"
+        className="bg-muted size-10 shrink-0 rounded-lg border object-contain p-1.5"
         height={40}
         onError={() => setFaviconFailed(true)}
         src={faviconUrl}
@@ -84,7 +85,7 @@ function ReviewIntegrationLogo({
   }
 
   return (
-    <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border bg-muted font-medium text-muted-foreground text-xs">
+    <div className="bg-muted text-muted-foreground flex size-10 shrink-0 items-center justify-center rounded-lg border text-xs font-medium">
       {getIntegrationInitials(integration.name)}
     </div>
   );
@@ -97,7 +98,7 @@ function PendingToolList({ tools }: PendingToolListProps) {
 
   if (tools.length === 0) {
     return (
-      <p className="px-4 py-3 text-muted-foreground text-sm">
+      <p className="text-muted-foreground px-4 py-3 text-sm">
         No tools indexed yet.
       </p>
     );
@@ -108,11 +109,11 @@ function PendingToolList({ tools }: PendingToolListProps) {
       {visibleTools.map((tool) => (
         <div className="grid min-w-0 gap-1 px-4 py-2.5" key={tool.id}>
           <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-            <code className="w-fit max-w-full truncate rounded-md bg-muted px-1.5 py-0.5 font-mono text-xs">
+            <code className="bg-muted w-fit max-w-full truncate rounded-md px-1.5 py-0.5 font-mono text-xs">
               {tool.serverToolName}
             </code>
             {tool.actionPhrasePresent || tool.actionPhrasePast ? (
-              <span className="min-w-0 truncate text-muted-foreground text-xs">
+              <span className="text-muted-foreground min-w-0 truncate text-xs">
                 {tool.actionPhrasePresent || "Running tool"} →{" "}
                 {tool.actionPhrasePast || "Ran tool"}
               </span>
@@ -123,7 +124,7 @@ function PendingToolList({ tools }: PendingToolListProps) {
             )}
           </div>
           {tool.description ? (
-            <p className="line-clamp-1 break-all text-muted-foreground/70 text-xs">
+            <p className="text-muted-foreground/70 line-clamp-1 text-xs break-all">
               {tool.description}
             </p>
           ) : null}
@@ -131,7 +132,7 @@ function PendingToolList({ tools }: PendingToolListProps) {
       ))}
       {hiddenCount > 0 ? (
         <button
-          className="flex w-full cursor-pointer items-center gap-1.5 px-4 py-2.5 text-muted-foreground text-xs transition-colors hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground flex w-full cursor-pointer items-center gap-1.5 px-4 py-2.5 text-xs transition-colors"
           onClick={() => setExpanded(true)}
           type="button"
         >
@@ -165,7 +166,7 @@ function PendingIntegrationCard({
             <ReviewIntegrationLogo integration={integration} />
             <div className="min-w-0">
               <p className="truncate font-medium">{integration.name}</p>
-              <p className="truncate text-muted-foreground text-sm">
+              <p className="text-muted-foreground truncate text-sm">
                 {integration.author ?? integration.organization.name} ·
                 submitted {formatIntegrationDate(integration.submittedAt)}
               </p>
@@ -188,8 +189,8 @@ function PendingIntegrationCard({
           </p>
         ) : null}
 
-        <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground text-xs">
-          <code className="min-w-0 break-all rounded-md bg-muted px-2 py-1 font-mono">
+        <div className="text-muted-foreground flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+          <code className="bg-muted min-w-0 rounded-md px-2 py-1 font-mono break-all">
             {integration.url}
           </code>
           <span className="truncate">
@@ -200,13 +201,13 @@ function PendingIntegrationCard({
       </div>
 
       <div className="border-t">
-        <p className="px-4 pt-3 font-medium text-[0.65rem] text-muted-foreground/70 uppercase tracking-wider">
+        <p className="text-muted-foreground/70 px-4 pt-3 text-[0.65rem] font-medium tracking-wider uppercase">
           Tools
         </p>
         <PendingToolList tools={integration.tools} />
       </div>
 
-      <div className="flex justify-end gap-2 border-t bg-muted/30 px-4 py-3">
+      <div className="bg-muted/30 flex justify-end gap-2 border-t px-4 py-3">
         <Button
           disabled={deciding}
           onClick={() => setRejectOpen(true)}
@@ -317,8 +318,8 @@ export function ReviewQueueClient() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">Review Queue</h1>
-        <p className="mt-1 text-muted-foreground text-sm">
+        <h1 className="text-2xl font-semibold tracking-tight">Review Queue</h1>
+        <p className="text-muted-foreground mt-1 text-sm">
           Integrations waiting for approval before they appear in the store.
         </p>
       </div>
@@ -332,7 +333,7 @@ export function ReviewQueueClient() {
       ) : null}
 
       {pendingQuery.isError && pending.length > 0 ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-amber-700 text-sm dark:text-amber-400">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
           <span>This list may be out of date. The last refresh failed.</span>
           <Button
             onClick={() => pendingQuery.refetch()}
@@ -345,7 +346,7 @@ export function ReviewQueueClient() {
       ) : null}
 
       {pendingQuery.isError && pending.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
+        <div className="text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm">
           <p>Could not load the review queue.</p>
           <Button
             className="mt-3"
@@ -359,7 +360,7 @@ export function ReviewQueueClient() {
       ) : null}
 
       {pendingQuery.data && !pendingQuery.isError && pending.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-10 text-center text-muted-foreground text-sm">
+        <div className="text-muted-foreground rounded-xl border border-dashed p-10 text-center text-sm">
           Nothing waiting for review.
         </div>
       ) : null}

@@ -13,6 +13,7 @@ import {
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import type React from "react";
 import { isValidElement, useState } from "react";
+
 import { Button } from "@/components/button";
 
 interface AddLinearIntegrationDialogProps {

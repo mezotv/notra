@@ -27,6 +27,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { useDashboardSession } from "@/lib/auth/use-dashboard-session";
 import { BRAND_ASSETS } from "@/lib/brand/constants";
 import { getNavbarVariantForPath } from "@/lib/navigation/navbar-variant";
@@ -39,6 +40,7 @@ import {
   type MarketingNavGroup,
   type MarketingNavRailItem,
 } from "@/utils/navigation";
+
 import { NotraMark, notraMarkSvgString } from "./notra-mark";
 import { ThemeToggle } from "./theme-toggle";
 import { TrackedSignupLink } from "./tracked-signup-link";
@@ -119,10 +121,10 @@ function MegaCard({
         icon={card.icon}
       />
       <span className="flex flex-col items-start gap-0.75 self-stretch">
-        <span className="font-sans font-semibold text-[#1E1E1E] text-base leading-5 dark:text-white">
+        <span className="font-sans text-base leading-5 font-semibold text-[#1E1E1E] dark:text-white">
           {card.label}
         </span>
-        <span className="self-stretch font-sans font-semibold text-[#1E1E1EBF] text-sm leading-[1.125rem] dark:text-neutral-400">
+        <span className="self-stretch font-sans text-sm leading-[1.125rem] font-semibold text-[#1E1E1EBF] dark:text-neutral-400">
           {card.description}
         </span>
       </span>
@@ -171,7 +173,7 @@ function RailItem({
         className="size-6 shrink-0 text-[#1E1E1E] dark:text-neutral-200"
         icon={item.icon}
       />
-      <span className="font-medium font-sans text-[#1E1E1E] text-base leading-[1.5625rem] tracking-[-0.02em] dark:text-neutral-200">
+      <span className="font-sans text-base leading-[1.5625rem] font-medium tracking-[-0.02em] text-[#1E1E1E] dark:text-neutral-200">
         {item.label}
       </span>
     </>
@@ -219,7 +221,7 @@ function MegaPanel({
         ))}
       </div>
       {group.rail.length > 0 && (
-        <div className="flex flex-col items-start self-stretch border-[#1E1E1E1A] border-l p-8 dark:border-white/10">
+        <div className="flex flex-col items-start self-stretch border-l border-[#1E1E1E1A] p-8 dark:border-white/10">
           <div className="flex flex-col gap-3">
             {group.rail.map((item) => (
               <RailItem item={item} key={item.href} onSelect={onSelect} />
@@ -452,10 +454,10 @@ export function Navbar({ variant }: NavbarProps = {}) {
                   }
                 >
                   <span className="inline-flex origin-left items-center gap-2 transition-transform duration-150 ease-out group-active:scale-95">
-                    <span className="flex size-10 items-center justify-center rounded-lg dark:inset-shadow-sm dark:inset-shadow-white/8 dark:bg-[#F6F3F1] dark:shadow-black/40 dark:shadow-sm dark:ring-1 dark:ring-white/10">
+                    <span className="flex size-10 items-center justify-center rounded-lg dark:bg-[#F6F3F1] dark:shadow-sm dark:ring-1 dark:inset-shadow-sm dark:shadow-black/40 dark:ring-white/10 dark:inset-shadow-white/8">
                       <NotraMark className="size-7 shrink-0" />
                     </span>
-                    <span className="font-semibold text-lg text-neutral-950 dark:text-white">
+                    <span className="text-lg font-semibold text-neutral-950 dark:text-white">
                       Notra
                     </span>
                   </span>
@@ -500,7 +502,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <nav className="-translate-x-1/2 -translate-y-1/2 absolute top-1/2 left-1/2 hidden items-center gap-8 lg:flex">
+              <nav className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-8 lg:flex">
                 {MARKETING_NAV.map((entry) => {
                   if (entry.type === "link") {
                     return (
@@ -547,7 +549,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
 
                 <div
                   aria-hidden="true"
-                  className="-z-10 pointer-events-none invisible absolute top-full left-0 size-0 overflow-hidden"
+                  className="pointer-events-none invisible absolute top-full left-0 -z-10 size-0 overflow-hidden"
                 >
                   {groups.map((group) => (
                     <div
@@ -626,7 +628,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                 <div className="hidden items-center gap-3 lg:flex">
                   {isAuthenticated ? (
                     <Link
-                      className="font-display font-semibold text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
+                      className="font-display text-base leading-[1.14] font-semibold tracking-[-0.015em] text-[#1E1E1E] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
                       href={DASHBOARD_URL}
                     >
                       Dashboard
@@ -634,13 +636,13 @@ export function Navbar({ variant }: NavbarProps = {}) {
                   ) : (
                     <>
                       <Link
-                        className="font-display text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
+                        className="font-display text-base leading-[1.14] tracking-[-0.015em] text-[#1E1E1E] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
                         href={SIGNIN_URL}
                       >
                         Sign In
                       </Link>
                       <TrackedSignupLink
-                        className="font-display font-semibold text-[#1E1E1E] text-base leading-[1.14] tracking-[-0.015em] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
+                        className="font-display text-base leading-[1.14] font-semibold tracking-[-0.015em] text-[#1E1E1E] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
                         source="navbar_desktop_signup"
                       >
                         Sign Up
@@ -695,7 +697,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
           if (entry.type === "link") {
             return (
               <Link
-                className="rounded-md px-3 py-2 text-neutral-600 text-sm hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-white/6 dark:hover:text-white"
+                className="rounded-md px-3 py-2 text-sm text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950 dark:text-neutral-300 dark:hover:bg-white/6 dark:hover:text-white"
                 href={entry.href}
                 key={entry.href}
                 onClick={onNavigate}
@@ -706,13 +708,13 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
           }
           return (
             <div className="flex flex-col gap-0.5" key={entry.label}>
-              <div className="px-3 pt-2 pb-1 font-medium text-neutral-400 text-xs uppercase tracking-wide dark:text-neutral-500">
+              <div className="px-3 pt-2 pb-1 text-xs font-medium tracking-wide text-neutral-400 uppercase dark:text-neutral-500">
                 {entry.label}
               </div>
               {[...entry.cards, ...entry.rail].map((item) =>
                 item.external ? (
                   <a
-                    className="rounded-md px-3 py-2 font-sans text-[#1E1E1E] text-sm hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
+                    className="rounded-md px-3 py-2 font-sans text-sm text-[#1E1E1E] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
                     href={item.href}
                     key={item.href}
                     onClick={onNavigate}
@@ -723,7 +725,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
                   </a>
                 ) : (
                   <Link
-                    className="rounded-md px-3 py-2 font-sans text-[#1E1E1E] text-sm hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
+                    className="rounded-md px-3 py-2 font-sans text-sm text-[#1E1E1E] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
                     href={item.href}
                     key={item.href}
                     onClick={onNavigate}
@@ -736,10 +738,10 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
           );
         })}
       </nav>
-      <div className="flex flex-col gap-2 border-[#1E1E1E14] border-t pt-3 dark:border-white/10">
+      <div className="flex flex-col gap-2 border-t border-[#1E1E1E14] pt-3 dark:border-white/10">
         {isAuthenticated ? (
           <Link
-            className="cta-gradient-primary rounded-full px-3 py-2.5 text-center font-display font-medium text-sm text-white tracking-[-0.015em]"
+            className="cta-gradient-primary font-display rounded-full px-3 py-2.5 text-center text-sm font-medium tracking-[-0.015em] text-white"
             href={DASHBOARD_URL}
             onClick={onNavigate}
           >
@@ -748,14 +750,14 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
         ) : (
           <>
             <Link
-              className="rounded-md px-3 py-2 text-center font-display text-[#1E1E1E] text-sm tracking-[-0.015em] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
+              className="font-display rounded-md px-3 py-2 text-center text-sm tracking-[-0.015em] text-[#1E1E1E] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
               href={SIGNIN_URL}
               onClick={onNavigate}
             >
               Sign In
             </Link>
             <TrackedSignupLink
-              className="cta-gradient-primary rounded-full px-3 py-2.5 text-center font-display font-medium text-sm text-white tracking-[-0.015em]"
+              className="cta-gradient-primary font-display rounded-full px-3 py-2.5 text-center text-sm font-medium tracking-[-0.015em] text-white"
               onClick={onNavigate}
               source="navbar_mobile_signup"
             >

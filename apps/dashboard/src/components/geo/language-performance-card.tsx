@@ -18,6 +18,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useCallback, useMemo, useState } from "react";
+
 import { Button } from "@/components/button";
 import { GeoBar } from "@/components/geo/geo-bar";
 import { GeoLanguagesDialog } from "@/components/geo/geo-languages-dialog";
@@ -44,6 +45,20 @@ import {
   withAddedGeoLanguage,
 } from "@/utils/geo-language-rows";
 import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
+
+function trackedChecksLabel(
+  mentions: number,
+  checks: number,
+  isScanning: boolean
+) {
+  if (checks > 0) {
+    return `${mentions}/${checks} checks`;
+  }
+  if (isScanning) {
+    return "Scanning…";
+  }
+  return "No checks yet";
+}
 
 function LanguageNameCell({
   language,
@@ -136,11 +151,13 @@ function LanguageAddButton({
 function languagePerformanceColumns({
   adding,
   atLimit,
+  isScanning,
   pendingLanguage,
   onAddLanguage,
 }: {
   adding: boolean;
   atLimit: boolean;
+  isScanning: boolean;
   pendingLanguage: string | undefined;
   onAddLanguage: (language: string) => void;
 }): TableColumn<LanguagePerformanceRow>[] {
@@ -166,18 +183,7 @@ function languagePerformanceColumns({
         row.kind === "tracked" ? row.mentionRate : Number.NEGATIVE_INFINITY,
       cell: (row) =>
         row.kind === "suggested" ? (
-          <span className="flex items-center justify-between gap-2">
-            <span className="text-muted-foreground/50 text-xs">
-              Not tracked
-            </span>
-            <LanguageAddButton
-              disabled={adding || atLimit}
-              language={row.language}
-              limitReached={atLimit}
-              onAdd={onAddLanguage}
-              pending={pendingLanguage === row.language}
-            />
-          </span>
+          <span className="text-muted-foreground/50 text-xs">Not tracked</span>
         ) : (
           <span className="flex items-center gap-2">
             <GeoBar
@@ -191,6 +197,28 @@ function languagePerformanceColumns({
           </span>
         ),
     },
+    {
+      key: "checks",
+      header: "Checks",
+      width: "7.5rem",
+      sortable: true,
+      sortValue: (row) =>
+        row.kind === "tracked" ? row.checks : Number.NEGATIVE_INFINITY,
+      cell: (row) =>
+        row.kind === "suggested" ? (
+          <LanguageAddButton
+            disabled={adding || atLimit}
+            language={row.language}
+            limitReached={atLimit}
+            onAdd={onAddLanguage}
+            pending={pendingLanguage === row.language}
+          />
+        ) : (
+          <span className="text-muted-foreground text-[0.6875rem] tabular-nums">
+            {trackedChecksLabel(row.mentions, row.checks, isScanning)}
+          </span>
+        ),
+    },
   ];
 }
 
@@ -198,6 +226,7 @@ export function LanguagePerformanceCard({
   points,
   organizationId,
   settings,
+  isScanning = false,
 }: LanguagePerformanceCardProps) {
   const [languagesOpen, setLanguagesOpen] = useState(false);
   const [languageToAdd, setLanguageToAdd] = useState<string>();
@@ -268,10 +297,11 @@ export function LanguagePerformanceCard({
       languagePerformanceColumns({
         adding: upsert.isPending,
         atLimit,
+        isScanning,
         onAddLanguage: setLanguageToAdd,
         pendingLanguage,
       }),
-    [atLimit, pendingLanguage, upsert.isPending]
+    [atLimit, isScanning, pendingLanguage, upsert.isPending]
   );
 
   return (
@@ -279,7 +309,7 @@ export function LanguagePerformanceCard({
       <InstrumentSection
         action={
           <button
-            className="text-muted-foreground text-xs underline-offset-4 hover:text-foreground hover:underline"
+            className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
             onClick={() => setLanguagesOpen(true)}
             type="button"
           >

@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useId } from "react";
+
 import { EASE_OUT, SPRING_PRESS } from "@/lib/ease";
 import { cn } from "@/lib/utils";
 
@@ -48,8 +49,8 @@ export function Checkbox({
         aria-checked={indeterminate ? "mixed" : checked}
         aria-label={ariaLabel}
         className={cn(
-          "inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-md border-2 outline-none transition-colors duration-200",
-          "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          "inline-flex h-5 w-5 shrink-0 cursor-pointer items-center justify-center rounded-md border-2 transition-colors duration-200 outline-none",
+          "focus-visible:ring-ring focus-visible:ring-offset-background focus-visible:ring-2 focus-visible:ring-offset-2",
           "disabled:cursor-not-allowed disabled:opacity-60",
           showMark
             ? "border-primary bg-primary text-primary-foreground"
@@ -112,7 +113,7 @@ export function Checkbox({
       {label ? (
         <span
           className={cn(
-            "select-none text-foreground text-sm",
+            "text-foreground text-sm select-none",
             disabled && "opacity-60"
           )}
         >

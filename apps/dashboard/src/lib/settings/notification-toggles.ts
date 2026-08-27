@@ -4,6 +4,7 @@ import {
   Forward02Icon,
   Megaphone01Icon,
 } from "@hugeicons/core-free-icons";
+
 import type { NotificationToggleGroup } from "@/types/settings/notifications";
 
 export const NOTIFICATION_TOGGLE_GROUPS: NotificationToggleGroup[] = [

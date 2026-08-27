@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { StoreIntegrationCard } from "@/components/integrations/store-integration-card";
 import { StoreIntegrationDialogs } from "@/components/integrations/store-integration-dialogs";
 import { buildOrganizationIntegrationsPath } from "@/lib/integrations/deeplink";
@@ -165,7 +166,7 @@ export function StoreIntegrationsSection({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="font-semibold text-xl tracking-tight">
+        <h2 className="text-xl font-semibold tracking-tight">
           From the integration store
         </h2>
         <p className="text-muted-foreground text-sm">

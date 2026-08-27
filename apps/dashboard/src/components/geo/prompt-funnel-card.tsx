@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+
 import { FunnelChart } from "@/components/charts/funnel-chart";
 import {
   InstrumentEmpty,

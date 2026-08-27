@@ -49,6 +49,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { SUBMITTED_CONFETTI_COLORS } from "@/lib/integrations/constants";
 import { getIntegrationInitials } from "@/lib/integrations/form";
@@ -86,7 +87,7 @@ function IntegrationLogo({ server }: { server: McpServer }) {
   }
 
   return (
-    <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted font-medium text-muted-foreground text-xs">
+    <div className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border text-xs font-medium">
       {getIntegrationInitials(server.name)}
     </div>
   );
@@ -129,7 +130,7 @@ function IntegrationRow({
                 {server.name}
               </Link>
               {server.description ? (
-                <p className="max-w-[24rem] truncate text-muted-foreground text-sm">
+                <p className="text-muted-foreground max-w-[24rem] truncate text-sm">
                   {server.description}
                 </p>
               ) : null}
@@ -360,7 +361,7 @@ export function IntegrationsPageClient({
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 lg:px-6">
       {celebrating ? (
-        <div className="-translate-x-1/2 pointer-events-none fixed top-0 left-1/2 z-50">
+        <div className="pointer-events-none fixed top-0 left-1/2 z-50 -translate-x-1/2">
           <Confetti
             colors={SUBMITTED_CONFETTI_COLORS}
             duration={4000}
@@ -375,10 +376,10 @@ export function IntegrationsPageClient({
       ) : null}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
         <div>
-          <h1 className="font-semibold text-2xl tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight">
             My Integrations
           </h1>
-          <p className="mt-1 text-muted-foreground text-sm">
+          <p className="text-muted-foreground mt-1 text-sm">
             MCP servers you&apos;ve registered for the Notra integration store.
           </p>
         </div>
@@ -395,7 +396,7 @@ export function IntegrationsPageClient({
 
       {integrationsQuery.isPending ? <LoadingTable /> : null}
       {integrationsQuery.isError ? (
-        <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
+        <div className="text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm">
           <p>Could not load integrations.</p>
           <Button
             className="mt-3"
@@ -410,7 +411,7 @@ export function IntegrationsPageClient({
       {data && servers.length === 0 ? (
         <div className="rounded-xl border border-dashed p-10 text-center">
           <p className="font-medium">No integrations yet</p>
-          <p className="mt-1 text-muted-foreground text-sm">
+          <p className="text-muted-foreground mt-1 text-sm">
             Register an MCP server to get it into the integration store.
           </p>
           <Button
@@ -458,7 +459,7 @@ export function IntegrationsPageClient({
       {dashboardConnectionCount > 0 ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
           <div>
-            <p className="font-medium text-sm">
+            <p className="text-sm font-medium">
               {formatDashboardConnectionsLabel(githubCount, linearCount)}
             </p>
             <p className="text-muted-foreground text-sm">

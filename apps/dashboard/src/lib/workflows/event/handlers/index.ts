@@ -3,6 +3,7 @@ import { generateBlogPost } from "@notra/ai/agents/blog-post";
 import { generateChangelog } from "@notra/ai/agents/changelog";
 import { generateLinkedInPost } from "@notra/ai/agents/linkedin";
 import { generateTwitterPost } from "@notra/ai/agents/twitter";
+
 import { AGENT_CONTENT_TASK_TYPES } from "@/constants/agent-content";
 import { generateContentViaAgentTask } from "@/lib/agent/content-task";
 import { isAgentContentGenerationEnabled } from "@/lib/agent/flag";
@@ -10,6 +11,7 @@ import type {
   EventGenerationContext,
   EventGenerationResult,
 } from "@/types/workflows/workflows";
+
 import { buildEventPromptInput } from "../prompt-input";
 
 export async function generateEventBasedContent(

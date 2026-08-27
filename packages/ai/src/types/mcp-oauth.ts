@@ -3,6 +3,7 @@ import type {
   OAuthProtectedResourceMetadata,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
 import type { z } from "zod";
+
 import type { MCP_AUTH_TYPES } from "../constants/mcp-auth";
 import type { mcpOAuthStoredAuthorizationServerSchema } from "../schemas/mcp-oauth";
 import type { McpHeaderMap, McpIntegrationResourceType } from "./integrations";

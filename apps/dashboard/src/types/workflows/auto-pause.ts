@@ -13,8 +13,7 @@ export interface RecordAutomatedWorkflowPauseParams {
   logPrefix: string;
 }
 
-export interface RecordAutomatedWorkflowPauseStepParams
-  extends RecordAutomatedWorkflowPauseParams {
+export interface RecordAutomatedWorkflowPauseStepParams extends RecordAutomatedWorkflowPauseParams {
   manual: boolean;
   stepName: string;
 }
@@ -23,8 +22,7 @@ export interface ClearAutomatedWorkflowPauseStateParams {
   triggerId: string;
 }
 
-export interface ClearAutomatedWorkflowPauseStateStepParams
-  extends ClearAutomatedWorkflowPauseStateParams {
+export interface ClearAutomatedWorkflowPauseStateStepParams extends ClearAutomatedWorkflowPauseStateParams {
   manual: boolean;
   logPrefix: string;
   stepName: string;

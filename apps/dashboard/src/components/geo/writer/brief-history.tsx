@@ -3,6 +3,7 @@
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
+
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Table, type TableColumn } from "@/components/motion/table";
 import {
@@ -31,7 +32,7 @@ function statusVariant(
 function BriefStatusBadge({ status }: { status: GeoContentBriefStatus }) {
   return (
     <Badge
-      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-sm text-[0.6875rem]"
+      className="inline-flex items-center gap-1.5 rounded-sm text-[0.6875rem] whitespace-nowrap"
       variant={statusVariant(status)}
     >
       {status === "writing" ? <StatusSpinner /> : null}
@@ -118,11 +119,11 @@ export function BriefHistory({
           const subtitle = brief.topic !== title ? brief.topic : null;
           return (
             <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="truncate font-medium text-sm leading-snug">
+              <span className="truncate text-sm leading-snug font-medium">
                 {title}
               </span>
               {subtitle ? (
-                <span className="truncate text-muted-foreground text-xs">
+                <span className="text-muted-foreground truncate text-xs">
                   {subtitle}
                 </span>
               ) : null}
@@ -145,7 +146,7 @@ export function BriefHistory({
         sortable: true,
         sortValue: (brief) => brief.createdAt,
         cell: (brief) => (
-          <span className="whitespace-nowrap text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground whitespace-nowrap tabular-nums">
             {formatRelativeDate(brief.createdAt)}
           </span>
         ),

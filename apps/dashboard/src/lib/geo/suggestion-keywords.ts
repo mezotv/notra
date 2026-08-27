@@ -1,4 +1,5 @@
 import type { GscQueryRow } from "@notra/ai/types/google-search-console";
+
 import {
   GSC_SYNC_MAX_KEYWORDS_FOR_MODEL,
   GSC_SYNC_MIN_IMPRESSIONS,

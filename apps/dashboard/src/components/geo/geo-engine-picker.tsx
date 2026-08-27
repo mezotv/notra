@@ -25,6 +25,7 @@ import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { ZdrConsentDialog } from "@/components/billing/zdr-consent-dialog";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import {
@@ -135,7 +136,7 @@ function GeoModelRow({
       >
         <span className="min-w-0 text-xs">{model.label}</span>
         {showZdrState && model.zdr === "none" ? (
-          <span className="shrink-0 text-muted-foreground text-xs">
+          <span className="text-muted-foreground shrink-0 text-xs">
             {approved ? "Approved without ZDR" : "No ZDR host"}
           </span>
         ) : null}
@@ -360,7 +361,7 @@ export function GeoEnginePicker({
     <div className="space-y-3">
       {labeled ? (
         <div className="space-y-1">
-          <p className="font-medium text-sm">Models</p>
+          <p className="text-sm font-medium">Models</p>
           <p className="text-muted-foreground text-xs">
             Every prompt runs against each enabled model. Turn off the ones you
             do not need to keep scans lean.
@@ -368,7 +369,7 @@ export function GeoEnginePicker({
         </div>
       ) : null}
 
-      <ul className="overflow-hidden rounded-xl border bg-card">
+      <ul className="bg-card overflow-hidden rounded-xl border">
         {catalog.providers.map((provider) => {
           const isVisible = provider.featured || showMore;
           const revealIndex = hiddenProviderIndex.get(provider.id) ?? 0;
@@ -420,7 +421,7 @@ export function GeoEnginePicker({
                     }
               }
               aria-hidden={!isVisible}
-              className="relative overflow-hidden border-border/60 border-b last:border-b-0"
+              className="border-border/60 relative overflow-hidden border-b last:border-b-0"
               inert={isVisible ? undefined : true}
               initial={false}
               key={provider.id}
@@ -445,12 +446,12 @@ export function GeoEnginePicker({
               <div
                 className={cn(
                   ROW_CLASS,
-                  "bg-card ps-4 pe-6 transition-colors hover:bg-muted/40"
+                  "bg-card hover:bg-muted/40 ps-4 pe-6 transition-colors"
                 )}
               >
                 <button
                   aria-expanded={isExpanded}
-                  className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed"
+                  className="focus-visible:ring-ring flex min-w-0 flex-1 cursor-pointer items-center gap-2.5 text-left text-sm outline-none focus-visible:ring-2 disabled:cursor-not-allowed"
                   disabled={disabled}
                   onClick={() => toggleExpanded(provider.id)}
                   type="button"
@@ -476,7 +477,7 @@ export function GeoEnginePicker({
                   )}
                   <HugeiconsIcon
                     className={cn(
-                      "size-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
+                      "text-muted-foreground size-3.5 shrink-0 transition-transform duration-200",
                       isExpanded && "rotate-180"
                     )}
                     icon={ArrowDown01Icon}
@@ -495,7 +496,7 @@ export function GeoEnginePicker({
               </div>
               <div
                 className={cn(
-                  "grid bg-muted/20 transition-[grid-template-rows] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none dark:bg-muted/15",
+                  "bg-muted/20 dark:bg-muted/15 grid transition-[grid-template-rows] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
                   isExpanded ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
                 )}
               >
@@ -503,10 +504,10 @@ export function GeoEnginePicker({
                   className="min-h-0 overflow-hidden"
                   inert={isExpanded ? undefined : true}
                 >
-                  <div className="relative mx-3 mb-3 rounded-lg border border-border/60 bg-background/70 py-1 dark:bg-background/45">
+                  <div className="border-border/60 bg-background/70 dark:bg-background/45 relative mx-3 mb-3 rounded-lg border py-1">
                     <span
                       aria-hidden
-                      className="pointer-events-none absolute top-2 bottom-2 left-[1.25rem] w-px bg-border"
+                      className="bg-border pointer-events-none absolute top-2 bottom-2 left-[1.25rem] w-px"
                     />
                     <ul>
                       {primaryModels.map((model) => {
@@ -570,7 +571,7 @@ export function GeoEnginePicker({
                       {additionalModels.length > 0 ? (
                         <li className="py-1.5 ps-10 pe-3">
                           <button
-                            className="cursor-pointer rounded-sm text-muted-foreground text-xs transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed"
+                            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring cursor-pointer rounded-sm text-xs transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed"
                             disabled={disabled}
                             onClick={() => toggleShowAllModels(provider.id)}
                             type="button"
@@ -592,7 +593,7 @@ export function GeoEnginePicker({
           <li className="bg-card">
             <button
               aria-expanded={showMore}
-              className="flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left text-muted-foreground text-sm transition-colors hover:bg-muted/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:cursor-not-allowed"
+              className="text-muted-foreground hover:bg-muted/40 hover:text-foreground focus-visible:ring-ring flex w-full cursor-pointer items-center gap-2.5 px-3 py-2.5 text-left text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset disabled:cursor-not-allowed"
               disabled={disabled}
               onClick={() => setShowMore((current) => !current)}
               type="button"
@@ -616,7 +617,7 @@ export function GeoEnginePicker({
         ) : null}
       </ul>
 
-      <div className="divide-y rounded-lg ring-1 ring-foreground/10">
+      <div className="ring-foreground/10 divide-y rounded-lg ring-1">
         <div className={`${ROW_CLASS} py-2.5`}>
           <div className="space-y-0.5">
             <div className="flex items-center gap-1.5">

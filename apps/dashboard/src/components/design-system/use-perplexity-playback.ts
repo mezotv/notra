@@ -6,6 +6,7 @@ import {
   perplexitySearchDuration,
 } from "@notra/ui/components/brainless/perplexity/perplexity-search-timing";
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import type { PerplexityStoryMessage } from "@/types/design-system-perplexity";
 
 const TOKEN_SPLIT = /(\s+)/;

@@ -4,6 +4,7 @@ import { createPerplexity } from "@ai-sdk/perplexity";
 import { gateway } from "@notra/ai/gateway";
 import { tool } from "ai";
 import { z } from "zod";
+
 import {
   GEO_ANTHROPIC_API_KEY_ENV,
   GEO_GROUNDED_ENGINES,

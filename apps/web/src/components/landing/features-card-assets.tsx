@@ -24,7 +24,7 @@ function AssetTile({
       <div className="flex items-start justify-between gap-4 px-2 py-1.5">
         <div className="flex min-w-0 items-center gap-2">
           {spinner}
-          <div className="line-clamp-1 font-medium font-sans text-[#737373] text-[1.125rem] leading-[155.556%]">
+          <div className="line-clamp-1 font-sans text-[1.125rem] leading-[155.556%] font-medium text-[#737373]">
             {title}
           </div>
         </div>
@@ -42,13 +42,13 @@ function AssetTile({
       </div>
       <div className="flex items-center gap-2 px-2 py-1.5">
         <div className="flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-clip rounded-4xl border border-[#E5E5E5] px-2 py-0.5">
-          <div className="w-max shrink-0 font-medium font-sans text-[#171717] text-[0.75rem] capitalize leading-[133.333%]">
+          <div className="w-max shrink-0 font-sans text-[0.75rem] leading-[133.333%] font-medium text-[#171717] capitalize">
             draft
           </div>
         </div>
         <div className="flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-clip rounded-4xl border border-[#00000000] bg-[#F5F5F5] px-2 py-0.5">
           {badgeIcon}
-          <div className="inline-block w-max shrink-0 font-medium font-sans text-[#171717] text-[0.75rem] capitalize leading-[133.333%]">
+          <div className="inline-block w-max shrink-0 font-sans text-[0.75rem] leading-[133.333%] font-medium text-[#171717] capitalize">
             {badge}
           </div>
         </div>

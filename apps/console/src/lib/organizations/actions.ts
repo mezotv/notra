@@ -7,6 +7,7 @@ import { members, organizations } from "@notra/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { cookies } from "next/headers";
+
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import { requireMembership, requireSession } from "@/lib/organizations/guards";

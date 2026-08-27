@@ -9,6 +9,7 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import { cn } from "@notra/ui/lib/utils";
 import Link from "next/link";
+
 import {
   SIDEBAR_MODE_HOME_LINKS,
   SIDEBAR_MODE_PILL_CLASS,
@@ -16,6 +17,7 @@ import {
 } from "@/constants/nav";
 import type { NavModeSwitchProps } from "@/types/components/nav";
 import { geoNavHref } from "@/utils/geo-paths";
+
 import { SidebarLabel } from "./sidebar-label";
 
 export function NavModeSwitch({
@@ -26,7 +28,7 @@ export function NavModeSwitch({
 }: NavModeSwitchProps) {
   return (
     <SidebarGroup className="pt-0">
-      <div className="rounded-lg bg-sidebar-accent p-0.5 group-data-[collapsible=icon]:hidden">
+      <div className="bg-sidebar-accent rounded-lg p-0.5 group-data-[collapsible=icon]:hidden">
         <div className="relative grid grid-cols-2">
           <div
             aria-hidden
@@ -43,7 +45,7 @@ export function NavModeSwitch({
                 className={cn(
                   "relative z-10 flex h-7 items-center justify-center gap-1.5 rounded-md text-xs transition-colors duration-150",
                   isActive
-                    ? "font-medium text-foreground"
+                    ? "text-foreground font-medium"
                     : "text-muted-foreground hover:text-foreground"
                 )}
                 href={geoNavHref(

@@ -9,6 +9,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
+
 import { TableMenu } from "./table-menu";
 
 /** The row handle, portaled so it can sit on the row's left border without the

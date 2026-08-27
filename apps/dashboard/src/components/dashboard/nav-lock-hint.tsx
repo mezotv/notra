@@ -7,6 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+
 import { cn } from "@/lib/utils";
 import type { NavLockHintProps } from "@/types/components/nav";
 
@@ -15,7 +16,7 @@ export function NavLockHint({ message, className }: NavLockHintProps) {
     <Tooltip>
       <TooltipTrigger
         className={cn(
-          "ml-auto inline-flex shrink-0 items-center text-muted-foreground group-data-[collapsible=icon]:hidden",
+          "text-muted-foreground ml-auto inline-flex shrink-0 items-center group-data-[collapsible=icon]:hidden",
           className
         )}
         render={<span />}

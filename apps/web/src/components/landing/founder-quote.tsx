@@ -1,4 +1,5 @@
 import Image from "next/image";
+
 import { FOUNDER_QUOTE } from "@/constants/landing/marquee-quote";
 
 const AVATAR_SIZE = 56;
@@ -8,7 +9,7 @@ export function FounderQuote() {
 
   return (
     <section className="flex flex-col items-center gap-10.5 px-6 pt-24 pb-24 antialiased sm:px-12 lg:px-20 lg:pt-40 lg:pb-35">
-      <blockquote className="max-w-[48.25rem] text-balance text-center font-medium font-sans text-[#1E1E1E] text-[1.875rem] leading-[1.15] tracking-[-0.02em] sm:text-[2.25rem] lg:text-[2.4375rem] lg:leading-[2.875rem] dark:text-white">
+      <blockquote className="max-w-[48.25rem] text-center font-sans text-[1.875rem] leading-[1.15] font-medium tracking-[-0.02em] text-balance text-[#1E1E1E] sm:text-[2.25rem] lg:text-[2.4375rem] lg:leading-[2.875rem] dark:text-white">
         {quote}
       </blockquote>
       <figcaption className="flex items-center gap-4">
@@ -22,10 +23,10 @@ export function FounderQuote() {
           />
         </span>
         <span className="flex flex-col items-start gap-2">
-          <span className="font-medium font-sans text-[#1E1E1E] text-base/5.5 dark:text-white">
+          <span className="font-sans text-base/5.5 font-medium text-[#1E1E1E] dark:text-white">
             {name}
           </span>
-          <span className="font-display text-[#1E1E1EBF] text-base/5.5 dark:text-white/70">
+          <span className="font-display text-base/5.5 text-[#1E1E1EBF] dark:text-white/70">
             {role}
           </span>
         </span>

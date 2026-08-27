@@ -1,6 +1,11 @@
 {
   "name": "turbo",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
   "scripts": {
     "build": "dotenv -- turbo run build",
     "dev": "dotenv -- turbo run dev",
@@ -15,14 +20,13 @@
     "email:dev": "dotenv -- bun run --filter=@notra/email dev",
     "devtools:api": "cd apps/api && bunx @ai-sdk/devtools",
     "devtools:dashboard": "cd apps/dashboard && bunx @ai-sdk/devtools",
-    "check": "ultracite check",
-    "format": "ultracite fix",
-    "format:unsafe": "ultracite fix --unsafe",
+    "check": "ultracite check --threads=4",
+    "format": "ultracite fix --threads=4",
+    "format:unsafe": "ultracite fix --unsafe --threads=4",
     "commitlint": "commitlint",
     "prepare": "husky && ./scripts/prepare-effect.sh"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.3.2",
     "@commitlint/cli": "^21.0.0",
     "@commitlint/config-conventional": "^21.0.0",
     "dotenv-cli": "^11.0.0",
@@ -31,17 +35,11 @@
     "husky": "^9.1.7",
     "knip": "^6.12.2",
     "openlogs": "^0.0.1",
+    "oxfmt": "0.64.0",
+    "oxlint": "1.79.0",
     "turbo": "^2.9.18",
-    "ultracite": "7.1.4"
+    "ultracite": "7.10.6"
   },
-  "engines": {
-    "node": "24.11.1"
-  },
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
-  "packageManager": "bun@1.4.0",
   "overrides": {
     "brace-expansion@1": "1.1.16",
     "brace-expansion@2": "2.1.2",
@@ -52,5 +50,9 @@
     "nf3": "0.3.17",
     "protobufjs@7": "7.6.5",
     "sharp": "^0.35.3"
-  }
+  },
+  "engines": {
+    "node": "24.11.1"
+  },
+  "packageManager": "bun@1.4.0"
 }

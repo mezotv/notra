@@ -6,6 +6,7 @@ import {
   ViewIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+
 import { cn } from "@/lib/utils";
 import type { GeoModeIconProps, GeoSparklineMode } from "@/types/geo";
 

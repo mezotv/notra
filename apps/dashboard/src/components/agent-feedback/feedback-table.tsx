@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import { cn } from "@notra/ui/lib/utils";
+
 import {
   AgentFeedbackKindBadge,
   AgentFeedbackStatusBadge,
@@ -55,7 +56,7 @@ export function AgentFeedbackTable({
   onSelect,
 }: AgentFeedbackTableProps) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border/80 bg-background">
+    <div className="border-border/80 bg-background overflow-hidden rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
@@ -72,7 +73,7 @@ export function AgentFeedbackTable({
           {!isPending && items.length === 0 ? (
             <TableRow>
               <TableCell
-                className="h-24 text-center text-muted-foreground"
+                className="text-muted-foreground h-24 text-center"
                 colSpan={AGENT_FEEDBACK_TABLE_COLUMN_COUNT}
               >
                 No feedback matches this filter
@@ -102,7 +103,7 @@ export function AgentFeedbackTable({
                     {item.title ?? item.message}
                   </div>
                   {item.title ? (
-                    <div className="truncate text-muted-foreground text-xs">
+                    <div className="text-muted-foreground truncate text-xs">
                       {item.message}
                     </div>
                   ) : null}
@@ -127,7 +128,7 @@ export function AgentFeedbackTable({
                 <TableCell>
                   <AgentFeedbackStatusBadge status={item.status} />
                 </TableCell>
-                <TableCell className="text-right text-muted-foreground text-sm">
+                <TableCell className="text-muted-foreground text-right text-sm">
                   {formatRelative(item.createdAt)}
                 </TableCell>
               </TableRow>

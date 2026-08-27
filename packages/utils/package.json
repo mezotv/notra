@@ -3,9 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "scripts": {
-    "check-types": "tsc --noEmit"
-  },
   "exports": {
     "./url": "./src/url.ts",
     "./callback-url": "./src/callback-url.ts",
@@ -14,6 +11,9 @@
     "./color": "./src/color.ts",
     "./ingest-token": "./src/ingest-token.ts",
     "./types/*": "./src/types/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",

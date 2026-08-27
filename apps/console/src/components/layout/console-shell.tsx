@@ -44,6 +44,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { UserImpersonationDialog } from "@/components/auth/user-impersonation-dialog";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { authClient } from "@/lib/auth/client";
@@ -112,7 +113,7 @@ function OrganizationSwitcher({
                   <span className="truncate font-medium">
                     {activeOrganization.name}
                   </span>
-                  <span className="truncate text-muted-foreground text-xs">
+                  <span className="text-muted-foreground truncate text-xs">
                     Notra Console
                   </span>
                 </div>
@@ -253,7 +254,7 @@ function UserMenu({ isAdmin, user }: UserMenuProps) {
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-medium">{user.name}</span>
-                    <span className="truncate text-muted-foreground text-xs">
+                    <span className="text-muted-foreground truncate text-xs">
                       {user.email}
                     </span>
                   </div>
@@ -269,7 +270,7 @@ function UserMenu({ isAdmin, user }: UserMenuProps) {
             >
               <DropdownMenuGroup>
                 <DropdownMenuLabel>
-                  <span className="block truncate text-foreground">
+                  <span className="text-foreground block truncate">
                     {user.name}
                   </span>
                   <span className="block truncate font-normal">
@@ -358,14 +359,14 @@ export function ConsoleShell({
               <div className="flex min-w-0 flex-1 items-center gap-1 lg:gap-2">
                 <SidebarTrigger className="-ml-1" />
                 <Separator
-                  className="mx-2 border-border border-l border-dashed bg-transparent"
+                  className="border-border mx-2 border-l border-dashed bg-transparent"
                   orientation="vertical"
                 />
-                <span className="font-medium text-sm">Notra Console</span>
+                <span className="text-sm font-medium">Notra Console</span>
               </div>
             </div>
           </header>
-          <div className="@container/main scrollbar-stable flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain">
+          <div className="scrollbar-stable @container/main flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain">
             {children}
           </div>
         </SidebarInset>

@@ -3,15 +3,15 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
   "scripts": {
     "check-types": "tsc --noEmit",
     "tinybird:dev": "tinybird dev",
     "tinybird:build": "tinybird build",
     "tinybird:deploy": "tinybird deploy",
     "tinybird:push": "tinybird build"
-  },
-  "exports": {
-    "./*": "./src/*.ts"
   },
   "dependencies": {
     "@tinybirdco/sdk": "^0.0.82",

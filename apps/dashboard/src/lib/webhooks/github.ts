@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+
 import {
   GITHUB_PULL_REQUEST_EVENT_TYPE,
   GITHUB_PULL_REQUEST_MERGED_ACTION,
@@ -8,6 +9,7 @@ import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
 import { and, eq, sql } from "drizzle-orm";
+
 import { GITHUB_PULL_REQUEST_CLOSED_ACTION } from "@/constants/github";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import { dispatchIrisGithubSignal } from "@/lib/iris/record-github-signal";

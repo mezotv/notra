@@ -1,4 +1,5 @@
 import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
+
 import { GEO_JOURNEY_DEEP_CRAWL_PAGES } from "@/constants/geo";
 import type { GeoJourney, GeoJourneyEvent } from "@/types/geo";
 

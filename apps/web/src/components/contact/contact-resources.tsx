@@ -1,4 +1,5 @@
 import Link from "next/link";
+
 import { CONTACT_RESOURCE_LINKS } from "@/constants/contact";
 import type { ContactResourceIconId } from "@/types/contact";
 
@@ -148,14 +149,14 @@ export function ContactResources() {
           rel={resource.external ? "noopener noreferrer" : undefined}
           target={resource.external ? "_blank" : undefined}
         >
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-[0.625rem] bg-[#F1ECFB] dark:bg-primary/15">
+          <span className="dark:bg-primary/15 flex size-9 shrink-0 items-center justify-center rounded-[0.625rem] bg-[#F1ECFB]">
             <ResourceGlyph icon={resource.icon} />
           </span>
           <span className="flex grow flex-col gap-px">
-            <span className="font-display font-medium text-[#1E1E1E] text-[0.9375rem]/5 tracking-[-0.01em] dark:text-white">
+            <span className="font-display text-[0.9375rem]/5 font-medium tracking-[-0.01em] text-[#1E1E1E] dark:text-white">
               {resource.label}
             </span>
-            <span className="font-sans text-[#1E1E1EA6] text-[0.8125rem]/4.5 dark:text-white/60">
+            <span className="font-sans text-[0.8125rem]/4.5 text-[#1E1E1EA6] dark:text-white/60">
               {resource.description}
             </span>
           </span>

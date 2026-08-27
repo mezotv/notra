@@ -86,6 +86,7 @@ import {
   useReducer,
 } from "react";
 import { toast } from "sonner";
+
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { ApiKeyPermissionSelector } from "@/components/api-keys/permission-selector";
 import { TrackingTokenCard } from "@/components/api-keys/tracking-token-card";
@@ -344,7 +345,7 @@ function ApiKeysTableContent({
     return (
       <TableRow>
         <TableCell
-          className="h-24 text-center text-muted-foreground"
+          className="text-muted-foreground h-24 text-center"
           colSpan={6}
         >
           No API keys yet
@@ -356,7 +357,7 @@ function ApiKeysTableContent({
   return keys.map((apiKey) => (
     <TableRow key={apiKey.keyId}>
       <TableCell className="font-medium">{apiKey.name}</TableCell>
-      <TableCell className="font-mono text-muted-foreground text-sm">
+      <TableCell className="text-muted-foreground font-mono text-sm">
         {apiKey.start}…
       </TableCell>
       <TableCell>{formatPermissionLabel(apiKey)}</TableCell>
@@ -405,7 +406,7 @@ function ApiKeysHeader({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="flex items-center justify-between">
       <div className="space-y-1">
-        <h1 className="font-bold text-3xl tracking-tight">API Keys</h1>
+        <h1 className="text-3xl font-bold tracking-tight">API Keys</h1>
         <p className="text-muted-foreground">
           Manage API keys for programmatic access to your organization
         </p>
@@ -461,7 +462,7 @@ function ApiKeysTable({
   onSort: () => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
+    <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
       <Table>
         <TableHeader>
           <TableRow>
@@ -499,7 +500,7 @@ function ApiKeyQuickStart({ onSelect }: { onSelect: (id: string) => void }) {
   return (
     <div className="space-y-3">
       <div className="space-y-1">
-        <h2 className="font-semibold text-lg tracking-tight">Quick start</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Quick start</h2>
         <p className="text-muted-foreground text-sm">
           Spin up a key preconfigured for how you plan to use the API.
         </p>
@@ -547,7 +548,7 @@ function CreateApiKeyDialog({
                 <HugeiconsIcon icon={InformationCircleIcon} />
                 <AlertDescription className="text-blue-700 dark:text-blue-300">
                   You can only see this key once.{" "}
-                  <span className="font-medium text-foreground">
+                  <span className="text-foreground font-medium">
                     Store it safely.
                   </span>
                 </AlertDescription>
@@ -575,7 +576,7 @@ function CreateApiKeyDialog({
               <div className="space-y-4 py-4">
                 <Field>
                   <FieldLabel>
-                    Name<span className="-ml-1 text-destructive">*</span>
+                    Name<span className="text-destructive -ml-1">*</span>
                   </FieldLabel>
                   <Input
                     disabled={isPending}
@@ -593,7 +594,7 @@ function CreateApiKeyDialog({
                 <Field>
                   <FieldLabel>
                     Permission
-                    <span className="-ml-1 text-destructive">*</span>
+                    <span className="text-destructive -ml-1">*</span>
                   </FieldLabel>
                   <ApiKeyPermissionSelector
                     disabled={isPending}
@@ -605,7 +606,7 @@ function CreateApiKeyDialog({
                 <Field>
                   <FieldLabel>
                     Expiration
-                    <span className="-ml-1 text-muted-foreground text-xs">
+                    <span className="text-muted-foreground -ml-1 text-xs">
                       (Optional)
                     </span>
                   </FieldLabel>
@@ -676,7 +677,7 @@ function EditApiKeyDialog({
               {(field) => (
                 <Field>
                   <FieldLabel>
-                    Name<span className="-ml-1 text-destructive">*</span>
+                    Name<span className="text-destructive -ml-1">*</span>
                   </FieldLabel>
                   <Input
                     autoFocus
@@ -705,7 +706,7 @@ function EditApiKeyDialog({
                 <Field>
                   <FieldLabel>
                     Permission
-                    <span className="-ml-1 text-destructive">*</span>
+                    <span className="text-destructive -ml-1">*</span>
                   </FieldLabel>
                   <ApiKeyPermissionSelector
                     disabled={isPending}

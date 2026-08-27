@@ -1,8 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Noto_Sans } from "next/font/google";
+
 import "@/styles/globals.css";
 
 import { Providers } from "@/utils/providers";
+
 import { SITE_CONFIG } from "../utils/site";
 
 export const instant = false;

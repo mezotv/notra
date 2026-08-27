@@ -11,6 +11,7 @@ import {
 import { LazyMotion, m, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
+
 import { Calendar } from "@/components/calendar";
 import { GEO_FILTER_TRIGGER_CLASS, GEO_RANGE_PRESETS } from "@/constants/geo";
 import { useAnimatedSize } from "@/lib/hooks/use-animated-size";
@@ -79,7 +80,7 @@ export function GeoRangePicker({ control }: GeoRangePickerProps) {
             }
           >
             <div className="flex w-max" ref={contentRef}>
-              <div className="flex min-w-44 flex-col gap-1 border-border border-r p-2">
+              <div className="border-border flex min-w-44 flex-col gap-1 border-r p-2">
                 {GEO_RANGE_PRESETS.map((preset) => (
                   <Button
                     className="justify-start"

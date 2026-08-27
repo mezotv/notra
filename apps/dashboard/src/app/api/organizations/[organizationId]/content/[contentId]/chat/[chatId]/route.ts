@@ -5,6 +5,7 @@ import { posts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import type { RouteContext } from "@/types/api/routes";
 

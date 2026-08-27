@@ -5,6 +5,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
 import { CountryFlag } from "@/components/geo/twemoji";
@@ -31,7 +32,7 @@ function ProviderTooltip({ entry }: { entry: GeoTrafficLogEntry }) {
       <div className="flex flex-col gap-0.5">
         <p className="font-medium">{detail.title}</p>
         {detail.raw ? (
-          <p className="font-mono text-[0.6875rem] text-muted-foreground">
+          <p className="text-muted-foreground font-mono text-[0.6875rem]">
             {detail.raw}
           </p>
         ) : null}
@@ -78,7 +79,7 @@ function MarkdownFlag({ wantsMarkdown }: { wantsMarkdown: boolean }) {
     <Tooltip>
       <TooltipTrigger
         render={
-          <span className="cursor-default rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] text-muted-foreground" />
+          <span className="bg-muted text-muted-foreground cursor-default rounded-sm px-1.5 py-0.5 font-mono text-[0.6875rem]" />
         }
       >
         MD
@@ -98,7 +99,7 @@ const CITATIONS_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
     sortable: true,
     sortValue: (entry) => entry.capturedAt,
     cell: (entry) => (
-      <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+      <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
         {formatCitationTimestamp(entry.capturedAt)}
       </span>
     ),
@@ -111,7 +112,7 @@ const CITATIONS_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
     sortValue: (entry) =>
       formatCitationProvider(entry.agent, entry.source, entry.visitorType),
     cell: (entry) => (
-      <span className="font-medium text-sm">
+      <span className="text-sm font-medium">
         <ProviderCell entry={entry} />
       </span>
     ),

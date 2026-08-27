@@ -3,6 +3,7 @@ import { db } from "@notra/db/drizzle";
 import { geoSettings } from "@notra/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { flattenError } from "zod";
+
 import { syncGeoScanSchedule } from "@/lib/geo/schedule";
 import { verifyQstashSignature } from "@/lib/workflows/qstash-verify";
 import { startGeoScanRun } from "@/lib/workflows/start";

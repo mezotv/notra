@@ -3,6 +3,7 @@ import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 import { defineTool } from "eve/tools";
+
 import { getBrandIdentityInputSchema } from "../schemas/assistant-tools";
 import { requireOrganizationId } from "../utils/organization";
 

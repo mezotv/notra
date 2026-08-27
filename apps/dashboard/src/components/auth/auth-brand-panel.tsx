@@ -3,6 +3,7 @@
 import { useIsMobile } from "@notra/ui/hooks/use-mobile";
 import { Dithering } from "@paper-design/shaders-react";
 import { useReducedMotion } from "motion/react";
+
 import { TestimonialCarousel } from "@/components/auth/testimonial-carousel";
 
 export function AuthBrandPanel() {

@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
+
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
 import { Table, type TableColumn } from "@/components/motion/table";
@@ -140,7 +141,7 @@ export function AccountDetailView({
         width: "7.5rem",
         sortable: true,
         cell: (row) => (
-          <span className="whitespace-nowrap font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground font-mono text-[0.6875rem] whitespace-nowrap tabular-nums">
             {formatDayLabel(row.postedAt.slice(0, 10))}
           </span>
         ),
@@ -178,7 +179,7 @@ export function AccountDetailView({
         align: "right",
         sortable: true,
         cell: (row) => (
-          <span className="font-mono text-muted-foreground text-sm tabular-nums">
+          <span className="text-muted-foreground font-mono text-sm tabular-nums">
             {row.impressions === null ? "-" : formatMetric(row.impressions)}
           </span>
         ),
@@ -230,7 +231,7 @@ export function AccountDetailView({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0 leading-tight">
-            <p className="flex min-w-0 items-center gap-1.5 font-semibold text-lg">
+            <p className="flex min-w-0 items-center gap-1.5 text-lg font-semibold">
               <span className="truncate">{displayName}</span>
               <XVerificationBadge
                 className="size-4 shrink-0"
@@ -238,14 +239,14 @@ export function AccountDetailView({
                 verifiedType={identity?.verifiedType ?? null}
               />
             </p>
-            <span className="flex items-center gap-1.5 font-mono text-muted-foreground text-xs">
+            <span className="text-muted-foreground flex items-center gap-1.5 font-mono text-xs">
               <HugeiconsIcon icon={providerIcon} size={12} />
               <span className="truncate">@{username}</span>
             </span>
           </div>
         </div>
         <div className="text-right leading-tight">
-          <p className="font-semibold text-lg tabular-nums">
+          <p className="text-lg font-semibold tabular-nums">
             {formatMetric(identity?.followersCount ?? null)}
           </p>
           <p className="text-muted-foreground text-xs">Followers</p>
@@ -254,7 +255,7 @@ export function AccountDetailView({
 
       {isOverviewLoading && <Skeleton className="h-14 w-full rounded-2xl" />}
       {!isOverviewLoading && metrics.length > 0 && (
-        <dl className="grid grid-cols-4 gap-px overflow-hidden rounded-2xl bg-border sm:grid-cols-8">
+        <dl className="bg-border grid grid-cols-4 gap-px overflow-hidden rounded-2xl sm:grid-cols-8">
           {metrics.map((metric) => (
             <div className="bg-muted/40 px-2 py-1.5" key={metric.label}>
               <dt className="text-muted-foreground text-xs capitalize">
@@ -267,7 +268,7 @@ export function AccountDetailView({
       )}
 
       <div className="space-y-2">
-        <h2 className="font-semibold text-base">Engagement over time</h2>
+        <h2 className="text-base font-semibold">Engagement over time</h2>
         {isEngagementLoading && <Skeleton className="h-52 w-full" />}
         {!isEngagementLoading && points.length >= ACCOUNT_DETAIL_MIN_POINTS && (
           <EChartsAreaChart
@@ -298,7 +299,7 @@ export function AccountDetailView({
 
       <div className="space-y-2">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-semibold text-base">Recent posts</h2>
+          <h2 className="text-base font-semibold">Recent posts</h2>
           <span className="text-muted-foreground text-xs tabular-nums">
             {posts.length.toLocaleString()} posts
           </span>

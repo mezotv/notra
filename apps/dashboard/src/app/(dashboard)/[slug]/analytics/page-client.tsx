@@ -2,6 +2,7 @@
 
 import { useReducedMotion } from "motion/react";
 import { useEffect, useMemo, useState } from "react";
+
 import { AccountSeriesChartCard } from "@/components/analytics/account-series-chart-card";
 import { useAnalyticsAccounts } from "@/components/analytics/analytics-context";
 import { FollowersCard } from "@/components/analytics/followers-card";

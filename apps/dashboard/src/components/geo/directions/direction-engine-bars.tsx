@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoBar } from "@/components/geo/geo-bar";
 import { Table, type TableColumn } from "@/components/motion/table";
@@ -12,7 +13,6 @@ import type {
   GeoDirectionEngineRow,
 } from "@/types/geo-directions";
 import { formatMentionRate } from "@/utils/geo-charts";
-
 import { tableHeightFor } from "@/utils/table";
 
 const MAX_RATE = 1;
@@ -26,7 +26,7 @@ export function DirectionEngineBars({ className }: DirectionBlockProps) {
         width: "1fr",
         sortable: true,
         cell: (row) => (
-          <span className="flex min-w-0 items-center gap-2 font-medium text-sm">
+          <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
             <EngineIcon engine={row.engine} />
             <span className="truncate">{row.label}</span>
           </span>
@@ -56,7 +56,7 @@ export function DirectionEngineBars({ className }: DirectionBlockProps) {
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
+      <div className="text-muted-foreground flex items-center justify-between px-1 text-xs">
         <span>{GEO_DIRECTIONS_ENGINES.length.toLocaleString()} engines</span>
       </div>
       <Table

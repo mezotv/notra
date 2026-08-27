@@ -3,6 +3,7 @@ import {
   SIDEBAR_COOKIE_NAME,
 } from "@notra/ui/lib/sidebar-state";
 import { cookies } from "next/headers";
+
 import { DashboardClientWrapper } from "@/components/dashboard/dashboard-client-wrapper";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 

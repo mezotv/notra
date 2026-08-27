@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+
 import { STORE_CACHE_CONTROL_HEADER } from "@/constants/store";
 import { getPublicStoreIntegration } from "@/lib/store/public-integrations";
 import { storeIntegrationIdParamSchema } from "@/schemas/store";

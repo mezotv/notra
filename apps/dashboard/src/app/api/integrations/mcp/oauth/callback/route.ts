@@ -13,6 +13,7 @@ import { buildCallbackUrl } from "@notra/utils/callback-url";
 import { createMcpOAuthPopupCompletionResponse } from "@notra/utils/oauth-popup";
 import { Effect } from "effect";
 import type { NextRequest } from "next/server";
+
 import { getServerSession } from "@/lib/auth/session";
 import { mcpOAuthCallbackQuerySchema } from "@/schemas/integrations";
 

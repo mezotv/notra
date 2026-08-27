@@ -3,6 +3,7 @@ import type {
   SlackInboundMessageContext,
   SlackMessage,
 } from "eve/channels/slack";
+
 import { SlackApiError } from "../schemas/slack";
 
 function isPublicChannelInfo(channel: unknown): boolean {

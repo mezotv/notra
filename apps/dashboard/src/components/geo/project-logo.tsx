@@ -3,6 +3,7 @@
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
 import { useMemo, useState } from "react";
+
 import { GEO_LOGO_SIZE_PX } from "@/constants/geo";
 import { projectLogoSources } from "@/lib/geo/logo";
 import type { GeoProjectLogoProps } from "@/types/geo";

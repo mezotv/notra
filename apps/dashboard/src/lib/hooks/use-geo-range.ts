@@ -2,6 +2,7 @@
 
 import { parseAsString, useQueryState } from "nuqs";
 import { useMemo } from "react";
+
 import { GEO_DEFAULT_RANGE } from "@/constants/geo";
 import type {
   GeoDateRange,

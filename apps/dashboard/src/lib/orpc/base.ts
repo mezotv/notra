@@ -1,5 +1,7 @@
 import { os } from "@orpc/server";
+
 import { assertAuthenticated } from "@/lib/auth/organization";
+
 import type { ORPCContext } from "./context";
 
 export const baseProcedure = os.$context<ORPCContext>();

@@ -51,11 +51,11 @@ export const InviteUserEmail = ({
               />
             </Section>
 
-            <Heading className="my-6 text-center font-medium text-2xl text-black">
+            <Heading className="my-6 text-center text-2xl font-medium text-black">
               Join <strong>{organizationName}</strong> on Notra
             </Heading>
 
-            <Text className="text-center text-[#737373] text-base leading-relaxed">
+            <Text className="text-center text-base leading-relaxed text-[#737373]">
               <strong>{invitedByUsername}</strong> has invited you to join the{" "}
               <strong>{organizationName}</strong> organization on Notra.
             </Text>
@@ -64,15 +64,15 @@ export const InviteUserEmail = ({
               <EmailButton href={inviteLink}>Join Organization</EmailButton>
             </Section>
 
-            <Text className="text-[14px] text-black leading-[24px]">
+            <Text className="text-[14px] leading-[24px] text-black">
               or copy and paste this URL into your browser:{" "}
               <Link className="text-blue-600 no-underline" href={inviteLink}>
                 {inviteLink}
               </Link>
             </Text>
 
-            <Hr className="mx-0 mt-[26px] w-full border border-[#eaeaea] border-solid" />
-            <Text className="text-[#666666] text-[12px] leading-[24px]">
+            <Hr className="mx-0 mt-[26px] w-full border border-solid border-[#eaeaea]" />
+            <Text className="text-[12px] leading-[24px] text-[#666666]">
               This invitation was intended for{" "}
               <span className="text-black">{inviteeEmail}</span>. If you weren't
               expecting this, you can safely ignore this email. Need help? Reach

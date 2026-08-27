@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+
 import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoBar } from "@/components/geo/geo-bar";
@@ -39,17 +40,17 @@ function FamilyRate({
   return (
     <button
       aria-label={`Open ${name} mention breakdown`}
-      className="space-y-1.5 rounded-lg p-1.5 text-left transition-colors hover:bg-muted/60"
+      className="hover:bg-muted/60 space-y-1.5 rounded-lg p-1.5 text-left transition-colors"
       onClick={onOpen}
       type="button"
     >
       <div className="flex items-baseline justify-between gap-2">
-        <span className="inline-flex min-w-0 items-center gap-2 font-medium text-sm">
+        <span className="inline-flex min-w-0 items-center gap-2 text-sm font-medium">
           <EngineIcon engine={family.family} />
           <span className="truncate">{name}</span>
         </span>
         {position === null ? null : (
-          <span className="shrink-0 text-muted-foreground text-xs tabular-nums">
+          <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
             avg position {position}
           </span>
         )}

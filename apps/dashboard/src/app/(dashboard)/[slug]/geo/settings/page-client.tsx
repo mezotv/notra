@@ -7,6 +7,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { useGeoModelCatalog, useGeoSettings } from "@/lib/hooks/use-geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import type { GeoPageClientProps } from "@/types/geo";
+
 import { GeoSettingsSkeleton } from "./skeleton";
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {

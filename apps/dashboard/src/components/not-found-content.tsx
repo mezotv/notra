@@ -3,6 +3,7 @@
 import { cn } from "@notra/ui/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import { buttonVariants } from "@/components/button";
 import type { NotFoundContentProps } from "@/types/components/not-found";
 
@@ -17,11 +18,11 @@ export function NotFoundContent({ className }: NotFoundContentProps) {
       )}
     >
       <div className="text-center">
-        <p className="font-medium text-muted-foreground text-sm">404</p>
-        <h1 className="mt-2 font-bold text-3xl text-foreground tracking-tight sm:text-4xl">
+        <p className="text-muted-foreground text-sm font-medium">404</p>
+        <h1 className="text-foreground mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
           Page not found
         </h1>
-        <p className="mx-auto mt-4 max-w-md text-base text-muted-foreground">
+        <p className="text-muted-foreground mx-auto mt-4 max-w-md text-base">
           Sorry, we couldn't find the page you're looking for. It might have
           been moved or deleted.
         </p>

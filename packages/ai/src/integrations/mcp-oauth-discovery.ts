@@ -3,6 +3,7 @@ import {
   discoverOAuthProtectedResourceMetadata,
 } from "@modelcontextprotocol/sdk/client/auth.js";
 import { assertPublicHttpUrlResolution } from "@notra/utils/url";
+
 import type {
   McpOAuthServerConfiguration,
   McpOAuthStoredAuthorizationServer,

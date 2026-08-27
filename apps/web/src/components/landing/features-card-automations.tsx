@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import {
   FEATURES_GITHUB_CONNECT,
   FEATURES_LINEAR_CONNECT,
@@ -21,26 +22,26 @@ function ConnectRow({
   return (
     <div className={`absolute h-32.25 rounded-lg ${wrapperClassName}`}>
       <div
-        className={`flex h-full flex-col overflow-clip rounded-lg border-t border-t-[#E5E5E5CC] border-r border-r-[#E5E5E5CC] border-b border-b-[#E5E5E566] border-l border-l-[#E5E5E5CC] bg-[#F5F5F5] ${shadowClassName}`}
+        className={`flex h-full flex-col overflow-clip rounded-lg border-t border-r border-b border-l border-t-[#E5E5E5CC] border-r-[#E5E5E5CC] border-b-[#E5E5E566] border-l-[#E5E5E5CC] bg-[#F5F5F5] ${shadowClassName}`}
       >
         <div className="flex items-start justify-between gap-4 px-4 py-2.5">
           <div className="flex min-w-0 grow basis-[0%] items-center gap-2">
             <div className="flex size-8 shrink-0 items-center justify-center">
               {icon}
             </div>
-            <div className="line-clamp-1 min-w-0 grow basis-[0%] font-medium font-sans text-[#171717] text-[1.125rem] leading-[155.556%]">
+            <div className="line-clamp-1 min-w-0 grow basis-[0%] font-sans text-[1.125rem] leading-[155.556%] font-medium text-[#171717]">
               {connection.name}
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <div className="flex items-center gap-2">
               <div className="flex size-5 shrink-0 items-center justify-center gap-1 overflow-clip rounded-4xl border border-[#00000000] bg-[#8B5CF6] px-2 py-0.5">
-                <div className="w-max shrink-0 font-medium font-sans text-[#FEFEFE] text-[0.75rem] leading-[133.333%]">
+                <div className="w-max shrink-0 font-sans text-[0.75rem] leading-[133.333%] font-medium text-[#FEFEFE]">
                   1
                 </div>
               </div>
               <div className="flex h-7 shrink-0 items-center justify-center gap-1 rounded-md border border-[#E5E5E5] bg-white px-2.5">
-                <div className="w-max shrink-0 text-center font-medium font-sans text-[#171717] text-[0.8rem] leading-[142.857%]">
+                <div className="w-max shrink-0 text-center font-sans text-[0.8rem] leading-[142.857%] font-medium text-[#171717]">
                   Connect
                 </div>
               </div>
@@ -48,7 +49,7 @@ function ConnectRow({
           </div>
         </div>
         <div className="grow basis-[0%] rounded-t-lg border-t border-t-[#E5E5E599] bg-white px-4 py-3">
-          <div className="line-clamp-2 font-sans text-[#737373] text-[0.875rem] leading-[142.857%]">
+          <div className="line-clamp-2 font-sans text-[0.875rem] leading-[142.857%] text-[#737373]">
             {connection.description}
           </div>
         </div>

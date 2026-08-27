@@ -42,6 +42,7 @@ import {
   useState,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+
 import { ChatContextConnectSuggestions } from "@/components/chat/chat-context-connect-suggestions";
 import { ChatContextOptionContent } from "@/components/chat/chat-context-option-content";
 import { ChatInputContextRow } from "@/components/chat/chat-input-context-row";
@@ -425,7 +426,7 @@ const ChatInput = ({
                               <ChatContextOptionContent option={option} />
                               {inContext ? (
                                 <HugeiconsIcon
-                                  className="ml-auto size-3.5 text-primary"
+                                  className="text-primary ml-auto size-3.5"
                                   icon={Tick02Icon}
                                 />
                               ) : null}
@@ -438,7 +439,7 @@ const ChatInput = ({
                   {organizationSlug ? (
                     <div className="border-border border-t p-1">
                       <Link
-                        className="flex items-center rounded-sm px-2 py-1.5 text-muted-foreground text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex items-center rounded-sm px-2 py-1.5 text-sm transition-colors outline-none"
                         href={`/${organizationSlug}/integrations`}
                         onClick={() => setIsContextPickerOpen(false)}
                       >
@@ -456,7 +457,7 @@ const ChatInput = ({
         </Tooltip>
         <Textarea
           aria-label="Send a message"
-          className="field-sizing-fixed block max-h-50 min-h-7 w-full min-w-0 flex-1 resize-none overflow-hidden whitespace-pre-wrap rounded-none border-0 bg-transparent px-1 py-1 text-foreground text-sm leading-5 caret-foreground shadow-none outline-none ring-0 focus-visible:border-transparent focus-visible:ring-0 disabled:cursor-not-allowed disabled:bg-transparent disabled:opacity-50 dark:bg-transparent dark:disabled:bg-transparent"
+          className="text-foreground caret-foreground block field-sizing-fixed max-h-50 min-h-7 w-full min-w-0 flex-1 resize-none overflow-hidden rounded-none border-0 bg-transparent px-1 py-1 text-sm leading-5 whitespace-pre-wrap shadow-none ring-0 outline-none focus-visible:border-transparent focus-visible:ring-0 disabled:cursor-not-allowed disabled:bg-transparent disabled:opacity-50 dark:bg-transparent dark:disabled:bg-transparent"
           disabled={isInputLocked}
           onBlur={() => setIsFocused(false)}
           onChange={(event) => {

@@ -1,6 +1,8 @@
 import { flattenError } from "zod";
+
 import { geoOrganizationInputSchema } from "@/schemas/geo";
 import type { GeoScanPayload, GeoScanResult } from "@/types/geo";
+
 import { runGeoScanStep } from "./steps/geo-scan-steps";
 
 export async function geoScanWorkflow(

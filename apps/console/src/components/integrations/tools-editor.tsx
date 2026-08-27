@@ -13,6 +13,7 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { ToolChatPreview } from "@/components/integrations/tool-chat-preview";
 import {
@@ -117,7 +118,7 @@ export function ToolsEditor({
       </div>
 
       {tools.length === 0 ? (
-        <p className="rounded-lg border border-dashed p-4 text-muted-foreground text-sm">
+        <p className="text-muted-foreground rounded-lg border border-dashed p-4 text-sm">
           {getEmptyStateMessage({ oauth, scanning })}
         </p>
       ) : null}
@@ -134,11 +135,11 @@ export function ToolsEditor({
           >
             <div className="flex min-w-0 items-start justify-between gap-2">
               <div className="grid min-w-0 gap-1">
-                <code className="w-fit max-w-full truncate rounded-md bg-muted px-2 py-1 font-mono text-xs">
+                <code className="bg-muted w-fit max-w-full truncate rounded-md px-2 py-1 font-mono text-xs">
                   {tool.serverToolName}
                 </code>
                 {tool.description ? (
-                  <p className="line-clamp-2 break-words text-muted-foreground text-xs">
+                  <p className="text-muted-foreground line-clamp-2 text-xs break-words">
                     {tool.description}
                   </p>
                 ) : null}

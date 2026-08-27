@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
 import { CurationClient } from "@/components/review/curation-client";
 import { ReviewQueueClient } from "@/components/review/review-queue-client";
 import { validateOrganizationAccess } from "@/lib/auth/actions";

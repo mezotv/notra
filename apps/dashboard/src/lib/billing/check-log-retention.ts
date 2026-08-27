@@ -1,5 +1,6 @@
 import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
+
 import type { LogRetentionDays } from "@/types/webhooks/webhooks";
 
 export async function checkLogRetention(

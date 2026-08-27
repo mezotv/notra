@@ -1,4 +1,5 @@
 import type { Plan } from "@notra/ai/types/router";
+
 import { autumn } from "./autumn";
 import { PAID_OR_LEGACY_PLAN_IDS } from "./features";
 

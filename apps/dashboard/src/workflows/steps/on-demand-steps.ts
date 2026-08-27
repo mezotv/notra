@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { githubIntegrations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
+
 import { completeActiveGeneration } from "@/lib/generations/tracking";
 import { resolveBrandVoiceForManualGeneration } from "@/lib/workflows/on-demand/helpers";
 import {

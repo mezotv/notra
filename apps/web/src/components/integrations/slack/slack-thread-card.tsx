@@ -1,4 +1,5 @@
 import Image from "next/image";
+
 import {
   SLACK_THREAD_CHANNEL,
   SLACK_THREAD_MESSAGES,
@@ -16,10 +17,10 @@ export function SlackThreadCard() {
           src="/logos/slack.svg"
           width={16}
         />
-        <span className="font-sans font-semibold text-[#1264A3] text-sm leading-[1.125rem] dark:text-[#7CC1E8]">
+        <span className="font-sans text-sm leading-[1.125rem] font-semibold text-[#1264A3] dark:text-[#7CC1E8]">
           {SLACK_THREAD_CHANNEL}
         </span>
-        <span className="font-sans text-[#1E1E1E66] text-xs leading-4 dark:text-white/40">
+        <span className="font-sans text-xs leading-4 text-[#1E1E1E66] dark:text-white/40">
           {SLACK_THREAD_REPLIES_LABEL}
         </span>
       </div>
@@ -31,10 +32,10 @@ export function SlackThreadCard() {
               style={{ backgroundImage: threadMessage.avatarGradient }}
             />
             <div className="flex flex-col gap-1">
-              <span className="font-sans font-semibold text-[#1E1E1E] text-[0.8125rem] leading-4 dark:text-white">
+              <span className="font-sans text-[0.8125rem] leading-4 font-semibold text-[#1E1E1E] dark:text-white">
                 {threadMessage.author}
               </span>
-              <span className="font-sans text-[#1E1E1EBF] text-[0.8125rem] leading-[1.125rem] dark:text-white/75">
+              <span className="font-sans text-[0.8125rem] leading-[1.125rem] text-[#1E1E1EBF] dark:text-white/75">
                 {threadMessage.message}
               </span>
             </div>

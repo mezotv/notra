@@ -1,5 +1,7 @@
 import { createHmac } from "node:crypto";
+
 import { getJourneyId } from "@usenotra/geo/markdown";
+
 import {
   GEO_JOURNEY_BROWSE_BUCKET_SECONDS,
   GEO_JOURNEY_BROWSE_CATEGORY,

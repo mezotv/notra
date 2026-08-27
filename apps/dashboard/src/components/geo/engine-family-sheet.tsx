@@ -8,6 +8,7 @@ import {
   SheetTitle,
 } from "@notra/ui/components/ui/sheet";
 import { useEffect, useMemo, useState } from "react";
+
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoModeIcon } from "@/components/geo/geo-mode-icon";
@@ -64,7 +65,7 @@ function ModeLegend({
 }) {
   return (
     <div className="min-w-0">
-      <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+      <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
         <GeoModeIcon mode={mode} />
         {label}
       </p>
@@ -196,19 +197,19 @@ function FamilyStats({ family }: { family: GeoEngineFamily }) {
     <dl className="grid grid-cols-3 gap-3 border-b px-4 py-3">
       <div className="space-y-0.5">
         <dt className="text-muted-foreground text-xs">Mention rate</dt>
-        <dd className="font-medium text-base tabular-nums tracking-tight">
+        <dd className="text-base font-medium tracking-tight tabular-nums">
           {totals ? formatMentionRate(totals.rate) : "—"}
         </dd>
       </div>
       <div className="space-y-0.5">
         <dt className="text-muted-foreground text-xs">Mentions</dt>
-        <dd className="font-medium text-base tabular-nums tracking-tight">
+        <dd className="text-base font-medium tracking-tight tabular-nums">
           {totals ? `${totals.mentions}/${totals.checks}` : "—"}
         </dd>
       </div>
       <div className="space-y-0.5">
         <dt className="text-muted-foreground text-xs">Avg position</dt>
-        <dd className="font-medium text-base tabular-nums tracking-tight">
+        <dd className="text-base font-medium tracking-tight tabular-nums">
           {position === null ? "—" : `#${position}`}
         </dd>
       </div>
@@ -239,7 +240,7 @@ function PromptHits({
   return (
     <section className="space-y-2">
       <div className="flex items-baseline justify-between gap-2 px-0.5">
-        <h3 className="font-medium text-sm">Prompts</h3>
+        <h3 className="text-sm font-medium">Prompts</h3>
         <p className="text-muted-foreground text-xs tabular-nums">
           {mentioned.toLocaleString()} mentioned · {missed.toLocaleString()}{" "}
           missed
@@ -264,7 +265,7 @@ function PromptHitRow({
   return (
     <li>
       <button
-        className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-muted/60"
+        className="hover:bg-muted/60 flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors"
         onClick={() => onOpen(hit.promptId)}
         type="button"
       >
@@ -330,7 +331,7 @@ export function EngineFamilySheet({
         <SheetContent className="gap-0 overflow-hidden rounded-xl data-[side=right]:inset-y-2 data-[side=right]:right-2 data-[side=right]:h-auto data-[side=right]:border data-[side=right]:sm:max-w-2xl">
           {family ? (
             <>
-              <SheetHeader className="border-b bg-muted/50 pr-14">
+              <SheetHeader className="bg-muted/50 border-b pr-14">
                 <SheetTitle className="flex items-center gap-2">
                   <EngineIcon className="size-5" engine={family.family} />
                   {name}

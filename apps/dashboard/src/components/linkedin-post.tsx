@@ -29,6 +29,7 @@ import {
 import Image from "next/image";
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
+
 import { Button } from "@/components/button";
 import { SocialAccountSelector } from "@/components/content/social-account-selector";
 import { LINKEDIN_TRUNCATION_LIMIT } from "@/constants/linkedin";
@@ -51,7 +52,7 @@ const reactionIcons: Record<string, typeof ThumbsUpIcon> = {
 function ReactionDot({ type }: { type: string }) {
   return (
     <span
-      className="flex size-4 items-center justify-center rounded-full text-white ring-1 ring-background"
+      className="ring-background flex size-4 items-center justify-center rounded-full text-white ring-1"
       style={{ backgroundColor: reactionColors[type] ?? reactionColors.like }}
     >
       <HugeiconsIcon
@@ -105,7 +106,7 @@ function formatContentWithHashtagsAndLinks(text: string): React.ReactNode[] {
     if (part.startsWith("#")) {
       return (
         <span
-          className="cursor-pointer text-blue-600 hover:underline hover:decoration-foreground hover:underline-offset-2"
+          className="hover:decoration-foreground cursor-pointer text-blue-600 hover:underline hover:underline-offset-2"
           key={index}
         >
           {part}
@@ -118,7 +119,7 @@ function formatContentWithHashtagsAndLinks(text: string): React.ReactNode[] {
         <Tooltip key={index}>
           <TooltipTrigger
             render={
-              <span className="cursor-pointer text-blue-600 hover:underline hover:decoration-foreground hover:underline-offset-2" />
+              <span className="hover:decoration-foreground cursor-pointer text-blue-600 hover:underline hover:underline-offset-2" />
             }
           >
             {mockUrl}
@@ -220,7 +221,7 @@ function PostContent({
       </span>
       {isCollapsed && (
         <button
-          className="ml-2 cursor-pointer font-medium text-muted-foreground hover:text-foreground hover:underline"
+          className="text-muted-foreground hover:text-foreground ml-2 cursor-pointer font-medium hover:underline"
           onClick={() => setExpanded(true)}
           type="button"
         >
@@ -263,7 +264,7 @@ function LinkedInPost({
   const [localValue, setLocalValue] = useState(() => content ?? "");
 
   const authorName = (
-    <span className="truncate font-semibold text-sm leading-tight">
+    <span className="truncate text-sm leading-tight font-semibold">
       {author.name}
     </span>
   );
@@ -301,21 +302,21 @@ function LinkedInPost({
                 <>
                   {authorName}
                   <HugeiconsIcon
-                    className="size-3.5 shrink-0 text-muted-foreground"
+                    className="text-muted-foreground size-3.5 shrink-0"
                     icon={ArrowDown01Icon}
                   />
                 </>
               }
             />
           ) : (
-            <p className="font-semibold text-sm leading-tight">{author.name}</p>
+            <p className="text-sm leading-tight font-semibold">{author.name}</p>
           )}
           {author.headline && (
-            <p className="truncate text-muted-foreground text-xs leading-tight">
+            <p className="text-muted-foreground truncate text-xs leading-tight">
               {author.headline}
             </p>
           )}
-          <div className="flex items-center gap-1 text-muted-foreground text-xs">
+          <div className="text-muted-foreground flex items-center gap-1 text-xs">
             {timestamp && <span>{timestamp}</span>}
             {timestamp && <span>·</span>}
             <HugeiconsIcon className="size-3" icon={GlobalIcon} />
@@ -352,7 +353,7 @@ function LinkedInPost({
               {"\u200b"}
             </div>
             <Textarea
-              className="field-sizing-content col-start-1 row-start-1 min-h-[6.5rem] min-w-0 resize-none overflow-hidden rounded-none border-none bg-transparent p-0 caret-foreground shadow-none focus-visible:ring-0 dark:bg-transparent"
+              className="caret-foreground col-start-1 row-start-1 field-sizing-content min-h-[6.5rem] min-w-0 resize-none overflow-hidden rounded-none border-none bg-transparent p-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
               onChange={(e) => {
                 const value = e.target.value;
                 setLocalValue(value);
@@ -386,7 +387,7 @@ function LinkedInPost({
           <div className="flex items-center gap-1">
             {reactions?.count && reactions.count > 0 && (
               <>
-                <div className="-space-x-0.5 flex">
+                <div className="flex -space-x-0.5">
                   {reactionTypes.map((type) => (
                     <ReactionDot key={type} type={type} />
                   ))}
@@ -397,7 +398,7 @@ function LinkedInPost({
               </>
             )}
           </div>
-          <div className="flex items-center gap-2 text-muted-foreground text-xs">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs">
             {(comments ?? 0) > 0 && (
               <span>{comments?.toLocaleString()} comments</span>
             )}
@@ -413,7 +414,7 @@ function LinkedInPost({
 
         <div className="flex items-center justify-around px-2">
           <Button
-            className="flex-1 gap-1.5 text-muted-foreground"
+            className="text-muted-foreground flex-1 gap-1.5"
             onClick={onLike}
             size="sm"
             variant="ghost"
@@ -422,7 +423,7 @@ function LinkedInPost({
             <span className="text-xs">Like</span>
           </Button>
           <Button
-            className="flex-1 gap-1.5 text-muted-foreground"
+            className="text-muted-foreground flex-1 gap-1.5"
             onClick={onComment}
             size="sm"
             variant="ghost"
@@ -431,7 +432,7 @@ function LinkedInPost({
             <span className="text-xs">Comment</span>
           </Button>
           <Button
-            className="flex-1 gap-1.5 text-muted-foreground"
+            className="text-muted-foreground flex-1 gap-1.5"
             onClick={onRepost}
             size="sm"
             variant="ghost"
@@ -440,7 +441,7 @@ function LinkedInPost({
             <span className="text-xs">Repost</span>
           </Button>
           <Button
-            className="flex-1 gap-1.5 text-muted-foreground"
+            className="text-muted-foreground flex-1 gap-1.5"
             onClick={onSend}
             size="sm"
             variant="ghost"

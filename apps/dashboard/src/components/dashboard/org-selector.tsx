@@ -39,11 +39,12 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCustomer } from "autumn-js/react";
+import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
+
 import { CreditBalanceMenuItem } from "@/components/billing/credit-balance-button";
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { useFeedback } from "@/components/dashboard/feedback-context";
@@ -53,6 +54,7 @@ import type { OrganizationOptionsListProps } from "@/types/dashboard";
 import { planDisplayName } from "@/utils/billing-plans";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
+
 import {
   type Organization,
   useOrganizationsContext,
@@ -144,7 +146,7 @@ function OrgSelectorTrigger({
     <DropdownMenuTrigger
       render={
         <SidebarMenuButton
-          className="min-w-0 cursor-pointer data-popup-open:bg-sidebar-accent/90 data-popup-open:text-sidebar-accent-foreground data-popup-open:ring-1 data-popup-open:ring-sidebar-border/70"
+          className="data-popup-open:bg-sidebar-accent/90 data-popup-open:text-sidebar-accent-foreground data-popup-open:ring-sidebar-border/70 min-w-0 cursor-pointer data-popup-open:ring-1"
           disabled={isSwitching}
           size="lg"
           tooltip={`Organization | ${activeOrganization?.name}`}
@@ -154,17 +156,17 @@ function OrgSelectorTrigger({
               className="rounded-lg"
               src={activeOrganization?.logo || undefined}
             />
-            <AvatarFallback className="rounded-lg bg-sidebar-accent">
+            <AvatarFallback className="bg-sidebar-accent rounded-lg">
               {activeOrganization?.name.charAt(0)}
             </AvatarFallback>
           </Avatar>
           <div className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm leading-tight transition-opacity duration-200 ease-(--sidebar-ease) group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:delay-75 group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0">
             <OverflowAwareText
-              className="font-medium text-sm"
+              className="text-sm font-medium"
               text={activeOrganization?.name}
             />
             {planBadge ? (
-              <Badge className="shrink-0 bg-purple-500/15 px-1.5 py-0 font-semibold text-[10px] text-purple-600 uppercase hover:bg-purple-500/15 dark:text-purple-400">
+              <Badge className="shrink-0 bg-purple-500/15 px-1.5 py-0 text-[10px] font-semibold text-purple-600 uppercase hover:bg-purple-500/15 dark:text-purple-400">
                 {planBadge}
               </Badge>
             ) : null}
@@ -206,7 +208,7 @@ function OrganizationOptionsList({
 }: OrganizationOptionsListProps) {
   if (!organizations.length) {
     return (
-      <div className="px-2 py-4 text-center text-muted-foreground text-sm">
+      <div className="text-muted-foreground px-2 py-4 text-center text-sm">
         No organizations found
       </div>
     );
@@ -238,7 +240,7 @@ function OrganizationOptionsList({
             />
             {isSelected ? (
               <HugeiconsIcon
-                className="ml-auto size-4 text-muted-foreground"
+                className="text-muted-foreground ml-auto size-4"
                 icon={Tick02Icon}
               />
             ) : null}

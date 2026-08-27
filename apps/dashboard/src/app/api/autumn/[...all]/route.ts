@@ -1,4 +1,5 @@
 import { autumnHandler } from "autumn-js/next";
+
 import { getAuthSession } from "@/lib/auth/server";
 
 type RouteHandler = (request: Request) => Response | Promise<Response>;

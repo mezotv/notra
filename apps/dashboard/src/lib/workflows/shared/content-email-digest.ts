@@ -1,5 +1,6 @@
 import { redis } from "@notra/ai/utils/redis";
 import { getResend } from "@notra/email/utils/resend";
+
 import { CONTENT_EMAIL_DIGEST_TTL_SECONDS } from "@/constants/workflows";
 import {
   sendAiCreditsDepletedEmail,

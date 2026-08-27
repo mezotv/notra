@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { desc, eq, type SQL, sql } from "drizzle-orm";
 import { defineTool } from "eve/tools";
+
 import { BRAND_PROFILE_FIELDS } from "../constants/brand";
 import { updateBrandProfileInputSchema } from "../schemas/onboarding-tools";
 import type { BrandProfileField } from "../types/brand";

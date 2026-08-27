@@ -8,6 +8,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import type { ComponentProps } from "react";
+
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import {
   COMPOSER_FRAME_NUDGE_PADDING,
@@ -79,7 +80,7 @@ function ComposerNudge({ title, action, children }: ComposerNudgeProps) {
       )}
     >
       {title && !hasChips ? (
-        <p className="min-w-0 flex-1 font-medium text-sm">{title}</p>
+        <p className="min-w-0 flex-1 text-sm font-medium">{title}</p>
       ) : null}
       {hasChips ? (
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
@@ -104,14 +105,14 @@ function ComposerChip({
   return (
     <span
       className={cn(
-        "inline-flex max-w-full items-center gap-1.5 rounded-md border border-foreground/25 border-dashed bg-background py-1 pr-1 pl-1.5 text-foreground text-xs",
+        "border-foreground/25 bg-background text-foreground inline-flex max-w-full items-center gap-1.5 rounded-md border border-dashed py-1 pr-1 pl-1.5 text-xs",
         pending ? "border-foreground/15 text-muted-foreground" : null
       )}
     >
       {onClick ? (
         <button
           aria-label={`Preview ${label}`}
-          className="flex min-w-0 items-center gap-1.5 rounded-sm text-left transition-colors hover:text-foreground"
+          className="hover:text-foreground flex min-w-0 items-center gap-1.5 rounded-sm text-left transition-colors"
           onClick={onClick}
           type="button"
         >
@@ -127,7 +128,7 @@ function ComposerChip({
       {onEdit ? (
         <button
           aria-label={editLabel ?? `Edit ${label}`}
-          className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-4 shrink-0 items-center justify-center rounded transition-colors"
           onClick={onEdit}
           type="button"
         >
@@ -137,7 +138,7 @@ function ComposerChip({
       {onRemove ? (
         <button
           aria-label={removeLabel ?? `Remove ${label}`}
-          className="flex size-4 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          className="text-muted-foreground hover:bg-accent hover:text-foreground flex size-4 shrink-0 items-center justify-center rounded transition-colors"
           onClick={onRemove}
           type="button"
         >

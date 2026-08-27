@@ -19,6 +19,7 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import { useMemo } from "react";
+
 import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { CountryFlag } from "@/components/geo/twemoji";
@@ -107,7 +108,7 @@ export function JourneyDetailDialog({
         </ResponsiveDialogHeader>
         <div className="space-y-4 px-4 md:px-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
+            <span className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 font-mono text-xs">
               {journey.journeyId}
             </span>
             <Button
@@ -174,7 +175,7 @@ export function JourneyDetailDialog({
                 )}
                 {events.map((event) => (
                   <TableRow key={`${event.capturedAt}-${event.path}`}>
-                    <TableCell className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+                    <TableCell className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
                       {formatGeoJourneyClock(event.capturedAt)}
                     </TableCell>
                     <TableCell

@@ -31,6 +31,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   useChatSessionMutations,
@@ -177,7 +178,7 @@ export function ChatTopbarTitle({ chatId }: ChatTopbarTitleProps) {
               <DropdownMenu onOpenChange={setIsMenuOpen} open={isMenuOpen}>
                 <DropdownMenuTrigger
                   className={cn(
-                    "flex min-w-0 max-w-[20ch] cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-foreground text-sm no-underline outline-hidden transition-colors hover:bg-accent hover:no-underline focus-visible:bg-accent sm:max-w-[40ch]",
+                    "text-foreground hover:bg-accent focus-visible:bg-accent flex max-w-[20ch] min-w-0 cursor-pointer items-center gap-1 rounded-md px-1.5 py-0.5 text-sm no-underline outline-hidden transition-colors hover:no-underline sm:max-w-[40ch]",
                     (isRenaming || isPinning) && "opacity-70"
                   )}
                   onDoubleClick={(event) => {
@@ -205,7 +206,7 @@ export function ChatTopbarTitle({ chatId }: ChatTopbarTitleProps) {
                   </span>
                   <HugeiconsIcon
                     className={cn(
-                      "size-3.5 shrink-0 text-muted-foreground transition-transform duration-200",
+                      "text-muted-foreground size-3.5 shrink-0 transition-transform duration-200",
                       isMenuOpen && "rotate-180"
                     )}
                     icon={ArrowDown01Icon}

@@ -12,6 +12,7 @@ import {
   $isRangeSelection,
 } from "lexical";
 import { type RefObject, useImperativeHandle } from "react";
+
 import { EDITOR_TRANSFORMERS } from "../markdown-transformers";
 
 export interface SelectionInfo {

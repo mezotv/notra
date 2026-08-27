@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
+
 import { getClientIp, ratelimit } from "@/utils/ratelimit";
 
 export async function GET(request: NextRequest) {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -108,7 +109,7 @@ export function EngineRateTable({
         header: "Last checked",
         width: "9.375rem",
         cell: (row) => (
-          <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
             {lastCheckedOf(row)}
           </span>
         ),

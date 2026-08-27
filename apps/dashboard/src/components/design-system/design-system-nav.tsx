@@ -20,7 +20,7 @@ export function DesignSystemNav() {
     >
       {LINKS.map((link) => (
         <Link
-          className="text-muted-foreground text-sm transition-colors hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground text-sm transition-colors"
           href={link.href}
           key={link.href}
         >

@@ -3,6 +3,7 @@ import {
   queryEngagementTimeseries,
 } from "@notra/analytics/tinybird/client";
 import { defineTool } from "eve/tools";
+
 import {
   ANALYTICS_NOT_CONFIGURED_MESSAGE,
   ANALYTICS_QUERY_FAILED_MESSAGE,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { tooltipColorSwatchHtml } from "@/components/evilcharts/ui/echarts-tooltip";
 import {

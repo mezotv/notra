@@ -46,6 +46,7 @@ import type { CheckResponse } from "autumn-js";
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { buildStandaloneChatTelemetryMetadata } from "@/lib/tcc";
 import type { RouteContext } from "@/types/api/routes";

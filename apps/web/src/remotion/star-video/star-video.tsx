@@ -1,4 +1,5 @@
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
+
 import type { StarVideoInputProps } from "../../types/star-video";
 import { AvatarCloud } from "./avatar-cloud";
 import { Confetti } from "./confetti";

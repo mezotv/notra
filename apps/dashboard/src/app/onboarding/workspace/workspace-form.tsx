@@ -19,6 +19,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
 import { OrgLogoField } from "@/components/onboarding/org-logo-field";
 import { OnboardingProgress } from "@/components/onboarding/progress";
 import { COMPANY_LOGO_DEBOUNCE_MS } from "@/constants/company-logo";
@@ -224,10 +225,10 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
             <div className="grid gap-2">
               <Label htmlFor="slug">Slug</Label>
               <div
-                className={`flex h-11 w-full flex-row items-center overflow-hidden rounded-xl border transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-input"}`}
+                className={`focus-within:border-ring focus-within:ring-ring/50 flex h-11 w-full flex-row items-center overflow-hidden rounded-xl border transition-colors focus-within:ring-[3px] ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-input"}`}
               >
                 <label
-                  className="flex h-full items-center border-input border-r bg-muted/30 px-3.5 text-muted-foreground text-sm"
+                  className="border-input bg-muted/30 text-muted-foreground flex h-full items-center border-r px-3.5 text-sm"
                   htmlFor="slug"
                 >
                   app.usenotra.com/
@@ -262,10 +263,10 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
             <div className="grid gap-2">
               <Label htmlFor="website">Website</Label>
               <div
-                className={`flex h-11 w-full flex-row items-center overflow-hidden rounded-xl border transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-input"}`}
+                className={`focus-within:border-ring focus-within:ring-ring/50 flex h-11 w-full flex-row items-center overflow-hidden rounded-xl border transition-colors focus-within:ring-[3px] ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-input"}`}
               >
                 <label
-                  className="flex h-full items-center border-input border-r bg-muted/30 px-3.5 text-muted-foreground text-sm"
+                  className="border-input bg-muted/30 text-muted-foreground flex h-full items-center border-r px-3.5 text-sm"
                   htmlFor="website"
                 >
                   https://

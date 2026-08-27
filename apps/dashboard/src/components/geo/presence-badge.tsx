@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@notra/ui/components/ui/badge";
+
 import { GEO_PRESENCE_LABELS } from "@/constants/geo";
 import type { GeoPresenceStatus, PresenceBadgeProps } from "@/types/geo";
 
@@ -19,7 +20,7 @@ export function PresenceBadge({ status }: PresenceBadgeProps) {
   }
   return (
     <Badge
-      className="whitespace-nowrap rounded-sm text-[0.6875rem]"
+      className="rounded-sm text-[0.6875rem] whitespace-nowrap"
       title={PRESENCE_TITLES[status]}
       variant="outline"
     >

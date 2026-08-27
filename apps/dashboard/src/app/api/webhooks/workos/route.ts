@@ -2,6 +2,7 @@ import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import type { Event as WorkOSEvent } from "@workos-inc/node";
 import { Effect } from "effect";
 import type { NextRequest } from "next/server";
+
 import {
   removeMembershipFromWebhook,
   upsertMembershipFromWebhook,

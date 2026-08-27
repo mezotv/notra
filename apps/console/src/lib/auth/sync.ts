@@ -5,6 +5,7 @@ import type { User } from "@workos-inc/node";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { isValid as isNotDisposableEmail } from "mailchecker";
+
 import { UserSyncError } from "@/lib/auth/errors";
 
 function buildUserName(workosUser: User) {

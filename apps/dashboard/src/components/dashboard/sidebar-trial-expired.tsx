@@ -4,6 +4,7 @@ import { FEATURES, PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
+
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 
@@ -35,9 +36,9 @@ export function SidebarTrialExpired() {
 
   return (
     <SidebarGroup className="px-3 pb-2 group-data-[collapsible=icon]:hidden">
-      <div className="overflow-hidden rounded-xl bg-card ring-1 ring-foreground/10">
-        <div className="border-b bg-muted/50 px-3 py-3">
-          <p className="font-semibold text-sm">Trial Ended</p>
+      <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl ring-1">
+        <div className="bg-muted/50 border-b px-3 py-3">
+          <p className="text-sm font-semibold">Trial Ended</p>
         </div>
         <div className="space-y-3 p-3">
           <p className="text-muted-foreground text-xs">

@@ -3,9 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "scripts": {
-    "check-types": "tsc --noEmit"
-  },
   "exports": {
     ".": "./src/index.ts",
     "./kiwi": "./src/codecs/kiwi.ts",
@@ -15,14 +12,17 @@
     "./dom-to-scene": "./src/converters/dom-to-scene.ts",
     "./schema": "./src/schemas/figma.ts"
   },
-  "devDependencies": {
-    "@types/opentype.js": "^1.3.9",
-    "@notra/typescript-config": "workspace:*",
-    "@types/node": "^22.15.3",
-    "typescript": "5.9.2"
+  "scripts": {
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "opentype.js": "^2.0.0",
     "zod": "^4.3.4"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "@types/opentype.js": "^1.3.9",
+    "typescript": "5.9.2"
   }
 }

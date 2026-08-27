@@ -11,6 +11,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import {
   CONTENT_NAV_LINK,
   NAV_RECENT_LABEL,
@@ -22,6 +23,7 @@ import {
 } from "@/constants/nav";
 import { usePosts } from "@/lib/hooks/use-posts";
 import type { NavRecentContentProps } from "@/types/components/nav";
+
 import { SidebarLabel } from "./sidebar-label";
 
 export function NavRecentContent({
@@ -66,7 +68,7 @@ export function NavRecentContent({
                         <span className={NAV_RECENT_TITLE_CLASS}>
                           {post.title}
                         </span>
-                        <span className="ml-auto shrink-0 text-[0.625rem] text-muted-foreground">
+                        <span className="text-muted-foreground ml-auto shrink-0 text-[0.625rem]">
                           {POST_STATUS_LABELS[post.status]}
                         </span>
                       </Link>

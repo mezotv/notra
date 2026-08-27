@@ -1,6 +1,8 @@
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
+
 import type { IntegrationBannerProps } from "@/types/integrations";
+
 import { IntegrationLogo } from "./integration-logo";
 
 export function IntegrationBanner({

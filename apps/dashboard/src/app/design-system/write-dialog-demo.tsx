@@ -2,6 +2,7 @@
 
 import { Button } from "@notra/ui/components/ui/button";
 import { useState } from "react";
+
 import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
 import { WriteDialog } from "@/components/geo/writer/write-dialog";
 
@@ -21,7 +22,7 @@ export function DesignSystemWriteDialogDemo() {
           Open write dialog
         </Button>
         <span
-          className="font-mono text-muted-foreground text-xs"
+          className="text-muted-foreground font-mono text-xs"
           data-testid="write-dialog-state"
         >
           open={String(open)} · events={events.join(",") || "none"}

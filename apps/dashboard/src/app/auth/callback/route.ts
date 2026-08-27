@@ -1,5 +1,6 @@
 import { handleAuth } from "@workos-inc/authkit-nextjs";
 import { Effect } from "effect";
+
 import { syncAuthenticatedUser } from "@/lib/auth/sync";
 
 export const GET = handleAuth({

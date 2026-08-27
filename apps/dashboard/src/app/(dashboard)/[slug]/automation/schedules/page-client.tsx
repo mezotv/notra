@@ -55,6 +55,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
 import { OnboardingSuggestions } from "@/components/automation/onboarding-suggestions";
 import { CreateScheduleDialog } from "@/components/automation/schedules/create-schedule-dialog";
@@ -74,6 +75,7 @@ import { dashboardOrpc } from "@/lib/orpc/query";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import type { Trigger } from "@/types/triggers/triggers";
 import { getOutputTypeLabel, OutputTypeIcon } from "@/utils/output-types";
+
 import { SchedulePageSkeleton } from "./skeleton";
 
 function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
@@ -397,7 +399,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Schedules</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Schedules</h1>
             <p className="text-muted-foreground">
               Configure cron schedules that run daily, weekly, or monthly
             </p>
@@ -577,7 +579,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               This will permanently delete{" "}
               {triggerToDelete ? (
                 <Tooltip>
-                  <TooltipTrigger className="cursor-help font-medium text-foreground underline decoration-dotted underline-offset-2">
+                  <TooltipTrigger className="text-foreground cursor-help font-medium underline decoration-dotted underline-offset-2">
                     {triggerToDelete.name}
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs" side="top">
@@ -698,14 +700,14 @@ function ScheduleTable({
 
   if (triggers.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
+      <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
         No schedules in this category.
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
+    <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
       <Table>
         <TableHeader>
           <TableRow>
@@ -748,7 +750,7 @@ function ScheduleTable({
               <TableRow key={trigger.id}>
                 <TableCell>
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-sm">
+                    <p className="truncate text-sm font-medium">
                       {trigger.name ?? "Untitled Schedule"}
                     </p>
                   </div>
@@ -786,14 +788,14 @@ function ScheduleTable({
                 <TableCell>
                   <DropdownMenu>
                     <DropdownMenuTrigger
-                      className="flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+                      className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center rounded-md disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={isThisUpdating || isThisRunning}
                     >
                       {isThisUpdating || isThisRunning ? (
-                        <Loader2Icon className="size-4 animate-spin text-muted-foreground" />
+                        <Loader2Icon className="text-muted-foreground size-4 animate-spin" />
                       ) : (
                         <HugeiconsIcon
-                          className="size-4 text-muted-foreground"
+                          className="text-muted-foreground size-4"
                           icon={MoreVerticalIcon}
                         />
                       )}

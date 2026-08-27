@@ -6,7 +6,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
+
 import type { BrandIdentityTabsProps, BrandTab } from "@/types/brand-identity";
+
 import { BrandForm } from "./brand-form";
 import { GuidelinesPanel } from "./guidelines-panel";
 import { ReferencesList } from "./references-list";

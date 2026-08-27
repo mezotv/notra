@@ -5,9 +5,11 @@ import {
   SidebarGroupLabel,
 } from "@notra/ui/components/ui/sidebar";
 import { usePathname } from "next/navigation";
+
 import { NAV_CATEGORY_LABELS, NAV_UTILITY_LINKS } from "@/constants/nav";
 import type { NavUtilityProps } from "@/types/components/nav";
 import { resolveActiveNavLink } from "@/utils/nav";
+
 import { NavList } from "./nav-list";
 import { SidebarLabel } from "./sidebar-label";
 

@@ -4,12 +4,14 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
+
 import {
   buildDetailMetaTail,
   buildDetailStats,
 } from "@/lib/integrations/helpers";
 import type { IntegrationDetailViewProps } from "@/types/integrations";
 import { getIntegrationReferralUrl } from "@/utils/integration-referral-url";
+
 import { IntegrationAuthorMeta } from "./integration-author-meta";
 import { IntegrationBanner } from "./integration-banner";
 import { IntegrationConnectButton } from "./integration-connect-button";
@@ -25,7 +27,7 @@ export function IntegrationDetailView({
     <div className="flex w-full flex-col items-center pb-14">
       <div className="flex w-[min(100%-3rem,64rem)] flex-col gap-8 pt-24 lg:pt-28">
         <Link
-          className="inline-flex w-max cursor-pointer items-center gap-1.5 whitespace-nowrap font-medium font-sans text-[#1E1E1E80] text-[0.875rem] leading-[1.29] transition-colors hover:text-[#1E1E1E] dark:text-white/50 dark:hover:text-white"
+          className="inline-flex w-max cursor-pointer items-center gap-1.5 font-sans text-[0.875rem] leading-[1.29] font-medium whitespace-nowrap text-[#1E1E1E80] transition-colors hover:text-[#1E1E1E] dark:text-white/50 dark:hover:text-white"
           href="/integrations"
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} size={16} />
@@ -44,11 +46,11 @@ export function IntegrationDetailView({
               <IntegrationLogo fill integration={integration} size={60} />
             </span>
             <div className="flex min-w-0 grow flex-col gap-1">
-              <h1 className="font-sans font-semibold text-[#1E1E1E] text-[2.375rem] leading-[1.16] tracking-[-0.02em] dark:text-white">
+              <h1 className="font-sans text-[2.375rem] leading-[1.16] font-semibold tracking-[-0.02em] text-[#1E1E1E] dark:text-white">
                 {integration.name}
               </h1>
               <IntegrationAuthorMeta
-                className="font-sans text-[#1E1E1EA6] text-[0.9375rem] leading-[1.33] tracking-[-0.01em] dark:text-white/60"
+                className="font-sans text-[0.9375rem] leading-[1.33] tracking-[-0.01em] text-[#1E1E1EA6] dark:text-white/60"
                 integration={integration}
                 tail={buildDetailMetaTail(integration)}
               />
@@ -56,7 +58,7 @@ export function IntegrationDetailView({
             <div className="flex items-center gap-3">
               {integration.websiteUrl ? (
                 <a
-                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white px-5.5 py-2.75 font-medium font-sans text-[#1E1E1E] text-[0.875rem] leading-[1.29] transition-colors [box-shadow:#ECECEC_0_0_0_0.0625rem,#28282814_0_0.0625rem_0.125rem] hover:bg-[#FAFAFA] dark:bg-white/[0.08] dark:text-white dark:hover:bg-white/[0.12] dark:[box-shadow:#FFFFFF1F_0_0_0_0.0625rem]"
+                  className="flex cursor-pointer items-center gap-1.5 rounded-full bg-white px-5.5 py-2.75 font-sans text-[0.875rem] leading-[1.29] font-medium text-[#1E1E1E] [box-shadow:#ECECEC_0_0_0_0.0625rem,#28282814_0_0.0625rem_0.125rem] transition-colors hover:bg-[#FAFAFA] dark:bg-white/[0.08] dark:text-white dark:[box-shadow:#FFFFFF1F_0_0_0_0.0625rem] dark:hover:bg-white/[0.12]"
                   href={getIntegrationReferralUrl(integration.websiteUrl)}
                   rel="noopener"
                   target="_blank"
@@ -73,7 +75,7 @@ export function IntegrationDetailView({
           </div>
 
           {integration.description ? (
-            <p className="font-sans text-[#1E1E1EBF] text-[1rem] leading-[1.56] tracking-[-0.005em] dark:text-white/70">
+            <p className="font-sans text-[1rem] leading-[1.56] tracking-[-0.005em] text-[#1E1E1EBF] dark:text-white/70">
               {integration.description}
             </p>
           ) : null}
@@ -84,10 +86,10 @@ export function IntegrationDetailView({
                 className="flex flex-col gap-0.5 rounded-2xl px-5.5 py-4.5 [box-shadow:#ECECEC_0_0_0_0.0625rem] dark:[box-shadow:#FFFFFF14_0_0_0_0.0625rem]"
                 key={stat.label}
               >
-                <span className="font-medium font-sans text-[#1E1E1E80] text-[0.75rem] leading-[1.33] tracking-[0.04em] dark:text-white/50">
+                <span className="font-sans text-[0.75rem] leading-[1.33] font-medium tracking-[0.04em] text-[#1E1E1E80] dark:text-white/50">
                   {stat.label}
                 </span>
-                <span className="font-sans font-semibold text-[#1E1E1E] text-[1.125rem] leading-[1.33] tracking-[-0.01em] dark:text-white">
+                <span className="font-sans text-[1.125rem] leading-[1.33] font-semibold tracking-[-0.01em] text-[#1E1E1E] dark:text-white">
                   {stat.value}
                 </span>
               </div>

@@ -8,6 +8,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+
 import { COMPANY_LOGO_STALE_TIME_MS } from "@/constants/company-logo";
 import {
   AGENT_RUN_REFETCH_INTERVAL_MS,
@@ -22,6 +23,7 @@ import type {
   UseOnboardingStatusOptions,
   UseOnboardingSuggestionsOptions,
 } from "@/types/hooks/onboarding";
+
 import { dashboardOrpc } from "../orpc/query";
 
 export function useOnboardingStatus(

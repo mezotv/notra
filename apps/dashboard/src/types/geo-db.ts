@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+
 import type { GeoScopeInput } from "@/types/geo";
 
 export interface GeoCollectionSpec<T extends object> {

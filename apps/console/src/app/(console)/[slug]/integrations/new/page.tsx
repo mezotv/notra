@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { IntegrationForm } from "@/components/integrations/integration-form";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 

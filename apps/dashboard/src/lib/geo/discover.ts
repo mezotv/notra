@@ -5,6 +5,7 @@ import { geoPrompts, geoSettings } from "@notra/db/schema";
 import { generateText, Output } from "ai";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import {
   GEO_DISCOVERY_ALIAS_LIMIT,
   GEO_DISCOVERY_CACHE_PREFIX,

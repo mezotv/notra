@@ -30,6 +30,7 @@ import { useRouter } from "next/navigation";
 import type { ReactElement } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { authClient } from "@/lib/auth/client";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
@@ -162,7 +163,7 @@ export function DeleteAccountDialog({
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
                   <HugeiconsIcon icon={Alert01Icon} size={18} />
-                  <p className="font-medium text-sm">
+                  <p className="text-sm font-medium">
                     You own organizations with other members:
                   </p>
                 </div>
@@ -185,7 +186,7 @@ export function DeleteAccountDialog({
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-sm">{org.name}</p>
+                          <p className="text-sm font-medium">{org.name}</p>
                           <p className="text-muted-foreground text-xs">
                             {org.memberCount} member
                             {org.memberCount !== 1 ? "s" : ""}
@@ -208,7 +209,7 @@ export function DeleteAccountDialog({
                             value="transfer"
                           />
                           <Label
-                            className="cursor-pointer font-normal text-sm leading-tight"
+                            className="cursor-pointer text-sm leading-tight font-normal"
                             htmlFor={`transfer-${org.id}`}
                           >
                             Transfer ownership
@@ -227,7 +228,7 @@ export function DeleteAccountDialog({
                             value="delete"
                           />
                           <Label
-                            className="cursor-pointer font-normal text-destructive text-sm leading-tight"
+                            className="text-destructive cursor-pointer text-sm leading-tight font-normal"
                             htmlFor={`delete-${org.id}`}
                           >
                             Delete this organization
@@ -242,9 +243,9 @@ export function DeleteAccountDialog({
 
             {soleOwnerOrgs.length > 0 && (
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-muted-foreground">
+                <div className="text-muted-foreground flex items-center gap-2">
                   <HugeiconsIcon icon={Building06Icon} size={18} />
-                  <p className="font-medium text-sm">
+                  <p className="text-sm font-medium">
                     These organizations will be deleted:
                   </p>
                 </div>
@@ -277,7 +278,7 @@ export function DeleteAccountDialog({
             )}
 
             {ownedOrganizations.length === 0 && (
-              <p className="py-2 text-muted-foreground text-sm">
+              <p className="text-muted-foreground py-2 text-sm">
                 This will permanently delete your account and remove your data
                 from our servers.
               </p>

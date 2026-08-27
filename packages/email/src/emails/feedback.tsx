@@ -49,31 +49,31 @@ export const FeedbackEmail = ({
               />
             </Section>
 
-            <Heading className="my-6 text-center font-medium text-2xl text-black">
+            <Heading className="my-6 text-center text-2xl font-medium text-black">
               {sentimentMeta ? `${sentimentMeta.emoji} ` : ""}New feedback
             </Heading>
 
-            <Section className="mt-6 rounded-md border border-[#eaeaea] border-solid bg-[#fafafa] p-5">
-              <Text className="m-0 whitespace-pre-wrap text-[15px] text-black leading-[22px]">
+            <Section className="mt-6 rounded-md border border-solid border-[#eaeaea] bg-[#fafafa] p-5">
+              <Text className="m-0 text-[15px] leading-[22px] whitespace-pre-wrap text-black">
                 {message}
               </Text>
             </Section>
 
             <Section className="mt-8">
-              <Text className="m-0 text-[#666666] text-[12px] uppercase tracking-wide">
+              <Text className="m-0 text-[12px] tracking-wide text-[#666666] uppercase">
                 From
               </Text>
-              <Text className="mt-1 mb-0 text-[14px] text-black leading-[22px]">
+              <Text className="mt-1 mb-0 text-[14px] leading-[22px] text-black">
                 {userName} &lt;{userEmail}&gt;
               </Text>
             </Section>
 
             {sentimentMeta ? (
               <Section className="mt-4">
-                <Text className="m-0 text-[#666666] text-[12px] uppercase tracking-wide">
+                <Text className="m-0 text-[12px] tracking-wide text-[#666666] uppercase">
                   Sentiment
                 </Text>
-                <Text className="mt-1 mb-0 text-[14px] text-black leading-[22px]">
+                <Text className="mt-1 mb-0 text-[14px] leading-[22px] text-black">
                   {sentimentMeta.emoji} {sentimentMeta.label}
                 </Text>
               </Section>
@@ -81,10 +81,10 @@ export const FeedbackEmail = ({
 
             {organizationName ? (
               <Section className="mt-4">
-                <Text className="m-0 text-[#666666] text-[12px] uppercase tracking-wide">
+                <Text className="m-0 text-[12px] tracking-wide text-[#666666] uppercase">
                   Organization
                 </Text>
-                <Text className="mt-1 mb-0 text-[14px] text-black leading-[22px]">
+                <Text className="mt-1 mb-0 text-[14px] leading-[22px] text-black">
                   {organizationName}
                   {organizationSlug ? ` (${organizationSlug})` : ""}
                 </Text>
@@ -93,10 +93,10 @@ export const FeedbackEmail = ({
 
             {pageUrl ? (
               <Section className="mt-4">
-                <Text className="m-0 text-[#666666] text-[12px] uppercase tracking-wide">
+                <Text className="m-0 text-[12px] tracking-wide text-[#666666] uppercase">
                   Page
                 </Text>
-                <Text className="mt-1 mb-0 break-all text-[14px] text-black leading-[22px]">
+                <Text className="mt-1 mb-0 text-[14px] leading-[22px] break-all text-black">
                   {pageUrl}
                 </Text>
               </Section>
@@ -104,10 +104,10 @@ export const FeedbackEmail = ({
 
             {userAgent ? (
               <Section className="mt-4">
-                <Text className="m-0 text-[#666666] text-[12px] uppercase tracking-wide">
+                <Text className="m-0 text-[12px] tracking-wide text-[#666666] uppercase">
                   User agent
                 </Text>
-                <Text className="mt-1 mb-0 break-all text-[#666666] text-[12px] leading-[18px]">
+                <Text className="mt-1 mb-0 text-[12px] leading-[18px] break-all text-[#666666]">
                   {userAgent}
                 </Text>
               </Section>

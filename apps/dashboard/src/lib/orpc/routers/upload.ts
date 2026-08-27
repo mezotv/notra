@@ -3,6 +3,7 @@ import { db } from "@notra/db/drizzle";
 import { members } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
+
 import {
   COMPANY_LOGO_FETCH_TIMEOUT_MS,
   COMPANY_LOGO_SOURCE_HOSTS,
@@ -25,6 +26,7 @@ import {
   uploadSvgSchema,
   validateUpload,
 } from "@/schemas/upload";
+
 import { badRequest, forbidden, unauthorized } from "../utils/errors";
 
 const TRAILING_SLASH_REGEX = /\/$/;

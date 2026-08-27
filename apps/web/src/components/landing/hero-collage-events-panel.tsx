@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@notra/ui/components/ui/table";
+
 import {
   HERO_COLLAGE_EVENT_ROWS,
   HERO_COLLAGE_EVENTS,
@@ -16,9 +17,9 @@ import {
 
 export function HeroCollageEventsPanel() {
   return (
-    <div className="relative z-10 h-[52rem] w-[28.125rem] shrink-0 translate-x-28 overflow-hidden rounded-3xl border border-black/5 bg-background py-5 pr-8 pl-12 transition-transform duration-300 ease-out dark:border-white/10 lg:[transform:perspective(87.5rem)_rotateY(8deg)] lg:motion-safe:hover:[transform:perspective(87.5rem)_rotateY(3deg)_scale(1.03)]">
+    <div className="bg-background relative z-10 h-[52rem] w-[28.125rem] shrink-0 translate-x-28 overflow-hidden rounded-3xl border border-black/5 py-5 pr-8 pl-12 transition-transform duration-300 ease-out lg:[transform:perspective(87.5rem)_rotateY(8deg)] lg:motion-safe:hover:[transform:perspective(87.5rem)_rotateY(3deg)_scale(1.03)] dark:border-white/10">
       <div className="mb-6 space-y-1">
-        <h3 className="font-bold font-sans text-[1.375rem] text-foreground leading-[1.2] tracking-[-0.0375rem]">
+        <h3 className="text-foreground font-sans text-[1.375rem] leading-[1.2] font-bold tracking-[-0.0375rem]">
           {HERO_COLLAGE_EVENTS.heading}
         </h3>
         <p className="text-muted-foreground text-sm leading-[1.5]">
@@ -26,18 +27,18 @@ export function HeroCollageEventsPanel() {
         </p>
       </div>
 
-      <div className="flex items-center gap-3 border-border/60 border-b">
-        <span className="after:-bottom-px relative pb-2 font-medium text-foreground text-sm after:absolute after:inset-x-0 after:h-0.5 after:bg-foreground">
+      <div className="border-border/60 flex items-center gap-3 border-b">
+        <span className="text-foreground after:bg-foreground relative pb-2 text-sm font-medium after:absolute after:inset-x-0 after:-bottom-px after:h-0.5">
           {HERO_COLLAGE_EVENTS.activeTab}
         </span>
-        <span className="pb-2 font-medium text-muted-foreground text-sm">
+        <span className="text-muted-foreground pb-2 text-sm font-medium">
           {HERO_COLLAGE_EVENTS.pausedTab}
         </span>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-lg border border-transparent bg-transparent shadow-none lg:border-border/80 lg:border-b-border/40 lg:bg-muted/80 lg:shadow-2xs">
+      <div className="lg:border-border/80 lg:border-b-border/40 lg:bg-muted/80 mt-4 overflow-hidden rounded-lg border border-transparent bg-transparent shadow-none lg:shadow-2xs">
         <Table>
-          <TableHeader className="bg-transparent lg:bg-muted/80">
+          <TableHeader className="lg:bg-muted/80 bg-transparent">
             <TableRow>
               <TableHead>{HERO_COLLAGE_EVENTS.typeHeader}</TableHead>
               <TableHead>{HERO_COLLAGE_EVENTS.eventsHeader}</TableHead>
@@ -49,10 +50,10 @@ export function HeroCollageEventsPanel() {
               <TableRow key={row.id}>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-lg border bg-muted/50">
+                    <span className="bg-muted/50 flex size-8 items-center justify-center rounded-lg border">
                       <Github className="size-4" />
                     </span>
-                    <span className="whitespace-nowrap text-sm">
+                    <span className="text-sm whitespace-nowrap">
                       {row.type}
                     </span>
                   </div>
@@ -61,7 +62,7 @@ export function HeroCollageEventsPanel() {
                   {row.event}
                 </TableCell>
                 <TableCell className="text-muted-foreground">
-                  <span className="flex items-center gap-1.5 whitespace-nowrap text-sm">
+                  <span className="flex items-center gap-1.5 text-sm whitespace-nowrap">
                     <HugeiconsIcon
                       className="size-3.5 text-violet-500 dark:text-violet-300"
                       icon={Blockchain04Icon}

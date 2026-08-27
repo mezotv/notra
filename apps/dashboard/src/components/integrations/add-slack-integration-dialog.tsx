@@ -13,6 +13,7 @@ import {
 import { Slack } from "@notra/ui/components/ui/svgs/slack";
 import type React from "react";
 import { isValidElement, useState } from "react";
+
 import { Button } from "@/components/button";
 import type { AddSlackIntegrationDialogProps } from "@/types/slack-integration";
 

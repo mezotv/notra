@@ -20,6 +20,7 @@ import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { DeleteAccountDialog } from "@/components/settings/delete-account-dialog";
 import { authClient } from "@/lib/auth/client";
@@ -108,8 +109,8 @@ export function OnboardingAccountMenu() {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-sm">{user.name}</p>
-                <p className="truncate text-muted-foreground text-xs">
+                <p className="truncate text-sm font-medium">{user.name}</p>
+                <p className="text-muted-foreground truncate text-xs">
                   {user.email}
                 </p>
               </div>

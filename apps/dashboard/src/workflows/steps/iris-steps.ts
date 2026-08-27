@@ -62,6 +62,7 @@ import type {
 import { buildControllerLeaseName } from "@notra/ai/utils/autonomy-lease-name";
 import { trackIrisRunUsage } from "@notra/ai/utils/iris-billing";
 import { Effect } from "effect";
+
 import { resolveIrisFlagState } from "@/lib/iris/flag";
 import {
   failOpenRun,
@@ -242,13 +243,11 @@ export async function pollIrisSourcesStep(input: {
   "use step";
   return await Effect.runPromise(
     pollIrisSources({ organizationId: input.organizationId }).pipe(
-      Effect.map(
-        (result): IrisPollSummary => ({
-          recordedCount: result.recordedCount,
-          deduplicatedCount: result.deduplicatedCount,
-          sources: result.sources.map((source) => source.source),
-        })
-      ),
+      Effect.map((result): IrisPollSummary => ({
+        recordedCount: result.recordedCount,
+        deduplicatedCount: result.deduplicatedCount,
+        sources: result.sources.map((source) => source.source),
+      })),
       Effect.catch((error) =>
         Effect.annotateLogs(Effect.logWarning("iris.poll.failed"), {
           organizationId: input.organizationId,

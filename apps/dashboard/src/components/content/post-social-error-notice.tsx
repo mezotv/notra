@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+
 import type { PostSocialErrorNoticeProps } from "@/types/content/post-social";
 
 export function PostSocialErrorNotice({

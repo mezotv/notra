@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { useState } from "react";
+
 import { AgentFeedbackRotateButton } from "@/components/agent-feedback/feedback-rotate-button";
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { Button } from "@/components/button";
@@ -49,7 +50,7 @@ export function AgentFeedbackSetup({
     <div className={cn("space-y-5", className)}>
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2 pe-1">
-          <h3 className="font-medium text-sm">Install the package</h3>
+          <h3 className="text-sm font-medium">Install the package</h3>
           <Tabs
             className="shrink-0 gap-0"
             onValueChange={(value) => {
@@ -62,7 +63,7 @@ export function AgentFeedbackSetup({
             <TabsList aria-label="Package manager">
               {GEO_INGEST_PACKAGE_MANAGER_OPTIONS.map((option) => (
                 <TabsTrigger
-                  className="px-2 text-xs dark:data-active:bg-background"
+                  className="dark:data-active:bg-background px-2 text-xs"
                   key={option.value}
                   value={option.value}
                 >
@@ -76,7 +77,7 @@ export function AgentFeedbackSetup({
       </section>
       <section className="space-y-2">
         <div className="flex items-center justify-between gap-2 pe-1">
-          <h3 className="font-medium text-sm">Set your token</h3>
+          <h3 className="text-sm font-medium">Set your token</h3>
           <AgentFeedbackRotateButton
             disabled={!setup}
             organizationId={organizationId}
@@ -94,7 +95,7 @@ export function AgentFeedbackSetup({
       </section>
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2 pe-1">
-          <h3 className="font-medium text-sm">
+          <h3 className="text-sm font-medium">
             Add the tool to your MCP server
           </h3>
           <Tabs
@@ -109,7 +110,7 @@ export function AgentFeedbackSetup({
             <TabsList aria-label="Snippet">
               {AGENT_FEEDBACK_SNIPPET_TABS.map((item) => (
                 <TabsTrigger
-                  className="px-2 text-xs dark:data-active:bg-background"
+                  className="dark:data-active:bg-background px-2 text-xs"
                   key={item.value}
                   value={item.value}
                 >
@@ -130,12 +131,12 @@ export function AgentFeedbackSetup({
       </section>
       <div className="space-y-2">
         <div aria-hidden className="flex items-center gap-3 py-1">
-          <span className="h-px flex-1 bg-border/80" />
+          <span className="bg-border/80 h-px flex-1" />
           <span className="text-muted-foreground text-xs">or</span>
-          <span className="h-px flex-1 bg-border/80" />
+          <span className="bg-border/80 h-px flex-1" />
         </div>
         <Button
-          className="mx-auto flex w-fit text-muted-foreground"
+          className="text-muted-foreground mx-auto flex w-fit"
           disabled={!setup}
           onClick={copy}
           size="sm"

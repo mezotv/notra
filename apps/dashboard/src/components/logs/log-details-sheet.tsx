@@ -11,6 +11,7 @@ import {
   SheetTitle,
 } from "@notra/ui/components/ui/sheet";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { IntegrationIcon } from "@/components/logs/integration-icon";
 import { LogStatusBadge } from "@/components/logs/log-status-badge";
@@ -39,7 +40,7 @@ export function LogDetailsSheet({
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
       <SheetContent className="overflow-hidden rounded-xl data-[side=right]:inset-y-2 data-[side=right]:right-2 data-[side=right]:h-auto data-[side=right]:border sm:max-w-md">
-        <SheetHeader className="border-b bg-muted/50 pr-14">
+        <SheetHeader className="bg-muted/50 border-b pr-14">
           <SheetTitle className="wrap-break-word">
             {log?.title ?? "Log details"}
           </SheetTitle>
@@ -54,7 +55,7 @@ export function LogDetailsSheet({
           <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-4">
             <section className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                   Integration
                 </h3>
                 <div className="flex items-center gap-2 text-sm">
@@ -63,7 +64,7 @@ export function LogDetailsSheet({
                 </div>
               </div>
               <div className="space-y-1.5">
-                <h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                   Status
                 </h3>
                 <div className="flex flex-wrap items-center gap-2">
@@ -79,8 +80,8 @@ export function LogDetailsSheet({
 
             {log.errorMessage ? (
               <section className="space-y-2">
-                <h3 className="font-medium text-sm">Error</h3>
-                <p className="wrap-break-word whitespace-pre-wrap rounded-lg border bg-destructive/5 p-3 text-destructive text-sm leading-relaxed">
+                <h3 className="text-sm font-medium">Error</h3>
+                <p className="bg-destructive/5 text-destructive rounded-lg border p-3 text-sm leading-relaxed wrap-break-word whitespace-pre-wrap">
                   {log.errorMessage}
                 </p>
               </section>
@@ -88,8 +89,8 @@ export function LogDetailsSheet({
 
             {payloadJson ? (
               <section className="space-y-2">
-                <h3 className="font-medium text-sm">Payload</h3>
-                <pre className="max-h-64 overflow-auto rounded-lg border bg-muted/50 p-3 font-mono text-muted-foreground text-xs leading-relaxed">
+                <h3 className="text-sm font-medium">Payload</h3>
+                <pre className="bg-muted/50 text-muted-foreground max-h-64 overflow-auto rounded-lg border p-3 font-mono text-xs leading-relaxed">
                   {payloadJson}
                 </pre>
               </section>
@@ -97,8 +98,8 @@ export function LogDetailsSheet({
 
             {log.referenceId ? (
               <section className="space-y-2">
-                <h3 className="font-medium text-sm">Reference ID</h3>
-                <p className="break-all font-mono text-muted-foreground text-xs">
+                <h3 className="text-sm font-medium">Reference ID</h3>
+                <p className="text-muted-foreground font-mono text-xs break-all">
                   {log.referenceId}
                 </p>
               </section>
@@ -107,7 +108,7 @@ export function LogDetailsSheet({
         ) : null}
 
         {log?.referenceId ? (
-          <SheetFooter className="border-t bg-muted/50 sm:flex-row sm:justify-end">
+          <SheetFooter className="bg-muted/50 border-t sm:flex-row sm:justify-end">
             <Button
               onClick={() => {
                 navigator.clipboard.writeText(log.referenceId ?? "");

@@ -5,6 +5,7 @@ import {
   Satellite02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+
 import type { IrisStats, IrisStatsRowProps, IrisStatTile } from "@/types/iris";
 import { formatIrisRelativeTime } from "@/utils/iris-copy";
 
@@ -42,14 +43,14 @@ export function IrisStatsRow({ stats }: IrisStatsRowProps) {
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       {buildTiles(stats).map((tile) => (
         <div
-          className="space-y-2 rounded-xl border border-border px-4 py-3"
+          className="border-border space-y-2 rounded-xl border px-4 py-3"
           key={tile.key}
         >
-          <div className="flex items-center gap-2 text-muted-foreground text-xs">
+          <div className="text-muted-foreground flex items-center gap-2 text-xs">
             <HugeiconsIcon className="size-3.5" icon={tile.icon} />
             {tile.label}
           </div>
-          <p className="font-semibold text-2xl tracking-tight">{tile.value}</p>
+          <p className="text-2xl font-semibold tracking-tight">{tile.value}</p>
         </div>
       ))}
     </div>

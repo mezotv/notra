@@ -1,4 +1,5 @@
 import { AsyncLocalStorage } from "node:async_hooks";
+
 import {
   getEnabledSlackIntegrations,
   getSlackIntegrationBotToken,
@@ -7,6 +8,7 @@ import {
 import { db } from "@notra/db/drizzle";
 import { organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
+
 import {
   INSTALLATION_CACHE_MAX_ENTRIES,
   INSTALLATION_CACHE_TTL_MS,

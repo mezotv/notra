@@ -1,6 +1,8 @@
 import { flattenError } from "zod";
+
 import { eventWorkflowPayloadSchema } from "@/schemas/workflows";
 import type { EventContentWorkflowResult } from "@/types/workflows/event-generation";
+
 import {
   appendAutomationLog,
   claimWorkflowExecution,

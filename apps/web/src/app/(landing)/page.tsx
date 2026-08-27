@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { CtaBanner } from "@/components/landing/cta-banner";
 import { FaqSection } from "@/components/landing/faq-section";
 import { FeaturesSection } from "@/components/landing/features-section";
@@ -145,7 +146,7 @@ function LandingPageJsonLd() {
 
 export default function LandingPage() {
   return (
-    <div className="flex w-full flex-col items-stretch justify-start overflow-x-clip bg-white dark:bg-background">
+    <div className="dark:bg-background flex w-full flex-col items-stretch justify-start overflow-x-clip bg-white">
       <LandingPageJsonLd />
       <main className="flex w-full flex-col items-stretch justify-start">
         <HeroSection />

@@ -3,13 +3,13 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "scripts": {
-    "check-types": "tsc --noEmit"
-  },
   "exports": {
     "./databuddy": "./src/databuddy.ts",
     "./jobs": "./src/jobs.ts",
     "./schemas": "./src/schemas.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@notra/ai": "workspace:*",

@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+
 import { redirectToAuthServer } from "@/utils/oauth-redirect";
 
 export function OPTIONS() {

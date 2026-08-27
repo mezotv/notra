@@ -6,6 +6,7 @@ import {
   thinkingLevelSchema,
 } from "@notra/ai/schemas/chat";
 import type { StoredChatPreferences } from "@notra/ai/types/chat";
+
 import { localStorageKeys } from "@/constants/storage";
 
 export const CHAT_PREFERENCES_STORAGE_KEY = localStorageKeys.chatPreferences;

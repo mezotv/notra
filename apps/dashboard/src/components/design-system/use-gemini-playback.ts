@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import type { GeminiStoryMessage } from "@/types/design-system-gemini";
 
 const TOKEN_SPLIT = /(\s+)/;

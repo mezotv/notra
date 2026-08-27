@@ -19,14 +19,13 @@ const KiboCodeBlockComponent = lazy(
   () => import("./kibo-code-block-component")
 );
 
-export interface SerializedKiboCodeBlockNode
-  extends Spread<
-    {
-      code: string;
-      language: string;
-    },
-    SerializedLexicalNode
-  > {}
+export interface SerializedKiboCodeBlockNode extends Spread<
+  {
+    code: string;
+    language: string;
+  },
+  SerializedLexicalNode
+> {}
 
 function $convertCodeBlockElement(
   domNode: HTMLElement

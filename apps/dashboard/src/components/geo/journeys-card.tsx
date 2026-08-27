@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { JourneyDetailDialog } from "@/components/geo/journey-detail-dialog";
 import {
@@ -35,7 +36,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
         width: "7.5rem",
         cell: (row) => (
           <span
-            className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs"
+            className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 font-mono text-xs"
             title={row.journeyId}
           >
             {formatGeoJourneyChip(row.journeyId)}
@@ -80,7 +81,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
         header: "Span",
         width: "9.5rem",
         cell: (row) => (
-          <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
             {formatGeoJourneySpan(row.firstSeenAt, row.lastSeenAt)}
           </span>
         ),
@@ -91,7 +92,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
         width: "9.375rem",
         sortable: true,
         cell: (row) => (
-          <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
             {formatAiTrafficTimestamp(row.lastSeenAt)}
           </span>
         ),
@@ -127,7 +128,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
       ) : (
         <div className="flex flex-col gap-2">
           {depthSummary && (
-            <p className="px-1 text-muted-foreground text-xs tabular-nums">
+            <p className="text-muted-foreground px-1 text-xs tabular-nums">
               {depthSummary}
             </p>
           )}

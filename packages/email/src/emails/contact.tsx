@@ -43,31 +43,31 @@ export const ContactMessageEmail = ({
               />
             </Section>
 
-            <Heading className="my-6 text-center font-medium text-2xl text-black">
+            <Heading className="my-6 text-center text-2xl font-medium text-black">
               New contact message
             </Heading>
 
-            <Section className="mt-6 rounded-md border border-[#eaeaea] border-solid bg-[#fafafa] p-5">
-              <Text className="m-0 whitespace-pre-wrap text-[15px] text-black leading-[22px]">
+            <Section className="mt-6 rounded-md border border-solid border-[#eaeaea] bg-[#fafafa] p-5">
+              <Text className="m-0 text-[15px] leading-[22px] whitespace-pre-wrap text-black">
                 {message}
               </Text>
             </Section>
 
             <Section className="mt-8">
-              <Text className="m-0 text-[#666666] text-[12px] uppercase tracking-wide">
+              <Text className="m-0 text-[12px] tracking-wide text-[#666666] uppercase">
                 From
               </Text>
-              <Text className="mt-1 mb-0 text-[14px] text-black leading-[22px]">
+              <Text className="mt-1 mb-0 text-[14px] leading-[22px] text-black">
                 {name} &lt;{email}&gt;
               </Text>
             </Section>
 
             {company ? (
               <Section className="mt-4">
-                <Text className="m-0 text-[#666666] text-[12px] uppercase tracking-wide">
+                <Text className="m-0 text-[12px] tracking-wide text-[#666666] uppercase">
                   Company
                 </Text>
-                <Text className="mt-1 mb-0 text-[14px] text-black leading-[22px]">
+                <Text className="mt-1 mb-0 text-[14px] leading-[22px] text-black">
                   {company}
                 </Text>
               </Section>

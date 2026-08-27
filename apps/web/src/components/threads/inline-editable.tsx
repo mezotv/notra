@@ -83,7 +83,7 @@ export function InlineEditable({
     return (
       <span
         className={cn(
-          "relative inline-flex items-center border-transparent border-b border-dashed transition-colors focus-within:border-muted-foreground/70 hover:border-muted-foreground/70 group-hover/post:border-muted-foreground/45",
+          "focus-within:border-muted-foreground/70 hover:border-muted-foreground/70 group-hover/post:border-muted-foreground/45 relative inline-flex items-center border-b border-dashed border-transparent transition-colors",
           className,
           isPlaceholder && "font-normal"
         )}
@@ -121,9 +121,9 @@ export function InlineEditable({
     <button
       aria-label={ariaLabel}
       className={cn(
-        "group/edit inline-flex max-w-full cursor-text items-center gap-1 truncate border-transparent border-b border-dashed text-left transition-colors hover:border-muted-foreground/70 hover:underline hover:decoration-foreground/40 hover:decoration-dashed hover:underline-offset-4 focus-visible:border-muted-foreground/70 focus-visible:bg-muted/70 focus-visible:outline-none group-hover/post:border-muted-foreground/45",
+        "group/edit hover:border-muted-foreground/70 hover:decoration-foreground/40 focus-visible:border-muted-foreground/70 focus-visible:bg-muted/70 group-hover/post:border-muted-foreground/45 inline-flex max-w-full cursor-text items-center gap-1 truncate border-b border-dashed border-transparent text-left transition-colors hover:underline hover:decoration-dashed hover:underline-offset-4 focus-visible:outline-none",
         className,
-        isPlaceholder && "font-normal text-muted-foreground/60"
+        isPlaceholder && "text-muted-foreground/60 font-normal"
       )}
       onClick={handleEditClick}
       type="button"

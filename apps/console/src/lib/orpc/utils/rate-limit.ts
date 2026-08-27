@@ -1,4 +1,5 @@
 import { redis } from "@notra/ai/utils/redis";
+
 import { tooManyRequests } from "./errors";
 
 export const MCP_CONNECTION_RATE_LIMIT = {

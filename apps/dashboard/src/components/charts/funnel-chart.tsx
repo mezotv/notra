@@ -10,7 +10,9 @@ import {
   useRef,
   useState,
 } from "react";
+
 import { cn } from "@/lib/utils";
+
 import { useEnterComplete } from "./use-enter-complete";
 import { useMountProgress } from "./use-mount-progress";
 
@@ -642,17 +644,17 @@ function SegmentLabel({
   };
 
   const valueEl = showValues && (
-    <span className="whitespace-nowrap font-semibold text-foreground text-sm">
+    <span className="text-foreground text-sm font-semibold whitespace-nowrap">
       {display}
     </span>
   );
   const pctEl = showPercentage && (
-    <span className="rounded-full bg-foreground px-3 py-1 font-bold text-background text-xs shadow-sm">
+    <span className="bg-foreground text-background rounded-full px-3 py-1 text-xs font-bold shadow-sm">
       {formatPercentage(pct)}
     </span>
   );
   const labelEl = showLabels && (
-    <span className="whitespace-nowrap font-medium text-muted-foreground text-xs">
+    <span className="text-muted-foreground text-xs font-medium whitespace-nowrap">
       {stage.label}
     </span>
   );
@@ -832,7 +834,7 @@ export function FunnelChart({
 
   return (
     <div
-      className={cn("relative w-full select-none overflow-visible", className)}
+      className={cn("relative w-full overflow-visible select-none", className)}
       ref={ref}
       style={{
         aspectRatio: horiz ? "2.2 / 1" : "1 / 1.8",

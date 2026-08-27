@@ -2,6 +2,7 @@
 
 import { Label } from "@notra/ui/components/ui/label";
 import { Switch } from "@notra/ui/components/ui/switch";
+
 import {
   GEO_SCAN_DEFAULT_INTERVAL_HOURS,
   GEO_SCAN_INTERVAL_OPTIONS,
@@ -20,7 +21,7 @@ export function GeoScanSchedule({
   const summary = enabled ? (
     <>
       Enabled models are checked every{" "}
-      <strong className="font-semibold text-foreground">
+      <strong className="text-foreground font-semibold">
         {geoScanIntervalNoun(intervalHours)}
       </strong>
       .
@@ -30,7 +31,7 @@ export function GeoScanSchedule({
   );
 
   return (
-    <div className="divide-y rounded-lg ring-1 ring-foreground/10">
+    <div className="ring-foreground/10 divide-y rounded-lg ring-1">
       <div className="flex items-center justify-between gap-3 px-3 py-2.5">
         <div className="space-y-0.5">
           <Label htmlFor={`${id}-enabled`}>Automatic scans</Label>
@@ -50,7 +51,7 @@ export function GeoScanSchedule({
       >
         <fieldset className="space-y-2" disabled={!enabled}>
           <legend className="space-y-0.5">
-            <span className="font-medium text-sm">Frequency</span>
+            <span className="text-sm font-medium">Frequency</span>
             <p className="text-muted-foreground text-xs">
               How often every enabled model is checked.
             </p>
@@ -64,7 +65,7 @@ export function GeoScanSchedule({
                 <button
                   aria-pressed={selected}
                   className={cn(
-                    "inline-flex h-8 items-center gap-1 rounded-md px-3 font-medium text-sm ring-1 transition-colors",
+                    "inline-flex h-8 items-center gap-1 rounded-md px-3 text-sm font-medium ring-1 transition-colors",
                     selected
                       ? "bg-primary text-primary-foreground ring-primary"
                       : "bg-background text-muted-foreground ring-foreground/10 hover:text-foreground",

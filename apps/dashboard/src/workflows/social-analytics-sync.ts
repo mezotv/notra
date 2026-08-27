@@ -1,9 +1,11 @@
 import { flattenError } from "zod";
+
 import { socialAnalyticsSyncPayloadSchema } from "@/schemas/analytics";
 import type {
   SocialAnalyticsSyncPayload,
   SocialAnalyticsSyncResult,
 } from "@/types/analytics";
+
 import {
   listSyncableAccounts,
   snapshotAccountDimensions,

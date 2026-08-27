@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { cn } from "@notra/ui/lib/utils";
 import { useMemo } from "react";
+
 import type { ContentDataPointSettings } from "@/schemas/content";
 import type { RepositoryPreview } from "@/types/content/preview";
 import {
@@ -12,6 +13,7 @@ import {
   prSelectionToKey,
   releaseSelectionToKey,
 } from "@/utils/content-preview";
+
 import { EventRow } from "./event-row";
 
 interface RepoSectionProps {
@@ -96,7 +98,7 @@ export function RepoSection({
   return (
     <div className="overflow-hidden rounded-lg border">
       <button
-        className="flex w-full items-center gap-2 bg-muted/30 px-3 py-2 text-left transition-colors hover:bg-muted/50"
+        className="bg-muted/30 hover:bg-muted/50 flex w-full items-center gap-2 px-3 py-2 text-left transition-colors"
         onClick={handleToggleAllRepo}
         type="button"
       >
@@ -113,7 +115,7 @@ export function RepoSection({
           )}
         </div>
         <Github className="size-4 shrink-0" />
-        <span className="flex-1 font-medium text-sm">
+        <span className="flex-1 text-sm font-medium">
           {repo.owner}/{repo.repo}
         </span>
       </button>

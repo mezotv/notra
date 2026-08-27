@@ -11,6 +11,7 @@ import {
 } from "@notra/ui/components/shared/responsive-dialog";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useMemo, useState } from "react";
+
 import { Button } from "@/components/button";
 import { ConversationReplayThread } from "@/components/geo/conversation-replay-thread";
 import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
@@ -89,7 +90,7 @@ export function ConversationResultsDialog({
         drawerClassName="h-[94svh] max-h-[94svh]"
       >
         <ResponsiveDialogHeader className="shrink-0 gap-3 overflow-visible px-6 pt-5 pr-12 pb-3">
-          <ResponsiveDialogTitle className="text-balance font-semibold text-xl leading-snug">
+          <ResponsiveDialogTitle className="text-xl leading-snug font-semibold text-balance">
             {sequence.name}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription className="sr-only">
@@ -137,7 +138,7 @@ export function ConversationResultsDialog({
           )}
           {!(isLoading || active) && (
             <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 px-6">
-              <p className="text-pretty text-center text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-center text-sm text-pretty">
                 No results yet. Play this conversation against the engines to
                 see where your brand shows up.
               </p>

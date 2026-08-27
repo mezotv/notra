@@ -1,6 +1,7 @@
 import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
 import { geoContentSubtypeSchema } from "@notra/ai/schemas/geo-writer";
 import { array, boolean, enum as enumType, number, object, string } from "zod";
+
 import {
   GEO_BRAND_SEARCH_MAX_QUERY_LENGTH,
   GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,

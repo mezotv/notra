@@ -1,4 +1,5 @@
 import type { GeoTrafficLogRow } from "@notra/analytics/types/tinybird-endpoints";
+
 import type {
   GeoCompetitor,
   GeoCompetitorRow,

@@ -1,7 +1,9 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+
 import type { CollectionEntry } from "@dualmark/converters";
 import type { CollectionConfig, StaticPageConfig } from "@dualmark/nextjs";
+
 import { changelog } from "@/../.source/server";
 import { listNotraBlogPosts } from "@/utils/blog";
 import {

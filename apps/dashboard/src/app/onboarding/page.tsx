@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
 import { getGeoOnboardingStage } from "@/lib/geo/onboarding-status";
 import { redirectIfAnyOrganizationHasPaidHistory } from "@/lib/onboarding/billing-gate";

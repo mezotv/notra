@@ -1,5 +1,6 @@
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
+
 import { MERCH_SPEC_ROWS } from "@/constants/merch";
 
 export function MerchSpecs() {
@@ -7,10 +8,10 @@ export function MerchSpecs() {
     <section className="w-full px-6 pt-28 lg:pt-32">
       <div className="mx-auto flex w-full max-w-[80rem] flex-col items-center gap-12">
         <div className="flex flex-col items-center gap-4">
-          <h2 className="max-w-[50rem] text-center font-display font-medium text-[#1E1E1E] text-[2rem] leading-[1.14] tracking-[-0.02em] sm:text-[2.875rem] dark:text-white">
+          <h2 className="font-display max-w-[50rem] text-center text-[2rem] leading-[1.14] font-medium tracking-[-0.02em] text-[#1E1E1E] sm:text-[2.875rem] dark:text-white">
             Just a <span className="text-primary">good hat</span>.
           </h2>
-          <p className="max-w-[40rem] text-center font-medium font-sans text-[#1E1E1EBF] text-[1.0625rem] leading-[1.3] tracking-[-0.005em] sm:text-[1.25rem] dark:text-white/70">
+          <p className="max-w-[40rem] text-center font-sans text-[1.0625rem] leading-[1.3] font-medium tracking-[-0.005em] text-[#1E1E1EBF] sm:text-[1.25rem] dark:text-white/70">
             Unstructured cotton twill, one size, the Notra mark on the front.
             That's it.
           </p>
@@ -32,14 +33,14 @@ export function MerchSpecs() {
                 className={cn(
                   "flex flex-col gap-1.5 py-4 sm:flex-row sm:items-center sm:gap-6 sm:py-5.5",
                   index < MERCH_SPEC_ROWS.length - 1 &&
-                    "border-[#1E1E1E14] border-b dark:border-white/10"
+                    "border-b border-[#1E1E1E14] dark:border-white/10"
                 )}
                 key={row.label}
               >
-                <dt className="shrink-0 font-sans text-[#1E1E1EA6] text-sm leading-5 tracking-[-0.005em] sm:w-32 sm:text-base dark:text-white/60">
+                <dt className="shrink-0 font-sans text-sm leading-5 tracking-[-0.005em] text-[#1E1E1EA6] sm:w-32 sm:text-base dark:text-white/60">
                   {row.label}
                 </dt>
-                <dd className="font-display font-medium text-[#1E1E1E] text-[1.125rem] leading-[1.22] tracking-[-0.015em] dark:text-white">
+                <dd className="font-display text-[1.125rem] leading-[1.22] font-medium tracking-[-0.015em] text-[#1E1E1E] dark:text-white">
                   {row.value}
                 </dd>
               </div>

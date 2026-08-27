@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { members } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import { getAuthSession } from "@/lib/auth/server";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import type { AuthSessionData } from "@/types/auth";

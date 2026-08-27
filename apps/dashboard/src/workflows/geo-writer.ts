@@ -1,8 +1,10 @@
 import { GEO_WRITER_MODEL } from "@notra/ai/constants/models";
 import { flattenError } from "zod";
+
 import { GEO_WRITER_TRIGGER_ID } from "@/constants/geo";
 import { geoWriterWorkflowPayloadSchema } from "@/schemas/geo";
 import type { GeoWriterContext, GeoWriterWorkflowResult } from "@/types/geo";
+
 import {
   appendAutomationLog,
   claimWorkflowExecution,

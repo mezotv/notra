@@ -12,6 +12,7 @@ import {
 } from "@notra/ui/components/ui/radio-group";
 import { cn } from "@notra/ui/lib/utils";
 import { useId } from "react";
+
 import type { BrandIdentityRadioGroupProps } from "@/types/components/brand-identity";
 import { getBrandFaviconUrl } from "@/utils/brand";
 
@@ -39,9 +40,9 @@ function BrandIdentityOptionCard({
   return (
     <Label
       className={cn(
-        "flex w-full cursor-pointer items-center gap-3 rounded-lg border bg-card px-3 py-3 font-normal transition-colors hover:border-foreground/20",
+        "bg-card hover:border-foreground/20 flex w-full cursor-pointer items-center gap-3 rounded-lg border px-3 py-3 font-normal transition-colors",
         isSelected
-          ? "border-foreground/40 ring-2 ring-foreground/10"
+          ? "border-foreground/40 ring-foreground/10 ring-2"
           : "border-border"
       )}
       htmlFor={itemId}
@@ -54,8 +55,8 @@ function BrandIdentityOptionCard({
         </Avatar>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-sm">{title}</p>
-        <p className="truncate text-muted-foreground text-xs">{subtitle}</p>
+        <p className="truncate text-sm font-medium">{title}</p>
+        <p className="text-muted-foreground truncate text-xs">{subtitle}</p>
       </div>
     </Label>
   );
@@ -82,7 +83,7 @@ export function BrandIdentityRadioGroup({
   return (
     <div className="space-y-2">
       {label && (
-        <p className="font-medium text-sm" id={labelId}>
+        <p className="text-sm font-medium" id={labelId}>
           {label}
         </p>
       )}

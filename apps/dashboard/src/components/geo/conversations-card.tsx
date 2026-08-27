@@ -15,6 +15,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo, useState } from "react";
+
 import { Button } from "@/components/button";
 import { ConversationBuilderDialog } from "@/components/geo/conversation-builder-dialog";
 import { ConversationResultsDialog } from "@/components/geo/conversation-results-dialog";
@@ -158,7 +159,7 @@ export function ConversationsCard({ organizationId }: ConversationsCardProps) {
         header: (
           <span className="inline-flex items-center gap-1.5">
             Conversation
-            <span className="font-normal text-muted-foreground tabular-nums">
+            <span className="text-muted-foreground font-normal tabular-nums">
               ({sequences.length})
             </span>
           </span>
@@ -230,7 +231,7 @@ export function ConversationsCard({ organizationId }: ConversationsCardProps) {
     <section className="space-y-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="font-semibold text-sm">Conversations</h2>
+          <h2 className="text-sm font-semibold">Conversations</h2>
           <p className="text-muted-foreground text-sm">
             Multi-turn questions where buying decisions happen
           </p>

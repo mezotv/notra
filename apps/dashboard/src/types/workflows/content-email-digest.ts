@@ -13,14 +13,12 @@ export interface ContentEmailDigestBaseEvent {
   organizationSlug: string;
 }
 
-export interface AiCreditsDepletedDigestEvent
-  extends ContentEmailDigestBaseEvent {
+export interface AiCreditsDepletedDigestEvent extends ContentEmailDigestBaseEvent {
   kind: "ai_credits_depleted";
   automationName: string;
 }
 
-export interface ScheduledContentCreatedDigestEvent
-  extends ContentEmailDigestBaseEvent {
+export interface ScheduledContentCreatedDigestEvent extends ContentEmailDigestBaseEvent {
   kind: "scheduled_content_created";
   scheduleName: string;
   createdContent: ScheduledCreatedContentItem[];
@@ -29,16 +27,14 @@ export interface ScheduledContentCreatedDigestEvent
   subject?: string;
 }
 
-export interface ScheduledContentFailedDigestEvent
-  extends ContentEmailDigestBaseEvent {
+export interface ScheduledContentFailedDigestEvent extends ContentEmailDigestBaseEvent {
   kind: "scheduled_content_failed";
   scheduleName: string;
   reason: string;
   subject?: string;
 }
 
-export interface ScheduledContentSkippedDigestEvent
-  extends ContentEmailDigestBaseEvent {
+export interface ScheduledContentSkippedDigestEvent extends ContentEmailDigestBaseEvent {
   kind: "scheduled_content_skipped";
   scheduleName: string;
   reason: string;

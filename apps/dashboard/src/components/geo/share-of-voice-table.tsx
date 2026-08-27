@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { GeoBar } from "@/components/geo/geo-bar";

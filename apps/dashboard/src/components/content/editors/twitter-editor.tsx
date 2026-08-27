@@ -9,9 +9,11 @@ import {
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useRef } from "react";
+
 import { TwitterPost } from "@/components/twitter-post";
 import { useSelectedSocialAccount } from "@/lib/hooks/use-selected-social-account";
 import { twitterAuthorFromAccount } from "@/utils/twitter";
+
 import type { ContentEditorProps } from "./types";
 
 const VIEW_OPTIONS = ["preview", "raw"] as const;
@@ -123,7 +125,7 @@ export function TwitterEditor({
         <TabsContent className="mt-0" value="raw">
           <textarea
             aria-label="Twitter post content editor"
-            className="field-sizing-content w-full resize-none whitespace-pre-wrap rounded-lg border-0 bg-transparent font-mono text-sm selection:bg-primary/30 focus:outline-none focus:ring-0"
+            className="selection:bg-primary/30 field-sizing-content w-full resize-none rounded-lg border-0 bg-transparent font-mono text-sm whitespace-pre-wrap focus:ring-0 focus:outline-none"
             onChange={(e) => {
               actions.setEditedMarkdown(e.target.value);
             }}

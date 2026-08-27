@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { useCustomer, useListPlans } from "autumn-js/react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { PlanCard } from "@/components/billing/plan-card";
 import { FEATURED_PLAN_TIER } from "@/constants/billing";
 import { GEO_UPGRADE_DESCRIPTION, GEO_UPGRADE_TITLE } from "@/constants/geo";
@@ -123,7 +124,7 @@ export function GeoUpgradeDialog({
               <TabsTrigger value="monthly">Monthly</TabsTrigger>
               <TabsTrigger className="flex items-center gap-1.5" value="yearly">
                 Yearly
-                <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 font-medium text-[10px] text-emerald-600">
+                <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
                   Save 20%
                 </span>
               </TabsTrigger>

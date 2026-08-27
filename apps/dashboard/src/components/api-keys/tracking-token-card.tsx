@@ -14,6 +14,7 @@ import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
+
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { Button } from "@/components/button";
 import {
@@ -36,7 +37,7 @@ export function TrackingTokenCard({ organizationId }: TrackingTokenCardProps) {
     <section className="space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="flex items-center gap-2 font-medium text-sm">
+          <h2 className="flex items-center gap-2 text-sm font-medium">
             Tracking token
             <Badge variant="secondary">Write-only</Badge>
           </h2>

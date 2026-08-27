@@ -31,13 +31,13 @@ export default function BrandVoicePreview({
     <div className={`relative overflow-hidden ${className}`}>
       <div className="flex flex-col gap-3 pt-4">
         <div className="mr-[-30%]">
-          <div className="flex flex-col rounded-lg border border-border/80 bg-muted/80 p-2">
+          <div className="border-border/80 bg-muted/80 flex flex-col rounded-lg border p-2">
             <div className="flex items-start justify-between gap-4 py-1.5 pr-2 pl-2">
-              <p className="min-w-0 truncate font-medium text-lg">
+              <p className="min-w-0 truncate text-lg font-medium">
                 Company Profile
               </p>
             </div>
-            <div className="flex-1 rounded-lg border border-border/80 bg-background px-4 py-3">
+            <div className="border-border/80 bg-background flex-1 rounded-lg border px-4 py-3">
               <div className="space-y-2">
                 <Label>Description</Label>
                 <Textarea
@@ -51,16 +51,16 @@ export default function BrandVoicePreview({
         </div>
 
         <div className="-mr-6 ml-[20%]">
-          <div className="flex flex-col rounded-lg border border-border/80 bg-muted/80 p-2">
+          <div className="border-border/80 bg-muted/80 flex flex-col rounded-lg border p-2">
             <div className="flex items-start justify-between gap-4 py-1.5 pr-2 pl-2">
-              <p className="min-w-0 truncate font-medium text-lg">
+              <p className="min-w-0 truncate text-lg font-medium">
                 Tone & Language
               </p>
             </div>
-            <div className="flex-1 rounded-lg border border-border/80 bg-background px-4 py-3">
+            <div className="border-border/80 bg-background flex-1 rounded-lg border px-4 py-3">
               <div className="space-y-3">
                 <span className="flex cursor-pointer items-center gap-2">
-                  <div className="flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground">
+                  <div className="bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-full">
                     <svg
                       aria-hidden="true"
                       className="size-3"
@@ -103,8 +103,8 @@ export default function BrandVoicePreview({
         </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-linear-to-b from-background to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t from-background to-transparent" />
+      <div className="from-background pointer-events-none absolute inset-x-0 top-0 h-8 bg-linear-to-b to-transparent" />
+      <div className="from-background pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t to-transparent" />
     </div>
   );
 }

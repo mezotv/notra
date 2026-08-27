@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { cn } from "@notra/ui/lib/utils";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
+
 import { AgentFeedbackDetailDialog } from "@/components/agent-feedback/feedback-detail-dialog";
 import { AgentFeedbackEmpty } from "@/components/agent-feedback/feedback-empty";
 import { AgentFeedbackSetupDialog } from "@/components/agent-feedback/feedback-setup-dialog";
@@ -57,7 +58,7 @@ export default function PageClient(_props: AgentFeedbackPageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Feedback</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Feedback</h1>
             <p className="text-muted-foreground">
               What AI agents are saying about your product.
             </p>
@@ -86,7 +87,7 @@ export default function PageClient(_props: AgentFeedbackPageClientProps) {
                     <TabsTrigger key={filter.value} value={filter.value}>
                       {filter.label}
                       {count !== null ? (
-                        <span className="ml-1.5 text-muted-foreground text-xs tabular-nums">
+                        <span className="text-muted-foreground ml-1.5 text-xs tabular-nums">
                           {count}
                         </span>
                       ) : null}

@@ -3,6 +3,7 @@ import { members, organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+
 import { isSessionBanned } from "@/lib/auth/banned";
 import { getRequestSession } from "@/lib/auth/session";
 

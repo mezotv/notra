@@ -9,6 +9,7 @@ import {
   SELECTION_CHANGE_COMMAND,
 } from "lexical";
 import { useEffect } from "react";
+
 import type { TextSelection } from "@/schemas/content";
 
 interface SelectionPluginProps {

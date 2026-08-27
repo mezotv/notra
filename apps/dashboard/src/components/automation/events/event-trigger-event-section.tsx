@@ -1,6 +1,8 @@
 import { useStore } from "@tanstack/react-form";
+
 import { EVENT_TYPE_ORDER } from "@/constants/event-triggers";
 import type { EventTriggerFormSectionProps } from "@/types/automation/event-trigger";
+
 import { EventTypeCard } from "./event-type-card";
 import { TriggerSwitchRow } from "./trigger-switch-row";
 
@@ -12,7 +14,7 @@ export function EventTriggerEventSection({
   return (
     <section className="space-y-3">
       <div className="space-y-1">
-        <h3 className="font-semibold text-base">Trigger event</h3>
+        <h3 className="text-base font-semibold">Trigger event</h3>
         <p className="text-muted-foreground text-sm">When should this fire?</p>
       </div>
       <form.Field name="eventType">

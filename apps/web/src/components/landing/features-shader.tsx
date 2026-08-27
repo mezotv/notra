@@ -1,4 +1,5 @@
 import { cn } from "@notra/ui/lib/utils";
+
 import { DeferredDithering } from "@/components/deferred-dithering";
 import type { FeaturesShaderProps } from "@/types/landing/features";
 

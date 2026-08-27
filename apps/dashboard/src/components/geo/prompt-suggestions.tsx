@@ -6,6 +6,7 @@ import { Badge } from "@notra/ui/components/ui/badge";
 import { Card } from "@notra/ui/components/ui/card";
 import { Google } from "@notra/ui/components/ui/svgs/google";
 import { useId } from "react";
+
 import { Button } from "@/components/button";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import {
@@ -81,7 +82,7 @@ function StatusRow({
     <div className="flex items-start gap-3 px-4 py-3">
       <div className="mt-0.5 shrink-0">{icon}</div>
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-sm leading-snug" id={titleId}>
+        <p className="text-sm leading-snug font-medium" id={titleId}>
           {title}
         </p>
         <p className="text-muted-foreground text-sm leading-snug">
@@ -131,7 +132,7 @@ function SuggestionRow({
   return (
     <div className="flex items-start gap-3 px-4 py-3">
       <div className="min-w-0 flex-1 space-y-1">
-        <p className="font-medium text-sm leading-snug">{suggestion.prompt}</p>
+        <p className="text-sm leading-snug font-medium">{suggestion.prompt}</p>
         <SuggestionEvidence keywords={suggestion.keywords} />
       </div>
       <div className="flex shrink-0 items-center gap-1">
@@ -222,7 +223,7 @@ export function PromptSuggestions({ organizationId }: PromptSuggestionsProps) {
       )}
       {hasSuggestions ? (
         <>
-          <div className="mx-4 border-border/80 border-t" />
+          <div className="border-border/80 mx-4 border-t" />
           <div className={cn(suggestions.length > 1 && "divide-y")}>
             {suggestions.map((suggestion) => (
               <SuggestionRow

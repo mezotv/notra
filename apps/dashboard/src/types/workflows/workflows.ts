@@ -5,6 +5,7 @@ import type {
 } from "@notra/ai/types/agents";
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { PostSourceMetadata } from "@notra/db/schema";
+
 import type { PostSummary } from "@/types/posts";
 
 export interface WorkflowTriggerData {

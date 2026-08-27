@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { ChangelogPageHeader } from "@/components/changelog-page-header";
 import { ChangelogTimeline } from "@/components/changelog-timeline";
 import {

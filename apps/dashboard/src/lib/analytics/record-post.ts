@@ -4,6 +4,7 @@ import {
   isTinybirdConfigured,
 } from "@notra/analytics/tinybird/client";
 import { toClickHouseDateTime } from "@notra/analytics/utils/datetime";
+
 import type { RecordPublishedSocialPostInput } from "@/types/analytics";
 
 export async function recordPublishedSocialPost(

@@ -4,6 +4,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
 } from "@notra/ui/components/ui/sidebar";
+
 import { GEO_UPGRADE_TOOLTIP } from "@/constants/geo";
 import {
   NAV_CATEGORY_LABELS,
@@ -14,6 +15,7 @@ import { useNavVisibility } from "@/lib/hooks/use-nav-visibility";
 import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import type { NavGeoProps } from "@/types/components/nav";
 import { resolveActiveNavLink, resolveGeoImproveLinks } from "@/utils/nav";
+
 import { NavList } from "./nav-list";
 import { NavLockHint } from "./nav-lock-hint";
 import { SidebarLabel } from "./sidebar-label";

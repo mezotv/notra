@@ -19,8 +19,7 @@ export interface GetSessionActivatedMcpToolsParams {
   serverIntegrationIds?: string[];
 }
 
-export interface QuerySessionActivatedMcpToolsParams
-  extends GetSessionActivatedMcpToolsParams {
+export interface QuerySessionActivatedMcpToolsParams extends GetSessionActivatedMcpToolsParams {
   database: McpToolIndexDatabase;
 }
 

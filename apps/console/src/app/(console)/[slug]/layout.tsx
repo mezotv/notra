@@ -3,6 +3,7 @@ import {
   SIDEBAR_COOKIE_NAME,
 } from "@notra/ui/lib/sidebar-state";
 import { cookies } from "next/headers";
+
 import { ConsoleShell } from "@/components/layout/console-shell";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 import { hasAdminRole } from "@/lib/auth/role";

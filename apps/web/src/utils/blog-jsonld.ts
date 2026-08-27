@@ -1,3 +1,5 @@
+import type { BlogFaqEntry, BlogJsonLdInput, NotraBlogPost } from "~types/blog";
+
 import {
   BLOG_FAQ_HEADING_REGEX,
   BLOG_HEADING_REGEX,
@@ -10,7 +12,6 @@ import {
   NOTRA_LOGO_PATH,
 } from "@/utils/constants";
 import { SITE_URL } from "@/utils/urls";
-import type { BlogFaqEntry, BlogJsonLdInput, NotraBlogPost } from "~types/blog";
 
 interface BlogHeading {
   level: number;

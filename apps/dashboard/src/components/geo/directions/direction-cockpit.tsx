@@ -3,6 +3,7 @@
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
+
 import { Button } from "@/components/button";
 import { EChartsLineChart } from "@/components/evilcharts/charts/echarts-line-chart";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
@@ -38,11 +39,11 @@ function Rail() {
       <Card>
         <CardContent className="flex flex-col gap-4">
           <div className="space-y-1.5">
-            <p className="font-medium text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm font-medium">
               AI visibility
             </p>
             <div className="flex items-end gap-2">
-              <span className="font-bold text-4xl text-primary tabular-nums">
+              <span className="text-primary text-4xl font-bold tabular-nums">
                 {formatMentionRate(GEO_DIRECTIONS_VISIBILITY)}
               </span>
               <DirectionDelta
@@ -52,14 +53,14 @@ function Rail() {
             </div>
           </div>
 
-          <div className="divide-y divide-border border-border border-t">
+          <div className="divide-border border-border divide-y border-t">
             {GEO_DIRECTIONS_ENGINES.map((engine) => (
               <div
                 className="flex items-center gap-2 py-2 text-sm"
                 key={engine.engine}
               >
                 <EngineIcon engine={engine.engine} />
-                <span className="min-w-0 flex-1 truncate text-muted-foreground">
+                <span className="text-muted-foreground min-w-0 flex-1 truncate">
                   {engine.label}
                 </span>
                 <span className="shrink-0 tabular-nums">
@@ -88,10 +89,10 @@ function KpiStrip() {
       {GEO_DIRECTIONS_KPIS.map((kpi) => (
         <Card key={kpi.label}>
           <CardContent className="flex flex-1 flex-col justify-center gap-2">
-            <p className="font-medium text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm font-medium">
               {kpi.label}
             </p>
-            <p className="font-bold text-3xl tabular-nums">
+            <p className="text-3xl font-bold tabular-nums">
               {formatDirectionCount(kpi.value)}
             </p>
             <p className="text-muted-foreground text-xs">{kpi.hint}</p>
@@ -163,7 +164,7 @@ function SourcesTable() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
+      <div className="text-muted-foreground flex items-center justify-between px-1 text-xs">
         <span>{GEO_DIRECTIONS_SOURCES.length.toLocaleString()} sources</span>
       </div>
       <Table

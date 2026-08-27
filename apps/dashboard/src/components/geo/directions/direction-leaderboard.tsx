@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+
 import { ChartSparkline } from "@/components/charts/chart-sparkline";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { DirectionDonut } from "@/components/geo/directions/direction-donut";
@@ -30,14 +31,13 @@ import {
   formatGeoSource,
 } from "@/utils/ai-traffic";
 import { formatMentionRate } from "@/utils/geo-charts";
-
 import { tableHeightFor } from "@/utils/table";
 
 const MAX_RATE = 1;
 
 function SectionHeading({ children }: DirectionSectionHeadingProps) {
   return (
-    <h2 className="font-medium text-foreground text-sm capitalize">
+    <h2 className="text-foreground text-sm font-medium capitalize">
       {children}
     </h2>
   );
@@ -71,7 +71,7 @@ function EngineRank() {
         width: "6rem",
         sortable: true,
         cell: (row) => (
-          <span className="font-semibold text-sm tabular-nums">
+          <span className="text-sm font-semibold tabular-nums">
             {formatMentionRate(row.rate)}
           </span>
         ),
@@ -89,7 +89,7 @@ function EngineRank() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
+      <div className="text-muted-foreground flex items-center justify-between px-1 text-xs">
         <span>{GEO_DIRECTIONS_ENGINES.length.toLocaleString()} engines</span>
       </div>
       <Table
@@ -115,7 +115,7 @@ function JourneysTable() {
         header: "Journey",
         width: "7.5rem",
         cell: (row) => (
-          <span className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
+          <span className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 font-mono text-xs">
             {formatGeoJourneyChip(row.journeyId)}
           </span>
         ),
@@ -158,7 +158,7 @@ function JourneysTable() {
         header: "Span",
         width: "9.5rem",
         cell: (row) => (
-          <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
             {formatGeoJourneySpan(row.firstSeenAt, row.lastSeenAt)}
           </span>
         ),
@@ -169,7 +169,7 @@ function JourneysTable() {
         width: "9.375rem",
         sortable: true,
         cell: (row) => (
-          <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
             {formatAiTrafficTimestamp(row.lastSeenAt)}
           </span>
         ),
@@ -191,7 +191,7 @@ function JourneysTable() {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
+      <div className="text-muted-foreground flex items-center justify-between px-1 text-xs">
         <span>{GEO_DIRECTIONS_JOURNEYS.length.toLocaleString()} journeys</span>
       </div>
       <Table
@@ -211,14 +211,14 @@ function JourneysTable() {
 
 export function DirectionLeaderboard() {
   return (
-    <div className="divide-y divide-border">
+    <div className="divide-border divide-y">
       <section className="flex flex-wrap items-end gap-x-10 gap-y-6 pb-8">
         <div className="space-y-2">
           <p className="text-muted-foreground text-sm capitalize">
             AI visibility
           </p>
           <div className="flex items-end gap-3">
-            <span className="font-semibold text-[4.5rem] tabular-nums leading-none tracking-tight">
+            <span className="text-[4.5rem] leading-none font-semibold tracking-tight tabular-nums">
               {formatMentionRate(GEO_DIRECTIONS_VISIBILITY)}
             </span>
             <DirectionDelta
@@ -244,7 +244,7 @@ export function DirectionLeaderboard() {
         <EngineRank />
       </section>
 
-      <section className="grid gap-8 py-8 md:grid-cols-2 md:gap-10 md:divide-x md:divide-border">
+      <section className="md:divide-border grid gap-8 py-8 md:grid-cols-2 md:gap-10 md:divide-x">
         <div className="space-y-3 md:pr-10">
           <SectionHeading>Where AI sends people</SectionHeading>
           <DirectionPagesTable />

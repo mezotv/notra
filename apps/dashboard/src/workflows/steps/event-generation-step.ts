@@ -1,6 +1,7 @@
 import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integrations/github";
 import { getValidToneProfile } from "@notra/ai/schemas/tone";
 import type { PostSourceMetadata } from "@notra/db/schema";
+
 import { generateEventBasedContent } from "@/lib/workflows/event/handlers";
 import type { EventGenerationStepInput } from "@/types/workflows/event-generation";
 import type { EventGenerationResult } from "@/types/workflows/workflows";

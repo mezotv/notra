@@ -8,6 +8,7 @@ import {
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
 import { useRouter } from "next/navigation";
+
 import type { CompetitorSheetProps } from "@/types/geo";
 
 export function CompetitorModal({ title, children }: CompetitorSheetProps) {

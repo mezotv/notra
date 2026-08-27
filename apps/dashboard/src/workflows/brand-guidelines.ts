@@ -1,10 +1,12 @@
 import type { BrandGuidelinesWorkflowPayload } from "@notra/ai/types/brand-guidelines";
 import { flattenError } from "zod";
+
 import { brandGuidelinesWorkflowPayloadSchema } from "@/schemas/brand-guidelines";
 import {
   BRAND_GUIDELINE_STAGES,
   type BrandGuidelinesWorkflowResult,
 } from "@/types/workflows/brand-guidelines";
+
 import {
   markBrandGuidelineStageFailed,
   markBrandGuidelinesGenerating,

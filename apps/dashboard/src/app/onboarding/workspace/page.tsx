@@ -2,8 +2,10 @@ import { db } from "@notra/db/drizzle";
 import { brandSettings, organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
+
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
 import { redirectIfAnyOrganizationHasPaidHistory } from "@/lib/onboarding/billing-gate";
+
 import { WorkspaceForm } from "./workspace-form";
 
 export default async function OnboardingWorkspacePage() {

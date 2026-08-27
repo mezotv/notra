@@ -23,6 +23,7 @@ import { Effect } from "effect";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useReducer } from "react";
 import { toast } from "sonner";
+
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
 import { PostSocialButton } from "@/components/content/post-social-button";
@@ -166,13 +167,13 @@ export function LinkedInPreview({
       open={isOpen}
     >
       <div className="ml-px max-w-md">
-        <div className="rounded-lg border border-border bg-muted/80">
+        <div className="border-border bg-muted/80 rounded-lg border">
           <CollapsibleTrigger className="flex w-full items-center gap-2 px-3 py-2 [&[data-panel-open]>svg]:rotate-90">
             <HugeiconsIcon
-              className="size-4 shrink-0 text-muted-foreground transition-transform"
+              className="text-muted-foreground size-4 shrink-0 transition-transform"
               icon={ArrowRight01Icon}
             />
-            <span className="min-w-0 truncate text-left font-medium text-sm">
+            <span className="min-w-0 truncate text-left text-sm font-medium">
               {title}
             </span>
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
@@ -219,7 +220,7 @@ export function LinkedInPreview({
               {regenerateOpen && !isFinished && (
                 <input
                   autoFocus
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="border-border bg-background focus-visible:ring-ring w-full rounded-md border px-3 py-2 text-sm outline-none focus-visible:ring-2"
                   onChange={(event) =>
                     dispatch({
                       type: "regenerateInstructionsChanged",
@@ -241,7 +242,7 @@ export function LinkedInPreview({
           {!isFinished && isOpen && (
             <div className="flex flex-wrap items-center gap-2 px-3 pb-2">
               {userAction === "generating" && (
-                <div className="mr-auto flex min-w-0 items-center gap-2 text-muted-foreground text-xs">
+                <div className="text-muted-foreground mr-auto flex min-w-0 items-center gap-2 text-xs">
                   <BrailleLoader className="text-xs" label="Generating post" />
                 </div>
               )}

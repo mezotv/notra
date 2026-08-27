@@ -7,6 +7,7 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+
 import { CompetitorEditForm } from "@/components/geo/competitor-edit-form";
 import type { CompetitorEditDialogProps } from "@/types/geo";
 
@@ -20,7 +21,7 @@ export function CompetitorEditDialog({
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
       <ResponsiveDialogContent className="sm:max-w-lg">
         <ResponsiveDialogHeader>
-          <ResponsiveDialogTitle className="font-semibold text-xl">
+          <ResponsiveDialogTitle className="text-xl font-semibold">
             {competitor ? `Edit ${competitor.name}` : "Add competitor"}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>

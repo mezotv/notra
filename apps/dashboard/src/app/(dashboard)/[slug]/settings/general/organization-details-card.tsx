@@ -16,6 +16,7 @@ import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import { uploadFile } from "@/lib/upload/client";
@@ -198,7 +199,7 @@ export function OrganizationDetailsCard({
             onMouseLeave={(e) => e.stopPropagation()}
             type="button"
           >
-            <Avatar className="size-16 rounded-lg ring-2 ring-transparent transition-shadow after:rounded-lg group-hover/logo:ring-muted-foreground/20 group-focus-visible:ring-ring">
+            <Avatar className="group-hover/logo:ring-muted-foreground/20 group-focus-visible:ring-ring size-16 rounded-lg ring-2 ring-transparent transition-shadow after:rounded-lg">
               <AvatarImage
                 alt={organization.name}
                 className="rounded-lg"
@@ -208,17 +209,17 @@ export function OrganizationDetailsCard({
                 {organization.name.charAt(0).toUpperCase()}
               </AvatarFallback>
               {isUploadingLogo && (
-                <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/80">
+                <span className="bg-background/80 absolute inset-0 flex items-center justify-center rounded-lg">
                   <Loader2Icon className="size-6 animate-spin" />
                 </span>
               )}
-              <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/80 opacity-0 transition-opacity group-hover/logo:opacity-100">
+              <span className="bg-background/80 absolute inset-0 flex items-center justify-center rounded-lg opacity-0 transition-opacity group-hover/logo:opacity-100">
                 <HugeiconsIcon className="size-6" icon={Upload01Icon} />
               </span>
             </Avatar>
           </button>
           <div className="space-y-1">
-            <p className="font-medium text-sm">Logo</p>
+            <p className="text-sm font-medium">Logo</p>
             <p className="text-muted-foreground text-xs">
               {isUploadingLogo ? "Uploading..." : "Click to upload a new logo"}
             </p>

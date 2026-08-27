@@ -6,6 +6,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import { cn } from "@notra/ui/lib/utils";
+
 import type { HeroCollageGlyphType } from "@/types/landing/hero-collage";
 
 const GLYPH_CLASS = "size-4";

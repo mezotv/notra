@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { SlackCtaBanner } from "@/components/integrations/slack/slack-cta-banner";
 import { SlackDemoSection } from "@/components/integrations/slack/slack-demo-section";
 import { SlackFeatureList } from "@/components/integrations/slack/slack-feature-list";

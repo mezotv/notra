@@ -2,6 +2,7 @@ import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { collectionOptions } from "@tanstack/react-db";
 import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   GeoCompetitor,

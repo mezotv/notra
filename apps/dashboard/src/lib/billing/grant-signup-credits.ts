@@ -4,6 +4,7 @@ import { db } from "@notra/db/drizzle";
 import { members, users } from "@notra/db/schema";
 import { and, eq, ne } from "drizzle-orm";
 import { isFreeEmail } from "free-email-domains-list";
+
 import {
   SIGNUP_CREDITS_BALANCE_PREFIX,
   SIGNUP_CREDITS_GRANT_CENTS,

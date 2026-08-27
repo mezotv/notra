@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { geoScans, geoSettings } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { Effect, Exit } from "effect";
+
 import { geoDb, geoSkip } from "@/lib/geo/effect";
 import type { GeoDatabaseError } from "@/lib/geo/errors";
 

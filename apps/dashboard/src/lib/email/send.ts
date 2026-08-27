@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+
 import { AiCreditsDepletedEmail } from "@notra/email/emails/ai-credits-depleted";
 import { FeedbackEmail } from "@notra/email/emails/feedback";
 import { ResetPasswordEmail } from "@notra/email/emails/reset";
@@ -10,6 +11,7 @@ import { WorkflowPausedEmail } from "@notra/email/emails/workflow-paused";
 import { EMAIL_CONFIG } from "@notra/email/utils/config";
 import { FEEDBACK_SENTIMENT_META } from "@notra/email/utils/feedback";
 import type { Resend } from "resend";
+
 import type {
   EmailResult,
   SendAiCreditsDepletedEmailProps,

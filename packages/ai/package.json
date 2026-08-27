@@ -2,10 +2,6 @@
   "name": "@notra/ai",
   "version": "0.0.1",
   "private": true,
-  "scripts": {
-    "check-types": "tsc --noEmit",
-    "test": "bun test src"
-  },
   "exports": {
     "./gateway": "./src/gateway.ts",
     "./model": "./src/model.ts",
@@ -37,6 +33,10 @@
     "./qstash/*": "./src/qstash/*.ts",
     "./integrations/*": "./src/integrations/*.ts",
     "./crypto/*": "./src/crypto/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "bun test src"
   },
   "dependencies": {
     "@ai-sdk/gateway": "3.0.132",

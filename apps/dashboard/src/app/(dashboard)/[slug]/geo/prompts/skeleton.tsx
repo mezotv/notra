@@ -4,6 +4,7 @@ import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+
 import { Button } from "@/components/button";
 import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
 import { PageContainer } from "@/components/layout/container";
@@ -16,7 +17,7 @@ export function GeoPromptsSkeleton() {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Prompts</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Prompts</h1>
             <p className="text-muted-foreground">
               The questions we ask AI engines on your behalf
             </p>
@@ -36,7 +37,7 @@ export function GeoPromptsSkeleton() {
         <div className="space-y-3">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-1">
-              <p className="font-semibold text-sm">Conversations</p>
+              <p className="text-sm font-semibold">Conversations</p>
               <p className="text-muted-foreground text-sm">
                 Multi-turn questions where buying decisions happen
               </p>

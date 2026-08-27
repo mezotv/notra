@@ -7,6 +7,7 @@ import {
   AlertTitle,
 } from "@notra/ui/components/ui/alert";
 import { useEffect } from "react";
+
 import { PageContainer } from "@/components/layout/container";
 import { getValidLanguage } from "@/schemas/brand";
 import type {
@@ -15,6 +16,7 @@ import type {
 } from "@/types/brand-identity";
 import { sanitizeBrandUrlInput } from "@/utils/brand-identity";
 import { formatRelativeTime } from "@/utils/format";
+
 import { AddIdentityDialog } from "./add-identity-dialog";
 import { AnalysisStepper } from "./analysis-stepper";
 import { BrandIdentityHeader } from "./brand-identity-header";

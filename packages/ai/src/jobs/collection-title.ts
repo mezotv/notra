@@ -96,9 +96,10 @@ export async function generateCollectionTitle(
         post.content.startsWith("http")
     )
     .slice(0, COLLECTION_TITLE_MAX_IMAGES)
-    .map(
-      (post): ImagePart => ({ type: "image", image: new URL(post.content) })
-    );
+    .map((post): ImagePart => ({
+      type: "image",
+      image: new URL(post.content),
+    }));
 
   const promptText = [
     organization ? `Organization: ${organization.name}` : null,

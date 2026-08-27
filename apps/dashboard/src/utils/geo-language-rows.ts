@@ -2,6 +2,7 @@ import {
   DEFAULT_LANGUAGE,
   SUPPORTED_LANGUAGES,
 } from "@notra/ai/constants/languages";
+
 import { GEO_MAX_LANGUAGES } from "@/constants/geo";
 import type {
   GeoLanguageSharePoint,

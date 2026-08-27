@@ -1,4 +1,5 @@
 import type { Font } from "opentype.js";
+
 import {
   SceneBuilder,
   solidFill,

@@ -4,6 +4,7 @@ import { createDb } from "@notra/db/drizzle";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { trimTrailingSlash } from "hono/trailing-slash";
+
 import {
   LEGACY_API_READ_SCOPE,
   LEGACY_API_WRITE_SCOPE,

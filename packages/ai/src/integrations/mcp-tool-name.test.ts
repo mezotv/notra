@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+
 import { createMcpRuntimeToolName } from "./mcp-tool-name";
 
 const HASHED_RUNTIME_TOOL_NAME_REGEX = /^mcp_[a-z0-9_-]+_[a-f0-9]{8}$/;

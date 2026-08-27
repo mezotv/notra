@@ -52,13 +52,13 @@ function TocList({ nodes }: { nodes: TocNode[] }) {
       {nodes.map((node) => (
         <li key={node.item.url}>
           <a
-            className="block font-sans text-muted-foreground text-sm transition-colors hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground block font-sans text-sm transition-colors"
             href={node.item.url}
           >
             {node.item.title}
           </a>
           {node.children.length > 0 && (
-            <div className="mt-1 border-muted-foreground/20 border-l pl-3">
+            <div className="border-muted-foreground/20 mt-1 border-l pl-3">
               <TocList nodes={node.children} />
             </div>
           )}
@@ -82,9 +82,9 @@ export function TableOfContents({
 
   return (
     <Collapsible className="not-prose mb-8" defaultOpen={false}>
-      <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 font-sans font-semibold text-foreground text-sm">
+      <CollapsibleTrigger className="text-foreground flex w-full cursor-pointer items-center gap-2 font-sans text-sm font-semibold">
         <HugeiconsIcon
-          className="size-3.5 text-muted-foreground transition-transform [[data-panel-open]_&]:rotate-180"
+          className="text-muted-foreground size-3.5 transition-transform [[data-panel-open]_&]:rotate-180"
           icon={ArrowDown01Icon}
         />
         On this page

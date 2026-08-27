@@ -1,4 +1,5 @@
 import type { BlogPostSubtype } from "@notra/db/types/content";
+
 import type { OnDemandContentType } from "@/schemas/content";
 import type { ScheduleOutputType } from "@/schemas/integrations";
 import type { FormatCardMeta } from "@/types/content/formats";

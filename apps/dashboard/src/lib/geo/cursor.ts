@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+
 import {
   Agent,
   JsonlLocalAgentStore,
@@ -9,6 +10,7 @@ import {
   type SDKAgent,
 } from "@cursor/sdk";
 import { Effect } from "effect";
+
 import {
   GEO_ANSWER_SYSTEM_PROMPT,
   GEO_CURSOR_API_KEY_ENV,

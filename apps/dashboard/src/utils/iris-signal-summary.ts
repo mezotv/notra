@@ -1,4 +1,5 @@
 import type { SignalSummary } from "@notra/ai/types/autonomy";
+
 import {
   IRIS_SIGNAL_COMMIT_SUBJECT_LIMIT,
   IRIS_SIGNAL_COMMIT_SUBJECT_MAX_LENGTH,

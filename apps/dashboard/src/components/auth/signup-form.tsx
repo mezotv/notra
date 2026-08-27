@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useQueryStates } from "nuqs";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
+
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
 import { SHOW_SIGNUP_CREDITS_BANNER } from "@/constants/signup-credits";
 import {
@@ -280,7 +281,7 @@ export function SignupForm({
 
           <p
             aria-live="polite"
-            className="mt-3 text-destructive text-sm empty:hidden"
+            className="text-destructive mt-3 text-sm empty:hidden"
           >
             {formError}
           </p>
@@ -303,12 +304,12 @@ export function SignupForm({
       </div>
 
       {(showForgotPasswordLink || showLoginLink) && (
-        <div className="flex flex-col gap-4 px-8 text-center text-muted-foreground text-xs">
+        <div className="text-muted-foreground flex flex-col gap-4 px-8 text-center text-xs">
           {showForgotPasswordLink && (
             <p>
               Forgot your password?{" "}
               <Link
-                className="underline underline-offset-4 hover:text-primary"
+                className="hover:text-primary underline underline-offset-4"
                 href="/forgot-password"
               >
                 Reset Your Password
@@ -320,7 +321,7 @@ export function SignupForm({
             <p>
               Already have an account?{" "}
               <Link
-                className="underline underline-offset-4 hover:text-primary"
+                className="hover:text-primary underline underline-offset-4"
                 href="/login"
               >
                 Log in

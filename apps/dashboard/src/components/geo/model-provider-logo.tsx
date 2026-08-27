@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+
 import { cn } from "@/lib/utils";
 import type { ModelProviderLogoProps } from "@/types/geo";
 import { modelsDevLogoUrl } from "@/utils/geo-model-display";

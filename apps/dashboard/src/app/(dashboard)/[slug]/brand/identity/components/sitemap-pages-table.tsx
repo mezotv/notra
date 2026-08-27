@@ -28,6 +28,7 @@ import {
 } from "@notra/ui/components/ui/table";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useState } from "react";
+
 import { useSitemapPages } from "@/lib/hooks/use-brand-sitemaps";
 import {
   formatTextRatio,
@@ -45,6 +46,7 @@ import type {
   SitemapPagesTableProps,
 } from "@/types/hooks/brand-sitemaps";
 import { getPageNumbers } from "@/utils/content-preview";
+
 import {
   PAGE_FILTER_TABS,
   SITEMAP_PAGE_SKELETON_KEYS,
@@ -136,7 +138,7 @@ export function SitemapPagesTable({
         <InputGroup className="h-9 sm:max-w-80">
           <InputGroupAddon>
             <HugeiconsIcon
-              className="size-4 text-muted-foreground"
+              className="text-muted-foreground size-4"
               icon={Search01Icon}
             />
           </InputGroupAddon>
@@ -154,10 +156,10 @@ export function SitemapPagesTable({
             return (
               <button
                 className={cn(
-                  "rounded-lg border px-3 py-1.5 font-medium text-xs transition-colors",
+                  "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
                   isActive
                     ? "border-primary bg-muted/60 text-foreground"
-                    : "border-transparent text-muted-foreground hover:bg-muted/40"
+                    : "text-muted-foreground hover:bg-muted/40 border-transparent"
                 )}
                 key={tab.value}
                 onClick={() => handleFilterChange(tab.value)}
@@ -260,13 +262,13 @@ function PageRow({ page }: { page: SitemapPage }) {
       <TableCell className="max-w-0">
         <div className="flex items-start gap-2">
           <HugeiconsIcon
-            className="mt-0.5 size-3.5 shrink-0 text-muted-foreground"
+            className="text-muted-foreground mt-0.5 size-3.5 shrink-0"
             icon={LinkSquare02Icon}
           />
           <div className="min-w-0">
             {safeUrl ? (
               <a
-                className="block truncate font-medium text-primary text-sm hover:underline"
+                className="text-primary block truncate text-sm font-medium hover:underline"
                 href={safeUrl}
                 rel="noopener noreferrer"
                 target="_blank"
@@ -274,11 +276,11 @@ function PageRow({ page }: { page: SitemapPage }) {
                 {page.path}
               </a>
             ) : (
-              <span className="block truncate font-medium text-sm">
+              <span className="block truncate text-sm font-medium">
                 {page.path}
               </span>
             )}
-            <p className="truncate text-muted-foreground text-xs">
+            <p className="text-muted-foreground truncate text-xs">
               {page.category === "redirect" && page.redirectTarget
                 ? `→ ${page.redirectTarget}`
                 : (page.title ?? page.url)}
@@ -292,7 +294,7 @@ function PageRow({ page }: { page: SitemapPage }) {
         ) : (
           <span
             className={cn(
-              "font-medium text-sm tabular-nums",
+              "text-sm font-medium tabular-nums",
               getStatusCodeClassName(page.statusCode)
             )}
           >

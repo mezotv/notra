@@ -16,6 +16,7 @@ import { Loader2Icon } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button, buttonVariants } from "@/components/button";
 import { AddReferenceControl } from "@/components/content/add-reference-control";
 import { PostSocialErrorNotice } from "@/components/content/post-social-error-notice";
@@ -204,7 +205,7 @@ export function PostSocialButton({
       </ResponsiveDialogTrigger>
       <ResponsiveDialogContent className="sm:max-w-lg">
         {published && (
-          <div className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2">
+          <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2">
             <Confetti
               colors={CONFETTI_COLORS}
               duration={3000}
@@ -250,7 +251,7 @@ export function PostSocialButton({
           )}
         </div>
         {!published && charLimit !== null && isOverCharLimit && (
-          <p className="text-amber-600 text-sm dark:text-amber-500">
+          <p className="text-sm text-amber-600 dark:text-amber-500">
             This post is {overCharCount.toLocaleString()}{" "}
             {overCharCount === 1 ? "character" : "characters"} over the{" "}
             {charLimit.toLocaleString()} character limit for @

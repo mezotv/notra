@@ -13,6 +13,7 @@ import {
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { useId, useState } from "react";
+
 import { Button } from "@/components/button";
 import { GEO_PROMPT_MIN_LENGTH, GEO_SEQUENCE_MAX_TURNS } from "@/constants/geo";
 import { useGeoSequencesDb } from "@/lib/hooks/use-geo-db";
@@ -102,12 +103,12 @@ export function ConversationBuilderDialog({
             <div className="space-y-2">
               {steps.map((step, index) => (
                 <div className="flex items-start gap-2" key={step.id}>
-                  <span className="mt-2 w-5 shrink-0 text-right text-muted-foreground text-xs tabular-nums">
+                  <span className="text-muted-foreground mt-2 w-5 shrink-0 text-right text-xs tabular-nums">
                     {index + 1}
                   </span>
-                  <div className="min-w-0 flex-1 rounded-lg border border-border bg-muted/40 px-3 py-2">
+                  <div className="border-border bg-muted/40 min-w-0 flex-1 rounded-lg border px-3 py-2">
                     <textarea
-                      className="block w-full resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                      className="placeholder:text-muted-foreground block w-full resize-none bg-transparent text-sm outline-none"
                       onChange={(event) =>
                         setSteps((previous) =>
                           previous.map((item) =>

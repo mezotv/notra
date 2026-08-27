@@ -14,6 +14,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import {
   useAnalyzeBrand,
   useBrandAnalysisProgress,
@@ -99,7 +100,7 @@ function InlineCreateForm({ organizationId }: InlineCreateFormProps) {
         }}
       >
         <div className="space-y-1">
-          <p className="font-semibold text-base">No brand identity yet</p>
+          <p className="text-base font-semibold">No brand identity yet</p>
           <p className="text-muted-foreground text-xs">
             Drop in your website and we'll learn your tone and audience.
           </p>
@@ -108,9 +109,9 @@ function InlineCreateForm({ organizationId }: InlineCreateFormProps) {
           <Label className="sr-only" htmlFor="identity-url">
             Website
           </Label>
-          <div className="flex w-full flex-row items-center rounded-md border border-border transition-colors focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/50">
+          <div className="border-border focus-within:border-ring focus-within:ring-ring/50 flex w-full flex-row items-center rounded-md border transition-colors focus-within:ring-2">
             <label
-              className="border-border border-r px-2.5 py-2 text-muted-foreground text-sm"
+              className="border-border text-muted-foreground border-r px-2.5 py-2 text-sm"
               htmlFor="identity-url"
             >
               https://
@@ -158,7 +159,7 @@ export function StepBrandIdentities({
   return (
     <div className="space-y-6">
       <div className="space-y-1">
-        <h2 className="font-semibold text-xl tracking-tight">
+        <h2 className="text-xl font-semibold tracking-tight">
           Which brand identity should this use?
         </h2>
         <p className="text-muted-foreground text-sm">
@@ -186,10 +187,10 @@ export function StepBrandIdentities({
               <button
                 aria-pressed={isSelected}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-lg border bg-card px-3 py-3 text-left transition-colors",
+                  "bg-card flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-colors",
                   "hover:border-foreground/20",
                   isSelected
-                    ? "border-foreground/40 ring-2 ring-foreground/10"
+                    ? "border-foreground/40 ring-foreground/10 ring-2"
                     : "border-border"
                 )}
                 key={voice.id}
@@ -208,15 +209,15 @@ export function StepBrandIdentities({
                     <HugeiconsIcon className="size-3" icon={Tick01Icon} />
                   )}
                 </div>
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
+                <div className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-md">
                   <HugeiconsIcon
-                    className="size-4 text-muted-foreground"
+                    className="text-muted-foreground size-4"
                     icon={UserGroupIcon}
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">{voice.name}</p>
-                  <p className="truncate text-muted-foreground text-xs">
+                  <p className="truncate text-sm font-medium">{voice.name}</p>
+                  <p className="text-muted-foreground truncate text-xs">
                     {voice.isDefault
                       ? "Default brand identity"
                       : "Brand identity"}

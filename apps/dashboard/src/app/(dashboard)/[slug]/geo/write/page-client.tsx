@@ -6,6 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useState } from "react";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
@@ -37,6 +38,7 @@ import type { GeoPageClientProps } from "@/types/geo";
 import { withGeoProject } from "@/utils/geo-paths";
 import { emptyWriteDialogState, geoContentPath } from "@/utils/geo-write-entry";
 import { isGeoWriterVisibleInNav } from "@/utils/geo-writer-flag";
+
 import { GeoWriterSkeleton } from "./skeleton";
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
@@ -156,12 +158,12 @@ function GeoWriterPageContent({ organizationSlug }: GeoWriterPageContentProps) {
       <div className="flex min-h-0 w-full flex-1 flex-col gap-6 px-4 lg:px-6">
         <header className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Write</h1>
-            <p className="max-w-2xl text-pretty text-muted-foreground text-sm">
+            <h1 className="text-3xl font-bold tracking-tight">Write</h1>
+            <p className="text-muted-foreground max-w-2xl text-sm text-pretty">
               Plan a custom article from a topic, type, and brand. Questions
               engines already answer live on{" "}
               <Link
-                className="underline decoration-from-font underline-offset-4 hover:text-foreground"
+                className="hover:text-foreground underline decoration-from-font underline-offset-4"
                 href={gapsHref}
               >
                 Content Gaps

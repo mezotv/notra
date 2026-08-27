@@ -27,7 +27,7 @@ export function TrafficDeltaBadge({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 font-medium text-[0.6875rem] tabular-nums leading-none",
+        "inline-flex shrink-0 items-center rounded-full px-1.5 py-0.5 text-[0.6875rem] leading-none font-medium tabular-nums",
         TRAFFIC_DELTA_TONE_CLASS[trafficDeltaTone(delta)],
         className
       )}

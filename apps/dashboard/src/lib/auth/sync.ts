@@ -10,6 +10,7 @@ import type { User } from "@workos-inc/node";
 import { and, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";
 import { isValid as isNotDisposableEmail } from "mailchecker";
+
 import { SocialConnectionError, UserSyncError } from "@/lib/auth/errors";
 import { sendWelcomeEmailAction } from "@/lib/email/actions";
 import type {

@@ -17,6 +17,7 @@ import { and, eq, inArray, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import { DEFAULT_LOOKBACK_WINDOW } from "@/constants/workflows";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
@@ -33,6 +34,7 @@ import {
   triggerTargetsSchema,
 } from "@/schemas/integrations";
 import type { Trigger } from "@/types/triggers/triggers";
+
 import {
   badRequest,
   conflict,

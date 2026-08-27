@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSyncExternalStore } from "react";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useReferences } from "@/lib/hooks/use-brand-references";
@@ -25,6 +26,7 @@ import {
   findSelectedBrandIdentity,
   readStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
+
 import { SidebarLabel } from "./sidebar-label";
 
 function subscribeToStorage(onStoreChange: () => void) {
@@ -138,7 +140,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
                 <HugeiconsIcon icon={Comment01Icon} />
                 <SidebarLabel>References</SidebarLabel>
                 {referenceCount > 0 ? (
-                  <span className="ml-auto text-muted-foreground text-xs tabular-nums group-data-[collapsible=icon]:hidden">
+                  <span className="text-muted-foreground ml-auto text-xs tabular-nums group-data-[collapsible=icon]:hidden">
                     {referenceCount}
                   </span>
                 ) : null}
@@ -155,7 +157,7 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
                 <HugeiconsIcon icon={GlobalIcon} />
                 <SidebarLabel>Sitemap</SidebarLabel>
                 {sitemapCount > 0 ? (
-                  <span className="ml-auto text-muted-foreground text-xs tabular-nums group-data-[collapsible=icon]:hidden">
+                  <span className="text-muted-foreground ml-auto text-xs tabular-nums group-data-[collapsible=icon]:hidden">
                     {sitemapCount}
                   </span>
                 ) : null}

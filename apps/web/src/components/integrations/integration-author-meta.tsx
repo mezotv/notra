@@ -1,4 +1,5 @@
 import { cn } from "@notra/ui/lib/utils";
+
 import type { IntegrationAuthorMetaProps } from "@/types/integrations";
 import { getIntegrationReferralUrl } from "@/utils/integration-referral-url";
 

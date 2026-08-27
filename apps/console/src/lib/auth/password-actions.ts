@@ -10,6 +10,7 @@ import { getWorkOS, saveSession } from "@workos-inc/authkit-nextjs";
 import type { AuthenticationResponse } from "@workos-inc/node";
 import { Effect } from "effect";
 import { headers } from "next/headers";
+
 import { UserSyncError, WorkOSAuthError } from "@/lib/auth/errors";
 import { authenticateResolvingOrgSelection } from "@/lib/auth/org-selection";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";

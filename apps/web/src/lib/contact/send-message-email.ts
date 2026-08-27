@@ -1,10 +1,12 @@
 import { createHash } from "node:crypto";
+
 import { ContactMessageEmail } from "@notra/email/emails/contact";
 import type { ContactMessageEmailProps } from "@notra/email/types/contact";
 import { EMAIL_CONFIG } from "@notra/email/utils/config";
 import { sendDevEmail } from "@notra/email/utils/dev";
 import { getResend } from "@notra/email/utils/resend";
 import { Data, Effect } from "effect";
+
 import { CONTACT_RECIPIENT } from "@/constants/contact";
 import type { ContactMessageInput } from "@/types/contact";
 

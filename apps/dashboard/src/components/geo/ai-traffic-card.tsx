@@ -6,6 +6,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
+
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
@@ -136,13 +137,13 @@ function TrafficHero({
   );
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+    <div className="border-border bg-card overflow-hidden rounded-2xl border">
+      <div className="divide-border grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
         {metrics.map((metric) => (
           <div className="px-5 py-4" key={metric.key}>
             <p className="text-muted-foreground text-xs">{metric.label}</p>
             <div className="mt-1 flex items-center gap-x-2">
-              <span className="font-semibold text-3xl tabular-nums leading-none tracking-tight">
+              <span className="text-3xl leading-none font-semibold tracking-tight tabular-nums">
                 {metric.value.toLocaleString()}
               </span>
               {metric.delta === null ? null : (
@@ -246,7 +247,7 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         width: "1fr",
         sortable: true,
         cell: (row) => (
-          <span className="flex min-w-0 items-center gap-2 font-medium text-sm">
+          <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
             <EngineIcon engine={row.source} />
             <span className="truncate">
               {formatGeoSource(row.source, row.visitorType)}
@@ -342,7 +343,7 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         width: "9.375rem",
         sortable: true,
         cell: (row) => (
-          <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
             {formatAiTrafficTimestamp(row.lastSeenAt)}
           </span>
         ),

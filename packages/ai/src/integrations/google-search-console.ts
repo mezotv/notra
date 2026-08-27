@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { googleSearchConsoleIntegrations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+
 import {
   ACCESS_TOKEN_REFRESH_BUFFER_MS,
   DEFAULT_ACCESS_TOKEN_TTL_SECONDS,

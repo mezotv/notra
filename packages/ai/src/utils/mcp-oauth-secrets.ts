@@ -1,4 +1,5 @@
 import type { z } from "zod";
+
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
 
 export function encryptMcpOAuthSecret(value: unknown) {

@@ -28,8 +28,10 @@ export interface StoreListingRow {
   indexedToolCount: number;
 }
 
-export interface PublicStoreIntegration
-  extends Omit<StoreListingRow, "storeFeaturedAt"> {
+export interface PublicStoreIntegration extends Omit<
+  StoreListingRow,
+  "storeFeaturedAt"
+> {
   featuredAt: string | null;
   tools: PublicStoreTool[];
 }

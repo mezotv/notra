@@ -26,7 +26,7 @@ export function DirectionReport() {
           GEO · {GEO_DIRECTIONS_WEEK_LABEL} · {GEO_DIRECTIONS_CHECK_COUNT}{" "}
           checks across {GEO_DIRECTIONS_ENGINE_COUNT} engines
         </p>
-        <h1 className="font-semibold text-2xl leading-snug tracking-tight">
+        <h1 className="text-2xl leading-snug font-semibold tracking-tight">
           AI engines mention {GEO_DIRECTIONS_COMPANY} in{" "}
           {formatMentionRate(GEO_DIRECTIONS_VISIBILITY)} of answers,{" "}
           <span className="text-geo-up">
@@ -37,57 +37,57 @@ export function DirectionReport() {
       </header>
 
       <section className="space-y-3">
-        <h2 className="font-semibold text-lg tracking-tight">
+        <h2 className="text-lg font-semibold tracking-tight">
           ChatGPT {GEO_SEARCH_LABEL} is where you win.
         </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
           {GEO_SEARCH_LABEL} names you in{" "}
-          <span className="font-semibold text-foreground">71%</span> of answers,
+          <span className="text-foreground font-semibold">71%</span> of answers,
           while ChatGPT without search gets you to{" "}
-          <span className="font-semibold text-foreground">62%</span>.
+          <span className="text-foreground font-semibold">62%</span>.
         </p>
         <DirectionEngineBars />
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-semibold text-lg tracking-tight">
+        <h2 className="text-lg font-semibold tracking-tight">
           Your changelog is the front door for AI traffic.
         </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
           One page took{" "}
-          <span className="font-semibold text-foreground">10,412</span> of your{" "}
-          <span className="font-semibold text-foreground">18,226</span> AI
+          <span className="text-foreground font-semibold">10,412</span> of your{" "}
+          <span className="text-foreground font-semibold">18,226</span> AI
           visits this week.
         </p>
         <DirectionPagesTable />
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-semibold text-lg tracking-tight">
+        <h2 className="text-lg font-semibold tracking-tight">
           You own about a third of the conversation.
         </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
           Across competitor comparisons you take{" "}
-          <span className="font-semibold text-foreground">31%</span> of
+          <span className="text-foreground font-semibold">31%</span> of
           mentions, ahead of Jasper at{" "}
-          <span className="font-semibold text-foreground">24%</span>.
+          <span className="text-foreground font-semibold">24%</span>.
         </p>
         <DirectionDonut />
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-semibold text-lg tracking-tight">
+        <h2 className="text-lg font-semibold tracking-tight">
           Agents are reading you deeply, not just fetching one page.
         </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
           One GPTBot journey{" "}
-          <span className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
+          <span className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 font-mono text-xs">
             {formatGeoJourneyChip(LEAD_JOURNEY?.journeyId ?? "")}
           </span>{" "}
-          read <span className="font-semibold text-foreground">14 pages</span>{" "}
-          in <span className="font-semibold text-foreground">22 minutes</span>,
+          read <span className="text-foreground font-semibold">14 pages</span>{" "}
+          in <span className="text-foreground font-semibold">22 minutes</span>,
           starting at{" "}
-          <span className="font-mono text-foreground text-xs">/changelog</span>.
+          <span className="text-foreground font-mono text-xs">/changelog</span>.
         </p>
       </section>
     </article>

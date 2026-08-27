@@ -9,6 +9,7 @@ import {
   type SQL,
   sql,
 } from "drizzle-orm";
+
 import { db } from "../drizzle";
 import { geoMentionChecks } from "../schema";
 import type {

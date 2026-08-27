@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { BlogArticleProps } from "~types/blog";
+
 import { ChangelogHtmlArticle } from "@/components/changelog-html-article";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
-import type { BlogArticleProps } from "~types/blog";
 
 const COPY_BUTTON_SELECTOR = "[data-copy-code]";
 const COPIED_STATE_DURATION_MS = 2000;

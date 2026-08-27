@@ -3,6 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
 import { toast } from "sonner";
+
 import { GSC_ERROR_MESSAGES } from "@/lib/integrations/google-search-console/oauth-errors";
 
 const OAUTH_RESULT_PARAMS = ["gscConnected", "error"] as const;

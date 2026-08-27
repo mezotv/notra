@@ -1,4 +1,5 @@
 import type { PerplexitySearchSource } from "@notra/ui/components/brainless/perplexity/perplexity-search";
+
 import type { GeoAnswerSource } from "@/types/geo";
 import { getReferenceDomain } from "@/utils/reference-display";
 

@@ -1,6 +1,7 @@
 import { createDualmarkMiddleware } from "@dualmark/nextjs";
 import { createGeoProxy } from "@usenotra/geo/next";
 import { after, type NextRequest, NextResponse } from "next/server";
+
 import { HOMEPAGE_LINK_HEADER, SITE_URL } from "@/utils/urls";
 
 const geoTracker = createGeoProxy({

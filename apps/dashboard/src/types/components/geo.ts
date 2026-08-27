@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import type { GeoPromptSuggestion, GeoSuggestionKeyword } from "@/types/geo";
 import type { GeoSearchConsoleStatus } from "@/types/google-search-console";
 

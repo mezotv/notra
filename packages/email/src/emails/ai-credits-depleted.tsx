@@ -42,11 +42,11 @@ export const AiCreditsDepletedEmail = ({
               />
             </Section>
 
-            <Heading className="my-6 text-center font-medium text-2xl text-black">
+            <Heading className="my-6 text-center text-2xl font-medium text-black">
               AI credits are depleted
             </Heading>
 
-            <Text className="text-center text-[#737373] text-base leading-relaxed">
+            <Text className="text-center text-base leading-relaxed text-[#737373]">
               Your <strong>{automationName}</strong> automation in{" "}
               <strong>{organizationName}</strong> did not run because your AI
               credit balance is empty.
@@ -56,7 +56,7 @@ export const AiCreditsDepletedEmail = ({
               <EmailButton href={creditsLink}>Add AI Credits</EmailButton>
             </Section>
 
-            <Text className="text-[14px] text-black leading-[24px]">
+            <Text className="text-[14px] leading-[24px] text-black">
               If the button does not work, copy and paste this URL into your
               browser: <Link href={creditsLink}>{creditsLink}</Link>
             </Text>

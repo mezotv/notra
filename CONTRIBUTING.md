@@ -201,7 +201,7 @@ We keep both in sync so the website and markdown endpoint (`/markdown`) say the 
 ## Code Style
 
 - Follow existing patterns in the touched area.
-- Use `ultracite`/Biome formatting and linting via repo scripts.
+- Use Ultracite's Oxlint and Oxfmt provider via the repository scripts.
 - Prefer readable, self-documenting code.
 - Add comments only when logic is not obvious.
 

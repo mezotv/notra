@@ -1,6 +1,7 @@
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
+
 import { EventsPageSkeleton } from "@/components/automation/events-skeleton";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
@@ -11,7 +12,7 @@ export default function Loading() {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Events</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Events</h1>
             <p className="text-muted-foreground">
               React to GitHub activity and trigger content generation
               automatically

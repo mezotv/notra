@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+
 import { ChartColorScope } from "@/components/charts/chart-color-scope";
 import { EChartsPieChart } from "@/components/evilcharts/charts/echarts-pie-chart";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
@@ -56,13 +57,13 @@ function ShareOfVoiceLegendRow({
           name={row.brand}
         />
       )}
-      <span className="min-w-0 flex-1 truncate text-muted-foreground">
+      <span className="text-muted-foreground min-w-0 flex-1 truncate">
         {row.brand}
       </span>
       <span className="shrink-0 tabular-nums">
         {formatMentionRate(row.share)}
       </span>
-      <span className="w-12 shrink-0 text-right text-muted-foreground tabular-nums">
+      <span className="text-muted-foreground w-12 shrink-0 text-right tabular-nums">
         {row.mentions.toLocaleString()}
       </span>
     </>
@@ -78,7 +79,7 @@ function ShareOfVoiceLegendRow({
     <button
       className={cn(
         className,
-        "rounded-md text-left transition-colors hover:bg-muted/60"
+        "hover:bg-muted/60 rounded-md text-left transition-colors"
       )}
       onClick={onClick}
       onPointerEnter={onPointerEnter}
@@ -142,7 +143,7 @@ export function ShareOfVoiceDonut({
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-6">
+    <div className="border-border bg-card rounded-2xl border p-6">
       <div className="flex flex-col">
         <div className="flex flex-1 flex-col items-stretch gap-4 sm:flex-row sm:items-center">
           <EChartsPieChart
@@ -190,7 +191,7 @@ export function ShareOfVoiceDonut({
           </ChartColorScope>
         </div>
         {caption ? (
-          <p className="mt-2 truncate text-[0.6875rem] text-muted-foreground">
+          <p className="text-muted-foreground mt-2 truncate text-[0.6875rem]">
             {caption}
           </p>
         ) : null}

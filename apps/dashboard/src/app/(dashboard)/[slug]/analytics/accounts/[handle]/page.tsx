@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { AccountDetailView } from "@/components/analytics/account-detail-view";
 import { PageContainer } from "@/components/layout/container";
 

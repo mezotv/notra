@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import type { ChartColorPair, ChartConfig, ChartMarker } from "@/types/charts";
 
 export interface SocialAnalyticsSyncPayload {

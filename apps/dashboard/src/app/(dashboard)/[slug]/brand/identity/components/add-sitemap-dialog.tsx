@@ -15,6 +15,7 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
 import { type KeyboardEvent, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { useCreateSitemap } from "@/lib/hooks/use-brand-sitemaps";
 import {
@@ -118,7 +119,7 @@ export function AddSitemapDialog({
                   : "Set a website on this brand identity first."}
               </p>
             ) : (
-              <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+              <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
                 <HugeiconsIcon className="size-3.5" icon={GlobalIcon} />
                 {brandHost
                   ? `Scoped to ${brandHost} and its subdomains`

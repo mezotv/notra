@@ -3,10 +3,6 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "scripts": {
-    "check-types": "tsc --noEmit",
-    "seed:brand-identity": "bun run src/scripts/seed-brand-identity.ts"
-  },
   "exports": {
     "./constants/*": "./src/constants/*.ts",
     "./drizzle": "./src/drizzle.ts",
@@ -14,6 +10,10 @@
     "./schema": "./src/schema.ts",
     "./types/*": "./src/types/*.ts",
     "./utils/*": "./src/utils/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "seed:brand-identity": "bun run src/scripts/seed-brand-identity.ts"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

@@ -1,4 +1,5 @@
 import { OpenAPIHono } from "@hono/zod-openapi";
+
 import { getOrganizationId } from "../utils/auth";
 import {
   ORGANIZATION_POST_PATH_REGEX,

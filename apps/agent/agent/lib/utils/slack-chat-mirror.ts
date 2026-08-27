@@ -4,6 +4,7 @@ import type {
   SlackMessage,
   SlackThreadMessage,
 } from "eve/channels/slack";
+
 import type { MirrorUiMessage } from "../types/chat-mirror";
 import { claimMirroredChatSession } from "./chat-mirror";
 import { isPublicSlackChannel } from "./slack-public-channel";

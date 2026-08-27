@@ -6,6 +6,7 @@ import { redis } from "@notra/ai/utils/redis";
 import { buildCallbackUrl } from "@notra/utils/callback-url";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
+
 import { SLACK_OAUTH_STATE_TTL_SECONDS } from "@/constants/slack-integration";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";

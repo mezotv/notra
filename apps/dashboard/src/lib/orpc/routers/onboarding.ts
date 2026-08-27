@@ -11,23 +11,24 @@ import {
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
+
 import {
   AGENT_RUN_HARD_LIMIT_MS,
   SELF_SERVE_AGENT_ERROR_MESSAGES,
 } from "@/constants/onboarding-agent";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { pickCompanyLogoUrl } from "@/lib/onboarding/company-logo";
 import {
   getOnboardingAgentState,
   startSelfServeOnboardingAgent,
 } from "@/lib/onboarding-agent";
+import { pickCompanyLogoUrl } from "@/lib/onboarding/company-logo";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
-import { companyLogoInputSchema } from "@/schemas/onboarding/company-logo";
 import {
   dismissSuggestionInputSchema,
   listSuggestionsInputSchema,
 } from "@/schemas/onboarding-agent";
+import { companyLogoInputSchema } from "@/schemas/onboarding/company-logo";
 import { ratelimit } from "@/utils/ratelimit";
 
 const onboardingInputSchema = z.object({

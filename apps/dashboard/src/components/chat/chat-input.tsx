@@ -69,6 +69,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
+
 import { Composer } from "@/components/composer/composer-shell";
 import { McpIcon } from "@/components/integrations/mcp-icon";
 import {
@@ -104,6 +105,7 @@ import {
   getIntegrationReferenceValue,
   getReferenceDisplay,
 } from "@/utils/integration-reference";
+
 import { AttachmentPreviewDialog } from "./attachment-preview";
 import { ChatContextConnectSuggestions } from "./chat-context-connect-suggestions";
 import { ChatContextOptionContent } from "./chat-context-option-content";
@@ -1488,16 +1490,16 @@ export function ChatInputAdvanced({
         createPortal(
           <div
             aria-hidden="true"
-            className="fade-in-0 pointer-events-none fixed inset-0 z-[100] flex animate-in items-center justify-center bg-background/75 backdrop-blur-sm duration-150"
+            className="fade-in-0 animate-in bg-background/75 pointer-events-none fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm duration-150"
           >
             <div className="flex flex-col items-center gap-5">
               <HugeiconsIcon
-                className="size-14 text-foreground"
+                className="text-foreground size-14"
                 icon={Upload04Icon}
                 strokeWidth={1.5}
               />
               <div className="flex flex-col items-center gap-2 text-center">
-                <p className="font-semibold text-2xl text-foreground tracking-tight">
+                <p className="text-foreground text-2xl font-semibold tracking-tight">
                   Add Attachment
                 </p>
                 <p className="text-muted-foreground text-sm">
@@ -1519,7 +1521,7 @@ export function ChatInputAdvanced({
             className="absolute bottom-full left-1 z-50 mb-1 w-72"
             ref={mentionListRef}
           >
-            <div className="max-h-64 overflow-y-auto rounded-md border border-border bg-popover p-1 text-popover-foreground shadow-md">
+            <div className="border-border bg-popover text-popover-foreground max-h-64 overflow-y-auto rounded-md border p-1 shadow-md">
               {filteredMentionItems.length > 0 ? (
                 <>
                   {filteredMentionItems.map((option, idx) => {
@@ -1532,12 +1534,12 @@ export function ChatInputAdvanced({
                     return (
                       <div key={option.id}>
                         {startsGroup && (
-                          <div className="px-2 py-1.5 font-semibold text-xs">
+                          <div className="px-2 py-1.5 text-xs font-semibold">
                             {option.kind === "mcp" ? "MCP tools" : "Context"}
                           </div>
                         )}
                         <button
-                          className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm outline-none transition-colors ${
+                          className={`flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm transition-colors outline-none ${
                             idx === mentionIndex
                               ? "bg-accent text-accent-foreground"
                               : "text-popover-foreground hover:bg-accent hover:text-accent-foreground"
@@ -1550,7 +1552,7 @@ export function ChatInputAdvanced({
                         >
                           <ChatContextOptionContent option={option} />
                           {inContext && (
-                            <span className="shrink-0 text-emerald-600 text-xs dark:text-emerald-400">
+                            <span className="shrink-0 text-xs text-emerald-600 dark:text-emerald-400">
                               Added
                             </span>
                           )}
@@ -1560,9 +1562,9 @@ export function ChatInputAdvanced({
                   })}
                   {organizationSlug && (
                     <>
-                      <div className="-mx-1 my-1 h-px bg-border" />
+                      <div className="bg-border -mx-1 my-1 h-px" />
                       <Link
-                        className="flex w-full items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                        className="hover:bg-accent hover:text-accent-foreground flex w-full items-center rounded-sm px-2 py-1.5 text-sm transition-colors outline-none"
                         href={`/${organizationSlug}/integrations`}
                         onMouseDown={(e) => {
                           e.stopPropagation();
@@ -1656,7 +1658,7 @@ export function ChatInputAdvanced({
                               />
                             ) : (
                               <HugeiconsIcon
-                                className="size-3.5 text-muted-foreground"
+                                className="text-muted-foreground size-3.5"
                                 icon={File02Icon}
                               />
                             )
@@ -1713,7 +1715,7 @@ export function ChatInputAdvanced({
               ref={fileInputRef}
               type="file"
             />
-            <div className="relative flex min-w-0 flex-col rounded-t-[13px] bg-background">
+            <div className="bg-background relative flex min-w-0 flex-col rounded-t-[13px]">
               <div className="flex w-full min-w-0 items-center rounded-t-[12px]">
                 <div className="relative flex min-w-0 flex-1 cursor-text transition-colors [--lh:1lh]">
                   {/* biome-ignore lint/a11y/useSemanticElements: rich mention editor requires a contentEditable host instead of a native textarea. */}
@@ -1721,7 +1723,7 @@ export function ChatInputAdvanced({
                     aria-disabled={isQueued}
                     aria-label="Send a message"
                     aria-multiline="true"
-                    className="wrap-anywhere relative max-h-50 min-h-12 w-full min-w-0 overflow-y-auto whitespace-pre-wrap rounded-t-[12px] px-3 py-2 text-foreground text-sm leading-6 caret-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[empty=true]:before:pointer-events-none data-[empty=true]:before:absolute data-[empty=true]:before:top-2 data-[empty=true]:before:left-3 data-[empty=true]:before:text-muted-foreground data-[empty=true]:before:content-[attr(data-placeholder)]"
+                    className="text-foreground caret-foreground data-[empty=true]:before:text-muted-foreground relative max-h-50 min-h-12 w-full min-w-0 overflow-y-auto rounded-t-[12px] px-3 py-2 text-sm leading-6 wrap-anywhere whitespace-pre-wrap outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-[empty=true]:before:pointer-events-none data-[empty=true]:before:absolute data-[empty=true]:before:top-2 data-[empty=true]:before:left-3 data-[empty=true]:before:content-[attr(data-placeholder)]"
                     contentEditable={!isQueued}
                     data-empty={isEmpty ? "true" : "false"}
                     data-placeholder={
@@ -1839,7 +1841,7 @@ export function ChatInputAdvanced({
                               <span className="text-muted-foreground text-xs">
                                 {m.description}
                               </span>
-                              <span className="text-[0.625rem] text-muted-foreground/70">
+                              <span className="text-muted-foreground/70 text-[0.625rem]">
                                 {m.pricing}
                               </span>
                             </div>
@@ -1875,7 +1877,7 @@ export function ChatInputAdvanced({
                       </span>
                       {thinkingLevel === level ? (
                         <HugeiconsIcon
-                          className="ml-auto size-3.5 text-primary"
+                          className="text-primary ml-auto size-3.5"
                           icon={Tick02Icon}
                         />
                       ) : null}
@@ -2000,7 +2002,7 @@ export function ChatInputAdvanced({
                         {organizationSlug && (
                           <div className="border-border border-t p-1">
                             <Link
-                              className="flex items-center rounded-sm px-2 py-1.5 text-muted-foreground text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                              className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex items-center rounded-sm px-2 py-1.5 text-sm transition-colors outline-none"
                               href={`/${organizationSlug}/integrations`}
                               onClick={() => setIsContextPickerOpen(false)}
                             >

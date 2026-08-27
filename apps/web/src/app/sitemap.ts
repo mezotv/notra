@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+
 import { changelog } from "@/../.source/server";
 import { fetchIntegrations } from "@/lib/integrations/fetch";
 import { getIntegrationHref } from "@/lib/integrations/helpers";
@@ -10,6 +11,7 @@ import {
 import { listNotraBlogPosts } from "@/utils/blog";
 import { listNotraChangelogPosts } from "@/utils/changelog";
 import { SITE_URL } from "@/utils/urls";
+
 import { getShowcaseEntrySlug, SHOWCASE_COMPANIES } from "../utils/showcase";
 
 const STATIC_PAGE_LAST_MODIFIED = new Date("2026-04-24");

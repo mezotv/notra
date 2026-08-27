@@ -24,6 +24,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -31,6 +32,7 @@ import type { GitHubIntegration, GitHubRepository } from "@/types/integrations";
 import type { WebhookConfig } from "@/types/services/integrations";
 import type { Trigger } from "@/types/triggers/triggers";
 import { getOutputTypeLabel } from "@/utils/output-types";
+
 import { GitHubIntegrationDetailSkeleton } from "./skeleton";
 
 const EditIntegrationDialog = dynamic(
@@ -172,8 +174,8 @@ function WebhookSection({
 
   if (isError) {
     return (
-      <div className="rounded-lg border border-destructive/50 p-5">
-        <p className="font-medium text-destructive text-sm">
+      <div className="border-destructive/50 rounded-lg border p-5">
+        <p className="text-destructive text-sm font-medium">
           Failed to load webhook configuration
         </p>
       </div>
@@ -185,7 +187,7 @@ function WebhookSection({
       <div className="rounded-lg border border-dashed p-5">
         <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
-            <p className="font-medium text-sm">Webhook not configured</p>
+            <p className="text-sm font-medium">Webhook not configured</p>
             <p className="text-muted-foreground text-xs">
               Generate a webhook secret to start receiving events from GitHub.
             </p>
@@ -213,7 +215,7 @@ function WebhookSection({
   return (
     <div className="space-y-4 rounded-lg border p-5">
       <fieldset className="space-y-1.5">
-        <p className="font-medium text-sm">Payload URL</p>
+        <p className="text-sm font-medium">Payload URL</p>
         <div className="flex gap-2">
           <Input
             className="font-mono text-xs"
@@ -225,12 +227,12 @@ function WebhookSection({
       </fieldset>
 
       <fieldset className="space-y-1.5">
-        <p className="font-medium text-sm">Content type</p>
+        <p className="text-sm font-medium">Content type</p>
         <Input className="text-xs" disabled value="application/json" />
       </fieldset>
 
       <fieldset className="space-y-1.5">
-        <p className="font-medium text-sm">Secret</p>
+        <p className="text-sm font-medium">Secret</p>
         <div className="flex gap-2">
           <Input
             className="font-mono text-xs"
@@ -317,7 +319,7 @@ function EventsSection({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="font-semibold text-lg">Events</h2>
+          <h2 className="text-lg font-semibold">Events</h2>
           <p className="text-muted-foreground text-sm">
             React to repository events like releases and pushes.
           </p>
@@ -336,12 +338,12 @@ function EventsSection({
       </div>
       {isLoadingEvents && <Skeleton className="h-18 w-full rounded-lg" />}
       {!isLoadingEvents && isError && (
-        <div className="flex items-center justify-center rounded-lg border border-destructive/50 border-dashed p-8 text-destructive text-sm">
+        <div className="border-destructive/50 text-destructive flex items-center justify-center rounded-lg border border-dashed p-8 text-sm">
           Failed to load event triggers.
         </div>
       )}
       {!isLoadingEvents && !isError && displayEvents.length === 0 && (
-        <div className="flex items-center justify-center rounded-lg border border-dashed p-8 text-muted-foreground text-sm">
+        <div className="text-muted-foreground flex items-center justify-center rounded-lg border border-dashed p-8 text-sm">
           No event triggers configured yet.
         </div>
       )}
@@ -353,10 +355,10 @@ function EventsSection({
               key={event.id}
             >
               <div className="flex min-w-0 items-center gap-3">
-                <span className="truncate font-medium text-sm">
+                <span className="truncate text-sm font-medium">
                   {event.name}
                 </span>
-                <span className="shrink-0 text-muted-foreground text-xs">
+                <span className="text-muted-foreground shrink-0 text-xs">
                   {getOutputTypeLabel(event.outputType)}
                 </span>
               </div>
@@ -411,7 +413,7 @@ function SchedulesSection({
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="font-semibold text-lg">Schedules</h2>
+          <h2 className="text-lg font-semibold">Schedules</h2>
           <p className="text-muted-foreground text-sm">
             Automated content generation on a recurring basis.
           </p>
@@ -430,12 +432,12 @@ function SchedulesSection({
       </div>
       {isLoadingSchedules && <Skeleton className="h-18 w-full rounded-lg" />}
       {!isLoadingSchedules && isError && (
-        <div className="flex items-center justify-center rounded-lg border border-destructive/50 border-dashed p-8 text-destructive text-sm">
+        <div className="border-destructive/50 text-destructive flex items-center justify-center rounded-lg border border-dashed p-8 text-sm">
           Failed to load schedules.
         </div>
       )}
       {!isLoadingSchedules && !isError && displaySchedules.length === 0 && (
-        <div className="flex items-center justify-center rounded-lg border border-dashed p-8 text-muted-foreground text-sm">
+        <div className="text-muted-foreground flex items-center justify-center rounded-lg border border-dashed p-8 text-sm">
           No schedules configured yet.
         </div>
       )}
@@ -447,10 +449,10 @@ function SchedulesSection({
               key={schedule.id}
             >
               <div className="flex min-w-0 items-center gap-3">
-                <span className="truncate font-medium text-sm">
+                <span className="truncate text-sm font-medium">
                   {schedule.name}
                 </span>
-                <span className="shrink-0 text-muted-foreground text-xs">
+                <span className="text-muted-foreground shrink-0 text-xs">
                   {formatFrequency(schedule.sourceConfig.cron)}
                 </span>
               </div>
@@ -521,7 +523,7 @@ export default function PageClient({ integrationId }: PageClientProps) {
       <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full space-y-6 px-4 lg:px-6">
           <div className="rounded-xl border border-dashed p-12 text-center">
-            <h3 className="font-medium text-lg">Integration not found</h3>
+            <h3 className="text-lg font-medium">Integration not found</h3>
             <p className="text-muted-foreground text-sm">
               This integration may have been deleted or you don't have access to
               it.
@@ -556,7 +558,7 @@ export default function PageClient({ integrationId }: PageClientProps) {
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <h1 className="font-bold text-3xl tracking-tight">
+                    <h1 className="text-3xl font-bold tracking-tight">
                       <span className="cursor-help">
                         {integration.displayName}
                       </span>
@@ -571,7 +573,7 @@ export default function PageClient({ integrationId }: PageClientProps) {
             </div>
             {repositoryFullName ? (
               <Link
-                className="group flex items-center gap-2 text-muted-foreground text-sm hover:text-foreground"
+                className="group text-muted-foreground hover:text-foreground flex items-center gap-2 text-sm"
                 href={
                   repositoryDefaultBranch
                     ? `https://github.com/${repositoryFullName}/tree/${repositoryDefaultBranch}`
@@ -586,7 +588,7 @@ export default function PageClient({ integrationId }: PageClientProps) {
                   <>
                     <span
                       aria-hidden="true"
-                      className="size-1 rounded-full bg-muted-foreground/70"
+                      className="bg-muted-foreground/70 size-1 rounded-full"
                     />
                     <span>{repositoryDefaultBranch}</span>
                   </>
@@ -648,7 +650,7 @@ export default function PageClient({ integrationId }: PageClientProps) {
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
                 <div className="space-y-1">
-                  <h2 className="font-semibold text-lg">Webhook</h2>
+                  <h2 className="text-lg font-semibold">Webhook</h2>
                   <p className="text-muted-foreground text-sm">
                     Receive events from GitHub when commits are pushed or
                     releases are published.

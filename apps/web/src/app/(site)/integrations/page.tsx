@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+
 import { ConsoleCallout } from "@/components/integrations/console-callout";
 import { IntegrationsMarketplace } from "@/components/integrations/integrations-marketplace";
 import { IntegrationsMarketplaceFallback } from "@/components/integrations/integrations-marketplace-fallback";

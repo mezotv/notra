@@ -1,4 +1,5 @@
 import type { SlackChannelCredentials } from "eve/channels/slack";
+
 import { resolveSlackOutboundBotToken } from "./slack-installation";
 
 function requireEnv(name: string, purpose: string): string {

@@ -5,12 +5,13 @@ import {
 } from "@notra/ui/components/ui/avatar";
 import Link from "next/link";
 import { ViewTransition } from "react";
+import type { BlogPostAuthorCardProps } from "~types/blog";
+
 import { getAuthorHref } from "@/utils/authors";
 import {
   blogAuthorAvatarTransitionName,
   blogAuthorNameTransitionName,
 } from "@/utils/blog-view-transitions";
-import type { BlogPostAuthorCardProps } from "~types/blog";
 
 export function BlogPostAuthorCard({ authors }: BlogPostAuthorCardProps) {
   if (authors.length === 0) {
@@ -19,7 +20,7 @@ export function BlogPostAuthorCard({ authors }: BlogPostAuthorCardProps) {
 
   return (
     <div>
-      <p className="mb-3 font-medium font-sans text-foreground text-sm">
+      <p className="text-foreground mb-3 font-sans text-sm font-medium">
         Written by
       </p>
       <ul className="flex flex-col gap-3">
@@ -43,12 +44,12 @@ export function BlogPostAuthorCard({ authors }: BlogPostAuthorCardProps) {
                 <ViewTransition
                   name={blogAuthorNameTransitionName(author.slug)}
                 >
-                  <span className="font-medium font-sans text-neutral-700 text-sm leading-tight transition-colors group-hover:text-foreground dark:text-neutral-200">
+                  <span className="group-hover:text-foreground font-sans text-sm leading-tight font-medium text-neutral-700 transition-colors dark:text-neutral-200">
                     {author.name}
                   </span>
                 </ViewTransition>
                 {author.role ? (
-                  <span className="mt-0.5 font-sans text-neutral-500 text-xs leading-tight dark:text-neutral-400">
+                  <span className="mt-0.5 font-sans text-xs leading-tight text-neutral-500 dark:text-neutral-400">
                     {author.role}
                   </span>
                 ) : null}

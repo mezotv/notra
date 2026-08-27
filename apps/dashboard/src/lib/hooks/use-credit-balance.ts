@@ -2,6 +2,7 @@
 
 import { FEATURES } from "@notra/ai/billing/features";
 import { useCustomer } from "autumn-js/react";
+
 import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
 
 export function useCreditBalance() {

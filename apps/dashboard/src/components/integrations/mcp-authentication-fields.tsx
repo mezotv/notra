@@ -10,6 +10,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
+
 import { Button } from "@/components/button";
 import { MCP_AUTH_OPTIONS } from "@/constants/mcp";
 import { getMcpFormErrorMessage } from "@/lib/integrations/mcp";
@@ -185,9 +186,9 @@ export function McpAuthenticationFields({
               </div>
             </TabsContent>
             <TabsContent value="oauth">
-              <div className="rounded-lg border bg-muted/40 p-3 text-sm">
+              <div className="bg-muted/40 rounded-lg border p-3 text-sm">
                 <p className="font-medium">Authorize securely</p>
-                <p className="mt-1 text-muted-foreground">
+                <p className="text-muted-foreground mt-1">
                   You will be redirected to the server to approve access. Notra
                   stores an encrypted refresh token and renews access
                   automatically.

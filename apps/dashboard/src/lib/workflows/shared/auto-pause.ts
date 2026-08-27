@@ -5,6 +5,7 @@ import { getResend } from "@notra/email/utils/resend";
 import type { WorkflowContext } from "@upstash/workflow";
 import { and, eq } from "drizzle-orm";
 import { Data, Effect } from "effect";
+
 import {
   AUTOMATED_WORKFLOW_FAILURE_PAUSE_THRESHOLD,
   AUTOMATED_WORKFLOW_FAILURE_STATE_TTL_SECONDS,

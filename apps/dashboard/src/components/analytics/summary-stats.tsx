@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
+
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import type { AnalyticsStatTile, SummaryStatsProps } from "@/types/analytics";
 import {
@@ -49,11 +50,11 @@ export function SummaryStats({
       {tiles.map((tile) => (
         <Card key={tile.label}>
           <CardContent className="flex flex-1 flex-col justify-center gap-2">
-            <p className="font-medium text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm font-medium">
               {tile.label}
             </p>
-            <p className="font-bold text-3xl tabular-nums">{tile.value}</p>
-            <p className="truncate text-muted-foreground text-xs">
+            <p className="text-3xl font-bold tabular-nums">{tile.value}</p>
+            <p className="text-muted-foreground truncate text-xs">
               {tile.hint}
             </p>
           </CardContent>

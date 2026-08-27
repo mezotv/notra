@@ -1,6 +1,8 @@
 import { contentGenerationWorkflowPayloadSchema } from "@notra/content-generation/schemas";
 import { flattenError } from "zod";
+
 import type { OnDemandContentWorkflowResult } from "@/types/workflows/on-demand-generation";
+
 import {
   appendAutomationLog,
   claimWorkflowExecution,
@@ -102,8 +104,8 @@ export async function onDemandContentWorkflow(
 
   const hasLinearSources = Boolean(
     dataPoints.includeLinearData &&
-      linearIntegrationIds &&
-      linearIntegrationIds.length > 0
+    linearIntegrationIds &&
+    linearIntegrationIds.length > 0
   );
 
   if (repositories.length === 0 && !hasLinearSources) {

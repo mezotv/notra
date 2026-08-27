@@ -1,4 +1,5 @@
 import dedent from "dedent";
+
 import type { SkillContent, SkillSummary } from "../types";
 import {
   escapeXmlAttribute,

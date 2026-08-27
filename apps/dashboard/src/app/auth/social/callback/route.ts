@@ -3,6 +3,7 @@ import { Effect } from "effect";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { NextRequest } from "next/server";
+
 import { SOCIAL_AUTH_STATE_COOKIE } from "@/constants/social-auth";
 import { UserSyncError, WorkOSAuthError } from "@/lib/auth/errors";
 import { authenticateResolvingOrgSelection } from "@/lib/auth/org-selection";

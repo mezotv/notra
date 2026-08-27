@@ -20,6 +20,7 @@ import { useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
 import { LegacyEditTokenDialog as EditTokenDialog } from "@/components/integrations/legacy/edit-token-dialog";
@@ -132,7 +133,7 @@ export function IntegrationCard({
   return (
     <>
       <Card
-        className="cursor-pointer transition-colors hover:bg-accent/50"
+        className="hover:bg-accent/50 cursor-pointer transition-colors"
         onClick={handleCardClick}
       >
         <CardHeader>

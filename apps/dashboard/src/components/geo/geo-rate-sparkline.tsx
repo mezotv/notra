@@ -31,7 +31,7 @@ export function GeoRateSparkline({
   return (
     <svg
       aria-label={ariaLabel ?? mentionRateSparklineLabel(points)}
-      className={cn("h-5 w-14 shrink-0 text-foreground", className)}
+      className={cn("text-foreground h-5 w-14 shrink-0", className)}
       role="img"
       style={style}
       viewBox={`0 0 ${GEO_RATE_SPARKLINE_WIDTH} ${GEO_RATE_SPARKLINE_HEIGHT}`}

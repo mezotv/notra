@@ -1,4 +1,5 @@
 import type { CapturedNetworkRequest, CaptureResult } from "posthog-js";
+
 import { POSTHOG_URL_PROPERTY_PATTERN } from "@/constants/posthog-redaction";
 
 export function stripUrlQueryAndHash(url: string): string {

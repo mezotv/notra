@@ -9,6 +9,7 @@ import {
 } from "@notra/ui/components/shared/responsive-dialog";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type KeyboardEvent, useState } from "react";
+
 import { GeoPromptAnswerThread } from "@/components/geo/geo-prompt-answer-thread";
 import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
 import { EASE_OUT } from "@/lib/ease";
@@ -115,7 +116,7 @@ function PromptAnswerPage({
       onKeyDown={handleArrowNavigation}
     >
       <ResponsiveDialogHeader className="shrink-0 gap-3 overflow-visible px-6 pt-5 pr-12 pb-3">
-        <ResponsiveDialogTitle className="text-balance font-semibold text-xl leading-snug">
+        <ResponsiveDialogTitle className="text-xl leading-snug font-semibold text-balance">
           {row.prompt}
         </ResponsiveDialogTitle>
         <ResponsiveDialogDescription className="sr-only">
@@ -153,7 +154,7 @@ function PromptAnswerPage({
             </motion.div>
           ) : (
             <div className="flex h-full min-h-0 items-center justify-center px-6">
-              <p className="text-pretty text-center text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-center text-sm text-pretty">
                 {geoScanEmptyMessage(
                   isScanning,
                   "Run a scan to see how engines answer this"

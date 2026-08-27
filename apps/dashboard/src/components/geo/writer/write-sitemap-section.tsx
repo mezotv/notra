@@ -8,6 +8,7 @@ import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { type KeyboardEvent, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { GEO_WRITE_SITEMAP_SKELETON_KEYS } from "@/constants/geo";
 import { useCreateSitemap } from "@/lib/hooks/use-brand-sitemaps";
@@ -18,6 +19,7 @@ import {
 } from "@/lib/sitemap/sitemap-url";
 import type { WriteSitemapSectionProps } from "@/types/components/geo-writer";
 import type { Sitemap } from "@/types/hooks/brand-sitemaps";
+
 import { WriteOptionCard } from "./write-option-card";
 
 function sitemapSummary(sitemap: Sitemap): string {
@@ -46,7 +48,7 @@ export function WriteSitemapSection({
 
   if (!brandVoiceId) {
     return (
-      <p className="rounded-lg border border-border border-dashed px-3 py-2.5 text-muted-foreground text-sm">
+      <p className="border-border text-muted-foreground rounded-lg border border-dashed px-3 py-2.5 text-sm">
         Sitemaps belong to a brand identity. Pick one above first.
       </p>
     );
@@ -56,9 +58,9 @@ export function WriteSitemapSection({
   const ownerLine = (
     <p className="text-muted-foreground text-sm">
       These sitemaps belong to{" "}
-      <span className="font-medium text-foreground">{ownerName}</span>.{" "}
+      <span className="text-foreground font-medium">{ownerName}</span>.{" "}
       <Link
-        className="font-medium text-foreground underline underline-offset-2"
+        className="text-foreground font-medium underline underline-offset-2"
         href={brandIdentityHref}
       >
         Manage in brand identity
@@ -122,7 +124,7 @@ export function WriteSitemapSection({
               description={sitemapSummary(sitemap)}
               icon={
                 <HugeiconsIcon
-                  className="size-5 text-muted-foreground"
+                  className="text-muted-foreground size-5"
                   icon={GlobalIcon}
                   strokeWidth={1.8}
                 />

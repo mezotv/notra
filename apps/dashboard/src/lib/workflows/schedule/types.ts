@@ -10,6 +10,7 @@ import type {
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { GitHubSelectionFilters } from "@notra/ai/types/tools";
 import type { PostSourceMetadata } from "@notra/db/schema";
+
 import type { PostSummary } from "@/types/posts";
 
 export interface ContentGenerationContext {

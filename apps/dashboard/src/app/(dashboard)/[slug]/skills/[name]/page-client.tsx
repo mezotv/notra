@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -150,8 +151,8 @@ export default function PageClient({ slug, name }: SkillDetailPageClientProps) {
     if (hasChanges && !saveToastIdRef.current) {
       saveToastIdRef.current = toast.custom(
         () => (
-          <div className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm">
-            <div className="flex items-center gap-3 rounded-lg bg-background px-4 py-3">
+          <div className="border-border bg-background rounded-[14px] border p-0.5 shadow-sm">
+            <div className="bg-background flex items-center gap-3 rounded-lg px-4 py-3">
               <span className="text-muted-foreground text-sm">
                 Unsaved changes
               </span>

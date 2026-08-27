@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { toast } from "sonner";
+
 import { MCP_OAUTH_ERROR_MESSAGES } from "@/constants/mcp";
 
 export function useMcpConnectionToast() {

@@ -8,6 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+
 import { PageContainer } from "@/components/layout/container";
 import { AttachmentsSection } from "@/components/settings/attachments/attachments-section";
 
@@ -20,9 +21,9 @@ export default function SettingsAttachmentsPage() {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-1">
           <div className="flex items-center gap-1.5">
-            <h1 className="font-bold text-3xl tracking-tight">Attachments</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Attachments</h1>
             <Tooltip>
-              <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+              <TooltipTrigger className="text-muted-foreground inline-flex cursor-help">
                 <HugeiconsIcon
                   className="size-4"
                   icon={InformationCircleIcon}

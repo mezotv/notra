@@ -6,6 +6,7 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import Link from "next/link";
 import { useState } from "react";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
@@ -34,6 +35,7 @@ import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import { withGeoProject } from "@/utils/geo-paths";
+
 import { GeoPromptsSkeleton } from "./skeleton";
 
 interface PageClientProps {
@@ -81,7 +83,7 @@ function GeoPromptsPageContent({ organizationSlug }: PageClientProps) {
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full space-y-6 px-4 lg:px-6">
           <header className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Prompts</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Prompts</h1>
             <p className="text-muted-foreground">
               The questions we ask AI engines on your behalf
             </p>
@@ -118,7 +120,7 @@ function GeoPromptsPageContent({ organizationSlug }: PageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Prompts</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Prompts</h1>
             <p className="text-muted-foreground">
               The questions we ask AI engines on your behalf
             </p>

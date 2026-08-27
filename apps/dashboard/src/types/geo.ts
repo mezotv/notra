@@ -6,6 +6,7 @@ import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 import type { GeoRequestPayload } from "@usenotra/geo";
 import type { LanguageModel, ToolSet } from "ai";
 import type { ReactNode } from "react";
+
 import type { ChartColorPair } from "@/types/charts";
 
 export interface GeoProject {

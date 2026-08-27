@@ -1,6 +1,7 @@
 import type { OnboardingAgentWorkflowPayload } from "@notra/ai/types/onboarding-agent";
 import { sleep } from "workflow";
 import { flattenError } from "zod";
+
 import {
   AGENT_RUN_BACKEND_SLEEP_SECONDS,
   AGENT_RUN_HARD_LIMIT_POLLS,
@@ -8,6 +9,7 @@ import {
 } from "@/constants/onboarding-agent";
 import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/workflows/onboarding-agent-payload";
 import type { OnboardingAgentWorkflowResult } from "@/types/workflows/onboarding-agent";
+
 import {
   getOnboardingAgentStateStep,
   grantSignupCreditsStep,

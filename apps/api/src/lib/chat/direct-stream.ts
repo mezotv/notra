@@ -14,6 +14,7 @@ import type { ChatUsageSnapshot } from "@notra/ai/types/chat";
 import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
 import { routeUsageProperties } from "@notra/ai/utils/route-usage";
 import { nanoid } from "nanoid";
+
 import type { DirectStandaloneChatArgs } from "../../types/chats";
 
 export async function createDirectStandaloneChatResponse({

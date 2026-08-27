@@ -1,10 +1,12 @@
 import Link from "next/link";
+
 import {
   buildAuthorCategoryLine,
   buildCardMeta,
   getIntegrationHref,
 } from "@/lib/integrations/helpers";
 import type { IntegrationCardProps } from "@/types/integrations";
+
 import { IntegrationConnectButton } from "./integration-connect-button";
 import { IntegrationLogo } from "./integration-logo";
 
@@ -20,7 +22,7 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
     >
       <Link
         aria-label={`View ${integration.name} details`}
-        className="absolute inset-0 z-0 cursor-pointer rounded-[1.25rem] outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="focus-visible:ring-primary absolute inset-0 z-0 cursor-pointer rounded-[1.25rem] outline-none focus-visible:ring-2"
         href={getIntegrationHref(integration)}
       />
       <div className="pointer-events-none relative z-10 flex flex-col gap-3">
@@ -37,19 +39,19 @@ export function IntegrationCard({ integration }: IntegrationCardProps) {
           />
         </div>
         <div className="flex flex-col gap-0.5">
-          <span className="font-sans font-semibold text-[#1E1E1E] text-[1.0625rem] leading-[1.29] tracking-[-0.01em] dark:text-white">
+          <span className="font-sans text-[1.0625rem] leading-[1.29] font-semibold tracking-[-0.01em] text-[#1E1E1E] dark:text-white">
             {integration.name}
           </span>
-          <span className="font-sans text-[#1E1E1EA6] text-[0.8125rem] leading-[1.31] tracking-[-0.005em] dark:text-white/60">
+          <span className="font-sans text-[0.8125rem] leading-[1.31] tracking-[-0.005em] text-[#1E1E1EA6] dark:text-white/60">
             {buildAuthorCategoryLine(integration)}
           </span>
         </div>
         {integration.description ? (
-          <span className="line-clamp-2 font-sans text-[#1E1E1EBF] text-[0.8125rem] leading-[1.46] tracking-[-0.005em] dark:text-white/70">
+          <span className="line-clamp-2 font-sans text-[0.8125rem] leading-[1.46] tracking-[-0.005em] text-[#1E1E1EBF] dark:text-white/70">
             {integration.description}
           </span>
         ) : null}
-        <span className="font-medium font-sans text-[#1E1E1E80] text-[0.75rem] leading-[1.33] dark:text-white/50">
+        <span className="font-sans text-[0.75rem] leading-[1.33] font-medium text-[#1E1E1E80] dark:text-white/50">
           {buildCardMeta(integration)}
         </span>
       </div>

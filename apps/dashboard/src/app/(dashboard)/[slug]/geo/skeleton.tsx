@@ -3,6 +3,7 @@
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
+
 import { Button } from "@/components/button";
 import {
   GeoSectionSkeleton,
@@ -18,7 +19,7 @@ export function GeoPageSkeleton() {
       <div className="w-full space-y-4 px-4 lg:px-6">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">GEO</h1>
+            <h1 className="text-3xl font-bold tracking-tight">GEO</h1>
             <p className="text-muted-foreground text-sm">
               How AI engines talk about your brand
             </p>

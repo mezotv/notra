@@ -12,9 +12,6 @@
     "agent:dev:devtools": "AI_SDK_DEVTOOLS=true dotenv -e ../../.env -- eve dev",
     "devtools": "bun x @ai-sdk/devtools"
   },
-  "engines": {
-    "node": "24.x"
-  },
   "dependencies": {
     "@ai-sdk/devtools": "1.0.1",
     "@ai-sdk/gateway": "3.0.132",
@@ -45,5 +42,8 @@
     "dotenv-cli": "^11.0.0",
     "microsandbox": "^0.6.1",
     "typescript": "5.9.2"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

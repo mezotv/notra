@@ -1,6 +1,7 @@
 import { PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import { Autumn } from "autumn-js";
 import type { Context, Next } from "hono";
+
 import { isIngestAuth } from "../types/auth";
 import { getOrganizationId } from "../utils/auth";
 

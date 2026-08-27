@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { IntegrationsPageClient } from "@/components/integrations/integrations-page-client";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 

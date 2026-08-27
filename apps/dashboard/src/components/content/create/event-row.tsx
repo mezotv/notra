@@ -9,6 +9,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { cn } from "@notra/ui/lib/utils";
+
 import { EVENT_BADGE } from "@/constants/content-preview";
 import type { EventType } from "@/types/content/preview";
 
@@ -37,7 +38,7 @@ export function EventRow({
   return (
     <button
       className={cn(
-        "flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-muted/50",
+        "hover:bg-muted/50 flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
         selected && "bg-muted/20"
       )}
       onClick={onToggle}
@@ -55,7 +56,7 @@ export function EventRow({
       </div>
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm">{label}</p>
-        <p className="truncate text-muted-foreground text-xs">{meta}</p>
+        <p className="text-muted-foreground truncate text-xs">{meta}</p>
       </div>
       <Badge className={cn("shrink-0", EVENT_BADGE[type])}>
         <HugeiconsIcon className="size-3!" icon={EVENT_ICON[type]} />

@@ -28,6 +28,7 @@ import {
 } from "@notra/db/utils/geo-checks";
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
+
 import {
   AI_TRAFFIC_DEFAULT_DAYS,
   AI_TRAFFIC_DEFAULT_JOURNEYS_LIMIT,

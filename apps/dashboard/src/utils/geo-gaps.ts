@@ -1,4 +1,5 @@
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
+
 import {
   GEO_GAPS_ENGINE_FILTER_ALL,
   GEO_GAPS_METER_STEPS,

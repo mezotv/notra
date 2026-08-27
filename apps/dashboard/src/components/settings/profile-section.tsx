@@ -16,6 +16,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import { uploadFile } from "@/lib/upload/client";
@@ -134,7 +135,7 @@ export function ProfileSection({
             onMouseLeave={(e) => e.stopPropagation()}
             type="button"
           >
-            <Avatar className="size-16 rounded-lg ring-2 ring-transparent transition-shadow after:rounded-lg group-hover/avatar:ring-muted-foreground/20 group-focus-visible:ring-ring">
+            <Avatar className="group-hover/avatar:ring-muted-foreground/20 group-focus-visible:ring-ring size-16 rounded-lg ring-2 ring-transparent transition-shadow after:rounded-lg">
               <AvatarImage
                 alt={user.name}
                 className="rounded-lg"
@@ -144,17 +145,17 @@ export function ProfileSection({
                 {user.name.charAt(0).toUpperCase()}
               </AvatarFallback>
               {isUploadingAvatar && (
-                <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/80">
+                <span className="bg-background/80 absolute inset-0 flex items-center justify-center rounded-lg">
                   <Loader2Icon className="size-6 animate-spin" />
                 </span>
               )}
-              <span className="absolute inset-0 flex items-center justify-center rounded-lg bg-background/80 opacity-0 transition-opacity group-hover/avatar:opacity-100">
+              <span className="bg-background/80 absolute inset-0 flex items-center justify-center rounded-lg opacity-0 transition-opacity group-hover/avatar:opacity-100">
                 <HugeiconsIcon className="size-6" icon={Upload01Icon} />
               </span>
             </Avatar>
           </button>
           <div className="space-y-1">
-            <p className="font-medium text-sm">Profile picture</p>
+            <p className="text-sm font-medium">Profile picture</p>
             <p className="text-muted-foreground text-xs">
               {isUploadingAvatar
                 ? "Uploading..."

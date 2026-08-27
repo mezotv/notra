@@ -1,5 +1,6 @@
 import { getAppUrl } from "@notra/ai/qstash/triggers";
 import { flattenError } from "zod";
+
 import { GSC_SYNC_WORKFLOW_PATH } from "@/constants/google-search-console";
 import { verifyQstashSignature } from "@/lib/workflows/qstash-verify";
 import { startGscSyncRun } from "@/lib/workflows/start";

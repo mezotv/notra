@@ -21,8 +21,10 @@ import {
 } from "lexical";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
+
 import { Button } from "@/components/button";
 import { cn } from "@/lib/utils";
+
 import { $isKiboCodeBlockNode } from "./kibo-code-block-node";
 
 const CODE_LANGUAGES: Record<string, string> = {
@@ -200,17 +202,17 @@ export default function KiboCodeBlockComponent({
     // biome-ignore lint/a11y/useKeyWithClickEvents: Click focuses textarea
     <div
       className={cn(
-        "relative my-4 overflow-hidden rounded-lg border bg-secondary/50",
-        isSelected && "ring-2 ring-primary ring-offset-2"
+        "bg-secondary/50 relative my-4 overflow-hidden rounded-lg border",
+        isSelected && "ring-primary ring-2 ring-offset-2"
       )}
       onClick={() => textareaRef.current?.focus()}
       ref={blockRef}
     >
-      <div className="flex items-center justify-between border-b bg-secondary px-1 py-1">
+      <div className="bg-secondary flex items-center justify-between border-b px-1 py-1">
         <Select onValueChange={handleLanguageChange} value={normalizedLanguage}>
           <SelectTrigger
             aria-label="Select code language"
-            className="h-7 w-fit gap-1 border-none bg-transparent text-muted-foreground text-xs shadow-none"
+            className="text-muted-foreground h-7 w-fit gap-1 border-none bg-transparent text-xs shadow-none"
             size="sm"
           >
             <SelectValue />
@@ -238,7 +240,7 @@ export default function KiboCodeBlockComponent({
       </div>
       <div className="flex">
         <div
-          className="min-w-[3ch] select-none border-r bg-secondary/50 py-4 pr-2 pl-4 text-right font-mono text-muted-foreground/50 text-sm tabular-nums leading-relaxed"
+          className="bg-secondary/50 text-muted-foreground/50 min-w-[3ch] border-r py-4 pr-2 pl-4 text-right font-mono text-sm leading-relaxed tabular-nums select-none"
           ref={lineNumbersRef}
         >
           {Array.from({ length: lineCount }, (_, i) => (

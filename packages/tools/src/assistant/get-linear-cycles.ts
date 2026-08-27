@@ -1,6 +1,7 @@
 import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
 import { createLinearClient } from "@notra/ai/utils/linear";
 import { defineTool } from "eve/tools";
+
 import { getLinearCyclesInputSchema } from "../schemas/assistant-tools";
 import { requireOrganizationId } from "../utils/organization";
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useMemo } from "react";
+
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import type {
   GeoProjectContextValue,

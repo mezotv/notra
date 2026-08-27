@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 import { type NextRequest, NextResponse } from "next/server";
+
 import { SOCIAL_CONNECTED_PARAMS } from "@/constants/social-connect";
 import { getServerSession } from "@/lib/auth/session";
 import { fromProviderPlatform } from "@/lib/social-connect/client";

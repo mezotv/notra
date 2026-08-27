@@ -3,6 +3,7 @@
 import { SquareLock02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useRouter } from "next/navigation";
+
 import { GeoUpgradeDialog } from "@/components/billing/geo-upgrade-dialog";
 import { EmptyStateAnalyticsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
@@ -27,7 +28,7 @@ export function GeoUpgradeGate({ slug, children }: GeoUpgradeGateProps) {
       <div className="relative w-full overflow-hidden rounded-2xl px-4 lg:px-6">
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 select-none px-3 pt-3 sm:px-4 sm:pt-4"
+          className="pointer-events-none absolute inset-x-0 top-0 px-3 pt-3 select-none sm:px-4 sm:pt-4"
         >
           <div className="mask-[linear-gradient(to_bottom,black_0%,transparent_100%)] opacity-[0.38]">
             <EmptyStateAnalyticsPreview />
@@ -35,13 +36,13 @@ export function GeoUpgradeGate({ slug, children }: GeoUpgradeGateProps) {
         </div>
         <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-col items-center px-6 pt-16 pb-8 text-center">
           <HugeiconsIcon
-            className="size-6 text-muted-foreground"
+            className="text-muted-foreground size-6"
             icon={SquareLock02Icon}
           />
-          <h2 className="mt-3 text-balance font-semibold text-lg">
+          <h2 className="mt-3 text-lg font-semibold text-balance">
             {GEO_LOCKED_TITLE}
           </h2>
-          <p className="mt-1.5 max-w-md text-pretty text-muted-foreground text-sm leading-relaxed">
+          <p className="text-muted-foreground mt-1.5 max-w-md text-sm leading-relaxed text-pretty">
             {GEO_UPGRADE_DESCRIPTION}
           </p>
         </div>

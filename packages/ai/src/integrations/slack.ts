@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+
 import {
   SLACK_API_BASE_URL,
   SLACK_REQUEST_TIMEOUT_MS,
@@ -110,7 +111,7 @@ const requestSlack = Effect.fn("requestSlack")(function* (
 export function hasSlackConnectConfigured(): boolean {
   return Boolean(
     process.env.SLACK_BOT_TOKEN?.trim() &&
-      process.env.SLACK_FOUNDER_MEMBER_ID?.trim()
+    process.env.SLACK_FOUNDER_MEMBER_ID?.trim()
   );
 }
 

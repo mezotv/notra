@@ -23,6 +23,7 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { type FormEvent, useId, useRef, useState } from "react";
+
 import { Button } from "@/components/button";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";

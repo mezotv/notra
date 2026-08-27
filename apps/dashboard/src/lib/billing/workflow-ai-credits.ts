@@ -5,6 +5,7 @@ import {
 import { ACTIVE_PAID_PLAN_IDS, FEATURES } from "@notra/ai/billing/features";
 import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import type { CheckResponse } from "autumn-js";
+
 import type { WorkflowAiCreditGateResult } from "@/types/billing/workflow-ai-credits";
 
 export async function checkWorkflowAiCredits(

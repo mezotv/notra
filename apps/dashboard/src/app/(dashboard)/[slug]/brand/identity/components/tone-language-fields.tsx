@@ -18,6 +18,7 @@ import {
 } from "@notra/ui/components/ui/select";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
+
 import { LANGUAGE_OPTIONS, TONE_OPTIONS } from "@/constants/brand-identity";
 import type { ToneLanguageFieldsProps } from "@/types/brand-identity";
 import { getLanguageFlag } from "@/utils/brand-identity";
@@ -50,7 +51,7 @@ export function ToneLanguageFields({
                     <div
                       className={`flex size-5 items-center justify-center rounded-full ${
                         useCustomToneField.state.value
-                          ? "border-2 border-muted-foreground/30"
+                          ? "border-muted-foreground/30 border-2"
                           : "bg-primary text-primary-foreground"
                       }`}
                     >
@@ -122,7 +123,7 @@ export function ToneLanguageFields({
                         className={`flex size-5 items-center justify-center rounded-full ${
                           useCustomToneField.state.value
                             ? "bg-primary text-primary-foreground"
-                            : "border-2 border-muted-foreground/30"
+                            : "border-muted-foreground/30 border-2"
                         }`}
                       >
                         {useCustomToneField.state.value && (
@@ -171,7 +172,7 @@ export function ToneLanguageFields({
               <div className="relative">
                 <span
                   aria-hidden="true"
-                  className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 z-10 text-base leading-none"
+                  className="pointer-events-none absolute top-1/2 left-3 z-10 -translate-y-1/2 text-base leading-none"
                 >
                   {getLanguageFlag(field.state.value, userLocales)}
                 </span>

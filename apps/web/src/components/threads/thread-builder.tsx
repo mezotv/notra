@@ -28,8 +28,10 @@ import {
   useRef,
   useState,
 } from "react";
+
 import { createEmptyPost, createSeedThread } from "@/lib/threads/posts";
 import type { ThreadPost } from "@/types/threads";
+
 import { SortableThreadPost } from "./sortable-thread-post";
 
 const DEFAULT_AUTHOR_NAME = "Your name";
@@ -202,7 +204,7 @@ export default function ThreadBuilder() {
         type="file"
       />
 
-      <p className="mb-5 text-center font-normal font-sans text-muted-foreground text-xs leading-5">
+      <p className="text-muted-foreground mb-5 text-center font-sans text-xs leading-5 font-normal">
         Click the name, handle, or avatar to customize the author.
       </p>
 
@@ -256,7 +258,7 @@ export default function ThreadBuilder() {
           <HugeiconsIcon className="size-3.5" icon={Add01Icon} />
           <span>Add post</span>
         </Button>
-        <p className="hidden font-normal font-sans text-muted-foreground/70 text-xs leading-5 sm:block">
+        <p className="text-muted-foreground/70 hidden font-sans text-xs leading-5 font-normal sm:block">
           <span suppressHydrationWarning>{addPostShortcut}</span> when an input
           is focused adds a post.
         </p>

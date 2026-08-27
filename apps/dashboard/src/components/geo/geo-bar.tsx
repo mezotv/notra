@@ -16,7 +16,7 @@ export function GeoBar({
   return (
     <span
       className={cn(
-        "block h-1.5 w-full overflow-hidden rounded-full bg-muted",
+        "bg-muted block h-1.5 w-full overflow-hidden rounded-full",
         className
       )}
     >

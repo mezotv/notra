@@ -6,6 +6,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import type { ReactNode } from "react";
+
 import { GEO_GAPS_LOGO_STACK_LIMIT } from "@/constants/geo";
 
 export interface LogoStackItem {
@@ -27,7 +28,7 @@ function LogoStackItemDetail({ item }: { item: LogoStackItem }) {
       <span className="min-w-0">
         <span className="block font-medium">{item.label}</span>
         {item.detail ? (
-          <span className="block text-muted-foreground text-xs">
+          <span className="text-muted-foreground block text-xs">
             {item.detail}
           </span>
         ) : null}
@@ -68,7 +69,7 @@ export function LogoStack({
           <TooltipTrigger
             aria-label={`Additional: ${hidden.map((item) => item.label).join(", ")}`}
             render={
-              <span className="cursor-default text-muted-foreground text-xs" />
+              <span className="text-muted-foreground cursor-default text-xs" />
             }
           >
             +{hidden.length}

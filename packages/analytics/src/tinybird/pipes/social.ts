@@ -6,6 +6,7 @@ import {
   p,
   t,
 } from "@tinybirdco/sdk";
+
 import { TRAILING_DAYS_PARAM } from "../../constants/analytics-params";
 import {
   socialAccountStatsLatest,

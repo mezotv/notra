@@ -3,6 +3,7 @@
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import type { AnalyticsNavProps } from "@/types/analytics";
 
 export function AnalyticsNav({ slug }: AnalyticsNavProps) {

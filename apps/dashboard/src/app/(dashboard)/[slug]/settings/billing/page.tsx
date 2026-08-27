@@ -23,6 +23,7 @@ import { useCustomer, useListPlans } from "autumn-js/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
+
 import { PlanCard } from "@/components/billing/plan-card";
 import { UsageSection } from "@/components/billing/usage-section";
 import { ZdrAddonCard } from "@/components/billing/zdr-addon-card";
@@ -51,6 +52,7 @@ import {
   selectPlanVariant,
   zdrAddonToggle,
 } from "@/utils/billing-plans";
+
 import { DashboardPageSkeleton } from "../../skeleton";
 
 const noop = () => undefined;
@@ -229,7 +231,7 @@ function BillingPageContent() {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-1">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="font-bold text-3xl tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               Billing & Usage
             </h1>
             {activeSubscription && (
@@ -270,7 +272,7 @@ function BillingPageContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2
-                        className="scroll-mt-24 font-semibold text-lg"
+                        className="scroll-mt-24 text-lg font-semibold"
                         id={PLANS_ANCHOR}
                       >
                         Plans
@@ -290,7 +292,7 @@ function BillingPageContent() {
                           value="yearly"
                         >
                           Yearly
-                          <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 font-medium text-[10px] text-emerald-600">
+                          <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
                             Save 20%
                           </span>
                         </TabsTrigger>
@@ -304,18 +306,18 @@ function BillingPageContent() {
                 </div>
 
                 <div className="space-y-3">
-                  <h2 className="font-semibold text-lg">Add-ons</h2>
+                  <h2 className="text-lg font-semibold">Add-ons</h2>
                   <ZdrAddonCard />
                 </div>
 
                 <div className="space-y-3">
-                  <h2 className="font-semibold text-lg">Invoices</h2>
-                  <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
+                  <h2 className="text-lg font-semibold">Invoices</h2>
+                  <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead
-                            className="w-[140px] cursor-pointer select-none transition-colors hover:text-foreground"
+                            className="hover:text-foreground w-[140px] cursor-pointer transition-colors select-none"
                             onClick={() =>
                               setDateSortOrder(
                                 dateSortOrder === "desc" ? "asc" : "desc"
@@ -343,7 +345,7 @@ function BillingPageContent() {
                         {sortedInvoices.length === 0 ? (
                           <TableRow>
                             <TableCell
-                              className="h-24 text-center text-muted-foreground"
+                              className="text-muted-foreground h-24 text-center"
                               colSpan={INVOICE_TABLE_COLUMN_COUNT}
                             >
                               No invoices yet

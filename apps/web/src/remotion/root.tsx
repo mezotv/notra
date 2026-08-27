@@ -1,4 +1,5 @@
 import { Composition } from "remotion";
+
 import { starVideoInputSchema } from "../schemas/star-video";
 import {
   DEFAULT_STAR_VIDEO_PROPS,

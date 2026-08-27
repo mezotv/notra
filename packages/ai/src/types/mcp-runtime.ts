@@ -1,5 +1,6 @@
 import type { MCPClient } from "@ai-sdk/mcp";
 import type { PrepareStepFunction, Tool, ToolExecutionOptions } from "ai";
+
 import type { McpRequestAuth } from "./mcp-oauth";
 import type { IndexedMcpTool, McpSessionSurface } from "./mcp-tool-index";
 

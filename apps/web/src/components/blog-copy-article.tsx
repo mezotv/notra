@@ -17,16 +17,17 @@ import { ClaudeAiIcon } from "@notra/ui/components/ui/svgs/claudeAiIcon";
 import { Openai } from "@notra/ui/components/ui/svgs/openai";
 import Link from "next/link";
 import { useRef, useState } from "react";
+import type {
+  BlogCopyArticleItemProps,
+  BlogCopyArticleProps,
+} from "~types/blog";
+
 import {
   buildChatGptUrl,
   buildClaudeUrl,
   openInNewTab,
 } from "@/utils/article-ai-links";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
-import type {
-  BlogCopyArticleItemProps,
-  BlogCopyArticleProps,
-} from "~types/blog";
 
 const COPIED_STATE_DURATION_MS = 2000;
 
@@ -37,11 +38,11 @@ function CopyArticleMenuItemContent({
 }: BlogCopyArticleItemProps) {
   return (
     <div className="flex items-center gap-3">
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-foreground">
+      <span className="bg-muted text-foreground flex size-9 shrink-0 items-center justify-center rounded-md">
         {icon}
       </span>
       <span className="flex flex-col">
-        <span className="font-medium text-foreground text-sm">{title}</span>
+        <span className="text-foreground text-sm font-medium">{title}</span>
         <span className="text-muted-foreground text-xs">{description}</span>
       </span>
     </div>
@@ -78,9 +79,9 @@ export function BlogCopyArticle({
   }
 
   return (
-    <div className="flex items-center gap-2 font-mono text-foreground/60 text-sm">
+    <div className="text-foreground/60 flex items-center gap-2 font-mono text-sm">
       <button
-        className="inline-flex cursor-pointer items-center gap-1.5 transition-colors hover:text-foreground"
+        className="hover:text-foreground inline-flex cursor-pointer items-center gap-1.5 transition-colors"
         onClick={handleCopy}
         type="button"
       >
@@ -99,7 +100,7 @@ export function BlogCopyArticle({
       <DropdownMenu>
         <DropdownMenuTrigger
           aria-label="More article options"
-          className="inline-flex cursor-pointer items-center transition-colors hover:text-foreground"
+          className="hover:text-foreground inline-flex cursor-pointer items-center transition-colors"
         >
           <HugeiconsIcon
             className="size-4"

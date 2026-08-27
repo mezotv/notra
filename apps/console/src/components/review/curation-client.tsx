@@ -12,6 +12,7 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Image from "next/image";
+
 import { getIntegrationInitials } from "@/lib/integrations/form";
 import { consoleOrpc } from "@/lib/orpc/query";
 import type { CurationRowProps } from "@/types/integrations";
@@ -45,7 +46,7 @@ function CurationLogo({ listing }: CurationRowProps) {
 
   return (
     <span
-      className="flex size-10 shrink-0 items-center justify-center rounded-lg border font-medium text-sm"
+      className="flex size-10 shrink-0 items-center justify-center rounded-lg border text-sm font-medium"
       style={{ color: listing.brandColor ?? undefined }}
     >
       {getIntegrationInitials(listing.name)}
@@ -87,9 +88,9 @@ function CurationRow({ listing }: CurationRowProps) {
       <div className="flex min-w-0 items-center gap-3">
         <CurationLogo listing={listing} />
         <div className="flex min-w-0 flex-col">
-          <span className="truncate font-medium text-sm">{listing.name}</span>
+          <span className="truncate text-sm font-medium">{listing.name}</span>
           {listing.author ? (
-            <span className="truncate text-muted-foreground text-xs">
+            <span className="text-muted-foreground truncate text-xs">
               by {listing.author}
             </span>
           ) : null}
@@ -141,7 +142,7 @@ export function CurationClient() {
   return (
     <section className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-4 pb-6 lg:px-6">
       <div className="flex flex-col gap-1">
-        <h2 className="font-semibold text-lg">Marketplace curation</h2>
+        <h2 className="text-lg font-semibold">Marketplace curation</h2>
         <p className="text-muted-foreground text-sm">
           Set a category and feature live listings in the public marketplace.
         </p>

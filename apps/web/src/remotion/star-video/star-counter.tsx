@@ -1,4 +1,5 @@
 import { AbsoluteFill, Easing, interpolate, useCurrentFrame } from "remotion";
+
 import { COUNT_DURATION_IN_FRAMES, COUNT_START_FRAME } from "./constants";
 
 const OUTLINE = [

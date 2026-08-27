@@ -8,6 +8,8 @@ import { buttonVariants } from "@notra/ui/components/ui/button";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ViewTransition } from "react";
+import type { BlogAuthorPageProps } from "~types/blog";
+
 import { BlogPostCard } from "@/components/blog-post-card";
 import { resolveSocialLink } from "@/utils/author-socials";
 import {
@@ -22,7 +24,6 @@ import {
 } from "@/utils/blog-view-transitions";
 import { TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
-import type { BlogAuthorPageProps } from "~types/blog";
 
 export const revalidate = 3000;
 
@@ -100,12 +101,12 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
 
         <div className="flex flex-col gap-1">
           <ViewTransition name={blogAuthorNameTransitionName(author.slug)}>
-            <h1 className="font-display font-medium text-4xl text-[#1E1E1E] tracking-[-0.02em] dark:text-white">
+            <h1 className="font-display text-4xl font-medium tracking-[-0.02em] text-[#1E1E1E] dark:text-white">
               {author.name}
             </h1>
           </ViewTransition>
           {author.role ? (
-            <p className="font-mono text-foreground/50 text-sm">
+            <p className="text-foreground/50 font-mono text-sm">
               {author.role}
             </p>
           ) : null}
@@ -137,8 +138,8 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
         ) : null}
       </div>
 
-      <div className="mt-14 border-border border-t pt-8">
-        <h2 className="font-mono text-foreground/40 text-sm">
+      <div className="border-border mt-14 border-t pt-8">
+        <h2 className="text-foreground/40 font-mono text-sm">
           {authorPosts.length} {postLabel}
         </h2>
 
@@ -151,7 +152,7 @@ export default async function BlogAuthorPage({ params }: BlogAuthorPageProps) {
             ))}
           </ul>
         ) : (
-          <p className="mt-4 font-sans text-muted-foreground text-sm leading-6">
+          <p className="text-muted-foreground mt-4 font-sans text-sm leading-6">
             No posts published yet.
           </p>
         )}

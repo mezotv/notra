@@ -13,6 +13,7 @@ import {
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
 import { Textarea } from "@notra/ui/components/ui/textarea";
+
 import { DiffView } from "@/components/content/diff-view";
 import { SKILL_EDITOR_VIEWS } from "@/constants/skills";
 import type {
@@ -96,7 +97,7 @@ export function SkillEditorForm({
             />
           </TabsContent>
           <TabsContent value="diff">
-            <div className="min-h-48 overflow-auto rounded-lg border border-border/80 bg-muted/20">
+            <div className="border-border/80 bg-muted/20 min-h-48 overflow-auto rounded-lg border">
               <DiffView
                 currentMarkdown={content}
                 originalMarkdown={originalContent}

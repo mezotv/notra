@@ -1,5 +1,6 @@
 import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
 import type { ToneProfile } from "@notra/ai/schemas/tone";
+
 import type { BrandTab } from "@/types/brand-identity";
 
 export const AUTO_SAVE_DELAY = 2500;

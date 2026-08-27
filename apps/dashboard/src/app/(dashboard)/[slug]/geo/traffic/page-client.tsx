@@ -3,6 +3,7 @@
 import { useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
@@ -34,6 +35,7 @@ import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps } from "@/types/geo";
 import { isTrafficPagePending } from "@/utils/ai-traffic";
 import { withGeoProject } from "@/utils/geo-paths";
+
 import { GeoTrafficSkeleton } from "./skeleton";
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
@@ -106,7 +108,7 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full space-y-6 px-4 lg:px-6">
           <header className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">AI Traffic</h1>
+            <h1 className="text-3xl font-bold tracking-tight">AI Traffic</h1>
             <p className="text-muted-foreground text-sm">
               AI crawlers and referrals visiting your site
             </p>
@@ -141,7 +143,7 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
   const header = (
     <header className="flex flex-wrap items-start justify-between gap-3">
       <div className="space-y-1">
-        <h1 className="font-bold text-3xl tracking-tight">AI Traffic</h1>
+        <h1 className="text-3xl font-bold tracking-tight">AI Traffic</h1>
         <p className="text-muted-foreground text-sm">
           AI crawlers and referrals visiting your site
         </p>

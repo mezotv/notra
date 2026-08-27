@@ -19,7 +19,7 @@ function Segment({
     return (
       <div className="relative flex min-w-7 items-center justify-center rounded-md px-2.5 py-1">
         <div className="absolute inset-0 rounded-md bg-[oklab(76.9%_0.064_0.177/10%)] [box-shadow:oklab(76.9%_0.064_0.177/30%)_0rem_0rem_0rem_0.0625rem,#0000001A_0rem_0.25rem_0.625rem,#0000001A_0rem_0.0625rem_0.125rem_-0.0625rem]" />
-        <div className="relative content-center text-center font-medium font-sans text-[0.875rem] text-[oklch(66.6%_0.179_58.3)] leading-[142.857%]">
+        <div className="relative content-center text-center font-sans text-[0.875rem] leading-[142.857%] font-medium text-[oklch(66.6%_0.179_58.3)]">
           {label}
         </div>
       </div>
@@ -29,7 +29,7 @@ function Segment({
     return (
       <div className="relative flex min-w-7 items-center justify-center rounded-md px-2.5 py-1">
         <div className="absolute inset-0 rounded-md bg-[oklab(69.6%_-0.162_0.051/10%)] [box-shadow:oklab(69.6%_-0.162_0.051/30%)_0rem_0rem_0rem_0.0625rem,#0000001A_0rem_0.25rem_0.625rem,#0000001A_0rem_0.0625rem_0.125rem_-0.0625rem]" />
-        <div className="relative content-center text-center font-medium font-sans text-[0.875rem] text-[oklch(59.6%_0.145_163.2)] leading-[142.857%]">
+        <div className="relative content-center text-center font-sans text-[0.875rem] leading-[142.857%] font-medium text-[oklch(59.6%_0.145_163.2)]">
           {label}
         </div>
       </div>
@@ -37,7 +37,7 @@ function Segment({
   }
   return (
     <div className="flex min-w-7 items-center justify-center rounded-md px-2.5 py-1">
-      <div className="content-center text-center font-medium font-sans text-[#737373] text-[0.875rem] leading-[142.857%]">
+      <div className="content-center text-center font-sans text-[0.875rem] leading-[142.857%] font-medium text-[#737373]">
         {label}
       </div>
     </div>
@@ -58,10 +58,10 @@ function PermissionRow({
       }`}
     >
       <div className="flex min-w-0 flex-col gap-0.5">
-        <div className="font-medium font-sans text-[#171717] text-[0.875rem] leading-[142.857%]">
+        <div className="font-sans text-[0.875rem] leading-[142.857%] font-medium text-[#171717]">
           {permission.name}
         </div>
-        <div className="font-sans text-[#737373] text-[0.75rem] leading-[133.333%]">
+        <div className="font-sans text-[0.75rem] leading-[133.333%] text-[#737373]">
           {permission.description}
         </div>
       </div>
@@ -83,7 +83,7 @@ function PermissionRow({
 function ViewDocs() {
   return (
     <div className="mt-auto flex w-fit items-center gap-1">
-      <div className="font-medium font-sans text-[#737373] text-[0.75rem] leading-[133.333%]">
+      <div className="font-sans text-[0.75rem] leading-[133.333%] font-medium text-[#737373]">
         View docs
       </div>
       <svg
@@ -111,23 +111,23 @@ export function FeaturesCardPublish() {
       <div className="absolute top-42 left-51 grid h-88 w-164.5 gap-4 overflow-clip rounded-2xl bg-white p-4 [box-shadow:#1E1E1E1A_0rem_0.125rem_1.25rem,#1717171A_0rem_0rem_0rem_0.0625rem] lg:top-21.5">
         <div>
           <div className="flex flex-col gap-2">
-            <div className="font-medium font-sans text-[#171717] text-[1.125rem] leading-[133.333%]">
+            <div className="font-sans text-[1.125rem] leading-[133.333%] font-medium text-[#171717]">
               Edit API Key
             </div>
           </div>
           <div className="py-4">
             <div className="mb-4 flex w-full flex-col gap-2">
               <div className="flex w-full items-center gap-2">
-                <div className="inline-block font-medium font-sans text-[#171717] text-[0.875rem] leading-[137.5%]">
+                <div className="inline-block font-sans text-[0.875rem] leading-[137.5%] font-medium text-[#171717]">
                   Name
                 </div>
-                <div className="-ml-1 font-medium font-sans text-[#EF4444] text-[0.875rem] leading-[137.5%]">
+                <div className="-ml-1 font-sans text-[0.875rem] leading-[137.5%] font-medium text-[#EF4444]">
                   *
                 </div>
               </div>
               <div className="flex h-8 w-full min-w-0 items-center overflow-clip rounded-lg border border-[#E5E5E5] px-2.5 py-1">
                 <div className="h-fit w-full overflow-clip">
-                  <div className="line-clamp-1 font-sans text-[#171717] text-[0.875rem] leading-[142.857%]">
+                  <div className="line-clamp-1 font-sans text-[0.875rem] leading-[142.857%] text-[#171717]">
                     CI/CD pipeline
                   </div>
                 </div>
@@ -135,10 +135,10 @@ export function FeaturesCardPublish() {
             </div>
             <div className="mb-4 flex w-full flex-col gap-2">
               <div className="flex w-full items-center gap-2">
-                <div className="inline-block font-medium font-sans text-[#171717] text-[0.875rem] leading-[137.5%]">
+                <div className="inline-block font-sans text-[0.875rem] leading-[137.5%] font-medium text-[#171717]">
                   Permission
                 </div>
-                <div className="-ml-1 font-medium font-sans text-[#EF4444] text-[0.875rem] leading-[137.5%]">
+                <div className="-ml-1 font-sans text-[0.875rem] leading-[137.5%] font-medium text-[#EF4444]">
                   *
                 </div>
               </div>
@@ -153,11 +153,11 @@ export function FeaturesCardPublish() {
               </div>
             </div>
             <div className="flex w-full flex-col gap-2">
-              <div className="w-full content-center font-medium font-sans text-[#171717] text-[0.875rem] leading-[137.5%]">
+              <div className="w-full content-center font-sans text-[0.875rem] leading-[137.5%] font-medium text-[#171717]">
                 Expiration
               </div>
               <div className="flex h-8 w-full items-center justify-between gap-1.5 rounded-lg border border-[#E5E5E5] py-2 pr-2 pl-2.5">
-                <div className="grow basis-[0%] content-center font-sans text-[#171717] text-[0.875rem] capitalize leading-[142.857%]">
+                <div className="grow basis-[0%] content-center font-sans text-[0.875rem] leading-[142.857%] text-[#171717] capitalize">
                   never
                 </div>
                 <svg
@@ -186,12 +186,12 @@ export function FeaturesCardPublish() {
           </div>
           <div className="-mx-4 -mb-4 flex justify-end gap-2 rounded-b-xl border-t border-t-[#E5E5E5] bg-[#F5F5F580] p-4">
             <div className="flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[#E5E5E5] bg-white px-2.5">
-              <div className="w-max shrink-0 text-center font-medium font-sans text-[#171717] text-[0.875rem] leading-[142.857%]">
+              <div className="w-max shrink-0 text-center font-sans text-[0.875rem] leading-[142.857%] font-medium text-[#171717]">
                 Cancel
               </div>
             </div>
             <div className="flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-[1.25rem] border border-[#00000000] bg-[#8B5CF6] px-2.5 [box-shadow:#FFFFFF14_0rem_0rem_0rem_0.15625rem_inset]">
-              <div className="w-max shrink-0 text-center font-medium font-sans text-[#FEFEFE] text-[0.875rem] leading-[142.857%]">
+              <div className="w-max shrink-0 text-center font-sans text-[0.875rem] leading-[142.857%] font-medium text-[#FEFEFE]">
                 Save Changes
               </div>
             </div>
@@ -215,7 +215,7 @@ export function FeaturesCardPublish() {
           </svg>
         </div>
       </div>
-      <div className="-left-65.75 absolute top-51.5 flex w-110.25 flex-col gap-4 rounded-2xl border border-[#1717171A] bg-white p-4 [box-shadow:#1717170D_0rem_0.1875rem_0.9375rem_-0.125rem] lg:top-31.5">
+      <div className="absolute top-51.5 -left-65.75 flex w-110.25 flex-col gap-4 rounded-2xl border border-[#1717171A] bg-white p-4 [box-shadow:#1717170D_0rem_0.1875rem_0.9375rem_-0.125rem] lg:top-31.5">
         <div className="flex grow basis-[0%] flex-col gap-4">
           <div className="flex items-center justify-end self-stretch">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white [box-shadow:#0000000A_0rem_0.125rem_0.375rem,#0000000D_0rem_0rem_0rem_0.0625rem]">
@@ -257,10 +257,10 @@ export function FeaturesCardPublish() {
             </div>
           </div>
           <div>
-            <div className="mb-1 flex flex-wrap justify-end text-right font-medium font-sans text-[#0A0A0A] text-[0.875rem] leading-[142.857%]">
+            <div className="mb-1 flex flex-wrap justify-end text-right font-sans text-[0.875rem] leading-[142.857%] font-medium text-[#0A0A0A]">
               {FEATURES_MCP_TOOL.title}
             </div>
-            <div className="flex flex-wrap justify-end text-right font-sans text-[#737373] text-[0.75rem] leading-[162.5%]">
+            <div className="flex flex-wrap justify-end text-right font-sans text-[0.75rem] leading-[162.5%] text-[#737373]">
               {FEATURES_MCP_TOOL.description}
             </div>
           </div>
@@ -269,7 +269,7 @@ export function FeaturesCardPublish() {
           </div>
         </div>
       </div>
-      <div className="-left-42 absolute top-98 flex w-86.5 flex-col items-end justify-center gap-4 rounded-2xl border border-[#1717171A] bg-white p-4 [box-shadow:#1717170D_0rem_0.1875rem_0.9375rem_-0.125rem] lg:top-78">
+      <div className="absolute top-98 -left-42 flex w-86.5 flex-col items-end justify-center gap-4 rounded-2xl border border-[#1717171A] bg-white p-4 [box-shadow:#1717170D_0rem_0.1875rem_0.9375rem_-0.125rem] lg:top-78">
         <div className="flex grow basis-[0%] flex-col gap-4 self-stretch">
           <div className="flex items-start justify-end self-stretch">
             <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-white [box-shadow:#0000000A_0rem_0.125rem_0.375rem,#0000000D_0rem_0rem_0rem_0.0625rem]">
@@ -303,10 +303,10 @@ export function FeaturesCardPublish() {
             </div>
           </div>
           <div>
-            <div className="mb-1 flex flex-wrap justify-end text-right font-medium font-sans text-[#0A0A0A] text-[0.875rem] leading-[142.857%]">
+            <div className="mb-1 flex flex-wrap justify-end text-right font-sans text-[0.875rem] leading-[142.857%] font-medium text-[#0A0A0A]">
               {FEATURES_CLI_TOOL.title}
             </div>
-            <div className="flex flex-wrap justify-end text-right font-sans text-[#737373] text-[0.75rem] leading-[162.5%]">
+            <div className="flex flex-wrap justify-end text-right font-sans text-[0.75rem] leading-[162.5%] text-[#737373]">
               {FEATURES_CLI_TOOL.description}
             </div>
           </div>

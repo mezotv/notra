@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
 import { and, count, eq, ne } from "drizzle-orm";
 import { Effect } from "effect";
+
 import { deleteAutumnCustomer } from "@/lib/billing/delete-autumn-customer";
 import {
   deleteOrganizationFromWorkOS,
@@ -22,6 +23,7 @@ import type {
   NextOwnerCandidate,
   OwnedOrganizationSummary,
 } from "@/types/user";
+
 import { badRequest, forbidden, notFound } from "../utils/errors";
 
 export const userRouter = {

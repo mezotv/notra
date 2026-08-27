@@ -3,6 +3,7 @@
 import { Label } from "@notra/ui/components/ui/label";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
+
 import { useShowAgentStats } from "@/lib/hooks/use-privacy-preferences";
 
 export function ChatSection() {
@@ -19,7 +20,7 @@ export function ChatSection() {
         <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
           <div className="min-w-0 space-y-1">
             <Label
-              className="cursor-pointer font-medium text-sm"
+              className="cursor-pointer text-sm font-medium"
               htmlFor="show-agent-stats"
             >
               Agent stats
@@ -28,7 +29,7 @@ export function ChatSection() {
               Show tokens per second, total tokens, and time to first token
               under assistant messages. Inspired by{" "}
               <a
-                className="underline underline-offset-2 hover:text-foreground"
+                className="hover:text-foreground underline underline-offset-2"
                 href="https://t3.chat"
                 rel="noopener"
                 target="_blank"

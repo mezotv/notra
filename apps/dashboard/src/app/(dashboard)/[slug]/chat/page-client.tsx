@@ -58,6 +58,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+
 import { ChatReasoningBlock } from "@/components/ai/chat-reasoning-block";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
 import { getMcpToolServerId } from "@/components/ai/chat-tool-block/mcp/utils";
@@ -162,7 +163,7 @@ const emptySubscribe = () => () => {
 
 function SlackMirrorNotice() {
   return (
-    <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-center text-muted-foreground text-sm">
+    <div className="border-border bg-muted/40 text-muted-foreground rounded-lg border px-4 py-3 text-center text-sm">
       Mirrored from a Slack thread.
     </div>
   );
@@ -174,10 +175,10 @@ function CreateToolPendingIndicator({
   const elapsedSeconds = useElapsedSeconds(true, toolCallId);
 
   return (
-    <div className="flex items-center gap-2 text-muted-foreground text-xs">
+    <div className="text-muted-foreground flex items-center gap-2 text-xs">
       <BrailleLoader className="text-sm" label="Thinking" />
       {elapsedSeconds >= TOOL_TIMER_THRESHOLD_SECONDS && (
-        <span className="shrink-0 text-muted-foreground/60 text-xs tabular-nums">
+        <span className="text-muted-foreground/60 shrink-0 text-xs tabular-nums">
           {formatElapsedSeconds(elapsedSeconds)}
         </span>
       )}
@@ -323,7 +324,7 @@ function ChatImageAttachment({
 
   if (hasError) {
     return (
-      <div className="my-1 inline-flex max-w-full items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-muted-foreground text-xs">
+      <div className="border-border bg-muted/40 text-muted-foreground my-1 inline-flex max-w-full items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs">
         <span className="truncate">
           {filename ?? mediaType ?? "Attachment"} is unavailable
         </span>
@@ -333,7 +334,7 @@ function ChatImageAttachment({
 
   return (
     <button
-      className="my-1 block w-fit overflow-hidden rounded-lg border border-border bg-muted/40 transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+      className="border-border bg-muted/40 focus-visible:ring-ring my-1 block w-fit overflow-hidden rounded-lg border transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
       onClick={onClick}
       type="button"
     >
@@ -404,7 +405,7 @@ function UserImageGrid({ children }: UserImageGridProps) {
         return (
           <m.div
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="aspect-square w-[calc((100%_-_0.75rem)/3)] [&>*]:m-0 [&>*]:size-full [&_img]:size-full [&_img]:object-cover"
+            className="aspect-square w-[calc((100%_-_0.75rem)/3)] [&_img]:size-full [&_img]:object-cover [&>*]:m-0 [&>*]:size-full"
             data-image-index={index}
             inert={isCovered ? true : undefined}
             initial={
@@ -428,7 +429,7 @@ function UserImageGrid({ children }: UserImageGridProps) {
         <m.button
           animate={{ opacity: 1 }}
           aria-label={`Show ${hiddenImageCount} more ${hiddenImageCount === 1 ? "image" : "images"}`}
-          className="absolute right-0 bottom-0 z-10 flex aspect-square w-[calc((100%_-_0.75rem)/3)] items-center justify-center rounded-lg border border-white/15 bg-black/60 font-medium text-white text-xl backdrop-blur-sm transition-colors hover:bg-black/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset motion-reduce:transition-none"
+          className="focus-visible:ring-ring absolute right-0 bottom-0 z-10 flex aspect-square w-[calc((100%_-_0.75rem)/3)] items-center justify-center rounded-lg border border-white/15 bg-black/60 text-xl font-medium text-white backdrop-blur-sm transition-colors hover:bg-black/70 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset motion-reduce:transition-none"
           initial={reduceMotion ? false : { opacity: 0 }}
           onClick={() => setIsExpanded(true)}
           transition={
@@ -1792,7 +1793,7 @@ function StandaloneChatPageClient({
       if (hasInlineReference) {
         return (
           <div
-            className="wrap-break-word size-full whitespace-pre-wrap"
+            className="size-full wrap-break-word whitespace-pre-wrap"
             key={`${messageId}-text-${index}`}
           >
             {renderTextWithIntegrationReferences(text, mcpLogosByConnectionId)}
@@ -1836,7 +1837,7 @@ function StandaloneChatPageClient({
       }
       return (
         <a
-          className="my-1 inline-flex max-w-full items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-foreground text-xs no-underline transition-colors hover:bg-accent"
+          className="border-border bg-muted/40 text-foreground hover:bg-accent my-1 inline-flex max-w-full items-center gap-2 rounded-md border px-2.5 py-1.5 text-xs no-underline transition-colors"
           href={url}
           key={fileKey}
           rel="noopener noreferrer"
@@ -1900,7 +1901,7 @@ function StandaloneChatPageClient({
               key={toolPart.toolCallId}
               toolCallId={toolPart.toolCallId}
             >
-              <div className="flex w-fit items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1 text-destructive text-xs">
+              <div className="bg-destructive/10 text-destructive flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-xs">
                 <HugeiconsIcon className="size-3.5" icon={X} />
                 <span>Draft generation failed. The assistant will retry.</span>
               </div>
@@ -2180,10 +2181,10 @@ function StandaloneChatPageClient({
   if (isLoadingHistory) {
     return (
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="min-w-0 flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
           <div className="relative flex min-h-full min-w-0 flex-col">
             <div className="flex flex-1 flex-col px-4 pt-6 pb-28">
-              <div className="mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-6">
+              <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-6">
                 <div className="flex justify-end">
                   <Skeleton className="h-10 w-48 rounded-2xl" />
                 </div>
@@ -2202,8 +2203,8 @@ function StandaloneChatPageClient({
                 </div>
               </div>
             </div>
-            <div className="sticky bottom-0 z-10 bg-background px-4 pb-4">
-              <div className="-inset-x-4 pointer-events-none absolute bottom-full h-12 bg-linear-to-t from-background to-transparent" />
+            <div className="bg-background sticky bottom-0 z-10 px-4 pb-4">
+              <div className="from-background pointer-events-none absolute -inset-x-4 bottom-full h-12 bg-linear-to-t to-transparent" />
               <div className="mx-auto w-full max-w-2xl">
                 <Skeleton className="h-28 w-full rounded-2xl" />
               </div>
@@ -2218,7 +2219,7 @@ function StandaloneChatPageClient({
     if (isSlackMirrored) {
       return (
         <div className="flex min-h-0 w-full min-w-0 flex-1 items-center justify-center px-4">
-          <div className="mx-auto w-full min-w-0 max-w-2xl">
+          <div className="mx-auto w-full max-w-2xl min-w-0">
             <SlackMirrorNotice />
           </div>
         </div>
@@ -2232,10 +2233,10 @@ function StandaloneChatPageClient({
 
     return (
       <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col items-center justify-center px-4">
-        <div className="mx-auto flex w-full min-w-0 max-w-2xl flex-col gap-4">
+        <div className="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4">
           <div className="w-full space-y-1">
             <p className="text-muted-foreground text-xs">{dateStr}</p>
-            <h1 className="font-semibold text-2xl tracking-tight">
+            <h1 className="text-2xl font-semibold tracking-tight">
               {greeting}
               {userName ? `, ${userName}` : ""}
             </h1>
@@ -2480,7 +2481,7 @@ function StandaloneChatPageClient({
                   })()}
                   {wasStoppedByUser && !isLoading && (
                     <div className="mx-auto w-full max-w-2xl">
-                      <div className="flex w-fit items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1 text-destructive text-xs">
+                      <div className="bg-destructive/10 text-destructive flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-xs">
                         <HugeiconsIcon className="size-3.5" icon={X} />
                         <span>Response stopped by user</span>
                       </div>
@@ -2488,12 +2489,12 @@ function StandaloneChatPageClient({
                   )}
                   {chatError && !isLoading && (
                     <div className="mx-auto w-full max-w-2xl">
-                      <div className="flex w-fit flex-wrap items-center gap-2 rounded-md bg-destructive/10 px-2.5 py-1.5 text-destructive text-xs">
+                      <div className="bg-destructive/10 text-destructive flex w-fit flex-wrap items-center gap-2 rounded-md px-2.5 py-1.5 text-xs">
                         <HugeiconsIcon className="size-3.5 shrink-0" icon={X} />
                         <span>{chatError}</span>
                         {!isSlackMirrored && (
                           <button
-                            className="inline-flex items-center gap-1 rounded font-medium underline-offset-2 transition-colors hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            className="focus-visible:ring-ring inline-flex items-center gap-1 rounded font-medium underline-offset-2 transition-colors hover:underline focus-visible:ring-2 focus-visible:outline-none"
                             onClick={handleRetryAfterError}
                             type="button"
                           >
@@ -2528,11 +2529,11 @@ function StandaloneChatPageClient({
           </MessageScrollerProvider>
           <div
             className={cn(
-              "z-10 bg-background px-4 pb-4",
+              "bg-background z-10 px-4 pb-4",
               isFirstMessageTransition && "chat-input-slide-down"
             )}
           >
-            <div className="mx-auto w-full min-w-0 max-w-2xl">
+            <div className="mx-auto w-full max-w-2xl min-w-0">
               <ChatQueue
                 authorsById={messageAuthorsById}
                 messages={queuedMessages}

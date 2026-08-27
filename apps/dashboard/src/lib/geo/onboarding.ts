@@ -3,6 +3,7 @@ import { db } from "@notra/db/drizzle";
 import { geoPrompts } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import {
   GEO_COMPETITOR_SUGGESTIONS_CACHE_PREFIX,
   GEO_DISCOVERY_CACHE_TTL_SECONDS,

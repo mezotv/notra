@@ -1,4 +1,5 @@
 import { Effect } from "effect";
+
 import { GeoDatabaseError, GeoTinybirdError } from "@/lib/geo/errors";
 
 export function geoQuery<A>(

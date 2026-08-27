@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@notra/ui/lib/utils";
+
 import { FREQUENCY_OPTIONS } from "@/constants/schedule";
 import type { ScheduleFrequencyTabsProps } from "@/types/automation/schedule";
 
@@ -16,9 +17,9 @@ export function ScheduleFrequencyTabs({
           <button
             aria-pressed={isActive}
             className={cn(
-              "h-10 rounded-lg border px-3 font-medium text-sm transition-all",
+              "h-10 rounded-lg border px-3 text-sm font-medium transition-all",
               isActive
-                ? "border-foreground bg-muted font-semibold text-foreground"
+                ? "border-foreground bg-muted text-foreground font-semibold"
                 : "border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             )}
             key={option.value}

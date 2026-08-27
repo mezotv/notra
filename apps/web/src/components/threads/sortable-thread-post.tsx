@@ -16,12 +16,14 @@ import {
 } from "@notra/ui/components/ui/avatar";
 import { cn } from "@notra/ui/lib/utils";
 import type { KeyboardEvent, RefObject } from "react";
+
 import {
   AUTHOR_HANDLE_LIMIT,
   AUTHOR_NAME_LIMIT,
   THREAD_POST_LIMIT,
   type ThreadPost,
 } from "@/types/threads";
+
 import { InlineEditable } from "./inline-editable";
 
 const DEFAULT_AUTHOR_NAME = "Your name";
@@ -102,9 +104,9 @@ export function SortableThreadPost({
   return (
     <li
       className={cn(
-        "group/post relative flex gap-3 rounded-xl p-3 transition-colors focus-within:bg-muted/50 hover:bg-muted/40",
+        "group/post focus-within:bg-muted/50 hover:bg-muted/40 relative flex gap-3 rounded-xl p-3 transition-colors",
         isDragging && "opacity-50",
-        isDropTarget && "bg-primary/5 ring-1 ring-primary/40"
+        isDropTarget && "bg-primary/5 ring-primary/40 ring-1"
       )}
       data-thread-post-id={post.id}
       key={post.id}
@@ -114,14 +116,14 @@ export function SortableThreadPost({
       {showConnector && !isDragging && (
         <div
           aria-hidden
-          className="-translate-x-1/2 pointer-events-none absolute top-13 bottom-[-1.375rem] left-8 w-px bg-border"
+          className="bg-border pointer-events-none absolute top-13 bottom-[-1.375rem] left-8 w-px -translate-x-1/2"
           data-thread-connector
         />
       )}
 
       <button
         aria-label="Change avatar"
-        className="group/avatar relative z-10 size-10 shrink-0 cursor-pointer rounded-full bg-background outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="group/avatar bg-background focus-visible:ring-primary relative z-10 size-10 shrink-0 cursor-pointer rounded-full outline-none focus-visible:ring-2"
         onClick={() => avatarInputRef.current?.click()}
         type="button"
       >
@@ -133,7 +135,7 @@ export function SortableThreadPost({
             )}
           </AvatarFallback>
         </Avatar>
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center rounded-full bg-foreground/55 text-background opacity-0 transition-opacity group-hover/avatar:opacity-100 group-focus-visible/avatar:opacity-100">
+        <span className="bg-foreground/55 text-background pointer-events-none absolute inset-0 flex items-center justify-center rounded-full opacity-0 transition-opacity group-hover/avatar:opacity-100 group-focus-visible/avatar:opacity-100">
           <HugeiconsIcon className="size-4" icon={Image01Icon} />
         </span>
       </button>
@@ -142,7 +144,7 @@ export function SortableThreadPost({
         <div className="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
           <InlineEditable
             ariaLabel="Edit display name"
-            className="max-w-[14rem] font-sans font-semibold text-foreground text-sm leading-tight"
+            className="text-foreground max-w-[14rem] font-sans text-sm leading-tight font-semibold"
             maxLength={AUTHOR_NAME_LIMIT}
             onChange={onAuthorNameChange}
             placeholder={DEFAULT_AUTHOR_NAME}
@@ -150,7 +152,7 @@ export function SortableThreadPost({
           />
           <InlineEditable
             ariaLabel="Edit handle"
-            className="max-w-[10rem] font-sans text-muted-foreground text-sm leading-tight"
+            className="text-muted-foreground max-w-[10rem] font-sans text-sm leading-tight"
             maxLength={AUTHOR_HANDLE_LIMIT}
             onChange={onAuthorHandleChange}
             placeholder={DEFAULT_AUTHOR_HANDLE}
@@ -160,7 +162,7 @@ export function SortableThreadPost({
         </div>
 
         <textarea
-          className="field-sizing-content w-full resize-none whitespace-pre-wrap text-pretty rounded-sm bg-transparent font-sans text-[0.9375rem] text-foreground leading-relaxed outline-none placeholder:text-muted-foreground/80"
+          className="text-foreground placeholder:text-muted-foreground/80 field-sizing-content w-full resize-none rounded-sm bg-transparent font-sans text-[0.9375rem] leading-relaxed text-pretty whitespace-pre-wrap outline-none"
           onChange={(event) => onPostChange(post.id, event.target.value)}
           onKeyDown={(event) => onPostKeyDown(post.id, event)}
           placeholder={
@@ -181,11 +183,11 @@ export function SortableThreadPost({
         </span>
       </div>
 
-      <div className="-right-18 absolute top-3 flex items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover/post:opacity-100">
+      <div className="absolute top-3 -right-18 flex items-center gap-1 opacity-0 transition-opacity group-hover/post:opacity-100 focus-within:opacity-100">
         {hasMultiplePosts && (
           <button
             aria-label={`Drag post ${index + 1}`}
-            className="flex size-7 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:cursor-grabbing"
+            className="text-muted-foreground hover:bg-muted hover:text-foreground flex size-7 cursor-grab touch-none items-center justify-center rounded-md transition-colors active:cursor-grabbing"
             ref={setActivatorNodeRef}
             type="button"
             {...attributes}
@@ -197,7 +199,7 @@ export function SortableThreadPost({
         {showDelete && (
           <button
             aria-label={`Delete post ${index + 1}`}
-            className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex size-7 items-center justify-center rounded-md transition-colors"
             onClick={() => onRemovePost(post.id)}
             type="button"
           >

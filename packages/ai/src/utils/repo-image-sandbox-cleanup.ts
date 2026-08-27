@@ -1,4 +1,5 @@
 import type { Box } from "@upstash/box";
+
 import { withBoxRetry } from "./repo-image-box";
 
 type RepoImageBox = Awaited<ReturnType<typeof Box.create>>;

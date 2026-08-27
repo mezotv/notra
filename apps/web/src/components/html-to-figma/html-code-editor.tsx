@@ -2,6 +2,7 @@
 
 import { cn } from "@notra/ui/lib/utils";
 import { useRef } from "react";
+
 import { HTML_HIGHLIGHT_CSS } from "@/lib/html-to-figma/constants";
 import { highlightHtml } from "@/lib/html-to-figma/highlight";
 import type { HtmlCodeEditorProps } from "@/types/html-to-figma";
@@ -38,11 +39,11 @@ export default function HtmlCodeEditor({
   }
 
   return (
-    <div className="relative h-[60svh] max-h-[44rem] min-h-[24rem] w-full overflow-hidden rounded-2xl border border-[#1E1E1E14] bg-background transition-colors focus-within:border-foreground/30 dark:border-white/10">
+    <div className="bg-background focus-within:border-foreground/30 relative h-[60svh] max-h-[44rem] min-h-[24rem] w-full overflow-hidden rounded-2xl border border-[#1E1E1E14] transition-colors dark:border-white/10">
       <style>{HTML_HIGHLIGHT_CSS}</style>
       <pre
         aria-hidden="true"
-        className={cn(SHARED_CLASS, "pointer-events-none text-foreground")}
+        className={cn(SHARED_CLASS, "text-foreground pointer-events-none")}
         // biome-ignore lint/security/noDangerouslySetInnerHtml: tokens are escaped in highlightHtml
         dangerouslySetInnerHTML={{ __html: `${highlightHtml(value)}\n` }}
         ref={preRef}
@@ -51,7 +52,7 @@ export default function HtmlCodeEditor({
         aria-label="HTML to convert"
         className={cn(
           SHARED_CLASS,
-          "resize-none bg-transparent text-transparent caret-foreground outline-none placeholder:text-muted-foreground/70"
+          "caret-foreground placeholder:text-muted-foreground/70 resize-none bg-transparent text-transparent outline-none"
         )}
         onChange={(event) => {
           onChange(event.target.value);

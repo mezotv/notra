@@ -64,22 +64,22 @@ export const ScheduledContentCreatedEmail = ({
               />
             </Section>
 
-            <Heading className="my-6 text-center font-medium text-2xl text-black">
+            <Heading className="my-6 text-center text-2xl font-medium text-black">
               New scheduled content is ready
             </Heading>
 
-            <Text className="text-center text-[#737373] text-base leading-relaxed">
+            <Text className="text-center text-base leading-relaxed text-[#737373]">
               Your <strong>{scheduleName}</strong> schedule in{" "}
               <strong>{organizationName}</strong> {summary}
             </Text>
 
             <Section className="mt-8">
-              <Text className="m-0 text-[#666666] text-[12px] uppercase tracking-wide">
+              <Text className="m-0 text-[12px] tracking-wide text-[#666666] uppercase">
                 {contentCount === 1 ? "Content title:" : "Created drafts:"}
               </Text>
               {createdContent.map((item) => (
                 <Text
-                  className="mt-2 mb-0 text-[14px] text-black leading-[22px]"
+                  className="mt-2 mb-0 text-[14px] leading-[22px] text-black"
                   key={item.contentLink}
                 >
                   <Link href={item.contentLink}>{item.title}</Link>
@@ -99,7 +99,7 @@ export const ScheduledContentCreatedEmail = ({
               </EmailButton>
             </Section>
 
-            <Text className="text-[14px] text-black leading-[24px]">
+            <Text className="text-[14px] leading-[24px] text-black">
               If the button does not work, copy and paste this URL into your
               browser:{" "}
               <Link
@@ -116,7 +116,7 @@ export const ScheduledContentCreatedEmail = ({
             </Text>
 
             <Section className="mt-8">
-              <Text className="m-0 text-center text-[#666666] text-[12px] uppercase tracking-wide">
+              <Text className="m-0 text-center text-[12px] tracking-wide text-[#666666] uppercase">
                 If you don't want to receive these emails, you can click{" "}
                 <Link
                   href={`${EMAIL_CONFIG.getAppUrl()}/${organizationSlug}/settings/notifications`}

@@ -19,6 +19,7 @@ import {
 import Link from "next/link";
 import { parseAsString, useQueryState } from "nuqs";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
@@ -142,7 +143,7 @@ function WriteCell({
 }) {
   return (
     <Button
-      className="opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+      className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
       onClick={(event) => {
         event.stopPropagation();
         if (
@@ -178,7 +179,7 @@ function GapMeter({ level, label }: { level: number; label: string }) {
           <span
             className={cn(
               "w-1.5 rounded-[1px]",
-              index < level ? cn("h-4", filledClass) : "h-2.5 bg-muted"
+              index < level ? cn("h-4", filledClass) : "bg-muted h-2.5"
             )}
             key={index}
           />
@@ -198,9 +199,9 @@ function ContentCell({
 }) {
   return (
     <span className="flex min-w-0 flex-col gap-0.5">
-      <span className="truncate font-medium text-sm leading-snug">{title}</span>
+      <span className="truncate text-sm leading-snug font-medium">{title}</span>
       {subtitle ? (
-        <span className="truncate text-muted-foreground text-xs">
+        <span className="text-muted-foreground truncate text-xs">
           {subtitle}
         </span>
       ) : null}
@@ -319,7 +320,7 @@ function GapsFilters({
     <div className="flex min-w-0 flex-wrap items-center gap-2">
       <div className="relative min-w-0 flex-1 sm:max-w-72">
         <HugeiconsIcon
-          className="-translate-y-1/2 absolute top-1/2 left-3 text-muted-foreground"
+          className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2"
           icon={SearchIcon}
           size={15}
         />

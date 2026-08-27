@@ -1,4 +1,5 @@
 import Image from "next/image";
+
 import {
   SLACK_DRAFT_ACTION_LABEL,
   SLACK_DRAFT_BODY,
@@ -19,22 +20,22 @@ export function SlackDraftCard() {
             src="/notra-mark.svg"
             width={18}
           />
-          <span className="font-sans font-semibold text-[#1E1E1E] text-sm leading-[1.125rem] dark:text-white">
+          <span className="font-sans text-sm leading-[1.125rem] font-semibold text-[#1E1E1E] dark:text-white">
             {SLACK_DRAFT_TITLE}
           </span>
         </div>
-        <span className="cta-gradient-primary-flat flex items-center rounded-full px-3.5 py-1.25 font-sans font-semibold text-white text-xs leading-4">
+        <span className="cta-gradient-primary-flat flex items-center rounded-full px-3.5 py-1.25 font-sans text-xs leading-4 font-semibold text-white">
           {SLACK_DRAFT_ACTION_LABEL}
         </span>
       </div>
       <div className="flex flex-col gap-2 px-5 pt-4 pb-5">
-        <span className="font-sans font-semibold text-[#1E1E1E] text-base leading-[1.3125rem] tracking-[-0.01em] dark:text-white">
+        <span className="font-sans text-base leading-[1.3125rem] font-semibold tracking-[-0.01em] text-[#1E1E1E] dark:text-white">
           {SLACK_DRAFT_HEADLINE}
         </span>
-        <p className="font-sans text-[#1E1E1EBF] text-[0.8125rem] leading-5 dark:text-white/75">
+        <p className="font-sans text-[0.8125rem] leading-5 text-[#1E1E1EBF] dark:text-white/75">
           {SLACK_DRAFT_BODY}
         </p>
-        <span className="font-medium font-sans text-[#1E1E1E80] text-xs leading-4 dark:text-white/50">
+        <span className="font-sans text-xs leading-4 font-medium text-[#1E1E1E80] dark:text-white/50">
           {SLACK_DRAFT_META}
         </span>
       </div>

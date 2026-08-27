@@ -15,6 +15,7 @@ import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { GEO_SAMPLE_DATA_ENABLED } from "@/constants/geo";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -78,7 +79,7 @@ export function DevSampleDataCard({ organizationId }: DevSampleDataCardProps) {
     <TitleCard heading="Developer">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-medium text-sm">GEO sample data</p>
+          <p className="text-sm font-medium">GEO sample data</p>
           <p className="text-muted-foreground text-xs">
             Reset replaces the complete demo project with 30 days of prompts,
             conversations, competitors, scans, and traffic. Clear removes only

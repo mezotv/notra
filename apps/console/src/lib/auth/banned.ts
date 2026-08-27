@@ -3,6 +3,7 @@ import { users } from "@notra/db/schema";
 import { withAuth } from "@workos-inc/authkit-nextjs";
 import { eq } from "drizzle-orm";
 import { unstable_rethrow } from "next/navigation";
+
 import type { BannedStatusUser } from "@/types/auth";
 
 export function isUserBanned(user: BannedStatusUser) {

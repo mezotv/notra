@@ -1,4 +1,5 @@
 import { p } from "@tinybirdco/sdk";
+
 import { TRAILING_DAYS_PARAM } from "./analytics-params";
 
 // Shared project scope and date-window plumbing for GEO traffic endpoints.

@@ -20,6 +20,7 @@ import {
 } from "@notra/ui/components/ui/select";
 import { Google } from "@notra/ui/components/ui/svgs/google";
 import { type ReactNode, useId, useState } from "react";
+
 import { Button } from "@/components/button";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { GSC_OAUTH_AUTHORIZE_PATH } from "@/constants/google-search-console";
@@ -62,7 +63,7 @@ function HeaderRow({
         </span>
       </div>
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-sm leading-snug" id={titleId}>
+        <p className="text-sm leading-snug font-medium" id={titleId}>
           Google Search Console
         </p>
         <p className="text-muted-foreground text-sm leading-snug">
@@ -74,7 +75,7 @@ function HeaderRow({
       {onDismiss ? (
         <Button
           aria-label="Dismiss Search Console card"
-          className="shrink-0 text-muted-foreground"
+          className="text-muted-foreground shrink-0"
           onClick={onDismiss}
           size="icon-sm"
           variant="ghost"
@@ -94,7 +95,7 @@ function ConnectAction({
 }: SearchConsoleConnectActionProps) {
   if (!configured) {
     return (
-      <p className="max-w-40 text-muted-foreground text-xs">
+      <p className="text-muted-foreground max-w-40 text-xs">
         Not available on this workspace yet.
       </p>
     );
@@ -125,7 +126,7 @@ function SelectSiteState({
 
   if (status.sites.length === 0) {
     return (
-      <p className="px-4 py-3 text-muted-foreground text-sm">
+      <p className="text-muted-foreground px-4 py-3 text-sm">
         {status.lastError ??
           "No Search Console properties found for this Google account. Add a property in Search Console, then reconnect."}
       </p>
@@ -202,7 +203,7 @@ function ConnectedState({
     <div className="flex items-start gap-3 px-4 py-3">
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="truncate font-medium text-sm leading-snug">
+          <p className="truncate text-sm leading-snug font-medium">
             {formatGscSiteUrl(status.siteUrl ?? "")}
           </p>
           {status.weeklySyncScheduled ? (
@@ -279,7 +280,7 @@ export function SearchConsoleCard({
 
   if (isPending || !status) {
     body = (
-      <div className="flex items-center gap-2 px-4 py-3 text-muted-foreground text-sm">
+      <div className="text-muted-foreground flex items-center gap-2 px-4 py-3 text-sm">
         <StatusSpinner />
         Loading…
       </div>
@@ -295,7 +296,7 @@ export function SearchConsoleCard({
     );
     if (status.status === "reauth_required") {
       body = (
-        <p className="px-4 py-3 text-muted-foreground text-sm">
+        <p className="text-muted-foreground px-4 py-3 text-sm">
           Google access expired. Reconnect to keep syncing keyword suggestions.
         </p>
       );
@@ -320,7 +321,7 @@ export function SearchConsoleCard({
       />
       {body ? (
         <>
-          <div className="mx-4 border-border/80 border-t" />
+          <div className="border-border/80 mx-4 border-t" />
           {body}
         </>
       ) : null}

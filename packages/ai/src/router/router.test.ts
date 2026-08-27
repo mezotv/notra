@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+
 import {
   ROUTER_METADATA_KEY,
   ROUTER_PROVIDER_OPTIONS_KEY,
 } from "@notra/ai/constants/router";
+
 import { createVercelAdapter } from "./adapters/vercel";
 import {
   GatewayCreditBalanceError,

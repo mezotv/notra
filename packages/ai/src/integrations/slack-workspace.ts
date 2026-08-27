@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { slackIntegrations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
 import type {
   CreateSlackIntegrationParams,

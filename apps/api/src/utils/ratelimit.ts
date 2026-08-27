@@ -2,6 +2,7 @@ import { CHAT_GENERATION_RATE_LIMIT } from "@notra/ai/constants/rate-limits";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import type { Context } from "hono";
+
 import { getOrganizationId } from "./auth";
 
 const redis = Redis.fromEnv();

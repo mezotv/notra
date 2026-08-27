@@ -9,6 +9,7 @@ import {
   errors as joseErrors,
   jwtVerify,
 } from "jose";
+
 import {
   LEGACY_API_READ_SCOPE,
   LEGACY_API_WRITE_SCOPE,

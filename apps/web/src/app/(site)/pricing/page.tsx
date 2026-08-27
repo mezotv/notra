@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import type { OfferLike } from "~types/jsonld";
+
 import { CtaBanner } from "@/components/landing/cta-banner";
 import { LandingPricingSection } from "@/components/landing/pricing-section";
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
@@ -16,7 +18,6 @@ import {
   TWITTER_HANDLE,
 } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
-import type { OfferLike } from "~types/jsonld";
 
 const title = "Pricing";
 const description =

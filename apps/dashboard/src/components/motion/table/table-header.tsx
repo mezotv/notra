@@ -12,9 +12,11 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { motion } from "motion/react";
 import { type PointerEvent as ReactPointerEvent, useEffect } from "react";
 import { createPortal } from "react-dom";
+
 import { Checkbox } from "@/components/motion/checkbox";
 import { EASE_OUT, SPRING_PRESS } from "@/lib/ease";
 import { cn } from "@/lib/utils";
+
 import { TableMenu } from "./table-menu";
 import type {
   HeaderCellRefs,
@@ -222,9 +224,9 @@ export function TableHeader<T>({
                     : undefined
                 }
                 className={cn(
-                  "group bg-muted p-0 font-medium text-muted-foreground",
-                  "data-[drop=true]:before:absolute data-[drop=true]:before:inset-y-0 data-[drop=true]:before:left-0 data-[drop=true]:before:w-0.5 data-[drop=true]:before:bg-primary",
-                  "data-[dropend=true]:after:absolute data-[dropend=true]:after:inset-y-0 data-[dropend=true]:after:right-0 data-[dropend=true]:after:w-0.5 data-[dropend=true]:after:bg-primary"
+                  "group bg-muted text-muted-foreground p-0 font-medium",
+                  "data-[drop=true]:before:bg-primary data-[drop=true]:before:absolute data-[drop=true]:before:inset-y-0 data-[drop=true]:before:left-0 data-[drop=true]:before:w-0.5",
+                  "data-[dropend=true]:after:bg-primary data-[dropend=true]:after:absolute data-[dropend=true]:after:inset-y-0 data-[dropend=true]:after:right-0 data-[dropend=true]:after:w-0.5"
                 )}
                 data-drop={dragKey ? dropIndex === index : undefined}
                 data-dropend={
@@ -267,7 +269,7 @@ export function TableHeader<T>({
                   {reorderable ? (
                     <button
                       aria-label={`Reorder ${column.key} column`}
-                      className="flex h-full w-6 cursor-grab touch-none items-center justify-center text-muted-foreground/60 transition-colors hover:text-foreground active:cursor-grabbing"
+                      className="text-muted-foreground/60 hover:text-foreground flex h-full w-6 cursor-grab touch-none items-center justify-center transition-colors active:cursor-grabbing"
                       onPointerDown={(e) => onReorderStart(column.key, e)}
                       onPointerMove={onReorderMove}
                       onPointerUp={onReorderEnd}
@@ -279,7 +281,7 @@ export function TableHeader<T>({
                   {column.sortable ? (
                     <button
                       className={cn(
-                        "flex h-full flex-1 select-none items-center gap-1 px-4 transition-colors hover:text-foreground",
+                        "hover:text-foreground flex h-full flex-1 items-center gap-1 px-4 transition-colors select-none",
                         alignFlex(column.align),
                         active && "text-foreground"
                       )}
@@ -317,7 +319,7 @@ export function TableHeader<T>({
                     <input
                       aria-label={`Rename ${column.key} column`}
                       className={cn(
-                        "min-w-0 flex-1 appearance-none truncate rounded-md border-0 bg-transparent px-4 font-medium text-muted-foreground outline-none transition-colors focus:bg-muted focus:text-foreground",
+                        "text-muted-foreground focus:bg-muted focus:text-foreground min-w-0 flex-1 appearance-none truncate rounded-md border-0 bg-transparent px-4 font-medium transition-colors outline-none",
                         alignText(column.align)
                       )}
                       onChange={(e) =>
@@ -331,7 +333,7 @@ export function TableHeader<T>({
                   ) : (
                     <span
                       className={cn(
-                        "flex-1 whitespace-nowrap px-4",
+                        "flex-1 px-4 whitespace-nowrap",
                         alignText(column.align)
                       )}
                     >
@@ -342,7 +344,7 @@ export function TableHeader<T>({
                 {resizable ? (
                   <button
                     aria-label={`Resize ${column.key} column`}
-                    className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none bg-transparent transition-colors hover:bg-primary/40"
+                    className="hover:bg-primary/40 absolute top-0 right-0 h-full w-1.5 cursor-col-resize touch-none bg-transparent transition-colors"
                     onPointerDown={(e) => onResizeStart(column.key, e)}
                     onPointerMove={onResizeMove}
                     onPointerUp={onResizeEnd}

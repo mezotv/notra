@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 import type { NextRequest, NextResponse } from "next/server";
+
 import { runGeoIngest } from "@/lib/geo-ingest/pipeline";
 import {
   toGeoIngestAcceptedResponse,

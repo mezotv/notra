@@ -1,5 +1,6 @@
 import { Notra } from "@notra/ui/components/ui/svgs/notra";
 import Link from "next/link";
+
 import { AuthBrandPanel } from "@/components/auth/auth-brand-panel";
 import type { OnboardingSplitLayoutProps } from "@/types/onboarding";
 
@@ -16,7 +17,7 @@ export function OnboardingSplitLayout({
           <span aria-hidden="true">
             <Notra className="size-7" />
           </span>
-          <span className="font-semibold text-foreground text-lg tracking-tight">
+          <span className="text-foreground text-lg font-semibold tracking-tight">
             Notra
           </span>
         </Link>

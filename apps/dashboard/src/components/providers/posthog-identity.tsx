@@ -2,6 +2,7 @@
 
 import posthog from "posthog-js";
 import { useEffect } from "react";
+
 import { POSTHOG_PROJECT_TOKEN } from "@/constants/posthog";
 import { authClient } from "@/lib/auth/client";
 

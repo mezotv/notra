@@ -10,6 +10,7 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
+
 import type { SkillDeleteDialogProps } from "@/types/skills/page";
 
 export function SkillDeleteDialog({

@@ -7,6 +7,7 @@ import { cn } from "cnfast";
 import { domAnimation, LazyMotion } from "motion/react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+
 import {
   getMcpFaviconUrl,
   getPreviewToolLabel,
@@ -32,7 +33,7 @@ function ToolIcon({ candidates, className }: ToolChatPreviewIconProps) {
     return (
       <span
         className={cn(
-          "inline-flex size-4 shrink-0 items-center justify-center text-muted-foreground",
+          "text-muted-foreground inline-flex size-4 shrink-0 items-center justify-center",
           className
         )}
       >
@@ -101,12 +102,12 @@ export function ToolChatPreview({
   );
 
   return (
-    <div className="grid gap-2 rounded-lg bg-muted/40 p-3">
-      <p className="font-medium text-[0.65rem] text-muted-foreground/70 uppercase tracking-wider">
+    <div className="bg-muted/40 grid gap-2 rounded-lg p-3">
+      <p className="text-muted-foreground/70 text-[0.65rem] font-medium tracking-wider uppercase">
         In chat
       </p>
       <LazyMotion features={domAnimation}>
-        <div className="flex min-w-0 items-center gap-2 text-muted-foreground text-sm">
+        <div className="text-muted-foreground flex min-w-0 items-center gap-2 text-sm">
           {icon}
           <Shimmer
             as="span"
@@ -117,14 +118,14 @@ export function ToolChatPreview({
           </Shimmer>
         </div>
       </LazyMotion>
-      <div className="flex min-w-0 items-center gap-2 text-muted-foreground text-sm">
+      <div className="text-muted-foreground flex min-w-0 items-center gap-2 text-sm">
         {icon}
         <span className="inline-block min-w-0 truncate leading-5">
           {doneText}
         </span>
         <HugeiconsIcon
           aria-hidden
-          className="size-3.5 shrink-0 text-muted-foreground/60"
+          className="text-muted-foreground/60 size-3.5 shrink-0"
           icon={ArrowDown01Icon}
         />
       </div>

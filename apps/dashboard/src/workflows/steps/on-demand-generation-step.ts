@@ -3,6 +3,7 @@ import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/line
 import { getValidToneProfile } from "@notra/ai/schemas/tone";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import { createRequestLogger } from "evlog";
+
 import {
   buildDataPointRestrictionInstructions,
   buildSelectedItemsInstructions,

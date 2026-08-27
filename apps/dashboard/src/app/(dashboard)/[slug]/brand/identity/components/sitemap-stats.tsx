@@ -7,8 +7,10 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Card, CardContent } from "@notra/ui/components/ui/card";
+
 import { formatRelativeCrawlTime } from "@/lib/sitemap/sitemap-url";
 import type { SitemapStatsProps } from "@/types/hooks/brand-sitemaps";
+
 import { SITEMAP_STATUS_META } from "../constants/sitemap-ui";
 
 export function SitemapStats({ sitemap }: SitemapStatsProps) {
@@ -23,21 +25,21 @@ export function SitemapStats({ sitemap }: SitemapStatsProps) {
       <Card>
         <CardContent className="space-y-3">
           <div className="flex items-center justify-between">
-            <p className="font-medium text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm font-medium">
               Indexed Pages
             </p>
             <HugeiconsIcon
-              className="size-4 text-muted-foreground"
+              className="text-muted-foreground size-4"
               icon={CheckmarkCircle02Icon}
             />
           </div>
-          <p className="font-bold text-3xl tabular-nums">
+          <p className="text-3xl font-bold tabular-nums">
             {indexedPages}
-            <span className="ml-1 font-normal text-base text-muted-foreground">
+            <span className="text-muted-foreground ml-1 text-base font-normal">
               / {totalPages}
             </span>
           </p>
-          <div className="flex h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div className="bg-muted flex h-2 w-full overflow-hidden rounded-full">
             <div
               className="h-full bg-emerald-500"
               style={{ width: `${successPercent}%` }}
@@ -61,15 +63,15 @@ export function SitemapStats({ sitemap }: SitemapStatsProps) {
       <Card>
         <CardContent className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="font-medium text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm font-medium">
               Crawl Status
             </p>
             <HugeiconsIcon
-              className="size-4 text-muted-foreground"
+              className="text-muted-foreground size-4"
               icon={Clock01Icon}
             />
           </div>
-          <p className="flex items-center gap-2 font-semibold text-2xl">
+          <p className="flex items-center gap-2 text-2xl font-semibold">
             <span
               className={`size-2.5 rounded-full ${statusMeta.dotClassName}`}
             />
@@ -86,15 +88,15 @@ export function SitemapStats({ sitemap }: SitemapStatsProps) {
       <Card>
         <CardContent className="space-y-2">
           <div className="flex items-center justify-between">
-            <p className="font-medium text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm font-medium">
               Coverage
             </p>
             <HugeiconsIcon
-              className="size-4 text-muted-foreground"
+              className="text-muted-foreground size-4"
               icon={GlobalIcon}
             />
           </div>
-          <p className="font-bold text-3xl tabular-nums">{totalPages}</p>
+          <p className="text-3xl font-bold tabular-nums">{totalPages}</p>
           <p className="text-muted-foreground text-sm">
             {accountedPages} of {totalPages} URLs processed
           </p>

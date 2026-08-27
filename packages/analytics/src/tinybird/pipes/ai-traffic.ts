@@ -1,4 +1,5 @@
 import { defineEndpoint, node, p, t } from "@tinybirdco/sdk";
+
 import { TRAILING_DAYS_PARAM } from "../../constants/analytics-params";
 
 export const aiTrafficOverview = defineEndpoint("ai_traffic_overview", {

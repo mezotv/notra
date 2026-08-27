@@ -4,6 +4,7 @@ import type { Transaction } from "@tanstack/react-db";
 import { useDbClient, useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useSyncExternalStore } from "react";
 import { toast } from "sonner";
+
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import {
   geoCollectionId,

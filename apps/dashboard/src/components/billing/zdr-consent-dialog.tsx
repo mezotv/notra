@@ -8,6 +8,7 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+
 import { Button } from "@/components/button";
 import {
   ZDR_CONSENT_BODY,
@@ -33,7 +34,7 @@ export function ZdrConsentDialog({
             {ZDR_CONSENT_BODY}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
-        <ul className="list-disc space-y-2 pl-5 text-muted-foreground text-sm">
+        <ul className="text-muted-foreground list-disc space-y-2 pl-5 text-sm">
           {ZDR_CONSENT_POINTS.map((point) => (
             <li key={point}>{point}</li>
           ))}

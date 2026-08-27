@@ -3,6 +3,7 @@
 import { useFlag } from "@databuddy/sdk/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+
 import { GeoGapsTable } from "@/components/geo/gaps-table";
 import {
   GeoWriterNeedsSetup,
@@ -30,6 +31,7 @@ import {
   writeDialogStateFromGap,
 } from "@/utils/geo-write-entry";
 import { isGeoWriterVisibleInNav } from "@/utils/geo-writer-flag";
+
 import { GeoGapsSkeleton } from "./skeleton";
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
@@ -97,7 +99,7 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
       <div className="flex min-h-0 w-full flex-1 flex-col gap-6 px-4 lg:px-6">
         <header className="flex shrink-0 flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Content Gaps</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Content Gaps</h1>
             <p className="text-muted-foreground">
               Questions engines answer without mentioning you
             </p>

@@ -24,6 +24,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { MouseEvent } from "react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
 import { EmptyState } from "@/components/empty-state";
@@ -34,6 +35,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { useLinearConnectionToast } from "@/lib/hooks/use-linear-connection-toast";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { LinearIntegration } from "@/types/integrations";
+
 import { LinearIntegrationsPageSkeleton } from "./skeleton";
 
 interface PageClientProps {
@@ -122,7 +124,7 @@ function LinearIntegrationCard({
   return (
     <>
       <Card
-        className="cursor-pointer transition-colors hover:bg-accent/50"
+        className="hover:bg-accent/50 cursor-pointer transition-colors"
         onClick={handleCardClick}
       >
         <CardHeader>
@@ -259,7 +261,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               Linear Integrations
             </h1>
             <p className="text-muted-foreground">

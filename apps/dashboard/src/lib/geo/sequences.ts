@@ -3,6 +3,7 @@ import { geoPromptSequences } from "@notra/db/schema";
 import { queryGeoCheckSequenceResults } from "@notra/db/utils/geo-checks";
 import { and, asc, eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import { geoDb } from "@/lib/geo/effect";
 import {
   GeoSequenceCreateFailedError,

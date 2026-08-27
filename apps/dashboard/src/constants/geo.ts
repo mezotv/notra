@@ -8,6 +8,7 @@ import {
   PaintBrush01Icon,
   UserMultiple02Icon,
 } from "@hugeicons/core-free-icons";
+
 import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
 import { GEO_MODEL_CATALOG_SEED } from "@/constants/geo-model-catalog";
 import type {

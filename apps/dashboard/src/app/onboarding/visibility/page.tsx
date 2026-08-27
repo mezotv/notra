@@ -3,6 +3,7 @@ import { brandSettings } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
 import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
 import { getGeoOnboardingStage } from "@/lib/geo/onboarding-status";
@@ -11,6 +12,7 @@ import {
   geoDashboardPath,
   geoOnboardingCompetitorsPath,
 } from "@/utils/geo-paths";
+
 import { VisibilityForm } from "./visibility-form";
 
 export const metadata: Metadata = {

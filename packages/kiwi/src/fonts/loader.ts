@@ -1,4 +1,5 @@
 import { type Font, parse } from "opentype.js";
+
 import { INTER_TTF_BASE64 } from "./inter-data";
 
 let fallbackFontPromise: Promise<Font> | null = null;

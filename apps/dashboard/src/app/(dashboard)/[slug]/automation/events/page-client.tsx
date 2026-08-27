@@ -27,9 +27,10 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { BrandVoiceCell } from "@/components/automation/brand-voice-cell";
-import { CreateEventTriggerDialog } from "@/components/automation/events/create-event-trigger-dialog";
 import { EventsPageSkeleton } from "@/components/automation/events-skeleton";
+import { CreateEventTriggerDialog } from "@/components/automation/events/create-event-trigger-dialog";
 import { OnboardingSuggestions } from "@/components/automation/onboarding-suggestions";
 import { SourcesCell } from "@/components/automation/sources-cell";
 import { TriggerRowActions } from "@/components/automation/triggers/trigger-row-actions";
@@ -219,7 +220,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Events</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Events</h1>
             <p className="text-muted-foreground">
               React to GitHub activity and trigger content generation
               automatically
@@ -392,14 +393,14 @@ function EventTable({
 
   if (triggers.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground text-sm">
+      <div className="text-muted-foreground rounded-lg border border-dashed p-8 text-center text-sm">
         No event triggers in this category.
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
+    <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
       <Table>
         <TableHeader>
           <TableRow>
@@ -438,7 +439,7 @@ function EventTable({
               <TableRow key={trigger.id}>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-lg border bg-muted/50">
+                    <span className="bg-muted/50 flex size-8 items-center justify-center rounded-lg border">
                       <Github className="size-4" />
                     </span>
                     <span className="text-sm">GitHub Webhook</span>

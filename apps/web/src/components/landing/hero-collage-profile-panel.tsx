@@ -11,6 +11,7 @@ import {
 } from "@notra/ui/components/ui/select";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useState } from "react";
+
 import {
   HERO_COLLAGE_LANGUAGE_OPTIONS,
   HERO_COLLAGE_PROFILE,
@@ -29,9 +30,9 @@ export function HeroCollageProfilePanel() {
   const [language, setLanguage] = useState(HERO_COLLAGE_PROFILE.languageValue);
 
   return (
-    <div className="-mx-26 relative z-20 w-[30rem] shrink-0 self-center rounded-3xl border border-black/5 bg-background px-12 py-5 shadow-none transition-transform duration-300 ease-out lg:shadow-[0_0.125rem_4.4375rem_rgba(0,0,0,0.1)] lg:motion-safe:hover:scale-[1.02] dark:border-white/10">
+    <div className="bg-background relative z-20 -mx-26 w-[30rem] shrink-0 self-center rounded-3xl border border-black/5 px-12 py-5 shadow-none transition-transform duration-300 ease-out lg:shadow-[0_0.125rem_4.4375rem_rgba(0,0,0,0.1)] lg:motion-safe:hover:scale-[1.02] dark:border-white/10">
       <div className="mb-6 space-y-1">
-        <h3 className="font-bold font-sans text-[1.375rem] text-foreground leading-[1.2] tracking-[-0.046875rem]">
+        <h3 className="text-foreground font-sans text-[1.375rem] leading-[1.2] font-bold tracking-[-0.046875rem]">
           {HERO_COLLAGE_PROFILE.heading}
         </h3>
         <p className="text-muted-foreground text-sm leading-[1.5]">
@@ -51,12 +52,12 @@ export function HeroCollageProfilePanel() {
               <Label htmlFor="hero-profile-website">
                 {HERO_COLLAGE_PROFILE.websiteLabel}
               </Label>
-              <div className="flex w-full flex-row items-center overflow-hidden rounded-lg border border-input transition-colors focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50">
-                <span className="border-input border-r px-2.5 py-1.5 text-muted-foreground text-sm">
+              <div className="border-input focus-within:border-ring focus-within:ring-ring/50 flex w-full flex-row items-center overflow-hidden rounded-lg border transition-colors focus-within:ring-[3px]">
+                <span className="border-input text-muted-foreground border-r px-2.5 py-1.5 text-sm">
                   {HERO_COLLAGE_PROFILE.websitePrefix}
                 </span>
                 <input
-                  className="w-full min-w-0 flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none placeholder:text-muted-foreground"
+                  className="placeholder:text-muted-foreground w-full min-w-0 flex-1 bg-transparent px-2.5 py-1.5 text-sm outline-none"
                   defaultValue={HERO_COLLAGE_PROFILE.websiteValue}
                   id="hero-profile-website"
                   inputMode="url"
@@ -93,8 +94,8 @@ export function HeroCollageProfilePanel() {
                 <span
                   className={
                     isCustomTone
-                      ? "size-5 rounded-full border-2 border-muted-foreground/30"
-                      : "flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                      ? "border-muted-foreground/30 size-5 rounded-full border-2"
+                      : "bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-full"
                   }
                 >
                   {isCustomTone ? null : (
@@ -155,8 +156,8 @@ export function HeroCollageProfilePanel() {
                 <span
                   className={
                     isCustomTone
-                      ? "flex size-5 items-center justify-center rounded-full bg-primary text-primary-foreground"
-                      : "size-5 rounded-full border-2 border-muted-foreground/30"
+                      ? "bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-full"
+                      : "border-muted-foreground/30 size-5 rounded-full border-2"
                   }
                 >
                   {isCustomTone ? (

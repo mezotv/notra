@@ -2,6 +2,7 @@
 
 import { Card, CardHeader } from "@notra/ui/components/ui/card";
 import { useId } from "react";
+
 import {
   EMPTY_STATE_CARD_COUNT,
   EMPTY_STATE_CARD_KEYS,
@@ -34,7 +35,7 @@ function GhostBar({
 }) {
   return (
     <div
-      className={cn("h-3.5 rounded-md bg-muted-foreground/20", className)}
+      className={cn("bg-muted-foreground/20 h-3.5 rounded-md", className)}
       style={width === undefined ? undefined : { width }}
     />
   );
@@ -52,8 +53,8 @@ export function EmptyStateTablePreview({
 }: EmptyStateTablePreviewProps) {
   const id = useId();
   return (
-    <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
-      <div className="flex items-center gap-4 border-border/60 border-b bg-muted/80 px-4 py-2.5">
+    <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
+      <div className="border-border/60 bg-muted/80 flex items-center gap-4 border-b px-4 py-2.5">
         {columns.map((width, column) => {
           const columnKey = EMPTY_STATE_COLUMN_KEYS[column];
           if (!columnKey) {
@@ -70,7 +71,7 @@ export function EmptyStateTablePreview({
       </div>
       {EMPTY_STATE_ROW_KEYS.slice(0, rows).map((rowKey, row) => (
         <div
-          className="flex items-center gap-4 border-border/60 border-b bg-background px-4 py-3 last:border-b-0"
+          className="border-border/60 bg-background flex items-center gap-4 border-b px-4 py-3 last:border-b-0"
           key={`${id}-${rowKey}`}
         >
           {columns.map((width, column) => {
@@ -94,11 +95,11 @@ export function EmptyStateTablePreview({
 
 function ContentCardGhost() {
   return (
-    <div className="flex h-[8.75rem] flex-col rounded-lg border border-border/80 bg-muted/80 p-2">
+    <div className="border-border/80 bg-muted/80 flex h-[8.75rem] flex-col rounded-lg border p-2">
       <div className="px-2 py-1.5">
         <GhostBar className="h-4" width="68%" />
       </div>
-      <div className="flex-1 space-y-2 rounded-md bg-background/70 px-3 py-2.5">
+      <div className="bg-background/70 flex-1 space-y-2 rounded-md px-3 py-2.5">
         <GhostBar className="h-3 w-full" />
         <GhostBar className="h-3 w-5/6" />
         <GhostBar className="h-3 w-2/3" />
@@ -138,9 +139,9 @@ function SkillCardGhost({ index }: { index: number }) {
 
 function ReferenceCardGhost() {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-border/80 bg-card p-4">
+    <div className="border-border/80 bg-card flex flex-col gap-3 rounded-xl border p-4">
       <div className="flex items-center gap-3">
-        <div className="size-8 shrink-0 rounded-full bg-muted-foreground/20" />
+        <div className="bg-muted-foreground/20 size-8 shrink-0 rounded-full" />
         <div className="min-w-0 flex-1 space-y-1.5">
           <GhostBar className="h-3.5 w-28" />
           <GhostBar className="h-3 w-16" />
@@ -155,7 +156,7 @@ function ReferenceCardGhost() {
 
 function RunCardGhost() {
   return (
-    <div className="space-y-4 rounded-xl border border-border p-4">
+    <div className="border-border space-y-4 rounded-xl border p-4">
       <div className="flex items-center gap-2">
         <GhostBar className="h-5 w-16 rounded-full" />
         <GhostBar className="h-5 w-20 rounded-full" />
@@ -172,8 +173,8 @@ function RunCardGhost() {
 
 function IntegrationCardGhost() {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border/80 bg-card p-4">
-      <div className="size-10 shrink-0 rounded-lg bg-muted-foreground/20" />
+    <div className="border-border/80 bg-card flex items-center gap-3 rounded-xl border p-4">
+      <div className="bg-muted-foreground/20 size-10 shrink-0 rounded-lg" />
       <div className="min-w-0 flex-1 space-y-2">
         <GhostBar className="h-4 w-36" />
         <GhostBar className="h-3 w-52" />
@@ -185,13 +186,13 @@ function IntegrationCardGhost() {
 
 function AnalyticsChartGhost({ bars }: { bars: readonly number[] }) {
   return (
-    <div className="rounded-2xl border border-border/80 bg-card p-4">
+    <div className="border-border/80 bg-card rounded-2xl border p-4">
       <GhostBar className="h-4 w-24" />
       <GhostBar className="mt-2 h-3 w-40" />
       <div className="mt-5 flex h-32 items-end gap-1.5">
         {bars.map((height) => (
           <div
-            className="flex-1 rounded-sm bg-muted-foreground/20"
+            className="bg-muted-foreground/20 flex-1 rounded-sm"
             key={`bar-${height}`}
             style={{ height }}
           />
@@ -205,7 +206,7 @@ export function EmptyStateTrendPreview() {
   return (
     <svg
       aria-hidden="true"
-      className="h-full w-full text-muted-foreground"
+      className="text-muted-foreground h-full w-full"
       fill="none"
       preserveAspectRatio="none"
       viewBox="0 0 1200 320"
@@ -270,7 +271,7 @@ export function EmptyStateAnalyticsPreview() {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {EMPTY_STATE_STAT_KEYS.map((key) => (
           <div
-            className="flex flex-col justify-center gap-2 rounded-xl border border-border/80 bg-card p-4"
+            className="border-border/80 bg-card flex flex-col justify-center gap-2 rounded-xl border p-4"
             key={key}
           >
             <GhostBar className="h-3 w-20" />
@@ -296,7 +297,7 @@ export function EmptyStateTrafficPreview() {
         {EMPTY_STATE_STAT_KEYS.slice(0, EMPTY_STATE_TRAFFIC_STAT_COUNT).map(
           (key) => (
             <div
-              className="flex flex-col justify-center gap-2 rounded-xl border border-border/80 bg-card p-4"
+              className="border-border/80 bg-card flex flex-col justify-center gap-2 rounded-xl border p-4"
               key={key}
             >
               <GhostBar className="h-3 w-16" />
@@ -320,11 +321,11 @@ export function EmptyStateGuidelinesPreview() {
       <div className="grid gap-3 sm:grid-cols-3">
         {EMPTY_STATE_GUIDELINE_ASSET_KEYS.map((key) => (
           <div
-            className="overflow-hidden rounded-xl border border-border/80 bg-card"
+            className="border-border/80 bg-card overflow-hidden rounded-xl border"
             key={key}
           >
-            <div className="flex h-28 items-center justify-center bg-muted/50">
-              <div className="size-12 rounded-lg bg-muted-foreground/20" />
+            <div className="bg-muted/50 flex h-28 items-center justify-center">
+              <div className="bg-muted-foreground/20 size-12 rounded-lg" />
             </div>
             <div className="space-y-2 p-3">
               <GhostBar className="h-3.5 w-24" />
@@ -336,10 +337,10 @@ export function EmptyStateGuidelinesPreview() {
       <div className="grid gap-3 sm:grid-cols-3">
         {EMPTY_STATE_GUIDELINE_COLOR_KEYS.map((key) => (
           <div
-            className="flex items-center gap-3 rounded-xl border border-border/80 bg-card p-3"
+            className="border-border/80 bg-card flex items-center gap-3 rounded-xl border p-3"
             key={key}
           >
-            <div className="size-9 shrink-0 rounded-lg bg-muted-foreground/20" />
+            <div className="bg-muted-foreground/20 size-9 shrink-0 rounded-lg" />
             <div className="min-w-0 flex-1 space-y-1.5">
               <GhostBar className="h-3.5 w-24" />
               <GhostBar className="h-3 w-16" />

@@ -12,6 +12,7 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { Suspense, use, useState } from "react";
+
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { columns } from "@/components/members/columns";
@@ -20,6 +21,7 @@ import { invitationColumns } from "@/components/members/invitation-columns";
 import { InviteMemberModal } from "@/components/members/invite-member-modal";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
+
 import { DashboardPageSkeleton } from "../../skeleton";
 
 interface PageProps {
@@ -105,7 +107,7 @@ function MembersPageContent({ params }: PageProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Members</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Members</h1>
             <p className="text-muted-foreground">
               Manage who has access to this organization
             </p>

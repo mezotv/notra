@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import { domAnimation, LazyMotion, m, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
+
 import { CursorTooltip } from "@/components/analytics/cursor-tooltip";
 import {
   InstrumentEmpty,
@@ -89,9 +90,9 @@ export function PostingPerformanceCard({
                 <>
                   {best && (
                     <div>
-                      <p className="font-mono text-xl tabular-nums tracking-tight">
+                      <p className="font-mono text-xl tracking-tight tabular-nums">
                         {best.weekday} {formatHourRange(best.hour)}
-                        <span className="ml-2 text-muted-foreground text-sm">
+                        <span className="text-muted-foreground ml-2 text-sm">
                           {timezoneAbbreviation()}
                         </span>
                       </p>
@@ -118,7 +119,7 @@ export function PostingPerformanceCard({
                           className="flex items-center gap-2"
                           key={WEEKDAY_LABELS[dayIndex]}
                         >
-                          <span className="w-7 shrink-0 font-mono text-[0.625rem] text-muted-foreground">
+                          <span className="text-muted-foreground w-7 shrink-0 font-mono text-[0.625rem]">
                             {WEEKDAY_LABELS[dayIndex]}
                           </span>
                           <div className="flex min-w-0 flex-1 gap-0.5">
@@ -145,7 +146,7 @@ export function PostingPerformanceCard({
                         </div>
                       ))}
                     </div>
-                    <div className="mt-1.5 ml-9 flex justify-between font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
+                    <div className="text-muted-foreground mt-1.5 ml-9 flex justify-between font-mono text-[0.6875rem] tabular-nums">
                       <span>0:00</span>
                       <span>12:00</span>
                       <span>24:00</span>
@@ -167,9 +168,9 @@ export function PostingPerformanceCard({
                   </div>
                   {best && (
                     <div>
-                      <p className="font-mono text-xl tabular-nums tracking-tight">
+                      <p className="font-mono text-xl tracking-tight tabular-nums">
                         {selectedLabel} {formatHourRange(best.hour)}
-                        <span className="ml-2 text-muted-foreground text-sm">
+                        <span className="text-muted-foreground ml-2 text-sm">
                           {timezoneAbbreviation()}
                         </span>
                       </p>
@@ -199,7 +200,7 @@ export function PostingPerformanceCard({
                             className={cn(
                               "min-w-0 flex-1 rounded-full",
                               isBest &&
-                                "ring-2 ring-ring ring-offset-1 ring-offset-card"
+                                "ring-ring ring-offset-card ring-2 ring-offset-1"
                             )}
                             key={slot.hour}
                             onPointerMove={(event) =>
@@ -224,7 +225,7 @@ export function PostingPerformanceCard({
                         );
                       })}
                     </div>
-                    <div className="mt-1.5 flex justify-between font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
+                    <div className="text-muted-foreground mt-1.5 flex justify-between font-mono text-[0.6875rem] tabular-nums">
                       <span>0:00</span>
                       <span>12:00</span>
                       <span>24:00</span>

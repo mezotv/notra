@@ -29,6 +29,7 @@ import {
 } from "@notra/ui/components/ui/dropdown-menu";
 import { getToolName, isToolUIPart } from "ai";
 import { Fragment, type ReactNode } from "react";
+
 import { ChatReasoningBlock } from "@/components/ai/chat-reasoning-block";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
 import { BrailleLoader } from "@/components/braille-loader";
@@ -168,8 +169,8 @@ export function ContentChatActivityPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="flex h-12 shrink-0 items-center justify-between gap-2 rounded-t-[calc(0.75rem-1px)] bg-muted px-4">
-        <h2 className="flex h-full min-w-0 items-center truncate text-foreground text-sm leading-none">
+      <header className="bg-muted flex h-12 shrink-0 items-center justify-between gap-2 rounded-t-[calc(0.75rem-1px)] px-4">
+        <h2 className="text-foreground flex h-full min-w-0 items-center truncate text-sm leading-none">
           Content Agent
         </h2>
         <div className="-mr-1.5 flex h-full items-center gap-0.5">
@@ -206,11 +207,11 @@ export function ContentChatActivityPanel({
               sideOffset={6}
             >
               {isHistoryLoading ? (
-                <p className="px-2 py-1.5 text-center text-muted-foreground text-xs">
+                <p className="text-muted-foreground px-2 py-1.5 text-center text-xs">
                   Loading chats...
                 </p>
               ) : sessions.length === 0 ? (
-                <p className="px-2 py-1.5 text-center text-muted-foreground text-xs">
+                <p className="text-muted-foreground px-2 py-1.5 text-center text-xs">
                   No previous chats
                 </p>
               ) : (
@@ -267,8 +268,8 @@ export function ContentChatActivityPanel({
           </Button>
         </div>
       </header>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-[calc(0.75rem-1px)] bg-muted">
-        <div className="flex min-h-0 flex-1 flex-col rounded-t-xl bg-background">
+      <div className="bg-muted flex min-h-0 flex-1 flex-col overflow-hidden rounded-b-[calc(0.75rem-1px)]">
+        <div className="bg-background flex min-h-0 flex-1 flex-col rounded-t-xl">
           <ContentChatActivityFeed scrollKey={activeChatId ?? ""}>
             <div className="flex min-w-0 flex-col gap-4">
               {visibleMessages.map((message) => (

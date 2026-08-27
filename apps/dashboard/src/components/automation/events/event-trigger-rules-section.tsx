@@ -1,8 +1,10 @@
 import { useStore } from "@tanstack/react-form";
+
 import { BrandIdentityRadioGroup } from "@/components/brand-identity-radio-group";
 import { FORMAT_CARD_META } from "@/constants/content-formats";
 import { supportsAutoPublish } from "@/constants/schedule-output-types";
 import type { EventTriggerRulesSectionProps } from "@/types/automation/event-trigger";
+
 import { TriggerSwitchRow } from "./trigger-switch-row";
 
 export function EventTriggerRulesSection({
@@ -26,7 +28,7 @@ export function EventTriggerRulesSection({
   return (
     <section className="space-y-3">
       <div className="space-y-1">
-        <h3 className="font-semibold text-base">
+        <h3 className="text-base font-semibold">
           {FORMAT_CARD_META[outputType].label} rules
         </h3>
         <p className="text-muted-foreground text-sm">

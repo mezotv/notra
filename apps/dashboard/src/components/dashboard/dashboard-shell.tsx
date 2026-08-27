@@ -3,6 +3,7 @@
 import { SidebarInset, SidebarProvider } from "@notra/ui/components/ui/sidebar";
 import { cn } from "@notra/ui/lib/utils";
 import { toast } from "sonner";
+
 import { SubscriptionGate } from "@/components/billing/subscription-gate";
 import { DashboardSidebar } from "@/components/dashboard/app-sidebar";
 import { SiteHeader } from "@/components/dashboard/header";
@@ -81,14 +82,14 @@ export function DashboardShell({
         />
         <SidebarInset
           className={cn(
-            "min-h-0 min-w-0 overflow-hidden border-sidebar-border",
+            "border-sidebar-border min-h-0 min-w-0 overflow-hidden",
             visible && "md:mt-0! md:rounded-t-none! md:border-t-0!"
           )}
         >
           <SiteHeader />
           <RestoreSidebarHome />
-          <div className="flex min-h-0 flex-1 flex-col bg-muted">
-            <div className="@container/main -mx-px scrollbar-stable scrollbar-floating flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain rounded-t-2xl border border-sidebar-border border-b-0 bg-background">
+          <div className="bg-muted flex min-h-0 flex-1 flex-col">
+            <div className="scrollbar-stable scrollbar-floating border-sidebar-border bg-background @container/main -mx-px flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain rounded-t-2xl border border-b-0">
               <SubscriptionGate>{children}</SubscriptionGate>
             </div>
           </div>

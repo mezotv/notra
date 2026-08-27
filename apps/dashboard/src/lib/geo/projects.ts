@@ -3,6 +3,7 @@ import { brandSettings, projects } from "@notra/db/schema";
 import type { GeoCheckScope } from "@notra/db/types/geo-checks";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import { geoDb } from "@/lib/geo/effect";
 import {
   GeoBrandIdentityMissingError,

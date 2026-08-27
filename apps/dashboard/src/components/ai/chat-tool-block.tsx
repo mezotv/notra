@@ -17,6 +17,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { CheckIcon, XIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
+
 import { McpIcon } from "@/components/integrations/mcp-icon";
 import { TOOL_TIMER_THRESHOLD_SECONDS } from "@/constants/chat-tool-timer";
 import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
@@ -36,6 +37,7 @@ import {
   webSearchOutputSchema,
 } from "@/schemas/ai/chat-tool-block";
 import { formatElapsedSeconds } from "@/utils/format-elapsed-seconds";
+
 import {
   getMcpToolActionPhrase,
   getMcpToolIconUrls,
@@ -604,7 +606,7 @@ function JsonView({ value }: { value: unknown }) {
   const raw = stringifyForDisplay(value);
   if (raw === undefined) {
     return (
-      <pre className="overflow-x-auto font-mono text-[0.75rem] text-muted-foreground">
+      <pre className="text-muted-foreground overflow-x-auto font-mono text-[0.75rem]">
         Unable to display value
       </pre>
     );
@@ -654,7 +656,7 @@ function JsonView({ value }: { value: unknown }) {
   }
 
   return (
-    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-border/50 bg-muted/30 p-3 font-mono text-[0.75rem] leading-relaxed">
+    <pre className="border-border/50 bg-muted/30 overflow-x-auto rounded-md border p-3 font-mono text-[0.75rem] leading-relaxed break-words whitespace-pre-wrap">
       {parts.map((part) => (
         <span className={part.className} key={part.key}>
           {part.text}
@@ -667,7 +669,7 @@ function JsonView({ value }: { value: unknown }) {
 function ToolDataSection({ label, value }: { label: string; value: unknown }) {
   return (
     <div>
-      <div className="mb-2 font-medium text-[0.65rem] text-muted-foreground/70 uppercase tracking-wider">
+      <div className="text-muted-foreground/70 mb-2 text-[0.65rem] font-medium tracking-wider uppercase">
         {label}
       </div>
       <JsonView value={value} />
@@ -770,7 +772,7 @@ export function ChatToolBlock({
   return (
     <Collapsible onOpenChange={setIsDetailsOpen} open={isOpen}>
       <CollapsibleTrigger
-        className="group flex w-full min-w-0 items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
+        className="group text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground flex w-full min-w-0 items-center gap-2 text-sm transition-colors disabled:cursor-default"
         disabled={!hasDetails}
       >
         {toolIcon}
@@ -788,14 +790,14 @@ export function ChatToolBlock({
           </span>
         )}
         {showElapsedTimer && (
-          <span className="shrink-0 text-muted-foreground/60 text-xs tabular-nums">
+          <span className="text-muted-foreground/60 shrink-0 text-xs tabular-nums">
             {formatElapsedSeconds(elapsedSeconds)}
           </span>
         )}
         <HugeiconsIcon
           aria-hidden
           className={cn(
-            "size-3.5 shrink-0 text-muted-foreground/60 transition-all",
+            "text-muted-foreground/60 size-3.5 shrink-0 transition-all",
             !hasDetails && "invisible",
             hasDetails && isOpen && "rotate-180 opacity-100",
             hasDetails &&

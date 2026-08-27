@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ChangelogEntryPageProps } from "~types/changelog";
+
 import { ChangelogHtmlArticle } from "@/components/changelog-html-article";
 import { NotraMark } from "@/components/notra-mark";
 import {
@@ -14,7 +16,6 @@ import {
 } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
-import type { ChangelogEntryPageProps } from "~types/changelog";
 
 export async function generateMetadata({
   params,
@@ -92,16 +93,16 @@ export default async function ChangelogEntryPage({
         type="application/ld+json"
       />
       <Link
-        className="mb-6 inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
+        className="text-foreground/50 hover:text-foreground mb-6 inline-flex items-center gap-1 font-sans text-sm transition-colors"
         href="/changelog/notra"
       >
         &larr; All updates
       </Link>
 
-      <h1 className="font-display font-semibold text-3xl text-[#1E1E1E] tracking-[-0.02em] sm:text-4xl dark:text-white">
+      <h1 className="font-display text-3xl font-semibold tracking-[-0.02em] text-[#1E1E1E] sm:text-4xl dark:text-white">
         {post.title}
       </h1>
-      <time className="mt-2 block font-sans text-foreground/40 text-sm">
+      <time className="text-foreground/40 mt-2 block font-sans text-sm">
         {formatChangelogDate(post.createdAt)}
       </time>
 
@@ -109,7 +110,7 @@ export default async function ChangelogEntryPage({
         <span className="text-primary">
           <NotraMark className="size-3.5 shrink-0" />
         </span>
-        <p className="font-sans text-muted-foreground text-xs">
+        <p className="text-muted-foreground font-sans text-xs">
           Published by the Notra team.
         </p>
       </div>

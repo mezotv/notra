@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
+
 import {
   AgentFeedbackKindBadge,
   AgentFeedbackStatusBadge,
@@ -44,10 +45,10 @@ function DetailField({
   }
   return (
     <div className="space-y-1.5">
-      <h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
+      <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
         {label}
       </h3>
-      <p className={mono ? "break-all font-mono text-xs" : "text-sm"}>
+      <p className={mono ? "font-mono text-xs break-all" : "text-sm"}>
         {value}
       </p>
     </div>
@@ -93,10 +94,10 @@ export function AgentFeedbackDetailDialog({
             </section>
 
             <section className="space-y-1.5">
-              <h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
+              <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                 Message
               </h3>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">
+              <p className="text-sm leading-relaxed whitespace-pre-wrap">
                 {item.message}
               </p>
             </section>
@@ -118,19 +119,19 @@ export function AgentFeedbackDetailDialog({
 
             {metadataJson ? (
               <section className="space-y-1.5">
-                <h3 className="font-medium text-muted-foreground text-xs uppercase tracking-wider">
+                <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
                   Metadata
                 </h3>
-                <pre className="max-h-64 overflow-auto rounded-md border bg-muted/40 p-3 font-mono text-xs">
+                <pre className="bg-muted/40 max-h-64 overflow-auto rounded-md border p-3 font-mono text-xs">
                   {metadataJson}
                 </pre>
               </section>
             ) : null}
           </div>
         ) : null}
-        <ResponsiveDialogFooter className="mx-0 mb-0 shrink-0 flex-row items-center justify-between gap-3 rounded-b-xl border-t bg-muted/50 p-4">
+        <ResponsiveDialogFooter className="bg-muted/50 mx-0 mb-0 shrink-0 flex-row items-center justify-between gap-3 rounded-b-xl border-t p-4">
           <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-xs uppercase tracking-wider">
+            <span className="text-muted-foreground text-xs tracking-wider uppercase">
               Status
             </span>
             <Select
@@ -142,7 +143,7 @@ export function AgentFeedbackDetailDialog({
               }}
               value={item?.status ?? "new"}
             >
-              <SelectTrigger className="w-40 bg-background">
+              <SelectTrigger className="bg-background w-40">
                 <SelectValue className="capitalize" />
               </SelectTrigger>
               <SelectContent>

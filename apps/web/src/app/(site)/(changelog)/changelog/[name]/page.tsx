@@ -3,6 +3,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { ShowcaseCompanyPageProps } from "~types/showcase";
+
 import { changelog } from "@/../.source/server";
 import { ChangelogPageHeader } from "@/components/changelog-page-header";
 import { ChangelogTimeline } from "@/components/changelog-timeline";
@@ -13,7 +15,6 @@ import {
   SHOWCASE_COMPANIES,
 } from "@/utils/showcase";
 import { SITE_URL } from "@/utils/urls";
-import type { ShowcaseCompanyPageProps } from "~types/showcase";
 
 export function generateStaticParams() {
   return SHOWCASE_COMPANIES.map((company) => ({ name: company.slug }));
@@ -92,7 +93,7 @@ export default async function ShowcaseCompanyPage({
         }
         meta={
           <a
-            className="inline-flex items-center gap-1 font-sans text-muted-foreground/60 text-sm transition-colors hover:text-foreground"
+            className="text-muted-foreground/60 hover:text-foreground inline-flex items-center gap-1 font-sans text-sm transition-colors"
             href={`${company.url}?utm_source=usenotra.com`}
             target="_blank"
           >
@@ -109,7 +110,7 @@ export default async function ShowcaseCompanyPage({
 
       <div className="mx-auto mt-8 w-full max-w-220 px-4 sm:px-6 md:px-8 lg:px-0">
         <Link
-          className="inline-flex items-center gap-1 font-sans text-foreground/50 text-sm transition-colors hover:text-foreground"
+          className="text-foreground/50 hover:text-foreground inline-flex items-center gap-1 font-sans text-sm transition-colors"
           href="/changelog"
         >
           &larr; All changelogs

@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+
 import type { TableRow } from "./types";
 
 export function useRowSelection<T>({

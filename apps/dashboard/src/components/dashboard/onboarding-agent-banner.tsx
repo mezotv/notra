@@ -21,6 +21,7 @@ import { Loader2Icon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { useTheme } from "next-themes";
 import { useState } from "react";
+
 import { Button } from "@/components/button";
 import {
   EVE_BANNER_COLORS_DARK,
@@ -58,7 +59,7 @@ export function OnboardingAgentBanner({
       style={{ backgroundColor: colors.colorBack }}
     >
       <Dithering
-        className="-z-10 -inset-px absolute size-[calc(100%+2px)] min-h-full min-w-full"
+        className="absolute -inset-px -z-10 size-[calc(100%+2px)] min-h-full min-w-full"
         colorBack={colors.colorBack}
         colorFront={colors.colorFront}
         scale={EVE_BANNER_DITHER_SCALE}
@@ -68,18 +69,18 @@ export function OnboardingAgentBanner({
         type={EVE_BANNER_DITHER_TYPE}
       />
       {state === "running" ? (
-        <output className="flex items-center gap-2 text-foreground">
+        <output className="text-foreground flex items-center gap-2">
           <Loader2Icon
             aria-hidden
             className="size-4 animate-spin motion-reduce:animate-none"
           />
-          <span className="font-medium text-sm">
+          <span className="text-sm font-medium">
             We are setting up your workspace
           </span>
         </output>
       ) : (
-        <div className="flex items-center gap-3 text-foreground">
-          <span className="font-medium text-sm">
+        <div className="text-foreground flex items-center gap-3">
+          <span className="text-sm font-medium">
             We can set up your workspace for you
           </span>
           <ResponsiveDialog onOpenChange={setConfirmOpen} open={confirmOpen}>
@@ -97,7 +98,7 @@ export function OnboardingAgentBanner({
             </ResponsiveDialogTrigger>
             <ResponsiveDialogContent>
               <ResponsiveDialogHeader>
-                <ResponsiveDialogTitle className="font-semibold text-lg">
+                <ResponsiveDialogTitle className="text-lg font-semibold">
                   Let us set up your workspace
                 </ResponsiveDialogTitle>
                 <ResponsiveDialogDescription>
@@ -141,7 +142,7 @@ export function OnboardingAgentBanner({
           </ResponsiveDialog>
           <Button
             aria-label="Dismiss workspace setup banner"
-            className="-translate-y-1/2 absolute top-1/2 right-3"
+            className="absolute top-1/2 right-3 -translate-y-1/2"
             onClick={onDismiss}
             size="icon-sm"
             variant="ghost"

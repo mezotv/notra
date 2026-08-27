@@ -2,9 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+
 import { SOCIAL_PLATFORM_LABELS } from "@/constants/social-connect";
 import type { SocialConnectPlatform } from "@/schemas/social-accounts";
 import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
+
 import { dashboardOrpc } from "../orpc/query";
 
 export function useConnectedAccounts(organizationId: string) {

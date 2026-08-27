@@ -2,6 +2,7 @@
 
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useQuery } from "@tanstack/react-query";
+
 import { Button } from "@/components/button";
 import { IntegrationForm } from "@/components/integrations/integration-form";
 import { consoleOrpc } from "@/lib/orpc/query";

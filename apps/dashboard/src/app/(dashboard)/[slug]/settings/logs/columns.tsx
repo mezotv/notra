@@ -16,6 +16,7 @@ import {
 } from "@notra/ui/components/ui/dropdown-menu";
 import { createColumnHelper } from "@tanstack/react-table";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { IntegrationIcon } from "@/components/logs/integration-icon";
 import { LogStatusBadge } from "@/components/logs/log-status-badge";
@@ -44,7 +45,7 @@ export const columns = [
         <div className="min-w-0 text-left">
           <span className="block truncate font-medium">{title}</span>
           {errorMessage ? (
-            <span className="block truncate text-muted-foreground text-xs">
+            <span className="text-muted-foreground block truncate text-xs">
               {errorMessage}
             </span>
           ) : null}
@@ -103,9 +104,9 @@ export const columns = [
       }
       return (
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex size-8 cursor-pointer items-center justify-center rounded-md hover:bg-accent">
+          <DropdownMenuTrigger className="hover:bg-accent flex size-8 cursor-pointer items-center justify-center rounded-md">
             <HugeiconsIcon
-              className="size-4 text-muted-foreground"
+              className="text-muted-foreground size-4"
               icon={MoreVerticalIcon}
             />
           </DropdownMenuTrigger>

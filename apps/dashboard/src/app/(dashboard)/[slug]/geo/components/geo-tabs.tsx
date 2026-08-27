@@ -8,6 +8,7 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import Link from "next/link";
 import type { ReactNode } from "react";
+
 import { EngineRateTable } from "@/components/geo/engine-rate-table";
 import { JourneysCard } from "@/components/geo/journeys-card";
 import { LanguagePerformanceCard } from "@/components/geo/language-performance-card";

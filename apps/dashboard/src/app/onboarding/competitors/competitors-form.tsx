@@ -8,6 +8,7 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
+
 import { Button } from "@/components/button";
 import { CompetitorBrandLogo } from "@/components/onboarding/competitor-brand-logo";
 import { CompetitorChoiceRow } from "@/components/onboarding/competitor-choice-row";
@@ -116,16 +117,16 @@ function CompetitorsPicker({
 
       {competitors.length > 0 ? (
         <div className="grid gap-2">
-          <p className="font-medium text-sm">
+          <p className="text-sm font-medium">
             Your competitors{" "}
-            <span className="font-normal text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-xs font-normal">
               ({competitors.length} of {GEO_MAX_COMPETITORS})
             </span>
           </p>
           <ul className="flex flex-wrap gap-1.5">
             {competitors.map((entry) => (
               <li
-                className="flex items-center gap-1.5 rounded-full border border-input py-1 pr-1 pl-1.5 text-sm"
+                className="border-input flex items-center gap-1.5 rounded-full border py-1 pr-1 pl-1.5 text-sm"
                 key={entry.id}
               >
                 <CompetitorBrandLogo
@@ -137,7 +138,7 @@ function CompetitorsPicker({
                 <span className="max-w-40 truncate">{entry.name}</span>
                 <button
                   aria-label={`Remove ${entry.name}`}
-                  className="cursor-pointer rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed"
+                  className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-full p-0.5 disabled:cursor-not-allowed"
                   disabled={busy}
                   onClick={() => remove(entry)}
                   type="button"
@@ -153,12 +154,12 @@ function CompetitorsPicker({
       {domain ? (
         <div className="grid gap-2">
           <div className="flex items-center justify-between gap-3">
-            <p className="truncate font-medium text-sm">
+            <p className="truncate text-sm font-medium">
               Suggested for {domain}
             </p>
             {remainingSuggestions.length > 1 ? (
               <Button
-                className="h-auto px-0 text-muted-foreground"
+                className="text-muted-foreground h-auto px-0"
                 disabled={busy || atLimit}
                 onClick={addAllSuggestions}
                 size="sm"
@@ -170,7 +171,7 @@ function CompetitorsPicker({
             ) : null}
           </div>
           {suggestions.data?.field ? (
-            <p className="-mt-1 text-muted-foreground text-xs">
+            <p className="text-muted-foreground -mt-1 text-xs">
               Other companies in {suggestions.data.field}
             </p>
           ) : null}

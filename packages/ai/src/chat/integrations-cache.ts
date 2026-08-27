@@ -74,24 +74,22 @@ async function loadStandaloneChatIntegrations(
 
   const github = githubIntegrations
     .filter((integration) => integration.enabled)
-    .map(
-      (integration): ValidatedIntegration => ({
-        id: integration.id,
-        type: "github" as const,
-        enabled: integration.enabled,
-        displayName: integration.displayName,
-        organizationId: integration.organizationId,
-        repositories: integration.repositories
-          .filter((repository) => repository.enabled)
-          .map((repository) => ({
-            id: repository.id,
-            owner: repository.owner,
-            repo: repository.repo,
-            defaultBranch: repository.defaultBranch ?? null,
-            enabled: repository.enabled,
-          })),
-      })
-    )
+    .map((integration): ValidatedIntegration => ({
+      id: integration.id,
+      type: "github" as const,
+      enabled: integration.enabled,
+      displayName: integration.displayName,
+      organizationId: integration.organizationId,
+      repositories: integration.repositories
+        .filter((repository) => repository.enabled)
+        .map((repository) => ({
+          id: repository.id,
+          owner: repository.owner,
+          repo: repository.repo,
+          defaultBranch: repository.defaultBranch ?? null,
+          enabled: repository.enabled,
+        })),
+    }))
     .filter((integration) => {
       return (
         integration.type === "github" && integration.repositories.length > 0
@@ -100,17 +98,15 @@ async function loadStandaloneChatIntegrations(
 
   const linear = linearIntegrations
     .filter((integration) => integration.enabled)
-    .map(
-      (integration): ValidatedIntegration => ({
-        id: integration.id,
-        type: "linear" as const,
-        enabled: integration.enabled,
-        displayName: integration.displayName,
-        organizationId: integration.organizationId,
-        linearTeamId: integration.linearTeamId,
-        linearTeamName: integration.linearTeamName,
-      })
-    );
+    .map((integration): ValidatedIntegration => ({
+      id: integration.id,
+      type: "linear" as const,
+      enabled: integration.enabled,
+      displayName: integration.displayName,
+      organizationId: integration.organizationId,
+      linearTeamId: integration.linearTeamId,
+      linearTeamName: integration.linearTeamName,
+    }));
 
   const granola: ValidatedIntegration[] = [];
   for (const integration of granolaIntegrations) {

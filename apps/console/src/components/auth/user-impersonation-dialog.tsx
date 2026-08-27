@@ -20,6 +20,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useEffect, useState } from "react";
+
 import { IMPERSONATION_SEARCH_DEBOUNCE_MS } from "@/constants/auth";
 import { authClient } from "@/lib/auth/client";
 import { hasAdminRole } from "@/lib/auth/role";
@@ -76,7 +77,7 @@ export function UserImpersonationDialog({
         />
         <CommandList>
           {usersQuery.isPending ? (
-            <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground text-sm">
+            <div className="text-muted-foreground flex items-center justify-center gap-2 py-6 text-sm">
               <Loader2Icon className="size-4 animate-spin" />
               Loading users...
             </div>
@@ -115,17 +116,17 @@ export function UserImpersonationDialog({
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <div className="truncate font-medium">{user.name}</div>
-                        <div className="truncate text-muted-foreground text-xs">
+                        <div className="text-muted-foreground truncate text-xs">
                           {user.email}
                         </div>
                       </div>
                       {status ? (
-                        <span className="ml-auto text-muted-foreground text-xs">
+                        <span className="text-muted-foreground ml-auto text-xs">
                           {status}
                         </span>
                       ) : (
                         <HugeiconsIcon
-                          className="ml-auto text-muted-foreground"
+                          className="text-muted-foreground ml-auto"
                           icon={LinkSquare02Icon}
                         />
                       )}

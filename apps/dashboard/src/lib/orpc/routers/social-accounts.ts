@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { runSocialConnect } from "@/lib/orpc/utils/social-connect";
@@ -25,6 +26,7 @@ import {
   socialAccountsOrganizationInputSchema,
   socialConnectPlatformSchema,
 } from "@/schemas/social-accounts";
+
 import { notFound } from "../utils/errors";
 
 export const socialAccountsRouter = {

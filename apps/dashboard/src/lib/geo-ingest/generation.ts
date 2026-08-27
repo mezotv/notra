@@ -2,6 +2,7 @@ import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { organizations } from "@notra/db/schema";
 import { eq, sql } from "drizzle-orm";
+
 import {
   GEO_INGEST_IDENTITY_ACTIVE_TTL_SECONDS,
   GEO_INGEST_IDENTITY_INACTIVE_TTL_SECONDS,

@@ -11,6 +11,7 @@ import {
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 import { and, asc, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import { Effect } from "effect";
+
 import {
   GEO_GAPS_MAX_CHECKS,
   GEO_GAPS_SEARCH_LIMIT,

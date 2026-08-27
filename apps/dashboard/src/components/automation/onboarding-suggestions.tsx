@@ -15,6 +15,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { SuggestionDetailsSheet } from "@/components/automation/suggestion-details-sheet";
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
@@ -73,10 +74,10 @@ export function OnboardingSuggestions({
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <HugeiconsIcon
-            className="size-4 text-muted-foreground"
+            className="text-muted-foreground size-4"
             icon={SparklesIcon}
           />
-          <h2 className="font-medium text-sm">Suggestions</h2>
+          <h2 className="text-sm font-medium">Suggestions</h2>
           {agentRunning && <BrailleLoader className="text-xs" />}
         </div>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -134,22 +135,22 @@ export function OnboardingSuggestions({
               >
                 <div className="space-y-1.5">
                   {suggestion.description ? (
-                    <p className="line-clamp-3 text-muted-foreground text-sm">
+                    <p className="text-muted-foreground line-clamp-3 text-sm">
                       {suggestion.description}
                     </p>
                   ) : null}
                   {evidence ? (
-                    <p className="line-clamp-2 text-muted-foreground/70 text-xs">
+                    <p className="text-muted-foreground/70 line-clamp-2 text-xs">
                       {evidence}
                     </p>
                   ) : null}
                   <button
                     aria-label={`View details for "${suggestion.title}"`}
-                    className="peer absolute inset-0 cursor-pointer rounded-t-lg focus-visible:ring-2 focus-visible:ring-ring"
+                    className="peer focus-visible:ring-ring absolute inset-0 cursor-pointer rounded-t-lg focus-visible:ring-2"
                     onClick={openDetails}
                     type="button"
                   />
-                  <span className="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-gradient-to-t from-background via-background/90 to-transparent pt-6 pb-2 font-medium text-foreground text-sm opacity-0 transition-opacity duration-200 peer-hover:opacity-100 peer-focus-visible:opacity-100">
+                  <span className="from-background via-background/90 text-foreground pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-gradient-to-t to-transparent pt-6 pb-2 text-sm font-medium opacity-0 transition-opacity duration-200 peer-hover:opacity-100 peer-focus-visible:opacity-100">
                     Click to expand
                     <HugeiconsIcon className="size-4" icon={ArrowRight01Icon} />
                   </span>

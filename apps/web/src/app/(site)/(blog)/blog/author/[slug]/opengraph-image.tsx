@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+
 import { ImageResponse } from "next/og";
+import type { BlogAuthorPageProps } from "~types/blog";
+
 import { getNotraAuthorBySlug } from "@/utils/authors";
 import { OG_BLOG_TITLE_MAX_LENGTH } from "@/utils/constants";
 import {
@@ -9,7 +12,6 @@ import {
   splitTitleForDot,
   truncate,
 } from "@/utils/og";
-import type { BlogAuthorPageProps } from "~types/blog";
 
 export const alt = "Notra blog author";
 export const size = { width: 1200, height: 630 };

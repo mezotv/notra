@@ -19,6 +19,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { isValidElement, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
@@ -173,7 +174,7 @@ export function EditIntegrationDialog({
                       value={field.state.value}
                     />
                     {field.state.meta.errors.length > 0 ? (
-                      <p className="mt-1 text-destructive text-sm">
+                      <p className="text-destructive mt-1 text-sm">
                         {typeof field.state.meta.errors[0] === "string"
                           ? field.state.meta.errors[0]
                           : ((
@@ -205,7 +206,7 @@ export function EditIntegrationDialog({
                             value={field.state.value}
                           />
                           {field.state.meta.errors.length > 0 ? (
-                            <p className="mt-1 text-destructive text-sm">
+                            <p className="text-destructive mt-1 text-sm">
                               {typeof field.state.meta.errors[0] === "string"
                                 ? field.state.meta.errors[0]
                                 : ((
@@ -235,7 +236,7 @@ export function EditIntegrationDialog({
                             value={field.state.value}
                           />
                           {field.state.meta.errors.length > 0 ? (
-                            <p className="mt-1 text-destructive text-sm">
+                            <p className="text-destructive mt-1 text-sm">
                               {typeof field.state.meta.errors[0] === "string"
                                 ? field.state.meta.errors[0]
                                 : ((

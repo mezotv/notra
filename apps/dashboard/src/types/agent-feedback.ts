@@ -3,6 +3,7 @@ import type {
   AgentFeedbackKind,
   AgentFeedbackStatus,
 } from "@notra/db/types/agent-feedback";
+
 import type { AuthenticatedUser } from "@/types/auth/organization";
 
 export type AgentFeedbackRow = typeof agentFeedback.$inferSelect;

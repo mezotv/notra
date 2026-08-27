@@ -1,6 +1,7 @@
 import { listChatSessions } from "@notra/ai/chat/history";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+
 import { withOrganizationAuth } from "@/lib/auth/organization";
 
 interface RouteContext {

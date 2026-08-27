@@ -1,6 +1,7 @@
 "use client";
 
 import { useFlag } from "@databuddy/sdk/react";
+
 import { SOCIAL_ANALYTICS_FLAG_KEY } from "@/constants/analytics";
 import { GEO_WRITER_FLAG_KEY } from "@/constants/geo";
 import { IRIS_FLAG_KEY } from "@/constants/iris";

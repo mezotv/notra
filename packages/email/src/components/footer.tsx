@@ -1,4 +1,5 @@
 import { Hr, Link, Section, Text } from "react-email";
+
 import { EMAIL_CONFIG } from "../utils/config";
 
 export const EmailFooter = () => {
@@ -6,7 +7,7 @@ export const EmailFooter = () => {
 
   return (
     <Section>
-      <Hr className="mx-0 mb-[26px] w-full border border-[#eaeaea] border-solid" />
+      <Hr className="mx-0 mb-[26px] w-full border border-solid border-[#eaeaea]" />
       <Text className="m-0 text-center text-xs" style={{ color: "#717175" }}>
         © {currentYear} Notra. All rights reserved.
       </Text>

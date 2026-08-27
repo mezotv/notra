@@ -1,5 +1,6 @@
 import type { GeoContentSubtype } from "@notra/ai/types/geo-writer";
 import type { ReactNode } from "react";
+
 import type {
   GeoContentBriefDetail,
   GeoContentBriefSummary,

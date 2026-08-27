@@ -2,6 +2,7 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "@notra/ui/lib/utils";
+
 import {
   GEO_WRITE_DIALOG_SECTIONS,
   GEO_WRITE_PANEL_HEADER_CLASS,
@@ -33,13 +34,13 @@ export function WriteSectionSidebar({
           <p
             className={cn(
               GEO_WRITE_PANEL_HEADER_ROW_CLASS,
-              "px-4 text-muted-foreground text-xs"
+              "text-muted-foreground px-4 text-xs"
             )}
           >
             Overview
           </p>
         </div>
-        <div className="-mt-5 flex min-h-0 flex-1 flex-col gap-0.5 rounded-2xl border border-border bg-background p-2">
+        <div className="border-border bg-background -mt-5 flex min-h-0 flex-1 flex-col gap-0.5 rounded-2xl border p-2">
           {GEO_WRITE_DIALOG_SECTIONS.map((item) => {
             const active = activeSection === item.id;
             return (
@@ -48,7 +49,7 @@ export function WriteSectionSidebar({
                 className={cn(
                   "flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
                   active
-                    ? "bg-muted font-medium text-primary"
+                    ? "bg-muted text-primary font-medium"
                     : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                 )}
                 key={item.id}

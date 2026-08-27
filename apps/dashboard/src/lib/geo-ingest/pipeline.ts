@@ -3,6 +3,7 @@ import type { GeoTrafficEventRow } from "@notra/analytics/tinybird/datasources";
 import type { GeoRequestPayload } from "@usenotra/geo";
 import { Effect } from "effect";
 import type { NextRequest } from "next/server";
+
 import { GEO_INGEST_BEARER_PREFIX } from "@/constants/geo";
 import { classifyVisitor } from "@/lib/geo-ingest/classify-visitor";
 import {

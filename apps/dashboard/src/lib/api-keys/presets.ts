@@ -4,6 +4,7 @@ import {
   SourceCodeIcon,
 } from "@hugeicons/core-free-icons";
 import type { ConnectedCardItem } from "@notra/ui/components/shared/connected-cards";
+
 import {
   API_KEY_GRANULAR_PERMISSIONS,
   API_KEY_GRANULAR_READ_PERMISSIONS,

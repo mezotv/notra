@@ -40,6 +40,7 @@ import { useParams, useSearchParams } from "next/navigation";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
@@ -107,7 +108,7 @@ function renderEventRows(events: ListEventsRow[] | undefined) {
     return (
       <TableRow>
         <TableCell
-          className="h-24 text-center text-muted-foreground"
+          className="text-muted-foreground h-24 text-center"
           colSpan={3}
         >
           No usage events yet
@@ -123,7 +124,7 @@ function renderEventRows(events: ListEventsRow[] | undefined) {
           {formatFullDate(event.timestamp)}
         </TableCell>
         <TableCell className="text-sm">{getCreditEventLabel(event)}</TableCell>
-        <TableCell className="text-right font-medium text-sm tabular-nums">
+        <TableCell className="text-right text-sm font-medium tabular-nums">
           {formatDollars(event.value)}
         </TableCell>
       </TableRow>
@@ -236,7 +237,7 @@ export default function CreditsPageClient() {
   if (success) {
     return (
       <PageContainer className="flex flex-1 flex-col items-center justify-center">
-        <div className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2">
+        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2">
           <Confetti
             colors={[
               "var(--primary)",
@@ -261,7 +262,7 @@ export default function CreditsPageClient() {
             icon={Tick02Icon}
           />
           <div className="space-y-1">
-            <h2 className="font-bold text-2xl">Credits Added!</h2>
+            <h2 className="text-2xl font-bold">Credits Added!</h2>
             <p className="text-muted-foreground">
               Your AI credits have been topped up and are ready to use.
             </p>
@@ -284,7 +285,7 @@ export default function CreditsPageClient() {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Credits</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Credits</h1>
             <p className="text-muted-foreground">
               Monitor your AI credit balance and usage
             </p>
@@ -308,13 +309,13 @@ export default function CreditsPageClient() {
           <div className="grid gap-4 sm:grid-cols-3">
             <TitleCard accentColor="#10b981" heading="Current Balance">
               <div>
-                <p className="font-bold text-3xl tabular-nums tracking-tight">
+                <p className="text-3xl font-bold tracking-tight tabular-nums">
                   {aiCreditsBalance !== null
                     ? formatDollars(aiCreditsBalance)
                     : "-"}
                 </p>
                 {aiCreditsIncluded !== null && (
-                  <p className="mt-1 text-muted-foreground text-sm">
+                  <p className="text-muted-foreground mt-1 text-sm">
                     of {formatDollars(aiCreditsIncluded)} included
                   </p>
                 )}
@@ -323,10 +324,10 @@ export default function CreditsPageClient() {
 
             <TitleCard accentColor="#8b5cf6" heading="Used This Period">
               <div>
-                <p className="font-bold text-3xl tabular-nums tracking-tight">
+                <p className="text-3xl font-bold tracking-tight tabular-nums">
                   {formatDollars(totalUsage)}
                 </p>
-                <p className="mt-1 text-muted-foreground text-sm">
+                <p className="text-muted-foreground mt-1 text-sm">
                   in the last {CREDIT_RANGE_LABELS[range]}
                 </p>
               </div>
@@ -335,12 +336,12 @@ export default function CreditsPageClient() {
             <TitleCard heading="Usage">
               <div>
                 <div className="flex items-baseline gap-2">
-                  <p className="font-bold text-3xl tabular-nums tracking-tight">
+                  <p className="text-3xl font-bold tracking-tight tabular-nums">
                     {Math.round(usagePercent)}%
                   </p>
                   <p className="text-muted-foreground text-sm">of plan</p>
                 </div>
-                <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div className="bg-muted mt-3 h-2 w-full overflow-hidden rounded-full">
                   <div
                     className={cn(
                       "h-full rounded-full transition-all duration-500",
@@ -358,7 +359,7 @@ export default function CreditsPageClient() {
 
         <div className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="font-semibold text-lg">Usage</h2>
+            <h2 className="text-lg font-semibold">Usage</h2>
             <Tabs
               onValueChange={(value) => {
                 if (isCreditRange(value, CREDIT_RANGES)) {
@@ -431,7 +432,7 @@ export default function CreditsPageClient() {
                 </BarChart>
               </ChartContainer>
             ) : (
-              <div className="flex h-[240px] items-center justify-center text-muted-foreground text-sm">
+              <div className="text-muted-foreground flex h-[240px] items-center justify-center text-sm">
                 No usage data for this period
               </div>
             )}
@@ -439,8 +440,8 @@ export default function CreditsPageClient() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="font-semibold text-lg">Recent Activity</h2>
-          <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
+          <h2 className="text-lg font-semibold">Recent Activity</h2>
+          <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
             <Table>
               <TableHeader>
                 <TableRow>

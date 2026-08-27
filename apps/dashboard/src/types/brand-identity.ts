@@ -1,6 +1,7 @@
 import type { SupportedLanguage } from "@notra/ai/constants/languages";
 import type { ToneProfile } from "@notra/ai/schemas/tone";
 import type { Dispatch } from "react";
+
 import type { useBrandForm } from "@/lib/hooks/use-brand-form";
 import type { AffectedTrigger } from "@/schemas/integrations";
 import type { BrandSettings, ProgressData } from "@/types/hooks/brand-analysis";
@@ -58,8 +59,7 @@ export interface GuidelinesColorsSectionProps extends GuidelinesSectionContext {
   colors: BrandGuidelineColor[];
 }
 
-export interface GuidelinesTypographySectionProps
-  extends GuidelinesSectionContext {
+export interface GuidelinesTypographySectionProps extends GuidelinesSectionContext {
   fonts: BrandGuidelineFont[];
 }
 
@@ -67,8 +67,7 @@ export interface GuidelinesTokensSectionProps extends GuidelinesSectionContext {
   tokens: BrandGuidelineToken[];
 }
 
-export interface GuidelinesScreenshotsSectionProps
-  extends GuidelinesSectionContext {
+export interface GuidelinesScreenshotsSectionProps extends GuidelinesSectionContext {
   screenshots: BrandGuidelineScreenshot[];
 }
 
@@ -83,8 +82,7 @@ interface GuidelineEditDialogBase extends GuidelinesSectionContext {
   onOpenChange: (open: boolean) => void;
 }
 
-export interface GuidelinesColorEditDialogProps
-  extends GuidelineEditDialogBase {
+export interface GuidelinesColorEditDialogProps extends GuidelineEditDialogBase {
   color: BrandGuidelineColor | null;
   presetRole?: BrandGuidelineColorRole;
 }
@@ -93,20 +91,17 @@ export interface GuidelinesFontEditDialogProps extends GuidelineEditDialogBase {
   font: BrandGuidelineFont;
 }
 
-export interface GuidelinesTokenEditDialogProps
-  extends GuidelineEditDialogBase {
+export interface GuidelinesTokenEditDialogProps extends GuidelineEditDialogBase {
   token: BrandGuidelineToken;
 }
 
-export interface GuidelinesAssetEditDialogProps
-  extends GuidelineEditDialogBase {
+export interface GuidelinesAssetEditDialogProps extends GuidelineEditDialogBase {
   asset: BrandGuidelineAsset | null;
   presetKind?: BrandGuidelineAssetKind;
   presetVariant?: BrandGuidelineAssetVariant;
 }
 
-export interface GuidelinesScreenshotEditDialogProps
-  extends GuidelineEditDialogBase {
+export interface GuidelinesScreenshotEditDialogProps extends GuidelineEditDialogBase {
   screenshot: BrandGuidelineScreenshot;
 }
 

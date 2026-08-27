@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import { AnalyticsProvider } from "@/components/analytics/analytics-context";
 import { AnalyticsShell } from "@/components/analytics/analytics-shell";
 

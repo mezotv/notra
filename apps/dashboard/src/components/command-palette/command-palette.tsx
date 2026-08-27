@@ -38,6 +38,7 @@ import {
   useTransition,
 } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
+
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
@@ -50,6 +51,7 @@ import type {
 } from "@/types/components/command-palette";
 import { truncateSnippet } from "@/utils/format";
 import { isGeoDashboardPath, withGeoProject } from "@/utils/geo-paths";
+
 import { useCommandPalette } from "./command-palette-context";
 import {
   COMMAND_ROUTES,
@@ -432,7 +434,7 @@ export function CommandPalette() {
   return (
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogContent
-        className="top-[18%] w-[calc(100%-2rem)] max-w-[45rem]! translate-y-0 gap-0 overflow-hidden rounded-xl! border border-border/60 p-0! shadow-2xl sm:max-w-[45rem]!"
+        className="border-border/60 top-[18%] w-[calc(100%-2rem)] max-w-[45rem]! translate-y-0 gap-0 overflow-hidden rounded-xl! border p-0! shadow-2xl sm:max-w-[45rem]!"
         showCloseButton={false}
       >
         <DialogHeader className="sr-only">
@@ -442,7 +444,7 @@ export function CommandPalette() {
           </DialogDescription>
         </DialogHeader>
         <CommandPrimitive
-          className="flex size-full flex-col bg-popover text-popover-foreground"
+          className="bg-popover text-popover-foreground flex size-full flex-col"
           onKeyDown={(event) => {
             if (
               event.key === "Enter" &&
@@ -455,15 +457,15 @@ export function CommandPalette() {
           }}
           shouldFilter={aiState.status === "idle"}
         >
-          <div className="flex h-12 items-center gap-2.5 border-border/60 border-b px-4">
+          <div className="border-border/60 flex h-12 items-center gap-2.5 border-b px-4">
             <HugeiconsIcon
-              className="size-4 shrink-0 text-muted-foreground"
+              className="text-muted-foreground size-4 shrink-0"
               icon={SearchIcon}
               strokeWidth={2}
             />
             <CommandPrimitive.Input
               className={cn(
-                "flex-1 bg-transparent text-foreground text-sm outline-none",
+                "text-foreground flex-1 bg-transparent text-sm outline-none",
                 "placeholder:text-muted-foreground/70",
                 isLoading && "text-muted-foreground"
               )}
@@ -479,7 +481,7 @@ export function CommandPalette() {
               value={query}
             />
             {hasQuery ? (
-              <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
+              <div className="text-muted-foreground flex items-center gap-1.5 text-xs">
                 <Kbd>{aiModifierLabel}</Kbd>
                 <Kbd>↵</Kbd>
                 <span>for AI</span>
@@ -490,7 +492,7 @@ export function CommandPalette() {
           <div className="overflow-hidden">
             {isLoading ? (
               <div className="flex h-[14rem] flex-col items-center justify-center px-6 text-center">
-                <div className="grid grid-cols-[1.125rem_auto_1.125rem] items-center gap-2 text-foreground text-sm">
+                <div className="text-foreground grid grid-cols-[1.125rem_auto_1.125rem] items-center gap-2 text-sm">
                   <BrailleSpinner className="text-[18px] leading-none" />
                   <LazyMotion features={domAnimation}>
                     <Shimmer
@@ -506,7 +508,7 @@ export function CommandPalette() {
                   </LazyMotion>
                   <span aria-hidden="true" />
                 </div>
-                <p className="mt-3 max-w-xs text-muted-foreground text-xs">
+                <p className="text-muted-foreground mt-3 max-w-xs text-xs">
                   {isNavigatingAi
                     ? "Hang tight, almost there."
                     : `Figuring out where to take you for “${trimmedQuery}”.`}
@@ -521,15 +523,15 @@ export function CommandPalette() {
             >
               <CommandPrimitive.Empty className="px-3 py-10">
                 <div className="mx-auto flex max-w-sm flex-col items-center gap-4 text-center">
-                  <div className="flex size-10 items-center justify-center rounded-full border border-border border-dashed bg-muted/40">
+                  <div className="border-border bg-muted/40 flex size-10 items-center justify-center rounded-full border border-dashed">
                     <HugeiconsIcon
-                      className="size-4 text-muted-foreground"
+                      className="text-muted-foreground size-4"
                       icon={SparklesIcon}
                       strokeWidth={2}
                     />
                   </div>
                   <div className="space-y-1">
-                    <p className="font-medium text-foreground text-sm">
+                    <p className="text-foreground text-sm font-medium">
                       No matches for &ldquo;{trimmedQuery}&rdquo;
                     </p>
                     <p className="text-muted-foreground text-xs">
@@ -538,14 +540,14 @@ export function CommandPalette() {
                   </div>
                   <div className="flex w-full flex-col gap-1.5">
                     <button
-                      className="group flex items-center gap-3 rounded-lg border border-border/80 bg-background px-3 py-2.5 text-left text-sm transition-all duration-150 hover:border-border hover:bg-muted/60 disabled:opacity-60"
+                      className="group border-border/80 bg-background hover:border-border hover:bg-muted/60 flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-150 disabled:opacity-60"
                       disabled={isLoading}
                       onClick={runAiSearch}
                       type="button"
                     >
                       <HugeiconsIcon
                         className={cn(
-                          "size-4 text-muted-foreground transition-colors group-hover:text-foreground",
+                          "text-muted-foreground group-hover:text-foreground size-4 transition-colors",
                           isLoading && "animate-spin motion-reduce:animate-none"
                         )}
                         icon={isLoading ? Loading03Icon : SparklesIcon}
@@ -560,18 +562,18 @@ export function CommandPalette() {
                       </div>
                     </button>
                     <button
-                      className="group flex items-center gap-3 rounded-lg border border-border/80 bg-background px-3 py-2.5 text-left text-sm transition-all duration-150 hover:border-border hover:bg-muted/60"
+                      className="group border-border/80 bg-background hover:border-border hover:bg-muted/60 flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-150"
                       onClick={() => openChatWithQuery(trimmedQuery)}
                       type="button"
                     >
                       <HugeiconsIcon
-                        className="size-4 text-muted-foreground transition-colors group-hover:text-foreground"
+                        className="text-muted-foreground group-hover:text-foreground size-4 transition-colors"
                         icon={Message01Icon}
                         strokeWidth={2}
                       />
                       <span className="flex-1 font-medium">Ask AI chat</span>
                       <HugeiconsIcon
-                        className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
+                        className="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5"
                         icon={ArrowRight01Icon}
                         strokeWidth={2}
                       />
@@ -594,14 +596,14 @@ export function CommandPalette() {
                 }
                 return (
                   <CommandPrimitive.Group
-                    className="px-1 pb-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+                    className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
                     heading={section}
                     key={section}
                   >
                     {items.map((item) => (
                       <CommandPrimitive.Item
                         className={cn(
-                          "group/item relative flex cursor-pointer select-none items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] outline-none transition-colors",
+                          "group/item relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none",
                           "data-[selected=true]:bg-muted data-[selected=true]:text-foreground",
                           "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50"
                         )}
@@ -611,13 +613,13 @@ export function CommandPalette() {
                         value={item.label}
                       >
                         <HugeiconsIcon
-                          className="size-4 shrink-0 text-muted-foreground transition-colors group-data-[selected=true]/item:text-foreground"
+                          className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
                           icon={item.icon}
                           strokeWidth={2}
                         />
                         <span className="flex-1 truncate">{item.label}</span>
                         <HugeiconsIcon
-                          className="size-3 text-muted-foreground opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
+                          className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
                           icon={ArrowRight01Icon}
                           strokeWidth={2}
                         />
@@ -634,14 +636,14 @@ export function CommandPalette() {
                 }
                 return (
                   <CommandPrimitive.Group
-                    className="px-1 pb-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+                    className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
                     heading={section}
                     key={section}
                   >
                     {items.map((hit) => (
                       <CommandPrimitive.Item
                         className={cn(
-                          "group/item relative flex cursor-pointer select-none items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] outline-none transition-colors",
+                          "group/item relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none",
                           "data-[selected=true]:bg-muted data-[selected=true]:text-foreground"
                         )}
                         key={hit.key}
@@ -650,18 +652,18 @@ export function CommandPalette() {
                         value={`${hit.key}__${hit.label}`}
                       >
                         <HugeiconsIcon
-                          className="size-4 shrink-0 text-muted-foreground transition-colors group-data-[selected=true]/item:text-foreground"
+                          className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
                           icon={hit.icon}
                           strokeWidth={2}
                         />
                         <span className="flex-1 truncate">{hit.label}</span>
                         {hit.sublabel ? (
-                          <span className="max-w-[40%] truncate text-[11px] text-muted-foreground">
+                          <span className="text-muted-foreground max-w-[40%] truncate text-[11px]">
                             {hit.sublabel}
                           </span>
                         ) : null}
                         <HugeiconsIcon
-                          className="size-3 text-muted-foreground opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
+                          className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
                           icon={ArrowRight01Icon}
                           strokeWidth={2}
                         />
@@ -672,23 +674,23 @@ export function CommandPalette() {
               })}
 
               <CommandPrimitive.Group
-                className="px-1 pb-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+                className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
                 heading="Actions"
               >
                 <CommandPrimitive.Item
-                  className="group/item relative flex cursor-pointer select-none items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] outline-none transition-colors data-[selected=true]:bg-muted data-[selected=true]:text-foreground"
+                  className="group/item data-[selected=true]:bg-muted data-[selected=true]:text-foreground relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none"
                   keywords={["feedback", "bug", "report", "idea", "feature"]}
                   onSelect={openFeedback}
                   value="__action_feedback"
                 >
                   <HugeiconsIcon
-                    className="size-4 shrink-0 text-muted-foreground transition-colors group-data-[selected=true]/item:text-foreground"
+                    className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
                     icon={Message01Icon}
                     strokeWidth={2}
                   />
                   <span className="flex-1 truncate">Send feedback</span>
                   <HugeiconsIcon
-                    className="size-3 text-muted-foreground opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
+                    className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
                     icon={ArrowRight01Icon}
                     strokeWidth={2}
                   />
@@ -697,18 +699,18 @@ export function CommandPalette() {
 
               {hasQuery ? (
                 <CommandPrimitive.Group
-                  className="px-1 pb-1 text-foreground [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-wider"
+                  className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
                   heading="AI"
                 >
                   <CommandPrimitive.Item
-                    className="group/item relative flex cursor-pointer select-none items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] outline-none transition-colors data-[selected=true]:bg-muted data-[selected=true]:text-foreground"
+                    className="group/item data-[selected=true]:bg-muted data-[selected=true]:text-foreground relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none"
                     keywords={["ai", "ask", "natural language"]}
                     onSelect={runAiSearch}
                     value={`__ai_navigate_${query}`}
                   >
                     <HugeiconsIcon
                       className={cn(
-                        "size-4 shrink-0 text-muted-foreground transition-colors group-data-[selected=true]/item:text-foreground",
+                        "text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors",
                         isLoading && "animate-spin motion-reduce:animate-none"
                       )}
                       icon={isLoading ? Loading03Icon : SparklesIcon}
@@ -725,13 +727,13 @@ export function CommandPalette() {
                     </div>
                   </CommandPrimitive.Item>
                   <CommandPrimitive.Item
-                    className="group/item relative flex cursor-pointer select-none items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] outline-none transition-colors data-[selected=true]:bg-muted data-[selected=true]:text-foreground"
+                    className="group/item data-[selected=true]:bg-muted data-[selected=true]:text-foreground relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none"
                     keywords={["chat", "conversation", "message"]}
                     onSelect={() => openChatWithQuery(trimmedQuery)}
                     value={`__ai_chat_${query}`}
                   >
                     <HugeiconsIcon
-                      className="size-4 shrink-0 text-muted-foreground transition-colors group-data-[selected=true]/item:text-foreground"
+                      className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
                       icon={Message01Icon}
                       strokeWidth={2}
                     />
@@ -739,7 +741,7 @@ export function CommandPalette() {
                       Ask AI chat about this
                     </span>
                     <HugeiconsIcon
-                      className="size-3 text-muted-foreground opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
+                      className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
                       icon={ArrowRight01Icon}
                       strokeWidth={2}
                     />
@@ -749,7 +751,7 @@ export function CommandPalette() {
             </CommandPrimitive.List>
           </div>
 
-          <div className="flex h-9 shrink-0 items-center justify-between gap-3 border-border/60 border-t bg-muted/30 px-3 text-[11px] text-muted-foreground">
+          <div className="border-border/60 bg-muted/30 text-muted-foreground flex h-9 shrink-0 items-center justify-between gap-3 border-t px-3 text-[11px]">
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
                 <Kbd>

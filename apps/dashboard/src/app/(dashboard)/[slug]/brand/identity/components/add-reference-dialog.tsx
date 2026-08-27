@@ -37,6 +37,7 @@ import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import {
   useConnectedAccounts,
@@ -48,6 +49,7 @@ import type {
   ApplicablePlatform,
 } from "@/types/hooks/brand-references";
 import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
+
 import {
   useCreateReference,
   useFetchTweet,
@@ -237,16 +239,16 @@ function SourceStep({ onSelect }: { onSelect: (step: Step) => void }) {
       <div className="grid gap-3 py-4">
         {sources.map((source) => (
           <button
-            className="flex cursor-pointer items-center gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/50"
+            className="hover:bg-muted/50 flex cursor-pointer items-center gap-3 rounded-lg border p-4 text-left transition-colors"
             key={source.step}
             onClick={() => onSelect(source.step)}
             type="button"
           >
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <div className="bg-muted flex size-10 shrink-0 items-center justify-center rounded-lg">
               <HugeiconsIcon className="size-5" icon={source.icon} />
             </div>
             <div>
-              <p className="font-medium text-sm">{source.title}</p>
+              <p className="text-sm font-medium">{source.title}</p>
               <p className="text-muted-foreground text-xs">
                 {source.description}
               </p>
@@ -438,16 +440,16 @@ function ImportXStep({
       <div className="space-y-3 py-4">
         {!isLoading && twitterAccounts.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/30 px-3 py-2.5">
+            <div className="bg-muted/30 flex items-center justify-between gap-2 rounded-lg border px-3 py-2.5">
               <div className="flex items-center gap-1.5">
                 <Label
-                  className="whitespace-nowrap text-xs"
+                  className="text-xs whitespace-nowrap"
                   htmlFor="max-results"
                 >
                   Amount of posts to import:
                 </Label>
                 <Tooltip>
-                  <TooltipTrigger className="cursor-help text-muted-foreground">
+                  <TooltipTrigger className="text-muted-foreground cursor-help">
                     <HugeiconsIcon
                       className="size-3.5"
                       icon={InformationCircleIcon}
@@ -481,17 +483,17 @@ function ImportXStep({
 
         {isLoading && (
           <div className="flex justify-center py-8">
-            <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+            <Loader2Icon className="text-muted-foreground size-6 animate-spin" />
           </div>
         )}
 
         {!isLoading && twitterAccounts.length === 0 && (
           <div className="flex flex-col items-center gap-4 py-8">
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+            <div className="bg-muted flex size-12 items-center justify-center rounded-full">
               <HugeiconsIcon className="size-6" icon={NewTwitterIcon} />
             </div>
             <div className="text-center">
-              <p className="font-medium text-sm">No X accounts connected</p>
+              <p className="text-sm font-medium">No X accounts connected</p>
               <p className="text-muted-foreground text-xs">
                 Connect an X account to import recent posts.
               </p>
@@ -523,13 +525,13 @@ function ImportXStep({
                   </AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="flex items-center gap-1 truncate font-medium text-sm">
+                  <p className="flex items-center gap-1 truncate text-sm font-medium">
                     {account.displayName}
                     {account.verified && (
                       <XVerifiedBadge className="size-4 shrink-0" />
                     )}
                   </p>
-                  <p className="truncate text-muted-foreground text-xs">
+                  <p className="text-muted-foreground truncate text-xs">
                     @{account.username}
                   </p>
                 </div>
@@ -550,7 +552,7 @@ function ImportXStep({
                   {!isImporting && !didImport && "Import"}
                 </Button>
                 <button
-                  className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                  className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md transition-colors"
                   disabled={disconnectAccount.isPending}
                   onClick={() => handleDisconnect(account)}
                   type="button"
@@ -563,19 +565,19 @@ function ImportXStep({
 
         {!isLoading && (
           <button
-            className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-dashed p-3 text-left transition-colors hover:bg-muted/50"
+            className="hover:bg-muted/50 flex w-full cursor-pointer items-center gap-3 rounded-lg border border-dashed p-3 text-left transition-colors"
             disabled={isConnecting}
             onClick={handleConnect}
             type="button"
           >
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+            <div className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-full">
               {isConnecting ? (
                 <Loader2Icon className="size-4 animate-spin" />
               ) : (
                 <HugeiconsIcon className="size-4" icon={Add01Icon} />
               )}
             </div>
-            <p className="font-medium text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-sm font-medium">
               {twitterAccounts.length === 0
                 ? "Connect an X account"
                 : "Connect another X account"}

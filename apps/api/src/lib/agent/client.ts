@@ -8,6 +8,7 @@ import {
 } from "@notra/ai/constants/agent";
 import { getVercelOidcToken } from "@vercel/oidc";
 import { Client } from "eve/client";
+
 import type { ApiAgentScope } from "../../types/agent";
 
 const TRAILING_SLASH_PATTERN = /\/+$/;

@@ -2,6 +2,7 @@ import { serializeAvailablePost } from "@notra/ai/utils/posts";
 import { db } from "@notra/db/drizzle";
 import { eq } from "drizzle-orm";
 import { defineTool } from "eve/tools";
+
 import { getAvailablePostsInputSchema } from "../schemas/assistant-tools";
 import { requireOrganizationId } from "../utils/organization";
 

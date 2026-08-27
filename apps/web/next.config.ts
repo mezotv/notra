@@ -1,7 +1,9 @@
 import path from "node:path";
+
 import { withDualmark } from "@dualmark/nextjs";
 import { createMDX } from "fumadocs-mdx/next";
 import type { NextConfig } from "next";
+
 import { SHOWCASE_COMPANIES } from "./src/utils/showcase";
 import { SOCIAL_LINKS } from "./src/utils/social-links";
 import { SITE_URL } from "./src/utils/urls";

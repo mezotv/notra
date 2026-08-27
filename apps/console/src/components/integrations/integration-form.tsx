@@ -37,6 +37,7 @@ import Link from "next/link";
 import type { Dispatch, FormEvent, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import {
   BannerUploader,
@@ -73,7 +74,7 @@ import type {
 
 function LiveWarningBanner() {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-amber-700 text-sm dark:text-amber-400">
+    <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
       <HugeiconsIcon className="mt-0.5 size-4 shrink-0" icon={Alert02Icon} />
       <p>{LIVE_EDIT_WARNING}</p>
     </div>
@@ -82,13 +83,13 @@ function LiveWarningBanner() {
 
 function RejectedBanner({ note }: { note: string | null }) {
   return (
-    <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+    <div className="border-destructive/40 bg-destructive/10 flex items-start gap-2 rounded-lg border p-3 text-sm">
       <HugeiconsIcon
-        className="mt-0.5 size-4 shrink-0 text-destructive"
+        className="text-destructive mt-0.5 size-4 shrink-0"
         icon={Alert02Icon}
       />
       <p>
-        <span className="font-medium text-destructive">
+        <span className="text-destructive font-medium">
           Rejected in review:
         </span>{" "}
         {note ?? "Update the integration and submit it again."}
@@ -107,17 +108,17 @@ function IntegrationFormHeader({
   return (
     <div className="grid gap-3">
       <Link
-        className="inline-flex w-fit items-center gap-1.5 text-muted-foreground text-sm hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground inline-flex w-fit items-center gap-1.5 text-sm"
         href={backHref}
       >
         <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
         Back to My Integrations
       </Link>
       <div>
-        <h1 className="font-semibold text-2xl tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight">
           {server ? <>Edit {server.name}</> : "New integration"}
         </h1>
-        <p className="mt-1 text-muted-foreground text-sm">
+        <p className="text-muted-foreground mt-1 text-sm">
           {server
             ? "Changes to a live integration go back through review when you save."
             : "Register an MCP server for the Notra integration store."}
@@ -204,7 +205,7 @@ function IntegrationDetailsCard({
         <div className="grid gap-2">
           <Label htmlFor="integration-website">
             Website{" "}
-            <span className="font-normal text-muted-foreground">
+            <span className="text-muted-foreground font-normal">
               (optional)
             </span>
           </Label>
@@ -223,7 +224,7 @@ function IntegrationDetailsCard({
         <div className="grid gap-2">
           <Label htmlFor="integration-description">
             Description{" "}
-            <span className="font-normal text-muted-foreground">
+            <span className="text-muted-foreground font-normal">
               (optional)
             </span>
           </Label>
@@ -308,7 +309,7 @@ function IntegrationBrandingCard({
         <div className="grid gap-2">
           <Label htmlFor="integration-brand-color">
             Brand color{" "}
-            <span className="font-normal text-muted-foreground">
+            <span className="text-muted-foreground font-normal">
               (optional)
             </span>
           </Label>
@@ -369,7 +370,7 @@ function IntegrationBrandingCard({
         <div className="grid gap-2">
           <Label>
             Banner{" "}
-            <span className="font-normal text-muted-foreground">
+            <span className="text-muted-foreground font-normal">
               (optional)
             </span>
           </Label>
@@ -452,7 +453,7 @@ function ServerAuthenticationCard({
                 className={cn(
                   "rounded-lg border p-3 text-left transition-colors",
                   authChoice === option.value
-                    ? "border-primary ring-1 ring-primary"
+                    ? "border-primary ring-primary ring-1"
                     : "hover:border-muted-foreground/40"
                 )}
                 disabled={isSaving}
@@ -460,8 +461,8 @@ function ServerAuthenticationCard({
                 onClick={() => setAuthChoice(option.value)}
                 type="button"
               >
-                <p className="font-medium text-sm">{option.label}</p>
-                <p className="mt-1 text-muted-foreground text-xs">
+                <p className="text-sm font-medium">{option.label}</p>
+                <p className="text-muted-foreground mt-1 text-xs">
                   {option.description}
                 </p>
               </button>
@@ -489,7 +490,7 @@ function ServerAuthenticationCard({
               </Label>
               <select
                 aria-labelledby="integration-key-style-label"
-                className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-8 w-full rounded-lg border px-2.5 text-sm outline-none focus-visible:ring-[3px]"
                 disabled={isSaving}
                 id="integration-key-style"
                 onChange={(event) => {
@@ -916,14 +917,14 @@ function IntegrationOwnershipConsent({
           aria-invalid={Boolean(error)}
           aria-labelledby={labelId}
           checked={checked}
-          className="mt-0.5 size-4 shrink-0 accent-primary"
+          className="accent-primary mt-0.5 size-4 shrink-0"
           disabled={disabled}
           id="integration-ownership-consent"
           onChange={(event) => onCheckedChange(event.target.checked)}
           type="checkbox"
         />
         <Label
-          className="font-normal leading-relaxed"
+          className="leading-relaxed font-normal"
           htmlFor="integration-ownership-consent"
           id={labelId}
         >
@@ -933,7 +934,7 @@ function IntegrationOwnershipConsent({
         </Label>
       </div>
       {error ? (
-        <p className="ml-7 text-destructive text-xs" id={errorId} role="alert">
+        <p className="text-destructive ml-7 text-xs" id={errorId} role="alert">
           {error}
         </p>
       ) : null}

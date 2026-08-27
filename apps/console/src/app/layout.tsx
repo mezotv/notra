@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Noto_Sans } from "next/font/google";
+
 import "@/styles/globals.css";
 
 import { ImpersonationBanner } from "@/components/auth/impersonation-banner";

@@ -1,4 +1,5 @@
 import { classifyUserAgent } from "@usenotra/geo/classify";
+
 import {
   GEO_AI_REFERRER_HOSTS,
   GEO_BROWSER_UA_PATTERNS,

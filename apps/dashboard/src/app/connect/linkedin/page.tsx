@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
+
 import { Button, buttonVariants } from "@/components/button";
 import {
   useCompleteLinkedInSelection,
@@ -132,7 +133,7 @@ function LinkedInConnectContent() {
           return (
             <button
               className={cn(
-                "flex w-full cursor-pointer items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60",
+                "hover:bg-accent flex w-full cursor-pointer items-center gap-3 rounded-lg border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-60",
                 isSelected && "border-primary/60 bg-primary/5"
               )}
               disabled={completeMutation.isPending}
@@ -157,7 +158,7 @@ function LinkedInConnectContent() {
                 </AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-sm">
+                <p className="truncate text-sm font-medium">
                   {account.username}
                 </p>
                 <p className="text-muted-foreground text-xs">
@@ -205,18 +206,18 @@ function LinkedInConnectContent() {
 
 function SelectionShell({ children }: SelectionShellProps) {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center bg-muted/40 px-4 py-12">
+    <div className="bg-muted/40 flex min-h-svh flex-col items-center justify-center px-4 py-12">
       <div className="mb-8 flex items-center gap-2.5">
-        <span className="flex size-11 items-center justify-center rounded-xl border border-border bg-white shadow-sm">
+        <span className="border-border flex size-11 items-center justify-center rounded-xl border bg-white shadow-sm">
           <Notra className="size-7" />
         </span>
-        <span className="font-semibold text-foreground text-xl tracking-tight">
+        <span className="text-foreground text-xl font-semibold tracking-tight">
           Notra
         </span>
       </div>
-      <div className="w-full max-w-md rounded-xl border bg-background p-6 shadow-sm">
+      <div className="bg-background w-full max-w-md rounded-xl border p-6 shadow-sm">
         <div className="mb-5 space-y-1">
-          <h1 className="font-bold text-lg">Where should we post from?</h1>
+          <h1 className="text-lg font-bold">Where should we post from?</h1>
           <p className="text-muted-foreground text-sm">
             Pick the LinkedIn profiles you want to post as.
           </p>
@@ -232,7 +233,7 @@ export default function LinkedInConnectPage() {
     <Suspense
       fallback={
         <div className="flex min-h-svh items-center justify-center">
-          <Loader2Icon className="size-6 animate-spin text-muted-foreground" />
+          <Loader2Icon className="text-muted-foreground size-6 animate-spin" />
         </div>
       }
     >

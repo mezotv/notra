@@ -1,5 +1,6 @@
 import type { GeoTrafficEventRow } from "@notra/analytics/tinybird/datasources";
 import { toClickHouseDateTime } from "@notra/analytics/utils/datetime";
+
 import { GEO_MAX_STORED_UA_LENGTH } from "@/constants/geo";
 import { GEO_MARKDOWN_ACCEPT_MATCHERS } from "@/constants/geo-accept";
 import type { GeoTrafficEventInput } from "@/types/geo";

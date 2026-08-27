@@ -6,6 +6,7 @@ import { Loader2Icon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useState } from "react";
+
 import { Button } from "@/components/button";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { GeoSetupEmpty } from "@/components/geo/geo-setup-empty";
@@ -33,6 +34,7 @@ import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
 import { geoNavHref } from "@/utils/geo-paths";
+
 import { GeoTabs } from "./components/geo-tabs";
 import { GeoPageSkeleton } from "./skeleton";
 
@@ -131,7 +133,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       <div className="w-full space-y-4 px-4 lg:px-6">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">GEO</h1>
+            <h1 className="text-3xl font-bold tracking-tight">GEO</h1>
             <p className="text-muted-foreground text-sm">
               How AI engines talk about {settings.companyName}
             </p>

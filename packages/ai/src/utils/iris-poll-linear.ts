@@ -74,37 +74,35 @@ const pollIntegration = Effect.fn("iris.poll.linear.integration")(function* (
 
   return issues.nodes
     .filter((issue) => issue.completedAt !== undefined)
-    .map(
-      (issue): IrisPollItem => ({
-        source: SIGNAL_SOURCE_LINEAR,
-        kind: SIGNAL_KIND_LINEAR_ISSUE_COMPLETED,
-        dedupeHash: computeSignalDedupeHash(
-          SIGNAL_SOURCE_LINEAR,
-          SIGNAL_KIND_LINEAR_ISSUE_COMPLETED,
-          `${issue.id}:${issue.completedAt?.toISOString() ?? ""}`
-        ),
-        sourceEventId: issue.id,
-        occurredAt: issue.completedAt ?? new Date(),
-        title: `${issue.identifier} ${issue.title}`,
-        url: issue.url,
-        payload: {
-          type: "issue",
-          action: "completed",
-          data: {
-            identifier: issue.identifier,
-            name: issue.title,
-            description: issue.description
-              ? truncate(issue.description, IRIS_POLL_LINEAR_DESCRIPTION_LIMIT)
-              : null,
-            completedAt: issue.completedAt ?? null,
-            url: issue.url,
-          },
-          integrationId: integration.id,
-          teamId: integration.linearTeamId,
-          discoveredBy: "poll",
+    .map((issue): IrisPollItem => ({
+      source: SIGNAL_SOURCE_LINEAR,
+      kind: SIGNAL_KIND_LINEAR_ISSUE_COMPLETED,
+      dedupeHash: computeSignalDedupeHash(
+        SIGNAL_SOURCE_LINEAR,
+        SIGNAL_KIND_LINEAR_ISSUE_COMPLETED,
+        `${issue.id}:${issue.completedAt?.toISOString() ?? ""}`
+      ),
+      sourceEventId: issue.id,
+      occurredAt: issue.completedAt ?? new Date(),
+      title: `${issue.identifier} ${issue.title}`,
+      url: issue.url,
+      payload: {
+        type: "issue",
+        action: "completed",
+        data: {
+          identifier: issue.identifier,
+          name: issue.title,
+          description: issue.description
+            ? truncate(issue.description, IRIS_POLL_LINEAR_DESCRIPTION_LIMIT)
+            : null,
+          completedAt: issue.completedAt ?? null,
+          url: issue.url,
         },
-      })
-    );
+        integrationId: integration.id,
+        teamId: integration.linearTeamId,
+        discoveredBy: "poll",
+      },
+    }));
 });
 
 export const pollLinearSource = Effect.fn("iris.poll.linear")(function* (

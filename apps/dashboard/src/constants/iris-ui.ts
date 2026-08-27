@@ -1,4 +1,5 @@
 import { Note01Icon, RssIcon, Sent02Icon } from "@hugeicons/core-free-icons";
+
 import type { IrisExplainerStep } from "@/types/iris";
 
 export const IRIS_EXPLAINER_STEPS: IrisExplainerStep[] = [

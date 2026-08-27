@@ -2,6 +2,7 @@
 
 import { useSidebar } from "@notra/ui/components/ui/sidebar";
 import { useReducedMotion } from "motion/react";
+
 import { cn } from "@/lib/utils";
 import type { SidebarLabelProps } from "@/types/components/sidebar-label";
 

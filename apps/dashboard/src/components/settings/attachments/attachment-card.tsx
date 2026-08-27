@@ -3,6 +3,7 @@
 import { Delete02Icon, File02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import Image from "next/image";
+
 import { Button } from "@/components/button";
 import { MIME_DISPLAY_LABELS } from "@/constants/upload";
 import {
@@ -23,9 +24,9 @@ function FilePlaceholder({ mediaType }: { mediaType: string }) {
   }
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-muted/40 text-muted-foreground">
+    <div className="bg-muted/40 text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-2">
       <HugeiconsIcon className="size-8" icon={File02Icon} />
-      <span className="font-medium text-xs">{label}</span>
+      <span className="text-xs font-medium">{label}</span>
     </div>
   );
 }
@@ -45,14 +46,14 @@ export function AttachmentCard({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-lg border border-border/80 bg-background shadow-2xs",
-        selected && "ring-2 ring-ring"
+        "border-border/80 bg-background relative overflow-hidden rounded-lg border shadow-2xs",
+        selected && "ring-ring ring-2"
       )}
     >
-      <div className="relative aspect-square bg-muted/20">
+      <div className="bg-muted/20 relative aspect-square">
         <button
           aria-label={`Preview ${attachment.filename}`}
-          className="absolute inset-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+          className="focus-visible:ring-ring absolute inset-0 cursor-pointer focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
           onClick={onOpen}
           type="button"
         >
@@ -70,11 +71,11 @@ export function AttachmentCard({
           )}
         </button>
 
-        <label className="absolute top-2 left-2 z-10 flex size-7 cursor-pointer items-center justify-center rounded-md border border-border bg-background/90 shadow-sm backdrop-blur-sm">
+        <label className="border-border bg-background/90 absolute top-2 left-2 z-10 flex size-7 cursor-pointer items-center justify-center rounded-md border shadow-sm backdrop-blur-sm">
           <input
             aria-label={`Select ${attachment.filename}`}
             checked={selected}
-            className="size-3.5 cursor-pointer rounded border-border"
+            className="border-border size-3.5 cursor-pointer rounded"
             onChange={(event) => onSelectedChange(event.target.checked)}
             onClick={(event) => event.stopPropagation()}
             type="checkbox"
@@ -98,13 +99,13 @@ export function AttachmentCard({
 
       <div className="space-y-0.5 px-3 py-2">
         <button
-          className="block w-full truncate text-left font-medium text-sm hover:underline"
+          className="block w-full truncate text-left text-sm font-medium hover:underline"
           onClick={onOpen}
           type="button"
         >
           {attachment.filename}
         </button>
-        <p className="truncate text-muted-foreground text-xs">
+        <p className="text-muted-foreground truncate text-xs">
           {typeLabel} · {formatRelativeDate(attachment.createdAt.toISOString())}
         </p>
       </div>

@@ -1,6 +1,7 @@
 import { redis } from "@notra/ai/utils/redis";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
+
 import {
   SLACK_BOT_SCOPES,
   SLACK_OAUTH_STATE_TTL_SECONDS,

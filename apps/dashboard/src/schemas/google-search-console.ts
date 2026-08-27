@@ -1,4 +1,5 @@
 import { array, object, string } from "zod";
+
 import {
   GSC_MAX_KEYWORDS_PER_SUGGESTION,
   GSC_SUGGESTIONS_MAX_PER_SYNC,

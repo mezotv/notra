@@ -1,4 +1,5 @@
 import type { GscQueryRow } from "@notra/ai/types/google-search-console";
+
 import {
   GEO_GAP_TITLE_MAX_LENGTH,
   GEO_PROMPT_MAX_LENGTH,

@@ -5,9 +5,7 @@ const FALLBACK_APP_URL = "https://app.usenotra.com";
 
 export function buildGeoAppUrl(): string {
   const base =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    process.env.BETTER_AUTH_URL ??
-    FALLBACK_APP_URL;
+    process.env.NEXT_PUBLIC_APP_URL ?? process.env.APP_URL ?? FALLBACK_APP_URL;
   return new URL("/", base).origin;
 }
 

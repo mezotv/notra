@@ -5,6 +5,7 @@ import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Suspense, use, useMemo } from "react";
 import { toast } from "sonner";
+
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { NotificationFooter } from "@/components/settings/notification-footer";
@@ -16,6 +17,7 @@ import { authClient } from "@/lib/auth/client";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { NOTIFICATION_TOGGLE_GROUPS } from "@/lib/settings/notification-toggles";
 import type { NotificationSettings } from "@/types/settings/notifications";
+
 import { DashboardPageSkeleton } from "../../skeleton";
 
 interface PageProps {
@@ -126,7 +128,7 @@ function NotificationsSettingsPageContent({ params }: PageProps) {
     >
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">Notifications</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Notifications</h1>
           <p className="text-muted-foreground">
             Configure email notifications for your organization
           </p>

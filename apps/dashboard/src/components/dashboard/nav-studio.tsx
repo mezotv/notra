@@ -4,6 +4,7 @@ import {
   SidebarGroup,
   SidebarGroupContent,
 } from "@notra/ui/components/ui/sidebar";
+
 import {
   NAV_AUTOMATION_LINKS,
   NAV_CATEGORY_LABELS,
@@ -13,6 +14,7 @@ import {
 import { useNavVisibility } from "@/lib/hooks/use-nav-visibility";
 import type { NavStudioProps } from "@/types/components/nav";
 import { resolveActiveNavLink } from "@/utils/nav";
+
 import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
 import { NavList } from "./nav-list";
 import { NavRecentContent } from "./nav-recent-content";

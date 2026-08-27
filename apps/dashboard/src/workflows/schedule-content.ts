@@ -1,5 +1,6 @@
 import { sleep } from "workflow";
 import { flattenError } from "zod";
+
 import {
   GITHUB_RATE_LIMIT_RETRY_DELAY,
   SCHEDULE_AI_CREDIT_LOCK_TTL_MS,
@@ -9,6 +10,7 @@ import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
 import { scheduleWorkflowPayloadSchema } from "@/schemas/workflows";
 import type { WorkflowAiCreditGate } from "@/types/workflows/content-generation-steps";
 import type { ScheduleContentWorkflowResult } from "@/types/workflows/schedule-generation";
+
 import {
   appendAutomationLog,
   claimWorkflowExecution,

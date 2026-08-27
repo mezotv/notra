@@ -1,5 +1,6 @@
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
+
 import { TestimonialsShader } from "@/components/landing/testimonials-shader";
 import {
   FEATURED_TESTIMONIAL,
@@ -23,7 +24,7 @@ function TestimonialCard({
     <article
       className={cn(
         "relative flex w-full flex-1 flex-col overflow-clip rounded-3xl p-6 backdrop-blur-[0.375rem] sm:p-10 lg:px-16 lg:py-20",
-        "[box-shadow:#ECECEC_0_0_0_0.0625rem,#28282814_0_0.0625rem_0.125rem] dark:bg-none dark:bg-white/[0.03] dark:[box-shadow:#FFFFFF14_0_0_0_0.0625rem,#00000014_0_0.0625rem_0.125rem]",
+        "[box-shadow:#ECECEC_0_0_0_0.0625rem,#28282814_0_0.0625rem_0.125rem] dark:bg-white/[0.03] dark:bg-none dark:[box-shadow:#FFFFFF14_0_0_0_0.0625rem,#00000014_0_0.0625rem_0.125rem]",
         featured
           ? "bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_20%)_0%,oklab(91.7%_0.017_-0.029_/_50%)_100%)]"
           : "bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_20%)_0%,oklab(93.7%_0.019_-0.031_/_50%)_100%)]"
@@ -40,7 +41,7 @@ function TestimonialCard({
           !featured && "justify-between lg:min-h-[25rem]"
         )}
       >
-        <p className="min-w-0 self-stretch font-medium font-sans text-[#1E1E1E] text-xl/7 tracking-[-0.015em] sm:text-[1.375rem]/7.5 lg:text-[1.5625rem]/8 dark:text-foreground">
+        <p className="dark:text-foreground min-w-0 self-stretch font-sans text-xl/7 font-medium tracking-[-0.015em] text-[#1E1E1E] sm:text-[1.375rem]/7.5 lg:text-[1.5625rem]/8">
           {testimonial.quote}
         </p>
         <div className="flex items-center gap-4">
@@ -54,10 +55,10 @@ function TestimonialCard({
             />
           </div>
           <div className="flex flex-col gap-2">
-            <span className="font-medium font-sans text-[#1E1E1E] text-base/5.5 dark:text-foreground">
+            <span className="dark:text-foreground font-sans text-base/5.5 font-medium text-[#1E1E1E]">
               {testimonial.name}
             </span>
-            <span className="font-display text-[#1E1E1EBF] text-base/5.5 dark:text-muted-foreground">
+            <span className="font-display dark:text-muted-foreground text-base/5.5 text-[#1E1E1EBF]">
               {testimonial.role}
             </span>
           </div>
@@ -71,10 +72,10 @@ export function TestimonialsSection() {
   return (
     <section className="flex w-full flex-col items-center gap-10 px-6 pt-24 pb-12 sm:px-12 sm:pb-27.5 lg:gap-13.5 lg:px-20 lg:pt-70">
       <div className="flex flex-col items-center gap-4">
-        <h2 className="text-center font-display font-medium text-[2rem]/tight text-black tracking-[-0.02em] sm:text-4xl/tight lg:text-[3.0625rem]/14 dark:text-foreground">
+        <h2 className="font-display dark:text-foreground text-center text-[2rem]/tight font-medium tracking-[-0.02em] text-black sm:text-4xl/tight lg:text-[3.0625rem]/14">
           Shipping, without the <span className="text-primary">busywork</span>.
         </h2>
-        <p className="max-w-[31.875rem] text-center font-display font-medium text-[#1E1E1EBF] text-lg/7 tracking-[-0.01em] sm:text-xl/7.5 dark:text-muted-foreground">
+        <p className="font-display dark:text-muted-foreground max-w-[31.875rem] text-center text-lg/7 font-medium tracking-[-0.01em] text-[#1E1E1EBF] sm:text-xl/7.5">
           {TESTIMONIALS_SUBHEADING}
         </p>
       </div>

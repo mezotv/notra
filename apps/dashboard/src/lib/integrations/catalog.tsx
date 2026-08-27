@@ -7,6 +7,7 @@ import { Granola } from "@notra/ui/components/ui/svgs/granola";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Raycast } from "@notra/ui/components/ui/svgs/raycast";
 import { Slack } from "@notra/ui/components/ui/svgs/slack";
+
 import type { IntegrationConfig } from "@/types/integrations/catalog";
 
 const INPUT_SOURCES: readonly IntegrationConfig[] = [

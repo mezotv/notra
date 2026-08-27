@@ -2,6 +2,7 @@
 
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
+
 import { PageContainer } from "@/components/layout/container";
 
 export function DashboardPageSkeleton() {

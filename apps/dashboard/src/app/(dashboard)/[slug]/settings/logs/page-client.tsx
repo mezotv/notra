@@ -30,6 +30,7 @@ import {
   useQueryState,
 } from "nuqs";
 import { useState } from "react";
+
 import { PageContainer } from "@/components/layout/container";
 import { LogDetailsSheet } from "@/components/logs/log-details-sheet";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -42,6 +43,7 @@ import {
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { Log, LogsResponse } from "@/types/webhooks/webhooks";
 import { getSourceLabel, getStatusLabel } from "@/utils/logs";
+
 import { columns } from "./columns";
 import { DataTable } from "./data-table";
 import { LogsPageSkeleton } from "./skeleton";
@@ -156,11 +158,11 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="font-bold text-3xl tracking-tight">Logs</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Logs</h1>
             <Tooltip>
               <TooltipTrigger
                 aria-label="Log retention information"
-                className="cursor-help text-muted-foreground transition-colors hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground cursor-help transition-colors"
               >
                 <HugeiconsIcon
                   className="size-4"
@@ -181,7 +183,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <HugeiconsIcon
-              className="-translate-y-1/2 absolute top-1/2 left-2.5 size-4 text-muted-foreground"
+              className="text-muted-foreground absolute top-1/2 left-2.5 size-4 -translate-y-1/2"
               icon={Search01Icon}
             />
             <Input
@@ -200,7 +202,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
             {searchInput.length > 0 && (
               <button
                 aria-label="Clear search"
-                className="-translate-y-1/2 absolute top-1/2 right-1 flex size-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring absolute top-1/2 right-1 flex size-6 -translate-y-1/2 items-center justify-center rounded-md transition-colors focus-visible:ring-2 focus-visible:outline-none"
                 onClick={() => {
                   setSearchInput("");
                   commitSearch("");

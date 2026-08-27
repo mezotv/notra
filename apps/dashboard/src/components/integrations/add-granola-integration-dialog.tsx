@@ -18,6 +18,7 @@ import { Loader2Icon } from "lucide-react";
 import type React from "react";
 import { isValidElement, useId, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { GRANOLA_API_KEYS_DOCS_URL } from "@/constants/granola";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -148,7 +149,7 @@ export function AddGranolaIntegrationDialog({
               Create a key in the Granola app under Settings, then Connectors,
               then API keys.{" "}
               <a
-                className="underline underline-offset-2 hover:text-foreground"
+                className="hover:text-foreground underline underline-offset-2"
                 href={GRANOLA_API_KEYS_DOCS_URL}
                 rel="noopener noreferrer"
                 target="_blank"

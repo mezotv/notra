@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+
 import { redirectOrgRootToStoredMode } from "@/lib/nav/org-root-redirect";
+
 import PageClient from "./page-client";
 import { HomePageSkeleton } from "./skeleton";
 

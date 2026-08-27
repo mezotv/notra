@@ -5,6 +5,7 @@ import {
   interpolate,
   useCurrentFrame,
 } from "remotion";
+
 import type { AvatarSlot } from "../../types/star-video";
 import { AVATAR_VERT_FACTOR, VIDEO_HEIGHT, VIDEO_WIDTH } from "./constants";
 

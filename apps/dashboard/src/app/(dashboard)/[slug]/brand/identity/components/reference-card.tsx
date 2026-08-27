@@ -34,6 +34,7 @@ import {
 import { Label } from "@notra/ui/components/ui/label";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useState } from "react";
+
 import { Button } from "@/components/button";
 import type {
   ReferenceCardProps,
@@ -115,7 +116,7 @@ function SourceLink({ sourceUrl }: { sourceUrl: string | null | undefined }) {
 
   return (
     <a
-      className="inline-flex w-fit items-center gap-1 text-muted-foreground text-xs transition-colors hover:text-foreground"
+      className="text-muted-foreground hover:text-foreground inline-flex w-fit items-center gap-1 text-xs transition-colors"
       href={safeSourceUrl}
       rel="noreferrer"
       target="_blank"
@@ -194,7 +195,7 @@ function NoteInput({
 
   return (
     <Textarea
-      className="max-h-20 min-h-0 resize-none overflow-y-auto border-none bg-transparent px-0 py-1.5 text-xs shadow-none placeholder:text-muted-foreground/50 focus-visible:ring-0"
+      className="placeholder:text-muted-foreground/50 max-h-20 min-h-0 resize-none overflow-y-auto border-none bg-transparent px-0 py-1.5 text-xs shadow-none focus-visible:ring-0"
       onBlur={handleNoteBlur}
       onChange={(e) => setNoteValue(e.target.value)}
       onKeyDown={handleNoteKeyDown}
@@ -210,7 +211,7 @@ function PlatformBadges({ applicableTo }: { applicableTo: string[] }) {
     <div className="flex flex-wrap gap-1">
       {applicableTo.map((platform) => (
         <span
-          className="rounded-full bg-muted px-2 py-0.5 text-[0.6875rem] text-muted-foreground"
+          className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[0.6875rem]"
           key={platform}
         >
           {PLATFORM_LABELS[platform] ?? platform}
@@ -310,7 +311,7 @@ function CardMenu({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-muted-foreground hover:bg-accent"
+          className="text-muted-foreground hover:bg-accent flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md"
           nativeButton={false}
           render={<span />}
         >
@@ -368,7 +369,7 @@ function TwitterReferenceCard({
     : null;
 
   return (
-    <div className="group flex break-inside-avoid flex-col overflow-hidden rounded-xl border transition-colors hover:border-border/80">
+    <div className="group hover:border-border/80 flex break-inside-avoid flex-col overflow-hidden rounded-xl border transition-colors">
       <div className="flex flex-col gap-2.5 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5">
@@ -383,13 +384,13 @@ function TwitterReferenceCard({
             </Avatar>
             <div className="min-w-0">
               <div className="flex items-center gap-1">
-                <span className="truncate font-semibold text-sm leading-tight">
+                <span className="truncate text-sm leading-tight font-semibold">
                   {displayName}
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 {showHandle && (
-                  <span className="truncate text-muted-foreground text-xs">
+                  <span className="text-muted-foreground truncate text-xs">
                     @{handle}
                   </span>
                 )}
@@ -401,7 +402,7 @@ function TwitterReferenceCard({
                       </span>
                     )}
                     <span
-                      className="shrink-0 text-muted-foreground/70 text-xs"
+                      className="text-muted-foreground/70 shrink-0 text-xs"
                       suppressHydrationWarning
                     >
                       {createdAtLabel}
@@ -423,7 +424,7 @@ function TwitterReferenceCard({
           </div>
         </div>
 
-        <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
+        <p className="text-[0.8125rem] leading-relaxed whitespace-pre-wrap">
           {formatTweetContent(reference.content)}
         </p>
 
@@ -432,19 +433,19 @@ function TwitterReferenceCard({
         {hasStats && (
           <div className="flex items-center gap-3 pt-0.5">
             {(metadata?.replies ?? 0) > 0 && (
-              <span className="flex items-center gap-1 text-muted-foreground text-xs">
+              <span className="text-muted-foreground flex items-center gap-1 text-xs">
                 <HugeiconsIcon className="size-3.5" icon={Comment01Icon} />
                 {formatCompactNumber(metadata?.replies ?? 0)}
               </span>
             )}
             {(metadata?.retweets ?? 0) > 0 && (
-              <span className="flex items-center gap-1 text-muted-foreground text-xs">
+              <span className="text-muted-foreground flex items-center gap-1 text-xs">
                 <HugeiconsIcon className="size-3.5" icon={RepeatIcon} />
                 {formatCompactNumber(metadata?.retweets ?? 0)}
               </span>
             )}
             {(metadata?.likes ?? 0) > 0 && (
-              <span className="flex items-center gap-1 text-muted-foreground text-xs">
+              <span className="text-muted-foreground flex items-center gap-1 text-xs">
                 <HugeiconsIcon className="size-3.5" icon={FavouriteIcon} />
                 {formatCompactNumber(metadata?.likes ?? 0)}
               </span>
@@ -453,7 +454,7 @@ function TwitterReferenceCard({
         )}
       </div>
 
-      <div className="rounded-b-xl border-t bg-muted/50 px-4 py-1.5">
+      <div className="bg-muted/50 rounded-b-xl border-t px-4 py-1.5">
         <NoteInput
           initialNote={reference.note}
           onUpdateNote={onUpdateNote}
@@ -481,12 +482,12 @@ function BlogReferenceCard({
   const showDomainLine = Boolean(domain && title);
 
   return (
-    <div className="group flex break-inside-avoid flex-col overflow-hidden rounded-xl border transition-colors hover:border-border/80">
+    <div className="group hover:border-border/80 flex break-inside-avoid flex-col overflow-hidden rounded-xl border transition-colors">
       <div className="flex flex-col gap-2.5 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex min-w-0 items-center gap-2.5">
             <Avatar
-              className="size-9 rounded-full bg-muted after:rounded-full"
+              className="bg-muted size-9 rounded-full after:rounded-full"
               size="sm"
             >
               {domain && (
@@ -497,12 +498,12 @@ function BlogReferenceCard({
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
-              <span className="block truncate font-semibold text-sm leading-tight">
+              <span className="block truncate text-sm leading-tight font-semibold">
                 {title ?? domain ?? "Blog post"}
               </span>
               <div className="flex items-center gap-1">
                 {authorName && (
-                  <span className="truncate text-muted-foreground text-xs">
+                  <span className="text-muted-foreground truncate text-xs">
                     {authorName}
                   </span>
                 )}
@@ -513,7 +514,7 @@ function BlogReferenceCard({
                         ·
                       </span>
                     )}
-                    <span className="truncate text-muted-foreground text-xs">
+                    <span className="text-muted-foreground truncate text-xs">
                       {domain}
                     </span>
                   </>
@@ -526,7 +527,7 @@ function BlogReferenceCard({
                       </span>
                     )}
                     <span
-                      className="shrink-0 text-muted-foreground/70 text-xs"
+                      className="text-muted-foreground/70 shrink-0 text-xs"
                       suppressHydrationWarning
                     >
                       {publishedAtLabel}
@@ -548,14 +549,14 @@ function BlogReferenceCard({
           </div>
         </div>
 
-        <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
+        <p className="text-[0.8125rem] leading-relaxed whitespace-pre-wrap">
           {reference.content}
         </p>
 
         <SourceLink sourceUrl={sourceUrl} />
       </div>
 
-      <div className="rounded-b-xl border-t bg-muted/50 px-4 py-1.5">
+      <div className="bg-muted/50 rounded-b-xl border-t px-4 py-1.5">
         <NoteInput
           initialNote={reference.note}
           onUpdateNote={onUpdateNote}
@@ -574,18 +575,18 @@ function CustomReferenceCard({
   isDeleting,
 }: ReferenceCardProps) {
   return (
-    <div className="group flex break-inside-avoid flex-col overflow-hidden rounded-xl border transition-colors hover:border-border/80">
+    <div className="group hover:border-border/80 flex break-inside-avoid flex-col overflow-hidden rounded-xl border transition-colors">
       <div className="flex flex-col gap-2.5 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+            <div className="bg-muted flex size-9 shrink-0 items-center justify-center rounded-full">
               <HugeiconsIcon
-                className="size-4 text-muted-foreground"
+                className="text-muted-foreground size-4"
                 icon={TextIcon}
               />
             </div>
             <div>
-              <span className="font-semibold text-sm leading-tight">
+              <span className="text-sm leading-tight font-semibold">
                 Custom reference
               </span>
               <p
@@ -608,14 +609,14 @@ function CustomReferenceCard({
           </div>
         </div>
 
-        <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
+        <p className="text-[0.8125rem] leading-relaxed whitespace-pre-wrap">
           {formatTweetContent(reference.content)}
         </p>
 
         <SourceLink sourceUrl={reference.sourceUrl} />
       </div>
 
-      <div className="rounded-b-xl border-t bg-muted/50 px-4 py-1.5">
+      <div className="bg-muted/50 rounded-b-xl border-t px-4 py-1.5">
         <NoteInput
           initialNote={reference.note}
           onUpdateNote={onUpdateNote}
