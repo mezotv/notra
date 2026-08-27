@@ -8,10 +8,10 @@ import {
 import { useMemo } from "react";
 
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
+import { TrafficSourceGroupCell } from "@/components/geo/traffic-source-group-cell";
 import {
   InstrumentEmpty,
   InstrumentSection,
@@ -30,22 +30,24 @@ import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { ChartConfig } from "@/types/charts";
 import type {
   AiTrafficCardProps,
-  GeoTrafficSource,
+  GeoTrafficSourceGroup,
   GeoTrafficTotals,
   GeoTrafficTrendRow,
 } from "@/types/geo";
 import {
-  buildTrafficSourceSeries,
   buildTrafficTrendRows,
   formatAiTrafficTimestamp,
-  formatGeoSource,
   formatMarkdownShare,
   hasTrafficSourceSeries,
   toGeoTrafficPreviousTotals,
-  trafficSourceKey,
   trafficSparklineDays,
   trafficVisitDelta,
 } from "@/utils/ai-traffic";
+import {
+  buildTrafficGroupSeries,
+  groupTrafficSources,
+  trafficGroupKey,
+} from "@/utils/ai-traffic-groups";
 import { todayIsoDate } from "@/utils/analytics-charts";
 import { seriesColors } from "@/utils/chart-colors";
 import { formatChartInteger } from "@/utils/geo-charts";
@@ -206,22 +208,18 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
     [sources]
   );
   const trendRows = useMemo(() => buildTrafficTrendRows(points), [points]);
+  const groups = useMemo(() => groupTrafficSources(sources), [sources]);
   const sparklineDays = useMemo(() => trafficSparklineDays(points), [points]);
   const canSparkline = hasTrafficSourceSeries(points);
-  const seriesBySource = useMemo(() => {
+  const seriesByGroup = useMemo(() => {
     if (!canSparkline) {
       return new Map<string, { day: string; value: number }[]>();
     }
     const map = new Map<string, { day: string; value: number }[]>();
-    for (const source of sources) {
-      const values = buildTrafficSourceSeries(
-        points,
-        source.source,
-        source.visitorType,
-        sparklineDays
-      );
+    for (const group of groups) {
+      const values = buildTrafficGroupSeries(points, group, sparklineDays);
       map.set(
-        trafficSourceKey(source.source, source.visitorType),
+        trafficGroupKey(group.visitorType, group.key),
         sparklineDays.map((day, index) => ({
           day,
           value: values[index] ?? 0,
@@ -229,31 +227,40 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
       );
     }
     return map;
-  }, [canSparkline, points, sources, sparklineDays]);
+  }, [canSparkline, points, groups, sparklineDays]);
 
-  const columns = useMemo<TableColumn<GeoTrafficSource>[]>(
+  const columns = useMemo<TableColumn<GeoTrafficSourceGroup>[]>(
     () => [
       {
         key: "source",
         header: "Source",
         width: "1fr",
         sortable: true,
-        cell: (row) => (
-          <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
-            <EngineIcon engine={row.source} />
-            <span className="truncate">
-              {formatGeoSource(row.source, row.visitorType)}
-            </span>
-          </span>
-        ),
-        sortValue: (row) => formatGeoSource(row.source, row.visitorType),
+        cell: (row) => <TrafficSourceGroupCell group={row} />,
+        sortValue: (row) => row.label,
       },
       {
         key: "category",
         header: "Purpose",
         width: "9.5rem",
         sortable: true,
-        cell: (row) => <PurposeBadge category={row.category} />,
+        cell: (row) => {
+          const [single] = row.categories;
+          if (single === undefined) {
+            return null;
+          }
+          if (row.categories.length === 1) {
+            return <PurposeBadge category={single} />;
+          }
+          return (
+            <span className="flex items-center gap-1">
+              {row.categories.map((category) => (
+                <PurposeBadge category={category} compact key={category} />
+              ))}
+            </span>
+          );
+        },
+        sortValue: (row) => row.categories.join(","),
       },
       {
         key: "visits",
@@ -261,8 +268,8 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         width: "10.5rem",
         sortable: true,
         cell: (row) => {
-          const series = seriesBySource.get(
-            trafficSourceKey(row.source, row.visitorType)
+          const series = seriesByGroup.get(
+            trafficGroupKey(row.visitorType, row.key)
           );
           const showSpark =
             series !== undefined && series.length >= GEO_SPARKLINE_MIN_POINTS;
@@ -341,7 +348,7 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         ),
       },
     ],
-    [seriesBySource]
+    [seriesByGroup]
   );
 
   if (sources.length === 0) {
@@ -366,11 +373,11 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         <Table
           className="rounded-2xl"
           columns={columns}
-          data={sources}
+          data={groups}
           defaultSort={{ key: "visits", direction: "desc" }}
           emptyState="No AI traffic captured yet"
-          getRowId={(row) => `${row.visitorType}-${row.source}`}
-          height={tableHeightFor(sources.length)}
+          getRowId={(row) => trafficGroupKey(row.visitorType, row.key)}
+          height={tableHeightFor(groups.length)}
           resizable
           rowHeight={TABLE_ROW_HEIGHT}
         />

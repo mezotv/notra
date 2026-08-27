@@ -1221,6 +1221,32 @@ export interface CitationsTableProps {
 
 export interface PurposeBadgeProps {
   category: string;
+  compact?: boolean;
+}
+
+export interface GeoTrafficSourceGroupDefinition {
+  key: string;
+  label: string;
+  icon: string | null;
+}
+
+export interface GeoTrafficSourceGroup extends GeoTrafficSourceGroupDefinition {
+  visitorType: GeoVisitorType;
+  visits: number;
+  markdownVisits: number;
+  paths: number;
+  lastSeenAt: string;
+  categories: string[];
+  members: GeoTrafficSource[];
+}
+
+export interface TrafficSourceGroupCellProps {
+  group: GeoTrafficSourceGroup;
+}
+
+export interface TrafficSourceGroupIconProps {
+  group: GeoTrafficSourceGroupDefinition;
+  className?: string;
 }
 
 export type EngineIconKey =

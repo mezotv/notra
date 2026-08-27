@@ -25,7 +25,7 @@ const PURPOSE_ICONS: Record<string, typeof QuotesIcon> = {
   "search-index": Search01Icon,
 };
 
-export function PurposeBadge({ category }: PurposeBadgeProps) {
+export function PurposeBadge({ category, compact = false }: PurposeBadgeProps) {
   const icon = PURPOSE_ICONS[category];
   const label = AI_TRAFFIC_PURPOSE_LABELS[category] ?? category;
   const description = AI_TRAFFIC_PURPOSE_DESCRIPTIONS[category] ?? category;
@@ -35,7 +35,11 @@ export function PurposeBadge({ category }: PurposeBadgeProps) {
       <TooltipTrigger
         render={<span className="inline-flex max-w-full cursor-help" />}
       >
-        <Badge className="gap-1 font-normal" variant="secondary">
+        <Badge
+          aria-label={compact ? label : undefined}
+          className={compact ? "px-1.5" : "gap-1 font-normal"}
+          variant="secondary"
+        >
           {icon ? (
             <HugeiconsIcon
               className="size-3 shrink-0"
@@ -43,10 +47,11 @@ export function PurposeBadge({ category }: PurposeBadgeProps) {
               strokeWidth={2}
             />
           ) : null}
-          {label}
+          {compact ? null : label}
         </Badge>
       </TooltipTrigger>
       <TooltipContent className="max-w-xs text-pretty">
+        {compact ? <span className="block font-medium">{label}</span> : null}
         {description}
       </TooltipContent>
     </Tooltip>

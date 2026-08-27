@@ -186,13 +186,6 @@ export function trafficDayKey(day: string): string {
   return String(day).slice(0, 10);
 }
 
-export function trafficSourceKey(
-  source: string,
-  visitorType: GeoVisitorType
-): string {
-  return `${visitorType}:${source}`;
-}
-
 export function hasTrafficSourceSeries(
   points: readonly GeoTrafficPoint[]
 ): boolean {
@@ -236,23 +229,6 @@ export function buildTrafficTrendRows(
       [GEO_TRAFFIC_TREND_CRAWLER_KEY]: values.crawler,
       [GEO_TRAFFIC_TREND_REFERRAL_KEY]: values.aiReferral,
     }));
-}
-
-export function buildTrafficSourceSeries(
-  points: readonly GeoTrafficPoint[],
-  source: string,
-  visitorType: GeoVisitorType,
-  days: readonly string[]
-): number[] {
-  const byDay = new Map<string, number>();
-  for (const point of points) {
-    if (point.source !== source || point.visitorType !== visitorType) {
-      continue;
-    }
-    const day = trafficDayKey(point.day);
-    byDay.set(day, (byDay.get(day) ?? 0) + point.visits);
-  }
-  return days.map((day) => byDay.get(day) ?? 0);
 }
 
 export function isTrafficPagePending({
