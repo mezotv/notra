@@ -14,6 +14,13 @@ export const GEO_PROJECT_SCOPE_PARAMS = {
     .describe("Set to 1 to include rows captured before project scoping"),
 };
 
+export const GEO_EXCLUDED_SOURCES_PARAMS = {
+  excluded_sources: p
+    .string()
+    .optional("")
+    .describe("Comma-separated traffic sources to hide, empty for none"),
+};
+
 export const GEO_WINDOW_PARAMS = {
   ...TRAILING_DAYS_PARAM,
   date_from: p
@@ -66,4 +73,9 @@ export const GEO_PROJECT_SCOPE_SQL = `AND (
             {{String(project_id, '')}} = ''
             OR project_id = {{String(project_id, '')}}
             OR ({{Int32(include_unassigned, 0)}} = 1 AND project_id = '')
+          )`;
+
+export const GEO_EXCLUDED_SOURCES_SQL = `AND (
+            {{String(excluded_sources, '')}} = ''
+            OR NOT has(splitByChar(',', {{String(excluded_sources, '')}}), source)
           )`;

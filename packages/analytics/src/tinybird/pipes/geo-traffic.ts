@@ -12,6 +12,8 @@ import {
   GEO_DAY_CURRENT_CONDITION,
   GEO_DAY_PREVIOUS_CONDITION,
   GEO_DAY_WINDOW_SQL,
+  GEO_EXCLUDED_SOURCES_PARAMS,
+  GEO_EXCLUDED_SOURCES_SQL,
   GEO_PROJECT_SCOPE_PARAMS,
   GEO_PROJECT_SCOPE_SQL,
   GEO_WINDOW_PARAMS,
@@ -82,6 +84,7 @@ export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_EXCLUDED_SOURCES_PARAMS,
     ...GEO_WINDOW_PARAMS,
   },
   nodes: [
@@ -102,6 +105,7 @@ export const geoTrafficOverview = defineEndpoint("geo_traffic_overview", {
         FROM geo_traffic_daily
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
+          ${GEO_EXCLUDED_SOURCES_SQL}
           ${GEO_DAY_COMPARISON_WINDOW_SQL}
         GROUP BY source, visitor_type
         HAVING visits > 0
@@ -128,6 +132,7 @@ export const geoTrafficTimeseries = defineEndpoint("geo_traffic_timeseries", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_EXCLUDED_SOURCES_PARAMS,
     ...GEO_WINDOW_PARAMS,
   },
   nodes: [
@@ -142,6 +147,7 @@ export const geoTrafficTimeseries = defineEndpoint("geo_traffic_timeseries", {
         FROM geo_traffic_daily
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
+          ${GEO_EXCLUDED_SOURCES_SQL}
           ${GEO_DAY_WINDOW_SQL}
         GROUP BY day, visitor_type, source
         ORDER BY day ASC, visitor_type ASC, source ASC
@@ -162,6 +168,7 @@ export const geoTrafficPages = defineEndpoint("geo_traffic_pages", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_EXCLUDED_SOURCES_PARAMS,
     ...GEO_WINDOW_PARAMS,
     visitor: p
       .string()
@@ -183,6 +190,7 @@ export const geoTrafficPages = defineEndpoint("geo_traffic_pages", {
         FROM geo_traffic_pages_daily
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
+          ${GEO_EXCLUDED_SOURCES_SQL}
           ${GEO_DAY_COMPARISON_WINDOW_SQL}
           AND visitor_type IN ('crawler', 'ai_referral')
           AND ({{String(visitor, '')}} = '' OR visitor_type = {{String(visitor, '')}})
@@ -208,6 +216,7 @@ export const geoTrafficLog = defineEndpoint("geo_traffic_log", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_EXCLUDED_SOURCES_PARAMS,
     limit: p.int32().optional(50).describe("Max events"),
     visitor_type: p
       .string()
@@ -242,6 +251,7 @@ export const geoTrafficLog = defineEndpoint("geo_traffic_log", {
         FROM geo_traffic_events
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
+          ${GEO_EXCLUDED_SOURCES_SQL}
           AND (
             ({{String(visitor_type, '')}} = '' AND visitor_type IN ('crawler', 'ai_referral'))
             OR has(splitByChar(',', {{String(visitor_type, '')}}), visitor_type)
@@ -277,6 +287,7 @@ export const geoTrafficJourneys = defineEndpoint("geo_traffic_journeys", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_EXCLUDED_SOURCES_PARAMS,
     ...GEO_WINDOW_PARAMS,
     limit: p.int32().optional(25).describe("Max journeys"),
   },
@@ -293,6 +304,7 @@ export const geoTrafficJourneys = defineEndpoint("geo_traffic_journeys", {
         FROM geo_traffic_events
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
+          ${GEO_EXCLUDED_SOURCES_SQL}
           ${GEO_CAPTURED_WINDOW_SQL}
           AND visitor_type IN ('crawler', 'ai_referral')
           AND journey_id != ''
@@ -334,6 +346,7 @@ export const geoJourneyDetail = defineEndpoint("geo_journey_detail", {
   params: {
     organization_id: p.string().describe("Organization id"),
     ...GEO_PROJECT_SCOPE_PARAMS,
+    ...GEO_EXCLUDED_SOURCES_PARAMS,
     journey_id: p.string().describe("Journey id"),
     ...GEO_WINDOW_PARAMS,
     limit: p.int32().optional(200).describe("Max events"),
@@ -354,6 +367,7 @@ export const geoJourneyDetail = defineEndpoint("geo_journey_detail", {
         FROM geo_traffic_events
         WHERE organization_id = {{String(organization_id)}}
           ${GEO_PROJECT_SCOPE_SQL}
+          ${GEO_EXCLUDED_SOURCES_SQL}
           AND journey_id = {{String(journey_id)}}
           ${GEO_CAPTURED_WINDOW_SQL}
         ORDER BY captured_at ASC

@@ -8,7 +8,6 @@ import {
   GEO_TRAFFIC_TREND_REFERRAL_KEY,
   GEO_UNTRACKED_VISITOR_TYPES,
 } from "@/constants/geo";
-import { GEO_HIDDEN_TRAFFIC_SOURCES } from "@/constants/geo-accept";
 import type {
   GeoTrafficLogFilters,
   GeoTrafficLogPurposeFilter,
@@ -34,20 +33,6 @@ export function toGeoVisitorType(value: string): GeoVisitorType {
 
 export function isTrackedGeoVisitorType(value: GeoVisitorType): boolean {
   return !GEO_UNTRACKED_VISITOR_TYPES.includes(value);
-}
-
-export function mapVisibleGeoTrafficRows<Row, Result>(
-  rows: readonly Row[],
-  sourceOf: (row: Row) => string,
-  toResult: (row: Row) => Result
-): Result[] {
-  const results: Result[] = [];
-  for (const row of rows) {
-    if (!GEO_HIDDEN_TRAFFIC_SOURCES.has(sourceOf(row))) {
-      results.push(toResult(row));
-    }
-  }
-  return results;
 }
 
 export function formatGeoSource(
