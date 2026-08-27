@@ -61,3 +61,8 @@ export const GEO_CLI_CLIENT_PATTERNS: readonly GeoCliClientPattern[] = [
 export const GEO_CLI_EXACT_USER_AGENTS: Readonly<Record<string, string>> = {
   node: "Node.js fetch",
 };
+
+export const GEO_HIDDEN_TRAFFIC_SOURCES: ReadonlySet<string> = new Set([
+  GEO_MARKDOWN_NEGOTIATION_AGENT,
+  GEO_BROWSER_IMITATION_AGENT,
+]);

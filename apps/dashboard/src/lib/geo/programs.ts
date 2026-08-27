@@ -93,7 +93,11 @@ import type {
   GeoTrafficSource,
   GeoWindowInput,
 } from "@/types/geo";
-import { toGeoTrafficTotals, toGeoVisitorType } from "@/utils/ai-traffic";
+import {
+  isHiddenGeoTrafficSource,
+  toGeoTrafficTotals,
+  toGeoVisitorType,
+} from "@/utils/ai-traffic";
 import { getGeoModelCatalogEntry } from "@/utils/geo-model-catalog";
 
 function mergeLegacyCompetitors(
@@ -664,20 +668,22 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
     { concurrency: "unbounded" }
   );
 
-  const sources: GeoTrafficSource[] = (overview?.data ?? []).map((row) => ({
-    source: row.source,
-    visitorType: toGeoVisitorType(row.visitor_type),
-    agent: row.agent,
-    category: row.category,
-    confidence: row.confidence,
-    visits: Number(row.visits),
-    ...(row.previous_visits == null
-      ? {}
-      : { previousVisits: Number(row.previous_visits) }),
-    markdownVisits: Number(row.markdown_visits),
-    paths: Number(row.paths),
-    lastSeenAt: row.last_seen_at,
-  }));
+  const sources: GeoTrafficSource[] = (overview?.data ?? [])
+    .filter((row) => !isHiddenGeoTrafficSource(row.source))
+    .map((row) => ({
+      source: row.source,
+      visitorType: toGeoVisitorType(row.visitor_type),
+      agent: row.agent,
+      category: row.category,
+      confidence: row.confidence,
+      visits: Number(row.visits),
+      ...(row.previous_visits == null
+        ? {}
+        : { previousVisits: Number(row.previous_visits) }),
+      markdownVisits: Number(row.markdown_visits),
+      paths: Number(row.paths),
+      lastSeenAt: row.last_seen_at,
+    }));
 
   const response: AiTrafficResponse = {
     configured: isTinybirdConfigured(),
@@ -686,12 +692,14 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
       (row) =>
         row.visitorType === "crawler" || row.visitorType === "ai_referral"
     ),
-    points: (timeseries?.data ?? []).map((row) => ({
-      day: row.day,
-      visitorType: toGeoVisitorType(row.visitor_type),
-      source: row.source ?? "",
-      visits: Number(row.visits),
-    })),
+    points: (timeseries?.data ?? [])
+      .filter((row) => !isHiddenGeoTrafficSource(row.source ?? ""))
+      .map((row) => ({
+        day: row.day,
+        visitorType: toGeoVisitorType(row.visitor_type),
+        source: row.source ?? "",
+        visits: Number(row.visits),
+      })),
   };
   return response;
 });
@@ -712,7 +720,9 @@ export const loadGeoTrafficLog = Effect.fn("geo.trafficLog")(function* (
     })
   );
   const data = rows?.data ?? [];
-  const log = data.map(toGeoTrafficLogEntry);
+  const log = data
+    .filter((row) => !isHiddenGeoTrafficSource(row.source))
+    .map(toGeoTrafficLogEntry);
 
   const response: GeoTrafficLogResponse = {
     configured: isTinybirdConfigured(),
@@ -739,16 +749,18 @@ export const loadGeoTrafficJourneys = Effect.fn("geo.trafficJourneys")(
 
     const response: GeoTrafficJourneysResponse = {
       configured: isTinybirdConfigured(),
-      journeys: (journeys?.data ?? []).map((row) => ({
-        journeyId: row.journey_id,
-        source: row.source,
-        visitorType: toGeoVisitorType(row.visitor_type),
-        pages: Number(row.pages),
-        distinctPaths: Number(row.distinct_paths),
-        firstSeenAt: row.first_seen_at,
-        lastSeenAt: row.last_seen_at,
-        samplePaths: row.sample_paths,
-      })),
+      journeys: (journeys?.data ?? [])
+        .filter((row) => !isHiddenGeoTrafficSource(row.source))
+        .map((row) => ({
+          journeyId: row.journey_id,
+          source: row.source,
+          visitorType: toGeoVisitorType(row.visitor_type),
+          pages: Number(row.pages),
+          distinctPaths: Number(row.distinct_paths),
+          firstSeenAt: row.first_seen_at,
+          lastSeenAt: row.last_seen_at,
+          samplePaths: row.sample_paths,
+        })),
     };
     return response;
   }
@@ -771,16 +783,18 @@ export const loadGeoJourneyDetail = Effect.fn("geo.journeyDetail")(function* (
 
   const response: GeoJourneyDetailResponse = {
     configured: isTinybirdConfigured(),
-    events: (detail?.data ?? []).map((row) => ({
-      capturedAt: row.captured_at,
-      path: row.path,
-      host: row.host,
-      method: row.method,
-      referer: row.referer,
-      country: row.country,
-      agent: row.agent,
-      category: row.category,
-    })),
+    events: (detail?.data ?? [])
+      .filter((row) => !isHiddenGeoTrafficSource(row.agent))
+      .map((row) => ({
+        capturedAt: row.captured_at,
+        path: row.path,
+        host: row.host,
+        method: row.method,
+        referer: row.referer,
+        country: row.country,
+        agent: row.agent,
+        category: row.category,
+      })),
   };
   return response;
 });
@@ -803,16 +817,18 @@ export const loadGeoTrafficPages = Effect.fn("geo.trafficPages")(function* (
 
   const response: GeoTrafficPagesResponse = {
     configured: isTinybirdConfigured(),
-    pages: (pages?.data ?? []).map((row) => ({
-      path: row.path,
-      source: row.source,
-      visitorType: toGeoVisitorType(row.visitor_type),
-      visits: Number(row.visits),
-      ...(row.previous_visits != null
-        ? { previousVisits: Number(row.previous_visits) }
-        : {}),
-      lastSeenAt: row.last_seen_at,
-    })),
+    pages: (pages?.data ?? [])
+      .filter((row) => !isHiddenGeoTrafficSource(row.source))
+      .map((row) => ({
+        path: row.path,
+        source: row.source,
+        visitorType: toGeoVisitorType(row.visitor_type),
+        visits: Number(row.visits),
+        ...(row.previous_visits != null
+          ? { previousVisits: Number(row.previous_visits) }
+          : {}),
+        lastSeenAt: row.last_seen_at,
+      })),
   };
   return response;
 });

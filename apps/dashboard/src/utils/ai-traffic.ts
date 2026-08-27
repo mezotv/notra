@@ -8,6 +8,7 @@ import {
   GEO_TRAFFIC_TREND_REFERRAL_KEY,
   GEO_UNTRACKED_VISITOR_TYPES,
 } from "@/constants/geo";
+import { GEO_HIDDEN_TRAFFIC_SOURCES } from "@/constants/geo-accept";
 import type {
   GeoTrafficLogFilters,
   GeoTrafficLogPurposeFilter,
@@ -33,6 +34,10 @@ export function toGeoVisitorType(value: string): GeoVisitorType {
 
 export function isTrackedGeoVisitorType(value: GeoVisitorType): boolean {
   return !GEO_UNTRACKED_VISITOR_TYPES.includes(value);
+}
+
+export function isHiddenGeoTrafficSource(source: string): boolean {
+  return GEO_HIDDEN_TRAFFIC_SOURCES.has(source);
 }
 
 export function formatGeoSource(
