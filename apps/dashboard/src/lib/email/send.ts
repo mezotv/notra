@@ -232,11 +232,17 @@ export async function sendAiCreditsDepletedEmail(
     organizationName,
     automationName,
     organizationSlug,
+    limitLabel,
     subject,
   }: SendAiCreditsDepletedEmailProps
 ) {
   const appUrl = process.env.APP_URL ?? EMAIL_CONFIG.getAppUrl();
-  const creditsLink = `${appUrl}/${organizationSlug}/settings/credits`;
+  const creditsLink = limitLabel
+    ? `${appUrl}/${organizationSlug}/settings/billing`
+    : `${appUrl}/${organizationSlug}/settings/credits`;
+  const defaultSubject = limitLabel
+    ? "Your Notra plan limit was reached"
+    : "Your Notra AI credits are depleted";
   const idempotencyKey = createHash("sha256")
     .update(
       `${recipientEmail}:${organizationSlug}:${automationName}:${Date.now()}`
@@ -250,12 +256,13 @@ export async function sendAiCreditsDepletedEmail(
       from: EMAIL_CONFIG.from,
       replyTo: EMAIL_CONFIG.replyTo,
       to: recipientEmail,
-      subject: subject ?? "Your Notra AI credits are depleted",
+      subject: subject ?? defaultSubject,
       react: AiCreditsDepletedEmail({
         organizationName,
         organizationSlug,
         automationName,
         creditsLink,
+        limitLabel,
       }),
       tags: [{ name: "category", value: "ai-credits-depleted" }],
     },

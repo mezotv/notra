@@ -2,7 +2,7 @@ import type { WorkflowPausedReason } from "@notra/email/types/workflow-paused";
 
 export type AutomatedWorkflowPauseReason = Extract<
   WorkflowPausedReason,
-  "ai_credits_depleted" | "workflow_errors"
+  "ai_credits_depleted" | "plan_limit_reached" | "workflow_errors"
 >;
 
 export interface RecordAutomatedWorkflowPauseParams {

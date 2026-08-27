@@ -48,6 +48,8 @@ function getFailureStateKeys(triggerId: string) {
   return [
     getFailureCountKey(triggerId, "ai_credits_depleted"),
     getFailureStateKey(triggerId, "ai_credits_depleted"),
+    getFailureCountKey(triggerId, "plan_limit_reached"),
+    getFailureStateKey(triggerId, "plan_limit_reached"),
     getFailureCountKey(triggerId, "workflow_errors"),
     getFailureStateKey(triggerId, "workflow_errors"),
   ];

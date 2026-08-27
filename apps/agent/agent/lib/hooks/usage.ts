@@ -63,12 +63,16 @@ async function trackUsage(
   });
 }
 
+function shouldChargeAiCredits(ctx: Parameters<typeof getSessionAttribute>[0]) {
+  return getSessionAttribute(ctx, "chargeAiCredits") !== "false";
+}
+
 export function createUsageHook(modelId: string): HookDefinition {
   return defineHook({
     events: {
       async "step.completed"(event, ctx) {
         try {
-          if (allowUnmeteredAiInDevelopment) {
+          if (allowUnmeteredAiInDevelopment || !shouldChargeAiCredits(ctx)) {
             return;
           }
           const organizationId = getOrganizationId(ctx);
@@ -120,7 +124,11 @@ export function createUsageHook(modelId: string): HookDefinition {
       async "turn.completed"(event, ctx) {
         let charged = false;
         try {
-          if (!redis || allowUnmeteredAiInDevelopment) {
+          if (
+            !redis ||
+            allowUnmeteredAiInDevelopment ||
+            !shouldChargeAiCredits(ctx)
+          ) {
             return;
           }
           const organizationId = getOrganizationId(ctx);

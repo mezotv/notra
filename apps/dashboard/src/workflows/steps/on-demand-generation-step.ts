@@ -19,7 +19,8 @@ export async function runOnDemandGeneration(
   input: OnDemandGenerationStepInput
 ): Promise<ContentGenerationResult> {
   "use step";
-  const { payload, repositories, brand, hasLinearSources } = input;
+  const { payload, repositories, brand, hasLinearSources, chargeAiCredits } =
+    input;
   const {
     organizationId,
     userId,
@@ -133,6 +134,7 @@ export async function runOnDemandGeneration(
       organizationId,
       userId,
       collectionId,
+      chargeAiCredits,
       repositories: repositories.map((repository) => ({
         integrationId: repository.id,
         owner: repository.owner,

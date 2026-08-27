@@ -1,7 +1,9 @@
+import { getContentBillingLimitLabel } from "@notra/ai/billing/content-billing";
 import { flattenError } from "zod";
 
 import { eventWorkflowPayloadSchema } from "@/schemas/workflows";
 import type { EventContentWorkflowResult } from "@/types/workflows/event-generation";
+import { resolveContentLimitPauseReason } from "@/utils/content-billing";
 
 import {
   appendAutomationLog,
@@ -15,10 +17,10 @@ import {
   fetchEventTrigger,
   fetchLogRetention,
   fetchNotificationData,
-  finalizeAiCredit,
+  finalizeContentBilling,
   finishGeneration,
-  gateAndReserveAiCredits,
-  notifyAiCreditsDepleted,
+  gateContentBilling,
+  notifyContentLimitReached,
   recordWorkflowPause,
   startGenerationTracking,
   trackContentOutcome,
@@ -77,23 +79,25 @@ export async function eventContentWorkflow(payload: {
   }
   const automationName = trigger.name.trim() || `${eventType} event`;
 
-  const gate = await gateAndReserveAiCredits({
+  const gate = await gateContentBilling({
     organizationId: trigger.organizationId,
     executionId: resolvedExecutionId,
+    outputType: trigger.outputType,
   });
   if (!gate.allowed) {
     if (gate.shouldNotify) {
-      await notifyAiCreditsDepleted({
+      await notifyContentLimitReached({
         organizationId: trigger.organizationId,
         automationName,
         logPrefix: LOG_PREFIX,
+        limitLabel: getContentBillingLimitLabel(gate),
       });
       if (!manual) {
         await recordWorkflowPause({
           triggerId,
           organizationId: trigger.organizationId,
           automationName,
-          reason: "ai_credits_depleted",
+          reason: resolveContentLimitPauseReason(gate),
           logPrefix: LOG_PREFIX,
         });
       }
@@ -117,8 +121,8 @@ export async function eventContentWorkflow(payload: {
       fetchLogRetention(trigger.organizationId),
     ]);
   } catch (error) {
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -129,8 +133,8 @@ export async function eventContentWorkflow(payload: {
     console.log(
       `[Event] Repository ${repositoryId} not found for trigger ${triggerId}, canceling`
     );
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -171,6 +175,7 @@ export async function eventContentWorkflow(payload: {
       eventType,
       eventAction,
       eventData,
+      chargeAiCredits: gate.mode === "ai_credits",
     });
 
     if (contentResult.status === "unsupported_output_type") {
@@ -183,8 +188,8 @@ export async function eventContentWorkflow(payload: {
         status: "failed",
         reason: "Unsupported output type",
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -214,8 +219,8 @@ export async function eventContentWorkflow(payload: {
         status: "failed",
         reason: contentResult.reason,
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -266,8 +271,8 @@ export async function eventContentWorkflow(payload: {
         status: "skipped",
         reason: contentResult.reason,
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -318,8 +323,8 @@ export async function eventContentWorkflow(payload: {
         status: "failed",
         reason: "Content generation returned no posts",
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -355,12 +360,12 @@ export async function eventContentWorkflow(payload: {
       title: contentTitle,
     });
 
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "confirm",
+      units: createdPosts.length,
       usage: contentResult.usage,
       fallbackModelId: "anthropic/claude-sonnet-4.6",
-      useMarkup: gate.useMarkup,
       properties: {
         source: "workflow_event",
         output_type: trigger.outputType,
@@ -445,8 +450,8 @@ export async function eventContentWorkflow(payload: {
       status: "failed",
       reason: "Unexpected workflow error",
     });
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });

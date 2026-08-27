@@ -34,6 +34,8 @@ export function createReviseImageTool() {
       const organizationId = requireOrganizationId(ctx);
       const userId = getSessionAttribute(ctx, "userId") ?? null;
       const useMarkup = getBooleanSessionAttribute(ctx, "useMarkup");
+      const chargeAiCredits =
+        getSessionAttribute(ctx, "chargeAiCredits") !== "false";
       const postId = inputPostId ?? getSessionAttribute(ctx, "contentId");
       if (!postId) {
         throw new Error(
@@ -154,6 +156,7 @@ export function createReviseImageTool() {
           postId,
           usage: result.usage,
           useMarkup,
+          chargeAiCredits,
         });
 
         return {

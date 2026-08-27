@@ -81,6 +81,7 @@ export interface EventGenerationContext {
   outputType: string;
   sourceMetadata: PostSourceMetadata;
   autoPublish?: boolean;
+  chargeAiCredits?: boolean;
   resolveContext: ResolveIntegrationContext;
   telemetryMetadata?: TccMetadata;
 }

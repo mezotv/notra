@@ -12,6 +12,7 @@ export interface EventGenerationStepInput {
   eventType: string;
   eventAction: string;
   eventData: Record<string, unknown>;
+  chargeAiCredits?: boolean;
 }
 
 export type EventContentWorkflowResult =

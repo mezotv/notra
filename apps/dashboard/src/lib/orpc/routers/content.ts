@@ -1,9 +1,7 @@
 import {
-  allowUnmeteredAiInDevelopment,
-  autumn,
-} from "@notra/ai/billing/autumn";
-import { FEATURES } from "@notra/ai/billing/features";
-import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
+  checkContentBilling,
+  describeContentBillingDenial,
+} from "@notra/ai/billing/content-billing";
 import { getTokenForIntegrationId } from "@notra/ai/integrations/github";
 import {
   getDecryptedLinearToken,
@@ -18,7 +16,6 @@ import { db } from "@notra/db/drizzle";
 import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
 import type { BlogPostSubtype } from "@notra/db/types/content";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
-import type { CheckResponse } from "autumn-js";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import { and, asc, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { marked } from "marked";
@@ -1409,28 +1406,18 @@ export const contentRouter = {
         }
       }
 
-      let aiCreditChecked = false;
-      let aiCreditMarkup = false;
+      let billing: Awaited<ReturnType<typeof checkContentBilling>>;
+      try {
+        billing = await checkContentBilling({
+          organizationId: input.organizationId,
+          outputType: input.contentType,
+        });
+      } catch {
+        throw internalServerError("Failed to verify plan limits");
+      }
 
-      if (autumn && !allowUnmeteredAiInDevelopment) {
-        let data: CheckResponse | null = null;
-
-        try {
-          data = await autumn.check({
-            customerId: input.organizationId,
-            featureId: FEATURES.AI_CREDITS,
-            requiredBalance: 1,
-          });
-        } catch {
-          throw internalServerError("Failed to verify AI credits");
-        }
-
-        if (!data?.allowed) {
-          throw paymentRequired("AI credit limit reached");
-        }
-
-        aiCreditChecked = true;
-        aiCreditMarkup = shouldApplyMarkup(data?.balance ?? null);
+      if (!billing.allowed) {
+        throw paymentRequired(describeContentBillingDenial(billing));
       }
 
       const runId = generateRunId("manual_on_demand");
@@ -1476,8 +1463,8 @@ export const contentRouter = {
         brandVoiceId: input.brandIdentityId ?? input.brandVoiceId,
         dataPoints: input.dataPoints,
         selectedItems: input.selectedItems,
-        aiCreditReserved: aiCreditChecked,
-        aiCreditMarkup,
+        aiCreditReserved: billing.mode === "ai_credits",
+        aiCreditMarkup: billing.useMarkup,
         source: "dashboard",
       });
 

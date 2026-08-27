@@ -16,6 +16,7 @@ export interface ContentEmailDigestBaseEvent {
 export interface AiCreditsDepletedDigestEvent extends ContentEmailDigestBaseEvent {
   kind: "ai_credits_depleted";
   automationName: string;
+  limitLabel?: string;
 }
 
 export interface ScheduledContentCreatedDigestEvent extends ContentEmailDigestBaseEvent {

@@ -9,6 +9,7 @@ export async function sendAiCreditsDepletedEmails({
   organizationId,
   automationName,
   logPrefix,
+  limitLabel,
 }: SendAiCreditsDepletedEmailsParams) {
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.id, organizationId),
@@ -39,6 +40,7 @@ export async function sendAiCreditsDepletedEmails({
       organizationName,
       organizationSlug,
       automationName,
+      ...(limitLabel ? { limitLabel } : {}),
     },
     logPrefix,
   });

@@ -3,6 +3,7 @@ import {
   allowUnmeteredAiInDevelopment,
   autumn,
 } from "@notra/ai/billing/autumn";
+import { checkChatBilling } from "@notra/ai/billing/chat-billing";
 import { FEATURES } from "@notra/ai/billing/features";
 import { startChatAbortPolling } from "@notra/ai/chat/abort-polling";
 import {
@@ -129,16 +130,16 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
     "recheck-ai-credit-balance",
     async () => {
       if (!autumn || allowUnmeteredAiInDevelopment) {
-        return { allowed: true, unavailable: false };
+        return { allowed: true, unavailable: false, chargeAiCredits: false };
       }
 
       try {
-        const result = await autumn.check({
-          customerId: organizationId,
-          featureId: FEATURES.AI_CREDITS,
-          requiredBalance: 1,
-        });
-        return { allowed: Boolean(result?.allowed), unavailable: false };
+        const billing = await checkChatBilling(organizationId);
+        return {
+          allowed: billing.allowed,
+          unavailable: false,
+          chargeAiCredits: billing.chargeAiCredits,
+        };
       } catch (error) {
         console.error("[Chat Workflow] AI credit check failed", {
           requestId,
@@ -146,7 +147,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
           chatId,
           error: error instanceof Error ? error.message : String(error),
         });
-        return { allowed: false, unavailable: true };
+        return { allowed: false, unavailable: true, chargeAiCredits: false };
       }
     }
   );
@@ -272,7 +273,11 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
           usageSnapshot.cacheWriteTokens =
             usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
-          if (!autumn || allowUnmeteredAiInDevelopment) {
+          if (
+            !autumn ||
+            allowUnmeteredAiInDevelopment ||
+            !creditCheck.chargeAiCredits
+          ) {
             return;
           }
 

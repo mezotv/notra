@@ -3,8 +3,8 @@ import {
   allowUnmeteredAiInDevelopment,
   autumn,
 } from "@notra/ai/billing/autumn";
+import { checkChatBilling } from "@notra/ai/billing/chat-billing";
 import { FEATURES } from "@notra/ai/billing/features";
-import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
 import { startChatAbortPolling } from "@notra/ai/chat/abort-polling";
 import { getChatRedis } from "@notra/ai/chat/config";
 import {
@@ -42,7 +42,6 @@ import {
 import { signChatWorkflowPayload } from "@notra/ai/utils/chat-workflow-auth";
 import { routeUsageProperties } from "@notra/ai/utils/route-usage";
 import { InvalidToolInputError, NoSuchToolError, type UIMessage } from "ai";
-import type { CheckResponse } from "autumn-js";
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -117,13 +116,11 @@ export const POST = withEvlog(async function POST(
     }
 
     let useMarkup = false;
-    if (autumn && !allowUnmeteredAiInDevelopment) {
-      let checkData: CheckResponse | null = null;
+    let chargeAiCredits = false;
+    if (autumn || allowUnmeteredAiInDevelopment) {
+      let billing: Awaited<ReturnType<typeof checkChatBilling>>;
       try {
-        checkData = await autumn.check({
-          customerId: organizationId,
-          featureId: FEATURES.AI_CREDITS,
-        });
+        billing = await checkChatBilling(organizationId);
       } catch (checkError) {
         console.error("[Autumn] Check error:", {
           requestId,
@@ -136,19 +133,20 @@ export const POST = withEvlog(async function POST(
         );
       }
 
-      if (!checkData?.allowed) {
+      if (!billing.allowed) {
         return NextResponse.json(
           {
             error: "Usage limit reached",
             code: "USAGE_LIMIT_REACHED",
-            balance: checkData?.balance ?? 0,
+            balance: billing.balanceRemaining ?? 0,
           },
           { status: 403 }
         );
       }
 
-      useMarkup = shouldApplyMarkup(checkData?.balance ?? null);
-    } else if (!allowUnmeteredAiInDevelopment) {
+      useMarkup = billing.useMarkup;
+      chargeAiCredits = billing.chargeAiCredits;
+    } else {
       return NextResponse.json(
         { error: "Billing service is unavailable", code: "BILLING_ERROR" },
         { status: 503 }
@@ -227,6 +225,7 @@ export const POST = withEvlog(async function POST(
         context,
         validatedIntegrations,
         useMarkup,
+        chargeAiCredits,
         requestId,
         log,
         model: parseResult.data.model,
@@ -340,6 +339,7 @@ async function createDirectStandaloneChatResponse({
   context,
   validatedIntegrations,
   useMarkup,
+  chargeAiCredits,
   requestId,
   log,
   model,
@@ -356,6 +356,7 @@ async function createDirectStandaloneChatResponse({
   context: StandaloneChatContextItem[];
   validatedIntegrations: ValidatedIntegration[];
   useMarkup: boolean;
+  chargeAiCredits: boolean;
   requestId: string;
   log: ReturnType<typeof useLogger>;
   model?: string;
@@ -445,7 +446,11 @@ async function createDirectStandaloneChatResponse({
           usageSnapshot.cacheWriteTokens =
             usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
-          if (!autumnClient || allowUnmeteredAiInDevelopment) {
+          if (
+            !autumnClient ||
+            allowUnmeteredAiInDevelopment ||
+            !chargeAiCredits
+          ) {
             return;
           }
 

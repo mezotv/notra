@@ -25,6 +25,10 @@ function getReasonCopy(reason: WorkflowPausedReason) {
     return "Your AI credit balance was empty for 3 automated runs in a row.";
   }
 
+  if (reason === "plan_limit_reached") {
+    return "Your plan's monthly content limit was reached for 3 automated runs in a row.";
+  }
+
   return "This workflow failed 3 automated runs in a row.";
 }
 

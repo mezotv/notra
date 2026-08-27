@@ -49,6 +49,7 @@ export async function generateContentViaAgentTask(
         contentType: options.contentType,
         autoPublish: options.autoPublish,
         voiceId: options.voiceId,
+        chargeAiCredits: options.chargeAiCredits,
         brandAgentType: options.brandAgentType,
         sourceMetadata: options.sourceMetadata,
         generationConfig: {

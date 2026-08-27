@@ -23,6 +23,7 @@ export async function runScheduledGeneration(
     collectionId,
     generationUserId,
     manual,
+    chargeAiCredits,
   } = input;
 
   const lookbackRange = resolveLookbackRange(lookbackWindow);
@@ -111,6 +112,7 @@ export async function runScheduledGeneration(
       organizationId: trigger.organizationId,
       userId: generationUserId,
       collectionId,
+      chargeAiCredits,
       repositories: repositoryParams,
       linearIntegrations: linearIntegrationRefs,
       tone,

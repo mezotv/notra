@@ -54,6 +54,7 @@ import type {
   EnabledLinear,
   EnabledRepo,
 } from "@/types/components/chat-input";
+import { hasIncludedChatPlan } from "@/utils/chat-billing";
 import {
   buildContentChatContextOptions,
   CHAT_INPUT_LIMIT_MESSAGE,
@@ -97,16 +98,20 @@ const ChatInput = ({
       requiredBalance: 1,
     });
   }, [check, customer]);
+  const chatIncludedInPlan = hasIncludedChatPlan(customer);
   const remainingChatCredits =
     typeof checkResult?.balance?.remaining === "number"
       ? checkResult.balance.remaining
       : null;
   const shouldShowLowCredits =
+    !chatIncludedInPlan &&
     remainingChatCredits !== null &&
     remainingChatCredits > 0 &&
     remainingChatCredits <= 10;
   const isUsageBlocked =
-    process.env.NODE_ENV !== "development" && checkResult?.allowed === false;
+    process.env.NODE_ENV !== "development" &&
+    checkResult?.allowed === false &&
+    !chatIncludedInPlan;
   const usageLimitError =
     externalError ??
     internalError ??
@@ -230,7 +235,7 @@ const ChatInput = ({
       return;
     }
 
-    if (customer) {
+    if (customer && !chatIncludedInPlan) {
       const sendCheckResult = check({
         featureId: FEATURES.AI_CREDITS,
         requiredBalance: 1,
@@ -252,6 +257,7 @@ const ChatInput = ({
     disabled,
     check,
     customer,
+    chatIncludedInPlan,
     isUsageBlocked,
     clearError,
     setValue,

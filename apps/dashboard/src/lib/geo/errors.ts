@@ -102,7 +102,9 @@ export class GeoCursorFlagEvaluationError extends Data.TaggedError(
 
 export class GeoWriterCreditsExhaustedError extends Data.TaggedError(
   "GeoWriterCreditsExhaustedError"
-)<Record<string, never>> {}
+)<{
+  readonly message: string;
+}> {}
 
 export class GeoContentBriefNotFoundError extends Data.TaggedError(
   "GeoContentBriefNotFoundError"

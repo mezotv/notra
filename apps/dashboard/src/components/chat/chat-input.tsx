@@ -95,6 +95,7 @@ import {
 } from "@/lib/upload/mime";
 import type { ChatContextOption } from "@/types/components/chat-input";
 import type { GitHubRepository } from "@/types/integrations";
+import { hasIncludedChatPlan } from "@/utils/chat-billing";
 import {
   CHAT_INPUT_LIMIT_MESSAGE,
   contextItemKey,
@@ -631,16 +632,20 @@ export function ChatInputAdvanced({
     });
   }, [check, customer]);
 
+  const chatIncludedInPlan = hasIncludedChatPlan(customer);
   const remainingChatCredits =
     typeof checkResult?.balance?.remaining === "number"
       ? checkResult.balance.remaining
       : null;
   const shouldShowLowCredits =
+    !chatIncludedInPlan &&
     remainingChatCredits !== null &&
     remainingChatCredits > 0 &&
     remainingChatCredits <= 10;
   const isUsageBlocked =
-    process.env.NODE_ENV !== "development" && checkResult?.allowed === false;
+    process.env.NODE_ENV !== "development" &&
+    checkResult?.allowed === false &&
+    !chatIncludedInPlan;
   const usageLimitError =
     externalError ??
     internalError ??
@@ -1155,7 +1160,7 @@ export function ChatInputAdvanced({
         setInternalError(CHAT_INPUT_LIMIT_MESSAGE);
         return false;
       }
-      if (customer) {
+      if (customer && !chatIncludedInPlan) {
         const result = check({
           featureId: FEATURES.AI_CREDITS,
           requiredBalance: 1,
@@ -1178,6 +1183,7 @@ export function ChatInputAdvanced({
       clearComposer,
       clearError,
       customer,
+      chatIncludedInPlan,
       isLoading,
       isUsageBlocked,
       model,
@@ -1217,7 +1223,7 @@ export function ChatInputAdvanced({
         setInternalError(CHAT_INPUT_LIMIT_MESSAGE);
         return;
       }
-      if (customer) {
+      if (customer && !chatIncludedInPlan) {
         const result = check({
           featureId: FEATURES.AI_CREDITS,
           requiredBalance: 1,
@@ -1263,6 +1269,7 @@ export function ChatInputAdvanced({
     clearComposer,
     clearError,
     customer,
+    chatIncludedInPlan,
     isLoading,
     isUploading,
     readEditorText,

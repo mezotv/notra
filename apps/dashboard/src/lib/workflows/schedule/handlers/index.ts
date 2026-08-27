@@ -44,6 +44,7 @@ export async function generateScheduledContent(
         commitWindow: ctx.commitWindow,
         autoPublish: ctx.autoPublish,
         voiceId: ctx.voiceId,
+        chargeAiCredits: ctx.chargeAiCredits,
       });
     }
   }

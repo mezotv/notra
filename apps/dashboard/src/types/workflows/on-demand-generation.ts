@@ -34,6 +34,7 @@ export interface OnDemandGenerationStepInput {
   repositories: ScheduleRepositoryData[];
   brand: ScheduleBrandSettingsData;
   hasLinearSources: boolean;
+  chargeAiCredits?: boolean;
 }
 
 export type OnDemandContentWorkflowResult =

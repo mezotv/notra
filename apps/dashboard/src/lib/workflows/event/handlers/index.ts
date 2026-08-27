@@ -55,6 +55,7 @@ export async function generateEventBasedContent(
       promptInput: buildEventPromptInput(ctx),
       sourceMetadata: ctx.sourceMetadata,
       autoPublish: ctx.autoPublish,
+      chargeAiCredits: ctx.chargeAiCredits,
     });
     if (agentResult.status === "rate_limited") {
       return {

@@ -46,6 +46,7 @@ export interface ContentGenerationContext {
   };
   voiceId?: string;
   autoPublish?: boolean;
+  chargeAiCredits?: boolean;
   resolveContext: ResolveIntegrationContext;
   resolveLinearContext?: ResolveLinearIntegrationContext;
   log?: AILogTarget;

@@ -1,9 +1,4 @@
-import {
-  allowUnmeteredAiInDevelopment,
-  autumn,
-} from "@notra/ai/billing/autumn";
-import { FEATURES } from "@notra/ai/billing/features";
-import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
+import { checkChatBilling } from "@notra/ai/billing/chat-billing";
 import { AGENT_SURFACES } from "@notra/ai/constants/agent";
 import {
   AgentSendLockedError,
@@ -13,7 +8,6 @@ import {
 } from "@notra/ai/utils/agent-proxy";
 import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
-import type { CheckResponse } from "autumn-js";
 import { and, eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -73,41 +67,42 @@ async function resolveContentId(
   return { contentId };
 }
 
-async function checkAiCredits(
-  organizationId: string
-): Promise<{ useMarkup: boolean; error?: NextResponse }> {
-  if (!autumn || allowUnmeteredAiInDevelopment) {
-    return { useMarkup: false };
-  }
-  let checkData: CheckResponse | null = null;
+async function checkAiCredits(organizationId: string): Promise<{
+  useMarkup: boolean;
+  chargeAiCredits: boolean;
+  error?: NextResponse;
+}> {
+  let billing: Awaited<ReturnType<typeof checkChatBilling>>;
   try {
-    checkData = await autumn.check({
-      customerId: organizationId,
-      featureId: FEATURES.AI_CREDITS,
-    });
+    billing = await checkChatBilling(organizationId);
   } catch {
     return {
       useMarkup: false,
+      chargeAiCredits: false,
       error: NextResponse.json(
         { error: "Failed to check usage limits", code: "BILLING_ERROR" },
         { status: 500 }
       ),
     };
   }
-  if (!checkData?.allowed) {
+  if (!billing.allowed) {
     return {
       useMarkup: false,
+      chargeAiCredits: false,
       error: NextResponse.json(
         {
           error: "Usage limit reached",
           code: "USAGE_LIMIT_REACHED",
-          balance: checkData?.balance ?? 0,
+          balance: billing.balanceRemaining ?? 0,
         },
         { status: 403 }
       ),
     };
   }
-  return { useMarkup: shouldApplyMarkup(checkData.balance ?? null) };
+  return {
+    useMarkup: billing.useMarkup,
+    chargeAiCredits: billing.chargeAiCredits,
+  };
 }
 
 export async function POST(request: NextRequest, context: AgentRouteContext) {
@@ -162,6 +157,7 @@ export async function POST(request: NextRequest, context: AgentRouteContext) {
           surface,
           contentId,
           useMarkup: credits.useMarkup,
+          chargeAiCredits: credits.chargeAiCredits,
         },
         message: parsed.data.message,
       });
@@ -205,6 +201,7 @@ export async function POST(request: NextRequest, context: AgentRouteContext) {
       "standalone-chat",
     contentId: mapping.contentId ?? undefined,
     useMarkup: credits.useMarkup,
+    chargeAiCredits: credits.chargeAiCredits,
   });
   try {
     return await forwardAgentFollowUp({

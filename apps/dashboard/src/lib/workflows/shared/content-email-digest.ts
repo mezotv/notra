@@ -185,10 +185,9 @@ export async function flushContentEmailDigest({
       creditEvents.map((event) => event.automationName),
       "your content automations"
     );
-    const subject =
-      creditEvents.length > 1
-        ? "Your Notra AI credits are depleted"
-        : undefined;
+    const limitLabel = creditEvents.find(
+      (event) => event.limitLabel
+    )?.limitLabel;
 
     assertEmailSent({
       result: await sendAiCreditsDepletedEmail(resend, {
@@ -196,7 +195,7 @@ export async function flushContentEmailDigest({
         organizationName: firstEvent.organizationName,
         organizationSlug: firstEvent.organizationSlug,
         automationName,
-        subject,
+        limitLabel,
       }),
       recipientEmail,
       kind,

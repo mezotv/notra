@@ -16,6 +16,7 @@ export interface DirectStandaloneChatArgs {
   context: StandaloneChatContextItem[];
   validatedIntegrations: ValidatedIntegration[];
   useMarkup: boolean;
+  chargeAiCredits: boolean;
   requestId: string;
   log: ChatLogger;
   model?: string;

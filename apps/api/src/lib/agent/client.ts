@@ -1,4 +1,5 @@
 import {
+  AGENT_CHARGE_AI_CREDITS_HEADER,
   AGENT_CHAT_HEADER,
   AGENT_ORGANIZATION_HEADER,
   AGENT_SERVICE_USERNAME,
@@ -39,6 +40,11 @@ export async function createAgentClient(scope: ApiAgentScope): Promise<Client> {
 
   if (scope.useMarkup !== undefined) {
     headers[AGENT_USE_MARKUP_HEADER] = scope.useMarkup ? "true" : "false";
+  }
+  if (scope.chargeAiCredits !== undefined) {
+    headers[AGENT_CHARGE_AI_CREDITS_HEADER] = scope.chargeAiCredits
+      ? "true"
+      : "false";
   }
 
   const clientOptions = {

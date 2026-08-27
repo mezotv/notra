@@ -1,3 +1,5 @@
+import { describeContentBillingDenial } from "@notra/ai/billing/content-billing";
+import { FEATURES } from "@notra/ai/billing/features";
 import { DEFAULT_LANGUAGE } from "@notra/ai/constants/languages";
 import { gateway } from "@notra/ai/gateway";
 import type { AgentTokenUsage } from "@notra/ai/types/agents";
@@ -87,8 +89,8 @@ import {
 } from "@/utils/geo-engines";
 import { isGeoScanRunning } from "@/utils/geo-scan";
 import {
-  finalizeAiCredit,
-  gateAndReserveAiCredits,
+  finalizeContentBilling,
+  gateContentBilling,
 } from "@/workflows/steps/content-generation-steps";
 
 const MAX_JUDGE_COMPETITORS = 10;
@@ -825,9 +827,11 @@ export const runGeoSequenceNow = Effect.fn("geo.runSequenceNow")(function* (
   const runId = `geo-sequence-${sequenceId}-${crypto.randomUUID()}`;
   const gate = yield* Effect.tryPromise({
     try: () =>
-      gateAndReserveAiCredits({
+      gateContentBilling({
         organizationId: scope.organizationId,
         executionId: runId,
+        outputType: null,
+        quotaFeatureId: FEATURES.AI_ANSWERS,
       }),
     catch: (cause) =>
       new GeoSequenceRunError({
@@ -836,7 +840,11 @@ export const runGeoSequenceNow = Effect.fn("geo.runSequenceNow")(function* (
       }),
   });
   if (!gate.allowed) {
-    return yield* Effect.fail(new GeoWriterCreditsExhaustedError({}));
+    return yield* Effect.fail(
+      new GeoWriterCreditsExhaustedError({
+        message: describeContentBillingDenial(gate),
+      })
+    );
   }
 
   const play = withGeoScanRun(
@@ -897,8 +905,8 @@ export const runGeoSequenceNow = Effect.fn("geo.runSequenceNow")(function* (
   const result = yield* play.pipe(
     Effect.tapError(() =>
       Effect.promise(() =>
-        finalizeAiCredit({
-          lockId: gate.lockId,
+        finalizeContentBilling({
+          reservation: gate,
           action: "release",
           logPrefix: "GeoSequenceRun",
         }).catch((releaseError) => {
@@ -912,12 +920,12 @@ export const runGeoSequenceNow = Effect.fn("geo.runSequenceNow")(function* (
   );
 
   yield* Effect.promise(() =>
-    finalizeAiCredit({
-      lockId: gate.lockId,
+    finalizeContentBilling({
+      reservation: gate,
       action: "confirm",
+      units: result.rows.length,
       usage: result.usage,
       fallbackModelId: groundedEngines[0]?.grounded.model ?? GEO_JUDGE_MODEL,
-      useMarkup: gate.useMarkup,
       properties: {
         source: "geo_sequence_run",
         run_id: runId,

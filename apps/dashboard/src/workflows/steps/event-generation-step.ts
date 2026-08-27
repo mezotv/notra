@@ -10,8 +10,15 @@ export async function runEventGeneration(
   input: EventGenerationStepInput
 ): Promise<EventGenerationResult> {
   "use step";
-  const { trigger, repository, brand, eventType, eventAction, eventData } =
-    input;
+  const {
+    trigger,
+    repository,
+    brand,
+    eventType,
+    eventAction,
+    eventData,
+    chargeAiCredits,
+  } = input;
 
   const sourceMetadata: PostSourceMetadata = {
     triggerId: trigger.id,
@@ -28,6 +35,7 @@ export async function runEventGeneration(
   return await generateEventBasedContent({
     organizationId: trigger.organizationId,
     collectionId: input.collectionId,
+    chargeAiCredits,
     triggerId: trigger.id,
     triggerName: trigger.name,
     eventType,

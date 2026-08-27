@@ -12,6 +12,7 @@ export interface AgentSessionScope {
   contentType?: string;
   autoPublish?: boolean;
   useMarkup?: boolean;
+  chargeAiCredits?: boolean;
   voiceId?: string;
   brandAgentType?: string;
   sourceMetadata?: object;

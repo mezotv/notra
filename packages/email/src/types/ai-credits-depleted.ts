@@ -3,4 +3,5 @@ export interface AiCreditsDepletedEmailProps {
   organizationSlug: string;
   automationName: string;
   creditsLink: string;
+  limitLabel?: string;
 }

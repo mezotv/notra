@@ -1,5 +1,6 @@
 import { calculateAiCreditCostCents } from "@notra/ai/billing/ai-credit-cost";
 import { autumn } from "@notra/ai/billing/autumn";
+import { checkChatBilling } from "@notra/ai/billing/chat-billing";
 import { FEATURES } from "@notra/ai/billing/features";
 import { startChatAbortPolling } from "@notra/ai/chat/abort-polling";
 import {
@@ -128,16 +129,16 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
       "recheck-ai-credit-balance",
       async () => {
         if (!autumn) {
-          return { allowed: true, unavailable: false };
+          return { allowed: true, unavailable: false, chargeAiCredits: false };
         }
 
         try {
-          const result = await autumn.check({
-            customerId: organizationId,
-            featureId: FEATURES.AI_CREDITS,
-            requiredBalance: 1,
-          });
-          return { allowed: Boolean(result?.allowed), unavailable: false };
+          const billing = await checkChatBilling(organizationId);
+          return {
+            allowed: billing.allowed,
+            unavailable: false,
+            chargeAiCredits: billing.chargeAiCredits,
+          };
         } catch (error) {
           console.error("[Chat Workflow] AI credit check failed", {
             requestId,
@@ -145,7 +146,11 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
             chatId,
             error: error instanceof Error ? error.message : String(error),
           });
-          return { allowed: false, unavailable: true };
+          return {
+            allowed: false,
+            unavailable: true,
+            chargeAiCredits: false,
+          };
         }
       }
     );
@@ -257,7 +262,7 @@ export const chatWorkflowHandler = serve<ChatWorkflowPayload>(
             usageSnapshot.outputTokens = usage.outputTokens ?? 0;
             usageSnapshot.totalTokens = usage.totalTokens ?? 0;
 
-            if (!autumn) {
+            if (!(autumn && creditCheck.chargeAiCredits)) {
               return;
             }
 

@@ -1,3 +1,4 @@
+import { describeContentBillingDenial } from "@notra/ai/billing/content-billing";
 import { contentGenerationWorkflowPayloadSchema } from "@notra/content-generation/schemas";
 import { flattenError } from "zod";
 
@@ -6,8 +7,8 @@ import type { OnDemandContentWorkflowResult } from "@/types/workflows/on-demand-
 import {
   appendAutomationLog,
   claimWorkflowExecution,
-  finalizeAiCredit,
-  gateAndReserveAiCredits,
+  finalizeContentBilling,
+  gateContentBilling,
   trackContentOutcome,
 } from "./steps/content-generation-steps";
 import { runOnDemandGeneration } from "./steps/on-demand-generation-step";
@@ -64,9 +65,10 @@ export async function onDemandContentWorkflow(
 
   await markOnDemandJobRunning({ jobId, contentType });
 
-  const gate = await gateAndReserveAiCredits({
+  const gate = await gateContentBilling({
     organizationId,
     executionId: runId,
+    outputType: contentType,
   });
   if (!gate.allowed) {
     await finishOnDemand({
@@ -74,7 +76,7 @@ export async function onDemandContentWorkflow(
       runId,
       contentType,
       status: "failed",
-      reason: "AI credit limit reached",
+      reason: describeContentBillingDenial(gate),
       source,
       jobId,
     });
@@ -94,8 +96,8 @@ export async function onDemandContentWorkflow(
       resolveManualBrandSettings({ organizationId, brandVoiceId }),
     ]);
   } catch (error) {
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -121,8 +123,8 @@ export async function onDemandContentWorkflow(
       source,
       jobId,
     });
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -150,6 +152,7 @@ export async function onDemandContentWorkflow(
       repositories,
       brand,
       hasLinearSources,
+      chargeAiCredits: gate.mode === "ai_credits",
     });
 
     if (contentResult.status === "skipped") {
@@ -170,8 +173,8 @@ export async function onDemandContentWorkflow(
         status: "skipped",
         errorMessage: contentResult.reason,
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -222,8 +225,8 @@ export async function onDemandContentWorkflow(
         status: "failed",
         errorMessage: reason,
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -262,8 +265,8 @@ export async function onDemandContentWorkflow(
         status: "failed",
         errorMessage: "No content was generated",
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -301,12 +304,12 @@ export async function onDemandContentWorkflow(
     });
 
     try {
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "confirm",
+        units: createdPosts.length,
         usage: contentResult.usage,
         fallbackModelId: "anthropic/claude-sonnet-4.6",
-        useMarkup: gate.useMarkup,
         properties: {
           source: "manual",
           output_type: contentType,
@@ -357,8 +360,8 @@ export async function onDemandContentWorkflow(
       source,
       jobId,
     });
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });

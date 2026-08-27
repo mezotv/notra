@@ -1,24 +1,40 @@
 import type { AgentTokenUsage } from "@notra/ai/types/agents";
 import type {
+  ContentBillingReservation,
+  ContentQuotaFeatureId,
+} from "@notra/ai/types/billing";
+import type {
   ContentCreationMode,
   DatabuddyWorkflowSource,
 } from "@notra/content-generation/databuddy";
 import type { PostSourceMetadata } from "@notra/db/schema";
 
-import type { AiCreditReservation } from "@/types/billing/ai-credit-lock";
 import type {
   IntegrationType,
   LogRetentionDays,
 } from "@/types/webhooks/webhooks";
+import type { AutomatedWorkflowPauseReason } from "@/types/workflows/auto-pause";
 import type {
   ContentEmailDigestKind,
   EnqueueContentEmailDigestEvent,
 } from "@/types/workflows/content-email-digest";
 
-export interface WorkflowAiCreditGate extends AiCreditReservation {
-  reason?: "no_active_paid_plan" | "insufficient_ai_credits";
-  shouldNotify?: boolean;
-  balanceRemaining?: number | null;
+export type WorkflowContentBillingGate = ContentBillingReservation;
+
+export interface GateContentBillingInput {
+  organizationId: string;
+  executionId: string;
+  outputType: string | null;
+  quotaFeatureId?: ContentQuotaFeatureId;
+  lockTtlMs?: number;
+  countTowardQuota?: boolean;
+}
+
+export interface NotifyContentLimitInput {
+  organizationId: string;
+  automationName: string;
+  logPrefix: string;
+  limitLabel?: string;
 }
 
 export interface FinishGenerationInput {
@@ -32,12 +48,12 @@ export interface FinishGenerationInput {
   title?: string;
 }
 
-export interface FinalizeAiCreditInput {
-  lockId: string | null;
+export interface FinalizeContentBillingInput {
+  reservation: ContentBillingReservation;
   action: "confirm" | "release";
+  units?: number;
   usage?: AgentTokenUsage;
   fallbackModelId?: string;
-  useMarkup?: boolean;
   properties?: Record<string, string | number | boolean>;
   logPrefix: string;
 }
@@ -100,6 +116,6 @@ export interface WorkflowPauseInput {
   triggerId: string;
   organizationId: string;
   automationName: string;
-  reason: "ai_credits_depleted" | "workflow_errors";
+  reason: AutomatedWorkflowPauseReason;
   logPrefix: string;
 }

@@ -61,8 +61,14 @@ export async function trackImageGenerationUsage(params: {
   postId: string;
   usage: Awaited<ReturnType<typeof generateRepoImage>>["usage"];
   useMarkup?: boolean;
+  chargeAiCredits?: boolean;
 }) {
-  if (!autumn || allowUnmeteredAiInDevelopment || !params.usage) {
+  if (
+    !autumn ||
+    allowUnmeteredAiInDevelopment ||
+    !params.usage ||
+    params.chargeAiCredits === false
+  ) {
     return;
   }
 

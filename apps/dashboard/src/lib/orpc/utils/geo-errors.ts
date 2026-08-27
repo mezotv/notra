@@ -39,7 +39,7 @@ export function toGeoOrpcError(failure: GeoRouterError): Error {
     case "GeoScanStartError":
       return toUnexpectedError(failure.cause, "Failed to start the scan");
     case "GeoWriterCreditsExhaustedError":
-      return paymentRequired("AI credit limit reached");
+      return paymentRequired(failure.message);
     case "GeoContentBriefNotFoundError":
       return notFound("Brief not found");
     case "GeoContentBriefStateError":

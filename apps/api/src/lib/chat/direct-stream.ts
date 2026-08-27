@@ -24,6 +24,7 @@ export async function createDirectStandaloneChatResponse({
   context,
   validatedIntegrations,
   useMarkup,
+  chargeAiCredits,
   requestId,
   log,
   model,
@@ -104,7 +105,7 @@ export async function createDirectStandaloneChatResponse({
           usageSnapshot.outputTokens = usage.outputTokens ?? 0;
           usageSnapshot.totalTokens = usage.totalTokens ?? 0;
 
-          if (!autumnClient) {
+          if (!(autumnClient && chargeAiCredits)) {
             return;
           }
 

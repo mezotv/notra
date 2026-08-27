@@ -1,7 +1,9 @@
 import { acquireClaim } from "@notra/ai/autonomy/claims";
-import { calculateAiCreditCostCents } from "@notra/ai/billing/ai-credit-cost";
-import { autumn } from "@notra/ai/billing/autumn";
-import { ACTIVE_PAID_PLAN_IDS } from "@notra/ai/billing/features";
+import {
+  confirmContentBilling,
+  releaseContentBilling,
+  reserveContentBilling,
+} from "@notra/ai/billing/content-billing";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
@@ -18,11 +20,6 @@ import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import { and, eq, inArray } from "drizzle-orm";
 
 import { isAgentContentGenerationEnabled } from "@/lib/agent/flag";
-import {
-  confirmAiCredits,
-  releaseAiCredits,
-  reserveAiCredits,
-} from "@/lib/billing/ai-credit-lock";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import {
   trackScheduledContentCreated,
@@ -51,12 +48,14 @@ import type {
   AppendAutomationLogInput,
   CreateGenerationCollectionInput,
   EnqueueDigestInput,
-  FinalizeAiCreditInput,
+  FinalizeContentBillingInput,
   FinishGenerationInput,
+  GateContentBillingInput,
   NotificationData,
   NotificationSettingKey,
+  NotifyContentLimitInput,
   TrackContentOutcomeInput,
-  WorkflowAiCreditGate,
+  WorkflowContentBillingGate,
   WorkflowPauseInput,
 } from "@/types/workflows/content-generation-steps";
 import type {
@@ -123,54 +122,16 @@ export async function fetchScheduleTriggerContext(triggerId: string): Promise<{
   };
 }
 
-export async function gateAndReserveAiCredits(input: {
-  organizationId: string;
-  executionId: string;
-  lockTtlMs?: number;
-}): Promise<WorkflowAiCreditGate> {
+export async function gateContentBilling(
+  input: GateContentBillingInput
+): Promise<WorkflowContentBillingGate> {
   "use step";
-  if (!autumn) {
-    return { allowed: true, reserved: false, useMarkup: false, lockId: null };
-  }
-
-  const customer = await autumn.customers.getOrCreate({
-    customerId: input.organizationId,
-  });
-  const hasActivePaidPlan = customer.subscriptions.some(
-    (subscription) =>
-      !subscription.addOn &&
-      subscription.status === "active" &&
-      ACTIVE_PAID_PLAN_IDS.has(subscription.planId)
-  );
-
-  const reservation = await reserveAiCredits(
-    input.organizationId,
-    input.executionId,
-    input.lockTtlMs
-  );
-  if (reservation.allowed) {
-    return reservation;
-  }
-
-  if (!hasActivePaidPlan) {
-    return {
-      ...reservation,
-      reason: "no_active_paid_plan",
-      shouldNotify: false,
-    };
-  }
-  return {
-    ...reservation,
-    reason: "insufficient_ai_credits",
-    shouldNotify: true,
-  };
+  return await reserveContentBilling(input);
 }
 
-export async function notifyAiCreditsDepleted(input: {
-  organizationId: string;
-  automationName: string;
-  logPrefix: string;
-}): Promise<void> {
+export async function notifyContentLimitReached(
+  input: NotifyContentLimitInput
+): Promise<void> {
   "use step";
   await sendAiCreditsDepletedEmails(input);
 }
@@ -429,36 +390,30 @@ export async function finishGeneration(
   });
 }
 
-export async function finalizeAiCredit(
-  input: FinalizeAiCreditInput
+export async function finalizeContentBilling(
+  input: FinalizeContentBillingInput
 ): Promise<void> {
   "use step";
-  if (
-    input.action === "confirm" &&
+  const { reservation } = input;
+  if (input.action === "release") {
+    await releaseContentBilling(reservation);
+    return;
+  }
+  const releaseUnbilledAgentRun =
+    reservation.mode === "ai_credits" &&
     !input.usage &&
-    isAgentContentGenerationEnabled()
-  ) {
-    await releaseAiCredits(input.lockId);
+    isAgentContentGenerationEnabled();
+  if (releaseUnbilledAgentRun) {
+    await releaseContentBilling(reservation);
     return;
   }
-  if (input.action === "confirm") {
-    const costCents = input.usage
-      ? calculateAiCreditCostCents(
-          input.usage,
-          input.usage.modelId ??
-            input.fallbackModelId ??
-            "anthropic/claude-sonnet-4.6",
-          input.useMarkup ?? false
-        ).costCents
-      : 1;
-    await confirmAiCredits({
-      lockId: input.lockId,
-      costCents,
-      properties: input.properties,
-    });
-    return;
-  }
-  await releaseAiCredits(input.lockId);
+  await confirmContentBilling({
+    reservation,
+    units: input.units,
+    usage: input.usage,
+    fallbackModelId: input.fallbackModelId,
+    properties: input.properties,
+  });
 }
 
 export async function appendAutomationLog(

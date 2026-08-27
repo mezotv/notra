@@ -1,4 +1,5 @@
 import { generateGeoContentBrief } from "@notra/ai/agents/geo-writer";
+import { describeContentBillingDenial } from "@notra/ai/billing/content-billing";
 import { GEO_WRITER_MODEL } from "@notra/ai/constants/models";
 import { POST_SLUG_MAX_LENGTH } from "@notra/ai/schemas/post";
 import type {
@@ -56,8 +57,8 @@ import type {
 import { REUSABLE_BRIEF_STATUSES } from "@/utils/geo-gaps";
 import { geoBriefToMarkdown } from "@/utils/geo-writer-brief-markdown";
 import {
-  finalizeAiCredit,
-  gateAndReserveAiCredits,
+  finalizeContentBilling,
+  gateContentBilling,
 } from "@/workflows/steps/content-generation-steps";
 
 const BLOG_POST_CONTENT_TYPE = "blog_post";
@@ -545,9 +546,11 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
   const planningRunId = `${GEO_WRITER_TRIGGER_ID}-plan-${crypto.randomUUID()}`;
   const gate = yield* Effect.tryPromise({
     try: () =>
-      gateAndReserveAiCredits({
+      gateContentBilling({
         organizationId: scope.organizationId,
         executionId: planningRunId,
+        outputType: BLOG_POST_CONTENT_TYPE,
+        countTowardQuota: false,
       }),
     catch: (cause) =>
       new GeoWriterPlanError({
@@ -556,7 +559,11 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
       }),
   });
   if (!gate.allowed) {
-    return yield* Effect.fail(new GeoWriterCreditsExhaustedError({}));
+    return yield* Effect.fail(
+      new GeoWriterCreditsExhaustedError({
+        message: describeContentBillingDenial(gate),
+      })
+    );
   }
 
   const generated = yield* Effect.tryPromise({
@@ -579,12 +586,11 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
             sitemapPages: sitemap.pages,
           },
         });
-        await finalizeAiCredit({
-          lockId: gate.lockId,
+        await finalizeContentBilling({
+          reservation: gate,
           action: "confirm",
           usage: result.usage,
           fallbackModelId: GEO_WRITER_MODEL,
-          useMarkup: gate.useMarkup,
           properties: {
             source: "geo_writer_planner",
             run_id: planningRunId,
@@ -594,8 +600,8 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
         });
         return result;
       } catch (cause) {
-        await finalizeAiCredit({
-          lockId: gate.lockId,
+        await finalizeContentBilling({
+          reservation: gate,
           action: "release",
           logPrefix: "GeoWriterPlanner",
         }).catch((releaseError) => {
