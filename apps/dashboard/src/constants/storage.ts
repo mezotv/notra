@@ -18,6 +18,7 @@ export const localStorageKeys = {
     `notra:eve-banner-dismissed:${organizationId}`,
   gscCardDismissed: (organizationId: string) =>
     `notra:gsc-card-dismissed:${organizationId}`,
+  chatSuggestionsDismissed: "notra:chat-suggestions-dismissed:v1",
 } as const;
 
 export const sessionStorageKeys = {

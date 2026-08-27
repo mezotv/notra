@@ -2,6 +2,8 @@
 
 import { SidebarInset, SidebarProvider } from "@notra/ui/components/ui/sidebar";
 import { cn } from "@notra/ui/lib/utils";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { SubscriptionGate } from "@/components/billing/subscription-gate";
@@ -40,6 +42,25 @@ export function DashboardShell({
   const shellStyle: DashboardShellStyle = {
     "--eve-banner-height": visible ? EVE_BANNER_HEIGHT : "0rem",
   };
+  const pathname = usePathname();
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+  const [mainScrolled, setMainScrolled] = useState(false);
+
+  useEffect(() => {
+    const el = mainScrollRef.current;
+    if (!el) {
+      return;
+    }
+
+    const sync = () => {
+      const next = el.scrollTop > 0;
+      setMainScrolled((current) => (current === next ? current : next));
+    };
+
+    sync();
+    el.addEventListener("scroll", sync, { passive: true });
+    return () => el.removeEventListener("scroll", sync);
+  }, [pathname]);
 
   const handleStart = () => {
     if (!organizationId || starting) {
@@ -88,10 +109,20 @@ export function DashboardShell({
         >
           <SiteHeader />
           <RestoreSidebarHome />
-          <div className="bg-muted flex min-h-0 flex-1 flex-col">
-            <div className="scrollbar-stable scrollbar-floating border-sidebar-border bg-background @container/main -mx-px flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain rounded-t-2xl border border-b-0">
+          <div className="bg-muted relative flex min-h-0 flex-1 flex-col">
+            <div
+              className="scrollbar-stable scrollbar-floating border-sidebar-border bg-background @container/main -mx-px flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain rounded-t-2xl border border-b-0"
+              ref={mainScrollRef}
+            >
               <SubscriptionGate>{children}</SubscriptionGate>
             </div>
+            <div
+              aria-hidden
+              className={cn(
+                "from-background pointer-events-none absolute -inset-x-px top-px z-10 h-12 rounded-t-[calc(1rem-1px)] bg-linear-to-b from-20% to-transparent transition-opacity duration-200 ease-out motion-reduce:transition-none",
+                mainScrolled ? "opacity-100" : "opacity-0"
+              )}
+            />
           </div>
         </SidebarInset>
         <div className="contents" id={RIGHT_PANEL_PORTAL_ID} />
