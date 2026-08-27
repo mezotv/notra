@@ -122,6 +122,7 @@ export function Table<T>({
     count: displayRows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeight,
+    initialRect: { height, width: 0 },
     overscan,
   });
 
@@ -186,6 +187,12 @@ export function Table<T>({
         sortedRows.length === 0 ? bodyHeight : contentHeight,
         minBodyHeight
       );
+  const renderedRows = scrolls
+    ? virtualItems.flatMap((item) => {
+        const entry = displayRows[item.index];
+        return entry ? [{ entry, index: item.index }] : [];
+      })
+    : displayRows.map((entry, index) => ({ entry, index }));
 
   const hasRowMenu = !!(onInsertRow || onDeleteRow);
   const hasColumnMenu = !!(onInsertColumn || onDeleteColumn);
@@ -378,23 +385,19 @@ export function Table<T>({
               )
             ) : (
               <>
-                {paddingTop > 0 ? (
+                {scrolls && paddingTop > 0 ? (
                   <tr aria-hidden style={{ height: paddingTop }}>
                     <td colSpan={leadColumns + 1} />
                   </tr>
                 ) : null}
-                {virtualItems.map((vItem) => {
-                  const entry = displayRows[vItem.index];
-                  if (!entry) {
-                    return null;
-                  }
+                {renderedRows.map(({ entry, index }) => {
                   return (
                     <TableBodyRow
                       columns={orderedColumns}
                       entry={entry}
                       hasRowMenu={hasRowMenu}
-                      index={vItem.index}
-                      isLastRow={vItem.index === displayRows.length - 1}
+                      index={index}
+                      isLastRow={index === displayRows.length - 1}
                       isSelected={selected.has(entry.id)}
                       key={entry.id}
                       onActivate={activateRow}
@@ -411,7 +414,7 @@ export function Table<T>({
                     />
                   );
                 })}
-                {paddingBottom > 0 ? (
+                {scrolls && paddingBottom > 0 ? (
                   <tr aria-hidden style={{ height: paddingBottom }}>
                     <td colSpan={leadColumns + 1} />
                   </tr>

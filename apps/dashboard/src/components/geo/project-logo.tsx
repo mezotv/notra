@@ -2,22 +2,21 @@
 
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { GEO_LOGO_SIZE_PX } from "@/constants/geo";
 import { projectLogoSources } from "@/lib/geo/logo";
+import { useCompanyLogo } from "@/lib/hooks/use-onboarding";
 import type { GeoProjectLogoProps } from "@/types/geo";
 
 function ProjectLogoInner({
   name,
   domain,
+  logo,
   className,
   fallbackClassName,
-}: GeoProjectLogoProps) {
-  const sources = useMemo(
-    () => projectLogoSources(domain, name.toLowerCase()),
-    [domain, name]
-  );
+}: GeoProjectLogoProps & { logo: string | null }) {
+  const sources = projectLogoSources(domain, name.toLowerCase(), logo);
   const [sourceIndex, setSourceIndex] = useState(0);
   const activeIndex = Math.min(sourceIndex, sources.length - 1);
   const src = sources[activeIndex] ?? sources.at(-1) ?? "";
@@ -55,12 +54,16 @@ export function ProjectLogo({
   className,
   fallbackClassName,
 }: GeoProjectLogoProps) {
+  const { data } = useCompanyLogo(domain);
+  const logo = data?.url ?? null;
+
   return (
     <ProjectLogoInner
       className={className}
       domain={domain}
       fallbackClassName={fallbackClassName}
-      key={`${domain ?? ""}:${name}`}
+      key={`${domain ?? ""}:${name}:${logo ?? ""}`}
+      logo={logo}
       name={name}
     />
   );
