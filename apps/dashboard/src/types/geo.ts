@@ -10,6 +10,7 @@ import type { LanguageModel, ToolSet } from "ai";
 import type { ReactNode } from "react";
 
 import type { ChartColorPair } from "@/types/charts";
+import type { TablePaginationState } from "@/types/table";
 
 export interface GeoProject {
   id: string;
@@ -1217,6 +1218,7 @@ export interface CitationsTableProps {
   entries: GeoTrafficLogEntry[];
   height: number;
   loading?: boolean;
+  pagination?: TablePaginationState;
 }
 
 export interface PurposeBadgeProps {

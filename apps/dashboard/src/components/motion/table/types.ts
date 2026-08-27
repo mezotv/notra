@@ -85,6 +85,12 @@ export interface TableProps<T> {
   isRowPinned?: (row: T) => boolean;
   /** Content rendered above the column headers inside the table surface. */
   toolbar?: ReactNode;
+  /** Content rendered below the body on a muted footer surface that mirrors the header. */
+  footer?: ReactNode;
+  /** 1-based page to render when `pageSize` is set. Rows are sliced after sorting. */
+  page?: number;
+  /** Rows per page. Omit to render every row. */
+  pageSize?: number;
   emptyState?: ReactNode;
   className?: string;
 }

@@ -10,11 +10,14 @@ import {
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { TablePagination } from "@/components/table-pagination";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
+import { GEO_TRAFFIC_PAGES_PAGE_PARAM } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import { useTablePagination } from "@/lib/hooks/use-table-pagination";
 import type { GeoTrafficPage, TrafficPagesCardProps } from "@/types/geo";
 import { formatGeoSource, trafficVisitDelta } from "@/utils/ai-traffic";
-import { tableHeightFor } from "@/utils/table";
+import { paginatedTableHeightFor } from "@/utils/table";
 
 const PAGE_SKELETON_ROWS = 4;
 const PAGE_COLUMN_WIDTH = "1.5fr";
@@ -25,6 +28,10 @@ export function TrafficPagesCard({
   pages,
   isPending = false,
 }: TrafficPagesCardProps) {
+  const pagination = useTablePagination({
+    key: GEO_TRAFFIC_PAGES_PAGE_PARAM,
+    totalItems: pages.length,
+  });
   const columns = useMemo<TableColumn<GeoTrafficPage>[]>(
     () => [
       {
@@ -98,8 +105,12 @@ export function TrafficPagesCard({
           data={pages}
           defaultSort={{ key: "visits", direction: "desc" }}
           emptyState="No AI visits captured yet"
+          footer={<TablePagination {...pagination} itemLabel="pages" />}
           getRowId={(row) => `${row.path}-${row.visitorType}-${row.source}`}
-          height={tableHeightFor(pages.length)}
+          height={paginatedTableHeightFor(pagination.pageRowCount)}
+          onSortChange={() => pagination.setPage(1)}
+          page={pagination.page}
+          pageSize={pagination.pageSize}
           resizable
           rowHeight={TABLE_ROW_HEIGHT}
         />

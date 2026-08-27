@@ -18,17 +18,20 @@ import {
 } from "@/components/instrument/instrument-module";
 import {
   GEO_CITATIONS_LIVE_INTERVAL_MS,
+  GEO_CITATIONS_ROW_HEIGHT,
+  GEO_TRAFFIC_LOG_PAGE_PARAM,
   GEO_TRAFFIC_LOG_PURPOSE_OPTIONS,
   GEO_TRAFFIC_LOG_VISITOR_OPTIONS,
 } from "@/constants/geo";
 import { useGeoTrafficLog } from "@/lib/hooks/use-geo";
+import { useTablePagination } from "@/lib/hooks/use-table-pagination";
 import type { AiTrafficLogCardProps, GeoTrafficLogFilters } from "@/types/geo";
 import {
   formatGeoTrafficFilterLabel,
   toggleGeoTrafficFilterValue,
 } from "@/utils/ai-traffic";
+import { paginatedTableHeightFor } from "@/utils/table";
 
-const TRAFFIC_LOG_HEIGHT = 416;
 const LOG_SKELETON_ROWS = 6;
 
 const FILTER_TRIGGER_CLASS =
@@ -45,6 +48,10 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
   });
   const log = data?.log ?? [];
   const total = data?.total ?? log.length;
+  const pagination = useTablePagination({
+    key: GEO_TRAFFIC_LOG_PAGE_PARAM,
+    totalItems: log.length,
+  });
   let readout: string | undefined;
   if (!isPending) {
     readout =
@@ -62,7 +69,16 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
       />
     );
   } else {
-    body = <CitationsTable entries={log} height={TRAFFIC_LOG_HEIGHT} />;
+    body = (
+      <CitationsTable
+        entries={log}
+        height={paginatedTableHeightFor(
+          pagination.pageRowCount,
+          GEO_CITATIONS_ROW_HEIGHT
+        )}
+        pagination={pagination}
+      />
+    );
   }
 
   const filterRow = (
@@ -82,6 +98,7 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
               checked={filters.visitorTypes.includes(option.value)}
               key={option.value}
               onCheckedChange={() => {
+                pagination.setPage(1);
                 setFilters((previous) => ({
                   ...previous,
                   visitorTypes: toggleGeoTrafficFilterValue(
@@ -111,6 +128,7 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
               checked={filters.categories.includes(option.value)}
               key={option.value}
               onCheckedChange={() => {
+                pagination.setPage(1);
                 setFilters((previous) => ({
                   ...previous,
                   categories: toggleGeoTrafficFilterValue(

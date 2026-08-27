@@ -15,6 +15,8 @@ import { toast } from "sonner";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import {
+  AI_TRAFFIC_LOG_FETCH_LIMIT,
+  AI_TRAFFIC_PAGES_FETCH_LIMIT,
   GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
   GEO_BRAND_SEARCH_STALE_MS,
   GEO_MODEL_CATALOG_STALE_MS,
@@ -532,6 +534,7 @@ export function useGeoTrafficLog(
       input: {
         organizationId,
         projectId,
+        limit: AI_TRAFFIC_LOG_FETCH_LIMIT,
         visitorTypes: toGeoTrafficLogVisitorFilter(filters.visitorTypes),
         categories: toGeoTrafficLogPurposeFilter(filters.categories),
       },
@@ -550,7 +553,12 @@ export function useGeoTrafficPages(
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrafficPagesResponse>({
     ...dashboardOrpc.geo.trafficPages.queryOptions({
-      input: { organizationId, projectId, ...toGeoWindowInput(range) },
+      input: {
+        organizationId,
+        projectId,
+        limit: AI_TRAFFIC_PAGES_FETCH_LIMIT,
+        ...toGeoWindowInput(range),
+      },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load top AI pages" },

@@ -63,6 +63,9 @@ export function Table<T>({
   onRowPointerEnter,
   isRowPinned,
   toolbar,
+  footer,
+  page = 1,
+  pageSize,
   className,
 }: TableProps<T>) {
   "use no memo";
@@ -118,9 +121,16 @@ export function Table<T>({
     () => pinRowsFirst(sortedRows, isRowPinned),
     [sortedRows, isRowPinned]
   );
+  const pagedRows = useMemo(() => {
+    if (pageSize == null) {
+      return displayRows;
+    }
+    const start = Math.max(0, page - 1) * pageSize;
+    return displayRows.slice(start, start + pageSize);
+  }, [displayRows, page, pageSize]);
 
   const virtualizer = useVirtualizer({
-    count: displayRows.length,
+    count: pagedRows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeight,
     initialRect: { height, width: 0 },
@@ -179,21 +189,21 @@ export function Table<T>({
         rowHeight;
   const contentHeight = Math.max(
     rowHeight,
-    Math.min(bodyHeight, sortedRows.length * rowHeight)
+    Math.min(bodyHeight, pagedRows.length * rowHeight)
   );
-  const scrolls = sortedRows.length * rowHeight > bodyHeight;
+  const scrolls = pagedRows.length * rowHeight > bodyHeight;
   const viewportHeight = scrolls
     ? bodyHeight
     : Math.max(
-        sortedRows.length === 0 ? bodyHeight : contentHeight,
+        pagedRows.length === 0 ? bodyHeight : contentHeight,
         minBodyHeight
       );
   const renderedRows = scrolls
     ? virtualItems.flatMap((item) => {
-        const entry = displayRows[item.index];
+        const entry = pagedRows[item.index];
         return entry ? [{ entry, index: item.index }] : [];
       })
-    : displayRows.map((entry, index) => ({ entry, index }));
+    : pagedRows.map((entry, index) => ({ entry, index }));
 
   const hasRowMenu = !!(onInsertRow || onDeleteRow);
   const hasColumnMenu = !!(onInsertColumn || onDeleteColumn);
@@ -369,7 +379,7 @@ export function Table<T>({
         >
           {columnGroup}
           <tbody>
-            {sortedRows.length === 0 ? (
+            {pagedRows.length === 0 ? (
               loading ? (
                 <SkeletonRows
                   columns={orderedColumns}
@@ -403,7 +413,7 @@ export function Table<T>({
                       entry={entry}
                       hasRowMenu={hasRowMenu}
                       index={index}
-                      isLastRow={index === displayRows.length - 1}
+                      isLastRow={index === pagedRows.length - 1}
                       isSelected={selected.has(entry.id)}
                       key={entry.id}
                       onActivate={activateRow}
@@ -438,6 +448,11 @@ export function Table<T>({
           </tbody>
         </table>
       </div>
+      {footer ? (
+        <div className="border-border bg-muted -mt-5 rounded-b-2xl border border-t-0 pt-5">
+          {footer}
+        </div>
+      ) : null}
       {hasRowMenu && activeRow ? (
         <RowHandle
           id={activeRow.id}
