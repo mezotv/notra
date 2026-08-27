@@ -39,42 +39,13 @@ import type {
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 
-function credentialsFromEnv(
-  clientId: string | undefined,
-  clientSecret: string | undefined
-): GscOAuthCredentials | null {
-  const id = clientId?.trim();
-  const secret = clientSecret?.trim();
-  if (!(id && secret)) {
+export function getGscOAuthCredentials(): GscOAuthCredentials | null {
+  const clientId = process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_ID?.trim();
+  const clientSecret = process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_SECRET?.trim();
+  if (!(clientId && clientSecret)) {
     return null;
   }
-  return { clientId: id, clientSecret: secret };
-}
-
-function getDedicatedGscOAuthCredentials(): GscOAuthCredentials | null {
-  return credentialsFromEnv(
-    process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_ID,
-    process.env.GOOGLE_SEARCH_CONSOLE_CLIENT_SECRET
-  );
-}
-
-/**
- * True when Search Console uses its own OAuth client. When it falls back to the
- * shared GOOGLE_CLIENT_ID (also used for sign-in), revoking a token would revoke
- * the user's whole Google grant for this app, so callers must not revoke.
- */
-export function hasDedicatedGscOAuthClient(): boolean {
-  return getDedicatedGscOAuthCredentials() !== null;
-}
-
-export function getGscOAuthCredentials(): GscOAuthCredentials | null {
-  return (
-    getDedicatedGscOAuthCredentials() ??
-    credentialsFromEnv(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET
-    )
-  );
+  return { clientId, clientSecret };
 }
 
 export class GscReauthRequiredError extends Error {
@@ -298,10 +269,6 @@ export async function deleteGscIntegration(
 }
 
 export async function revokeGscToken(integration: GscIntegrationRow) {
-  if (!hasDedicatedGscOAuthClient()) {
-    // Shared sign-in client: revoking would also revoke the user's Google login grant.
-    return;
-  }
   try {
     const refreshToken = decryptToken(integration.encryptedRefreshToken);
     await fetch(GSC_OAUTH_REVOKE_URL, {
