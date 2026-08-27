@@ -31,6 +31,19 @@ describe("mentionCountDelta", () => {
     ).toBe(20);
   });
 
+  test("excludes today's partial mentions", () => {
+    expect(
+      mentionCountDelta(
+        [
+          { day: "2026-08-25", value: 10 },
+          { day: "2026-08-26", value: 20 },
+          { day: "2026-08-27", value: 100 },
+        ],
+        "2026-08-27"
+      )
+    ).toBe(100);
+  });
+
   test("returns null when there is no meaningful comparison", () => {
     expect(mentionCountDelta([])).toBeNull();
     expect(

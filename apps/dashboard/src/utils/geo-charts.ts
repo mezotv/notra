@@ -707,20 +707,22 @@ function relativePercentDelta(
 }
 
 export function mentionCountDelta(
-  points: readonly GeoSparklinePoint[]
+  points: readonly GeoSparklinePoint[],
+  today = todayIsoDate()
 ): number | null {
-  if (points.length < GEO_SPARKLINE_MIN_POINTS) {
+  const settledPoints = points.filter((point) => point.day < today);
+  if (settledPoints.length < GEO_SPARKLINE_MIN_POINTS) {
     return null;
   }
-  const midpoint = Math.floor(points.length / 2);
-  const previousTotal = points
+  const midpoint = Math.floor(settledPoints.length / 2);
+  const previousTotal = settledPoints
     .slice(0, midpoint)
     .reduce((sum, point) => sum + point.value, 0);
-  const currentTotal = points
+  const currentTotal = settledPoints
     .slice(midpoint)
     .reduce((sum, point) => sum + point.value, 0);
   const previousAverage = previousTotal / midpoint;
-  const currentAverage = currentTotal / (points.length - midpoint);
+  const currentAverage = currentTotal / (settledPoints.length - midpoint);
   return relativePercentDelta(currentAverage, previousAverage);
 }
 
