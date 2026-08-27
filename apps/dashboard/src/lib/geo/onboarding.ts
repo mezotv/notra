@@ -19,6 +19,10 @@ import { GeoDiscoveryError, GeoSettingsMissingError } from "@/lib/geo/errors";
 import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
 import { upsertGeoSettings } from "@/lib/geo/programs";
 import { promptKey } from "@/lib/geo/prompt-key";
+import {
+  buildBrandTerms,
+  promptMentionsBrand,
+} from "@/lib/geo/suggestion-keywords";
 import { geoCompetitorSuggestionsResponseSchema } from "@/schemas/geo";
 import type {
   GeoBrandSearchResponse,
@@ -68,11 +72,15 @@ export const saveGeoOnboardingBrand = Effect.fn("geo.onboardingBrand")(
       })
     );
     const seen = new Set(existingPrompts.map((row) => promptKey(row.prompt)));
+    const brandTerms = buildBrandTerms({
+      companyName: input.companyName,
+      aliases: input.aliases,
+    });
     const values = input.prompts.flatMap((entry) => {
       const prompt = entry.prompt.trim();
       const title = entry.title.trim().slice(0, GEO_GAP_TITLE_MAX_LENGTH);
       const key = promptKey(prompt);
-      if (seen.has(key)) {
+      if (seen.has(key) || promptMentionsBrand(prompt, brandTerms)) {
         return [];
       }
       seen.add(key);

@@ -30,6 +30,7 @@ import {
 import {
   buildBrandTerms,
   normalizeSuggestionKey,
+  promptMentionsBrand,
   resolveSourceKeywords,
   selectKeywordsForModel,
 } from "@/lib/geo/suggestion-keywords";
@@ -159,7 +160,8 @@ async function runSync(
     if (
       prompt.length < GEO_PROMPT_MIN_LENGTH ||
       prompt.length > GEO_PROMPT_MAX_LENGTH ||
-      seen.has(key)
+      seen.has(key) ||
+      promptMentionsBrand(prompt, brandTerms)
     ) {
       continue;
     }

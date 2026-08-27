@@ -7,15 +7,56 @@ import {
 import type { GeoSuggestionKeyword } from "@/types/geo";
 
 const MIN_BRAND_TERM_LENGTH = 3;
+const REGEXP_ESCAPE_REGEX = /[.*+?^${}()|[\]\\]/g;
+const BRAND_TOKEN_SEPARATOR = "[-_\\s]+";
+
+function escapeRegExp(value: string): string {
+  return value.replace(REGEXP_ESCAPE_REGEX, "\\$&");
+}
 
 export function normalizeSuggestionKey(value: string): string {
   return value.trim().toLowerCase();
 }
 
-function isBrandedQuery(query: string, brandTerms: string[]): boolean {
-  const normalized = ` ${normalizeSuggestionKey(query)} `;
+function normalizeForBrandMatch(value: string): string {
+  return normalizeSuggestionKey(value)
+    .replace(/[-_]+/g, " ")
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function promptMentionsBrand(
+  text: string,
+  brandTerms: string[]
+): boolean {
+  const normalized = ` ${normalizeForBrandMatch(text)} `;
   // Space-delimited so a short alias like "hub" does not drop "github".
-  return brandTerms.some((term) => normalized.includes(` ${term} `));
+  return brandTerms.some((term) =>
+    normalized.includes(` ${normalizeForBrandMatch(term)} `)
+  );
+}
+
+export function stripBrandTerms(text: string, brandTerms: string[]): string {
+  let result = text;
+  const sorted = [...brandTerms].sort(
+    (left, right) => right.length - left.length
+  );
+  for (const term of sorted) {
+    const folded = normalizeForBrandMatch(term);
+    if (folded.length === 0) {
+      continue;
+    }
+    const parts = folded.split(" ").filter(Boolean).map(escapeRegExp);
+    if (parts.length === 0) {
+      continue;
+    }
+    result = result.replace(
+      new RegExp(`\\b${parts.join(BRAND_TOKEN_SEPARATOR)}\\b`, "gi"),
+      " "
+    );
+  }
+  return result.replace(/\s+/g, " ").trim();
 }
 
 export function buildBrandTerms(
@@ -38,7 +79,7 @@ export function selectKeywordsForModel(
     .filter(
       (row) =>
         row.impressions >= GSC_SYNC_MIN_IMPRESSIONS &&
-        !isBrandedQuery(row.query, brandTerms)
+        !promptMentionsBrand(row.query, brandTerms)
     )
     .sort((a, b) => b.impressions - a.impressions || b.clicks - a.clicks)
     .slice(0, GSC_SYNC_MAX_KEYWORDS_FOR_MODEL);

@@ -19,6 +19,7 @@ import type {
   GeoGroundedEngine,
   GeoIngestFramework,
   GeoIngestPackageManager,
+  GeoJourneyPathKind,
   GeoPromptResult,
   GeoRangePreset,
   GeoTab,
@@ -344,6 +345,8 @@ export const GEO_BRAND_SEARCH_MIN_QUERY_LENGTH = 2;
 export const GEO_BRAND_SEARCH_MAX_QUERY_LENGTH = 100;
 export const GEO_BRAND_SEARCH_DEBOUNCE_MS = 300;
 export const GEO_BRAND_SEARCH_STALE_MS = 5 * 60 * 1000;
+export const GEO_TRACKED_PROMPT_VOICE =
+  'Write each prompt in lowercase the way a person types into ChatGPT: short, one intent, no question mark at the end. Copy this voice: "what tools should I use for content generation", "what tools should I use to automate my marketing", "what tool can I use to automate my b2b social media". Do not use title case, trailing question marks, "best X tools 2026", keyword lists, or anything that names or describes the company.';
 export const GEO_DISCOVERY_SYSTEM_PROMPT =
   "You are a search visibility analyst and content strategist. You read a company's website and derive the brand identity and the buyer questions that decide whether an AI assistant recommends this company. Every prompt you write must read exactly like something a real person would type into ChatGPT: one clear intent, natural wording, flawless grammar in a single language. Never string keywords together. Respond only with the requested structured data.";
 export const GEO_ANSWER_SYSTEM_PROMPT =
@@ -557,6 +560,72 @@ export const GEO_JOURNEY_KIND_LABELS: Record<string, string> = {
   fingerprint: "Fingerprinted journey, matched by heuristic",
 };
 
+export const GEO_JOURNEY_PATH_KINDS = [
+  "home",
+  "docs",
+  "blog",
+  "search",
+  "page",
+] as const;
+
+export const GEO_JOURNEY_PATH_KIND_LABELS: Record<GeoJourneyPathKind, string> =
+  {
+    home: "Home",
+    docs: "Docs",
+    blog: "Posts",
+    search: "Search",
+    page: "Pages",
+  };
+
+export const GEO_JOURNEY_PATH_KIND_CLASS: Record<GeoJourneyPathKind, string> = {
+  home: "border-geo-up/30 bg-geo-up/10 text-geo-up",
+  docs: "border-geo-mid/30 bg-geo-mid/10 text-geo-mid",
+  search: "border-geo-search/30 bg-geo-search/10 text-geo-search",
+  blog: "border-geo-memory/30 bg-geo-memory/10 text-geo-memory",
+  page: "border-border bg-muted/70 text-foreground",
+};
+
+export const GEO_JOURNEY_HOME_PATHS = new Set([
+  "/",
+  "/index",
+  "/home",
+  "/index.html",
+]);
+
+export const GEO_JOURNEY_DOCS_PREFIXES = [
+  "/docs",
+  "/documentation",
+  "/api",
+  "/reference",
+  "/guide",
+  "/guides",
+  "/sdk",
+  "/help",
+  "/developer",
+] as const;
+
+export const GEO_JOURNEY_BLOG_PREFIXES = [
+  "/blog",
+  "/changelog",
+  "/news",
+  "/posts",
+  "/articles",
+  "/updates",
+  "/journal",
+] as const;
+
+export const GEO_JOURNEY_SEARCH_PREFIXES = [
+  "/search",
+  "/query",
+  "/find",
+] as const;
+
+export const GEO_JOURNEY_OVERVIEW_SOURCES = 5;
+export const GEO_JOURNEY_OVERVIEW_PATHS = 5;
+export const GEO_JOURNEY_TRAIL_TABLE_LIMIT = 4;
+export const GEO_JOURNEY_TRAIL_DETAIL_LIMIT = 10;
+export const GEO_JOURNEY_PATH_LABEL_MAX = 28;
+
 export const AI_TRAFFIC_CONFIDENCE_LABELS: Record<string, string> = {
   verified: "Verified",
   reported: "Reported",
@@ -574,12 +643,20 @@ export const GEO_SENTIMENT_LABELS: Record<string, string> = {
   negative: "Negative",
 };
 
+export const GEO_PROMPT_PREVIEW_ROW_HEIGHT = 72;
+export const GEO_PROMPT_NO_MENTION = "No engine named you";
+
 export const GEO_MENTION_TREND_TOTAL_KEY = "total";
 export const GEO_MENTION_TREND_TOTAL_LABEL = "All engines";
 export const GEO_DEFAULT_RANGE: GeoRangePreset = "30d";
 export const GEO_MENTION_TREND_AVERAGE_KEY = "average";
 export const GEO_MENTION_TREND_AVERAGE_LABEL = "Average";
 export const GEO_MENTION_TREND_AGENT_ICON_LIMIT = 4;
+export const GEO_MENTION_TREND_ALL_AGENTS_LABEL = "All agents";
+export const GEO_MENTION_ACTIVITY_LABEL = "Mention activity";
+export const GEO_MENTION_SUMMARY_VISIBLE = 5;
+export const GEO_MENTION_SUMMARY_MORE = "Show more";
+export const GEO_MENTION_SUMMARY_LESS = "Show less";
 export const GEO_RANGE_PRESETS = [
   { value: "today", label: "Today" },
   { value: "yesterday", label: "Yesterday" },
@@ -604,6 +681,14 @@ export const GEO_DEFAULT_QUERY_DAYS = 30;
 export const GEO_FILTER_TRIGGER_CLASS =
   "corner-squircle flex h-7 items-center gap-1.5 rounded-lg border bg-background px-2.5 text-xs outline-none hover:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring";
 export const GEO_MENTION_RATE_LABEL = "Mention rate";
+export const GEO_MENTIONS_LABEL = "Mentions";
+export const GEO_AVG_POSITION_LABEL = "Avg position";
+export const GEO_FAMILY_STAT_TREND_HINT = "vs first half of this range";
+/** Search vs memory gap that names a specific bottleneck. */
+export const GEO_FAMILY_IMPROVE_SPLIT = 0.25;
+/** Overall rate high enough that remaining misses are the whole job. */
+export const GEO_FAMILY_IMPROVE_STRONG_RATE = 0.7;
+export const GEO_FAMILY_IMPROVE_CTA_GAPS = "Close these gaps";
 export const GEO_SPARKLINE_MIN_POINTS = 2;
 export const GEO_RATE_SPARKLINE_WIDTH = 56;
 export const GEO_RATE_SPARKLINE_HEIGHT = 20;
@@ -654,8 +739,6 @@ export const GEO_TAB_BREADCRUMB_LABELS: Record<string, string> = {
   prompts: "Prompts",
   journeys: "Journeys",
 };
-
-export const GEO_PROMPTS_TAB_PREVIEW_LIMIT = 6;
 
 export const GEO_LOGO_LINK_BASE = "https://logos.context.dev/";
 export const GEO_LOGO_LINK_CLIENT_ID_ENV = "NEXT_PUBLIC_LOGOLINK_CLIENT_ID";

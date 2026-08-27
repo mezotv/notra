@@ -17,6 +17,7 @@ import {
   ONBOARDING_FIELD_CLASS,
   ONBOARDING_STEP_VISIBILITY,
 } from "@/constants/onboarding";
+import { buildBrandTerms } from "@/lib/geo/suggestion-keywords";
 import {
   useGeoDiscoverWebsite,
   useGeoOnboardingBrand,
@@ -49,7 +50,13 @@ function VisibilityReview({
   const [isLeaving, setIsLeaving] = useState(false);
   const busy = save.isPending || isLeaving;
   const canSubmit = companyName.trim().length > 0 && !busy;
-  const promptCount = uniqueVisibilityPrompts(discovery?.prompts ?? []).length;
+  const promptCount = uniqueVisibilityPrompts(
+    discovery?.prompts ?? [],
+    buildBrandTerms({
+      companyName,
+      aliases: [...(discovery?.aliases ?? [])],
+    })
+  ).length;
 
   const handleSubmit = () => {
     if (!canSubmit) {

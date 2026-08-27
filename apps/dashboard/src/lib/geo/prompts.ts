@@ -1,4 +1,9 @@
 import { GEO_MAX_PROMPTS } from "@/constants/geo";
+import {
+  buildBrandTerms,
+  promptMentionsBrand,
+  stripBrandTerms,
+} from "@/lib/geo/suggestion-keywords";
 import type {
   GeoBrandContext,
   GeoPromptDefinition,
@@ -52,14 +57,33 @@ export function findPromptMentionEntry<T>(
 const SENTENCE_SPLIT_REGEX = /[.!?]/;
 const LEADING_FILLER_REGEX =
   /^(we are|we're|we|it is|it's|the|a|an|our)\s+(the\s+|a\s+|an\s+)?/i;
-const PLATFORM_PREFIX_REGEX =
-  /^(platform|tool|software|solution|service|app|product)\s+(for|to|that)\s+/i;
+const IS_A_FOR_REGEX =
+  /\b(?:is|are|was|were)\s+(?:a|an|the)\s+(.+?)\s+for\s+(.+)$/i;
+const IS_A_REGEX = /\b(?:is|are|was|were)\s+(?:a|an|the)\s+(.+)$/i;
+const HELP_VERB_REGEX =
+  /\bhelps?\s+.+\s+(generate|create|send|build|track|manage|automate|write|deliver|host)\s+(.+)$/i;
+const TO_VERB_REGEX =
+  /\bto\s+(generate|create|send|build|track|manage|automate|write|deliver|host)\s+(.+)$/i;
+const WRAPPER_NOUN_REGEX =
+  /\b(platform|tool|software|solution|service|app|product|toolkit|suite|system)\b/gi;
+const TYPE_BEFORE_WRAPPER_REGEX =
+  /^(.+?)\s+(?:platform|tool|software|solution|service|app|product|toolkit|suite|system)\b/i;
+const TRAILING_FLUFF_REGEX = /\s+(built|designed|made|created|used|offered)$/i;
+const TRAILING_HYPE_REGEX =
+  /\s+(at scale|in the cloud|worldwide|globally|online|today)$/i;
+const AUDIENCE_LIKE_REGEX =
+  /\b(teams?|companies|businesses|developers|marketers|startups|enterprises|agencies|people|users|customers|organizations|founders|engineers|designers)\b/i;
+const GERUND_REGEX =
+  /^(sending|building|creating|generating|managing|tracking|automating|writing|hosting|processing|analyzing|monitoring|delivering|integrating)\b/i;
+const WEAK_CATEGORY_REGEX =
+  /^(developer|modern|powerful|simple|easy|best|leading|innovative|next-gen|next generation)$/i;
+const SENTENCE_LEFTOVER_REGEX = /\b(is|are|was|were)\b/;
 const WHITESPACE_REGEX = /\s+/;
 const TRAILING_PUNCTUATION_REGEX = /[\s,;:.-]+$/;
 
-const CATEGORY_MAX_WORDS = 12;
-const CATEGORY_FALLBACK = "software in this space";
-const AUDIENCE_MAX_WORDS = 14;
+const CATEGORY_MAX_WORDS = 6;
+const CATEGORY_FALLBACK = "this space";
+const AUDIENCE_MAX_WORDS = 10;
 
 function condense(value: string, maxWords: number): string {
   return value
@@ -70,7 +94,44 @@ function condense(value: string, maxWords: number): string {
     .replace(TRAILING_PUNCTUATION_REGEX, "");
 }
 
-function deriveCategory(companyDescription: string | null): string {
+function cleanPhrase(value: string): string {
+  return value
+    .replace(TRAILING_HYPE_REGEX, "")
+    .replace(TRAILING_FLUFF_REGEX, "")
+    .replace(TRAILING_PUNCTUATION_REGEX, "")
+    .replace(WHITESPACE_REGEX, " ")
+    .trim();
+}
+
+function nounPhraseFromType(typePhrase: string): string {
+  const trimmed = cleanPhrase(typePhrase);
+  const beforeWrapper = trimmed.match(TYPE_BEFORE_WRAPPER_REGEX)?.[1];
+  if (beforeWrapper && !WEAK_CATEGORY_REGEX.test(beforeWrapper.trim())) {
+    return cleanPhrase(beforeWrapper);
+  }
+  return cleanPhrase(trimmed.replace(WRAPPER_NOUN_REGEX, ""));
+}
+
+function finalizeCategory(value: string, brandTerms: string[]): string | null {
+  const stripped = stripBrandTerms(cleanPhrase(value), brandTerms);
+  const condensed = condense(stripped, CATEGORY_MAX_WORDS).toLowerCase();
+  if (
+    condensed.length === 0 ||
+    WEAK_CATEGORY_REGEX.test(condensed) ||
+    SENTENCE_LEFTOVER_REGEX.test(condensed)
+  ) {
+    return null;
+  }
+  if (promptMentionsBrand(condensed, brandTerms)) {
+    return null;
+  }
+  return condensed;
+}
+
+function deriveCategory(
+  companyDescription: string | null,
+  brandTerms: string[]
+): string {
   if (!companyDescription) {
     return CATEGORY_FALLBACK;
   }
@@ -78,61 +139,122 @@ function deriveCategory(companyDescription: string | null): string {
   if (!firstSentence) {
     return CATEGORY_FALLBACK;
   }
-  const cleaned = firstSentence
-    .trim()
+
+  const stripped = stripBrandTerms(firstSentence.trim(), brandTerms);
+  if (!stripped) {
+    return CATEGORY_FALLBACK;
+  }
+
+  const isAFor = stripped.match(IS_A_FOR_REGEX);
+  if (isAFor?.[1] && isAFor[2]) {
+    const useCase = cleanPhrase(isAFor[2]);
+    const typePhrase = nounPhraseFromType(isAFor[1]);
+    const preferred = GERUND_REGEX.test(useCase)
+      ? useCase
+      : AUDIENCE_LIKE_REGEX.test(useCase)
+        ? typePhrase
+        : typePhrase || useCase;
+    const category = finalizeCategory(preferred, brandTerms);
+    if (category) {
+      return category;
+    }
+  }
+
+  const isA = stripped.match(IS_A_REGEX);
+  if (isA?.[1]) {
+    const category = finalizeCategory(nounPhraseFromType(isA[1]), brandTerms);
+    if (category) {
+      return category;
+    }
+  }
+
+  const helpVerb = stripped.match(HELP_VERB_REGEX);
+  if (helpVerb?.[1] && helpVerb[2]) {
+    const category = finalizeCategory(
+      `${helpVerb[1]} ${helpVerb[2]}`,
+      brandTerms
+    );
+    if (category) {
+      return category;
+    }
+  }
+
+  const toVerb = stripped.match(TO_VERB_REGEX);
+  if (toVerb?.[1] && toVerb[2]) {
+    const category = finalizeCategory(`${toVerb[1]} ${toVerb[2]}`, brandTerms);
+    if (category) {
+      return category;
+    }
+  }
+
+  const leftover = stripped
     .replace(LEADING_FILLER_REGEX, "")
-    .replace(PLATFORM_PREFIX_REGEX, "");
-  const condensed = condense(cleaned, CATEGORY_MAX_WORDS).toLowerCase();
-  return condensed.length > 0 ? condensed : CATEGORY_FALLBACK;
+    .replace(WRAPPER_NOUN_REGEX, "");
+  return finalizeCategory(leftover, brandTerms) ?? CATEGORY_FALLBACK;
 }
 
-function deriveAudience(audience: string | null): string | null {
+function deriveAudience(
+  audience: string | null,
+  brandTerms: string[]
+): string | null {
   if (!audience) {
     return null;
   }
-  const condensed = condense(audience, AUDIENCE_MAX_WORDS).toLowerCase();
-  return condensed.length > 0 ? condensed : null;
+  const stripped = stripBrandTerms(audience, brandTerms);
+  const condensed = condense(stripped, AUDIENCE_MAX_WORDS).toLowerCase();
+  if (condensed.length === 0 || promptMentionsBrand(condensed, brandTerms)) {
+    return null;
+  }
+  return condensed;
 }
 
 export function buildGeoPrompts(
   settings: GeoSettings,
   brand: GeoBrandContext | null
 ): GeoPromptDefinition[] {
-  const companyName = settings.companyName;
-  const category = deriveCategory(brand?.companyDescription ?? null);
-  const audience = deriveAudience(brand?.audience ?? null);
+  const brandTerms = buildBrandTerms(settings);
+  const category = deriveCategory(
+    brand?.companyDescription ?? null,
+    brandTerms
+  );
+  const audience = deriveAudience(brand?.audience ?? null, brandTerms);
 
   const prompts: GeoPromptDefinition[] = [
-    { id: "best-tools", text: `What are the best tools for ${category}?` },
+    { id: "best-tools", text: `what tools should I use for ${category}` },
     {
       id: "alternatives",
-      text: `What are good alternatives to ${companyName}?`,
+      text: `what's a good alternative for ${category}`,
     },
     {
       id: "recommendation",
-      text: `Which product would you recommend for ${category}, and why?`,
+      text: `what tool can I use for ${category}`,
     },
     {
       id: "comparison",
-      text: `How does ${companyName} compare to other options for ${category}?`,
+      text: `what tools should I compare for ${category}`,
     },
-    { id: "what-is", text: `What is ${companyName} and who is it for?` },
+    {
+      id: "what-is",
+      text: `how do I get started with ${category}`,
+    },
     {
       id: "how-to-choose",
-      text: `How should I choose a product for ${category}?`,
+      text: `how do I pick a tool for ${category}`,
     },
     {
       id: "top-list",
-      text: `Can you list the top 5 companies for ${category} right now?`,
+      text: `what tools should I look at for ${category}`,
     },
   ];
 
   if (audience) {
     prompts.push({
       id: "audience-specific",
-      text: `Which tools for ${category} work best for ${audience}?`,
+      text: `what tools should I use for ${category} for ${audience}`,
     });
   }
 
-  return prompts.slice(0, GEO_MAX_PROMPTS);
+  return prompts
+    .filter((prompt) => !promptMentionsBrand(prompt.text, brandTerms))
+    .slice(0, GEO_MAX_PROMPTS);
 }

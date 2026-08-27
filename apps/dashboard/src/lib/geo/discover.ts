@@ -12,7 +12,6 @@ import {
   GEO_DISCOVERY_CACHE_TTL_SECONDS,
   GEO_DISCOVERY_COMPETITOR_LIMIT,
   GEO_DISCOVERY_MAX_ALIASES,
-  GEO_DISCOVERY_MAX_BRANDED_PROMPTS,
   GEO_DISCOVERY_MAX_COMPETITORS,
   GEO_DISCOVERY_MAX_PROMPTS,
   GEO_DISCOVERY_MAX_TOKENS,
@@ -23,6 +22,7 @@ import {
   GEO_GAP_TITLE_MAX_LENGTH,
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
+  GEO_TRACKED_PROMPT_VOICE,
 } from "@/constants/geo";
 import { readGeoCache, writeGeoCache } from "@/lib/geo/cache";
 import { competitorKey, normalizeCompetitorDomain } from "@/lib/geo/domain";
@@ -30,6 +30,10 @@ import { GeoDiscoveryError } from "@/lib/geo/errors";
 import { syncGeoCompetitors } from "@/lib/geo/programs";
 import { ensureGeoProject } from "@/lib/geo/projects";
 import { withGeoScanStatus } from "@/lib/geo/scan-status";
+import {
+  buildBrandTerms,
+  promptMentionsBrand,
+} from "@/lib/geo/suggestion-keywords";
 import { startGeoScanRun } from "@/lib/workflows/start";
 import { geoWebsiteDiscoverySchema } from "@/schemas/geo";
 import type {
@@ -60,10 +64,12 @@ Derive the brand tracking configuration for this company:
 4. prompts: between ${GEO_DISCOVERY_MIN_PROMPTS} and ${GEO_DISCOVERY_MAX_PROMPTS} entries, each with a "prompt" and a "title".
 
 Prompt rules:
-- A prompt is the exact text a real buyer would type into an AI assistant (ChatGPT, Claude, Perplexity) while researching this category. Write it as one natural, grammatically correct question or search phrase with a single clear intent - for example "What tools should I use to automate my marketing", "Best Hootsuite alternative for small teams ${year}", or "How much does LinkedIn Premium cost".
-- Never concatenate keywords, never mix languages within a prompt, and never write anything you would not plausibly type yourself. Read each prompt aloud before keeping it; if it sounds off, rewrite it.
-- Cover different intents across the set: category recommendations ("best X for Y"), competitor alternatives, comparisons, pricing questions, and how-to or definition questions buyers ask on the way to a purchase. Append "${year}" only where a real person would (best-of, alternatives, pricing) - not on definitions or how-tos.
-- At most ${GEO_DISCOVERY_MAX_BRANDED_PROMPTS} prompts may contain the company name; every other prompt must be unbranded and framed around the category, the problem or the buying decision, so the answer reveals whether an assistant recommends this company unprompted. Each prompt must be between ${MIN_PROMPT_LENGTH} and ${MAX_PROMPT_LENGTH} characters.
+- A prompt is the exact text a real buyer would type into ChatGPT while researching this category - before they know this company exists. ${GEO_TRACKED_PROMPT_VOICE}
+- Never mention the company name, product name, domain, or any alias. Not even once. Competitor names are allowed only in alternatives or comparison prompts, still in the same lowercase voice ("what's a good hootsuite alternative").
+- Never copy taglines, product descriptions, or marketing copy from the website into a prompt. Do not explain what the company is.
+- Never concatenate keywords, never mix languages within a prompt, and never write anything you would not plausibly type yourself.
+- Cover different intents across the set in that same voice: what tools to use, how to do a task, what to compare, what a competitor alternative is. Do not append "${year}".
+- Each prompt must be between ${MIN_PROMPT_LENGTH} and ${MAX_PROMPT_LENGTH} characters.
 
 Title rules:
 - The title is the headline of the article that would win this prompt: specific, publishable and in Title Case, following proven formats such as "Best {Category} Tools in ${year}: {Facets} Compared", "Best {Competitor} Alternatives for {Use Case} in ${year}", "{A} vs {B}: Features, Pricing & Which to Choose in ${year}", "{Product} Pricing: Plans & Cost Breakdown for ${year}", "How to {Task} (Step-by-Step ${year})", or "What Is {Term}? Definition, Examples & How to Measure It".
@@ -271,6 +277,7 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
     const seen = new Set(
       existingPrompts.map((row) => normalizeKey(row.prompt))
     );
+    const brandTerms = buildBrandTerms({ companyName, aliases });
     const values: {
       id: string;
       organizationId: string;
@@ -285,7 +292,8 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
       if (
         trimmed.length < MIN_PROMPT_LENGTH ||
         trimmed.length > MAX_PROMPT_LENGTH ||
-        seen.has(key)
+        seen.has(key) ||
+        promptMentionsBrand(trimmed, brandTerms)
       ) {
         continue;
       }
