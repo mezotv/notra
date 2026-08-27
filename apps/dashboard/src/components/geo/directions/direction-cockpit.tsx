@@ -213,7 +213,7 @@ export function DirectionCockpit() {
             />
           </EChartsLineChart>
         </InstrumentModule>
-        <InstrumentModule eyebrow="Traffic by source" readout="30D">
+        <InstrumentModule eyebrow="Traffic by source">
           <SourcesTable />
         </InstrumentModule>
         <InstrumentModule

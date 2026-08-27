@@ -64,8 +64,8 @@ function HeaderRow({
   onDismiss,
 }: SearchConsoleHeaderRowProps) {
   return (
-    <div className="flex items-start gap-3 px-4 py-3">
-      <div className="mt-0.5 shrink-0">
+    <div className="flex items-center gap-3 px-4 py-3">
+      <div className="shrink-0">
         <span className="inline-flex size-5 items-center justify-center">
           <Google className="size-4" />
         </span>
@@ -76,20 +76,24 @@ function HeaderRow({
         </p>
         <p className="text-muted-foreground text-sm leading-snug">
           We read the queries your site ranks for and suggest the AI prompts
-          people ask about the same topics. Suggestions refresh every week.
+          people ask. Suggestions refresh weekly.
         </p>
       </div>
-      {action ? <div className="shrink-0">{action}</div> : null}
-      {onDismiss ? (
-        <Button
-          aria-label="Dismiss Search Console card"
-          className="text-muted-foreground shrink-0"
-          onClick={onDismiss}
-          size="icon-sm"
-          variant="ghost"
-        >
-          <HugeiconsIcon icon={Cancel01Icon} size={14} />
-        </Button>
+      {action || onDismiss ? (
+        <div className="flex shrink-0 items-center gap-1">
+          {action}
+          {onDismiss ? (
+            <Button
+              aria-label="Dismiss Search Console card"
+              className="text-muted-foreground"
+              onClick={onDismiss}
+              size="icon-sm"
+              variant="ghost"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} size={14} />
+            </Button>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );

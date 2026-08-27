@@ -1,31 +1,32 @@
 "use client";
 
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@notra/ui/components/ui/tabs";
+  PermissionOption,
+  PermissionRow,
+} from "@notra/ui/components/ui/permission-selector";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { EngineRateTable } from "@/components/geo/engine-rate-table";
+import { GeoPromptsPanel } from "@/components/geo/geo-prompts-panel";
+import { JourneyOverviewCard } from "@/components/geo/journey-overview-card";
+import { JourneyPathsCard } from "@/components/geo/journey-paths-card";
 import { JourneysCard } from "@/components/geo/journeys-card";
 import { LanguagePerformanceCard } from "@/components/geo/language-performance-card";
+import { MentionRateCard } from "@/components/geo/mention-rate-card";
 import { MentionTrendCard } from "@/components/geo/mention-trend-card";
-import { PromptFunnelCard } from "@/components/geo/prompt-funnel-card";
-import { PromptResultsPreview } from "@/components/geo/prompt-results-preview";
 import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import {
   GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
-  GEO_PROMPTS_TAB_PREVIEW_LIMIT,
+  GEO_GAPS_NAV_LINK,
 } from "@/constants/geo";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
+import { cn } from "@/lib/utils";
 import type { GeoTabsProps } from "@/types/geo";
-import { withGeoProject } from "@/utils/geo-paths";
+import { geoNavHref, withGeoProject } from "@/utils/geo-paths";
 import { toGeoTab } from "@/utils/geo-tabs";
 
 const TAB_LINK_CLASS =
@@ -36,7 +37,9 @@ function TriggerCount({ count }: { count: number }) {
     return null;
   }
   return (
-    <span className="text-muted-foreground">({count.toLocaleString()})</span>
+    <span className="text-xs tabular-nums opacity-70">
+      {count.toLocaleString()}
+    </span>
   );
 }
 
@@ -44,13 +47,19 @@ function TabSection({
   active,
   order,
   children,
+  className,
 }: {
   active: boolean;
   order: number;
   children: ReactNode;
+  className?: string;
 }) {
   return (
-    <InstrumentReveal active={active} className="h-full" order={order}>
+    <InstrumentReveal
+      active={active}
+      className={cn("h-full", className)}
+      order={order}
+    >
       {children}
     </InstrumentReveal>
   );
@@ -82,81 +91,103 @@ export function GeoTabs({
   const promptsHref = withGeoProject(promptsPath, projectId);
 
   return (
-    <Tabs
-      onValueChange={(value) => onActiveTabChange(toGeoTab(value))}
-      value={activeTab}
-    >
-      <TabsList variant="line">
-        <TabsTrigger value="visibility">Visibility</TabsTrigger>
-        <TabsTrigger value="prompts">
+    <div className="flex flex-col">
+      <PermissionRow
+        className="w-fit shrink-0"
+        label="GEO sections"
+        layout="compact"
+        onValueChange={(value) => onActiveTabChange(toGeoTab(value))}
+        value={activeTab}
+      >
+        <PermissionOption value="visibility">Visibility</PermissionOption>
+        <PermissionOption value="prompts">
           Prompts
           <TriggerCount count={promptCount} />
-        </TabsTrigger>
-        <TabsTrigger value="journeys">
+        </PermissionOption>
+        <PermissionOption value="journeys">
           Journeys
           <TriggerCount count={journeys.length} />
-        </TabsTrigger>
-      </TabsList>
+        </PermissionOption>
+      </PermissionRow>
 
-      <TabsContent className="mt-6 flex flex-col gap-6" value="visibility">
-        <TabSection active={revealActive} order={0}>
-          <MentionTrendCard isScanning={isScanning} points={timeseriesPoints} />
-        </TabSection>
-        <TabSection active={revealActive} order={1}>
-          <EngineRateTable
-            engines={engines}
-            isScanning={isScanning}
-            promptResults={promptResults}
-            timeseriesPoints={timeseriesPoints}
-          />
-        </TabSection>
-        <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-2">
+      {activeTab === "visibility" ? (
+        <div className="mt-6 flex flex-col gap-6 overflow-visible">
+          <InstrumentGrid className="grid-cols-1 items-stretch gap-4 overflow-visible lg:grid-cols-12">
+            <TabSection
+              active={revealActive}
+              className="relative z-20 overflow-visible lg:col-span-5"
+              order={0}
+            >
+              <MentionRateCard
+                engines={engines}
+                isScanning={isScanning}
+                organizationSlug={organizationSlug}
+                promptResults={promptResults}
+                timeseriesPoints={timeseriesPoints}
+                trackedEngines={settings.engines}
+              />
+            </TabSection>
+            <TabSection
+              active={revealActive}
+              className="lg:col-span-7"
+              order={1}
+            >
+              <MentionTrendCard
+                isScanning={isScanning}
+                points={timeseriesPoints}
+              />
+            </TabSection>
+          </InstrumentGrid>
           <TabSection active={revealActive} order={2}>
-            <ShareOfVoiceCard
-              action={
-                <Link
-                  className={TAB_LINK_CLASS}
-                  href={withGeoProject(
-                    `/${organizationSlug}/geo/competitors`,
-                    projectId
-                  )}
-                  prefetch={true}
-                >
-                  All competitors
-                </Link>
-              }
-              aliases={settings.aliases}
-              companyName={settings.companyName}
-              competitors={competitors}
+            <EngineRateTable
+              engines={engines}
               isScanning={isScanning}
-              organizationId={organizationId}
               organizationSlug={organizationSlug}
-              points={competitorPoints}
-              timeseries={competitorShareTimeseries}
+              promptResults={promptResults}
+              timeseriesPoints={timeseriesPoints}
             />
           </TabSection>
-          <TabSection active={revealActive} order={3}>
-            <LanguagePerformanceCard
-              isScanning={isScanning}
-              organizationId={organizationId}
-              points={languagePoints}
-              settings={settings}
-            />
-          </TabSection>
-        </InstrumentGrid>
-      </TabsContent>
+          <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-2">
+            <TabSection active={revealActive} order={3}>
+              <ShareOfVoiceCard
+                action={
+                  <Link
+                    className={TAB_LINK_CLASS}
+                    href={withGeoProject(
+                      `/${organizationSlug}/geo/competitors`,
+                      projectId
+                    )}
+                    prefetch={true}
+                  >
+                    All competitors
+                  </Link>
+                }
+                aliases={settings.aliases}
+                companyName={settings.companyName}
+                competitors={competitors}
+                isScanning={isScanning}
+                organizationId={organizationId}
+                organizationSlug={organizationSlug}
+                points={competitorPoints}
+                timeseries={competitorShareTimeseries}
+              />
+            </TabSection>
+            <TabSection active={revealActive} order={4}>
+              <LanguagePerformanceCard
+                isScanning={isScanning}
+                organizationId={organizationId}
+                points={languagePoints}
+                settings={settings}
+              />
+            </TabSection>
+          </InstrumentGrid>
+        </div>
+      ) : null}
 
-      <TabsContent className="mt-6 flex flex-col gap-6" value="prompts">
-        <InstrumentGrid className="auto-rows-fr grid-cols-1 gap-4 lg:grid-cols-2 lg:items-stretch">
+      {activeTab === "prompts" ? (
+        <div className="mt-6 flex flex-col gap-6">
           <TabSection active={revealActive} order={0}>
-            <PromptFunnelCard
-              isScanning={isScanning}
-              promptCount={promptCount}
-              results={promptResults}
-            />
-          </TabSection>
-          <TabSection active={revealActive} order={1}>
-            <PromptResultsPreview
+            <GeoPromptsPanel
               action={
                 <Link
                   className={TAB_LINK_CLASS}
@@ -166,19 +197,41 @@ export function GeoTabs({
                   All prompts
                 </Link>
               }
+              gapsHref={geoNavHref(
+                organizationSlug,
+                GEO_GAPS_NAV_LINK,
+                projectId
+              )}
               isScanning={isScanning}
-              limit={GEO_PROMPTS_TAB_PREVIEW_LIMIT}
               results={promptResults}
             />
           </TabSection>
-        </InstrumentGrid>
-      </TabsContent>
+        </div>
+      ) : null}
 
-      <TabsContent className="mt-6 flex flex-col gap-6" value="journeys">
-        <TabSection active={revealActive} order={0}>
-          <JourneysCard journeys={journeys} organizationId={organizationId} />
-        </TabSection>
-      </TabsContent>
-    </Tabs>
+      {activeTab === "journeys" ? (
+        <div className="mt-6 flex flex-col gap-6">
+          <InstrumentGrid className="grid-cols-1 items-stretch gap-4 lg:grid-cols-12">
+            <TabSection
+              active={revealActive}
+              className="lg:col-span-5"
+              order={0}
+            >
+              <JourneyOverviewCard journeys={journeys} />
+            </TabSection>
+            <TabSection
+              active={revealActive}
+              className="lg:col-span-7"
+              order={1}
+            >
+              <JourneyPathsCard journeys={journeys} />
+            </TabSection>
+          </InstrumentGrid>
+          <TabSection active={revealActive} order={2}>
+            <JourneysCard journeys={journeys} organizationId={organizationId} />
+          </TabSection>
+        </div>
+      ) : null}
+    </div>
   );
 }

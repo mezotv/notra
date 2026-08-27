@@ -15,6 +15,8 @@ export function GeoRateSparkline({
   className,
   ariaLabel,
   style,
+  color,
+  label,
 }: GeoRateSparklineProps) {
   const values = points.map((point) => point.value);
   const polyline = sparklinePolyline({
@@ -30,10 +32,10 @@ export function GeoRateSparkline({
 
   return (
     <svg
-      aria-label={ariaLabel ?? mentionRateSparklineLabel(points)}
+      aria-label={ariaLabel ?? label ?? mentionRateSparklineLabel(points)}
       className={cn("text-foreground h-5 w-14 shrink-0", className)}
       role="img"
-      style={style}
+      style={color ? { ...style, color } : style}
       viewBox={`0 0 ${GEO_RATE_SPARKLINE_WIDTH} ${GEO_RATE_SPARKLINE_HEIGHT}`}
     >
       <polyline

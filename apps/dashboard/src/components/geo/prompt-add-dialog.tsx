@@ -189,7 +189,7 @@ export function PromptAddDialog({
                         handleAdd();
                       }
                     }}
-                    placeholder="What's the best tool for automating changelogs?"
+                    placeholder="what tools should I use for automating changelogs"
                     ref={promptRef}
                     rows={4}
                     value={draft}

@@ -13,6 +13,7 @@ import { EngineIcon } from "@/components/geo/engine-icon";
 import {
   GEO_FILTER_TRIGGER_CLASS,
   GEO_MENTION_TREND_AGENT_ICON_LIMIT,
+  GEO_MENTION_TREND_ALL_AGENTS_LABEL,
 } from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { MentionTrendAgentsPickerProps } from "@/types/geo";
@@ -26,7 +27,10 @@ export function MentionTrendAgentsPicker({
   const visible = series.filter((entry) => !hiddenKeys.has(entry.key));
   const preview = visible.slice(0, GEO_MENTION_TREND_AGENT_ICON_LIMIT);
   const count = visible.length;
-  const label = `${count} ${count === 1 ? "agent" : "agents"}`;
+  const label =
+    count > 0 && count === series.length
+      ? GEO_MENTION_TREND_ALL_AGENTS_LABEL
+      : `${count} ${count === 1 ? "agent" : "agents"}`;
   const accessibleLabel =
     visible.length > 0
       ? `Mention trend agents: ${visible.map((entry) => entry.label).join(", ")}`

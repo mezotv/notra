@@ -4,13 +4,16 @@ import { SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Input } from "@notra/ui/components/ui/input";
 import {
+  PermissionOption,
+  PermissionRow,
+} from "@notra/ui/components/ui/permission-selector";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -269,14 +272,6 @@ function GapsEmpty({
   );
 }
 
-function GapsTabCount({ count }: { count: number }) {
-  return (
-    <span className="text-muted-foreground tabular-nums">
-      ({count.toLocaleString()})
-    </span>
-  );
-}
-
 function GapsTabs({
   tab,
   onTabChange,
@@ -284,7 +279,10 @@ function GapsTabs({
   searchCount,
 }: GeoGapsTabsProps) {
   return (
-    <Tabs
+    <PermissionRow
+      className="w-fit shrink-0"
+      label="Gap type"
+      layout="compact"
       onValueChange={(value) => {
         if (value === "prompt" || value === "search") {
           onTabChange(value);
@@ -292,17 +290,19 @@ function GapsTabs({
       }}
       value={tab}
     >
-      <TabsList variant="line">
-        <TabsTrigger value="prompt">
-          Prompt Gaps
-          <GapsTabCount count={promptCount} />
-        </TabsTrigger>
-        <TabsTrigger value="search">
-          Search Gaps
-          <GapsTabCount count={searchCount} />
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
+      <PermissionOption value="prompt">
+        Prompt Gaps
+        <span className="text-xs tabular-nums opacity-70">
+          {promptCount.toLocaleString()}
+        </span>
+      </PermissionOption>
+      <PermissionOption value="search">
+        Search Gaps
+        <span className="text-xs tabular-nums opacity-70">
+          {searchCount.toLocaleString()}
+        </span>
+      </PermissionOption>
+    </PermissionRow>
   );
 }
 

@@ -8,10 +8,11 @@ import { engineIconHtml } from "@/components/geo/engine-icon";
 import { MentionTrendAgentsPicker } from "@/components/geo/mention-trend-agents";
 import {
   InstrumentEmpty,
-  InstrumentSection,
+  InstrumentModule,
 } from "@/components/instrument/instrument-module";
 import { CHART_MUTED_COLOR } from "@/constants/charts";
 import {
+  GEO_MENTION_ACTIVITY_LABEL,
   GEO_MENTION_TREND_AVERAGE_KEY,
   GEO_MENTION_TREND_AVERAGE_LABEL,
 } from "@/constants/geo";
@@ -21,6 +22,7 @@ import type {
   MentionTrendRow,
   MentionTrendSeries,
 } from "@/types/geo";
+import { todayIsoDate } from "@/utils/analytics-charts";
 import { accountSeriesColors, seriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";
 import {
@@ -50,6 +52,10 @@ function sampledDayCount(
   return rows.filter((row) =>
     engines.some((engine) => typeof row[chartKey(engine)] === "number")
   ).length;
+}
+
+function hasIncompleteTail(rows: readonly MentionTrendRow[]): boolean {
+  return rows.at(-1)?.rawDay === todayIsoDate();
 }
 
 function toggleHiddenSeries(
@@ -121,6 +127,7 @@ export function MentionTrendCard({
     }
     return trendConfig;
   }, [series]);
+  const markIncompleteTail = hasIncompleteTail(rows);
   const sampledDays = sampledDayCount(rows, engines);
 
   const handleToggle = useCallback(
@@ -136,7 +143,7 @@ export function MentionTrendCard({
       : null;
 
   return (
-    <InstrumentSection
+    <InstrumentModule
       action={
         <MentionTrendAgentsPicker
           disabled={emptyMessage !== null}
@@ -145,21 +152,22 @@ export function MentionTrendCard({
           series={series}
         />
       }
-      bodyClassName="flex flex-col"
-      eyebrow="Mention trend"
+      bodyClassName="flex min-h-0 flex-1 flex-col"
+      className="h-full"
+      eyebrow={GEO_MENTION_ACTIVITY_LABEL}
     >
       {emptyMessage ? (
         <InstrumentEmpty
           busy={isScanning}
-          className="h-80"
+          className="min-h-64 flex-1"
           message={emptyMessage}
           preview={<EmptyStateTrendPreview />}
-          seed="Mention trend"
+          seed="Mention activity"
         />
       ) : (
         <EChartsAreaChart
           animation={false}
-          className="h-80 w-full"
+          className="min-h-64 w-full flex-1"
           config={config}
           curveType="monotone"
           data={chartRows}
@@ -171,6 +179,8 @@ export function MentionTrendCard({
           {series.map((entry) => (
             <EChartsAreaChart.Area
               dataKey={entry.key}
+              enableBufferLine={markIncompleteTail}
+              gapMissing
               key={entry.key}
               strokeVariant="solid"
               strokeWidth={ENGINE_STROKE_WIDTH}
@@ -183,7 +193,8 @@ export function MentionTrendCard({
           <EChartsAreaChart.Area
             curveType="linear"
             dataKey={GEO_MENTION_TREND_AVERAGE_KEY}
-            strokeVariant="solid"
+            gapMissing
+            strokeVariant="dashed"
             strokeWidth={AVERAGE_STROKE_WIDTH}
             variant="none"
           />
@@ -199,6 +210,6 @@ export function MentionTrendCard({
           />
         </EChartsAreaChart>
       )}
-    </InstrumentSection>
+    </InstrumentModule>
   );
 }

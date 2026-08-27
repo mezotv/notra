@@ -3,8 +3,8 @@
 import { type ReactNode, useMemo } from "react";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
 import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
-import { TrafficDeltaBadge } from "@/components/geo/traffic-delta-badge";
 import {
   InstrumentEmpty,
   InstrumentSection,
@@ -67,7 +67,7 @@ export function TrafficPagesCard({
 
           return (
             <span className="flex items-center justify-end gap-2">
-              <TrafficDeltaBadge delta={delta} />
+              <GeoStatDelta delta={delta} />
               <span className="text-sm tabular-nums">
                 {row.visits.toLocaleString()}
               </span>

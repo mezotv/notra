@@ -18,6 +18,7 @@ import type {
   ShareOfVoiceRow,
 } from "@/types/geo";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
+import { sumGeoSparklinePoints } from "@/utils/geo-sparkline";
 
 const DOMAIN_LIKE_REGEX = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 
@@ -216,6 +217,7 @@ export function mergeCompetitorSharePoints(
     merged.set(key, {
       brand: canonicalByKey.get(key) ?? existing?.brand ?? point.brand,
       mentions: (existing?.mentions ?? 0) + point.mentions,
+      trend: sumGeoSparklinePoints([existing?.trend ?? [], point.trend ?? []]),
     });
   }
 

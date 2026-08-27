@@ -1,0 +1,42 @@
+import { Fragment } from "react";
+
+import {
+  JourneyPathJoin,
+  JourneyPathPill,
+} from "@/components/geo/journey-path-pill";
+import { GEO_JOURNEY_TRAIL_TABLE_LIMIT } from "@/constants/geo";
+import { cn } from "@/lib/utils";
+import type { JourneyPathTrailProps } from "@/types/geo";
+import { compactJourneyPaths, isGeoJourneyTrailGap } from "@/utils/geo-journey";
+
+export function JourneyPathTrail({
+  paths,
+  limit = GEO_JOURNEY_TRAIL_TABLE_LIMIT,
+  className,
+}: JourneyPathTrailProps) {
+  const trail = compactJourneyPaths(paths, limit);
+
+  if (trail.nodes.length === 0) {
+    return <span className="text-muted-foreground text-xs">—</span>;
+  }
+
+  return (
+    <span
+      className={cn("flex min-w-0 flex-wrap items-center gap-y-1", className)}
+      title={
+        trail.omitted > 0
+          ? `${paths.join(" → ")} (${trail.omitted} hidden)`
+          : paths.join(" → ")
+      }
+    >
+      {trail.nodes.map((node, index) => (
+        <Fragment key={`${node.path}-${index}`}>
+          {index > 0 && !isGeoJourneyTrailGap(node.path) ? (
+            <JourneyPathJoin />
+          ) : null}
+          <JourneyPathPill node={node} />
+        </Fragment>
+      ))}
+    </span>
+  );
+}

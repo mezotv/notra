@@ -1,4 +1,3 @@
-import type { FunnelStage } from "@/components/charts/funnel-chart";
 import { GEO_PROMPT_FUNNEL_TOP_POSITION } from "@/constants/geo";
 import { trackedPromptScanId } from "@/lib/geo/prompts";
 import type {
@@ -59,22 +58,6 @@ export function promptCoverageInsight(coverage: GeoPromptCoverage): string {
   return `${coverage.mentioned} of ${coverage.total} tracked prompts`;
 }
 
-export function buildPromptVisibilityFunnel(
-  promptCount: number,
-  results: readonly GeoPromptResult[]
-): FunnelStage[] {
-  const { mentioned, topRanked } = promptMentionSets(results);
-
-  return [
-    { label: "Tracked prompts", value: promptCount },
-    { label: "Mentioned in an answer", value: mentioned.size },
-    {
-      label: `Ranked top ${GEO_PROMPT_FUNNEL_TOP_POSITION}`,
-      value: topRanked.size,
-    },
-  ];
-}
-
 const PRESENCE_SORT_VALUE: Record<GeoPresenceStatus, number> = {
   "training-data": 3,
   "retrieval-only": 2,
@@ -132,7 +115,7 @@ export function buildPromptTableRows(
     .map((entry) => entry.row);
 }
 
-function bestMentionedResult(
+export function bestMentionedResult(
   results: readonly GeoPromptResult[]
 ): GeoPromptResult | null {
   let best: GeoPromptResult | null = null;

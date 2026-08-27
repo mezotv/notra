@@ -46,12 +46,32 @@
     color: var(--geo-mid);
   }
 
+  .text-geo-search {
+    color: var(--geo-search);
+  }
+
+  .text-geo-memory {
+    color: var(--geo-memory);
+  }
+
   .bg-geo-up\/10 {
     background-color: color-mix(in oklab, var(--geo-up) 10%, transparent);
   }
 
   .bg-geo-down\/10 {
     background-color: color-mix(in oklab, var(--geo-down) 10%, transparent);
+  }
+
+  .bg-geo-mid\/10 {
+    background-color: color-mix(in oklab, var(--geo-mid) 10%, transparent);
+  }
+
+  .bg-geo-search\/10 {
+    background-color: color-mix(in oklab, var(--geo-search) 10%, transparent);
+  }
+
+  .bg-geo-memory\/10 {
+    background-color: color-mix(in oklab, var(--geo-memory) 10%, transparent);
   }
 }
 

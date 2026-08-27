@@ -143,6 +143,31 @@ export function ShareOfVoiceTable({
           );
         },
       },
+      {
+        key: "trend",
+        header: "Trend",
+        width: "5.5rem",
+        cell: (row) => {
+          if (row.trend.length < GEO_SPARKLINE_MIN_POINTS) {
+            return <span className="text-muted-foreground text-xs">-</span>;
+          }
+          const own = isOwnBrandName(row.brand, companyName, aliases);
+          const color = shareOfVoiceSliceColor(
+            row.brand,
+            shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
+            competitors,
+            ownBrand
+          );
+          return (
+            <GeoRateSparkline
+              className={own ? "text-primary" : undefined}
+              color={own ? undefined : color.light}
+              label={`${row.brand} share of voice trend`}
+              points={row.trend}
+            />
+          );
+        },
+      },
     ],
     [
       aliases,

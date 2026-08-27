@@ -22,6 +22,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { GeoBar } from "@/components/geo/geo-bar";
 import { GeoLanguagesDialog } from "@/components/geo/geo-languages-dialog";
+import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Twemoji } from "@/components/geo/twemoji";
 import { InstrumentSection } from "@/components/instrument/instrument-module";
@@ -29,6 +30,7 @@ import { Table, type TableColumn } from "@/components/motion/table";
 import {
   GEO_LANGUAGE_FLAGS,
   GEO_MAX_LANGUAGES,
+  GEO_SPARKLINE_MIN_POINTS,
   GEO_VISIBILITY_TABLE_ROWS,
 } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
@@ -45,20 +47,6 @@ import {
   withAddedGeoLanguage,
 } from "@/utils/geo-language-rows";
 import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
-
-function trackedChecksLabel(
-  mentions: number,
-  checks: number,
-  isScanning: boolean
-) {
-  if (checks > 0) {
-    return `${mentions}/${checks} checks`;
-  }
-  if (isScanning) {
-    return "Scanning…";
-  }
-  return "No checks yet";
-}
 
 function LanguageNameCell({
   language,
@@ -151,13 +139,11 @@ function LanguageAddButton({
 function languagePerformanceColumns({
   adding,
   atLimit,
-  isScanning,
   pendingLanguage,
   onAddLanguage,
 }: {
   adding: boolean;
   atLimit: boolean;
-  isScanning: boolean;
   pendingLanguage: string | undefined;
   onAddLanguage: (language: string) => void;
 }): TableColumn<LanguagePerformanceRow>[] {
@@ -198,12 +184,9 @@ function languagePerformanceColumns({
         ),
     },
     {
-      key: "checks",
-      header: "Checks",
+      key: "trend",
+      header: "Trend",
       width: "7.5rem",
-      sortable: true,
-      sortValue: (row) =>
-        row.kind === "tracked" ? row.checks : Number.NEGATIVE_INFINITY,
       cell: (row) =>
         row.kind === "suggested" ? (
           <LanguageAddButton
@@ -213,10 +196,14 @@ function languagePerformanceColumns({
             onAdd={onAddLanguage}
             pending={pendingLanguage === row.language}
           />
+        ) : (row.trend?.length ?? 0) >= GEO_SPARKLINE_MIN_POINTS ? (
+          <GeoRateSparkline
+            className="text-geo-search"
+            label={`${row.language} mention rate trend`}
+            points={row.trend ?? []}
+          />
         ) : (
-          <span className="text-muted-foreground text-[0.6875rem] tabular-nums">
-            {trackedChecksLabel(row.mentions, row.checks, isScanning)}
-          </span>
+          <span className="text-muted-foreground text-xs">-</span>
         ),
     },
   ];
@@ -226,7 +213,6 @@ export function LanguagePerformanceCard({
   points,
   organizationId,
   settings,
-  isScanning = false,
 }: LanguagePerformanceCardProps) {
   const [languagesOpen, setLanguagesOpen] = useState(false);
   const [languageToAdd, setLanguageToAdd] = useState<string>();
@@ -237,9 +223,10 @@ export function LanguagePerformanceCard({
     upsert.isPending && upsert.variables
       ? trackedGeoLanguages(upsert.variables.languages)
       : savedExtras;
+  const configuredLanguageSet = new Set(configuredLanguages);
   const pendingLanguage =
     configuredLanguages.find((language) => !savedExtraSet.has(language)) ??
-    savedExtras.find((language) => !configuredLanguages.includes(language));
+    savedExtras.find((language) => !configuredLanguageSet.has(language));
   const atLimit = configuredLanguages.length >= GEO_MAX_LANGUAGES;
 
   const rows = buildLanguagePerformanceRows({
@@ -297,11 +284,10 @@ export function LanguagePerformanceCard({
       languagePerformanceColumns({
         adding: upsert.isPending,
         atLimit,
-        isScanning,
         onAddLanguage: setLanguageToAdd,
         pendingLanguage,
       }),
-    [atLimit, isScanning, pendingLanguage, upsert.isPending]
+    [atLimit, pendingLanguage, upsert.isPending]
   );
 
   return (

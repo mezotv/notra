@@ -105,7 +105,7 @@ export function toGeoTrafficLogEntry(
   };
 }
 
-export function toNullableNumber(value: number | bigint | null): number | null {
+function toNullableNumber(value: number | bigint | null): number | null {
   if (value === null) {
     return null;
   }

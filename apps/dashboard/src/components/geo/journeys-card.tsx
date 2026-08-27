@@ -4,11 +4,13 @@ import { useMemo, useState } from "react";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { JourneyDetailDialog } from "@/components/geo/journey-detail-dialog";
+import { JourneyPathTrail } from "@/components/geo/journey-path-trail";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { GEO_JOURNEY_TRAIL_TABLE_LIMIT } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { GeoJourney, JourneysCardProps } from "@/types/geo";
 import {
@@ -17,16 +19,10 @@ import {
   formatGeoJourneySpan,
   formatGeoSource,
 } from "@/utils/ai-traffic";
-import { buildJourneyDepthSummary } from "@/utils/geo-journey";
 import { tableHeightFor } from "@/utils/table";
 
 export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
   const [selected, setSelected] = useState<GeoJourney | null>(null);
-
-  const depthSummary = useMemo(
-    () => buildJourneyDepthSummary(journeys),
-    [journeys]
-  );
 
   const columns = useMemo<TableColumn<GeoJourney>[]>(
     () => [
@@ -99,15 +95,14 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
       },
       {
         key: "entryPath",
-        header: "Entry path",
-        width: "1.2fr",
+        header: "Path",
+        width: "2fr",
         cell: (row) => (
-          <span
-            className="block w-full min-w-0 truncate font-mono text-xs"
-            title={row.samplePaths.join("\n")}
-          >
-            {row.samplePaths[0] ?? ""}
-          </span>
+          <JourneyPathTrail
+            className="flex-nowrap overflow-hidden"
+            limit={GEO_JOURNEY_TRAIL_TABLE_LIMIT}
+            paths={row.samplePaths}
+          />
         ),
         sortValue: (row) => row.samplePaths[0] ?? "",
       },
@@ -118,7 +113,11 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
   return (
     <InstrumentSection
       eyebrow="Agent journeys"
-      readout={journeys.length > 0 ? undefined : "no journeys yet"}
+      readout={
+        journeys.length > 0
+          ? `${journeys.length.toLocaleString()} captured`
+          : "no journeys yet"
+      }
     >
       {journeys.length === 0 ? (
         <InstrumentEmpty
@@ -127,11 +126,6 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
         />
       ) : (
         <div className="flex flex-col gap-2">
-          {depthSummary && (
-            <p className="text-muted-foreground px-1 text-xs tabular-nums">
-              {depthSummary}
-            </p>
-          )}
           <Table
             className="rounded-2xl"
             columns={columns}

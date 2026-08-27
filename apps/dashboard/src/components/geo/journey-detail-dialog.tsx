@@ -22,7 +22,9 @@ import { useMemo } from "react";
 
 import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { JourneyPathTrail } from "@/components/geo/journey-path-trail";
 import { CountryFlag } from "@/components/geo/twemoji";
+import { GEO_JOURNEY_TRAIL_DETAIL_LIMIT } from "@/constants/geo";
 import { useGeoJourneyDetail } from "@/lib/hooks/use-geo";
 import type { JourneyDetailDialogProps } from "@/types/geo";
 import { formatGeoJourneySpan, formatGeoSource } from "@/utils/ai-traffic";
@@ -84,6 +86,7 @@ export function JourneyDetailDialog({
   );
 
   const events = useMemo(() => data?.events ?? [], [data]);
+  const eventPaths = useMemo(() => events.map((event) => event.path), [events]);
 
   if (!journey) {
     return null;
@@ -146,6 +149,25 @@ export function JourneyDetailDialog({
               <dd className="text-sm tabular-nums">{journey.distinctPaths}</dd>
             </div>
           </dl>
+          {isLoading ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {JOURNEY_EVENT_SKELETON_ROW_KEYS.slice(0, skeletonRows).map(
+                (key) => (
+                  <Skeleton className="h-5 w-20 rounded-full" key={key} />
+                )
+              )}
+            </div>
+          ) : eventPaths.length > 0 ? (
+            <JourneyPathTrail
+              limit={GEO_JOURNEY_TRAIL_DETAIL_LIMIT}
+              paths={eventPaths}
+            />
+          ) : (
+            <JourneyPathTrail
+              limit={GEO_JOURNEY_TRAIL_DETAIL_LIMIT}
+              paths={journey.samplePaths}
+            />
+          )}
           <div aria-busy={isLoading} className="max-h-96 overflow-auto">
             <Table>
               <TableHeader>

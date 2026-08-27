@@ -223,6 +223,7 @@ export interface AreaProps {
   connectNulls?: boolean; // join segments across null/missing values
   isClickable?: boolean; // lets this area be selected by clicking it
   enableBufferLine?: boolean; // renders this area's last segment as a dashed, fill-less buffer
+  gapMissing?: boolean; // render absent data keys as gaps instead of zeroes
   visible?: boolean; // when false, keeps the series mounted but fades it out for smooth toggles
   children?: ReactNode; // optional <Dot> and <ActiveDot> config
 }
@@ -268,6 +269,7 @@ const YAxis: FC<YAxisProps> = () => null;
 
 export interface GridProps {
   variant?: GridLineVariant; // "dashed" (default) or unbroken "solid" split lines
+  lineType?: GridLineVariant; // alias used by the shared chart API
 }
 
 /** Presence shows the horizontal split lines. Renders nothing. */
@@ -321,6 +323,7 @@ type AreaSeriesConfig = {
   connectNulls: boolean;
   isClickable: boolean;
   enableBufferLine: boolean;
+  gapMissing: boolean;
   visible: boolean;
   dotVariant: DotVariant; // "none" when no <Dot> child is present
   activeDotVariant: DotVariant; // "none" when no <ActiveDot> child is present
@@ -433,6 +436,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
         connectNulls: props.connectNulls ?? false,
         isClickable: props.isClickable ?? false,
         enableBufferLine: props.enableBufferLine ?? false,
+        gapMissing: props.gapMissing ?? false,
         visible: props.visible ?? true,
         dotVariant,
         activeDotVariant,
@@ -457,7 +461,8 @@ function collectConfig(children: ReactNode): CollectedConfig {
       };
     } else if (type === Grid) {
       showGrid = true;
-      gridVariant = (child.props as GridProps).variant ?? "dashed";
+      const props = child.props as GridProps;
+      gridVariant = props.lineType ?? props.variant ?? "dashed";
     } else if (type === Tooltip) {
       const props = child.props as TooltipProps;
       tooltip = {
@@ -1219,7 +1224,7 @@ function buildBrushOption(
       type: "line",
       xAxisIndex: 1,
       yAxisIndex: 1,
-      data: data.map((row) => Number(row[key]) || 0),
+      data: data.map((row) => areaPointValue(row, key, area.gapMissing)),
       stack: isStacked ? "__mini-total" : undefined,
       smooth: curve.smooth,
       step: curve.step,
@@ -1322,16 +1327,17 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
     const curve = curveConfig(area.curveType ?? curveType);
 
     const values = data.map((row, i) => {
-      const value = Number(row[key]) || 0;
+      const value = areaPointValue(row, key, area.gapMissing);
       if (!isExpanded) return value;
+      if (value === null) return null;
       const total = rowTotals[i];
       return total ? value / total : 0;
     });
-    const n = values.length;
+    const lastPresent = lastPresentIndex(values);
     // Hover-reveal is a root-level mode and owns the whole area rendering, so it
     // takes precedence over a per-area buffer tail when both are set.
     const reveal = enableHoverReveal;
-    const buffer = !reveal && area.enableBufferLine && n >= 2;
+    const buffer = !reveal && area.enableBufferLine && lastPresent >= 1;
     const revealActive = reveal && revealIndex !== null;
 
     const restingDot = dotStyle(
@@ -1425,7 +1431,7 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
     if (reveal) revealSink[key] = toPoints(values);
 
     const mainValues: (number | null)[] = buffer
-      ? values.map((v, i) => (i === n - 1 ? null : v))
+      ? values.map((v, i) => (i === lastPresent ? null : v))
       : revealActive
         ? sliceToNull(values, revealIndex as number)
         : values;
@@ -1579,7 +1585,7 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
     // intercepts clicks/hover; it still feeds the axis tooltip (silent series
     // are aggregated by axis), which is why the last point keeps its number.
     const bufferValues: (number | null)[] = values.map((v, i) =>
-      i >= n - 2 ? v : null
+      i >= lastPresent - 1 && i <= lastPresent ? v : null
     );
     const bufferSeries: LineSeriesOption = {
       id: `${BUFFER_PREFIX}${key}`,
@@ -1660,6 +1666,22 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
   });
 }
 
+function areaPointValue(
+  row: Record<string, unknown>,
+  key: string,
+  gapMissing: boolean
+): number | null {
+  if (gapMissing && !(key in row)) return null;
+  return Number(row[key]) || 0;
+}
+
+function lastPresentIndex(values: readonly (number | null)[]): number {
+  for (let index = values.length - 1; index >= 0; index -= 1) {
+    if (values[index] !== null) return index;
+  }
+  return -1;
+}
+
 // Copy a value list with everything AFTER `idx` nulled — the hover-reveal cut:
 // the colored real series keeps its data up to the cursor and drops the rest, so
 // (with connectNulls false) its line and fill stop dead at the pointer.
@@ -1689,7 +1711,7 @@ function computePlottedTops(ctx: OptionBuildContext): Record<string, number[]> {
   for (const area of areas) {
     const key = area.dataKey;
     tops[key] = data.map((row, i) => {
-      let value = Number(row[key]) || 0;
+      let value = areaPointValue(row, key, area.gapMissing) ?? 0;
       if (isExpanded) value = rowTotals[i] ? value / rowTotals[i] : 0;
       return isStacked ? (running[i] += value) : value;
     });

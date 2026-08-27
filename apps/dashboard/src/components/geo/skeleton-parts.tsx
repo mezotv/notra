@@ -3,6 +3,7 @@
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
 
+import { cn } from "@/lib/utils";
 import type {
   GeoSectionSkeletonProps,
   GeoTableSkeletonProps,
@@ -12,9 +13,10 @@ export function GeoSectionSkeleton({
   eyebrow,
   action,
   children,
+  className,
 }: GeoSectionSkeletonProps) {
   return (
-    <section className="flex min-w-0 flex-col gap-3">
+    <section className={cn("flex min-w-0 flex-col gap-3", className)}>
       <div className="flex min-w-0 items-center justify-between gap-2">
         <div className="flex h-7 items-center">
           <h2 className="text-foreground text-sm leading-none font-medium capitalize">

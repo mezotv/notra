@@ -10,8 +10,8 @@ import { useMemo } from "react";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
+import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
-import { TrafficDeltaBadge } from "@/components/geo/traffic-delta-badge";
 import {
   InstrumentEmpty,
   InstrumentSection,
@@ -142,24 +142,16 @@ function TrafficHero({
         {metrics.map((metric) => (
           <div className="px-5 py-4" key={metric.key}>
             <p className="text-muted-foreground text-xs">{metric.label}</p>
-            <div className="mt-1 flex items-center gap-x-2">
+            <div className="mt-1 flex items-baseline gap-2">
               <span className="text-3xl leading-none font-semibold tracking-tight tabular-nums">
                 {metric.value.toLocaleString()}
               </span>
-              {metric.delta === null ? null : (
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <span className="cursor-default">
-                        <TrafficDeltaBadge delta={metric.delta} />
-                      </span>
-                    }
-                  />
-                  <TooltipContent side="top">
-                    vs. previous period
-                  </TooltipContent>
-                </Tooltip>
-              )}
+              <GeoStatDelta
+                className="mb-0.5"
+                delta={metric.delta}
+                hint="vs. previous period"
+                label={metric.label}
+              />
             </div>
           </div>
         ))}

@@ -4,6 +4,7 @@ import {
   GEO_AI_REFERRER_LABELS,
   GEO_JOURNEY_CHIP_LENGTH,
   GEO_JOURNEY_EXPLICIT_PREFIX,
+  GEO_SPARKLINE_MIN_POINTS,
   GEO_TRAFFIC_TREND_CRAWLER_KEY,
   GEO_TRAFFIC_TREND_REFERRAL_KEY,
   GEO_UNTRACKED_VISITOR_TYPES,
@@ -17,6 +18,7 @@ import type {
   GeoTrafficTotals,
   GeoTrafficTrendRow,
   GeoVisitorType,
+  TrafficMetricDeltas,
 } from "@/types/geo";
 import { formatDayLabel } from "@/utils/analytics-charts";
 
@@ -253,24 +255,6 @@ export function buildTrafficSourceSeries(
   return days.map((day) => byDay.get(day) ?? 0);
 }
 
-export type TrafficDeltaTone = "up" | "down" | "flat";
-
-export function trafficDeltaTone(delta: number): TrafficDeltaTone {
-  const rounded = Math.round(delta);
-  if (rounded > 0) {
-    return "up";
-  }
-  if (rounded < 0) {
-    return "down";
-  }
-  return "flat";
-}
-
-export function formatTrafficDelta(delta: number): string {
-  const rounded = Math.round(Math.abs(delta));
-  return `${delta >= 0 ? "+" : "-"}${rounded}%`;
-}
-
 export function isTrafficPagePending({
   isSettingsPending,
   hasSettings,
@@ -307,4 +291,55 @@ export function trafficVisitDelta(
     return current > 0 ? 100 : null;
   }
   return ((current - previous) / previous) * 100;
+}
+
+function sumTrafficTrendMetric(
+  rows: readonly GeoTrafficTrendRow[],
+  key:
+    | typeof GEO_TRAFFIC_TREND_CRAWLER_KEY
+    | typeof GEO_TRAFFIC_TREND_REFERRAL_KEY
+): number {
+  return rows.reduce((total, row) => total + row[key], 0);
+}
+
+export function trafficMetricDeltas(
+  rows: readonly GeoTrafficTrendRow[]
+): TrafficMetricDeltas {
+  const empty: TrafficMetricDeltas = {
+    crawler: null,
+    aiReferral: null,
+    total: null,
+  };
+  if (rows.length < GEO_SPARKLINE_MIN_POINTS) {
+    return empty;
+  }
+
+  const mid = Math.floor(rows.length / 2);
+  const previous = rows.slice(0, mid);
+  const current = rows.slice(mid);
+  const previousCrawler = sumTrafficTrendMetric(
+    previous,
+    GEO_TRAFFIC_TREND_CRAWLER_KEY
+  );
+  const currentCrawler = sumTrafficTrendMetric(
+    current,
+    GEO_TRAFFIC_TREND_CRAWLER_KEY
+  );
+  const previousReferral = sumTrafficTrendMetric(
+    previous,
+    GEO_TRAFFIC_TREND_REFERRAL_KEY
+  );
+  const currentReferral = sumTrafficTrendMetric(
+    current,
+    GEO_TRAFFIC_TREND_REFERRAL_KEY
+  );
+
+  return {
+    crawler: trafficVisitDelta(currentCrawler, previousCrawler),
+    aiReferral: trafficVisitDelta(currentReferral, previousReferral),
+    total: trafficVisitDelta(
+      currentCrawler + currentReferral,
+      previousCrawler + previousReferral
+    ),
+  };
 }

@@ -9,9 +9,12 @@ import {
   GEO_MENTION_TREND_TOTAL_KEY,
   GEO_SEARCH_LABEL,
   GEO_SHARE_OF_VOICE_TOP_BRANDS,
+  GEO_SPARKLINE_MIN_POINTS,
 } from "@/constants/geo";
 import type {
   EngineFamilyModeTrendRow,
+  EngineFamilyStatTrends,
+  FamilyDayBucket,
   GeoCompetitor,
   GeoCompetitorSharePoint,
   GeoEngineFamily,
@@ -20,10 +23,14 @@ import type {
   GeoEngineVariant,
   GeoOverviewEngine,
   GeoSparklinePoint,
+  GeoStatDeltaKind,
+  GeoStatDeltaTone,
   GeoTimeseriesPoint,
+  MentionProviderRow,
   MentionRateSparklineOptions,
   MentionTrend,
   MentionTrendRow,
+  ShareOfVoiceBreakdown,
   ShareOfVoiceDonutSlice,
   ShareOfVoiceRow,
 } from "@/types/geo";
@@ -35,9 +42,54 @@ import {
   GROUNDED_SUFFIX_PATTERN,
   isGroundedEngine,
 } from "@/utils/geo-presence";
+import { sumGeoSparklinePoints } from "@/utils/geo-sparkline";
 
 const GPT_PREFIX_PATTERN = /^gpt-/i;
 const MINI_SUFFIX_PATTERN = /-mini$/i;
+
+export function buildShareOfVoiceBreakdown(
+  points: readonly GeoCompetitorSharePoint[],
+  options?: {
+    limit?: number;
+    competitors?: readonly GeoCompetitor[];
+  }
+): ShareOfVoiceBreakdown {
+  const limit = options?.limit ?? GEO_SHARE_OF_VOICE_TOP_BRANDS;
+  const merged = mergeCompetitorSharePoints(points, options?.competitors);
+  const top = merged.slice(0, limit);
+  const rest = merged.slice(limit);
+  const otherTotal = rest.reduce((sum, point) => sum + point.mentions, 0);
+  const total =
+    top.reduce((sum, point) => sum + point.mentions, 0) + otherTotal;
+  const toRow = (
+    brand: string,
+    mentions: number,
+    trend: readonly GeoSparklinePoint[]
+  ): ShareOfVoiceRow => ({
+    brand,
+    mentions,
+    share: total > 0 ? mentions / total : 0,
+    trend: [...trend],
+  });
+  const rows = top.map((point) =>
+    toRow(point.brand, point.mentions, point.trend ?? [])
+  );
+  if (otherTotal > 0) {
+    rows.push(
+      toRow(
+        CHART_OTHER_SLICE_LABEL,
+        otherTotal,
+        sumGeoSparklinePoints(rest.map((point) => point.trend ?? []))
+      )
+    );
+  }
+  return {
+    rows,
+    others: rest.map((point) =>
+      toRow(point.brand, point.mentions, point.trend ?? [])
+    ),
+  };
+}
 
 export function buildShareOfVoiceRows(
   points: readonly GeoCompetitorSharePoint[],
@@ -46,24 +98,7 @@ export function buildShareOfVoiceRows(
     competitors?: readonly GeoCompetitor[];
   }
 ): ShareOfVoiceRow[] {
-  const limit = options?.limit ?? GEO_SHARE_OF_VOICE_TOP_BRANDS;
-  const merged = mergeCompetitorSharePoints(points, options?.competitors);
-  const top = merged.slice(0, limit);
-  const rest = merged.slice(limit);
-  const brands = top.map((point) => ({
-    brand: point.brand,
-    mentions: point.mentions,
-  }));
-  const otherTotal = rest.reduce((sum, point) => sum + point.mentions, 0);
-  if (otherTotal > 0) {
-    brands.push({ brand: CHART_OTHER_SLICE_LABEL, mentions: otherTotal });
-  }
-  const total = brands.reduce((sum, row) => sum + row.mentions, 0);
-  return brands.map((row) => ({
-    brand: row.brand,
-    mentions: row.mentions,
-    share: total > 0 ? row.mentions / total : 0,
-  }));
+  return buildShareOfVoiceBreakdown(points, options).rows;
 }
 
 export function toShareOfVoiceDonutSlices(
@@ -253,8 +288,11 @@ export function mentionCountSparklineLabel(
   return `${from} to ${to} mentions over ${points.length} days`;
 }
 
-function daysWithSettledUsage(knownDays: readonly string[]): string[] {
-  const settled = knownDays.filter((day) => day < todayIsoDate());
+function daysWithSettledUsage(
+  knownDays: readonly string[],
+  today = todayIsoDate()
+): string[] {
+  const settled = knownDays.filter((day) => day < today);
   return settled.length > 0 ? [...settled] : [...knownDays];
 }
 
@@ -515,4 +553,253 @@ export function buildEngineFamilyModeTrendRows(
 
 function familySortRate(family: GeoEngineFamily): number {
   return engineFamilyTotals(family)?.rate ?? -1;
+}
+
+function emptyFamilyDayBucket(): FamilyDayBucket {
+  return {
+    mentions: 0,
+    checks: 0,
+    positionWeighted: 0,
+    positionWeight: 0,
+  };
+}
+
+function addFamilyDayPoint(
+  bucket: FamilyDayBucket,
+  point: GeoTimeseriesPoint
+): void {
+  bucket.mentions += point.mentions;
+  bucket.checks += point.checks;
+  if (point.avgPosition === null || point.avgPosition === undefined) {
+    return;
+  }
+  const weight = point.mentions > 0 ? point.mentions : 1;
+  bucket.positionWeighted += point.avgPosition * weight;
+  bucket.positionWeight += weight;
+}
+
+function familyDayBuckets(
+  points: readonly GeoTimeseriesPoint[],
+  family?: string
+): Map<string, FamilyDayBucket> {
+  const byDay = new Map<string, FamilyDayBucket>();
+  for (const point of points) {
+    if (family && engineFamilyOf(point.engine) !== family) {
+      continue;
+    }
+    const bucket = byDay.get(point.day) ?? emptyFamilyDayBucket();
+    addFamilyDayPoint(bucket, point);
+    byDay.set(point.day, bucket);
+  }
+  return byDay;
+}
+
+export function mentionOverviewTotals(
+  engines: readonly GeoOverviewEngine[]
+): GeoEngineFamilyTotals | null {
+  return totalsForEngines(engines);
+}
+
+const EMPTY_FAMILY_TOTALS: GeoEngineFamilyTotals = {
+  mentions: 0,
+  checks: 0,
+  rate: 0,
+};
+
+const EMPTY_OVERVIEW_ENGINE = {
+  checks: 0,
+  mentions: 0,
+  mentionRate: 0,
+  avgPosition: null,
+  lastCheckedAt: "",
+} as const;
+
+export function withTrackedMentionEngines(
+  scanned: readonly GeoOverviewEngine[],
+  tracked: readonly string[] = []
+): GeoOverviewEngine[] {
+  const present = new Set(
+    scanned.map((engine) => engineFamilyOf(engine.engine))
+  );
+  const extras: GeoOverviewEngine[] = [];
+  for (const engine of tracked) {
+    const family = engineFamilyOf(engine);
+    if (present.has(family)) {
+      continue;
+    }
+    present.add(family);
+    extras.push({ ...EMPTY_OVERVIEW_ENGINE, engine });
+  }
+  return extras.length === 0 ? [...scanned] : [...scanned, ...extras];
+}
+
+function compareMentionProviderRows(
+  left: MentionProviderRow,
+  right: MentionProviderRow
+): number {
+  if (right.totals.mentions !== left.totals.mentions) {
+    return right.totals.mentions - left.totals.mentions;
+  }
+  return engineFamilyLabel(left.family.family).localeCompare(
+    engineFamilyLabel(right.family.family)
+  );
+}
+
+export function buildMentionProviderRows(
+  scanned: readonly GeoOverviewEngine[],
+  options?: {
+    trackedEngines?: readonly string[];
+    timeseriesPoints?: readonly GeoTimeseriesPoint[];
+  }
+): MentionProviderRow[] {
+  const families = groupEngineFamilies(
+    withTrackedMentionEngines(scanned, options?.trackedEngines)
+  );
+  const points = options?.timeseriesPoints ?? [];
+  return families
+    .map((family) => ({
+      family,
+      totals: engineFamilyTotals(family) ?? EMPTY_FAMILY_TOTALS,
+      mentionDelta: engineFamilyStatTrends(points, family.family).mentionDelta,
+    }))
+    .sort(compareMentionProviderRows);
+}
+
+function sumFamilyWindow(
+  days: readonly string[],
+  byDay: ReadonlyMap<string, FamilyDayBucket>
+): FamilyDayBucket {
+  const total = emptyFamilyDayBucket();
+  for (const day of days) {
+    const bucket = byDay.get(day);
+    if (!bucket) {
+      continue;
+    }
+    total.mentions += bucket.mentions;
+    total.checks += bucket.checks;
+    total.positionWeighted += bucket.positionWeighted;
+    total.positionWeight += bucket.positionWeight;
+  }
+  return total;
+}
+
+function windowRate(bucket: FamilyDayBucket): number | null {
+  if (bucket.checks <= 0) {
+    return null;
+  }
+  return bucket.mentions / bucket.checks;
+}
+
+function windowPosition(bucket: FamilyDayBucket): number | null {
+  if (bucket.positionWeight <= 0) {
+    return null;
+  }
+  return bucket.positionWeighted / bucket.positionWeight;
+}
+
+function relativePercentDelta(
+  current: number,
+  previous: number
+): number | null {
+  if (current === 0 && previous === 0) {
+    return null;
+  }
+  if (previous === 0) {
+    return current > 0 ? 100 : null;
+  }
+  return ((current - previous) / previous) * CHART_PERCENT_SCALE;
+}
+
+function splitTrendDays(
+  days: readonly string[]
+): { previous: string[]; current: string[] } | null {
+  if (days.length < GEO_SPARKLINE_MIN_POINTS) {
+    return null;
+  }
+  const mid = Math.floor(days.length / 2);
+  return {
+    previous: [...days.slice(0, mid)],
+    current: [...days.slice(mid)],
+  };
+}
+
+export function mentionStatTrends(
+  points: readonly GeoTimeseriesPoint[],
+  options?: { family?: string; today?: string }
+): EngineFamilyStatTrends {
+  const empty: EngineFamilyStatTrends = {
+    ratePts: null,
+    mentionDelta: null,
+    positionDelta: null,
+  };
+  const today = options?.today ?? todayIsoDate();
+  const byDay = familyDayBuckets(points, options?.family);
+  const knownDays = [...byDay.keys()].sort();
+  const windows = splitTrendDays(daysWithSettledUsage(knownDays, today));
+  if (!windows) {
+    return empty;
+  }
+  const previous = sumFamilyWindow(windows.previous, byDay);
+  const current = sumFamilyWindow(windows.current, byDay);
+  const previousRate = windowRate(previous);
+  const currentRate = windowRate(current);
+  const previousPosition = windowPosition(previous);
+  const currentPosition = windowPosition(current);
+  return {
+    ratePts:
+      previousRate === null || currentRate === null
+        ? null
+        : (currentRate - previousRate) * CHART_PERCENT_SCALE,
+    mentionDelta: relativePercentDelta(current.mentions, previous.mentions),
+    positionDelta:
+      previousPosition === null || currentPosition === null
+        ? null
+        : currentPosition - previousPosition,
+  };
+}
+
+export function engineFamilyStatTrends(
+  points: readonly GeoTimeseriesPoint[],
+  family: string,
+  today = todayIsoDate()
+): EngineFamilyStatTrends {
+  return mentionStatTrends(points, { family, today });
+}
+
+export function geoStatDeltaTone(
+  delta: number,
+  kind: GeoStatDeltaKind
+): GeoStatDeltaTone {
+  const rounded =
+    kind === "position" ? Math.round(delta * 10) / 10 : Math.round(delta);
+  const effective = kind === "position" ? -rounded : rounded;
+  if (effective > 0) {
+    return "up";
+  }
+  if (effective < 0) {
+    return "down";
+  }
+  return "flat";
+}
+
+export function formatGeoStatDelta(
+  delta: number,
+  kind: GeoStatDeltaKind
+): string {
+  const tone = geoStatDeltaTone(delta, kind);
+  const signed = tone !== "flat";
+
+  if (kind === "mentions") {
+    const rounded = Math.round(Math.abs(delta));
+    return signed ? `${delta >= 0 ? "+" : "-"}${rounded}%` : `${rounded}%`;
+  }
+  if (kind === "rate") {
+    const rounded = Math.round(delta);
+    return signed
+      ? `${rounded >= 0 ? "+" : ""}${rounded} pts`
+      : `${rounded} pts`;
+  }
+  const rounded = Math.round(delta * 10) / 10;
+  const text = Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  return signed ? `${rounded > 0 ? "+" : ""}${text}` : text;
 }

@@ -43,7 +43,6 @@ export function CompetitorShareCard({
           : "Brands AI engines bring up"
       }
       eyebrow="Share of voice"
-      readout={points.length > 0 ? "30D" : undefined}
     >
       <ShareOfVoiceDonut
         aliases={aliases}

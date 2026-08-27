@@ -17,6 +17,7 @@ import { GeoRemoveDialog } from "@/components/geo/geo-remove-dialog";
 import { PresenceBadge } from "@/components/geo/presence-badge";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import {
   PROMPTS_TABLE_HEIGHT,
   PROMPTS_TABLE_ROW_HEIGHT,
@@ -159,16 +160,9 @@ export function PromptsTable({
         width: "1fr",
         minWidth: "10rem",
         cell: (row) => (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="block w-full min-w-0 truncate font-medium">
-                  {row.prompt}
-                </span>
-              }
-            />
-            <TooltipContent className="max-w-sm">{row.prompt}</TooltipContent>
-          </Tooltip>
+          <TruncateWithTooltip className="font-medium">
+            {row.prompt}
+          </TruncateWithTooltip>
         ),
       },
       {

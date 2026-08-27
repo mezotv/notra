@@ -90,10 +90,13 @@ export function sortWinningPromptSummaries(
     });
 }
 
-export function mentionedEngineFamilies(summary: GeoPromptSummary): string[] {
+function uniqueEngineFamilies(
+  summary: GeoPromptSummary,
+  mentionedOnly: boolean
+): string[] {
   const families = new Set<string>();
   for (const result of summary.results) {
-    if (!result.mentioned) {
+    if (mentionedOnly && !result.mentioned) {
       continue;
     }
     families.add(engineFamilyOf(result.engine));
@@ -101,4 +104,21 @@ export function mentionedEngineFamilies(summary: GeoPromptSummary): string[] {
   return [...families].sort((a, b) =>
     engineFamilyLabel(a).localeCompare(engineFamilyLabel(b))
   );
+}
+
+export function mentionedEngineFamilies(summary: GeoPromptSummary): string[] {
+  return uniqueEngineFamilies(summary, true);
+}
+
+export function scannedEngineFamilies(summary: GeoPromptSummary): string[] {
+  return uniqueEngineFamilies(summary, false);
+}
+
+export function unseenPromptSummaries(
+  summaries: readonly GeoPromptSummary[]
+): GeoPromptSummary[] {
+  return summaries
+    .filter((summary) => summary.mentioned === 0)
+    .slice()
+    .sort((left, right) => left.prompt.localeCompare(right.prompt));
 }
