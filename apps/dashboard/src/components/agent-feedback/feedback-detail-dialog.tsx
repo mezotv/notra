@@ -15,19 +15,16 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
 } from "@notra/ui/components/ui/select";
+import { cn } from "@notra/ui/lib/utils";
 
+import { AgentFeedbackAgent } from "@/components/agent-feedback/feedback-agent-icon";
 import {
   AgentFeedbackKindBadge,
+  AgentFeedbackSentimentLabel,
   AgentFeedbackStatusBadge,
 } from "@/components/agent-feedback/feedback-badges";
 import { Button } from "@/components/button";
-import {
-  AGENT_FEEDBACK_SENTIMENT_LABELS,
-  AGENT_FEEDBACK_STATUS_LABELS,
-  AGENT_FEEDBACK_UNSPECIFIED_LABEL,
-} from "@/constants/agent-feedback";
 import type {
   AgentFeedbackDetailDialogProps,
   AgentFeedbackDetailFieldProps,
@@ -38,19 +35,20 @@ import { formatRelative } from "@/utils/format-relative";
 function DetailField({
   label,
   value,
+  children,
   mono = false,
 }: AgentFeedbackDetailFieldProps) {
-  if (!value) {
+  if (!children && !value) {
     return null;
   }
   return (
-    <div className="space-y-1.5">
-      <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-        {label}
-      </h3>
-      <p className={mono ? "font-mono text-xs break-all" : "text-sm"}>
-        {value}
-      </p>
+    <div className="grid grid-cols-[6.5rem_minmax(0,1fr)] items-start gap-3 py-1.5">
+      <div className="text-muted-foreground pt-0.5 text-xs">{label}</div>
+      {children ?? (
+        <p className={cn(mono ? "font-mono text-xs break-all" : "text-sm")}>
+          {value}
+        </p>
+      )}
     </div>
   );
 }
@@ -75,53 +73,86 @@ export function AgentFeedbackDetailDialog({
             {item?.title ?? "Feedback"}
           </ResponsiveDialogTitle>
           <ResponsiveDialogDescription>
-            {item
-              ? `Received ${formatRelative(item.createdAt)}${item.agentClient ? ` via ${item.agentClient}` : ""}`
-              : "Inspect this feedback."}
+            {item ? (
+              <span className="inline-flex flex-wrap items-center gap-x-1.5">
+                Received {formatRelative(item.createdAt)}
+                {item.agentClient ? (
+                  <>
+                    <span aria-hidden="true">via</span>
+                    <AgentFeedbackAgent
+                      className="text-muted-foreground"
+                      client={item.agentClient}
+                    />
+                  </>
+                ) : null}
+              </span>
+            ) : (
+              "Inspect this feedback."
+            )}
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
         {item ? (
-          <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-4">
-            <section className="flex flex-wrap items-center gap-2">
-              <AgentFeedbackKindBadge kind={item.kind} />
-              <AgentFeedbackStatusBadge status={item.status} />
-              {item.sentiment ? (
-                <span className="text-muted-foreground text-xs">
-                  {AGENT_FEEDBACK_SENTIMENT_LABELS[item.sentiment]}
-                </span>
-              ) : null}
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4">
+            <section className="space-y-2">
+              <div className="text-muted-foreground text-xs">Labels</div>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+                  <AgentFeedbackKindBadge kind={item.kind} />
+                  <AgentFeedbackSentimentLabel sentiment={item.sentiment} />
+                </div>
+                <Select
+                  disabled={isUpdating}
+                  onValueChange={(value) => {
+                    if (value && isAgentFeedbackStatus(value)) {
+                      onStatusChange(value);
+                    }
+                  }}
+                  value={item.status}
+                >
+                  <SelectTrigger
+                    aria-label="Feedback status"
+                    className="hover:bg-background bg-background h-8 w-auto shrink-0 gap-1.5"
+                  >
+                    <AgentFeedbackStatusBadge status={item.status} />
+                  </SelectTrigger>
+                  <SelectContent align="end">
+                    {AGENT_FEEDBACK_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status}>
+                        <AgentFeedbackStatusBadge status={status} />
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </section>
 
             <section className="space-y-1.5">
-              <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                Message
-              </h3>
+              <div className="text-muted-foreground text-xs">Message</div>
               <p className="text-sm leading-relaxed whitespace-pre-wrap">
                 {item.message}
               </p>
             </section>
 
-            <section className="grid grid-cols-2 gap-4">
-              <DetailField
-                label="Agent"
-                value={item.agentClient ?? AGENT_FEEDBACK_UNSPECIFIED_LABEL}
-              />
+            <section className="divide-y">
+              <DetailField label="Agent">
+                <AgentFeedbackAgent
+                  className="text-sm"
+                  client={item.agentClient}
+                />
+              </DetailField>
               <DetailField label="Model" value={item.agentModel} />
               <DetailField label="Tool version" value={item.toolVersion} />
               <DetailField label="Source" value={item.source} />
               <DetailField label="External ID" mono value={item.externalId} />
               <DetailField label="Project" mono value={item.projectId} />
+              <DetailField label="Context URL" mono value={item.contextUrl} />
+              <DetailField label="User agent" mono value={item.userAgent} />
             </section>
-
-            <DetailField label="Context URL" mono value={item.contextUrl} />
-            <DetailField label="User agent" mono value={item.userAgent} />
 
             {metadataJson ? (
               <section className="space-y-1.5">
-                <h3 className="text-muted-foreground text-xs font-medium tracking-wider uppercase">
-                  Metadata
-                </h3>
+                <div className="text-muted-foreground text-xs">Metadata</div>
                 <pre className="bg-muted/40 max-h-64 overflow-auto rounded-md border p-3 font-mono text-xs">
                   {metadataJson}
                 </pre>
@@ -129,32 +160,7 @@ export function AgentFeedbackDetailDialog({
             ) : null}
           </div>
         ) : null}
-        <ResponsiveDialogFooter className="bg-muted/50 mx-0 mb-0 shrink-0 flex-row items-center justify-between gap-3 rounded-b-xl border-t p-4">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground text-xs tracking-wider uppercase">
-              Status
-            </span>
-            <Select
-              disabled={isUpdating || !item}
-              onValueChange={(value) => {
-                if (value && isAgentFeedbackStatus(value)) {
-                  onStatusChange(value);
-                }
-              }}
-              value={item?.status ?? "new"}
-            >
-              <SelectTrigger className="bg-background w-40">
-                <SelectValue className="capitalize" />
-              </SelectTrigger>
-              <SelectContent>
-                {AGENT_FEEDBACK_STATUSES.map((status) => (
-                  <SelectItem key={status} value={status}>
-                    {AGENT_FEEDBACK_STATUS_LABELS[status]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <ResponsiveDialogFooter className="bg-muted/50 mx-0 mb-0 shrink-0 flex-row items-center justify-end gap-3 rounded-b-xl border-t p-4">
           <ResponsiveDialogClose render={<Button variant="outline" />}>
             Done
           </ResponsiveDialogClose>

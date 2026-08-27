@@ -1,52 +1,142 @@
 "use client";
 
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@notra/ui/components/ui/table";
-import { cn } from "@notra/ui/lib/utils";
+import { useLayoutEffect, useRef, useState } from "react";
 
+import { AgentFeedbackAgent } from "@/components/agent-feedback/feedback-agent-icon";
 import {
   AgentFeedbackKindBadge,
+  AgentFeedbackSentimentLabel,
   AgentFeedbackStatusBadge,
 } from "@/components/agent-feedback/feedback-badges";
-import {
-  AGENT_FEEDBACK_SENTIMENT_LABELS,
-  AGENT_FEEDBACK_SKELETON_ROWS,
-  AGENT_FEEDBACK_TABLE_COLUMN_COUNT,
-  AGENT_FEEDBACK_UNSPECIFIED_LABEL,
-} from "@/constants/agent-feedback";
-import type { AgentFeedbackTableProps } from "@/types/agent-feedback";
+import { Table, type TableColumn } from "@/components/motion/table";
+import type {
+  AgentFeedbackItem,
+  AgentFeedbackTableProps,
+} from "@/types/agent-feedback";
 import { formatRelative } from "@/utils/format-relative";
+import { tableHeightFor } from "@/utils/table";
 
-function SkeletonRows() {
-  return AGENT_FEEDBACK_SKELETON_ROWS.map((row) => (
-    <TableRow key={row}>
-      <TableCell>
-        <Skeleton className="h-4 w-64" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-5 w-14 rounded-full" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-4 w-16" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-4 w-24" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-5 w-16 rounded-full" />
-      </TableCell>
-      <TableCell>
-        <Skeleton className="h-4 w-20" />
-      </TableCell>
-    </TableRow>
-  ));
+const FEEDBACK_SKELETON_ROW_COUNT = 6;
+const FEEDBACK_TABLE_ROW_HEIGHT = 48;
+
+const FEEDBACK_COLUMNS: TableColumn<AgentFeedbackItem>[] = [
+  {
+    key: "feedback",
+    header: "Feedback",
+    width: "1fr",
+    minWidth: "18rem",
+    sortable: true,
+    sortValue: (item) => item.title ?? item.message,
+    cell: (item) => (
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="truncate text-sm font-medium">
+          {item.title ?? item.message}
+        </span>
+        {item.title ? (
+          <span className="text-muted-foreground truncate text-xs">
+            {item.message}
+          </span>
+        ) : null}
+      </span>
+    ),
+  },
+  {
+    key: "kind",
+    header: "Kind",
+    width: "8rem",
+    sortable: true,
+    cell: (item) => <AgentFeedbackKindBadge kind={item.kind} />,
+  },
+  {
+    key: "sentiment",
+    header: "Sentiment",
+    width: "9rem",
+    sortable: true,
+    sortValue: (item) => item.sentiment ?? "",
+    cell: (item) => <AgentFeedbackSentimentLabel sentiment={item.sentiment} />,
+  },
+  {
+    key: "agentClient",
+    header: "Agent",
+    width: "10rem",
+    sortable: true,
+    sortValue: (item) => item.agentClient ?? "",
+    cell: (item) => (
+      <AgentFeedbackAgent
+        className="text-muted-foreground text-xs"
+        client={item.agentClient}
+      />
+    ),
+  },
+  {
+    key: "status",
+    header: "Status",
+    width: "8rem",
+    sortable: true,
+    cell: (item) => <AgentFeedbackStatusBadge status={item.status} />,
+  },
+  {
+    key: "createdAt",
+    header: "Received",
+    width: "8rem",
+    align: "right",
+    sortable: true,
+    sortValue: (item) => item.createdAt,
+    cell: (item) => (
+      <span className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
+        {formatRelative(item.createdAt)}
+      </span>
+    ),
+  },
+];
+
+function feedbackTableHeight(rowCount: number): number {
+  return tableHeightFor(rowCount, FEEDBACK_TABLE_ROW_HEIGHT);
+}
+
+function useAvailableTableHeight(fallback: number) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [height, setHeight] = useState(fallback);
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) {
+      return;
+    }
+
+    const update = () => {
+      const next = Math.floor(element.clientHeight);
+      if (next > 0) {
+        setHeight((current) => (current === next ? current : next));
+      }
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  return [ref, height] as const;
+}
+
+export function AgentFeedbackTableSkeleton() {
+  const fallback = feedbackTableHeight(FEEDBACK_SKELETON_ROW_COUNT);
+  const [tableRef, tableHeight] = useAvailableTableHeight(fallback);
+
+  return (
+    <div className="h-full min-h-0" ref={tableRef}>
+      <Table
+        className="rounded-2xl"
+        columns={FEEDBACK_COLUMNS}
+        data={[]}
+        height={tableHeight}
+        loading
+        resizable
+        rowHeight={FEEDBACK_TABLE_ROW_HEIGHT}
+      />
+    </div>
+  );
 }
 
 export function AgentFeedbackTable({
@@ -55,86 +145,27 @@ export function AgentFeedbackTable({
   selectedId,
   onSelect,
 }: AgentFeedbackTableProps) {
+  const rowCount = isPending ? FEEDBACK_SKELETON_ROW_COUNT : items.length;
+  const [tableRef, tableHeight] = useAvailableTableHeight(
+    feedbackTableHeight(rowCount)
+  );
+
   return (
-    <div className="border-border/80 bg-background overflow-hidden rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[45%]">Feedback</TableHead>
-            <TableHead>Kind</TableHead>
-            <TableHead>Sentiment</TableHead>
-            <TableHead>Agent</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Received</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isPending ? <SkeletonRows /> : null}
-          {!isPending && items.length === 0 ? (
-            <TableRow>
-              <TableCell
-                className="text-muted-foreground h-24 text-center"
-                colSpan={AGENT_FEEDBACK_TABLE_COLUMN_COUNT}
-              >
-                No feedback matches this filter
-              </TableCell>
-            </TableRow>
-          ) : null}
-          {!isPending &&
-            items.map((item) => (
-              <TableRow
-                aria-selected={item.id === selectedId}
-                className={cn(
-                  "cursor-pointer",
-                  item.id === selectedId && "bg-muted/60"
-                )}
-                key={item.id}
-                onClick={() => onSelect(item)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelect(item);
-                  }
-                }}
-                tabIndex={0}
-              >
-                <TableCell className="max-w-0">
-                  <div className="truncate font-medium">
-                    {item.title ?? item.message}
-                  </div>
-                  {item.title ? (
-                    <div className="text-muted-foreground truncate text-xs">
-                      {item.message}
-                    </div>
-                  ) : null}
-                </TableCell>
-                <TableCell>
-                  <AgentFeedbackKindBadge kind={item.kind} />
-                </TableCell>
-                <TableCell className="text-muted-foreground text-sm">
-                  {item.sentiment
-                    ? AGENT_FEEDBACK_SENTIMENT_LABELS[item.sentiment]
-                    : "–"}
-                </TableCell>
-                <TableCell className="text-muted-foreground text-xs">
-                  {item.agentClient ? (
-                    <span className="font-mono">{item.agentClient}</span>
-                  ) : (
-                    <span className="italic">
-                      {AGENT_FEEDBACK_UNSPECIFIED_LABEL}
-                    </span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <AgentFeedbackStatusBadge status={item.status} />
-                </TableCell>
-                <TableCell className="text-muted-foreground text-right text-sm">
-                  {formatRelative(item.createdAt)}
-                </TableCell>
-              </TableRow>
-            ))}
-        </TableBody>
-      </Table>
+    <div className="h-full min-h-0" ref={tableRef}>
+      <Table
+        className="rounded-2xl"
+        columns={FEEDBACK_COLUMNS}
+        data={items}
+        defaultSort={{ key: "createdAt", direction: "desc" }}
+        emptyState="No feedback matches this filter"
+        getRowId={(item) => item.id}
+        height={tableHeight}
+        loading={isPending}
+        onRowClick={onSelect}
+        resizable
+        rowHeight={FEEDBACK_TABLE_ROW_HEIGHT}
+        selectedRowIds={selectedId ? [selectedId] : undefined}
+      />
     </div>
   );
 }

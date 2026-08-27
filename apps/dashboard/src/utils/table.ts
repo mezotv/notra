@@ -5,9 +5,12 @@ import {
   TABLE_ROW_HEIGHT,
 } from "@/constants/table";
 
-export function tableHeightFor(rowCount: number): number {
+export function tableHeightFor(
+  rowCount: number,
+  rowHeight = TABLE_ROW_HEIGHT
+): number {
   const rows = Math.max(rowCount, TABLE_MIN_ROWS);
-  return Math.min(TABLE_MAX_HEIGHT, (rows + 1) * TABLE_ROW_HEIGHT);
+  return Math.min(TABLE_MAX_HEIGHT, (rows + 1) * rowHeight);
 }
 
 export const GEO_VISIBILITY_TABLE_HEIGHT = tableHeightFor(
