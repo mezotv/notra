@@ -40,7 +40,7 @@ export const onboardingRouter = {
     .input(companyLogoInputSchema)
     .handler(async ({ context, input }) => {
       const { success: withinLimit } = await ratelimit.companyLogo.limit(
-        context.user.id
+        `${context.user.id}:${input.domain.toLowerCase()}`
       );
       if (!withinLimit) {
         throw new ORPCError("TOO_MANY_REQUESTS", {
