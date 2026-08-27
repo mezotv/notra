@@ -82,6 +82,7 @@ import type {
   GeoSequenceRunResponse,
   GeoSettingsRow,
   GeoZdrMode,
+  GeoProjectScanOutcome,
 } from "@/types/geo";
 import {
   resolveGeoEngineGateway,
@@ -159,10 +160,12 @@ const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
         cause,
       }),
   });
-  return {
+  const answer: EngineAnswer = {
     text: result.text,
     grounding: extractGrounding(result),
+    usage: result.usage,
   };
+  return answer;
 });
 
 /**
@@ -192,7 +195,7 @@ const askCursorEngineEffect = Effect.fn("geo.askCursorEngine")(function* (
         ),
     })
   );
-  const answer: GeoEngineAnswer = {
+  const answer: EngineAnswer = {
     text,
     grounding: EMPTY_GEO_CHECK_GROUNDING,
   };
@@ -223,6 +226,10 @@ interface GroundedAnswer {
   grounding: GeoEngineAnswer["grounding"];
   sources: GeoCheckSourceItem[];
   usage: LanguageModelUsage;
+}
+
+interface EngineAnswer extends GeoEngineAnswer {
+  usage?: LanguageModelUsage;
 }
 
 function collectGroundedSources(
@@ -359,6 +366,9 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
       resolveGeoEngineGateway(context.catalog, task.engine)
     ));
   const judged = yield* judgeAnswer(context, task.prompt.text, answer.text);
+  const usage = answer.usage
+    ? addTokenUsage(EMPTY_TOKEN_USAGE, answer.usage)
+    : EMPTY_TOKEN_USAGE;
 
   const row: GeoCheckWrite = {
     organizationId: context.organizationId,
@@ -381,7 +391,8 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
     sources: grounded?.sources ?? [],
   };
 
-  return row;
+  const outcome: GeoCheckOutcome = { row, usage };
+  return outcome;
 });
 
 const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
@@ -557,8 +568,13 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
     { concurrency: GEO_SCAN_CONCURRENCY }
   );
 
-  const rows: GeoCheckWrite[] = results.filter(
-    (result): result is GeoCheckWrite => result !== null
+  const checkOutcomes = results.filter(
+    (result): result is GeoCheckOutcome => result !== null
+  );
+  const rows: GeoCheckWrite[] = checkOutcomes.map((outcome) => outcome.row);
+  let usage = checkOutcomes.reduce(
+    (total, outcome) => addTokenUsage(total, outcome.usage),
+    EMPTY_TOKEN_USAGE
   );
 
   const sequenceRows = yield* Effect.tryPromise({
@@ -593,9 +609,13 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
       ),
     { concurrency: GEO_SCAN_CONCURRENCY }
   );
-  rows.push(
-    ...sequenceResults.flatMap((result) => (result ? result.rows : []))
-  );
+  for (const result of sequenceResults) {
+    if (!result) {
+      continue;
+    }
+    rows.push(...result.rows);
+    usage = addTokenUsage(usage, result.usage);
+  }
 
   yield* Effect.tryPromise({
     try: () => insertGeoMentionChecks(rows),
@@ -603,16 +623,21 @@ const runGeoScanForProject = Effect.fn("geo.runScanProject")(function* (
       new GeoScanError({ message: "Failed to store GEO checks", cause }),
   });
 
-  const completed: GeoScanResult = {
-    status: "completed",
+  const outcome: GeoProjectScanOutcome = {
     checks: rows.length,
     mentions: rows.filter((row) => row.mentioned).length,
+    usage,
   };
-  return completed;
+  return outcome;
 });
 
 interface GeoSequenceCheckOutcome {
   rows: GeoCheckWrite[];
+  usage: AgentTokenUsage;
+}
+
+interface GeoCheckOutcome {
+  row: GeoCheckWrite;
   usage: AgentTokenUsage;
 }
 
@@ -731,15 +756,66 @@ export const runGeoScan = Effect.fn("geo.runScan")(function* (
   let checks = 0;
   let mentions = 0;
   for (const settingsRow of enabledRows) {
+    const runId = `geo-scan-${settingsRow.projectId}-${crypto.randomUUID()}`;
+    const gate = yield* Effect.tryPromise({
+      try: () =>
+        gateContentBilling({
+          organizationId: settingsRow.organizationId,
+          executionId: runId,
+          outputType: null,
+          quotaFeatureId: FEATURES.AI_ANSWERS,
+        }),
+      catch: (cause) =>
+        new GeoScanError({ message: "Failed to reserve AI answers", cause }),
+    });
+    if (!gate.allowed) {
+      yield* Effect.logWarning(
+        `geo: skipping scan for project ${settingsRow.projectId}: ${describeContentBillingDenial(gate)}`
+      );
+      continue;
+    }
+
     const result = yield* withGeoScanRun(
       {
         organizationId: settingsRow.organizationId,
         projectId: settingsRow.projectId,
       },
       (scanId) => runGeoScanForProject(settingsRow, scanId)
+    ).pipe(
+      Effect.tapError(() =>
+        Effect.promise(() =>
+          finalizeContentBilling({
+            reservation: gate,
+            action: "release",
+            logPrefix: "GeoScan",
+          }).catch((releaseError) => {
+            console.error("[GEO] scan credit release failed:", releaseError);
+          })
+        )
+      )
     );
-    checks += result.checks ?? 0;
-    mentions += result.mentions ?? 0;
+
+    yield* Effect.promise(() =>
+      finalizeContentBilling({
+        reservation: gate,
+        action: "confirm",
+        units: result.checks,
+        usage: result.usage,
+        fallbackModelId: GEO_JUDGE_MODEL,
+        properties: {
+          source: "geo_scan",
+          run_id: runId,
+          project_id: settingsRow.projectId,
+          markup_applied: gate.useMarkup,
+        },
+        logPrefix: "GeoScan",
+      }).catch((confirmError) => {
+        console.error("[GEO] scan credit confirm failed:", confirmError);
+      })
+    );
+
+    checks += result.checks;
+    mentions += result.mentions;
   }
 
   const completed: GeoScanResult = {

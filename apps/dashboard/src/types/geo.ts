@@ -1,3 +1,4 @@
+import type { AgentTokenUsage } from "@notra/ai/types/agents";
 import type {
   GeoContentBrief,
   GeoContentSubtype,
@@ -450,6 +451,12 @@ export interface GeoScanResult {
   status: "completed" | "skipped" | "invalid_payload";
   checks?: number;
   mentions?: number;
+}
+
+export interface GeoProjectScanOutcome {
+  checks: number;
+  mentions: number;
+  usage: AgentTokenUsage;
 }
 
 export interface GeoPromptDefinition {
