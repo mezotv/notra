@@ -282,10 +282,7 @@ export const POST = withEvlog(async function POST(
 });
 
 function canUseChatWorkflowStreaming() {
-  if (
-    process.env.NODE_ENV !== "production" &&
-    process.env.FORCE_CHAT_WORKFLOW_STREAMING !== "true"
-  ) {
+  if (process.env.NODE_ENV !== "production") {
     return false;
   }
 
