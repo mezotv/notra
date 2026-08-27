@@ -83,20 +83,32 @@ function collectToolOutputs(
     if (!isRecord(result)) {
       continue;
     }
+    if (isRecord(result.input)) {
+      addQuery(
+        queries,
+        seenQueries,
+        result.input.query ?? result.input.q ?? result.input.search_query
+      );
+    }
     const output = result.output;
-    if (!isRecord(output)) {
-      continue;
-    }
-    if (isRecord(output.action)) {
-      addQuery(queries, seenQueries, output.action.query);
-    }
-    addQuery(queries, seenQueries, output.query);
-    const listed = output.sources ?? output.results;
-    if (!Array.isArray(listed)) {
-      continue;
-    }
-    for (const item of listed) {
+    const outputs = Array.isArray(output) ? output : [output];
+    for (const item of outputs) {
+      if (!isRecord(item)) {
+        continue;
+      }
+      if (isRecord(item.action)) {
+        addQuery(queries, seenQueries, item.action.query);
+      }
+      addQuery(queries, seenQueries, item.query);
       addSource(sources, seenUrls, item);
+
+      const listed = item.sources ?? item.results;
+      if (!Array.isArray(listed)) {
+        continue;
+      }
+      for (const source of listed) {
+        addSource(sources, seenUrls, source);
+      }
     }
   }
 }
