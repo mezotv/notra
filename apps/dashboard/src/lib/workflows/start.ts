@@ -1,5 +1,7 @@
 import { acquireClaim, releaseClaim } from "@notra/ai/autonomy/claims";
+import { chatWorkflowPayloadSchema } from "@notra/ai/schemas/chat";
 import type { BrandGuidelinesWorkflowPayload } from "@notra/ai/types/brand-guidelines";
+import type { ChatWorkflowPayload } from "@notra/ai/types/chat";
 import type { OnboardingAgentWorkflowPayload } from "@notra/ai/types/onboarding-agent";
 import { contentGenerationWorkflowPayloadSchema } from "@notra/content-generation/schemas";
 import { start } from "workflow/api";
@@ -32,6 +34,7 @@ import {
   brandAnalysisWorkflow,
 } from "@/workflows/brand-analysis";
 import { brandGuidelinesWorkflow } from "@/workflows/brand-guidelines";
+import { standaloneChatWorkflow } from "@/workflows/chat";
 import { eventContentWorkflow } from "@/workflows/event-content";
 import { geoScanWorkflow } from "@/workflows/geo-scan";
 import { geoWriterWorkflow } from "@/workflows/geo-writer";
@@ -55,6 +58,14 @@ export async function startBrandGuidelinesRun(
 ): Promise<{ runId: string }> {
   const parsed = brandGuidelinesWorkflowPayloadSchema.parse(payload);
   const run = await start(brandGuidelinesWorkflow, [parsed]);
+  return { runId: run.runId };
+}
+
+export async function startStandaloneChatRun(
+  payload: ChatWorkflowPayload
+): Promise<{ runId: string }> {
+  const parsed = chatWorkflowPayloadSchema.parse(payload);
+  const run = await start(standaloneChatWorkflow, [parsed]);
   return { runId: run.runId };
 }
 

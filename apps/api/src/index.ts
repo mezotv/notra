@@ -13,7 +13,6 @@ import { authMiddleware } from "./middleware/auth";
 import { subscriptionMiddleware } from "./middleware/subscription";
 import { agentChatsRoutes } from "./routes/agent-chats";
 import { brandIdentitiesRoutes } from "./routes/brand-identities";
-import { chatWorkflowRoutes } from "./routes/chat-workflow";
 import { chatsRoutes } from "./routes/chats";
 import { eventTriggersRoutes } from "./routes/event-triggers";
 import { feedbackRoutes } from "./routes/feedback";
@@ -100,8 +99,6 @@ interface Bindings {
   UPSTASH_REDIS_REST_URL?: string;
   UPSTASH_REDIS_REST_TOKEN?: string;
   QSTASH_TOKEN?: string;
-  QSTASH_CURRENT_SIGNING_KEY?: string;
-  QSTASH_NEXT_SIGNING_KEY?: string;
   WORKFLOW_BASE_URL?: string;
   INTEGRATION_ENCRYPTION_KEY?: string;
   NEXT_PUBLIC_APP_URL?: string;
@@ -261,7 +258,6 @@ app.route("/v1", chatsRoutes);
 app.route("/v1", skillsRoutes);
 app.route("/v1", feedbackRoutes);
 app.route("/v2", agentChatsRoutes);
-app.route("/", chatWorkflowRoutes);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "BearerAuth", {
   type: "http",

@@ -24,14 +24,12 @@ import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integra
 import { getGranolaToolContextByIntegrationId } from "@notra/ai/integrations/granola";
 import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
 import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
-import { getWorkflowClient } from "@notra/ai/qstash/client";
-import { getBaseUrl } from "@notra/ai/qstash/triggers";
 import { realtime } from "@notra/ai/realtime";
 import { standaloneChatRequestSchema } from "@notra/ai/schemas/chat";
 import type { StandaloneChatContextItem } from "@notra/ai/schemas/standalone-chat";
 import type {
   ChatUsageSnapshot,
-  UnsignedChatWorkflowPayload,
+  ChatWorkflowPayload,
 } from "@notra/ai/types/chat";
 import type { ValidatedIntegration } from "@notra/ai/types/orchestration";
 import type { TccMetadata } from "@notra/ai/types/tcc";
@@ -39,7 +37,6 @@ import {
   buildChatFinishMetadata,
   stampUserMessageAuthors,
 } from "@notra/ai/utils/chat";
-import { signChatWorkflowPayload } from "@notra/ai/utils/chat-workflow-auth";
 import { routeUsageProperties } from "@notra/ai/utils/route-usage";
 import { InvalidToolInputError, NoSuchToolError, type UIMessage } from "ai";
 import { nanoid } from "nanoid";
@@ -48,6 +45,7 @@ import { NextResponse } from "next/server";
 
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { buildStandaloneChatTelemetryMetadata } from "@/lib/tcc";
+import { startStandaloneChatRun } from "@/lib/workflows/start";
 import type { RouteContext } from "@/types/api/routes";
 import { enforceChatGenerationRatelimit } from "@/utils/chat-ratelimit";
 
@@ -208,7 +206,7 @@ export const POST = withEvlog(async function POST(
       await generateAndSetChatTitle(organizationId, chatId, latestMessage);
     }
 
-    const canUseWorkflowStreaming = canUseUpstashWorkflowStreaming();
+    const canUseWorkflowStreaming = canUseChatWorkflowStreaming();
     const telemetryMetadata = buildStandaloneChatTelemetryMetadata({
       chatId,
       organizationId,
@@ -237,7 +235,7 @@ export const POST = withEvlog(async function POST(
       });
     }
 
-    const workflowPayload: UnsignedChatWorkflowPayload = {
+    const workflowPayload: ChatWorkflowPayload = {
       requestId,
       organizationId,
       chatId,
@@ -250,21 +248,8 @@ export const POST = withEvlog(async function POST(
       thinkingLevel: parseResult.data.thinkingLevel,
       timezone: parseResult.data.timezone,
     };
-    const workflowSecret = process.env.QSTASH_TOKEN;
-    if (!workflowSecret) {
-      throw new Error("QSTASH_TOKEN is not defined");
-    }
 
-    await getWorkflowClient().trigger({
-      url: `${getBaseUrl()}/api/workflows/chat`,
-      body: {
-        ...workflowPayload,
-        workflowSignature: signChatWorkflowPayload(
-          workflowPayload,
-          workflowSecret
-        ),
-      },
-    });
+    await startStandaloneChatRun(workflowPayload);
 
     return NextResponse.json(
       { ok: true, chatId, streamId: latestMessage.id },
@@ -296,39 +281,15 @@ export const POST = withEvlog(async function POST(
   }
 });
 
-function canUseUpstashWorkflowStreaming() {
+function canUseChatWorkflowStreaming() {
   if (
     process.env.NODE_ENV !== "production" &&
-    process.env.FORCE_UPSTASH_CHAT_STREAMING !== "true"
+    process.env.FORCE_CHAT_WORKFLOW_STREAMING !== "true"
   ) {
     return false;
   }
 
-  if (!(realtime && process.env.QSTASH_TOKEN && getChatRedis())) {
-    return false;
-  }
-
-  const baseUrl = getBaseUrl();
-  if (!baseUrl) {
-    return false;
-  }
-
-  try {
-    const hostname = new URL(baseUrl).hostname.toLowerCase();
-
-    if (
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "0.0.0.0" ||
-      hostname === "::1"
-    ) {
-      return false;
-    }
-
-    return true;
-  } catch {
-    return false;
-  }
+  return Boolean(realtime && getChatRedis());
 }
 
 async function createDirectStandaloneChatResponse({

@@ -115,7 +115,6 @@ export const updateChatSessionSchema = z
   );
 
 export const chatWorkflowPayloadSchema = z.object({
-  workflowSignature: z.string().regex(/^[a-f0-9]{64}$/),
   requestId: z.string().min(1),
   organizationId: z.string().min(1),
   chatId: z.string().min(1),

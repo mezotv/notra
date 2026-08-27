@@ -26,45 +26,119 @@ import {
 } from "@notra/ai/integrations/linear";
 import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
 import { realtime } from "@notra/ai/realtime";
-import { chatWorkflowPayloadSchema } from "@notra/ai/schemas/chat";
-import type {
-  ChatUsageSnapshot,
-  ChatWorkflowPayload,
-} from "@notra/ai/types/chat";
+import type { ChatUsageSnapshot } from "@notra/ai/types/chat";
 import type { StandaloneChatContextItem } from "@notra/ai/types/standalone-chat";
 import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
-import { verifyChatWorkflowPayload } from "@notra/ai/utils/chat-workflow-auth";
 import { routeUsageProperties } from "@notra/ai/utils/route-usage";
-import { serve } from "@upstash/workflow/nextjs";
 import type { UIMessageChunk } from "ai";
 import { nanoid } from "nanoid";
 
-export const maxDuration = 1800;
+import { buildStandaloneChatTelemetryMetadata } from "@/lib/tcc";
+import type {
+  ChatBillingRecheckInput,
+  ChatBillingRecheckResult,
+  RejectChatGenerationInput,
+  ResolveChatStreamInput,
+  ResolveChatStreamResult,
+  StandaloneChatWorkflowResult,
+  StreamChatResponseInput,
+} from "@/types/workflows/chat";
 
-export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
-  const parseResult = chatWorkflowPayloadSchema.safeParse(
-    context.requestPayload
+const LOG_PREFIX = "[Chat Workflow]";
+
+export async function claimChatWorkflowRequestStep(
+  requestId: string
+): Promise<boolean> {
+  "use step";
+  return await claimChatWorkflowRequest(requestId);
+}
+
+export async function resolveChatStreamStep(
+  input: ResolveChatStreamInput
+): Promise<ResolveChatStreamResult> {
+  "use step";
+  const messages = await loadChatHistory(input.organizationId, input.chatId);
+  const latestMessage = messages.at(-1);
+  if (!latestMessage) {
+    return { status: "empty_history" };
+  }
+  if (!latestMessage.id) {
+    return { status: "missing_message_id" };
+  }
+  return { status: "ready", streamId: latestMessage.id };
+}
+
+export async function recheckChatBillingStep(
+  input: ChatBillingRecheckInput
+): Promise<ChatBillingRecheckResult> {
+  "use step";
+  if (!autumn || allowUnmeteredAiInDevelopment) {
+    return { allowed: true, unavailable: false, chargeAiCredits: false };
+  }
+
+  try {
+    const billing = await checkChatBilling(input.organizationId);
+    return {
+      allowed: billing.allowed,
+      unavailable: false,
+      chargeAiCredits: billing.chargeAiCredits,
+    };
+  } catch (error) {
+    console.error(`${LOG_PREFIX} AI credit check failed`, {
+      requestId: input.requestId,
+      organizationId: input.organizationId,
+      chatId: input.chatId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return { allowed: false, unavailable: true, chargeAiCredits: false };
+  }
+}
+
+export async function rejectChatGenerationStep(
+  input: RejectChatGenerationInput
+): Promise<void> {
+  "use step";
+  const { requestId, organizationId, chatId, streamId, unavailable } = input;
+  console.warn(`${LOG_PREFIX} AI credit check rejected generation`, {
+    requestId,
+    organizationId,
+    chatId,
+    unavailable,
+  });
+
+  const channel = realtime?.channel(
+    getChatStreamChannelName(organizationId, chatId, streamId)
   );
 
-  if (!parseResult.success) {
-    console.error(
-      "[Chat Workflow] Invalid payload:",
-      parseResult.error.flatten()
-    );
-    await context.cancel();
-    return;
+  try {
+    if (channel) {
+      await channel.emit("ai.chunk", {
+        type: "error",
+        errorText: unavailable
+          ? "Unable to verify usage limits. Please try again."
+          : "Usage limit reached.",
+      });
+      await channel.emit("ai.chunk", {
+        type: "finish",
+        finishReason: "error",
+      });
+    }
+  } catch (error) {
+    console.error(`${LOG_PREFIX} Failed to emit billing error`, {
+      requestId,
+      organizationId,
+      chatId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+  } finally {
+    await clearActiveChatStream(organizationId, chatId, streamId);
   }
+}
 
-  const workflowSecret = process.env.QSTASH_TOKEN;
-  if (
-    !workflowSecret ||
-    !verifyChatWorkflowPayload(parseResult.data, workflowSecret)
-  ) {
-    console.error("[Chat Workflow] Payload authorization failed");
-    await context.cancel();
-    return;
-  }
-
+export async function streamChatResponseStep(
+  input: StreamChatResponseInput
+): Promise<StandaloneChatWorkflowResult> {
+  "use step";
   const {
     requestId,
     organizationId,
@@ -76,112 +150,32 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
     enableThinking,
     thinkingLevel,
     timezone,
-  } = parseResult.data;
+    streamId,
+    chargeAiCredits,
+  } = input;
 
-  const requestClaimed = await context.run("claim-chat-workflow-request", () =>
-    claimChatWorkflowRequest(requestId)
-  );
-  if (!requestClaimed) {
-    console.error("[Chat Workflow] Duplicate or unclaimable request", {
-      requestId,
-      organizationId,
-      chatId,
-    });
-    await context.cancel();
-    return;
-  }
-
-  const messages = await context.run("load-chat-history", () =>
-    loadChatHistory(organizationId, chatId)
-  );
-
+  const messages = await loadChatHistory(organizationId, chatId);
   if (messages.length === 0) {
-    await context.cancel();
-    return;
-  }
-
-  const latestMessage = messages.at(-1);
-  if (!latestMessage?.id) {
-    await context.cancel();
-    return;
+    await clearActiveChatStream(organizationId, chatId, streamId);
+    return { status: "empty_history" };
   }
 
   const channelName = getChatStreamChannelName(
     organizationId,
     chatId,
-    latestMessage.id
+    streamId
   );
-
   const channel = realtime?.channel(channelName);
 
   if (!channel) {
-    console.error("[Chat Workflow] Realtime not configured for streaming", {
+    console.error(`${LOG_PREFIX} Realtime not configured for streaming`, {
       requestId,
       organizationId,
       chatId,
       channelName,
     });
-    await clearActiveChatStream(organizationId, chatId, latestMessage.id);
-    await context.cancel();
-    return;
-  }
-
-  const creditCheck = await context.run(
-    "recheck-ai-credit-balance",
-    async () => {
-      if (!autumn || allowUnmeteredAiInDevelopment) {
-        return { allowed: true, unavailable: false, chargeAiCredits: false };
-      }
-
-      try {
-        const billing = await checkChatBilling(organizationId);
-        return {
-          allowed: billing.allowed,
-          unavailable: false,
-          chargeAiCredits: billing.chargeAiCredits,
-        };
-      } catch (error) {
-        console.error("[Chat Workflow] AI credit check failed", {
-          requestId,
-          organizationId,
-          chatId,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        return { allowed: false, unavailable: true, chargeAiCredits: false };
-      }
-    }
-  );
-
-  if (!creditCheck.allowed) {
-    console.warn("[Chat Workflow] AI credit check rejected generation", {
-      requestId,
-      organizationId,
-      chatId,
-      unavailable: creditCheck.unavailable,
-    });
-    try {
-      await channel.emit("ai.chunk", {
-        type: "error",
-        errorText: creditCheck.unavailable
-          ? "Unable to verify usage limits. Please try again."
-          : "Usage limit reached.",
-      });
-      await channel.emit("ai.chunk", {
-        type: "finish",
-        finishReason: "error",
-      });
-    } catch (error) {
-      console.error("[Chat Workflow] Failed to emit billing error", {
-        requestId,
-        organizationId,
-        chatId,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    } finally {
-      await clearActiveChatStream(organizationId, chatId, latestMessage.id);
-    }
-    await context.cancel();
-    return;
+    await clearActiveChatStream(organizationId, chatId, streamId);
+    return { status: "realtime_unavailable" };
   }
 
   const abortController = new AbortController();
@@ -221,7 +215,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
     stopAbortPolling = startChatAbortPolling({
       organizationId,
       chatId,
-      streamId: latestMessage.id,
+      streamId,
       onAbort: () => abortController.abort(),
     });
     const { stream, routingDecision } = await orchestrateStandaloneChat(
@@ -238,15 +232,12 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
         thinkingLevel,
         timezone,
         useMarkup,
-        telemetryMetadata: {
+        telemetryMetadata: buildStandaloneChatTelemetryMetadata({
           chatId,
-          feature: "standalone_chat",
           organizationId,
-          routeName: "/api/workflows/chat",
-          "tcc.conversational": "true",
-          "tcc.sessionId": chatId,
-          userId: parseResult.data.userId,
-        },
+          routeName: "workflows/standalone-chat",
+          userId,
+        }),
       },
       {
         integrationFetchers: {
@@ -273,11 +264,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
           usageSnapshot.cacheWriteTokens =
             usage.inputTokenDetails?.cacheWriteTokens ?? 0;
 
-          if (
-            !autumn ||
-            allowUnmeteredAiInDevelopment ||
-            !creditCheck.chargeAiCredits
-          ) {
+          if (!autumn || allowUnmeteredAiInDevelopment || !chargeAiCredits) {
             return;
           }
 
@@ -325,7 +312,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
       }
     );
 
-    console.log("[Chat Workflow] Routing decision:", {
+    console.log(`${LOG_PREFIX} Routing decision:`, {
       requestId,
       chatId,
       decision: routingDecision,
@@ -375,20 +362,20 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
             chatId,
             responseMessages,
             undefined,
-            latestMessage.id
+            streamId
           );
           if (!saved) {
             console.warn(
-              "[Chat Workflow] Skipped saving response: chat was deleted",
+              `${LOG_PREFIX} Skipped saving response: chat was deleted`,
               { requestId, organizationId, chatId }
             );
           }
         } finally {
-          await clearActiveChatStream(organizationId, chatId, latestMessage.id);
+          await clearActiveChatStream(organizationId, chatId, streamId);
         }
       },
       onError: (error) => {
-        console.error("[Chat Workflow] Stream error:", { requestId, error });
+        console.error(`${LOG_PREFIX} Stream error:`, { requestId, error });
         return "An error occurred while processing your request.";
       },
     });
@@ -410,6 +397,9 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
     }
 
     await drainPendingFlushes();
+    return abortController.signal.aborted
+      ? { status: "aborted" }
+      : { status: "completed" };
   } catch (error) {
     const isAbort =
       abortController.signal.aborted ||
@@ -418,7 +408,7 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
     await drainPendingFlushes();
 
     if (isAbort) {
-      console.log("[Chat Workflow] Aborted by user:", { requestId, chatId });
+      console.log(`${LOG_PREFIX} Aborted by user:`, { requestId, chatId });
       await channel.emit("ai.chunk", {
         type: "abort",
         reason: "user-stopped",
@@ -428,29 +418,29 @@ export const { POST } = serve<ChatWorkflowPayload>(async (context) => {
         finishReason: "stop",
       });
     } else {
-      console.error("[Chat Workflow] Error:", {
+      console.error(`${LOG_PREFIX} Error:`, {
         requestId,
         chatId,
         error: error instanceof Error ? error.message : String(error),
       });
-
-      if (channel) {
-        await channel.emit("ai.chunk", {
-          type: "error",
-          errorText: "An error occurred while processing your request.",
-        });
-        await channel.emit("ai.chunk", {
-          type: "finish",
-          finishReason: "error",
-        });
-      }
+      await channel.emit("ai.chunk", {
+        type: "error",
+        errorText: "An error occurred while processing your request.",
+      });
+      await channel.emit("ai.chunk", {
+        type: "finish",
+        finishReason: "error",
+      });
     }
 
-    await clearActiveChatStream(organizationId, chatId, latestMessage.id);
+    await clearActiveChatStream(organizationId, chatId, streamId);
+    return isAbort ? { status: "aborted" } : { status: "failed" };
   } finally {
     stopAbortPolling?.();
-    await clearChatAbortFlag(organizationId, chatId, latestMessage.id).catch(
+    await clearChatAbortFlag(organizationId, chatId, streamId).catch(
       () => undefined
     );
   }
-});
+}
+
+Object.assign(streamChatResponseStep, { maxRetries: 0 });

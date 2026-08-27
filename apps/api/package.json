@@ -20,7 +20,6 @@
     "@unkey/api": "^2.3.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.35.8",
-    "@upstash/workflow": "^1.1.0",
     "@vercel/oidc": "^3.8.0",
     "ai": "6.0.206",
     "autumn-js": "^1.2.5",

@@ -64,7 +64,6 @@
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/realtime": "^1.0.3",
     "@upstash/redis": "^1.35.8",
-    "@upstash/workflow": "^1.1.0",
     "@usenotra/geo": "workspace:*",
     "@vercel/oidc": "^3.8.0",
     "@vercel/otel": "^2.1.2",
