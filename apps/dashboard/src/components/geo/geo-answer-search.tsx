@@ -9,6 +9,7 @@ import { getReferenceDomain } from "@/utils/reference-display";
 import { getSafeReferenceSourceUrl } from "@/utils/reference-source-url";
 
 const SEARCHED_THE_WEB = "Searched the web";
+const EMPTY_QUERIES: readonly string[] = [];
 
 function citedSourceHref(url: string | undefined): string | null {
   return url ? getSafeReferenceSourceUrl(url) : null;
@@ -189,7 +190,7 @@ function GeminiCitedSearch({
 export function GeoAnswerSearch({
   skin,
   sources,
-  queries = [],
+  queries = EMPTY_QUERIES,
 }: {
   skin: GeoChatSkin;
   sources: readonly PerplexitySearchSource[];

@@ -15,6 +15,12 @@ export function JourneyPathTrail({
   className,
 }: JourneyPathTrailProps) {
   const trail = compactJourneyPaths(paths, limit);
+  const pathOccurrences = new Map<string, number>();
+  const keyedNodes = trail.nodes.map((node) => {
+    const occurrence = (pathOccurrences.get(node.path) ?? 0) + 1;
+    pathOccurrences.set(node.path, occurrence);
+    return { key: `${node.path}:${occurrence}`, node };
+  });
 
   if (trail.nodes.length === 0) {
     return <span className="text-muted-foreground text-xs">—</span>;
@@ -29,8 +35,8 @@ export function JourneyPathTrail({
           : paths.join(" → ")
       }
     >
-      {trail.nodes.map((node, index) => (
-        <Fragment key={`${node.path}-${index}`}>
+      {keyedNodes.map(({ key, node }, index) => (
+        <Fragment key={key}>
           {index > 0 && !isGeoJourneyTrailGap(node.path) ? (
             <JourneyPathJoin />
           ) : null}
