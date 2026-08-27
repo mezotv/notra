@@ -26,6 +26,7 @@ export interface GateContentBillingInput {
   executionId: string;
   outputType: string | null;
   quotaFeatureId?: ContentQuotaFeatureId;
+  units?: number;
   lockTtlMs?: number;
   countTowardQuota?: boolean;
 }

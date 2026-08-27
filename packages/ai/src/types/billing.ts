@@ -52,6 +52,7 @@ export interface ReserveContentBillingInput {
   organizationId: string;
   outputType: string | null;
   quotaFeatureId?: ContentQuotaFeatureId;
+  units?: number;
   executionId?: string;
   lockTtlMs?: number;
   countTowardQuota?: boolean;

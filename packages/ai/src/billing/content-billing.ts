@@ -182,6 +182,7 @@ export async function reserveContentBilling(
 
   const lockTtlMs = input.lockTtlMs ?? CONTENT_BILLING_LOCK_TTL_MS;
   const countTowardQuota = input.countTowardQuota ?? true;
+  const units = Math.max(1, Math.round(input.units ?? 1));
   const quotaFeature =
     input.quotaFeatureId ?? resolveContentQuotaFeature(input.outputType);
 
@@ -197,7 +198,7 @@ export async function reserveContentBilling(
     const quota = await checkFeature({
       organizationId: input.organizationId,
       featureId: quotaFeature,
-      requiredBalance: metered ? 1 : undefined,
+      requiredBalance: metered ? units : undefined,
       lockId: quotaLockId,
       lockTtlMs,
     });
