@@ -94,7 +94,7 @@ import type {
   GeoWindowInput,
 } from "@/types/geo";
 import {
-  isHiddenGeoTrafficSource,
+  mapVisibleGeoTrafficRows,
   toGeoTrafficTotals,
   toGeoVisitorType,
 } from "@/utils/ai-traffic";
@@ -668,9 +668,10 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
     { concurrency: "unbounded" }
   );
 
-  const sources: GeoTrafficSource[] = (overview?.data ?? [])
-    .filter((row) => !isHiddenGeoTrafficSource(row.source))
-    .map((row) => ({
+  const sources: GeoTrafficSource[] = mapVisibleGeoTrafficRows(
+    overview?.data ?? [],
+    (row) => row.source,
+    (row) => ({
       source: row.source,
       visitorType: toGeoVisitorType(row.visitor_type),
       agent: row.agent,
@@ -683,7 +684,8 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
       markdownVisits: Number(row.markdown_visits),
       paths: Number(row.paths),
       lastSeenAt: row.last_seen_at,
-    }));
+    })
+  );
 
   const response: AiTrafficResponse = {
     configured: isTinybirdConfigured(),
@@ -692,14 +694,16 @@ export const loadAiTraffic = Effect.fn("geo.aiTraffic")(function* (
       (row) =>
         row.visitorType === "crawler" || row.visitorType === "ai_referral"
     ),
-    points: (timeseries?.data ?? [])
-      .filter((row) => !isHiddenGeoTrafficSource(row.source ?? ""))
-      .map((row) => ({
+    points: mapVisibleGeoTrafficRows(
+      timeseries?.data ?? [],
+      (row) => row.source ?? "",
+      (row) => ({
         day: row.day,
         visitorType: toGeoVisitorType(row.visitor_type),
         source: row.source ?? "",
         visits: Number(row.visits),
-      })),
+      })
+    ),
   };
   return response;
 });
@@ -720,9 +724,11 @@ export const loadGeoTrafficLog = Effect.fn("geo.trafficLog")(function* (
     })
   );
   const data = rows?.data ?? [];
-  const log = data
-    .filter((row) => !isHiddenGeoTrafficSource(row.source))
-    .map(toGeoTrafficLogEntry);
+  const log = mapVisibleGeoTrafficRows(
+    data,
+    (row) => row.source,
+    toGeoTrafficLogEntry
+  );
 
   const response: GeoTrafficLogResponse = {
     configured: isTinybirdConfigured(),
@@ -749,9 +755,10 @@ export const loadGeoTrafficJourneys = Effect.fn("geo.trafficJourneys")(
 
     const response: GeoTrafficJourneysResponse = {
       configured: isTinybirdConfigured(),
-      journeys: (journeys?.data ?? [])
-        .filter((row) => !isHiddenGeoTrafficSource(row.source))
-        .map((row) => ({
+      journeys: mapVisibleGeoTrafficRows(
+        journeys?.data ?? [],
+        (row) => row.source,
+        (row) => ({
           journeyId: row.journey_id,
           source: row.source,
           visitorType: toGeoVisitorType(row.visitor_type),
@@ -760,7 +767,8 @@ export const loadGeoTrafficJourneys = Effect.fn("geo.trafficJourneys")(
           firstSeenAt: row.first_seen_at,
           lastSeenAt: row.last_seen_at,
           samplePaths: row.sample_paths,
-        })),
+        })
+      ),
     };
     return response;
   }
@@ -783,9 +791,10 @@ export const loadGeoJourneyDetail = Effect.fn("geo.journeyDetail")(function* (
 
   const response: GeoJourneyDetailResponse = {
     configured: isTinybirdConfigured(),
-    events: (detail?.data ?? [])
-      .filter((row) => !isHiddenGeoTrafficSource(row.agent))
-      .map((row) => ({
+    events: mapVisibleGeoTrafficRows(
+      detail?.data ?? [],
+      (row) => row.agent,
+      (row) => ({
         capturedAt: row.captured_at,
         path: row.path,
         host: row.host,
@@ -794,7 +803,8 @@ export const loadGeoJourneyDetail = Effect.fn("geo.journeyDetail")(function* (
         country: row.country,
         agent: row.agent,
         category: row.category,
-      })),
+      })
+    ),
   };
   return response;
 });
@@ -817,9 +827,10 @@ export const loadGeoTrafficPages = Effect.fn("geo.trafficPages")(function* (
 
   const response: GeoTrafficPagesResponse = {
     configured: isTinybirdConfigured(),
-    pages: (pages?.data ?? [])
-      .filter((row) => !isHiddenGeoTrafficSource(row.source))
-      .map((row) => ({
+    pages: mapVisibleGeoTrafficRows(
+      pages?.data ?? [],
+      (row) => row.source,
+      (row) => ({
         path: row.path,
         source: row.source,
         visitorType: toGeoVisitorType(row.visitor_type),
@@ -828,7 +839,8 @@ export const loadGeoTrafficPages = Effect.fn("geo.trafficPages")(function* (
           ? { previousVisits: Number(row.previous_visits) }
           : {}),
         lastSeenAt: row.last_seen_at,
-      })),
+      })
+    ),
   };
   return response;
 });
