@@ -1656,6 +1656,9 @@ export const geoAgentReadinessReports = pgTable(
       table.projectId,
       table.createdAt
     ),
+    uniqueIndex("geoAgentReadinessReports_projectId_running_uidx")
+      .on(table.projectId)
+      .where(sql`${table.status} = 'running'`),
   ]
 );
 

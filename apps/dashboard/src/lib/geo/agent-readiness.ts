@@ -11,7 +11,6 @@ import {
   AGENT_READINESS_API_ORIGIN,
   AGENT_READINESS_HISTORY_LIMIT,
   AGENT_READINESS_SCAN_TIMEOUT_MS,
-  AGENT_READINESS_STALE_RUNNING_MS,
 } from "@/constants/agent-readiness";
 import { startAgentReadinessRun } from "@/lib/workflows/start";
 import {
@@ -26,7 +25,10 @@ import type {
   AgentReadinessWorkflowPayload,
   AgentReadinessWorkflowResult,
 } from "@/types/agent-readiness";
-import { toAgentReadinessApiErrorMessage } from "@/utils/agent-readiness";
+import {
+  canReuseAgentReadinessScan,
+  toAgentReadinessApiErrorMessage,
+} from "@/utils/agent-readiness";
 import { normalizeWebsiteUrl } from "@/utils/geo-website";
 
 const USER_AGENT = "notra-geo/1.0 (+https://notra.so)";
@@ -234,21 +236,25 @@ async function resolveTargetUrl(brandSettingsId: string): Promise<string> {
 
 async function latestRowWhere(
   projectId: string,
-  status?: ReportRow["status"]
+  status?: ReportRow["status"],
+  targetUrl?: string
 ): Promise<ReportRow | undefined> {
+  const conditions = [eq(geoAgentReadinessReports.projectId, projectId)];
+  if (status) {
+    conditions.push(eq(geoAgentReadinessReports.status, status));
+  }
+  if (targetUrl) {
+    conditions.push(eq(geoAgentReadinessReports.targetUrl, targetUrl));
+  }
   return await db.query.geoAgentReadinessReports.findFirst({
-    where: status
-      ? and(
-          eq(geoAgentReadinessReports.projectId, projectId),
-          eq(geoAgentReadinessReports.status, status)
-        )
-      : eq(geoAgentReadinessReports.projectId, projectId),
+    where: and(...conditions),
     orderBy: desc(geoAgentReadinessReports.createdAt),
   });
 }
 
 async function loadHistory(
-  projectId: string
+  projectId: string,
+  targetUrl: string
 ): Promise<AgentReadinessHistoryPoint[]> {
   const rows = await db.query.geoAgentReadinessReports.findMany({
     columns: {
@@ -260,6 +266,7 @@ async function loadHistory(
     },
     where: and(
       eq(geoAgentReadinessReports.projectId, projectId),
+      eq(geoAgentReadinessReports.targetUrl, targetUrl),
       eq(geoAgentReadinessReports.status, "completed")
     ),
     orderBy: desc(geoAgentReadinessReports.createdAt),
@@ -281,11 +288,11 @@ async function loadHistory(
 export async function loadAgentReadiness(
   scope: AgentReadinessScope
 ): Promise<AgentReadinessResponse> {
-  const [targetUrl, completed, latest, history] = await Promise.all([
-    resolveTargetUrl(scope.brandSettingsId),
-    latestRowWhere(scope.projectId, "completed"),
-    latestRowWhere(scope.projectId),
-    loadHistory(scope.projectId),
+  const targetUrl = await resolveTargetUrl(scope.brandSettingsId);
+  const [completed, latest, history] = await Promise.all([
+    latestRowWhere(scope.projectId, "completed", targetUrl),
+    latestRowWhere(scope.projectId, undefined, targetUrl),
+    loadHistory(scope.projectId, targetUrl),
   ]);
 
   const report = completed ? toReportView(completed) : null;
@@ -301,36 +308,78 @@ export async function startAgentReadinessScan(
     resolveTargetUrl(scope.brandSettingsId),
     latestRowWhere(scope.projectId, "running"),
   ]);
-  if (
-    running &&
-    Date.now() - running.createdAt.getTime() < AGENT_READINESS_STALE_RUNNING_MS
-  ) {
+  if (running && canReuseAgentReadinessScan(running, targetUrl)) {
     return { reportId: running.id, alreadyRunning: true };
   }
 
+  if (running) {
+    const targetChanged = running.targetUrl !== targetUrl;
+    await db
+      .update(geoAgentReadinessReports)
+      .set({
+        status: "failed",
+        errorMessage: targetChanged
+          ? "Scan replaced after the website URL changed."
+          : "Scan timed out before completion.",
+      })
+      .where(
+        and(
+          eq(geoAgentReadinessReports.id, running.id),
+          eq(geoAgentReadinessReports.status, "running")
+        )
+      );
+  }
+
   const reportId = crypto.randomUUID();
-  await db.insert(geoAgentReadinessReports).values({
-    id: reportId,
-    organizationId: scope.organizationId,
-    projectId: scope.projectId,
-    targetUrl,
-  });
-  await startAgentReadinessRun({
-    organizationId: scope.organizationId,
-    projectId: scope.projectId,
-    reportId,
-    targetUrl,
-  });
+  const inserted = await db
+    .insert(geoAgentReadinessReports)
+    .values({
+      id: reportId,
+      organizationId: scope.organizationId,
+      projectId: scope.projectId,
+      targetUrl,
+    })
+    .onConflictDoNothing()
+    .returning({ id: geoAgentReadinessReports.id });
+  if (inserted.length === 0) {
+    const winner =
+      (await latestRowWhere(scope.projectId, "running")) ??
+      (await latestRowWhere(scope.projectId));
+    if (!winner) {
+      throw new Error("Failed to claim agent readiness scan");
+    }
+    return { reportId: winner.id, alreadyRunning: true };
+  }
+
+  try {
+    await startAgentReadinessRun({
+      organizationId: scope.organizationId,
+      projectId: scope.projectId,
+      reportId,
+      targetUrl,
+    });
+  } catch (error) {
+    await db
+      .update(geoAgentReadinessReports)
+      .set({
+        status: "failed",
+        errorMessage: "Scan could not be started. Please try again.",
+      })
+      .where(eq(geoAgentReadinessReports.id, reportId));
+    throw error;
+  }
   return { reportId, alreadyRunning: false };
 }
 
 async function latestCompletedBefore(
   projectId: string,
+  targetUrl: string,
   excludeReportId: string
 ): Promise<ReportRow | undefined> {
   return await db.query.geoAgentReadinessReports.findFirst({
     where: and(
       eq(geoAgentReadinessReports.projectId, projectId),
+      eq(geoAgentReadinessReports.targetUrl, targetUrl),
       eq(geoAgentReadinessReports.status, "completed"),
       ne(geoAgentReadinessReports.id, excludeReportId)
     ),
@@ -349,6 +398,7 @@ export async function executeAgentReadinessScan(
   try {
     const previous = await latestCompletedBefore(
       payload.projectId,
+      payload.targetUrl,
       payload.reportId
     );
     let report = await fetchStoredReport(payload.targetUrl);

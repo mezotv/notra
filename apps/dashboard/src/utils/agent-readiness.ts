@@ -3,6 +3,7 @@ import type { AgentReadinessIssue } from "@notra/db/types/agent-readiness";
 import {
   AGENT_READINESS_GREAT_THRESHOLD,
   AGENT_READINESS_NEEDS_IMPROVEMENT_THRESHOLD,
+  AGENT_READINESS_STALE_RUNNING_MS,
 } from "@/constants/agent-readiness";
 import type {
   AgentReadinessIssueGroups,
@@ -14,6 +15,17 @@ const RESULT_ORDER: Record<AgentReadinessIssue["result"], number> = {
   failed: 0,
   partial: 1,
 };
+
+export function canReuseAgentReadinessScan(
+  running: { createdAt: Date; targetUrl: string },
+  targetUrl: string,
+  now = Date.now()
+): boolean {
+  return (
+    running.targetUrl === targetUrl &&
+    now - running.createdAt.getTime() < AGENT_READINESS_STALE_RUNNING_MS
+  );
+}
 
 function sortOpenIssues(
   left: AgentReadinessIssue,

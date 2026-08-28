@@ -4444,6 +4444,22 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "geoAgentReadinessReports_projectId_running_uidx": {
+          "name": "geoAgentReadinessReports_projectId_running_uidx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {},
+          "where": "\"geo_agent_readiness_reports\".\"status\" = 'running'"
         }
       },
       "foreignKeys": {

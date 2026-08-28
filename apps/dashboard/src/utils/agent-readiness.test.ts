@@ -4,8 +4,11 @@ import type { AgentReadinessIssue } from "@notra/db/types/agent-readiness";
 
 import {
   buildAgentReadinessAllFixesPrompt,
+  canReuseAgentReadinessScan,
   groupAgentReadinessIssues,
 } from "./agent-readiness";
+
+const NOW = new Date("2026-08-28T12:00:00.000Z").getTime();
 
 function issue(
   overrides: Partial<AgentReadinessIssue> &
@@ -43,6 +46,27 @@ describe("groupAgentReadinessIssues", () => {
 
     expect(grouped.mustDo.map((item) => item.id)).toEqual(["404", "oauth"]);
     expect(grouped.shouldDo.map((item) => item.id)).toEqual(["mcp"]);
+  });
+});
+
+describe("canReuseAgentReadinessScan", () => {
+  test("reuses only a fresh scan for the current target", () => {
+    const fresh = {
+      createdAt: new Date(NOW - 60_000),
+      targetUrl: "https://example.com",
+    };
+
+    expect(canReuseAgentReadinessScan(fresh, fresh.targetUrl, NOW)).toBe(true);
+    expect(
+      canReuseAgentReadinessScan(fresh, "https://new.example.com", NOW)
+    ).toBe(false);
+    expect(
+      canReuseAgentReadinessScan(
+        { ...fresh, createdAt: new Date("2026-08-28T11:00:00.000Z") },
+        fresh.targetUrl,
+        NOW
+      )
+    ).toBe(false);
   });
 });
 
