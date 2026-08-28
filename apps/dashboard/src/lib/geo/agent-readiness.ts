@@ -342,10 +342,8 @@ export async function startAgentReadinessScan(
     .onConflictDoNothing()
     .returning({ id: geoAgentReadinessReports.id });
   if (inserted.length === 0) {
-    const winner =
-      (await latestRowWhere(scope.projectId, "running")) ??
-      (await latestRowWhere(scope.projectId));
-    if (!winner) {
+    const winner = await latestRowWhere(scope.projectId, "running", targetUrl);
+    if (!winner || !canReuseAgentReadinessScan(winner, targetUrl)) {
       throw new Error("Failed to claim agent readiness scan");
     }
     return { reportId: winner.id, alreadyRunning: true };
