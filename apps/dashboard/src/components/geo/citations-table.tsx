@@ -7,11 +7,6 @@ import {
   HoverCard,
   HoverCardTrigger,
 } from "@notra/ui/components/ui/hover-card";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
@@ -20,9 +15,11 @@ import { CountryFlag } from "@/components/geo/twemoji";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import {
+  AI_TRAFFIC_PURPOSE_DESCRIPTIONS,
   AI_TRAFFIC_PURPOSE_LABELS,
   GEO_CITATIONS_ROW_HEIGHT,
 } from "@/constants/geo";
+import { AI_TRAFFIC_PURPOSE_ICONS } from "@/constants/geo-purpose-icons";
 import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
 import type { CitationsTableProps, GeoTrafficLogEntry } from "@/types/geo";
 import { countryName } from "@/utils/country";
@@ -77,29 +74,84 @@ function ProviderCell({ entry }: { entry: GeoTrafficLogEntry }) {
   );
 }
 
-function MarkdownFlag({ wantsMarkdown }: { wantsMarkdown: boolean }) {
-  if (!wantsMarkdown) {
-    return null;
-  }
+const MARKDOWN_HINT = "Asked for markdown via the Accept header";
+
+function MarkdownBadge() {
+  return (
+    <Badge aria-label="Markdown" className="px-1.5" variant="secondary">
+      <HugeiconsIcon
+        className="size-3 shrink-0"
+        icon={SourceCodeIcon}
+        strokeWidth={2}
+      />
+    </Badge>
+  );
+}
+
+function PurposeCell({ entry }: { entry: GeoTrafficLogEntry }) {
+  const purposeIcon = AI_TRAFFIC_PURPOSE_ICONS[entry.category];
+  const purposeLabel =
+    AI_TRAFFIC_PURPOSE_LABELS[entry.category] ?? entry.category;
+  const purposeDescription =
+    AI_TRAFFIC_PURPOSE_DESCRIPTIONS[entry.category] ?? entry.category;
 
   return (
-    <Tooltip>
-      <TooltipTrigger
-        render={<span className="inline-flex shrink-0 cursor-help" />}
-      >
-        <Badge aria-label="Markdown" className="px-1.5" variant="secondary">
-          <HugeiconsIcon
-            className="size-3 shrink-0"
-            icon={SourceCodeIcon}
-            strokeWidth={2}
+    <HoverCard>
+      <HoverCardTrigger
+        delay={GEO_TRAFFIC_HOVER_DELAY_MS}
+        render={
+          <button
+            aria-label={
+              entry.wantsMarkdown
+                ? `${purposeLabel}, requested markdown, show details`
+                : `${purposeLabel}, show details`
+            }
+            className="focus-visible:ring-ring/50 flex items-center gap-1 rounded-sm outline-hidden focus-visible:ring-[3px]"
+            type="button"
           />
-        </Badge>
-      </TooltipTrigger>
-      <TooltipContent align="start" className="max-w-xs text-pretty">
-        <span className="block font-medium">Markdown</span>
-        Asked for markdown via the Accept header
-      </TooltipContent>
-    </Tooltip>
+        }
+      >
+        <PurposeBadge category={entry.category} compact tooltip={false} />
+        {entry.wantsMarkdown ? <MarkdownBadge /> : null}
+      </HoverCardTrigger>
+      <TrafficBreakdownCard
+        icon={
+          purposeIcon ? (
+            <HugeiconsIcon
+              aria-hidden="true"
+              className="size-4 shrink-0"
+              icon={purposeIcon}
+              strokeWidth={2}
+            />
+          ) : null
+        }
+        title={purposeLabel}
+      >
+        <ul>
+          <li className="px-3 py-1.5">
+            <p className="text-muted-foreground text-xs text-pretty">
+              {purposeDescription}
+            </p>
+          </li>
+          {entry.wantsMarkdown ? (
+            <li className="flex items-start gap-2 px-3 py-1.5">
+              <HugeiconsIcon
+                aria-hidden="true"
+                className="text-muted-foreground mt-0.5 size-3.5 shrink-0"
+                icon={SourceCodeIcon}
+                strokeWidth={2}
+              />
+              <span className="flex min-w-0 flex-col">
+                <span className="text-xs font-medium">Markdown</span>
+                <span className="text-muted-foreground text-xs text-pretty">
+                  {MARKDOWN_HINT}
+                </span>
+              </span>
+            </li>
+          ) : null}
+        </ul>
+      </TrafficBreakdownCard>
+    </HoverCard>
   );
 }
 
@@ -150,12 +202,7 @@ const CITATIONS_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
     sortable: true,
     sortValue: (entry) =>
       AI_TRAFFIC_PURPOSE_LABELS[entry.category] ?? entry.category,
-    cell: (entry) => (
-      <span className="flex items-center gap-1">
-        <PurposeBadge category={entry.category} compact />
-        <MarkdownFlag wantsMarkdown={entry.wantsMarkdown} />
-      </span>
-    ),
+    cell: (entry) => <PurposeCell entry={entry} />,
   },
   {
     key: "country",
