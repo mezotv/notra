@@ -1,16 +1,14 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings, geoAgentReadinessReports } from "@notra/db/schema";
-import type {
-  AgentReadinessIssue,
-  AgentReadinessScoreBreakdown,
-} from "@notra/db/types/agent-readiness";
 import { and, desc, eq, ne } from "drizzle-orm";
-import type { infer as ZodInfer } from "zod";
 
 import {
   AGENT_READINESS_API_ORIGIN,
   AGENT_READINESS_HISTORY_LIMIT,
+  AGENT_READINESS_HTTP_NOT_FOUND,
+  AGENT_READINESS_REPORT_TIMEOUT_MS,
   AGENT_READINESS_SCAN_TIMEOUT_MS,
+  AGENT_READINESS_USER_AGENT,
 } from "@/constants/agent-readiness";
 import { startAgentReadinessRun } from "@/lib/workflows/start";
 import {
@@ -18,10 +16,16 @@ import {
   agentReadinessApiReportSchema,
 } from "@/schemas/agent-readiness";
 import type {
+  AgentReadinessApiReport,
   AgentReadinessHistoryPoint,
+  AgentReadinessParsedReport,
   AgentReadinessReportView,
+  AgentReadinessReportRow,
   AgentReadinessResponse,
   AgentReadinessScanResponse,
+  AgentReadinessScope,
+  AgentReadinessSseEvent,
+  AgentReadinessSseFrameBoundary,
   AgentReadinessWorkflowPayload,
   AgentReadinessWorkflowResult,
 } from "@/types/agent-readiness";
@@ -31,9 +35,6 @@ import {
 } from "@/utils/agent-readiness";
 import { normalizeWebsiteUrl } from "@/utils/geo-website";
 
-const USER_AGENT = "notra-geo/1.0 (+https://notra.so)";
-const HTTP_NOT_FOUND = 404;
-
 export class AgentReadinessApiError extends Error {}
 
 export class AgentReadinessTargetMissingError extends Error {
@@ -42,27 +43,9 @@ export class AgentReadinessTargetMissingError extends Error {
   }
 }
 
-type ApiReport = ZodInfer<typeof agentReadinessApiReportSchema>;
-
-interface ParsedReport {
-  score: number | null;
-  scoreLabel: string | null;
-  scoreBreakdown: AgentReadinessScoreBreakdown | null;
-  issues: AgentReadinessIssue[];
-  eligibleChecks: number | null;
-  reportUrl: string | null;
-  scannedAt: Date | null;
-}
-
-type ReportRow = typeof geoAgentReadinessReports.$inferSelect;
-
-interface AgentReadinessScope {
-  organizationId: string;
-  projectId: string;
-  brandSettingsId: string;
-}
-
-function parseApiReport(body: ApiReport): ParsedReport {
+function parseApiReport(
+  body: AgentReadinessApiReport
+): AgentReadinessParsedReport {
   const breakdown = body.score_breakdown;
   return {
     score: body.score ?? null,
@@ -93,21 +76,31 @@ function parseApiReport(body: ApiReport): ParsedReport {
 
 async function fetchStoredReport(
   targetUrl: string
-): Promise<ParsedReport | null> {
+): Promise<AgentReadinessParsedReport | null> {
   const endpoint = new URL("/api/v1/report", AGENT_READINESS_API_ORIGIN);
   endpoint.searchParams.set("url", targetUrl);
   const response = await fetch(endpoint, {
-    headers: { Accept: "application/json", "User-Agent": USER_AGENT },
+    headers: {
+      Accept: "application/json",
+      "User-Agent": AGENT_READINESS_USER_AGENT,
+    },
+    signal: AbortSignal.timeout(AGENT_READINESS_REPORT_TIMEOUT_MS),
   });
 
-  if (response.status === HTTP_NOT_FOUND) {
+  if (response.status === AGENT_READINESS_HTTP_NOT_FOUND) {
     await response.text();
     return null;
   }
   if (!response.ok) {
-    await response.text();
+    const parsedProblem = agentReadinessApiProblemSchema.safeParse(
+      await response.json().catch(() => null)
+    );
     throw new AgentReadinessApiError(
-      `Is Agentic report API returned HTTP ${response.status}`
+      toAgentReadinessApiErrorMessage(
+        parsedProblem.success ? parsedProblem.data.code : null,
+        targetUrl,
+        response.status
+      )
     );
   }
 
@@ -122,7 +115,7 @@ async function fetchStoredReport(
 
 function ssePayload(frame: string): unknown {
   const dataLines = frame
-    .split("\n")
+    .split(/\r\n|\n|\r/)
     .filter((line) => line.startsWith("data:"))
     .map((line) => line.slice("data:".length).trim());
   if (dataLines.length === 0) {
@@ -135,12 +128,21 @@ function ssePayload(frame: string): unknown {
   }
 }
 
+function sseFrameBoundary(
+  buffer: string
+): AgentReadinessSseFrameBoundary | null {
+  const match = /\r\n\r\n|\n\n|\r\r/.exec(buffer);
+  return match?.index === undefined
+    ? null
+    : { index: match.index, length: match[0].length };
+}
+
 function assertScanFrameOk(frame: string): void {
   const event = ssePayload(frame);
   if (
     event &&
     typeof event === "object" &&
-    (event as { type?: string }).type === "error"
+    (event as AgentReadinessSseEvent).type === "error"
   ) {
     throw new AgentReadinessApiError(
       "Is Agentic could not complete the scan for this website"
@@ -159,7 +161,7 @@ async function streamScan(targetUrl: string): Promise<void> {
     headers: {
       Accept: "text/event-stream",
       "Cache-Control": "no-store",
-      "User-Agent": USER_AGENT,
+      "User-Agent": AGENT_READINESS_USER_AGENT,
     },
     signal: AbortSignal.timeout(AGENT_READINESS_SCAN_TIMEOUT_MS),
   });
@@ -186,12 +188,12 @@ async function streamScan(targetUrl: string): Promise<void> {
       if (done) {
         break;
       }
-      buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
-      let boundary = buffer.indexOf("\n\n");
-      while (boundary !== -1) {
-        assertScanFrameOk(buffer.slice(0, boundary));
-        buffer = buffer.slice(boundary + 2);
-        boundary = buffer.indexOf("\n\n");
+      buffer += decoder.decode(value, { stream: true });
+      let boundary = sseFrameBoundary(buffer);
+      while (boundary) {
+        assertScanFrameOk(buffer.slice(0, boundary.index));
+        buffer = buffer.slice(boundary.index + boundary.length);
+        boundary = sseFrameBoundary(buffer);
       }
     }
     buffer += decoder.decode();
@@ -203,7 +205,7 @@ async function streamScan(targetUrl: string): Promise<void> {
   }
 }
 
-function toReportView(row: ReportRow): AgentReadinessReportView {
+function toReportView(row: AgentReadinessReportRow): AgentReadinessReportView {
   return {
     id: row.id,
     status: row.status,
@@ -236,9 +238,9 @@ async function resolveTargetUrl(brandSettingsId: string): Promise<string> {
 
 async function latestRowWhere(
   projectId: string,
-  status?: ReportRow["status"],
+  status?: AgentReadinessReportRow["status"],
   targetUrl?: string
-): Promise<ReportRow | undefined> {
+): Promise<AgentReadinessReportRow | undefined> {
   const conditions = [eq(geoAgentReadinessReports.projectId, projectId)];
   if (status) {
     conditions.push(eq(geoAgentReadinessReports.status, status));
@@ -363,7 +365,12 @@ export async function startAgentReadinessScan(
         status: "failed",
         errorMessage: "Scan could not be started. Please try again.",
       })
-      .where(eq(geoAgentReadinessReports.id, reportId));
+      .where(
+        and(
+          eq(geoAgentReadinessReports.id, reportId),
+          eq(geoAgentReadinessReports.status, "running")
+        )
+      );
     throw error;
   }
   return { reportId, alreadyRunning: false };
@@ -373,7 +380,7 @@ async function latestCompletedBefore(
   projectId: string,
   targetUrl: string,
   excludeReportId: string
-): Promise<ReportRow | undefined> {
+): Promise<AgentReadinessReportRow | undefined> {
   return await db.query.geoAgentReadinessReports.findFirst({
     where: and(
       eq(geoAgentReadinessReports.projectId, projectId),
@@ -415,7 +422,7 @@ export async function executeAgentReadinessScan(
       );
     }
 
-    await db
+    const updated = await db
       .update(geoAgentReadinessReports)
       .set({
         status: "completed",
@@ -428,7 +435,22 @@ export async function executeAgentReadinessScan(
         errorMessage: null,
         scannedAt: report.scannedAt ?? new Date(),
       })
-      .where(eq(geoAgentReadinessReports.id, payload.reportId));
+      .where(
+        and(
+          eq(geoAgentReadinessReports.id, payload.reportId),
+          eq(geoAgentReadinessReports.organizationId, payload.organizationId),
+          eq(geoAgentReadinessReports.projectId, payload.projectId),
+          eq(geoAgentReadinessReports.targetUrl, payload.targetUrl),
+          eq(geoAgentReadinessReports.status, "running")
+        )
+      )
+      .returning({ id: geoAgentReadinessReports.id });
+    if (updated.length === 0) {
+      return {
+        status: "failed",
+        reason: "Scan was replaced before completion.",
+      };
+    }
     return { status: "completed" };
   } catch (error) {
     const reason =
@@ -439,7 +461,15 @@ export async function executeAgentReadinessScan(
     await db
       .update(geoAgentReadinessReports)
       .set({ status: "failed", errorMessage: reason })
-      .where(eq(geoAgentReadinessReports.id, payload.reportId));
+      .where(
+        and(
+          eq(geoAgentReadinessReports.id, payload.reportId),
+          eq(geoAgentReadinessReports.organizationId, payload.organizationId),
+          eq(geoAgentReadinessReports.projectId, payload.projectId),
+          eq(geoAgentReadinessReports.targetUrl, payload.targetUrl),
+          eq(geoAgentReadinessReports.status, "running")
+        )
+      );
     return { status: "failed", reason };
   }
 }

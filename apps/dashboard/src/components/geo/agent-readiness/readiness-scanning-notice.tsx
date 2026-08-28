@@ -5,24 +5,20 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Button } from "@/components/button";
 import { InstrumentModule } from "@/components/instrument/instrument-module";
 import {
+  AGENT_READINESS_CHECKLIST_PLACEHOLDER_KEYS,
+  AGENT_READINESS_GAUGE_CIRCUMFERENCE,
+  AGENT_READINESS_GAUGE_RADIUS,
+  AGENT_READINESS_GAUGE_SIZE,
+  AGENT_READINESS_GAUGE_STROKE,
   AGENT_READINESS_MUST_DO_LABEL,
+  AGENT_READINESS_SCANNING_GAUGE_ARC,
   AGENT_READINESS_SHOULD_DO_LABEL,
 } from "@/constants/agent-readiness";
-import type { AgentReadinessScanningNoticeProps } from "@/types/agent-readiness";
+import type {
+  AgentReadinessScanningBreakdownTileProps,
+  AgentReadinessScanningNoticeProps,
+} from "@/types/agent-readiness";
 import { stripWebsiteProtocol } from "@/utils/geo-website";
-
-const GAUGE_SIZE = 120;
-const GAUGE_STROKE = 8;
-const GAUGE_RADIUS = (GAUGE_SIZE - GAUGE_STROKE) / 2;
-const GAUGE_CIRCUMFERENCE = 2 * Math.PI * GAUGE_RADIUS;
-/** Length of the spinning indeterminate arc. */
-const GAUGE_ARC = GAUGE_CIRCUMFERENCE * 0.28;
-
-const CHECKLIST_PLACEHOLDER_KEYS = [
-  "scanning-check-1",
-  "scanning-check-2",
-  "scanning-check-3",
-];
 
 /** Same ring as the score gauge, but with an indeterminate spinning arc. */
 function ScanningGauge() {
@@ -30,26 +26,26 @@ function ScanningGauge() {
     <div aria-hidden="true" className="text-primary relative size-28 shrink-0">
       <svg
         className="size-full motion-safe:animate-spin motion-safe:[animation-duration:1.8s]"
-        viewBox={`0 0 ${GAUGE_SIZE} ${GAUGE_SIZE}`}
+        viewBox={`0 0 ${AGENT_READINESS_GAUGE_SIZE} ${AGENT_READINESS_GAUGE_SIZE}`}
       >
         <circle
           className="opacity-15"
-          cx={GAUGE_SIZE / 2}
-          cy={GAUGE_SIZE / 2}
+          cx={AGENT_READINESS_GAUGE_SIZE / 2}
+          cy={AGENT_READINESS_GAUGE_SIZE / 2}
           fill="none"
-          r={GAUGE_RADIUS}
+          r={AGENT_READINESS_GAUGE_RADIUS}
           stroke="currentColor"
-          strokeWidth={GAUGE_STROKE}
+          strokeWidth={AGENT_READINESS_GAUGE_STROKE}
         />
         <circle
-          cx={GAUGE_SIZE / 2}
-          cy={GAUGE_SIZE / 2}
+          cx={AGENT_READINESS_GAUGE_SIZE / 2}
+          cy={AGENT_READINESS_GAUGE_SIZE / 2}
           fill="none"
-          r={GAUGE_RADIUS}
+          r={AGENT_READINESS_GAUGE_RADIUS}
           stroke="currentColor"
-          strokeDasharray={`${GAUGE_ARC} ${GAUGE_CIRCUMFERENCE - GAUGE_ARC}`}
+          strokeDasharray={`${AGENT_READINESS_SCANNING_GAUGE_ARC} ${AGENT_READINESS_GAUGE_CIRCUMFERENCE - AGENT_READINESS_SCANNING_GAUGE_ARC}`}
           strokeLinecap="round"
-          strokeWidth={GAUGE_STROKE}
+          strokeWidth={AGENT_READINESS_GAUGE_STROKE}
         />
       </svg>
       <span className="absolute inset-0 flex items-center justify-center">
@@ -65,10 +61,7 @@ function ScanningGauge() {
 function ScanningBreakdownTile({
   label,
   hint,
-}: {
-  label: string;
-  hint: string;
-}) {
+}: AgentReadinessScanningBreakdownTileProps) {
   return (
     <div className="bg-muted/40 flex min-w-0 flex-col gap-2 rounded-xl px-4 py-3">
       <span className="text-muted-foreground text-xs font-medium">{label}</span>
@@ -172,7 +165,7 @@ export function AgentReadinessScanningNotice({
           <Skeleton className="h-5 w-28" />
           <Skeleton className="mt-1.5 h-3.5 w-52 max-w-full" />
         </div>
-        {CHECKLIST_PLACEHOLDER_KEYS.map((key) => (
+        {AGENT_READINESS_CHECKLIST_PLACEHOLDER_KEYS.map((key) => (
           <ChecklistPlaceholderRow key={key} />
         ))}
       </InstrumentModule>

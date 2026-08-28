@@ -7,7 +7,6 @@ import {
   Tick01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { AgentReadinessIssue } from "@notra/db/types/agent-readiness";
 import { Badge } from "@notra/ui/components/ui/badge";
 
 import { Button } from "@/components/button";
@@ -21,7 +20,12 @@ import {
 } from "@/constants/agent-readiness";
 import type {
   AgentReadinessChecklistProps,
+  AgentReadinessChecklistPromptActionsProps,
+  AgentReadinessCopyPromptButtonProps,
+  AgentReadinessIssueEntryProps,
   AgentReadinessIssueGroups,
+  AgentReadinessResultBadgeProps,
+  AgentReadinessSectionHeaderProps,
 } from "@/types/agent-readiness";
 import {
   buildAgentReadinessAllFixesPrompt,
@@ -34,12 +38,7 @@ function CopyPromptButton({
   label,
   variant = "outline",
   size = "sm",
-}: {
-  prompt: string;
-  label: string;
-  variant?: "outline" | "default" | "ghost";
-  size?: "sm" | "xs";
-}) {
+}: AgentReadinessCopyPromptButtonProps) {
   const { copied, copy } = useCopyCode(prompt);
 
   return (
@@ -56,7 +55,7 @@ function CopyPromptButton({
   );
 }
 
-function ResultBadge({ result }: { result: AgentReadinessIssue["result"] }) {
+function ResultBadge({ result }: AgentReadinessResultBadgeProps) {
   if (result === "failed") {
     return <Badge variant="destructive">Failed</Badge>;
   }
@@ -88,10 +87,7 @@ function buildFullBacklogPrompt(
 function ChecklistPromptActions({
   targetUrl,
   groups,
-}: {
-  targetUrl: string;
-  groups: AgentReadinessIssueGroups;
-}) {
+}: AgentReadinessChecklistPromptActionsProps) {
   const hasMustDo = groups.mustDo.length > 0;
   const hasShouldDo = groups.shouldDo.length > 0;
   const masterPrompt = buildAgentReadinessAllFixesPrompt(
@@ -120,11 +116,7 @@ function IssueEntry({
   issue,
   index,
   targetUrl,
-}: {
-  issue: AgentReadinessIssue;
-  index: number;
-  targetUrl: string;
-}) {
+}: AgentReadinessIssueEntryProps) {
   const fixPrompt = buildAgentReadinessFixPrompt(targetUrl, issue);
 
   return (
@@ -175,13 +167,7 @@ function SectionHeader({
   label,
   hint,
   count,
-}: {
-  icon: typeof AlertCircleIcon;
-  iconClassName: string;
-  label: string;
-  hint: string;
-  count: number;
-}) {
+}: AgentReadinessSectionHeaderProps) {
   return (
     <div className="pb-2">
       <span className="inline-flex items-center gap-1.5 font-medium">

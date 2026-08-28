@@ -3,25 +3,23 @@ import type { AgentReadinessIssue } from "@notra/db/types/agent-readiness";
 import {
   AGENT_READINESS_GREAT_THRESHOLD,
   AGENT_READINESS_NEEDS_IMPROVEMENT_THRESHOLD,
+  AGENT_READINESS_PROMPT_WORK_RULES,
+  AGENT_READINESS_RESULT_ORDER,
   AGENT_READINESS_STALE_RUNNING_MS,
 } from "@/constants/agent-readiness";
 import type {
   AgentReadinessIssueGroups,
+  AgentReadinessRunningScan,
   AgentReadinessScoreBand,
 } from "@/types/agent-readiness";
 import { stripWebsiteProtocol } from "@/utils/geo-website";
-
-const RESULT_ORDER: Record<AgentReadinessIssue["result"], number> = {
-  failed: 0,
-  partial: 1,
-};
 
 export function isAgentReadinessVisibleInNav(flagOn: boolean): boolean {
   return flagOn || process.env.NODE_ENV === "development";
 }
 
 export function canReuseAgentReadinessScan(
-  running: { createdAt: Date; targetUrl: string },
+  running: AgentReadinessRunningScan,
   targetUrl: string,
   now = Date.now()
 ): boolean {
@@ -35,7 +33,9 @@ function sortOpenIssues(
   left: AgentReadinessIssue,
   right: AgentReadinessIssue
 ): number {
-  const byResult = RESULT_ORDER[left.result] - RESULT_ORDER[right.result];
+  const byResult =
+    AGENT_READINESS_RESULT_ORDER[left.result] -
+    AGENT_READINESS_RESULT_ORDER[right.result];
   if (byResult !== 0) {
     return byResult;
   }
@@ -119,13 +119,6 @@ function formatIssueSection(
   ];
 }
 
-const PROMPT_WORK_RULES = [
-  "Finish every item in Must do before starting Should do.",
-  "A failed check needs a complete implementation. A partial check already has some of the pieces — close the gap described in Evidence.",
-  "Stay scoped: implement the recommended fix. Do not refactor unrelated code.",
-  "After each item, note the files you changed in one line.",
-];
-
 /** A paste-ready prompt for a coding agent to implement one flagged fix. */
 export function buildAgentReadinessFixPrompt(
   targetUrl: string,
@@ -168,7 +161,9 @@ export function buildAgentReadinessAllFixesPrompt(
     "You are a coding agent working in this repository. Notra scanned this site for how well AI agents can discover, understand, and use it. Treat the sections below as a prioritized backlog, not a flat list.",
     "",
     "## How to work",
-    ...PROMPT_WORK_RULES.map((rule, index) => `${index + 1}. ${rule}`),
+    ...AGENT_READINESS_PROMPT_WORK_RULES.map(
+      (rule, index) => `${index + 1}. ${rule}`
+    ),
     "",
     ...formatIssueSection(
       "Must do",

@@ -28,7 +28,7 @@ import {
   useGeoSettings,
 } from "@/lib/hooks/use-geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
-import type { AgentReadinessResponse } from "@/types/agent-readiness";
+import type { AgentReadinessBodyProps } from "@/types/agent-readiness";
 import type { GeoPageClientProps } from "@/types/geo";
 import { getAgentReadinessScanErrorMessage } from "@/utils/agent-readiness";
 import { withGeoProject } from "@/utils/geo-paths";
@@ -50,11 +50,7 @@ function ReadinessBody({
   data,
   isScanPending,
   onRequestScan,
-}: {
-  data: AgentReadinessResponse;
-  isScanPending: boolean;
-  onRequestScan: () => void;
-}) {
+}: AgentReadinessBodyProps) {
   const { report, scan, targetUrl, history } = data;
   const isScanning = isScanPending || scan?.status === "running";
   const previousScore =

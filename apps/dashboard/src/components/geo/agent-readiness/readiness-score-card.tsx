@@ -17,19 +17,17 @@ import {
   AGENT_READINESS_SHOULD_DO_LABEL,
 } from "@/constants/agent-readiness";
 import { cn } from "@/lib/utils";
-import type { AgentReadinessScoreCardProps } from "@/types/agent-readiness";
+import type {
+  AgentReadinessBreakdownTileProps,
+  AgentReadinessScoreCardProps,
+  AgentReadinessScoreDeltaProps,
+} from "@/types/agent-readiness";
 import {
   formatAgentReadinessDate,
   getAgentReadinessScoreBand,
 } from "@/utils/agent-readiness";
 
-function ScoreDelta({
-  score,
-  previousScore,
-}: {
-  score: number;
-  previousScore: number | null;
-}) {
+function ScoreDelta({ score, previousScore }: AgentReadinessScoreDeltaProps) {
   if (previousScore === null || previousScore === score) {
     return null;
   }
@@ -68,13 +66,7 @@ function BreakdownTile({
   hint,
   passing,
   total,
-}: {
-  label: string;
-  value: string;
-  hint: string;
-  passing?: number;
-  total?: number;
-}) {
+}: AgentReadinessBreakdownTileProps) {
   const showBar = passing !== undefined && total !== undefined && total > 0;
 
   return (

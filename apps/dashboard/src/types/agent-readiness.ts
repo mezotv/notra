@@ -1,8 +1,36 @@
+import type { IconSvgElement } from "@hugeicons/react";
+import type { geoAgentReadinessReports } from "@notra/db/schema";
 import type {
   AgentReadinessIssue,
   AgentReadinessReportStatus,
   AgentReadinessScoreBreakdown,
 } from "@notra/db/types/agent-readiness";
+import type { infer as ZodInfer } from "zod";
+
+import type { agentReadinessApiReportSchema } from "@/schemas/agent-readiness";
+
+export type AgentReadinessApiReport = ZodInfer<
+  typeof agentReadinessApiReportSchema
+>;
+
+export type AgentReadinessReportRow =
+  typeof geoAgentReadinessReports.$inferSelect;
+
+export interface AgentReadinessParsedReport {
+  score: number | null;
+  scoreLabel: string | null;
+  scoreBreakdown: AgentReadinessScoreBreakdown | null;
+  issues: AgentReadinessIssue[];
+  eligibleChecks: number | null;
+  reportUrl: string | null;
+  scannedAt: Date | null;
+}
+
+export interface AgentReadinessScope {
+  organizationId: string;
+  projectId: string;
+  brandSettingsId: string;
+}
 
 export interface AgentReadinessReportView {
   id: string;
@@ -89,4 +117,81 @@ export interface AgentReadinessScanDialogProps {
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   isPending: boolean;
+}
+
+export interface AgentReadinessPageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export interface AgentReadinessBodyProps {
+  data: AgentReadinessResponse;
+  isScanPending: boolean;
+  onRequestScan: () => void;
+}
+
+export interface AgentReadinessCopyPromptButtonProps {
+  prompt: string;
+  label: string;
+  variant?: "outline" | "default" | "ghost";
+  size?: "sm" | "xs";
+}
+
+export interface AgentReadinessResultBadgeProps {
+  result: AgentReadinessIssue["result"];
+}
+
+export interface AgentReadinessChecklistPromptActionsProps {
+  targetUrl: string;
+  groups: AgentReadinessIssueGroups;
+}
+
+export interface AgentReadinessIssueEntryProps {
+  issue: AgentReadinessIssue;
+  index: number;
+  targetUrl: string;
+}
+
+export interface AgentReadinessSectionHeaderProps {
+  icon: IconSvgElement;
+  iconClassName: string;
+  label: string;
+  hint: string;
+  count: number;
+}
+
+export interface AgentReadinessScanningBreakdownTileProps {
+  label: string;
+  hint: string;
+}
+
+export interface AgentReadinessScoreDeltaProps {
+  score: number;
+  previousScore: number | null;
+}
+
+export interface AgentReadinessBreakdownTileProps {
+  label: string;
+  value: string;
+  hint: string;
+  passing?: number;
+  total?: number;
+}
+
+export interface AgentReadinessScoreGaugeProps {
+  score: number;
+  className?: string;
+}
+
+export interface AgentReadinessSseEvent {
+  type?: string;
+}
+
+export interface AgentReadinessSseFrameBoundary {
+  index: number;
+  length: number;
+}
+
+export interface AgentReadinessRunningScan {
+  createdAt: Date;
+  targetUrl: string;
 }

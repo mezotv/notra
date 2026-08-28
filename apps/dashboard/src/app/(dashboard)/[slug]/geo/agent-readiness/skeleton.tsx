@@ -6,13 +6,8 @@ import { PageContainer } from "@/components/layout/container";
 import {
   AGENT_READINESS_PAGE_DESCRIPTION,
   AGENT_READINESS_PAGE_TITLE,
+  AGENT_READINESS_SKELETON_ROW_KEYS,
 } from "@/constants/agent-readiness";
-
-const CHECKLIST_ROW_COUNT = 3;
-const CHECKLIST_ROW_KEYS = Array.from(
-  { length: CHECKLIST_ROW_COUNT },
-  (_, index) => `checklist-row-${index}`
-);
 
 export function AgentReadinessSkeleton() {
   const content = (
@@ -33,7 +28,7 @@ export function AgentReadinessSkeleton() {
         </div>
       </div>
       <div className="grid gap-4 rounded-2xl border p-5 md:grid-cols-3">
-        {CHECKLIST_ROW_KEYS.map((key) => (
+        {AGENT_READINESS_SKELETON_ROW_KEYS.map((key) => (
           <Skeleton className="h-40 w-full rounded-lg" key={key} />
         ))}
       </div>

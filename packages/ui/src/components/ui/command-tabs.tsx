@@ -21,6 +21,7 @@ import {
   useState,
 } from "react";
 import { Button } from "@notra/ui/components/ui/button";
+import { COMMAND_TABS_COPY_BUTTON_TRANSITION } from "@notra/ui/constants/command-tabs";
 import { cn } from "@notra/ui/lib/utils";
 
 interface CommandTabsItem {
@@ -48,10 +49,6 @@ const COPY_FEEDBACK_MS = 2000;
 const SCROLLBAR_HIDE_MS = 800;
 const PERCENT = 100;
 const SCROLL_STEP_PX = 40;
-const COPY_BUTTON_TRANSITION = {
-  duration: 0.2,
-  ease: [0.23, 1, 0.32, 1] as const,
-};
 const MotionButton = m.create(Button);
 
 type CommandTokenType = "command" | "string" | "flag" | "plain";
@@ -489,7 +486,7 @@ export function CommandTabs({
             layout={!reduceMotion}
             onClick={handleCopy}
             size="sm"
-            transition={COPY_BUTTON_TRANSITION}
+            transition={COMMAND_TABS_COPY_BUTTON_TRANSITION}
             variant="outline"
           >
             <AnimatePresence initial={false} mode="popLayout">
@@ -515,7 +512,7 @@ export function CommandTabs({
                     : "translateY(70%)",
                 }}
                 key={copied ? "copied" : "copy"}
-                transition={COPY_BUTTON_TRANSITION}
+                transition={COMMAND_TABS_COPY_BUTTON_TRANSITION}
               >
                 <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} />
                 <span>{copied ? "Copied" : copyLabel}</span>
