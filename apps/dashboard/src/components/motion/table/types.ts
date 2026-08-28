@@ -92,6 +92,12 @@ export interface TableProps<T> {
   /** Rows per page. Omit to render every row. */
   pageSize?: number;
   emptyState?: ReactNode;
+  /** Square off the top edge so the table can sit flush under another surface. */
+  flushTop?: boolean;
+  /** Square off the bottom edge so another surface can sit flush beneath the table. */
+  flushBottom?: boolean;
+  /** Pad the header band so the table can tuck 20px under the rounded bottom of a surface above it. */
+  overlapTop?: boolean;
   className?: string;
 }
 

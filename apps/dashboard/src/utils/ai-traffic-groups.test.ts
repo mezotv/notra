@@ -29,13 +29,13 @@ function crawler(
 }
 
 describe("resolveTrafficSourceGroup", () => {
-  test("maps OpenAI bots to the ChatGPT group", () => {
+  test("maps OpenAI bots to the OpenAI group", () => {
     expect(resolveTrafficSourceGroup("OAI-SearchBot", "crawler").key).toBe(
-      "chatgpt"
+      "openai"
     );
-    expect(resolveTrafficSourceGroup("GPTBot", "crawler").key).toBe("chatgpt");
+    expect(resolveTrafficSourceGroup("GPTBot", "crawler").key).toBe("openai");
     expect(resolveTrafficSourceGroup("ChatGPT-User", "crawler").key).toBe(
-      "chatgpt"
+      "openai"
     );
   });
 
@@ -92,7 +92,7 @@ describe("groupTrafficSources", () => {
 
     const groups = groupTrafficSources(sources);
     const chatgpt = groups.find(
-      (group) => group.key === "chatgpt" && group.visitorType === "crawler"
+      (group) => group.key === "openai" && group.visitorType === "crawler"
     );
     const other = groups.find((group) => group.key === "other");
     const referral = groups.find(

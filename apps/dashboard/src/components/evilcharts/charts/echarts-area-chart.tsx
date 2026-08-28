@@ -62,6 +62,7 @@ import {
   type TooltipRoundness,
   type TooltipVariant,
   composeTooltipBody,
+  composeTooltipGroupedBody,
   configIndicatorHtml,
   formatTooltipValue,
   tooltipBaseOption,
@@ -72,10 +73,12 @@ import {
 import type {
   ChartConfig,
   ChartMarker,
+  TooltipBodyGroup,
   TooltipBodyItem,
   TooltipEmptyLabel,
   TooltipLabelFormatter,
   TooltipLayout,
+  TooltipRowGroup,
   TooltipValueFormatter,
 } from "@/types/charts";
 
@@ -293,6 +296,9 @@ export interface TooltipProps {
   // instead of the visible series — so a single total line can still list a
   // per-engine breakdown on hover.
   rowKeys?: readonly string[];
+  // Sectioned rows: each group heading is a data key rendered as a full bar,
+  // followed by its row keys scaled to the heading value.
+  rowGroups?: readonly TooltipRowGroup[];
   hideZeros?: boolean; // drop series whose hovered value is 0 / empty
   excludeKeys?: readonly string[]; // series drawn on the chart but omitted from the tooltip
   emptyLabel?: TooltipEmptyLabel; // shown when hideZeros / missing values leave no rows
@@ -362,6 +368,7 @@ type TooltipSlot = {
   barMax?: number;
   confine: boolean;
   rowKeys?: readonly string[];
+  rowGroups?: readonly TooltipRowGroup[];
   hideZeros: boolean;
   excludeKeys: readonly string[];
   emptyLabel?: TooltipEmptyLabel;
@@ -487,6 +494,7 @@ function collectConfig(children: ReactNode): CollectedConfig {
         barMax: props.barMax,
         confine: props.confine ?? true,
         rowKeys: props.rowKeys,
+        rowGroups: props.rowGroups,
         hideZeros: props.hideZeros ?? false,
         excludeKeys: props.excludeKeys ?? [],
         emptyLabel: props.emptyLabel,
@@ -1066,6 +1074,42 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
     const label = tooltipSlot.labelFormatter
       ? tooltipSlot.labelFormatter(rawLabel)
       : rawLabel;
+    const rowGroups = tooltipSlot.rowGroups;
+    if (rowGroups && rowGroups.length > 0 && typeof first.dataIndex === "number") {
+      const groups: TooltipBodyGroup[] = [];
+      for (const group of rowGroups) {
+        const [heading] = tooltipItemsFromRow(
+          hoveredRow,
+          [group.headingKey],
+          config,
+          tooltipSlot.valueFormatter,
+          resolved.series
+        );
+        if (heading === undefined) {
+          continue;
+        }
+        groups.push({
+          heading,
+          items: tooltipItemsFromRow(
+            hoveredRow,
+            group.rowKeys,
+            config,
+            tooltipSlot.valueFormatter,
+            resolved.series
+          ),
+        });
+      }
+      return tooltipShell({
+        label,
+        body:
+          groups.length > 0
+            ? composeTooltipGroupedBody(groups)
+            : tooltipBodyHtml([], tooltipSlot, hoveredRow),
+        roundness: tooltipSlot.roundness,
+        variant: tooltipSlot.variant,
+        layout: "bars",
+      });
+    }
     const rowKeys = tooltipSlot.rowKeys;
     if (rowKeys && rowKeys.length > 0 && typeof first.dataIndex === "number") {
       const items = tooltipItemsFromRow(

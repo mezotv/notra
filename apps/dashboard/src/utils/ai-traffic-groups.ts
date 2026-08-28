@@ -34,14 +34,14 @@ export function resolveTrafficSourceGroup(
   if (visitorType !== "crawler") {
     return {
       key: source,
-      label: formatGeoSource(source, visitorType),
+      label: formatGeoSource(source),
       icon: source,
     };
   }
   return group;
 }
 
-function laterTimestamp(left: string, right: string): string {
+export function laterTrafficTimestamp(left: string, right: string): string {
   const leftTime = parseClickHouseDateTime(left).getTime();
   const rightTime = parseClickHouseDateTime(right).getTime();
   if (Number.isNaN(leftTime)) {
@@ -85,7 +85,7 @@ export function groupTrafficSources(
     existing.visits += source.visits;
     existing.markdownVisits += source.markdownVisits;
     existing.paths = Math.max(existing.paths, source.paths);
-    existing.lastSeenAt = laterTimestamp(
+    existing.lastSeenAt = laterTrafficTimestamp(
       existing.lastSeenAt,
       source.lastSeenAt
     );

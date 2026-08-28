@@ -1,216 +1,42 @@
 "use client";
 
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
-import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
-import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
+import { TrafficHero } from "@/components/geo/traffic-hero";
+import { TrafficMarkdownCell } from "@/components/geo/traffic-markdown-cell";
 import { TrafficPurposeCell } from "@/components/geo/traffic-purpose-cell";
 import { TrafficSourceGroupCell } from "@/components/geo/traffic-source-group-cell";
+import { TrafficSourcesGroup } from "@/components/geo/traffic-sources-group";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
-import { Table, type TableColumn } from "@/components/motion/table";
-import { TablePagination } from "@/components/table-pagination";
-import { CHART_PRIMARY_COLOR, CHART_SECONDARY_COLOR } from "@/constants/charts";
+import type { TableColumn } from "@/components/motion/table";
 import {
   GEO_EMPTY_TRAFFIC_RESPONSE,
   GEO_SPARKLINE_MIN_POINTS,
-  GEO_TRAFFIC_TREND_CRAWLER_KEY,
-  GEO_TRAFFIC_TREND_CRAWLER_LABEL,
-  GEO_TRAFFIC_SOURCES_PAGE_PARAM,
-  GEO_TRAFFIC_TREND_REFERRAL_KEY,
-  GEO_TRAFFIC_TREND_REFERRAL_LABEL,
+  GEO_SPARKLINE_TREND_CLASS,
+  GEO_TRAFFIC_MARKDOWN_COLUMN_KEY,
 } from "@/constants/geo";
-import { TABLE_ROW_HEIGHT } from "@/constants/table";
-import { useTablePagination } from "@/lib/hooks/use-table-pagination";
-import { cn } from "@/lib/utils";
-import type { ChartConfig } from "@/types/charts";
 import type {
   AiTrafficCardProps,
   GeoTrafficSourceGroup,
-  GeoTrafficTotals,
-  GeoTrafficTrendRow,
+  GeoVisitorType,
 } from "@/types/geo";
 import {
   buildTrafficTrendRows,
   formatAiTrafficTimestamp,
-  formatMarkdownShare,
   hasTrafficSourceSeries,
   toGeoTrafficPreviousTotals,
+  sparklineTrend,
   trafficSparklineDays,
-  trafficVisitDelta,
 } from "@/utils/ai-traffic";
 import {
   buildTrafficGroupSeries,
   groupTrafficSources,
   trafficGroupKey,
 } from "@/utils/ai-traffic-groups";
-import { todayIsoDate } from "@/utils/analytics-charts";
-import { seriesColors } from "@/utils/chart-colors";
-import { formatChartInteger } from "@/utils/geo-charts";
-import { paginatedTableHeightFor } from "@/utils/table";
-
-const HERO_CHART_OPTIONS = {
-  grid: { left: 4, right: 8, top: 8, bottom: 4, containLabel: true },
-};
-
-const TRAFFIC_TREND_STROKE_WIDTH = 1.5;
-const TRAFFIC_TREND_TOTAL_KEY = "total";
-
-type TrafficMetricKey =
-  | typeof GEO_TRAFFIC_TREND_CRAWLER_KEY
-  | typeof GEO_TRAFFIC_TREND_REFERRAL_KEY
-  | typeof TRAFFIC_TREND_TOTAL_KEY;
-
-interface TrafficMetricOption {
-  key: TrafficMetricKey;
-  label: string;
-  value: number;
-  delta: number | null;
-}
-
-function metricDelta(current: number, previous: number | null): number | null {
-  return previous === null ? null : trafficVisitDelta(current, previous);
-}
-
-function TrafficHero({
-  totals,
-  previousTotals,
-  rows,
-}: {
-  totals: GeoTrafficTotals;
-  previousTotals: GeoTrafficTotals | null;
-  rows: readonly GeoTrafficTrendRow[];
-}) {
-  const markIncompleteTail = rows.at(-1)?.rawDay === todayIsoDate();
-  const showTrend = rows.length >= GEO_SPARKLINE_MIN_POINTS;
-  const totalVisits = totals.crawler + totals.aiReferral;
-  const previousTotalVisits =
-    previousTotals === null
-      ? null
-      : previousTotals.crawler + previousTotals.aiReferral;
-
-  const metrics: TrafficMetricOption[] = [
-    {
-      key: GEO_TRAFFIC_TREND_CRAWLER_KEY,
-      label: GEO_TRAFFIC_TREND_CRAWLER_LABEL,
-      value: totals.crawler,
-      delta: metricDelta(totals.crawler, previousTotals?.crawler ?? null),
-    },
-    {
-      key: GEO_TRAFFIC_TREND_REFERRAL_KEY,
-      label: GEO_TRAFFIC_TREND_REFERRAL_LABEL,
-      value: totals.aiReferral,
-      delta: metricDelta(totals.aiReferral, previousTotals?.aiReferral ?? null),
-    },
-    {
-      key: TRAFFIC_TREND_TOTAL_KEY,
-      label: "Total",
-      value: totalVisits,
-      delta: metricDelta(totalVisits, previousTotalVisits),
-    },
-  ];
-
-  const chartConfig = useMemo<ChartConfig>(
-    () => ({
-      [GEO_TRAFFIC_TREND_CRAWLER_KEY]: {
-        label: GEO_TRAFFIC_TREND_CRAWLER_LABEL,
-        colors: seriesColors(CHART_PRIMARY_COLOR),
-      },
-      [GEO_TRAFFIC_TREND_REFERRAL_KEY]: {
-        label: GEO_TRAFFIC_TREND_REFERRAL_LABEL,
-        colors: seriesColors(CHART_SECONDARY_COLOR),
-      },
-    }),
-    []
-  );
-  const chartRows = useMemo(
-    () =>
-      rows.map((row) => ({
-        day: row.day,
-        rawDay: row.rawDay,
-        [GEO_TRAFFIC_TREND_CRAWLER_KEY]: row.crawler,
-        [GEO_TRAFFIC_TREND_REFERRAL_KEY]: row.aiReferral,
-      })),
-    [rows]
-  );
-
-  return (
-    <div>
-      <div
-        className={cn(
-          "divide-border grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0",
-          showTrend
-            ? "border-border bg-muted rounded-t-2xl border border-b-0 pb-5"
-            : "border-border bg-card overflow-hidden rounded-2xl border"
-        )}
-      >
-        {metrics.map((metric) => (
-          <div className="px-5 py-4" key={metric.key}>
-            <p className="text-muted-foreground text-xs">{metric.label}</p>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-3xl leading-none font-semibold tracking-tight tabular-nums">
-                {metric.value.toLocaleString()}
-              </span>
-              <GeoStatDelta
-                className="mb-0.5"
-                delta={metric.delta}
-                hint="vs. previous period"
-                label={metric.label}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
-      {showTrend ? (
-        <div className="border-border bg-card -mt-5 rounded-2xl border p-4">
-          <EChartsAreaChart
-            animation={false}
-            chartOptions={HERO_CHART_OPTIONS}
-            className="h-72 w-full"
-            config={chartConfig}
-            curveType="monotone"
-            data={chartRows}
-            xDataKey="day"
-          >
-            <EChartsAreaChart.Grid variant="solid" />
-            <EChartsAreaChart.XAxis dataKey="day" />
-            <EChartsAreaChart.YAxis />
-            <EChartsAreaChart.Area
-              dataKey={GEO_TRAFFIC_TREND_CRAWLER_KEY}
-              enableBufferLine={markIncompleteTail}
-              strokeVariant="solid"
-              strokeWidth={TRAFFIC_TREND_STROKE_WIDTH}
-              variant="gradient"
-            >
-              <EChartsAreaChart.ActiveDot variant="border" />
-            </EChartsAreaChart.Area>
-            <EChartsAreaChart.Area
-              dataKey={GEO_TRAFFIC_TREND_REFERRAL_KEY}
-              enableBufferLine={markIncompleteTail}
-              strokeVariant="solid"
-              strokeWidth={TRAFFIC_TREND_STROKE_WIDTH}
-              variant="gradient"
-            >
-              <EChartsAreaChart.ActiveDot variant="border" />
-            </EChartsAreaChart.Area>
-            <EChartsAreaChart.Tooltip
-              position="fixed"
-              valueFormatter={formatChartInteger}
-            />
-          </EChartsAreaChart>
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
   const { sources, totals, points } = traffic ?? GEO_EMPTY_TRAFFIC_RESPONSE;
@@ -220,11 +46,26 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
   );
   const trendRows = useMemo(() => buildTrafficTrendRows(points), [points]);
   const groups = groupTrafficSources(sources);
-  const pagination = useTablePagination({
-    key: GEO_TRAFFIC_SOURCES_PAGE_PARAM,
-    totalItems: groups.length,
-    isReady: traffic !== undefined,
-  });
+  const crawlerGroups = groups.filter(
+    (group) => group.visitorType === "crawler"
+  );
+  const referralGroups = groups.filter(
+    (group) => group.visitorType === "ai_referral"
+  );
+  const [collapsed, setCollapsed] = useState<ReadonlySet<GeoVisitorType>>(
+    () => new Set()
+  );
+  const toggleCollapsed = (visitorType: GeoVisitorType) =>
+    setCollapsed((current) => {
+      const next = new Set(current);
+      if (next.has(visitorType)) {
+        next.delete(visitorType);
+      } else {
+        next.add(visitorType);
+      }
+      return next;
+    });
+  const crawlersCollapsed = collapsed.has("crawler");
   const sparklineDays = useMemo(() => trafficSparklineDays(points), [points]);
   const canSparkline = hasTrafficSourceSeries(points);
   const seriesByGroup = new Map<string, { day: string; value: number }[]>();
@@ -274,11 +115,7 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
           <span className="flex items-center gap-2">
             {showSpark ? (
               <GeoRateSparkline
-                className={
-                  row.visitorType === "ai_referral"
-                    ? "text-geo-memory"
-                    : "text-geo-search"
-                }
+                className={GEO_SPARKLINE_TREND_CLASS[sparklineTrend(series)]}
                 points={series}
               />
             ) : null}
@@ -290,9 +127,10 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
       },
     },
     {
-      key: "markdownVisits",
+      key: GEO_TRAFFIC_MARKDOWN_COLUMN_KEY,
       header: "Markdown",
-      width: "6.75rem",
+      width: "8.5rem",
+      minWidth: "8.5rem",
       sortable: true,
       cell: (row) => {
         if (row.markdownVisits <= 0) {
@@ -300,24 +138,10 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         }
 
         return (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="cursor-default tabular-nums">
-                  {formatMarkdownShare(row.markdownVisits, row.visits)}
-                </span>
-              }
-            />
-            <TooltipContent
-              align="start"
-              className="max-w-xs text-pretty"
-              side="top"
-            >
-              {row.markdownVisits.toLocaleString()} of{" "}
-              {row.visits.toLocaleString()} requests asked for markdown via the
-              Accept header
-            </TooltipContent>
-          </Tooltip>
+          <TrafficMarkdownCell
+            markdownVisits={row.markdownVisits}
+            visits={row.visits}
+          />
         );
       },
       sortValue: (row) =>
@@ -357,26 +181,31 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
   return (
     <div className="flex flex-col gap-6">
       <TrafficHero
+        groups={groups}
+        points={points}
         previousTotals={previousTotals}
         rows={trendRows}
         totals={totals}
       />
       <InstrumentSection eyebrow="Sources">
-        <Table
-          className="rounded-2xl"
-          columns={columns}
-          data={groups}
-          defaultSort={{ key: "visits", direction: "desc" }}
-          emptyState="No AI traffic captured yet"
-          footer={<TablePagination {...pagination} itemLabel="sources" />}
-          getRowId={(row) => trafficGroupKey(row.visitorType, row.key)}
-          height={paginatedTableHeightFor(pagination.pageRowCount)}
-          onSortChange={() => pagination.setPage(1)}
-          page={pagination.page}
-          pageSize={pagination.pageSize}
-          resizable
-          rowHeight={TABLE_ROW_HEIGHT}
-        />
+        <div className="flex flex-col">
+          <TrafficSourcesGroup
+            collapsed={crawlersCollapsed}
+            columns={columns}
+            groups={crawlerGroups}
+            onToggle={() => toggleCollapsed("crawler")}
+            stacked={false}
+            visitorType="crawler"
+          />
+          <TrafficSourcesGroup
+            collapsed={collapsed.has("ai_referral")}
+            columns={columns}
+            groups={referralGroups}
+            onToggle={() => toggleCollapsed("ai_referral")}
+            stacked
+            visitorType="ai_referral"
+          />
+        </div>
       </InstrumentSection>
     </div>
   );

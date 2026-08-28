@@ -60,7 +60,7 @@ export function JourneyOverviewCard({ journeys }: JourneyOverviewCardProps) {
             </div>
             <div className="border-border border-t">
               {overview.sources.map((row, index) => {
-                const name = formatGeoSource(row.source, row.visitorType);
+                const name = formatGeoSource(row.source);
                 return (
                   <div
                     className="flex items-center gap-3 border-b px-1 py-2.5 last:border-b-0"

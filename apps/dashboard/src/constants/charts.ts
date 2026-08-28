@@ -64,3 +64,8 @@ export const COMPETITOR_SWATCHES: readonly string[] = [
 
 /** Rivals skip Search (brand) and Memory hues so those roles stay exclusive. */
 export const RIVAL_SWATCHES: readonly string[] = COMPETITOR_SWATCHES.slice(2);
+
+export const GEO_TRAFFIC_PROVIDER_COLORS: readonly ChartColorPair[] = [
+  { light: "#6B6B75", dark: "#9A9AA4" },
+  ...ACCOUNT_SERIES_COLORS,
+];

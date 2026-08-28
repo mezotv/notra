@@ -358,6 +358,7 @@ export const AI_TRAFFIC_DEFAULT_PAGES_LIMIT = 20;
 export const AI_TRAFFIC_PAGES_FETCH_LIMIT = 100;
 export const AI_TRAFFIC_LOG_FETCH_LIMIT = 200;
 export const GEO_TRAFFIC_SOURCES_PAGE_PARAM = "sourcesPage";
+export const GEO_TRAFFIC_MARKDOWN_COLUMN_KEY = "markdownVisits";
 export const GEO_TRAFFIC_PAGES_PAGE_PARAM = "topPagesPage";
 export const GEO_TRAFFIC_LOG_PAGE_PARAM = "logPage";
 export const GEO_CITATIONS_ROW_HEIGHT = 40;
@@ -472,17 +473,51 @@ export const GEO_AI_REFERRER_HOSTS: Record<string, string> = {
   "chat.qwen.ai": "qwen",
 };
 
-export const GEO_AI_REFERRER_LABELS: Record<string, string> = {
+export const GEO_SOURCE_LABELS: Record<string, string> = {
   chatgpt: "ChatGPT",
+  openai: "ChatGPT",
   perplexity: "Perplexity",
   gemini: "Gemini",
+  google: "Gemini",
   claude: "Claude",
+  anthropic: "Claude",
   copilot: "Copilot",
+  microsoft: "Microsoft",
   you: "You.com",
+  "you.com": "You.com",
   deepseek: "DeepSeek",
   mistral: "Mistral",
   grok: "Grok",
+  xai: "xAI",
   qwen: "Qwen",
+  alibaba: "Alibaba",
+  meta: "Meta",
+  amazon: "Amazon",
+  apple: "Apple",
+  bytedance: "ByteDance",
+  tiktok: "TikTok",
+  cohere: "Cohere",
+  cloudflare: "Cloudflare",
+  mozilla: "Mozilla",
+  duckduckgo: "DuckDuckGo",
+  commoncrawl: "Common Crawl",
+  kimi: "Kimi",
+  moonshot: "Moonshot AI",
+  huawei: "Huawei",
+  baidu: "Baidu",
+  kagi: "Kagi",
+  exa: "Exa",
+  tavily: "Tavily",
+  firecrawl: "Firecrawl",
+  diffbot: "Diffbot",
+  liner: "Liner",
+  timpi: "Timpi",
+  cursor: "Cursor",
+  opencode: "OpenCode",
+  devin: "Devin",
+  cline: "Cline",
+  manus: "Manus",
+  zai: "Z.ai",
 };
 
 export const GEO_NON_AI_BOT_PATTERNS: readonly string[] = [
@@ -514,6 +549,8 @@ export const GEO_BROWSER_UA_PATTERNS: readonly string[] = [
   "edg/",
   "opera",
 ];
+
+export const GEO_TRAFFIC_PAGE_SOURCE_ICON_LIMIT = 4;
 
 export const GEO_VISITOR_TYPE_LABELS: Record<string, string> = {
   crawler: "AI crawler",
@@ -552,8 +589,8 @@ export const GEO_TRAFFIC_OTHER_GROUP: GeoTrafficSourceGroupDefinition = {
 export const GEO_TRAFFIC_GROUPS_BY_ENGINE: Partial<
   Record<EngineIconKey, GeoTrafficSourceGroupDefinition>
 > = {
-  openai: { key: "chatgpt", label: "ChatGPT", icon: "openai" },
-  claude: { key: "claude", label: "Claude", icon: "claude" },
+  openai: { key: "openai", label: "OpenAI", icon: "openai" },
+  claude: { key: "anthropic", label: "Anthropic", icon: "claude" },
   gemini: GEO_TRAFFIC_GOOGLE_GROUP,
   google: GEO_TRAFFIC_GOOGLE_GROUP,
   perplexity: { key: "perplexity", label: "Perplexity", icon: "perplexity" },
@@ -577,6 +614,8 @@ export const GEO_TRAFFIC_TREND_CRAWLER_KEY = "crawler";
 export const GEO_TRAFFIC_TREND_REFERRAL_KEY = "aiReferral";
 export const GEO_TRAFFIC_TREND_CRAWLER_LABEL = "Crawlers";
 export const GEO_TRAFFIC_TREND_REFERRAL_LABEL = "Referrals";
+export const GEO_TRAFFIC_TREND_TOTAL_KEY = "total";
+export const GEO_TRAFFIC_TREND_TOTAL_LABEL = "Total";
 export const GEO_TRAFFIC_CRAWLER_HINT =
   "Bots fetching your pages to train models or build a search index";
 export const GEO_TRAFFIC_REFERRAL_HINT =
@@ -731,6 +770,13 @@ export const GEO_FAMILY_IMPROVE_SPLIT = 0.25;
 export const GEO_FAMILY_IMPROVE_STRONG_RATE = 0.7;
 export const GEO_FAMILY_IMPROVE_CTA_GAPS = "Close these gaps";
 export const GEO_SPARKLINE_MIN_POINTS = 2;
+export const GEO_SPARKLINE_FLAT_THRESHOLD = 0.05;
+export const GEO_SPARKLINE_TREND_CLASS: Record<"up" | "down" | "flat", string> =
+  {
+    up: "text-geo-up",
+    down: "text-geo-down",
+    flat: "text-muted-foreground",
+  };
 export const GEO_RATE_SPARKLINE_WIDTH = 56;
 export const GEO_RATE_SPARKLINE_HEIGHT = 20;
 export const GEO_RATE_SPARKLINE_PADDING = 2;

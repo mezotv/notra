@@ -7,6 +7,7 @@ import {
 } from "@/components/evilcharts/ui/echarts-chart";
 import type {
   ChartConfig,
+  TooltipBodyGroup,
   TooltipBodyItem,
   TooltipLayout,
   TooltipValueFormatter,
@@ -24,7 +25,7 @@ import { echartsDatumValue } from "@/utils/echarts-datum";
 // chart composes its own rows but shares the shell/styling and base option.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type TooltipVariant = "default" | "frosted-glass";
+export type TooltipVariant = "default" | "frosted-glass" | "duotone";
 export type TooltipRoundness = "sm" | "md" | "lg" | "xl";
 // Tooltip anchoring: "variable" follows both axes (ECharts default, current
 // behavior); "fixed" sits beside the pointer's X so the hover line stays
@@ -67,6 +68,7 @@ export const roundnessClass: Record<TooltipRoundness, string> = {
 export const tooltipVariantClass: Record<TooltipVariant, string> = {
   default: "bg-background",
   "frosted-glass": "bg-background/50 backdrop-blur-md",
+  duotone: "bg-popover",
 };
 
 // The standard series indicator swatch — a rounded square filled with the
@@ -317,6 +319,9 @@ export function tooltipShell({
 }): string {
   const isBars = layout === "bars";
   const isActivity = layout === "activity";
+  if (variant === "duotone") {
+    return tooltipDuotoneShell(label, body, isBars);
+  }
   const header =
     label.length > 0
       ? `<div class="${isActivity ? "px-0.5 text-[11px] font-medium text-zinc-400" : "font-medium text-foreground"}">${escapeHtml(label)}</div>`
@@ -427,4 +432,96 @@ export function tooltipBaseOption(params: {
           : linePointer,
     position: resolveTooltipPosition(position, confine),
   };
+}
+
+// Dual-tone surface: a muted header band carrying the axis label, with the
+// rows on a popover card that overlaps it, mirroring the hover breakdown cards.
+function tooltipDuotoneShell(
+  label: string,
+  body: string,
+  isBars: boolean
+): string {
+  const header =
+    label.length > 0
+      ? `<div class="border-border bg-muted rounded-t-2xl border border-b-0 px-3 pt-2 pb-6"><span class="text-foreground text-sm font-semibold">${escapeHtml(label)}</span></div>`
+      : "";
+  return `<div class="grid ${isBars ? "min-w-56" : "min-w-40"} text-xs">
+      ${header}
+      <div class="border-border bg-popover ${label.length > 0 ? "-mt-4" : ""} rounded-2xl border px-3 py-2.5 shadow-md">
+        <div class="grid ${isBars ? "gap-2.5" : "gap-1.5"}" style="transition:opacity 0.24s ease">${body}</div>
+      </div>
+    </div>`;
+}
+
+const TOOLTIP_GROUP_FULL_WIDTH = 100;
+
+// Sectioned bars: each group renders its heading as a full-width bar followed
+// by its rows scaled to the heading value, so children read as shares of it.
+export function composeTooltipGroupedBody(
+  groups: readonly TooltipBodyGroup[]
+): string {
+  return groups
+    .map((group, index) => {
+      const headingValue = group.heading.value ?? 0;
+      const rows = [...group.items].sort(
+        (left, right) => (right.value ?? -1) - (left.value ?? -1)
+      );
+      const headingHtml = tooltipGroupHeadingRow({
+        key: group.heading.key,
+        colorsCount: group.heading.colorsCount,
+        labelText: group.heading.labelText,
+        valueText: group.heading.valueText,
+        widthPercent: headingValue > 0 ? TOOLTIP_GROUP_FULL_WIDTH : 0,
+        paint: group.heading.paint,
+      });
+      const rowsHtml = rows
+        .map((item) =>
+          tooltipBarRow({
+            key: item.key,
+            colorsCount: item.colorsCount,
+            labelText: item.labelText,
+            valueText: item.valueText,
+            widthPercent: tooltipBarWidth(item.value ?? 0, headingValue),
+            dimmed: item.dimmed,
+            indicatorHtml: item.indicatorHtml,
+            paint: item.paint,
+          })
+        )
+        .join("");
+      const separator =
+        index > 0
+          ? `<div class="border-border -mx-3 my-1 border-t" role="separator"></div>`
+          : "";
+      return `${separator}<div class="grid gap-2.5">
+          ${headingHtml}
+          ${rowsHtml.length > 0 ? `<div class="grid gap-2 pl-3">${rowsHtml}</div>` : ""}
+        </div>`;
+    })
+    .join("");
+}
+
+function tooltipGroupHeadingRow({
+  key,
+  colorsCount,
+  labelText,
+  valueText,
+  widthPercent,
+  paint,
+}: {
+  key: string;
+  colorsCount: number;
+  labelText: string;
+  valueText: string;
+  widthPercent: number;
+  paint?: string;
+}): string {
+  const fill = paint ?? indicatorBackground(key, colorsCount);
+  const barFill = escapeHtml(tooltipBarFillStyle(fill));
+  return `<div class="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-1.5">
+          <span class="self-center truncate font-semibold text-foreground leading-none">${escapeHtml(labelText)}</span>
+          <span class="self-center font-mono font-semibold text-foreground tabular-nums leading-none" style="${TOOLTIP_VALUE_MOTION_STYLE}">${escapeHtml(valueText)}</span>
+          <div class="col-span-2 h-2 overflow-hidden rounded-full bg-muted/45 shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)]">
+            <div class="ec-tooltip-bar-fill h-full rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.32),inset_0_-1px_1px_rgba(0,0,0,0.22)]" style="width:${widthPercent}%;background:${barFill};${TOOLTIP_BAR_MOTION_STYLE}"></div>
+          </div>
+        </div>`;
 }

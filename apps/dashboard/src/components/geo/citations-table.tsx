@@ -175,8 +175,7 @@ const CITATIONS_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
     header: "Provider",
     width: "11rem",
     sortable: true,
-    sortValue: (entry) =>
-      formatCitationProvider(entry.agent, entry.source, entry.visitorType),
+    sortValue: (entry) => formatCitationProvider(entry.agent, entry.source),
     cell: (entry) => (
       <span className="text-sm font-medium">
         <ProviderCell entry={entry} />

@@ -87,9 +87,7 @@ export function TrafficPurposeCell({ group }: TrafficPurposeCellProps) {
                   </span>
                   <span className="text-muted-foreground truncate text-[0.6875rem]">
                     {total.members
-                      .map((member) =>
-                        formatGeoSource(member, group.visitorType)
-                      )
+                      .map((member) => formatGeoSource(member))
                       .join(", ")}
                   </span>
                 </span>

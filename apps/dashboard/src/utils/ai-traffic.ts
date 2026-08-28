@@ -1,10 +1,11 @@
 import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
 
 import {
-  GEO_AI_REFERRER_LABELS,
+  GEO_SOURCE_LABELS,
   GEO_JOURNEY_CHIP_LENGTH,
   GEO_JOURNEY_EXPLICIT_PREFIX,
   GEO_SPARKLINE_MIN_POINTS,
+  GEO_SPARKLINE_FLAT_THRESHOLD,
   GEO_TRAFFIC_TREND_CRAWLER_KEY,
   GEO_TRAFFIC_TREND_REFERRAL_KEY,
   GEO_UNTRACKED_VISITOR_TYPES,
@@ -37,14 +38,9 @@ export function isTrackedGeoVisitorType(value: GeoVisitorType): boolean {
   return !GEO_UNTRACKED_VISITOR_TYPES.includes(value);
 }
 
-export function formatGeoSource(
-  source: string,
-  visitorType: GeoVisitorType
-): string {
-  if (visitorType === "ai_referral") {
-    return GEO_AI_REFERRER_LABELS[source] ?? source;
-  }
-  return source;
+export function formatGeoSource(source: string): string {
+  const trimmed = source.trim();
+  return GEO_SOURCE_LABELS[trimmed.toLowerCase()] ?? trimmed;
 }
 
 export function toGeoTrafficTotals(
@@ -318,4 +314,39 @@ export function trafficMetricDeltas(
       previousCrawler + previousReferral
     ),
   };
+}
+
+export function sparklineTrend(
+  points: readonly { value: number }[]
+): "up" | "down" | "flat" {
+  const count = points.length;
+  if (count < GEO_SPARKLINE_MIN_POINTS) {
+    return "flat";
+  }
+  const meanX = (count - 1) / 2;
+  let sum = 0;
+  for (const point of points) {
+    sum += point.value;
+  }
+  const meanY = sum / count;
+  if (meanY === 0) {
+    return "flat";
+  }
+  let covariance = 0;
+  let variance = 0;
+  for (const [index, point] of points.entries()) {
+    const dx = index - meanX;
+    covariance += dx * (point.value - meanY);
+    variance += dx * dx;
+  }
+  const slope = variance === 0 ? 0 : covariance / variance;
+  const changeOverWindow = slope * (count - 1);
+  const relativeChange = changeOverWindow / meanY;
+  if (relativeChange > GEO_SPARKLINE_FLAT_THRESHOLD) {
+    return "up";
+  }
+  if (relativeChange < -GEO_SPARKLINE_FLAT_THRESHOLD) {
+    return "down";
+  }
+  return "flat";
 }

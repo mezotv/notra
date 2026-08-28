@@ -66,6 +66,9 @@ export function Table<T>({
   footer,
   page = 1,
   pageSize,
+  flushTop = false,
+  flushBottom = false,
+  overlapTop = false,
   className,
 }: TableProps<T>) {
   "use no memo";
@@ -304,7 +307,13 @@ export function Table<T>({
   return (
     <div className={cn("w-full text-sm", className)}>
       {/* Overlap (>= rounded-2xl) hides the header's side border in the body radius. */}
-      <div className="border-border bg-muted overflow-hidden rounded-t-2xl border border-b-0 pb-5">
+      <div
+        className={cn(
+          "border-border bg-muted overflow-hidden rounded-t-2xl border border-b-0 pb-5",
+          flushTop && "rounded-t-none border-t-0",
+          overlapTop && "pt-5"
+        )}
+      >
         {toolbar ? (
           <div className="border-border bg-background border-b">{toolbar}</div>
         ) : null}
@@ -357,7 +366,8 @@ export function Table<T>({
       <div
         className={cn(
           "scrollbar-floating border-border bg-background relative -mt-5 box-content rounded-2xl border outline-none",
-          scrolls ? "overflow-auto" : "overflow-x-auto overflow-y-hidden"
+          scrolls ? "overflow-auto" : "overflow-x-auto overflow-y-hidden",
+          flushBottom && !footer && "rounded-b-none"
         )}
         onScroll={handleScroll}
         ref={scrollRef}
@@ -449,7 +459,12 @@ export function Table<T>({
         </table>
       </div>
       {footer ? (
-        <div className="border-border bg-muted -mt-5 rounded-b-2xl border border-t-0 pt-5">
+        <div
+          className={cn(
+            "border-border bg-muted -mt-5 rounded-b-2xl border border-t-0 pt-5",
+            flushBottom && "rounded-b-none border-b-0"
+          )}
+        >
           {footer}
         </div>
       ) : null}

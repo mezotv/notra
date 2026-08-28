@@ -124,7 +124,7 @@ export function JourneyDetailDialog({
             </Button>
             <span className="inline-flex items-center gap-2 text-sm">
               <EngineIcon engine={journey.source} />
-              {formatGeoSource(journey.source, journey.visitorType)}
+              {formatGeoSource(journey.source)}
             </span>
           </div>
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">

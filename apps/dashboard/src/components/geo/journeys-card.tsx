@@ -47,12 +47,10 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2 text-sm">
             <EngineIcon engine={row.source} />
-            <span className="truncate">
-              {formatGeoSource(row.source, row.visitorType)}
-            </span>
+            <span className="truncate">{formatGeoSource(row.source)}</span>
           </span>
         ),
-        sortValue: (row) => formatGeoSource(row.source, row.visitorType),
+        sortValue: (row) => formatGeoSource(row.source),
       },
       {
         key: "pages",

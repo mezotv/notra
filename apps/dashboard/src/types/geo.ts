@@ -9,7 +9,12 @@ import type { GeoRequestPayload } from "@usenotra/geo";
 import type { LanguageModel, ToolSet } from "ai";
 import type { ReactNode } from "react";
 
-import type { ChartColorPair } from "@/types/charts";
+import type { TableColumn } from "@/components/motion/table";
+import type {
+  ChartColorPair,
+  ChartConfig,
+  ChartSeriesColors,
+} from "@/types/charts";
 import type { TablePaginationState } from "@/types/table";
 
 export interface GeoProject {
@@ -948,6 +953,25 @@ export interface GeoScanScheduleProps {
 
 export interface AiTrafficCardProps {
   traffic: AiTrafficResponse | undefined;
+}
+
+export interface GeoTrafficPageSource {
+  source: string;
+  visitorType: GeoVisitorType;
+  visits: number;
+  lastSeenAt: string;
+}
+
+export interface GeoTrafficPageGroup {
+  path: string;
+  visits: number;
+  previousVisits?: number;
+  lastSeenAt: string;
+  sources: GeoTrafficPageSource[];
+}
+
+export interface TrafficPageSourcesCellProps {
+  group: GeoTrafficPageGroup;
 }
 
 export interface TrafficPagesCardProps {
@@ -1920,3 +1944,56 @@ export type GeoWriterWorkflowResult =
   | { status: "duplicate_execution" }
   | { status: "invalid_state" }
   | { status: "invalid_payload" };
+
+export type TrafficTrendMode = "crawler" | "ai_referral" | "total";
+
+export interface TrafficTrendSeries {
+  key: string;
+  label: string;
+  icon: string | null;
+  colors: ChartSeriesColors;
+}
+
+export interface TrafficTrendMetric {
+  key: TrafficTrendMode;
+  label: string;
+  value: number;
+  delta: number | null;
+}
+
+export interface TrafficHeroProps {
+  totals: GeoTrafficTotals;
+  previousTotals: GeoTrafficTotals | null;
+  rows: readonly GeoTrafficTrendRow[];
+  groups: readonly GeoTrafficSourceGroup[];
+  points: readonly GeoTrafficPoint[];
+}
+
+export interface TrafficTrendProvider {
+  key: string;
+  label: string;
+  icon: string | null;
+  visits: number;
+  sources: string[];
+}
+
+export interface TrafficProviderLegendProps {
+  config: ChartConfig;
+  series: readonly TrafficTrendSeries[];
+  hiddenKeys: ReadonlySet<string>;
+  onToggle: (key: string) => void;
+}
+
+export interface TrafficSourcesGroupProps {
+  visitorType: GeoVisitorType;
+  groups: GeoTrafficSourceGroup[];
+  columns: TableColumn<GeoTrafficSourceGroup>[];
+  collapsed: boolean;
+  onToggle: () => void;
+  stacked: boolean;
+}
+
+export interface TrafficMarkdownCellProps {
+  markdownVisits: number;
+  visits: number;
+}

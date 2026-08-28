@@ -73,7 +73,7 @@ export function TrafficSourceGroupCell({ group }: TrafficSourceGroupCellProps) {
               />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-xs font-medium">
-                  {formatGeoSource(member.source, member.visitorType)}
+                  {formatGeoSource(member.source)}
                 </span>
                 <span className="text-muted-foreground flex gap-2 text-[0.6875rem]">
                   <span className="truncate">

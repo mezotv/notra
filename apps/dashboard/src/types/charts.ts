@@ -78,3 +78,13 @@ export interface TooltipBodyItem {
   /** Resolved CSS background. Required when the tooltip mounts outside `[data-chart]`. */
   paint?: string;
 }
+
+export interface TooltipRowGroup {
+  headingKey: string;
+  rowKeys: readonly string[];
+}
+
+export interface TooltipBodyGroup {
+  heading: TooltipBodyItem;
+  items: TooltipBodyItem[];
+}
