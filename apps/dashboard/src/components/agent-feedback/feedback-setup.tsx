@@ -1,12 +1,15 @@
 "use client";
 
+import { AiMagicIcon, Tick01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { useState } from "react";
 
 import { AgentFeedbackRotateButton } from "@/components/agent-feedback/feedback-rotate-button";
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
-import { CodeSnippet } from "@/components/geo/code-snippet";
+import { Button } from "@/components/button";
+import { CodeSnippet, useCopyCode } from "@/components/geo/code-snippet";
 import { GeoPackageManagerIcon } from "@/components/geo/package-manager-icon";
 import {
   AGENT_FEEDBACK_DEFAULT_SNIPPET_TAB,
@@ -31,6 +34,7 @@ export function AgentFeedbackSetup({
   setup,
   organizationId,
   className,
+  showPromptAction = true,
 }: AgentFeedbackSetupPanelProps) {
   const [snippetKey, setSnippetKey] = useState<AgentFeedbackSnippetKey>(
     AGENT_FEEDBACK_DEFAULT_SNIPPET_TAB
@@ -42,6 +46,7 @@ export function AgentFeedbackSetup({
     GEO_INGEST_PACKAGE_MANAGER_OPTIONS.find(
       (option) => option.value === packageManager
     )?.command ?? GEO_INGEST_PACKAGE_MANAGER_OPTIONS[0].command;
+  const { copied, copy } = useCopyCode(setup?.prompt ?? "");
 
   return (
     <div className={cn("space-y-5", className)}>
@@ -131,6 +136,25 @@ export function AgentFeedbackSetup({
           <Skeleton className="h-44 w-full rounded-lg" />
         )}
       </section>
+      {showPromptAction ? (
+        <div className="space-y-2">
+          <div aria-hidden className="flex items-center gap-3 py-1">
+            <span className="bg-border/80 h-px flex-1" />
+            <span className="text-muted-foreground text-xs">or</span>
+            <span className="bg-border/80 h-px flex-1" />
+          </div>
+          <Button
+            className="text-muted-foreground mx-auto flex w-fit"
+            disabled={!setup}
+            onClick={copy}
+            size="sm"
+            variant="ghost"
+          >
+            <HugeiconsIcon icon={copied ? Tick01Icon : AiMagicIcon} size={14} />
+            {copied ? "Prompt copied" : "Copy agent prompt"}
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }

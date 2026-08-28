@@ -64,6 +64,7 @@ export interface AgentFeedbackSetupPanelProps {
   setup: AgentFeedbackSetupResponse | undefined;
   organizationId: string;
   className?: string;
+  showPromptAction?: boolean;
 }
 
 export interface AgentFeedbackEmptyProps {

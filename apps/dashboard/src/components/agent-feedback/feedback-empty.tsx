@@ -59,6 +59,7 @@ export function AgentFeedbackEmpty({
           className="border-border bg-card relative -mt-5 rounded-2xl border p-4 text-left sm:p-5"
           organizationId={organizationId}
           setup={setup}
+          showPromptAction={false}
         />
       </div>
     </div>
