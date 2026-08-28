@@ -1223,6 +1223,50 @@ export interface CitationsTableProps {
 
 export interface PurposeBadgeProps {
   category: string;
+  compact?: boolean;
+  tooltip?: boolean;
+}
+
+export interface GeoTrafficSourceGroupDefinition {
+  key: string;
+  label: string;
+  icon: string | null;
+}
+
+export interface GeoTrafficSourceGroup extends GeoTrafficSourceGroupDefinition {
+  visitorType: GeoVisitorType;
+  visits: number;
+  markdownVisits: number;
+  paths: number;
+  lastSeenAt: string;
+  categories: string[];
+  members: GeoTrafficSource[];
+}
+
+export interface TrafficSourceGroupCellProps {
+  group: GeoTrafficSourceGroup;
+}
+
+export interface TrafficPurposeCellProps {
+  group: GeoTrafficSourceGroup;
+}
+
+export interface GeoTrafficPurposeTotal {
+  category: string;
+  visits: number;
+  members: string[];
+}
+
+export interface TrafficBreakdownCardProps {
+  icon: ReactNode;
+  title: string;
+  aside?: ReactNode;
+  children: ReactNode;
+}
+
+export interface TrafficSourceGroupIconProps {
+  group: GeoTrafficSourceGroupDefinition;
+  className?: string;
 }
 
 export type EngineIconKey =
@@ -1322,15 +1366,6 @@ export interface GeoSettingsFormProps {
   organizationId: string;
   settings: GeoSettings | null;
   catalog: GeoModelCatalog;
-}
-
-export interface GeoSubDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  organizationId: string;
-  settings: GeoSettings | null;
-  companyName: string;
-  enabled: boolean;
 }
 
 export interface GeoTagListProps {
@@ -1452,7 +1487,6 @@ export interface ShareOfVoiceCardProps {
   points: GeoCompetitorSharePoint[];
   timeseries?: readonly GeoCompetitorShareTimeseriesPoint[];
   competitors?: GeoCompetitor[];
-  action?: ReactNode;
   isScanning?: boolean;
   organizationSlug?: string;
   organizationId?: string;

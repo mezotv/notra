@@ -284,25 +284,6 @@ export function mentionRateSparklineLabel(
   return `Mention rate ${from} to ${to} over ${points.length} days`;
 }
 
-export function mentionCountSparklineLabel(
-  points: readonly GeoSparklinePoint[]
-): string {
-  const first = points[0];
-  const last = points.at(-1);
-  if (!(first && last)) {
-    return "Mention trend";
-  }
-  const from = formatChartInteger(first.value);
-  const to = formatChartInteger(last.value);
-  if (points.length === 1) {
-    return `${from} mentions`;
-  }
-  if (from === to) {
-    return `${to} mentions over ${points.length} days`;
-  }
-  return `${from} to ${to} mentions over ${points.length} days`;
-}
-
 function daysWithSettledUsage(
   knownDays: readonly string[],
   today = todayIsoDate()
@@ -723,6 +704,26 @@ function relativePercentDelta(
     return current > 0 ? 100 : null;
   }
   return ((current - previous) / previous) * CHART_PERCENT_SCALE;
+}
+
+export function mentionCountDelta(
+  points: readonly GeoSparklinePoint[],
+  today = todayIsoDate()
+): number | null {
+  const settledPoints = points.filter((point) => point.day < today);
+  if (settledPoints.length < GEO_SPARKLINE_MIN_POINTS) {
+    return null;
+  }
+  const midpoint = Math.floor(settledPoints.length / 2);
+  const previousTotal = settledPoints
+    .slice(0, midpoint)
+    .reduce((sum, point) => sum + point.value, 0);
+  const currentTotal = settledPoints
+    .slice(midpoint)
+    .reduce((sum, point) => sum + point.value, 0);
+  const previousAverage = previousTotal / midpoint;
+  const currentAverage = currentTotal / (settledPoints.length - midpoint);
+  return relativePercentDelta(currentAverage, previousAverage);
 }
 
 function splitTrendDays(

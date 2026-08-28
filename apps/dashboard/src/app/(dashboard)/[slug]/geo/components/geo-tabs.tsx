@@ -150,18 +150,6 @@ export function GeoTabs({
           <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-2">
             <TabSection active={revealActive} order={3}>
               <ShareOfVoiceCard
-                action={
-                  <Link
-                    className={TAB_LINK_CLASS}
-                    href={withGeoProject(
-                      `/${organizationSlug}/geo/competitors`,
-                      projectId
-                    )}
-                    prefetch={true}
-                  >
-                    All competitors
-                  </Link>
-                }
                 aliases={settings.aliases}
                 companyName={settings.companyName}
                 competitors={competitors}

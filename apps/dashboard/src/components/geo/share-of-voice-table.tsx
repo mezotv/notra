@@ -6,6 +6,7 @@ import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { GeoBar } from "@/components/geo/geo-bar";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
+import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
 import { InstrumentEmpty } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
@@ -21,7 +22,7 @@ import { geoModeFillClass } from "@/utils/chart-colors";
 import {
   buildShareOfVoiceRows,
   formatMentionRate,
-  mentionCountSparklineLabel,
+  mentionCountDelta,
 } from "@/utils/geo-charts";
 import {
   buildShareOfVoiceMentionSparklines,
@@ -114,31 +115,17 @@ export function ShareOfVoiceTable({
         sortable: true,
         cell: (row) => {
           const series = mentionSparklines.get(row.brand) ?? [];
-          const showSpark = series.length >= GEO_SPARKLINE_MIN_POINTS;
-          const own = isOwnBrandName(row.brand, companyName, aliases);
-          const color =
-            row.brand === CHART_OTHER_SLICE_LABEL
-              ? null
-              : shareOfVoiceSliceColor(
-                  row.brand,
-                  shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
-                  competitors,
-                  ownBrand
-                );
 
           return (
             <span className="flex items-center gap-2">
-              {showSpark ? (
-                <GeoRateSparkline
-                  ariaLabel={mentionCountSparklineLabel(series)}
-                  className={own ? "text-geo-search" : undefined}
-                  points={series}
-                  style={color && !own ? { color: color.light } : undefined}
-                />
-              ) : null}
-              <span className="text-sm tabular-nums">
+              <span className="w-12 shrink-0 text-right text-sm tabular-nums">
                 {row.mentions.toLocaleString()}
               </span>
+              <GeoStatDelta
+                delta={mentionCountDelta(series)}
+                hint="vs first half of this range"
+                label={`${row.brand} mentions`}
+              />
             </span>
           );
         },

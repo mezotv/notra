@@ -13,6 +13,7 @@ import { LANGUAGE_FLAGS } from "@/constants/brand-identity";
 import { GEO_MODEL_CATALOG_SEED } from "@/constants/geo-model-catalog";
 import type {
   AiTrafficResponse,
+  EngineIconKey,
   GeoChatSkin,
   GeoCompetitorKind,
   GeoCompetitorShareTimeseriesPoint,
@@ -26,6 +27,7 @@ import type {
   GeoTimeseriesPoint,
   GeoTrafficLogPurposeOption,
   GeoTrafficLogVisitorOption,
+  GeoTrafficSourceGroupDefinition,
   GeoVisitorType,
 } from "@/types/geo";
 
@@ -532,6 +534,42 @@ export const AI_TRAFFIC_PURPOSE_DESCRIPTIONS: Record<string, string> = {
     "Fetched while an assistant was answering someone. A fetch is not proof of a citation",
   "assistant-referral":
     "A person clicked through to your site from an AI answer",
+};
+
+const GEO_TRAFFIC_GOOGLE_GROUP: GeoTrafficSourceGroupDefinition = {
+  key: "google",
+  label: "Google",
+  icon: "googlebot",
+};
+
+export const GEO_TRAFFIC_OTHER_GROUP: GeoTrafficSourceGroupDefinition = {
+  key: "other",
+  label: "Other",
+  icon: null,
+};
+
+export const GEO_TRAFFIC_GROUPS_BY_ENGINE: Partial<
+  Record<EngineIconKey, GeoTrafficSourceGroupDefinition>
+> = {
+  openai: { key: "chatgpt", label: "ChatGPT", icon: "openai" },
+  claude: { key: "claude", label: "Claude", icon: "claude" },
+  gemini: GEO_TRAFFIC_GOOGLE_GROUP,
+  google: GEO_TRAFFIC_GOOGLE_GROUP,
+  perplexity: { key: "perplexity", label: "Perplexity", icon: "perplexity" },
+  copilot: { key: "microsoft", label: "Microsoft", icon: "copilot" },
+  meta: { key: "meta", label: "Meta", icon: "meta-" },
+  amazon: { key: "amazon", label: "Amazon", icon: "amazonbot" },
+  apple: { key: "apple", label: "Apple", icon: "applebot" },
+  tiktok: { key: "bytedance", label: "ByteDance", icon: "bytespider" },
+  mistral: { key: "mistral", label: "Mistral", icon: "mistral" },
+  deepseek: { key: "deepseek", label: "DeepSeek", icon: "deepseek" },
+  grok: { key: "xai", label: "xAI", icon: "grok" },
+  qwen: { key: "alibaba", label: "Alibaba", icon: "qwen" },
+  commoncrawl: { key: "commoncrawl", label: "Common Crawl", icon: "ccbot" },
+  cohere: { key: "cohere", label: "Cohere", icon: "cohere" },
+  duckduckgo: { key: "duckduckgo", label: "DuckDuckGo", icon: "duckduckgo" },
+  opencode: { key: "opencode", label: "OpenCode", icon: "opencode" },
+  cursor: { key: "cursor", label: "Cursor", icon: "cursor" },
 };
 
 export const GEO_TRAFFIC_TREND_CRAWLER_KEY = "crawler";

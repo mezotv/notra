@@ -21,7 +21,6 @@ import { useCallback, useMemo, useState } from "react";
 
 import { Button } from "@/components/button";
 import { GeoBar } from "@/components/geo/geo-bar";
-import { GeoLanguagesDialog } from "@/components/geo/geo-languages-dialog";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Twemoji } from "@/components/geo/twemoji";
@@ -214,7 +213,6 @@ export function LanguagePerformanceCard({
   organizationId,
   settings,
 }: LanguagePerformanceCardProps) {
-  const [languagesOpen, setLanguagesOpen] = useState(false);
   const [languageToAdd, setLanguageToAdd] = useState<string>();
   const upsert = useGeoSettingsUpsert(organizationId);
   const savedExtras = trackedGeoLanguages(settings.languages);
@@ -293,15 +291,6 @@ export function LanguagePerformanceCard({
   return (
     <>
       <InstrumentSection
-        action={
-          <button
-            className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
-            onClick={() => setLanguagesOpen(true)}
-            type="button"
-          >
-            Languages
-          </button>
-        }
         bodyClassName="flex min-h-0 flex-1 flex-col"
         className="h-full"
         eyebrow="Performance by language"
@@ -345,14 +334,6 @@ export function LanguagePerformanceCard({
           </ResponsiveAlertDialogFooter>
         </ResponsiveAlertDialogContent>
       </ResponsiveAlertDialog>
-      <GeoLanguagesDialog
-        companyName={settings.companyName}
-        enabled={settings.enabled}
-        onOpenChange={setLanguagesOpen}
-        open={languagesOpen}
-        organizationId={organizationId}
-        settings={settings}
-      />
     </>
   );
 }
