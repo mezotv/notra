@@ -26,6 +26,7 @@ import {
   resolveOrganizationId,
 } from "@/lib/organizations/guards";
 import { runOrganizationAction } from "@/lib/organizations/run-action";
+import { validateActionInput } from "@/lib/organizations/validate-input";
 import {
   ensureWorkOSOrganizationWithMembers,
   removeMembershipFromWorkOS,
@@ -33,9 +34,16 @@ import {
   updateMembershipRoleInWorkOS,
 } from "@/lib/organizations/workos-sync";
 import {
-  memberRoleSchema,
-  organizationSlugSchema,
-} from "@/schemas/organization";
+  createOrganizationInputSchema,
+  invitationActionInputSchema,
+  inviteMemberInputSchema,
+  organizationLookupQueryInputSchema,
+  organizationScopedQueryInputSchema,
+  removeMemberInputSchema,
+  setActiveOrganizationInputSchema,
+  updateMemberRoleInputSchema,
+  updateOrganizationInputSchema,
+} from "@/schemas/organizations/actions";
 import type {
   ActionResult,
   CreateOrganizationInput,
@@ -52,23 +60,6 @@ import type {
   UpdateMemberRoleInput,
   UpdateOrganizationInput,
 } from "@/types/organizations/actions";
-
-const validateSlug = Effect.fn("organizations.actions.validateSlug")(function* (
-  rawSlug: string
-) {
-  const validation = organizationSlugSchema.safeParse(rawSlug.trim());
-
-  if (!validation.success) {
-    return yield* Effect.fail(
-      new OrganizationActionError({
-        message:
-          validation.error.issues[0]?.message ?? "Invalid organization slug",
-      })
-    );
-  }
-
-  return validation.data;
-});
 
 const enforceTeamMembersLimit = Effect.fn(
   "organizations.actions.enforceTeamMembersLimit"
@@ -206,12 +197,16 @@ const requireInvitationManagement = Effect.fn(
 });
 
 export async function createOrganizationAction(
-  input: CreateOrganizationInput
+  rawInput: CreateOrganizationInput
 ): Promise<ActionResult<OrganizationRow>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
-      const slug = yield* validateSlug(input.slug);
+      const input = yield* validateActionInput(
+        createOrganizationInputSchema,
+        rawInput
+      );
+      const { slug } = input;
 
       const existing = yield* tryDb(
         () =>
@@ -341,11 +336,15 @@ export async function createOrganizationAction(
 }
 
 export async function updateOrganizationAction(
-  input: UpdateOrganizationInput
+  rawInput: UpdateOrganizationInput
 ): Promise<ActionResult<OrganizationRow>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        updateOrganizationInputSchema,
+        rawInput
+      );
       yield* requireManagerMembership(session, input.organizationId);
 
       const updates: Partial<{
@@ -363,7 +362,7 @@ export async function updateOrganizationAction(
       }
 
       if (input.data.slug !== undefined) {
-        updates.slug = yield* validateSlug(input.data.slug);
+        updates.slug = input.data.slug;
       }
 
       const [organization] = yield* tryDb(
@@ -448,11 +447,15 @@ function findOrganizationForSelection(input: SetActiveOrganizationInput) {
 }
 
 export async function setActiveOrganizationAction(
-  input: SetActiveOrganizationInput
+  rawInput: SetActiveOrganizationInput
 ): Promise<ActionResult<OrganizationRow>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        setActiveOrganizationInputSchema,
+        rawInput
+      );
 
       const organization = yield* tryDb(
         () => findOrganizationForSelection(input),
@@ -480,12 +483,16 @@ export async function setActiveOrganizationAction(
   );
 }
 
-export async function getFullOrganizationAction(input?: {
+export async function getFullOrganizationAction(rawInput?: {
   query?: { organizationId?: string; organizationSlug?: string };
 }): Promise<ActionResult<FullOrganization | null>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        organizationLookupQueryInputSchema,
+        rawInput
+      );
 
       let organizationId = input?.query?.organizationId;
 
@@ -548,11 +555,15 @@ export async function getFullOrganizationAction(input?: {
 }
 
 export async function listMembersAction(
-  input?: ListMembersInput
+  rawInput?: ListMembersInput
 ): Promise<ActionResult<MembersListResult>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        organizationScopedQueryInputSchema,
+        rawInput
+      );
       const organizationId = yield* resolveOrganizationId(
         session,
         input?.query?.organizationId
@@ -580,11 +591,15 @@ export async function listMembersAction(
 }
 
 export async function updateMemberRoleAction(
-  input: UpdateMemberRoleInput
+  rawInput: UpdateMemberRoleInput
 ): Promise<ActionResult<MemberWithUser | null>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        updateMemberRoleInputSchema,
+        rawInput
+      );
 
       const member = yield* tryDb(
         () =>
@@ -605,18 +620,7 @@ export async function updateMemberRoleAction(
         member.organizationId
       );
 
-      const roleValidation = memberRoleSchema.safeParse(input.role);
-
-      if (!roleValidation.success) {
-        return yield* Effect.fail(
-          new OrganizationActionError({ message: "Invalid role" })
-        );
-      }
-
-      if (
-        roleValidation.data === "owner" &&
-        callerMembership.role !== "owner"
-      ) {
+      if (input.role === "owner" && callerMembership.role !== "owner") {
         return yield* Effect.fail(
           new OrganizationActionError({
             message: "Only the organization owner can assign the owner role",
@@ -666,11 +670,15 @@ export async function updateMemberRoleAction(
 }
 
 export async function removeMemberAction(
-  input: RemoveMemberInput
+  rawInput: RemoveMemberInput
 ): Promise<ActionResult<{ removed: boolean }>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        removeMemberInputSchema,
+        rawInput
+      );
       const organizationId = yield* resolveOrganizationId(
         session,
         input.organizationId
@@ -738,12 +746,16 @@ export async function removeMemberAction(
   );
 }
 
-export async function listInvitationsAction(input?: {
+export async function listInvitationsAction(rawInput?: {
   query?: { organizationId?: string };
 }): Promise<ActionResult<InvitationSummary[]>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        organizationScopedQueryInputSchema,
+        rawInput
+      );
       const organizationId = yield* resolveOrganizationId(
         session,
         input?.query?.organizationId
@@ -766,11 +778,15 @@ export async function listInvitationsAction(input?: {
 }
 
 export async function inviteMemberAction(
-  input: InviteMemberInput
+  rawInput: InviteMemberInput
 ): Promise<ActionResult<InvitationSummary>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        inviteMemberInputSchema,
+        rawInput
+      );
       const organizationId = yield* resolveOrganizationId(
         session,
         input.organizationId
@@ -780,18 +796,7 @@ export async function inviteMemberAction(
         organizationId
       );
 
-      const roleValidation = memberRoleSchema.safeParse(input.role);
-
-      if (!roleValidation.success) {
-        return yield* Effect.fail(
-          new OrganizationActionError({ message: "Invalid role" })
-        );
-      }
-
-      if (
-        roleValidation.data === "owner" &&
-        callerMembership.role !== "owner"
-      ) {
+      if (input.role === "owner" && callerMembership.role !== "owner") {
         return yield* Effect.fail(
           new OrganizationActionError({
             message: "Only the organization owner can assign the owner role",
@@ -827,10 +832,14 @@ export async function inviteMemberAction(
 }
 
 export async function cancelInvitationAction(
-  input: InvitationActionInput
+  rawInput: InvitationActionInput
 ): Promise<ActionResult<InvitationSummary>> {
   return runOrganizationAction(
     Effect.gen(function* () {
+      const input = yield* validateActionInput(
+        invitationActionInputSchema,
+        rawInput
+      );
       yield* requireInvitationManagement(input.invitationId);
 
       const revoked = yield* tryWorkOS(
@@ -844,10 +853,14 @@ export async function cancelInvitationAction(
 }
 
 export async function resendInvitationAction(
-  input: InvitationActionInput
+  rawInput: InvitationActionInput
 ): Promise<ActionResult<InvitationSummary>> {
   return runOrganizationAction(
     Effect.gen(function* () {
+      const input = yield* validateActionInput(
+        invitationActionInputSchema,
+        rawInput
+      );
       yield* requireInvitationManagement(input.invitationId);
 
       const invitation = yield* tryWorkOS(

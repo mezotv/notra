@@ -10,6 +10,9 @@ import {
   EMPTY_STATE_COLUMN_KEYS,
   EMPTY_STATE_GUIDELINE_ASSET_KEYS,
   EMPTY_STATE_GUIDELINE_COLOR_KEYS,
+  EMPTY_STATE_READINESS_ISSUE_COUNT,
+  EMPTY_STATE_READINESS_SCORE_PERCENT,
+  EMPTY_STATE_READINESS_TIER_KEYS,
   EMPTY_STATE_ROW_KEYS,
   EMPTY_STATE_SKILL_CARD_LAYOUTS,
   EMPTY_STATE_STAT_KEYS,
@@ -402,6 +405,63 @@ export function EmptyStateCardsPreview({
         }
         return <ContentCardGhost key={`${id}-${cardKey}`} />;
       })}
+    </div>
+  );
+}
+
+export function EmptyStateReadinessPreview() {
+  return (
+    <div className="h-80 space-y-3 overflow-hidden">
+      <div className="border-border/80 bg-card flex flex-col gap-4 rounded-2xl border p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <GhostBar className="h-8 w-24" />
+            <GhostBar className="h-3 w-32" />
+          </div>
+          <GhostBar className="h-7 w-20 rounded-lg" />
+        </div>
+        <div className="bg-muted-foreground/10 h-2 w-full overflow-hidden rounded-full">
+          <GhostBar
+            className="h-2 rounded-full"
+            width={EMPTY_STATE_READINESS_SCORE_PERCENT}
+          />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {EMPTY_STATE_READINESS_TIER_KEYS.map((key) => (
+            <div
+              className="border-border/80 bg-muted/40 flex flex-col gap-2 rounded-xl border p-4"
+              key={key}
+            >
+              <GhostBar className="h-3 w-16" />
+              <GhostBar className="h-5 w-14" />
+              <GhostBar className="h-3 w-24" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="border-border/80 bg-card overflow-hidden rounded-2xl border">
+        <div className="border-border/60 space-y-2 border-b px-5 py-4">
+          <GhostBar className="h-4 w-24" />
+          <GhostBar className="h-3 w-56" />
+        </div>
+        <div className="divide-border/60 divide-y">
+          {EMPTY_STATE_ROW_KEYS.slice(0, EMPTY_STATE_READINESS_ISSUE_COUNT).map(
+            (key) => (
+              <div className="space-y-2 px-5 py-4" key={key}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <GhostBar className="h-4 w-12 rounded-full" />
+                    <GhostBar className="h-4 w-16 rounded-full" />
+                    <GhostBar className="h-4 w-32" />
+                  </div>
+                  <GhostBar className="h-6 w-28 rounded-lg" />
+                </div>
+                <GhostBar className="h-3 w-3/4" />
+              </div>
+            )
+          )}
+        </div>
+      </div>
     </div>
   );
 }

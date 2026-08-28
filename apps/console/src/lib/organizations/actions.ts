@@ -12,31 +12,18 @@ import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import { requireMembership, requireSession } from "@/lib/organizations/guards";
 import { runOrganizationAction } from "@/lib/organizations/run-action";
+import { validateActionInput } from "@/lib/organizations/validate-input";
 import { ensureWorkOSOrganizationWithMembers } from "@/lib/organizations/workos-sync";
-import { organizationSlugSchema } from "@/schemas/organization";
+import {
+  createOrganizationInputSchema,
+  setActiveOrganizationInputSchema,
+} from "@/schemas/organization";
 import type {
   ActionResult,
   CreateOrganizationInput,
   OrganizationRow,
   SetActiveOrganizationInput,
 } from "@/types/organization";
-
-const validateSlug = Effect.fn("organizations.actions.validateSlug")(function* (
-  rawSlug: string
-) {
-  const validation = organizationSlugSchema.safeParse(rawSlug.trim());
-
-  if (!validation.success) {
-    return yield* Effect.fail(
-      new OrganizationActionError({
-        message:
-          validation.error.issues[0]?.message ?? "Invalid organization slug",
-      })
-    );
-  }
-
-  return validation.data;
-});
 
 const tryDb = <T>(run: () => Promise<T>, message: string) =>
   Effect.tryPromise({
@@ -45,12 +32,16 @@ const tryDb = <T>(run: () => Promise<T>, message: string) =>
   });
 
 export async function createOrganizationAction(
-  input: CreateOrganizationInput
+  rawInput: CreateOrganizationInput
 ): Promise<ActionResult<OrganizationRow>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
-      const slug = yield* validateSlug(input.slug);
+      const input = yield* validateActionInput(
+        createOrganizationInputSchema,
+        rawInput
+      );
+      const { slug } = input;
 
       const existing = yield* tryDb(
         () =>
@@ -220,11 +211,15 @@ function findOrganizationForSelection(input: SetActiveOrganizationInput) {
 }
 
 export async function setActiveOrganizationAction(
-  input: SetActiveOrganizationInput
+  rawInput: SetActiveOrganizationInput
 ): Promise<ActionResult<OrganizationRow>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        setActiveOrganizationInputSchema,
+        rawInput
+      );
 
       const organization = yield* tryDb(
         () => findOrganizationForSelection(input),

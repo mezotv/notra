@@ -10,15 +10,19 @@ import { hasAdminRole } from "@/lib/auth/role";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import { requireSession } from "@/lib/organizations/guards";
 import { runOrganizationAction } from "@/lib/organizations/run-action";
+import { validateActionInput } from "@/lib/organizations/validate-input";
+import { listUsersInputSchema } from "@/schemas/auth-actions";
 import type { ImpersonationUser, ListUsersInput } from "@/types/auth";
 import type { ActionResult } from "@/types/organization";
+import { escapeLikePattern } from "@/utils/sql";
 
 export async function listUsersAction(
-  input?: ListUsersInput
+  rawInput?: ListUsersInput
 ): Promise<ActionResult<ImpersonationUser[]>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(listUsersInputSchema, rawInput);
 
       if (!hasAdminRole(session.user.role)) {
         return yield* Effect.fail(
@@ -28,15 +32,16 @@ export async function listUsersAction(
         );
       }
 
-      const search = input?.search?.trim();
+      const search = input?.search;
+      const searchPattern = search ? `%${escapeLikePattern(search)}%` : null;
 
       const rows = yield* Effect.tryPromise({
         try: () =>
           db.query.users.findMany({
-            where: search
+            where: searchPattern
               ? or(
-                  ilike(users.name, `%${search}%`),
-                  ilike(users.email, `%${search}%`)
+                  ilike(users.name, searchPattern),
+                  ilike(users.email, searchPattern)
                 )
               : undefined,
             columns: {

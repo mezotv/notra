@@ -4,6 +4,7 @@ import type { EmptyStateProps } from "@/types/components/empty-state";
 
 function EmptyState({
   title,
+  titleIcon,
   description,
   action,
   actionLabel,
@@ -55,7 +56,10 @@ function EmptyState({
           preview && "-mt-4 px-6 pt-2 pb-10"
         )}
       >
-        <h3 className="text-lg font-semibold text-balance">{title}</h3>
+        <h3 className="flex items-center justify-center gap-2 text-lg font-semibold text-balance">
+          {titleIcon}
+          {title}
+        </h3>
         <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed text-pretty">
           {description}
         </p>

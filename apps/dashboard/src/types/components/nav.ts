@@ -29,6 +29,7 @@ export interface NavPrimaryActionConfig {
 export interface NavVisibility {
   iris: boolean;
   analytics: boolean;
+  agentReadiness: boolean;
 }
 
 export interface NavListProps {

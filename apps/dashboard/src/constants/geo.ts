@@ -58,6 +58,7 @@ export const GEO_CURSOR_FLAG_ERROR_REASON = "ERROR";
 export const GEO_WRITER_NAV_LINK = "/geo/write";
 export const GEO_GAPS_NAV_LINK = "/geo/gaps";
 export const GEO_PROMPTS_NAV_LINK = "/geo/prompts";
+export const GEO_AGENT_READINESS_NAV_LINK = "/geo/agent-readiness";
 export const GEO_WRITER_TOPIC_MIN_LENGTH = 3;
 export const GEO_WRITER_TOPIC_MAX_LENGTH = 8000;
 export const GEO_WRITER_GAP_LOOKBACK_DAYS = 30;

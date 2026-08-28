@@ -10,8 +10,16 @@ import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { isSessionBanned } from "@/lib/auth/banned";
 import { getAuthSession } from "@/lib/auth/server";
 import { retryTransientDbError } from "@/lib/db/retry";
+import { organizationSlugParamSchema } from "@/schemas/auth/organization";
 
-export async function validateOrganizationAccess(slug: string) {
+export async function validateOrganizationAccess(rawSlug: string) {
+  const slugValidation = organizationSlugParamSchema.safeParse(rawSlug);
+
+  if (!slugValidation.success) {
+    notFound();
+  }
+
+  const slug = slugValidation.data;
   const session = await getAuthSession();
 
   if (!session?.user) {

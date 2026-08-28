@@ -26,6 +26,10 @@ import {
   GEO_WRITER_SOURCE_KINDS,
 } from "./constants/geo-writer";
 import type { AgentFeedbackMetadata } from "./types/agent-feedback";
+import type {
+  AgentReadinessIssue,
+  AgentReadinessScoreBreakdown,
+} from "./types/agent-readiness";
 import type { GeoCheckGrounding } from "./types/geo-checks";
 import type { GeoContentBriefJson } from "./types/geo-writer";
 
@@ -1611,6 +1615,53 @@ export const geoMentionChecks = pgTable(
   ]
 );
 
+export const geoAgentReadinessReports = pgTable(
+  "geo_agent_readiness_reports",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    targetUrl: text("target_url").notNull(),
+    status: text("status", { enum: ["running", "completed", "failed"] })
+      .notNull()
+      .default("running"),
+    score: real("score"),
+    scoreLabel: text("score_label"),
+    scoreBreakdown: jsonb("score_breakdown")
+      .$type<AgentReadinessScoreBreakdown | null>()
+      .default(null),
+    issues: jsonb("issues")
+      .$type<AgentReadinessIssue[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    eligibleChecks: integer("eligible_checks"),
+    reportUrl: text("report_url"),
+    errorMessage: text("error_message"),
+    scannedAt: timestamp("scanned_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoAgentReadinessReports_organizationId_idx").on(
+      table.organizationId
+    ),
+    index("geoAgentReadinessReports_projectId_createdAt_idx").on(
+      table.projectId,
+      table.createdAt
+    ),
+    uniqueIndex("geoAgentReadinessReports_projectId_running_uidx")
+      .on(table.projectId)
+      .where(sql`${table.status} = 'running'`),
+  ]
+);
+
 export const googleSearchConsoleIntegrations = pgTable(
   "google_search_console_integrations",
   {
@@ -2922,6 +2973,20 @@ export const geoPromptSuggestionsRelations = relations(
     acceptedPrompt: one(geoPrompts, {
       fields: [geoPromptSuggestions.acceptedPromptId],
       references: [geoPrompts.id],
+    }),
+  })
+);
+
+export const geoAgentReadinessReportsRelations = relations(
+  geoAgentReadinessReports,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoAgentReadinessReports.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [geoAgentReadinessReports.projectId],
+      references: [projects.id],
     }),
   })
 );

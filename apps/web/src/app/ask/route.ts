@@ -1,15 +1,23 @@
+import { askRequestSchema } from "@/schemas/ask";
 import { buildAgentJson } from "@/utils/agent-metadata";
 
 export async function POST(request: Request) {
-  const body = await request.json().catch(() => ({}));
-  const streaming = body?.prefer?.streaming === true;
+  const rawBody: unknown = await request.json().catch(() => null);
+  const parsed = askRequestSchema.safeParse(rawBody ?? {});
+
+  if (!parsed.success) {
+    return Response.json({ error: "Invalid request body" }, { status: 400 });
+  }
+
+  const body = parsed.data;
+  const streaming = body.prefer?.streaming === true;
   const agent = buildAgentJson();
   const result = {
     _meta: {
       response_type: "answer",
       version: "1.0",
     },
-    query: typeof body?.query === "string" ? body.query : null,
+    query: body.query ?? null,
     answer:
       "Notra turns shipped work into changelogs, launch posts, blog posts, marketing assets, and social updates in a saved brand voice.",
     resources: [agent.api.openapi, agent.api.auth, agent.mcp.docs],

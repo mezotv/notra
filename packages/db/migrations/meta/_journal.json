@@ -498,6 +498,13 @@
       "when": 1787843865078,
       "tag": "0070_misty_toro",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1787898950006,
+      "tag": "0071_remarkable_kronos",
+      "breakpoints": true
     }
   ]
 }

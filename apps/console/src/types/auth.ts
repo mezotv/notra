@@ -93,3 +93,7 @@ export interface ConsoleLoginFormProps {
   initialError?: string;
   initialPendingVerification?: PendingVerification;
 }
+
+export interface SignOutActionOptions {
+  returnTo?: string;
+}

@@ -107,3 +107,13 @@ export const EMPTY_STATE_SKILL_CARD_LAYOUTS = [
     ],
   },
 ] as const satisfies readonly EmptyStateSkillCardLayout[];
+
+export const EMPTY_STATE_READINESS_TIER_KEYS = [
+  "tier-a",
+  "tier-b",
+  "tier-c",
+] as const;
+
+export const EMPTY_STATE_READINESS_ISSUE_COUNT = 3;
+
+export const EMPTY_STATE_READINESS_SCORE_PERCENT = "68%";

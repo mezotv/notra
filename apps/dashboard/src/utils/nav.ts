@@ -1,4 +1,7 @@
-import { GEO_WRITER_NAV_LINK } from "@/constants/geo";
+import {
+  GEO_AGENT_READINESS_NAV_LINK,
+  GEO_WRITER_NAV_LINK,
+} from "@/constants/geo";
 import {
   ANALYTICS_NAV_LINK,
   DEFAULT_NAV_VISIBILITY,
@@ -75,7 +78,12 @@ export function resolveNavItems(
   const withAnalytics = visibility.analytics
     ? items
     : items.filter((item) => item.link !== ANALYTICS_NAV_LINK);
-  return filterIrisNavItems(withAnalytics, visibility.iris);
+  const withAgentReadiness = visibility.agentReadiness
+    ? withAnalytics
+    : withAnalytics.filter(
+        (item) => item.link !== GEO_AGENT_READINESS_NAV_LINK
+      );
+  return filterIrisNavItems(withAgentReadiness, visibility.iris);
 }
 
 export function resolveGeoImproveLinks(

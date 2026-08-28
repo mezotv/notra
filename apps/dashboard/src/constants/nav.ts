@@ -20,6 +20,7 @@ import {
   PlugIcon,
   PlusSignIcon,
   RainbowIcon,
+  Robot01Icon,
   SearchList01Icon,
   Settings01Icon,
   UserCircleIcon,
@@ -29,6 +30,7 @@ import {
 
 import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import {
+  GEO_AGENT_READINESS_NAV_LINK,
   GEO_GAPS_NAV_LINK,
   GEO_PROMPTS_NAV_LINK,
   GEO_WRITER_NAV_LINK,
@@ -119,6 +121,11 @@ export const NAV_MAIN_ITEMS: NavMainItem[] = [
   { link: GEO_PROMPTS_NAV_LINK, icon: AiChat01Icon, label: "Prompts" },
   { link: GEO_GAPS_NAV_LINK, icon: SearchList01Icon, label: "Content Gaps" },
   {
+    link: GEO_AGENT_READINESS_NAV_LINK,
+    icon: Robot01Icon,
+    label: "Agent Readiness",
+  },
+  {
     link: GEO_COMPETITORS_NAV_LINK,
     icon: ChartAnalysisIcon,
     label: "Competitors",
@@ -139,6 +146,7 @@ export const NAV_GEO_VISIBILITY_LINKS: readonly string[] = [
 
 export const NAV_GEO_IMPROVE_LINKS: readonly string[] = [
   GEO_GAPS_NAV_LINK,
+  GEO_AGENT_READINESS_NAV_LINK,
   GEO_WRITER_NAV_LINK,
   CONTENT_NAV_LINK,
   SCHEDULES_NAV_LINK,
@@ -177,6 +185,7 @@ export const NAV_UTILITY_LINKS: readonly string[] = [
 export const DEFAULT_NAV_VISIBILITY: NavVisibility = {
   iris: true,
   analytics: true,
+  agentReadiness: true,
 };
 
 export const NAV_PRIMARY_ACTIONS: Record<SidebarMode, NavPrimaryActionConfig> =
