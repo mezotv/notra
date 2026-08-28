@@ -27,6 +27,7 @@ import {
   GEO_TRAFFIC_TREND_REFERRAL_LABEL,
 } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import { cn } from "@/lib/utils";
 import type { ChartConfig } from "@/types/charts";
 import type {
   AiTrafficCardProps,
@@ -139,8 +140,15 @@ function TrafficHero({
   );
 
   return (
-    <div className="border-border bg-card overflow-hidden rounded-2xl border">
-      <div className="divide-border grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+    <div>
+      <div
+        className={cn(
+          "divide-border grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0",
+          showTrend
+            ? "border-border bg-muted rounded-t-2xl border border-b-0 pb-5"
+            : "border-border bg-card overflow-hidden rounded-2xl border"
+        )}
+      >
         {metrics.map((metric) => (
           <div className="px-5 py-4" key={metric.key}>
             <p className="text-muted-foreground text-xs">{metric.label}</p>
@@ -159,7 +167,7 @@ function TrafficHero({
         ))}
       </div>
       {showTrend ? (
-        <div className="border-border border-t p-4">
+        <div className="border-border bg-card -mt-5 rounded-2xl border p-4">
           <EChartsAreaChart
             animation={false}
             chartOptions={HERO_CHART_OPTIONS}
