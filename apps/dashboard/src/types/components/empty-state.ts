@@ -3,7 +3,8 @@ import type { ComponentProps, ReactNode } from "react";
 
 export interface EmptyStateProps extends ComponentProps<"div"> {
   title: string;
-  description: string;
+  titleIcon?: ReactNode;
+  description: ReactNode;
   action?: ReactNode;
   actionLabel?: string;
   actionVariant?: ComponentProps<typeof UiButton>["variant"];

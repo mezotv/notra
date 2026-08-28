@@ -222,6 +222,49 @@
   }
 }
 
+@keyframes agent-readiness-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+.agent-readiness-progress {
+  animation: agent-readiness-progress 1.8s cubic-bezier(0.65, 0, 0.35, 1)
+    infinite;
+}
+
+@keyframes agent-readiness-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+.agent-readiness-pulse {
+  animation: agent-readiness-pulse 2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agent-readiness-progress {
+    animation: none;
+    opacity: 0.5;
+    transform: none;
+    width: 100%;
+  }
+
+  .agent-readiness-pulse {
+    animation: none;
+  }
+}
+
 @keyframes chat-input-slide-down {
   from {
     transform: translateY(calc(-50dvh + 50% + 1.5rem));

@@ -10,6 +10,7 @@ import {
   IRIS_START_CLAIM_SCOPE,
   IRIS_START_CLAIM_TTL_SECONDS,
 } from "@/constants/iris";
+import { agentReadinessWorkflowPayloadSchema } from "@/schemas/agent-readiness";
 import { socialAnalyticsSyncPayloadSchema } from "@/schemas/analytics";
 import { brandGuidelinesWorkflowPayloadSchema } from "@/schemas/brand-guidelines";
 import {
@@ -26,9 +27,11 @@ import {
   irisWorkflowPayloadSchema,
 } from "@/schemas/workflows/iris";
 import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/workflows/onboarding-agent-payload";
+import type { AgentReadinessWorkflowPayload } from "@/types/agent-readiness";
 import type { BrandAnalysisPayload } from "@/types/brand-analysis";
 import type { GeoWriterPayload } from "@/types/geo";
 import type { GscSyncPayload } from "@/types/google-search-console";
+import { agentReadinessWorkflow } from "@/workflows/agent-readiness";
 import {
   brandAnalysisPayloadSchema,
   brandAnalysisWorkflow,
@@ -152,6 +155,14 @@ export async function startGeoWriterRun(
 ): Promise<{ runId: string }> {
   const parsed = geoWriterWorkflowPayloadSchema.parse(payload);
   const run = await start(geoWriterWorkflow, [parsed]);
+  return { runId: run.runId };
+}
+
+export async function startAgentReadinessRun(
+  payload: AgentReadinessWorkflowPayload
+): Promise<{ runId: string }> {
+  const parsed = agentReadinessWorkflowPayloadSchema.parse(payload);
+  const run = await start(agentReadinessWorkflow, [parsed]);
   return { runId: run.runId };
 }
 

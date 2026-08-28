@@ -13,6 +13,7 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
+import { AGENT_READINESS_POLL_INTERVAL_MS } from "@/constants/agent-readiness";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import {
   AI_TRAFFIC_LOG_FETCH_LIMIT,
@@ -25,6 +26,7 @@ import {
 } from "@/constants/geo";
 import { localStorageKeys } from "@/constants/storage";
 import { geoDbOrgQueryKey, geoDbQueryKey } from "@/lib/db/geo-collections";
+import type { AgentReadinessResponse } from "@/types/agent-readiness";
 import type {
   AiTrafficResponse,
   GeoBrandSearchResponse,
@@ -510,6 +512,40 @@ export function useIsGeoScanning(organizationId: string) {
     mutationKey: geoStartScanMutationKey(organizationId, projectId),
   });
   return pendingCount > 0 || Boolean(data?.settings?.isScanning);
+}
+
+export function useAgentReadiness(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  return useQuery<AgentReadinessResponse>({
+    ...dashboardOrpc.geo.agentReadiness.queryOptions({
+      input: { organizationId, projectId },
+    }),
+    enabled: !!organizationId,
+    refetchInterval: (query) =>
+      query.state.data?.scan?.status === "running"
+        ? AGENT_READINESS_POLL_INTERVAL_MS
+        : false,
+    meta: { errorMessage: "Failed to load agent readiness" },
+  });
+}
+
+export function useAgentReadinessScan(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      dashboardOrpc.geo.agentReadinessScan.call({ organizationId, projectId }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.agentReadiness.queryKey({
+          input: { organizationId, projectId },
+        }),
+      });
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to start scan"));
+    },
+  });
 }
 
 export function useAiTraffic(organizationId: string, range?: GeoRangeQuery) {

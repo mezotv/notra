@@ -38,6 +38,12 @@ import {
   buildGeoSnippets,
 } from "@/lib/geo-ingest/snippet";
 import { buildGeoIngestToken } from "@/lib/geo-ingest/token";
+import {
+  AgentReadinessApiError,
+  AgentReadinessTargetMissingError,
+  loadAgentReadiness,
+  startAgentReadinessScan,
+} from "@/lib/geo/agent-readiness";
 import { discoverGeoWebsite, generateGeoFromWebsite } from "@/lib/geo/discover";
 import type { GeoRouterError } from "@/lib/geo/errors";
 import { loadGeoContentGaps } from "@/lib/geo/gaps";
@@ -71,7 +77,11 @@ import {
   upsertGeoCompetitor,
   upsertGeoSettings,
 } from "@/lib/geo/programs";
-import { createGeoProject, listGeoProjects } from "@/lib/geo/projects";
+import {
+  createGeoProject,
+  listGeoProjects,
+  requireGeoProject,
+} from "@/lib/geo/projects";
 import { clearGeoSampleData, seedGeoSampleData } from "@/lib/geo/sample-data";
 import { runGeoSequenceNow } from "@/lib/geo/scan";
 import { syncGscSuggestions } from "@/lib/geo/search-console";
@@ -124,6 +134,10 @@ import {
   geoWriterPlanInputSchema,
 } from "@/schemas/geo";
 import { gscSelectSiteInputSchema } from "@/schemas/google-search-console";
+import type {
+  AgentReadinessResponse,
+  AgentReadinessScanResponse,
+} from "@/types/agent-readiness";
 import type { AuthenticatedUser } from "@/types/auth/organization";
 import type {
   GeoBrandSearchHandlerInput,
@@ -225,6 +239,22 @@ function toGscErrorMessage(error: unknown, fallback: string): string {
     return error.message || fallback;
   }
   return fallback;
+}
+
+async function runAgentReadinessOrBadRequest<T>(
+  run: () => Promise<T>
+): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    if (
+      error instanceof AgentReadinessTargetMissingError ||
+      error instanceof AgentReadinessApiError
+    ) {
+      throw badRequest(error.message);
+    }
+    throw error;
+  }
 }
 
 async function runGscSyncOrBadRequest(
@@ -371,6 +401,40 @@ export const geoRouter = {
       geoHandler((input) =>
         loadGeoCompetitorDetail(input, input.brand, geoWindow(input))
       )
+    ),
+  agentReadiness: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async ({ context, input }): Promise<AgentReadinessResponse> => {
+      await assertGeoAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+      const scope = await runOrpcEffect(
+        requireGeoProject(input),
+        toGeoOrpcError
+      );
+      return await runAgentReadinessOrBadRequest(() =>
+        loadAgentReadiness(scope)
+      );
+    }),
+  agentReadinessScan: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(
+      async ({ context, input }): Promise<AgentReadinessScanResponse> => {
+        await assertGeoAccess({
+          headers: context.headers,
+          organizationId: input.organizationId,
+          user: context.user,
+        });
+        const scope = await runOrpcEffect(
+          requireGeoProject(input),
+          toGeoOrpcError
+        );
+        return await runAgentReadinessOrBadRequest(() =>
+          startAgentReadinessScan(scope)
+        );
+      }
     ),
   aiTraffic: authorizedProcedure
     .input(aiTrafficInputSchema)
