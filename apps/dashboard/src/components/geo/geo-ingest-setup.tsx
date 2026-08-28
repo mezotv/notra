@@ -8,6 +8,7 @@ import { useState } from "react";
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { Button } from "@/components/button";
 import { CodeSnippet, useCopyCode } from "@/components/geo/code-snippet";
+import { GeoPackageManagerIcon } from "@/components/geo/package-manager-icon";
 import {
   GEO_INGEST_DEFAULT_FRAMEWORK,
   GEO_INGEST_DEFAULT_PACKAGE_MANAGER,
@@ -56,10 +57,12 @@ export function GeoIngestSetup({ setup, className }: GeoIngestSetupPanelProps) {
             <TabsList aria-label="Package manager">
               {GEO_INGEST_PACKAGE_MANAGER_OPTIONS.map((option) => (
                 <TabsTrigger
-                  className="dark:data-active:bg-background px-2 text-xs"
+                  aria-label={option.label}
+                  className="gap-1 px-2 text-xs"
                   key={option.value}
                   value={option.value}
                 >
+                  <GeoPackageManagerIcon manager={option.value} />
                   {option.label}
                 </TabsTrigger>
               ))}
@@ -89,7 +92,7 @@ export function GeoIngestSetup({ setup, className }: GeoIngestSetupPanelProps) {
             <TabsList aria-label="Framework">
               {GEO_INGEST_FRAMEWORK_OPTIONS.map((option) => (
                 <TabsTrigger
-                  className="dark:data-active:bg-background px-2 text-xs"
+                  className="px-2 text-xs"
                   key={option.value}
                   value={option.value}
                 >

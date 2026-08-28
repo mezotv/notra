@@ -921,6 +921,10 @@ export type GeoIngestFramework = "next" | "nuxt" | "netlify";
 
 export type GeoIngestPackageManager = "bun" | "pnpm" | "yarn" | "npm";
 
+export interface GeoPackageManagerIconProps {
+  manager: GeoIngestPackageManager;
+}
+
 export type GeoIngestSnippets = Record<GeoIngestFramework, string>;
 
 export interface GeoIngestSetupResponse {
