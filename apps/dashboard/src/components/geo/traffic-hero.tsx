@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
-import { engineIconHtml } from "@/components/geo/engine-icon";
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
 import { TrafficProviderLegend } from "@/components/geo/traffic-provider-legend";
 import { CHART_PRIMARY_COLOR, CHART_SECONDARY_COLOR } from "@/constants/charts";
@@ -29,6 +28,7 @@ import {
 } from "@/utils/ai-traffic-trend";
 import { todayIsoDate } from "@/utils/analytics-charts";
 import { seriesColors } from "@/utils/chart-colors";
+import { engineIconHtml } from "@/utils/engine-icon-html";
 import { formatChartInteger } from "@/utils/geo-charts";
 
 const HERO_CHART_OPTIONS = {
@@ -53,7 +53,7 @@ export function TrafficHero({
   );
   const markIncompleteTail = rows.at(-1)?.rawDay === todayIsoDate();
   const showTrend = rows.length >= GEO_SPARKLINE_MIN_POINTS;
-  const days = useMemo(() => trafficSparklineDays(points), [points]);
+  const days = trafficSparklineDays(points);
   const totalVisits = totals.crawler + totals.aiReferral;
   const previousTotalVisits =
     previousTotals === null
@@ -81,67 +81,59 @@ export function TrafficHero({
     },
   ];
 
-  const providers = useMemo(
-    () => buildTrafficTrendProviders(groups.flatMap((group) => group.members)),
-    [groups]
+  const providers = buildTrafficTrendProviders(
+    groups.flatMap((group) => group.members)
   );
-  const providerSeries = useMemo(
-    () => buildTrafficTrendSeries(providers),
-    [providers]
+  const providerSeries = buildTrafficTrendSeries(providers);
+  const chartRows = buildTrafficTrendRowsForProviders(
+    points,
+    providers,
+    days,
+    hiddenKeys
   );
-  const chartRows = useMemo(
-    () =>
-      buildTrafficTrendRowsForProviders(points, providers, days, hiddenKeys),
-    [points, providers, days, hiddenKeys]
+  const config: ChartConfig = {
+    [GEO_TRAFFIC_TREND_CRAWLER_KEY]: {
+      label: GEO_TRAFFIC_TREND_CRAWLER_LABEL,
+      colors: seriesColors(CHART_PRIMARY_COLOR),
+    },
+    [GEO_TRAFFIC_TREND_REFERRAL_KEY]: {
+      label: GEO_TRAFFIC_TREND_REFERRAL_LABEL,
+      colors: seriesColors(CHART_SECONDARY_COLOR),
+    },
+    ...Object.fromEntries(
+      providerSeries.flatMap((entry) => {
+        const item = {
+          label: entry.label,
+          colors: entry.colors,
+          ...(entry.icon === null
+            ? {}
+            : { indicatorHtml: engineIconHtml(entry.icon, false) }),
+        };
+        return [
+          [entry.key, item],
+          [trafficTrendProviderTypeKey(entry.key, "crawler"), item],
+          [trafficTrendProviderTypeKey(entry.key, "ai_referral"), item],
+        ];
+      })
+    ),
+  };
+  const visibleProviders = providerSeries.filter(
+    (entry) => !hiddenKeys.has(entry.key)
   );
-  const config = useMemo<ChartConfig>(
-    () => ({
-      [GEO_TRAFFIC_TREND_CRAWLER_KEY]: {
-        label: GEO_TRAFFIC_TREND_CRAWLER_LABEL,
-        colors: seriesColors(CHART_PRIMARY_COLOR),
-      },
-      [GEO_TRAFFIC_TREND_REFERRAL_KEY]: {
-        label: GEO_TRAFFIC_TREND_REFERRAL_LABEL,
-        colors: seriesColors(CHART_SECONDARY_COLOR),
-      },
-      ...Object.fromEntries(
-        providerSeries.flatMap((entry) => {
-          const item = {
-            label: entry.label,
-            colors: entry.colors,
-            ...(entry.icon === null
-              ? {}
-              : { indicatorHtml: engineIconHtml(entry.icon, false) }),
-          };
-          return [
-            [entry.key, item],
-            [trafficTrendProviderTypeKey(entry.key, "crawler"), item],
-            [trafficTrendProviderTypeKey(entry.key, "ai_referral"), item],
-          ];
-        })
+  const tooltipGroups: TooltipRowGroup[] = [
+    {
+      headingKey: GEO_TRAFFIC_TREND_CRAWLER_KEY,
+      rowKeys: visibleProviders.map((entry) =>
+        trafficTrendProviderTypeKey(entry.key, "crawler")
       ),
-    }),
-    [providerSeries]
-  );
-  const tooltipGroups = useMemo<TooltipRowGroup[]>(() => {
-    const visible = providerSeries.filter(
-      (entry) => !hiddenKeys.has(entry.key)
-    );
-    return [
-      {
-        headingKey: GEO_TRAFFIC_TREND_CRAWLER_KEY,
-        rowKeys: visible.map((entry) =>
-          trafficTrendProviderTypeKey(entry.key, "crawler")
-        ),
-      },
-      {
-        headingKey: GEO_TRAFFIC_TREND_REFERRAL_KEY,
-        rowKeys: visible.map((entry) =>
-          trafficTrendProviderTypeKey(entry.key, "ai_referral")
-        ),
-      },
-    ];
-  }, [providerSeries, hiddenKeys]);
+    },
+    {
+      headingKey: GEO_TRAFFIC_TREND_REFERRAL_KEY,
+      rowKeys: visibleProviders.map((entry) =>
+        trafficTrendProviderTypeKey(entry.key, "ai_referral")
+      ),
+    },
+  ];
   const anyVisible = providerSeries.some((entry) => !hiddenKeys.has(entry.key));
 
   return (

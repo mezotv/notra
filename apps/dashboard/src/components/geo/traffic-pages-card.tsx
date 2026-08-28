@@ -1,6 +1,6 @@
 "use client";
 
-import { type ReactNode, useMemo } from "react";
+import type { ReactNode } from "react";
 
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
 import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
@@ -29,61 +29,58 @@ export function TrafficPagesCard({
   pages,
   isPending = false,
 }: TrafficPagesCardProps) {
-  const groups = useMemo(() => groupTrafficPages(pages), [pages]);
+  const groups = groupTrafficPages(pages);
   const pagination = useTablePagination({
     key: GEO_TRAFFIC_PAGES_PAGE_PARAM,
     totalItems: groups.length,
     isReady: !isPending,
   });
-  const columns = useMemo<TableColumn<GeoTrafficPageGroup>[]>(
-    () => [
-      {
-        key: "path",
-        header: "Page",
-        width: PAGE_COLUMN_WIDTH,
-        sortable: true,
-        cell: (row) => (
-          <TruncateWithTooltip className="font-mono text-xs">
-            {row.path}
-          </TruncateWithTooltip>
-        ),
-      },
-      {
-        key: "sources",
-        header: "Sources",
-        width: SOURCE_COLUMN_WIDTH,
-        sortable: true,
-        cell: (row) => <TrafficPageSourcesCell group={row} />,
-        sortValue: (row) =>
-          row.sources.length === 1 && row.sources[0]
-            ? formatGeoSource(row.sources[0].source)
-            : `~${String(row.sources.length).padStart(3, "0")}`,
-      },
-      {
-        key: "visits",
-        header: "Visits",
-        width: VISITS_COLUMN_WIDTH,
-        align: "right",
-        sortable: true,
-        cell: (row) => {
-          const delta =
-            row.previousVisits === undefined
-              ? null
-              : trafficVisitDelta(row.visits, row.previousVisits);
+  const columns: TableColumn<GeoTrafficPageGroup>[] = [
+    {
+      key: "path",
+      header: "Page",
+      width: PAGE_COLUMN_WIDTH,
+      sortable: true,
+      cell: (row) => (
+        <TruncateWithTooltip className="font-mono text-xs">
+          {row.path}
+        </TruncateWithTooltip>
+      ),
+    },
+    {
+      key: "sources",
+      header: "Sources",
+      width: SOURCE_COLUMN_WIDTH,
+      sortable: true,
+      cell: (row) => <TrafficPageSourcesCell group={row} />,
+      sortValue: (row) =>
+        row.sources.length === 1 && row.sources[0]
+          ? formatGeoSource(row.sources[0].source)
+          : `~${String(row.sources.length).padStart(3, "0")}`,
+    },
+    {
+      key: "visits",
+      header: "Visits",
+      width: VISITS_COLUMN_WIDTH,
+      align: "right",
+      sortable: true,
+      cell: (row) => {
+        const delta =
+          row.previousVisits === undefined
+            ? null
+            : trafficVisitDelta(row.visits, row.previousVisits);
 
-          return (
-            <span className="flex items-center justify-end gap-2">
-              <GeoStatDelta delta={delta} />
-              <span className="text-sm tabular-nums">
-                {row.visits.toLocaleString()}
-              </span>
+        return (
+          <span className="flex items-center justify-end gap-2">
+            <GeoStatDelta delta={delta} />
+            <span className="text-sm tabular-nums">
+              {row.visits.toLocaleString()}
             </span>
-          );
-        },
+          </span>
+        );
       },
-    ],
-    []
-  );
+    },
+  ];
 
   let body: ReactNode;
   if (isPending) {

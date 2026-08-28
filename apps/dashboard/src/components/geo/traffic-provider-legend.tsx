@@ -2,7 +2,7 @@
 
 import { Robot01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useId, useMemo } from "react";
+import { useId } from "react";
 
 import { buildChartCss } from "@/components/evilcharts/ui/echarts-chart";
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -17,10 +17,7 @@ export function TrafficProviderLegend({
 }: TrafficProviderLegendProps) {
   const rawId = useId();
   const legendId = `legend-${rawId.replace(/:/g, "")}`;
-  const css = useMemo(
-    () => buildChartCss(legendId, config),
-    [legendId, config]
-  );
+  const css = buildChartCss(legendId, config);
 
   return (
     <div

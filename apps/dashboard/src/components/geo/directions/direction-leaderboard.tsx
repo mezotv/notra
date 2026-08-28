@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
-
 import { ChartSparkline } from "@/components/charts/chart-sparkline";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { DirectionDonut } from "@/components/geo/directions/direction-donut";
@@ -44,48 +42,45 @@ function SectionHeading({ children }: DirectionSectionHeadingProps) {
 }
 
 function EngineRank() {
-  const columns = useMemo<TableColumn<GeoDirectionEngineRow>[]>(
-    () => [
-      {
-        key: "label",
-        header: "Engine",
-        width: "1fr",
-        sortable: true,
-        cell: (row) => (
-          <span className="flex min-w-0 items-center gap-2 text-sm">
-            <EngineIcon engine={row.engine} />
-            <span className="truncate">{row.label}</span>
-          </span>
-        ),
-      },
-      {
-        key: "bar",
-        header: "Mention rate",
-        width: "1.4fr",
-        cell: (row) => <GeoBar max={MAX_RATE} value={row.rate} />,
-        sortValue: (row) => row.rate,
-      },
-      {
-        key: "rate",
-        header: "Rate",
-        width: "6rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-sm font-semibold tabular-nums">
-            {formatMentionRate(row.rate)}
-          </span>
-        ),
-      },
-      {
-        key: "delta",
-        header: "\u0394",
-        width: "5.5rem",
-        sortable: true,
-        cell: (row) => <DirectionDelta delta={row.delta} />,
-      },
-    ],
-    []
-  );
+  const columns: TableColumn<GeoDirectionEngineRow>[] = [
+    {
+      key: "label",
+      header: "Engine",
+      width: "1fr",
+      sortable: true,
+      cell: (row) => (
+        <span className="flex min-w-0 items-center gap-2 text-sm">
+          <EngineIcon engine={row.engine} />
+          <span className="truncate">{row.label}</span>
+        </span>
+      ),
+    },
+    {
+      key: "bar",
+      header: "Mention rate",
+      width: "1.4fr",
+      cell: (row) => <GeoBar max={MAX_RATE} value={row.rate} />,
+      sortValue: (row) => row.rate,
+    },
+    {
+      key: "rate",
+      header: "Rate",
+      width: "6rem",
+      sortable: true,
+      cell: (row) => (
+        <span className="text-sm font-semibold tabular-nums">
+          {formatMentionRate(row.rate)}
+        </span>
+      ),
+    },
+    {
+      key: "delta",
+      header: "\u0394",
+      width: "5.5rem",
+      sortable: true,
+      cell: (row) => <DirectionDelta delta={row.delta} />,
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-2">
@@ -108,84 +103,79 @@ function EngineRank() {
 }
 
 function JourneysTable() {
-  const columns = useMemo<TableColumn<GeoJourney>[]>(
-    () => [
-      {
-        key: "journeyId",
-        header: "Journey",
-        width: "7.5rem",
-        cell: (row) => (
-          <span className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 font-mono text-xs">
-            {formatGeoJourneyChip(row.journeyId)}
-          </span>
-        ),
-      },
-      {
-        key: "source",
-        header: "Source",
-        width: "1fr",
-        sortable: true,
-        cell: (row) => (
-          <span className="flex min-w-0 items-center gap-2 text-sm">
-            <EngineIcon engine={row.source} />
-            <span className="truncate">{formatGeoSource(row.source)}</span>
-          </span>
-        ),
-        sortValue: (row) => formatGeoSource(row.source),
-      },
-      {
-        key: "pages",
-        header: "Pages",
-        width: "5.625rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-sm tabular-nums">{row.pages}</span>
-        ),
-      },
-      {
-        key: "distinctPaths",
-        header: "Unique",
-        width: "5.625rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-sm tabular-nums">{row.distinctPaths}</span>
-        ),
-      },
-      {
-        key: "span",
-        header: "Span",
-        width: "9.5rem",
-        cell: (row) => (
-          <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
-            {formatGeoJourneySpan(row.firstSeenAt, row.lastSeenAt)}
-          </span>
-        ),
-      },
-      {
-        key: "lastSeenAt",
-        header: "Last seen",
-        width: "9.375rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
-            {formatAiTrafficTimestamp(row.lastSeenAt)}
-          </span>
-        ),
-      },
-      {
-        key: "entryPath",
-        header: "Entry path",
-        width: "1.2fr",
-        cell: (row) => (
-          <span className="block w-full min-w-0 truncate font-mono text-xs">
-            {row.samplePaths[0] ?? ""}
-          </span>
-        ),
-        sortValue: (row) => row.samplePaths[0] ?? "",
-      },
-    ],
-    []
-  );
+  const columns: TableColumn<GeoJourney>[] = [
+    {
+      key: "journeyId",
+      header: "Journey",
+      width: "7.5rem",
+      cell: (row) => (
+        <span className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 font-mono text-xs">
+          {formatGeoJourneyChip(row.journeyId)}
+        </span>
+      ),
+    },
+    {
+      key: "source",
+      header: "Source",
+      width: "1fr",
+      sortable: true,
+      cell: (row) => (
+        <span className="flex min-w-0 items-center gap-2 text-sm">
+          <EngineIcon engine={row.source} />
+          <span className="truncate">{formatGeoSource(row.source)}</span>
+        </span>
+      ),
+      sortValue: (row) => formatGeoSource(row.source),
+    },
+    {
+      key: "pages",
+      header: "Pages",
+      width: "5.625rem",
+      sortable: true,
+      cell: (row) => <span className="text-sm tabular-nums">{row.pages}</span>,
+    },
+    {
+      key: "distinctPaths",
+      header: "Unique",
+      width: "5.625rem",
+      sortable: true,
+      cell: (row) => (
+        <span className="text-sm tabular-nums">{row.distinctPaths}</span>
+      ),
+    },
+    {
+      key: "span",
+      header: "Span",
+      width: "9.5rem",
+      cell: (row) => (
+        <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
+          {formatGeoJourneySpan(row.firstSeenAt, row.lastSeenAt)}
+        </span>
+      ),
+    },
+    {
+      key: "lastSeenAt",
+      header: "Last seen",
+      width: "9.375rem",
+      sortable: true,
+      cell: (row) => (
+        <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
+          {formatAiTrafficTimestamp(row.lastSeenAt)}
+        </span>
+      ),
+    },
+    {
+      key: "entryPath",
+      header: "Entry path",
+      width: "1.2fr",
+      cell: (row) => (
+        <span className="block w-full min-w-0 truncate font-mono text-xs">
+          {row.samplePaths[0] ?? ""}
+        </span>
+      ),
+      sortValue: (row) => row.samplePaths[0] ?? "",
+    },
+  ];
 
   return (
     <div className="flex flex-col gap-2">

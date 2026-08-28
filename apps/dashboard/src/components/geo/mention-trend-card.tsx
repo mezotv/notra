@@ -4,7 +4,6 @@ import { useCallback, useMemo, useState } from "react";
 
 import { EmptyStateTrendPreview } from "@/components/empty-state-preview";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
-import { engineIconHtml } from "@/components/geo/engine-icon";
 import { MentionTrendAgentsPicker } from "@/components/geo/mention-trend-agents";
 import {
   InstrumentEmpty,
@@ -27,6 +26,7 @@ import type {
 import { formatFullDayLabel, todayIsoDate } from "@/utils/analytics-charts";
 import { accountSeriesColors, seriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";
+import { engineIconHtml } from "@/utils/engine-icon-html";
 import {
   buildMentionTrendRows,
   fitMentionTrendLine,

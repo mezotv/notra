@@ -463,7 +463,7 @@ export function composeTooltipGroupedBody(
   return groups
     .map((group, index) => {
       const headingValue = group.heading.value ?? 0;
-      const rows = [...group.items].sort(
+      const rows = group.items.toSorted(
         (left, right) => (right.value ?? -1) - (left.value ?? -1)
       );
       const headingHtml = tooltipGroupHeadingRow({

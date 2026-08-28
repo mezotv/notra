@@ -38,7 +38,7 @@ const geoWindowFields = {
   to: string().regex(GEO_DAY_STRING_REGEX).optional(),
 };
 const MAX_AI_TRAFFIC_LOG_LIMIT = 200;
-const MAX_AI_TRAFFIC_PAGES_LIMIT = 100;
+const MAX_AI_TRAFFIC_PAGES_LIMIT = 500;
 const MAX_AI_TRAFFIC_JOURNEYS_LIMIT = 100;
 const MAX_GEO_FIELD_LENGTH = 1024;
 const MAX_GEO_SHORT_FIELD_LENGTH = 128;

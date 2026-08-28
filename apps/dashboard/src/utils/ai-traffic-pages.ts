@@ -63,9 +63,9 @@ export function groupTrafficPages(
 
   const result = [...groups.values()];
   for (const group of result) {
-    group.sources = [...(sourcesByGroup.get(group.path)?.values() ?? [])].sort(
-      byVisitsDesc
-    );
+    group.sources = Array.from(
+      sourcesByGroup.get(group.path)?.values() ?? []
+    ).sort(byVisitsDesc);
   }
   return result;
 }
