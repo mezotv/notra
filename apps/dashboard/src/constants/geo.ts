@@ -563,6 +563,8 @@ export const GEO_TRAFFIC_GROUPS_BY_ENGINE: Partial<
   commoncrawl: { key: "commoncrawl", label: "Common Crawl", icon: "ccbot" },
   cohere: { key: "cohere", label: "Cohere", icon: "cohere" },
   duckduckgo: { key: "duckduckgo", label: "DuckDuckGo", icon: "duckduckgo" },
+  opencode: { key: "opencode", label: "OpenCode", icon: "opencode" },
+  cursor: { key: "cursor", label: "Cursor", icon: "cursor" },
 };
 
 export const GEO_TRAFFIC_TREND_CRAWLER_KEY = "crawler";

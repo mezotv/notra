@@ -6,6 +6,7 @@ import {
 } from "@/constants/geo";
 import type {
   GeoTrafficPoint,
+  GeoTrafficPurposeTotal,
   GeoTrafficSource,
   GeoTrafficSourceGroup,
   GeoTrafficSourceGroupDefinition,
@@ -25,6 +26,11 @@ export function resolveTrafficSourceGroup(
   source: string,
   visitorType: GeoVisitorType
 ): GeoTrafficSourceGroupDefinition {
+  const engine = resolveEngineIconKey(source);
+  const group = engine ? GEO_TRAFFIC_GROUPS_BY_ENGINE[engine] : undefined;
+  if (group === undefined) {
+    return GEO_TRAFFIC_OTHER_GROUP;
+  }
   if (visitorType !== "crawler") {
     return {
       key: source,
@@ -32,9 +38,7 @@ export function resolveTrafficSourceGroup(
       icon: source,
     };
   }
-  const engine = resolveEngineIconKey(source);
-  const group = engine ? GEO_TRAFFIC_GROUPS_BY_ENGINE[engine] : undefined;
-  return group ?? GEO_TRAFFIC_OTHER_GROUP;
+  return group;
 }
 
 function laterTimestamp(left: string, right: string): string {
@@ -122,12 +126,40 @@ export function buildTrafficGroupSeries(
   return days.map((day) => byDay.get(day) ?? 0);
 }
 
-export function trafficGroupShare(
-  member: GeoTrafficSource,
+export function hasTrafficGroupBreakdown(
   group: GeoTrafficSourceGroup
-): string {
-  if (group.visits === 0) {
+): boolean {
+  return (
+    group.visitorType === "crawler" || group.key === GEO_TRAFFIC_OTHER_GROUP.key
+  );
+}
+
+export function trafficVisitShare(visits: number, total: number): string {
+  if (total === 0) {
     return "0%";
   }
-  return `${Math.round((member.visits / group.visits) * 100)}%`;
+  return `${Math.round((visits / total) * 100)}%`;
+}
+
+export function trafficGroupPurposeTotals(
+  group: GeoTrafficSourceGroup
+): GeoTrafficPurposeTotal[] {
+  const totals = new Map<string, GeoTrafficPurposeTotal>();
+  for (const member of group.members) {
+    if (member.category.length === 0) {
+      continue;
+    }
+    const existing = totals.get(member.category);
+    if (existing === undefined) {
+      totals.set(member.category, {
+        category: member.category,
+        visits: member.visits,
+        members: [member.source],
+      });
+      continue;
+    }
+    existing.visits += member.visits;
+    existing.members.push(member.source);
+  }
+  return [...totals.values()].sort((left, right) => right.visits - left.visits);
 }

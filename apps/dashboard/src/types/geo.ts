@@ -1222,6 +1222,7 @@ export interface CitationsTableProps {
 export interface PurposeBadgeProps {
   category: string;
   compact?: boolean;
+  tooltip?: boolean;
 }
 
 export interface GeoTrafficSourceGroupDefinition {
@@ -1242,6 +1243,23 @@ export interface GeoTrafficSourceGroup extends GeoTrafficSourceGroupDefinition {
 
 export interface TrafficSourceGroupCellProps {
   group: GeoTrafficSourceGroup;
+}
+
+export interface TrafficPurposeCellProps {
+  group: GeoTrafficSourceGroup;
+}
+
+export interface GeoTrafficPurposeTotal {
+  category: string;
+  visits: number;
+  members: string[];
+}
+
+export interface TrafficBreakdownCardProps {
+  icon: ReactNode;
+  title: string;
+  aside?: ReactNode;
+  children: ReactNode;
 }
 
 export interface TrafficSourceGroupIconProps {

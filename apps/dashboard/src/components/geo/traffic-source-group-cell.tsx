@@ -1,41 +1,21 @@
 "use client";
 
-import { Robot01Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   HoverCard,
-  HoverCardContent,
   HoverCardTrigger,
 } from "@notra/ui/components/ui/hover-card";
 
-import { EngineIcon } from "@/components/geo/engine-icon";
+import { TrafficBreakdownCard } from "@/components/geo/traffic-breakdown-card";
+import { TrafficSourceGroupIcon } from "@/components/geo/traffic-source-group-icon";
 import { AI_TRAFFIC_PURPOSE_LABELS } from "@/constants/geo";
-import { cn } from "@/lib/utils";
-import type {
-  TrafficSourceGroupCellProps,
-  TrafficSourceGroupIconProps,
-} from "@/types/geo";
-import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
-import { trafficGroupShare } from "@/utils/ai-traffic-groups";
+import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
+import type { TrafficSourceGroupCellProps } from "@/types/geo";
+import { formatAiTrafficTimestamp, formatGeoSource } from "@/utils/ai-traffic";
+import {
+  hasTrafficGroupBreakdown,
+  trafficVisitShare,
+} from "@/utils/ai-traffic-groups";
 import { resolveEngineIconKey } from "@/utils/geo-engine-icon";
-
-const HOVER_OPEN_DELAY_MS = 150;
-
-function TrafficSourceGroupIcon({
-  group,
-  className,
-}: TrafficSourceGroupIconProps) {
-  if (group.icon === null) {
-    return (
-      <HugeiconsIcon
-        aria-hidden="true"
-        className={cn("text-muted-foreground size-4 shrink-0", className)}
-        icon={Robot01Icon}
-      />
-    );
-  }
-  return <EngineIcon className={className} engine={group.icon} />;
-}
 
 export function TrafficSourceGroupCell({ group }: TrafficSourceGroupCellProps) {
   const label = (
@@ -45,19 +25,21 @@ export function TrafficSourceGroupCell({ group }: TrafficSourceGroupCellProps) {
     </span>
   );
 
-  if (group.visitorType !== "crawler") {
+  if (!hasTrafficGroupBreakdown(group)) {
     return label;
   }
 
   const botCount = group.members.length;
+  const noun = group.visitorType === "crawler" ? "bot" : "source";
+  const botsLabel = `${botCount} ${botCount === 1 ? noun : `${noun}s`}`;
 
   return (
     <HoverCard>
       <HoverCardTrigger
-        delay={HOVER_OPEN_DELAY_MS}
+        delay={GEO_TRAFFIC_HOVER_DELAY_MS}
         render={
           <button
-            aria-label={`${group.label}: ${botCount} ${botCount === 1 ? "bot" : "bots"}, show breakdown`}
+            aria-label={`${group.label}: ${botsLabel}, show breakdown`}
             className="focus-visible:ring-ring/50 flex max-w-full min-w-0 cursor-default items-center gap-2 rounded-sm text-left outline-hidden focus-visible:ring-[3px]"
             type="button"
           />
@@ -65,20 +47,15 @@ export function TrafficSourceGroupCell({ group }: TrafficSourceGroupCellProps) {
       >
         {label}
         <span className="text-muted-foreground shrink-0 text-[0.6875rem] tabular-nums">
-          {botCount} {botCount === 1 ? "bot" : "bots"}
+          {botsLabel}
         </span>
       </HoverCardTrigger>
-      <HoverCardContent align="start" className="w-80 p-0" side="bottom">
-        <div className="border-border flex items-center justify-between gap-3 border-b px-3 py-2">
-          <span className="flex min-w-0 items-center gap-2 text-sm font-medium">
-            <TrafficSourceGroupIcon group={group} />
-            <span className="truncate">{group.label}</span>
-          </span>
-          <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
-            {group.visits.toLocaleString()} visits
-          </span>
-        </div>
-        <ul className="max-h-72 overflow-y-auto py-1">
+      <TrafficBreakdownCard
+        aside={`${group.visits.toLocaleString()} visits`}
+        icon={<TrafficSourceGroupIcon group={group} />}
+        title={group.label}
+      >
+        <ul>
           {group.members.map((member) => (
             <li
               className="flex items-center gap-2 px-3 py-1.5"
@@ -96,7 +73,7 @@ export function TrafficSourceGroupCell({ group }: TrafficSourceGroupCellProps) {
               />
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-xs font-medium">
-                  {member.source}
+                  {formatGeoSource(member.source, member.visitorType)}
                 </span>
                 <span className="text-muted-foreground flex gap-2 text-[0.6875rem]">
                   <span className="truncate">
@@ -113,13 +90,13 @@ export function TrafficSourceGroupCell({ group }: TrafficSourceGroupCellProps) {
                   {member.visits.toLocaleString()}
                 </span>
                 <span className="text-muted-foreground text-[0.6875rem] tabular-nums">
-                  {trafficGroupShare(member, group)}
+                  {trafficVisitShare(member.visits, group.visits)}
                 </span>
               </span>
             </li>
           ))}
         </ul>
-      </HoverCardContent>
+      </TrafficBreakdownCard>
     </HoverCard>
   );
 }

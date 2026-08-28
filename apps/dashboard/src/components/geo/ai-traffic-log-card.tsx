@@ -10,6 +10,7 @@ import {
 } from "@notra/ui/components/ui/dropdown-menu";
 import { type ReactNode, useState } from "react";
 
+import { Button } from "@/components/button";
 import { CitationsTable } from "@/components/geo/citations-table";
 import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
 import {
@@ -30,9 +31,6 @@ import {
 
 const TRAFFIC_LOG_HEIGHT = 416;
 const LOG_SKELETON_ROWS = 6;
-
-const FILTER_TRIGGER_CLASS =
-  "flex h-6 items-center gap-1 rounded-sm border border-border bg-background px-2 text-xs hover:bg-muted";
 
 export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
   const [filters, setFilters] = useState<GeoTrafficLogFilters>({
@@ -68,7 +66,7 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
   const filterRow = (
     <div className="flex items-center gap-2">
       <DropdownMenu>
-        <DropdownMenuTrigger className={FILTER_TRIGGER_CLASS}>
+        <DropdownMenuTrigger render={<Button size="sm" variant="outline" />}>
           {formatGeoTrafficFilterLabel(
             "All visitors",
             "visitors",
@@ -97,7 +95,7 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
         </DropdownMenuContent>
       </DropdownMenu>
       <DropdownMenu>
-        <DropdownMenuTrigger className={FILTER_TRIGGER_CLASS}>
+        <DropdownMenuTrigger render={<Button size="sm" variant="outline" />}>
           {formatGeoTrafficFilterLabel(
             "All purposes",
             "purposes",
@@ -126,18 +124,18 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
         </DropdownMenuContent>
       </DropdownMenu>
       {total > 0 && (
-        <button
-          className={FILTER_TRIGGER_CLASS}
+        <Button
           onClick={() => setLive((current) => !current)}
-          type="button"
+          size="sm"
+          variant="outline"
         >
           <HugeiconsIcon
+            data-icon="inline-start"
             icon={live ? PauseIcon : PlayIcon}
-            size={12}
             strokeWidth={2}
           />
           {live ? "Pause live updates" : "Resume live updates"}
-        </button>
+        </Button>
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import {
   buildTrafficGroupSeries,
   groupTrafficSources,
   resolveTrafficSourceGroup,
+  trafficGroupPurposeTotals,
 } from "@/utils/ai-traffic-groups";
 
 function crawler(
@@ -44,6 +45,19 @@ describe("resolveTrafficSourceGroup", () => {
     expect(
       resolveTrafficSourceGroup("Browser-imitating agent", "crawler").key
     ).toBe("other");
+  });
+
+  test("gives coding agents their own groups", () => {
+    expect(resolveTrafficSourceGroup("OpenCode", "crawler").key).toBe(
+      "opencode"
+    );
+    expect(resolveTrafficSourceGroup("Cursor", "crawler").key).toBe("cursor");
+  });
+
+  test("sends lesser known referrers to Other", () => {
+    expect(resolveTrafficSourceGroup("you.com", "ai_referral").key).toBe(
+      "other"
+    );
   });
 
   test("keeps referrals as their own labelled source", () => {
@@ -100,6 +114,30 @@ describe("groupTrafficSources", () => {
       "LinerBot",
     ]);
     expect(referral?.label).toBe("ChatGPT");
+  });
+});
+
+describe("trafficGroupPurposeTotals", () => {
+  test("sums visits per purpose and lists contributing bots", () => {
+    const [group] = groupTrafficSources([
+      crawler("GPTBot", "training-crawler", 40),
+      crawler("OAI-SearchBot", "search-index", 60),
+      crawler("OAI-AdsBot", "search-index", 5),
+      crawler("ChatGPT-User", "assistant-browse", 1),
+    ]);
+    if (group === undefined) {
+      throw new Error("expected a ChatGPT group");
+    }
+
+    expect(trafficGroupPurposeTotals(group)).toEqual([
+      {
+        category: "search-index",
+        visits: 65,
+        members: ["OAI-SearchBot", "OAI-AdsBot"],
+      },
+      { category: "training-crawler", visits: 40, members: ["GPTBot"] },
+      { category: "assistant-browse", visits: 1, members: ["ChatGPT-User"] },
+    ]);
   });
 });
 

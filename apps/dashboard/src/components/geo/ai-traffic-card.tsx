@@ -10,7 +10,7 @@ import { useMemo } from "react";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
-import { PurposeBadge } from "@/components/geo/purpose-badge";
+import { TrafficPurposeCell } from "@/components/geo/traffic-purpose-cell";
 import { TrafficSourceGroupCell } from "@/components/geo/traffic-source-group-cell";
 import {
   InstrumentEmpty,
@@ -239,22 +239,7 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
       header: "Purpose",
       width: "9.5rem",
       sortable: true,
-      cell: (row) => {
-        const [single] = row.categories;
-        if (single === undefined) {
-          return null;
-        }
-        if (row.categories.length === 1) {
-          return <PurposeBadge category={single} />;
-        }
-        return (
-          <span className="flex items-center gap-1">
-            {row.categories.map((category) => (
-              <PurposeBadge category={category} compact key={category} />
-            ))}
-          </span>
-        );
-      },
+      cell: (row) => <TrafficPurposeCell group={row} />,
       sortValue: (row) => row.categories.join(","),
     },
     {

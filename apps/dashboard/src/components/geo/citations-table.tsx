@@ -1,5 +1,12 @@
 "use client";
 
+import { SourceCodeIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Badge } from "@notra/ui/components/ui/badge";
+import {
+  HoverCard,
+  HoverCardTrigger,
+} from "@notra/ui/components/ui/hover-card";
 import {
   Tooltip,
   TooltipContent,
@@ -8,6 +15,7 @@ import {
 
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { PurposeBadge } from "@/components/geo/purpose-badge";
+import { TrafficBreakdownCard } from "@/components/geo/traffic-breakdown-card";
 import { CountryFlag } from "@/components/geo/twemoji";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
@@ -15,6 +23,7 @@ import {
   AI_TRAFFIC_PURPOSE_LABELS,
   GEO_CITATIONS_ROW_HEIGHT,
 } from "@/constants/geo";
+import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
 import type { CitationsTableProps, GeoTrafficLogEntry } from "@/types/geo";
 import { countryName } from "@/utils/country";
 import {
@@ -24,49 +33,47 @@ import {
   formatCitationTimestamp,
 } from "@/utils/geo-citations";
 
-function ProviderTooltip({ entry }: { entry: GeoTrafficLogEntry }) {
-  const detail = citationProviderTooltip(entry);
-
-  return (
-    <div className="flex flex-col gap-2 text-left">
-      <div className="flex flex-col gap-0.5">
-        <p className="font-medium">{detail.title}</p>
-        {detail.raw ? (
-          <p className="text-muted-foreground font-mono text-[0.6875rem]">
-            {detail.raw}
-          </p>
-        ) : null}
-      </div>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-        <dt className="text-muted-foreground">Purpose</dt>
-        <dd className="m-0">{detail.purpose}</dd>
-        <dt className="text-muted-foreground">Confidence</dt>
-        <dd className="m-0">{detail.confidence}</dd>
-      </dl>
-    </div>
-  );
-}
-
 function ProviderCell({ entry }: { entry: GeoTrafficLogEntry }) {
-  const label = formatCitationProvider(
-    entry.agent,
-    entry.source,
-    entry.visitorType
-  );
+  const detail = citationProviderTooltip(entry);
+  const engine = entry.agent || entry.source;
   return (
-    <Tooltip>
-      <TooltipTrigger
+    <HoverCard>
+      <HoverCardTrigger
+        delay={GEO_TRAFFIC_HOVER_DELAY_MS}
         render={
-          <span className="inline-flex cursor-default items-center gap-2" />
+          <button
+            aria-label={`${detail.title}, show details`}
+            className="focus-visible:ring-ring/50 inline-flex max-w-full min-w-0 cursor-default items-center gap-2 rounded-sm text-left outline-hidden focus-visible:ring-[3px]"
+            type="button"
+          />
         }
       >
-        <EngineIcon engine={entry.agent || entry.source} />
-        <span className="truncate">{label}</span>
-      </TooltipTrigger>
-      <TooltipContent align="start" className="max-w-xs">
-        <ProviderTooltip entry={entry} />
-      </TooltipContent>
-    </Tooltip>
+        <EngineIcon engine={engine} />
+        <span className="truncate">{detail.title}</span>
+      </HoverCardTrigger>
+      <TrafficBreakdownCard
+        aside={
+          detail.raw ? (
+            <span className="block max-w-32 truncate font-mono">
+              {detail.raw}
+            </span>
+          ) : null
+        }
+        icon={<EngineIcon engine={engine} />}
+        title={detail.title}
+      >
+        <dl className="flex flex-col">
+          <div className="flex items-center justify-between gap-3 px-3 py-1.5">
+            <dt className="text-muted-foreground text-xs">Purpose</dt>
+            <dd className="m-0 text-xs font-medium">{detail.purpose}</dd>
+          </div>
+          <div className="flex items-center justify-between gap-3 px-3 py-1.5">
+            <dt className="text-muted-foreground text-xs">Confidence</dt>
+            <dd className="m-0 text-xs font-medium">{detail.confidence}</dd>
+          </div>
+        </dl>
+      </TrafficBreakdownCard>
+    </HoverCard>
   );
 }
 
@@ -78,14 +85,19 @@ function MarkdownFlag({ wantsMarkdown }: { wantsMarkdown: boolean }) {
   return (
     <Tooltip>
       <TooltipTrigger
-        render={
-          <span className="bg-muted text-muted-foreground cursor-default rounded-sm px-1.5 py-0.5 font-mono text-[0.6875rem]" />
-        }
+        render={<span className="inline-flex shrink-0 cursor-help" />}
       >
-        MD
+        <Badge aria-label="Markdown" className="px-1.5" variant="secondary">
+          <HugeiconsIcon
+            className="size-3 shrink-0"
+            icon={SourceCodeIcon}
+            strokeWidth={2}
+          />
+        </Badge>
       </TooltipTrigger>
       <TooltipContent align="start" className="max-w-xs text-pretty">
-        Requested markdown (Accept header)
+        <span className="block font-medium">Markdown</span>
+        Asked for markdown via the Accept header
       </TooltipContent>
     </Tooltip>
   );
@@ -128,23 +140,27 @@ const CITATIONS_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
             {entry.path}
           </TruncateWithTooltip>
         </span>
-        <MarkdownFlag wantsMarkdown={entry.wantsMarkdown} />
       </span>
     ),
   },
   {
     key: "category",
     header: "Purpose",
-    width: "9.5rem",
+    width: "6.5rem",
     sortable: true,
     sortValue: (entry) =>
       AI_TRAFFIC_PURPOSE_LABELS[entry.category] ?? entry.category,
-    cell: (entry) => <PurposeBadge category={entry.category} />,
+    cell: (entry) => (
+      <span className="flex items-center gap-1">
+        <PurposeBadge category={entry.category} compact />
+        <MarkdownFlag wantsMarkdown={entry.wantsMarkdown} />
+      </span>
+    ),
   },
   {
     key: "country",
     header: "Country",
-    width: "9rem",
+    width: "10.5rem",
     sortable: true,
     sortValue: (row) => countryName(row.country),
     cell: (row) =>
