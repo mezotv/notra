@@ -169,16 +169,25 @@ const reconcileGeoCompetitors = Effect.fn("geo.competitorsReconcile")(
     const outcome = yield* geoDb("competitors sync failed", () =>
       db.transaction(async (tx): Promise<GeoCompetitorReconcileOutcome> => {
         await lockGeoProject(tx, projectId);
-        const [existing, settingsRow] = await Promise.all([
-          tx.query.geoCompetitors.findMany({
-            where: eq(geoCompetitors.projectId, projectId),
-            orderBy: [asc(geoCompetitors.createdAt)],
-          }),
-          tx.query.geoSettings.findFirst({
-            columns: { competitors: true },
-            where: eq(geoSettings.projectId, projectId),
-          }),
-        ]);
+        const [existing, settingsRow] = await Effect.runPromise(
+          Effect.all(
+            [
+              Effect.promise(() =>
+                tx.query.geoCompetitors.findMany({
+                  where: eq(geoCompetitors.projectId, projectId),
+                  orderBy: [asc(geoCompetitors.createdAt)],
+                })
+              ),
+              Effect.promise(() =>
+                tx.query.geoSettings.findFirst({
+                  columns: { competitors: true },
+                  where: eq(geoSettings.projectId, projectId),
+                })
+              ),
+            ],
+            { concurrency: "unbounded" }
+          )
+        );
         const current = mergeLegacyCompetitors(
           existing.map(toGeoCompetitor),
           settingsRow?.competitors ?? []
