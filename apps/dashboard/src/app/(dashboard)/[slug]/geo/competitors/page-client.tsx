@@ -1,6 +1,6 @@
 "use client";
 
-import { PlusSignIcon } from "@hugeicons/core-free-icons";
+import { PlusSignIcon, Upload01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
@@ -13,6 +13,7 @@ import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorShareCard } from "@/components/geo/competitor-share-card";
 import { CompetitorsTable } from "@/components/geo/competitors-table";
+import { CompetitorsCsvImportDialog } from "@/components/geo/geo-csv-import-dialog";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { PageContainer } from "@/components/layout/container";
 import {
@@ -69,8 +70,11 @@ function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
   const { competitors } = useGeoCompetitorsDb(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
   const [managerOpen, setManagerOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
-  useHotkey("C", () => setManagerOpen(true), { enabled: !managerOpen });
+  useHotkey("C", () => setManagerOpen(true), {
+    enabled: !managerOpen && !importOpen,
+  });
 
   if (isPending) {
     return <GeoPageSkeleton />;
@@ -118,7 +122,7 @@ function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
-        <header className="flex items-center justify-between">
+        <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight">Competitors</h1>
             <p className="text-muted-foreground">
@@ -127,6 +131,14 @@ function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
           </div>
           <div className="flex items-center gap-2">
             <GeoRangePicker control={geoRange} />
+            <Button
+              className="gap-1.5"
+              onClick={() => setImportOpen(true)}
+              variant="outline"
+            >
+              <HugeiconsIcon className="size-4" icon={Upload01Icon} />
+              Import CSV
+            </Button>
             <Button className="gap-1.5" onClick={() => setManagerOpen(true)}>
               <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
               Add Competitor
@@ -155,6 +167,11 @@ function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
         competitor={null}
         onOpenChange={setManagerOpen}
         open={managerOpen}
+        organizationId={organizationId}
+      />
+      <CompetitorsCsvImportDialog
+        onOpenChange={setImportOpen}
+        open={importOpen}
         organizationId={organizationId}
       />
     </PageContainer>

@@ -27,6 +27,10 @@ export function toGeoOrpcError(failure: GeoRouterError): Error {
       return badRequest(failure.message);
     case "GeoSequenceCreateFailedError":
       return badRequest("Failed to create conversation");
+    case "GeoCompetitorLimitError":
+      return badRequest(
+        `You can track up to ${failure.limit} competitors. Remove some before importing more.`
+      );
     case "GeoSettingsMissingError":
       return badRequest("Configure your brand tracking settings first");
     case "GeoSettingsDisabledError":

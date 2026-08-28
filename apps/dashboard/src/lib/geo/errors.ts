@@ -30,6 +30,12 @@ export class GeoPromptNotFoundError extends Data.TaggedError(
   readonly promptId: string;
 }> {}
 
+export class GeoCompetitorLimitError extends Data.TaggedError(
+  "GeoCompetitorLimitError"
+)<{
+  readonly limit: number;
+}> {}
+
 export class GeoSettingsMissingError extends Data.TaggedError(
   "GeoSettingsMissingError"
 )<{
@@ -133,6 +139,7 @@ export class GeoWriterStartError extends Data.TaggedError(
 export type GeoRouterError =
   | GeoBrandIdentityMissingError
   | GeoBrandIdentityNotFoundError
+  | GeoCompetitorLimitError
   | GeoContentBriefNotFoundError
   | GeoContentBriefStateError
   | GeoDatabaseError

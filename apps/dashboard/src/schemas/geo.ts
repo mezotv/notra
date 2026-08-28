@@ -5,6 +5,7 @@ import { array, boolean, enum as enumType, number, object, string } from "zod";
 import {
   GEO_BRAND_SEARCH_MAX_QUERY_LENGTH,
   GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
+  GEO_COMPETITOR_MAX_SYNONYMS,
   GEO_DISCOVERY_MAX_ALIASES,
   GEO_DISCOVERY_MAX_COMPETITORS,
   GEO_DISCOVERY_MAX_PROMPTS,
@@ -19,11 +20,17 @@ import {
   GEO_PROMPT_MAX_LENGTH,
   GEO_PROMPT_MIN_LENGTH,
   GEO_SCAN_INTERVAL_HOURS,
+  GEO_SHORT_FIELD_MAX_LENGTH,
   GEO_SEQUENCE_MAX_TURNS,
   GEO_WRITER_TOPIC_MAX_LENGTH,
   GEO_WRITER_TOPIC_MIN_LENGTH,
 } from "@/constants/geo";
-import { normalizeCompetitorDomain } from "@/lib/geo/domain";
+import { GEO_CSV_IMPORT_MAX_ROWS } from "@/constants/geo-import";
+import {
+  geoCompetitorDomainSchema,
+  geoCompetitorImportRowSchema,
+  geoPromptImportRowSchema,
+} from "@/schemas/geo-import";
 import { publicWebsiteUrlSchema } from "@/schemas/url";
 
 const GEO_SUPPORTED_LANGUAGE_SET = new Set<string>(SUPPORTED_LANGUAGES);
@@ -41,11 +48,8 @@ const MAX_AI_TRAFFIC_LOG_LIMIT = 200;
 const MAX_AI_TRAFFIC_PAGES_LIMIT = 500;
 const MAX_AI_TRAFFIC_JOURNEYS_LIMIT = 100;
 const MAX_GEO_FIELD_LENGTH = 1024;
-const MAX_GEO_SHORT_FIELD_LENGTH = 128;
-const MAX_GEO_COMPETITOR_SYNONYMS = 8;
 const MAX_GEO_URL_LENGTH = 2048;
 const MAX_GEO_METHOD_LENGTH = 16;
-const GEO_DOMAIN_REGEX = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 const MIN_PROMPT_LENGTH = GEO_PROMPT_MIN_LENGTH;
 const MAX_PROMPT_LENGTH = GEO_PROMPT_MAX_LENGTH;
 
@@ -72,12 +76,12 @@ export const geoSettingsUpsertInputSchema = geoOrganizationInputSchema.extend({
         message: "Unsupported language",
       }
     ),
-  engines: array(string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH))
+  engines: array(string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH))
     .min(1)
     .max(GEO_MAX_ENGINES),
   enforceZdr: boolean(),
   nonZdrApprovedEngines: array(
-    string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH)
+    string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH)
   ).max(GEO_MAX_ENGINES),
   enabled: boolean(),
   scanIntervalHours: number().refine(
@@ -86,30 +90,22 @@ export const geoSettingsUpsertInputSchema = geoOrganizationInputSchema.extend({
   ),
 });
 
-export const geoCompetitorDomainSchema = string()
-  .trim()
-  .max(MAX_GEO_SHORT_FIELD_LENGTH)
-  .transform(normalizeCompetitorDomain)
-  .refine((value) => value === null || GEO_DOMAIN_REGEX.test(value), {
-    message: "Enter a domain like example.com",
-  });
-
 export const geoCompetitorUpsertInputSchema = geoOrganizationInputSchema.extend(
   {
-    name: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
+    name: string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
     previousName: string()
       .trim()
       .min(1)
-      .max(MAX_GEO_SHORT_FIELD_LENGTH)
+      .max(GEO_SHORT_FIELD_MAX_LENGTH)
       .optional(),
     domain: geoCompetitorDomainSchema.nullable(),
-    synonyms: array(string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH))
-      .max(MAX_GEO_COMPETITOR_SYNONYMS)
+    synonyms: array(string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH))
+      .max(GEO_COMPETITOR_MAX_SYNONYMS)
       .optional(),
     kind: enumType(["direct", "indirect"]).optional(),
     color: string()
       .trim()
-      .max(MAX_GEO_SHORT_FIELD_LENGTH)
+      .max(GEO_SHORT_FIELD_MAX_LENGTH)
       .nullable()
       .optional(),
   }
@@ -117,13 +113,13 @@ export const geoCompetitorUpsertInputSchema = geoOrganizationInputSchema.extend(
 
 export const geoCompetitorDeleteInputSchema = geoOrganizationInputSchema.extend(
   {
-    name: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
+    name: string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
   }
 );
 
 export const geoCompetitorDetailInputSchema = geoOrganizationInputSchema.extend(
   {
-    brand: string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
+    brand: string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
     ...geoWindowFields,
   }
 );
@@ -134,7 +130,7 @@ export const geoTranslationResultSchema = object({
 
 export const geoSequenceCreateInputSchema = geoOrganizationInputSchema.extend({
   id: string().uuid().optional(),
-  name: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
+  name: string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
   steps: array(string().trim().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH))
     .min(1)
     .max(GEO_SEQUENCE_MAX_TURNS),
@@ -142,7 +138,7 @@ export const geoSequenceCreateInputSchema = geoOrganizationInputSchema.extend({
 
 export const geoSequenceUpdateInputSchema = geoOrganizationInputSchema.extend({
   sequenceId: string().min(1),
-  name: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
+  name: string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH).optional(),
   steps: array(string().trim().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH))
     .min(1)
     .max(GEO_SEQUENCE_MAX_TURNS)
@@ -164,7 +160,7 @@ export const geoSequenceRunInputSchema = geoOrganizationInputSchema.extend({
 
 export const geoProjectCreateInputSchema = object({
   organizationId: string().min(1),
-  name: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
+  name: string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
   brandSettingsId: string().min(1),
 });
 
@@ -186,6 +182,15 @@ export const geoPromptToggleInputSchema = geoOrganizationInputSchema.extend({
   enabled: boolean(),
 });
 
+export const geoPromptsImportInputSchema = geoOrganizationInputSchema.extend({
+  rows: array(geoPromptImportRowSchema).min(1).max(GEO_CSV_IMPORT_MAX_ROWS),
+});
+
+export const geoCompetitorsImportInputSchema =
+  geoOrganizationInputSchema.extend({
+    rows: array(geoCompetitorImportRowSchema).min(1).max(GEO_MAX_COMPETITORS),
+  });
+
 export const geoGenerateFromWebsiteInputSchema =
   geoOrganizationInputSchema.extend({
     url: publicWebsiteUrlSchema,
@@ -202,8 +207,8 @@ const geoTrackingLanguagesSchema = array(string().min(1))
   );
 
 export const geoOnboardingBrandInputSchema = geoOrganizationInputSchema.extend({
-  companyName: string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
-  aliases: array(string().trim().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH)).max(
+  companyName: string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
+  aliases: array(string().trim().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH)).max(
     GEO_MAX_ALIASES
   ),
   prompts: array(
@@ -213,12 +218,12 @@ export const geoOnboardingBrandInputSchema = geoOrganizationInputSchema.extend({
     })
   ).max(GEO_ONBOARDING_MAX_PROMPTS),
   languages: geoTrackingLanguagesSchema.optional(),
-  engines: array(string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH))
+  engines: array(string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH))
     .min(1)
     .max(GEO_MAX_ENGINES)
     .optional(),
   enforceZdr: boolean().optional(),
-  nonZdrApprovedEngines: array(string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH))
+  nonZdrApprovedEngines: array(string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH))
     .max(GEO_MAX_ENGINES)
     .optional(),
 });
@@ -297,26 +302,26 @@ export const geoTrafficLogInputSchema = geoOrganizationInputSchema.extend({
 });
 
 export const geoRequestPayloadSchema = object({
-  timestamp: string().max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
+  timestamp: string().max(GEO_SHORT_FIELD_MAX_LENGTH).optional(),
   method: string().min(1).max(MAX_GEO_METHOD_LENGTH),
   url: string().min(1).max(MAX_GEO_URL_LENGTH),
-  ip: string().max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
+  ip: string().max(GEO_SHORT_FIELD_MAX_LENGTH).optional(),
   geo: object({
-    country: string().max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
-    region: string().max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
-    city: string().max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
-    timezone: string().max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
-    latitude: string().max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
-    longitude: string().max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
+    country: string().max(GEO_SHORT_FIELD_MAX_LENGTH).optional(),
+    region: string().max(GEO_SHORT_FIELD_MAX_LENGTH).optional(),
+    city: string().max(GEO_SHORT_FIELD_MAX_LENGTH).optional(),
+    timezone: string().max(GEO_SHORT_FIELD_MAX_LENGTH).optional(),
+    latitude: string().max(GEO_SHORT_FIELD_MAX_LENGTH).optional(),
+    longitude: string().max(GEO_SHORT_FIELD_MAX_LENGTH).optional(),
   }).optional(),
   referer: string().max(MAX_GEO_URL_LENGTH).optional(),
   userAgent: string().max(MAX_GEO_FIELD_LENGTH).optional(),
   accept: string().max(MAX_GEO_FIELD_LENGTH).optional(),
   acceptLanguage: string().max(MAX_GEO_FIELD_LENGTH).optional(),
-  requestId: string().max(MAX_GEO_SHORT_FIELD_LENGTH).optional(),
+  requestId: string().max(GEO_SHORT_FIELD_MAX_LENGTH).optional(),
   signals: object({
     clientHints: boolean(),
-    fetchMode: string().max(MAX_GEO_SHORT_FIELD_LENGTH).nullable(),
+    fetchMode: string().max(GEO_SHORT_FIELD_MAX_LENGTH).nullable(),
     tracing: boolean(),
   }).optional(),
 });
@@ -327,7 +332,7 @@ export const geoTrafficJourneysInputSchema = geoOrganizationInputSchema.extend({
 });
 
 export const geoJourneyDetailInputSchema = geoOrganizationInputSchema.extend({
-  journeyId: string().min(1).max(MAX_GEO_SHORT_FIELD_LENGTH),
+  journeyId: string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
   ...geoWindowFields,
 });
 

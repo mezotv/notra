@@ -61,6 +61,10 @@ import type {
   GeoTrafficPagesResponse,
 } from "@/types/geo";
 import type {
+  GeoCompetitorImportRow,
+  GeoPromptImportRow,
+} from "@/types/geo-import";
+import type {
   GeoSearchConsoleStatus,
   GscSelectSiteInput,
   GscSitesResponse,
@@ -72,6 +76,7 @@ import {
 } from "@/utils/ai-traffic";
 import { toErrorMessage } from "@/utils/error-message";
 import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
+import { describeGeoImportResult } from "@/utils/geo-import";
 import { withGeoProject } from "@/utils/geo-paths";
 import { toGeoWindowInput } from "@/utils/geo-range";
 
@@ -418,6 +423,42 @@ export function useGeoGenerateFromWebsite(organizationId: string) {
       toast.error(
         toErrorMessage(error, "Failed to generate GEO tracking from website")
       );
+    },
+  });
+}
+
+export function useGeoImportPrompts(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: GeoPromptImportRow[]) =>
+      dashboardOrpc.geo.promptsImport.call({ organizationId, projectId, rows }),
+    onSuccess: async (result) => {
+      await invalidatePromptQueries(queryClient, organizationId, projectId);
+      toast.success(describeGeoImportResult("prompts", result));
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to import prompts"));
+    },
+  });
+}
+
+export function useGeoImportCompetitors(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: GeoCompetitorImportRow[]) =>
+      dashboardOrpc.geo.competitorsImport.call({
+        organizationId,
+        projectId,
+        rows,
+      }),
+    onSuccess: async (result) => {
+      await invalidateCompetitorQueries(queryClient, organizationId, projectId);
+      toast.success(describeGeoImportResult("competitors", result));
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to import competitors"));
     },
   });
 }

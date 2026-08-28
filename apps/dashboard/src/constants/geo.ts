@@ -793,6 +793,9 @@ export const GEO_EMPTY_TRAFFIC_RESPONSE: AiTrafficResponse = {
 
 export const GEO_MAX_ALIASES = 10;
 export const GEO_MAX_COMPETITORS = 25;
+export const GEO_COMPETITOR_MAX_SYNONYMS = 8;
+export const GEO_SHORT_FIELD_MAX_LENGTH = 128;
+export const GEO_DOMAIN_REGEX = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 /** Debounce before persisting GEO settings. Short enough for toggles. */
 export const GEO_SETTINGS_AUTO_SAVE_MS = 800;
 export const GEO_MAX_LANGUAGES = 4;

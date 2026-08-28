@@ -39,12 +39,14 @@ import {
   GEO_COMPETITOR_DETAIL_DAYS,
   GEO_COMPETITOR_SHARE_LIMIT,
   GEO_JOURNEY_DETAIL_LIMIT,
+  GEO_MAX_COMPETITORS,
 } from "@/constants/geo";
 import { GEO_MODEL_CATALOG_STATIC } from "@/constants/geo-model-catalog";
 import { hasZdrEntitlement } from "@/lib/billing/subscription";
 import { competitorKey } from "@/lib/geo/domain";
 import { geoDb, geoQuery } from "@/lib/geo/effect";
 import {
+  GeoCompetitorLimitError,
   GeoPromptCreateFailedError,
   GeoPromptNotFoundError,
   GeoScanStartError,
@@ -66,6 +68,7 @@ import {
   requireGeoProject,
   resolveGeoScope,
 } from "@/lib/geo/projects";
+import { promptKey } from "@/lib/geo/prompt-key";
 import { buildGeoPrompts } from "@/lib/geo/prompts";
 import { withGeoScanStatus } from "@/lib/geo/scan-status";
 import { syncGeoScanSchedule } from "@/lib/geo/schedule";
@@ -95,6 +98,12 @@ import type {
   GeoTrafficSource,
   GeoWindowInput,
 } from "@/types/geo";
+import type {
+  GeoCompetitorImportRow,
+  GeoCompetitorsImportResult,
+  GeoImportResult,
+  GeoPromptImportRow,
+} from "@/types/geo-import";
 import { toGeoTrafficTotals, toGeoVisitorType } from "@/utils/ai-traffic";
 import { getGeoModelCatalogEntry } from "@/utils/geo-model-catalog";
 import { groupGeoSparklinePoints } from "@/utils/geo-sparkline";
@@ -333,6 +342,83 @@ export const deleteGeoCompetitor = Effect.fn("geo.competitorDelete")(function* (
   const response: GeoCompetitorsResponse = { competitors };
   return response;
 });
+
+export const importGeoCompetitors = Effect.fn("geo.competitorsImport")(
+  function* (
+    scopeInput: GeoScopeInput,
+    rows: readonly GeoCompetitorImportRow[]
+  ) {
+    const scope = yield* requireGeoProject(scopeInput);
+    const current = yield* loadCompetitorsByProject(scope.projectId);
+    const entries: Required<GeoCompetitorSeed>[] = current.map(
+      (competitor) => ({
+        name: competitor.name,
+        domain: competitor.domain,
+        synonyms: competitor.synonyms,
+        kind: competitor.kind,
+        color: competitor.color,
+      })
+    );
+    const indexByKey = new Map(
+      entries.map((entry, index) => [competitorKey(entry.name), index])
+    );
+    const seen = new Set<string>();
+    let imported = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const row of rows) {
+      const name = row.name.trim();
+      const key = competitorKey(name);
+      if (seen.has(key)) {
+        skipped += 1;
+        continue;
+      }
+      seen.add(key);
+      const index = indexByKey.get(key);
+      const previous = index === undefined ? undefined : entries[index];
+      if (index === undefined || !previous) {
+        entries.push({
+          name,
+          domain: row.domain ?? null,
+          synonyms: row.synonyms ?? [],
+          kind: row.kind ?? "direct",
+          color: null,
+        });
+        indexByKey.set(key, entries.length - 1);
+        imported += 1;
+        continue;
+      }
+      entries[index] = {
+        name: previous.name,
+        domain: row.domain ?? previous.domain,
+        synonyms: row.synonyms ?? previous.synonyms,
+        kind: row.kind ?? previous.kind,
+        color: previous.color,
+      };
+      updated += 1;
+    }
+
+    if (entries.length > GEO_MAX_COMPETITORS) {
+      return yield* Effect.fail(
+        new GeoCompetitorLimitError({ limit: GEO_MAX_COMPETITORS })
+      );
+    }
+
+    const competitors = yield* syncGeoCompetitors(
+      scope.organizationId,
+      scope.projectId,
+      entries
+    );
+    const result: GeoCompetitorsImportResult = {
+      imported,
+      updated,
+      skipped,
+      competitors,
+    };
+    return result;
+  }
+);
 
 export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
   input: GeoSettingsUpsertInput
@@ -965,6 +1051,51 @@ export const createGeoPrompt = Effect.fn("geo.promptsCreate")(function* (
   }
 
   return toTrackedPrompt(row);
+});
+
+export const importGeoPrompts = Effect.fn("geo.promptsImport")(function* (
+  input: GeoScopeInput,
+  rows: readonly GeoPromptImportRow[]
+) {
+  const scope = yield* requireGeoProject(input);
+  const projectId = scope.projectId;
+  const existing = yield* geoDb("prompts lookup failed", () =>
+    db.query.geoPrompts.findMany({
+      columns: { prompt: true },
+      where: eq(geoPrompts.projectId, projectId),
+    })
+  );
+  const seen = new Set(existing.map((row) => promptKey(row.prompt)));
+  const values = rows.flatMap((row) => {
+    const prompt = row.prompt.trim();
+    const key = promptKey(prompt);
+    if (seen.has(key)) {
+      return [];
+    }
+    seen.add(key);
+    return [
+      {
+        id: crypto.randomUUID(),
+        organizationId: scope.organizationId,
+        projectId,
+        prompt,
+        enabled: row.enabled ?? true,
+      },
+    ];
+  });
+
+  if (values.length > 0) {
+    yield* geoDb("prompts import failed", () =>
+      db.insert(geoPrompts).values(values)
+    );
+  }
+
+  const result: GeoImportResult = {
+    imported: values.length,
+    updated: 0,
+    skipped: rows.length - values.length,
+  };
+  return result;
 });
 
 export const deleteGeoPrompt = Effect.fn("geo.promptsDelete")(function* (

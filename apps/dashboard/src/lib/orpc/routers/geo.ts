@@ -52,6 +52,8 @@ import {
   createGeoPrompt,
   deleteGeoCompetitor,
   deleteGeoPrompt,
+  importGeoCompetitors,
+  importGeoPrompts,
   listGeoPrompts,
   loadAiTraffic,
   loadGeoCompetitorDetail,
@@ -97,6 +99,7 @@ import {
   aiTrafficInputSchema,
   geoBrandSearchInputSchema,
   geoCompetitorDeleteInputSchema,
+  geoCompetitorsImportInputSchema,
   geoCompetitorDetailInputSchema,
   geoCompetitorSuggestionsInputSchema,
   geoCompetitorUpsertInputSchema,
@@ -107,6 +110,7 @@ import {
   geoOrganizationInputSchema,
   geoProjectCreateInputSchema,
   geoPromptCreateInputSchema,
+  geoPromptsImportInputSchema,
   geoPromptDeleteInputSchema,
   geoPromptToggleInputSchema,
   geoSequenceCreateInputSchema,
@@ -365,6 +369,11 @@ export const geoRouter = {
   competitorDelete: authorizedProcedure
     .input(geoCompetitorDeleteInputSchema)
     .handler(geoOpenHandler((input) => deleteGeoCompetitor(input, input.name))),
+  competitorsImport: authorizedProcedure
+    .input(geoCompetitorsImportInputSchema)
+    .handler(
+      geoOpenHandler((input) => importGeoCompetitors(input, input.rows))
+    ),
   competitorDetail: authorizedProcedure
     .input(geoCompetitorDetailInputSchema)
     .handler(
@@ -456,6 +465,9 @@ export const geoRouter = {
     .handler(
       geoHandler((input) => createGeoPrompt(input, input.prompt, input.id))
     ),
+  promptsImport: authorizedProcedure
+    .input(geoPromptsImportInputSchema)
+    .handler(geoHandler((input) => importGeoPrompts(input, input.rows))),
   promptsDelete: authorizedProcedure
     .input(geoPromptDeleteInputSchema)
     .handler(
