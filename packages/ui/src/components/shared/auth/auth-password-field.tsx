@@ -6,6 +6,7 @@ import { useState } from "react";
 import type { AuthPasswordFieldProps } from "../../../lib/auth-types";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
+import { AuthFieldError } from "./auth-field-error";
 
 export function AuthPasswordField({
   id,
@@ -51,13 +52,7 @@ export function AuthPasswordField({
           )}
         </button>
       </div>
-      <p
-        aria-live="polite"
-        className="min-h-5 text-destructive text-sm"
-        id={`${id}-error`}
-      >
-        {error}
-      </p>
+      <AuthFieldError error={error} id={`${id}-error`} />
     </div>
   );
 }

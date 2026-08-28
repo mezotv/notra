@@ -1,6 +1,7 @@
 "use client";
 
 import { AuthEmailField } from "@notra/ui/components/shared/auth/auth-email-field";
+import { AuthFormError } from "@notra/ui/components/shared/auth/auth-form-error";
 import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
 import { AuthOrDivider } from "@notra/ui/components/shared/auth/auth-or-divider";
 import { AuthPasswordField } from "@notra/ui/components/shared/auth/auth-password-field";
@@ -228,7 +229,7 @@ export function SignupForm({
             form.handleSubmit();
           }}
         >
-          <div className="grid gap-1">
+          <div className="grid gap-3">
             <form.Field
               name="email"
               validators={{
@@ -279,12 +280,7 @@ export function SignupForm({
             </form.Field>
           </div>
 
-          <p
-            aria-live="polite"
-            className="text-destructive mt-3 text-sm empty:hidden"
-          >
-            {formError}
-          </p>
+          <AuthFormError className="mt-4" error={formError} />
 
           <CtaButton
             className="mt-4 w-full"

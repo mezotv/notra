@@ -19,6 +19,7 @@ import { Badge } from "../../ui/badge";
 import { Separator } from "../../ui/separator";
 import { CtaButton } from "../cta-button";
 import { AuthEmailField } from "./auth-email-field";
+import { AuthFormError } from "./auth-form-error";
 import { AuthFormHeader } from "./auth-form-header";
 import { AuthOrDivider } from "./auth-or-divider";
 import { AuthPasswordField } from "./auth-password-field";
@@ -177,7 +178,7 @@ export function LoginForm({
             form.handleSubmit();
           }}
         >
-          <div className="grid gap-1">
+          <div className="grid gap-3">
             <form.Field
               name="email"
               validators={{
@@ -220,12 +221,7 @@ export function LoginForm({
             </form.Field>
           </div>
 
-          <p
-            aria-live="polite"
-            className="mt-3 text-destructive text-sm empty:hidden"
-          >
-            {formError}
-          </p>
+          <AuthFormError className="mt-4" error={formError} />
 
           <div className="relative mt-4 pt-2">
             {lastMethod === "email" && (
