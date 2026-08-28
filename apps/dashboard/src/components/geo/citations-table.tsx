@@ -19,6 +19,7 @@ import {
   AI_TRAFFIC_PURPOSE_DESCRIPTIONS,
   AI_TRAFFIC_PURPOSE_LABELS,
   GEO_CITATIONS_ROW_HEIGHT,
+  GEO_PURPOSE_COLUMN_WIDTH,
 } from "@/constants/geo";
 import { AI_TRAFFIC_PURPOSE_ICONS } from "@/constants/geo-purpose-icons";
 import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
@@ -112,7 +113,7 @@ function PurposeCell({ entry }: { entry: GeoTrafficLogEntry }) {
           />
         }
       >
-        <PurposeBadge category={entry.category} compact tooltip={false} />
+        <PurposeBadge category={entry.category} tooltip={false} />
         {entry.wantsMarkdown ? <MarkdownBadge /> : null}
       </HoverCardTrigger>
       <TrafficBreakdownCard
@@ -199,7 +200,7 @@ const CITATIONS_COLUMNS: TableColumn<GeoTrafficLogEntry>[] = [
   {
     key: "category",
     header: "Purpose",
-    width: "6.5rem",
+    width: GEO_PURPOSE_COLUMN_WIDTH,
     sortable: true,
     sortValue: (entry) =>
       AI_TRAFFIC_PURPOSE_LABELS[entry.category] ?? entry.category,

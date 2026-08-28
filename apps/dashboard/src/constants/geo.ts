@@ -361,6 +361,7 @@ export const GEO_TRAFFIC_SOURCES_PAGE_PARAM = "sourcesPage";
 export const GEO_TRAFFIC_PAGES_PAGE_PARAM = "topPagesPage";
 export const GEO_TRAFFIC_LOG_PAGE_PARAM = "logPage";
 export const GEO_CITATIONS_ROW_HEIGHT = 40;
+export const GEO_PURPOSE_COLUMN_WIDTH = "12.5rem";
 export const GEO_CITATIONS_LIVE_INTERVAL_MS = 5000;
 export const GEO_INGEST_PATH = "/api/geo/ingest";
 export const GEO_INGEST_SNIPPET_FALLBACK =

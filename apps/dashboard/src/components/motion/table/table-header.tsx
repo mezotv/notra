@@ -224,7 +224,7 @@ export function TableHeader<T>({
                     : undefined
                 }
                 className={cn(
-                  "group bg-muted text-muted-foreground p-0 font-medium",
+                  "group bg-muted text-muted-foreground relative p-0 font-medium",
                   "data-[drop=true]:before:bg-primary data-[drop=true]:before:absolute data-[drop=true]:before:inset-y-0 data-[drop=true]:before:left-0 data-[drop=true]:before:w-0.5",
                   "data-[dropend=true]:after:bg-primary data-[dropend=true]:after:absolute data-[dropend=true]:after:inset-y-0 data-[dropend=true]:after:right-0 data-[dropend=true]:after:w-0.5"
                 )}
