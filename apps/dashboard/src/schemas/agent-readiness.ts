@@ -1,10 +1,10 @@
-import { array, enum as enumType, number, object, string } from "zod";
+import { array, enum as enumType, number, object, string, url } from "zod";
 
 export const agentReadinessWorkflowPayloadSchema = object({
   organizationId: string().min(1),
   projectId: string().min(1),
   reportId: string().min(1),
-  targetUrl: string().url(),
+  targetUrl: url(),
 });
 
 export const agentReadinessApiProblemSchema = object({

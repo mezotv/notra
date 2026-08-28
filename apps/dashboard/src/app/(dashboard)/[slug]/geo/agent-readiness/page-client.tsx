@@ -66,14 +66,7 @@ function ReadinessBody({
 
   if (!report) {
     if (isScanning) {
-      return (
-        <div className="flex flex-col gap-6">
-          <AgentReadinessScanningNotice targetUrl={targetUrl} />
-          <div aria-hidden="true" className="opacity-60">
-            <AgentReadinessSkeleton embedded />
-          </div>
-        </div>
-      );
+      return <AgentReadinessScanningNotice targetUrl={targetUrl} />;
     }
     return (
       <EmptyState

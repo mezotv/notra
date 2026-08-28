@@ -297,9 +297,10 @@ export async function loadAgentReadiness(
 export async function startAgentReadinessScan(
   scope: AgentReadinessScope
 ): Promise<AgentReadinessScanResponse> {
-  const targetUrl = await resolveTargetUrl(scope.brandSettingsId);
-
-  const running = await latestRowWhere(scope.projectId, "running");
+  const [targetUrl, running] = await Promise.all([
+    resolveTargetUrl(scope.brandSettingsId),
+    latestRowWhere(scope.projectId, "running"),
+  ]);
   if (
     running &&
     Date.now() - running.createdAt.getTime() < AGENT_READINESS_STALE_RUNNING_MS

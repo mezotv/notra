@@ -14,11 +14,7 @@ const CHECKLIST_ROW_KEYS = Array.from(
   (_, index) => `checklist-row-${index}`
 );
 
-export function AgentReadinessSkeleton({
-  embedded = false,
-}: {
-  embedded?: boolean;
-}) {
+export function AgentReadinessSkeleton() {
   const content = (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-6 rounded-2xl border p-6">
@@ -43,10 +39,6 @@ export function AgentReadinessSkeleton({
       </div>
     </div>
   );
-
-  if (embedded) {
-    return content;
-  }
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
