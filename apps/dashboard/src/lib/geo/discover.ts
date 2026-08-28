@@ -1,7 +1,7 @@
 import { gateway } from "@notra/ai/gateway";
 import { scrapeWebsiteForBrandAnalysis } from "@notra/ai/utils/context-dev";
 import { db } from "@notra/db/drizzle";
-import { geoPrompts, geoSettings } from "@notra/db/schema";
+import { geoSettings } from "@notra/db/schema";
 import { generateText, Output } from "ai";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
@@ -27,7 +27,7 @@ import {
 import { readGeoCache, writeGeoCache } from "@/lib/geo/cache";
 import { competitorKey, normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { GeoDiscoveryError } from "@/lib/geo/errors";
-import { syncGeoCompetitors } from "@/lib/geo/programs";
+import { insertGeoPrompts, reconcileGeoCompetitors } from "@/lib/geo/programs";
 import { ensureGeoProject } from "@/lib/geo/projects";
 import { withGeoScanStatus } from "@/lib/geo/scan-status";
 import {
@@ -40,6 +40,7 @@ import type {
   GeoCompetitorSeed,
   GeoDiscoverWebsiteResult,
   GeoGenerateFromWebsiteResult,
+  GeoPromptInsert,
   GeoScopeInput,
   GeoWebsiteDiscovery,
 } from "@/types/geo";
@@ -227,11 +228,6 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
       discovery.aliases,
       GEO_DISCOVERY_ALIAS_LIMIT
     );
-    const competitors = unionValues(
-      existing?.competitors ?? [],
-      discovery.competitors.map((entry) => entry.name),
-      GEO_DISCOVERY_COMPETITOR_LIMIT
-    );
     const companyName = existing?.companyName ?? discovery.companyName;
 
     yield* Effect.tryPromise({
@@ -244,12 +240,12 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
             projectId,
             companyName,
             aliases,
-            competitors,
+            competitors: [],
             enabled: true,
           })
           .onConflictDoUpdate({
             target: geoSettings.projectId,
-            set: { companyName, aliases, competitors },
+            set: { companyName, aliases },
           }),
       catch: (cause) =>
         new GeoDiscoveryError({
@@ -258,71 +254,55 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
         }),
     });
 
-    yield* syncGeoCompetitors(
+    const competitorRows = yield* reconcileGeoCompetitors(
       organizationId,
       projectId,
-      buildCompetitorSeeds(competitors, discovery.competitors)
+      (current) =>
+        buildCompetitorSeeds(
+          unionValues(
+            current.map((competitor) => competitor.name),
+            discovery.competitors.map((entry) => entry.name),
+            GEO_DISCOVERY_COMPETITOR_LIMIT
+          ),
+          discovery.competitors
+        )
     );
+    const competitors = competitorRows.map((competitor) => competitor.name);
 
-    const existingPrompts = yield* Effect.tryPromise({
-      try: () =>
-        db.query.geoPrompts.findMany({
-          columns: { prompt: true },
-          where: eq(geoPrompts.projectId, projectId),
-        }),
-      catch: (cause) =>
-        new GeoDiscoveryError({ message: "Failed to load GEO prompts", cause }),
-    });
-
-    const seen = new Set(
-      existingPrompts.map((row) => normalizeKey(row.prompt))
-    );
     const brandTerms = buildBrandTerms({ companyName, aliases });
-    const values: {
-      id: string;
-      organizationId: string;
-      projectId: string;
-      prompt: string;
-      title: string | null;
-    }[] = [];
+    const entries: GeoPromptInsert[] = [];
     for (const entry of discovery.prompts) {
       const trimmed = entry.prompt.trim();
       const title = entry.title.trim().slice(0, GEO_GAP_TITLE_MAX_LENGTH);
-      const key = normalizeKey(trimmed);
       if (
         trimmed.length < MIN_PROMPT_LENGTH ||
         trimmed.length > MAX_PROMPT_LENGTH ||
-        seen.has(key) ||
         promptMentionsBrand(trimmed, brandTerms)
       ) {
         continue;
       }
-      seen.add(key);
-      values.push({
-        id: crypto.randomUUID(),
-        organizationId,
-        projectId,
-        prompt: trimmed,
-        title: title.length > 0 ? title : null,
-      });
+      entries.push({ prompt: trimmed, title: title.length > 0 ? title : null });
     }
 
-    if (values.length > 0) {
-      yield* Effect.tryPromise({
-        try: () => db.insert(geoPrompts).values(values),
-        catch: (cause) =>
+    const inserted = yield* insertGeoPrompts(
+      organizationId,
+      projectId,
+      entries
+    ).pipe(
+      Effect.mapError(
+        (cause) =>
           new GeoDiscoveryError({
             message: "Failed to save GEO prompts",
             cause,
-          }),
-      });
-    }
+          })
+      )
+    );
 
     const summary: GeoGenerateFromWebsiteResult = {
       companyName,
       aliases,
       competitors,
-      promptsAdded: values.length,
+      promptsAdded: inserted.length,
     };
 
     // Newly created settings default to enabled; an existing disabled row is

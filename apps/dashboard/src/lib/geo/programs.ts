@@ -86,9 +86,11 @@ import type {
   GeoCompetitorShareResponse,
   GeoCompetitorsResponse,
   GeoCompetitorUpsertInput,
+  GeoInsertedPrompt,
   GeoJourneyDetailResponse,
   GeoLanguageShareResponse,
   GeoOverviewResponse,
+  GeoPromptInsert,
   GeoPromptResultsResponse,
   GeoScopeInput,
   GeoSettingsResponse,
@@ -277,7 +279,7 @@ const reconcileCompetitorsInTransaction = Effect.fn(
   return outcome;
 });
 
-const reconcileGeoCompetitors = Effect.fn("geo.competitorsReconcile")(
+export const reconcileGeoCompetitors = Effect.fn("geo.competitorsReconcile")(
   function* (
     organizationId: string,
     projectId: string,
@@ -306,18 +308,6 @@ const reconcileGeoCompetitors = Effect.fn("geo.competitorsReconcile")(
     return outcome.competitors;
   }
 );
-
-export const syncGeoCompetitors = Effect.fn("geo.competitorsSync")(function* (
-  organizationId: string,
-  projectId: string,
-  entries: readonly GeoCompetitorSeed[]
-) {
-  return yield* reconcileGeoCompetitors(
-    organizationId,
-    projectId,
-    () => entries
-  );
-});
 
 const loadCompetitorsByProject = Effect.fn("geo.competitorsByProject")(
   function* (projectId: string) {
@@ -559,7 +549,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
         projectId,
         companyName: input.companyName,
         aliases: input.aliases,
-        competitors: input.competitors,
+        competitors: [],
         languages: input.languages,
         engines,
         enforceZdr,
@@ -572,7 +562,6 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
         set: {
           companyName: input.companyName,
           aliases: input.aliases,
-          competitors: input.competitors,
           languages: input.languages,
           engines,
           enforceZdr,
@@ -583,10 +572,10 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
       })
   );
 
-  yield* syncGeoCompetitors(
+  yield* reconcileGeoCompetitors(
     input.organizationId,
     projectId,
-    input.competitors.map((name) => ({ name, domain: null }))
+    (current) => current
   );
 
   const existingMessageId = existingSettings?.qstashMessageId ?? null;
@@ -1163,11 +1152,11 @@ export const createGeoPrompt = Effect.fn("geo.promptsCreate")(function* (
   return toTrackedPrompt(row);
 });
 
-const importPromptsInTransaction = Effect.fn("geo.promptsImportTx")(function* (
+const insertPromptsInTransaction = Effect.fn("geo.promptsInsertTx")(function* (
   tx: DbTransaction,
   organizationId: string,
   projectId: string,
-  rows: readonly GeoPromptImportRow[]
+  entries: readonly GeoPromptInsert[]
 ) {
   yield* lockGeoProject(tx, projectId);
   const existing = yield* geoDb("prompts lookup failed", () =>
@@ -1177,10 +1166,10 @@ const importPromptsInTransaction = Effect.fn("geo.promptsImportTx")(function* (
     })
   );
   const seen = new Set(existing.map((row) => promptKey(row.prompt)));
-  const values = rows.flatMap((row) => {
-    const prompt = row.prompt.trim();
+  const values = entries.flatMap((entry) => {
+    const prompt = entry.prompt.trim();
     const key = promptKey(prompt);
-    if (seen.has(key)) {
+    if (prompt.length === 0 || seen.has(key)) {
       return [];
     }
     seen.add(key);
@@ -1190,17 +1179,38 @@ const importPromptsInTransaction = Effect.fn("geo.promptsImportTx")(function* (
         organizationId,
         projectId,
         prompt,
-        enabled: row.enabled ?? true,
+        title: entry.title ?? null,
+        enabled: entry.enabled ?? true,
       },
     ];
   });
 
-  if (values.length > 0) {
-    yield* geoDb("prompts insert failed", () =>
-      tx.insert(geoPrompts).values(values)
-    );
+  if (values.length === 0) {
+    const none: GeoInsertedPrompt[] = [];
+    return none;
   }
-  return values.length;
+  const rows = yield* geoDb("prompts insert failed", () =>
+    tx
+      .insert(geoPrompts)
+      .values(values)
+      .returning({ id: geoPrompts.id, prompt: geoPrompts.prompt })
+  );
+  const inserted: GeoInsertedPrompt[] = rows;
+  return inserted;
+});
+
+export const insertGeoPrompts = Effect.fn("geo.promptsInsert")(function* (
+  organizationId: string,
+  projectId: string,
+  entries: readonly GeoPromptInsert[]
+) {
+  return yield* geoDb("prompts insert failed", () =>
+    db.transaction((tx) =>
+      Effect.runPromise(
+        insertPromptsInTransaction(tx, organizationId, projectId, entries)
+      )
+    )
+  );
 });
 
 export const importGeoPrompts = Effect.fn("geo.promptsImport")(function* (
@@ -1208,23 +1218,16 @@ export const importGeoPrompts = Effect.fn("geo.promptsImport")(function* (
   rows: readonly GeoPromptImportRow[]
 ) {
   const scope = yield* requireGeoProject(input);
-  const imported = yield* geoDb("prompts import failed", () =>
-    db.transaction((tx) =>
-      Effect.runPromise(
-        importPromptsInTransaction(
-          tx,
-          scope.organizationId,
-          scope.projectId,
-          rows
-        )
-      )
-    )
+  const inserted = yield* insertGeoPrompts(
+    scope.organizationId,
+    scope.projectId,
+    rows
   );
 
   const result: GeoImportResult = {
-    imported,
+    imported: inserted.length,
     updated: 0,
-    skipped: rows.length - imported,
+    skipped: rows.length - inserted.length,
   };
   return result;
 });

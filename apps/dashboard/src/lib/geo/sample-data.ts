@@ -9,7 +9,6 @@ import { EMPTY_GEO_CHECK_GROUNDING } from "@notra/db/constants/geo-checks";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
-  geoCompetitors,
   geoPromptSequences,
   geoPrompts,
   geoScans,
@@ -47,9 +46,9 @@ import {
   GeoSampleDataDisabledError,
   GeoTinybirdError,
 } from "@/lib/geo/errors";
+import { insertGeoPrompts, reconcileGeoCompetitors } from "@/lib/geo/programs";
 import { customPromptScanId } from "@/lib/geo/prompts";
 import type {
-  GeoCompetitorSeed,
   GeoSampleDataClearResponse,
   GeoSampleDataResponse,
   GeoScopeInput,
@@ -504,72 +503,28 @@ export const seedGeoSampleData = Effect.fn("geo.sampleData")(function* (
     );
   }
 
-  const existingCompetitors = yield* geoDb("competitors lookup failed", () =>
-    db.query.geoCompetitors.findMany({
-      where: eq(geoCompetitors.projectId, projectId),
-    })
-  );
-  const existingCompetitorKeys = new Set(
-    existingCompetitors.map((row) => competitorKey(row.name))
-  );
-  const competitorsToAdd: GeoCompetitorSeed[] = GEO_SAMPLE_COMPETITORS.filter(
-    (entry) => !existingCompetitorKeys.has(competitorKey(entry.name))
-  );
-
-  if (competitorsToAdd.length > 0) {
-    yield* geoDb("competitors insert failed", () =>
-      db.insert(geoCompetitors).values(
-        competitorsToAdd.map((entry) => ({
-          id: crypto.randomUUID(),
-          organizationId: input.organizationId,
-          projectId,
-          name: entry.name,
-          domain: entry.domain,
-          synonyms: entry.synonyms ?? [],
-          kind: entry.kind ?? "direct",
-          color: entry.color ?? null,
-        }))
-      )
+  let competitorsAdded = 0;
+  yield* reconcileGeoCompetitors(input.organizationId, projectId, (current) => {
+    const currentKeys = new Set(
+      current.map((competitor) => competitorKey(competitor.name))
     );
-  }
-
-  const allCompetitorNames = [
-    ...existingCompetitors.map((row) => row.name),
-    ...competitorsToAdd.map((entry) => entry.name),
-  ];
-  yield* geoDb("settings competitors stamp failed", () =>
-    db
-      .update(geoSettings)
-      .set({ competitors: allCompetitorNames })
-      .where(eq(geoSettings.projectId, projectId))
-  );
+    const missing = GEO_SAMPLE_COMPETITORS.filter(
+      (entry) => !currentKeys.has(competitorKey(entry.name))
+    );
+    competitorsAdded = missing.length;
+    return [...current, ...missing];
+  });
 
   const existingPrompts = yield* geoDb("prompts lookup failed", () =>
     db.query.geoPrompts.findMany({
       where: eq(geoPrompts.projectId, projectId),
     })
   );
-  const existingPromptTexts = new Set(existingPrompts.map((row) => row.prompt));
-  const promptsToAdd = GEO_SAMPLE_PROMPTS.filter(
-    (prompt) => !existingPromptTexts.has(prompt.english)
+  const insertedPrompts = yield* insertGeoPrompts(
+    input.organizationId,
+    projectId,
+    GEO_SAMPLE_PROMPTS.map((prompt) => ({ prompt: prompt.english }))
   );
-
-  const insertedPrompts =
-    promptsToAdd.length > 0
-      ? yield* geoDb("prompts insert failed", () =>
-          db
-            .insert(geoPrompts)
-            .values(
-              promptsToAdd.map((prompt) => ({
-                id: crypto.randomUUID(),
-                organizationId: input.organizationId,
-                projectId,
-                prompt: prompt.english,
-              }))
-            )
-            .returning({ id: geoPrompts.id, prompt: geoPrompts.prompt })
-        )
-      : [];
 
   const promptByEnglish = new Map(
     GEO_SAMPLE_PROMPTS.map((prompt) => [prompt.english, prompt])
@@ -653,7 +608,7 @@ export const seedGeoSampleData = Effect.fn("geo.sampleData")(function* (
   const response: GeoSampleDataResponse = {
     projectId,
     promptsAdded: insertedPrompts.length,
-    competitorsAdded: competitorsToAdd.length,
+    competitorsAdded,
     sequencesAdded: insertedSequences.length,
     mentionChecks: mentionChecks.length,
     trafficEvents: trafficEvents.length,

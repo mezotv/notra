@@ -14,8 +14,8 @@ import {
 } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { geoPromptSuggestions, geoPrompts, projects } from "@notra/db/schema";
-import { and, asc, desc, eq } from "drizzle-orm";
-import type { Effect } from "effect";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { Effect } from "effect";
 
 import { GEO_SAMPLE_DATA_ENABLED } from "@/constants/geo";
 import {
@@ -41,6 +41,7 @@ import { buildGeoIngestToken } from "@/lib/geo-ingest/token";
 import { discoverGeoWebsite, generateGeoFromWebsite } from "@/lib/geo/discover";
 import type { GeoRouterError } from "@/lib/geo/errors";
 import { loadGeoContentGaps } from "@/lib/geo/gaps";
+import { lockGeoProject } from "@/lib/geo/lock";
 import { toTrackedPrompt } from "@/lib/geo/mappers";
 import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
 import {
@@ -74,6 +75,7 @@ import {
   upsertGeoSettings,
 } from "@/lib/geo/programs";
 import { createGeoProject, listGeoProjects } from "@/lib/geo/projects";
+import { promptKey } from "@/lib/geo/prompt-key";
 import { clearGeoSampleData, seedGeoSampleData } from "@/lib/geo/sample-data";
 import { runGeoSequenceNow } from "@/lib/geo/scan";
 import { syncGscSuggestions } from "@/lib/geo/search-console";
@@ -129,6 +131,7 @@ import {
 } from "@/schemas/geo";
 import { gscSelectSiteInputSchema } from "@/schemas/google-search-console";
 import type { AuthenticatedUser } from "@/types/auth/organization";
+import type { DbTransaction } from "@/types/db";
 import type {
   GeoBrandSearchHandlerInput,
   GeoCompetitorSuggestionsHandlerInput,
@@ -290,20 +293,19 @@ async function requireDefaultProjectId(
   return row.id;
 }
 
-type GeoTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-
 async function acceptSuggestionInTx(
-  tx: GeoTransaction,
+  tx: DbTransaction,
   organizationId: string,
   projectId: string,
   suggestion: Pick<GeoPromptSuggestionRow, "id" | "prompt" | "title">
 ): Promise<GeoTrackedPrompt> {
+  await Effect.runPromise(lockGeoProject(tx, projectId));
   // Reuse an identical tracked prompt instead of creating a duplicate.
   const existing = await tx.query.geoPrompts.findFirst({
     where: and(
       eq(geoPrompts.organizationId, organizationId),
       eq(geoPrompts.projectId, projectId),
-      eq(geoPrompts.prompt, suggestion.prompt)
+      sql`lower(trim(${geoPrompts.prompt})) = ${promptKey(suggestion.prompt)}`
     ),
   });
   const promptRow =

@@ -1,7 +1,4 @@
 import { extractCompetitors, searchBrands } from "@notra/ai/utils/context-dev";
-import { db } from "@notra/db/drizzle";
-import { geoPrompts } from "@notra/db/schema";
-import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
 import {
@@ -14,11 +11,9 @@ import {
 import { readGeoCache, writeGeoCache } from "@/lib/geo/cache";
 import { discoverGeoWebsite } from "@/lib/geo/discover";
 import { normalizeCompetitorDomain } from "@/lib/geo/domain";
-import { geoDb } from "@/lib/geo/effect";
 import { GeoDiscoveryError, GeoSettingsMissingError } from "@/lib/geo/errors";
 import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
-import { upsertGeoSettings } from "@/lib/geo/programs";
-import { promptKey } from "@/lib/geo/prompt-key";
+import { insertGeoPrompts, upsertGeoSettings } from "@/lib/geo/programs";
 import {
   buildBrandTerms,
   promptMentionsBrand,
@@ -29,6 +24,7 @@ import type {
   GeoCompetitorSuggestionsResponse,
   GeoOnboardingBrandInput,
   GeoOnboardingBrandResult,
+  GeoPromptInsert,
   GeoScopeInput,
 } from "@/types/geo";
 import { resolveTrackedEngines } from "@/utils/geo-engines";
@@ -65,46 +61,28 @@ export const saveGeoOnboardingBrand = Effect.fn("geo.onboardingBrand")(
 
     const projectId = settings.projectId;
 
-    const existingPrompts = yield* geoDb("prompts lookup failed", () =>
-      db.query.geoPrompts.findMany({
-        columns: { prompt: true },
-        where: eq(geoPrompts.projectId, projectId),
-      })
-    );
-    const seen = new Set(existingPrompts.map((row) => promptKey(row.prompt)));
     const brandTerms = buildBrandTerms({
       companyName: input.companyName,
       aliases: input.aliases,
     });
-    const values = input.prompts.flatMap((entry) => {
+    const entries: GeoPromptInsert[] = input.prompts.flatMap((entry) => {
       const prompt = entry.prompt.trim();
       const title = entry.title.trim().slice(0, GEO_GAP_TITLE_MAX_LENGTH);
-      const key = promptKey(prompt);
-      if (seen.has(key) || promptMentionsBrand(prompt, brandTerms)) {
+      if (promptMentionsBrand(prompt, brandTerms)) {
         return [];
       }
-      seen.add(key);
-      return [
-        {
-          id: crypto.randomUUID(),
-          organizationId,
-          projectId,
-          prompt,
-          title: title.length > 0 ? title : null,
-        },
-      ];
+      return [{ prompt, title: title.length > 0 ? title : null }];
     });
-
-    if (values.length > 0) {
-      yield* geoDb("prompts insert failed", () =>
-        db.insert(geoPrompts).values(values)
-      );
-    }
+    const inserted = yield* insertGeoPrompts(
+      organizationId,
+      projectId,
+      entries
+    );
 
     const result: GeoOnboardingBrandResult = {
       projectId,
       companyName: settings.companyName,
-      promptsAdded: values.length,
+      promptsAdded: inserted.length,
     };
     return result;
   }
