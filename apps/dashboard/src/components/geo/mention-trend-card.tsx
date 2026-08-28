@@ -86,12 +86,22 @@ export function MentionTrendCard({
   const series = useMemo(() => mentionTrendSeries(engines), [engines]);
   const allKeys = useMemo(() => series.map((entry) => entry.key), [series]);
   const chartRows = useMemo(() => {
-    const trend = fitMentionTrendLine(rows, GEO_MENTION_TREND_TOTAL_KEY);
-    return rows.map((row, index) => ({
-      ...row,
-      [GEO_MENTION_TREND_LINE_KEY]: trend[index] ?? null,
-    }));
-  }, [rows]);
+    const observedRows = rows.map((row) =>
+      allKeys.some((key) => typeof row[key] === "number")
+        ? row
+        : { ...row, [GEO_MENTION_TREND_TOTAL_KEY]: null }
+    );
+    const trend = fitMentionTrendLine(
+      observedRows,
+      GEO_MENTION_TREND_TOTAL_KEY
+    );
+    return rows.map((row, index) => {
+      const trendValue = trend[index];
+      return typeof trendValue === "number"
+        ? { ...row, [GEO_MENTION_TREND_LINE_KEY]: trendValue }
+        : row;
+    });
+  }, [allKeys, rows]);
   const config = useMemo(() => {
     const trendConfig: ChartConfig = {
       [GEO_MENTION_TREND_TOTAL_KEY]: {

@@ -6,6 +6,7 @@ import {
 import {
   GEO_BRAND_LABELS,
   GEO_ENGINE_LABELS,
+  GEO_MENTION_TREND_BACKFILL_DAYS,
   GEO_MENTION_TREND_TOTAL_KEY,
   GEO_SEARCH_LABEL,
   GEO_SHARE_OF_VOICE_TOP_BRANDS,
@@ -328,8 +329,20 @@ export function buildMentionTrendRows(
   ];
   const firstDay = knownDays.at(0);
   const lastDay = knownDays.at(-1);
+  const isFirstScan = knownDays.length === 1;
+  const chartFirstDay =
+    firstDay && isFirstScan
+      ? new Date(
+          new Date(`${firstDay}T00:00:00Z`).getTime() -
+            GEO_MENTION_TREND_BACKFILL_DAYS * DAY_MS
+        )
+          .toISOString()
+          .slice(0, 10)
+      : firstDay;
   const days =
-    firstDay && lastDay ? listDaysThrough(firstDay, lastDay) : knownDays;
+    chartFirstDay && lastDay
+      ? listDaysThrough(chartFirstDay, lastDay)
+      : knownDays;
   const rows = days.map((day) => {
     const row: MentionTrendRow = { day: formatDayLabel(day), rawDay: day };
     const dayPoints = byDay.get(day);
@@ -337,13 +350,14 @@ export function buildMentionTrendRows(
     let sampled = false;
     for (const engine of engines) {
       const point = dayPoints?.get(engine);
-      row[chartKey(engine)] = point ? point.mentions : null;
       if (point) {
+        row[chartKey(engine)] = point.mentions;
         total += point.mentions;
         sampled = true;
       }
     }
-    row[GEO_MENTION_TREND_TOTAL_KEY] = sampled ? total : null;
+    row[GEO_MENTION_TREND_TOTAL_KEY] =
+      sampled || (isFirstScan && !dayPoints) ? total : null;
     return row;
   });
 

@@ -37,6 +37,13 @@ export const DESIGN_SYSTEM_GEO_POINTS: GeoTimeseriesPoint[] = Array.from(
   }
 ).flat();
 
+const DESIGN_SYSTEM_GEO_FIRST_SCAN_DAY = DESIGN_SYSTEM_GEO_POINTS.at(-1)?.day;
+
+export const DESIGN_SYSTEM_GEO_FIRST_SCAN_POINTS =
+  DESIGN_SYSTEM_GEO_POINTS.filter(
+    (point) => point.day === DESIGN_SYSTEM_GEO_FIRST_SCAN_DAY
+  );
+
 export const DESIGN_SYSTEM_GEO_OVERVIEW: GeoOverviewEngine[] = PROVIDERS.map(
   (provider) => {
     const providerPoints = DESIGN_SYSTEM_GEO_POINTS.filter(

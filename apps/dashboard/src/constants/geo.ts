@@ -728,6 +728,7 @@ export const GEO_SENTIMENT_LABELS: Record<string, string> = {
 export const GEO_PROMPT_PREVIEW_ROW_HEIGHT = 72;
 export const GEO_PROMPT_NO_MENTION = "No engine named you";
 
+export const GEO_MENTION_TREND_BACKFILL_DAYS = 6;
 export const GEO_MENTION_TREND_TOTAL_KEY = "total";
 export const GEO_MENTION_TREND_TOTAL_LABEL = "All providers";
 export const GEO_DEFAULT_RANGE: GeoRangePreset = "30d";
