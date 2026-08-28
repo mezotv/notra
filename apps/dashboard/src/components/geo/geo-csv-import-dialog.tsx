@@ -16,6 +16,7 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { Effect } from "effect";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -27,7 +28,11 @@ import {
   GEO_CSV_IMPORT_MAX_ISSUES_SHOWN,
   GEO_IMPORT_COPY,
 } from "@/constants/geo-import";
-import { parseCompetitorsCsv, parsePromptsCsv } from "@/lib/geo/csv-import";
+import {
+  parseCompetitorsCsv,
+  parsePromptsCsv,
+  readGeoCsvFile,
+} from "@/lib/geo/csv-import";
 import {
   useGeoImportCompetitors,
   useGeoImportPrompts,
@@ -110,25 +115,33 @@ function GeoCsvImportDialog<TRow>({
     onOpenChange(false);
   };
 
-  const handleDrop = async (files: File[]) => {
+  const handleDrop = (files: File[]) => {
     const file = files.at(0);
     if (!file) {
       return;
     }
-    try {
-      const text = await file.text();
-      setSelection({ file, result: parse(text) });
-    } catch {
-      toast.error("Could not read that file");
-    }
+    Effect.runFork(
+      readGeoCsvFile(file, parse).pipe(
+        Effect.match({
+          onSuccess: setSelection,
+          onFailure: () => toast.error("Could not read that file"),
+        })
+      )
+    );
   };
 
-  const handleImport = async () => {
+  const handleImport = () => {
     if (!canImport) {
       return;
     }
-    await onImport(rows);
-    close();
+    Effect.runFork(
+      Effect.tryPromise(() => onImport(rows)).pipe(
+        Effect.match({
+          onSuccess: close,
+          onFailure: () => undefined,
+        })
+      )
+    );
   };
 
   const downloadTemplate = () => {

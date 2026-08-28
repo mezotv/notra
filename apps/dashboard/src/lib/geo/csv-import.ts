@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import type { ZodType } from "zod";
 
 import { GEO_MAX_COMPETITORS } from "@/constants/geo";
@@ -12,6 +13,7 @@ import {
 } from "@/constants/geo-import";
 import { csvCell, csvColumnIndex, parseCsv } from "@/lib/csv/parse";
 import { competitorKey } from "@/lib/geo/domain";
+import { GeoCsvReadError } from "@/lib/geo/errors";
 import { promptKey } from "@/lib/geo/prompt-key";
 import {
   geoCompetitorImportRowSchema,
@@ -22,6 +24,7 @@ import type {
   GeoCompetitorImportRow,
   GeoCsvIssue,
   GeoCsvParseResult,
+  GeoCsvSelection,
   GeoImportKind,
   GeoPromptImportRow,
 } from "@/types/geo-import";
@@ -176,3 +179,15 @@ export function parseCompetitorsCsv(
 ): GeoCsvParseResult<GeoCompetitorImportRow> {
   return readCsvRows(text, competitorsReader, "competitors");
 }
+
+export const readGeoCsvFile = Effect.fn("geo.csvRead")(function* <TRow>(
+  file: File,
+  parse: (text: string) => GeoCsvParseResult<TRow>
+) {
+  const text = yield* Effect.tryPromise({
+    try: () => file.text(),
+    catch: (cause) => new GeoCsvReadError({ cause }),
+  });
+  const selection: GeoCsvSelection<TRow> = { file, result: parse(text) };
+  return selection;
+});

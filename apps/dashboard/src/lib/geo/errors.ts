@@ -20,6 +20,10 @@ export class GeoDatabaseError extends Data.TaggedError("GeoDatabaseError")<{
   readonly cause: unknown;
 }> {}
 
+export class GeoCsvReadError extends Data.TaggedError("GeoCsvReadError")<{
+  readonly cause: unknown;
+}> {}
+
 export class GeoPromptDuplicateError extends Data.TaggedError(
   "GeoPromptDuplicateError"
 )<{

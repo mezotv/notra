@@ -75,6 +75,7 @@ import { withGeoScanStatus } from "@/lib/geo/scan-status";
 import { syncGeoScanSchedule } from "@/lib/geo/schedule";
 import { geoTrafficWindowParams } from "@/lib/geo/window";
 import { startGeoScanRun } from "@/lib/workflows/start";
+import type { DbTransaction } from "@/types/db";
 import type {
   AiTrafficResponse,
   GeoCompetitor,
@@ -159,6 +160,123 @@ export const loadGeoSettings = Effect.fn("geo.settings")(function* (
   return response;
 });
 
+const reconcileCompetitorsInTransaction = Effect.fn(
+  "geo.competitorsReconcileTx"
+)(function* (
+  tx: DbTransaction,
+  organizationId: string,
+  projectId: string,
+  merge: GeoCompetitorMerge,
+  limit?: number
+) {
+  yield* lockGeoProject(tx, projectId);
+  const [existing, settingsRow] = yield* Effect.all(
+    [
+      geoDb("competitors lookup failed", () =>
+        tx.query.geoCompetitors.findMany({
+          where: eq(geoCompetitors.projectId, projectId),
+          orderBy: [asc(geoCompetitors.createdAt)],
+        })
+      ),
+      geoDb("settings lookup failed", () =>
+        tx.query.geoSettings.findFirst({
+          columns: { competitors: true },
+          where: eq(geoSettings.projectId, projectId),
+        })
+      ),
+    ],
+    { concurrency: "unbounded" }
+  );
+  const current = mergeLegacyCompetitors(
+    existing.map(toGeoCompetitor),
+    settingsRow?.competitors ?? []
+  );
+  const entries = merge(current);
+  const existingByName = new Map(
+    existing.map((row) => [competitorKey(row.name), row])
+  );
+
+  const resolved: Required<GeoCompetitorSeed>[] = [];
+  const seen = new Set<string>();
+  for (const entry of entries) {
+    const name = entry.name.trim();
+    const key = competitorKey(name);
+    if (name.length === 0 || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    const previous = existingByName.get(key);
+    resolved.push({
+      name,
+      domain: entry.domain ?? previous?.domain ?? null,
+      synonyms: entry.synonyms ?? previous?.synonyms ?? [],
+      kind: entry.kind ?? previous?.kind ?? "direct",
+      color: entry.color ?? previous?.color ?? null,
+    });
+  }
+
+  if (limit !== undefined && resolved.length > limit) {
+    const overLimit: GeoCompetitorReconcileOutcome = { status: "limit" };
+    return overLimit;
+  }
+
+  const staleIds = existing.flatMap((row) =>
+    seen.has(competitorKey(row.name)) ? [] : [row.id]
+  );
+  if (staleIds.length > 0) {
+    yield* geoDb("competitors delete failed", () =>
+      tx.delete(geoCompetitors).where(inArray(geoCompetitors.id, staleIds))
+    );
+  }
+
+  if (resolved.length > 0) {
+    yield* geoDb("competitors upsert failed", () =>
+      tx
+        .insert(geoCompetitors)
+        .values(
+          resolved.map((entry) => ({
+            id: crypto.randomUUID(),
+            organizationId,
+            projectId,
+            name: entry.name,
+            domain: entry.domain,
+            synonyms: entry.synonyms,
+            kind: entry.kind,
+            color: entry.color,
+          }))
+        )
+        .onConflictDoUpdate({
+          target: [geoCompetitors.projectId, geoCompetitors.name],
+          set: {
+            domain: sql`excluded.domain`,
+            synonyms: sql`excluded.synonyms`,
+            kind: sql`excluded.kind`,
+            color: sql`excluded.color`,
+          },
+        })
+    );
+  }
+
+  yield* geoDb("settings update failed", () =>
+    tx
+      .update(geoSettings)
+      .set({ competitors: resolved.map((entry) => entry.name) })
+      .where(eq(geoSettings.projectId, projectId))
+  );
+
+  const rows = yield* geoDb("competitors lookup failed", () =>
+    tx.query.geoCompetitors.findMany({
+      where: eq(geoCompetitors.projectId, projectId),
+      orderBy: [asc(geoCompetitors.createdAt)],
+    })
+  );
+  const outcome: GeoCompetitorReconcileOutcome = {
+    status: "ok",
+    competitors: rows.map(toGeoCompetitor),
+  };
+  return outcome;
+});
+
 const reconcileGeoCompetitors = Effect.fn("geo.competitorsReconcile")(
   function* (
     organizationId: string,
@@ -167,105 +285,17 @@ const reconcileGeoCompetitors = Effect.fn("geo.competitorsReconcile")(
     limit?: number
   ) {
     const outcome = yield* geoDb("competitors sync failed", () =>
-      db.transaction(async (tx): Promise<GeoCompetitorReconcileOutcome> => {
-        await lockGeoProject(tx, projectId);
-        const [existing, settingsRow] = await Effect.runPromise(
-          Effect.all(
-            [
-              Effect.promise(() =>
-                tx.query.geoCompetitors.findMany({
-                  where: eq(geoCompetitors.projectId, projectId),
-                  orderBy: [asc(geoCompetitors.createdAt)],
-                })
-              ),
-              Effect.promise(() =>
-                tx.query.geoSettings.findFirst({
-                  columns: { competitors: true },
-                  where: eq(geoSettings.projectId, projectId),
-                })
-              ),
-            ],
-            { concurrency: "unbounded" }
+      db.transaction((tx) =>
+        Effect.runPromise(
+          reconcileCompetitorsInTransaction(
+            tx,
+            organizationId,
+            projectId,
+            merge,
+            limit
           )
-        );
-        const current = mergeLegacyCompetitors(
-          existing.map(toGeoCompetitor),
-          settingsRow?.competitors ?? []
-        );
-        const entries = merge(current);
-        const existingByName = new Map(
-          existing.map((row) => [competitorKey(row.name), row])
-        );
-
-        const resolved: Required<GeoCompetitorSeed>[] = [];
-        const seen = new Set<string>();
-        for (const entry of entries) {
-          const name = entry.name.trim();
-          const key = competitorKey(name);
-          if (name.length === 0 || seen.has(key)) {
-            continue;
-          }
-          seen.add(key);
-          const previous = existingByName.get(key);
-          resolved.push({
-            name,
-            domain: entry.domain ?? previous?.domain ?? null,
-            synonyms: entry.synonyms ?? previous?.synonyms ?? [],
-            kind: entry.kind ?? previous?.kind ?? "direct",
-            color: entry.color ?? previous?.color ?? null,
-          });
-        }
-
-        if (limit !== undefined && resolved.length > limit) {
-          return { status: "limit" };
-        }
-
-        const staleIds = existing.flatMap((row) =>
-          seen.has(competitorKey(row.name)) ? [] : [row.id]
-        );
-        if (staleIds.length > 0) {
-          await tx
-            .delete(geoCompetitors)
-            .where(inArray(geoCompetitors.id, staleIds));
-        }
-
-        if (resolved.length > 0) {
-          await tx
-            .insert(geoCompetitors)
-            .values(
-              resolved.map((entry) => ({
-                id: crypto.randomUUID(),
-                organizationId,
-                projectId,
-                name: entry.name,
-                domain: entry.domain,
-                synonyms: entry.synonyms,
-                kind: entry.kind,
-                color: entry.color,
-              }))
-            )
-            .onConflictDoUpdate({
-              target: [geoCompetitors.projectId, geoCompetitors.name],
-              set: {
-                domain: sql`excluded.domain`,
-                synonyms: sql`excluded.synonyms`,
-                kind: sql`excluded.kind`,
-                color: sql`excluded.color`,
-              },
-            });
-        }
-
-        await tx
-          .update(geoSettings)
-          .set({ competitors: resolved.map((entry) => entry.name) })
-          .where(eq(geoSettings.projectId, projectId));
-
-        const rows = await tx.query.geoCompetitors.findMany({
-          where: eq(geoCompetitors.projectId, projectId),
-          orderBy: [asc(geoCompetitors.createdAt)],
-        });
-        return { status: "ok", competitors: rows.map(toGeoCompetitor) };
-      })
+        )
+      )
     );
 
     if (outcome.status === "limit") {
@@ -1072,38 +1102,58 @@ export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
   return response;
 });
 
+const createPromptInTransaction = Effect.fn("geo.promptsCreateTx")(function* (
+  tx: DbTransaction,
+  organizationId: string,
+  projectId: string,
+  prompt: string,
+  id?: string
+) {
+  yield* lockGeoProject(tx, projectId);
+  const duplicate = yield* geoDb("prompt lookup failed", () =>
+    tx.query.geoPrompts.findFirst({
+      columns: { id: true },
+      where: and(
+        eq(geoPrompts.projectId, projectId),
+        sql`lower(trim(${geoPrompts.prompt})) = ${promptKey(prompt)}`
+      ),
+    })
+  );
+  if (duplicate) {
+    return null;
+  }
+  const rows = yield* geoDb("prompt create failed", () =>
+    tx
+      .insert(geoPrompts)
+      .values({
+        id: id ?? crypto.randomUUID(),
+        organizationId,
+        projectId,
+        prompt,
+      })
+      .returning()
+  );
+  return rows.at(0) ?? null;
+});
+
 export const createGeoPrompt = Effect.fn("geo.promptsCreate")(function* (
   input: GeoScopeInput,
   prompt: string,
   id?: string
 ) {
   const scope = yield* requireGeoProject(input);
-  const projectId = scope.projectId;
-  const key = promptKey(prompt);
   const row = yield* geoDb("prompt create failed", () =>
-    db.transaction(async (tx) => {
-      await lockGeoProject(tx, projectId);
-      const duplicate = await tx.query.geoPrompts.findFirst({
-        columns: { id: true },
-        where: and(
-          eq(geoPrompts.projectId, projectId),
-          sql`lower(trim(${geoPrompts.prompt})) = ${key}`
-        ),
-      });
-      if (duplicate) {
-        return null;
-      }
-      const rows = await tx
-        .insert(geoPrompts)
-        .values({
-          id: id ?? crypto.randomUUID(),
-          organizationId: scope.organizationId,
-          projectId,
+    db.transaction((tx) =>
+      Effect.runPromise(
+        createPromptInTransaction(
+          tx,
+          scope.organizationId,
+          scope.projectId,
           prompt,
-        })
-        .returning();
-      return rows.at(0) ?? null;
-    })
+          id
+        )
+      )
+    )
   );
 
   if (!row) {
@@ -1113,43 +1163,62 @@ export const createGeoPrompt = Effect.fn("geo.promptsCreate")(function* (
   return toTrackedPrompt(row);
 });
 
+const importPromptsInTransaction = Effect.fn("geo.promptsImportTx")(function* (
+  tx: DbTransaction,
+  organizationId: string,
+  projectId: string,
+  rows: readonly GeoPromptImportRow[]
+) {
+  yield* lockGeoProject(tx, projectId);
+  const existing = yield* geoDb("prompts lookup failed", () =>
+    tx.query.geoPrompts.findMany({
+      columns: { prompt: true },
+      where: eq(geoPrompts.projectId, projectId),
+    })
+  );
+  const seen = new Set(existing.map((row) => promptKey(row.prompt)));
+  const values = rows.flatMap((row) => {
+    const prompt = row.prompt.trim();
+    const key = promptKey(prompt);
+    if (seen.has(key)) {
+      return [];
+    }
+    seen.add(key);
+    return [
+      {
+        id: crypto.randomUUID(),
+        organizationId,
+        projectId,
+        prompt,
+        enabled: row.enabled ?? true,
+      },
+    ];
+  });
+
+  if (values.length > 0) {
+    yield* geoDb("prompts insert failed", () =>
+      tx.insert(geoPrompts).values(values)
+    );
+  }
+  return values.length;
+});
+
 export const importGeoPrompts = Effect.fn("geo.promptsImport")(function* (
   input: GeoScopeInput,
   rows: readonly GeoPromptImportRow[]
 ) {
   const scope = yield* requireGeoProject(input);
-  const projectId = scope.projectId;
   const imported = yield* geoDb("prompts import failed", () =>
-    db.transaction(async (tx) => {
-      await lockGeoProject(tx, projectId);
-      const existing = await tx.query.geoPrompts.findMany({
-        columns: { prompt: true },
-        where: eq(geoPrompts.projectId, projectId),
-      });
-      const seen = new Set(existing.map((row) => promptKey(row.prompt)));
-      const values = rows.flatMap((row) => {
-        const prompt = row.prompt.trim();
-        const key = promptKey(prompt);
-        if (seen.has(key)) {
-          return [];
-        }
-        seen.add(key);
-        return [
-          {
-            id: crypto.randomUUID(),
-            organizationId: scope.organizationId,
-            projectId,
-            prompt,
-            enabled: row.enabled ?? true,
-          },
-        ];
-      });
-
-      if (values.length > 0) {
-        await tx.insert(geoPrompts).values(values);
-      }
-      return values.length;
-    })
+    db.transaction((tx) =>
+      Effect.runPromise(
+        importPromptsInTransaction(
+          tx,
+          scope.organizationId,
+          scope.projectId,
+          rows
+        )
+      )
+    )
   );
 
   const result: GeoImportResult = {
