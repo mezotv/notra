@@ -4,17 +4,42 @@ const BYTE_ORDER_MARK = "﻿";
 const CANDIDATE_DELIMITERS = [",", ";", "\t"] as const;
 const QUOTE = '"';
 
-function firstLine(text: string): string {
-  const newlineIndex = text.search(/\r\n|\n|\r/);
-  return newlineIndex === -1 ? text : text.slice(0, newlineIndex);
+function headerSample(text: string): string {
+  let inQuotes = false;
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === QUOTE) {
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (!inQuotes && (char === "\n" || char === "\r")) {
+      return text.slice(0, index);
+    }
+  }
+  return text;
+}
+
+function countOutsideQuotes(sample: string, delimiter: string): number {
+  let count = 0;
+  let inQuotes = false;
+  for (const char of sample) {
+    if (char === QUOTE) {
+      inQuotes = !inQuotes;
+      continue;
+    }
+    if (!inQuotes && char === delimiter) {
+      count += 1;
+    }
+  }
+  return count;
 }
 
 function detectCsvDelimiter(text: string): string {
-  const sample = firstLine(text);
+  const sample = headerSample(text);
   let best: string = CANDIDATE_DELIMITERS[0];
   let bestCount = -1;
   for (const delimiter of CANDIDATE_DELIMITERS) {
-    const count = sample.split(delimiter).length - 1;
+    const count = countOutsideQuotes(sample, delimiter);
     if (count > bestCount) {
       best = delimiter;
       bestCount = count;

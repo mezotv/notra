@@ -4,8 +4,8 @@ import { badRequest, notFound, paymentRequired } from "@/lib/orpc/utils/errors";
 
 export function toGeoOrpcError(failure: GeoRouterError): Error {
   switch (failure._tag) {
-    case "GeoPromptCreateFailedError":
-      return badRequest("Failed to create prompt");
+    case "GeoPromptDuplicateError":
+      return badRequest("This prompt is already tracked");
     case "GeoPromptNotFoundError":
       return notFound("Prompt not found");
     case "GeoProjectNotFoundError":

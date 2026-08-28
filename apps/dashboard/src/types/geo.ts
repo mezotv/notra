@@ -1599,6 +1599,14 @@ export interface GeoCompetitorRow {
   updatedAt: Date;
 }
 
+export type GeoCompetitorMerge = (
+  current: GeoCompetitor[]
+) => readonly GeoCompetitorSeed[];
+
+export type GeoCompetitorReconcileOutcome =
+  | { status: "limit" }
+  | { status: "ok"; competitors: GeoCompetitor[] };
+
 export interface GeoCompetitorsResponse {
   competitors: GeoCompetitor[];
 }

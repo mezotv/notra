@@ -20,9 +20,11 @@ export class GeoDatabaseError extends Data.TaggedError("GeoDatabaseError")<{
   readonly cause: unknown;
 }> {}
 
-export class GeoPromptCreateFailedError extends Data.TaggedError(
-  "GeoPromptCreateFailedError"
-)<Record<string, never>> {}
+export class GeoPromptDuplicateError extends Data.TaggedError(
+  "GeoPromptDuplicateError"
+)<{
+  readonly prompt: string;
+}> {}
 
 export class GeoPromptNotFoundError extends Data.TaggedError(
   "GeoPromptNotFoundError"
@@ -146,7 +148,7 @@ export type GeoRouterError =
   | GeoDiscoveryError
   | GeoProjectCreateFailedError
   | GeoProjectNotFoundError
-  | GeoPromptCreateFailedError
+  | GeoPromptDuplicateError
   | GeoPromptNotFoundError
   | GeoSampleDataDisabledError
   | GeoScanStartError
