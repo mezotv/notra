@@ -3,7 +3,7 @@ import * as z from "zod";
 
 import { RESERVED_ORGANIZATION_SLUGS } from "@/constants/organization";
 
-export const organizationSlugSchema = z
+const organizationSlugSchema = z
   .string()
   .slugify()
   .min(3, "Organization slug must be at least 3 characters long")
@@ -16,7 +16,7 @@ export const organizationSlugSchema = z
     "This slug is reserved and cannot be used for an organization"
   );
 
-export const organizationNameSchema = z
+const organizationNameSchema = z
   .string()
   .min(2, "Organization name must be at least 2 characters")
   .max(100, "Organization name must be at most 100 characters");
@@ -24,4 +24,37 @@ export const organizationNameSchema = z
 export const createOrganizationSchema = z.object({
   name: organizationNameSchema,
   slug: organizationSlugSchema,
+});
+
+const ORGANIZATION_LOGO_MAX_LENGTH = 2048;
+const ORGANIZATION_SLUG_LOOKUP_MAX_LENGTH = 63;
+
+const organizationIdSchema = z.string().min(1);
+
+const organizationLogoSchema = z
+  .string()
+  .trim()
+  .url("Logo must be a valid URL")
+  .max(ORGANIZATION_LOGO_MAX_LENGTH, "Logo URL is too long");
+
+const trimmedOrganizationSlugSchema = z
+  .string()
+  .trim()
+  .pipe(organizationSlugSchema);
+
+export const createOrganizationInputSchema = z.object({
+  name: organizationNameSchema,
+  slug: trimmedOrganizationSlugSchema,
+  logo: organizationLogoSchema.optional(),
+  keepCurrentActiveOrganization: z.boolean().optional(),
+});
+
+export const setActiveOrganizationInputSchema = z.object({
+  organizationId: organizationIdSchema.optional(),
+  organizationSlug: z
+    .string()
+    .trim()
+    .min(1)
+    .max(ORGANIZATION_SLUG_LOOKUP_MAX_LENGTH)
+    .optional(),
 });

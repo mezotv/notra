@@ -12,9 +12,19 @@ import {
   SOCIAL_AUTH_STATE_MAX_AGE_SECONDS,
 } from "@/constants/social-auth";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
+import { startSocialSignInInputSchema } from "@/schemas/auth-actions";
 import { getClientIpFromHeaders, ratelimit } from "@/utils/ratelimit";
 
-export async function startSocialSignInAction(input: StartSocialSignInInput) {
+export async function startSocialSignInAction(
+  rawInput: StartSocialSignInInput
+) {
+  const parsed = startSocialSignInInputSchema.safeParse(rawInput);
+
+  if (!parsed.success) {
+    redirect("/login");
+  }
+
+  const input = parsed.data;
   const mappedProvider = SOCIAL_AUTH_PROVIDERS[input.provider];
 
   if (!mappedProvider) {

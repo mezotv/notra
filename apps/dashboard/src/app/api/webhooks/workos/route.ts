@@ -7,6 +7,7 @@ import {
   removeMembershipFromWebhook,
   upsertMembershipFromWebhook,
 } from "@/lib/auth/webhook-sync";
+import { workosWebhookPayloadSchema } from "@/schemas/workos-webhook";
 
 function handleMembershipEvent(event: WorkOSEvent) {
   switch (event.event) {
@@ -33,12 +34,26 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: "missing_signature" }, { status: 401 });
   }
 
+  const rawBody = await request.text();
+  let rawPayload: unknown;
+
+  try {
+    rawPayload = JSON.parse(rawBody);
+  } catch {
+    return Response.json({ error: "invalid_payload" }, { status: 400 });
+  }
+
+  const parsedPayload = workosWebhookPayloadSchema.safeParse(rawPayload);
+
+  if (!parsedPayload.success) {
+    return Response.json({ error: "invalid_payload" }, { status: 400 });
+  }
+
   let event: WorkOSEvent;
 
   try {
-    const payload = await request.json();
     event = await getWorkOS().webhooks.constructEvent({
-      payload,
+      payload: rawBody,
       sigHeader,
       secret,
     });

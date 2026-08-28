@@ -18,9 +18,11 @@ import { syncAuthenticatedUser } from "@/lib/auth/sync";
 import { readWorkOSError } from "@/lib/auth/workos-error";
 import { sendResetPasswordAction } from "@/lib/email/actions";
 import {
-  loginSchema,
-  signupSchema,
-  verificationCodeSchema,
+  forgotPasswordInputSchema,
+  resetPasswordInputSchema,
+  signInWithPasswordInputSchema,
+  signUpWithPasswordInputSchema,
+  verifyEmailCodeInputSchema,
 } from "@/schemas/auth/credentials";
 import type {
   ForgotPasswordInput,
@@ -135,9 +137,9 @@ const runAuthFlow = (
   Effect.runPromise(flow.pipe(Effect.catch(mapAuthFailure(email))));
 
 export async function signInWithPasswordAction(
-  input: SignInWithPasswordInput
+  rawInput: SignInWithPasswordInput
 ): Promise<AuthFlowResult> {
-  const parsed = loginSchema.safeParse(input);
+  const parsed = signInWithPasswordInputSchema.safeParse(rawInput);
 
   if (!parsed.success) {
     return {
@@ -161,15 +163,15 @@ export async function signInWithPasswordAction(
         })
       );
 
-      return yield* completeAuthentication(response, input.returnTo);
+      return yield* completeAuthentication(response, parsed.data.returnTo);
     })
   );
 }
 
 export async function signUpWithPasswordAction(
-  input: SignUpWithPasswordInput
+  rawInput: SignUpWithPasswordInput
 ): Promise<AuthFlowResult> {
-  const parsed = signupSchema.safeParse(input);
+  const parsed = signUpWithPasswordInputSchema.safeParse(rawInput);
 
   if (!parsed.success) {
     return {
@@ -182,7 +184,7 @@ export async function signUpWithPasswordAction(
     return { status: "error", message: RATE_LIMITED_MESSAGE };
   }
 
-  const [firstName, ...rest] = (input.name ?? "")
+  const [firstName, ...rest] = (parsed.data.name ?? "")
     .trim()
     .split(NAME_SPLIT_REGEX);
 
@@ -206,20 +208,20 @@ export async function signUpWithPasswordAction(
         })
       );
 
-      return yield* completeAuthentication(response, input.returnTo);
+      return yield* completeAuthentication(response, parsed.data.returnTo);
     })
   );
 }
 
 export async function verifyEmailCodeAction(
-  input: VerifyEmailCodeInput
+  rawInput: VerifyEmailCodeInput
 ): Promise<AuthFlowResult> {
-  const codeValidation = verificationCodeSchema.safeParse(input.code);
+  const parsed = verifyEmailCodeInputSchema.safeParse(rawInput);
 
-  if (!codeValidation.success) {
+  if (!parsed.success) {
     return {
       status: "error",
-      message: codeValidation.error.issues[0]?.message ?? "Invalid code",
+      message: parsed.error.issues[0]?.message ?? "Invalid code",
     };
   }
 
@@ -229,19 +231,27 @@ export async function verifyEmailCodeAction(
       const response = yield* authenticateResolvingOrgSelection(() =>
         getWorkOS().userManagement.authenticateWithEmailVerification({
           clientId: getClientId(),
-          code: codeValidation.data,
-          pendingAuthenticationToken: input.pendingAuthenticationToken,
+          code: parsed.data.code,
+          pendingAuthenticationToken: parsed.data.pendingAuthenticationToken,
         })
       );
 
-      return yield* completeAuthentication(response, input.returnTo);
+      return yield* completeAuthentication(response, parsed.data.returnTo);
     })
   );
 }
 
 export async function forgotPasswordAction(
-  input: ForgotPasswordInput
+  rawInput: ForgotPasswordInput
 ): Promise<{ sent: boolean }> {
+  const parsed = forgotPasswordInputSchema.safeParse(rawInput);
+
+  if (!parsed.success) {
+    return { sent: false };
+  }
+
+  const input = parsed.data;
+
   if (await isRateLimited(ratelimit.forgotPassword, input.email)) {
     return { sent: false };
   }
@@ -274,8 +284,19 @@ export async function forgotPasswordAction(
 }
 
 export async function resetPasswordAction(
-  input: ResetPasswordInput
+  rawInput: ResetPasswordInput
 ): Promise<AuthFlowResult> {
+  const parsed = resetPasswordInputSchema.safeParse(rawInput);
+
+  if (!parsed.success) {
+    return {
+      status: "error",
+      message: parsed.error.issues[0]?.message ?? "Invalid password reset",
+    };
+  }
+
+  const input = parsed.data;
+
   return Effect.runPromise(
     tryWorkOSAuth(() =>
       getWorkOS().userManagement.resetPassword({

@@ -10,8 +10,18 @@ import { sendResetPasswordAction } from "@/lib/email/actions";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import { requireSession } from "@/lib/organizations/guards";
 import { runOrganizationAction } from "@/lib/organizations/run-action";
+import { validateActionInput } from "@/lib/organizations/validate-input";
+import {
+  signOutOptionsSchema,
+  unlinkAccountInputSchema,
+  updateUserInputSchema,
+} from "@/schemas/auth/user-actions";
 import type { SessionUser } from "@/types/auth/session";
-import type { UpdateUserInput } from "@/types/auth/user-actions";
+import type {
+  SignOutActionOptions,
+  UnlinkAccountInput,
+  UpdateUserInput,
+} from "@/types/auth/user-actions";
 import type { AccountInfo, ActionResult } from "@/types/organizations/actions";
 
 const tryAction = <T>(run: () => Promise<T>, message: string) =>
@@ -20,16 +30,18 @@ const tryAction = <T>(run: () => Promise<T>, message: string) =>
     catch: (cause) => new OrganizationActionError({ message, cause }),
   });
 
-export async function signOutAction(options?: { returnTo?: string }) {
-  await signOut(options);
+export async function signOutAction(options?: SignOutActionOptions) {
+  const parsed = signOutOptionsSchema.safeParse(options);
+  await signOut(parsed.success ? parsed.data : undefined);
 }
 
 export async function updateUserAction(
-  input: UpdateUserInput
+  rawInput: UpdateUserInput
 ): Promise<ActionResult<SessionUser>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(updateUserInputSchema, rawInput);
 
       const updates: Partial<{
         name: string;
@@ -182,12 +194,16 @@ export async function listAccountsAction(): Promise<
   );
 }
 
-export async function unlinkAccountAction(input: {
-  providerId: string;
-}): Promise<ActionResult<{ removed: boolean }>> {
+export async function unlinkAccountAction(
+  rawInput: UnlinkAccountInput
+): Promise<ActionResult<{ removed: boolean }>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        unlinkAccountInputSchema,
+        rawInput
+      );
 
       yield* tryAction(
         () =>

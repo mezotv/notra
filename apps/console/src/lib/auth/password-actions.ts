@@ -16,7 +16,10 @@ import { authenticateResolvingOrgSelection } from "@/lib/auth/org-selection";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
 import { ensureLocalUser } from "@/lib/auth/sync";
 import { readWorkOSError } from "@/lib/auth/workos-error";
-import { loginSchema, verificationCodeSchema } from "@/schemas/auth";
+import {
+  signInWithPasswordInputSchema,
+  verifyEmailCodeInputSchema,
+} from "@/schemas/auth-actions";
 import { getClientIpFromHeaders, ratelimit } from "@/utils/ratelimit";
 
 const VERIFICATION_REQUIRED_CODE = "email_verification_required";
@@ -96,9 +99,9 @@ const runAuthFlow = (
   Effect.runPromise(flow.pipe(Effect.catch(mapAuthFailure(email))));
 
 export async function signInWithPasswordAction(
-  input: SignInWithPasswordInput
+  rawInput: SignInWithPasswordInput
 ): Promise<AuthFlowResult> {
-  const parsed = loginSchema.safeParse(input);
+  const parsed = signInWithPasswordInputSchema.safeParse(rawInput);
 
   if (!parsed.success) {
     return {
@@ -122,20 +125,20 @@ export async function signInWithPasswordAction(
         })
       );
 
-      return yield* completeAuthentication(response, input.returnTo);
+      return yield* completeAuthentication(response, parsed.data.returnTo);
     })
   );
 }
 
 export async function verifyEmailCodeAction(
-  input: VerifyEmailCodeInput
+  rawInput: VerifyEmailCodeInput
 ): Promise<AuthFlowResult> {
-  const codeValidation = verificationCodeSchema.safeParse(input.code);
+  const parsed = verifyEmailCodeInputSchema.safeParse(rawInput);
 
-  if (!codeValidation.success) {
+  if (!parsed.success) {
     return {
       status: "error",
-      message: codeValidation.error.issues[0]?.message ?? "Invalid code",
+      message: parsed.error.issues[0]?.message ?? "Invalid code",
     };
   }
 
@@ -145,12 +148,12 @@ export async function verifyEmailCodeAction(
       const response = yield* authenticateResolvingOrgSelection(() =>
         getWorkOS().userManagement.authenticateWithEmailVerification({
           clientId: getClientId(),
-          code: codeValidation.data,
-          pendingAuthenticationToken: input.pendingAuthenticationToken,
+          code: parsed.data.code,
+          pendingAuthenticationToken: parsed.data.pendingAuthenticationToken,
         })
       );
 
-      return yield* completeAuthentication(response, input.returnTo);
+      return yield* completeAuthentication(response, parsed.data.returnTo);
     })
   );
 }
