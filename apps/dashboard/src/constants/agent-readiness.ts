@@ -1,5 +1,8 @@
 /** Public Is Agentic API (Vercel Labs); no API key required. */
 export const AGENT_READINESS_API_ORIGIN = "https://is-agentic.com";
+export const AGENT_READINESS_FLAG_KEY = "agent-readiness";
+export const AGENT_READINESS_UNAVAILABLE_DESCRIPTION =
+  "Agent Readiness is not available for this organization.";
 /** Scans usually finish in 1-3 minutes; abort well past that. */
 export const AGENT_READINESS_SCAN_TIMEOUT_MS = 8 * 60 * 1000;
 /** A running row older than this is treated as stuck and can be replaced. */

@@ -44,6 +44,7 @@ import {
   loadAgentReadiness,
   startAgentReadinessScan,
 } from "@/lib/geo/agent-readiness";
+import { assertAgentReadinessEnabled } from "@/lib/geo/agent-readiness-access";
 import { discoverGeoWebsite, generateGeoFromWebsite } from "@/lib/geo/discover";
 import type { GeoRouterError } from "@/lib/geo/errors";
 import { loadGeoContentGaps } from "@/lib/geo/gaps";
@@ -410,6 +411,7 @@ export const geoRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
+      await assertAgentReadinessEnabled(input.organizationId);
       const scope = await runOrpcEffect(
         requireGeoProject(input),
         toGeoOrpcError
@@ -427,6 +429,7 @@ export const geoRouter = {
           organizationId: input.organizationId,
           user: context.user,
         });
+        await assertAgentReadinessEnabled(input.organizationId);
         const scope = await runOrpcEffect(
           requireGeoProject(input),
           toGeoOrpcError

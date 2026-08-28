@@ -16,6 +16,10 @@ const RESULT_ORDER: Record<AgentReadinessIssue["result"], number> = {
   partial: 1,
 };
 
+export function isAgentReadinessVisibleInNav(flagOn: boolean): boolean {
+  return flagOn || process.env.NODE_ENV === "development";
+}
+
 export function canReuseAgentReadinessScan(
   running: { createdAt: Date; targetUrl: string },
   targetUrl: string,

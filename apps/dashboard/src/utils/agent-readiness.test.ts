@@ -2,11 +2,14 @@ import { describe, expect, test } from "bun:test";
 
 import type { AgentReadinessIssue } from "@notra/db/types/agent-readiness";
 
+import { GEO_AGENT_READINESS_NAV_LINK } from "@/constants/geo";
+
 import {
   buildAgentReadinessAllFixesPrompt,
   canReuseAgentReadinessScan,
   groupAgentReadinessIssues,
 } from "./agent-readiness";
+import { resolveNavItems } from "./nav";
 
 const NOW = new Date("2026-08-28T12:00:00.000Z").getTime();
 
@@ -67,6 +70,18 @@ describe("canReuseAgentReadinessScan", () => {
         NOW
       )
     ).toBe(false);
+  });
+});
+
+describe("agent readiness navigation", () => {
+  test("hides the navigation item when the feature flag is off", () => {
+    expect(
+      resolveNavItems([GEO_AGENT_READINESS_NAV_LINK], {
+        agentReadiness: false,
+        analytics: true,
+        iris: true,
+      })
+    ).toEqual([]);
   });
 });
 
