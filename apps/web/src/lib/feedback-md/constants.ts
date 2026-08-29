@@ -211,7 +211,7 @@ export const FEEDBACK_MD_SIBLINGS: FeedbackMdSibling[] = [
 
 const FEEDBACK_MD_PAGE_URL = `${SITE_URL}${FEEDBACK_MD_PAGE_PATH}`;
 
-export const FEEDBACK_MD_SETUP_PROMPT = `Read ${FEEDBACK_MD_PAGE_URL} and add a feedback.md to this site at /feedback.md, following the template on that page. Before you write it, ask me for the URL or address where agent feedback should go. Serve the file as text/markdown and link it from llms.txt.`;
+export const FEEDBACK_MD_SETUP_PROMPT = `Read ${FEEDBACK_MD_PAGE_URL} and add a feedback.md to this site at /feedback.md, following the template on that page. Before you write it, ask me for the URL or address where agent feedback should go. Serve the file as text/markdown. Then add it to the site's llms.txt so agents can find it, creating llms.txt if it does not exist yet.`;
 
 export const FEEDBACK_MD_QUESTIONS: FeedbackMdQuestion[] = [
   {
