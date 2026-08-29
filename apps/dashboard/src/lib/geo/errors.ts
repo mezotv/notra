@@ -1,3 +1,4 @@
+import type { AgentTokenUsage } from "@notra/ai/types/agents";
 import type { FinishReason, LanguageModelUsage } from "ai";
 import { Data } from "effect";
 
@@ -114,6 +115,12 @@ export class GeoSequenceNotFoundError extends Data.TaggedError(
 export class GeoSequenceCreateFailedError extends Data.TaggedError(
   "GeoSequenceCreateFailedError"
 )<Record<string, never>> {}
+
+export class GeoSequenceEmptyError extends Data.TaggedError(
+  "GeoSequenceEmptyError"
+)<{
+  readonly usage: AgentTokenUsage;
+}> {}
 
 export class GeoSequenceRunUnavailableError extends Data.TaggedError(
   "GeoSequenceRunUnavailableError"

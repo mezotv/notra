@@ -49,6 +49,7 @@ import {
   GeoEmptyAnswerError,
   GeoJudgeError,
   GeoScanError,
+  GeoSequenceEmptyError,
   GeoSequenceNotFoundError,
   GeoSequenceRunError,
   GeoSequenceRunUnavailableError,
@@ -1179,12 +1180,12 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
           (outcome): outcome is GeoSequenceCheckOutcome => outcome !== null
         );
         const rows = succeeded.flatMap((outcome) => outcome.rows);
+        const usage = succeeded.reduce(
+          (total, outcome) => addTokenUsage(total, outcome.usage),
+          EMPTY_TOKEN_USAGE
+        );
         if (rows.length === 0) {
-          return yield* Effect.fail(
-            new GeoSequenceRunError({
-              message: "Engines failed to answer this conversation. Try again.",
-            })
-          );
+          return yield* Effect.fail(new GeoSequenceEmptyError({ usage }));
         }
         yield* Effect.tryPromise({
           try: () => insertGeoMentionChecks(rows),
@@ -1194,34 +1195,16 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
               cause,
             }),
         });
-        const usage = succeeded.reduce(
-          (total, outcome) => addTokenUsage(total, outcome.usage),
-          EMPTY_TOKEN_USAGE
-        );
         return { rows, usage };
       })
   );
 
-  const result = yield* play.pipe(
-    Effect.tapError(() =>
-      Effect.promise(() =>
-        finalizeContentBilling({
-          reservation: gate,
-          action: "release",
-          logPrefix: "GeoSequenceRun",
-        }).catch((releaseError) => {
-          logGeoBillingFailure("release", projectId, runId, releaseError);
-        })
-      )
-    )
-  );
-
-  yield* Effect.promise(() =>
+  const confirmBilling = (units: number, usage: AgentTokenUsage) =>
     finalizeContentBilling({
       reservation: gate,
       action: "confirm",
-      units: result.rows.length,
-      usage: result.usage,
+      units,
+      usage,
       fallbackModelId: groundedEngines[0]?.grounded.model ?? GEO_JUDGE_MODEL,
       properties: {
         source: "geo_sequence_run",
@@ -1232,8 +1215,32 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
       logPrefix: "GeoSequenceRun",
     }).catch((confirmError) => {
       logGeoBillingFailure("confirm", projectId, runId, confirmError);
-    })
+    });
+
+  const result = yield* play.pipe(
+    Effect.tapError((error) =>
+      Effect.promise(() =>
+        error._tag === "GeoSequenceEmptyError"
+          ? confirmBilling(0, error.usage)
+          : finalizeContentBilling({
+              reservation: gate,
+              action: "release",
+              logPrefix: "GeoSequenceRun",
+            }).catch((releaseError) => {
+              logGeoBillingFailure("release", projectId, runId, releaseError);
+            })
+      )
+    ),
+    Effect.catchTag("GeoSequenceEmptyError", () =>
+      Effect.fail(
+        new GeoSequenceRunError({
+          message: "Engines failed to answer this conversation. Try again.",
+        })
+      )
+    )
   );
+
+  yield* Effect.promise(() => confirmBilling(result.rows.length, result.usage));
 
   const response: GeoSequenceRunResponse = {
     checks: result.rows.length,
