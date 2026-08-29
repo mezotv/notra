@@ -8,6 +8,7 @@ const AGENT_DISCOVERY_PATHS = {
   apiCatalog: "/.well-known/api-catalog",
   authMarkdown: "/auth.md",
   botAuthDirectory: "/.well-known/http-message-signatures-directory",
+  feedbackMarkdown: "/feedback.md",
   mcp: "/.well-known/mcp",
   oauthProtectedResource: "/.well-known/oauth-protected-resource",
   schemaMap: "/schema-map.xml",
@@ -114,6 +115,11 @@ export function buildAgentJson() {
     },
     capabilities: NOTRA_CAPABILITIES,
     auth: buildAgentAuthMetadata(),
+    feedback: {
+      markdown: siteUrl(AGENT_DISCOVERY_PATHS.feedbackMarkdown),
+      endpoint: apiUrl("/v1/feedback"),
+      docs: `${DOCS_URL}/api/agent-feedback`,
+    },
     contact: {
       email: NOTRA_CONTACT_EMAIL,
       support: NOTRA_SUPPORT_EMAIL,

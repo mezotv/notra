@@ -5,6 +5,7 @@ import type { CollectionEntry } from "@dualmark/converters";
 import type { CollectionConfig, StaticPageConfig } from "@dualmark/nextjs";
 
 import { changelog } from "@/../.source/server";
+import { buildFeedbackMdPageMarkdown } from "@/lib/feedback-md/markdown";
 import { listNotraBlogPosts } from "@/utils/blog";
 import {
   getChangelogPostHref,
@@ -274,6 +275,7 @@ export function buildDualmarkStaticPages(): StaticPageConfig[] {
     { pattern: "/features", render: () => buildFeaturesMarkdown() },
     { pattern: "/pricing", render: () => buildPricingMarkdown() },
     { pattern: "/brand", render: () => buildBrandMarkdown() },
+    { pattern: "/feedback-md", render: () => buildFeedbackMdPageMarkdown() },
     { pattern: "/blog", render: () => buildBlogIndexMarkdown() },
     { pattern: "/changelog", render: () => buildChangelogHubMarkdown() },
     {

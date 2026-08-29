@@ -22,6 +22,7 @@ const dualmarkProxy = createDualmarkMiddleware({
       "/demo.webp",
       "/design.md",
       "/favicon.ico",
+      "/feedback.md",
       "/icon.svg",
       "/llms-full.txt",
       "/llms.txt",
