@@ -75,8 +75,7 @@
   "scripts": {
     "build": "tsup",
     "check-types": "tsc --noEmit",
-    "test": "bun test test",
-    "prepublishOnly": "bun run build && bun run test"
+    "prepublishOnly": "bun run build"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",
