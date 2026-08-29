@@ -5,11 +5,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import type { ComponentProps } from "react";
 
-const CTA_PRIMARY =
-  "corner-squircle rounded-[1rem] shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.08)_inset] hover:bg-primary/90 supports-[corner-shape:round]:rounded-[1.25rem]";
-
-const CTA_OUTLINE =
-  "corner-squircle rounded-[1rem] shadow-[0px_0px_0px_2.5px_rgba(0,0,0,0.05)_inset] supports-[corner-shape:round]:rounded-[1.25rem] dark:shadow-[0px_0px_0px_2.5px_rgba(255,255,255,0.05)_inset]";
+import { CTA_DESTRUCTIVE, CTA_OUTLINE, CTA_PRIMARY } from "@/constants/button";
 
 function isDefaultVariant(variant: ComponentProps<typeof UiButton>["variant"]) {
   return variant === undefined || variant === "default";
@@ -21,6 +17,9 @@ function ctaClass(variant: ComponentProps<typeof UiButton>["variant"]) {
   }
   if (variant === "outline") {
     return CTA_OUTLINE;
+  }
+  if (variant === "destructive") {
+    return CTA_DESTRUCTIVE;
   }
   return null;
 }
