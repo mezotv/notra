@@ -5,6 +5,7 @@ import { Effect, Exit } from "effect";
 
 import { geoDb, geoSkip } from "@/lib/geo/effect";
 import type { GeoDatabaseError } from "@/lib/geo/errors";
+import { describeGeoCause, geoLogError } from "@/lib/geo/log";
 
 const markGeoScanStarted = Effect.fn("geo.markScanStarted")(function* (
   projectId: string
@@ -49,10 +50,18 @@ export function withGeoScanStatus<A, E, R>(
   options?: GeoScanStatusOptions
 ): Effect.Effect<A, E, R> {
   const started = markGeoScanStarted(projectId).pipe(
-    geoSkip("scan start stamp failed")
+    geoSkip("scan start stamp failed", {
+      event: "geo.scan.stamp_failed",
+      projectId,
+      stamp: "started",
+    })
   );
   const finished = markGeoScanFinished(projectId).pipe(
-    geoSkip("scan finish stamp failed")
+    geoSkip("scan finish stamp failed", {
+      event: "geo.scan.stamp_failed",
+      projectId,
+      stamp: "finished",
+    })
   );
   const run = started.pipe(Effect.andThen(effect));
   if (options?.finishOn === "failure") {
@@ -108,12 +117,28 @@ export function withGeoScanRun<A, E, R>(
   const tracked = Effect.gen(function* () {
     const scanId = yield* createGeoScanRow(scope);
     return yield* run(scanId).pipe(
-      Effect.onExit((exit) => {
-        const status = Exit.isSuccess(exit) ? "completed" : "failed";
-        return finishGeoScanRow(scanId, status).pipe(
-          geoSkip("scan row finish failed")
-        );
-      })
+      Effect.onExit((exit) =>
+        Effect.gen(function* () {
+          if (Exit.isFailure(exit)) {
+            yield* geoLogError({
+              event: "geo.scan.failed",
+              organizationId: scope.organizationId,
+              projectId: scope.projectId,
+              scanId,
+              ...describeGeoCause(exit.cause),
+            });
+          }
+          const status = Exit.isSuccess(exit) ? "completed" : "failed";
+          yield* finishGeoScanRow(scanId, status).pipe(
+            geoSkip("scan row finish failed", {
+              event: "geo.scan.stamp_failed",
+              projectId: scope.projectId,
+              scanId,
+              stamp: status,
+            })
+          );
+        })
+      )
     );
   });
   return withGeoScanStatus(scope.projectId, tracked);

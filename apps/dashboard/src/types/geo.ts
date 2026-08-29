@@ -1,12 +1,22 @@
 import type { AgentTokenUsage } from "@notra/ai/types/agents";
+import type { GeoLogEventName } from "@notra/ai/types/evlog";
 import type {
   GeoContentBrief,
   GeoContentSubtype,
 } from "@notra/ai/types/geo-writer";
-import type { GeoCheckGrounding } from "@notra/db/types/geo-checks";
+import type {
+  GeoCheckGrounding,
+  GeoCheckSourceItem,
+  GeoCheckWrite,
+} from "@notra/db/types/geo-checks";
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 import type { GeoRequestPayload } from "@usenotra/geo";
-import type { LanguageModel, ToolSet } from "ai";
+import type {
+  FinishReason,
+  LanguageModel,
+  LanguageModelUsage,
+  ToolSet,
+} from "ai";
 import type { ReactNode } from "react";
 
 import type { TableColumn } from "@/components/motion/table";
@@ -196,6 +206,55 @@ export interface GeoGenerateTrace {
 export interface GeoEngineAnswer {
   text: string;
   grounding: GeoCheckGrounding;
+  finishReason: FinishReason | null;
+  usage?: LanguageModelUsage;
+}
+
+export interface GeoGroundedAnswer extends GeoEngineAnswer {
+  sources: GeoCheckSourceItem[];
+  usage: LanguageModelUsage;
+}
+
+export interface GeoCheckOutcome {
+  row: GeoCheckWrite;
+  usage: AgentTokenUsage;
+}
+
+export interface GeoSequenceCheckOutcome {
+  rows: GeoCheckWrite[];
+  usage: AgentTokenUsage;
+}
+
+export type GeoCheckFailureReason =
+  | "empty_answer"
+  | "engine_error"
+  | "judge_error"
+  | "translation_error";
+
+export type GeoScanSkipReason =
+  | "billing"
+  | "zdr"
+  | "disabled"
+  | "superseded"
+  | "already_running";
+
+export interface GeoErrorFields {
+  errorName: string;
+  errorMessage: string;
+  causeName?: string;
+  causeMessage?: string;
+  finishReason?: FinishReason | null;
+  usage?: LanguageModelUsage;
+}
+
+export interface GeoSkipFields extends Record<string, unknown> {
+  event?: GeoLogEventName;
+}
+
+export interface GeoEngineAttemptSummary {
+  engine: string;
+  attempted: number;
+  failed: number;
 }
 
 export interface GeoTimeseriesResponse {

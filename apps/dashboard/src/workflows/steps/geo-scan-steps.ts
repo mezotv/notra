@@ -1,3 +1,4 @@
+import { flushGeoLog } from "@notra/ai/evlog";
 import { Effect } from "effect";
 
 import { runGeoScan } from "@/lib/geo/scan";
@@ -8,5 +9,9 @@ export async function runGeoScanStep(
   projectId?: string
 ): Promise<GeoScanResult> {
   "use step";
-  return await Effect.runPromise(runGeoScan(organizationId, projectId));
+  try {
+    return await Effect.runPromise(runGeoScan(organizationId, projectId));
+  } finally {
+    await flushGeoLog();
+  }
 }

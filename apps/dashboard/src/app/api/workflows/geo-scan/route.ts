@@ -4,6 +4,7 @@ import { geoSettings } from "@notra/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { flattenError } from "zod";
 
+import { logGeoScanSkipped } from "@/lib/geo/log";
 import { syncGeoScanSchedule } from "@/lib/geo/schedule";
 import { verifyQstashSignature } from "@/lib/workflows/qstash-verify";
 import { startGeoScanRun } from "@/lib/workflows/start";
@@ -53,9 +54,20 @@ export async function POST(request: Request) {
     orderBy: [asc(geoSettings.createdAt)],
   });
   if (!settings || !settings.enabled) {
+    await logGeoScanSkipped("disabled", {
+      organizationId: parsed.data.organizationId,
+      projectId: settings?.projectId ?? parsed.data.projectId ?? null,
+      messageId,
+    });
     return Response.json({ status: "skipped", reason: "disabled" });
   }
   if (settings.qstashMessageId !== messageId) {
+    await logGeoScanSkipped("superseded", {
+      organizationId: settings.organizationId,
+      projectId: settings.projectId,
+      messageId,
+      scheduledMessageId: settings.qstashMessageId,
+    });
     return Response.json({ status: "skipped", reason: "superseded" });
   }
 
@@ -86,10 +98,22 @@ export async function POST(request: Request) {
     } catch (error) {
       console.warn("[GEO] Failed to cancel superseded next scan:", error);
     }
+    await logGeoScanSkipped("superseded", {
+      organizationId: settings.organizationId,
+      projectId: settings.projectId,
+      messageId,
+      claimLost: true,
+    });
     return Response.json({ status: "skipped", reason: "superseded" });
   }
 
   if (isGeoScanRunning(settings.scanStartedAt, settings.lastScanAt)) {
+    await logGeoScanSkipped("already_running", {
+      organizationId: settings.organizationId,
+      projectId: settings.projectId,
+      messageId,
+      scanStartedAt: settings.scanStartedAt,
+    });
     return Response.json({ status: "skipped", reason: "already_running" });
   }
 

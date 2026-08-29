@@ -1,7 +1,32 @@
+import type { FinishReason, LanguageModelUsage } from "ai";
 import { Data } from "effect";
 
 export class GeoScanError extends Data.TaggedError("GeoScanError")<{
   readonly message: string;
+  readonly cause?: unknown;
+}> {}
+
+export class GeoEmptyAnswerError extends Data.TaggedError(
+  "GeoEmptyAnswerError"
+)<{
+  readonly message: string;
+  readonly engine: string;
+  readonly promptId: string;
+  readonly language: string;
+  readonly finishReason: FinishReason | null;
+  readonly usage?: LanguageModelUsage;
+}> {}
+
+export class GeoJudgeError extends Data.TaggedError("GeoJudgeError")<{
+  readonly message: string;
+  readonly cause: unknown;
+}> {}
+
+export class GeoTranslationError extends Data.TaggedError(
+  "GeoTranslationError"
+)<{
+  readonly message: string;
+  readonly language: string;
   readonly cause?: unknown;
 }> {}
 
