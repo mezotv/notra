@@ -41,7 +41,7 @@ function feedbackHeaders(
   const headers: Record<string, string> = {
     "content-type": "application/json",
   };
-  if (options.token) {
+  if (!options.url && options.token) {
     headers.authorization = `Bearer ${options.token}`;
   }
   return headers;

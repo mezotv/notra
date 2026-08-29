@@ -64,6 +64,26 @@ describe("submitFeedback", () => {
     expect(headers.authorization).toBe("Bearer nfb_org.sig");
   });
 
+  test("never sends the legacy token to a caller-provided url", async () => {
+    let captured: { init?: RequestInit } | null = null;
+    await submitFeedback(
+      { message: "hello" },
+      {
+        url: "https://api.example.com/v1/feedback/acme",
+        token: "nfb_org.sig",
+        fetch: (_url, init) => {
+          captured = { init };
+          return Promise.resolve(
+            jsonResponse({ feedback: { id: "fb_1" }, deduplicated: false })
+          );
+        },
+      }
+    );
+
+    const headers = captured?.init?.headers as Record<string, string>;
+    expect(headers.authorization).toBeUndefined();
+  });
+
   test("rejects when neither url nor token is provided", async () => {
     await expect(
       submitFeedback(
