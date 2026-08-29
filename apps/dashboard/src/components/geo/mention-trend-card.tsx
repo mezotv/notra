@@ -183,6 +183,7 @@ export function MentionTrendCard({
             activeKeys.has(entry.key) ? (
               <EChartsAreaChart.Area
                 dataKey={entry.key}
+                connectNulls
                 enableBufferLine={markIncompleteTail}
                 gapMissing
                 key={entry.key}
