@@ -340,7 +340,7 @@ export function buildMentionTrendRows(
           .slice(0, 10)
       : firstDay;
   const days =
-    chartFirstDay && lastDay
+    isFirstScan && chartFirstDay && lastDay
       ? listDaysThrough(chartFirstDay, lastDay)
       : knownDays;
   const rows = days.map((day) => {

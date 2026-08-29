@@ -1734,7 +1734,7 @@ function areaPointValue(
   key: string,
   gapMissing: boolean
 ): number | null {
-  if (gapMissing && !(key in row)) return null;
+  if (gapMissing && (!(key in row) || row[key] === null)) return null;
   return Number(row[key]) || 0;
 }
 

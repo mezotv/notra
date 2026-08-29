@@ -505,6 +505,13 @@
       "when": 1787898950006,
       "tag": "0071_remarkable_kronos",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1788009529729,
+      "tag": "0072_tidy_thunderbird",
+      "breakpoints": true
     }
   ]
 }

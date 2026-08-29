@@ -1,0 +1,1 @@
+ALTER TABLE "geo_settings" ALTER COLUMN "scan_interval_hours" SET DEFAULT 24;
