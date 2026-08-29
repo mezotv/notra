@@ -190,7 +190,7 @@
         "@upstash/ratelimit": "^2.0.8",
         "@upstash/realtime": "^1.0.3",
         "@upstash/redis": "^1.35.8",
-        "@usenotra/geo": "workspace:*",
+        "@usenotra/geo": "npm:@usenotra/geo@^0.3.0",
         "@vercel/oidc": "^3.8.0",
         "@vercel/otel": "^2.1.2",
         "@workos-inc/authkit-nextjs": "^4.3.1",
@@ -312,7 +312,7 @@
         "@upstash/ratelimit": "^2.0.8",
         "@upstash/redis": "^1.35.8",
         "@usemarble/sdk": "^1.2.1",
-        "@usenotra/geo": "workspace:*",
+        "@usenotra/geo": "npm:@usenotra/geo@^0.3.0",
         "dompurify": "^3.4.12",
         "effect": "4.0.0-beta.93",
         "fumadocs-core": "^16.6.17",
@@ -430,7 +430,7 @@
         "zod": "^4.3.4",
       },
       "devDependencies": {
-        "@notra/typescript-config": "*",
+        "@notra/typescript-config": "workspace:*",
         "@types/node": "^22.15.3",
         "drizzle-kit": "^0.31.8",
         "effect": "4.0.0-beta.93",
@@ -552,7 +552,7 @@
         "use-stick-to-bottom": "^1.1.1",
       },
       "devDependencies": {
-        "@notra/typescript-config": "*",
+        "@notra/typescript-config": "workspace:*",
         "@tailwindcss/postcss": "^4",
         "@types/node": "^22.15.3",
         "@types/react": "^19.2.18",
@@ -5579,6 +5579,8 @@
 
     "dashboard/@types/node": ["@types/node@20.19.43", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA=="],
 
+    "dashboard/@usenotra/geo": ["@usenotra/geo@0.3.0", "", { "peerDependencies": { "zod": "^4.0.0" }, "optionalPeers": ["zod"] }, "sha512-8l4NKUXwtdoAqP8+ZfB95yjpjSpexBgewCsPYpUAUZ2wY/CFvIX8HHHl0GRh51+KsKe0+1deJdmZsTEqi4Qxjg=="],
+
     "dashboard/ai": ["ai@6.0.206", "", { "dependencies": { "@ai-sdk/gateway": "3.0.132", "@ai-sdk/provider": "3.0.10", "@ai-sdk/provider-utils": "4.0.29", "@opentelemetry/api": "^1.9.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-hVdB5PozMMxmkPBfbCxkFOn0eVeCMi/imkfPvk65cxL4O8oIrvjUxDUX8dGkdkWG1No+R7e7D9ti2DHO61Z4YQ=="],
 
     "dashboard/eve": ["eve@0.19.0", "", { "dependencies": { "nitro": "3.0.260610-beta" }, "peerDependencies": { "@opentelemetry/api": "^1.0.0", "ai": "^7.0.0", "braintrust": "^3.0.0", "just-bash": "^3.0.0", "microsandbox": "^0.5.0" }, "optionalPeers": ["@opentelemetry/api", "braintrust", "just-bash", "microsandbox"], "bin": { "eve": "./bin/eve.js" } }, "sha512-fZ4gyBUoJ8FWtA+vUz6Q/OWJDXPf++RYsbVL+NrEAn2VJCrZyiuDj4todsBJlDib3+sZtzHMsNSn06EP0j0++w=="],
@@ -5848,6 +5850,8 @@
     "untyped/citty": ["citty@0.1.6", "", { "dependencies": { "consola": "^3.2.3" } }, "sha512-tskPPKEs8D2KPafUypv2gxwJP8h/OaJmC82QQGGDQcHvXX43xF2VDACcJVmZ0EuSxkpO9Kc4MlrA3q0+FG58AQ=="],
 
     "web/@types/node": ["@types/node@20.19.43", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA=="],
+
+    "web/@usenotra/geo": ["@usenotra/geo@0.3.0", "", { "peerDependencies": { "zod": "^4.0.0" }, "optionalPeers": ["zod"] }, "sha512-8l4NKUXwtdoAqP8+ZfB95yjpjSpexBgewCsPYpUAUZ2wY/CFvIX8HHHl0GRh51+KsKe0+1deJdmZsTEqi4Qxjg=="],
 
     "web/shiki": ["shiki@4.2.0", "", { "dependencies": { "@shikijs/core": "4.2.0", "@shikijs/engine-javascript": "4.2.0", "@shikijs/engine-oniguruma": "4.2.0", "@shikijs/langs": "4.2.0", "@shikijs/themes": "4.2.0", "@shikijs/types": "4.2.0", "@shikijs/vscode-textmate": "^10.0.2", "@types/hast": "^3.0.4" } }, "sha512-hjNax6o/ylDy9lefQEaSDtzaT3iVNtZ3WmpQnbuQNoG4xvnSKf2kSKbihZVO4JRG1TTMejs7CmNRYlWgAL66pQ=="],
 
