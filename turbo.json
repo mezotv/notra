@@ -105,7 +105,6 @@
       "dependsOn": ["^transit"]
     },
     "build": {
-      "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".vercel/**"]
     },
@@ -119,13 +118,12 @@
       ]
     },
     "check-types": {
-      "dependsOn": ["transit", "^build"]
+      "dependsOn": ["transit"]
     },
     "knip": {
-      "dependsOn": ["transit", "^build"]
+      "dependsOn": ["transit"]
     },
     "dev": {
-      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },

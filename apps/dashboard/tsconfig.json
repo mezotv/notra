@@ -9,7 +9,9 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@usenotra/geo": ["../../packages/geo/src/index.ts"],
+      "@usenotra/geo/*": ["../../packages/geo/src/*.ts"]
     }
   },
   "include": [
