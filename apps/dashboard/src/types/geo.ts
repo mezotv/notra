@@ -216,13 +216,14 @@ export interface GeoGroundedAnswer extends GeoEngineAnswer {
 }
 
 export interface GeoCheckOutcome {
-  row: GeoCheckWrite;
+  row: GeoCheckWrite | null;
   usage: AgentTokenUsage;
 }
 
 export interface GeoSequenceCheckOutcome {
   rows: GeoCheckWrite[];
   usage: AgentTokenUsage;
+  droppedTurns: number;
 }
 
 export type GeoCheckFailureReason =
