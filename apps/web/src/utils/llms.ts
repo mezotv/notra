@@ -94,6 +94,7 @@ export async function buildLlmsText() {
     ),
     formatLink("API Resources", "/api/llms.txt", "OpenAPI, auth, and MCP"),
     formatLink("Agent Auth", "/auth.md", "Credential discovery and usage"),
+    formatLink("Agent Feedback", "/feedback.md", "Where agents send feedback"),
     formatLink(
       "Agent Discovery",
       "/.well-known/agent.json",

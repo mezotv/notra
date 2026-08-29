@@ -227,6 +227,12 @@ export const FEEDBACK_MD_QUESTIONS: FeedbackMdQuestion[] = [
       "llms.txt, auth.md and design.md all live at the root and agents already look there. Markdown under .well-known is unusual, and a file a person can open in a browser is the point. Serving a copy at /.well-known/feedback.md costs nothing if you want both.",
   },
   {
+    id: "discovery",
+    question: "How do agents find it?",
+    answer:
+      "The same way they find everything else on your site. Link it from llms.txt, add it to your agent card or api-catalog under .well-known and mention it in auth.md. Agents follow links they are given. They do not go looking for file names.",
+  },
+  {
     id: "no-endpoint",
     question: "What if I do not have a feedback endpoint?",
     answer:

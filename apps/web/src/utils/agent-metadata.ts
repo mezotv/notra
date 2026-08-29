@@ -117,7 +117,7 @@ export function buildAgentJson() {
     auth: buildAgentAuthMetadata(),
     feedback: {
       markdown: siteUrl(AGENT_DISCOVERY_PATHS.feedbackMarkdown),
-      endpoint: apiUrl("/v1/feedback"),
+      endpoint: apiUrl("/v1/feedback/notra"),
       docs: `${DOCS_URL}/api/agent-feedback`,
     },
     contact: {
