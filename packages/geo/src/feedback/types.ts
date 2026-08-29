@@ -19,7 +19,8 @@ export interface FeedbackInput {
 }
 
 export interface FeedbackClientOptions {
-  token: string;
+  url?: string;
+  token?: string;
   endpoint?: string;
   fetch?: typeof globalThis.fetch;
   timeoutMs?: number;

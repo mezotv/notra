@@ -5,12 +5,11 @@ import {
   AGENT_FEEDBACK_DOCS_URL,
   AGENT_FEEDBACK_PACKAGE,
   AGENT_FEEDBACK_PACKAGE_ENTRY,
-  AGENT_FEEDBACK_TOKEN_ENV,
 } from "@/constants/agent-feedback";
 import type {
   AgentFeedbackSetupResponse,
   AgentFeedbackSetupSnippets,
-  AgentFeedbackTokenResult,
+  AgentFeedbackSetupSource,
 } from "@/types/agent-feedback";
 
 const TRAILING_SLASHES_REGEX = /\/+$/;
@@ -22,29 +21,27 @@ function resolveApiBaseUrl(): string {
   return base.replace(TRAILING_SLASHES_REGEX, "");
 }
 
-function isApiBaseOverridden(): boolean {
-  return resolveApiBaseUrl() !== AGENT_FEEDBACK_API_BASE_URL;
+function buildAgentFeedbackUrl(organizationSlug: string): string {
+  return `${resolveApiBaseUrl()}${AGENT_FEEDBACK_API_PATH}/${organizationSlug}`;
 }
 
-function resolveApiUrl(): string {
-  return `${resolveApiBaseUrl()}${AGENT_FEEDBACK_API_PATH}`;
-}
-
-function buildPromptSnippet(result: AgentFeedbackTokenResult): string {
+function buildPromptSnippet(
+  source: AgentFeedbackSetupSource,
+  feedbackUrl: string
+): string {
   return [
-    `Add a feedback tool to our MCP server so AI agents using ${result.organizationName} can send bugs, feature requests, questions and praise to our Notra inbox.`,
+    `Add a feedback tool to our MCP server so AI agents using ${source.organizationName} can send bugs, feature requests, questions and praise to our Notra inbox.`,
     "",
     `1. Install ${AGENT_FEEDBACK_PACKAGE} with the project's package manager.`,
-    `2. Where the McpServer is created, call registerFeedbackTool(server, { token: process.env.${AGENT_FEEDBACK_TOKEN_ENV}!, productName: ${JSON.stringify(result.organizationName)}${isApiBaseOverridden() ? `, endpoint: ${JSON.stringify(resolveApiBaseUrl())}` : ""} }) from "${AGENT_FEEDBACK_PACKAGE_ENTRY}". It registers a submit_feedback tool that accepts message, title, kind (bug | feature | praise | question | other), sentiment (negative | neutral | positive) and contextUrl.`,
-    `3. Add ${AGENT_FEEDBACK_TOKEN_ENV}=${result.token} to the server's environment (.env.example, deployment config and secrets). It is a write-only token: it can only submit feedback.`,
-    `4. If the server does not use @modelcontextprotocol/sdk, register an equivalent tool that POSTs JSON to ${resolveApiUrl()} with header "Authorization: Bearer $${AGENT_FEEDBACK_TOKEN_ENV}" and a body of { message, title?, kind?, sentiment?, contextUrl?, agentClient? }. Only message is required; Notra fills in title, kind and sentiment when they are missing. The API answers 202 with the stored feedback.`,
-    "5. Mention the tool in the server instructions so agents know they can use it when a user hits a problem or asks for something we do not support.",
+    `2. Where the McpServer is created, call registerFeedbackTool(server, { url: ${JSON.stringify(feedbackUrl)}, productName: ${JSON.stringify(source.organizationName)} }) from "${AGENT_FEEDBACK_PACKAGE_ENTRY}". It registers a submit_feedback tool that accepts message, title, kind (bug | feature | praise | question | other), sentiment (negative | neutral | positive) and contextUrl. The URL is not a secret, so it can live in code.`,
+    `3. If the server does not use @modelcontextprotocol/sdk, register an equivalent tool that POSTs JSON to ${feedbackUrl} with a body of { message, title?, kind?, sentiment?, contextUrl?, agentClient? }. No authentication header is needed. Only message is required; Notra fills in title, kind and sentiment when they are missing. The API answers 202 with the stored feedback.`,
+    "4. Mention the tool in the server instructions so agents know they can use it when a user hits a problem or asks for something we do not support.",
     "",
     `Docs: ${AGENT_FEEDBACK_DOCS_URL}`,
   ].join("\n");
 }
 
-function buildMcpSnippet(productName: string): string {
+function buildMcpSnippet(productName: string, feedbackUrl: string): string {
   return [
     'import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";',
     `import { registerFeedbackTool } from "${AGENT_FEEDBACK_PACKAGE_ENTRY}";`,
@@ -55,16 +52,13 @@ function buildMcpSnippet(productName: string): string {
     "});",
     "",
     "registerFeedbackTool(server, {",
-    `  token: process.env.${AGENT_FEEDBACK_TOKEN_ENV}!,`,
+    `  url: ${JSON.stringify(feedbackUrl)},`,
     `  productName: ${JSON.stringify(productName)},`,
-    ...(isApiBaseOverridden()
-      ? [`  endpoint: ${JSON.stringify(resolveApiBaseUrl())},`]
-      : []),
     "});",
   ].join("\n");
 }
 
-function buildFetchSnippet(productName: string): string {
+function buildFetchSnippet(productName: string, feedbackUrl: string): string {
   return [
     'import * as z from "zod";',
     "",
@@ -80,12 +74,9 @@ function buildFetchSnippet(productName: string): string {
     "    },",
     "  },",
     "  async (input) => {",
-    `    const response = await fetch("${resolveApiUrl()}", {`,
+    `    const response = await fetch(${JSON.stringify(feedbackUrl)}, {`,
     '      method: "POST",',
-    "      headers: {",
-    '        "content-type": "application/json",',
-    `        authorization: \`Bearer \${process.env.${AGENT_FEEDBACK_TOKEN_ENV}}\`,`,
-    "      },",
+    '      headers: { "content-type": "application/json" },',
     "      body: JSON.stringify(input),",
     "    });",
     "    return {",
@@ -104,10 +95,9 @@ function buildFetchSnippet(productName: string): string {
   ].join("\n");
 }
 
-function buildCurlSnippet(token: string): string {
+function buildCurlSnippet(feedbackUrl: string): string {
   return [
-    `curl -X POST ${resolveApiUrl()} \\`,
-    `  -H "Authorization: Bearer ${token}" \\`,
+    `curl -X POST ${feedbackUrl} \\`,
     '  -H "Content-Type: application/json" \\',
     "  -d '{",
     '    "message": "The search tool times out when the query has quotes.",',
@@ -117,22 +107,23 @@ function buildCurlSnippet(token: string): string {
 }
 
 function buildAgentFeedbackSnippets(
-  result: AgentFeedbackTokenResult
+  source: AgentFeedbackSetupSource,
+  feedbackUrl: string
 ): AgentFeedbackSetupSnippets {
   return {
-    mcp: buildMcpSnippet(result.organizationName),
-    fetch: buildFetchSnippet(result.organizationName),
-    curl: buildCurlSnippet(result.token),
+    mcp: buildMcpSnippet(source.organizationName, feedbackUrl),
+    fetch: buildFetchSnippet(source.organizationName, feedbackUrl),
+    curl: buildCurlSnippet(feedbackUrl),
   };
 }
 
 export function buildAgentFeedbackSetup(
-  result: AgentFeedbackTokenResult
+  source: AgentFeedbackSetupSource
 ): AgentFeedbackSetupResponse {
+  const feedbackUrl = buildAgentFeedbackUrl(source.organizationSlug);
   return {
-    apiUrl: resolveApiUrl(),
-    token: result.token,
-    prompt: buildPromptSnippet(result),
-    snippets: buildAgentFeedbackSnippets(result),
+    apiUrl: feedbackUrl,
+    prompt: buildPromptSnippet(source, feedbackUrl),
+    snippets: buildAgentFeedbackSnippets(source, feedbackUrl),
   };
 }

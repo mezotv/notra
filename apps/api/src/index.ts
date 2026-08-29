@@ -30,6 +30,7 @@ import {
   SITE_URL,
 } from "./utils/agent-discovery";
 import { assertRequiredEnv } from "./utils/env";
+import { isPublicFeedbackIngestRequest } from "./utils/feedback";
 import { logError } from "./utils/logging";
 import { getRequiredOAuthScope } from "./utils/oauth-scopes";
 
@@ -195,10 +196,17 @@ const oauthScopeMiddleware = (c: Context, next: () => Promise<void>) => {
   })(c, next);
 };
 
-app.use("/v1/*", oauthScopeMiddleware);
+const unlessPublicFeedbackIngest =
+  (middleware: (c: Context, next: () => Promise<void>) => Promise<unknown>) =>
+  (c: Context, next: () => Promise<void>) =>
+    isPublicFeedbackIngestRequest(new URL(c.req.url).pathname, c.req.method)
+      ? next()
+      : middleware(c, next);
+
+app.use("/v1/*", unlessPublicFeedbackIngest(oauthScopeMiddleware));
 app.use("/v2/*", oauthScopeMiddleware);
 
-app.use("/v1/*", subscriptionMiddleware());
+app.use("/v1/*", unlessPublicFeedbackIngest(subscriptionMiddleware()));
 app.use("/v2/*", subscriptionMiddleware());
 
 app.get("/", (c) => {
@@ -311,7 +319,7 @@ app.doc31("/openapi.json", (_c) => ({
     {
       name: "Feedback",
       description:
-        "Collect and triage feedback submitted by AI agents. Submission accepts a write-only feedback token (nfb_...) or an API key with feedback.write; reading and triage require an API key.",
+        "Collect and triage feedback submitted by AI agents. Agents post to the organization's feedback URL without credentials; reading and triage require an API key with feedback.read or feedback.write.",
     },
   ],
 }));

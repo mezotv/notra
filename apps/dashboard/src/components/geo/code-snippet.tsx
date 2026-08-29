@@ -68,7 +68,8 @@ function CopyCodeButton({ code, label }: { code: string; label: string }) {
 function CommandSnippet({
   code,
   className,
-}: Pick<CodeSnippetProps, "code" | "className">) {
+  label = "command",
+}: Pick<CodeSnippetProps, "code" | "className" | "label">) {
   return (
     <div
       className={cn(
@@ -77,13 +78,13 @@ function CommandSnippet({
       )}
     >
       <input
-        aria-label="Package install command"
+        aria-label={label}
         className="text-foreground h-full min-w-0 flex-1 cursor-text appearance-none border-0 bg-transparent p-0 font-mono text-xs leading-none shadow-none outline-none"
         onFocus={(event) => event.currentTarget.select()}
         readOnly
         value={code}
       />
-      <CopyCodeButton code={code} label="command" />
+      <CopyCodeButton code={code} label={label} />
     </div>
   );
 }
@@ -94,9 +95,10 @@ export function CodeSnippet({
   filename,
   headerEnd,
   variant = "panel",
+  label,
 }: CodeSnippetProps) {
   if (variant === "command") {
-    return <CommandSnippet className={className} code={code} />;
+    return <CommandSnippet className={className} code={code} label={label} />;
   }
 
   return (

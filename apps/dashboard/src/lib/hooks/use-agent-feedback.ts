@@ -75,28 +75,3 @@ export function useAgentFeedbackSetup(organizationId: string) {
     retry: false,
   });
 }
-
-export function useAgentFeedbackTokenRotate(organizationId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (): Promise<AgentFeedbackSetupResponse> =>
-      dashboardOrpc.agentFeedback.rotateToken.call({ organizationId }),
-    onSuccess: async (setup) => {
-      queryClient.setQueryData(
-        dashboardOrpc.agentFeedback.setup.queryKey({
-          input: { organizationId },
-        }),
-        setup
-      );
-      await queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.agentFeedback.setup.queryKey({
-          input: { organizationId },
-        }),
-      });
-      toast.success("Feedback token rotated");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to rotate the token");
-    },
-  });
-}

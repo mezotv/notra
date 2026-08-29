@@ -1,4 +1,12 @@
 import { CHAT_GENERATION_RATE_LIMIT } from "@notra/ai/constants/rate-limits";
+import {
+  AGENT_FEEDBACK_RATE_LIMIT_IP_WINDOW_LABEL,
+  AGENT_FEEDBACK_RATE_LIMIT_IP_WINDOW_MINUTES,
+  AGENT_FEEDBACK_RATE_LIMIT_ORGANIZATION_WINDOW_LABEL,
+  AGENT_FEEDBACK_RATE_LIMIT_ORGANIZATION_WINDOW_MINUTES,
+  AGENT_FEEDBACK_RATE_LIMIT_PER_IP,
+  AGENT_FEEDBACK_RATE_LIMIT_PER_ORGANIZATION,
+} from "@notra/db/constants/agent-feedback";
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import type { Context } from "hono";
@@ -17,7 +25,14 @@ export const RATE_LIMITS = {
   integrationCreate: { requests: 20, window: "1 minute" },
   postUpdate: { requests: 60, window: "1 minute" },
   feedbackIngest: { requests: 120, window: "1 minute" },
-  feedbackIngestIp: { requests: 60, window: "1 minute" },
+  feedbackIngestIp: {
+    requests: AGENT_FEEDBACK_RATE_LIMIT_PER_IP,
+    window: AGENT_FEEDBACK_RATE_LIMIT_IP_WINDOW_LABEL,
+  },
+  feedbackIngestOrganization: {
+    requests: AGENT_FEEDBACK_RATE_LIMIT_PER_ORGANIZATION,
+    window: AGENT_FEEDBACK_RATE_LIMIT_ORGANIZATION_WINDOW_LABEL,
+  },
 } as const;
 
 export const ratelimit = {
@@ -72,7 +87,16 @@ export const ratelimit = {
     prefix: "ratelimit:api:feedback-ingest-ip",
     limiter: Ratelimit.slidingWindow(
       RATE_LIMITS.feedbackIngestIp.requests,
-      "1m"
+      `${AGENT_FEEDBACK_RATE_LIMIT_IP_WINDOW_MINUTES}m`
+    ),
+  }),
+  feedbackIngestOrganization: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:api:feedback-ingest-organization",
+    limiter: Ratelimit.slidingWindow(
+      RATE_LIMITS.feedbackIngestOrganization.requests,
+      `${AGENT_FEEDBACK_RATE_LIMIT_ORGANIZATION_WINDOW_MINUTES}m`
     ),
   }),
 };
@@ -126,12 +150,12 @@ function setRatelimitHeaders(
   return resetSeconds;
 }
 
-export async function enforceRatelimit(
+export async function enforceRatelimitForKey(
   c: Context,
   limiter: Ratelimit,
-  scope: RatelimitScope = "credential"
+  key: string
 ) {
-  const result = await limiter.limit(getRatelimitKey(c, scope));
+  const result = await limiter.limit(key);
   const resetSeconds = setRatelimitHeaders(c, result);
 
   if (result.success) {
@@ -149,4 +173,12 @@ export async function enforceRatelimit(
     },
     429
   );
+}
+
+export function enforceRatelimit(
+  c: Context,
+  limiter: Ratelimit,
+  scope: RatelimitScope = "credential"
+) {
+  return enforceRatelimitForKey(c, limiter, getRatelimitKey(c, scope));
 }

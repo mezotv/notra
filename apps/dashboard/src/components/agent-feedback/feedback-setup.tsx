@@ -6,8 +6,6 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { useState } from "react";
 
-import { AgentFeedbackRotateButton } from "@/components/agent-feedback/feedback-rotate-button";
-import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { Button } from "@/components/button";
 import { CodeSnippet, useCopyCode } from "@/components/geo/code-snippet";
 import { GeoPackageManagerIcon } from "@/components/geo/package-manager-icon";
@@ -15,7 +13,6 @@ import {
   AGENT_FEEDBACK_DEFAULT_SNIPPET_TAB,
   AGENT_FEEDBACK_SNIPPET_FILENAMES,
   AGENT_FEEDBACK_SNIPPET_TABS,
-  AGENT_FEEDBACK_TOKEN_ENV,
 } from "@/constants/agent-feedback";
 import {
   GEO_INGEST_DEFAULT_PACKAGE_MANAGER,
@@ -32,7 +29,6 @@ import { isGeoIngestPackageManager } from "@/utils/geo-ingest";
 
 export function AgentFeedbackSetup({
   setup,
-  organizationId,
   className,
   showPromptAction = true,
 }: AgentFeedbackSetupPanelProps) {
@@ -80,24 +76,19 @@ export function AgentFeedbackSetup({
         <CodeSnippet code={installCommand} variant="command" />
       </section>
       <section className="space-y-2">
-        <div className="flex items-center justify-between gap-2 pe-1">
-          <h3 className="text-sm font-medium">Set your token</h3>
-          <AgentFeedbackRotateButton
-            disabled={!setup}
-            organizationId={organizationId}
-          />
-        </div>
+        <h3 className="text-sm font-medium">Your feedback URL</h3>
         <p className="text-muted-foreground text-xs">
-          Add this as{" "}
-          <code className="bg-muted text-foreground rounded-sm px-1.5 py-0.5 font-mono text-[0.6875rem]">
-            {AGENT_FEEDBACK_TOKEN_ENV}
-          </code>{" "}
-          in your MCP server's environment. It can only submit feedback.
+          Agents POST JSON to this URL. It is unique to your organization and
+          needs no token or API key.
         </p>
         {setup ? (
-          <ApiKeyRevealField value={setup.token} />
+          <CodeSnippet
+            code={setup.apiUrl}
+            label="feedback URL"
+            variant="command"
+          />
         ) : (
-          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-9 w-full rounded-lg" />
         )}
       </section>
       <section className="space-y-2">

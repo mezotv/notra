@@ -55,14 +55,12 @@ export type AgentFeedbackSetupSnippets = Record<
 
 export interface AgentFeedbackSetupResponse {
   apiUrl: string;
-  token: string;
   prompt: string;
   snippets: AgentFeedbackSetupSnippets;
 }
 
 export interface AgentFeedbackSetupPanelProps {
   setup: AgentFeedbackSetupResponse | undefined;
-  organizationId: string;
   className?: string;
   showPromptAction?: boolean;
 }
@@ -71,14 +69,9 @@ export interface AgentFeedbackEmptyProps {
   organizationId: string;
 }
 
-export interface AgentFeedbackRotateButtonProps {
-  organizationId: string;
-  disabled?: boolean;
-}
-
-export interface AgentFeedbackTokenResult {
-  token: string;
+export interface AgentFeedbackSetupSource {
   organizationName: string;
+  organizationSlug: string;
 }
 
 export interface AgentFeedbackListInput {
@@ -145,11 +138,6 @@ export interface AgentFeedbackHandlerOptions<TInput> {
   input: TInput;
 }
 
-export interface AgentFeedbackOrganizationTokenState {
-  generation: number;
-  name: string;
-}
-
 export interface AgentFeedbackUpdateStatusInput {
   organizationId: string;
   feedbackId: string;
@@ -171,5 +159,3 @@ export interface AgentFeedbackDetailFieldProps {
 export interface AgentFeedbackSetupDialogProps {
   organizationId: string;
 }
-
-export type AgentFeedbackGenerationCacheMode = "fill" | "overwrite";

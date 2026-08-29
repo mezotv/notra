@@ -56,8 +56,6 @@ export const AGENT_FEEDBACK_SENTIMENT_LABELS: Record<
   positive: "Positive",
 };
 
-export const AGENT_FEEDBACK_TOKEN_ENV = "NOTRA_FEEDBACK_TOKEN";
-
 export const AGENT_FEEDBACK_DEFAULT_SNIPPET_TAB: AgentFeedbackSnippetKey =
   "mcp";
 
@@ -80,7 +78,6 @@ export const AGENT_FEEDBACK_SNIPPET_FILENAMES: Record<
   curl: "terminal",
 };
 
-export const AGENT_FEEDBACK_TOKEN_GENERATION_MISSING = "missing";
 export const AGENT_FEEDBACK_UNSPECIFIED_LABEL = "Unspecified";
 
 export const AGENT_FEEDBACK_STATUS_ICON_CLASS: Record<

@@ -18,10 +18,35 @@ function jsonResponse(body: unknown, status = 202): Response {
 }
 
 describe("submitFeedback", () => {
-  test("posts to /v1/feedback with the bearer token", async () => {
+  test("posts to the feedback URL without credentials", async () => {
     let captured: { url: string; init?: RequestInit } | null = null;
     const result = await submitFeedback(
       { message: "hello", kind: "bug" },
+      {
+        url: "https://api.example.com/v1/feedback/acme",
+        fetch: (url, init) => {
+          captured = { url: String(url), init };
+          return Promise.resolve(
+            jsonResponse({ feedback: { id: "fb_1" }, deduplicated: false })
+          );
+        },
+      }
+    );
+
+    expect(result).toEqual({ id: "fb_1", deduplicated: false });
+    expect(captured?.url).toBe("https://api.example.com/v1/feedback/acme");
+    const headers = captured?.init?.headers as Record<string, string>;
+    expect(headers.authorization).toBeUndefined();
+    expect(JSON.parse(String(captured?.init?.body))).toEqual({
+      message: "hello",
+      kind: "bug",
+    });
+  });
+
+  test("falls back to /v1/feedback with a bearer token", async () => {
+    let captured: { url: string; init?: RequestInit } | null = null;
+    await submitFeedback(
+      { message: "hello" },
       {
         token: "nfb_org.sig",
         endpoint: "https://api.example.com/",
@@ -34,14 +59,18 @@ describe("submitFeedback", () => {
       }
     );
 
-    expect(result).toEqual({ id: "fb_1", deduplicated: false });
     expect(captured?.url).toBe("https://api.example.com/v1/feedback");
     const headers = captured?.init?.headers as Record<string, string>;
     expect(headers.authorization).toBe("Bearer nfb_org.sig");
-    expect(JSON.parse(String(captured?.init?.body))).toEqual({
-      message: "hello",
-      kind: "bug",
-    });
+  });
+
+  test("rejects when neither url nor token is provided", async () => {
+    await expect(
+      submitFeedback(
+        { message: "hello" },
+        { fetch: () => Promise.reject(new Error("unreachable")) }
+      )
+    ).rejects.toThrow("Provide the feedback URL");
   });
 
   test("throws FeedbackSubmitError with the API message", async () => {
@@ -82,7 +111,7 @@ describe("registerFeedbackTool", () => {
     let sentBody: Record<string, unknown> = {};
 
     registerFeedbackTool(server, {
-      token: "nfb_org.sig",
+      url: "https://api.example.com/v1/feedback/acme",
       productName: "Acme",
       defaults: { agentClient: "acme-mcp" },
       fetch: (_url, init) => {

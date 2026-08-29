@@ -40,12 +40,12 @@ export function AgentFeedbackSetupDialog({
           <ResponsiveDialogHeader className="shrink-0 border-b p-4 pr-14">
             <ResponsiveDialogTitle>Feedback setup</ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
-              Add the feedback tool to another MCP server or update the token
-              you ship with it.
+              Add the feedback tool to another MCP server or copy your feedback
+              URL.
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            <AgentFeedbackSetup organizationId={organizationId} setup={setup} />
+            <AgentFeedbackSetup setup={setup} />
           </div>
           <ResponsiveDialogFooter className="bg-muted/50 mx-0 mb-0 shrink-0 rounded-b-xl border-t p-4">
             <ResponsiveDialogClose render={<Button variant="outline" />}>

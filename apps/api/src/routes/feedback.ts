@@ -1,15 +1,15 @@
 import { createRoute } from "@hono/zod-openapi";
-import { classifyAgentFeedback } from "@notra/ai/jobs/feedback-classifier";
 import { agentFeedback } from "@notra/db/schema";
 import { and, count, desc, eq } from "drizzle-orm";
-import { nanoid } from "nanoid";
 
 import {
   FEEDBACK_NOT_FOUND_ERROR,
+  FEEDBACK_ORGANIZATION_NOT_FOUND_ERROR,
   FEEDBACK_PROJECT_NOT_FOUND_ERROR,
 } from "../constants/feedback";
 import { ORGANIZATION_SCOPED_API_KEY_ERROR } from "../constants/skills";
 import {
+  feedbackOrganizationParamsSchema,
   feedbackParamsSchema,
   feedbackResponseSchema,
   listFeedbackQuerySchema,
@@ -20,47 +20,86 @@ import {
 } from "../schemas/feedback";
 import { getOrganizationId } from "../utils/auth";
 import {
-  getIngestProjectId,
-  projectExists,
+  findOrganizationIdBySlug,
   serializeFeedback,
+  submitFeedback,
 } from "../utils/feedback";
 import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";
-import { enforceRatelimit, RATE_LIMITS, ratelimit } from "../utils/ratelimit";
+import {
+  enforceRatelimit,
+  enforceRatelimitForKey,
+  RATE_LIMITS,
+  ratelimit,
+} from "../utils/ratelimit";
 
 export const feedbackRoutes = createOpenApiApp();
+
+const feedbackAcceptedResponse = {
+  description: "Feedback accepted",
+  content: {
+    "application/json": { schema: submitFeedbackResponseSchema },
+  },
+};
+
+const feedbackRateLimitedResponse = rateLimitResponse(
+  RATE_LIMITS.feedbackIngest.requests,
+  RATE_LIMITS.feedbackIngest.window,
+  "credential"
+);
+
+const publicFeedbackRateLimitedResponse = rateLimitResponse(
+  RATE_LIMITS.feedbackIngestIp.requests,
+  RATE_LIMITS.feedbackIngestIp.window,
+  `IP address, plus ${RATE_LIMITS.feedbackIngestOrganization.requests} requests per ${RATE_LIMITS.feedbackIngestOrganization.window} per organization`
+);
+
+const submitFeedbackBody = {
+  required: true,
+  content: {
+    "application/json": { schema: submitFeedbackRequestSchema },
+  },
+};
+
+const submitOrganizationFeedbackRoute = createRoute({
+  method: "post",
+  path: "/feedback/{organizationSlug}",
+  tags: ["Feedback"],
+  operationId: "submitOrganizationFeedback",
+  summary: "Submit feedback to an organization's feedback URL",
+  description:
+    "Record feedback from an AI agent or integration by posting to the organization's feedback URL, as shown on the Feedback page in the dashboard. No credentials are required. Limited per source IP and per organization.",
+  security: [],
+  request: {
+    params: feedbackOrganizationParamsSchema,
+    body: submitFeedbackBody,
+  },
+  responses: {
+    202: feedbackAcceptedResponse,
+    400: errorResponse("Invalid request body"),
+    404: errorResponse(FEEDBACK_ORGANIZATION_NOT_FOUND_ERROR),
+    429: publicFeedbackRateLimitedResponse,
+  },
+});
 
 const submitFeedbackRoute = createRoute({
   method: "post",
   path: "/feedback",
   tags: ["Feedback"],
   operationId: "submitFeedback",
-  summary: "Submit feedback",
+  summary: "Submit feedback with an API key",
   description:
-    "Record feedback from an AI agent or integration. Accepts a write-only feedback token (Authorization: Bearer nfb_...) or an API key with the feedback.write scope.",
+    "Record feedback for the organization that owns the credential. Requires an API key with the feedback.write scope. Agents and MCP servers should post to the organization's feedback URL instead.",
   request: {
-    body: {
-      required: true,
-      content: {
-        "application/json": { schema: submitFeedbackRequestSchema },
-      },
-    },
+    body: submitFeedbackBody,
   },
   responses: {
-    202: {
-      description: "Feedback accepted",
-      content: {
-        "application/json": { schema: submitFeedbackResponseSchema },
-      },
-    },
+    202: feedbackAcceptedResponse,
     400: errorResponse("Invalid request body"),
     401: errorResponse("Missing or invalid credentials"),
     403: errorResponse("Forbidden"),
     404: errorResponse(FEEDBACK_PROJECT_NOT_FOUND_ERROR),
-    429: rateLimitResponse(
-      RATE_LIMITS.feedbackIngest.requests,
-      RATE_LIMITS.feedbackIngest.window
-    ),
+    429: feedbackRateLimitedResponse,
     503: errorResponse("Authentication service unavailable"),
   },
 });
@@ -132,15 +171,45 @@ const updateFeedbackRoute = createRoute({
   },
 });
 
+feedbackRoutes.openapi(submitOrganizationFeedbackRoute, async (c) => {
+  const ipLimited = await enforceRatelimit(c, ratelimit.feedbackIngestIp, "ip");
+  if (ipLimited) {
+    return ipLimited;
+  }
+
+  const { organizationSlug } = c.req.valid("param");
+  const organizationId = await findOrganizationIdBySlug(c, organizationSlug);
+  if (!organizationId) {
+    return c.json({ error: FEEDBACK_ORGANIZATION_NOT_FOUND_ERROR }, 404);
+  }
+
+  const organizationLimited = await enforceRatelimitForKey(
+    c,
+    ratelimit.feedbackIngestOrganization,
+    organizationId
+  );
+  if (organizationLimited) {
+    return organizationLimited;
+  }
+
+  const outcome = await submitFeedback(c, organizationId, c.req.valid("json"));
+  if (outcome.kind === "project_not_found") {
+    return c.json({ error: FEEDBACK_PROJECT_NOT_FOUND_ERROR }, 404);
+  }
+  if (outcome.kind === "not_found") {
+    return c.json({ error: FEEDBACK_NOT_FOUND_ERROR }, 404);
+  }
+
+  return c.json(
+    { feedback: outcome.feedback, deduplicated: outcome.deduplicated },
+    202
+  );
+});
+
 feedbackRoutes.openapi(submitFeedbackRoute, async (c) => {
   const organizationId = getOrganizationId(c);
   if (!organizationId) {
     return c.json({ error: ORGANIZATION_SCOPED_API_KEY_ERROR }, 403);
-  }
-
-  const ipLimited = await enforceRatelimit(c, ratelimit.feedbackIngestIp, "ip");
-  if (ipLimited) {
-    return ipLimited;
   }
 
   const rateLimited = await enforceRatelimit(c, ratelimit.feedbackIngest);
@@ -148,80 +217,16 @@ feedbackRoutes.openapi(submitFeedbackRoute, async (c) => {
     return rateLimited;
   }
 
-  const body = c.req.valid("json");
-  const tokenProjectId = getIngestProjectId(c);
-  const projectId =
-    tokenProjectId === undefined ? (body.projectId ?? null) : tokenProjectId;
-
-  if (
-    tokenProjectId === undefined &&
-    projectId &&
-    !(await projectExists(c, organizationId, projectId))
-  ) {
+  const outcome = await submitFeedback(c, organizationId, c.req.valid("json"));
+  if (outcome.kind === "project_not_found") {
     return c.json({ error: FEEDBACK_PROJECT_NOT_FOUND_ERROR }, 404);
   }
-
-  const feedbackId = nanoid();
-  const needsClassification = !(body.kind && body.sentiment && body.title);
-  const classification = needsClassification
-    ? await classifyAgentFeedback({
-        organizationId,
-        feedbackId,
-        message: body.message,
-        title: body.title,
-        contextUrl: body.contextUrl,
-        agentClient: body.agentClient,
-      })
-    : null;
-
-  const db = c.get("db");
-  const [created] = await db
-    .insert(agentFeedback)
-    .values({
-      id: feedbackId,
-      organizationId,
-      projectId,
-      source: body.source,
-      kind: body.kind ?? classification?.kind ?? "other",
-      sentiment: body.sentiment ?? classification?.sentiment ?? null,
-      title: body.title ?? classification?.title ?? null,
-      message: body.message,
-      agentClient: body.agentClient ?? null,
-      agentModel: body.agentModel ?? null,
-      toolVersion: body.toolVersion ?? null,
-      userAgent: body.userAgent ?? c.req.header("user-agent") ?? null,
-      contextUrl: body.contextUrl ?? null,
-      externalId: body.externalId ?? null,
-      idempotencyKey: body.idempotencyKey ?? null,
-      metadata: body.metadata ?? null,
-    })
-    .onConflictDoNothing({
-      target: [agentFeedback.organizationId, agentFeedback.idempotencyKey],
-    })
-    .returning();
-
-  if (created) {
-    return c.json(
-      { feedback: serializeFeedback(created), deduplicated: false },
-      202
-    );
-  }
-
-  const existing = body.idempotencyKey
-    ? await db.query.agentFeedback.findFirst({
-        where: and(
-          eq(agentFeedback.organizationId, organizationId),
-          eq(agentFeedback.idempotencyKey, body.idempotencyKey)
-        ),
-      })
-    : undefined;
-
-  if (!existing) {
+  if (outcome.kind === "not_found") {
     return c.json({ error: FEEDBACK_NOT_FOUND_ERROR }, 404);
   }
 
   return c.json(
-    { feedback: serializeFeedback(existing), deduplicated: true },
+    { feedback: outcome.feedback, deduplicated: outcome.deduplicated },
     202
   );
 });

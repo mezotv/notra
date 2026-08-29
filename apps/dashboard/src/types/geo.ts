@@ -1388,6 +1388,7 @@ export interface CodeSnippetProps {
   filename?: string;
   headerEnd?: ReactNode;
   variant?: "command" | "panel";
+  label?: string;
 }
 
 export interface GeoSettingsFormProps {

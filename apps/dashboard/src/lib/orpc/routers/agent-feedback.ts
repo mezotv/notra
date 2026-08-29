@@ -1,15 +1,12 @@
 import { Effect } from "effect";
 
 import type { AgentFeedbackRouterError } from "@/lib/agent-feedback/errors";
+import { readAgentFeedbackOrganization } from "@/lib/agent-feedback/organization";
 import {
   listAgentFeedback,
   updateAgentFeedbackStatus,
 } from "@/lib/agent-feedback/programs";
 import { buildAgentFeedbackSetup } from "@/lib/agent-feedback/snippet";
-import {
-  buildAgentFeedbackToken,
-  rotateAgentFeedbackToken,
-} from "@/lib/agent-feedback/token";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { runOrpcEffect } from "@/lib/orpc/effect";
@@ -52,17 +49,7 @@ export const agentFeedbackRouter = {
     .handler(
       agentFeedbackHandler((input) =>
         Effect.map(
-          buildAgentFeedbackToken(input.organizationId),
-          buildAgentFeedbackSetup
-        )
-      )
-    ),
-  rotateToken: authorizedProcedure
-    .input(agentFeedbackOrganizationInputSchema)
-    .handler(
-      agentFeedbackHandler((input) =>
-        Effect.map(
-          rotateAgentFeedbackToken(input.organizationId),
+          readAgentFeedbackOrganization(input.organizationId),
           buildAgentFeedbackSetup
         )
       )
