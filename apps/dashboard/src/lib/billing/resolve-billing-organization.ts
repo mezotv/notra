@@ -39,14 +39,11 @@ export async function resolveBillingOrganizationId(
   );
 
   if (requestedSlug.success) {
-    const organizationId = await Effect.runPromise(
+    return await Effect.runPromise(
       findMemberOrganizationIdBySlug(requestedSlug.data, session.user.id).pipe(
         Effect.catch(() => Effect.succeed(null))
       )
     );
-    if (organizationId) {
-      return organizationId;
-    }
   }
 
   return session.session.activeOrganizationId ?? null;

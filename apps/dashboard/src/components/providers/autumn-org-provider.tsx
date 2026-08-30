@@ -2,7 +2,7 @@
 
 import { AutumnProvider } from "autumn-js/react";
 import { usePathname } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { AUTUMN_ORGANIZATION_HEADER } from "@/constants/billing";
 import { authClient } from "@/lib/auth/client";
@@ -49,10 +49,9 @@ export function AutumnOrgProvider({ children }: AutumnOrgProviderProps) {
     : INITIAL_PROVIDER_KEY;
   const providerKey = pathSlug ? `slug:${pathSlug}` : sessionProviderKey;
 
-  const headers = useMemo(
-    () => (pathSlug ? { [AUTUMN_ORGANIZATION_HEADER]: pathSlug } : undefined),
-    [pathSlug]
-  );
+  const headers = pathSlug
+    ? { [AUTUMN_ORGANIZATION_HEADER]: pathSlug }
+    : undefined;
 
   return (
     <AutumnProvider headers={headers} includeCredentials key={providerKey}>
