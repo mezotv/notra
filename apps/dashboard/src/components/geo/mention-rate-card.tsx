@@ -83,7 +83,7 @@ function ProviderRow({ rank, row, onOpen }: MentionProviderRowProps) {
       clickable ? "hover:bg-muted/50 cursor-pointer" : "cursor-default",
       !tracked && "opacity-50 hover:opacity-100"
     ),
-    disabled: !clickable,
+    disabled: tracked && !clickable,
     onClick: clickable ? () => onOpen(family) : undefined,
     style: ROW_STYLE,
     type: "button",
