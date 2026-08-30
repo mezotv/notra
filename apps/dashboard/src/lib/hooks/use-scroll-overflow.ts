@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type {
   ScrollOverflow,
@@ -47,19 +47,14 @@ export function useScrollOverflow<T extends HTMLElement>(
   const ref = useRef<T>(null);
   const [state, setState] = useState<ScrollOverflowState>(INITIAL_STATE);
 
-  const measure = useCallback(() => {
-    const node = ref.current;
-    if (!node) {
-      return;
-    }
-    setState(measureOverflow(node, insetRem));
-  }, [insetRem]);
-
   useEffect(() => {
     const node = ref.current;
     if (!node) {
       return;
     }
+    const measure = () => {
+      setState(measureOverflow(node, insetRem));
+    };
     measure();
     node.addEventListener("scroll", measure, { passive: true });
     const observer = new ResizeObserver(measure);
@@ -68,9 +63,9 @@ export function useScrollOverflow<T extends HTMLElement>(
       node.removeEventListener("scroll", measure);
       observer.disconnect();
     };
-  }, [measure, itemCount]);
+  }, [insetRem, itemCount]);
 
-  const scrollToEnd = useCallback((smooth: boolean) => {
+  const scrollToEnd = (smooth: boolean) => {
     const node = ref.current;
     if (!node) {
       return;
@@ -79,7 +74,7 @@ export function useScrollOverflow<T extends HTMLElement>(
       top: node.scrollHeight,
       behavior: smooth ? "smooth" : "auto",
     });
-  }, []);
+  };
 
   return { ref, ...state, scrollToEnd };
 }
