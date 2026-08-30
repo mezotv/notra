@@ -16,7 +16,10 @@ import { Effect } from "effect";
 import { isValid as isNotDisposableEmail } from "mailchecker";
 import { cookies } from "next/headers";
 
-import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
+import {
+  LAST_VISITED_ORGANIZATION_COOKIE,
+  LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
+} from "@/constants/cookies";
 import { readWorkOSError } from "@/lib/auth/workos-error";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import {
@@ -476,6 +479,7 @@ export async function setActiveOrganizationAction(
       );
       cookieStore.set(LAST_VISITED_ORGANIZATION_COOKIE, organization.slug, {
         path: "/",
+        maxAge: LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
       });
 
       return organization;

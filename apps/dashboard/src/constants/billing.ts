@@ -82,3 +82,5 @@ export const ZDR_CONSENT_FOOTNOTE =
   "By enabling, you acknowledge that zero data retention is provided under third-party gateway agreements and applies only to models covered by one at the time of each request.";
 export const ZDR_CONSENT_CONFIRM = "Enable";
 export const ZDR_CONSENT_CANCEL = "Not now";
+
+export const AUTUMN_ORGANIZATION_HEADER = "x-notra-organization";
