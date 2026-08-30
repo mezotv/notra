@@ -1,4 +1,4 @@
-import { PUBLIC_API_SCOPES } from "../constants/oauth-scopes";
+import { PUBLIC_API_SCOPES } from "@notra/utils/api-scopes";
 
 export const API_URL = "https://api.usenotra.com";
 const DEFAULT_AUTHKIT_DOMAIN = "auth.usenotra.com";

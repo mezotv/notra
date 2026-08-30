@@ -1,0 +1,5 @@
+export const GEO_PROJECT_NAME_MAX_LENGTH = 120;
+export const GEO_SCANS_DEFAULT_LIMIT = 20;
+export const GEO_SCANS_MAX_LIMIT = 100;
+export const GEO_SEQUENCE_MAX_STEPS = 10;
+export const GEO_SEQUENCE_NAME_MAX_LENGTH = 120;

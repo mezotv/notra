@@ -45,6 +45,7 @@
     "DO_NOT_TRACK",
     "UNKEY_ROOT_KEY",
     "UNKEY_API_ID",
+    "PORT",
     "TWITTER_BEARER_TOKEN",
     "OPENAI_API_KEY",
     "ANTHROPIC_API_KEY",

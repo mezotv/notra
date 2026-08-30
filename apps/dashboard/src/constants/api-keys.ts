@@ -1,42 +1,31 @@
-export const API_KEY_PERMISSIONS = ["api.read", "api.write"] as const;
+import {
+  API_ACCEPTED_SCOPES,
+  API_GRANULAR_SCOPES,
+  API_READ_SCOPES,
+  API_SCOPE_RESOURCES,
+  API_WRITE_SCOPES,
+  getApiScopeId,
+  LEGACY_API_SCOPES,
+} from "@notra/utils/api-scopes";
 
-export const API_KEY_GRANULAR_READ_PERMISSIONS = [
-  "posts.read",
-  "brand-identities.read",
-  "integrations.read",
-  "schedules.read",
-  "event-triggers.read",
-  "chats.read",
-  "skills.read",
-  "feedback.read",
-] as const;
+/**
+ * Scope names and resource metadata come from the shared registry in
+ * `@notra/utils/api-scopes`, which `apps/api` uses to authorize requests.
+ * Add new resources there, not here.
+ */
+export const API_KEY_PERMISSIONS = LEGACY_API_SCOPES;
 
-export const API_KEY_GRANULAR_WRITE_PERMISSIONS = [
-  "posts.write",
-  "brand-identities.write",
-  "integrations.write",
-  "schedules.write",
-  "event-triggers.write",
-  "chats.write",
-  "skills.write",
-  "feedback.write",
-] as const;
+export const API_KEY_GRANULAR_READ_PERMISSIONS = API_READ_SCOPES;
 
-export const API_KEY_GRANULAR_PERMISSIONS = [
-  ...API_KEY_GRANULAR_READ_PERMISSIONS,
-  ...API_KEY_GRANULAR_WRITE_PERMISSIONS,
-] as const;
+export const API_KEY_GRANULAR_WRITE_PERMISSIONS = API_WRITE_SCOPES;
 
-export const API_KEY_LEGACY_PERMISSIONS = ["api.read", "api.write"] as const;
+export const API_KEY_GRANULAR_PERMISSIONS = API_GRANULAR_SCOPES;
 
-export const API_KEY_ACCEPTED_PERMISSIONS = [
-  ...API_KEY_GRANULAR_PERMISSIONS,
-  ...API_KEY_LEGACY_PERMISSIONS,
-] as const;
+export const API_KEY_LEGACY_PERMISSIONS = LEGACY_API_SCOPES;
 
-export const API_KEY_DEFAULT_SCOPES = [
-  ...API_KEY_GRANULAR_READ_PERMISSIONS,
-] as const;
+export const API_KEY_ACCEPTED_PERMISSIONS = API_ACCEPTED_SCOPES;
+
+export const API_KEY_DEFAULT_SCOPES = API_READ_SCOPES;
 
 export const API_KEY_SCOPE_LEVEL = {
   none: "none",
@@ -44,64 +33,13 @@ export const API_KEY_SCOPE_LEVEL = {
   write: "write",
 } as const;
 
-export const API_KEY_SCOPE_RESOURCES = [
-  {
-    id: "posts",
-    label: "Posts",
-    description: "Read and manage your posts and drafts",
-    readScope: "posts.read",
-    writeScope: "posts.write",
-  },
-  {
-    id: "brand-identities",
-    label: "Brand identities",
-    description: "Read and manage saved brand voices",
-    readScope: "brand-identities.read",
-    writeScope: "brand-identities.write",
-  },
-  {
-    id: "integrations",
-    label: "Integrations",
-    description: "Read and manage connected content sources",
-    readScope: "integrations.read",
-    writeScope: "integrations.write",
-  },
-  {
-    id: "schedules",
-    label: "Schedules",
-    description: "Read and manage scheduled content generation",
-    readScope: "schedules.read",
-    writeScope: "schedules.write",
-  },
-  {
-    id: "event-triggers",
-    label: "Event triggers",
-    description: "Read and manage event-based content generation",
-    readScope: "event-triggers.read",
-    writeScope: "event-triggers.write",
-  },
-  {
-    id: "chats",
-    label: "Chats",
-    description: "Read and manage chat sessions",
-    readScope: "chats.read",
-    writeScope: "chats.write",
-  },
-  {
-    id: "skills",
-    label: "Skills",
-    description: "Read and manage your skills",
-    readScope: "skills.read",
-    writeScope: "skills.write",
-  },
-  {
-    id: "feedback",
-    label: "Agent feedback",
-    description: "Read and triage feedback submitted by AI agents",
-    readScope: "feedback.read",
-    writeScope: "feedback.write",
-  },
-] as const;
+export const API_KEY_SCOPE_RESOURCES = API_SCOPE_RESOURCES.map((resource) => ({
+  id: resource.id,
+  label: resource.label,
+  description: resource.description,
+  readScope: getApiScopeId(resource.id, "read"),
+  writeScope: getApiScopeId(resource.id, "write"),
+}));
 
 export const API_KEY_PRESET_IDS = ["mcp", "sdk", "cli"] as const;
 

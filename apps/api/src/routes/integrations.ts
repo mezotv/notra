@@ -195,11 +195,6 @@ integrationsRoutes.openapi(createGitHubIntegrationRoute, async (c) => {
     );
   }
 
-  const rateLimited = await enforceRatelimit(c, ratelimit.integrationCreate);
-  if (rateLimited) {
-    return rateLimited;
-  }
-
   const body = c.req.valid("json");
   const db = c.get("db");
   const organization = await getOrganizationResponse(db, orgId);
@@ -223,6 +218,13 @@ integrationsRoutes.openapi(createGitHubIntegrationRoute, async (c) => {
 
     if (existingIntegration) {
       return c.json({ error: "Repository already connected" }, 409);
+    }
+
+    // Charged immediately before the GitHub round-trip and the write: the 404
+    // and 409 above must not spend the caller's budget.
+    const rateLimited = await enforceRatelimit(c, ratelimit.integrationCreate);
+    if (rateLimited) {
+      return rateLimited;
     }
 
     await validateGitHubRepositoryAccess({ owner, repo, token });

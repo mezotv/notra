@@ -1,0 +1,186 @@
+import { createRoute } from "@hono/zod-openapi";
+import { FEATURE_NOT_ENABLED_CODE } from "@notra/geo-core/constants/agent-readiness";
+import {
+  AgentReadinessApiError,
+  AgentReadinessTargetMissingError,
+  loadAgentReadiness,
+  startAgentReadinessScan,
+} from "@notra/geo-core/geo/agent-readiness";
+import { requireGeoProject } from "@notra/geo-core/geo/projects";
+import { Effect } from "effect";
+
+import {
+  GEO_COMMON_ERROR_RESPONSES,
+  GEO_OPENAPI_TAG,
+} from "../constants/geo-openapi";
+import { geoCoreApiLayer } from "../lib/geo/configure";
+import {
+  agentReadinessResponseSchema,
+  agentReadinessScanResponseSchema,
+} from "../schemas/geo-agent-readiness";
+import { projectParamsSchema } from "../schemas/geo-params";
+import { geoErrorResponse } from "../utils/geo";
+import { runGeoEffect } from "../utils/geo-effect";
+import { InternalDashboardError } from "../utils/internal-workflow";
+import { logError } from "../utils/logging";
+import { createOpenApiApp } from "../utils/openapi-app";
+import { rateLimitResponse } from "../utils/openapi-responses";
+import { enforceRatelimit, RATE_LIMITS, ratelimit } from "../utils/ratelimit";
+
+/**
+ * Agent readiness reports.
+ *
+ * Both programs run in this process — they only touch the database and the
+ * is-agentic API, which needs no credentials. The one capability the API lacks
+ * is the Databuddy feature flag, and that is enforced where it can be: inside
+ * the internal dashboard route that `startAgentReadinessRun` hands off to. A
+ * disabled organization gets a 403 back through that hop.
+ *
+ * The read is deliberately not flag-gated. It returns rows this organization
+ * already produced, and hiding a customer's own stored history behind a rollout
+ * flag would be worse than showing it.
+ */
+export const geoAgentReadinessRoutes = createOpenApiApp();
+
+const GEO_TAG = GEO_OPENAPI_TAG;
+const commonErrors = GEO_COMMON_ERROR_RESPONSES;
+
+const getReadinessRoute = createRoute({
+  method: "get",
+  path: "/projects/{projectId}/geo/agent-readiness",
+  tags: [GEO_TAG],
+  operationId: "getGeoAgentReadiness",
+  summary: "Get the latest agent readiness report",
+  description:
+    "The most recent completed report for the project's website, any newer run still in flight or failed, and the score history. Returns stored data only; it never starts a scan.",
+  request: { params: projectParamsSchema },
+  responses: {
+    200: {
+      description: "Report fetched successfully",
+      content: {
+        "application/json": { schema: agentReadinessResponseSchema },
+      },
+    },
+    ...commonErrors,
+  },
+});
+
+const startScanRoute = createRoute({
+  method: "post",
+  path: "/projects/{projectId}/geo/agent-readiness/scan",
+  tags: [GEO_TAG],
+  operationId: "startGeoAgentReadinessScan",
+  summary: "Start an agent readiness scan",
+  description:
+    "Queues a readiness scan for the project's website. A scan already running against the same URL is reused rather than duplicated, in which case `alreadyRunning` is true. Requires the agent readiness feature to be enabled for the organization.",
+  request: { params: projectParamsSchema },
+  responses: {
+    202: {
+      description: "Scan accepted",
+      content: {
+        "application/json": { schema: agentReadinessScanResponseSchema },
+      },
+    },
+    ...commonErrors,
+    429: rateLimitResponse(
+      RATE_LIMITS.agentReadinessScan.requests,
+      RATE_LIMITS.agentReadinessScan.window
+    ),
+  },
+});
+
+/**
+ * Maps the readiness helpers' thrown errors onto statuses.
+ *
+ * `AgentReadinessTargetMissingError` and `AgentReadinessApiError` are the two
+ * the dashboard turns into a 400, so they read the same here. A flag refusal
+ * arrives as an `InternalDashboardError` carrying `FEATURE_NOT_ENABLED`.
+ */
+function readinessFailure(error: unknown): {
+  status: 400 | 403 | 500;
+  error: string;
+} {
+  if (
+    error instanceof InternalDashboardError &&
+    error.code === FEATURE_NOT_ENABLED_CODE
+  ) {
+    return {
+      status: 403,
+      error: "Agent Readiness is not available for this organization.",
+    };
+  }
+  if (
+    error instanceof AgentReadinessTargetMissingError ||
+    error instanceof AgentReadinessApiError
+  ) {
+    return { status: 400, error: error.message };
+  }
+  return { status: 500, error: "Internal server error" };
+}
+
+geoAgentReadinessRoutes.openapi(getReadinessRoute, async (c) => {
+  const base = c.get("geo");
+  const { projectId } = c.req.valid("param");
+
+  const scope = await runGeoEffect(
+    "agentReadinessScope",
+    requireGeoProject({ organizationId: base.organizationId, projectId })
+  );
+  if (!scope.ok) {
+    return geoErrorResponse(c, scope.failure);
+  }
+
+  try {
+    const report = await loadAgentReadiness(scope.value);
+    return c.json({ ...report, organization: base.organization }, 200);
+  } catch (error) {
+    const failure = readinessFailure(error);
+    if (failure.status === 500) {
+      logError("[GEO] agentReadiness", error);
+      return c.json({ error: failure.error }, 500);
+    }
+    return failure.status === 403
+      ? c.json({ error: failure.error }, 403)
+      : c.json({ error: failure.error }, 400);
+  }
+});
+
+geoAgentReadinessRoutes.openapi(startScanRoute, async (c) => {
+  const base = c.get("geo");
+  const { projectId } = c.req.valid("param");
+
+  const scope = await runGeoEffect(
+    "agentReadinessScope",
+    requireGeoProject({ organizationId: base.organizationId, projectId })
+  );
+  if (!scope.ok) {
+    return geoErrorResponse(c, scope.failure);
+  }
+
+  // Charged immediately before the scan starts: rejected requests (unknown
+  // project, GEO not enabled) must not spend the hourly budget.
+  const rateLimited = await enforceRatelimit(
+    c,
+    ratelimit.agentReadinessScan,
+    "organization"
+  );
+  if (rateLimited) {
+    return rateLimited;
+  }
+
+  try {
+    const started = await Effect.runPromise(
+      startAgentReadinessScan(scope.value).pipe(Effect.provide(geoCoreApiLayer))
+    );
+    return c.json({ ...started, organization: base.organization }, 202);
+  } catch (error) {
+    const failure = readinessFailure(error);
+    if (failure.status === 500) {
+      logError("[GEO] agentReadinessScan", error);
+      return c.json({ error: failure.error }, 500);
+    }
+    return failure.status === 403
+      ? c.json({ error: failure.error }, 403)
+      : c.json({ error: failure.error }, 400);
+  }
+});

@@ -1,23 +1,15 @@
 import {
-  API_KEY_GRANULAR_PERMISSIONS,
-  API_KEY_GRANULAR_READ_PERMISSIONS,
-  API_KEY_LEGACY_PERMISSIONS,
+  expandLegacyApiScopes,
+  getUnknownApiScopes,
+  sortApiScopes,
+} from "@notra/utils/api-scopes";
+
+import {
   API_KEY_SCOPE_LEVEL,
   API_KEY_SCOPE_LEVEL_LABELS,
   API_KEY_SCOPE_RESOURCES,
 } from "@/constants/api-keys";
-import type { ApiKeyGranularScope, ApiKeyScopeGroup } from "@/types/api-keys";
-
-const GRANULAR_SCOPE_SET: ReadonlySet<string> = new Set(
-  API_KEY_GRANULAR_PERMISSIONS
-);
-const LEGACY_SCOPE_SET: ReadonlySet<string> = new Set(
-  API_KEY_LEGACY_PERMISSIONS
-);
-
-const SCOPE_ORDER = new Map(
-  API_KEY_GRANULAR_PERMISSIONS.map((scope, index) => [scope as string, index])
-);
+import type { ApiKeyScopeGroup } from "@/types/api-keys";
 
 export const API_KEY_SCOPE_GROUPS: ApiKeyScopeGroup[] =
   API_KEY_SCOPE_RESOURCES.map((resource) => ({
@@ -80,45 +72,11 @@ export function applyScopeLevel(
   return next;
 }
 
-export function expandLegacyApiKeyScopes(
-  scopes: readonly string[]
-): ApiKeyGranularScope[] {
-  const next = new Set<string>();
+export const expandLegacyApiKeyScopes = expandLegacyApiScopes;
 
-  for (const scope of scopes) {
-    if (GRANULAR_SCOPE_SET.has(scope)) {
-      next.add(scope);
-      continue;
-    }
-    if (scope === "api.write") {
-      for (const granular of API_KEY_GRANULAR_PERMISSIONS) {
-        next.add(granular);
-      }
-      continue;
-    }
-    if (scope === "api.read") {
-      for (const granular of API_KEY_GRANULAR_READ_PERMISSIONS) {
-        next.add(granular);
-      }
-    }
-  }
+export const sortApiKeyScopes = sortApiScopes;
 
-  return sortApiKeyScopes([...next]);
-}
-
-export function sortApiKeyScopes(scopes: string[]): ApiKeyGranularScope[] {
-  return scopes
-    .filter((scope): scope is ApiKeyGranularScope =>
-      GRANULAR_SCOPE_SET.has(scope)
-    )
-    .sort((a, b) => (SCOPE_ORDER.get(a) ?? 0) - (SCOPE_ORDER.get(b) ?? 0));
-}
-
-export function getUnknownApiKeyPermissions(scopes: readonly string[]) {
-  return scopes.filter(
-    (scope) => !(GRANULAR_SCOPE_SET.has(scope) || LEGACY_SCOPE_SET.has(scope))
-  );
-}
+export const getUnknownApiKeyPermissions = getUnknownApiScopes;
 
 export function summarizeApiKeyScopes(scopes: readonly string[]) {
   const selected = new Set(scopes);

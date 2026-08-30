@@ -469,11 +469,6 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
     );
   }
 
-  const rateLimited = await enforceRatelimit(c, ratelimit.postUpdate);
-  if (rateLimited) {
-    return rateLimited;
-  }
-
   const { postId } = c.req.valid("param");
   const body = c.req.valid("json");
   const db = c.get("db");
@@ -554,6 +549,13 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
     updatedAt: Date;
   }> = [];
 
+  // Charged immediately before the write: the 404s and 400s above must not
+  // spend the caller's update budget.
+  const rateLimited = await enforceRatelimit(c, ratelimit.postUpdate);
+  if (rateLimited) {
+    return rateLimited;
+  }
+
   try {
     updatedRows = await db
       .update(posts)
@@ -600,11 +602,6 @@ postsRoutes.openapi(createPostGenerationRoute, async (c) => {
       { error: "Forbidden: API key must be scoped to an organization" },
       403
     );
-  }
-
-  const rateLimited = await enforceRatelimit(c, ratelimit.postGeneration);
-  if (rateLimited) {
-    return rateLimited;
   }
 
   const runtimeEnv = c.env ?? {};
@@ -664,6 +661,13 @@ postsRoutes.openapi(createPostGenerationRoute, async (c) => {
       },
       400
     );
+  }
+
+  // Charged immediately before the billable generation is queued: the 503, 404
+  // and 400 responses above must not spend the caller's budget.
+  const rateLimited = await enforceRatelimit(c, ratelimit.postGeneration);
+  if (rateLimited) {
+    return rateLimited;
   }
 
   const now = new Date().toISOString();

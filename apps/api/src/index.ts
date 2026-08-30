@@ -1,26 +1,46 @@
 import "./tcc";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { createDb } from "@notra/db/drizzle";
+import {
+  API_OPENAPI_TAGS,
+  getRequiredApiScope,
+  isApiMutationMethod,
+  isUnscopedApiPath,
+  LEGACY_API_READ_SCOPE,
+  LEGACY_API_WRITE_SCOPE,
+} from "@notra/utils/api-scopes";
 import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { trimTrailingSlash } from "hono/trailing-slash";
 
-import {
-  LEGACY_API_READ_SCOPE,
-  LEGACY_API_WRITE_SCOPE,
-} from "./constants/oauth-scopes";
 import { authMiddleware } from "./middleware/auth";
+import {
+  geoContextMiddleware,
+  geoProjectContextMiddleware,
+} from "./middleware/geo-context";
+import { geoEntitlementMiddleware } from "./middleware/geo-entitlement";
 import { subscriptionMiddleware } from "./middleware/subscription";
 import { agentChatsRoutes } from "./routes/agent-chats";
 import { brandIdentitiesRoutes } from "./routes/brand-identities";
 import { chatsRoutes } from "./routes/chats";
 import { eventTriggersRoutes } from "./routes/event-triggers";
 import { feedbackRoutes } from "./routes/feedback";
+import { geoAgentReadinessRoutes } from "./routes/geo-agent-readiness";
+import { geoBriefsRoutes } from "./routes/geo-briefs";
+import { geoCompetitorsRoutes } from "./routes/geo-competitors";
+import { geoProjectsRoutes } from "./routes/geo-projects";
+import { geoPromptsRoutes } from "./routes/geo-prompts";
+import { geoScansRoutes } from "./routes/geo-scans";
+import { geoSequencesRoutes } from "./routes/geo-sequences";
+import { geoSettingsRoutes } from "./routes/geo-settings";
+import { geoTrafficRoutes } from "./routes/geo-traffic";
+import { geoVisibilityRoutes } from "./routes/geo-visibility";
 import { integrationsRoutes } from "./routes/integrations";
 import { legacyRedirectRoutes } from "./routes/legacy-redirects";
 import { postsRoutes } from "./routes/posts";
 import { schedulesRoutes } from "./routes/schedules";
 import { skillsRoutes } from "./routes/skills";
+import type { ApiEnv } from "./types/env";
 import {
   API_URL,
   AUTH_GUIDE_URL,
@@ -32,7 +52,6 @@ import {
 import { assertRequiredEnv } from "./utils/env";
 import { isPublicFeedbackIngestRequest } from "./utils/feedback";
 import { logError } from "./utils/logging";
-import { getRequiredOAuthScope } from "./utils/oauth-scopes";
 
 const FRAMER_PLUGIN_ID = "8d4wmwtko6960jsu3ojmalvqm";
 
@@ -93,32 +112,9 @@ function getAllowedOrigin(origin: string | undefined): string | null {
     : null;
 }
 
-interface Bindings {
-  UNKEY_ROOT_KEY: string;
-  DATABASE_URL: string;
-  AUTUMN_SECRET_KEY?: string;
-  UPSTASH_REDIS_REST_URL?: string;
-  UPSTASH_REDIS_REST_TOKEN?: string;
-  QSTASH_TOKEN?: string;
-  WORKFLOW_BASE_URL?: string;
-  INTEGRATION_ENCRYPTION_KEY?: string;
-  NEXT_PUBLIC_APP_URL?: string;
-  APP_URL?: string;
-  WORKOS_AUTHKIT_DOMAIN?: string;
-  WORKOS_CLIENT_ID?: string;
-  FEEDBACK_INGEST_SECRET?: string;
-}
-
-interface AppEnv {
-  Bindings: Bindings;
-  Variables: {
-    db: ReturnType<typeof createDb>;
-  };
-}
-
 assertRequiredEnv();
 
-const app = new OpenAPIHono<AppEnv>({ strict: true });
+export const app = new OpenAPIHono<ApiEnv>({ strict: true });
 
 const securityHeadersMiddleware = async (
   c: Context,
@@ -179,19 +175,25 @@ app.openapi(publicStatusRoute, (c) => {
   });
 });
 
-const oauthScopeMiddleware = (c: Context, next: () => Promise<void>) => {
-  const requiredScope = getRequiredOAuthScope(
-    new URL(c.req.url).pathname,
-    c.req.method
-  );
-  const legacyPermission = ["POST", "PUT", "PATCH", "DELETE"].includes(
-    c.req.method
-  )
-    ? LEGACY_API_WRITE_SCOPE
-    : LEGACY_API_READ_SCOPE;
+const oauthScopeMiddleware = async (c: Context, next: () => Promise<void>) => {
+  const pathname = new URL(c.req.url).pathname;
+  const requiredScope = getRequiredApiScope(pathname, c.req.method);
+  if (!requiredScope && !isUnscopedApiPath(pathname)) {
+    // A route that was not registered must never silently become accessible
+    // to any valid key. Returning 404 keeps unknown endpoints conventional
+    // while making a newly added-but-unregistered operation unreachable.
+    return c.json({ error: "Not found" }, 404);
+  }
+  // `expandLegacyApiScopes` is the registry's rule: `api.write` implies every
+  // scope, `api.read` only the read scopes. So a read may fall back to either
+  // legacy scope, while a write accepts `api.write` alone — offering
+  // `api.read` on a write would hand read-only keys mutation access.
+  const legacyPermissions = isApiMutationMethod(c.req.method)
+    ? [LEGACY_API_WRITE_SCOPE]
+    : [LEGACY_API_READ_SCOPE, LEGACY_API_WRITE_SCOPE];
 
-  return authMiddleware({
-    legacyPermissions: [legacyPermission],
+  return await authMiddleware({
+    legacyPermissions,
     permissions: requiredScope,
   })(c, next);
 };
@@ -208,6 +210,15 @@ app.use("/v2/*", oauthScopeMiddleware);
 
 app.use("/v1/*", unlessPublicFeedbackIngest(subscriptionMiddleware()));
 app.use("/v2/*", subscriptionMiddleware());
+
+// GEO is a paid add-on, so every GEO endpoint — reads included — additionally
+// requires the `ai_answers` plan entitlement. `subscriptionMiddleware` above
+// still applies unchanged.
+app.use("/v1/projects/*", geoEntitlementMiddleware());
+app.use("/v1/geo/ingest/*", geoEntitlementMiddleware());
+app.use("/v1/projects/*", geoContextMiddleware());
+app.use("/v1/projects/:projectId/*", geoProjectContextMiddleware());
+app.use("/v1/geo/ingest/*", geoContextMiddleware());
 
 app.get("/", (c) => {
   return c.text("ok");
@@ -265,6 +276,16 @@ app.route("/v1", eventTriggersRoutes);
 app.route("/v1", chatsRoutes);
 app.route("/v1", skillsRoutes);
 app.route("/v1", feedbackRoutes);
+app.route("/v1", geoProjectsRoutes);
+app.route("/v1", geoSettingsRoutes);
+app.route("/v1", geoPromptsRoutes);
+app.route("/v1", geoSequencesRoutes);
+app.route("/v1", geoCompetitorsRoutes);
+app.route("/v1", geoScansRoutes);
+app.route("/v1", geoVisibilityRoutes);
+app.route("/v1", geoBriefsRoutes);
+app.route("/v1", geoAgentReadinessRoutes);
+app.route("/v1", geoTrafficRoutes);
 app.route("/v2", agentChatsRoutes);
 
 app.openAPIRegistry.registerComponent("securitySchemes", "BearerAuth", {
@@ -290,38 +311,7 @@ app.doc31("/openapi.json", (_c) => ({
     },
   ],
   security: [{ BearerAuth: [] }],
-  tags: [
-    {
-      name: "Content",
-      description:
-        "Read content. Organization is inferred from the API key (identity.externalId).",
-    },
-    {
-      name: "Schedules",
-      description:
-        "Manage scheduled content generation. Organization is inferred from the API key (identity.externalId).",
-    },
-    {
-      name: "Event Triggers",
-      description:
-        "Manage event-based content generation triggered by GitHub webhooks. Organization is inferred from the API key (identity.externalId).",
-    },
-    {
-      name: "Chats",
-      description:
-        "Manage chat sessions. Organization is inferred from the API key (identity.externalId).",
-    },
-    {
-      name: "Skills",
-      description:
-        "Manage reusable writing skills. Organization is inferred from the API key (identity.externalId).",
-    },
-    {
-      name: "Feedback",
-      description:
-        "Collect and triage feedback submitted by AI agents. Agents post to the organization's feedback URL without credentials; reading and triage require an API key with feedback.read or feedback.write.",
-    },
-  ],
+  tags: [...API_OPENAPI_TAGS],
 }));
 
 app.onError((error, c) => {
@@ -336,5 +326,13 @@ app.onError((error, c) => {
 
 export default {
   port: process.env.PORT ?? 3000,
+  // Bun closes a connection after 10s without bytes on the socket, and an
+  // in-flight handler that has not written a response yet counts as idle. That
+  // default silently killed the synchronous GEO sequence run — the socket shut
+  // after ~10s with zero bytes sent. 255s is Bun's maximum; the synchronous
+  // internal call gives up at 240s (see SYNCHRONOUS_INTERNAL_CALL_TIMEOUT_MS)
+  // so the client always gets a real answer first. Not 0/disabled: a wedged
+  // upstream should not hold sockets forever.
+  idleTimeout: 255,
   fetch: (request: Request) => app.fetch(request, process.env),
 };

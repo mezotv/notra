@@ -542,11 +542,15 @@ function CreateApiKeyDialog({
       open={open}
     >
       <ResponsiveDialogContent
-        className={createdKey ? "sm:max-w-md" : "sm:max-w-2xl"}
+        className={
+          createdKey
+            ? "sm:max-w-md"
+            : "flex max-h-[90svh] flex-col overflow-hidden sm:max-w-2xl"
+        }
       >
         {createdKey ? (
           <>
-            <ResponsiveDialogHeader>
+            <ResponsiveDialogHeader className="shrink-0">
               <ResponsiveDialogTitle>View API Key</ResponsiveDialogTitle>
             </ResponsiveDialogHeader>
             <div className="space-y-4">
@@ -578,8 +582,11 @@ function CreateApiKeyDialog({
                 Create a new API key for your organization.
               </ResponsiveDialogDescription>
             </ResponsiveDialogHeader>
-            <form action={onSubmit}>
-              <div className="space-y-4 py-4">
+            <form
+              action={onSubmit}
+              className="flex min-h-0 flex-1 flex-col overflow-hidden"
+            >
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain py-4 pr-1">
                 <Field>
                   <FieldLabel>
                     Name<span className="text-destructive -ml-1">*</span>
@@ -636,7 +643,7 @@ function CreateApiKeyDialog({
                   </Select>
                 </Field>
               </div>
-              <ResponsiveDialogFooter>
+              <ResponsiveDialogFooter className="shrink-0">
                 <ResponsiveDialogClose
                   disabled={isPending}
                   render={<Button variant="outline">Cancel</Button>}

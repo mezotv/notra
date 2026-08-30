@@ -226,7 +226,7 @@ export const errorResponseSchema = z
   })
   .openapi("ErrorResponse");
 
-const organizationResponseSchema = z.object({
+export const organizationResponseSchema = z.object({
   id: z.string(),
   slug: z.string(),
   name: z.string(),

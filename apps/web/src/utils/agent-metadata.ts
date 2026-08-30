@@ -1,3 +1,5 @@
+import { PUBLIC_API_SCOPES } from "@notra/utils/api-scopes";
+
 import { SITE_DESCRIPTION } from "@/utils/metadata";
 import { SOCIAL_LINKS } from "@/utils/social-links";
 import { API_URL, APP_URL, DOCS_URL, MCP_URL, SITE_URL } from "@/utils/urls";
@@ -23,24 +25,6 @@ export const NOTRA_SAME_AS = [
   SOCIAL_LINKS.linkedin,
   SOCIAL_LINKS.youtube,
   SOCIAL_LINKS.reddit,
-] as const;
-
-const PUBLIC_API_SCOPES = [
-  "offline_access",
-  "posts.read",
-  "posts.write",
-  "brand-identities.read",
-  "brand-identities.write",
-  "integrations.read",
-  "integrations.write",
-  "schedules.read",
-  "schedules.write",
-  "event-triggers.read",
-  "event-triggers.write",
-  "chats.read",
-  "chats.write",
-  "skills.read",
-  "skills.write",
 ] as const;
 
 export const NOTRA_CAPABILITIES = [
