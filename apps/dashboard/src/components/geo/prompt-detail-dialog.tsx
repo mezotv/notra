@@ -1,5 +1,8 @@
 "use client";
 
+import type { GeoPromptResult } from "@notra/geo-core/types/geo";
+import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -13,15 +16,9 @@ import { type KeyboardEvent, useState } from "react";
 import { GeoPromptAnswerThread } from "@/components/geo/geo-prompt-answer-thread";
 import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
 import { EASE_OUT } from "@/lib/ease";
-import type {
-  GeoPromptResult,
-  GeoPromptTableRow,
-  PromptDetailDialogProps,
-} from "@/types/geo";
-import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
+import type { GeoPromptTableRow, PromptDetailDialogProps } from "@/types/geo";
 import { sharedEngineAnswerMode } from "@/utils/geo-charts";
 import { adjacentPromptEngine } from "@/utils/geo-prompt-engines";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 const INSTANT = { duration: 0 } as const;
 const SLIDE_PX = 18;

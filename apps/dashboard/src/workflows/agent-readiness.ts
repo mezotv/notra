@@ -1,10 +1,9 @@
-import { flattenError } from "zod";
-
-import { agentReadinessWorkflowPayloadSchema } from "@/schemas/agent-readiness";
+import { agentReadinessWorkflowPayloadSchema } from "@notra/geo-core/schemas/agent-readiness";
 import type {
   AgentReadinessWorkflowPayload,
   AgentReadinessWorkflowResult,
-} from "@/types/agent-readiness";
+} from "@notra/geo-core/types/agent-readiness";
+import { flattenError } from "zod";
 
 import { runAgentReadinessScanStep } from "./steps/agent-readiness-steps";
 

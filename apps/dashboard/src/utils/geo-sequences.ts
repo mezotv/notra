@@ -1,7 +1,6 @@
-import type {
-  GeoSequenceEngineThread,
-  GeoSequenceTurnResult,
-} from "@/types/geo";
+import type { GeoSequenceTurnResult } from "@notra/geo-core/types/geo";
+
+import type { GeoSequenceEngineThread } from "@/types/geo";
 
 export function buildSequenceEngineThreads(
   results: readonly GeoSequenceTurnResult[],

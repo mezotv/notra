@@ -2,6 +2,8 @@
 
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_MAX_COMPETITORS } from "@notra/geo-core/constants/geo";
+import type { GeoCompetitor } from "@notra/geo-core/types/geo";
 import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Label } from "@notra/ui/components/ui/label";
@@ -16,7 +18,6 @@ import { CompetitorSearch } from "@/components/onboarding/competitor-search";
 import { CompetitorSuggestionsSkeleton } from "@/components/onboarding/competitor-suggestions-skeleton";
 import { OnboardingProgress } from "@/components/onboarding/progress";
 import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
-import { GEO_MAX_COMPETITORS } from "@/constants/geo";
 import {
   ONBOARDING_STEP_COMPETITORS,
   ONBOARDING_VISIBLE_SUGGESTIONS,
@@ -28,7 +29,6 @@ import {
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import { cn } from "@/lib/utils";
-import type { GeoCompetitor } from "@/types/geo";
 import type {
   CompetitorsFormProps,
   CompetitorsPickerProps,

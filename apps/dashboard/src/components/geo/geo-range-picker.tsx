@@ -2,6 +2,10 @@
 
 import { ArrowDown01Icon, Calendar03Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  GEO_FILTER_TRIGGER_CLASS,
+  GEO_RANGE_PRESETS,
+} from "@notra/geo-core/constants/geo";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Popover,
@@ -13,7 +17,6 @@ import { useState } from "react";
 import type { DateRange } from "react-day-picker";
 
 import { Calendar } from "@/components/calendar";
-import { GEO_FILTER_TRIGGER_CLASS, GEO_RANGE_PRESETS } from "@/constants/geo";
 import { useAnimatedSize } from "@/lib/hooks/use-animated-size";
 import type { GeoRangePickerProps } from "@/types/geo";
 import {

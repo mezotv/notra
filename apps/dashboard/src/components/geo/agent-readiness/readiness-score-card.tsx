@@ -7,25 +7,25 @@ import {
   Refresh01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-
-import { Button } from "@/components/button";
-import { AgentReadinessScoreGauge } from "@/components/geo/agent-readiness/readiness-score-gauge";
-import { InstrumentModule } from "@/components/instrument/instrument-module";
 import {
   AGENT_READINESS_MAX_SCORE,
   AGENT_READINESS_MUST_DO_LABEL,
   AGENT_READINESS_SHOULD_DO_LABEL,
-} from "@/constants/agent-readiness";
+} from "@notra/geo-core/constants/agent-readiness";
+import {
+  formatAgentReadinessDate,
+  getAgentReadinessScoreBand,
+} from "@notra/geo-core/utils/agent-readiness";
+
+import { Button } from "@/components/button";
+import { AgentReadinessScoreGauge } from "@/components/geo/agent-readiness/readiness-score-gauge";
+import { InstrumentModule } from "@/components/instrument/instrument-module";
 import { cn } from "@/lib/utils";
 import type {
   AgentReadinessBreakdownTileProps,
   AgentReadinessScoreCardProps,
   AgentReadinessScoreDeltaProps,
 } from "@/types/agent-readiness";
-import {
-  formatAgentReadinessDate,
-  getAgentReadinessScoreBand,
-} from "@/utils/agent-readiness";
 
 function ScoreDelta({ score, previousScore }: AgentReadinessScoreDeltaProps) {
   if (previousScore === null || previousScore === score) {

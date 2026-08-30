@@ -141,16 +141,12 @@
       "name": "dashboard",
       "version": "0.1.0",
       "dependencies": {
-        "@ai-sdk/anthropic": "3.0.84",
-        "@ai-sdk/openai": "3.0.71",
-        "@ai-sdk/perplexity": "3.0.35",
         "@ai-sdk/react": "3.0.208",
         "@aws-sdk/client-s3": "^3.990.0",
         "@aws-sdk/s3-request-presigner": "^3.990.0",
         "@base-ui/react": "^1.1.0",
         "@calcom/embed-react": "^1.5.3",
         "@contextcompany/otel": "^1.0.16",
-        "@cursor/sdk": "^1.0.28",
         "@databuddy/sdk": "^2.4.11",
         "@hugeicons/core-free-icons": "^4.1.1",
         "@hugeicons/react": "^1.1.4",
@@ -169,6 +165,7 @@
         "@notra/content-generation": "workspace:*",
         "@notra/db": "workspace:*",
         "@notra/email": "workspace:*",
+        "@notra/geo-core": "workspace:*",
         "@notra/kiwi": "workspace:*",
         "@notra/ui": "workspace:*",
         "@notra/utils": "workspace:*",
@@ -467,6 +464,31 @@
       "optionalPeers": [
         "zod",
       ],
+    },
+    "packages/geo-core": {
+      "name": "@notra/geo-core",
+      "version": "0.0.1",
+      "dependencies": {
+        "@ai-sdk/anthropic": "3.0.84",
+        "@ai-sdk/openai": "3.0.71",
+        "@ai-sdk/perplexity": "3.0.35",
+        "@cursor/sdk": "^1.0.28",
+        "@notra/ai": "workspace:*",
+        "@notra/analytics": "workspace:*",
+        "@notra/db": "workspace:*",
+        "@notra/utils": "workspace:*",
+        "@usenotra/geo": "workspace:*",
+        "ai": "6.0.206",
+        "drizzle-orm": "^0.45.2",
+        "effect": "4.0.0-beta.93",
+        "evlog": "2.13.0",
+        "zod": "^4.3.4",
+      },
+      "devDependencies": {
+        "@notra/typescript-config": "workspace:*",
+        "@types/node": "^20",
+        "typescript": "5.9.2",
+      },
     },
     "packages/kiwi": {
       "name": "@notra/kiwi",
@@ -1296,6 +1318,8 @@
     "@notra/db": ["@notra/db@workspace:packages/db"],
 
     "@notra/email": ["@notra/email@workspace:packages/email"],
+
+    "@notra/geo-core": ["@notra/geo-core@workspace:packages/geo-core"],
 
     "@notra/kiwi": ["@notra/kiwi@workspace:packages/kiwi"],
 
@@ -5177,6 +5201,10 @@
 
     "@notra/email/@types/node": ["@types/node@22.9.0", "", { "dependencies": { "undici-types": "~6.19.8" } }, "sha512-vuyHg81vvWA1Z1ELfvLko2c8f34gyA0zaic0+Rllc5lbCnbSyuvb2Oxpm6TAUAC/2xZN3QGqxBNggD1nNR2AfQ=="],
 
+    "@notra/geo-core/@types/node": ["@types/node@20.19.43", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA=="],
+
+    "@notra/geo-core/ai": ["ai@6.0.206", "", { "dependencies": { "@ai-sdk/gateway": "3.0.132", "@ai-sdk/provider": "3.0.10", "@ai-sdk/provider-utils": "4.0.29", "@opentelemetry/api": "^1.9.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-hVdB5PozMMxmkPBfbCxkFOn0eVeCMi/imkfPvk65cxL4O8oIrvjUxDUX8dGkdkWG1No+R7e7D9ti2DHO61Z4YQ=="],
+
     "@notra/kiwi/@types/node": ["@types/node@22.19.21", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-VMeFBSCKQKmm2swI2kW51SFusDqekC6q9trBCvJ/JliDchFSuoYYKN7yVNjPthP1HKZcx3U1gI/wTcEBjEFKTA=="],
 
     "@notra/onboarding-agent/eve": ["eve@0.19.0", "", { "dependencies": { "nitro": "3.0.260610-beta" }, "peerDependencies": { "@opentelemetry/api": "^1.0.0", "ai": "^7.0.0", "braintrust": "^3.0.0", "just-bash": "^3.0.0", "microsandbox": "^0.5.0" }, "optionalPeers": ["@opentelemetry/api", "braintrust", "just-bash", "microsandbox"], "bin": { "eve": "./bin/eve.js" } }, "sha512-fZ4gyBUoJ8FWtA+vUz6Q/OWJDXPf++RYsbVL+NrEAn2VJCrZyiuDj4todsBJlDib3+sZtzHMsNSn06EP0j0++w=="],
@@ -6124,6 +6152,8 @@
     "@notra/db/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
     "@notra/email/@types/node/undici-types": ["undici-types@6.19.8", "", {}, "sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw=="],
+
+    "@notra/geo-core/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
     "@notra/kiwi/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 

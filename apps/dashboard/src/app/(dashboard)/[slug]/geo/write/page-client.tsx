@@ -2,6 +2,7 @@
 
 import { PencilEdit01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_GAPS_NAV_LINK } from "@notra/geo-core/constants/geo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useState } from "react";
@@ -22,7 +23,6 @@ import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
 } from "@/constants/empty-state";
-import { GEO_GAPS_NAV_LINK } from "@/constants/geo";
 import { useGeoSettings } from "@/lib/hooks/use-geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoWriterBriefs } from "@/lib/hooks/use-geo-writer";

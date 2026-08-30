@@ -21,6 +21,7 @@ import {
   contentTriggers,
 } from "@notra/db/schema";
 import { deleteBrandReferenceMemory } from "@notra/db/utils/supermemory";
+import { publicWebsiteUrlSchema } from "@notra/geo-core/schemas/url";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
@@ -56,7 +57,6 @@ import {
   updateGuidelineScreenshotSchema,
   updateGuidelineTokenSchema,
 } from "@/schemas/brand-guidelines";
-import { publicWebsiteUrlSchema } from "@/schemas/url";
 import type {
   BrandSettings as BrandVoiceOutput,
   ProgressData,

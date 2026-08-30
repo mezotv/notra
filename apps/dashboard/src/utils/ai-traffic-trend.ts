@@ -1,24 +1,24 @@
 import {
-  CHART_MUTED_COLOR,
-  GEO_TRAFFIC_PROVIDER_COLORS,
-} from "@/constants/charts";
-import {
   GEO_TRAFFIC_GROUPS_BY_ENGINE,
   GEO_TRAFFIC_OTHER_GROUP,
   GEO_TRAFFIC_TREND_CRAWLER_KEY,
   GEO_TRAFFIC_TREND_REFERRAL_KEY,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
 import type {
   GeoTrafficPoint,
   GeoTrafficSource,
   GeoTrafficTrendRow,
   GeoVisitorType,
-  TrafficTrendProvider,
-  TrafficTrendSeries,
-} from "@/types/geo";
+} from "@notra/geo-core/types/geo";
+import { resolveEngineIconKey } from "@notra/geo-core/utils/geo-engine-icon";
+
+import {
+  CHART_MUTED_COLOR,
+  GEO_TRAFFIC_PROVIDER_COLORS,
+} from "@/constants/charts";
+import type { TrafficTrendProvider, TrafficTrendSeries } from "@/types/geo";
 import { formatDayLabel } from "@/utils/analytics-charts";
 import { seriesColors } from "@/utils/chart-colors";
-import { resolveEngineIconKey } from "@/utils/geo-engine-icon";
 
 const SERIES_KEY_UNSAFE = /[^a-z0-9]+/gi;
 

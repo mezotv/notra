@@ -4,7 +4,8 @@ import {
   GEO_RATE_SPARKLINE_HEIGHT,
   GEO_RATE_SPARKLINE_PADDING,
   GEO_RATE_SPARKLINE_WIDTH,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+
 import { cn } from "@/lib/utils";
 import type { GeoRateSparklineProps } from "@/types/geo";
 import { mentionRateSparklineLabel } from "@/utils/geo-charts";

@@ -1,16 +1,19 @@
-import { GEO_PROMPT_FUNNEL_TOP_POSITION } from "@/constants/geo";
-import { trackedPromptScanId } from "@/lib/geo/prompts";
+import { GEO_PROMPT_FUNNEL_TOP_POSITION } from "@notra/geo-core/constants/geo";
+import { trackedPromptScanId } from "@notra/geo-core/geo/prompts";
+import type {
+  GeoPresenceStatus,
+  GeoPromptResult,
+  GeoTrackedPrompt,
+} from "@notra/geo-core/types/geo";
+import { summarizePromptResults } from "@notra/geo-core/utils/geo-presence";
+
 import type {
   EngineFamilyPromptHit,
-  GeoPresenceStatus,
   GeoPromptCoverage,
-  GeoPromptResult,
   GeoPromptTableRow,
-  GeoTrackedPrompt,
 } from "@/types/geo";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
 import { engineFamilyOf } from "@/utils/geo-charts";
-import { summarizePromptResults } from "@/utils/geo-presence";
 
 function promptMentionSets(results: readonly GeoPromptResult[]): {
   mentioned: Set<string>;

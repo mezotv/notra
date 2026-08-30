@@ -2,6 +2,13 @@
 
 import { SourceCodeIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  AI_TRAFFIC_PURPOSE_DESCRIPTIONS,
+  AI_TRAFFIC_PURPOSE_LABELS,
+  GEO_CITATIONS_ROW_HEIGHT,
+  GEO_PURPOSE_COLUMN_WIDTH,
+} from "@notra/geo-core/constants/geo";
+import type { GeoTrafficLogEntry } from "@notra/geo-core/types/geo";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   HoverCard,
@@ -15,15 +22,9 @@ import { CountryFlag } from "@/components/geo/twemoji";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TablePagination } from "@/components/table-pagination";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
-import {
-  AI_TRAFFIC_PURPOSE_DESCRIPTIONS,
-  AI_TRAFFIC_PURPOSE_LABELS,
-  GEO_CITATIONS_ROW_HEIGHT,
-  GEO_PURPOSE_COLUMN_WIDTH,
-} from "@/constants/geo";
 import { AI_TRAFFIC_PURPOSE_ICONS } from "@/constants/geo-purpose-icons";
 import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
-import type { CitationsTableProps, GeoTrafficLogEntry } from "@/types/geo";
+import type { CitationsTableProps } from "@/types/geo";
 import { countryName } from "@/utils/country";
 import {
   citationProviderTooltip,

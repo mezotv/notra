@@ -37,11 +37,8 @@ export const ACCOUNT_SERIES_COLORS: readonly ChartColorPair[] = [
 ];
 
 export const CHART_OTHER_SLICE_LABEL = "Other";
-
 export const CHART_PERCENT_SCALE = 100;
-
 export const CHART_MIN_BAR_PERCENT = 2;
-
 export const SPARKLINE_SERIES_KEY = "value";
 
 export const SPARKLINE_CHART_OPTIONS: Record<string, unknown> = {

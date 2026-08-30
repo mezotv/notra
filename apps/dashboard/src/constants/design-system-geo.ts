@@ -1,4 +1,7 @@
-import type { GeoOverviewEngine, GeoTimeseriesPoint } from "@/types/geo";
+import type {
+  GeoOverviewEngine,
+  GeoTimeseriesPoint,
+} from "@notra/geo-core/types/geo";
 
 const PROVIDERS = [
   { engine: "openai/gpt-5.4-grounded", baseline: 18, growth: 0.5 },

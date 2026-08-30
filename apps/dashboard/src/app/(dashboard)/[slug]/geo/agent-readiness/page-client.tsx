@@ -2,6 +2,12 @@
 
 import { AlertCircleIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  AGENT_READINESS_PAGE_DESCRIPTION,
+  AGENT_READINESS_PAGE_TITLE,
+} from "@notra/geo-core/constants/agent-readiness";
+import { getAgentReadinessScanErrorMessage } from "@notra/geo-core/utils/agent-readiness";
+import { stripWebsiteProtocol } from "@notra/geo-core/utils/geo-website";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -19,10 +25,6 @@ import {
 } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
-  AGENT_READINESS_PAGE_DESCRIPTION,
-  AGENT_READINESS_PAGE_TITLE,
-} from "@/constants/agent-readiness";
-import {
   useAgentReadiness,
   useAgentReadinessScan,
   useGeoSettings,
@@ -30,9 +32,7 @@ import {
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import type { AgentReadinessBodyProps } from "@/types/agent-readiness";
 import type { GeoPageClientProps } from "@/types/geo";
-import { getAgentReadinessScanErrorMessage } from "@/utils/agent-readiness";
 import { withGeoProject } from "@/utils/geo-paths";
-import { stripWebsiteProtocol } from "@/utils/geo-website";
 
 import { AgentReadinessSkeleton } from "./skeleton";
 

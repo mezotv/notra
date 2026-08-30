@@ -7,12 +7,12 @@ import {
   geoSettings,
   projects,
 } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
-
 import {
   GEO_WRITER_TRIGGER_ID,
   GEO_WRITER_TRIGGER_NAME,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+import { and, eq } from "drizzle-orm";
+
 import { completeActiveGeneration } from "@/lib/generations/tracking";
 import type { GeoWriterContext } from "@/types/geo";
 
@@ -20,6 +20,7 @@ const BLOG_POST_CONTENT_TYPE = "blog_post";
 
 export async function loadGeoWriterContext(input: {
   organizationId: string;
+  projectId: string;
   briefId: string;
   runId: string;
 }): Promise<GeoWriterContext | null> {
@@ -28,17 +29,19 @@ export async function loadGeoWriterContext(input: {
     where: and(
       eq(geoContentBriefs.id, input.briefId),
       eq(geoContentBriefs.organizationId, input.organizationId),
-      eq(geoContentBriefs.runId, input.runId)
+      eq(geoContentBriefs.projectId, input.projectId),
+      eq(geoContentBriefs.runId, input.runId),
+      eq(geoContentBriefs.status, "writing")
     ),
   });
-  if (!(brief?.collectionId && brief.status === "writing")) {
+  if (!brief?.collectionId) {
     return null;
   }
 
   const project = await db.query.projects.findFirst({
     columns: { id: true },
     where: and(
-      eq(projects.id, brief.projectId),
+      eq(projects.id, input.projectId),
       eq(projects.organizationId, input.organizationId)
     ),
   });
@@ -49,17 +52,23 @@ export async function loadGeoWriterContext(input: {
   const [brand, settings] = await Promise.all([
     db.query.brandSettings.findFirst({
       columns: { companyName: true, language: true },
-      where: eq(brandSettings.id, brief.brandSettingsId),
+      where: and(
+        eq(brandSettings.id, brief.brandSettingsId),
+        eq(brandSettings.organizationId, input.organizationId)
+      ),
     }),
     db.query.geoSettings.findFirst({
       columns: { companyName: true },
-      where: eq(geoSettings.projectId, brief.projectId),
+      where: and(
+        eq(geoSettings.organizationId, input.organizationId),
+        eq(geoSettings.projectId, input.projectId)
+      ),
     }),
   ]);
 
   return {
-    organizationId: brief.organizationId,
-    projectId: brief.projectId,
+    organizationId: input.organizationId,
+    projectId: input.projectId,
     briefId: brief.id,
     brandSettingsId: brief.brandSettingsId,
     collectionId: brief.collectionId,
@@ -108,6 +117,7 @@ export async function runGeoWriterStep(
 
 export async function finishGeoWriter(input: {
   organizationId: string;
+  projectId: string;
   briefId: string;
   runId: string;
   postId: string;
@@ -127,6 +137,7 @@ export async function finishGeoWriter(input: {
     .where(
       and(
         eq(geoContentBriefs.organizationId, input.organizationId),
+        eq(geoContentBriefs.projectId, input.projectId),
         eq(geoContentBriefs.id, input.briefId),
         eq(geoContentBriefs.runId, input.runId),
         eq(geoContentBriefs.status, "writing")
@@ -147,6 +158,7 @@ export async function finishGeoWriter(input: {
 
 export async function failGeoWriter(input: {
   organizationId: string;
+  projectId: string;
   briefId: string;
   runId: string;
   reason: string;
@@ -158,6 +170,7 @@ export async function failGeoWriter(input: {
     .where(
       and(
         eq(geoContentBriefs.organizationId, input.organizationId),
+        eq(geoContentBriefs.projectId, input.projectId),
         eq(geoContentBriefs.id, input.briefId),
         eq(geoContentBriefs.runId, input.runId),
         eq(geoContentBriefs.status, "writing")

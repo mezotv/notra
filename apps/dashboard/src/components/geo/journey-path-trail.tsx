@@ -1,10 +1,10 @@
+import { GEO_JOURNEY_TRAIL_TABLE_LIMIT } from "@notra/geo-core/constants/geo";
 import { Fragment } from "react";
 
 import {
   JourneyPathJoin,
   JourneyPathPill,
 } from "@/components/geo/journey-path-pill";
-import { GEO_JOURNEY_TRAIL_TABLE_LIMIT } from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { JourneyPathTrailProps } from "@/types/geo";
 import { compactJourneyPaths, isGeoJourneyTrailGap } from "@/utils/geo-journey";

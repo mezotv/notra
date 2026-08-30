@@ -5,6 +5,16 @@ import {
   PencilEdit02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  COMPETITOR_PROMPTS_PAGE_TABLE_HEIGHT,
+  COMPETITOR_PROMPTS_TABLE_HEIGHT,
+  COMPETITORS_TABLE_ROW_HEIGHT,
+  GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS,
+  GEO_COMPETITOR_DETAIL_MIN_POINTS,
+  GEO_COMPETITOR_DETAIL_SERIES_KEY,
+} from "@notra/geo-core/constants/geo";
+import type { GeoCompetitorPromptRow } from "@notra/geo-core/types/geo";
+import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Tooltip,
@@ -21,14 +31,6 @@ import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { CHART_PRIMARY_COLOR } from "@/constants/charts";
-import {
-  COMPETITOR_PROMPTS_PAGE_TABLE_HEIGHT,
-  COMPETITOR_PROMPTS_TABLE_HEIGHT,
-  COMPETITORS_TABLE_ROW_HEIGHT,
-  GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS,
-  GEO_COMPETITOR_DETAIL_MIN_POINTS,
-  GEO_COMPETITOR_DETAIL_SERIES_KEY,
-} from "@/constants/geo";
 import { useGeoCompetitorDetail, useGeoCompetitors } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
 import type { ChartConfig } from "@/types/charts";
@@ -36,9 +38,7 @@ import type {
   CompetitorDetailViewProps,
   GeoCompetitorDetailPoint,
   GeoCompetitorMentionStats,
-  GeoCompetitorPromptRow,
 } from "@/types/geo";
-import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import { seriesColors } from "@/utils/chart-colors";
 import { formatEngineFamily } from "@/utils/geo-charts";
 import {

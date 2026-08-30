@@ -1,5 +1,12 @@
 "use client";
 
+import { GEO_FAMILY_IMPROVE_CTA_GAPS } from "@notra/geo-core/constants/geo";
+import type { GeoPromptSummary } from "@notra/geo-core/types/geo";
+import {
+  scannedEngineFamilies,
+  summarizePromptResults,
+  unseenPromptSummaries,
+} from "@notra/geo-core/utils/geo-presence";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -9,15 +16,9 @@ import { LogoStack } from "@/components/geo/logo-stack";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
-import { GEO_FAMILY_IMPROVE_CTA_GAPS } from "@/constants/geo";
 import { cn } from "@/lib/utils";
-import type { GeoPromptSummary, PromptUnseenListProps } from "@/types/geo";
+import type { PromptUnseenListProps } from "@/types/geo";
 import { engineFamilyLabel } from "@/utils/geo-charts";
-import {
-  scannedEngineFamilies,
-  summarizePromptResults,
-  unseenPromptSummaries,
-} from "@/utils/geo-presence";
 import { promptTableRowForId } from "@/utils/geo-prompts";
 
 function UnseenRow({

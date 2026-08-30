@@ -14,6 +14,15 @@ import { HugeiconsIcon } from "@hugeicons/react";
  */
 import type { GeoContentSubtype } from "@notra/ai/types/geo-writer";
 import {
+  GEO_WRITE_PANEL_FOOTER_CLASS,
+  GEO_WRITE_PANEL_FOOTER_ROW_CLASS,
+  GEO_WRITE_PANEL_HEADER_CLASS,
+  GEO_WRITE_PANEL_HEADER_ROW_CLASS,
+  GEO_WRITE_SIDEBAR_SHORTCUT,
+  GEO_WRITER_TOPIC_MAX_LENGTH,
+  GEO_WRITER_TOPIC_MIN_LENGTH,
+} from "@notra/geo-core/constants/geo";
+import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
@@ -45,14 +54,7 @@ import { useGeoProjectScope } from "@/components/providers/geo-project-provider"
 import {
   GEO_WRITE_CONTENT_SUBTYPES,
   GEO_WRITE_DIALOG_SECTIONS,
-  GEO_WRITE_PANEL_FOOTER_CLASS,
-  GEO_WRITE_PANEL_FOOTER_ROW_CLASS,
-  GEO_WRITE_PANEL_HEADER_CLASS,
-  GEO_WRITE_PANEL_HEADER_ROW_CLASS,
-  GEO_WRITE_SIDEBAR_SHORTCUT,
-  GEO_WRITER_TOPIC_MAX_LENGTH,
-  GEO_WRITER_TOPIC_MIN_LENGTH,
-} from "@/constants/geo";
+} from "@/constants/geo-writer";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useSitemaps } from "@/lib/hooks/use-brand-sitemaps";
 import { useGeoCompetitors, useGeoPrompts } from "@/lib/hooks/use-geo";

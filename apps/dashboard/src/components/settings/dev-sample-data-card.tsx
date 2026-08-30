@@ -1,5 +1,6 @@
 "use client";
 
+import { GEO_SAMPLE_DATA_ENABLED } from "@notra/geo-core/constants/geo";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -17,7 +18,6 @@ import { Loader2Icon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
-import { GEO_SAMPLE_DATA_ENABLED } from "@/constants/geo";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { errorMessageOr } from "@/lib/utils";
 import type { DevSampleDataCardProps } from "@/types/settings/general";

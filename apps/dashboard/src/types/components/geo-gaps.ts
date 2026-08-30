@@ -2,7 +2,7 @@ import type {
   GeoCompetitor,
   GeoPromptGapRow,
   GeoSearchGapRow,
-} from "@/types/geo";
+} from "@notra/geo-core/types/geo";
 
 export type GeoGapsTab = "prompt" | "search";
 

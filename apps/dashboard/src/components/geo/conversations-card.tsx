@@ -8,6 +8,7 @@ import {
   PlusSignIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { GeoPromptSequence } from "@notra/geo-core/types/geo";
 import { Switch } from "@notra/ui/components/ui/switch";
 import {
   Tooltip,
@@ -23,7 +24,7 @@ import { Table, type TableColumn } from "@/components/motion/table";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { useGeoRunSequence } from "@/lib/hooks/use-geo";
 import { useGeoSequencesDb } from "@/lib/hooks/use-geo-db";
-import type { ConversationsCardProps, GeoPromptSequence } from "@/types/geo";
+import type { ConversationsCardProps } from "@/types/geo";
 import { tableHeightFor } from "@/utils/table";
 
 const CONVERSATION_TURNS_WIDTH = "4.5rem";

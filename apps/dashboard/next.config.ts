@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: [
     "@notra/db",
+    "@notra/geo-core",
     "@notra/ui",
     "@notra/email",
     "@notra/ai",

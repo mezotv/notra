@@ -1,5 +1,6 @@
 "use client";
 
+import { GEO_DEFAULT_TAB, GEO_TAB_VALUES } from "@notra/geo-core/constants/geo";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Loader2Icon } from "lucide-react";
@@ -16,7 +17,6 @@ import {
   useGeoProjectScope,
 } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { GEO_DEFAULT_TAB, GEO_TAB_VALUES } from "@/constants/geo";
 import {
   useGeoCompetitorShare,
   useGeoCompetitors,

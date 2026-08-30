@@ -1,9 +1,7 @@
-import type {
-  GeoTrafficPage,
-  GeoTrafficPageGroup,
-  GeoTrafficPageSource,
-} from "@/types/geo";
-import { formatGeoSource } from "@/utils/ai-traffic";
+import type { GeoTrafficPage } from "@notra/geo-core/types/geo";
+import { formatGeoSource } from "@notra/geo-core/utils/ai-traffic";
+
+import type { GeoTrafficPageGroup, GeoTrafficPageSource } from "@/types/geo";
 import { laterTrafficTimestamp } from "@/utils/ai-traffic-groups";
 
 function pageSourceKey(page: GeoTrafficPage): string {

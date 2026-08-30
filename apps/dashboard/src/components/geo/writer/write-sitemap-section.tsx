@@ -2,6 +2,7 @@
 
 import { GlobalIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_WRITE_SITEMAP_SKELETON_KEYS } from "@notra/geo-core/constants/geo";
 import { Input } from "@notra/ui/components/ui/input";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Loader2Icon } from "lucide-react";
@@ -10,7 +11,6 @@ import { type KeyboardEvent, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
-import { GEO_WRITE_SITEMAP_SKELETON_KEYS } from "@/constants/geo";
 import { useCreateSitemap } from "@/lib/hooks/use-brand-sitemaps";
 import {
   getRegistrableHost,

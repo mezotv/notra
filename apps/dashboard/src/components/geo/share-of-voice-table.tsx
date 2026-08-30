@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
+  GEO_SPARKLINE_MIN_POINTS,
+} from "@notra/geo-core/constants/geo";
+import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
+import type { ShareOfVoiceRow } from "@notra/geo-core/types/geo";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { useMemo } from "react";
 
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
@@ -11,13 +18,8 @@ import { InstrumentEmpty } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { EMPTY_STATE_TABLE_COLUMNS } from "@/constants/empty-state";
-import {
-  GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
-  GEO_SPARKLINE_MIN_POINTS,
-} from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
-import { findCompetitorDomain } from "@/lib/geo/domain";
-import type { ShareOfVoiceRow, ShareOfVoiceTableProps } from "@/types/geo";
+import type { ShareOfVoiceTableProps } from "@/types/geo";
 import { geoModeFillClass } from "@/utils/chart-colors";
 import {
   buildShareOfVoiceRows,
@@ -30,7 +32,6 @@ import {
   shareOfVoiceRivalIndex,
   shareOfVoiceSliceColor,
 } from "@/utils/geo-competitors";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
 
 export function ShareOfVoiceTable({

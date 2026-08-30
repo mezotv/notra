@@ -2,13 +2,13 @@
 
 import { ArrowDown01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-
-import { Table, type TableColumn } from "@/components/motion/table";
 import {
   GEO_TRAFFIC_MARKDOWN_COLUMN_KEY,
   GEO_TRAFFIC_TREND_CRAWLER_LABEL,
   GEO_TRAFFIC_TREND_REFERRAL_LABEL,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+
+import { Table, type TableColumn } from "@/components/motion/table";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { cn } from "@/lib/utils";
 import type {

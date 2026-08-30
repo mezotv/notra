@@ -1,10 +1,10 @@
 import { describeContentBillingDenial } from "@notra/ai/billing/content-billing";
 import { GEO_WRITER_MODEL } from "@notra/ai/constants/models";
 import type { ContentBillingReservation } from "@notra/ai/types/billing";
+import { GEO_WRITER_TRIGGER_ID } from "@notra/geo-core/constants/geo";
+import { geoWriterWorkflowPayloadSchema } from "@notra/geo-core/schemas/geo";
 import { flattenError } from "zod";
 
-import { GEO_WRITER_TRIGGER_ID } from "@/constants/geo";
-import { geoWriterWorkflowPayloadSchema } from "@/schemas/geo";
 import type { GeoWriterContext, GeoWriterWorkflowResult } from "@/types/geo";
 
 import {
@@ -43,7 +43,7 @@ export async function geoWriterWorkflow(
     );
     return { status: "invalid_payload" };
   }
-  const { organizationId, briefId, runId } = parseResult.data;
+  const { organizationId, projectId, briefId, runId } = parseResult.data;
 
   let context: GeoWriterContext | null = null;
   let billing: ContentBillingReservation | null = null;
@@ -60,7 +60,12 @@ export async function geoWriterWorkflow(
       return { status: "duplicate_execution" };
     }
 
-    context = await loadGeoWriterContext({ organizationId, briefId, runId });
+    context = await loadGeoWriterContext({
+      organizationId,
+      projectId,
+      briefId,
+      runId,
+    });
     if (!context) {
       console.warn(
         `[${LOG_PREFIX}] Brief ${briefId} is not ready for writing, skipping`
@@ -76,6 +81,7 @@ export async function geoWriterWorkflow(
     if (!gate.allowed) {
       await failGeoWriter({
         organizationId,
+        projectId,
         briefId,
         runId,
         reason: describeContentBillingDenial(gate),
@@ -93,6 +99,7 @@ export async function geoWriterWorkflow(
 
     await finishGeoWriter({
       organizationId,
+      projectId,
       briefId,
       runId,
       postId: result.postId,
@@ -139,7 +146,7 @@ export async function geoWriterWorkflow(
     const reason = describeFailure(error);
     console.error(`[${LOG_PREFIX}] Run ${runId} failed:`, error);
     const cleanup = [
-      failGeoWriter({ organizationId, briefId, runId, reason }),
+      failGeoWriter({ organizationId, projectId, briefId, runId, reason }),
       billing
         ? finalizeContentBilling({
             reservation: billing,

@@ -1,5 +1,7 @@
 "use client";
 
+import { GEO_TRAFFIC_REVEAL_MS } from "@notra/geo-core/constants/geo";
+import { isTrafficPagePending } from "@notra/geo-core/utils/ai-traffic";
 import { useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -23,7 +25,6 @@ import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
 } from "@/constants/empty-state";
-import { GEO_TRAFFIC_REVEAL_MS } from "@/constants/geo";
 import {
   useAiTraffic,
   useGeoIngestSetup,
@@ -33,7 +34,6 @@ import {
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps } from "@/types/geo";
-import { isTrafficPagePending } from "@/utils/ai-traffic";
 import { withGeoProject } from "@/utils/geo-paths";
 
 import { GeoTrafficSkeleton } from "./skeleton";

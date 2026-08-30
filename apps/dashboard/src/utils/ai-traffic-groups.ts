@@ -1,19 +1,24 @@
 import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
-
 import {
   GEO_TRAFFIC_GROUPS_BY_ENGINE,
   GEO_TRAFFIC_OTHER_GROUP,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
 import type {
   GeoTrafficPoint,
-  GeoTrafficPurposeTotal,
   GeoTrafficSource,
-  GeoTrafficSourceGroup,
   GeoTrafficSourceGroupDefinition,
   GeoVisitorType,
+} from "@notra/geo-core/types/geo";
+import {
+  formatGeoSource,
+  trafficDayKey,
+} from "@notra/geo-core/utils/ai-traffic";
+import { resolveEngineIconKey } from "@notra/geo-core/utils/geo-engine-icon";
+
+import type {
+  GeoTrafficPurposeTotal,
+  GeoTrafficSourceGroup,
 } from "@/types/geo";
-import { formatGeoSource, trafficDayKey } from "@/utils/ai-traffic";
-import { resolveEngineIconKey } from "@/utils/geo-engine-icon";
 
 export function trafficGroupKey(
   visitorType: GeoVisitorType,

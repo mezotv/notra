@@ -1,9 +1,5 @@
 import { AiScanIcon, Refresh01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
-
-import { Button } from "@/components/button";
-import { InstrumentModule } from "@/components/instrument/instrument-module";
 import {
   AGENT_READINESS_CHECKLIST_PLACEHOLDER_KEYS,
   AGENT_READINESS_GAUGE_CIRCUMFERENCE,
@@ -13,12 +9,16 @@ import {
   AGENT_READINESS_MUST_DO_LABEL,
   AGENT_READINESS_SCANNING_GAUGE_ARC,
   AGENT_READINESS_SHOULD_DO_LABEL,
-} from "@/constants/agent-readiness";
+} from "@notra/geo-core/constants/agent-readiness";
+import { stripWebsiteProtocol } from "@notra/geo-core/utils/geo-website";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
+
+import { Button } from "@/components/button";
+import { InstrumentModule } from "@/components/instrument/instrument-module";
 import type {
   AgentReadinessScanningBreakdownTileProps,
   AgentReadinessScanningNoticeProps,
 } from "@/types/agent-readiness";
-import { stripWebsiteProtocol } from "@/utils/geo-website";
 
 /** Same ring as the score gauge, but with an indeterminate spinning arc. */
 function ScanningGauge() {

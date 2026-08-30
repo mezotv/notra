@@ -1,15 +1,15 @@
 "use client";
 
-import { Label } from "@notra/ui/components/ui/label";
-import { Switch } from "@notra/ui/components/ui/switch";
-
 import {
   GEO_SCAN_DEFAULT_INTERVAL_HOURS,
   GEO_SCAN_INTERVAL_OPTIONS,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+import { geoScanIntervalNoun } from "@notra/geo-core/utils/geo-scan";
+import { Label } from "@notra/ui/components/ui/label";
+import { Switch } from "@notra/ui/components/ui/switch";
+
 import { cn } from "@/lib/utils";
 import type { GeoScanScheduleProps } from "@/types/geo";
-import { geoScanIntervalNoun } from "@/utils/geo-scan";
 
 export function GeoScanSchedule({
   id,

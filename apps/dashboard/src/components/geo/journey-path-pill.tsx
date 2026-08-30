@@ -6,10 +6,11 @@ import {
   Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_JOURNEY_PATH_KIND_CLASS } from "@notra/geo-core/constants/geo";
+import type { GeoJourneyPathKind } from "@notra/geo-core/types/geo";
 
-import { GEO_JOURNEY_PATH_KIND_CLASS } from "@/constants/geo";
 import { cn } from "@/lib/utils";
-import type { GeoJourneyPathKind, JourneyPathPillProps } from "@/types/geo";
+import type { JourneyPathPillProps } from "@/types/geo";
 import { isGeoJourneyTrailGap } from "@/utils/geo-journey";
 
 const KIND_ICON: Record<GeoJourneyPathKind, typeof Home01Icon> = {

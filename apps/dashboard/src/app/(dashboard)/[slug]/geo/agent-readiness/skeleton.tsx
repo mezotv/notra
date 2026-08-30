@@ -1,13 +1,13 @@
 "use client";
 
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
-
-import { PageContainer } from "@/components/layout/container";
 import {
   AGENT_READINESS_PAGE_DESCRIPTION,
   AGENT_READINESS_PAGE_TITLE,
   AGENT_READINESS_SKELETON_ROW_KEYS,
-} from "@/constants/agent-readiness";
+} from "@notra/geo-core/constants/agent-readiness";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
+
+import { PageContainer } from "@/components/layout/container";
 
 export function AgentReadinessSkeleton() {
   const content = (

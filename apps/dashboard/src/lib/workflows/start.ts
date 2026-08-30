@@ -4,20 +4,23 @@ import type { BrandGuidelinesWorkflowPayload } from "@notra/ai/types/brand-guide
 import type { ChatWorkflowPayload } from "@notra/ai/types/chat";
 import type { OnboardingAgentWorkflowPayload } from "@notra/ai/types/onboarding-agent";
 import { contentGenerationWorkflowPayloadSchema } from "@notra/content-generation/schemas";
+import { agentReadinessWorkflowPayloadSchema } from "@notra/geo-core/schemas/agent-readiness";
+import {
+  geoScanWorkflowPayloadSchema,
+  geoWriterWorkflowPayloadSchema,
+} from "@notra/geo-core/schemas/geo";
+import { gscSyncPayloadSchema } from "@notra/geo-core/schemas/google-search-console";
+import type { AgentReadinessWorkflowPayload } from "@notra/geo-core/types/agent-readiness";
+import type { GeoWriterPayload } from "@notra/geo-core/types/geo";
+import type { GscSyncPayload } from "@notra/geo-core/types/google-search-console";
 import { start } from "workflow/api";
 
 import {
   IRIS_START_CLAIM_SCOPE,
   IRIS_START_CLAIM_TTL_SECONDS,
 } from "@/constants/iris";
-import { agentReadinessWorkflowPayloadSchema } from "@/schemas/agent-readiness";
 import { socialAnalyticsSyncPayloadSchema } from "@/schemas/analytics";
 import { brandGuidelinesWorkflowPayloadSchema } from "@/schemas/brand-guidelines";
-import {
-  geoOrganizationInputSchema,
-  geoWriterWorkflowPayloadSchema,
-} from "@/schemas/geo";
-import { gscSyncPayloadSchema } from "@/schemas/google-search-console";
 import {
   eventWorkflowPayloadSchema,
   scheduleWorkflowPayloadSchema,
@@ -27,10 +30,7 @@ import {
   irisWorkflowPayloadSchema,
 } from "@/schemas/workflows/iris";
 import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/workflows/onboarding-agent-payload";
-import type { AgentReadinessWorkflowPayload } from "@/types/agent-readiness";
 import type { BrandAnalysisPayload } from "@/types/brand-analysis";
-import type { GeoWriterPayload } from "@/types/geo";
-import type { GscSyncPayload } from "@/types/google-search-console";
 import { agentReadinessWorkflow } from "@/workflows/agent-readiness";
 import {
   brandAnalysisPayloadSchema,
@@ -144,8 +144,10 @@ export async function startSocialAnalyticsSyncRun(payload: {
 export async function startGeoScanRun(payload: {
   organizationId: string;
   projectId?: string;
+  claimedAt?: string;
+  scanId?: string;
 }): Promise<{ runId: string }> {
-  const parsed = geoOrganizationInputSchema.parse(payload);
+  const parsed = geoScanWorkflowPayloadSchema.parse(payload);
   const run = await start(geoScanWorkflow, [parsed]);
   return { runId: run.runId };
 }

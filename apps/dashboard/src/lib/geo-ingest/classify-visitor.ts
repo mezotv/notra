@@ -1,10 +1,8 @@
-import { classifyUserAgent } from "@usenotra/geo/classify";
-
 import {
   GEO_AI_REFERRER_HOSTS,
   GEO_BROWSER_UA_PATTERNS,
   GEO_NON_AI_BOT_PATTERNS,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
 import {
   GEO_ACCEPT_FINGERPRINT_CONFIDENCE,
   GEO_ACCEPT_FINGERPRINTS,
@@ -16,7 +14,9 @@ import {
   GEO_MARKDOWN_NEGOTIATION_AGENT,
   GEO_MARKDOWN_NEGOTIATION_CATEGORY,
   GEO_MARKDOWN_NEGOTIATION_CONFIDENCE,
-} from "@/constants/geo-accept";
+} from "@notra/geo-core/constants/geo-accept";
+import { classifyUserAgent } from "@usenotra/geo/classify";
+
 import type {
   GeoVisitorClassification,
   GeoVisitorInput,

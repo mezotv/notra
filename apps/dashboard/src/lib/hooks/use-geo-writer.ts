@@ -1,16 +1,16 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-
-import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
-import { GEO_WRITER_BRIEF_POLL_INTERVAL_MS } from "@/constants/geo";
+import { GEO_WRITER_BRIEF_POLL_INTERVAL_MS } from "@notra/geo-core/constants/geo";
 import type {
   GeoContentBriefDetail,
   GeoContentBriefsResponse,
   GeoContentGapsResponse,
   GeoWriterPlanInput,
-} from "@/types/geo";
+} from "@notra/geo-core/types/geo";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+
+import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { toErrorMessage } from "@/utils/error-message";
 
 import { dashboardOrpc } from "../orpc/query";

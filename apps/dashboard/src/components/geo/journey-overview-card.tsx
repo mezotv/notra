@@ -1,5 +1,7 @@
 "use client";
 
+import { GEO_JOURNEY_DEEP_CRAWL_PAGES } from "@notra/geo-core/constants/geo";
+import { formatGeoSource } from "@notra/geo-core/utils/ai-traffic";
 import { useMemo } from "react";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -7,9 +9,7 @@ import {
   InstrumentEmpty,
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
-import { GEO_JOURNEY_DEEP_CRAWL_PAGES } from "@/constants/geo";
 import type { JourneyOverviewCardProps } from "@/types/geo";
-import { formatGeoSource } from "@/utils/ai-traffic";
 import { buildJourneyOverview } from "@/utils/geo-journey";
 
 function shareLabel(value: number): string {

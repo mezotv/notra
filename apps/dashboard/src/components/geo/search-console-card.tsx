@@ -2,6 +2,8 @@
 
 import { Cancel01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GSC_OAUTH_AUTHORIZE_PATH } from "@notra/geo-core/constants/google-search-console";
+import type { GeoSearchConsoleStatus } from "@notra/geo-core/types/google-search-console";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -32,7 +34,6 @@ import { Button } from "@/components/button";
 import { ProjectLogo } from "@/components/geo/project-logo";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
-import { GSC_OAUTH_AUTHORIZE_PATH } from "@/constants/google-search-console";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import {
   useGscDisconnect,
@@ -51,7 +52,6 @@ import type {
   SearchConsoleSelectSiteStateProps,
   SearchConsoleToolbarProps,
 } from "@/types/components/geo";
-import type { GeoSearchConsoleStatus } from "@/types/google-search-console";
 import { formatRelative } from "@/utils/format-relative";
 import {
   findMatchingGscSiteUrl,

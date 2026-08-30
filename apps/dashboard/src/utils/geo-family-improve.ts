@@ -1,12 +1,10 @@
 import {
   GEO_FAMILY_IMPROVE_SPLIT,
   GEO_FAMILY_IMPROVE_STRONG_RATE,
-} from "@/constants/geo";
-import type {
-  FamilyImproveInsight,
-  FamilyImproveKind,
-  GeoEngineFamilyTotals,
-} from "@/types/geo";
+} from "@notra/geo-core/constants/geo";
+import type { GeoEngineFamilyTotals } from "@notra/geo-core/types/geo";
+
+import type { FamilyImproveInsight, FamilyImproveKind } from "@/types/geo";
 import { formatMentionRate } from "@/utils/geo-charts";
 
 function promptCountLabel(missed: number): string {

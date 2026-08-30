@@ -1,5 +1,13 @@
 "use client";
 
+import { GEO_JOURNEY_TRAIL_TABLE_LIMIT } from "@notra/geo-core/constants/geo";
+import type { GeoJourney } from "@notra/geo-core/types/geo";
+import {
+  formatAiTrafficTimestamp,
+  formatGeoJourneyChip,
+  formatGeoJourneySpan,
+  formatGeoSource,
+} from "@notra/geo-core/utils/ai-traffic";
 import { useState } from "react";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -10,15 +18,8 @@ import {
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { GEO_JOURNEY_TRAIL_TABLE_LIMIT } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
-import type { GeoJourney, JourneysCardProps } from "@/types/geo";
-import {
-  formatAiTrafficTimestamp,
-  formatGeoJourneyChip,
-  formatGeoJourneySpan,
-  formatGeoSource,
-} from "@/utils/ai-traffic";
+import type { JourneysCardProps } from "@/types/geo";
 import { tableHeightFor } from "@/utils/table";
 
 export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {

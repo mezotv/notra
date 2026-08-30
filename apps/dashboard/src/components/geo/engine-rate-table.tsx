@@ -2,6 +2,15 @@
 
 import { SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  GEO_EMPTY_PROMPT_RESULTS,
+  GEO_EMPTY_TIMESERIES,
+  GEO_FAMILY_STAT_TREND_HINT,
+  GEO_SPARKLINE_MIN_POINTS,
+} from "@notra/geo-core/constants/geo";
+import type { GeoEngineFamily } from "@notra/geo-core/types/geo";
+import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { Input } from "@notra/ui/components/ui/input";
 import { useMemo, useState } from "react";
 
@@ -17,15 +26,8 @@ import {
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { EMPTY_STATE_TABLE_COLUMNS } from "@/constants/empty-state";
-import {
-  GEO_EMPTY_PROMPT_RESULTS,
-  GEO_EMPTY_TIMESERIES,
-  GEO_FAMILY_STAT_TREND_HINT,
-  GEO_SPARKLINE_MIN_POINTS,
-} from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
-import type { EngineRateTableProps, GeoEngineFamily } from "@/types/geo";
-import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
+import type { EngineRateTableProps } from "@/types/geo";
 import {
   engineFamilyAvgPosition,
   engineFamilyLabel,
@@ -36,7 +38,6 @@ import {
   groupEngineFamilies,
   mentionRateSparkline,
 } from "@/utils/geo-charts";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 import { tableHeightFor } from "@/utils/table";
 
 const NOT_SCANNED_RATE = -1;

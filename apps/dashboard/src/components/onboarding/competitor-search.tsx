@@ -1,6 +1,12 @@
 "use client";
 
 import {
+  GEO_BRAND_SEARCH_DEBOUNCE_MS,
+  GEO_BRAND_SEARCH_MAX_QUERY_LENGTH,
+  GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
+} from "@notra/geo-core/constants/geo";
+import type { GeoBrandSearchResult } from "@notra/geo-core/types/geo";
+import {
   Combobox,
   ComboboxContent,
   ComboboxEmpty,
@@ -13,13 +19,7 @@ import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 
 import { CompetitorBrandLogo } from "@/components/onboarding/competitor-brand-logo";
-import {
-  GEO_BRAND_SEARCH_DEBOUNCE_MS,
-  GEO_BRAND_SEARCH_MAX_QUERY_LENGTH,
-  GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
-} from "@/constants/geo";
 import { useGeoBrandSearch } from "@/lib/hooks/use-geo";
-import type { GeoBrandSearchResult } from "@/types/geo";
 import type { CompetitorSearchProps } from "@/types/onboarding";
 import { findCompetitor } from "@/utils/onboarding-competitors";
 

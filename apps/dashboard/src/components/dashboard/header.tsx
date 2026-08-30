@@ -2,6 +2,10 @@ import { getCalApi } from "@calcom/embed-react";
 import { ArrowRight01Icon, SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  GEO_DEFAULT_TAB,
+  GEO_TAB_BREADCRUMB_LABELS,
+} from "@notra/geo-core/constants/geo";
+import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
@@ -32,7 +36,6 @@ import { useFeedback } from "@/components/dashboard/feedback-context";
 import { FeedbackForm } from "@/components/dashboard/feedback-popover";
 import { NavUser } from "@/components/dashboard/nav-user";
 import { SidebarToggle } from "@/components/dashboard/sidebar-toggle";
-import { GEO_DEFAULT_TAB, GEO_TAB_BREADCRUMB_LABELS } from "@/constants/geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { withGeoProject } from "@/utils/geo-paths";
 

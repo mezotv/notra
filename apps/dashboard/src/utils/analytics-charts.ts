@@ -1,3 +1,5 @@
+import { formatDayLabel, todayIsoDate } from "@notra/geo-core/utils/day-label";
+
 import {
   CURSOR_TOOLTIP_EDGE_PX,
   TOP_POST_CONTENT_PREVIEW_LENGTH,
@@ -19,14 +21,11 @@ import type {
 import type { ChartMarker } from "@/types/charts";
 import { chartKey } from "@/utils/chart-keys";
 
+export { formatDayLabel, todayIsoDate };
+
 const compactFormatter = new Intl.NumberFormat("en", {
   notation: "compact",
   maximumFractionDigits: 1,
-});
-
-const dayLabelFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
 });
 
 const sparklineDayLabelFormatter = new Intl.DateTimeFormat("en-US", {
@@ -50,18 +49,6 @@ export function formatMetric(value: number | null): string {
     return "N/A";
   }
   return compactFormatter.format(value);
-}
-
-export function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-export function formatDayLabel(day: string): string {
-  const date = new Date(`${day}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) {
-    return day;
-  }
-  return dayLabelFormatter.format(date);
 }
 
 export function formatSparklineDayLabel(day: string): string {

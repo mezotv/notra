@@ -1,11 +1,11 @@
 "use client";
 
+import { GEO_LOGO_SIZE_PX } from "@notra/geo-core/constants/geo";
+import { competitorLogoSources } from "@notra/geo-core/geo/logo";
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
 import { useState } from "react";
 
-import { GEO_LOGO_SIZE_PX } from "@/constants/geo";
-import { competitorLogoSources } from "@/lib/geo/logo";
 import { useCompanyLogo } from "@/lib/hooks/use-onboarding";
 import type { CompetitorLogoProps } from "@/types/geo";
 

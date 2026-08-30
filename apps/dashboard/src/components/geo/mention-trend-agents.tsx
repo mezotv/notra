@@ -3,6 +3,11 @@
 import { ArrowUpDownIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  GEO_FILTER_TRIGGER_CLASS,
+  GEO_MENTION_TREND_AGENT_ICON_LIMIT,
+  GEO_MENTION_TREND_ALL_PROVIDERS_LABEL,
+} from "@notra/geo-core/constants/geo";
+import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -12,11 +17,6 @@ import {
 } from "@notra/ui/components/ui/dropdown-menu";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
-import {
-  GEO_FILTER_TRIGGER_CLASS,
-  GEO_MENTION_TREND_AGENT_ICON_LIMIT,
-  GEO_MENTION_TREND_ALL_PROVIDERS_LABEL,
-} from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { MentionTrendAgentsPickerProps } from "@/types/geo";
 

@@ -2,14 +2,14 @@ import {
   createServerFlagsManager,
   type ServerFlagsManager,
 } from "@databuddy/sdk/node";
-import { Effect } from "effect";
-
 import {
   GEO_CURSOR_FLAG_CACHE_TTL_MS,
   GEO_CURSOR_FLAG_ERROR_REASON,
   GEO_CURSOR_FLAG_STALE_TIME_MS,
-} from "@/constants/geo";
-import { GeoCursorFlagEvaluationError } from "@/lib/geo/errors";
+} from "@notra/geo-core/constants/geo";
+import { GeoCursorFlagEvaluationError } from "@notra/geo-core/geo/errors";
+import { Effect } from "effect";
+
 import type { GeoCursorFlagState } from "@/types/geo";
 
 const clientId = process.env.NEXT_PUBLIC_DATABUDDY_DASHBOARD_WEBSITE_ID ?? "";

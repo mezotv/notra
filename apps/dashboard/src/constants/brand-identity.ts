@@ -20,39 +20,7 @@ export const TONE_OPTIONS: { value: ToneProfile; label: string }[] = [
 
 export const LANGUAGE_OPTIONS = SUPPORTED_LANGUAGES;
 
-export const LANGUAGE_FLAGS: Record<
-  (typeof SUPPORTED_LANGUAGES)[number],
-  string
-> = {
-  English: "🇺🇸",
-  Spanish: "🇪🇸",
-  French: "🇫🇷",
-  German: "🇩🇪",
-  Portuguese: "🇵🇹",
-  Dutch: "🇳🇱",
-  Italian: "🇮🇹",
-  Japanese: "🇯🇵",
-  Korean: "🇰🇷",
-  Chinese: "🇨🇳",
-  Arabic: "🇸🇦",
-  Hindi: "🇮🇳",
-  Russian: "🇷🇺",
-  Turkish: "🇹🇷",
-  Polish: "🇵🇱",
-  Swedish: "🇸🇪",
-  Danish: "🇩🇰",
-  Norwegian: "🇳🇴",
-  Finnish: "🇫🇮",
-  Czech: "🇨🇿",
-  Romanian: "🇷🇴",
-  Hungarian: "🇭🇺",
-  Greek: "🇬🇷",
-  Thai: "🇹🇭",
-  Vietnamese: "🇻🇳",
-  Indonesian: "🇮🇩",
-  Ukrainian: "🇺🇦",
-  Hebrew: "🇮🇱",
-};
+export { LANGUAGE_FLAGS } from "@/constants/language-flags";
 
 export const FULL_URL_REGEX = /^https?:\/\//i;
 

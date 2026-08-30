@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizePublicWebsiteUrl } from "@notra/geo-core/schemas/url";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useReducer, useRef } from "react";
@@ -33,7 +34,6 @@ import {
 import { useRefreshBrandGuidelinesAction } from "../../../../../lib/hooks/use-brand-guidelines";
 import { useReferences } from "../../../../../lib/hooks/use-brand-references";
 import { useSitemaps } from "../../../../../lib/hooks/use-brand-sitemaps";
-import { normalizePublicWebsiteUrl } from "../../../../../schemas/url";
 import { BrandIdentityWorkspace } from "./components/brand-identity-workspace";
 import { EmptyBrandIdentityState } from "./components/empty-brand-identity-state";
 import { BrandIdentityPageSkeleton } from "./skeleton";

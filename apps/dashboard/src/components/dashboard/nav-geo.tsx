@@ -1,11 +1,11 @@
 "use client";
 
+import { GEO_UPGRADE_TOOLTIP } from "@notra/geo-core/constants/geo";
 import {
   SidebarGroup,
   SidebarGroupLabel,
 } from "@notra/ui/components/ui/sidebar";
 
-import { GEO_UPGRADE_TOOLTIP } from "@/constants/geo";
 import {
   NAV_CATEGORY_LABELS,
   NAV_GEO_LINKS,

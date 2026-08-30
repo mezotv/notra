@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  GEO_SEARCH_LABEL,
+  GEO_WITHOUT_SEARCH_LABEL,
+} from "@notra/geo-core/constants/geo";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
@@ -13,7 +17,6 @@ import { GeoBar } from "@/components/geo/geo-bar";
 import { InstrumentModule } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_PERCENT_SCALE } from "@/constants/charts";
-import { GEO_SEARCH_LABEL, GEO_WITHOUT_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_ENGINES,
   GEO_DIRECTIONS_KPIS,

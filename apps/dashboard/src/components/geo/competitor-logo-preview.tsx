@@ -1,12 +1,12 @@
 "use client";
 
+import { GEO_LOGO_DEBOUNCE_MS } from "@notra/geo-core/constants/geo";
+import { normalizeCompetitorDomain } from "@notra/geo-core/geo/domain";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { useState } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
-import { GEO_LOGO_DEBOUNCE_MS } from "@/constants/geo";
-import { normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { cn } from "@/lib/utils";
 import type { CompetitorLogoPreviewProps } from "@/types/geo";
 

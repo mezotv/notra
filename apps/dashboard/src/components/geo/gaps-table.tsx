@@ -2,6 +2,20 @@
 
 import { SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  GEO_COMPETITOR_KIND_DETAIL,
+  GEO_GAPS_EMPTY,
+  GEO_GAPS_ENGINE_FILTER_ALL,
+  GEO_GAPS_METER_STEPS,
+  GEO_GAPS_METER_TONE_CLASS,
+  GEO_GAPS_TABLE_HEIGHT,
+  GEO_PROMPTS_NAV_LINK,
+} from "@notra/geo-core/constants/geo";
+import { findCompetitor } from "@notra/geo-core/geo/domain";
+import type {
+  GeoPromptGapRow,
+  GeoSearchGapRow,
+} from "@notra/geo-core/types/geo";
 import { Input } from "@notra/ui/components/ui/input";
 import {
   PermissionOption,
@@ -36,16 +50,6 @@ import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
 } from "@/constants/empty-state";
-import {
-  GEO_COMPETITOR_KIND_DETAIL,
-  GEO_GAPS_EMPTY,
-  GEO_GAPS_ENGINE_FILTER_ALL,
-  GEO_GAPS_METER_STEPS,
-  GEO_GAPS_METER_TONE_CLASS,
-  GEO_GAPS_TABLE_HEIGHT,
-  GEO_PROMPTS_NAV_LINK,
-} from "@/constants/geo";
-import { findCompetitor } from "@/lib/geo/domain";
 import { cn } from "@/lib/utils";
 import type {
   GeoGapsEmptyProps,
@@ -54,7 +58,6 @@ import type {
   GeoGapsTableProps,
   GeoGapsTabsProps,
 } from "@/types/components/geo-gaps";
-import type { GeoPromptGapRow, GeoSearchGapRow } from "@/types/geo";
 import { engineFamilyLabel, formatMentionRate } from "@/utils/geo-charts";
 import { matchTrackedCompetitorNames } from "@/utils/geo-competitors";
 import {

@@ -1,5 +1,10 @@
 "use client";
 
+import { GEO_TRAFFIC_PAGES_PAGE_PARAM } from "@notra/geo-core/constants/geo";
+import {
+  formatGeoSource,
+  trafficVisitDelta,
+} from "@notra/geo-core/utils/ai-traffic";
 import type { ReactNode } from "react";
 
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
@@ -12,11 +17,9 @@ import {
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TablePagination } from "@/components/table-pagination";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
-import { GEO_TRAFFIC_PAGES_PAGE_PARAM } from "@/constants/geo";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { useTablePagination } from "@/lib/hooks/use-table-pagination";
 import type { GeoTrafficPageGroup, TrafficPagesCardProps } from "@/types/geo";
-import { formatGeoSource, trafficVisitDelta } from "@/utils/ai-traffic";
 import { groupTrafficPages } from "@/utils/ai-traffic-pages";
 import { paginatedTableHeightFor } from "@/utils/table";
 

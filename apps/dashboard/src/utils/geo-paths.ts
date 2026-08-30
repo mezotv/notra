@@ -1,4 +1,4 @@
-import { GEO_GAPS_NAV_LINK } from "@/constants/geo";
+import { GEO_GAPS_NAV_LINK } from "@notra/geo-core/constants/geo";
 
 const GEO_DASHBOARD_PATH_PATTERN = /(?:^|\/)geo(?:\/|\?|$)/;
 

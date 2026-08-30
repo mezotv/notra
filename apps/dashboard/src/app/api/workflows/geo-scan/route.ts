@@ -1,15 +1,20 @@
 import { deleteQstashMessage, getAppUrl } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { geoSettings } from "@notra/db/schema";
+import {
+  claimGeoScanRun,
+  releaseGeoScanRun,
+} from "@notra/geo-core/geo/scan-status";
+import { syncGeoScanSchedule } from "@notra/geo-core/geo/schedule";
+import { geoOrganizationInputSchema } from "@notra/geo-core/schemas/geo";
+import { logGeoScanSkipped } from "@notra/geo-core/utils/geo-log";
+import { isDefiniteGeoScanHandoffRejection } from "@notra/geo-core/utils/geo-scan";
 import { and, asc, eq } from "drizzle-orm";
+import { Effect } from "effect";
 import { flattenError } from "zod";
 
-import { logGeoScanSkipped } from "@/lib/geo/log";
-import { syncGeoScanSchedule } from "@/lib/geo/schedule";
 import { verifyQstashSignature } from "@/lib/workflows/qstash-verify";
 import { startGeoScanRun } from "@/lib/workflows/start";
-import { geoOrganizationInputSchema } from "@/schemas/geo";
-import { isGeoScanRunning } from "@/utils/geo-scan";
 
 const ROUTE_PATH = "/api/workflows/geo-scan";
 
@@ -107,7 +112,17 @@ export async function POST(request: Request) {
     return Response.json({ status: "skipped", reason: "superseded" });
   }
 
-  if (isGeoScanRunning(settings.scanStartedAt, settings.lastScanAt)) {
+  // Same atomic claim the public API and the dashboard trigger take, so a
+  // scheduled scan cannot start alongside a manual one. Reading
+  // `isGeoScanRunning` here would let all three pass the check together.
+  const claim = await Effect.runPromise(
+    Effect.result(claimGeoScanRun(settings.projectId))
+  );
+  if (claim._tag === "Failure") {
+    console.error("[GEO] Failed to claim the scan slot:", claim.failure);
+    return new Response("Failed to claim the scan slot", { status: 500 });
+  }
+  if (!claim.success) {
     await logGeoScanSkipped("already_running", {
       organizationId: settings.organizationId,
       projectId: settings.projectId,
@@ -116,10 +131,33 @@ export async function POST(request: Request) {
     });
     return Response.json({ status: "skipped", reason: "already_running" });
   }
+  const { claimedAt } = claim.success;
 
-  const { runId } = await startGeoScanRun({
-    organizationId: settings.organizationId,
-    projectId: settings.projectId,
-  });
-  return Response.json({ runId }, { status: 202 });
+  try {
+    const { runId } = await startGeoScanRun({
+      organizationId: settings.organizationId,
+      projectId: settings.projectId,
+      // Ownership token for the claim above: the run is the only writer
+      // allowed to release or finish it.
+      claimedAt: claimedAt.toISOString(),
+    });
+    return Response.json({ runId }, { status: 202 });
+  } catch (error) {
+    console.error("[GEO] Failed to start the scheduled scan:", error);
+    if (isDefiniteGeoScanHandoffRejection(error)) {
+      // Provably nothing was started, so hand the slot straight back instead
+      // of blocking the next trigger until the claim goes stale.
+      await Effect.runPromise(
+        Effect.result(releaseGeoScanRun(settings.projectId, claimedAt))
+      );
+    } else {
+      // Ambiguous outcome — the workflow may have been accepted before the
+      // error surfaced. Releasing would let the next trigger run a second,
+      // separately billed scan alongside it, so let the claim go stale.
+      console.warn(
+        "[GEO] Scan hand-off outcome unknown; holding the claim until it goes stale"
+      );
+    }
+    return new Response("Failed to start the scan", { status: 500 });
+  }
 }

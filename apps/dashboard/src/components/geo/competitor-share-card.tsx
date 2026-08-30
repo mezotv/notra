@@ -1,11 +1,13 @@
 "use client";
 
+import { GEO_SHARE_OF_VOICE_PAGE_TOP_BRANDS } from "@notra/geo-core/constants/geo";
+import type { ShareOfVoiceRow } from "@notra/geo-core/types/geo";
+
 import { ShareOfVoiceDonut } from "@/components/geo/share-of-voice-donut";
 import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
-import { GEO_SHARE_OF_VOICE_PAGE_TOP_BRANDS } from "@/constants/geo";
 import { useGeoCompetitorRowNavigation } from "@/lib/hooks/use-geo";
-import type { CompetitorShareCardProps, ShareOfVoiceRow } from "@/types/geo";
+import type { CompetitorShareCardProps } from "@/types/geo";
 
 export function CompetitorShareCard({
   points,

@@ -1,6 +1,5 @@
+import type { GeoScopeInput } from "@notra/geo-core/types/geo";
 import type { QueryClient } from "@tanstack/react-query";
-
-import type { GeoScopeInput } from "@/types/geo";
 
 export interface GeoCollectionSpec<T extends object> {
   name: string;

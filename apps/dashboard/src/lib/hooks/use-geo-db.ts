@@ -1,5 +1,11 @@
 "use client";
 
+import type {
+  GeoCompetitor,
+  GeoPromptSequence,
+  GeoScopeInput,
+  GeoTrackedPrompt,
+} from "@notra/geo-core/types/geo";
 import type { Transaction } from "@tanstack/react-db";
 import { useDbClient, useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useSyncExternalStore } from "react";
@@ -18,12 +24,6 @@ import {
   markRowPending,
   subscribeToPendingRows,
 } from "@/lib/db/pending-rows";
-import type {
-  GeoCompetitor,
-  GeoPromptSequence,
-  GeoScopeInput,
-  GeoTrackedPrompt,
-} from "@/types/geo";
 import { toErrorMessage } from "@/utils/error-message";
 
 function usePendingRows(name: string, scope: GeoScopeInput) {

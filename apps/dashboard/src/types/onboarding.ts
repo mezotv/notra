@@ -1,13 +1,13 @@
-import type * as z from "zod";
-
-import type { ONBOARDING_HEARD_ABOUT_NOTRA_SOURCES } from "@/constants/onboarding";
-import type { onboardingWorkspaceSchema } from "@/schemas/onboarding/workspace";
 import type {
   GeoBrandSearchResult,
   GeoCompetitor,
   GeoDiscoveredPrompt,
   GeoWebsiteDiscovery,
-} from "@/types/geo";
+} from "@notra/geo-core/types/geo";
+import type * as z from "zod";
+
+import type { ONBOARDING_HEARD_ABOUT_NOTRA_SOURCES } from "@/constants/onboarding";
+import type { onboardingWorkspaceSchema } from "@/schemas/onboarding/workspace";
 
 export type OnboardingHeardAboutNotraSource =
   (typeof ONBOARDING_HEARD_ABOUT_NOTRA_SOURCES)[number];

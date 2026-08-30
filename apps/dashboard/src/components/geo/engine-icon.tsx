@@ -5,6 +5,8 @@ import {
   Robot01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { EngineIconKey } from "@notra/geo-core/types/geo";
+import { resolveEngineIconKey } from "@notra/geo-core/utils/geo-engine-icon";
 import { Amazon } from "@notra/ui/components/ui/svgs/amazon";
 import { Apple } from "@notra/ui/components/ui/svgs/apple";
 import { AppleDark } from "@notra/ui/components/ui/svgs/appleDark";
@@ -54,8 +56,7 @@ import type { ComponentType, SVGProps } from "react";
 
 import { ModelProviderLogo } from "@/components/geo/model-provider-logo";
 import { cn } from "@/lib/utils";
-import type { EngineIconKey, EngineIconProps } from "@/types/geo";
-import { resolveEngineIconKey } from "@/utils/geo-engine-icon";
+import type { EngineIconProps } from "@/types/geo";
 import { splitModelId } from "@/utils/geo-model-display";
 
 export function EngineIcon(props: EngineIconProps) {

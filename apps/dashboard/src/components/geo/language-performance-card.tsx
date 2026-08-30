@@ -3,6 +3,17 @@
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  GEO_MAX_LANGUAGES,
+  GEO_SPARKLINE_MIN_POINTS,
+  GEO_VISIBILITY_TABLE_ROWS,
+} from "@notra/geo-core/constants/geo";
+import type { LanguagePerformanceRow } from "@notra/geo-core/types/geo";
+import {
+  buildLanguagePerformanceRows,
+  trackedGeoLanguages,
+  withAddedGeoLanguage,
+} from "@notra/geo-core/utils/geo-language-rows";
+import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
   ResponsiveAlertDialogCancel,
@@ -26,25 +37,12 @@ import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Twemoji } from "@/components/geo/twemoji";
 import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
-import {
-  GEO_LANGUAGE_FLAGS,
-  GEO_MAX_LANGUAGES,
-  GEO_SPARKLINE_MIN_POINTS,
-  GEO_VISIBILITY_TABLE_ROWS,
-} from "@/constants/geo";
+import { LANGUAGE_FLAGS } from "@/constants/language-flags";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
-import type {
-  LanguagePerformanceCardProps,
-  LanguagePerformanceRow,
-} from "@/types/geo";
+import type { LanguagePerformanceCardProps } from "@/types/geo";
 import { formatMentionRate } from "@/utils/geo-charts";
-import {
-  buildLanguagePerformanceRows,
-  trackedGeoLanguages,
-  withAddedGeoLanguage,
-} from "@/utils/geo-language-rows";
 import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
 
 function LanguageNameCell({
@@ -63,7 +61,7 @@ function LanguageNameCell({
     >
       <Twemoji
         className={cn("size-4 shrink-0", muted && "opacity-40")}
-        emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+        emoji={LANGUAGE_FLAGS[language as keyof typeof LANGUAGE_FLAGS] ?? ""}
         label={language}
       />
       <span className={cn("min-w-0 truncate", !muted && "font-medium")}>

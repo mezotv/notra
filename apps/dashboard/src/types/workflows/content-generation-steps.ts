@@ -1,13 +1,14 @@
-import type { AgentTokenUsage } from "@notra/ai/types/agents";
-import type {
-  ContentBillingReservation,
-  ContentQuotaFeatureId,
-} from "@notra/ai/types/billing";
 import type {
   ContentCreationMode,
   DatabuddyWorkflowSource,
 } from "@notra/content-generation/databuddy";
 import type { PostSourceMetadata } from "@notra/db/schema";
+
+export type {
+  FinalizeContentBillingInput,
+  GateContentBillingInput,
+  WorkflowContentBillingGate,
+} from "@notra/geo-core/types/content-billing";
 
 import type {
   IntegrationType,
@@ -18,18 +19,6 @@ import type {
   ContentEmailDigestKind,
   EnqueueContentEmailDigestEvent,
 } from "@/types/workflows/content-email-digest";
-
-export type WorkflowContentBillingGate = ContentBillingReservation;
-
-export interface GateContentBillingInput {
-  organizationId: string;
-  executionId: string;
-  outputType: string | null;
-  quotaFeatureId?: ContentQuotaFeatureId;
-  units?: number;
-  lockTtlMs?: number;
-  countTowardQuota?: boolean;
-}
 
 export interface NotifyContentLimitInput {
   organizationId: string;
@@ -47,16 +36,6 @@ export interface FinishGenerationInput {
   status: "success" | "failed" | "skipped";
   reason?: string;
   title?: string;
-}
-
-export interface FinalizeContentBillingInput {
-  reservation: ContentBillingReservation;
-  action: "confirm" | "release";
-  units?: number;
-  usage?: AgentTokenUsage;
-  fallbackModelId?: string;
-  properties?: Record<string, string | number | boolean>;
-  logPrefix: string;
 }
 
 export interface AppendAutomationLogInput {

@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  GEO_UPGRADE_DESCRIPTION,
+  GEO_UPGRADE_TITLE,
+} from "@notra/geo-core/constants/geo";
+import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
@@ -16,7 +20,6 @@ import { toast } from "sonner";
 
 import { PlanCard } from "@/components/billing/plan-card";
 import { FEATURED_PLAN_TIER } from "@/constants/billing";
-import { GEO_UPGRADE_DESCRIPTION, GEO_UPGRADE_TITLE } from "@/constants/geo";
 import { attachPlanWithAddons } from "@/lib/billing/attach-plan";
 import type { BillingPlanGroup } from "@/types/billing/plan";
 import type { GeoUpgradeDialogProps } from "@/types/components/geo";

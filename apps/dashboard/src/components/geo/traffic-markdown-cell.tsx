@@ -2,6 +2,7 @@
 
 import { SourceCodeIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { formatMarkdownShare } from "@notra/geo-core/utils/ai-traffic";
 import {
   HoverCard,
   HoverCardTrigger,
@@ -10,7 +11,6 @@ import {
 import { TrafficBreakdownCard } from "@/components/geo/traffic-breakdown-card";
 import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
 import type { TrafficMarkdownCellProps } from "@/types/geo";
-import { formatMarkdownShare } from "@/utils/ai-traffic";
 
 export function TrafficMarkdownCell({
   markdownVisits,

@@ -1,5 +1,8 @@
-import { GEO_IMPORT_COPY } from "@/constants/geo-import";
-import type { GeoImportKind, GeoImportResult } from "@/types/geo-import";
+import { GEO_IMPORT_COPY } from "@notra/geo-core/constants/geo-import";
+import type {
+  GeoImportKind,
+  GeoImportResult,
+} from "@notra/geo-core/types/geo-import";
 
 export function geoImportNoun(kind: GeoImportKind, count: number): string {
   const copy = GEO_IMPORT_COPY[kind];

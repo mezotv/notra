@@ -1,9 +1,10 @@
 "use client";
 
+import { GEO_PRESENCE_LABELS } from "@notra/geo-core/constants/geo";
+import type { GeoPresenceStatus } from "@notra/geo-core/types/geo";
 import { Badge } from "@notra/ui/components/ui/badge";
 
-import { GEO_PRESENCE_LABELS } from "@/constants/geo";
-import type { GeoPresenceStatus, PresenceBadgeProps } from "@/types/geo";
+import type { PresenceBadgeProps } from "@/types/geo";
 
 const PRESENCE_TITLES: Partial<Record<GeoPresenceStatus, string>> = {
   "retrieval-only": "Mentioned in Search only: found live, not in the model",

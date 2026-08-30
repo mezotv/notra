@@ -7,10 +7,11 @@ import {
   AGENT_READINESS_GAUGE_SIZE,
   AGENT_READINESS_GAUGE_STROKE,
   AGENT_READINESS_MAX_SCORE,
-} from "@/constants/agent-readiness";
+} from "@notra/geo-core/constants/agent-readiness";
+import { getAgentReadinessScoreBand } from "@notra/geo-core/utils/agent-readiness";
+
 import { cn } from "@/lib/utils";
 import type { AgentReadinessScoreGaugeProps } from "@/types/agent-readiness";
-import { getAgentReadinessScoreBand } from "@/utils/agent-readiness";
 
 /** Lighthouse-style circular score ring, colored by band. */
 export function AgentReadinessScoreGauge({

@@ -1,6 +1,10 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  AI_TRAFFIC_PURPOSE_DESCRIPTIONS,
+  AI_TRAFFIC_PURPOSE_LABELS,
+} from "@notra/geo-core/constants/geo";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   Tooltip,
@@ -8,10 +12,6 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 
-import {
-  AI_TRAFFIC_PURPOSE_DESCRIPTIONS,
-  AI_TRAFFIC_PURPOSE_LABELS,
-} from "@/constants/geo";
 import { AI_TRAFFIC_PURPOSE_ICONS } from "@/constants/geo-purpose-icons";
 import type { PurposeBadgeProps } from "@/types/geo";
 

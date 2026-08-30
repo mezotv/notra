@@ -2,6 +2,11 @@
 
 import { Copy01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_JOURNEY_TRAIL_DETAIL_LIMIT } from "@notra/geo-core/constants/geo";
+import {
+  formatGeoJourneySpan,
+  formatGeoSource,
+} from "@notra/geo-core/utils/ai-traffic";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -24,10 +29,8 @@ import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { JourneyPathTrail } from "@/components/geo/journey-path-trail";
 import { CountryFlag } from "@/components/geo/twemoji";
-import { GEO_JOURNEY_TRAIL_DETAIL_LIMIT } from "@/constants/geo";
 import { useGeoJourneyDetail } from "@/lib/hooks/use-geo";
 import type { JourneyDetailDialogProps } from "@/types/geo";
-import { formatGeoJourneySpan, formatGeoSource } from "@/utils/ai-traffic";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
 import { countryName } from "@/utils/country";
 import {

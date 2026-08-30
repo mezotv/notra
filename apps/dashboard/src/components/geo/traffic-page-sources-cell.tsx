@@ -1,19 +1,22 @@
 "use client";
 
 import {
+  GEO_TRAFFIC_PAGE_SOURCE_ICON_LIMIT,
+  GEO_VISITOR_TYPE_LABELS,
+} from "@notra/geo-core/constants/geo";
+import {
+  formatAiTrafficTimestamp,
+  formatGeoSource,
+} from "@notra/geo-core/utils/ai-traffic";
+import {
   HoverCard,
   HoverCardTrigger,
 } from "@notra/ui/components/ui/hover-card";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { TrafficBreakdownCard } from "@/components/geo/traffic-breakdown-card";
-import {
-  GEO_TRAFFIC_PAGE_SOURCE_ICON_LIMIT,
-  GEO_VISITOR_TYPE_LABELS,
-} from "@/constants/geo";
 import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
 import type { TrafficPageSourcesCellProps } from "@/types/geo";
-import { formatAiTrafficTimestamp, formatGeoSource } from "@/utils/ai-traffic";
 import { trafficVisitShare } from "@/utils/ai-traffic-groups";
 import { trafficPageSourcesLabel } from "@/utils/ai-traffic-pages";
 

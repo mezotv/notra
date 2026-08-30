@@ -1,4 +1,5 @@
-import { AGENT_READINESS_UNAVAILABLE_DESCRIPTION } from "@/constants/agent-readiness";
+import { AGENT_READINESS_UNAVAILABLE_DESCRIPTION } from "@notra/geo-core/constants/agent-readiness";
+
 import { isAgentReadinessEnabledForOrganization } from "@/lib/geo/agent-readiness-flag";
 import { forbidden } from "@/lib/orpc/utils/errors";
 

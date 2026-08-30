@@ -1,13 +1,13 @@
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { projects } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
-
 import {
   GEO_INGEST_IDENTITY_ACTIVE_TTL_SECONDS,
   GEO_INGEST_IDENTITY_CACHE_PREFIX,
   GEO_INGEST_IDENTITY_INACTIVE_TTL_SECONDS,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+import { and, eq } from "drizzle-orm";
+
 import { getGeoIngestTokenGeneration } from "@/lib/geo-ingest/generation";
 import type { GeoIngestIdentity } from "@/types/geo";
 

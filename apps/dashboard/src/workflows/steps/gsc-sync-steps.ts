@@ -1,5 +1,5 @@
-import { syncGscSuggestions } from "@/lib/geo/search-console";
-import type { GscSyncResult } from "@/types/google-search-console";
+import { syncGscSuggestions } from "@notra/geo-core/geo/search-console";
+import type { GscSyncResult } from "@notra/geo-core/types/google-search-console";
 
 export async function runGscSyncStep(
   organizationId: string

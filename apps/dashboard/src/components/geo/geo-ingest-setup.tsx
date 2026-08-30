@@ -2,6 +2,17 @@
 
 import { AiMagicIcon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  GEO_INGEST_DEFAULT_FRAMEWORK,
+  GEO_INGEST_DEFAULT_PACKAGE_MANAGER,
+  GEO_INGEST_FRAMEWORK_OPTIONS,
+  GEO_INGEST_PACKAGE_MANAGER_OPTIONS,
+  GEO_INGEST_TOKEN_ENV,
+} from "@notra/geo-core/constants/geo";
+import type {
+  GeoIngestFramework,
+  GeoIngestPackageManager,
+} from "@notra/geo-core/types/geo";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { useState } from "react";
 
@@ -9,19 +20,8 @@ import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { Button } from "@/components/button";
 import { CodeSnippet, useCopyCode } from "@/components/geo/code-snippet";
 import { GeoPackageManagerIcon } from "@/components/geo/package-manager-icon";
-import {
-  GEO_INGEST_DEFAULT_FRAMEWORK,
-  GEO_INGEST_DEFAULT_PACKAGE_MANAGER,
-  GEO_INGEST_FRAMEWORK_OPTIONS,
-  GEO_INGEST_PACKAGE_MANAGER_OPTIONS,
-  GEO_INGEST_TOKEN_ENV,
-} from "@/constants/geo";
 import { cn } from "@/lib/utils";
-import type {
-  GeoIngestFramework,
-  GeoIngestPackageManager,
-  GeoIngestSetupPanelProps,
-} from "@/types/geo";
+import type { GeoIngestSetupPanelProps } from "@/types/geo";
 import {
   geoIngestAgentPrompt,
   geoIngestInstallCommand,

@@ -2,6 +2,13 @@
 
 import { ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
+import type {
+  GeoCompetitor,
+  ShareOfVoiceDonutSlice,
+  ShareOfVoiceRow,
+} from "@notra/geo-core/types/geo";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { type CSSProperties, type ReactNode, useMemo, useState } from "react";
 
 import { ChartColorScope } from "@/components/charts/chart-color-scope";
@@ -14,15 +21,9 @@ import {
   DONUT_INNER_RADIUS,
   DONUT_OUTER_RADIUS,
 } from "@/constants/charts";
-import { findCompetitorDomain } from "@/lib/geo/domain";
 import { cn } from "@/lib/utils";
 import type { ChartConfig } from "@/types/charts";
-import type {
-  GeoCompetitor,
-  ShareOfVoiceDonutProps,
-  ShareOfVoiceDonutSlice,
-  ShareOfVoiceRow,
-} from "@/types/geo";
+import type { ShareOfVoiceDonutProps } from "@/types/geo";
 import { seriesColors } from "@/utils/chart-colors";
 import {
   buildShareOfVoiceBreakdown,
@@ -33,7 +34,6 @@ import {
   shareOfVoiceRivalIndex,
   shareOfVoiceSliceColor,
 } from "@/utils/geo-competitors";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 const LEGEND_ROW_CLASS = "flex w-full items-center gap-1.5 px-1 py-0.5 text-xs";
 const LEGEND_ROW_INTERACTIVE_CLASS =

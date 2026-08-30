@@ -1,4 +1,5 @@
-import { GEO_VISIBILITY_TABLE_ROWS } from "@/constants/geo";
+import { GEO_VISIBILITY_TABLE_ROWS } from "@notra/geo-core/constants/geo";
+
 import {
   TABLE_MAX_HEIGHT,
   TABLE_MIN_ROWS,

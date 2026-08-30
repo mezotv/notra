@@ -1,5 +1,10 @@
 "use client";
 
+import { GEO_CHAT_SKIN_SURFACE } from "@notra/geo-core/constants/geo";
+import type { GeoChatSkin, GeoPromptResult } from "@notra/geo-core/types/geo";
+import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { perplexitySourcesFromExcerpt } from "@notra/geo-core/utils/geo-perplexity-sources";
+import { isGroundedEngine } from "@notra/geo-core/utils/geo-presence";
 import { MessageResponse } from "@notra/ui/components/ai-elements/message";
 import { ChatgptActions } from "@notra/ui/components/brainless/chatgpt/chatgpt-actions";
 import { ChatgptComposer } from "@notra/ui/components/brainless/chatgpt/chatgpt-composer";
@@ -14,14 +19,8 @@ import type { ReactNode } from "react";
 
 import { GeoAnswerSearch } from "@/components/geo/geo-answer-search";
 import { GeoSkinMessage } from "@/components/geo/geo-skin-message";
-import { GEO_CHAT_SKIN_SURFACE } from "@/constants/geo";
 import { cn } from "@/lib/utils";
-import type {
-  GeoChatSkin,
-  GeoPromptAnswerThreadProps,
-  GeoPromptResult,
-} from "@/types/geo";
-import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
+import type { GeoPromptAnswerThreadProps } from "@/types/geo";
 import {
   chatgptModelForEngine,
   claudeModelForEngine,
@@ -29,8 +28,6 @@ import {
   perplexityModelForEngine,
 } from "@/utils/geo-chat-model";
 import { geoChatSkin } from "@/utils/geo-chat-skin";
-import { perplexitySourcesFromExcerpt } from "@/utils/geo-perplexity-sources";
-import { isGroundedEngine } from "@/utils/geo-presence";
 
 const ANSWER_MARKDOWN_CLASS =
   "[&_h1]:mt-0 [&_h1]:mb-2 [&_h1]:text-[1.15em] [&_h1]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:text-[1.05em] [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_h3]:text-[1em] [&_h3]:font-semibold [&_p]:my-2.5 [&_ul]:my-2.5 [&_ol]:my-2.5";

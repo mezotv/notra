@@ -1,6 +1,8 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
+import { AI_TRAFFIC_PURPOSE_LABELS } from "@notra/geo-core/constants/geo";
+import { formatGeoSource } from "@notra/geo-core/utils/ai-traffic";
 import {
   HoverCard,
   HoverCardTrigger,
@@ -9,11 +11,9 @@ import {
 import { PurposeBadge } from "@/components/geo/purpose-badge";
 import { TrafficBreakdownCard } from "@/components/geo/traffic-breakdown-card";
 import { TrafficSourceGroupIcon } from "@/components/geo/traffic-source-group-icon";
-import { AI_TRAFFIC_PURPOSE_LABELS } from "@/constants/geo";
 import { AI_TRAFFIC_PURPOSE_ICONS } from "@/constants/geo-purpose-icons";
 import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
 import type { TrafficPurposeCellProps } from "@/types/geo";
-import { formatGeoSource } from "@/utils/ai-traffic";
 import {
   hasTrafficGroupBreakdown,
   trafficGroupPurposeTotals,

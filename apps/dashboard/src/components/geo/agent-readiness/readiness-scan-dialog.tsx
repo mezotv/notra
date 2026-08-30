@@ -1,6 +1,12 @@
 "use client";
 
 import {
+  AGENT_READINESS_SCAN_DIALOG_BODY,
+  AGENT_READINESS_SCAN_DIALOG_CANCEL,
+  AGENT_READINESS_SCAN_DIALOG_CONFIRM,
+  AGENT_READINESS_SCAN_DIALOG_TITLE,
+} from "@notra/geo-core/constants/agent-readiness";
+import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
   ResponsiveAlertDialogCancel,
@@ -11,12 +17,6 @@ import {
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
 
-import {
-  AGENT_READINESS_SCAN_DIALOG_BODY,
-  AGENT_READINESS_SCAN_DIALOG_CANCEL,
-  AGENT_READINESS_SCAN_DIALOG_CONFIRM,
-  AGENT_READINESS_SCAN_DIALOG_TITLE,
-} from "@/constants/agent-readiness";
 import type { AgentReadinessScanDialogProps } from "@/types/agent-readiness";
 
 export function AgentReadinessScanDialog({

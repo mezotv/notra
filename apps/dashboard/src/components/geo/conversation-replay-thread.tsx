@@ -1,5 +1,11 @@
 "use client";
 
+import { GEO_CHAT_SKIN_SURFACE } from "@notra/geo-core/constants/geo";
+import type {
+  GeoChatSkin,
+  GeoSequenceTurnResult,
+} from "@notra/geo-core/types/geo";
+import { perplexitySourcesFromStoredOrExcerpt } from "@notra/geo-core/utils/geo-perplexity-sources";
 import {
   PerplexitySearch,
   type PerplexitySearchSource,
@@ -9,15 +15,9 @@ import { useEffect, useState } from "react";
 
 import { AnswerMarkdown } from "@/components/geo/geo-prompt-answer-thread";
 import { GeoSkinMessage } from "@/components/geo/geo-skin-message";
-import { GEO_CHAT_SKIN_SURFACE } from "@/constants/geo";
 import { cn } from "@/lib/utils";
-import type {
-  ConversationReplayThreadProps,
-  GeoChatSkin,
-  GeoSequenceTurnResult,
-} from "@/types/geo";
+import type { ConversationReplayThreadProps } from "@/types/geo";
 import { geoChatSkin } from "@/utils/geo-chat-skin";
-import { perplexitySourcesFromStoredOrExcerpt } from "@/utils/geo-perplexity-sources";
 
 const USER_PAUSE_MS = 420;
 const THINKING_MS = 1400;

@@ -2,12 +2,15 @@
 
 import { SquareLock02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  GEO_LOCKED_TITLE,
+  GEO_UPGRADE_DESCRIPTION,
+} from "@notra/geo-core/constants/geo";
 import { useRouter } from "next/navigation";
 
 import { GeoUpgradeDialog } from "@/components/billing/geo-upgrade-dialog";
 import { EmptyStateAnalyticsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
-import { GEO_LOCKED_TITLE, GEO_UPGRADE_DESCRIPTION } from "@/constants/geo";
 import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import type { GeoUpgradeGateProps } from "@/types/components/geo";
 

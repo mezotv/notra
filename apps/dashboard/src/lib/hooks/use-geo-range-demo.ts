@@ -1,14 +1,10 @@
 "use client";
 
+import { GEO_DEFAULT_RANGE } from "@notra/geo-core/constants/geo";
+import type { GeoRangePreset } from "@notra/geo-core/types/geo";
 import { useState } from "react";
 
-import { GEO_DEFAULT_RANGE } from "@/constants/geo";
-import type {
-  GeoDateRange,
-  GeoRangeControl,
-  GeoRangePreset,
-  GeoRangeState,
-} from "@/types/geo";
+import type { GeoDateRange, GeoRangeControl, GeoRangeState } from "@/types/geo";
 import {
   geoPresetRange,
   geoRangeLabel,

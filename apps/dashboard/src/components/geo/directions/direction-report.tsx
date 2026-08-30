@@ -1,9 +1,11 @@
 "use client";
 
+import { GEO_SEARCH_LABEL } from "@notra/geo-core/constants/geo";
+import { formatGeoJourneyChip } from "@notra/geo-core/utils/ai-traffic";
+
 import { DirectionDonut } from "@/components/geo/directions/direction-donut";
 import { DirectionEngineBars } from "@/components/geo/directions/direction-engine-bars";
 import { DirectionPagesTable } from "@/components/geo/directions/direction-pages-table";
-import { GEO_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_CHECK_COUNT,
   GEO_DIRECTIONS_COMPANY,
@@ -13,7 +15,6 @@ import {
   GEO_DIRECTIONS_VISIBILITY_DELTA,
   GEO_DIRECTIONS_WEEK_LABEL,
 } from "@/constants/geo-directions";
-import { formatGeoJourneyChip } from "@/utils/ai-traffic";
 import { formatMentionRate } from "@/utils/geo-charts";
 
 const LEAD_JOURNEY = GEO_DIRECTIONS_JOURNEYS[0];

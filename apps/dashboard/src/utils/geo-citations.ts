@@ -1,11 +1,10 @@
 import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
-
 import {
   AI_TRAFFIC_CONFIDENCE_LABELS,
   AI_TRAFFIC_PURPOSE_LABELS,
-} from "@/constants/geo";
-import type { GeoTrafficLogEntry } from "@/types/geo";
-import { formatGeoSource } from "@/utils/ai-traffic";
+} from "@notra/geo-core/constants/geo";
+import type { GeoTrafficLogEntry } from "@notra/geo-core/types/geo";
+import { formatGeoSource } from "@notra/geo-core/utils/ai-traffic";
 
 export interface CitationProviderTooltip {
   title: string;

@@ -6,6 +6,7 @@ import {
   MinusSignIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import type { GeoStatDeltaTone } from "@notra/geo-core/types/geo";
 import {
   Tooltip,
   TooltipContent,
@@ -13,7 +14,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 
 import { cn } from "@/lib/utils";
-import type { GeoStatDeltaProps, GeoStatDeltaTone } from "@/types/geo";
+import type { GeoStatDeltaProps } from "@/types/geo";
 import { formatGeoStatDelta, geoStatDeltaTone } from "@/utils/geo-charts";
 
 const PILL_CLASS =

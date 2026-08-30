@@ -1,5 +1,20 @@
 "use client";
 
+import {
+  GEO_EMPTY_TRAFFIC_RESPONSE,
+  GEO_SPARKLINE_MIN_POINTS,
+  GEO_SPARKLINE_TREND_CLASS,
+  GEO_TRAFFIC_MARKDOWN_COLUMN_KEY,
+} from "@notra/geo-core/constants/geo";
+import type { GeoVisitorType } from "@notra/geo-core/types/geo";
+import {
+  buildTrafficTrendRows,
+  formatAiTrafficTimestamp,
+  hasTrafficSourceSeries,
+  toGeoTrafficPreviousTotals,
+  sparklineTrend,
+  trafficSparklineDays,
+} from "@notra/geo-core/utils/ai-traffic";
 import { useMemo, useState } from "react";
 
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
@@ -13,25 +28,7 @@ import {
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import type { TableColumn } from "@/components/motion/table";
-import {
-  GEO_EMPTY_TRAFFIC_RESPONSE,
-  GEO_SPARKLINE_MIN_POINTS,
-  GEO_SPARKLINE_TREND_CLASS,
-  GEO_TRAFFIC_MARKDOWN_COLUMN_KEY,
-} from "@/constants/geo";
-import type {
-  AiTrafficCardProps,
-  GeoTrafficSourceGroup,
-  GeoVisitorType,
-} from "@/types/geo";
-import {
-  buildTrafficTrendRows,
-  formatAiTrafficTimestamp,
-  hasTrafficSourceSeries,
-  toGeoTrafficPreviousTotals,
-  sparklineTrend,
-  trafficSparklineDays,
-} from "@/utils/ai-traffic";
+import type { AiTrafficCardProps, GeoTrafficSourceGroup } from "@/types/geo";
 import {
   buildTrafficGroupSeries,
   groupTrafficSources,

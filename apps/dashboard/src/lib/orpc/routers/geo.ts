@@ -14,48 +14,36 @@ import {
 } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { geoPromptSuggestions, geoPrompts, projects } from "@notra/db/schema";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
-import { Effect } from "effect";
-
-import { GEO_SAMPLE_DATA_ENABLED } from "@/constants/geo";
+import { GEO_SAMPLE_DATA_ENABLED } from "@notra/geo-core/constants/geo";
 import {
   GSC_SCHEDULE_ID_PREFIX,
   GSC_SYNC_CRON,
   GSC_SYNC_WORKFLOW_PATH,
-} from "@/constants/google-search-console";
-import { assertOrganizationAccess } from "@/lib/auth/organization";
-import {
-  assertActiveSubscription,
-  assertGeoEntitlement,
-} from "@/lib/billing/subscription";
-import {
-  getGeoIngestTokenGeneration,
-  rotateGeoIngestTokenGeneration,
-} from "@/lib/geo-ingest/generation";
-import {
-  buildGeoAppUrl,
-  buildGeoIngestUrl,
-  buildGeoSnippets,
-} from "@/lib/geo-ingest/snippet";
-import { buildGeoIngestToken } from "@/lib/geo-ingest/token";
+} from "@notra/geo-core/constants/google-search-console";
 import {
   AgentReadinessApiError,
   AgentReadinessTargetMissingError,
   loadAgentReadiness,
   startAgentReadinessScan,
-} from "@/lib/geo/agent-readiness";
-import { assertAgentReadinessEnabled } from "@/lib/geo/agent-readiness-access";
-import { discoverGeoWebsite, generateGeoFromWebsite } from "@/lib/geo/discover";
-import type { GeoRouterError } from "@/lib/geo/errors";
-import { loadGeoContentGaps } from "@/lib/geo/gaps";
-import { lockGeoProject } from "@/lib/geo/lock";
-import { toTrackedPrompt } from "@/lib/geo/mappers";
-import { loadGeoModelCatalog } from "@/lib/geo/model-catalog";
+} from "@notra/geo-core/geo/agent-readiness";
+import {
+  discoverGeoWebsite,
+  generateGeoFromWebsite,
+} from "@notra/geo-core/geo/discover";
+import type { GeoRouterError } from "@notra/geo-core/geo/errors";
+import { loadGeoContentGaps } from "@notra/geo-core/geo/gaps";
+import {
+  issueGeoIngestSetupResponse,
+  rotateGeoIngestSetupResponse,
+} from "@notra/geo-core/geo/ingest";
+import { lockGeoProject } from "@notra/geo-core/geo/lock";
+import { toTrackedPrompt } from "@notra/geo-core/geo/mappers";
+import { loadGeoModelCatalog } from "@notra/geo-core/geo/model-catalog";
 import {
   saveGeoOnboardingBrand,
   searchGeoBrands,
   suggestGeoCompetitors,
-} from "@/lib/geo/onboarding";
+} from "@notra/geo-core/geo/onboarding";
 import {
   createGeoPrompt,
   deleteGeoCompetitor,
@@ -80,34 +68,33 @@ import {
   toggleGeoPrompt,
   upsertGeoCompetitor,
   upsertGeoSettings,
-} from "@/lib/geo/programs";
+} from "@notra/geo-core/geo/programs";
 import {
   createGeoProject,
   listGeoProjects,
   requireGeoProject,
-} from "@/lib/geo/projects";
-import { promptKey } from "@/lib/geo/prompt-key";
-import { clearGeoSampleData, seedGeoSampleData } from "@/lib/geo/sample-data";
-import { runGeoSequenceNow } from "@/lib/geo/scan";
-import { syncGscSuggestions } from "@/lib/geo/search-console";
+} from "@notra/geo-core/geo/projects";
+import { promptKey } from "@notra/geo-core/geo/prompt-key";
+import {
+  clearGeoSampleData,
+  seedGeoSampleData,
+} from "@notra/geo-core/geo/sample-data";
+import { runGeoSequenceNow } from "@notra/geo-core/geo/scan";
+import { syncGscSuggestions } from "@notra/geo-core/geo/search-console";
 import {
   createGeoSequence,
   deleteGeoSequence,
   listGeoSequences,
   loadGeoSequenceResults,
   updateGeoSequence,
-} from "@/lib/geo/sequences";
-import { geoWindow } from "@/lib/geo/window";
+} from "@notra/geo-core/geo/sequences";
+import { geoWindow } from "@notra/geo-core/geo/window";
 import {
   approveAndStartGeoWriter,
   getGeoContentBrief,
   listGeoContentBriefs,
   planGeoContentBrief,
-} from "@/lib/geo/writer";
-import { authorizedProcedure } from "@/lib/orpc/base";
-import { runOrpcEffect } from "@/lib/orpc/effect";
-import { badRequest, notFound } from "@/lib/orpc/utils/errors";
-import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
+} from "@notra/geo-core/geo/writer";
 import {
   aiTrafficInputSchema,
   geoBrandSearchInputSchema,
@@ -139,14 +126,34 @@ import {
   geoTrafficPagesInputSchema,
   geoWriterBriefIdInputSchema,
   geoWriterPlanInputSchema,
-} from "@/schemas/geo";
-import { gscSelectSiteInputSchema } from "@/schemas/google-search-console";
+} from "@notra/geo-core/schemas/geo";
+import { gscSelectSiteInputSchema } from "@notra/geo-core/schemas/google-search-console";
 import type {
   AgentReadinessResponse,
   AgentReadinessScanResponse,
-} from "@/types/agent-readiness";
+} from "@notra/geo-core/types/agent-readiness";
+import type { DbTransaction } from "@notra/geo-core/types/db";
+import type { GeoTrackedPrompt } from "@notra/geo-core/types/geo";
+import type {
+  GeoSearchConsoleStatus,
+  GscSitesResponse,
+  GscSyncResult,
+} from "@notra/geo-core/types/google-search-console";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { Effect } from "effect";
+
+import { assertOrganizationAccess } from "@/lib/auth/organization";
+import {
+  assertActiveSubscription,
+  assertGeoEntitlement,
+} from "@/lib/billing/subscription";
+import { assertAgentReadinessEnabled } from "@/lib/geo/agent-readiness-access";
+import { geoCoreDashboardLayer } from "@/lib/geo/configure";
+import { authorizedProcedure } from "@/lib/orpc/base";
+import { runOrpcEffect } from "@/lib/orpc/effect";
+import { badRequest, notFound } from "@/lib/orpc/utils/errors";
+import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
 import type { AuthenticatedUser } from "@/types/auth/organization";
-import type { DbTransaction } from "@/types/db";
 import type {
   GeoBrandSearchHandlerInput,
   GeoCompetitorSuggestionsHandlerInput,
@@ -154,32 +161,13 @@ import type {
   GeoPromptSuggestion,
   GeoPromptSuggestionRow,
   GeoPromptSuggestionsResponse,
-  GeoTrackedPrompt,
 } from "@/types/geo";
-import type {
-  GeoSearchConsoleStatus,
-  GscSitesResponse,
-  GscSyncResult,
-} from "@/types/google-search-console";
+import type { GeoDashboardRuntime } from "@/types/geo-runtime";
 import { ratelimit } from "@/utils/ratelimit";
 
 interface GeoHandlerOptions<TInput> {
   context: { headers: Headers; user?: AuthenticatedUser };
   input: TInput;
-}
-
-async function buildGeoIngestSetupResponse(
-  organizationId: string,
-  projectId: string | undefined
-): Promise<GeoIngestSetupResponse> {
-  const generation = (await getGeoIngestTokenGeneration(organizationId)) ?? 1;
-  const snippets = buildGeoSnippets(buildGeoAppUrl());
-  return {
-    ingestUrl: buildGeoIngestUrl(),
-    token: buildGeoIngestToken(organizationId, projectId, generation) ?? "",
-    snippet: snippets.next,
-    snippets,
-  };
 }
 
 async function assertGeoAccess(
@@ -193,7 +181,7 @@ function geoOpenHandler<
   TInput extends { organizationId: string },
   TOutput,
   TError extends GeoRouterError,
->(run: (input: TInput) => Effect.Effect<TOutput, TError>) {
+>(run: (input: TInput) => Effect.Effect<TOutput, TError, GeoDashboardRuntime>) {
   return async ({
     context,
     input,
@@ -204,7 +192,10 @@ function geoOpenHandler<
       user: context.user,
     });
 
-    return await runOrpcEffect(run(input), toGeoOrpcError);
+    return await runOrpcEffect(
+      run(input).pipe(Effect.provide(geoCoreDashboardLayer)),
+      toGeoOrpcError
+    );
   };
 }
 
@@ -212,7 +203,7 @@ function geoHandler<
   TInput extends { organizationId: string },
   TOutput,
   TError extends GeoRouterError,
->(run: (input: TInput) => Effect.Effect<TOutput, TError>) {
+>(run: (input: TInput) => Effect.Effect<TOutput, TError, GeoDashboardRuntime>) {
   return async ({
     context,
     input,
@@ -223,7 +214,10 @@ function geoHandler<
       user: context.user,
     });
 
-    return await runOrpcEffect(run(input), toGeoOrpcError);
+    return await runOrpcEffect(
+      run(input).pipe(Effect.provide(geoCoreDashboardLayer)),
+      toGeoOrpcError
+    );
   };
 }
 
@@ -365,7 +359,13 @@ async function acceptSuggestionInTx(
 export const geoRouter = {
   modelCatalog: authorizedProcedure
     .input(geoModelCatalogInputSchema)
-    .handler(({ input }) => loadGeoModelCatalog(input.organizationId)),
+    .handler(({ input }) =>
+      Effect.runPromise(
+        loadGeoModelCatalog(input.organizationId).pipe(
+          Effect.provide(geoCoreDashboardLayer)
+        )
+      )
+    ),
   settings: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoOpenHandler((input) => loadGeoSettings(input))),
@@ -446,7 +446,11 @@ export const geoRouter = {
           toGeoOrpcError
         );
         return await runAgentReadinessOrBadRequest(() =>
-          startAgentReadinessScan(scope)
+          Effect.runPromise(
+            startAgentReadinessScan(scope).pipe(
+              Effect.provide(geoCoreDashboardLayer)
+            )
+          )
         );
       }
     ),
@@ -500,10 +504,16 @@ export const geoRouter = {
         user: context.user,
       });
 
-      return await buildGeoIngestSetupResponse(
-        input.organizationId,
-        input.projectId
+      const setup = await runOrpcEffect(
+        issueGeoIngestSetupResponse(input).pipe(
+          Effect.provide(geoCoreDashboardLayer)
+        ),
+        toGeoOrpcError
       );
+      if (!setup) {
+        throw notFound("Organization not found");
+      }
+      return setup;
     }),
   ingestTokenRotate: authorizedProcedure
     .input(geoOrganizationInputSchema)
@@ -514,17 +524,16 @@ export const geoRouter = {
         user: context.user,
       });
 
-      const generation = await rotateGeoIngestTokenGeneration(
-        input.organizationId
+      const setup = await runOrpcEffect(
+        rotateGeoIngestSetupResponse(input).pipe(
+          Effect.provide(geoCoreDashboardLayer)
+        ),
+        toGeoOrpcError
       );
-      if (generation === null) {
+      if (!setup) {
         throw notFound("Organization not found");
       }
-
-      return await buildGeoIngestSetupResponse(
-        input.organizationId,
-        input.projectId
-      );
+      return setup;
     }),
   promptsList: authorizedProcedure
     .input(geoOrganizationInputSchema)
@@ -539,16 +548,12 @@ export const geoRouter = {
     .handler(geoHandler((input) => importGeoPrompts(input, input.rows))),
   promptsDelete: authorizedProcedure
     .input(geoPromptDeleteInputSchema)
-    .handler(
-      geoHandler((input) =>
-        deleteGeoPrompt(input.organizationId, input.promptId)
-      )
-    ),
+    .handler(geoHandler((input) => deleteGeoPrompt(input, input.promptId))),
   promptsToggle: authorizedProcedure
     .input(geoPromptToggleInputSchema)
     .handler(
       geoHandler((input) =>
-        toggleGeoPrompt(input.organizationId, input.promptId, input.enabled)
+        toggleGeoPrompt(input, input.promptId, input.enabled)
       )
     ),
   sequencesList: authorizedProcedure
@@ -585,7 +590,9 @@ export const geoRouter = {
       }
 
       return await runOrpcEffect(
-        runGeoSequenceNow(input, input.sequenceId),
+        runGeoSequenceNow(input, input.sequenceId).pipe(
+          Effect.provide(geoCoreDashboardLayer)
+        ),
         toGeoOrpcError
       );
     }),
@@ -653,11 +660,7 @@ export const geoRouter = {
     .handler(geoHandler((input) => listGeoContentBriefs(input))),
   writerBrief: authorizedProcedure
     .input(geoWriterBriefIdInputSchema)
-    .handler(
-      geoHandler((input) =>
-        getGeoContentBrief(input.organizationId, input.briefId)
-      )
-    ),
+    .handler(geoHandler((input) => getGeoContentBrief(input, input.briefId))),
   writerPlan: authorizedProcedure
     .input(geoWriterPlanInputSchema)
     .handler(async ({ context, input }) => {
@@ -675,7 +678,9 @@ export const geoRouter = {
       }
 
       return await runOrpcEffect(
-        planGeoContentBrief(input, context.user?.id),
+        planGeoContentBrief(input, context.user?.id).pipe(
+          Effect.provide(geoCoreDashboardLayer)
+        ),
         toGeoOrpcError
       );
     }),
@@ -692,7 +697,9 @@ export const geoRouter = {
       ]);
 
       return await runOrpcEffect(
-        approveAndStartGeoWriter(input.organizationId, input.briefId),
+        approveAndStartGeoWriter(input, input.briefId).pipe(
+          Effect.provide(geoCoreDashboardLayer)
+        ),
         toGeoOrpcError
       );
     }),

@@ -6,6 +6,7 @@ import {
   Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_SEARCH_LABEL } from "@notra/geo-core/constants/geo";
 import {
   Tooltip,
   TooltipContent,
@@ -16,7 +17,6 @@ import { useId } from "react";
 
 import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { GEO_SEARCH_LABEL } from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { PromptEngineSwitcherProps } from "@/types/geo";
 import {

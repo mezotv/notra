@@ -239,22 +239,21 @@ export async function queryGeoCheckPromptResults(
   scope: GeoCheckScope,
   window: GeoCheckWindow | undefined
 ): Promise<GeoCheckPromptResultRow[]> {
+  // Every field must come from the same newest row per (prompt, engine).
+  // Aggregating across the window would pair a current answer with a stale
+  // mention flag or position.
   const rows = await db
-    .select({
+    .selectDistinctOn([geoMentionChecks.promptId, geoMentionChecks.engine], {
       promptId: geoMentionChecks.promptId,
       engine: geoMentionChecks.engine,
-      prompt: sql<string>`(array_agg(${geoMentionChecks.prompt} order by ${geoMentionChecks.capturedAt} desc))[1]`,
-      answer: sql<string>`(array_agg(${geoMentionChecks.answer} order by ${geoMentionChecks.capturedAt} desc))[1]`,
-      mentioned: sql<boolean>`bool_or(${geoMentionChecks.mentioned})`,
-      position: sql<
-        number | null
-      >`min(${geoMentionChecks.position}) filter (where ${geoMentionChecks.mentioned} and ${geoMentionChecks.position} is not null)`,
-      sentiment: sql<
-        string | null
-      >`(array_agg(${geoMentionChecks.sentiment} order by ${geoMentionChecks.capturedAt} desc))[1]`,
-      excerpt: sql<string>`(array_agg(${geoMentionChecks.excerpt} order by ${geoMentionChecks.capturedAt} desc))[1]`,
-      grounding: sql`(array_agg(${geoMentionChecks.grounding} order by ${geoMentionChecks.capturedAt} desc))[1]`,
-      lastCheckedAt: sql<Date>`max(${geoMentionChecks.capturedAt})`,
+      prompt: geoMentionChecks.prompt,
+      answer: geoMentionChecks.answer,
+      mentioned: geoMentionChecks.mentioned,
+      position: geoMentionChecks.position,
+      sentiment: geoMentionChecks.sentiment,
+      excerpt: geoMentionChecks.excerpt,
+      grounding: geoMentionChecks.grounding,
+      lastCheckedAt: geoMentionChecks.capturedAt,
     })
     .from(geoMentionChecks)
     .where(
@@ -263,24 +262,29 @@ export async function queryGeoCheckPromptResults(
         englishOnly: true,
       })
     )
-    .groupBy(geoMentionChecks.promptId, geoMentionChecks.engine)
-    .orderBy(desc(sql`max(${geoMentionChecks.capturedAt})`));
+    .orderBy(
+      geoMentionChecks.promptId,
+      geoMentionChecks.engine,
+      desc(geoMentionChecks.capturedAt)
+    );
 
-  return rows.map((row) => ({
-    promptId: row.promptId,
-    engine: row.engine,
-    prompt: String(row.prompt ?? ""),
-    answer: String(row.answer ?? ""),
-    mentioned: row.mentioned === true,
-    position: toNullableNumber(row.position),
-    sentiment:
-      row.sentiment === null || row.sentiment === undefined
-        ? null
-        : String(row.sentiment),
-    excerpt: String(row.excerpt ?? ""),
-    grounding: parseGeoCheckGrounding(row.grounding),
-    lastCheckedAt: toDate(row.lastCheckedAt),
-  }));
+  return rows
+    .map((row) => ({
+      promptId: row.promptId,
+      engine: row.engine,
+      prompt: row.prompt,
+      answer: row.answer,
+      mentioned: row.mentioned,
+      position: row.position,
+      sentiment: row.sentiment,
+      excerpt: row.excerpt,
+      grounding: parseGeoCheckGrounding(row.grounding),
+      lastCheckedAt: row.lastCheckedAt,
+    }))
+    .sort(
+      (left, right) =>
+        right.lastCheckedAt.getTime() - left.lastCheckedAt.getTime()
+    );
 }
 
 export async function queryGeoCheckCompetitorShare(

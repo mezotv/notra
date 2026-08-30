@@ -1,7 +1,7 @@
+import { resolveEngineIconKey } from "@notra/geo-core/utils/geo-engine-icon";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { resolveEngineIconKey } from "@/utils/geo-engine-icon";
 import { modelsDevLogoUrl, splitModelId } from "@/utils/geo-model-display";
 import { prefixSvgIds, svgIdPrefix } from "@/utils/svg-ids";
 

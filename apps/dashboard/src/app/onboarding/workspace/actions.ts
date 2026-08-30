@@ -3,6 +3,7 @@
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { brandSettings, members, organizations } from "@notra/db/schema";
+import { warmGeoOnboardingCache } from "@notra/geo-core/geo/onboarding";
 import { ORPCError } from "@orpc/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { Effect } from "effect";
@@ -13,7 +14,6 @@ import { z } from "zod";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getAuthSession } from "@/lib/auth/server";
 import { queueBrandAnalysisForOnboarding } from "@/lib/brand-analysis";
-import { warmGeoOnboardingCache } from "@/lib/geo/onboarding";
 import {
   ensureDefaultBrandIdentity,
   launchReservedOnboardingAgent,

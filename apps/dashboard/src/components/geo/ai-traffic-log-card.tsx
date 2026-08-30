@@ -3,6 +3,18 @@
 import { PauseIcon, PlayIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  GEO_CITATIONS_LIVE_INTERVAL_MS,
+  GEO_CITATIONS_ROW_HEIGHT,
+  GEO_TRAFFIC_LOG_PAGE_PARAM,
+  GEO_TRAFFIC_LOG_PURPOSE_OPTIONS,
+  GEO_TRAFFIC_LOG_VISITOR_OPTIONS,
+} from "@notra/geo-core/constants/geo";
+import type { GeoTrafficLogFilters } from "@notra/geo-core/types/geo";
+import {
+  formatGeoTrafficFilterLabel,
+  toggleGeoTrafficFilterValue,
+} from "@notra/geo-core/utils/ai-traffic";
+import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -17,20 +29,9 @@ import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
-import {
-  GEO_CITATIONS_LIVE_INTERVAL_MS,
-  GEO_CITATIONS_ROW_HEIGHT,
-  GEO_TRAFFIC_LOG_PAGE_PARAM,
-  GEO_TRAFFIC_LOG_PURPOSE_OPTIONS,
-  GEO_TRAFFIC_LOG_VISITOR_OPTIONS,
-} from "@/constants/geo";
 import { useGeoTrafficLog } from "@/lib/hooks/use-geo";
 import { useTablePagination } from "@/lib/hooks/use-table-pagination";
-import type { AiTrafficLogCardProps, GeoTrafficLogFilters } from "@/types/geo";
-import {
-  formatGeoTrafficFilterLabel,
-  toggleGeoTrafficFilterValue,
-} from "@/utils/ai-traffic";
+import type { AiTrafficLogCardProps } from "@/types/geo";
 import { paginatedTableHeightFor } from "@/utils/table";
 
 const LOG_SKELETON_ROWS = 6;

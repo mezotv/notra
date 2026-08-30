@@ -2,6 +2,11 @@
 
 import { Delete02Icon, SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  PROMPTS_TABLE_HEIGHT,
+  PROMPTS_TABLE_ROW_HEIGHT,
+} from "@notra/geo-core/constants/geo";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { Input } from "@notra/ui/components/ui/input";
 import { Switch } from "@notra/ui/components/ui/switch";
 import {
@@ -18,17 +23,12 @@ import { PresenceBadge } from "@/components/geo/presence-badge";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
-import {
-  PROMPTS_TABLE_HEIGHT,
-  PROMPTS_TABLE_ROW_HEIGHT,
-} from "@/constants/geo";
 import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import type { GeoPromptTableRow, PromptsTableProps } from "@/types/geo";
 import {
   buildPromptTableRows,
   promptPresenceSortValue,
 } from "@/utils/geo-prompts";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 const PROMPT_NOUNS = { singular: "prompt", plural: "prompts" } as const;
 const PROMPT_ACTIONS_WIDTH = "6.5rem";

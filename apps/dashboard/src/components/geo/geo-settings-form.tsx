@@ -1,5 +1,13 @@
 "use client";
 
+import {
+  GEO_MAX_ALIASES,
+  GEO_SCAN_DEFAULT_INTERVAL_HOURS,
+  GEO_SETTINGS_AUTO_SAVE_MS,
+} from "@notra/geo-core/constants/geo";
+import type { GeoSettingsUpsertInput } from "@notra/geo-core/types/geo";
+import { resolveTrackedEngines } from "@notra/geo-core/utils/geo-engines";
+import { trackedGeoLanguages } from "@notra/geo-core/utils/geo-language-rows";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { useAsyncDebouncer } from "@tanstack/react-pacer";
@@ -9,16 +17,9 @@ import { GeoEnginePicker } from "@/components/geo/geo-engine-picker";
 import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
 import { GeoScanSchedule } from "@/components/geo/geo-scan-schedule";
 import { GeoTagList } from "@/components/geo/geo-tag-list";
-import {
-  GEO_MAX_ALIASES,
-  GEO_SCAN_DEFAULT_INTERVAL_HOURS,
-  GEO_SETTINGS_AUTO_SAVE_MS,
-} from "@/constants/geo";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
-import type { GeoSettingsFormProps, GeoSettingsUpsertInput } from "@/types/geo";
-import { resolveTrackedEngines } from "@/utils/geo-engines";
-import { trackedGeoLanguages } from "@/utils/geo-language-rows";
+import type { GeoSettingsFormProps } from "@/types/geo";
 
 export function GeoSettingsForm({
   organizationId,

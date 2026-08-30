@@ -1,11 +1,18 @@
-import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
-import { ONBOARDING_VISIBILITY_MAX_PROMPTS } from "@/constants/onboarding";
-import { promptKey } from "@/lib/geo/prompt-key";
+import {
+  GEO_PROMPT_MAX_LENGTH,
+  GEO_PROMPT_MIN_LENGTH,
+} from "@notra/geo-core/constants/geo";
+import { promptKey } from "@notra/geo-core/geo/prompt-key";
 import {
   buildBrandTerms,
   promptMentionsBrand,
-} from "@/lib/geo/suggestion-keywords";
-import type { GeoDiscoveredPrompt, GeoOnboardingBrandInput } from "@/types/geo";
+} from "@notra/geo-core/geo/suggestion-keywords";
+import type {
+  GeoDiscoveredPrompt,
+  GeoOnboardingBrandInput,
+} from "@notra/geo-core/types/geo";
+
+import { ONBOARDING_VISIBILITY_MAX_PROMPTS } from "@/constants/onboarding";
 import type { VisibilityBrandDraft } from "@/types/onboarding";
 
 export function uniqueVisibilityPrompts(

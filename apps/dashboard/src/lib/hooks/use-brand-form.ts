@@ -1,12 +1,12 @@
 "use client";
 
+import { normalizePublicWebsiteUrl } from "@notra/geo-core/schemas/url";
 import { useForm } from "@tanstack/react-form";
 import { useAsyncDebouncer } from "@tanstack/react-pacer";
 import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
 import { AUTO_SAVE_DELAY } from "@/constants/brand-identity";
-import { normalizePublicWebsiteUrl } from "@/schemas/url";
 import type { BrandFormProps } from "@/types/brand-identity";
 
 import { useUpdateBrandSettings } from "./use-brand-analysis";

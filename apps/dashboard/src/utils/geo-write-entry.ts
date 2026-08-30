@@ -1,10 +1,11 @@
-import { GEO_WRITER_TRIGGER_ID } from "@/constants/geo";
+import { GEO_WRITER_TRIGGER_ID } from "@notra/geo-core/constants/geo";
+import type { GeoContentBriefSummary } from "@notra/geo-core/types/geo";
+
 import { sourceMetadataSchema } from "@/schemas/content";
 import type {
   GeoGapsWriteEntry,
   WriteDialogInitialState,
 } from "@/types/components/geo-writer";
-import type { GeoContentBriefSummary } from "@/types/geo";
 
 /**
  * GEO write entry helpers.

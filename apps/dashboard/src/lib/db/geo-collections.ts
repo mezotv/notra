@@ -1,15 +1,15 @@
+import type {
+  GeoCompetitor,
+  GeoPromptSequence,
+  GeoScopeInput,
+  GeoTrackedPrompt,
+} from "@notra/geo-core/types/geo";
 import { queryCollectionOptions } from "@tanstack/query-db-collection";
 import { collectionOptions } from "@tanstack/react-db";
 import type { QueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type {
-  GeoCompetitor,
-  GeoPromptSequence,
-  GeoScopeInput,
-  GeoTrackedPrompt,
-} from "@/types/geo";
 import type { GeoCollectionSpec } from "@/types/geo-db";
 
 function scopeKey(scope: GeoScopeInput): string {

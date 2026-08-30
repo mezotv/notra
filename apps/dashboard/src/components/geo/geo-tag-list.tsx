@@ -2,16 +2,16 @@
 
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  addUniqueValues,
+  LINE_BREAK_REGEX,
+  removeValue,
+} from "@notra/geo-core/geo/string-list";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { useState } from "react";
 
-import {
-  addUniqueValues,
-  LINE_BREAK_REGEX,
-  removeValue,
-} from "@/lib/geo/string-list";
 import type { GeoTagListProps } from "@/types/geo";
 
 export function GeoTagList({

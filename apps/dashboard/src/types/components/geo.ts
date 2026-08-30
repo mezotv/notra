@@ -1,7 +1,7 @@
+import type { GeoSearchConsoleStatus } from "@notra/geo-core/types/google-search-console";
 import type { ReactNode } from "react";
 
 import type { GeoPromptSuggestion } from "@/types/geo";
-import type { GeoSearchConsoleStatus } from "@/types/google-search-console";
 
 export interface PromptSuggestionsProps {
   organizationId: string;

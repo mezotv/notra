@@ -1,6 +1,6 @@
+import { AGENT_READINESS_FLAG_KEY } from "@notra/geo-core/constants/agent-readiness";
 import { Effect } from "effect";
 
-import { AGENT_READINESS_FLAG_KEY } from "@/constants/agent-readiness";
 import { resolveGeoFlagState } from "@/lib/geo/flag";
 
 export function isAgentReadinessEnabledForOrganization(

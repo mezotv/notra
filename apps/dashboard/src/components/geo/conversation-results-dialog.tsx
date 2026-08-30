@@ -2,6 +2,7 @@
 
 import { Loading03Icon, PlayIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -20,7 +21,6 @@ import type {
   ConversationResultsDialogProps,
   GeoSequenceEngineThread,
 } from "@/types/geo";
-import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import { buildSequenceEngineThreads } from "@/utils/geo-sequences";
 
 function latestCheckAt(threads: GeoSequenceEngineThread[]): string | null {

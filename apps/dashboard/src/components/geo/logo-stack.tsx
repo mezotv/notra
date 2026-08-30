@@ -1,13 +1,12 @@
 "use client";
 
+import { GEO_GAPS_LOGO_STACK_LIMIT } from "@notra/geo-core/constants/geo";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import type { ReactNode } from "react";
-
-import { GEO_GAPS_LOGO_STACK_LIMIT } from "@/constants/geo";
 
 export interface LogoStackItem {
   key: string;

@@ -1,11 +1,11 @@
 "use client";
 
+import type { GeoChatSkin } from "@notra/geo-core/types/geo";
+import { getReferenceDomain } from "@notra/geo-core/utils/reference-display";
 import { ClaudeChatSources } from "@notra/ui/components/brainless/claude-chat/claude-chat-sources";
 import { PerplexitySearch } from "@notra/ui/components/brainless/perplexity/perplexity-search";
 import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
 
-import type { GeoChatSkin } from "@/types/geo";
-import { getReferenceDomain } from "@/utils/reference-display";
 import { getSafeReferenceSourceUrl } from "@/utils/reference-source-url";
 
 const SEARCHED_THE_WEB = "Searched the web";

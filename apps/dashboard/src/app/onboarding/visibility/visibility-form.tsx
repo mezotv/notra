@@ -1,5 +1,7 @@
 "use client";
 
+import { buildBrandTerms } from "@notra/geo-core/geo/suggestion-keywords";
+import { normalizeWebsiteUrl } from "@notra/geo-core/utils/geo-website";
 import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Input } from "@notra/ui/components/ui/input";
@@ -17,7 +19,6 @@ import {
   ONBOARDING_FIELD_CLASS,
   ONBOARDING_STEP_VISIBILITY,
 } from "@/constants/onboarding";
-import { buildBrandTerms } from "@/lib/geo/suggestion-keywords";
 import {
   useGeoDiscoverWebsite,
   useGeoOnboardingBrand,
@@ -26,7 +27,6 @@ import type {
   VisibilityFormProps,
   VisibilityReviewProps,
 } from "@/types/onboarding";
-import { normalizeWebsiteUrl } from "@/utils/geo-website";
 import { stripWebsitePrefix } from "@/utils/onboarding";
 import {
   toVisibilityBrandInput,

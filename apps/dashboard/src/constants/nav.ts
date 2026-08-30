@@ -27,14 +27,14 @@ import {
   UserGroupIcon,
   Wallet01Icon,
 } from "@hugeicons/core-free-icons";
-
-import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import {
   GEO_AGENT_READINESS_NAV_LINK,
   GEO_GAPS_NAV_LINK,
   GEO_PROMPTS_NAV_LINK,
   GEO_WRITER_NAV_LINK,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+
+import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import { IRIS_NAV_LINK } from "@/constants/iris";
 import type { PostStatus } from "@/schemas/content";
 import type {

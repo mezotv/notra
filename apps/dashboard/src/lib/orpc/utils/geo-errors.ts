@@ -1,4 +1,5 @@
-import type { GeoRouterError } from "@/lib/geo/errors";
+import type { GeoRouterError } from "@notra/geo-core/geo/errors";
+
 import { toUnexpectedError } from "@/lib/orpc/effect";
 import { badRequest, notFound, paymentRequired } from "@/lib/orpc/utils/errors";
 
@@ -12,6 +13,10 @@ export function toGeoOrpcError(failure: GeoRouterError): Error {
       return notFound("Project not found");
     case "GeoProjectCreateFailedError":
       return badRequest("Failed to create project");
+    case "GeoProjectDeleteBlockedError":
+      return badRequest(
+        "You cannot delete your last project. Create another one first."
+      );
     case "GeoBrandIdentityNotFoundError":
       return notFound("Brand identity not found");
     case "GeoBrandIdentityMissingError":
@@ -42,6 +47,12 @@ export function toGeoOrpcError(failure: GeoRouterError): Error {
       return badRequest(failure.message);
     case "GeoScanStartError":
       return toUnexpectedError(failure.cause, "Failed to start the scan");
+    case "GeoScanAlreadyRunningError":
+      return badRequest("A scan is already running for this project");
+    case "GeoScheduleCancelError":
+      return badRequest(
+        "Could not cancel this project's scheduled scan. Try again."
+      );
     case "GeoWriterCreditsExhaustedError":
       return paymentRequired(failure.message);
     case "GeoContentBriefNotFoundError":

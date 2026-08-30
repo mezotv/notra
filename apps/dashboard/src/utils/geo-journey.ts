@@ -1,5 +1,4 @@
 import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
-
 import {
   GEO_JOURNEY_BLOG_PREFIXES,
   GEO_JOURNEY_DEEP_CRAWL_PAGES,
@@ -11,13 +10,16 @@ import {
   GEO_JOURNEY_PATH_KINDS,
   GEO_JOURNEY_PATH_LABEL_MAX,
   GEO_JOURNEY_SEARCH_PREFIXES,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
 import type {
   GeoJourney,
   GeoJourneyEvent,
+  GeoJourneyPathKind,
+} from "@notra/geo-core/types/geo";
+
+import type {
   GeoJourneyKindCount,
   GeoJourneyOverview,
-  GeoJourneyPathKind,
   GeoJourneyPathNode,
   GeoJourneyPathRow,
   GeoJourneySourceRow,

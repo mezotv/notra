@@ -1,5 +1,11 @@
 "use client";
 
+import { AI_TRAFFIC_PURPOSE_LABELS } from "@notra/geo-core/constants/geo";
+import {
+  formatAiTrafficTimestamp,
+  formatGeoSource,
+} from "@notra/geo-core/utils/ai-traffic";
+import { resolveEngineIconKey } from "@notra/geo-core/utils/geo-engine-icon";
 import {
   HoverCard,
   HoverCardTrigger,
@@ -7,15 +13,12 @@ import {
 
 import { TrafficBreakdownCard } from "@/components/geo/traffic-breakdown-card";
 import { TrafficSourceGroupIcon } from "@/components/geo/traffic-source-group-icon";
-import { AI_TRAFFIC_PURPOSE_LABELS } from "@/constants/geo";
 import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
 import type { TrafficSourceGroupCellProps } from "@/types/geo";
-import { formatAiTrafficTimestamp, formatGeoSource } from "@/utils/ai-traffic";
 import {
   hasTrafficGroupBreakdown,
   trafficVisitShare,
 } from "@/utils/ai-traffic-groups";
-import { resolveEngineIconKey } from "@/utils/geo-engine-icon";
 
 export function TrafficSourceGroupCell({ group }: TrafficSourceGroupCellProps) {
   const label = (

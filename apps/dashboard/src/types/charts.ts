@@ -1,5 +1,10 @@
 import type { ComponentType, ReactNode } from "react";
 
+export interface ChartColorPair {
+  light: string;
+  dark: string;
+}
+
 // Require at least one theme key — identical constraint to the repo's ChartConfig.
 export type AtLeastOneThemeColor =
   | { light: string[]; dark?: string[] }
@@ -15,11 +20,6 @@ export type ChartConfig = Record<
     indicatorHtml?: string;
   }
 >;
-
-export interface ChartColorPair {
-  light: string;
-  dark: string;
-}
 
 export interface ChartSeriesColors {
   light: string[];

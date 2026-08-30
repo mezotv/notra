@@ -1,6 +1,7 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_UPGRADE_TOOLTIP } from "@notra/geo-core/constants/geo";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   SidebarMenu,
@@ -10,7 +11,6 @@ import {
 import Link from "next/link";
 
 import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
-import { GEO_UPGRADE_TOOLTIP } from "@/constants/geo";
 import type { NavListProps } from "@/types/components/nav";
 import { geoNavHref, isGeoDashboardPath } from "@/utils/geo-paths";
 import { resolveNavItems } from "@/utils/nav";

@@ -1,9 +1,10 @@
-import { CHART_PERCENT_SCALE } from "@/constants/charts";
 import type {
   GeoCompetitorSharePoint,
   GeoOverviewEngine,
   GeoTimeseriesPoint,
-} from "@/types/geo";
+} from "@notra/geo-core/types/geo";
+
+import { CHART_PERCENT_SCALE } from "@/constants/charts";
 import type {
   GeoDirectionEngineRow,
   GeoDirectionTone,

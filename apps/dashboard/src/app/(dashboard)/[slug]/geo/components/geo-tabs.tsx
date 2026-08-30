@@ -1,6 +1,10 @@
 "use client";
 
 import {
+  GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
+  GEO_GAPS_NAV_LINK,
+} from "@notra/geo-core/constants/geo";
+import {
   PermissionOption,
   PermissionRow,
 } from "@notra/ui/components/ui/permission-selector";
@@ -19,10 +23,6 @@ import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
-import {
-  GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
-  GEO_GAPS_NAV_LINK,
-} from "@/constants/geo";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import { cn } from "@/lib/utils";
 import type { GeoTabsProps } from "@/types/geo";

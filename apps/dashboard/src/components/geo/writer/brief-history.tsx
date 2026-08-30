@@ -1,19 +1,19 @@
 "use client";
 
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
-import { Badge } from "@notra/ui/components/ui/badge";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
-
-import { StatusSpinner } from "@/components/geo/status-spinner";
-import { Table, type TableColumn } from "@/components/motion/table";
 import {
   GEO_WRITE_BRIEF_STATUS_LABELS,
   GEO_WRITE_TABLE_HEIGHT,
   GEO_WRITE_TABLE_MIN_ROWS,
   GEO_WRITE_TABLE_ROW_HEIGHT,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+import type { GeoContentBriefSummary } from "@notra/geo-core/types/geo";
+import { Badge } from "@notra/ui/components/ui/badge";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+
+import { StatusSpinner } from "@/components/geo/status-spinner";
+import { Table, type TableColumn } from "@/components/motion/table";
 import type { BriefHistoryProps } from "@/types/components/geo-writer";
-import type { GeoContentBriefSummary } from "@/types/geo";
 import { formatRelativeDate } from "@/utils/content-preview";
 import { briefDisplayTitle } from "@/utils/geo-write-entry";
 

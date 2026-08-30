@@ -1,14 +1,14 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
-import { cn } from "@notra/ui/lib/utils";
-
 import {
-  GEO_WRITE_DIALOG_SECTIONS,
   GEO_WRITE_PANEL_HEADER_CLASS,
   GEO_WRITE_PANEL_HEADER_ROW_CLASS,
   GEO_WRITE_SIDEBAR_WIDTH,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+import { cn } from "@notra/ui/lib/utils";
+
+import { GEO_WRITE_DIALOG_SECTIONS } from "@/constants/geo-writer";
 import type { WriteSectionSidebarProps } from "@/types/components/geo-writer";
 
 export function WriteSectionSidebar({

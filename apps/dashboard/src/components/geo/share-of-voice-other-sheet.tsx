@@ -1,5 +1,7 @@
 "use client";
 
+import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
+import type { ShareOfVoiceRow } from "@notra/geo-core/types/geo";
 import {
   Sheet,
   SheetContent,
@@ -10,9 +12,8 @@ import {
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { GeoBar } from "@/components/geo/geo-bar";
-import { findCompetitorDomain } from "@/lib/geo/domain";
 import { cn } from "@/lib/utils";
-import type { ShareOfVoiceOtherSheetProps, ShareOfVoiceRow } from "@/types/geo";
+import type { ShareOfVoiceOtherSheetProps } from "@/types/geo";
 import { formatMentionRate } from "@/utils/geo-charts";
 import {
   isOwnBrandName,

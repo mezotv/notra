@@ -1,9 +1,9 @@
 "use client";
 
+import { GEO_FAMILY_IMPROVE_CTA_GAPS } from "@notra/geo-core/constants/geo";
 import Link from "next/link";
 
 import { buttonVariants } from "@/components/button";
-import { GEO_FAMILY_IMPROVE_CTA_GAPS } from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { FamilyImproveCardProps } from "@/types/geo";
 

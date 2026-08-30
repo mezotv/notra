@@ -2,6 +2,11 @@
 
 import { AiMagicIcon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  GEO_INGEST_DEFAULT_PACKAGE_MANAGER,
+  GEO_INGEST_PACKAGE_MANAGER_OPTIONS,
+} from "@notra/geo-core/constants/geo";
+import type { GeoIngestPackageManager } from "@notra/geo-core/types/geo";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { useState } from "react";
@@ -14,16 +19,11 @@ import {
   AGENT_FEEDBACK_SNIPPET_FILENAMES,
   AGENT_FEEDBACK_SNIPPET_TABS,
 } from "@/constants/agent-feedback";
-import {
-  GEO_INGEST_DEFAULT_PACKAGE_MANAGER,
-  GEO_INGEST_PACKAGE_MANAGER_OPTIONS,
-} from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type {
   AgentFeedbackSetupPanelProps,
   AgentFeedbackSnippetKey,
 } from "@/types/agent-feedback";
-import type { GeoIngestPackageManager } from "@/types/geo";
 import { isAgentFeedbackSnippetKey } from "@/utils/agent-feedback";
 import { isGeoIngestPackageManager } from "@/utils/geo-ingest";
 

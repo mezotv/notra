@@ -12,6 +12,13 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  getFaviconUrl,
+  getMetadataString,
+  getReferenceDomain,
+  getTwitterAvatarUrl,
+  getTwitterHandleFromUrl,
+} from "@notra/geo-core/utils/reference-display";
+import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
@@ -41,13 +48,6 @@ import type {
   TweetMetadata,
 } from "@/types/hooks/brand-references";
 import { formatTweetContent } from "@/utils/format-tweet-content";
-import {
-  getFaviconUrl,
-  getMetadataString,
-  getReferenceDomain,
-  getTwitterAvatarUrl,
-  getTwitterHandleFromUrl,
-} from "@/utils/reference-display";
 import { getSafeReferenceSourceUrl } from "@/utils/reference-source-url";
 
 const PLATFORM_OPTIONS = [

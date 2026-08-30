@@ -1,7 +1,8 @@
 import {
   GEO_AGENT_READINESS_NAV_LINK,
   GEO_WRITER_NAV_LINK,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+
 import {
   ANALYTICS_NAV_LINK,
   DEFAULT_NAV_VISIBILITY,

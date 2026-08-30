@@ -4,18 +4,18 @@ import {
 } from "@notra/ai/constants/google-search-console";
 import { getGscOAuthCredentials } from "@notra/ai/integrations/google-search-console";
 import { redis } from "@notra/ai/utils/redis";
-import { ORPCError } from "@orpc/server";
-import { type NextRequest, NextResponse } from "next/server";
-
 import {
   GSC_OAUTH_STATE_KEY_PREFIX,
   GSC_OAUTH_STATE_TTL_SECONDS,
-} from "@/constants/google-search-console";
+} from "@notra/geo-core/constants/google-search-console";
+import { gscAuthorizeQuerySchema } from "@notra/geo-core/schemas/google-search-console";
+import type { GscOAuthState } from "@notra/geo-core/types/google-search-console";
+import { ORPCError } from "@orpc/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { gscOAuthErrorParam } from "@/lib/integrations/google-search-console/oauth-errors";
 import { getGscRedirectUri } from "@/lib/integrations/google-search-console/redirect-uri";
-import { gscAuthorizeQuerySchema } from "@/schemas/google-search-console";
-import type { GscOAuthState } from "@/types/google-search-console";
 import { ratelimit } from "@/utils/ratelimit";
 
 // OAuth authorize endpoints are GET by spec; the only side effect is storing

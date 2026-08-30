@@ -2,6 +2,13 @@
 
 import { Delete02Icon, SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  COMPETITOR_TYPE_FILTER_VALUES,
+  COMPETITOR_TYPE_FILTERS,
+  COMPETITORS_TABLE_HEIGHT,
+  COMPETITORS_TABLE_ROW_HEIGHT,
+} from "@notra/geo-core/constants/geo";
+import type { GeoCompetitorTypeFilter } from "@notra/geo-core/types/geo";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
 import {
@@ -18,19 +25,10 @@ import { Button } from "@/components/button";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { GeoRemoveDialog } from "@/components/geo/geo-remove-dialog";
 import { Table, type TableColumn } from "@/components/motion/table";
-import {
-  COMPETITOR_TYPE_FILTER_VALUES,
-  COMPETITOR_TYPE_FILTERS,
-  COMPETITORS_TABLE_HEIGHT,
-  COMPETITORS_TABLE_ROW_HEIGHT,
-} from "@/constants/geo";
 import { useGeoCompetitorRowNavigation } from "@/lib/hooks/use-geo";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
-import type {
-  CompetitorsTableProps,
-  GeoCompetitorRowEntry,
-  GeoCompetitorTypeFilter,
-} from "@/types/geo";
+import type { CompetitorsTableProps } from "@/types/geo";
+import type { GeoCompetitorRowEntry } from "@/types/geo-competitors";
 import {
   buildCompetitorRows,
   findOwnBrandDomain,

@@ -7,17 +7,22 @@ import {
   Tick01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Badge } from "@notra/ui/components/ui/badge";
-
-import { Button } from "@/components/button";
-import { useCopyCode } from "@/components/geo/code-snippet";
-import { InstrumentModule } from "@/components/instrument/instrument-module";
 import {
   AGENT_READINESS_MUST_DO_HINT,
   AGENT_READINESS_MUST_DO_LABEL,
   AGENT_READINESS_SHOULD_DO_HINT,
   AGENT_READINESS_SHOULD_DO_LABEL,
-} from "@/constants/agent-readiness";
+} from "@notra/geo-core/constants/agent-readiness";
+import {
+  buildAgentReadinessAllFixesPrompt,
+  buildAgentReadinessFixPrompt,
+  groupAgentReadinessIssues,
+} from "@notra/geo-core/utils/agent-readiness";
+import { Badge } from "@notra/ui/components/ui/badge";
+
+import { Button } from "@/components/button";
+import { useCopyCode } from "@/components/geo/code-snippet";
+import { InstrumentModule } from "@/components/instrument/instrument-module";
 import type {
   AgentReadinessChecklistProps,
   AgentReadinessChecklistPromptActionsProps,
@@ -27,11 +32,6 @@ import type {
   AgentReadinessResultBadgeProps,
   AgentReadinessSectionHeaderProps,
 } from "@/types/agent-readiness";
-import {
-  buildAgentReadinessAllFixesPrompt,
-  buildAgentReadinessFixPrompt,
-  groupAgentReadinessIssues,
-} from "@/utils/agent-readiness";
 
 function CopyPromptButton({
   prompt,

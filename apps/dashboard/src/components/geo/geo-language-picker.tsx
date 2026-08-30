@@ -6,6 +6,7 @@ import {
   DEFAULT_LANGUAGE,
   SUPPORTED_LANGUAGES,
 } from "@notra/ai/constants/languages";
+import { GEO_MAX_LANGUAGES } from "@notra/geo-core/constants/geo";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   Combobox,
@@ -18,7 +19,7 @@ import {
 import { useState } from "react";
 
 import { Twemoji } from "@/components/geo/twemoji";
-import { GEO_LANGUAGE_FLAGS, GEO_MAX_LANGUAGES } from "@/constants/geo";
+import { LANGUAGE_FLAGS } from "@/constants/language-flags";
 import type { GeoLanguagePickerProps } from "@/types/geo";
 
 function LanguageLabel({ language }: { language: string }) {
@@ -26,7 +27,7 @@ function LanguageLabel({ language }: { language: string }) {
     <span className="flex items-center gap-1.5">
       <Twemoji
         className="size-3.5 shrink-0"
-        emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+        emoji={LANGUAGE_FLAGS[language as keyof typeof LANGUAGE_FLAGS] ?? ""}
         label={language}
       />
       {language}

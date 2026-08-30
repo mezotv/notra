@@ -2,6 +2,17 @@
 
 import { SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  GEO_PROMPT_NO_MENTION,
+  GEO_PROMPT_PREVIEW_ROW_HEIGHT,
+  GEO_SENTIMENT_LABELS,
+} from "@notra/geo-core/constants/geo";
+import type { GeoPromptSummary } from "@notra/geo-core/types/geo";
+import {
+  mentionedEngineFamilies,
+  summarizePromptResults,
+} from "@notra/geo-core/utils/geo-presence";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
 import { useMemo, useState } from "react";
@@ -17,24 +28,13 @@ import {
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
-import {
-  GEO_PROMPT_NO_MENTION,
-  GEO_PROMPT_PREVIEW_ROW_HEIGHT,
-  GEO_SENTIMENT_LABELS,
-} from "@/constants/geo";
 import type {
-  GeoPromptSummary,
   PromptResultsPreviewProps,
   PromptSentimentLabelProps,
 } from "@/types/geo";
 import { fuzzyMatches } from "@/utils/fuzzy";
 import { engineFamilyLabel } from "@/utils/geo-charts";
-import {
-  mentionedEngineFamilies,
-  summarizePromptResults,
-} from "@/utils/geo-presence";
 import { bestMentionedResult, promptTableRowForId } from "@/utils/geo-prompts";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 import { tableHeightFor } from "@/utils/table";
 
 const EMPTY_PROMPTS = "Run a scan to see how engines answer your prompts";

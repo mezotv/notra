@@ -1,24 +1,27 @@
+import { OWN_BRAND_ROW_ID } from "@notra/geo-core/constants/geo";
+import { competitorKey } from "@notra/geo-core/geo/domain";
+import type {
+  GeoCompetitor,
+  GeoCompetitorKind,
+  GeoCompetitorSharePoint,
+  GeoCompetitorShareTimeseriesPoint,
+  GeoCompetitorTypeFilter,
+  GeoSparklinePoint,
+  ShareOfVoiceRow,
+} from "@notra/geo-core/types/geo";
+import { competitorCanonicalMap } from "@notra/geo-core/utils/geo-competitor-names";
+import { sumGeoSparklinePoints } from "@notra/geo-core/utils/geo-sparkline";
+
 import {
   CHART_MUTED_COLOR,
   CHART_OTHER_SLICE_LABEL,
   CHART_PRIMARY_COLOR,
   RIVAL_SWATCHES,
 } from "@/constants/charts";
-import { OWN_BRAND_ROW_ID } from "@/constants/geo";
-import { competitorKey } from "@/lib/geo/domain";
 import type { ChartColorPair } from "@/types/charts";
-import type {
-  GeoCompetitor,
-  GeoCompetitorKind,
-  GeoCompetitorRowEntry,
-  GeoCompetitorSharePoint,
-  GeoCompetitorShareTimeseriesPoint,
-  GeoCompetitorTypeFilter,
-  GeoSparklinePoint,
-  ShareOfVoiceRow,
-} from "@/types/geo";
-import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
-import { sumGeoSparklinePoints } from "@/utils/geo-sparkline";
+import type { GeoCompetitorRowEntry } from "@/types/geo-competitors";
+
+import { bestFuzzyScore, fuzzyMatches } from "./fuzzy";
 
 const DOMAIN_LIKE_REGEX = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 
@@ -155,29 +158,6 @@ export function rivalMentionShare(
     return 0;
   }
   return rival.mentions / total;
-}
-
-export function competitorCanonicalMap(
-  competitors: readonly {
-    name: string;
-    synonyms?: readonly string[];
-  }[]
-): Map<string, string> {
-  const map = new Map<string, string>();
-  for (const competitor of competitors) {
-    const nameKey = competitorKey(competitor.name);
-    if (nameKey.length === 0) {
-      continue;
-    }
-    map.set(nameKey, competitor.name);
-    for (const synonym of competitor.synonyms ?? []) {
-      const key = competitorKey(synonym);
-      if (key.length > 0 && !map.has(key)) {
-        map.set(key, competitor.name);
-      }
-    }
-  }
-  return map;
 }
 
 /** Keep mention-check names that match a tracked competitor or synonym. */

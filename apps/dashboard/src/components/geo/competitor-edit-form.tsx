@@ -9,6 +9,12 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  COMPETITOR_KIND_HINT,
+  GEO_COLOR_DEBOUNCE_MS,
+} from "@notra/geo-core/constants/geo";
+import { normalizeCompetitorDomain } from "@notra/geo-core/geo/domain";
+import type { GeoCompetitorKind } from "@notra/geo-core/types/geo";
+import {
   ColorPicker,
   ColorPickerEyeDropper,
   ColorPickerFormat,
@@ -33,11 +39,9 @@ import { type ComponentProps, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { CompetitorLogoPreview } from "@/components/geo/competitor-logo-preview";
 import { COMPETITOR_SWATCHES } from "@/constants/charts";
-import { COMPETITOR_KIND_HINT, GEO_COLOR_DEBOUNCE_MS } from "@/constants/geo";
-import { normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { cn } from "@/lib/utils";
-import type { CompetitorEditFormProps, GeoCompetitorKind } from "@/types/geo";
+import type { CompetitorEditFormProps } from "@/types/geo";
 
 const COMPOSER_TRANSITION = {
   type: "spring",

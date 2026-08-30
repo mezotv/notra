@@ -1,14 +1,15 @@
 "use client";
 
+import type { GeoTrafficPage } from "@notra/geo-core/types/geo";
+import { formatGeoSource } from "@notra/geo-core/utils/ai-traffic";
+
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { GEO_DIRECTIONS_PAGES } from "@/constants/geo-directions";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { cn } from "@/lib/utils";
-import type { GeoTrafficPage } from "@/types/geo";
 import type { DirectionBlockProps } from "@/types/geo-directions";
-import { formatGeoSource } from "@/utils/ai-traffic";
 import { formatDirectionCount } from "@/utils/geo-directions";
 import { tableHeightFor } from "@/utils/table";
 

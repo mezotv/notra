@@ -1,5 +1,14 @@
 "use client";
 
+import { GEO_SEARCH_LABEL } from "@notra/geo-core/constants/geo";
+import type { GeoJourney } from "@notra/geo-core/types/geo";
+import {
+  formatAiTrafficTimestamp,
+  formatGeoJourneyChip,
+  formatGeoJourneySpan,
+  formatGeoSource,
+} from "@notra/geo-core/utils/ai-traffic";
+
 import { ChartSparkline } from "@/components/charts/chart-sparkline";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { DirectionDonut } from "@/components/geo/directions/direction-donut";
@@ -8,7 +17,6 @@ import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoBar } from "@/components/geo/geo-bar";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_PRIMARY_COLOR } from "@/constants/charts";
-import { GEO_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_ENGINES,
   GEO_DIRECTIONS_GROUNDED_SERIES,
@@ -17,17 +25,10 @@ import {
   GEO_DIRECTIONS_VISIBILITY_DELTA,
 } from "@/constants/geo-directions";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
-import type { GeoJourney } from "@/types/geo";
 import type {
   DirectionSectionHeadingProps,
   GeoDirectionEngineRow,
 } from "@/types/geo-directions";
-import {
-  formatAiTrafficTimestamp,
-  formatGeoJourneyChip,
-  formatGeoJourneySpan,
-  formatGeoSource,
-} from "@/utils/ai-traffic";
 import { formatMentionRate } from "@/utils/geo-charts";
 import { tableHeightFor } from "@/utils/table";
 

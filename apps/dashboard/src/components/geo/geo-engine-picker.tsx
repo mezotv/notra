@@ -2,6 +2,16 @@
 
 import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_PICKER_VISIBLE_MODELS } from "@notra/geo-core/constants/geo-model-catalog";
+import type {
+  GeoModelCatalog,
+  GeoModelCatalogEntry,
+} from "@notra/geo-core/types/geo";
+import {
+  applyGeoZdrEngineFallback,
+  sortKnownEngines,
+} from "@notra/geo-core/utils/geo-engines";
+import { geoModelsForProvider } from "@notra/geo-core/utils/geo-model-catalog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,22 +49,12 @@ import {
   ZDR_ADDON_ANCHOR,
   ZDR_CHECKOUT_SUCCESS_PARAM,
 } from "@/constants/billing";
-import { GEO_PICKER_VISIBLE_MODELS } from "@/constants/geo-model-catalog";
 import { cn } from "@/lib/utils";
-import type {
-  GeoEnginePickerProps,
-  GeoModelCatalog,
-  GeoModelCatalogEntry,
-} from "@/types/geo";
+import type { GeoEnginePickerProps } from "@/types/geo";
 import {
   findActivePlanSubscription,
   zdrAddonPlanId,
 } from "@/utils/billing-plans";
-import {
-  applyGeoZdrEngineFallback,
-  sortKnownEngines,
-} from "@/utils/geo-engines";
-import { geoModelsForProvider } from "@/utils/geo-model-catalog";
 
 const ROW_CLASS = "flex items-center justify-between gap-3 px-3 py-2";
 

@@ -3,6 +3,20 @@
 import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  GEO_EMPTY_PROMPT_RESULTS,
+  GEO_EMPTY_TIMESERIES,
+  GEO_FAMILY_STAT_TREND_HINT,
+  GEO_MENTION_SUMMARY_LESS,
+  GEO_MENTION_SUMMARY_VISIBLE,
+  GEO_MENTIONS_LABEL,
+} from "@notra/geo-core/constants/geo";
+import type {
+  GeoEngineFamily,
+  GeoEngineFamilyTotals,
+  MentionProviderRow,
+} from "@notra/geo-core/types/geo";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import {
   AnimatePresence,
   domAnimation,
   LazyMotion,
@@ -18,22 +32,9 @@ import {
   InstrumentEmpty,
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
-import {
-  GEO_EMPTY_PROMPT_RESULTS,
-  GEO_EMPTY_TIMESERIES,
-  GEO_FAMILY_STAT_TREND_HINT,
-  GEO_MENTION_SUMMARY_LESS,
-  GEO_MENTION_SUMMARY_VISIBLE,
-  GEO_MENTIONS_LABEL,
-} from "@/constants/geo";
 import { EASE_OUT } from "@/lib/ease";
 import { cn } from "@/lib/utils";
-import type {
-  GeoEngineFamily,
-  GeoEngineFamilyTotals,
-  MentionProviderRow,
-  MentionRateCardProps,
-} from "@/types/geo";
+import type { MentionRateCardProps } from "@/types/geo";
 import {
   buildMentionProviderRows,
   engineFamilyLabel,
@@ -41,7 +42,6 @@ import {
   mentionStatTrends,
   withTrackedMentionEngines,
 } from "@/utils/geo-charts";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 const REVEAL_SPRING = { type: "spring", duration: 0.3, bounce: 0 } as const;
 const REVEAL_STAGGER = 0.08;

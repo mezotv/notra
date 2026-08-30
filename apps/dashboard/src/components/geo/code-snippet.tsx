@@ -2,12 +2,12 @@
 
 import { Copy01Icon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { COPY_FEEDBACK_MS } from "@notra/geo-core/constants/geo";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { highlight } from "sugar-high";
 
 import { Button } from "@/components/button";
-import { COPY_FEEDBACK_MS } from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type { CodeSnippetProps } from "@/types/geo";
 

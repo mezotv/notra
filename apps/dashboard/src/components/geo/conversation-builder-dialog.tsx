@@ -3,6 +3,10 @@
 import { Cancel01Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  GEO_PROMPT_MIN_LENGTH,
+  GEO_SEQUENCE_MAX_TURNS,
+} from "@notra/geo-core/constants/geo";
+import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
@@ -15,7 +19,6 @@ import { Label } from "@notra/ui/components/ui/label";
 import { useId, useState } from "react";
 
 import { Button } from "@/components/button";
-import { GEO_PROMPT_MIN_LENGTH, GEO_SEQUENCE_MAX_TURNS } from "@/constants/geo";
 import { useGeoSequencesDb } from "@/lib/hooks/use-geo-db";
 import type {
   ConversationBuilderDialogProps,
