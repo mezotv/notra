@@ -10,6 +10,7 @@ import {
 } from "@notra/geo-core/constants/geo";
 import type { GeoEngineFamily } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { Input } from "@notra/ui/components/ui/input";
 import { useMemo, useState } from "react";
@@ -30,7 +31,6 @@ import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { EngineRateTableProps } from "@/types/geo";
 import {
   engineFamilyAvgPosition,
-  engineFamilyLabel,
   engineFamilyLastCheckedAt,
   engineFamilyStatTrends,
   engineFamilyTotals,

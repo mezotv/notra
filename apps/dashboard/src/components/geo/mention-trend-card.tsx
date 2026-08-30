@@ -8,6 +8,7 @@ import {
   GEO_MENTION_TREND_TOTAL_LABEL,
 } from "@notra/geo-core/constants/geo";
 import type { MentionTrendRow } from "@notra/geo-core/types/geo";
+import { todayIsoDate } from "@notra/geo-core/utils/day-label";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { useCallback, useMemo, useState } from "react";
 
@@ -21,7 +22,7 @@ import {
 import { CHART_MUTED_COLOR, CHART_PRIMARY_COLOR } from "@/constants/charts";
 import type { ChartConfig } from "@/types/charts";
 import type { MentionTrendCardProps, MentionTrendSeries } from "@/types/geo";
-import { formatFullDayLabel, todayIsoDate } from "@/utils/analytics-charts";
+import { formatFullDayLabel } from "@/utils/analytics-charts";
 import { accountSeriesColors, seriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";
 import { engineIconHtml } from "@/utils/engine-icon-html";

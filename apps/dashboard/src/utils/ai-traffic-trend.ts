@@ -10,6 +10,7 @@ import type {
   GeoTrafficTrendRow,
   GeoVisitorType,
 } from "@notra/geo-core/types/geo";
+import { formatDayLabel } from "@notra/geo-core/utils/day-label";
 import { resolveEngineIconKey } from "@notra/geo-core/utils/geo-engine-icon";
 
 import {
@@ -17,7 +18,6 @@ import {
   GEO_TRAFFIC_PROVIDER_COLORS,
 } from "@/constants/charts";
 import type { TrafficTrendProvider, TrafficTrendSeries } from "@/types/geo";
-import { formatDayLabel } from "@/utils/analytics-charts";
 import { seriesColors } from "@/utils/chart-colors";
 
 const SERIES_KEY_UNSAFE = /[^a-z0-9]+/gi;

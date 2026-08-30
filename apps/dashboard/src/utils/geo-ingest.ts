@@ -10,9 +10,8 @@ import {
 import type {
   GeoIngestFramework,
   GeoIngestPackageManager,
+  GeoIngestSetupResponse,
 } from "@notra/geo-core/types/geo";
-
-import type { GeoIngestSetupResponse } from "@/types/geo";
 
 export function geoIngestSnippet(
   setup: GeoIngestSetupResponse | undefined,

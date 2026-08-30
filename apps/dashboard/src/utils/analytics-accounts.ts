@@ -1,3 +1,5 @@
+import { formatDayLabel } from "@notra/geo-core/utils/day-label";
+
 import type {
   AccountEngagementPoint,
   AccountIdentity,
@@ -7,7 +9,6 @@ import type {
   SocialOverviewAccount,
   TopPostItem,
 } from "@/types/analytics";
-import { formatDayLabel } from "@/utils/analytics-charts";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
 
 function searchableFields(entry: LeaderboardEntry): string[] {

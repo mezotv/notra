@@ -50,18 +50,3 @@ export interface GeoCsvSelection<TRow> {
   file: File;
   result: GeoCsvParseResult<TRow>;
 }
-
-export interface GeoCsvImportDialogProps<TRow> {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  kind: GeoImportKind;
-  parse: (text: string) => GeoCsvParseResult<TRow>;
-  onImport: (rows: TRow[]) => Promise<unknown>;
-  isPending: boolean;
-}
-
-export interface GeoImportDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  organizationId: string;
-}

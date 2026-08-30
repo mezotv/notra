@@ -6,10 +6,9 @@ import {
   GEO_INGEST_IDENTITY_CACHE_PREFIX,
   GEO_INGEST_IDENTITY_INACTIVE_TTL_SECONDS,
 } from "@notra/geo-core/constants/geo";
+import { getGeoIngestTokenGeneration } from "@notra/geo-core/geo/ingest";
+import type { GeoIngestIdentity } from "@notra/geo-core/types/geo";
 import { and, eq } from "drizzle-orm";
-
-import { getGeoIngestTokenGeneration } from "@/lib/geo-ingest/generation";
-import type { GeoIngestIdentity } from "@/types/geo";
 
 function identityCacheKey(identity: GeoIngestIdentity): string {
   return `${GEO_INGEST_IDENTITY_CACHE_PREFIX}:${identity.organizationId}:${identity.projectId ?? "-"}`;

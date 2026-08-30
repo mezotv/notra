@@ -9,6 +9,10 @@ import type {
   GeoPromptGapRow,
   GeoSearchGapRow,
 } from "@notra/geo-core/types/geo";
+import {
+  engineFamilyLabel,
+  engineFamilyOf,
+} from "@notra/geo-core/utils/geo-engine-family";
 
 import type {
   GeoGapsEmptyKind,
@@ -17,7 +21,6 @@ import type {
 } from "@/types/components/geo-gaps";
 
 import { bestFuzzyScore, fuzzyMatches } from "./fuzzy";
-import { engineFamilyLabel, engineFamilyOf } from "./geo-charts";
 
 /** Map 0–1 intensity onto a 1–5 inspo-style meter (empty when intensity is 0). */
 export function gapMeterLevel(

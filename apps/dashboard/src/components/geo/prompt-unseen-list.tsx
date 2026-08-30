@@ -2,6 +2,7 @@
 
 import { GEO_FAMILY_IMPROVE_CTA_GAPS } from "@notra/geo-core/constants/geo";
 import type { GeoPromptSummary } from "@notra/geo-core/types/geo";
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import {
   scannedEngineFamilies,
   summarizePromptResults,
@@ -18,7 +19,6 @@ import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { cn } from "@/lib/utils";
 import type { PromptUnseenListProps } from "@/types/geo";
-import { engineFamilyLabel } from "@/utils/geo-charts";
 import { promptTableRowForId } from "@/utils/geo-prompts";
 
 function UnseenRow({

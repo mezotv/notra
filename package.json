@@ -10,6 +10,7 @@
     "build": "dotenv -- turbo run build",
     "dev": "dotenv -- turbo run dev",
     "check-types": "dotenv -- turbo run check-types",
+    "test": "turbo run test",
     "knip": "dotenv -- turbo run knip --filter=web --filter=dashboard --filter=api",
     "db:generate": "dotenv -- bunx drizzle-kit generate --config packages/db/drizzle.config.ts",
     "db:migrate": "dotenv -- bunx drizzle-kit migrate --config packages/db/drizzle.config.ts",

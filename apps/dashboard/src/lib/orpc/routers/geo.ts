@@ -133,7 +133,10 @@ import type {
   AgentReadinessScanResponse,
 } from "@notra/geo-core/types/agent-readiness";
 import type { DbTransaction } from "@notra/geo-core/types/db";
-import type { GeoTrackedPrompt } from "@notra/geo-core/types/geo";
+import type {
+  GeoIngestSetupResponse,
+  GeoTrackedPrompt,
+} from "@notra/geo-core/types/geo";
 import type {
   GeoSearchConsoleStatus,
   GscSitesResponse,
@@ -157,7 +160,6 @@ import type { AuthenticatedUser } from "@/types/auth/organization";
 import type {
   GeoBrandSearchHandlerInput,
   GeoCompetitorSuggestionsHandlerInput,
-  GeoIngestSetupResponse,
   GeoPromptSuggestion,
   GeoPromptSuggestionRow,
   GeoPromptSuggestionsResponse,

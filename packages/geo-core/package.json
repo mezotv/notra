@@ -7,15 +7,13 @@
     "./deps": "./src/deps.ts",
     "./geo/*": "./src/geo/*.ts",
     "./types/*": "./src/types/*.ts",
-    "./types/components/*": "./src/types/components/*.ts",
     "./constants/*": "./src/constants/*.ts",
     "./schemas/*": "./src/schemas/*.ts",
     "./utils/*": "./src/utils/*.ts",
     "./csv/*": "./src/csv/*.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit",
-    "test": "bun test src"
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "3.0.84",

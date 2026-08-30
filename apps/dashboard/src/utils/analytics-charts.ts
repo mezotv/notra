@@ -1,4 +1,4 @@
-import { formatDayLabel, todayIsoDate } from "@notra/geo-core/utils/day-label";
+import { formatDayLabel } from "@notra/geo-core/utils/day-label";
 
 import {
   CURSOR_TOOLTIP_EDGE_PX,
@@ -20,8 +20,6 @@ import type {
 } from "@/types/analytics";
 import type { ChartMarker } from "@/types/charts";
 import { chartKey } from "@/utils/chart-keys";
-
-export { formatDayLabel, todayIsoDate };
 
 const compactFormatter = new Intl.NumberFormat("en", {
   notation: "compact",

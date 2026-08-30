@@ -11,9 +11,9 @@ import {
   GEO_JOURNEY_IPV6_GROUPS,
   GEO_JOURNEY_PARAM,
 } from "@notra/geo-core/constants/geo";
+import { getGeoIngestSecret } from "@notra/geo-core/geo/ingest";
 import { getJourneyId } from "@usenotra/geo/markdown";
 
-import { getGeoIngestSecret } from "@/lib/geo-ingest/token";
 import type {
   GeoJourneyInput,
   GeoJourneyResolution,

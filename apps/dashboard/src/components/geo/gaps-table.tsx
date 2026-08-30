@@ -16,6 +16,7 @@ import type {
   GeoPromptGapRow,
   GeoSearchGapRow,
 } from "@notra/geo-core/types/geo";
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import { Input } from "@notra/ui/components/ui/input";
 import {
   PermissionOption,
@@ -58,7 +59,7 @@ import type {
   GeoGapsTableProps,
   GeoGapsTabsProps,
 } from "@/types/components/geo-gaps";
-import { engineFamilyLabel, formatMentionRate } from "@/utils/geo-charts";
+import { formatMentionRate } from "@/utils/geo-charts";
 import { matchTrackedCompetitorNames } from "@/utils/geo-competitors";
 import {
   filterPromptGaps,

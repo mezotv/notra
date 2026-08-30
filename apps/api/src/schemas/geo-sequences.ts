@@ -1,11 +1,8 @@
 import { z } from "@hono/zod-openapi";
+import { GEO_SEQUENCE_MAX_TURNS } from "@notra/geo-core/constants/geo";
 
-import {
-  GEO_SEQUENCE_MAX_STEPS,
-  GEO_SEQUENCE_NAME_MAX_LENGTH,
-} from "../constants/geo-schemas";
 import { organizationResponseSchema } from "./content";
-import { geoPromptTextSchema } from "./geo-fields";
+import { createGeoShortTextSchema, geoPromptTextSchema } from "./geo-fields";
 
 const sequenceSchema = z
   .object({
@@ -20,7 +17,7 @@ const sequenceSchema = z
 const sequenceStepsSchema = z
   .array(geoPromptTextSchema)
   .min(1)
-  .max(GEO_SEQUENCE_MAX_STEPS);
+  .max(GEO_SEQUENCE_MAX_TURNS);
 
 export const listSequencesResponseSchema = z
   .object({
@@ -38,14 +35,14 @@ export const sequenceResponseSchema = z
 
 export const createSequenceRequestSchema = z
   .object({
-    name: z.string().trim().min(1).max(GEO_SEQUENCE_NAME_MAX_LENGTH),
+    name: createGeoShortTextSchema(),
     steps: sequenceStepsSchema,
   })
   .openapi("CreateGeoSequenceRequest");
 
 export const patchSequenceRequestSchema = z
   .object({
-    name: z.string().trim().min(1).max(GEO_SEQUENCE_NAME_MAX_LENGTH).optional(),
+    name: createGeoShortTextSchema().optional(),
     steps: sequenceStepsSchema.optional(),
     enabled: z.boolean().optional(),
   })

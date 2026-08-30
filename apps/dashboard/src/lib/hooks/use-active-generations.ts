@@ -1,14 +1,14 @@
 "use client";
 
+import type {
+  ActiveGeneration,
+  GenerationResult,
+} from "@notra/geo-core/types/generation-tracking";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
 
-import type {
-  ActiveGeneration,
-  GenerationResult,
-} from "@/types/generations/tracking";
 import { hasShownToast, markToastShown } from "@/utils/toast-dedupe";
 
 import { dashboardOrpc } from "../orpc/query";

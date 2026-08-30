@@ -2,6 +2,7 @@
 
 import { Linkedin02Icon, NewTwitterIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { formatDayLabel } from "@notra/geo-core/utils/day-label";
 import {
   Avatar,
   AvatarFallback,
@@ -22,11 +23,7 @@ import { Table, type TableColumn } from "@/components/motion/table";
 import { ANALYTICS_TOOLTIP_DELAY_MS } from "@/constants/analytics";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { TopPostItem, TopPostsCardProps } from "@/types/analytics";
-import {
-  formatDayLabel,
-  formatMetric,
-  previewPostContent,
-} from "@/utils/analytics-charts";
+import { formatMetric, previewPostContent } from "@/utils/analytics-charts";
 import { tableHeightFor } from "@/utils/table";
 
 function PostAvatar({ post }: { post: TopPostItem }) {

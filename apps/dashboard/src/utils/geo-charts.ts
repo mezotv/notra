@@ -1,5 +1,4 @@
 import {
-  GEO_BRAND_LABELS,
   GEO_ENGINE_LABELS,
   GEO_MENTION_TREND_BACKFILL_DAYS,
   GEO_MENTION_TREND_TOTAL_KEY,
@@ -31,8 +30,11 @@ import type {
   ShareOfVoiceRow,
 } from "@notra/geo-core/types/geo";
 import { formatDayLabel, todayIsoDate } from "@notra/geo-core/utils/day-label";
-import { GROUNDED_SUFFIX_PATTERN } from "@notra/geo-core/utils/geo-engine-family";
-import { resolveEngineIconKey } from "@notra/geo-core/utils/geo-engine-icon";
+import {
+  engineFamilyLabel,
+  engineFamilyOf,
+  engineModelOf,
+} from "@notra/geo-core/utils/geo-engine-family";
 import { isGroundedEngine } from "@notra/geo-core/utils/geo-presence";
 import { sumGeoSparklinePoints } from "@notra/geo-core/utils/geo-sparkline";
 
@@ -368,23 +370,6 @@ export function buildMentionTrendRows(
   );
 
   return { rows, engines: ranked };
-}
-
-export function engineModelOf(engine: string): string {
-  return engine.replace(GROUNDED_SUFFIX_PATTERN, "");
-}
-
-export function engineFamilyOf(engine: string): string {
-  return resolveEngineIconKey(engine) ?? engineModelOf(engine);
-}
-
-export function engineFamilyLabel(family: string): string {
-  return (
-    GEO_BRAND_LABELS[family] ??
-    GEO_ENGINE_LABELS[family] ??
-    GEO_ENGINE_LABELS[`${family}-grounded`] ??
-    family
-  );
 }
 
 export function engineVariantLabel(model: string, brandLabel: string): string {

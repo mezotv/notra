@@ -1,10 +1,11 @@
 import { z } from "@hono/zod-openapi";
 import {
-  GEO_MAX_ALIASES,
+  GEO_COMPETITOR_MAX_SYNONYMS,
   GEO_MAX_COMPETITORS,
   GEO_SHORT_FIELD_MAX_LENGTH,
 } from "@notra/geo-core/constants/geo";
 import { GEO_CSV_IMPORT_MAX_BYTES } from "@notra/geo-core/constants/geo-import";
+import { geoCompetitorDomainSchema } from "@notra/geo-core/schemas/geo-import";
 
 import { organizationResponseSchema } from "./content";
 import { createGeoShortTextSchema } from "./geo-fields";
@@ -63,10 +64,10 @@ export const putCompetitorRequestSchema = z
     previousName: createGeoShortTextSchema().optional().openapi({
       description: "Set to rename an existing competitor.",
     }),
-    domain: z.string().trim().max(GEO_SHORT_FIELD_MAX_LENGTH).nullable(),
+    domain: geoCompetitorDomainSchema.nullable(),
     synonyms: z
       .array(createGeoShortTextSchema())
-      .max(GEO_MAX_ALIASES)
+      .max(GEO_COMPETITOR_MAX_SYNONYMS)
       .optional(),
     kind: z.enum(["direct", "indirect"]).optional(),
     color: z
@@ -80,14 +81,12 @@ export const putCompetitorRequestSchema = z
 
 const competitorImportRowSchema = z.object({
   name: createGeoShortTextSchema(),
-  domain: z
-    .string()
-    .trim()
-    .max(GEO_SHORT_FIELD_MAX_LENGTH)
-    .nullable()
-    .optional(),
+  domain: geoCompetitorDomainSchema.nullable().optional(),
   kind: z.enum(["direct", "indirect"]).optional(),
-  synonyms: z.array(createGeoShortTextSchema()).max(GEO_MAX_ALIASES).optional(),
+  synonyms: z
+    .array(createGeoShortTextSchema())
+    .max(GEO_COMPETITOR_MAX_SYNONYMS)
+    .optional(),
 });
 
 export const importCompetitorsRequestSchema = z

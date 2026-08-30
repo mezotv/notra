@@ -27,6 +27,7 @@ import type {
   GeoOverviewResponse,
   GeoProject,
   GeoProjectsResponse,
+  GeoIngestSetupResponse,
   GeoPromptResultsResponse,
   GeoSequenceResultsResponse,
   GeoSettingsResponse,
@@ -70,7 +71,6 @@ import { localStorageKeys } from "@/constants/storage";
 import { geoDbOrgQueryKey, geoDbQueryKey } from "@/lib/db/geo-collections";
 import type {
   GeoGenerateFromWebsiteInput,
-  GeoIngestSetupResponse,
   GeoProjectCreateInput,
   GeoPromptSuggestionsResponse,
   GeoRangeQuery,

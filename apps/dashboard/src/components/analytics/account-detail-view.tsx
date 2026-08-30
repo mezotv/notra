@@ -2,6 +2,7 @@
 
 import { Linkedin02Icon, NewTwitterIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { formatDayLabel } from "@notra/geo-core/utils/day-label";
 import {
   Avatar,
   AvatarFallback,
@@ -47,7 +48,6 @@ import {
   postsForAccount,
 } from "@/utils/analytics-accounts";
 import {
-  formatDayLabel,
   formatMetric,
   leaderboardDetailMetrics,
   previewPostContent,

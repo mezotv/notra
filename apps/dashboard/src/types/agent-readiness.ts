@@ -1,12 +1,10 @@
 import type { IconSvgElement } from "@hugeicons/react";
 import type { AgentReadinessIssue } from "@notra/db/types/agent-readiness";
 import type {
-  AgentReadinessIssueGroups as CoreAgentReadinessIssueGroups,
+  AgentReadinessIssueGroups,
   AgentReadinessReportView,
   AgentReadinessResponse,
 } from "@notra/geo-core/types/agent-readiness";
-
-export type AgentReadinessIssueGroups = CoreAgentReadinessIssueGroups;
 
 export interface AgentReadinessScoreCardProps {
   report: AgentReadinessReportView;

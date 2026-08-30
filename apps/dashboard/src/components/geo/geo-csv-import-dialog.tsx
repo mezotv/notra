@@ -19,10 +19,8 @@ import {
   readGeoCsvFile,
 } from "@notra/geo-core/geo/csv-import";
 import type {
-  GeoCsvImportDialogProps,
   GeoCsvIssue,
   GeoCsvSelection,
-  GeoImportDialogProps,
 } from "@notra/geo-core/types/geo-import";
 import { Dropzone } from "@notra/ui/components/kibo-ui/dropzone";
 import {
@@ -44,6 +42,10 @@ import {
   useGeoImportPrompts,
 } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
+import type {
+  GeoCsvImportDialogProps,
+  GeoImportDialogProps,
+} from "@/types/components/geo";
 import { downloadBlob } from "@/utils/download";
 import { formatCsvFileSize, geoImportNoun } from "@/utils/geo-import";
 

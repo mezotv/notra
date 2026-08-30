@@ -8,6 +8,7 @@ import {
   GEO_SENTIMENT_LABELS,
 } from "@notra/geo-core/constants/geo";
 import type { GeoPromptSummary } from "@notra/geo-core/types/geo";
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import {
   mentionedEngineFamilies,
   summarizePromptResults,
@@ -33,7 +34,6 @@ import type {
   PromptSentimentLabelProps,
 } from "@/types/geo";
 import { fuzzyMatches } from "@/utils/fuzzy";
-import { engineFamilyLabel } from "@/utils/geo-charts";
 import { bestMentionedResult, promptTableRowForId } from "@/utils/geo-prompts";
 import { tableHeightFor } from "@/utils/table";
 

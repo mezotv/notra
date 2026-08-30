@@ -3,6 +3,7 @@ import type {
   GeoOverviewEngine,
   GeoTimeseriesPoint,
 } from "@notra/geo-core/types/geo";
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 
 import { CHART_PERCENT_SCALE } from "@/constants/charts";
 import type {
@@ -12,7 +13,6 @@ import type {
 } from "@/types/geo-directions";
 import {
   engineFamilyAvgPosition,
-  engineFamilyLabel,
   engineFamilySources,
   engineFamilyTotals,
   groupEngineFamilies,

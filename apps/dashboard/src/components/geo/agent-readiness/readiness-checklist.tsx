@@ -13,6 +13,7 @@ import {
   AGENT_READINESS_SHOULD_DO_HINT,
   AGENT_READINESS_SHOULD_DO_LABEL,
 } from "@notra/geo-core/constants/agent-readiness";
+import type { AgentReadinessIssueGroups } from "@notra/geo-core/types/agent-readiness";
 import {
   buildAgentReadinessAllFixesPrompt,
   buildAgentReadinessFixPrompt,
@@ -28,7 +29,6 @@ import type {
   AgentReadinessChecklistPromptActionsProps,
   AgentReadinessCopyPromptButtonProps,
   AgentReadinessIssueEntryProps,
-  AgentReadinessIssueGroups,
   AgentReadinessResultBadgeProps,
   AgentReadinessSectionHeaderProps,
 } from "@/types/agent-readiness";

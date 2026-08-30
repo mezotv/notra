@@ -5,6 +5,7 @@ import type {
   GeoPromptResult,
   GeoTrackedPrompt,
 } from "@notra/geo-core/types/geo";
+import { engineFamilyOf } from "@notra/geo-core/utils/geo-engine-family";
 import { summarizePromptResults } from "@notra/geo-core/utils/geo-presence";
 
 import type {
@@ -13,7 +14,6 @@ import type {
   GeoPromptTableRow,
 } from "@/types/geo";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
-import { engineFamilyOf } from "@/utils/geo-charts";
 
 function promptMentionSets(results: readonly GeoPromptResult[]): {
   mentioned: Set<string>;

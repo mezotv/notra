@@ -1,7 +1,7 @@
 import { z } from "@hono/zod-openapi";
 
-import { GEO_PROJECT_NAME_MAX_LENGTH } from "../constants/geo-schemas";
 import { organizationResponseSchema } from "./content";
+import { createGeoShortTextSchema } from "./geo-fields";
 import { resourceIdSchema } from "./ids";
 
 const projectSchema = z
@@ -29,7 +29,7 @@ export const projectResponseSchema = z
 
 export const createProjectRequestSchema = z
   .object({
-    name: z.string().trim().min(1).max(GEO_PROJECT_NAME_MAX_LENGTH),
+    name: createGeoShortTextSchema(),
     brandSettingsId: resourceIdSchema("brandSettingsId").optional().openapi({
       description:
         "Brand identity to link. Defaults to the organization's default identity.",
@@ -39,7 +39,7 @@ export const createProjectRequestSchema = z
 
 export const patchProjectRequestSchema = z
   .object({
-    name: z.string().trim().min(1).max(GEO_PROJECT_NAME_MAX_LENGTH).optional(),
+    name: createGeoShortTextSchema().optional(),
     brandSettingsId: resourceIdSchema("brandSettingsId").optional(),
   })
   .refine(

@@ -1,3 +1,5 @@
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
+
 import {
   MODEL_HYPHEN_PREFIXES,
   MODEL_TOKEN_LABELS,
@@ -5,7 +7,6 @@ import {
   MODELS_DEV_LOGO_BASE,
 } from "@/constants/geo-models";
 import type { ParsedModelId } from "@/types/geo";
-import { engineFamilyLabel } from "@/utils/geo-charts";
 
 const VERSION_TOKEN = /^v?\d/i;
 const ALPHA_TOKEN = /^[a-z]+$/i;

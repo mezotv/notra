@@ -7,10 +7,8 @@ import type {
   GeoCompetitorShareTimeseriesPoint,
   GeoEngineFamily,
   GeoIngestFramework,
-  GeoIngestIdentity,
   GeoIngestPackageManager,
   GeoIngestSetupResponse,
-  GeoIngestSnippets,
   GeoJourney,
   GeoJourneyPathKind,
   GeoLanguageSharePoint,
@@ -51,10 +49,6 @@ export interface GeoProjectCreateInput {
   name: string;
   brandSettingsId: string;
 }
-
-// Moved to `@notra/geo-core/types/geo` alongside the token/snippet builders the
-// public API also needs. Re-exported so dashboard imports keep working.
-export type { GeoIngestIdentity, GeoIngestSetupResponse, GeoIngestSnippets };
 
 export interface GeoProjectContextValue {
   projectId: string | undefined;

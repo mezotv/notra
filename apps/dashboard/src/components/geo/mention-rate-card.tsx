@@ -15,6 +15,7 @@ import type {
   GeoEngineFamilyTotals,
   MentionProviderRow,
 } from "@notra/geo-core/types/geo";
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import {
   AnimatePresence,
@@ -37,7 +38,6 @@ import { cn } from "@/lib/utils";
 import type { MentionRateCardProps } from "@/types/geo";
 import {
   buildMentionProviderRows,
-  engineFamilyLabel,
   mentionOverviewTotals,
   mentionStatTrends,
   withTrackedMentionEngines,

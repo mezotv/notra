@@ -1,7 +1,9 @@
 import { ingestGeoTrafficEvents } from "@notra/analytics/tinybird/client";
 import type { GeoTrafficEventRow } from "@notra/analytics/tinybird/datasources";
 import { GEO_INGEST_BEARER_PREFIX } from "@notra/geo-core/constants/geo";
+import { verifyGeoIngestToken } from "@notra/geo-core/geo/ingest";
 import { geoRequestPayloadSchema } from "@notra/geo-core/schemas/geo";
+import type { GeoIngestIdentity } from "@notra/geo-core/types/geo";
 import { isTrackedGeoVisitorType } from "@notra/geo-core/utils/ai-traffic";
 import type { GeoRequestPayload } from "@usenotra/geo";
 import { Effect } from "effect";
@@ -19,8 +21,6 @@ import {
 import { buildGeoTrafficEvent, toCapturedDate } from "@/lib/geo-ingest/event";
 import { isGeoIngestIdentityActive } from "@/lib/geo-ingest/identity";
 import { resolveJourneyId } from "@/lib/geo-ingest/journey";
-import { verifyGeoIngestToken } from "@/lib/geo-ingest/token";
-import type { GeoIngestIdentity } from "@/types/geo";
 import { ratelimit } from "@/utils/ratelimit";
 
 const authenticate = Effect.fn("geoIngest.authenticate")(function* (

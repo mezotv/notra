@@ -19,6 +19,8 @@ import type {
   GeoTimeseriesPoint,
 } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { todayIsoDate } from "@notra/geo-core/utils/day-label";
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import {
   Sheet,
   SheetContent,
@@ -48,12 +50,10 @@ import type {
   EngineFamilyPromptHit,
   EngineFamilySheetProps,
 } from "@/types/geo";
-import { todayIsoDate } from "@/utils/analytics-charts";
 import { geoModeColor, seriesColors } from "@/utils/chart-colors";
 import {
   buildEngineFamilyModeTrendRows,
   engineFamilyAvgPosition,
-  engineFamilyLabel,
   engineFamilyLastCheckedAt,
   engineFamilyModeTotals,
   engineFamilyStatTrends,
