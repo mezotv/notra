@@ -6,6 +6,7 @@ import {
   GEO_EMPTY_PROMPT_RESULTS,
   GEO_EMPTY_TIMESERIES,
   GEO_FAMILY_STAT_TREND_HINT,
+  GEO_MENTION_HINT_BLEED_REM,
   GEO_MENTION_HINT_HEIGHT_REM,
   GEO_MENTION_ROW_HEIGHT_REM,
   GEO_MENTION_SUMMARY_VISIBLE,
@@ -58,12 +59,13 @@ const HINT_TRANSITION = { duration: 0.2, ease: EASE_OUT } as const;
 const HINT_HIDDEN = { opacity: 0 } as const;
 const HINT_VISIBLE = { opacity: 1 } as const;
 const HINT_ROW_CLASS =
-  "group border-border bg-card text-foreground/70 hover:text-foreground focus-visible:ring-ring absolute inset-x-0 bottom-0 flex w-full cursor-pointer items-center justify-center gap-1.5 border-t text-xs transition-colors outline-none focus-visible:ring-2";
+  "group border-border bg-card text-foreground/70 hover:text-foreground focus-visible:ring-ring absolute inset-x-0 flex w-full cursor-pointer items-center justify-center gap-1.5 border-t text-xs transition-colors outline-none focus-visible:ring-2";
 const HINT_ROW_HOVER_CLASS =
   "group-hover:bg-muted/50 pointer-events-none absolute inset-0 transition-colors";
 const ROW_STYLE = { height: `${GEO_MENTION_ROW_HEIGHT_REM}rem` } as const;
 const HINT_ROW_STYLE = {
-  height: `calc(${GEO_MENTION_HINT_HEIGHT_REM}rem + 1px)`,
+  top: `calc(${GEO_MENTION_SUMMARY_VISIBLE * GEO_MENTION_ROW_HEIGHT_REM}rem - 1px)`,
+  bottom: `-${GEO_MENTION_HINT_BLEED_REM}rem`,
 } as const;
 const LIST_STYLE = {
   maxHeight: `${GEO_MENTION_SUMMARY_VISIBLE * GEO_MENTION_ROW_HEIGHT_REM + GEO_MENTION_HINT_HEIGHT_REM}rem`,
@@ -228,7 +230,7 @@ export function MentionRateCard({
             seed="Mentions"
           />
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-1 flex-col gap-4">
             <div className="flex items-end gap-2">
               <p className="text-3xl leading-none font-semibold tracking-tight tabular-nums">
                 {totals.mentions.toLocaleString()}
@@ -242,12 +244,12 @@ export function MentionRateCard({
               />
             </div>
 
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-1 flex-col gap-1">
               <div className="flex items-center justify-between gap-3 text-sm font-medium">
                 <span>Provider</span>
                 <span>Mentions</span>
               </div>
-              <div className="relative">
+              <div className="relative flex-1">
                 <div
                   className="border-border relative overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>button:last-of-type]:border-b-0"
                   ref={ref}

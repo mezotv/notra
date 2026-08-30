@@ -673,6 +673,7 @@ export const GEO_MENTION_ACTIVITY_LABEL = "Mention activity";
 export const GEO_MENTION_SUMMARY_VISIBLE = 5;
 export const GEO_MENTION_ROW_HEIGHT_REM = 2.75;
 export const GEO_MENTION_HINT_HEIGHT_REM = 2;
+export const GEO_MENTION_HINT_BLEED_REM = 1;
 export const GEO_MENTION_UNTRACKED_LABEL = "Not tracked";
 export const GEO_MENTION_UNTRACKED_HINT =
   "These mentions come from earlier scans. Add the model back in GEO settings to keep tracking it.";
