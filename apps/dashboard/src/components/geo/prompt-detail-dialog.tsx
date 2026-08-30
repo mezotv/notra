@@ -121,11 +121,14 @@ function PromptAnswerPage({
             ? `Latest ${answerMode} answer from each engine`
             : "Latest answer from each engine"}
         </ResponsiveDialogDescription>
-        {latestCheck ? (
-          <p className="text-muted-foreground text-sm">
-            {formatAiTrafficTimestamp(latestCheck)}
-          </p>
-        ) : null}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+          <span className="font-medium">Latest engine receipts</span>
+          {latestCheck ? (
+            <span className="text-muted-foreground">
+              · Updated {formatAiTrafficTimestamp(latestCheck)}
+            </span>
+          ) : null}
+        </div>
         {results.length > 0 && active ? (
           <PromptEngineSwitcher
             active={active}

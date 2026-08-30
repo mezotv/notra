@@ -51,7 +51,7 @@ export function PromptEngineSwitcher({
       <LayoutGroup id={layoutId}>
         <div
           aria-label="Engines"
-          className="flex min-w-0 flex-1 flex-wrap items-center gap-1 p-0.5"
+          className="scrollbar-none flex min-w-0 flex-1 items-center gap-1 overflow-x-auto p-0.5 pb-1"
           role="tablist"
         >
           {results.map((result, index) => {
@@ -66,6 +66,7 @@ export function PromptEngineSwitcher({
                 aria-selected={selected}
                 className={cn(
                   "relative inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-sm",
+                  "shrink-0",
                   "transition-[color,transform] duration-150 ease-out",
                   "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
                   "active:scale-[0.96]",
