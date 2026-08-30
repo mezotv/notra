@@ -651,13 +651,21 @@ export function buildMentionProviderRows(
     withTrackedMentionEngines(scanned, options?.trackedEngines)
   );
   const points = options?.timeseriesPoints ?? [];
+  const trackedFamilies = new Set(
+    (options?.trackedEngines ?? []).map((engine) => engineFamilyOf(engine))
+  );
   return families
     .map((family) => ({
       family,
       totals: engineFamilyTotals(family) ?? EMPTY_FAMILY_TOTALS,
       mentionDelta: engineFamilyStatTrends(points, family.family).mentionDelta,
+      tracked: trackedFamilies.size === 0 || trackedFamilies.has(family.family),
     }))
     .sort(compareMentionProviderRows);
+}
+
+export function mentionMoreModelsLabel(count: number): string {
+  return count === 1 ? "1 more model" : `${count.toLocaleString()} more models`;
 }
 
 function sumFamilyWindow(

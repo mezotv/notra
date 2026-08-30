@@ -6,17 +6,20 @@ import {
   GEO_EMPTY_PROMPT_RESULTS,
   GEO_EMPTY_TIMESERIES,
   GEO_FAMILY_STAT_TREND_HINT,
-  GEO_MENTION_SUMMARY_LESS,
+  GEO_MENTION_HINT_HEIGHT_REM,
+  GEO_MENTION_ROW_HEIGHT_REM,
   GEO_MENTION_SUMMARY_VISIBLE,
+  GEO_MENTION_UNTRACKED_HINT,
+  GEO_MENTION_UNTRACKED_LABEL,
   GEO_MENTIONS_LABEL,
 } from "@notra/geo-core/constants/geo";
-import type {
-  GeoEngineFamily,
-  GeoEngineFamilyTotals,
-  MentionProviderRow,
-} from "@notra/geo-core/types/geo";
+import type { GeoEngineFamily } from "@notra/geo-core/types/geo";
 import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import {
+  HoverCard,
+  HoverCardTrigger,
+} from "@notra/ui/components/ui/hover-card";
 import {
   AnimatePresence,
   domAnimation,
@@ -24,70 +27,69 @@ import {
   m,
   useReducedMotion,
 } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
+import { TrafficBreakdownCard } from "@/components/geo/traffic-breakdown-card";
 import {
   InstrumentEmpty,
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
+import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
 import { EASE_OUT } from "@/lib/ease";
+import { useScrollOverflow } from "@/lib/hooks/use-scroll-overflow";
 import { cn } from "@/lib/utils";
-import type { MentionRateCardProps } from "@/types/geo";
+import type {
+  MentionMoreModelsHintProps,
+  MentionProviderRowProps,
+  MentionRateCardProps,
+} from "@/types/geo";
 import {
   buildMentionProviderRows,
+  mentionMoreModelsLabel,
   mentionOverviewTotals,
   mentionStatTrends,
   withTrackedMentionEngines,
 } from "@/utils/geo-charts";
 
-const REVEAL_SPRING = { type: "spring", duration: 0.3, bounce: 0 } as const;
-const REVEAL_STAGGER = 0.08;
-const OVERLAY_HIDDEN = {
-  opacity: 0,
-  y: -4,
-  filter: "blur(4px)",
+const HINT_TRANSITION = { duration: 0.2, ease: EASE_OUT } as const;
+const HINT_HIDDEN = { opacity: 0 } as const;
+const HINT_VISIBLE = { opacity: 1 } as const;
+const HINT_ROW_CLASS =
+  "group border-border bg-card focus-visible:ring-ring absolute inset-x-0 bottom-0 grid w-full cursor-pointer grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-1.5 border-t text-left outline-none focus-visible:ring-2";
+const HINT_ROW_HOVER_CLASS =
+  "group-hover:bg-muted/50 pointer-events-none absolute inset-0 transition-colors";
+const ROW_STYLE = { height: `${GEO_MENTION_ROW_HEIGHT_REM}rem` } as const;
+const HINT_ROW_STYLE = {
+  height: `calc(${GEO_MENTION_HINT_HEIGHT_REM}rem + 1px)`,
 } as const;
-const OVERLAY_VISIBLE = {
-  opacity: 1,
-  y: 0,
-  filter: "blur(0px)",
+const LIST_STYLE = {
+  maxHeight: `${GEO_MENTION_SUMMARY_VISIBLE * GEO_MENTION_ROW_HEIGHT_REM + GEO_MENTION_HINT_HEIGHT_REM}rem`,
 } as const;
-const OVERLAY_CLASS =
-  "absolute top-full -right-4 -left-4 z-20 rounded-b-xl bg-card px-4 pb-4 shadow-[0_12px_24px_-8px_oklch(0_0_0/0.14)]";
 
-function ProviderRow({
-  rank,
-  family,
-  totals,
-  mentionDelta,
-  onOpen,
-}: {
-  rank: number;
-  family: GeoEngineFamily;
-  totals: GeoEngineFamilyTotals;
-  mentionDelta: number | null;
-  onOpen: () => void;
-}) {
+function ProviderRow({ rank, row, onOpen }: MentionProviderRowProps) {
+  const { family, totals, mentionDelta, tracked } = row;
   const name = engineFamilyLabel(family.family);
   const clickable = totals.mentions > 0;
-
-  return (
-    <button
-      aria-disabled={!clickable}
-      aria-label={
-        clickable ? `Open ${name} mention breakdown` : `${name}, no mentions`
-      }
-      className={cn(
-        "grid w-full grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-1.5 border-b py-2 text-left transition-colors",
-        clickable ? "hover:bg-muted/50 cursor-pointer" : "cursor-default"
-      )}
-      disabled={!clickable}
-      onClick={clickable ? onOpen : undefined}
-      type="button"
-    >
+  const buttonProps = {
+    "aria-disabled": !clickable,
+    "aria-label": clickable
+      ? `Open ${name} mention breakdown`
+      : `${name}, no mentions`,
+    className: cn(
+      "grid w-full grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-1.5 border-b text-left transition-colors",
+      clickable ? "hover:bg-muted/50 cursor-pointer" : "cursor-default",
+      !tracked && "opacity-50 hover:opacity-100"
+    ),
+    disabled: !clickable,
+    onClick: clickable ? () => onOpen(family) : undefined,
+    style: ROW_STYLE,
+    type: "button",
+  } as const;
+  const content = (
+    <>
       <span className="text-muted-foreground w-4 shrink-0 text-right text-xs tabular-nums">
         {rank}
       </span>
@@ -112,134 +114,78 @@ function ProviderRow({
           variant="plain"
         />
       </span>
-    </button>
-  );
-}
-
-function ProviderList({
-  rows,
-  startRank,
-  onOpen,
-}: {
-  rows: readonly MentionProviderRow[];
-  startRank: number;
-  onOpen: (family: GeoEngineFamily) => void;
-}) {
-  return (
-    <>
-      {rows.map((row, index) => (
-        <ProviderRow
-          family={row.family}
-          key={row.family.family}
-          mentionDelta={row.mentionDelta}
-          onOpen={() => onOpen(row.family)}
-          rank={startRank + index}
-          totals={row.totals}
-        />
-      ))}
     </>
   );
-}
 
-function ProviderToggle({
-  expanded,
-  hiddenCount,
-  onToggle,
-}: {
-  expanded: boolean;
-  hiddenCount: number;
-  onToggle: () => void;
-}) {
+  if (tracked) {
+    return <button {...buttonProps}>{content}</button>;
+  }
+
   return (
-    <button
-      aria-expanded={expanded}
-      className="text-muted-foreground hover:text-foreground focus-visible:ring-ring -mx-4 -mb-4 flex min-h-10 w-[calc(100%+2rem)] items-center justify-between pr-6 pl-9 text-sm transition-colors outline-none focus-visible:ring-2"
-      onClick={onToggle}
-      type="button"
-    >
-      {expanded
-        ? GEO_MENTION_SUMMARY_LESS
-        : `Tracking ${hiddenCount.toLocaleString()} more`}
-      <HugeiconsIcon
-        className={cn(
-          "transition-transform duration-200 ease-out",
-          expanded && "rotate-180"
-        )}
-        icon={ArrowDown01Icon}
-        size={12}
-      />
-    </button>
+    <HoverCard>
+      <HoverCardTrigger
+        delay={GEO_TRAFFIC_HOVER_DELAY_MS}
+        render={<button {...buttonProps} />}
+      >
+        {content}
+      </HoverCardTrigger>
+      <TrafficBreakdownCard
+        aside={GEO_MENTION_UNTRACKED_LABEL}
+        icon={<EngineIcon className="size-4" engine={family.family} />}
+        title={name}
+      >
+        <p className="text-muted-foreground px-3 py-1.5 text-xs text-pretty">
+          {GEO_MENTION_UNTRACKED_HINT}
+        </p>
+      </TrafficBreakdownCard>
+    </HoverCard>
   );
 }
 
-function ProviderOverlay({
-  rows,
-  startRank,
-  expanded,
-  onOpen,
-  onToggle,
-}: {
-  rows: readonly MentionProviderRow[];
-  startRank: number;
-  expanded: boolean;
-  onOpen: (family: GeoEngineFamily) => void;
-  onToggle: () => void;
-}) {
+function MoreModelsHint({
+  count,
+  visible,
+  onClick,
+}: MentionMoreModelsHintProps) {
   const reduceMotion = useReducedMotion();
+  const row = (
+    <button
+      aria-label={`Show ${mentionMoreModelsLabel(count)}`}
+      className={HINT_ROW_CLASS}
+      onClick={onClick}
+      style={HINT_ROW_STYLE}
+      type="button"
+    >
+      <span aria-hidden="true" className={HINT_ROW_HOVER_CLASS} />
+      <span className="w-4 shrink-0" />
+      <span className="flex min-w-0 flex-1 items-center gap-2">
+        <span className="text-muted-foreground flex w-7 shrink-0 items-center justify-center">
+          <HugeiconsIcon icon={ArrowDown01Icon} size={12} />
+        </span>
+        <span className="text-muted-foreground truncate text-xs">
+          {mentionMoreModelsLabel(count)}
+        </span>
+      </span>
+      <span className="shrink-0" />
+    </button>
+  );
 
   if (reduceMotion) {
-    return expanded ? (
-      <div className={OVERLAY_CLASS}>
-        <ProviderList onOpen={onOpen} rows={rows} startRank={startRank} />
-        <ProviderToggle
-          expanded
-          hiddenCount={rows.length}
-          onToggle={onToggle}
-        />
-      </div>
-    ) : null;
+    return visible ? row : null;
   }
 
   return (
     <LazyMotion features={domAnimation}>
       <AnimatePresence initial={false}>
-        {expanded ? (
+        {visible ? (
           <m.div
-            animate={OVERLAY_VISIBLE}
-            className={OVERLAY_CLASS}
-            exit={OVERLAY_HIDDEN}
-            initial={OVERLAY_HIDDEN}
-            key="mention-providers"
-            transition={REVEAL_SPRING}
+            animate={HINT_VISIBLE}
+            exit={HINT_HIDDEN}
+            initial={HINT_HIDDEN}
+            key="more-models"
+            transition={HINT_TRANSITION}
           >
-            {rows.map((row, index) => (
-              <m.div
-                animate={OVERLAY_VISIBLE}
-                exit={{
-                  ...OVERLAY_HIDDEN,
-                  transition: { duration: 0.15, ease: EASE_OUT },
-                }}
-                initial={OVERLAY_HIDDEN}
-                key={row.family.family}
-                transition={{
-                  ...REVEAL_SPRING,
-                  delay: index * REVEAL_STAGGER,
-                }}
-              >
-                <ProviderRow
-                  family={row.family}
-                  mentionDelta={row.mentionDelta}
-                  onOpen={() => onOpen(row.family)}
-                  rank={startRank + index}
-                  totals={row.totals}
-                />
-              </m.div>
-            ))}
-            <ProviderToggle
-              expanded
-              hiddenCount={rows.length}
-              onToggle={onToggle}
-            />
+            {row}
           </m.div>
         ) : null}
       </AnimatePresence>
@@ -263,46 +209,22 @@ export function MentionRateCard({
       }),
     [engines, trackedEngines, timeseriesPoints]
   );
-  const visible = ranked.slice(0, GEO_MENTION_SUMMARY_VISIBLE);
-  const hidden = ranked.slice(GEO_MENTION_SUMMARY_VISIBLE);
   const totals = mentionOverviewTotals(
     withTrackedMentionEngines(engines, trackedEngines)
   );
   const overviewDelta = mentionStatTrends(timeseriesPoints).mentionDelta;
   const [selected, setSelected] = useState<GeoEngineFamily | null>(null);
-  const [expanded, setExpanded] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!expanded) {
-      return;
-    }
-
-    const onPointerDown = (event: PointerEvent) => {
-      const node = rootRef.current;
-      if (node && !node.contains(event.target as Node)) {
-        setExpanded(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setExpanded(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [expanded]);
+  const reduceMotion = useReducedMotion();
+  const { ref, hiddenBelow, atEnd, scrollToEnd } =
+    useScrollOverflow<HTMLDivElement>(
+      ranked.length,
+      GEO_MENTION_HINT_HEIGHT_REM
+    );
 
   return (
-    <div className="relative h-full" ref={rootRef}>
+    <div className="relative h-full">
       <InstrumentModule
-        bodyClassName={cn(expanded && "rounded-b-none")}
-        className={cn("h-full overflow-visible", expanded && "rounded-b-none")}
+        className="h-full"
         eyebrow={GEO_MENTIONS_LABEL}
         variant="table"
       >
@@ -333,30 +255,26 @@ export function MentionRateCard({
                 <span>Provider</span>
                 <span>Mentions</span>
               </div>
-              <div className="border-border relative [&>button:last-of-type]:border-b-0">
-                <ProviderList
-                  onOpen={setSelected}
-                  rows={visible}
-                  startRank={1}
-                />
-                {hidden.length > 0 ? (
-                  <>
-                    {expanded ? null : (
-                      <ProviderToggle
-                        expanded={false}
-                        hiddenCount={hidden.length}
-                        onToggle={() => setExpanded(true)}
-                      />
-                    )}
-                    <ProviderOverlay
-                      expanded={expanded}
+              <div className="relative">
+                <div
+                  className="border-border relative overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden [&>button:last-of-type]:border-b-0"
+                  ref={ref}
+                  style={LIST_STYLE}
+                >
+                  {ranked.map((row, index) => (
+                    <ProviderRow
+                      key={row.family.family}
                       onOpen={setSelected}
-                      onToggle={() => setExpanded(false)}
-                      rows={hidden}
-                      startRank={GEO_MENTION_SUMMARY_VISIBLE + 1}
+                      rank={index + 1}
+                      row={row}
                     />
-                  </>
-                ) : null}
+                  ))}
+                </div>
+                <MoreModelsHint
+                  count={hiddenBelow}
+                  onClick={() => scrollToEnd(!reduceMotion)}
+                  visible={!atEnd && hiddenBelow > 0}
+                />
               </div>
             </div>
           </div>

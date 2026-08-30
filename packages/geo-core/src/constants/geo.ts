@@ -671,7 +671,11 @@ export const GEO_MENTION_TREND_AGENT_ICON_LIMIT = 4;
 export const GEO_MENTION_TREND_ALL_PROVIDERS_LABEL = "All providers";
 export const GEO_MENTION_ACTIVITY_LABEL = "Mention activity";
 export const GEO_MENTION_SUMMARY_VISIBLE = 5;
-export const GEO_MENTION_SUMMARY_LESS = "Show less";
+export const GEO_MENTION_ROW_HEIGHT_REM = 2.75;
+export const GEO_MENTION_HINT_HEIGHT_REM = 2;
+export const GEO_MENTION_UNTRACKED_LABEL = "Not tracked";
+export const GEO_MENTION_UNTRACKED_HINT =
+  "These mentions come from earlier scans. Add the model back in GEO settings to keep tracking it.";
 export const GEO_RANGE_PRESETS = [
   { value: "today", label: "Today" },
   { value: "yesterday", label: "Yesterday" },

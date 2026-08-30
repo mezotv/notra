@@ -6,6 +6,7 @@ import type {
   GeoCompetitorSharePoint,
   GeoCompetitorShareTimeseriesPoint,
   GeoEngineFamily,
+  MentionProviderRow,
   GeoIngestFramework,
   GeoIngestPackageManager,
   GeoIngestSetupResponse,
@@ -398,6 +399,18 @@ export interface LanguagePerformanceCardProps {
   organizationId: string;
   settings: GeoSettings;
   isScanning?: boolean;
+}
+
+export interface MentionProviderRowProps {
+  rank: number;
+  row: MentionProviderRow;
+  onOpen: (family: GeoEngineFamily) => void;
+}
+
+export interface MentionMoreModelsHintProps {
+  count: number;
+  visible: boolean;
+  onClick: () => void;
 }
 
 export interface MentionRateCardProps {

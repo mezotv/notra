@@ -67,3 +67,10 @@ export const DESIGN_SYSTEM_GEO_OVERVIEW: GeoOverviewEngine[] = PROVIDERS.map(
     };
   }
 );
+
+export const DESIGN_SYSTEM_GEO_TRACKED_ENGINES: readonly string[] = [
+  ...PROVIDERS.filter(
+    (provider) => !provider.engine.startsWith("mistral/")
+  ).map((provider) => provider.engine),
+  "deepseek/deepseek-v4-pro",
+];

@@ -764,6 +764,7 @@ export interface MentionProviderRow {
   family: GeoEngineFamily;
   totals: GeoEngineFamilyTotals;
   mentionDelta: number | null;
+  tracked: boolean;
 }
 
 export interface GeoLanguageSharePoint {

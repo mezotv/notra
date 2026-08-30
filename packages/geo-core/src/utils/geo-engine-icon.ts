@@ -49,6 +49,7 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
   {
     key: "amazon",
     patterns: ["amazonbot", "amzn-"],
+    exact: ["amazon"],
   },
   {
     key: "duckduckgo",
@@ -148,6 +149,7 @@ const ENGINE_ICON_RULES: readonly EngineIconRule[] = [
   {
     key: "meta",
     patterns: ["meta-", "meta/", "llama", "facebook", "muse-spark"],
+    exact: ["meta"],
   },
   {
     key: "grok",
