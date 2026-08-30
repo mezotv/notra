@@ -6,6 +6,7 @@ import { GEO_SENTIMENT_LABELS } from "@notra/geo-core/constants/geo";
 import type { GeoChatSkin, GeoPromptResult } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { perplexitySourcesFromExcerpt } from "@notra/geo-core/utils/geo-perplexity-sources";
+import { getReferenceDomain } from "@notra/geo-core/utils/reference-display";
 import { MessageResponse } from "@notra/ui/components/ai-elements/message";
 import { Badge } from "@notra/ui/components/ui/badge";
 import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
@@ -15,7 +16,6 @@ import { Button } from "@/components/button";
 import { cn } from "@/lib/utils";
 import type { GeoPromptAnswerThreadProps } from "@/types/geo";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
-import { getReferenceDomain } from "@/utils/reference-display";
 import { getSafeReferenceSourceUrl } from "@/utils/reference-source-url";
 
 const ANSWER_MARKDOWN_CLASS =
@@ -191,7 +191,9 @@ function SearchEvidence({
           </h3>
           <ul className="grid gap-2 sm:grid-cols-2">
             {sources.map((source) => {
-              const href = getSafeReferenceSourceUrl(source.url);
+              const href = source.url
+                ? getSafeReferenceSourceUrl(source.url)
+                : null;
               const domain = getReferenceDomain(source.url) ?? source.domain;
               const content = (
                 <>
