@@ -1,6 +1,7 @@
 import {
   GEO_BRIEF_MAX_CHECKLIST,
   GEO_BRIEF_MAX_CLAIMS,
+  GEO_BRIEF_MAX_EVIDENCE_ITEMS,
   GEO_BRIEF_MAX_LINKS,
   GEO_BRIEF_MAX_QUESTIONS,
   GEO_BRIEF_MAX_SECTIONS,
@@ -53,4 +54,31 @@ export const geoContentBriefSchema = z.object({
     .describe("Questions the FAQ section must answer directly"),
   internalLinks: z.array(geoBriefInternalLinkSchema).max(GEO_BRIEF_MAX_LINKS),
   acceptanceChecklist: z.array(z.string().min(1)).max(GEO_BRIEF_MAX_CHECKLIST),
+  recommendedAngle: z
+    .string()
+    .optional()
+    .describe(
+      "One or two sentences on why this article will win the target prompt, grounded in the evidence"
+    ),
+  competitorsToCounter: z
+    .array(z.string().min(1))
+    .max(GEO_BRIEF_MAX_EVIDENCE_ITEMS)
+    .optional()
+    .describe(
+      "Brands assistants recommended instead, with the claim that earned them the mention"
+    ),
+  sourcesToReference: z
+    .array(z.string().min(1))
+    .max(GEO_BRIEF_MAX_EVIDENCE_ITEMS)
+    .optional()
+    .describe(
+      "Domains assistants cited for this prompt that the article should match or outdo"
+    ),
+  missingCoverage: z
+    .array(z.string().min(1))
+    .max(GEO_BRIEF_MAX_EVIDENCE_ITEMS)
+    .optional()
+    .describe(
+      "Facts, proof points, or topics the winning answers covered that the brand's site does not"
+    ),
 });

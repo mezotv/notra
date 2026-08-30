@@ -18,6 +18,7 @@ export interface NavMainItem extends NavItem {
 export interface SidebarModeOption {
   id: SidebarMode;
   label: string;
+  description: string;
   icon: IconSvgElement;
 }
 

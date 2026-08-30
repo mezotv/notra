@@ -2,12 +2,12 @@
 
 import {
   GEO_SPARKLINE_MIN_POINTS,
+  GEO_TRAFFIC_FUNNEL_STAGES,
+  GEO_TRAFFIC_STAT_TREND_HINT,
   GEO_TRAFFIC_TREND_CRAWLER_KEY,
   GEO_TRAFFIC_TREND_CRAWLER_LABEL,
   GEO_TRAFFIC_TREND_REFERRAL_KEY,
   GEO_TRAFFIC_TREND_REFERRAL_LABEL,
-  GEO_TRAFFIC_TREND_TOTAL_KEY,
-  GEO_TRAFFIC_TREND_TOTAL_LABEL,
 } from "@notra/geo-core/constants/geo";
 import {
   trafficSparklineDays,
@@ -57,32 +57,19 @@ export function TrafficHero({
   const markIncompleteTail = rows.at(-1)?.rawDay === todayIsoDate();
   const showTrend = rows.length >= GEO_SPARKLINE_MIN_POINTS;
   const days = trafficSparklineDays(points);
-  const totalVisits = totals.crawler + totals.aiReferral;
-  const previousTotalVisits =
-    previousTotals === null
-      ? null
-      : previousTotals.crawler + previousTotals.aiReferral;
 
-  const metrics: TrafficTrendMetric[] = [
-    {
-      key: GEO_TRAFFIC_TREND_CRAWLER_KEY,
-      label: GEO_TRAFFIC_TREND_CRAWLER_LABEL,
-      value: totals.crawler,
-      delta: metricDelta(totals.crawler, previousTotals?.crawler ?? null),
-    },
-    {
-      key: "ai_referral",
-      label: GEO_TRAFFIC_TREND_REFERRAL_LABEL,
-      value: totals.aiReferral,
-      delta: metricDelta(totals.aiReferral, previousTotals?.aiReferral ?? null),
-    },
-    {
-      key: GEO_TRAFFIC_TREND_TOTAL_KEY,
-      label: GEO_TRAFFIC_TREND_TOTAL_LABEL,
-      value: totalVisits,
-      delta: metricDelta(totalVisits, previousTotalVisits),
-    },
-  ];
+  const metrics: TrafficTrendMetric[] = GEO_TRAFFIC_FUNNEL_STAGES.map(
+    (stage) => ({
+      key: stage.key,
+      label: stage.label,
+      description: stage.description,
+      value: totals[stage.key],
+      delta: metricDelta(
+        totals[stage.key],
+        previousTotals === null ? null : previousTotals[stage.key]
+      ),
+    })
+  );
 
   const providers = buildTrafficTrendProviders(
     groups.flatMap((group) => group.members)
@@ -152,14 +139,17 @@ export function TrafficHero({
         {metrics.map((metric) => (
           <div className="px-5 py-4" key={metric.key}>
             <p className="text-muted-foreground text-xs">{metric.label}</p>
-            <div className="mt-1 flex items-baseline gap-2">
+            <p className="text-muted-foreground/70 text-[0.6875rem] leading-snug">
+              {metric.description}
+            </p>
+            <div className="mt-2 flex items-baseline gap-2">
               <span className="text-3xl leading-none font-semibold tracking-tight tabular-nums">
                 {metric.value.toLocaleString()}
               </span>
               <GeoStatDelta
                 className="mb-0.5"
                 delta={metric.delta}
-                hint="vs. previous period"
+                hint={GEO_TRAFFIC_STAT_TREND_HINT}
                 label={metric.label}
               />
             </div>

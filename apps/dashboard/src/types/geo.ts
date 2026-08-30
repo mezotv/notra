@@ -1,8 +1,12 @@
-import type { GeoContentBrief } from "@notra/ai/types/geo-writer";
+import type { GeoWriterBrief } from "@notra/ai/types/geo-writer";
+import type { GeoWriterSourceKind } from "@notra/db/types/geo-writer";
 import type {
   AiTrafficResponse,
+  GeoChangeEvent,
+  GeoChangesSummary,
   GeoChatSkin,
   GeoCompetitor,
+  GeoCompetitorPromptSummary,
   GeoCompetitorSharePoint,
   GeoCompetitorShareTimeseriesPoint,
   GeoEngineFamily,
@@ -17,6 +21,9 @@ import type {
   GeoOverviewEngine,
   GeoPresenceStatus,
   GeoProject,
+  GeoAnswerSource,
+  GeoPromptHistoryCheck,
+  GeoPromptReceiptView,
   GeoPromptResult,
   GeoPromptSequence,
   GeoRangePreset,
@@ -35,6 +42,7 @@ import type {
   GeoTrafficPoint,
   GeoTrafficSource,
   GeoTrafficSourceGroupDefinition,
+  GeoTrafficFunnelStageKey,
   GeoTrafficTotals,
   GeoTrafficTrendRow,
   GeoVisitorType,
@@ -754,6 +762,24 @@ export interface ShareOfVoiceTableProps {
   onRowPointerEnter?: (row: ShareOfVoiceRow) => void;
   companyName?: string | null;
   aliases?: readonly string[];
+  organizationId?: string;
+}
+
+export interface BrandTrackingBadgeProps {
+  tracked: boolean;
+  className?: string;
+}
+
+export interface ShareOfVoiceBrandTagProps {
+  row: ShareOfVoiceRow;
+  own: boolean;
+  onTrack?: (brand: string) => void;
+}
+
+export interface TrackBrandButtonProps {
+  brand: string;
+  onTrack: (brand: string) => void;
+  className?: string;
 }
 
 export interface ShareOfVoiceOtherSheetProps {
@@ -766,6 +792,7 @@ export interface ShareOfVoiceOtherSheetProps {
   aliases?: readonly string[];
   onBrandClick?: (row: ShareOfVoiceRow) => void;
   onBrandPointerEnter?: (row: ShareOfVoiceRow) => void;
+  onTrackBrand?: (brand: string) => void;
 }
 
 export interface ShareOfVoiceDonutProps {
@@ -777,6 +804,7 @@ export interface ShareOfVoiceDonutProps {
   onSlicePointerEnter?: (row: ShareOfVoiceRow) => void;
   companyName?: string | null;
   aliases?: readonly string[];
+  organizationId?: string;
 }
 
 export interface CompetitorShareCardProps {
@@ -794,13 +822,30 @@ export interface CompetitorEditDialogProps {
   onOpenChange: (open: boolean) => void;
   organizationId: string;
   competitor: GeoCompetitor | null;
+  initialName?: string;
 }
 
 export interface CompetitorEditFormProps {
   organizationId: string;
   competitor: GeoCompetitor | null;
+  initialName?: string;
   onDone: () => void;
   onCancel?: () => void;
+}
+
+export interface CompetitorPromptSummaryStripProps {
+  summary: GeoCompetitorPromptSummary;
+}
+
+export interface ScanPreflightDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onConfirm: () => void;
+  isPending: boolean;
+  promptCount: number;
+  engines: readonly string[];
+  languages: readonly string[];
+  lastScanAt: string | null;
 }
 
 export interface GeoCompetitorDetailPoint {
@@ -861,12 +906,58 @@ export interface PromptDetailDialogProps {
   row: GeoPromptTableRow | null;
   isScanning?: boolean;
   surface?: GeoPromptDetailSurface;
+  organizationId?: string;
 }
 
 export interface PromptAnswerPageProps {
   row: GeoPromptTableRow;
+  organizationId: string;
   isScanning?: boolean;
   surface?: GeoPromptDetailSurface;
+}
+
+export type PromptHistoryChangeKind =
+  | "gained"
+  | "lost"
+  | "position"
+  | "competitor";
+
+export interface PromptHistoryChange {
+  kind: PromptHistoryChangeKind;
+  label: string;
+}
+
+export interface PromptHistoryEntry {
+  check: GeoPromptHistoryCheck;
+  changes: PromptHistoryChange[];
+}
+
+export interface PromptReceiptViewSwitchProps {
+  view: GeoPromptReceiptView;
+  onChange: (view: GeoPromptReceiptView) => void;
+}
+
+export interface PromptReceiptAnalysisProps {
+  prompt: string;
+  result: GeoPromptResult;
+  history: GeoPromptHistoryCheck[];
+  isHistoryLoading: boolean;
+}
+
+export interface PromptReceiptHistoryProps {
+  entries: PromptHistoryEntry[];
+  isLoading: boolean;
+}
+
+export interface PromptReceiptTextInput {
+  prompt: string;
+  result: GeoPromptResult;
+  latest: GeoPromptHistoryCheck | null;
+}
+
+export interface GeoAnswerActionsProps {
+  text: string;
+  sources: readonly GeoAnswerSource[];
 }
 
 export interface GeoPromptAnswerThreadProps {
@@ -978,7 +1069,9 @@ export interface GeoWriterContext {
   brandName: string;
   language: string | null;
   topic: string;
-  brief: GeoContentBrief;
+  brief: GeoWriterBrief;
+  sourceKind: GeoWriterSourceKind;
+  sourceId: string | null;
 }
 
 export type GeoWriterWorkflowResult =
@@ -989,8 +1082,6 @@ export type GeoWriterWorkflowResult =
   | { status: "invalid_state" }
   | { status: "invalid_payload" };
 
-export type TrafficTrendMode = "crawler" | "ai_referral" | "total";
-
 export interface TrafficTrendSeries {
   key: string;
   label: string;
@@ -999,8 +1090,9 @@ export interface TrafficTrendSeries {
 }
 
 export interface TrafficTrendMetric {
-  key: TrafficTrendMode;
+  key: GeoTrafficFunnelStageKey;
   label: string;
+  description: string;
   value: number;
   delta: number | null;
 }
@@ -1040,4 +1132,25 @@ export interface TrafficSourcesGroupProps {
 export interface TrafficMarkdownCellProps {
   markdownVisits: number;
   visits: number;
+}
+
+export interface WhatChangedCardProps {
+  organizationId: string;
+  organizationSlug: string;
+  promptResults?: readonly GeoPromptResult[];
+  isScanning?: boolean;
+}
+
+export interface GeoChangeRowProps {
+  event: GeoChangeEvent;
+  onOpen: (event: GeoChangeEvent) => void;
+}
+
+export interface GeoChangeSummaryChipProps {
+  label: string;
+  value: number;
+}
+
+export interface GeoChangesSummaryRowProps {
+  summary: GeoChangesSummary;
 }

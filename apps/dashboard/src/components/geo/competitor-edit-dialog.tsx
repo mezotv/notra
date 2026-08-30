@@ -16,6 +16,7 @@ export function CompetitorEditDialog({
   onOpenChange,
   organizationId,
   competitor,
+  initialName,
 }: CompetitorEditDialogProps) {
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
@@ -32,6 +33,7 @@ export function CompetitorEditDialog({
         </ResponsiveDialogHeader>
         <CompetitorEditForm
           competitor={competitor}
+          initialName={initialName}
           onDone={() => onOpenChange(false)}
           organizationId={organizationId}
         />

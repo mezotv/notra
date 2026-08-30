@@ -543,7 +543,7 @@ export function CommandPalette() {
                   setAiState({ status: "idle" });
                 }
               }}
-              placeholder="Search pages, actions, or ask AI…"
+              placeholder="Search pages, settings, actions, or ask AI…"
               value={query}
             />
             {hasQuery ? (

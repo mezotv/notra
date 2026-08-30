@@ -29,7 +29,9 @@ import { competitorCanonicalMap } from "../utils/geo-competitor-names";
 import {
   gapOpportunityScore,
   isMissingMajority,
+  searchGapClicks,
   searchGapImpressions,
+  searchGapPosition,
 } from "../utils/geo-gaps";
 import { competitorKey } from "./domain";
 import { geoDb } from "./effect";
@@ -57,6 +59,7 @@ interface PromptGapAgg {
   total: number;
   mentioned: number;
   missing: string[];
+  mentionedEngines: string[];
   competitors: string[];
 }
 
@@ -74,6 +77,35 @@ function toBriefRef(row: GapBriefRow | undefined): GeoGapBriefRef | null {
 
 function sourceKey(kind: string, sourceId: string): string {
   return `${kind}:${sourceId}`;
+}
+
+function splitGapCompetitors(
+  names: readonly string[],
+  trackedAliases: Map<string, string>
+): { tracked: string[]; discovered: string[] } {
+  const tracked: string[] = [];
+  const discovered: string[] = [];
+  const seenTracked = new Set<string>();
+  const seenDiscovered = new Set<string>();
+  for (const name of names) {
+    const key = competitorKey(name);
+    if (key.length === 0) {
+      continue;
+    }
+    const canonical = trackedAliases.get(key);
+    if (canonical) {
+      if (!seenTracked.has(canonical)) {
+        seenTracked.add(canonical);
+        tracked.push(canonical);
+      }
+      continue;
+    }
+    if (!seenDiscovered.has(key)) {
+      seenDiscovered.add(key);
+      discovered.push(name.trim());
+    }
+  }
+  return { tracked, discovered };
 }
 
 function lookbackSince(): Date {
@@ -144,11 +176,13 @@ function aggregateMentionChecks(
       total: 0,
       mentioned: 0,
       missing: [] as string[],
+      mentionedEngines: [] as string[],
       competitors: [] as string[],
     };
     entry.total += 1;
     if (check.mentioned) {
       entry.mentioned += 1;
+      entry.mentionedEngines.push(check.engine);
     } else {
       entry.missing.push(check.engine);
       entry.competitors.push(...check.competitors);
@@ -301,28 +335,26 @@ export const loadGeoContentGaps = Effect.fn("geo.gaps")(function* (
   const promptGaps: GeoPromptGapRow[] = [];
 
   forEachMissingMajorityGap(prompts, byPrompt, (id, prompt, title, entry) => {
-    const competitorNames = [
-      ...new Set(
-        entry.competitors.flatMap((name) => {
-          const canonical = trackedAliases.get(competitorKey(name));
-          return canonical ? [canonical] : [];
-        })
-      ),
-    ];
+    const { tracked, discovered } = splitGapCompetitors(
+      entry.competitors,
+      trackedAliases
+    );
     const ownMentionRate = entry.mentioned / entry.total;
     promptGaps.push({
       id,
       prompt,
       title,
       engines: entry.missing,
-      competitors: competitorNames,
+      mentionedEngines: entry.mentionedEngines,
+      competitors: tracked,
+      discoveredCompetitors: discovered,
       ownMentionRate,
       engineCoverage: entry.total,
-      opportunity: gapOpportunityScore(
+      opportunity: gapOpportunityScore({
         ownMentionRate,
-        competitorNames.length,
-        entry.total
-      ),
+        competitorCount: tracked.length + discovered.length,
+        engineCoverage: entry.total,
+      }),
       brief: toBriefRef(briefBySource.get(sourceKey("gap", id))),
     });
   });
@@ -333,6 +365,9 @@ export const loadGeoContentGaps = Effect.fn("geo.gaps")(function* (
     prompt: suggestion.prompt,
     title: suggestion.title,
     impressions: searchGapImpressions(suggestion.sourceKeywords),
+    clicks: searchGapClicks(suggestion.sourceKeywords),
+    position: searchGapPosition(suggestion.sourceKeywords),
+    queries: suggestion.sourceKeywords ?? [],
     brief: toBriefRef(
       briefBySource.get(sourceKey("search_console", suggestion.id))
     ),

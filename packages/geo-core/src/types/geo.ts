@@ -242,6 +242,7 @@ export interface GeoPromptResult {
   mentioned: boolean;
   position: number | null;
   sentiment: string | null;
+  competitors: string[];
   excerpt: string;
   searchQueries: string[];
   sources: GeoAnswerSource[];
@@ -257,6 +258,33 @@ export interface GeoPromptResultsResponse {
   configured: boolean;
   results: GeoPromptResult[];
 }
+
+export interface GeoPromptHistoryInput extends GeoScopeInput {
+  promptId: string;
+}
+
+export interface GeoPromptHistoryCheck {
+  id: string;
+  scanId: string;
+  engine: string;
+  mentioned: boolean;
+  position: number | null;
+  sentiment: string | null;
+  competitors: string[];
+  excerpt: string;
+  searchQueries: string[];
+  sources: GeoAnswerSource[];
+  language: string;
+  capturedAt: string;
+}
+
+export interface GeoPromptHistoryResponse {
+  configured: boolean;
+  promptId: string;
+  checks: GeoPromptHistoryCheck[];
+}
+
+export type GeoPromptReceiptView = "analysis" | "raw";
 
 export interface GeoCompetitorSharePoint {
   brand: string;
@@ -778,7 +806,16 @@ export interface GeoJourneyDetailResponse {
 
 export interface GeoTrafficTotals {
   crawler: number;
+  cited: number;
   aiReferral: number;
+}
+
+export type GeoTrafficFunnelStageKey = keyof GeoTrafficTotals;
+
+export interface GeoTrafficFunnelStage {
+  key: GeoTrafficFunnelStageKey;
+  label: string;
+  description: string;
 }
 
 export interface TrafficMetricDeltas {
@@ -1046,6 +1083,7 @@ export interface ShareOfVoiceRow {
   mentions: number;
   share: number;
   trend: GeoSparklinePoint[];
+  tracked: boolean;
 }
 
 export interface ShareOfVoiceBreakdown {
@@ -1136,6 +1174,13 @@ export interface GeoCompetitorPromptRow {
   position: number | null;
 }
 
+export interface GeoCompetitorPromptSummary {
+  mentioned: number;
+  total: number;
+  bestPosition: number | null;
+  engines: number;
+}
+
 export interface GeoCompetitorDetailResponse {
   configured: boolean;
   points: GeoCompetitorTimeseriesPoint[];
@@ -1170,6 +1215,29 @@ export interface GeoWriterPlanInput {
   sourceId?: string;
 }
 
+export interface GeoPromptEvidenceEngine {
+  engine: string;
+  mentioned: boolean;
+  position: number | null;
+  sentiment: string | null;
+  competitors: string[];
+  excerpt: string;
+  queries: string[];
+  sourceDomains: string[];
+  capturedAt: string;
+}
+
+export interface GeoPromptEvidence {
+  sourcePromptId: string;
+  prompt: string;
+  mentionedEngines: number;
+  totalEngines: number;
+  engines: GeoPromptEvidenceEngine[];
+  competitorMentions: Array<{ name: string; engines: number }>;
+  citedDomains: Array<{ domain: string; engines: number }>;
+  capturedAt: string | null;
+}
+
 export interface GeoWriterPlanResponse {
   briefId: string;
   brief: GeoContentBrief;
@@ -1194,12 +1262,20 @@ export interface GeoGapBriefRef {
   workingTitle: string | null;
 }
 
+export interface GeoGapOpportunityInput {
+  ownMentionRate: number;
+  competitorCount: number;
+  engineCoverage: number;
+}
+
 export interface GeoPromptGapRow {
   id: string;
   prompt: string;
   title: string | null;
   engines: string[];
+  mentionedEngines: string[];
   competitors: string[];
+  discoveredCompetitors: string[];
   ownMentionRate: number;
   engineCoverage: number;
   opportunity: number;
@@ -1211,6 +1287,9 @@ export interface GeoSearchGapRow {
   prompt: string;
   title: string | null;
   impressions: number | null;
+  clicks: number | null;
+  position: number | null;
+  queries: GeoSuggestionKeyword[];
   brief: GeoGapBriefRef | null;
 }
 
@@ -1257,4 +1336,59 @@ export interface GeoWriterPayload {
   projectId: string;
   briefId: string;
   runId: string;
+}
+
+export type GeoChangeKind =
+  | "gained_mention"
+  | "lost_mention"
+  | "position_improved"
+  | "position_dropped"
+  | "competitor_displaced"
+  | "citation_added"
+  | "citation_removed"
+  | "new_engine";
+
+export interface GeoChangeCheckState {
+  mentioned: boolean;
+  position: number | null;
+}
+
+export interface GeoScanCheckSnapshot extends GeoChangeCheckState {
+  promptId: string;
+  prompt: string;
+  engine: string;
+  competitors: string[];
+  domains: string[];
+}
+
+export interface GeoChangeEvent {
+  kind: GeoChangeKind;
+  promptId: string;
+  prompt: string;
+  engine: string;
+  previous: GeoChangeCheckState | null;
+  current: GeoChangeCheckState;
+  competitors: string[];
+  domains: string[];
+}
+
+export interface GeoChangesSummary {
+  gained: number;
+  lost: number;
+  positionImproved: number;
+  positionDropped: number;
+  citationsAdded: number;
+  citationsRemoved: number;
+}
+
+export interface GeoChangeScan {
+  id: string;
+  finishedAt: string | null;
+}
+
+export interface GeoChangesResponse {
+  previousScan: GeoChangeScan | null;
+  currentScan: GeoChangeScan | null;
+  summary: GeoChangesSummary;
+  events: GeoChangeEvent[];
 }

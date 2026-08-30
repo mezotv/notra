@@ -25,10 +25,16 @@ export function geoContentPath(
 export function writeDialogStateFromGap(
   input: GeoGapsWriteEntry
 ): WriteDialogInitialState {
+  const mentioned = input.mentionedEngines?.length ?? 0;
+  const missing = input.missingEngines?.length ?? 0;
+  const total = mentioned + missing;
   return {
     sourceKind: "gap",
     sourceId: input.promptId,
     topic: input.prompt,
+    baseline:
+      total > 0 ? { mentionedEngines: mentioned, totalEngines: total } : null,
+    mentionedCompetitors: [...(input.mentionedCompetitors ?? [])],
   };
 }
 

@@ -14,6 +14,7 @@ import type { AgentReadinessResponse } from "@notra/geo-core/types/agent-readine
 import type {
   AiTrafficResponse,
   GeoBrandSearchResponse,
+  GeoChangesResponse,
   GeoCompetitorDetailResponse,
   GeoCompetitorShareResponse,
   GeoCompetitorSuggestionsResponse,
@@ -28,6 +29,7 @@ import type {
   GeoProject,
   GeoProjectsResponse,
   GeoIngestSetupResponse,
+  GeoPromptHistoryResponse,
   GeoPromptResultsResponse,
   GeoSequenceResultsResponse,
   GeoSettingsResponse,
@@ -144,6 +146,12 @@ async function invalidateGeoScanResultQueries(queryClient: QueryClient) {
     }),
     queryClient.invalidateQueries({
       queryKey: dashboardOrpc.geo.promptResults.key(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.changes.key(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.promptHistory.key(),
     }),
     queryClient.invalidateQueries({
       queryKey: dashboardOrpc.geo.competitorShare.key(),
@@ -305,6 +313,33 @@ export function useGeoPromptResults(
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load prompt results" },
+  });
+}
+
+export function useGeoPromptHistory(
+  organizationId: string,
+  promptId: string,
+  options: { enabled: boolean }
+) {
+  const { projectId } = useGeoProjectScope();
+  return useQuery<GeoPromptHistoryResponse>({
+    ...dashboardOrpc.geo.promptHistory.queryOptions({
+      input: { organizationId, projectId, promptId },
+    }),
+    enabled: options.enabled && !!organizationId && !!promptId,
+    meta: { errorMessage: "Failed to load prompt history" },
+  });
+}
+
+export function useGeoChanges(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  return useQuery<GeoChangesResponse>({
+    ...dashboardOrpc.geo.changes.queryOptions({
+      input: { organizationId, projectId },
+    }),
+    enabled: !!organizationId,
+    placeholderData: keepPreviousData,
+    meta: { errorMessage: "Failed to load scan changes" },
   });
 }
 

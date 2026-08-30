@@ -127,6 +127,7 @@ export interface LogoStackItem {
 export interface LogoStackProps {
   items: LogoStackItem[];
   limit?: number;
+  emptyLabel?: string;
 }
 
 export interface StatTile {

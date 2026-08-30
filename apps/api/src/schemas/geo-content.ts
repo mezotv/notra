@@ -27,7 +27,9 @@ const promptGapSchema = z.object({
   prompt: z.string(),
   title: z.string().nullable(),
   engines: z.array(z.string()),
+  mentionedEngines: z.array(z.string()),
   competitors: z.array(z.string()),
+  discoveredCompetitors: z.array(z.string()),
   ownMentionRate: z.number(),
   engineCoverage: z.number(),
   opportunity: z.number(),
@@ -39,6 +41,16 @@ const searchGapSchema = z.object({
   prompt: z.string(),
   title: z.string().nullable(),
   impressions: z.number().nullable(),
+  clicks: z.number().nullable(),
+  position: z.number().nullable(),
+  queries: z.array(
+    z.object({
+      query: z.string(),
+      clicks: z.number(),
+      impressions: z.number(),
+      position: z.number(),
+    })
+  ),
   brief: gapBriefRefSchema.nullable(),
 });
 
@@ -83,6 +95,32 @@ const briefDocumentSchema = z
     questionsToAnswer: z.array(z.string()),
     internalLinks: z.array(briefInternalLinkSchema),
     acceptanceChecklist: z.array(z.string()),
+    recommendedAngle: z.string().optional(),
+    competitorsToCounter: z.array(z.string()).optional(),
+    sourcesToReference: z.array(z.string()).optional(),
+    missingCoverage: z.array(z.string()).optional(),
+    baseline: z
+      .object({
+        sourcePromptId: z.string(),
+        mentionedEngines: z.number(),
+        totalEngines: z.number(),
+        engines: z.array(
+          z.object({
+            engine: z.string(),
+            mentioned: z.boolean(),
+            position: z.number().nullable(),
+          })
+        ),
+        competitorMentions: z.array(
+          z.object({ name: z.string(), engines: z.number() })
+        ),
+        citedDomains: z.array(
+          z.object({ domain: z.string(), engines: z.number() })
+        ),
+        capturedAt: z.string().nullable(),
+      })
+      .nullable()
+      .optional(),
   })
   .openapi("GeoContentBriefDocument");
 

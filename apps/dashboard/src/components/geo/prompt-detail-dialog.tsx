@@ -1,6 +1,9 @@
 "use client";
 
-import type { GeoPromptResult } from "@notra/geo-core/types/geo";
+import type {
+  GeoPromptReceiptView,
+  GeoPromptResult,
+} from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
@@ -17,14 +20,19 @@ import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 import { GeoPromptAnswerThread } from "@/components/geo/geo-prompt-answer-thread";
 import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
+import { PromptReceiptAnalysis } from "@/components/geo/prompt-receipt-analysis";
+import { PromptReceiptViewSwitch } from "@/components/geo/prompt-receipt-view-switch";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
 import { trackEvent } from "@/lib/analytics/posthog-client";
+import { useGeoPromptHistory } from "@/lib/hooks/use-geo";
 import type {
   PromptAnswerPageProps,
   PromptDetailDialogProps,
 } from "@/types/geo";
 import { sharedEngineAnswerMode } from "@/utils/geo-charts";
 import { adjacentPromptEngine } from "@/utils/geo-prompt-engines";
+import { promptHistoryForEngine } from "@/utils/geo-prompt-history";
 
 const INSTANT = { duration: 0 } as const;
 const SLIDE_PX = 18;
@@ -57,12 +65,14 @@ function latestPromptCheckAt(
 
 function PromptAnswerPage({
   row,
+  organizationId,
   isScanning = false,
   surface,
 }: PromptAnswerPageProps) {
   const results = row.results;
   const engines = results.map((result) => result.engine);
   const [engine, setEngine] = useState(engines[0] ?? "");
+  const [view, setView] = useState<GeoPromptReceiptView>("analysis");
   const [direction, setDirection] = useState(1);
   const reduceMotion = useReducedMotion();
   const answerMode = sharedEngineAnswerMode(engines);
@@ -85,6 +95,13 @@ function PromptAnswerPage({
       prompt_id: row.id,
     });
   }, [activeEngine, resultCount, row.id, surface]);
+  const scanPromptId = results[0]?.promptId ?? row.id;
+  const history = useGeoPromptHistory(organizationId, scanPromptId, {
+    enabled: results.length > 0,
+  });
+  const engineHistory = active
+    ? promptHistoryForEngine(history.data?.checks ?? [], active.engine)
+    : [];
   const threadTransition = reduceMotion ? INSTANT : tween("slow", "emphasized");
 
   function selectEngine(next: string, nextDirection: number) {
@@ -145,11 +162,14 @@ function PromptAnswerPage({
           </p>
         ) : null}
         {results.length > 0 && active ? (
-          <PromptEngineSwitcher
-            active={active}
-            onChange={selectEngine}
-            results={results}
-          />
+          <div className="flex flex-col gap-3">
+            <PromptReceiptViewSwitch onChange={setView} view={view} />
+            <PromptEngineSwitcher
+              active={active}
+              onChange={selectEngine}
+              results={results}
+            />
+          </div>
         ) : null}
       </ResponsiveDialogHeader>
       <div className="relative min-h-0 flex-1 overflow-hidden">
@@ -161,11 +181,20 @@ function PromptAnswerPage({
               custom={direction}
               exit="exit"
               initial="enter"
-              key={active.engine}
+              key={`${active.engine}-${view}`}
               transition={threadTransition}
               variants={threadVariants(Boolean(reduceMotion))}
             >
-              <GeoPromptAnswerThread prompt={row.prompt} result={active} />
+              {view === "analysis" ? (
+                <PromptReceiptAnalysis
+                  history={engineHistory}
+                  isHistoryLoading={history.isPending}
+                  prompt={row.prompt}
+                  result={active}
+                />
+              ) : (
+                <GeoPromptAnswerThread prompt={row.prompt} result={active} />
+              )}
             </motion.div>
           ) : (
             <div className="flex h-full min-h-0 items-center justify-center px-6">
@@ -189,7 +218,10 @@ export function PromptDetailDialog({
   row,
   isScanning = false,
   surface,
+  organizationId,
 }: PromptDetailDialogProps) {
+  const { activeOrganization } = useOrganizationsContext();
+  const resolvedOrganizationId = organizationId ?? activeOrganization?.id ?? "";
   if (!row) {
     return null;
   }
@@ -199,6 +231,7 @@ export function PromptDetailDialog({
       <PromptAnswerPage
         isScanning={isScanning}
         key={row.id}
+        organizationId={resolvedOrganizationId}
         row={row}
         surface={surface}
       />

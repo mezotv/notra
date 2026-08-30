@@ -12,6 +12,10 @@ import {
 } from "@notra/ui/components/ui/sheet";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
+import {
+  BrandTrackingBadge,
+  TrackBrandButton,
+} from "@/components/geo/share-of-voice-brand-tag";
 import { cn } from "@/lib/utils";
 import type { ShareOfVoiceOtherSheetProps } from "@/types/geo";
 import { formatMentionRate } from "@/utils/geo-charts";
@@ -32,6 +36,7 @@ function OtherBrandRow({
   aliases,
   onClick,
   onPointerEnter,
+  onTrack,
 }: {
   row: ShareOfVoiceRow;
   index: number;
@@ -41,10 +46,19 @@ function OtherBrandRow({
   aliases?: readonly string[];
   onClick?: () => void;
   onPointerEnter?: () => void;
+  onTrack?: (brand: string) => void;
 }) {
   const ownBrand = { companyName, aliases };
   const color = shareOfVoiceSliceColor(row.brand, index, competitors, ownBrand);
   const own = isOwnBrandName(row.brand, companyName, aliases);
+  const trackAction =
+    !own && !row.tracked && onTrack ? (
+      <TrackBrandButton
+        brand={row.brand}
+        className="shrink-0"
+        onTrack={onTrack}
+      />
+    ) : null;
   const content = (
     <>
       <CompetitorLogo
@@ -54,7 +68,10 @@ function OtherBrandRow({
       />
       <span className="min-w-0 flex-1">
         <span className="flex items-center justify-between gap-3">
-          <span className="truncate text-sm">{row.brand}</span>
+          <span className="flex min-w-0 items-center gap-1.5">
+            <span className="truncate text-sm">{row.brand}</span>
+            {own ? null : <BrandTrackingBadge tracked={row.tracked} />}
+          </span>
           <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
             {row.mentions.toLocaleString()}
           </span>
@@ -77,18 +94,29 @@ function OtherBrandRow({
   const className = "flex w-full items-center gap-3 rounded-lg px-2 py-2";
 
   if (!onClick) {
-    return <div className={className}>{content}</div>;
+    return (
+      <div className="flex items-center gap-1">
+        <div className={cn(className, "min-w-0 flex-1")}>{content}</div>
+        {trackAction}
+      </div>
+    );
   }
 
   return (
-    <button
-      className={cn(className, "hover:bg-muted/60 text-left transition-colors")}
-      onClick={onClick}
-      onPointerEnter={onPointerEnter}
-      type="button"
-    >
-      {content}
-    </button>
+    <div className="flex items-center gap-1">
+      <button
+        className={cn(
+          className,
+          "hover:bg-muted/60 min-w-0 flex-1 text-left transition-colors"
+        )}
+        onClick={onClick}
+        onPointerEnter={onPointerEnter}
+        type="button"
+      >
+        {content}
+      </button>
+      {trackAction}
+    </div>
   );
 }
 
@@ -102,6 +130,7 @@ export function ShareOfVoiceOtherSheet({
   aliases,
   onBrandClick,
   onBrandPointerEnter,
+  onTrackBrand,
 }: ShareOfVoiceOtherSheetProps) {
   const maxShare = others.reduce((max, row) => Math.max(max, row.share), 0);
 
@@ -138,6 +167,7 @@ export function ShareOfVoiceOtherSheet({
                       ? () => onBrandPointerEnter(row)
                       : undefined
                   }
+                  onTrack={onTrackBrand}
                   row={row}
                 />
               </li>

@@ -110,6 +110,12 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
                 writeDialogStateFromGap({
                   promptId: row.id,
                   prompt: row.prompt,
+                  mentionedEngines: row.mentionedEngines,
+                  missingEngines: row.engines,
+                  mentionedCompetitors: [
+                    ...row.competitors,
+                    ...row.discoveredCompetitors,
+                  ],
                 })
               );
             }}

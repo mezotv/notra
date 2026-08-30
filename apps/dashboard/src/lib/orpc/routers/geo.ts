@@ -60,12 +60,14 @@ import {
   importGeoPrompts,
   listGeoPrompts,
   loadAiTraffic,
+  loadGeoChanges,
   loadGeoCompetitorDetail,
   loadGeoCompetitorShare,
   loadGeoCompetitors,
   loadGeoJourneyDetail,
   loadGeoLanguageShare,
   loadGeoOverview,
+  loadGeoPromptHistory,
   loadGeoPromptResults,
   loadGeoSettings,
   loadGeoTimeseries,
@@ -122,6 +124,7 @@ import {
   geoProjectCreateInputSchema,
   geoProjectDeleteInputSchema,
   geoPromptCreateInputSchema,
+  geoPromptHistoryInputSchema,
   geoPromptsImportInputSchema,
   geoPromptDeleteInputSchema,
   geoPromptToggleInputSchema,
@@ -457,6 +460,12 @@ export const geoRouter = {
     .handler(
       geoHandler((input) => loadGeoPromptResults(input, geoWindow(input)))
     ),
+  changes: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(geoHandler((input) => loadGeoChanges(input))),
+  promptHistory: authorizedProcedure
+    .input(geoPromptHistoryInputSchema)
+    .handler(geoHandler((input) => loadGeoPromptHistory(input))),
   competitorShare: authorizedProcedure
     .input(geoCompetitorShareInputSchema)
     .handler(

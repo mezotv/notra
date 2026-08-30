@@ -305,6 +305,7 @@ function CompetitorSynonymsField({
 export function CompetitorEditForm({
   organizationId,
   competitor,
+  initialName,
   onDone,
   onCancel,
 }: CompetitorEditFormProps) {
@@ -315,7 +316,7 @@ export function CompetitorEditForm({
 
   const form = useForm({
     defaultValues: {
-      name: competitor?.name ?? "",
+      name: competitor?.name ?? initialName ?? "",
       website: competitor?.domain ?? "",
       synonyms: competitor?.synonyms ?? [],
       kind: competitor?.kind ?? ("direct" as GeoCompetitorKind),

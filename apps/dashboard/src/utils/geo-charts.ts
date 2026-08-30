@@ -5,6 +5,7 @@ import {
   GEO_SEARCH_LABEL,
   GEO_SHARE_OF_VOICE_TOP_BRANDS,
   GEO_SPARKLINE_MIN_POINTS,
+  GEO_STAT_DELTA_NEW_LABEL,
 } from "@notra/geo-core/constants/geo";
 import type {
   EngineFamilyModeTrendRow,
@@ -29,6 +30,10 @@ import type {
   ShareOfVoiceDonutSlice,
   ShareOfVoiceRow,
 } from "@notra/geo-core/types/geo";
+import {
+  isGeoStatDeltaNew,
+  trafficVisitDelta,
+} from "@notra/geo-core/utils/ai-traffic";
 import { formatDayLabel, todayIsoDate } from "@notra/geo-core/utils/day-label";
 import {
   engineFamilyLabel,
@@ -45,7 +50,10 @@ import {
 } from "@/constants/charts";
 
 import { chartKey } from "./chart-keys";
-import { mergeCompetitorSharePoints } from "./geo-competitors";
+import {
+  isTrackedShareOfVoiceBrand,
+  mergeCompetitorSharePoints,
+} from "./geo-competitors";
 
 const GPT_PREFIX_PATTERN = /^gpt-/i;
 const MINI_SUFFIX_PATTERN = /-mini$/i;
@@ -55,10 +63,16 @@ export function buildShareOfVoiceBreakdown(
   options?: {
     limit?: number;
     competitors?: readonly GeoCompetitor[];
+    companyName?: string | null;
+    aliases?: readonly string[];
   }
 ): ShareOfVoiceBreakdown {
   const limit = options?.limit ?? GEO_SHARE_OF_VOICE_TOP_BRANDS;
   const merged = mergeCompetitorSharePoints(points, options?.competitors);
+  const ownBrand = {
+    companyName: options?.companyName,
+    aliases: options?.aliases,
+  };
   const top = merged.slice(0, limit);
   const rest = merged.slice(limit);
   const otherTotal = rest.reduce((sum, point) => sum + point.mentions, 0);
@@ -73,6 +87,7 @@ export function buildShareOfVoiceBreakdown(
     mentions,
     share: total > 0 ? mentions / total : 0,
     trend: [...trend],
+    tracked: isTrackedShareOfVoiceBrand(brand, options?.competitors, ownBrand),
   });
   const rows = top.map((point) =>
     toRow(point.brand, point.mentions, point.trend ?? [])
@@ -99,6 +114,8 @@ export function buildShareOfVoiceRows(
   options?: {
     limit?: number;
     competitors?: readonly GeoCompetitor[];
+    companyName?: string | null;
+    aliases?: readonly string[];
   }
 ): ShareOfVoiceRow[] {
   return buildShareOfVoiceBreakdown(points, options).rows;
@@ -700,19 +717,6 @@ function windowPosition(bucket: FamilyDayBucket): number | null {
   return bucket.positionWeighted / bucket.positionWeight;
 }
 
-function relativePercentDelta(
-  current: number,
-  previous: number
-): number | null {
-  if (current === 0 && previous === 0) {
-    return null;
-  }
-  if (previous === 0) {
-    return current > 0 ? 100 : null;
-  }
-  return ((current - previous) / previous) * CHART_PERCENT_SCALE;
-}
-
 export function mentionCountDelta(
   points: readonly GeoSparklinePoint[],
   today = todayIsoDate()
@@ -730,7 +734,7 @@ export function mentionCountDelta(
     .reduce((sum, point) => sum + point.value, 0);
   const previousAverage = previousTotal / midpoint;
   const currentAverage = currentTotal / (settledPoints.length - midpoint);
-  return relativePercentDelta(currentAverage, previousAverage);
+  return trafficVisitDelta(currentAverage, previousAverage);
 }
 
 function splitTrendDays(
@@ -773,7 +777,7 @@ export function mentionStatTrends(
       previousRate === null || currentRate === null
         ? null
         : (currentRate - previousRate) * CHART_PERCENT_SCALE,
-    mentionDelta: relativePercentDelta(current.mentions, previous.mentions),
+    mentionDelta: trafficVisitDelta(current.mentions, previous.mentions),
     positionDelta:
       previousPosition === null || currentPosition === null
         ? null
@@ -793,6 +797,9 @@ export function geoStatDeltaTone(
   delta: number,
   kind: GeoStatDeltaKind
 ): GeoStatDeltaTone {
+  if (isGeoStatDeltaNew(delta)) {
+    return "up";
+  }
   const rounded =
     kind === "position" ? Math.round(delta * 10) / 10 : Math.round(delta);
   const effective = kind === "position" ? -rounded : rounded;
@@ -809,6 +816,9 @@ export function formatGeoStatDelta(
   delta: number,
   kind: GeoStatDeltaKind
 ): string {
+  if (isGeoStatDeltaNew(delta)) {
+    return GEO_STAT_DELTA_NEW_LABEL;
+  }
   const tone = geoStatDeltaTone(delta, kind);
   const signed = tone !== "flat";
 

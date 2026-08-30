@@ -58,6 +58,17 @@ export interface WriteOptionCardProps {
   selected: boolean;
   onToggle: () => void;
   compact?: boolean;
+  badge?: string | null;
+}
+
+export interface WriteDialogBaseline {
+  mentionedEngines: number;
+  totalEngines: number;
+}
+
+export interface WriteFormatRecommendation {
+  id: GeoContentSubtype;
+  reason: string;
 }
 
 export type WriteDialogSourceKind = GeoWriterSourceKind;
@@ -69,6 +80,8 @@ export interface WriteDialogInitialState {
   contentSubtype?: GeoContentSubtype;
   brandVoiceId?: string;
   competitorIds?: string[];
+  baseline?: WriteDialogBaseline | null;
+  mentionedCompetitors?: string[];
 }
 
 export interface WriteDialogProps {
@@ -84,6 +97,9 @@ export interface WriteDialogProps {
 export interface GeoGapsWriteEntry {
   promptId: string;
   prompt: string;
+  mentionedEngines?: readonly string[];
+  missingEngines?: readonly string[];
+  mentionedCompetitors?: readonly string[];
 }
 
 export interface WriterExecuteRootProps {

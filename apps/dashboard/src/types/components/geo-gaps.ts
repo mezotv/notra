@@ -3,6 +3,7 @@ import type {
   GeoGapWriteAction,
   GeoPromptGapRow,
   GeoSearchGapRow,
+  GeoSuggestionKeyword,
   GeoWriterSourceKind,
 } from "@notra/geo-core/types/geo";
 
@@ -63,4 +64,48 @@ export interface GeoGapsFiltersProps {
 
 export interface GeoGapsPageContentProps {
   organizationSlug: string;
+}
+
+export interface GeoGapOpportunityCellProps {
+  row: GeoPromptGapRow;
+  maxOpportunity: number;
+}
+
+export interface GeoGapVisibleOnCellProps {
+  mentionedEngines: readonly string[];
+  missingEngines: readonly string[];
+}
+
+export interface GeoGapBrandMentionsCellProps {
+  competitors: GeoCompetitor[];
+  tracked: readonly string[];
+  discovered: readonly string[];
+}
+
+export interface GeoGapContentCellProps {
+  title: string;
+  subtitle: string | null;
+}
+
+export interface GeoGapWriteCellProps {
+  action: GeoGapWriteAction;
+  postId: string | null | undefined;
+  onOpenPost: (postId: string) => void;
+  onWrite: () => void;
+}
+
+export interface GeoGapQueriesCellProps {
+  prompt: string;
+  queries: readonly GeoSuggestionKeyword[];
+}
+
+export interface GeoGapNumberCellProps {
+  value: number | null;
+  emptyLabel: string;
+  format?: (value: number) => string;
+}
+
+export interface GeoGapMeterProps {
+  level: number;
+  label: string;
 }

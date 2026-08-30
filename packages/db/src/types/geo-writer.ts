@@ -16,6 +16,22 @@ export interface GeoContentBriefInternalLinkJson {
   why: string;
 }
 
+export interface GeoContentBriefBaselineEngineJson {
+  engine: string;
+  mentioned: boolean;
+  position: number | null;
+}
+
+export interface GeoContentBriefBaselineJson {
+  sourcePromptId: string;
+  mentionedEngines: number;
+  totalEngines: number;
+  engines: GeoContentBriefBaselineEngineJson[];
+  competitorMentions: Array<{ name: string; engines: number }>;
+  citedDomains: Array<{ domain: string; engines: number }>;
+  capturedAt: string | null;
+}
+
 /**
  * Stored shape of a GEO writer brief. Mirrors `geoContentBriefSchema` in
  * `@notra/ai/schemas/geo-writer`; kept here so the schema package does not
@@ -32,6 +48,11 @@ export interface GeoContentBriefJson {
   questionsToAnswer: string[];
   internalLinks: GeoContentBriefInternalLinkJson[];
   acceptanceChecklist: string[];
+  recommendedAngle?: string;
+  competitorsToCounter?: string[];
+  sourcesToReference?: string[];
+  missingCoverage?: string[];
+  baseline?: GeoContentBriefBaselineJson | null;
 }
 
 export type GeoContentBriefStatus = (typeof GEO_CONTENT_BRIEF_STATUSES)[number];

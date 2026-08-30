@@ -11,6 +11,7 @@ import {
   GEO_WRITER_TRIGGER_ID,
   GEO_WRITER_TRIGGER_NAME,
 } from "@notra/geo-core/constants/geo";
+import { briefProvenanceMetadata } from "@notra/geo-core/geo/writer";
 import { and, eq } from "drizzle-orm";
 
 import {
@@ -88,6 +89,8 @@ export async function loadGeoWriterContext(input: {
     language: brand?.language ?? null,
     topic: brief.topic,
     brief: brief.brief,
+    sourceKind: brief.sourceKind,
+    sourceId: brief.sourceId,
   };
 }
 
@@ -113,6 +116,11 @@ export async function runGeoWriterStep(
       brandVoiceId: context.brandSettingsId,
       briefId: context.briefId,
       projectId: context.projectId,
+      ...briefProvenanceMetadata({
+        brief: context.brief,
+        sourceKind: context.sourceKind,
+        sourceId: context.sourceId,
+      }),
     },
     telemetryMetadata: {
       organizationId: context.organizationId,

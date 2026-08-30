@@ -1,12 +1,19 @@
 "use client";
 
-import { GEO_TRAFFIC_PAGES_PAGE_PARAM } from "@notra/geo-core/constants/geo";
+import { SearchIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  GEO_TRAFFIC_PAGES_PAGE_PARAM,
+  GEO_TRAFFIC_PAGES_PATH_PARAM,
+} from "@notra/geo-core/constants/geo";
 import {
   formatGeoSource,
   trafficVisitDelta,
 } from "@notra/geo-core/utils/ai-traffic";
 import { TablePagination } from "@notra/ui/components/shared/table-pagination";
 import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
+import { Input } from "@notra/ui/components/ui/input";
+import { parseAsString, useQueryState } from "nuqs";
 import type { ReactNode } from "react";
 
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
@@ -20,7 +27,10 @@ import { Table, type TableColumn } from "@/components/motion/table";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { useTablePagination } from "@/lib/hooks/use-table-pagination";
 import type { GeoTrafficPageGroup, TrafficPagesCardProps } from "@/types/geo";
-import { groupTrafficPages } from "@/utils/ai-traffic-pages";
+import {
+  filterTrafficPageGroups,
+  groupTrafficPages,
+} from "@/utils/ai-traffic-pages";
 import { paginatedTableHeightFor } from "@/utils/table";
 
 const PAGE_SKELETON_ROWS = 4;
@@ -32,12 +42,21 @@ export function TrafficPagesCard({
   pages,
   isPending = false,
 }: TrafficPagesCardProps) {
+  const [pathQuery, setPathQuery] = useQueryState(
+    GEO_TRAFFIC_PAGES_PATH_PARAM,
+    parseAsString.withDefault("").withOptions({ clearOnDefault: true })
+  );
   const groups = groupTrafficPages(pages);
+  const filteredGroups = filterTrafficPageGroups(groups, pathQuery);
   const pagination = useTablePagination({
     key: GEO_TRAFFIC_PAGES_PAGE_PARAM,
-    totalItems: groups.length,
+    totalItems: filteredGroups.length,
     isReady: !isPending,
   });
+  const handlePathQueryChange = (value: string) => {
+    pagination.setPage(1);
+    setPathQuery(value);
+  };
   const columns: TableColumn<GeoTrafficPageGroup>[] = [
     {
       key: "path",
@@ -98,21 +117,42 @@ export function TrafficPagesCard({
   } else {
     body = (
       <div className="flex flex-col gap-2">
-        <Table
-          className="rounded-2xl"
-          columns={columns}
-          data={groups}
-          defaultSort={{ key: "visits", direction: "desc" }}
-          emptyState="No AI visits captured yet"
-          footer={<TablePagination {...pagination} itemLabel="pages" />}
-          getRowId={(row) => row.path}
-          height={paginatedTableHeightFor(pagination.pageRowCount)}
-          onSortChange={() => pagination.setPage(1)}
-          page={pagination.page}
-          pageSize={pagination.pageSize}
-          resizable
-          rowHeight={TABLE_ROW_HEIGHT}
-        />
+        <div className="relative max-w-xs">
+          <HugeiconsIcon
+            className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2"
+            icon={SearchIcon}
+            size={15}
+          />
+          <Input
+            aria-label="Filter pages by path"
+            className="pl-9"
+            onChange={(event) => handlePathQueryChange(event.target.value)}
+            placeholder="Filter by path..."
+            value={pathQuery}
+          />
+        </div>
+        {filteredGroups.length === 0 ? (
+          <InstrumentEmpty
+            message="No pages match this filter"
+            seed="geo-traffic-pages-filter"
+          />
+        ) : (
+          <Table
+            className="rounded-2xl"
+            columns={columns}
+            data={filteredGroups}
+            defaultSort={{ key: "visits", direction: "desc" }}
+            emptyState="No pages match this filter"
+            footer={<TablePagination {...pagination} itemLabel="pages" />}
+            getRowId={(row) => row.path}
+            height={paginatedTableHeightFor(pagination.pageRowCount)}
+            onSortChange={() => pagination.setPage(1)}
+            page={pagination.page}
+            pageSize={pagination.pageSize}
+            resizable
+            rowHeight={TABLE_ROW_HEIGHT}
+          />
+        )}
       </div>
     );
   }

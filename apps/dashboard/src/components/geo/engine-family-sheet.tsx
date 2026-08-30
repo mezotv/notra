@@ -470,6 +470,7 @@ function EngineFamilySheetSession({
           }
         }}
         open={selectedRow !== null}
+        organizationId={organizationId || undefined}
         row={selectedRow}
         surface={GEO_PROMPT_DETAIL_SURFACES.ENGINE_SHEET}
       />

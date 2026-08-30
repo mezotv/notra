@@ -81,6 +81,7 @@ const promptResultSchema = z.object({
   mentioned: z.boolean(),
   position: z.number().int().nullable(),
   sentiment: z.string().nullable(),
+  competitors: z.array(z.string()),
   excerpt: z.string(),
   searchQueries: z.array(z.string()),
   sources: z.array(answerSourceSchema),

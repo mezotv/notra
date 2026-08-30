@@ -113,6 +113,7 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
             {showSpark ? (
               <GeoRateSparkline
                 className={GEO_SPARKLINE_TREND_CLASS[sparklineTrend(series)]}
+                label={`${row.label} visit trend`}
                 points={series}
               />
             ) : null}

@@ -112,6 +112,7 @@ export const trafficOverviewResponseSchema = z
     configured: trafficConfiguredField,
     totals: z.object({
       crawler: z.number().int(),
+      cited: z.number().int(),
       aiReferral: z.number().int(),
     }),
     sources: z.array(trafficSourceSchema),

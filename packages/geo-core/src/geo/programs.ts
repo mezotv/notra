@@ -23,7 +23,9 @@ import {
   queryGeoCheckLanguageShare,
   queryGeoCheckLanguageShareTrends,
   queryGeoCheckOverview,
+  queryGeoCheckPromptHistory,
   queryGeoCheckPromptResults,
+  queryGeoScanComparison,
   queryGeoCheckTimeseries,
   toGeoCheckWindow,
 } from "@notra/db/utils/geo-checks";
@@ -35,8 +37,10 @@ import {
   AI_TRAFFIC_DEFAULT_JOURNEYS_LIMIT,
   AI_TRAFFIC_DEFAULT_LOG_LIMIT,
   AI_TRAFFIC_DEFAULT_PAGES_LIMIT,
+  GEO_CHANGES_LIMIT,
   GEO_COMPETITOR_DETAIL_DAYS,
   GEO_COMPETITOR_SHARE_LIMIT,
+  GEO_PROMPT_HISTORY_LIMIT,
   GEO_JOURNEY_DETAIL_LIMIT,
   GEO_MAX_COMPETITORS,
   GEO_MAX_ENGINES,
@@ -47,6 +51,8 @@ import { GeoEntitlementService } from "../deps";
 import type { DbTransaction } from "../types/db";
 import type {
   AiTrafficResponse,
+  GeoChangesResponse,
+  GeoChangeScan,
   GeoCompetitor,
   GeoCompetitorDetailResponse,
   GeoCompetitorMerge,
@@ -59,6 +65,8 @@ import type {
   GeoJourneyDetailResponse,
   GeoLanguageShareResponse,
   GeoOverviewResponse,
+  GeoPromptHistoryInput,
+  GeoPromptHistoryResponse,
   GeoPromptInsert,
   GeoPromptResultsResponse,
   GeoScopeInput,
@@ -82,6 +90,12 @@ import type {
   GeoPromptImportRow,
 } from "../types/geo-import";
 import { toGeoTrafficTotals, toGeoVisitorType } from "../utils/ai-traffic";
+import { geoAnswerSourcesFor } from "../utils/geo-answer-sources";
+import {
+  diffScanChecks,
+  summarizeGeoChanges,
+  toGeoScanCheckSnapshot,
+} from "../utils/geo-changes";
 import { trackedGeoLanguages } from "../utils/geo-language-rows";
 import {
   geoDefaultEngines,
@@ -117,7 +131,7 @@ import {
   resolveGeoScope,
 } from "./projects";
 import { promptKey } from "./prompt-key";
-import { buildGeoPrompts } from "./prompts";
+import { buildGeoPrompts, customPromptScanId } from "./prompts";
 import { startClaimedGeoScanRun } from "./scan-handoff";
 import { nextGeoScanAt } from "./scan-schedule";
 import { claimGeoScanRun } from "./scan-status";
@@ -812,6 +826,7 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
       mentioned: row.mentioned,
       position: row.position,
       sentiment: row.sentiment,
+      competitors: row.competitors,
       excerpt: row.excerpt,
       searchQueries: row.grounding.queries,
       sources:
@@ -829,6 +844,72 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
       truncated: row.truncated,
       lastCheckedAt: row.lastCheckedAt.toISOString(),
     })),
+  };
+  return response;
+});
+
+function promptHistoryScanIds(promptId: string): string[] {
+  return [...new Set([promptId, customPromptScanId(promptId)])];
+}
+
+export const loadGeoPromptHistory = Effect.fn("geo.promptHistory")(function* (
+  input: GeoPromptHistoryInput
+) {
+  const scope = yield* resolveGeoScope(input);
+  const rows = yield* geoDb("prompt history query failed", () =>
+    queryGeoCheckPromptHistory(geoCheckScope(scope), {
+      promptIds: promptHistoryScanIds(input.promptId),
+      limit: GEO_PROMPT_HISTORY_LIMIT,
+    })
+  );
+
+  const response: GeoPromptHistoryResponse = {
+    configured: true,
+    promptId: input.promptId,
+    checks: rows.map((row) => ({
+      id: row.id,
+      scanId: row.scanId,
+      engine: row.engine,
+      mentioned: row.mentioned,
+      position: row.position,
+      sentiment: row.sentiment,
+      competitors: row.competitors,
+      excerpt: row.excerpt,
+      searchQueries: row.grounding.queries,
+      sources: geoAnswerSourcesFor(row.grounding, row.sources),
+      language: row.language,
+      capturedAt: row.capturedAt.toISOString(),
+    })),
+  };
+  return response;
+});
+
+function toGeoChangeScan(
+  scan: { id: string; finishedAt: Date | null } | null
+): GeoChangeScan | null {
+  if (!scan) {
+    return null;
+  }
+  return { id: scan.id, finishedAt: scan.finishedAt?.toISOString() ?? null };
+}
+
+export const loadGeoChanges = Effect.fn("geo.changes")(function* (
+  input: GeoScopeInput
+) {
+  const scope = yield* requireGeoProject(input);
+  const comparison = yield* geoDb("scan comparison query failed", () =>
+    queryGeoScanComparison({ projectId: scope.projectId })
+  );
+  const events = diffScanChecks(
+    comparison.previous.map(toGeoScanCheckSnapshot),
+    comparison.current.map(toGeoScanCheckSnapshot)
+  );
+
+  const response: GeoChangesResponse = {
+    previousScan: toGeoChangeScan(comparison.previousScan),
+    currentScan: toGeoChangeScan(comparison.currentScan),
+    summary: summarizeGeoChanges(events),
+    events: events.slice(0, GEO_CHANGES_LIMIT),
   };
   return response;
 });

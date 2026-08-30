@@ -13,7 +13,10 @@ import {
   GEO_COMPETITOR_DETAIL_MIN_POINTS,
   GEO_COMPETITOR_DETAIL_SERIES_KEY,
 } from "@notra/geo-core/constants/geo";
-import type { GeoCompetitorPromptRow } from "@notra/geo-core/types/geo";
+import type {
+  GeoCompetitorPromptRow,
+  GeoCompetitorPromptSummary,
+} from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
@@ -29,15 +32,24 @@ import { EChartsBarChart } from "@/components/evilcharts/charts/echarts-bar-char
 import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import {
+  BrandTrackingBadge,
+  TrackBrandButton,
+} from "@/components/geo/share-of-voice-brand-tag";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { CHART_PRIMARY_COLOR } from "@/constants/charts";
 import { trackEvent } from "@/lib/analytics/posthog-client";
-import { useGeoCompetitorDetail, useGeoCompetitors } from "@/lib/hooks/use-geo";
+import {
+  useGeoCompetitorDetail,
+  useGeoCompetitors,
+  useGeoSettings,
+} from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
 import type { ChartConfig } from "@/types/charts";
 import type {
   CompetitorDetailViewProps,
+  CompetitorPromptSummaryStripProps,
   GeoCompetitorDetailPoint,
   GeoCompetitorMentionStats,
 } from "@/types/geo";
@@ -48,6 +60,10 @@ import {
   competitorChartHasIncompleteTail,
   competitorMentionStats,
 } from "@/utils/geo-competitor";
+import {
+  competitorPromptSummary,
+  isOwnBrandName,
+} from "@/utils/geo-competitors";
 import { tableHeightFor } from "@/utils/table";
 
 const CHART_CONFIG: ChartConfig = {
@@ -131,6 +147,39 @@ function CompetitorMentionStats({
   );
 }
 
+function CompetitorPromptSummaryStrip({
+  summary,
+}: CompetitorPromptSummaryStripProps) {
+  return (
+    <dl className="text-muted-foreground flex flex-wrap items-baseline gap-x-4 gap-y-1 text-xs tabular-nums">
+      <div className="flex items-baseline gap-1">
+        <dt className="sr-only">Mentions</dt>
+        <dd>
+          Mentioned on{" "}
+          <span className="text-foreground font-medium">
+            {summary.mentioned.toLocaleString()}
+          </span>{" "}
+          of {summary.total.toLocaleString()} prompt answers
+        </dd>
+      </div>
+      {summary.bestPosition === null ? null : (
+        <div className="flex items-baseline gap-1">
+          <dt>Best position</dt>
+          <dd className="text-foreground font-medium">
+            #{summary.bestPosition.toLocaleString()}
+          </dd>
+        </div>
+      )}
+      <div className="flex items-baseline gap-1">
+        <dt>Engines:</dt>
+        <dd className="text-foreground font-medium">
+          {summary.engines.toLocaleString()}
+        </dd>
+      </div>
+    </dl>
+  );
+}
+
 function CompetitorPromptAppearances({
   competitor,
   prompts,
@@ -195,10 +244,17 @@ export function CompetitorDetailView({
   }, [variant]);
 
   const { data: competitorList } = useGeoCompetitors(organizationId);
+  const { data: settingsData } = useGeoSettings(organizationId);
   const entry =
     competitorList?.competitors.find(
       (item) => item.name.toLowerCase() === competitor.toLowerCase()
     ) ?? null;
+  const ownBrand = isOwnBrandName(
+    competitor,
+    settingsData?.settings?.companyName,
+    settingsData?.settings?.aliases
+  );
+  const discovered = entry === null && !ownBrand;
   const domain = entry?.domain ?? null;
   const [editOpen, setEditOpen] = useState(false);
   const { data, isPending } = useGeoCompetitorDetail(
@@ -216,6 +272,13 @@ export function CompetitorDetailView({
   );
   const incompleteTail = competitorChartHasIncompleteTail(points);
   const prompts = useMemo(() => data?.prompts ?? [], [data]);
+  const promptSummary = useMemo<GeoCompetitorPromptSummary | null>(
+    () =>
+      showLoading || prompts.length === 0
+        ? null
+        : competitorPromptSummary(prompts),
+    [prompts, showLoading]
+  );
 
   const columns = useMemo<TableColumn<GeoCompetitorPromptRow>[]>(
     () => [
@@ -312,6 +375,13 @@ export function CompetitorDetailView({
         <div className="min-w-0 flex-1 leading-tight">
           <div className="flex min-w-0 items-center gap-1">
             <p className="truncate text-lg font-semibold">{competitor}</p>
+            {ownBrand ? null : <BrandTrackingBadge tracked={entry !== null} />}
+            {discovered ? (
+              <TrackBrandButton
+                brand={competitor}
+                onTrack={() => setEditOpen(true)}
+              />
+            ) : null}
             {entry ? (
               <Tooltip>
                 <TooltipTrigger
@@ -374,6 +444,9 @@ export function CompetitorDetailView({
 
       <div className="space-y-2">
         <h2 className="text-base font-semibold">Where {competitor} shows up</h2>
+        {promptSummary ? (
+          <CompetitorPromptSummaryStrip summary={promptSummary} />
+        ) : null}
         <CompetitorPromptAppearances
           columns={columns}
           competitor={competitor}
@@ -382,14 +455,15 @@ export function CompetitorDetailView({
           tableHeight={tableHeight}
         />
       </div>
-      {entry ? (
+      {ownBrand ? null : (
         <CompetitorEditDialog
           competitor={entry}
+          initialName={competitor}
           onOpenChange={setEditOpen}
           open={editOpen}
           organizationId={organizationId}
         />
-      ) : null}
+      )}
     </div>
   );
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { GEO_TRAFFIC_FUNNEL_STAGES } from "@notra/geo-core/constants/geo";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 
 import {
@@ -25,9 +26,10 @@ export function GeoTrafficSkeleton() {
         <div className="flex flex-col gap-6">
           <div className="border-border bg-card overflow-hidden rounded-2xl border">
             <div className="divide-border grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-              {["Crawlers", "Referrals", "Total"].map((label) => (
-                <div className="space-y-2 px-5 py-4" key={label}>
-                  <Skeleton className="h-3 w-16" />
+              {GEO_TRAFFIC_FUNNEL_STAGES.map((stage) => (
+                <div className="space-y-2 px-5 py-4" key={stage.key}>
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-2.5 w-40" />
                   <div className="flex items-baseline gap-2">
                     <Skeleton className="h-9 w-16" />
                     <Skeleton className="h-5 w-10 rounded-full" />
@@ -53,7 +55,7 @@ export function GeoTrafficSkeleton() {
           </GeoSectionSkeleton>
           <GeoSectionSkeleton
             action={<Skeleton className="h-3.5 w-24" />}
-            eyebrow="Recent citations"
+            eyebrow="Recent AI requests"
           >
             <GeoTableSkeleton rows={CITATION_ROW_COUNT} />
           </GeoSectionSkeleton>

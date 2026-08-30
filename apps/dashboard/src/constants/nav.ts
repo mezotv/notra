@@ -71,8 +71,18 @@ export const SIDEBAR_RESIZE_STEP = 8;
 export const SIDEBAR_WIDTH_COOKIE_NAME = "sidebar_width";
 
 export const SIDEBAR_MODES: SidebarModeOption[] = [
-  { id: "geo", label: "GEO", icon: AiBrowserIcon },
-  { id: "studio", label: "Studio", icon: NoteIcon },
+  {
+    id: "geo",
+    label: "GEO",
+    description: "Measure visibility",
+    icon: AiBrowserIcon,
+  },
+  {
+    id: "studio",
+    label: "Studio",
+    description: "Create content",
+    icon: NoteIcon,
+  },
 ];
 
 export const SIDEBAR_MODE_HOME_LINKS: Record<SidebarMode, string> = {
@@ -197,7 +207,7 @@ export const DEFAULT_NAV_VISIBILITY: NavVisibility = {
 
 export const NAV_PRIMARY_ACTIONS: Record<SidebarMode, NavPrimaryActionConfig> =
   {
-    geo: { label: "Write", icon: PencilEdit01Icon },
+    geo: { label: "New content", icon: PencilEdit01Icon },
     studio: { label: "New post", icon: PlusSignIcon },
   };
 

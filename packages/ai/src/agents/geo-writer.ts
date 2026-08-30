@@ -240,6 +240,12 @@ function stripDashes(brief: GeoContentBrief): GeoContentBrief {
       why: stripDashesFromText(link.why),
     })),
     acceptanceChecklist: brief.acceptanceChecklist.map(stripDashesFromText),
+    recommendedAngle: brief.recommendedAngle
+      ? stripDashesFromText(brief.recommendedAngle)
+      : undefined,
+    competitorsToCounter: brief.competitorsToCounter?.map(stripDashesFromText),
+    sourcesToReference: brief.sourcesToReference?.map(stripDashesFromText),
+    missingCoverage: brief.missingCoverage?.map(stripDashesFromText),
   };
 }
 

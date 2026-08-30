@@ -3,6 +3,8 @@ import { competitorKey } from "@notra/geo-core/geo/domain";
 import type {
   GeoCompetitor,
   GeoCompetitorKind,
+  GeoCompetitorPromptRow,
+  GeoCompetitorPromptSummary,
   GeoCompetitorSharePoint,
   GeoCompetitorShareTimeseriesPoint,
   GeoCompetitorTypeFilter,
@@ -82,6 +84,43 @@ export function shareOfVoiceSliceColor(
     return { light: stored, dark: stored };
   }
   return competitorSliceColor(index);
+}
+
+export function isTrackedShareOfVoiceBrand(
+  brand: string,
+  competitors: readonly GeoCompetitor[] | undefined,
+  ownBrand?: { companyName?: string | null; aliases?: readonly string[] }
+): boolean {
+  if (brand === CHART_OTHER_SLICE_LABEL) {
+    return false;
+  }
+  if (isOwnBrandName(brand, ownBrand?.companyName, ownBrand?.aliases)) {
+    return true;
+  }
+  const key = competitorKey(brand);
+  return key.length > 0 && competitorCanonicalMap(competitors ?? []).has(key);
+}
+
+export function competitorPromptSummary(
+  rows: readonly GeoCompetitorPromptRow[]
+): GeoCompetitorPromptSummary {
+  const engines = new Set<string>();
+  let mentioned = 0;
+  let bestPosition: number | null = null;
+  for (const row of rows) {
+    engines.add(row.engine);
+    if (!row.mentioned) {
+      continue;
+    }
+    mentioned += 1;
+    if (
+      row.position !== null &&
+      (bestPosition === null || row.position < bestPosition)
+    ) {
+      bestPosition = row.position;
+    }
+  }
+  return { mentioned, total: rows.length, bestPosition, engines: engines.size };
 }
 
 export function shareOfVoiceRivalIndex(

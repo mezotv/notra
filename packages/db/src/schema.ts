@@ -2463,6 +2463,14 @@ export interface PostSourceMetadata {
   sourcePostId?: string | null;
   briefId?: string;
   projectId?: string;
+  geoSourceKind?: string;
+  geoSourceId?: string | null;
+  geoBaseline?: {
+    sourcePromptId: string;
+    mentionedEngines: number;
+    totalEngines: number;
+    capturedAt: string | null;
+  } | null;
   sandbox?: {
     boxId?: string;
     snapshotId?: string;

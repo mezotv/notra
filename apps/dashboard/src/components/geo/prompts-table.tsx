@@ -3,12 +3,15 @@
 import { Delete02Icon, SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  GEO_PROMPT_AUTO_MANAGED_HINT,
+  GEO_PROMPT_AUTO_MANAGED_LABEL,
   PROMPTS_TABLE_HEIGHT,
   PROMPTS_TABLE_ROW_HEIGHT,
 } from "@notra/geo-core/constants/geo";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { PresenceBadge } from "@notra/ui/components/geo/presence-badge";
 import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
+import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
 import { Switch } from "@notra/ui/components/ui/switch";
 import {
@@ -32,7 +35,7 @@ import {
 } from "@/utils/geo-prompts";
 
 const PROMPT_NOUNS = { singular: "prompt", plural: "prompts" } as const;
-const PROMPT_ACTIONS_WIDTH = "6.5rem";
+const PROMPT_ACTIONS_WIDTH = "10rem";
 
 function PromptRowActions({
   row,
@@ -52,20 +55,19 @@ function PromptRowActions({
       <Tooltip>
         <TooltipTrigger
           render={
-            <button
+            <Badge
               aria-label="Auto-generated prompts cannot be paused or removed"
-              className="text-muted-foreground inline-flex size-8 cursor-help items-center justify-center"
+              className="text-muted-foreground cursor-help font-normal"
               onClick={(event) => event.stopPropagation()}
               onPointerDown={(event) => event.stopPropagation()}
-              type="button"
+              variant="secondary"
             >
-              —
-            </button>
+              {GEO_PROMPT_AUTO_MANAGED_LABEL}
+            </Badge>
           }
         />
         <TooltipContent className="max-w-xs">
-          Generated from your site. Only custom prompts can be paused or
-          removed.
+          {GEO_PROMPT_AUTO_MANAGED_HINT}
         </TooltipContent>
       </Tooltip>
     );
@@ -305,6 +307,7 @@ export function PromptsTable({
           }
         }}
         open={detail !== null}
+        organizationId={organizationId}
         row={detail}
         surface={GEO_PROMPT_DETAIL_SURFACES.PROMPTS_TABLE}
       />

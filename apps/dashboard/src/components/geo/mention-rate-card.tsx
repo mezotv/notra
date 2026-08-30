@@ -13,6 +13,8 @@ import {
   GEO_MENTION_SUMMARY_VISIBLE,
   GEO_MENTION_UNTRACKED_HINT,
   GEO_MENTIONS_LABEL,
+  GEO_PROVIDER_COLUMN_LABEL,
+  GEO_PROVIDER_MENTIONS_COLUMN_LABEL,
 } from "@notra/geo-core/constants/geo";
 import type { GeoEngineFamily } from "@notra/geo-core/types/geo";
 import {
@@ -26,6 +28,11 @@ import {
   HoverCard,
   HoverCardTrigger,
 } from "@notra/ui/components/ui/hover-card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import {
   AnimatePresence,
   domAnimation,
@@ -348,8 +355,8 @@ export function MentionRateCard({
 
             <div className="flex flex-1 flex-col gap-1">
               <div className="flex items-center justify-between gap-3 text-sm font-medium">
-                <span>Provider</span>
-                <span>Mentions</span>
+                <span>{GEO_PROVIDER_COLUMN_LABEL}</span>
+                <span>{GEO_PROVIDER_MENTIONS_COLUMN_LABEL}</span>
               </div>
               <div className="relative flex-1">
                 <div

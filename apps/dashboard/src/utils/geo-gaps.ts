@@ -33,6 +33,28 @@ export function gapMeterLevel(
   return Math.max(1, Math.min(steps, Math.round(intensity * steps)));
 }
 
+export function gapOpportunityDetail(row: GeoPromptGapRow): string {
+  const missing = gapMissingEngineFamilies(row.engines).length;
+  const visible = gapMissingEngineFamilies(row.mentionedEngines).length;
+  const total = missing + visible;
+  const competitorCount =
+    row.competitors.length + row.discoveredCompetitors.length;
+  const competitorPart =
+    competitorCount === 0
+      ? "no other brands recommended"
+      : `${competitorCount} ${competitorCount === 1 ? "brand" : "brands"} recommended instead`;
+  return `Not visible on ${missing} of ${total} ${total === 1 ? "engine" : "engines"} · ${competitorPart}`;
+}
+
+export function gapVisibleOnLabel(
+  mentionedEngines: readonly string[],
+  missingEngines: readonly string[]
+): string {
+  const visible = gapMissingEngineFamilies(mentionedEngines).length;
+  const total = visible + gapMissingEngineFamilies(missingEngines).length;
+  return `${visible} of ${total}`;
+}
+
 export function gapMeterTone(level: number): GeoGapsMeterTone {
   if (level <= 0) {
     return "empty";

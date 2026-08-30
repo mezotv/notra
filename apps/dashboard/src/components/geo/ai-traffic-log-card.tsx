@@ -1,10 +1,11 @@
 "use client";
 
-import { PauseIcon, PlayIcon } from "@hugeicons/core-free-icons";
+import { PauseIcon, PlayIcon, QuotesIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GEO_CITATIONS_LIVE_INTERVAL_MS,
   GEO_CITATIONS_ROW_HEIGHT,
+  GEO_TRAFFIC_CITATIONS_ONLY_LABEL,
   GEO_TRAFFIC_LOG_PAGE_PARAM,
   GEO_TRAFFIC_LOG_PURPOSE_OPTIONS,
   GEO_TRAFFIC_LOG_VISITOR_OPTIONS,
@@ -12,6 +13,9 @@ import {
 import type { GeoTrafficLogFilters } from "@notra/geo-core/types/geo";
 import {
   formatGeoTrafficFilterLabel,
+  formatGeoTrafficRequestCount,
+  isGeoTrafficCitationsOnly,
+  toggleGeoTrafficCitationsOnly,
   toggleGeoTrafficFilterValue,
 } from "@notra/geo-core/utils/ai-traffic";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
@@ -34,6 +38,7 @@ import { TRAFFIC_LOG_FILTER_KINDS } from "@/constants/geo-analytics";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoTrafficLog } from "@/lib/hooks/use-geo";
 import { useTablePagination } from "@/lib/hooks/use-table-pagination";
+import { cn } from "@/lib/utils";
 import type { AiTrafficLogCardProps } from "@/types/geo";
 import { paginatedTableHeightFor } from "@/utils/table";
 
@@ -55,10 +60,11 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
     totalItems: log.length,
     isReady: !isPending,
   });
+  const citationsOnly = isGeoTrafficCitationsOnly(filters.categories);
   let readout: string | undefined;
   if (!isPending) {
     readout =
-      total === 0 ? "no visits yet" : `${total.toLocaleString()} requests`;
+      total === 0 ? "no visits yet" : formatGeoTrafficRequestCount(total);
   }
 
   let body: ReactNode;
@@ -156,6 +162,26 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
+      <Button
+        aria-pressed={citationsOnly}
+        className={cn(citationsOnly && "bg-muted")}
+        onClick={() => {
+          pagination.setPage(1);
+          setFilters((previous) => ({
+            ...previous,
+            categories: toggleGeoTrafficCitationsOnly(previous.categories),
+          }));
+        }}
+        size="sm"
+        variant="outline"
+      >
+        <HugeiconsIcon
+          data-icon="inline-start"
+          icon={QuotesIcon}
+          strokeWidth={2}
+        />
+        {GEO_TRAFFIC_CITATIONS_ONLY_LABEL}
+      </Button>
       {total > 0 && (
         <Button
           onClick={() => {
@@ -179,7 +205,7 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
   return (
     <InstrumentSection
       action={filterRow}
-      eyebrow="Recent citations"
+      eyebrow="Recent AI requests"
       readout={readout}
     >
       {body}

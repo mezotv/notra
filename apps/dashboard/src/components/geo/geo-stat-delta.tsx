@@ -7,6 +7,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { GeoStatDeltaTone } from "@notra/geo-core/types/geo";
+import { isGeoStatDeltaNew } from "@notra/geo-core/utils/ai-traffic";
 import {
   Tooltip,
   TooltipContent,
@@ -78,6 +79,7 @@ export function GeoStatDelta({
 
   const tone = geoStatDeltaTone(delta, kind);
   const formatted = formatGeoStatDelta(delta, kind);
+  const isNew = isGeoStatDeltaNew(delta);
   const displayedValue =
     variant === "plain" ? formatted.replace(/^[+-]/, "") : formatted;
   const content =
@@ -89,12 +91,12 @@ export function GeoStatDelta({
           className
         )}
       >
-        <span aria-hidden="true">{TONE_ARROW[tone]}</span>
+        {isNew ? null : <span aria-hidden="true">{TONE_ARROW[tone]}</span>}
         {displayedValue}
       </span>
     ) : (
       <span className={cn(PILL_CLASS, TONE_CLASS[tone], className)}>
-        <GeoStatDeltaIcon tone={tone} />
+        {isNew ? null : <GeoStatDeltaIcon tone={tone} />}
         {formatted}
       </span>
     );
