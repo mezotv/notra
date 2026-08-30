@@ -58,7 +58,7 @@ const HINT_TRANSITION = { duration: 0.2, ease: EASE_OUT } as const;
 const HINT_HIDDEN = { opacity: 0 } as const;
 const HINT_VISIBLE = { opacity: 1 } as const;
 const HINT_ROW_CLASS =
-  "group border-border bg-card focus-visible:ring-ring absolute inset-x-0 bottom-0 grid w-full cursor-pointer grid-cols-[1rem_minmax(0,1fr)_auto] items-center gap-1.5 border-t text-left outline-none focus-visible:ring-2";
+  "group border-border bg-card text-foreground/70 hover:text-foreground focus-visible:ring-ring absolute inset-x-0 bottom-0 flex w-full cursor-pointer items-center justify-center gap-1.5 border-t text-xs transition-colors outline-none focus-visible:ring-2";
 const HINT_ROW_HOVER_CLASS =
   "group-hover:bg-muted/50 pointer-events-none absolute inset-0 transition-colors";
 const ROW_STYLE = { height: `${GEO_MENTION_ROW_HEIGHT_REM}rem` } as const;
@@ -157,16 +157,8 @@ function MoreModelsHint({
       type="button"
     >
       <span aria-hidden="true" className={HINT_ROW_HOVER_CLASS} />
-      <span className="w-4 shrink-0" />
-      <span className="flex min-w-0 flex-1 items-center gap-2">
-        <span className="text-muted-foreground flex w-7 shrink-0 items-center justify-center">
-          <HugeiconsIcon icon={ArrowDown01Icon} size={12} />
-        </span>
-        <span className="text-muted-foreground truncate text-xs">
-          {mentionMoreModelsLabel(count)}
-        </span>
-      </span>
-      <span className="shrink-0" />
+      <span className="relative">{mentionMoreModelsLabel(count)}</span>
+      <HugeiconsIcon className="relative" icon={ArrowDown01Icon} size={12} />
     </button>
   );
 
