@@ -26,7 +26,7 @@
     "@notra/analytics": "workspace:*",
     "@notra/db": "workspace:*",
     "@notra/utils": "workspace:*",
-    "@usenotra/geo": "workspace:*",
+    "@usenotra/geo": "npm:@usenotra/geo@^0.3.0",
     "ai": "6.0.206",
     "drizzle-orm": "^0.45.2",
     "effect": "4.0.0-beta.93",
