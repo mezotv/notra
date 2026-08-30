@@ -1,11 +1,16 @@
 "use client";
 
 import {
+  GEO_CONVERSION_PATHS_DESCRIPTION,
+  GEO_CONVERSION_PATHS_LABEL,
+  GEO_CONVERSION_PATHS_PLACEHOLDER,
   GEO_MAX_ALIASES,
+  GEO_MAX_CONVERSION_PATHS,
   GEO_SCAN_DEFAULT_INTERVAL_HOURS,
   GEO_SETTINGS_AUTO_SAVE_MS,
 } from "@notra/geo-core/constants/geo";
 import type { GeoSettingsUpsertInput } from "@notra/geo-core/types/geo";
+import { normalizeConversionPaths } from "@notra/geo-core/utils/geo-conversion-paths";
 import { resolveTrackedEngines } from "@notra/geo-core/utils/geo-engines";
 import { trackedGeoLanguages } from "@notra/geo-core/utils/geo-language-rows";
 import { Input } from "@notra/ui/components/ui/input";
@@ -31,6 +36,9 @@ export function GeoSettingsForm({
     () => settings?.companyName ?? ""
   );
   const [aliases, setAliases] = useState(() => settings?.aliases ?? []);
+  const [conversionPaths, setConversionPaths] = useState(() =>
+    normalizeConversionPaths(settings?.conversionPaths ?? [])
+  );
   const [competitors] = useState(() => settings?.competitors ?? []);
   const [languages, setLanguages] = useState(() =>
     trackedGeoLanguages(settings?.languages ?? [])
@@ -88,6 +96,7 @@ export function GeoSettingsForm({
       companyName,
       aliases,
       competitors,
+      conversionPaths,
       languages,
       engines,
       enforceZdr,
@@ -106,6 +115,9 @@ export function GeoSettingsForm({
           companyName: settings?.companyName ?? "",
           aliases: settings?.aliases ?? [],
           competitors: settings?.competitors ?? [],
+          conversionPaths: normalizeConversionPaths(
+            settings?.conversionPaths ?? []
+          ),
           languages: trackedGeoLanguages(settings?.languages ?? []),
           engines: resolveTrackedEngines(catalog, settings?.engines),
           enforceZdr: settings?.enforceZdr ?? true,
@@ -134,6 +146,7 @@ export function GeoSettingsForm({
     catalog,
     companyName,
     competitors,
+    conversionPaths,
     enabled,
     engines,
     enforceZdr,
@@ -207,6 +220,22 @@ export function GeoSettingsForm({
             />
           </div>
         </section>
+        <SettingsSection
+          description={GEO_CONVERSION_PATHS_DESCRIPTION}
+          title={GEO_CONVERSION_PATHS_LABEL}
+        >
+          <GeoTagList
+            id={`${id}-conversion-paths`}
+            label={GEO_CONVERSION_PATHS_LABEL}
+            labeled={false}
+            max={GEO_MAX_CONVERSION_PATHS}
+            onChange={(values) =>
+              setConversionPaths(normalizeConversionPaths(values))
+            }
+            placeholder={GEO_CONVERSION_PATHS_PLACEHOLDER}
+            values={conversionPaths}
+          />
+        </SettingsSection>
         <SettingsSection
           description="When enabled models are checked automatically. Manual scans always work."
           title="Scan schedule"

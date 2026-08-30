@@ -1417,6 +1417,10 @@ export const geoSettings = pgTable(
       .array()
       .notNull()
       .default(sql`ARRAY[]::text[]`),
+    conversionPaths: text("conversion_paths")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     languages: text("languages").array(),
     // null = track the default engine set; otherwise a subset of GEO_ENGINES.
     engines: text("engines").array(),
@@ -1424,6 +1428,10 @@ export const geoSettings = pgTable(
     enforceZdr: boolean("enforce_zdr").notNull().default(true),
     // Engines without a ZDR host the user explicitly approved anyway.
     nonZdrApprovedEngines: text("non_zdr_approved_engines")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    pausedAutoPromptIds: text("paused_auto_prompt_ids")
       .array()
       .notNull()
       .default(sql`ARRAY[]::text[]`),
@@ -1456,6 +1464,10 @@ export const geoPrompts = pgTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     prompt: text("prompt").notNull(),
     title: text("title"),
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     enabled: boolean("enabled").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -1801,6 +1813,9 @@ export const geoContentBriefs = pgTable(
     approvedAt: timestamp("approved_at"),
     startedAt: timestamp("started_at"),
     completedAt: timestamp("completed_at"),
+    publishedAt: timestamp("published_at"),
+    rescanScanId: text("rescan_scan_id"),
+    rescanRequestedAt: timestamp("rescan_requested_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

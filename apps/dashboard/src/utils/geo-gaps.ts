@@ -2,11 +2,14 @@ import {
   GEO_GAPS_ENGINE_FILTER_ALL,
   GEO_GAPS_METER_STEPS,
   GEO_GAPS_WRITE_LABELS,
+  GEO_SEARCH_GAP_ACTION_ORDER,
+  GEO_SEARCH_GAP_WRITE_LABELS,
 } from "@notra/geo-core/constants/geo";
 import type {
   GeoGapBriefRef,
   GeoGapWriteAction,
   GeoPromptGapRow,
+  GeoSearchGapAction,
   GeoSearchGapRow,
 } from "@notra/geo-core/types/geo";
 import {
@@ -15,6 +18,8 @@ import {
 } from "@notra/geo-core/utils/geo-engine-family";
 
 import type {
+  GeoGapLift,
+  GeoGapLiftTone,
   GeoGapsEmptyKind,
   GeoGapsMeterTone,
   GeoGapsTab,
@@ -106,6 +111,54 @@ export function gapWriteAction(
 
 export function gapWriteLabel(action: GeoGapWriteAction): string {
   return GEO_GAPS_WRITE_LABELS[action];
+}
+
+export function gapCanRescan(brief: GeoGapBriefRef | null): boolean {
+  return brief?.status === "completed" && brief.postId !== null;
+}
+
+export function gapLift(row: GeoPromptGapRow): GeoGapLift | null {
+  const baseline = row.brief?.baseline;
+  if (!baseline) {
+    return null;
+  }
+  const after = row.mentionedEngines.length;
+  const total = after + row.engines.length;
+  return {
+    before: baseline.mentionedEngines,
+    baselineTotal: baseline.totalEngines,
+    after,
+    total,
+    delta: after - baseline.mentionedEngines,
+  };
+}
+
+export function gapLiftTone(delta: number): GeoGapLiftTone {
+  if (delta > 0) {
+    return "up";
+  }
+  if (delta < 0) {
+    return "down";
+  }
+  return "flat";
+}
+
+export function searchGapWriteLabel(action: GeoSearchGapAction): string {
+  return GEO_SEARCH_GAP_WRITE_LABELS[action];
+}
+
+export function searchGapActionOrder(action: GeoSearchGapAction): number {
+  return GEO_SEARCH_GAP_ACTION_ORDER[action];
+}
+
+export function existingPageLabel(url: string): string {
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname === "/" ? "" : parsed.pathname;
+    return `${parsed.hostname}${path}`;
+  } catch {
+    return url;
+  }
 }
 
 export function geoGapsEmptyKind({

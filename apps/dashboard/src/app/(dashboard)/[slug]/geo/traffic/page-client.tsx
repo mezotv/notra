@@ -189,7 +189,13 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
         {header}
         <div className="flex flex-col gap-6">
           <InstrumentReveal active={revealActive} order={0}>
-            <AiTrafficCard traffic={traffic} />
+            <AiTrafficCard
+              settingsHref={withGeoProject(
+                `/${organizationSlug}/geo/settings`,
+                projectId
+              )}
+              traffic={traffic}
+            />
           </InstrumentReveal>
           <InstrumentReveal active={revealActive} order={1}>
             <TrafficPagesCard

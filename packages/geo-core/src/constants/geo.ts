@@ -11,8 +11,11 @@ import type {
   GeoIngestFramework,
   GeoIngestPackageManager,
   GeoJourneyPathKind,
+  GeoPromptIntent,
+  GeoPromptIntentRule,
   GeoPromptResult,
   GeoRangePreset,
+  GeoSearchGapAction,
   GeoTab,
   GeoTimeseriesPoint,
   GeoTrafficFunnelStage,
@@ -95,6 +98,120 @@ export const GEO_GAPS_WRITE_LABELS = {
   writing: "Writing",
   open: "Open post",
 } as const;
+export const GEO_EXISTING_PAGE_URL_MAX_LENGTH = 2048;
+export const GEO_SEARCH_GAP_MIN_IMPRESSIONS = 25;
+export const GEO_COLLISION_STRONG_SCORE = 0.55;
+export const GEO_COLLISION_PARTIAL_SCORE = 0.35;
+export const GEO_COLLISION_MERGE_TARGET_LIMIT = 3;
+export const GEO_COLLISION_MIN_TOKEN_LENGTH = 3;
+export const GEO_COLLISION_ORDERED_TITLE_BONUS = 0.15;
+export const GEO_COLLISION_SITEMAP_PAGE_LIMIT = 400;
+export const GEO_COLLISION_POST_LIMIT = 300;
+export const GEO_COLLISION_POST_CONTENT_TYPE = "blog_post";
+export const GEO_COLLISION_STOPWORDS = new Set([
+  "a",
+  "about",
+  "after",
+  "all",
+  "also",
+  "an",
+  "and",
+  "any",
+  "are",
+  "as",
+  "at",
+  "be",
+  "been",
+  "best",
+  "between",
+  "but",
+  "by",
+  "can",
+  "could",
+  "do",
+  "does",
+  "for",
+  "from",
+  "get",
+  "has",
+  "have",
+  "how",
+  "if",
+  "in",
+  "into",
+  "is",
+  "it",
+  "its",
+  "make",
+  "more",
+  "most",
+  "my",
+  "need",
+  "not",
+  "of",
+  "on",
+  "one",
+  "or",
+  "our",
+  "should",
+  "so",
+  "some",
+  "than",
+  "that",
+  "the",
+  "their",
+  "them",
+  "there",
+  "these",
+  "they",
+  "this",
+  "those",
+  "to",
+  "top",
+  "use",
+  "used",
+  "using",
+  "was",
+  "we",
+  "what",
+  "when",
+  "where",
+  "which",
+  "who",
+  "why",
+  "will",
+  "with",
+  "would",
+  "you",
+  "your",
+]);
+export const GEO_SEARCH_GAP_ACTION_LABELS: Record<GeoSearchGapAction, string> =
+  {
+    create: "Create",
+    update: "Update",
+    merge: "Merge",
+    ignore: "Ignore",
+  };
+export const GEO_SEARCH_GAP_ACTION_ORDER: Record<GeoSearchGapAction, number> = {
+  create: 0,
+  update: 1,
+  merge: 2,
+  ignore: 3,
+};
+export const GEO_SEARCH_GAP_ACTION_CLASS: Record<GeoSearchGapAction, string> = {
+  create: "border-geo-up/30 bg-geo-up/10 text-geo-up",
+  update: "border-geo-mid/30 bg-geo-mid/10 text-geo-mid",
+  merge: "border-geo-mid/30 bg-geo-mid/10 text-geo-mid",
+  ignore: "border-border bg-muted/70 text-muted-foreground",
+};
+export const GEO_SEARCH_GAP_WRITE_LABELS = {
+  create: "Write from gap",
+  update: "Update page",
+  merge: "Merge into page",
+  ignore: "Write",
+  dismiss: "Dismiss",
+} as const;
+export const GEO_SEARCH_GAP_DISMISSED_TOAST = "Search gap dismissed";
 export const GEO_GAPS_EMPTY = {
   scanning: {
     title: "Scanning engines",
@@ -332,9 +449,61 @@ export const GEO_SEQUENCE_PAIR_TIMEOUT_MS = 7 * 60 * 1000;
 export const GEO_SCAN_DUE_LIMIT_PER_SWEEP = 25;
 export const GEO_SCAN_POLL_INTERVAL_MS = 3000;
 export const GEO_START_SCAN_MUTATION_KEY = "geo-start-scan";
+export const GEO_RESCAN_LABEL = "Rescan";
+export const GEO_RESCAN_TOOLTIP =
+  "Re-run this prompt across engines to measure lift";
+export const GEO_RESCAN_SOURCE_KINDS = ["gap", "prompt"] as const;
+export const GEO_GAPS_WON_LABEL = "Won";
+export const GEO_GAPS_WON_DETAIL =
+  "Engines now mention you on most answers. Kept here so you can see the lift from the published article.";
+export const GEO_GAPS_LIFT_BASELINE_LABEL = "Baseline";
+export const GEO_GAPS_LIFT_NOW_LABEL = "now";
+export const GEO_GAPS_LIFT_TONE_CLASS = {
+  up: "text-geo-up",
+  down: "text-geo-down",
+  flat: "text-muted-foreground",
+} as const;
 export const GEO_EXCERPT_MAX_LENGTH = 300;
 export const GEO_PROMPT_MIN_LENGTH = 8;
 export const GEO_PROMPT_MAX_LENGTH = 300;
+export const GEO_PROMPT_MAX_TAGS = 20;
+export const GEO_PROMPT_TAG_MAX_LENGTH = 40;
+export const GEO_PROMPT_TAG_SEPARATOR_REGEX = /[\s,]+/;
+export const GEO_PROMPT_INTENTS = [
+  "comparison",
+  "list",
+  "how_to",
+  "question",
+  "other",
+] as const satisfies readonly GeoPromptIntent[];
+export const GEO_PROMPT_INTENT_RULES: readonly GeoPromptIntentRule[] = [
+  {
+    intent: "comparison",
+    pattern:
+      /\b(vs\.?|versus|compare|comparison|compared|alternatives?|instead of|better than)\b/i,
+  },
+  {
+    intent: "how_to",
+    pattern:
+      /\b(how (?:do|can|to|should)|steps?|guide|tutorial|set ?up|get started|implement|configure|install)\b/i,
+  },
+  {
+    intent: "list",
+    pattern:
+      /\b(best|top|list|options|tools|examples|recommend(?:ed|ations?)?|which|what (?:tools?|platforms?|software|services?|apps?|products?|companies))\b/i,
+  },
+  {
+    intent: "question",
+    pattern: /^(what|why|when|where|who|is|are|does|do|can|should|will)\b|\?/i,
+  },
+];
+export const GEO_PROMPT_INTENT_LABELS: Record<GeoPromptIntent, string> = {
+  comparison: "Comparison",
+  list: "List",
+  how_to: "How to",
+  question: "Question",
+  other: "Other",
+};
 export const GEO_GAP_TITLE_MAX_LENGTH = 160;
 export const GEO_DISCOVERY_MODEL = "anthropic/claude-sonnet-4.6";
 export const GEO_DISCOVERY_MAX_TOKENS = 4000;
@@ -669,7 +838,14 @@ export const GEO_TRAFFIC_FUNNEL_STAGES: readonly GeoTrafficFunnelStage[] = [
     label: "AI referrals",
     description: "People arriving from AI products",
   },
+  {
+    key: "conversions",
+    label: "Conversions",
+    description: "AI referrals that reached a conversion path",
+  },
 ];
+export const GEO_TRAFFIC_CONVERSIONS_NOT_CONFIGURED_LABEL = "Not configured";
+export const GEO_TRAFFIC_CONVERSIONS_SETUP_LABEL = "Set conversion paths";
 export const GEO_TRAFFIC_CITATIONS_ONLY_LABEL = "Citations only";
 
 export const GEO_TRAFFIC_LOG_VISITOR_OPTIONS: readonly GeoTrafficLogVisitorOption[] =
@@ -802,7 +978,9 @@ export const GEO_SHARE_OF_VOICE_TRACKING_HINT =
   "Discovered brands come from scan answers. Tracked brands are called out in scans and available in the writer.";
 export const GEO_PROMPT_AUTO_MANAGED_LABEL = "Managed automatically";
 export const GEO_PROMPT_AUTO_MANAGED_HINT =
-  "Generated from your site. Only custom prompts can be paused or removed.";
+  "Generated from your site. Pause it to skip it in scans; it cannot be removed.";
+export const GEO_PROMPT_TAGS_CUSTOM_ONLY_TOAST =
+  "Tags apply to custom prompts. Auto-generated prompts were skipped.";
 export const GEO_SCAN_PREFLIGHT_TITLE = "Run a scan now?";
 export const GEO_SCAN_PREFLIGHT_BODY =
   "Every enabled prompt is asked on each engine and language below.";
@@ -863,13 +1041,20 @@ export const GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES: readonly GeoCompetitorShareT
 export const GEO_EMPTY_PROMPT_RESULTS: readonly GeoPromptResult[] = [];
 export const GEO_EMPTY_TRAFFIC_RESPONSE: AiTrafficResponse = {
   configured: false,
-  totals: { crawler: 0, cited: 0, aiReferral: 0 },
+  totals: { crawler: 0, cited: 0, aiReferral: 0, conversions: null },
+  previousConversions: null,
   sources: [],
   points: [],
 };
 
 export const GEO_MAX_ALIASES = 10;
 export const GEO_MAX_COMPETITORS = 25;
+export const GEO_MAX_CONVERSION_PATHS = 20;
+export const GEO_CONVERSION_PATH_MAX_LENGTH = 200;
+export const GEO_CONVERSION_PATHS_LABEL = "Conversion paths";
+export const GEO_CONVERSION_PATHS_DESCRIPTION =
+  "Paths that count as a conversion when an AI referral reaches them, for example /signup or /pricing. Prefix match; /pricing also counts /pricing/teams.";
+export const GEO_CONVERSION_PATHS_PLACEHOLDER = "/signup";
 export const GEO_COMPETITOR_MAX_SYNONYMS = 8;
 export const GEO_SHORT_FIELD_MAX_LENGTH = 128;
 export const GEO_DOMAIN_REGEX = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;

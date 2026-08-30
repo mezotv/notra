@@ -15,6 +15,7 @@ export interface GeoWorkflowServiceShape {
     projectId?: string;
     claimedAt?: string;
     scanId?: string;
+    promptIds?: string[];
   }) => Effect.Effect<{ runId: string }, unknown>;
   readonly startGeoWriterRun: (
     payload: GeoWriterPayload

@@ -42,6 +42,7 @@ export function buildGeoPlannerSystem(): string {
     - The acceptance checklist mirrors the GEO writing rules below, adapted to this article.
     - Never invent competitor facts, statistics, or sources. If the topic text provides facts, use them.
     - When <target-evidence> is present, treat it as the ground truth about how assistants answer the target prompt today. Fill recommendedAngle (why this article will earn the mention), competitorsToCounter (each brand named in the evidence plus the claim that earned it the mention), sourcesToReference (only domains listed in the evidence), and missingCoverage (facts or topics the winning answers included that the brand must now cover). Make section claims answer those gaps directly. Leave these fields empty only when no evidence is provided.
+    - When <existing-page> is present, the brief must refresh and expand that page instead of proposing a new one. Keep its slug intent, list the sections and claims that page is missing, and never plan a competing page on the same topic.
 
     GEO writing rules the article must follow:
     ${GEO_WRITING_RULES}
@@ -125,6 +126,19 @@ function formatEvidence(
   `;
 }
 
+function formatExistingPage(url: string | null | undefined): string {
+  const trimmed = url?.trim();
+  if (!trimmed) {
+    return "";
+  }
+  return dedent`
+    <existing-page>
+    URL: ${trimmed}
+    This page already ranks for the target queries. Plan the article as a refresh and expansion of this exact URL: keep its slug intent, keep what already works, and list the sections, claims, and FAQ answers that must be added. Do not plan a new competing page.
+    </existing-page>
+  `;
+}
+
 export function buildGeoPlannerPrompt(input: GeoPlannerPromptInput): string {
   const topic = input.topic.slice(0, MAX_PLANNER_TOPIC_CHARS);
   const aliases =
@@ -159,6 +173,7 @@ export function buildGeoPlannerPrompt(input: GeoPlannerPromptInput): string {
   );
 
   const evidence = formatEvidence(input.evidence);
+  const existingPage = formatExistingPage(input.existingPageUrl);
 
   return dedent`
     <brand>
@@ -182,6 +197,8 @@ export function buildGeoPlannerPrompt(input: GeoPlannerPromptInput): string {
     </sitemap-pages>
 
     ${evidence}
+
+    ${existingPage}
 
     <topic>
     ${topic}

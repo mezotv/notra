@@ -41,10 +41,12 @@ export function toGeoSettings(
     companyName: row.companyName,
     aliases: row.aliases,
     competitors: row.competitors,
+    conversionPaths: row.conversionPaths,
     languages: trackedGeoLanguages(row.languages ?? []),
     engines: resolveTrackedEngines(catalog, row.engines),
     enforceZdr: row.enforceZdr,
     nonZdrApprovedEngines: row.nonZdrApprovedEngines,
+    pausedAutoPromptIds: row.pausedAutoPromptIds,
     enabled: row.enabled,
     scanIntervalHours: row.scanIntervalHours,
     scanStartedAt,
@@ -82,6 +84,7 @@ export function toTrackedPrompt(row: GeoPromptRow): GeoTrackedPrompt {
     prompt: row.prompt,
     enabled: row.enabled,
     source: "custom",
+    tags: row.tags,
     createdAt: row.createdAt.toISOString(),
   };
 }

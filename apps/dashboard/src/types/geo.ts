@@ -23,9 +23,11 @@ import type {
   GeoProject,
   GeoAnswerSource,
   GeoPromptHistoryCheck,
+  GeoPromptIntent,
   GeoPromptReceiptView,
   GeoPromptResult,
   GeoPromptSequence,
+  GeoPromptSource,
   GeoRangePreset,
   GeoScopeInput,
   GeoSequenceTurnResult,
@@ -135,11 +137,82 @@ export interface GeoPromptTableRow {
   prompt: string;
   enabled: boolean;
   source: GeoTrackedPrompt["source"];
+  tags: string[];
+  intent: GeoPromptIntent;
   mentioned: number;
   total: number;
   bestPosition: number | null;
   presence: GeoPresenceStatus | null;
   results: GeoPromptResult[];
+}
+
+export type GeoPromptIntentFilter = GeoPromptIntent | "all";
+
+export type GeoPromptSourceFilter = GeoPromptSource | "all";
+
+export interface GeoPromptTableFilters {
+  q: string;
+  intent: GeoPromptIntentFilter;
+  tag: string;
+  source: GeoPromptSourceFilter;
+}
+
+export interface GeoPromptFilterOption<T extends string> {
+  value: T;
+  label: string;
+}
+
+export interface GeoPromptSavedView {
+  id: string;
+  name: string;
+  query: GeoPromptTableFilters;
+}
+
+export interface UseGeoSavedViewsResult {
+  views: GeoPromptSavedView[];
+  saveView: (name: string, query: GeoPromptTableFilters) => void;
+  removeView: (viewId: string) => void;
+}
+
+export interface PromptTagsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  initialTags: string[];
+  suggestions: string[];
+  onConfirm: (tags: string[]) => void;
+}
+
+export interface PromptTagsFormProps {
+  formId: string;
+  initialTags: string[];
+  suggestions: string[];
+  onSubmit: (tags: string[]) => void;
+}
+
+export interface PromptTagChipsProps {
+  tags: string[];
+}
+
+export interface PromptSavedViewsMenuProps {
+  views: GeoPromptSavedView[];
+  filters: GeoPromptTableFilters;
+  onApply: (view: GeoPromptSavedView) => void;
+  onSave: (name: string) => void;
+  onRemove: (viewId: string) => void;
+}
+
+export interface PromptSaveViewDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (name: string) => void;
+}
+
+export interface PromptTagsDialogTarget {
+  mode: "edit" | "bulk";
+  rows: GeoPromptTableRow[];
 }
 
 export interface ConversationsCardProps {
@@ -206,6 +279,7 @@ export interface GeoScanPayload {
    * field existed.
    */
   scanId?: string;
+  promptIds?: string[];
 }
 
 export interface GeoGenerateFromWebsiteInput {
@@ -376,6 +450,7 @@ export interface GeoScanScheduleProps {
 
 export interface AiTrafficCardProps {
   traffic: AiTrafficResponse | undefined;
+  settingsHref: string;
 }
 
 export interface GeoTrafficPageSource {
@@ -1093,7 +1168,7 @@ export interface TrafficTrendMetric {
   key: GeoTrafficFunnelStageKey;
   label: string;
   description: string;
-  value: number;
+  value: number | null;
   delta: number | null;
 }
 
@@ -1103,6 +1178,12 @@ export interface TrafficHeroProps {
   rows: readonly GeoTrafficTrendRow[];
   groups: readonly GeoTrafficSourceGroup[];
   points: readonly GeoTrafficPoint[];
+  settingsHref: string;
+}
+
+export interface TrafficHeroMetricProps {
+  metric: TrafficTrendMetric;
+  settingsHref: string;
 }
 
 export interface TrafficTrendProvider {

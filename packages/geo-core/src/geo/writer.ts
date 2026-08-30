@@ -752,6 +752,7 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
           gapPrompts: gapData.gaps,
           sitemapPages: sitemap.pages,
           evidence,
+          existingPageUrl: input.existingPageUrl ?? null,
         },
       }),
     catch: (cause) => cause,

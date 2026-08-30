@@ -105,6 +105,7 @@ geoSettingsRoutes.openapi(patchSettingsRoute, async (c) => {
       projectId,
       companyName: body.companyName,
       aliases: body.aliases,
+      conversionPaths: body.conversionPaths,
       // `upsertGeoSettings` always writes an empty competitor array and then
       // reconciles from `geo_competitors`, so this field is inert. Competitors
       // are owned by the competitors endpoints.
@@ -113,6 +114,7 @@ geoSettingsRoutes.openapi(patchSettingsRoute, async (c) => {
       engines: body.engines,
       enforceZdr: body.enforceZdr,
       nonZdrApprovedEngines: body.nonZdrApprovedEngines,
+      pausedAutoPromptIds: body.pausedAutoPromptIds,
       enabled: body.enabled,
       scanIntervalHours: body.scanIntervalHours,
     })

@@ -111,19 +111,32 @@ export const geoPromptsCollection = createCollectionFactory<GeoTrackedPrompt>({
       ...scope,
       id: item.id,
       prompt: item.prompt,
+      tags: item.tags,
     }),
   update: (scope, key, modified) =>
-    dashboardOrpc.geo.promptsToggle.call({
-      ...scope,
-      promptId: key,
-      enabled: modified.enabled,
-    }),
+    modified.source === "auto"
+      ? dashboardOrpc.geo.promptsToggleAuto.call({
+          ...scope,
+          promptId: key,
+          enabled: modified.enabled,
+        })
+      : dashboardOrpc.geo.promptsUpdate.call({
+          ...scope,
+          promptId: key,
+          enabled: modified.enabled,
+          tags: modified.tags,
+        }),
   remove: (scope, original) =>
     dashboardOrpc.geo.promptsDelete.call({ ...scope, promptId: original.id }),
   invalidateLegacy: (queryClient, scope) =>
-    queryClient.invalidateQueries({
-      queryKey: dashboardOrpc.geo.promptsList.queryKey({ input: scope }),
-    }),
+    Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.promptsList.queryKey({ input: scope }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.settings.queryKey({ input: scope }),
+      }),
+    ]),
 });
 
 export const geoCompetitorsCollection = createCollectionFactory<GeoCompetitor>({

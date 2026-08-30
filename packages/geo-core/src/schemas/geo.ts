@@ -10,6 +10,7 @@ import {
   number,
   object,
   string,
+  url,
 } from "zod";
 
 import {
@@ -21,14 +22,20 @@ import {
   GEO_DISCOVERY_MAX_PROMPTS,
   GEO_DISCOVERY_MIN_COMPETITORS,
   GEO_DISCOVERY_MIN_PROMPTS,
+  GEO_EXISTING_PAGE_URL_MAX_LENGTH,
   GEO_GAP_TITLE_MAX_LENGTH,
+  GEO_CONVERSION_PATH_MAX_LENGTH,
   GEO_MAX_ALIASES,
   GEO_MAX_COMPETITORS,
+  GEO_MAX_CONVERSION_PATHS,
   GEO_MAX_ENGINES,
   GEO_MAX_LANGUAGES,
+  GEO_MAX_PROMPTS,
   GEO_ONBOARDING_MAX_PROMPTS,
   GEO_PROMPT_MAX_LENGTH,
+  GEO_PROMPT_MAX_TAGS,
   GEO_PROMPT_MIN_LENGTH,
+  GEO_PROMPT_TAG_MAX_LENGTH,
   GEO_SCAN_INTERVAL_HOURS,
   GEO_SHORT_FIELD_MAX_LENGTH,
   GEO_SEQUENCE_MAX_TURNS,
@@ -36,6 +43,7 @@ import {
   GEO_WRITER_TOPIC_MIN_LENGTH,
 } from "../constants/geo";
 import { GEO_CSV_IMPORT_MAX_ROWS } from "../constants/geo-import";
+import { normalizePromptTags } from "../utils/geo-prompt-tags";
 import {
   geoCompetitorDomainSchema,
   geoCompetitorImportRowSchema,
@@ -87,6 +95,7 @@ export const geoScanWorkflowPayloadSchema = geoOrganizationInputSchema
   .extend({
     claimedAt: iso.datetime().optional(),
     scanId: string().min(1).optional(),
+    promptIds: array(string().min(1)).min(1).optional(),
   })
   .refine(
     (value) =>
@@ -117,10 +126,21 @@ export const geoSettingsLanguageAddInputSchema =
       }),
   });
 
+export const geoConversionPathSchema = string()
+  .trim()
+  .min(1)
+  .max(GEO_CONVERSION_PATH_MAX_LENGTH)
+  .refine((value) => value.startsWith("/"), {
+    message: "Conversion paths must start with /",
+  });
+
 export const geoSettingsUpsertInputSchema = geoOrganizationInputSchema.extend({
   companyName: string().min(1),
   aliases: array(string().min(1)).max(GEO_MAX_ALIASES),
   competitors: array(string().min(1)).max(GEO_MAX_COMPETITORS),
+  conversionPaths: array(geoConversionPathSchema)
+    .max(GEO_MAX_CONVERSION_PATHS)
+    .optional(),
   languages: array(string().min(1))
     .min(1)
     .max(GEO_MAX_LANGUAGES)
@@ -138,6 +158,9 @@ export const geoSettingsUpsertInputSchema = geoOrganizationInputSchema.extend({
   nonZdrApprovedEngines: array(
     string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH)
   ).max(GEO_MAX_ENGINES),
+  pausedAutoPromptIds: array(string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH))
+    .max(GEO_MAX_PROMPTS)
+    .optional(),
   enabled: boolean(),
   scanIntervalHours: number().refine(
     (value) => GEO_SCAN_INTERVAL_HOURS.some((interval) => interval === value),
@@ -229,6 +252,10 @@ export const geoPromptHistoryInputSchema = geoOrganizationInputSchema.extend({
 >>>>>>> 48fba180 (feat(geo): turn dashboard data into a decision layer)
 });
 
+export const geoPromptRescanInputSchema = geoOrganizationInputSchema.extend({
+  promptId: string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
+});
+
 export const geoTimeseriesInputSchema = geoOrganizationInputSchema.extend({
   ...geoWindowFields,
 });
@@ -237,10 +264,34 @@ export const geoCompetitorShareInputSchema = geoTimeseriesInputSchema.extend({
   summaryOnly: boolean().optional(),
 });
 
+export const geoPromptTagsSchema = array(
+  string().trim().min(1).max(GEO_PROMPT_TAG_MAX_LENGTH)
+)
+  .max(GEO_PROMPT_MAX_TAGS)
+  .transform((values) => normalizePromptTags(values));
+
 export const geoPromptCreateInputSchema = geoOrganizationInputSchema.extend({
   id: string().uuid().optional(),
   prompt: string().min(MIN_PROMPT_LENGTH).max(MAX_PROMPT_LENGTH),
+  tags: geoPromptTagsSchema.optional(),
 });
+
+export const geoPromptUpdateInputSchema = geoOrganizationInputSchema
+  .extend({
+    promptId: string().min(1),
+    enabled: boolean().optional(),
+    tags: geoPromptTagsSchema.optional(),
+  })
+  .refine((value) => value.enabled !== undefined || value.tags !== undefined, {
+    message: "Provide enabled or tags",
+  });
+
+export const geoAutoPromptToggleInputSchema = geoOrganizationInputSchema.extend(
+  {
+    promptId: string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
+    enabled: boolean(),
+  }
+);
 
 export const geoPromptDeleteInputSchema = geoOrganizationInputSchema.extend({
   promptId: string().min(1),
@@ -428,6 +479,7 @@ export const geoWriterPlanInputSchema = geoOrganizationInputSchema.extend({
     "search_console",
   ]).optional(),
   sourceId: string().min(1).optional(),
+  existingPageUrl: url().max(GEO_EXISTING_PAGE_URL_MAX_LENGTH).optional(),
 });
 
 export const geoWriterBriefIdInputSchema = geoOrganizationInputSchema.extend({

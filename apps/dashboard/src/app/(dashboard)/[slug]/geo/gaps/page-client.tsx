@@ -1,7 +1,9 @@
 "use client";
 
+import { GEO_SEARCH_GAP_DISMISSED_TOAST } from "@notra/geo-core/constants/geo";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+import { toast } from "sonner";
 
 import { GeoGapsTable } from "@/components/geo/gaps-table";
 import { GeoWriterNeedsSetup } from "@/components/geo/writer/page-gate";
@@ -12,8 +14,10 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { GEO_WRITE_DIALOG_ENTRIES } from "@/constants/geo-analytics";
 import {
   useGeoCompetitors,
+  useGeoRescanPrompt,
   useGeoSettings,
   useGeoStartScan,
+  useGeoSuggestionDismiss,
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
@@ -54,7 +58,9 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
   const gapsQuery = useGeoWriterGaps(organizationId);
   const competitorsQuery = useGeoCompetitors(organizationId);
   const startScan = useGeoStartScan(organizationId);
+  const rescanPrompt = useGeoRescanPrompt(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
+  const dismissSuggestion = useGeoSuggestionDismiss(organizationId);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogInitial, setDialogInitial] =
@@ -104,6 +110,7 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
             onOpenPost={(postId) => {
               router.push(geoContentPath(organizationSlug, postId));
             }}
+            onRescanPrompt={(row) => rescanPrompt.mutate(row.id)}
             onRunScan={() => startScan.mutate("gaps_empty")}
             onWritePrompt={(row) => {
               openDialog(
@@ -119,11 +126,27 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
                 })
               );
             }}
-            onWriteSearch={(row) => {
+            dismissingSearchId={
+              dismissSuggestion.isPending
+                ? (dismissSuggestion.variables?.suggestionId ?? null)
+                : null
+            }
+            onDismissSearch={(row) => {
+              dismissSuggestion.mutate(
+                { suggestionId: row.id },
+                {
+                  onSuccess: () => {
+                    toast.success(GEO_SEARCH_GAP_DISMISSED_TOAST);
+                  },
+                }
+              );
+            }}
+            onWriteSearch={(row, existingPageUrl) => {
               openDialog({
                 sourceKind: "search_console",
                 sourceId: row.id,
                 topic: row.prompt,
+                existingPageUrl,
               });
             }}
             organizationSlug={organizationSlug}

@@ -74,8 +74,11 @@ import {
   loadGeoTrafficJourneys,
   loadGeoTrafficLog,
   loadGeoTrafficPages,
+  startGeoPromptRescan,
   startGeoScan,
+  toggleGeoAutoPrompt,
   toggleGeoPrompt,
+  updateGeoPrompt,
   upsertGeoCompetitor,
   upsertGeoSettings,
 } from "@notra/geo-core/geo/programs";
@@ -125,9 +128,12 @@ import {
   geoProjectDeleteInputSchema,
   geoPromptCreateInputSchema,
   geoPromptHistoryInputSchema,
+  geoPromptRescanInputSchema,
   geoPromptsImportInputSchema,
   geoPromptDeleteInputSchema,
   geoPromptToggleInputSchema,
+  geoPromptUpdateInputSchema,
+  geoAutoPromptToggleInputSchema,
   geoSequenceCreateInputSchema,
   geoSequenceDeleteInputSchema,
   geoSequenceResultsInputSchema,
@@ -694,7 +700,8 @@ export const geoRouter = {
     .handler(geoHandler((input) => listGeoPrompts(input))),
   promptsCreate: authorizedProcedure.input(geoPromptCreateInputSchema).handler(
     geoHandler(
-      (input) => createGeoPrompt(input, input.prompt, input.id),
+      (input) =>
+        createGeoPrompt(input, input.prompt, input.id, input.tags ?? []),
       ({ context, input, output }) => {
         trackGeoRouterEvent({
           context,
@@ -738,6 +745,21 @@ export const geoRouter = {
       }
     )
   ),
+  promptsUpdate: authorizedProcedure.input(geoPromptUpdateInputSchema).handler(
+    geoHandler((input) =>
+      updateGeoPrompt(input, input.promptId, {
+        enabled: input.enabled,
+        tags: input.tags,
+      })
+    )
+  ),
+  promptsToggleAuto: authorizedProcedure
+    .input(geoAutoPromptToggleInputSchema)
+    .handler(
+      geoHandler((input) =>
+        toggleGeoAutoPrompt(input, input.promptId, input.enabled)
+      )
+    ),
   promptsToggle: authorizedProcedure.input(geoPromptToggleInputSchema).handler(
     geoHandler(
       (input) => toggleGeoPrompt(input, input.promptId, input.enabled),
@@ -995,6 +1017,9 @@ export const geoRouter = {
       }
     )
   ),
+  rescanPrompt: authorizedProcedure
+    .input(geoPromptRescanInputSchema)
+    .handler(geoHandler((input) => startGeoPromptRescan(input))),
   writerGaps: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => loadGeoContentGaps(input))),

@@ -71,6 +71,7 @@ import type {
   WriteDialogSectionId,
   WriteDialogSourceKind,
 } from "@/types/components/geo-writer";
+import { existingPageLabel } from "@/utils/geo-gaps";
 import { withGeoProject } from "@/utils/geo-paths";
 import { geoContentPath } from "@/utils/geo-write-entry";
 import {
@@ -174,6 +175,10 @@ function WriteDialogForm({
   );
   const recommendation = recommendedContentSubtype(topic);
   const baselineLabel = writerBaselineLabel(initial?.baseline);
+  const existingPageUrl = initial?.existingPageUrl;
+  const promptBadgeLabel = existingPageUrl
+    ? `Updating ${existingPageLabel(existingPageUrl)}`
+    : baselineLabel;
   const mentionedCompetitors = initial?.mentionedCompetitors ?? [];
   const [brandVoiceId, setBrandVoiceId] = useState<string | null>(
     initial?.brandVoiceId ?? null
@@ -310,6 +315,7 @@ function WriteDialogForm({
       sitemapId: effectiveSitemapId ?? undefined,
       sourceKind,
       sourceId,
+      existingPageUrl,
     });
     onOpenChange(false);
     if (result.postId) {
@@ -442,9 +448,9 @@ function WriteDialogForm({
                     "Pick a tracked prompt or write your own. The article answers this question.",
                     `${fieldId}-topic`
                   )}
-                  {baselineLabel ? (
+                  {promptBadgeLabel ? (
                     <Badge className="shrink-0 font-normal" variant="outline">
-                      {baselineLabel}
+                      {promptBadgeLabel}
                     </Badge>
                   ) : null}
                 </div>

@@ -70,6 +70,7 @@ export interface GeoPlannerPromptInput {
   sitemapPages: GeoPlannerSitemapPage[];
   contentSubtype?: GeoContentSubtype;
   evidence?: GeoPlannerEvidence | null;
+  existingPageUrl?: string | null;
 }
 
 export interface GenerateGeoContentBriefOptions {

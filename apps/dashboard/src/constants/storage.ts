@@ -19,6 +19,8 @@ export const localStorageKeys = {
   gscCardDismissed: (organizationId: string) =>
     `notra:gsc-card-dismissed:${organizationId}`,
   chatSuggestionsDismissed: "notra:chat-suggestions-dismissed:v1",
+  geoPromptViews: (organizationId: string, projectId: string | undefined) =>
+    `notra:geo-prompt-views:v1:${organizationId}:${projectId ?? "all"}`,
 } as const;
 
 export const sessionStorageKeys = {

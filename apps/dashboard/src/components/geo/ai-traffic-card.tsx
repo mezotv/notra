@@ -35,11 +35,12 @@ import {
   trafficGroupKey,
 } from "@/utils/ai-traffic-groups";
 
-export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
-  const { sources, totals, points } = traffic ?? GEO_EMPTY_TRAFFIC_RESPONSE;
+export function AiTrafficCard({ traffic, settingsHref }: AiTrafficCardProps) {
+  const { sources, totals, points, previousConversions } =
+    traffic ?? GEO_EMPTY_TRAFFIC_RESPONSE;
   const previousTotals = useMemo(
-    () => toGeoTrafficPreviousTotals(sources),
-    [sources]
+    () => toGeoTrafficPreviousTotals(sources, previousConversions),
+    [sources, previousConversions]
   );
   const trendRows = useMemo(() => buildTrafficTrendRows(points), [points]);
   const groups = groupTrafficSources(sources);
@@ -183,6 +184,7 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         points={points}
         previousTotals={previousTotals}
         rows={trendRows}
+        settingsHref={settingsHref}
         totals={totals}
       />
       <InstrumentSection eyebrow="Sources">

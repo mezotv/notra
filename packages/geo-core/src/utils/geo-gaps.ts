@@ -1,7 +1,7 @@
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 
 import { GEO_GAPS_COMPETITOR_SIGNAL_CAP } from "../constants/geo";
-import type { GeoGapOpportunityInput } from "../types/geo";
+import type { GeoGapBriefBaseline, GeoGapOpportunityInput } from "../types/geo";
 
 export const REUSABLE_BRIEF_STATUSES = [
   "draft",
@@ -72,4 +72,21 @@ export function searchGapImpressions(
     return null;
   }
   return keywords.reduce((sum, keyword) => sum + keyword.impressions, 0);
+}
+
+export function toGapBriefBaseline(value: unknown): GeoGapBriefBaseline | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+  if (!("mentionedEngines" in value && "totalEngines" in value)) {
+    return null;
+  }
+  const { mentionedEngines, totalEngines } = value;
+  if (
+    typeof mentionedEngines !== "number" ||
+    typeof totalEngines !== "number"
+  ) {
+    return null;
+  }
+  return { mentionedEngines, totalEngines };
 }

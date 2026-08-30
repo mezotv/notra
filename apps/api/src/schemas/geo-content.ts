@@ -5,7 +5,10 @@ import {
   GEO_CONTENT_BRIEF_STATUSES,
   GEO_WRITER_SOURCE_KINDS,
 } from "@notra/db/constants/geo-writer";
-import { GEO_MAX_COMPETITORS } from "@notra/geo-core/constants/geo";
+import {
+  GEO_EXISTING_PAGE_URL_MAX_LENGTH,
+  GEO_MAX_COMPETITORS,
+} from "@notra/geo-core/constants/geo";
 
 import { organizationResponseSchema } from "./content";
 import { projectParamsSchema } from "./geo-params";
@@ -15,11 +18,19 @@ const GEO_BRIEF_TOPIC_MIN_LENGTH = 3;
 const GEO_BRIEF_TOPIC_MAX_LENGTH = 200;
 const GEO_BRIEF_MAX_BRAND_VOICES = 8;
 
+const gapBriefBaselineSchema = z.object({
+  mentionedEngines: z.number(),
+  totalEngines: z.number(),
+});
+
 const gapBriefRefSchema = z.object({
   briefId: z.string(),
   status: z.enum(GEO_CONTENT_BRIEF_STATUSES),
   postId: z.string().nullable(),
   workingTitle: z.string().nullable(),
+  publishedAt: z.string().nullable(),
+  baseline: gapBriefBaselineSchema.nullable(),
+  rescanned: z.boolean(),
 });
 
 const promptGapSchema = z.object({
@@ -33,7 +44,25 @@ const promptGapSchema = z.object({
   ownMentionRate: z.number(),
   engineCoverage: z.number(),
   opportunity: z.number(),
+  won: z.boolean(),
   brief: gapBriefRefSchema.nullable(),
+});
+
+const searchGapTargetSchema = z.object({
+  kind: z.enum(["page", "post"]),
+  id: z.string(),
+  url: z.string().nullable(),
+  title: z.string(),
+  score: z.number(),
+});
+
+const searchGapRecommendationSchema = z.object({
+  action: z.enum(["create", "update", "merge", "ignore"]).openapi({
+    description:
+      "What to do with this query cluster: create a new page, update the strongest existing page, merge overlapping pages, or ignore thin demand.",
+  }),
+  reason: z.string(),
+  targets: z.array(searchGapTargetSchema),
 });
 
 const searchGapSchema = z.object({
@@ -52,6 +81,7 @@ const searchGapSchema = z.object({
     })
   ),
   brief: gapBriefRefSchema.nullable(),
+  recommendation: searchGapRecommendationSchema,
 });
 
 export const contentGapsResponseSchema = z
@@ -200,6 +230,14 @@ export const planBriefRequestSchema = z
       description:
         "Gap, prompt or search-console suggestion id. An open brief for the same source is reused instead of planning a new one.",
     }),
+    existingPageUrl: z
+      .url()
+      .max(GEO_EXISTING_PAGE_URL_MAX_LENGTH)
+      .optional()
+      .openapi({
+        description:
+          "Existing page the article should refresh instead of creating a competing page.",
+      }),
   })
   .openapi("PlanGeoContentBriefRequest");
 

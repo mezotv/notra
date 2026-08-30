@@ -25,6 +25,7 @@ import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import { and, asc, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { marked } from "marked";
 import { nanoid } from "nanoid";
+import { after } from "next/server";
 
 import {
   GITHUB_API_MAX_PAGES,
@@ -43,6 +44,7 @@ import {
   getActiveGenerations,
   getCompletedGenerations,
 } from "@/lib/generations/tracking";
+import { requestGeoRescanForPublishedPost } from "@/lib/geo/rescan";
 import { baseProcedure } from "@/lib/orpc/base";
 import { startOnDemandRun } from "@/lib/workflows/start";
 import { contentListQuerySchema } from "@/schemas/api-params";
@@ -671,6 +673,18 @@ export const contentRouter = {
               type: existingPost.contentType,
             },
           });
+        }
+
+        if (
+          updatedPost.status === "published" &&
+          existingPost.status !== "published"
+        ) {
+          after(() =>
+            requestGeoRescanForPublishedPost({
+              organizationId: input.organizationId,
+              postId: updatedPost.id,
+            })
+          );
         }
 
         return {

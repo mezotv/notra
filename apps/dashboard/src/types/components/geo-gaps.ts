@@ -2,6 +2,7 @@ import type {
   GeoCompetitor,
   GeoGapWriteAction,
   GeoPromptGapRow,
+  GeoSearchGapRecommendation,
   GeoSearchGapRow,
   GeoSuggestionKeyword,
   GeoWriterSourceKind,
@@ -14,11 +15,27 @@ export interface GeoGapsWriteCellProps {
   opportunityBucket: number | null;
   onOpenPost: (postId: string) => void;
   onWrite: () => void;
+  onRescan?: () => void;
+  rescanDisabled?: boolean;
 }
 
 export type GeoGapsTab = "prompt" | "search";
 
 export type GeoGapsMeterTone = "empty" | "low" | "mid" | "high";
+
+export type GeoGapLiftTone = "up" | "down" | "flat";
+
+export interface GeoGapLift {
+  before: number;
+  baselineTotal: number;
+  after: number;
+  total: number;
+  delta: number;
+}
+
+export interface GeoGapLiftLineProps {
+  lift: GeoGapLift;
+}
 
 export type GeoGapsEmptyKind =
   | "scanning"
@@ -36,8 +53,23 @@ export interface GeoGapsTableProps {
   organizationSlug: string;
   onRunScan: () => void;
   onWritePrompt: (row: GeoPromptGapRow) => void;
-  onWriteSearch: (row: GeoSearchGapRow) => void;
+  onWriteSearch: (row: GeoSearchGapRow, existingPageUrl?: string) => void;
+  onDismissSearch: (row: GeoSearchGapRow) => void;
+  dismissingSearchId: string | null;
+  onRescanPrompt: (row: GeoPromptGapRow) => void;
   onOpenPost: (postId: string) => void;
+}
+
+export interface GeoGapRecommendationCellProps {
+  recommendation: GeoSearchGapRecommendation;
+}
+
+export interface GeoGapSearchWriteCellProps {
+  row: GeoSearchGapRow;
+  isDismissing: boolean;
+  onOpenPost: (postId: string) => void;
+  onWrite: (existingPageUrl?: string) => void;
+  onDismiss: () => void;
 }
 
 export interface GeoGapsEmptyProps {
@@ -85,6 +117,7 @@ export interface GeoGapBrandMentionsCellProps {
 export interface GeoGapContentCellProps {
   title: string;
   subtitle: string | null;
+  lift?: GeoGapLift | null;
 }
 
 export interface GeoGapWriteCellProps {
@@ -92,6 +125,8 @@ export interface GeoGapWriteCellProps {
   postId: string | null | undefined;
   onOpenPost: (postId: string) => void;
   onWrite: () => void;
+  onRescan?: () => void;
+  rescanDisabled?: boolean;
 }
 
 export interface GeoGapQueriesCellProps {

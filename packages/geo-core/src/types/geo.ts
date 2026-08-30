@@ -62,12 +62,14 @@ export interface GeoSettings {
   companyName: string;
   aliases: string[];
   competitors: string[];
+  conversionPaths: string[];
   languages: string[];
   engines: string[];
   /** ZDR add-on: request zero data retention from every model host. */
   enforceZdr: boolean;
   /** Models without a ZDR host the user approved to run anyway. */
   nonZdrApprovedEngines: string[];
+  pausedAutoPromptIds: string[];
   enabled: boolean;
   scanIntervalHours: number;
   scanStartedAt: string | null;
@@ -89,10 +91,12 @@ export interface GeoSettingsRow {
   companyName: string;
   aliases: string[];
   competitors: string[];
+  conversionPaths: string[];
   languages: string[] | null;
   engines: string[] | null;
   enforceZdr: boolean;
   nonZdrApprovedEngines: string[];
+  pausedAutoPromptIds: string[];
   enabled: boolean;
   scanIntervalHours: number;
   nextScanAt: Date | null;
@@ -179,7 +183,9 @@ export type GeoScanSkipReason =
   | "zdr"
   | "disabled"
   | "claim_lost"
-  | "already_running";
+  | "superseded"
+  | "already_running"
+  | "scoped_prompts_missing";
 
 export interface GeoErrorFields {
   errorName: string;
@@ -263,6 +269,22 @@ export interface GeoPromptHistoryInput extends GeoScopeInput {
   promptId: string;
 }
 
+export interface GeoPromptRescanInput extends GeoScopeInput {
+  promptId: string;
+}
+
+export interface GeoRescanForPostInput {
+  organizationId: string;
+  postId: string;
+}
+
+export type GeoPostRescanStatus = "started" | "deferred" | "skipped";
+
+export interface GeoPostRescanOutcome {
+  status: GeoPostRescanStatus;
+  scanId: string | null;
+}
+
 export interface GeoPromptHistoryCheck {
   id: string;
   scanId: string;
@@ -310,10 +332,12 @@ export interface GeoSettingsUpsertInput {
   companyName: string;
   aliases: string[];
   competitors: string[];
+  conversionPaths?: string[];
   languages: string[];
   engines: string[];
   enforceZdr: boolean;
   nonZdrApprovedEngines: string[];
+  pausedAutoPromptIds?: string[];
   enabled: boolean;
   scanIntervalHours: number;
 }
@@ -348,11 +372,26 @@ export interface GeoSampleDataClearResponse {
   analyticsCleared: boolean;
 }
 
+export type GeoPromptSource = "custom" | "auto";
+
+export type GeoPromptIntent =
+  | "comparison"
+  | "list"
+  | "how_to"
+  | "question"
+  | "other";
+
+export interface GeoPromptIntentRule {
+  intent: Exclude<GeoPromptIntent, "other">;
+  pattern: RegExp;
+}
+
 export interface GeoTrackedPrompt {
   id: string;
   prompt: string;
   enabled: boolean;
-  source: "custom" | "auto";
+  source: GeoPromptSource;
+  tags: string[];
   createdAt: string | null;
 }
 
@@ -361,9 +400,21 @@ export interface GeoPromptRow {
   organizationId: string;
   projectId: string;
   prompt: string;
+  tags: string[];
   enabled: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface GeoPromptUpdateChanges {
+  enabled?: boolean;
+  tags?: string[];
+}
+
+export interface GeoAutoPromptToggleResult {
+  promptId: string;
+  enabled: boolean;
+  pausedAutoPromptIds: string[];
 }
 
 export interface GeoTrackedPromptsResponse {
@@ -500,6 +551,16 @@ export interface GeoScanProjectTotals {
   mentions: number;
   dropped: number;
   usage: AgentTokenUsage;
+}
+
+export interface GeoScanProgramOptions {
+  projectId?: string;
+  claimedAt?: Date;
+  scanId?: string;
+  /** Explicit project subset for a retry pass; overrides `projectId` scoping. */
+  projectIds?: readonly string[];
+  promptIds?: readonly string[];
+}
 }
 
 export interface GeoProjectScanOutcome {
@@ -808,6 +869,18 @@ export interface GeoTrafficTotals {
   crawler: number;
   cited: number;
   aiReferral: number;
+  conversions: number | null;
+}
+
+export interface GeoConversionPageVisit {
+  path: string;
+  visits: number;
+  previousVisits?: number;
+}
+
+export interface GeoConversionTotals {
+  conversions: number;
+  previousConversions: number | null;
 }
 
 export type GeoTrafficFunnelStageKey = keyof GeoTrafficTotals;
@@ -827,6 +900,7 @@ export interface TrafficMetricDeltas {
 export interface AiTrafficResponse {
   configured: boolean;
   totals: GeoTrafficTotals;
+  previousConversions: number | null;
   sources: GeoTrafficSource[];
   points: GeoTrafficPoint[];
 }
@@ -1213,6 +1287,7 @@ export interface GeoWriterPlanInput {
   sitemapId?: string;
   sourceKind?: GeoWriterSourceKind;
   sourceId?: string;
+  existingPageUrl?: string;
 }
 
 export interface GeoPromptEvidenceEngine {
@@ -1255,11 +1330,19 @@ export interface GeoWriterUpdateInput {
 
 export type GeoGapWriteAction = "write" | "review" | "writing" | "open";
 
+export interface GeoGapBriefBaseline {
+  mentionedEngines: number;
+  totalEngines: number;
+}
+
 export interface GeoGapBriefRef {
   briefId: string;
   status: GeoContentBriefStatus;
   postId: string | null;
   workingTitle: string | null;
+  publishedAt: string | null;
+  baseline: GeoGapBriefBaseline | null;
+  rescanned: boolean;
 }
 
 export interface GeoGapOpportunityInput {
@@ -1279,6 +1362,7 @@ export interface GeoPromptGapRow {
   ownMentionRate: number;
   engineCoverage: number;
   opportunity: number;
+  won: boolean;
   brief: GeoGapBriefRef | null;
 }
 
@@ -1291,6 +1375,45 @@ export interface GeoSearchGapRow {
   position: number | null;
   queries: GeoSuggestionKeyword[];
   brief: GeoGapBriefRef | null;
+  recommendation: GeoSearchGapRecommendation;
+}
+
+export type GeoSearchGapAction = "create" | "update" | "merge" | "ignore";
+
+export type GeoContentCollisionKind = "page" | "post";
+
+export interface GeoContentCollisionCandidate {
+  kind: GeoContentCollisionKind;
+  id: string;
+  url: string | null;
+  title: string | null;
+  slug: string | null;
+}
+
+export interface GeoContentCollisionMatch {
+  kind: GeoContentCollisionKind;
+  id: string;
+  url: string | null;
+  title: string;
+  score: number;
+}
+
+export interface GeoContentCollisionGap {
+  prompt: string;
+  title: string | null;
+  queries: readonly string[];
+}
+
+export interface GeoSearchGapRecommendationInput {
+  matches: readonly GeoContentCollisionMatch[];
+  impressions: number | null;
+  clicks: number | null;
+}
+
+export interface GeoSearchGapRecommendation {
+  action: GeoSearchGapAction;
+  reason: string;
+  targets: GeoContentCollisionMatch[];
 }
 
 export interface GeoContentGapsResponse {

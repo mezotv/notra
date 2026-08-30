@@ -43,6 +43,18 @@ export function promptIdFromScanId(scanId: string): string {
     : scanId;
 }
 
+export function scopeGeoPrompts(
+  prompts: readonly GeoPromptDefinition[],
+  promptIds: readonly string[]
+): GeoPromptDefinition[] {
+  const scanIds = new Set<string>();
+  for (const promptId of promptIds) {
+    scanIds.add(promptId);
+    scanIds.add(customPromptScanId(promptId));
+  }
+  return prompts.filter((prompt) => scanIds.has(prompt.id));
+}
+
 /**
  * Mention checks for custom prompts are keyed by `custom-<uuid>`. Fall back to
  * the raw id so auto-generated slugs (`best-tools`) and legacy rows still match.

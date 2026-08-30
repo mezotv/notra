@@ -7,10 +7,13 @@ import type {
 } from "@notra/geo-core/types/geo";
 import { engineFamilyOf } from "@notra/geo-core/utils/geo-engine-family";
 import { summarizePromptResults } from "@notra/geo-core/utils/geo-presence";
+import { geoPromptIntent } from "@notra/geo-core/utils/geo-prompt-intent";
 
+import { GEO_PROMPT_FILTER_ALL } from "@/constants/geo-prompts";
 import type {
   EngineFamilyPromptHit,
   GeoPromptCoverage,
+  GeoPromptTableFilters,
   GeoPromptTableRow,
 } from "@/types/geo";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
@@ -76,10 +79,33 @@ export function promptPresenceSortValue(
   return PRESENCE_SORT_VALUE[status];
 }
 
+function matchesPromptFilters(
+  prompt: GeoTrackedPrompt,
+  intent: GeoPromptTableRow["intent"],
+  filters: GeoPromptTableFilters
+): boolean {
+  if (
+    filters.source !== GEO_PROMPT_FILTER_ALL &&
+    prompt.source !== filters.source
+  ) {
+    return false;
+  }
+  if (filters.intent !== GEO_PROMPT_FILTER_ALL && intent !== filters.intent) {
+    return false;
+  }
+  if (
+    filters.tag !== GEO_PROMPT_FILTER_ALL &&
+    !prompt.tags.includes(filters.tag)
+  ) {
+    return false;
+  }
+  return fuzzyMatches([prompt.prompt, ...prompt.tags], filters.q.trim());
+}
+
 export function buildPromptTableRows(
   prompts: readonly GeoTrackedPrompt[],
   results: readonly GeoPromptResult[],
-  search: string
+  filters: GeoPromptTableFilters
 ): GeoPromptTableRow[] {
   const summaries = new Map(
     summarizePromptResults([...results]).map((summary) => [
@@ -87,11 +113,12 @@ export function buildPromptTableRows(
       summary,
     ])
   );
-  const query = search.trim();
+  const query = filters.q.trim();
   const rows: GeoPromptTableRow[] = [];
 
   for (const prompt of prompts) {
-    if (!fuzzyMatches([prompt.prompt], query)) {
+    const intent = geoPromptIntent(prompt.prompt);
+    if (!matchesPromptFilters(prompt, intent, filters)) {
       continue;
     }
     const summary = summaries.get(trackedPromptScanId(prompt));
@@ -100,6 +127,8 @@ export function buildPromptTableRows(
       prompt: prompt.prompt,
       enabled: prompt.enabled,
       source: prompt.source,
+      tags: prompt.tags,
+      intent,
       mentioned: summary?.mentioned ?? 0,
       total: summary?.total ?? 0,
       bestPosition: summary?.bestPosition ?? null,
@@ -113,7 +142,10 @@ export function buildPromptTableRows(
   }
 
   return rows
-    .map((row) => ({ row, score: bestFuzzyScore([row.prompt], query) }))
+    .map((row) => ({
+      row,
+      score: bestFuzzyScore([row.prompt, ...row.tags], query),
+    }))
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.row);
 }
@@ -199,6 +231,8 @@ export function promptTableRowForId(
     prompt: first.prompt,
     enabled: true,
     source: "auto",
+    tags: [],
+    intent: geoPromptIntent(first.prompt),
     mentioned: mentioned.length,
     total: group.length,
     bestPosition: best?.position ?? null,

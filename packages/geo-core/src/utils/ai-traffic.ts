@@ -46,9 +46,15 @@ export function formatGeoSource(source: string): string {
 }
 
 export function toGeoTrafficTotals(
-  sources: readonly GeoTrafficSource[]
+  sources: readonly GeoTrafficSource[],
+  conversions: number | null = null
 ): GeoTrafficTotals {
-  const totals: GeoTrafficTotals = { crawler: 0, cited: 0, aiReferral: 0 };
+  const totals: GeoTrafficTotals = {
+    crawler: 0,
+    cited: 0,
+    aiReferral: 0,
+    conversions,
+  };
   for (const source of sources) {
     if (source.visitorType === "crawler") {
       totals.crawler += source.visits;
@@ -66,7 +72,8 @@ export function toGeoTrafficTotals(
 // endpoint sent no comparison data at all, so callers can hide their deltas
 // instead of rendering an all-zero baseline as "+100%".
 export function toGeoTrafficPreviousTotals(
-  sources: readonly GeoTrafficSource[]
+  sources: readonly GeoTrafficSource[],
+  previousConversions: number | null = null
 ): GeoTrafficTotals | null {
   const withPrevious = sources.filter(
     (source) => source.previousVisits !== undefined
@@ -78,7 +85,8 @@ export function toGeoTrafficPreviousTotals(
     withPrevious.map((source) => ({
       ...source,
       visits: source.previousVisits ?? 0,
-    }))
+    })),
+    previousConversions
   );
 }
 

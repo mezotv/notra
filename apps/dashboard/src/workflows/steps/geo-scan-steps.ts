@@ -57,7 +57,12 @@ export async function listGeoScanProjectsStep(
 export async function prepareGeoScanProjectStep(
   organizationId: string,
   projectId: string,
-  options: { claimedAt?: string; scanId?: string; retried: boolean }
+  options: {
+    claimedAt?: string;
+    scanId?: string;
+    retried: boolean;
+    promptIds?: string[];
+  }
 ): Promise<GeoScanProjectPlanResult> {
   "use step";
   const startedAt = Date.now();
@@ -66,6 +71,7 @@ export async function prepareGeoScanProjectStep(
       prepareGeoScanProject(organizationId, projectId, {
         claimedAt: parseClaimedAt(options.claimedAt),
         scanId: options.scanId,
+        promptIds: options.promptIds,
       }).pipe(Effect.provide(geoCoreDashboardLayer))
     );
     if (result.status === "skipped") {

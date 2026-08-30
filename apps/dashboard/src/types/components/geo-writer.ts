@@ -82,6 +82,7 @@ export interface WriteDialogInitialState {
   competitorIds?: string[];
   baseline?: WriteDialogBaseline | null;
   mentionedCompetitors?: string[];
+  existingPageUrl?: string;
 }
 
 export interface WriteDialogProps {

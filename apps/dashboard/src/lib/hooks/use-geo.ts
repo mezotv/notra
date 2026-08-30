@@ -631,6 +631,30 @@ export function useGeoStartScan(organizationId: string) {
   });
 }
 
+export function useGeoRescanPrompt(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationKey: geoStartScanMutationKey(organizationId, projectId),
+    mutationFn: (promptId: string) =>
+      dashboardOrpc.geo.rescanPrompt.call({
+        organizationId,
+        projectId,
+        promptId,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.settings.queryKey({
+          input: { organizationId, projectId },
+        }),
+      });
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to start rescan"));
+    },
+  });
+}
+
 export function useIsGeoScanning(organizationId: string) {
   const { projectId } = useGeoProjectScope();
   const { data } = useGeoSettings(organizationId);
@@ -1021,6 +1045,11 @@ function useInvalidateSuggestionQueries(organizationId: string) {
       }),
       queryClient.invalidateQueries({
         queryKey: dashboardOrpc.geo.promptsList.queryKey({
+          input: { organizationId },
+        }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.writerGaps.queryKey({
           input: { organizationId },
         }),
       }),
