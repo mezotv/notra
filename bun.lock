@@ -90,55 +90,6 @@
         "typescript": "^5",
       },
     },
-    "apps/console": {
-      "name": "console",
-      "version": "0.1.0",
-      "dependencies": {
-        "@hugeicons/core-free-icons": "^4.1.1",
-        "@hugeicons/react": "^1.1.4",
-        "@neoconfetti/react": "^1.0.0",
-        "@notra/ai": "workspace:*",
-        "@notra/db": "workspace:*",
-        "@notra/ui": "workspace:*",
-        "@notra/utils": "workspace:*",
-        "@orpc/client": "^1.13.9",
-        "@orpc/server": "^1.13.9",
-        "@orpc/tanstack-query": "^1.13.9",
-        "@tailwindcss/typography": "^0.5.19",
-        "@tanstack/react-hotkeys": "^0.3.0",
-        "@tanstack/react-query": "^5.102.4",
-        "@toolwind/corner-shape": "^0.0.8-3",
-        "@upstash/ratelimit": "^2.0.8",
-        "@upstash/redis": "^1.35.8",
-        "@workos-inc/authkit-nextjs": "^4.3.1",
-        "@workos-inc/node": "^10.10.0",
-        "cnfast": "^0.0.6",
-        "drizzle-orm": "^0.45.2",
-        "effect": "4.0.0-beta.93",
-        "lucide-react": "^0.562.0",
-        "mailchecker": "^6.0.19",
-        "motion": "^12.40.0",
-        "next": "^16.3.3",
-        "next-themes": "^0.4.6",
-        "react": "^19.2.8",
-        "react-dom": "^19.2.8",
-        "server-only": "^0.0.1",
-        "shadcn": "^4.12.0",
-        "sonner": "^2.0.7",
-        "tw-animate-css": "^1.4.0",
-        "zod": "^4.3.4",
-      },
-      "devDependencies": {
-        "@notra/typescript-config": "workspace:*",
-        "@tailwindcss/postcss": "^4",
-        "@types/node": "^20",
-        "@types/react": "^19.2.18",
-        "@types/react-dom": "^19.2.5",
-        "postcss": "^8.5.8",
-        "tailwindcss": "^4",
-        "typescript": "^5",
-      },
-    },
     "apps/dashboard": {
       "name": "dashboard",
       "version": "0.1.0",
@@ -2762,8 +2713,6 @@
     "confbox": ["confbox@0.1.8", "", {}, "sha512-RMtmw0iFkeR4YV+fUOSucriAQNb9g8zFR52MWCtl+cCZOFRNL6zeB395vPzFhEjjn4fMxXudmELnl/KF/WrK6w=="],
 
     "consola": ["consola@3.4.2", "", {}, "sha512-5IKcdX0nnYavi6G7TtOhwkYzyjfJlatbjMjuLSfE2kYT5pMDOilZ4OvMhi637CcDICTmz3wARPoyhqyX1Y+XvA=="],
-
-    "console": ["console@workspace:apps/console"],
 
     "content-disposition": ["content-disposition@1.1.0", "", {}, "sha512-5jRCH9Z/+DRP7rkvY83B+yGIGX96OYdJmzngqnw2SBSxqCFPd0w2km3s5iawpGX8krnwSGmF0FW5Nhr0Hfai3g=="],
 
@@ -5589,8 +5538,6 @@
 
     "compare-func/dot-prop": ["dot-prop@5.3.0", "", { "dependencies": { "is-obj": "^2.0.0" } }, "sha512-QM8q3zDe58hqUqjraQOmzZ1LIH9SWQJTlEKCH4kJ2oQvLZk7RbQXvtDM2XEq3fwkV9CCvvH4LA0AV+ogFsBM2Q=="],
 
-    "console/@types/node": ["@types/node@20.19.43", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA=="],
-
     "cosmiconfig/env-paths": ["env-paths@2.2.1", "", {}, "sha512-+h1lkLKhZMTYjog1VEpJNG7NZJWcuc2DDk/qsqSTRRCOXiLjeQ1d1/udrUGhqMxUgAlwKNZ0cf2uqan5GLuS2A=="],
 
     "cosmiconfig/js-yaml": ["js-yaml@4.2.0", "", { "dependencies": { "argparse": "^2.0.1" }, "bin": { "js-yaml": "bin/js-yaml.js" } }, "sha512-ePWsvanv0DWuDRsW8dnt+R4jQ31SCRCQ7hhNcPXZPsoBZiemuZNYGf7adZdqX2D86j6rvKp3RpCxVTSb8WQlOw=="],
@@ -6484,8 +6431,6 @@
     "c12/chokidar/readdirp": ["readdirp@5.0.0", "", {}, "sha512-9u/XQ1pvrQtYyMpZe7DXKv2p5CNvyVwzUB6uhLAnQwHMSgKMBR62lc7AHljaeteeHXn11XTAaLLUVZYVZyuRBQ=="],
 
     "compare-func/dot-prop/is-obj": ["is-obj@2.0.0", "", {}, "sha512-drqDG3cbczxxEJRoOXcOjtdp1J/lyp1mNn0xaznRs8+muBhgQcrnbspox5X5fOw0HnMnbfDzvnEMEtqDEJEo8w=="],
-
-    "console/@types/node/undici-types": ["undici-types@6.21.0", "", {}, "sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ=="],
 
     "cosmiconfig/js-yaml/argparse": ["argparse@2.0.1", "", {}, "sha512-8+9WqebbFzpX9OR+Wa6O29asIogeRMzcGtAINdpMHHyAg10f05aSFVBbcEqGf/PXw1EjAZ+q2/bEBg3DvurK3Q=="],
 
