@@ -1,15 +1,20 @@
 "use client";
 
 import { AutumnProvider } from "autumn-js/react";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
+import { AUTUMN_ORGANIZATION_HEADER } from "@/constants/billing";
 import { authClient } from "@/lib/auth/client";
 import type { AutumnOrgProviderProps } from "@/types/components/providers";
+import { getOrganizationSlugFromPathname } from "@/utils/organization-pathname";
 
 const INITIAL_PROVIDER_KEY = "initial-organization";
 const NO_ORGANIZATION_BASELINE = "no-organization";
 
 export function AutumnOrgProvider({ children }: AutumnOrgProviderProps) {
+  const pathname = usePathname();
+  const pathSlug = getOrganizationSlugFromPathname(pathname);
   const { data: session, isPending } = authClient.useSession();
   const sessionOrganizationId = session?.session.activeOrganizationId ?? null;
 
@@ -39,12 +44,17 @@ export function AutumnOrgProvider({ children }: AutumnOrgProviderProps) {
     effectiveOrganizationId !== null &&
     baselineOrganizationId !== null &&
     effectiveOrganizationId !== baselineOrganizationId;
-  const providerKey = hasSwitchedOrganization
+  const sessionProviderKey = hasSwitchedOrganization
     ? effectiveOrganizationId
     : INITIAL_PROVIDER_KEY;
+  const providerKey = pathSlug ? `slug:${pathSlug}` : sessionProviderKey;
+
+  const headers = pathSlug
+    ? { [AUTUMN_ORGANIZATION_HEADER]: pathSlug }
+    : undefined;
 
   return (
-    <AutumnProvider includeCredentials key={providerKey}>
+    <AutumnProvider headers={headers} includeCredentials key={providerKey}>
       {children}
     </AutumnProvider>
   );

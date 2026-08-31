@@ -6,7 +6,7 @@ import { array, boolean, enum as enumType, number, object, string } from "zod";
 // apps/dashboard/src/constants/geo.ts. Re-sync by hand if either changes.
 const ENGINE = "google/gemini-3-flash";
 const GEO_JUDGE_MODEL = "openai/gpt-5.4-nano";
-const GEO_ANSWER_MAX_TOKENS = 600;
+const GEO_ANSWER_MAX_TOKENS = 4096;
 const GEO_JUDGE_MAX_TOKENS = 800;
 const GEO_EXCERPT_MAX_LENGTH = 300;
 const MAX_JUDGE_COMPETITORS = 10;

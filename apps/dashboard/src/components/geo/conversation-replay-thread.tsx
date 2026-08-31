@@ -215,7 +215,11 @@ function ReplayTurn({
             <ThinkingIndicator skin={skin} />
           ) : (
             <>
-              <AnswerMarkdown skin={skin} text={answerText} />
+              <AnswerMarkdown
+                mode={answerDone ? "static" : "streaming"}
+                skin={skin}
+                text={answerText}
+              />
               {answerDone && skin !== "perplexity" && (
                 <SourcePills sources={sources} />
               )}

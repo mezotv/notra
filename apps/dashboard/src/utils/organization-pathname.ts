@@ -1,4 +1,5 @@
 import { RESERVED_ORGANIZATION_SLUGS } from "@/constants/organization";
+import { NON_ORGANIZATION_ROUTE_SEGMENTS } from "@/constants/organization-routes";
 
 const reservedSlugs: ReadonlySet<string> = new Set(RESERVED_ORGANIZATION_SLUGS);
 
@@ -27,4 +28,17 @@ export function maskOrganizationPathname(
   segments[0] = replacement;
 
   return `/${segments.join("/")}`;
+}
+
+export function getOrganizationSlugFromPathname(
+  pathname: string | null
+): string | null {
+  if (!pathname) {
+    return null;
+  }
+  const [firstSegment] = pathname.split("/").filter(Boolean);
+  if (!firstSegment || NON_ORGANIZATION_ROUTE_SEGMENTS.has(firstSegment)) {
+    return null;
+  }
+  return firstSegment;
 }

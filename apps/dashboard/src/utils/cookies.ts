@@ -3,6 +3,7 @@ import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension
 
 import {
   LAST_VISITED_ORGANIZATION_COOKIE,
+  LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
   SIDEBAR_MODE_COOKIE,
   SIDEBAR_MODE_COOKIE_MAX_AGE,
 } from "@/constants/cookies";
@@ -49,7 +50,7 @@ async function setClientCookie(
 
 export const setLastVisitedOrganization = async (
   organizationSlug: string,
-  maxAge: number = 30 * 86_400
+  maxAge: number = LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE
 ) => {
   await setClientCookie(
     LAST_VISITED_ORGANIZATION_COOKIE,

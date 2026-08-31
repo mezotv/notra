@@ -75,9 +75,11 @@ function emptyAnswerClassName(skin: GeoChatSkin): string {
 export function AnswerMarkdown({
   text,
   skin,
+  mode = "static",
 }: {
   text: string;
   skin: GeoChatSkin;
+  mode?: "static" | "streaming";
 }) {
   return (
     <MessageResponse
@@ -88,6 +90,7 @@ export function AnswerMarkdown({
         skin === "perplexity" &&
           "font-serif [&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif"
       )}
+      mode={mode}
     >
       {text}
     </MessageResponse>

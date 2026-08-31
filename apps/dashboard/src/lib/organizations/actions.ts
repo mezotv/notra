@@ -18,7 +18,10 @@ import { isValid as isNotDisposableEmail } from "mailchecker";
 import { cookies } from "next/headers";
 
 import { QUOTA_FEATURES } from "@/constants/analytics-events";
-import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
+import {
+  LAST_VISITED_ORGANIZATION_COOKIE,
+  LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
+} from "@/constants/cookies";
 import {
   identifyOrganizationGroup,
   trackServerEvent,
@@ -546,6 +549,7 @@ export async function setActiveOrganizationAction(
       );
       cookieStore.set(LAST_VISITED_ORGANIZATION_COOKIE, organization.slug, {
         path: "/",
+        maxAge: LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
       });
 
       return organization;

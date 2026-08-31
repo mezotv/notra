@@ -1,19 +1,26 @@
 import { autumnHandler } from "autumn-js/next";
 
 import { getAuthSession } from "@/lib/auth/server";
+import { resolveBillingOrganizationId } from "@/lib/billing/resolve-billing-organization";
 
 type RouteHandler = (request: Request) => Response | Promise<Response>;
 
 const handlers: { GET: RouteHandler; POST: RouteHandler } = autumnHandler({
-  identify: async () => {
+  identify: async (request) => {
     const session = await getAuthSession();
 
-    if (!(session?.user && session?.session?.activeOrganizationId)) {
+    if (!session?.user) {
+      return null;
+    }
+
+    const customerId = await resolveBillingOrganizationId(request, session);
+
+    if (!customerId) {
       return null;
     }
 
     return {
-      customerId: session.session.activeOrganizationId,
+      customerId,
       customerData: {
         name: session.user.name,
         email: session.user.email,
