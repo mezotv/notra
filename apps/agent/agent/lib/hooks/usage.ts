@@ -158,9 +158,8 @@ export function createUsageHook(modelId: string): HookDefinition {
     events: {
       async "step.completed"(event, ctx) {
         try {
-          if (allowUnmeteredAiInDevelopment || !shouldChargeAiCredits(ctx)) {
-            return;
-          }
+          const shouldBill =
+            !allowUnmeteredAiInDevelopment && shouldChargeAiCredits(ctx);
           const organizationId = getOrganizationId(ctx);
           const usage = event.data.usage;
           if (!(organizationId && usage)) {
@@ -182,16 +181,18 @@ export function createUsageHook(modelId: string): HookDefinition {
               event.data.stepIndex,
               stepUsage
             );
-            await trackUsage(modelId, organizationId, stepUsage, {
-              source: getSessionAttribute(ctx, "surface") ?? "agent",
-              agent: ctx.agent.name,
-              session_id: ctx.session.id,
-              turn_id: event.data.turnId,
-              step_index: event.data.stepIndex,
-              markup_applied: getBooleanSessionAttribute(ctx, "useMarkup")
-                ? "true"
-                : "false",
-            });
+            if (shouldBill) {
+              await trackUsage(modelId, organizationId, stepUsage, {
+                source: getSessionAttribute(ctx, "surface") ?? "agent",
+                agent: ctx.agent.name,
+                session_id: ctx.session.id,
+                turn_id: event.data.turnId,
+                step_index: event.data.stepIndex,
+                markup_applied: getBooleanSessionAttribute(ctx, "useMarkup")
+                  ? "true"
+                  : "false",
+              });
+            }
             await flushPostHogServer();
             return;
           }
@@ -204,14 +205,20 @@ export function createUsageHook(modelId: string): HookDefinition {
           if (claimed !== "OK") {
             return;
           }
-          const key = accumulatorKey(ctx.session.id, event.data.turnId);
-          await Promise.all([
-            redis.hincrby(key, "inputTokens", stepUsage.inputTokens),
-            redis.hincrby(key, "outputTokens", stepUsage.outputTokens),
-            redis.hincrby(key, "cacheReadTokens", stepUsage.cacheReadTokens),
-            redis.hincrby(key, "cacheWriteTokens", stepUsage.cacheWriteTokens),
-            redis.expire(key, USAGE_KEY_TTL_SECONDS),
-          ]);
+          if (shouldBill) {
+            const key = accumulatorKey(ctx.session.id, event.data.turnId);
+            await Promise.all([
+              redis.hincrby(key, "inputTokens", stepUsage.inputTokens),
+              redis.hincrby(key, "outputTokens", stepUsage.outputTokens),
+              redis.hincrby(key, "cacheReadTokens", stepUsage.cacheReadTokens),
+              redis.hincrby(
+                key,
+                "cacheWriteTokens",
+                stepUsage.cacheWriteTokens
+              ),
+              redis.expire(key, USAGE_KEY_TTL_SECONDS),
+            ]);
+          }
           captureStepGeneration(
             ctx,
             modelId,

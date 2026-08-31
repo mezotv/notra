@@ -108,8 +108,9 @@ export const gateway = (...args: GatewayArgs): GatewayResult => {
   const model = getModelRouter().model(modelId, options);
   return wrapModelWithPostHog(model, {
     organizationId: options?.organizationId,
-    privacyMode: options?.zdr === "required",
     ...options?.posthog,
+    privacyMode:
+      options?.zdr === "required" || options?.posthog?.privacyMode === true,
   });
 };
 
