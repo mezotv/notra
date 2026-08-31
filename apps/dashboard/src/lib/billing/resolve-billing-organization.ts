@@ -34,17 +34,22 @@ export async function resolveBillingOrganizationId(
   request: Request,
   session: AuthSessionData
 ): Promise<string | null> {
-  const requestedSlug = organizationSlugParamSchema.safeParse(
-    request.headers.get(AUTUMN_ORGANIZATION_HEADER)
-  );
+  const requestedSlugHeader = request.headers.get(AUTUMN_ORGANIZATION_HEADER);
 
-  if (requestedSlug.success) {
-    return await Effect.runPromise(
-      findMemberOrganizationIdBySlug(requestedSlug.data, session.user.id).pipe(
-        Effect.catch(() => Effect.succeed(null))
-      )
-    );
+  if (requestedSlugHeader === null) {
+    return session.session.activeOrganizationId ?? null;
   }
 
-  return session.session.activeOrganizationId ?? null;
+  const requestedSlug =
+    organizationSlugParamSchema.safeParse(requestedSlugHeader);
+
+  if (!requestedSlug.success) {
+    return null;
+  }
+
+  return await Effect.runPromise(
+    findMemberOrganizationIdBySlug(requestedSlug.data, session.user.id).pipe(
+      Effect.catch(() => Effect.succeed(null))
+    )
+  );
 }
