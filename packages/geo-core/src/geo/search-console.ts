@@ -46,9 +46,7 @@ import {
 
 async function generateSuggestions(params: GscSuggestionGenerationParams) {
   const result = await generateText({
-    model: gateway(GSC_SUGGESTION_MODEL, {
-      posthog: { feature: "gsc_suggestions" },
-    }),
+    model: gateway(GSC_SUGGESTION_MODEL, {}),
     output: Output.object({ schema: geoSearchConsoleSuggestionSchema }),
     system: GSC_SUGGESTION_SYSTEM_PROMPT,
     prompt: buildGscSuggestionPrompt(params),

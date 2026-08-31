@@ -61,7 +61,6 @@ export async function extractBrandInfo(
       model: ai.wrap(
         gateway("anthropic/claude-sonnet-4.6", {
           organizationId: input.organizationId,
-          posthog: { feature: "brand_analysis" },
         })
       ),
       output: Output.object({ schema: brandSettingsSchema }),

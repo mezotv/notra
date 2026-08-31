@@ -247,7 +247,6 @@ async function reviewRenderedRepoImageForLogoIssues(params: {
   const { output } = await generateText({
     model: gateway(IMAGE_REVIEW_MODEL_ID, {
       organizationId: params.organizationId,
-      posthog: { feature: "image_review" },
     }),
     output: Output.object({ schema: repoImageLogoReviewSchema }),
     messages: [

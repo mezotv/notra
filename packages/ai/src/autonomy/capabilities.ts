@@ -204,10 +204,6 @@ const generateIrisText = Effect.fn("iris.capabilities.generateText")(
         generateText({
           model: gateway(IRIS_CONTENT_MODEL_ID, {
             organizationId: params.input.organizationId,
-            posthog: {
-              feature: "iris_content",
-              sessionId: `iris:${params.input.runId}`,
-            },
           }),
           system: buildIrisContentSystemPrompt({
             objective: params.input.mandate.objective,
@@ -462,7 +458,6 @@ const reviewIrisImage = Effect.fn("iris.capabilities.reviewImage")(
         generateText({
           model: gateway(IMAGE_REVIEW_MODEL_ID, {
             organizationId: params.organizationId,
-            posthog: { feature: "iris_image_review" },
           }),
           output: Output.object({ schema: irisImageReviewSchema }),
           messages: [

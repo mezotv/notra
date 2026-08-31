@@ -22,7 +22,6 @@ import type {
   RouterLogFields,
   RouterLogger,
 } from "@notra/ai/types/router";
-import { wrapModelWithPostHog } from "@notra/posthog/ai-sdk";
 
 const APP_URL = "https://www.usenotra.com";
 const APP_TITLE = "Notra";
@@ -105,13 +104,7 @@ export function setModelRouter(next: ModelRouter | null): void {
  */
 export const gateway = (...args: GatewayArgs): GatewayResult => {
   const [modelId, options] = args;
-  const model = getModelRouter().model(modelId, options);
-  return wrapModelWithPostHog(model, {
-    organizationId: options?.organizationId,
-    ...options?.posthog,
-    privacyMode:
-      options?.zdr === "required" || options?.posthog?.privacyMode === true,
-  });
+  return getModelRouter().model(modelId, options);
 };
 
 export function resolveModelRoute(

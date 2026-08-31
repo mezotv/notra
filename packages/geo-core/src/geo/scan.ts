@@ -252,7 +252,6 @@ const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
           organizationId,
           zdr,
           gateway: gatewayPin,
-          posthog: { feature: "geo_scan_answer" },
         }),
         prompt: promptText,
         system: GEO_ANSWER_SYSTEM_PROMPT,
@@ -396,11 +395,6 @@ const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
       generateText({
         model: gateway(GEO_JUDGE_MODEL, {
           organizationId: context.organizationId,
-          posthog: {
-            feature: "geo_scan_judge",
-            projectId: context.projectId,
-            sessionId: `scan:${context.scanId}`,
-          },
         }),
         output: Output.object({ schema: geoJudgeResultSchema }),
         prompt: buildJudgePrompt(context, promptText, answer),
@@ -425,7 +419,6 @@ const translatePrompts = Effect.fn("geo.translatePrompts")(function* (
       generateText({
         model: gateway(GEO_JUDGE_MODEL, {
           organizationId,
-          posthog: { feature: "geo_scan_translate" },
         }),
         output: Output.object({ schema: geoTranslationResultSchema }),
         prompt: `Translate each prompt into ${language}. Keep brand and product names unchanged. Return the translations in the same order.\n\n${JSON.stringify(prompts.map((prompt) => prompt.text))}`,

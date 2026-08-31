@@ -48,7 +48,6 @@ import type {
   PostToolsResult,
 } from "@notra/ai/types/post-tools";
 import { updatePostRecord } from "@notra/ai/utils/post-service";
-import { buildTelemetrySessionId } from "@notra/ai/utils/posthog-tracing";
 import { summarizeRouteUsage } from "@notra/ai/utils/route-usage";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
@@ -164,7 +163,7 @@ export async function generateGeoContentBrief(
   const model = createModel(
     organizationId,
     GEO_WRITER_MODEL,
-    { disableMemory: true, posthog: { feature: "geo_writer" } },
+    { disableMemory: true },
     log
   );
   const system = buildGeoPlannerSystem();
@@ -306,15 +305,6 @@ async function humanizeMarkdown(
     GEO_WRITER_MODEL,
     {
       disableMemory: true,
-      posthog: {
-        feature: "geo_writer",
-        projectId: options.projectId,
-        sessionId: buildTelemetrySessionId(
-          "brief",
-          options.telemetryMetadata,
-          "briefId"
-        ),
-      },
     },
     options.log
   );
@@ -380,15 +370,6 @@ export async function runGeoWriter(
     GEO_WRITER_MODEL,
     {
       disableMemory: true,
-      posthog: {
-        feature: "geo_writer",
-        projectId,
-        sessionId: buildTelemetrySessionId(
-          "brief",
-          telemetryMetadata,
-          "briefId"
-        ),
-      },
     },
     log
   );

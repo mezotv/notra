@@ -6,18 +6,13 @@ import {
 import { FEATURES } from "@notra/ai/billing/features";
 import { redis } from "@notra/ai/utils/redis";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
-import {
-  capturePostHogLlmGeneration,
-  capturePostHogLlmTrace,
-} from "@notra/posthog/llm";
 import { captureServerEvent, flushPostHogServer } from "@notra/posthog/server";
-import { parseGatewayModelId } from "@notra/posthog/utils/model-id";
 import { getOrganizationId } from "@notra/tools/utils/organization";
 import {
   getBooleanSessionAttribute,
   getSessionAttribute,
 } from "@notra/tools/utils/session";
-import { defineHook, type HookContext, type HookDefinition } from "eve/hooks";
+import { defineHook, type HookDefinition } from "eve/hooks";
 
 const USAGE_KEY_TTL_SECONDS = 60 * 60 * 24;
 
@@ -30,67 +25,6 @@ interface AccumulatedUsage {
 
 function accumulatorKey(sessionId: string, turnId: string) {
   return `agent:usage:acc:${sessionId}:${turnId}`;
-}
-
-function resolveFeature(ctx: HookContext) {
-  return getSessionAttribute(ctx, "surface") ?? "agent";
-}
-
-function captureStepGeneration(
-  ctx: HookContext,
-  modelId: string,
-  organizationId: string,
-  turnId: string,
-  stepIndex: number,
-  usage: AccumulatedUsage
-) {
-  const { provider, model } = parseGatewayModelId(modelId);
-  capturePostHogLlmGeneration({
-    distinctId: getSessionAttribute(ctx, "userId"),
-    organizationId,
-    traceId: `${ctx.session.id}:${turnId}`,
-    sessionId: `agent:${ctx.session.id}`,
-    spanName: ctx.agent.name,
-    model,
-    provider,
-    inputTokens: usage.inputTokens,
-    outputTokens: usage.outputTokens,
-    cacheReadTokens: usage.cacheReadTokens,
-    cacheWriteTokens: usage.cacheWriteTokens,
-    isError: false,
-    feature: resolveFeature(ctx),
-    privacyMode: true,
-    properties: {
-      agent: ctx.agent.name,
-      turn_id: turnId,
-      step_index: stepIndex,
-    },
-  });
-}
-
-function captureTurnFailure(
-  ctx: HookContext,
-  turnId: string,
-  code: string,
-  stage: "turn" | "step",
-  stepIndex?: number
-) {
-  capturePostHogLlmTrace({
-    distinctId: getSessionAttribute(ctx, "userId"),
-    organizationId: getOrganizationId(ctx),
-    traceId: `${ctx.session.id}:${turnId}`,
-    sessionId: `agent:${ctx.session.id}`,
-    spanName: ctx.agent.name,
-    isError: true,
-    error: code,
-    feature: resolveFeature(ctx),
-    properties: {
-      agent: ctx.agent.name,
-      turn_id: turnId,
-      stage,
-      step_index: stepIndex,
-    },
-  });
 }
 
 async function trackUsage(
@@ -147,6 +81,7 @@ async function trackUsage(
       markup_applied: properties.markup_applied === "true",
     },
   });
+  await flushPostHogServer();
 }
 
 function shouldChargeAiCredits(ctx: Parameters<typeof getSessionAttribute>[0]) {
@@ -158,8 +93,9 @@ export function createUsageHook(modelId: string): HookDefinition {
     events: {
       async "step.completed"(event, ctx) {
         try {
-          const shouldBill =
-            !allowUnmeteredAiInDevelopment && shouldChargeAiCredits(ctx);
+          if (allowUnmeteredAiInDevelopment || !shouldChargeAiCredits(ctx)) {
+            return;
+          }
           const organizationId = getOrganizationId(ctx);
           const usage = event.data.usage;
           if (!(organizationId && usage)) {
@@ -173,27 +109,16 @@ export function createUsageHook(modelId: string): HookDefinition {
           };
 
           if (!redis) {
-            captureStepGeneration(
-              ctx,
-              modelId,
-              organizationId,
-              event.data.turnId,
-              event.data.stepIndex,
-              stepUsage
-            );
-            if (shouldBill) {
-              await trackUsage(modelId, organizationId, stepUsage, {
-                source: getSessionAttribute(ctx, "surface") ?? "agent",
-                agent: ctx.agent.name,
-                session_id: ctx.session.id,
-                turn_id: event.data.turnId,
-                step_index: event.data.stepIndex,
-                markup_applied: getBooleanSessionAttribute(ctx, "useMarkup")
-                  ? "true"
-                  : "false",
-              });
-            }
-            await flushPostHogServer();
+            await trackUsage(modelId, organizationId, stepUsage, {
+              source: getSessionAttribute(ctx, "surface") ?? "agent",
+              agent: ctx.agent.name,
+              session_id: ctx.session.id,
+              turn_id: event.data.turnId,
+              step_index: event.data.stepIndex,
+              markup_applied: getBooleanSessionAttribute(ctx, "useMarkup")
+                ? "true"
+                : "false",
+            });
             return;
           }
 
@@ -205,53 +130,16 @@ export function createUsageHook(modelId: string): HookDefinition {
           if (claimed !== "OK") {
             return;
           }
-          if (shouldBill) {
-            const key = accumulatorKey(ctx.session.id, event.data.turnId);
-            await Promise.all([
-              redis.hincrby(key, "inputTokens", stepUsage.inputTokens),
-              redis.hincrby(key, "outputTokens", stepUsage.outputTokens),
-              redis.hincrby(key, "cacheReadTokens", stepUsage.cacheReadTokens),
-              redis.hincrby(
-                key,
-                "cacheWriteTokens",
-                stepUsage.cacheWriteTokens
-              ),
-              redis.expire(key, USAGE_KEY_TTL_SECONDS),
-            ]);
-          }
-          captureStepGeneration(
-            ctx,
-            modelId,
-            organizationId,
-            event.data.turnId,
-            event.data.stepIndex,
-            stepUsage
-          );
-          await flushPostHogServer();
+          const key = accumulatorKey(ctx.session.id, event.data.turnId);
+          await Promise.all([
+            redis.hincrby(key, "inputTokens", stepUsage.inputTokens),
+            redis.hincrby(key, "outputTokens", stepUsage.outputTokens),
+            redis.hincrby(key, "cacheReadTokens", stepUsage.cacheReadTokens),
+            redis.hincrby(key, "cacheWriteTokens", stepUsage.cacheWriteTokens),
+            redis.expire(key, USAGE_KEY_TTL_SECONDS),
+          ]);
         } catch (error) {
           console.error("[agent] Usage accumulation failed", error);
-        }
-      },
-      async "step.failed"(event, ctx) {
-        try {
-          captureTurnFailure(
-            ctx,
-            event.data.turnId,
-            event.data.code,
-            "step",
-            event.data.stepIndex
-          );
-          await flushPostHogServer();
-        } catch (error) {
-          console.error("[agent] Step failure capture failed", error);
-        }
-      },
-      async "turn.failed"(event, ctx) {
-        try {
-          captureTurnFailure(ctx, event.data.turnId, event.data.code, "turn");
-          await flushPostHogServer();
-        } catch (error) {
-          console.error("[agent] Turn failure capture failed", error);
         }
       },
       async "turn.completed"(event, ctx) {
@@ -309,7 +197,6 @@ export function createUsageHook(modelId: string): HookDefinition {
           );
           charged = true;
           await redis.del(billingKey);
-          await flushPostHogServer();
         } catch (error) {
           console.error("[agent] Usage metering failed", error);
           if (!charged) {

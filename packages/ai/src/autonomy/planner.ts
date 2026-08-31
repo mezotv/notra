@@ -55,7 +55,6 @@ const generatePlannerDraft = Effect.fn("iris.planner.generate")(function* (
       const result = await generateText({
         model: gateway(IRIS_PLANNER_MODEL_ID, {
           organizationId,
-          posthog: { feature: "iris_planner" },
         }),
         output: Output.object({ schema: plannerDraftOutputSchema }),
         system: buildIrisPlannerSystemPrompt(),

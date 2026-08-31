@@ -99,7 +99,7 @@ function compactProperties(
   return compacted;
 }
 
-export function resolveServiceDistinctId(
+function resolveServiceDistinctId(
   organizationId: string | null | undefined
 ): string {
   return `${POSTHOG_SERVICE_DISTINCT_ID_PREFIX}${organizationId ?? "anonymous"}`;

@@ -108,17 +108,7 @@ export async function runBackgroundGen(
 
   await assertRouteHasCredits({ organizationId, modelId: AGENT_DEFAULT_MODEL });
 
-  const model = createModel(
-    organizationId,
-    AGENT_DEFAULT_MODEL,
-    {
-      posthog: {
-        feature: "content_generation",
-        properties: { content_label: contentLabel },
-      },
-    },
-    log
-  );
+  const model = createModel(organizationId, AGENT_DEFAULT_MODEL, {}, log);
 
   const prompt = getUserPrompt(contentLabel, promptInput);
 

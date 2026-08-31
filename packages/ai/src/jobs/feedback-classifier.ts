@@ -35,7 +35,6 @@ export async function classifyAgentFeedback(
     const { object } = await generateObject({
       model: gateway(FEEDBACK_CLASSIFIER_MODEL_ID, {
         organizationId: params.organizationId,
-        posthog: { feature: "feedback_classifier" },
       }),
       schema: feedbackClassificationSchema,
       system: FEEDBACK_CLASSIFIER_SYSTEM_PROMPT,

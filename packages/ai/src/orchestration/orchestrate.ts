@@ -7,7 +7,6 @@ import type {
   OrchestrateResult,
 } from "@notra/ai/types/orchestration";
 import { normalizeMarkdownFileAttachments } from "@notra/ai/utils/message-attachments";
-import { buildTelemetrySessionId } from "@notra/ai/utils/posthog-tracing";
 import { summarizeRouteUsage } from "@notra/ai/utils/route-usage";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import {
@@ -83,13 +82,7 @@ export async function orchestrateChat(
   const modelWithMemory = createModel(
     organizationId,
     routingDecision.model,
-    {
-      posthog: {
-        feature: "content_chat",
-        distinctId: userId,
-        sessionId: buildTelemetrySessionId("chat", telemetryMetadata, "chatId"),
-      },
-    },
+    {},
     log
   );
 

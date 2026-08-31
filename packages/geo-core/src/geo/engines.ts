@@ -36,7 +36,6 @@ export function buildGroundedInvocation(
     organizationId: options.organizationId,
     gateway: "vercel",
     zdr: options.zdr,
-    posthog: { feature: "geo_scan_grounded" },
   } as const;
   switch (engine.provider) {
     case "gateway-openai":

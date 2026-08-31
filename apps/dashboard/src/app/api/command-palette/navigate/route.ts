@@ -282,11 +282,6 @@ export async function POST(request: NextRequest) {
     const { object } = await generateObject({
       model: gateway("anthropic/claude-sonnet-4.6", {
         organizationId,
-        posthog: {
-          feature: "command_palette_navigate",
-          distinctId: user.id,
-          sessionId: getPostHogRequestContext(request.headers).sessionId,
-        },
       }),
       schema: resultSchema,
       system: [

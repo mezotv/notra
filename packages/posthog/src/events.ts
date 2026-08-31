@@ -229,8 +229,6 @@ export const POSTHOG_EVENTS = {
   WORKFLOW_PAUSED: "workflow_paused",
   WORKFLOW_DUPLICATE_REJECTED: "workflow_duplicate_rejected",
 
-  AI_GENERATION: "$ai_generation",
-  AI_TRACE: "$ai_trace",
   GROUP_IDENTIFY: "$groupidentify",
   PAGEVIEW: "$pageview",
 } as const;

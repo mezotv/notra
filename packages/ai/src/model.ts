@@ -5,14 +5,12 @@ import {
 } from "@notra/ai/observability";
 import type { GatewayArgs, GatewayResult } from "@notra/ai/types/gateway";
 import type { SupermemoryOptions } from "@notra/ai/types/model";
-import type { PostHogModelTracingOptions } from "@notra/posthog/types/ai-sdk";
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
 import { type LanguageModelMiddleware, wrapLanguageModel } from "ai";
 
 export interface CreateModelOptions {
   supermemory?: Omit<SupermemoryOptions, "mode" | "addMemory">;
   disableMemory?: boolean;
-  posthog?: PostHogModelTracingOptions;
 }
 
 type DevToolsMiddleware =
@@ -24,7 +22,7 @@ export function createModel(
   options?: CreateModelOptions,
   log?: AILogTarget
 ): GatewayResult {
-  const base = gateway(modelId, { organizationId, posthog: options?.posthog });
+  const base = gateway(modelId, { organizationId });
 
   if (!organizationId || options?.disableMemory) {
     return wrapModelForDevTools(wrapModelWithObservability(base, log));

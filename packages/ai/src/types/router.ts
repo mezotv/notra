@@ -4,7 +4,6 @@ import type {
   SharedV3ProviderOptions,
 } from "@ai-sdk/provider";
 import type { routerProviderOptionsSchema } from "@notra/ai/schemas/router";
-import type { PostHogModelTracingOptions } from "@notra/posthog/types/ai-sdk";
 import type { ProviderMetadata } from "ai";
 import type * as z from "zod";
 
@@ -245,7 +244,6 @@ export interface RoutedModelOptions {
   organizationId?: string;
   gateway?: GatewayId;
   zdr?: ZdrMode;
-  posthog?: PostHogModelTracingOptions;
 }
 
 export interface ModelRouter {

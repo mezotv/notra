@@ -6,19 +6,14 @@
   "exports": {
     "./events": "./src/events.ts",
     "./server": "./src/server.ts",
-    "./ai-sdk": "./src/ai-sdk.ts",
-    "./llm": "./src/llm.ts",
     "./request": "./src/request.ts",
     "./types/*": "./src/types/*.ts",
-    "./constants/*": "./src/constants/*.ts",
-    "./utils/*": "./src/utils/*.ts"
+    "./constants/*": "./src/constants/*.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@ai-sdk/provider": "3.0.10",
-    "@posthog/ai": "8.8.0",
     "posthog-node": "5.50.0"
   },
   "devDependencies": {
