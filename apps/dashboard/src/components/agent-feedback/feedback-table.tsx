@@ -1,5 +1,16 @@
 "use client";
 
+import { Delete02Icon, ViewIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { AGENT_FEEDBACK_STATUSES } from "@notra/db/constants/agent-feedback";
+import {
+  ContextMenuGroup,
+  ContextMenuItem,
+  ContextMenuLabel,
+  ContextMenuRadioGroup,
+  ContextMenuRadioItem,
+  ContextMenuSeparator,
+} from "@notra/ui/components/ui/context-menu";
 import { useLayoutEffect, useRef, useState } from "react";
 
 import { AgentFeedbackAgent } from "@/components/agent-feedback/feedback-agent-icon";
@@ -142,8 +153,12 @@ export function AgentFeedbackTableSkeleton() {
 export function AgentFeedbackTable({
   items,
   isPending,
+  isDeleting,
+  isUpdatingStatus,
   selectedId,
   onSelect,
+  onStatusChange,
+  onDelete,
 }: AgentFeedbackTableProps) {
   const rowCount = isPending ? FEEDBACK_SKELETON_ROW_COUNT : items.length;
   const [tableRef, tableHeight] = useAvailableTableHeight(
@@ -162,6 +177,45 @@ export function AgentFeedbackTable({
         height={tableHeight}
         loading={isPending}
         onRowClick={onSelect}
+        renderRowContextMenu={(item) => (
+          <>
+            <ContextMenuItem onClick={() => onSelect(item)}>
+              <HugeiconsIcon icon={ViewIcon} />
+              View details
+            </ContextMenuItem>
+            <ContextMenuSeparator />
+            <ContextMenuGroup>
+              <ContextMenuLabel>Set status</ContextMenuLabel>
+              <ContextMenuRadioGroup
+                onValueChange={(status) => {
+                  if (status !== item.status) {
+                    onStatusChange(item, status);
+                  }
+                }}
+                value={item.status}
+              >
+                {AGENT_FEEDBACK_STATUSES.map((status) => (
+                  <ContextMenuRadioItem
+                    disabled={isUpdatingStatus}
+                    key={status}
+                    value={status}
+                  >
+                    <AgentFeedbackStatusBadge status={status} />
+                  </ContextMenuRadioItem>
+                ))}
+              </ContextMenuRadioGroup>
+            </ContextMenuGroup>
+            <ContextMenuSeparator />
+            <ContextMenuItem
+              disabled={isDeleting}
+              onClick={() => onDelete(item)}
+              variant="destructive"
+            >
+              <HugeiconsIcon icon={Delete02Icon} />
+              Delete
+            </ContextMenuItem>
+          </>
+        )}
         resizable
         rowHeight={FEEDBACK_TABLE_ROW_HEIGHT}
         selectedRowIds={selectedId ? [selectedId] : undefined}

@@ -1,3 +1,13 @@
+import {
+  Bug01Icon,
+  HelpCircleIcon,
+  MoreHorizontalCircle01Icon,
+  NeutralIcon,
+  Sad01Icon,
+  SmileIcon,
+  SparklesIcon,
+  ThumbsUpIcon,
+} from "@hugeicons/core-free-icons";
 import type {
   AgentFeedbackKind,
   AgentFeedbackSentiment,
@@ -47,6 +57,17 @@ export const AGENT_FEEDBACK_KIND_LABELS: Record<AgentFeedbackKind, string> = {
   other: "Other",
 };
 
+export const AGENT_FEEDBACK_KIND_ICONS: Record<
+  AgentFeedbackKind,
+  typeof Bug01Icon
+> = {
+  bug: Bug01Icon,
+  feature: SparklesIcon,
+  praise: ThumbsUpIcon,
+  question: HelpCircleIcon,
+  other: MoreHorizontalCircle01Icon,
+};
+
 export const AGENT_FEEDBACK_SENTIMENT_LABELS: Record<
   AgentFeedbackSentiment,
   string
@@ -54,6 +75,15 @@ export const AGENT_FEEDBACK_SENTIMENT_LABELS: Record<
   negative: "Negative",
   neutral: "Neutral",
   positive: "Positive",
+};
+
+export const AGENT_FEEDBACK_SENTIMENT_ICONS: Record<
+  AgentFeedbackSentiment,
+  typeof Sad01Icon
+> = {
+  negative: Sad01Icon,
+  neutral: NeutralIcon,
+  positive: SmileIcon,
 };
 
 export const AGENT_FEEDBACK_DEFAULT_SNIPPET_TAB: AgentFeedbackSnippetKey =
@@ -105,15 +135,6 @@ export const AGENT_FEEDBACK_KIND_PILL_CLASS: Record<AgentFeedbackKind, string> =
     other: "border-border bg-muted/50 text-muted-foreground dark:bg-muted/30",
   };
 
-export const AGENT_FEEDBACK_KIND_DOT_CLASS: Record<AgentFeedbackKind, string> =
-  {
-    bug: "bg-red-500",
-    feature: "bg-sky-500",
-    praise: "bg-emerald-500",
-    question: "bg-amber-500",
-    other: "bg-muted-foreground",
-  };
-
 export const AGENT_FEEDBACK_SENTIMENT_PILL_CLASS: Record<
   AgentFeedbackSentiment,
   string
@@ -123,15 +144,6 @@ export const AGENT_FEEDBACK_SENTIMENT_PILL_CLASS: Record<
   neutral: "border-border bg-muted/50 text-muted-foreground dark:bg-muted/30",
   positive:
     "border-emerald-200/80 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200",
-};
-
-export const AGENT_FEEDBACK_SENTIMENT_DOT_CLASS: Record<
-  AgentFeedbackSentiment,
-  string
-> = {
-  negative: "bg-red-500",
-  neutral: "bg-muted-foreground",
-  positive: "bg-emerald-500",
 };
 
 export const AGENT_FEEDBACK_CLIENT_BRAND_RULES: readonly AgentFeedbackClientBrandRule[] =

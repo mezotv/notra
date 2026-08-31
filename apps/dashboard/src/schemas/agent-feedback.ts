@@ -11,6 +11,11 @@ export const agentFeedbackOrganizationInputSchema = z.object({
   organizationId: organizationIdSchema,
 });
 
+export const agentFeedbackItemInputSchema = z.object({
+  organizationId: organizationIdSchema,
+  feedbackId: z.string().min(1),
+});
+
 export const agentFeedbackListInputSchema = z.object({
   organizationId: organizationIdSchema,
   status: z.enum(AGENT_FEEDBACK_STATUSES).optional(),
@@ -19,8 +24,7 @@ export const agentFeedbackListInputSchema = z.object({
   limit: z.number().int().min(1).max(100).default(AGENT_FEEDBACK_PAGE_SIZE),
 });
 
-export const agentFeedbackUpdateStatusInputSchema = z.object({
-  organizationId: organizationIdSchema,
-  feedbackId: z.string().min(1),
-  status: z.enum(AGENT_FEEDBACK_STATUSES),
-});
+export const agentFeedbackUpdateStatusInputSchema =
+  agentFeedbackItemInputSchema.extend({
+    status: z.enum(AGENT_FEEDBACK_STATUSES),
+  });

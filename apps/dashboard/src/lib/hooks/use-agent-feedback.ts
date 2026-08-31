@@ -66,6 +66,26 @@ export function useAgentFeedbackUpdateStatus(organizationId: string) {
   });
 }
 
+export function useAgentFeedbackDelete(organizationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (feedbackId: string) =>
+      dashboardOrpc.agentFeedback.delete.call({
+        organizationId,
+        feedbackId,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.agentFeedback.list.key(),
+      });
+      toast.success("Feedback deleted");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete feedback");
+    },
+  });
+}
+
 export function useAgentFeedbackSetup(organizationId: string) {
   return useQuery<AgentFeedbackSetupResponse>({
     ...dashboardOrpc.agentFeedback.setup.queryOptions({

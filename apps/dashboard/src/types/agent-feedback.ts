@@ -85,8 +85,15 @@ export interface AgentFeedbackListInput {
 export interface AgentFeedbackTableProps {
   items: AgentFeedbackItem[];
   isPending: boolean;
+  isDeleting: boolean;
+  isUpdatingStatus: boolean;
   selectedId: string | null;
   onSelect: (item: AgentFeedbackItem) => void;
+  onStatusChange: (
+    item: AgentFeedbackItem,
+    status: AgentFeedbackStatus
+  ) => void;
+  onDelete: (item: AgentFeedbackItem) => void;
 }
 
 export interface AgentFeedbackDetailDialogProps {
@@ -142,6 +149,11 @@ export interface AgentFeedbackUpdateStatusInput {
   organizationId: string;
   feedbackId: string;
   status: AgentFeedbackStatus;
+}
+
+export interface AgentFeedbackDeleteInput {
+  organizationId: string;
+  feedbackId: string;
 }
 
 export interface AgentFeedbackCursor {

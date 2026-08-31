@@ -13,6 +13,7 @@ import {
   toAgentFeedbackItem,
 } from "@/lib/agent-feedback/mappers";
 import type {
+  AgentFeedbackDeleteInput,
   AgentFeedbackItem,
   AgentFeedbackListInput,
   AgentFeedbackListResponse,
@@ -113,4 +114,28 @@ export const updateAgentFeedbackStatus = Effect.fn(
 
   const item: AgentFeedbackItem = toAgentFeedbackItem(updated);
   return item;
+});
+
+export const deleteAgentFeedback = Effect.fn("agentFeedback.delete")(function* (
+  input: AgentFeedbackDeleteInput
+) {
+  const [deleted] = yield* agentFeedbackDb("delete", () =>
+    db
+      .delete(agentFeedback)
+      .where(
+        and(
+          eq(agentFeedback.organizationId, input.organizationId),
+          eq(agentFeedback.id, input.feedbackId)
+        )
+      )
+      .returning({ id: agentFeedback.id })
+  );
+
+  if (!deleted) {
+    return yield* Effect.fail(
+      new AgentFeedbackNotFoundError({ feedbackId: input.feedbackId })
+    );
+  }
+
+  return { success: true as const };
 });

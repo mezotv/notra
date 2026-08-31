@@ -1,12 +1,13 @@
+import { HugeiconsIcon } from "@hugeicons/react";
 import { cn } from "@notra/ui/lib/utils";
 
 import { AgentFeedbackStatusIcon } from "@/components/agent-feedback/feedback-status-icon";
 import {
-  AGENT_FEEDBACK_KIND_DOT_CLASS,
+  AGENT_FEEDBACK_KIND_ICONS,
   AGENT_FEEDBACK_KIND_LABELS,
   AGENT_FEEDBACK_KIND_PILL_CLASS,
   AGENT_FEEDBACK_LABEL_PILL_CLASS,
-  AGENT_FEEDBACK_SENTIMENT_DOT_CLASS,
+  AGENT_FEEDBACK_SENTIMENT_ICONS,
   AGENT_FEEDBACK_SENTIMENT_LABELS,
   AGENT_FEEDBACK_SENTIMENT_PILL_CLASS,
   AGENT_FEEDBACK_STATUS_LABELS,
@@ -41,11 +42,11 @@ export function AgentFeedbackKindBadge({ kind }: AgentFeedbackKindBadgeProps) {
         AGENT_FEEDBACK_KIND_PILL_CLASS[kind]
       )}
     >
-      <span
-        className={cn(
-          "size-1.5 rounded-full",
-          AGENT_FEEDBACK_KIND_DOT_CLASS[kind]
-        )}
+      <HugeiconsIcon
+        aria-hidden
+        className="size-3.5 shrink-0"
+        icon={AGENT_FEEDBACK_KIND_ICONS[kind]}
+        strokeWidth={2}
       />
       {AGENT_FEEDBACK_KIND_LABELS[kind]}
     </span>
@@ -65,11 +66,11 @@ export function AgentFeedbackSentimentLabel({
         AGENT_FEEDBACK_SENTIMENT_PILL_CLASS[sentiment]
       )}
     >
-      <span
-        className={cn(
-          "size-1.5 rounded-full",
-          AGENT_FEEDBACK_SENTIMENT_DOT_CLASS[sentiment]
-        )}
+      <HugeiconsIcon
+        aria-hidden
+        className="size-3.5 shrink-0"
+        icon={AGENT_FEEDBACK_SENTIMENT_ICONS[sentiment]}
+        strokeWidth={2}
       />
       {AGENT_FEEDBACK_SENTIMENT_LABELS[sentiment]}
     </span>

@@ -4,6 +4,7 @@ import { Effect } from "effect";
 import type { AgentFeedbackRouterError } from "@/lib/agent-feedback/errors";
 import { readAgentFeedbackOrganization } from "@/lib/agent-feedback/organization";
 import {
+  deleteAgentFeedback,
   listAgentFeedback,
   updateAgentFeedbackStatus,
 } from "@/lib/agent-feedback/programs";
@@ -14,6 +15,7 @@ import { authorizedProcedure } from "@/lib/orpc/base";
 import { runOrpcEffect } from "@/lib/orpc/effect";
 import { toAgentFeedbackOrpcError } from "@/lib/orpc/utils/agent-feedback-errors";
 import {
+  agentFeedbackItemInputSchema,
   agentFeedbackListInputSchema,
   agentFeedbackOrganizationInputSchema,
   agentFeedbackUpdateStatusInputSchema,
@@ -72,6 +74,9 @@ export const agentFeedbackRouter = {
 
       return item;
     }),
+  delete: authorizedProcedure
+    .input(agentFeedbackItemInputSchema)
+    .handler(agentFeedbackHandler((input) => deleteAgentFeedback(input))),
   setup: authorizedProcedure
     .input(agentFeedbackOrganizationInputSchema)
     .handler(

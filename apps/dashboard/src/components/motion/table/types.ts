@@ -79,6 +79,8 @@ export interface TableProps<T> {
   skeletonRows?: number;
   /** Called when a row is clicked or activated with Enter/Space. */
   onRowClick?: (row: T) => void;
+  /** Menu content shown when a row is opened with the context-menu gesture. */
+  renderRowContextMenu?: (row: T) => ReactNode;
   /** Called when a pointer enters a row — prefetch, hover menus, etc. */
   onRowPointerEnter?: (row: T) => void;
   /** Keep matching rows first after sort. They scroll with the table (not sticky). */

@@ -1,10 +1,16 @@
 "use client";
 
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuTrigger,
+} from "@notra/ui/components/ui/context-menu";
+
 import { Checkbox } from "@/components/motion/checkbox";
 import { cn } from "@/lib/utils";
 
 import { EditableCell } from "./editable-cell";
-import type { TableColumn, TableRow } from "./types";
+import type { TableColumn, TableProps, TableRow } from "./types";
 import { alignText, readCell, TABLE_CELL_INNER_CLASS } from "./utils";
 
 const INTERACTIVE_SELECTOR =
@@ -31,6 +37,7 @@ export function TableBodyRow<T>({
   onDeactivate,
   onToggleRow,
   onCellEdit,
+  renderRowContextMenu,
   rowRef,
 }: {
   entry: TableRow<T>;
@@ -47,12 +54,13 @@ export function TableBodyRow<T>({
   onDeactivate?: () => void;
   onToggleRow: (id: string) => void;
   onCellEdit?: (rowId: string, columnKey: string, value: string) => void;
+  renderRowContextMenu: TableProps<T>["renderRowContextMenu"];
   rowRef: (el: HTMLTableRowElement | null) => void;
 }) {
   // The virtualizer's bottom spacer <tr> can be :last-child, so a CSS
   // last-child rule misses the real final row; flag it explicitly instead.
   const cellBorder = isLastRow ? "border-b-0" : "border-border/60 border-b";
-  return (
+  const tableRow = (
     <tr
       className={cn(
         "group transition-colors",
@@ -135,5 +143,16 @@ export function TableBodyRow<T>({
       ))}
       <td aria-hidden className={cellBorder} />
     </tr>
+  );
+
+  if (!renderRowContextMenu) {
+    return tableRow;
+  }
+
+  return (
+    <ContextMenu>
+      <ContextMenuTrigger render={tableRow} />
+      <ContextMenuContent>{renderRowContextMenu(entry.row)}</ContextMenuContent>
+    </ContextMenu>
   );
 }

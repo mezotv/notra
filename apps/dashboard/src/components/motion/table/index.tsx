@@ -60,6 +60,7 @@ export function Table<T>({
   skeletonRows = 3,
   emptyState = "No data",
   onRowClick,
+  renderRowContextMenu,
   onRowPointerEnter,
   isRowPinned,
   toolbar,
@@ -432,6 +433,7 @@ export function Table<T>({
                       onRowClick={onRowClick}
                       onRowPointerEnter={onRowPointerEnter}
                       onToggleRow={toggleRow}
+                      renderRowContextMenu={renderRowContextMenu}
                       rowHeight={rowHeight}
                       rowRef={(el) => {
                         rowRefs.current[entry.id] = el;

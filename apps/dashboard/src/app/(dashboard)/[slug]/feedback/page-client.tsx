@@ -1,6 +1,17 @@
 "use client";
 
 import { Confetti } from "@neoconfetti/react";
+import type { AgentFeedbackStatus } from "@notra/db/types/agent-feedback";
+import {
+  ResponsiveAlertDialog,
+  ResponsiveAlertDialogAction,
+  ResponsiveAlertDialogCancel,
+  ResponsiveAlertDialogContent,
+  ResponsiveAlertDialogDescription,
+  ResponsiveAlertDialogFooter,
+  ResponsiveAlertDialogHeader,
+  ResponsiveAlertDialogTitle,
+} from "@notra/ui/components/shared/responsive-alert-dialog";
 import {
   PermissionOption,
   PermissionRow,
@@ -19,10 +30,12 @@ import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { AGENT_FEEDBACK_STATUS_FILTERS } from "@/constants/agent-feedback";
 import {
+  useAgentFeedbackDelete,
   useAgentFeedbackList,
   useAgentFeedbackUpdateStatus,
 } from "@/lib/hooks/use-agent-feedback";
 import type {
+  AgentFeedbackItem,
   AgentFeedbackPageClientProps,
   AgentFeedbackStatusFilter,
 } from "@/types/agent-feedback";
@@ -44,10 +57,13 @@ export default function PageClient(_props: AgentFeedbackPageClientProps) {
   const [statusFilter, setStatusFilter] =
     useState<AgentFeedbackStatusFilter>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deleteCandidate, setDeleteCandidate] =
+    useState<AgentFeedbackItem | null>(null);
   const [resolvedCelebration, setResolvedCelebration] = useState(0);
 
   const list = useAgentFeedbackList(organizationId, statusFilter);
   const updateStatus = useAgentFeedbackUpdateStatus(organizationId);
+  const deleteFeedback = useAgentFeedbackDelete(organizationId);
 
   const items = list.data?.pages.flatMap((page) => page.items) ?? [];
   const counts = list.data?.pages[0]?.counts;
@@ -57,6 +73,41 @@ export default function PageClient(_props: AgentFeedbackPageClientProps) {
   const selectedItem = items.find((item) => item.id === selectedId) ?? null;
   const isLoading = !!organizationId && list.isPending;
   const showEmptyState = !isLoading && totalCount === 0;
+
+  const handleStatusChange = (
+    item: AgentFeedbackItem,
+    status: AgentFeedbackStatus
+  ) => {
+    if (item.status === status) {
+      return;
+    }
+
+    const wasResolved = item.status === "resolved";
+    updateStatus.mutate(
+      { feedbackId: item.id, status },
+      {
+        onSuccess: () => {
+          if (status === "resolved" && !wasResolved) {
+            setResolvedCelebration((current) => current + 1);
+          }
+        },
+      }
+    );
+  };
+
+  const handleDelete = () => {
+    if (!deleteCandidate) {
+      return;
+    }
+
+    const feedbackId = deleteCandidate.id;
+    deleteFeedback.mutate(feedbackId, {
+      onSuccess: () => {
+        setDeleteCandidate(null);
+        setSelectedId((current) => (current === feedbackId ? null : current));
+      },
+    });
+  };
 
   const countFor = (filter: AgentFeedbackStatusFilter) => {
     if (!counts) {
@@ -145,9 +196,13 @@ export default function PageClient(_props: AgentFeedbackPageClientProps) {
               )}
             >
               <AgentFeedbackTable
+                isDeleting={deleteFeedback.isPending}
                 isPending={isLoading}
+                isUpdatingStatus={updateStatus.isPending}
                 items={items}
+                onDelete={setDeleteCandidate}
                 onSelect={(item) => setSelectedId(item.id)}
+                onStatusChange={handleStatusChange}
                 selectedId={selectedId}
               />
             </div>
@@ -181,21 +236,48 @@ export default function PageClient(_props: AgentFeedbackPageClientProps) {
         }}
         onStatusChange={(status) => {
           if (selectedItem) {
-            const wasResolved = selectedItem.status === "resolved";
-            updateStatus.mutate(
-              { feedbackId: selectedItem.id, status },
-              {
-                onSuccess: () => {
-                  if (status === "resolved" && !wasResolved) {
-                    setResolvedCelebration((current) => current + 1);
-                  }
-                },
-              }
-            );
+            handleStatusChange(selectedItem, status);
           }
         }}
         open={selectedItem !== null}
       />
+
+      <ResponsiveAlertDialog
+        onOpenChange={(open) => {
+          if (!open && !deleteFeedback.isPending) {
+            setDeleteCandidate(null);
+          }
+        }}
+        open={deleteCandidate !== null}
+      >
+        <ResponsiveAlertDialogContent>
+          <ResponsiveAlertDialogHeader>
+            <ResponsiveAlertDialogTitle>
+              Delete feedback?
+            </ResponsiveAlertDialogTitle>
+            <ResponsiveAlertDialogDescription>
+              This will permanently delete &quot;
+              {deleteCandidate?.title ?? deleteCandidate?.message}&quot;. This
+              action cannot be undone.
+            </ResponsiveAlertDialogDescription>
+          </ResponsiveAlertDialogHeader>
+          <ResponsiveAlertDialogFooter>
+            <ResponsiveAlertDialogCancel disabled={deleteFeedback.isPending}>
+              Cancel
+            </ResponsiveAlertDialogCancel>
+            <ResponsiveAlertDialogAction
+              disabled={deleteFeedback.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                handleDelete();
+              }}
+              variant="destructive"
+            >
+              {deleteFeedback.isPending ? "Deleting..." : "Delete"}
+            </ResponsiveAlertDialogAction>
+          </ResponsiveAlertDialogFooter>
+        </ResponsiveAlertDialogContent>
+      </ResponsiveAlertDialog>
     </PageContainer>
   );
 }
