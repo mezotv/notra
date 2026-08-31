@@ -12,7 +12,6 @@ import {
   organizations,
   posts,
 } from "@notra/db/schema";
-import { getPostHogRequestContext } from "@notra/posthog/request";
 import { generateObject } from "ai";
 import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { createRequestLogger } from "evlog";

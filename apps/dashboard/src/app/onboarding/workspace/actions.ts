@@ -140,9 +140,10 @@ export async function triggerOnboardingBrandAnalysis(
     throw new Error("Forbidden");
   }
 
-  const { success: withinLimit } =
-    await ratelimit.onboardingBrandAnalysis.limit(input.organizationId);
-  const requestHeaders = await readRequestHeaders();
+  const [{ success: withinLimit }, requestHeaders] = await Promise.all([
+    ratelimit.onboardingBrandAnalysis.limit(input.organizationId),
+    readRequestHeaders(),
+  ]);
 
   if (!withinLimit) {
     trackServerEvent({

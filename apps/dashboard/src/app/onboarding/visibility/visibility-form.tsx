@@ -170,8 +170,12 @@ export function VisibilityForm({
   const discoveryTrackedUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (analyzedUrl && discover.isPending) {
-      discoveryStartedAtRef.current ??= Date.now();
+    if (
+      analyzedUrl &&
+      discover.isPending &&
+      discoveryStartedAtRef.current === null
+    ) {
+      discoveryStartedAtRef.current = Date.now();
     }
     if (
       !analyzedUrl ||

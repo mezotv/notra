@@ -44,10 +44,12 @@ export default async function AuthCallback(props: {
     signup_method?: string;
   }>;
 }) {
-  const session = await getSession();
-  const searchParams = await props.searchParams;
+  const [session, searchParams, requestHeaders] = await Promise.all([
+    getSession(),
+    props.searchParams,
+    readRequestHeaders(),
+  ]);
   const marketingAttribution = await loadMarketingAttribution(searchParams);
-  const requestHeaders = await readRequestHeaders();
   const userId = session?.user?.id ?? null;
   let returnTo = searchParams.returnTo;
 
