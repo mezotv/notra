@@ -8,6 +8,7 @@ import {
   Tick01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -30,6 +31,7 @@ import { StepFormats } from "@/components/content/create/step-formats";
 import { AddRepositoryDialog } from "@/components/integrations/add-repository-dialog";
 import { LegacyAddIntegrationDialog as AddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
 import { DEFAULT_DATA_POINTS } from "@/constants/content-preview";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   ContentDataPointSettings,
@@ -40,6 +42,7 @@ import {
   type CreateContentFormValues,
   createContentFormSchema,
 } from "@/schemas/content/create-content-form";
+import type { ContentCreateEntry } from "@/types/analytics/studio-events";
 import type {
   IntegrationOption,
   StepProgressProps,
@@ -54,6 +57,7 @@ import {
 } from "@/utils/content-preview";
 
 interface CreateContentDialogProps {
+  entry: ContentCreateEntry;
   hideTrigger?: boolean;
   onOpenChange?: (open: boolean) => void;
   open?: boolean;
@@ -85,6 +89,7 @@ function getDefaultContentFormValues(): CreateContentFormValues {
 }
 
 export function CreateContentDialog({
+  entry,
   hideTrigger = false,
   onOpenChange,
   open: controlledOpen,
@@ -101,16 +106,34 @@ export function CreateContentDialog({
     },
     [controlledOpen, onOpenChange]
   );
+  const hotkeyEntryRef = useRef<ContentCreateEntry | null>(null);
+  const trackedOpenRef = useRef(false);
 
   useHotkey(
     "C",
     () => {
       if (organizationId) {
+        hotkeyEntryRef.current = "hotkey";
         setDialogOpen(true);
       }
     },
     { enabled: !open }
   );
+
+  useEffect(() => {
+    if (!open) {
+      trackedOpenRef.current = false;
+      return;
+    }
+    if (trackedOpenRef.current) {
+      return;
+    }
+    trackedOpenRef.current = true;
+    trackEvent(POSTHOG_EVENTS.CONTENT_CREATE_DIALOG_OPENED, {
+      entry: hotkeyEntryRef.current ?? entry,
+    });
+    hotkeyEntryRef.current = null;
+  }, [entry, open]);
 
   const queryClient = useQueryClient();
 
@@ -654,11 +677,19 @@ export function CreateContentDialog({
       }
     }
     setAttemptedAdvance(false);
+    trackEvent(POSTHOG_EVENTS.CONTENT_CREATE_STEP_COMPLETED, {
+      step,
+      format_count: selectedFormats.length,
+      repo_count: selectedRepoIds.length,
+      lookback: lookbackWindow,
+      event_count: eventCounts.selected,
+    });
     setStep(STEP_ORDER[idx + 1] as WizardStep);
   }, [
     step,
     selectedFormats.length,
     selectedRepoIds.length,
+    lookbackWindow,
     isLoadingPreview,
     eventCounts.selected,
   ]);
@@ -739,6 +770,14 @@ export function CreateContentDialog({
   submitHandlerRef.current = async (value: CreateContentFormValues) => {
     const voiceIds =
       value.brandVoiceIds.length > 0 ? value.brandVoiceIds : [""];
+    trackEvent(POSTHOG_EVENTS.CONTENT_CREATE_STEP_COMPLETED, {
+      step,
+      format_count: value.formats.length,
+      repo_count: value.repositoryIds.length,
+      lookback: value.lookbackWindow,
+      event_count: eventCounts.selected,
+      voice_count: value.brandVoiceIds.length,
+    });
     await mutation.mutateAsync({
       formats: value.formats,
       voiceIds,

@@ -137,7 +137,10 @@ const extractDiscovery = Effect.fn("geo.discover.extract")(function* (
   const result = yield* Effect.tryPromise({
     try: () =>
       generateText({
-        model: gateway(GEO_DISCOVERY_MODEL, { organizationId }),
+        model: gateway(GEO_DISCOVERY_MODEL, {
+          organizationId,
+          posthog: { feature: "geo_discovery" },
+        }),
         output: Output.object({ schema: geoWebsiteDiscoverySchema }),
         prompt: buildDiscoveryPrompt(url, content),
         system: GEO_DISCOVERY_SYSTEM_PROMPT,

@@ -14,12 +14,15 @@ import {
   jwtVerify,
 } from "jose";
 
+import { API_AUTH_KINDS } from "../constants/analytics";
+import type { ApiAuthKind } from "../types/analytics";
 import type { AuthData } from "../types/auth";
 import {
   API_URL,
   AUTH_GUIDE_URL,
   RESOURCE_METADATA_URL,
 } from "../utils/agent-discovery";
+import { trackApiKeyRejected, trackApiKeyVerified } from "../utils/analytics";
 import { isFeedbackToken, verifyFeedbackToken } from "../utils/feedback-token";
 
 declare module "hono" {
@@ -65,7 +68,13 @@ type AuthFailureStatus = 401 | 403 | 429 | 503;
 
 type AuthResult =
   | { success: true; auth: AuthData }
-  | { success: false; error: string; status: AuthFailureStatus };
+  | {
+      success: false;
+      error: string;
+      status: AuthFailureStatus;
+      kind?: ApiAuthKind;
+      code?: string;
+    };
 
 /**
  * Unkey's verification codes, mapped onto answers a client can act on.
@@ -398,7 +407,7 @@ async function verifyRequestAuth(
       options.permissions
     );
     if (!tokenResult.success) {
-      return tokenResult;
+      return { ...tokenResult, kind: API_AUTH_KINDS.FEEDBACK_TOKEN };
     }
     const { identity } = tokenResult;
     const auth: AuthData = {
@@ -416,8 +425,9 @@ async function verifyRequestAuth(
     const oauthResult = await verifyOAuthToken(c, apiKey, options.permissions);
     if (oauthResult.success) {
       c.set("auth", oauthResult.auth);
+      return oauthResult;
     }
-    return oauthResult;
+    return { ...oauthResult, kind: API_AUTH_KINDS.OAUTH };
   }
 
   try {
@@ -453,7 +463,13 @@ async function verifyRequestAuth(
     if (!result.data.valid) {
       const failure =
         UNKEY_AUTH_FAILURES[result.data.code] ?? DEFAULT_UNKEY_AUTH_FAILURE;
-      return { success: false, error: failure.error, status: failure.status };
+      return {
+        success: false,
+        error: failure.error,
+        status: failure.status,
+        kind: API_AUTH_KINDS.UNKEY,
+        code: result.data.code,
+      };
     }
 
     if (!result.data.identity?.externalId) {
@@ -461,13 +477,19 @@ async function verifyRequestAuth(
         success: false,
         error: "Missing or invalid API key",
         status: 401,
+        kind: API_AUTH_KINDS.UNKEY,
       };
     }
 
     c.set("auth", result.data);
     return { success: true, auth: result.data };
   } catch {
-    return { success: false, error: "Service unavailable", status: 503 };
+    return {
+      success: false,
+      error: "Service unavailable",
+      status: 503,
+      kind: API_AUTH_KINDS.UNKEY,
+    };
   }
 }
 
@@ -475,6 +497,12 @@ export function authMiddleware(options: AuthOptions = {}) {
   return async (c: Context, next: Next) => {
     const authResult = await verifyRequestAuth(c, options);
     if (!authResult.success) {
+      trackApiKeyRejected(c, {
+        authKind: authResult.kind,
+        status: authResult.status,
+        reason: authResult.error,
+        unkeyCode: authResult.code,
+      });
       if (authResult.status === 401) {
         c.header(
           "WWW-Authenticate",
@@ -492,6 +520,7 @@ export function authMiddleware(options: AuthOptions = {}) {
       );
     }
 
+    trackApiKeyVerified(c, authResult.auth);
     await next();
   };
 }

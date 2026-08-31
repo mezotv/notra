@@ -1,7 +1,10 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Effect } from "effect";
 
+import { INTEGRATION_PROVIDERS } from "@/constants/integration-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { isNextRedirectError } from "@/lib/auth/redirect-error";
 import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -59,6 +62,11 @@ export function startGitHubInstall(params: {
   allowAccountConnection?: boolean;
 }): Promise<StartGitHubInstallResult> {
   const allowAccountConnection = params.allowAccountConnection ?? true;
+
+  trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+    provider: INTEGRATION_PROVIDERS.GITHUB,
+    allow_account_connection: allowAccountConnection,
+  });
 
   return Effect.runPromise(
     Effect.tryPromise({

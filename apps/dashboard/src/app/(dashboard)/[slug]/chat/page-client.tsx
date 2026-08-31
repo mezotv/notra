@@ -18,6 +18,7 @@ import type {
   ExternalChannelId,
   MirrorChatStatus,
 } from "@notra/ai/types/chat";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   Message,
   MessageContent,
@@ -84,6 +85,8 @@ import { TOOL_TIMER_THRESHOLD_SECONDS } from "@/constants/chat-tool-timer";
 import { INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX } from "@/constants/integration-reference";
 import { MIRROR_WORKING_TIMEOUT_MS } from "@/constants/slack-mirror";
 import { localStorageKeys } from "@/constants/storage";
+import { trackEvent } from "@/lib/analytics/posthog-client";
+import { getChatContextKind } from "@/lib/analytics/studio-events";
 import { authClient } from "@/lib/auth/client";
 import { emitAutumnRefresh } from "@/lib/billing/autumn-refresh";
 import {
@@ -96,6 +99,10 @@ import { getMcpIconUrls } from "@/lib/integrations/mcp";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { isImageMimeType } from "@/lib/upload/mime";
 import { cn } from "@/lib/utils";
+import type {
+  ChatDraftAction,
+  ChatToolApprovalDecision,
+} from "@/types/analytics/studio-events";
 import type { ChatMessageAuthor } from "@/types/chat";
 import type {
   CreateToolContentType,
@@ -699,6 +706,7 @@ function StandaloneChatPageClient({
     }
 
     setSelectedModel(nextModel);
+    trackEvent(POSTHOG_EVENTS.CHAT_MODEL_CHANGED, { model: nextModel });
   }, []);
 
   const handleThinkingLevelChange = useCallback((level: ThinkingLevel) => {
@@ -708,6 +716,9 @@ function StandaloneChatPageClient({
     }
 
     setThinkingLevel(nextThinkingLevel);
+    trackEvent(POSTHOG_EVENTS.CHAT_THINKING_LEVEL_CHANGED, {
+      level: nextThinkingLevel,
+    });
   }, []);
 
   useEffect(() => {
@@ -1164,6 +1175,9 @@ function StandaloneChatPageClient({
 
   const handleAddContext = useCallback((item: ContextItem) => {
     setHasCustomizedContext(true);
+    trackEvent(POSTHOG_EVENTS.CHAT_CONTEXT_ADDED, {
+      kind: getChatContextKind(item.type),
+    });
     setContext((prev) => {
       const exists = prev.some((c) => {
         if (c.type !== item.type) {
@@ -1183,6 +1197,9 @@ function StandaloneChatPageClient({
 
   const handleRemoveContext = useCallback((item: ContextItem) => {
     setHasCustomizedContext(true);
+    trackEvent(POSTHOG_EVENTS.CHAT_CONTEXT_REMOVED, {
+      kind: getChatContextKind(item.type),
+    });
     setContext((prev) =>
       prev.filter((c) => {
         if (c.type !== item.type) {
@@ -1318,6 +1335,7 @@ function StandaloneChatPageClient({
   const handleEditMessage = useCallback(
     async (userMessageId: string, newText: string) => {
       setEditingMessageId(null);
+      trackEvent(POSTHOG_EVENTS.CHAT_MESSAGE_EDITED, { chat_id: stableChatId });
       const current = messagesRef.current;
       const message = current.find((m) => m.id === userMessageId);
       const attachments = message
@@ -1339,6 +1357,10 @@ function StandaloneChatPageClient({
       if (!text.trim() && attachments.length === 0) {
         return;
       }
+      trackEvent(POSTHOG_EVENTS.CHAT_RETRY, {
+        chat_id: stableChatId,
+        model: modelOverride ?? null,
+      });
       await resendFromUserMessage(
         userMessageId,
         text,
@@ -1346,7 +1368,7 @@ function StandaloneChatPageClient({
         modelOverride
       );
     },
-    [extractUserMessageContent, resendFromUserMessage]
+    [extractUserMessageContent, resendFromUserMessage, stableChatId]
   );
 
   const [branchSwitchSignal, setBranchSwitchSignal] = useState<{
@@ -1383,8 +1405,13 @@ function StandaloneChatPageClient({
       setMessages([...before, ...(tails[active] ?? [])]);
 
       setBranchSwitchSignal({ userMessageId, tick: Date.now() });
+      trackEvent(POSTHOG_EVENTS.CHAT_BRANCH_SWITCHED, {
+        chat_id: stableChatId,
+        direction,
+        branch_count: total,
+      });
     },
-    [messageBranches, setMessages]
+    [messageBranches, setMessages, stableChatId]
   );
 
   const dispatchMessage = useCallback(
@@ -1942,24 +1969,36 @@ function StandaloneChatPageClient({
           toolPart.state === "approval-requested"
             ? toolPart.approval.id
             : undefined;
+        const trackDraftAction = (action: ChatDraftAction) => {
+          trackEvent(POSTHOG_EVENTS.CHAT_DRAFT_ACTION, {
+            action,
+            type: contentType,
+            chat_id: stableChatId,
+            relayed_to_slack: isSlackMirrored,
+          });
+        };
         const handleApprove = approvalId
-          ? () =>
-              isSlackMirrored
+          ? () => {
+              trackDraftAction("approve");
+              return isSlackMirrored
                 ? relayApproval(approvalId, true)
                 : addToolApprovalResponse({
                     id: approvalId,
                     approved: true,
-                  })
+                  });
+            }
           : undefined;
         const handleDeny = approvalId
-          ? () =>
-              isSlackMirrored
+          ? () => {
+              trackDraftAction("deny");
+              return isSlackMirrored
                 ? relayApproval(approvalId, false)
                 : addToolApprovalResponse({
                     id: approvalId,
                     approved: false,
                     reason: "discard",
-                  })
+                  });
+            }
           : undefined;
         const handlePersist =
           approvalId && !isSlackMirrored
@@ -1967,6 +2006,9 @@ function StandaloneChatPageClient({
                 status: "draft" | "published",
                 payload: { title: string; markdown: string }
               ) => {
+                trackDraftAction(
+                  status === "published" ? "save_published" : "save_draft"
+                );
                 const response = await fetch(
                   `/api/organizations/${organizationId}/chat/posts`,
                   {
@@ -2008,6 +2050,7 @@ function StandaloneChatPageClient({
               instructions: string,
               payload: { title: string; markdown: string }
             ) => {
+              trackDraftAction("regenerate");
               const regeneratePrompt = `Regenerate the ${getOutputTypeLabel(contentType)} with these changes: ${instructions}\n\nCurrent title: ${payload.title}\n\nCurrent draft:\n${payload.markdown}`;
               if (isSlackMirrored) {
                 const sent = await relayMessage(regeneratePrompt);
@@ -2032,6 +2075,13 @@ function StandaloneChatPageClient({
           : undefined;
 
         const handlePublished = (published: PublishedSocialPost) => {
+          trackEvent(POSTHOG_EVENTS.CHAT_DRAFT_ACTION, {
+            action: "publish_social",
+            type: contentType,
+            chat_id: stableChatId,
+            platform: published.platform,
+            relayed_to_slack: isSlackMirrored,
+          });
           sendMessage({
             text: buildPublishedChatMessage(published),
             metadata: authorMetadata,
@@ -2121,23 +2171,35 @@ function StandaloneChatPageClient({
           toolPart.state === "approval-requested"
             ? toolPart.approval.id
             : undefined;
+        const trackToolApproval = (decision: ChatToolApprovalDecision) => {
+          trackEvent(POSTHOG_EVENTS.CHAT_TOOL_APPROVAL, {
+            tool: toolName,
+            decision,
+            chat_id: stableChatId,
+            relayed_to_slack: isSlackMirrored,
+          });
+        };
         const handleApprove = approvalId
-          ? () =>
-              isSlackMirrored
+          ? () => {
+              trackToolApproval("approved");
+              return isSlackMirrored
                 ? relayApproval(approvalId, true)
                 : addToolApprovalResponse({
                     id: approvalId,
                     approved: true,
-                  })
+                  });
+            }
           : undefined;
         const handleDeny = approvalId
-          ? () =>
-              isSlackMirrored
+          ? () => {
+              trackToolApproval("denied");
+              return isSlackMirrored
                 ? relayApproval(approvalId, false)
                 : addToolApprovalResponse({
                     id: approvalId,
                     approved: false,
-                  })
+                  });
+            }
           : undefined;
         const output =
           toolPart.state === "output-error"

@@ -17,9 +17,16 @@ import {
   postCollections,
 } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, eq, inArray } from "drizzle-orm";
 
+import { WORKFLOW_OUTCOMES } from "@/constants/workflow-analytics";
 import { isAgentContentGenerationEnabled } from "@/lib/agent/flag";
+import { trackServerEventAndFlush } from "@/lib/analytics/posthog-server";
+import {
+  trackContentOutcomeAndFlush,
+  trackWorkflowOutcomeAndFlush,
+} from "@/lib/analytics/workflow-lifecycle";
 import { checkLogRetention } from "@/lib/billing/check-log-retention";
 import {
   trackScheduledContentCreated,
@@ -46,6 +53,7 @@ import type { LookbackWindow } from "@/schemas/integrations";
 import type { LogRetentionDays } from "@/types/webhooks/webhooks";
 import type {
   AppendAutomationLogInput,
+  ClaimWorkflowExecutionInput,
   CreateGenerationCollectionInput,
   EnqueueDigestInput,
   FinalizeContentBillingInput,
@@ -69,17 +77,27 @@ import type {
 const EXECUTION_CLAIM_TTL_SECONDS = 60 * 60 * 24;
 const EXECUTION_CLAIM_SCOPE = "workflow-execution";
 
-export async function claimWorkflowExecution(input: {
-  executionId: string;
-  claimToken: string;
-}): Promise<{ claimed: boolean }> {
+export async function claimWorkflowExecution(
+  input: ClaimWorkflowExecutionInput
+): Promise<{ claimed: boolean }> {
   "use step";
-  return await acquireClaim({
+  const claim = await acquireClaim({
     scope: EXECUTION_CLAIM_SCOPE,
     claimKey: input.executionId,
     ownerToken: input.claimToken,
     ttlSeconds: EXECUTION_CLAIM_TTL_SECONDS,
   });
+  if (!claim.claimed) {
+    await trackServerEventAndFlush({
+      event: POSTHOG_EVENTS.WORKFLOW_DUPLICATE_REJECTED,
+      organizationId: input.organizationId,
+      properties: {
+        workflow: input.workflow,
+        execution_id: input.executionId,
+      },
+    });
+  }
+  return claim;
 }
 
 export async function fetchScheduleTriggerContext(triggerId: string): Promise<{
@@ -141,6 +159,15 @@ export async function recordWorkflowPause(
 ): Promise<void> {
   "use step";
   await recordAutomatedWorkflowPauseSafe(input);
+  await trackServerEventAndFlush({
+    event: POSTHOG_EVENTS.WORKFLOW_PAUSED,
+    organizationId: input.organizationId,
+    properties: {
+      reason: input.reason,
+      trigger_id: input.triggerId,
+      source: input.logPrefix.toLowerCase(),
+    },
+  });
 }
 
 export async function clearWorkflowPause(input: {
@@ -388,6 +415,24 @@ export async function finishGeneration(
     ...(input.title ? { title: input.title } : {}),
     completedAt: new Date().toISOString(),
   });
+  if (input.workflow) {
+    await trackWorkflowOutcomeAndFlush({
+      workflow: input.workflow,
+      outcome:
+        input.status === "failed"
+          ? WORKFLOW_OUTCOMES.FAILED
+          : WORKFLOW_OUTCOMES.COMPLETED,
+      organizationId: input.organizationId,
+      runId: input.runId,
+      startedAt: input.startedAt,
+      reason: input.reason,
+      properties: {
+        status: input.status,
+        output_type: input.outputType,
+        trigger_id: input.triggerId,
+      },
+    });
+  }
 }
 
 export async function finalizeContentBilling(
@@ -437,6 +482,7 @@ export async function trackContentOutcome(
   input: TrackContentOutcomeInput
 ): Promise<void> {
   "use step";
+  await trackContentOutcomeAndFlush(input);
   try {
     if (input.kind === "created") {
       const trackingResults = await Promise.allSettled(

@@ -10,11 +10,17 @@ import {
 } from "@notra/ai/integrations/github";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { redis } from "@notra/ai/utils/redis";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Data, Effect } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 
 import { GITHUB_INSTALL_STATE_TTL_SECONDS } from "@/constants/github";
+import {
+  INTEGRATION_AUTH_KINDS,
+  INTEGRATION_PROVIDERS,
+} from "@/constants/integration-analytics";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import {
@@ -260,7 +266,7 @@ export const githubRouter = {
           organizationId: input.organizationId,
         });
 
-        return Effect.runPromise(
+        const selection = await Effect.runPromise(
           Effect.tryPromise({
             try: () =>
               setSelectedGitHubAppRepositories({
@@ -272,10 +278,22 @@ export const githubRouter = {
           }).pipe(
             Effect.match({
               onFailure: mapGitHubAppRequestError,
-              onSuccess: (selection) => selection,
+              onSuccess: (result) => result,
             })
           )
         );
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.GITHUB_REPOSITORIES_SELECTED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            repo_count: input.repositoryIds.length,
+          },
+        });
+
+        return selection;
       }),
     disconnect: authorizedProcedure
       .input(disconnectGitHubAppInputSchema)
@@ -302,6 +320,18 @@ export const githubRouter = {
           input.organizationId,
           input.accountId
         );
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.INTEGRATION_DISCONNECTED,
+          headers: context.headers,
+          userId: context.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            provider: INTEGRATION_PROVIDERS.GITHUB,
+            auth_kind: INTEGRATION_AUTH_KINDS.OAUTH,
+            installation_count: installations.length,
+          },
+        });
 
         return { success: true };
       }),

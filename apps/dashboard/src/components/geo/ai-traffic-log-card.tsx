@@ -14,6 +14,7 @@ import {
   formatGeoTrafficFilterLabel,
   toggleGeoTrafficFilterValue,
 } from "@notra/geo-core/utils/ai-traffic";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -29,6 +30,8 @@ import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
+import { TRAFFIC_LOG_FILTER_KINDS } from "@/constants/geo-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoTrafficLog } from "@/lib/hooks/use-geo";
 import { useTablePagination } from "@/lib/hooks/use-table-pagination";
 import type { AiTrafficLogCardProps } from "@/types/geo";
@@ -99,6 +102,11 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
               key={option.value}
               onCheckedChange={() => {
                 pagination.setPage(1);
+                trackEvent(POSTHOG_EVENTS.TRAFFIC_LOG_FILTER_CHANGED, {
+                  filter: TRAFFIC_LOG_FILTER_KINDS.VISITOR_TYPE,
+                  value: option.value,
+                  active: !filters.visitorTypes.includes(option.value),
+                });
                 setFilters((previous) => ({
                   ...previous,
                   visitorTypes: toggleGeoTrafficFilterValue(
@@ -129,6 +137,11 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
               key={option.value}
               onCheckedChange={() => {
                 pagination.setPage(1);
+                trackEvent(POSTHOG_EVENTS.TRAFFIC_LOG_FILTER_CHANGED, {
+                  filter: TRAFFIC_LOG_FILTER_KINDS.PURPOSE,
+                  value: option.value,
+                  active: !filters.categories.includes(option.value),
+                });
                 setFilters((previous) => ({
                   ...previous,
                   categories: toggleGeoTrafficFilterValue(
@@ -145,7 +158,10 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
       </DropdownMenu>
       {total > 0 && (
         <Button
-          onClick={() => setLive((current) => !current)}
+          onClick={() => {
+            trackEvent(POSTHOG_EVENTS.TRAFFIC_LIVE_TOGGLED, { live: !live });
+            setLive((current) => !current);
+          }}
           size="sm"
           variant="outline"
         >

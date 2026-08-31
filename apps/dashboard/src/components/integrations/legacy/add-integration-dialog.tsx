@@ -1,5 +1,6 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -29,6 +30,8 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { INTEGRATION_PROVIDERS } from "@/constants/integration-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseGitHubUrl } from "@/lib/utils/github";
 import {
@@ -168,6 +171,11 @@ export function LegacyAddIntegrationDialog({
       if (!parsed) {
         throw new Error("Invalid GitHub repository URL");
       }
+
+      trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+        provider: INTEGRATION_PROVIDERS.GITHUB,
+        has_token: Boolean(values.token?.trim()),
+      });
 
       const integration = await dashboardOrpc.integrations.create.call({
         organizationId,

@@ -23,6 +23,7 @@ import { PresenceBadge } from "@/components/geo/presence-badge";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
+import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
 import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import type { GeoPromptTableRow, PromptsTableProps } from "@/types/geo";
 import {
@@ -305,6 +306,7 @@ export function PromptsTable({
         }}
         open={detail !== null}
         row={detail}
+        surface={GEO_PROMPT_DETAIL_SURFACES.PROMPTS_TABLE}
       />
     </div>
   );

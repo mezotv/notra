@@ -2,6 +2,7 @@
 
 import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
@@ -30,12 +31,18 @@ import { ZdrAddonCard } from "@/components/billing/zdr-addon-card";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { PLAN_SURFACES } from "@/constants/analytics-events";
 import {
   BILLING_SECTION_VALUES,
   FEATURED_PLAN_TIER,
   INVOICE_TABLE_COLUMN_COUNT,
   PLANS_ANCHOR,
 } from "@/constants/billing";
+import {
+  billingInterval,
+  planSelectedProperties,
+} from "@/lib/analytics/billing-events";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { attachPlanWithAddons } from "@/lib/billing/attach-plan";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import type { BillingPlanGroup, PlanCardButton } from "@/types/billing/plan";
@@ -109,8 +116,35 @@ function BillingPageContent() {
     activeSubscription?.trialEndsAt != null &&
     activeSubscription.trialEndsAt > now;
 
+  function handleIntervalChange(value: string) {
+    const yearly = value === "yearly";
+    trackEvent(POSTHOG_EVENTS.PRICING_INTERVAL_TOGGLED, {
+      interval: billingInterval(yearly),
+      surface: PLAN_SURFACES.BILLING_PAGE,
+    });
+    setIsYearly(yearly);
+  }
+
+  function handleIncludeZdrChange(checked: boolean) {
+    trackEvent(POSTHOG_EVENTS.ZDR_ADDON_TOGGLED, {
+      enabled: checked,
+      surface: PLAN_SURFACES.BILLING_PAGE,
+    });
+    setIncludeZdr(checked);
+  }
+
   async function handleCheckout(planId: string) {
     setLoading(planId);
+    trackEvent(
+      POSTHOG_EVENTS.PLAN_SELECTED,
+      planSelectedProperties({
+        plans,
+        planId,
+        isYearly,
+        includeZdr,
+        surface: PLAN_SURFACES.BILLING_PAGE,
+      })
+    );
     const successUrl = activeOrganization?.slug
       ? `${window.location.origin}/${activeOrganization.slug}/settings/billing/success`
       : undefined;
@@ -130,6 +164,10 @@ function BillingPageContent() {
       }
     } catch (err) {
       console.error("Attach error:", err);
+      trackEvent(POSTHOG_EVENTS.CHECKOUT_FAILED, {
+        plan_id: planId,
+        surface: PLAN_SURFACES.BILLING_PAGE,
+      });
       toast.error(
         err instanceof Error
           ? err.message
@@ -141,6 +179,9 @@ function BillingPageContent() {
 
   async function handleManageSubscription() {
     setPortalLoading(true);
+    trackEvent(POSTHOG_EVENTS.CUSTOMER_PORTAL_OPENED, {
+      surface: PLAN_SURFACES.BILLING_PAGE,
+    });
     const returnUrl = `${window.location.origin}/${activeOrganization?.slug}/settings/billing`;
     try {
       await openCustomerPortal({
@@ -209,7 +250,7 @@ function BillingPageContent() {
             </Badge>
           ) : undefined
         }
-        addon={zdrAddonToggle(addonPlan, includeZdr, setIncludeZdr)}
+        addon={zdrAddonToggle(addonPlan, includeZdr, handleIncludeZdrChange)}
         button={planButton(group)}
         description={planGroupDescription(group)}
         featured={group.id === FEATURED_PLAN_TIER}
@@ -282,7 +323,7 @@ function BillingPageContent() {
                       </p>
                     </div>
                     <Tabs
-                      onValueChange={(value) => setIsYearly(value === "yearly")}
+                      onValueChange={handleIntervalChange}
                       value={isYearly ? "yearly" : "monthly"}
                     >
                       <TabsList variant="line">

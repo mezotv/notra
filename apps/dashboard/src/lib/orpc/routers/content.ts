@@ -16,6 +16,7 @@ import { db } from "@notra/db/drizzle";
 import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
 import type { BlogPostSubtype } from "@notra/db/types/content";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import { and, asc, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { marked } from "marked";
@@ -26,6 +27,8 @@ import {
   GITHUB_API_MAX_RESULTS,
   GITHUB_API_PAGE_SIZE,
 } from "@/constants/content-preview";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
+import { getEnabledDataPoints } from "@/lib/analytics/studio-events";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import {
@@ -559,7 +562,7 @@ export const contentRouter = {
   update: baseProcedure
     .input(contentInputSchema.and(updateContentSchema))
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      const auth = await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
       });
@@ -573,6 +576,7 @@ export const contentRouter = {
         columns: {
           title: true,
           contentType: true,
+          status: true,
         },
       });
 
@@ -625,6 +629,38 @@ export const contentRouter = {
           throw internalServerError("Failed to update content");
         }
 
+        if (input.markdown !== undefined) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.CONTENT_SAVED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              content_id: input.contentId,
+              type: existingPost.contentType,
+            },
+          });
+        }
+
+        if (
+          input.status !== undefined &&
+          input.status !== existingPost.status
+        ) {
+          trackServerEvent({
+            event:
+              input.status === "published"
+                ? POSTHOG_EVENTS.CONTENT_PUBLISHED
+                : POSTHOG_EVENTS.CONTENT_UNPUBLISHED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              content_id: input.contentId,
+              type: existingPost.contentType,
+            },
+          });
+        }
+
         return {
           success: true,
           content: serializeContent(updatedPost),
@@ -644,7 +680,7 @@ export const contentRouter = {
   delete: baseProcedure
     .input(contentInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      const auth = await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
       });
@@ -656,6 +692,7 @@ export const contentRouter = {
         ),
         columns: {
           id: true,
+          contentType: true,
         },
       });
 
@@ -671,6 +708,17 @@ export const contentRouter = {
             eq(posts.organizationId, input.organizationId)
           )
         );
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.CONTENT_DELETED,
+        headers: context.headers,
+        userId: auth.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          content_id: input.contentId,
+          type: existingPost.contentType,
+        },
+      });
 
       return { success: true };
     }),
@@ -868,7 +916,7 @@ export const contentRouter = {
     rename: baseProcedure
       .input(renamePostCollectionInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -892,6 +940,16 @@ export const contentRouter = {
         if (!updatedCollection) {
           throw notFound("Post collection not found");
         }
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.COLLECTION_RENAMED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            collection_id: updatedCollection.id,
+          },
+        });
 
         return {
           collection: {
@@ -1417,10 +1475,39 @@ export const contentRouter = {
       }
 
       if (!billing.allowed) {
+        trackServerEvent({
+          event: POSTHOG_EVENTS.CONTENT_GENERATION_DENIED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            reason: billing.reason ?? null,
+            format: input.contentType,
+          },
+        });
         throw paymentRequired(describeContentBillingDenial(billing));
       }
 
       const runId = generateRunId("manual_on_demand");
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.CONTENT_GENERATION_REQUESTED,
+        headers: context.headers,
+        userId: auth.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          format: input.contentType,
+          voice_id: input.brandIdentityId ?? input.brandVoiceId ?? null,
+          source_count:
+            (input.repositoryIds ?? input.integrations?.github ?? []).length +
+            (input.linearIntegrationIds ?? input.integrations?.linear ?? [])
+              .length,
+          data_points: getEnabledDataPoints(input.dataPoints),
+          lookback: input.lookbackWindow,
+          collection_id: input.collectionId,
+          run_id: runId,
+        },
+      });
 
       await addActiveGeneration(input.organizationId, {
         runId,

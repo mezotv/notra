@@ -9,6 +9,7 @@ import {
   organizations,
   slackIntegrations,
 } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, count, desc, eq, gte, isNotNull, lt } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -18,6 +19,7 @@ import {
   IRIS_RUNS_PAGE_SIZE,
   IRIS_STATS_WINDOW_MS,
 } from "@/constants/iris";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { assertIrisEnabled } from "@/lib/iris/access";
@@ -252,7 +254,19 @@ export const irisRouter = {
       }
 
       await ensureWakeSchedule(mandate);
-      await kickManualRun(input.organizationId);
+      const manualRunId = await kickManualRun(input.organizationId);
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.IRIS_STARTED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          mandate_id: mandate.id,
+          mandate_version: mandate.version,
+          manual_run_started: manualRunId !== null,
+        },
+      });
 
       return await reloadMandateView(input.organizationId, mandate.id);
     }),
@@ -307,6 +321,17 @@ export const irisRouter = {
         });
       }
 
+      trackServerEvent({
+        event: POSTHOG_EVENTS.IRIS_PAUSED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          mandate_id: mandate.id,
+          pause_reason: "manual",
+        },
+      });
+
       return await reloadMandateView(input.organizationId, mandate.id);
     }),
 
@@ -336,6 +361,16 @@ export const irisRouter = {
 
       await ensureWakeSchedule(mandate);
 
+      trackServerEvent({
+        event: POSTHOG_EVENTS.IRIS_RESUMED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          mandate_id: mandate.id,
+        },
+      });
+
       return await reloadMandateView(input.organizationId, mandate.id);
     }),
 
@@ -363,6 +398,16 @@ export const irisRouter = {
       if (!runId) {
         throw conflict("Iris is already working on a run");
       }
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.IRIS_RUN_NOW,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          run_id: runId,
+        },
+      });
 
       return { runId };
     }),

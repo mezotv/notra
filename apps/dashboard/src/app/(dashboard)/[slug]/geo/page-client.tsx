@@ -1,12 +1,13 @@
 "use client";
 
 import { GEO_DEFAULT_TAB, GEO_TAB_VALUES } from "@notra/geo-core/constants/geo";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Loader2Icon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
@@ -17,6 +18,7 @@ import {
   useGeoProjectScope,
 } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   useGeoCompetitorShare,
   useGeoCompetitors,
@@ -86,7 +88,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
   const startScan = useGeoStartScan(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
 
-  useHotkey("R", () => startScan.mutate(), { enabled: !isScanning });
+  useHotkey("R", () => startScan.mutate("hotkey"), { enabled: !isScanning });
 
   const [activeTab, setActiveTab] = useQueryState(
     "tab",
@@ -106,6 +108,29 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
     return () => clearTimeout(timer);
   }, [ready, reduceMotion]);
 
+  const overviewViewedRef = useRef(false);
+  const hasSettings = Boolean(settingsData?.settings);
+  const overviewLoaded = overview !== undefined;
+  const engineCount = overview?.engines.length ?? 0;
+  const rangePreset = geoRange.preset;
+
+  useEffect(() => {
+    if (
+      overviewViewedRef.current ||
+      !ready ||
+      (hasSettings && !overviewLoaded)
+    ) {
+      return;
+    }
+    overviewViewedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.GEO_OVERVIEW_VIEWED, {
+      has_data: engineCount > 0,
+      has_settings: hasSettings,
+      range: rangePreset,
+      tab: activeTab,
+    });
+  }, [activeTab, engineCount, hasSettings, overviewLoaded, rangePreset, ready]);
+
   if (isSettingsPending) {
     return <GeoPageSkeleton />;
   }
@@ -117,6 +142,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full px-4 lg:px-6">
           <GeoSetupEmpty
+            page="overview"
             settingsHref={geoNavHref(
               organizationSlug,
               "/geo/settings",
@@ -143,7 +169,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
             <Button
               className="w-fit gap-2"
               disabled={isScanning}
-              onClick={() => startScan.mutate()}
+              onClick={() => startScan.mutate("manual")}
               size="sm"
             >
               <span className="inline-flex items-center gap-1.5">

@@ -1,13 +1,24 @@
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
 
+import { trackServerException } from "@/lib/analytics/posthog-server";
 import { createORPCContext } from "@/lib/orpc/context";
 import { dashboardRouter } from "@/lib/orpc/router";
+import { isServerFailureError } from "@/utils/orpc-errors";
 
 const handler = new RPCHandler(dashboardRouter, {
   interceptors: [
-    onError((error) => {
+    onError((error, options) => {
       console.error("[oRPC]", error);
+      if (isServerFailureError(error)) {
+        trackServerException({
+          error,
+          headers: options.context.headers,
+          userId: options.context.user?.id,
+          organizationId: options.context.session?.activeOrganizationId,
+          properties: { surface: "rpc" },
+        });
+      }
     }),
   ],
 });

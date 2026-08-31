@@ -41,6 +41,7 @@
     "@notra/email": "workspace:*",
     "@notra/geo-core": "workspace:*",
     "@notra/kiwi": "workspace:*",
+    "@notra/posthog": "workspace:*",
     "@notra/ui": "workspace:*",
     "@notra/utils": "workspace:*",
     "@orpc/client": "^1.13.9",

@@ -61,8 +61,10 @@ import type {
 } from "@notra/ai/types/autonomy";
 import { buildControllerLeaseName } from "@notra/ai/utils/autonomy-lease-name";
 import { trackIrisRunUsage } from "@notra/ai/utils/iris-billing";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Effect } from "effect";
 
+import { trackServerEventAndFlush } from "@/lib/analytics/posthog-server";
 import { resolveIrisFlagState } from "@/lib/iris/flag";
 import {
   failOpenRun,
@@ -340,6 +342,20 @@ export async function recordIrisNoOpRun(input: {
       yield* completeRun({ runId: input.runId, status: "completed" });
     })
   );
+
+  await trackServerEventAndFlush({
+    event: POSTHOG_EVENTS.IRIS_RUN_NOOP,
+    organizationId: input.mandate.organizationId,
+    properties: {
+      run_id: input.runId,
+      mandate_id: input.mandate.id,
+      mandate_version: input.mandate.version,
+      gate_reason: input.reason,
+      signal_count: input.consumedSignalIds.length,
+      artifact_count: 0,
+      cost_cents: 0,
+    },
+  });
 }
 
 export async function coalesceIrisSignals(input: {
@@ -695,6 +711,21 @@ export async function finalizeIrisRun(input: {
       }
     })
   );
+
+  await trackServerEventAndFlush({
+    event:
+      input.status === "failed"
+        ? POSTHOG_EVENTS.IRIS_RUN_FAILED
+        : POSTHOG_EVENTS.IRIS_RUN_COMPLETED,
+    organizationId: input.organizationId,
+    properties: {
+      run_id: input.runId,
+      run_status: input.status,
+      cost_cents: input.costCents,
+      has_goal: input.goalId !== null,
+      goal_status: input.goalStatus,
+    },
+  });
 }
 
 export async function publishIrisOutbox(input: {
@@ -816,4 +847,14 @@ export async function closeOpenIrisRun(input: {
       )
     )
   );
+
+  await trackServerEventAndFlush({
+    event: POSTHOG_EVENTS.IRIS_RUN_FAILED,
+    organizationId: input.organizationId,
+    properties: {
+      run_id: input.runId,
+      run_status: "failed",
+      gate_reason: "stale_open_run",
+    },
+  });
 }

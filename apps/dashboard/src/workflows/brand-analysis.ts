@@ -34,11 +34,13 @@ export async function brandAnalysisWorkflow(
     return { status: "invalid_payload" };
   }
   const { organizationId, url, voiceId, jobId } = parseResult.data;
+  const workflowStartedAt = Date.now();
 
   try {
     await setBrandAnalysisProgress({
       organizationId,
       jobId,
+      startedAt: workflowStartedAt,
       progress: { status: "scraping", currentStep: 1, totalSteps: STEP_COUNT },
     });
 
@@ -47,6 +49,7 @@ export async function brandAnalysisWorkflow(
       await setBrandAnalysisProgress({
         organizationId,
         jobId,
+        startedAt: workflowStartedAt,
         progress: {
           status: "failed",
           currentStep: 1,
@@ -60,6 +63,7 @@ export async function brandAnalysisWorkflow(
     await setBrandAnalysisProgress({
       organizationId,
       jobId,
+      startedAt: workflowStartedAt,
       progress: {
         status: "extracting",
         currentStep: 2,
@@ -77,6 +81,7 @@ export async function brandAnalysisWorkflow(
       await setBrandAnalysisProgress({
         organizationId,
         jobId,
+        startedAt: workflowStartedAt,
         progress: {
           status: "failed",
           currentStep: 2,
@@ -90,6 +95,7 @@ export async function brandAnalysisWorkflow(
     await setBrandAnalysisProgress({
       organizationId,
       jobId,
+      startedAt: workflowStartedAt,
       progress: { status: "saving", currentStep: 3, totalSteps: STEP_COUNT },
     });
 
@@ -103,6 +109,7 @@ export async function brandAnalysisWorkflow(
     await setBrandAnalysisProgress({
       organizationId,
       jobId,
+      startedAt: workflowStartedAt,
       progress: {
         status: "completed",
         currentStep: 3,
@@ -115,6 +122,7 @@ export async function brandAnalysisWorkflow(
     await setBrandAnalysisProgress({
       organizationId,
       jobId,
+      startedAt: workflowStartedAt,
       progress: {
         status: "failed",
         currentStep: 0,

@@ -1,5 +1,7 @@
 "use server";
 
+import { POSTHOG_EVENTS, type PostHogEventName } from "@notra/posthog/events";
+import type { PostHogProperties } from "@notra/posthog/types/posthog";
 import type {
   AuthFlowResult,
   SignInWithPasswordInput,
@@ -11,6 +13,12 @@ import type { AuthenticationResponse } from "@workos-inc/node";
 import { Effect } from "effect";
 import { headers } from "next/headers";
 
+import {
+  ANALYTICS_AUTH_METHODS,
+  PASSWORD_RESET_OUTCOMES,
+} from "@/constants/analytics-events";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
+import { readRequestHeaders } from "@/lib/analytics/request-headers";
 import { UserSyncError, WorkOSAuthError } from "@/lib/auth/errors";
 import { authenticateResolvingOrgSelection } from "@/lib/auth/org-selection";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
@@ -30,6 +38,15 @@ import type {
   SignUpWithPasswordInput,
 } from "@/types/auth/password-actions";
 import { getClientIpFromHeaders, ratelimit } from "@/utils/ratelimit";
+
+async function trackAuthEvent(
+  event: PostHogEventName,
+  properties?: PostHogProperties,
+  userId?: string | null
+) {
+  const requestHeaders = await readRequestHeaders();
+  trackServerEvent({ event, headers: requestHeaders, userId, properties });
+}
 
 const VERIFICATION_REQUIRED_CODE = "email_verification_required";
 const NAME_SPLIT_REGEX = /\s+/;
@@ -70,7 +87,11 @@ const tryWorkOSAuth = <T>(run: () => Promise<T>) =>
   });
 
 const completeAuthentication = Effect.fn("auth.password.completeSession")(
-  function* (response: AuthenticationResponse, returnTo?: string | null) {
+  function* (
+    response: AuthenticationResponse,
+    returnTo?: string | null,
+    completionEvent?: PostHogEventName
+  ) {
     yield* Effect.tryPromise({
       try: () =>
         saveSession(
@@ -87,11 +108,21 @@ const completeAuthentication = Effect.fn("auth.password.completeSession")(
         new UserSyncError({ message: "Failed to persist session", cause }),
     });
 
-    yield* syncAuthenticatedUser({
+    const localUser = yield* syncAuthenticatedUser({
       workosUser: response.user,
       oauthTokens: response.oauthTokens,
       authenticationMethod: response.authenticationMethod,
     });
+
+    if (completionEvent) {
+      yield* Effect.promise(() =>
+        trackAuthEvent(
+          completionEvent,
+          { method: ANALYTICS_AUTH_METHODS.PASSWORD },
+          localUser.id
+        )
+      );
+    }
 
     const redirectTo =
       sanitizeReturnTo(returnTo ?? null) ?? DEFAULT_POST_LOGIN_PATH;
@@ -111,11 +142,18 @@ const mapAuthFailure =
         info.code === VERIFICATION_REQUIRED_CODE &&
         info.pendingAuthenticationToken
       ) {
-        return Effect.succeed<AuthFlowResult>({
-          status: "verification-required",
-          pendingAuthenticationToken: info.pendingAuthenticationToken,
-          email,
-        });
+        const pendingToken = info.pendingAuthenticationToken;
+        return Effect.promise(() =>
+          trackAuthEvent(POSTHOG_EVENTS.EMAIL_VERIFICATION_REQUIRED, {
+            method: ANALYTICS_AUTH_METHODS.PASSWORD,
+          })
+        ).pipe(
+          Effect.as<AuthFlowResult>({
+            status: "verification-required",
+            pendingAuthenticationToken: pendingToken,
+            email,
+          })
+        );
       }
 
       return Effect.succeed<AuthFlowResult>({
@@ -236,7 +274,11 @@ export async function verifyEmailCodeAction(
         })
       );
 
-      return yield* completeAuthentication(response, parsed.data.returnTo);
+      return yield* completeAuthentication(
+        response,
+        parsed.data.returnTo,
+        POSTHOG_EVENTS.EMAIL_VERIFIED
+      );
     })
   );
 }
@@ -247,12 +289,18 @@ export async function forgotPasswordAction(
   const parsed = forgotPasswordInputSchema.safeParse(rawInput);
 
   if (!parsed.success) {
+    await trackAuthEvent(POSTHOG_EVENTS.PASSWORD_RESET_REQUESTED, {
+      outcome: PASSWORD_RESET_OUTCOMES.INVALID,
+    });
     return { sent: false };
   }
 
   const input = parsed.data;
 
   if (await isRateLimited(ratelimit.forgotPassword, input.email)) {
+    await trackAuthEvent(POSTHOG_EVENTS.PASSWORD_RESET_REQUESTED, {
+      outcome: PASSWORD_RESET_OUTCOMES.RATE_LIMITED,
+    });
     return { sent: false };
   }
 
@@ -269,6 +317,12 @@ export async function forgotPasswordAction(
         })
       );
 
+      yield* Effect.promise(() =>
+        trackAuthEvent(POSTHOG_EVENTS.PASSWORD_RESET_REQUESTED, {
+          outcome: PASSWORD_RESET_OUTCOMES.SENT,
+        })
+      );
+
       return { sent: true };
     }).pipe(
       Effect.catch((error) =>
@@ -276,6 +330,13 @@ export async function forgotPasswordAction(
           Effect.annotateLogs({
             error: readWorkOSError(error.error).message,
           }),
+          Effect.andThen(
+            Effect.promise(() =>
+              trackAuthEvent(POSTHOG_EVENTS.PASSWORD_RESET_REQUESTED, {
+                outcome: PASSWORD_RESET_OUTCOMES.FAILED,
+              })
+            )
+          ),
           Effect.as({ sent: true })
         )
       )
@@ -304,12 +365,25 @@ export async function resetPasswordAction(
         newPassword: input.newPassword,
       })
     ).pipe(
+      Effect.andThen(
+        Effect.promise(() =>
+          trackAuthEvent(POSTHOG_EVENTS.PASSWORD_RESET_COMPLETED, {
+            outcome: PASSWORD_RESET_OUTCOMES.SUCCESS,
+          })
+        )
+      ),
       Effect.as<AuthFlowResult>({ status: "success", redirectTo: "/login" }),
       Effect.catch((error) =>
-        Effect.succeed<AuthFlowResult>({
-          status: "error",
-          message: readWorkOSError(error.error).message,
-        })
+        Effect.promise(() =>
+          trackAuthEvent(POSTHOG_EVENTS.PASSWORD_RESET_COMPLETED, {
+            outcome: PASSWORD_RESET_OUTCOMES.ERROR,
+          })
+        ).pipe(
+          Effect.as<AuthFlowResult>({
+            status: "error",
+            message: readWorkOSError(error.error).message,
+          })
+        )
       )
     )
   );

@@ -1,8 +1,10 @@
 import { createRoute } from "@hono/zod-openapi";
 import { geoScans } from "@notra/db/schema";
 import { startGeoScan } from "@notra/geo-core/geo/programs";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, count, desc, eq } from "drizzle-orm";
 
+import { API_TRIGGER_SOURCE } from "../constants/analytics";
 import {
   GEO_COMMON_ERROR_RESPONSES,
   GEO_OPENAPI_TAG,
@@ -14,6 +16,7 @@ import {
   listScansResponseSchema,
   scanResponseSchema,
 } from "../schemas/geo-scans";
+import { trackApiEvent } from "../utils/analytics";
 import { geoErrorResponse } from "../utils/geo";
 import { runGeoEffect } from "../utils/geo-effect";
 import { createOpenApiApp } from "../utils/openapi-app";
@@ -141,6 +144,12 @@ geoScansRoutes.openapi(createScanRoute, async (c) => {
   // returning it left clients polling for a row that did not exist yet.
   const { scanId } = outcome.value;
   const statusUrl = `/v1/projects/${projectId}/geo/scans/${scanId}`;
+  trackApiEvent(c, {
+    event: POSTHOG_EVENTS.GEO_SCAN_STARTED,
+    organizationId: base.organizationId,
+    projectId,
+    properties: { trigger: API_TRIGGER_SOURCE, scan_id: scanId },
+  });
 
   return c.json({ scanId, statusUrl, organization: base.organization }, 202, {
     Location: statusUrl,

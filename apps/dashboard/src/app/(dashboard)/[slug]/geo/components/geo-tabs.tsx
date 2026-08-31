@@ -4,6 +4,7 @@ import {
   GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES,
   GEO_GAPS_NAV_LINK,
 } from "@notra/geo-core/constants/geo";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   PermissionOption,
   PermissionRow,
@@ -23,6 +24,7 @@ import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import { cn } from "@/lib/utils";
 import type { GeoTabsProps } from "@/types/geo";
@@ -96,7 +98,11 @@ export function GeoTabs({
         className="w-fit shrink-0"
         label="GEO sections"
         layout="compact"
-        onValueChange={(value) => onActiveTabChange(toGeoTab(value))}
+        onValueChange={(value) => {
+          const tab = toGeoTab(value);
+          trackEvent(POSTHOG_EVENTS.GEO_TAB_CHANGED, { tab });
+          onActiveTabChange(tab);
+        }}
         value={activeTab}
       >
         <PermissionOption value="visibility">Visibility</PermissionOption>

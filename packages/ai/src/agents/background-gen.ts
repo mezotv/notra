@@ -111,7 +111,12 @@ export async function runBackgroundGen(
   const model = createModel(
     organizationId,
     AGENT_DEFAULT_MODEL,
-    undefined,
+    {
+      posthog: {
+        feature: "content_generation",
+        properties: { content_label: contentLabel },
+      },
+    },
     log
   );
 

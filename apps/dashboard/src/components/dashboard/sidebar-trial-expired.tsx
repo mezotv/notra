@@ -1,12 +1,18 @@
 "use client";
 
 import { FEATURES, PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { PAYWALL_KINDS, PLAN_SURFACES } from "@/constants/analytics-events";
+import { trackEvent } from "@/lib/analytics/posthog-client";
+import { toAnalyticsRoute } from "@/lib/analytics/route";
 
 export function SidebarTrialExpired() {
   const { activeOrganization } = useOrganizationsContext();
@@ -14,23 +20,43 @@ export function SidebarTrialExpired() {
   const { data: customer, isLoading } = useCustomer({
     expand: ["balances.feature", "subscriptions.plan"],
   });
+  const pathname = usePathname();
+  const route = toAnalyticsRoute(pathname, activeOrganization?.slug);
+  const shownRef = useRef(false);
 
-  if (isLoading || !customer) {
-    return null;
-  }
-
-  const hasActiveSubscription = customer.subscriptions.some(
-    (subscription) =>
-      !subscription.addOn &&
-      subscription.status === "active" &&
-      PAID_OR_LEGACY_PLAN_IDS.has(subscription.planId)
+  const hasActiveSubscription = Boolean(
+    customer?.subscriptions.some(
+      (subscription) =>
+        !subscription.addOn &&
+        subscription.status === "active" &&
+        PAID_OR_LEGACY_PLAN_IDS.has(subscription.planId)
+    )
   );
 
-  const aiCredits = customer.balances?.[FEATURES.AI_CREDITS];
+  const aiCredits = customer?.balances?.[FEATURES.AI_CREDITS];
   const hasCreditsBalance =
     typeof aiCredits?.remaining === "number" && aiCredits.remaining > 0;
 
-  if (hasActiveSubscription || hasCreditsBalance) {
+  const isVisible =
+    !isLoading &&
+    customer !== null &&
+    customer !== undefined &&
+    !hasActiveSubscription &&
+    !hasCreditsBalance;
+
+  useEffect(() => {
+    if (!isVisible || shownRef.current) {
+      return;
+    }
+    shownRef.current = true;
+    trackEvent(POSTHOG_EVENTS.PAYWALL_SHOWN, {
+      kind: PAYWALL_KINDS.TRIAL_EXPIRED,
+      plan_id: null,
+      route,
+    });
+  }, [isVisible, route]);
+
+  if (!isVisible) {
     return null;
   }
 
@@ -48,6 +74,14 @@ export function SidebarTrialExpired() {
           <Button
             className="w-full"
             nativeButton={false}
+            onClick={() =>
+              trackEvent(POSTHOG_EVENTS.UPGRADE_CLICKED, {
+                surface: PLAN_SURFACES.SIDEBAR_TRIAL_EXPIRED,
+                target_plan: null,
+                interval: null,
+                zdr: false,
+              })
+            }
             render={<Link href={`/${slug}/settings/billing`} />}
             size="sm"
           >

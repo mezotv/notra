@@ -3,14 +3,17 @@
 import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Confetti } from "@neoconfetti/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { cn } from "@notra/ui/lib/utils";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { buttonVariants } from "@/components/button";
+import { CHECKOUT_SURFACES } from "@/constants/analytics-events";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { planDisplayName } from "@/utils/billing-plans";
 
 function BillingSuccessPageContent() {
@@ -24,8 +27,29 @@ function BillingSuccessPageContent() {
   );
   const planName =
     planDisplayName(activeSubscription?.plan?.name) ?? "your new plan";
+  const [now] = useState(() => Date.now());
+  const completedRef = useRef(false);
+  const activePlanId =
+    activeSubscription?.plan?.id ?? activeSubscription?.planId ?? null;
+  const isTrial =
+    activeSubscription?.trialEndsAt != null &&
+    activeSubscription.trialEndsAt > now;
+
+  useEffect(() => {
+    if (!activeSubscription || completedRef.current) {
+      return;
+    }
+    completedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.CHECKOUT_COMPLETED, {
+      plan_id: activePlanId,
+      is_trial: isTrial,
+    });
+  }, [activeSubscription, activePlanId, isTrial]);
 
   async function handleManageBilling() {
+    trackEvent(POSTHOG_EVENTS.CUSTOMER_PORTAL_OPENED, {
+      surface: CHECKOUT_SURFACES.SUCCESS_PAGE,
+    });
     try {
       await openCustomerPortal({
         returnUrl: `${window.location.origin}/${slug}/settings/billing`,

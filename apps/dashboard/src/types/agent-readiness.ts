@@ -6,6 +6,8 @@ import type {
   AgentReadinessResponse,
 } from "@notra/geo-core/types/agent-readiness";
 
+import type { AgentReadinessFixCopyKind } from "@/types/analytics/geo-events";
+
 export interface AgentReadinessScoreCardProps {
   report: AgentReadinessReportView;
   previousScore: number | null;
@@ -42,6 +44,8 @@ export interface AgentReadinessBodyProps {
 export interface AgentReadinessCopyPromptButtonProps {
   prompt: string;
   label: string;
+  copyKind: AgentReadinessFixCopyKind;
+  checkId?: string;
   variant?: "outline" | "default" | "ghost";
   size?: "sm" | "xs";
 }

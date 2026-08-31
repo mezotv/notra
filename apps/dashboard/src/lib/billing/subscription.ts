@@ -4,9 +4,15 @@ import {
 } from "@notra/ai/billing/autumn";
 import { FEATURES, PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import type { GeoZdrEntitlement } from "@notra/geo-core/types/geo";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { ORPCError } from "@orpc/server";
 
+import {
+  ENTITLEMENT_FEATURES,
+  ENTITLEMENT_SURFACES,
+} from "@/constants/analytics-events";
 import { GEO_PLAN_REQUIRED_MESSAGE } from "@/constants/billing";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { internalServerError, paymentRequired } from "@/lib/orpc/utils/errors";
 
 async function hasAiCreditsBalance(organizationId: string): Promise<boolean> {
@@ -64,7 +70,8 @@ export async function resolveZdrEntitlement(
 }
 
 export async function assertActiveSubscription(
-  organizationId: string
+  organizationId: string,
+  procedure?: string
 ): Promise<void> {
   if (allowUnmeteredAiInDevelopment) {
     return;
@@ -78,11 +85,18 @@ export async function assertActiveSubscription(
   }
 
   let hasAccess = false;
+  let activePlanId: string | null = null;
 
   try {
     const customer = await autumn.customers.getOrCreate({
       customerId: organizationId,
     });
+
+    activePlanId =
+      customer.subscriptions.find(
+        (subscription) =>
+          !subscription.addOn && subscription.status === "active"
+      )?.planId ?? null;
 
     hasAccess = customer.subscriptions.some(
       (subscription) =>
@@ -102,6 +116,11 @@ export async function assertActiveSubscription(
   }
 
   if (!hasAccess) {
+    trackServerEvent({
+      event: POSTHOG_EVENTS.SUBSCRIPTION_REQUIRED_HIT,
+      organizationId,
+      properties: { procedure: procedure ?? null, plan_id: activePlanId },
+    });
     throw paymentRequired("Active subscription required");
   }
 }
@@ -162,6 +181,14 @@ export async function assertGeoEntitlement(
   }
 
   if (!entitled) {
+    trackServerEvent({
+      event: POSTHOG_EVENTS.ENTITLEMENT_DENIED,
+      organizationId,
+      properties: {
+        feature: ENTITLEMENT_FEATURES.AI_ANSWERS,
+        surface: ENTITLEMENT_SURFACES.DASHBOARD,
+      },
+    });
     throw paymentRequired(GEO_PLAN_REQUIRED_MESSAGE);
   }
 }

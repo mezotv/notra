@@ -22,6 +22,8 @@ import * as z from "zod";
 
 import { OrgLogoField } from "@/components/onboarding/org-logo-field";
 import { OnboardingProgress } from "@/components/onboarding/progress";
+import { OnboardingStepViewTracker } from "@/components/onboarding/step-view-tracker";
+import { ONBOARDING_STEPS } from "@/constants/analytics-events";
 import { COMPANY_LOGO_DEBOUNCE_MS } from "@/constants/company-logo";
 import {
   ONBOARDING_HEARD_ABOUT_NOTRA_OPTIONS,
@@ -143,6 +145,10 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
 
   return (
     <div className="flex w-full flex-col gap-5">
+      <OnboardingStepViewTracker
+        isResuming={isResuming}
+        step={ONBOARDING_STEPS.WORKSPACE}
+      />
       <div className="flex justify-center">
         <OnboardingProgress current={ONBOARDING_STEP_WORKSPACE} />
       </div>

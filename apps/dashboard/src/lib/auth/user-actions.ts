@@ -2,10 +2,13 @@
 
 import { db } from "@notra/db/drizzle";
 import { socialConnections, users } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { getWorkOS, signOut } from "@workos-inc/authkit-nextjs";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
+import { readRequestHeaders } from "@/lib/analytics/request-headers";
 import { sendResetPasswordAction } from "@/lib/email/actions";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import { requireSession } from "@/lib/organizations/guards";
@@ -128,6 +131,16 @@ export async function deleteUserAction(): Promise<
           )
         );
       }
+
+      const requestHeaders = yield* Effect.promise(readRequestHeaders);
+      yield* Effect.sync(() => {
+        trackServerEvent({
+          event: POSTHOG_EVENTS.ACCOUNT_DELETED,
+          headers: requestHeaders,
+          userId: session.user.id,
+          properties: { had_paid_history: null },
+        });
+      });
 
       yield* tryAction(
         () => db.delete(users).where(eq(users.id, session.user.id)),

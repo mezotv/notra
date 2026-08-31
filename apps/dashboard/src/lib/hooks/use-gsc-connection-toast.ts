@@ -1,9 +1,11 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { GSC_ERROR_MESSAGES } from "@/lib/integrations/google-search-console/oauth-errors";
 
 const OAUTH_RESULT_PARAMS = ["gscConnected", "error"] as const;
@@ -25,16 +27,27 @@ export function useGscConnectionToast() {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
+  const trackedResultRef = useRef<string | null>(null);
 
   useEffect(() => {
     const connected = searchParams.get("gscConnected");
     const error = searchParams.get("error");
+    const resultKey = `${connected ?? ""}:${error ?? ""}`;
+    const alreadyTracked = trackedResultRef.current === resultKey;
 
     if (connected === "true") {
+      if (!alreadyTracked) {
+        trackedResultRef.current = resultKey;
+        trackEvent(POSTHOG_EVENTS.GSC_CONNECT_SUCCEEDED);
+      }
       toast.success("Google Search Console connected", {
         id: "gsc-connected",
       });
     } else if (error && Object.hasOwn(GSC_ERROR_MESSAGES, error)) {
+      if (!alreadyTracked) {
+        trackedResultRef.current = resultKey;
+        trackEvent(POSTHOG_EVENTS.GSC_CONNECT_FAILED, { error_code: error });
+      }
       toast.error(GSC_ERROR_MESSAGES[error], { id: `gsc-error-${error}` });
     } else {
       return;

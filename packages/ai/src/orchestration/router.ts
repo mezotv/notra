@@ -123,6 +123,7 @@ export async function routeMessage(
         typeof telemetryMetadata?.organizationId === "string"
           ? telemetryMetadata.organizationId
           : undefined,
+      posthog: { feature: "chat_router" },
     }),
     log
   );

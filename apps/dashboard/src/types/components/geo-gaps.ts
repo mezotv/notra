@@ -1,8 +1,19 @@
 import type {
   GeoCompetitor,
+  GeoGapWriteAction,
   GeoPromptGapRow,
   GeoSearchGapRow,
+  GeoWriterSourceKind,
 } from "@notra/geo-core/types/geo";
+
+export interface GeoGapsWriteCellProps {
+  action: GeoGapWriteAction;
+  postId: string | null | undefined;
+  sourceKind: GeoWriterSourceKind;
+  opportunityBucket: number | null;
+  onOpenPost: (postId: string) => void;
+  onWrite: () => void;
+}
 
 export type GeoGapsTab = "prompt" | "search";
 

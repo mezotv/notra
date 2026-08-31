@@ -1,8 +1,10 @@
 import { db } from "@notra/db/drizzle";
 import { connectedSocialAccounts } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { runSocialConnect } from "@/lib/orpc/utils/social-connect";
@@ -99,6 +101,17 @@ export const socialAccountsRouter = {
         .delete(connectedSocialAccounts)
         .where(eq(connectedSocialAccounts.id, input.accountId));
 
+      trackServerEvent({
+        event: POSTHOG_EVENTS.SOCIAL_ACCOUNT_DISCONNECTED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          platform: existing.provider,
+          account_id: existing.id,
+        },
+      });
+
       return { success: true };
     }),
   refresh: authorizedProcedure
@@ -134,6 +147,18 @@ export const socialAccountsRouter = {
         }),
         { logLabel: "Failed to publish post", reconnectHint: true }
       );
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.CONTENT_SOCIAL_PUBLISHED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          platform: result.platform,
+          from: input.from ?? null,
+          account_id: input.accountId,
+        },
+      });
 
       return {
         postId: result.postId,
@@ -189,6 +214,17 @@ export const socialAccountsRouter = {
         }),
         { logLabel: "Failed to complete LinkedIn selection" }
       );
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.SOCIAL_ACCOUNT_CONNECTED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: stash.organizationId,
+        properties: {
+          platform: "linkedin",
+          account_count: input.accountIds.length,
+        },
+      });
 
       return { callbackPath: result.callbackPath };
     }),

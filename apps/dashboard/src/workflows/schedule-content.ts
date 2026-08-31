@@ -2,6 +2,7 @@ import { getContentBillingLimitLabel } from "@notra/ai/billing/content-billing";
 import { sleep } from "workflow";
 import { flattenError } from "zod";
 
+import { WORKFLOW_ANALYTICS_NAMES } from "@/constants/workflow-analytics";
 import {
   GITHUB_RATE_LIMIT_RETRY_DELAY,
   SCHEDULE_AI_CREDIT_LOCK_TTL_MS,
@@ -55,6 +56,7 @@ export async function scheduleContentWorkflow(payload: {
   }
   const { triggerId, manual, executionId, delaySeconds } = parseResult.data;
   const creationMode = manual ? "manual" : "automatic";
+  const workflowStartedAt = Date.now();
   const resolvedExecutionId = executionId ?? crypto.randomUUID();
   const claimToken = crypto.randomUUID();
 
@@ -65,6 +67,7 @@ export async function scheduleContentWorkflow(payload: {
   const claim = await claimWorkflowExecution({
     executionId: resolvedExecutionId,
     claimToken,
+    workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
   });
   if (!claim.claimed) {
     console.warn(
@@ -209,6 +212,8 @@ export async function scheduleContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -231,6 +236,8 @@ export async function scheduleContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -267,6 +274,8 @@ export async function scheduleContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -339,6 +348,8 @@ export async function scheduleContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -406,6 +417,8 @@ export async function scheduleContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -442,6 +455,8 @@ export async function scheduleContentWorkflow(payload: {
     await finishGeneration({
       organizationId: trigger.organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+      startedAt: workflowStartedAt,
       triggerId,
       outputType: trigger.outputType,
       triggerName: automationName,
@@ -532,6 +547,8 @@ export async function scheduleContentWorkflow(payload: {
     await finishGeneration({
       organizationId: trigger.organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+      startedAt: workflowStartedAt,
       triggerId,
       outputType: trigger.outputType,
       triggerName: automationName,

@@ -115,6 +115,7 @@ export function NavModePrimaryAction({
       </div>
       {createMounted && (
         <CreateContentDialog
+          entry="nav_primary"
           hideTrigger
           onOpenChange={setCreateOpen}
           open={createOpen}

@@ -8,6 +8,7 @@ import {
   NewTwitterIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   Avatar,
   AvatarFallback,
@@ -32,6 +33,7 @@ import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { DevSampleDataCard } from "@/components/settings/dev-sample-data-card";
 import { OrganizationMembershipActionDialog } from "@/components/settings/organization-membership-action-dialog";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
 import {
   useConnectedAccounts,
@@ -107,6 +109,14 @@ function GeneralSettingsPageContent({ params }: GeneralSettingsPageProps) {
         organizationId: organization.id,
         action,
       });
+
+      if (action === "delete") {
+        trackEvent(POSTHOG_EVENTS.ORGANIZATION_DELETED, {
+          deleted_organization_id: organization.id,
+          had_other_members: hasOtherMembers,
+          had_paid_history: null,
+        });
+      }
 
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.AUTH.organizations,

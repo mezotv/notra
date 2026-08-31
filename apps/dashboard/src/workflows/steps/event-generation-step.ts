@@ -1,6 +1,7 @@
 import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integrations/github";
 import { getValidToneProfile } from "@notra/ai/schemas/tone";
 import type { PostSourceMetadata } from "@notra/db/schema";
+import { flushPostHogServer } from "@notra/posthog/server";
 
 import { generateEventBasedContent } from "@/lib/workflows/event/handlers";
 import type { EventGenerationStepInput } from "@/types/workflows/event-generation";
@@ -32,44 +33,48 @@ export async function runEventGeneration(
 
   const tone = getValidToneProfile(brand?.toneProfile, "Conversational");
 
-  return await generateEventBasedContent({
-    organizationId: trigger.organizationId,
-    collectionId: input.collectionId,
-    chargeAiCredits,
-    triggerId: trigger.id,
-    triggerName: trigger.name,
-    eventType,
-    eventAction,
-    eventData,
-    repositoryId: repository.id,
-    repositoryOwner: repository.owner,
-    repositoryName: repository.name,
-    outputType: trigger.outputType,
-    tone,
-    brand: {
-      companyName: brand?.companyName ?? undefined,
-      companyDescription: brand?.companyDescription ?? undefined,
-      audience: brand?.audience ?? undefined,
-      customInstructions: brand?.customInstructions ?? null,
-    },
-    sourceMetadata,
-    autoPublish: trigger.autoPublish,
-    resolveContext: getGitHubToolRepositoryContextByIntegrationId,
-    telemetryMetadata: {
-      contentType: trigger.outputType,
-      eventAction,
-      eventType,
-      feature: "content_generation",
-      generationMode: "event",
+  try {
+    return await generateEventBasedContent({
       organizationId: trigger.organizationId,
-      repositoryId: repository.id,
-      routeName: "/api/workflows/event",
+      collectionId: input.collectionId,
+      chargeAiCredits,
       triggerId: trigger.id,
       triggerName: trigger.name,
-      triggerSourceType: "github_webhook",
-      voiceId: brand?.id,
-    },
-  });
+      eventType,
+      eventAction,
+      eventData,
+      repositoryId: repository.id,
+      repositoryOwner: repository.owner,
+      repositoryName: repository.name,
+      outputType: trigger.outputType,
+      tone,
+      brand: {
+        companyName: brand?.companyName ?? undefined,
+        companyDescription: brand?.companyDescription ?? undefined,
+        audience: brand?.audience ?? undefined,
+        customInstructions: brand?.customInstructions ?? null,
+      },
+      sourceMetadata,
+      autoPublish: trigger.autoPublish,
+      resolveContext: getGitHubToolRepositoryContextByIntegrationId,
+      telemetryMetadata: {
+        contentType: trigger.outputType,
+        eventAction,
+        eventType,
+        feature: "content_generation",
+        generationMode: "event",
+        organizationId: trigger.organizationId,
+        repositoryId: repository.id,
+        routeName: "/api/workflows/event",
+        triggerId: trigger.id,
+        triggerName: trigger.name,
+        triggerSourceType: "github_webhook",
+        voiceId: brand?.id,
+      },
+    });
+  } finally {
+    await flushPostHogServer();
+  }
 }
 
 Object.assign(runEventGeneration, { maxRetries: 0 });

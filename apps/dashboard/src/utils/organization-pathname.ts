@@ -1,0 +1,30 @@
+import { RESERVED_ORGANIZATION_SLUGS } from "@/constants/organization";
+
+const reservedSlugs: ReadonlySet<string> = new Set(RESERVED_ORGANIZATION_SLUGS);
+
+export function getFirstPathSegment(pathname: string): string {
+  return pathname.split("/").filter(Boolean)[0] ?? "";
+}
+
+export function isReservedOrganizationSlug(slug: string): boolean {
+  return reservedSlugs.has(slug);
+}
+
+export function shouldMaskOrganizationPathname(pathname: string): boolean {
+  const firstSegment = getFirstPathSegment(pathname);
+  return Boolean(firstSegment) && !isReservedOrganizationSlug(firstSegment);
+}
+
+export function maskOrganizationPathname(
+  pathname: string,
+  replacement: string
+): string {
+  if (!shouldMaskOrganizationPathname(pathname)) {
+    return pathname;
+  }
+
+  const segments = pathname.split("/").filter(Boolean);
+  segments[0] = replacement;
+
+  return `/${segments.join("/")}`;
+}

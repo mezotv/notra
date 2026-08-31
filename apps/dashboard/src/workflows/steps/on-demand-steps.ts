@@ -2,6 +2,8 @@ import { db } from "@notra/db/drizzle";
 import { githubIntegrations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 
+import { WORKFLOW_OUTCOMES } from "@/constants/workflow-analytics";
+import { trackWorkflowOutcomeAndFlush } from "@/lib/analytics/workflow-lifecycle";
 import { completeActiveGeneration } from "@/lib/generations/tracking";
 import { resolveBrandVoiceForManualGeneration } from "@/lib/workflows/on-demand/helpers";
 import {
@@ -129,6 +131,25 @@ export async function finishOnDemand(
     completedAt: new Date().toISOString(),
     source: input.source,
   });
+  if (input.workflow) {
+    await trackWorkflowOutcomeAndFlush({
+      workflow: input.workflow,
+      outcome:
+        input.status === "failed"
+          ? WORKFLOW_OUTCOMES.FAILED
+          : WORKFLOW_OUTCOMES.COMPLETED,
+      organizationId: input.organizationId,
+      runId: input.runId,
+      startedAt: input.startedAt,
+      reason: input.reason,
+      properties: {
+        status: input.status,
+        output_type: input.contentType,
+        trigger: input.source,
+        post_count: input.postCount,
+      },
+    });
+  }
 
   if (input.status === "success") {
     await setTrackedJobStatus(input.jobId, "completed", {

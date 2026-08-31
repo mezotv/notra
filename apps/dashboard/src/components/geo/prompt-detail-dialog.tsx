@@ -3,6 +3,7 @@
 import type { GeoPromptResult } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -11,12 +12,17 @@ import {
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type KeyboardEvent, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 
 import { GeoPromptAnswerThread } from "@/components/geo/geo-prompt-answer-thread";
 import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
+import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { EASE_OUT } from "@/lib/ease";
-import type { GeoPromptTableRow, PromptDetailDialogProps } from "@/types/geo";
+import type {
+  PromptAnswerPageProps,
+  PromptDetailDialogProps,
+} from "@/types/geo";
 import { sharedEngineAnswerMode } from "@/utils/geo-charts";
 import { adjacentPromptEngine } from "@/utils/geo-prompt-engines";
 
@@ -52,10 +58,8 @@ function latestPromptCheckAt(
 function PromptAnswerPage({
   row,
   isScanning = false,
-}: {
-  row: GeoPromptTableRow;
-  isScanning?: boolean;
-}) {
+  surface,
+}: PromptAnswerPageProps) {
   const results = row.results;
   const engines = results.map((result) => result.engine);
   const [engine, setEngine] = useState(engines[0] ?? "");
@@ -65,6 +69,22 @@ function PromptAnswerPage({
   const latestCheck = latestPromptCheckAt(results);
   const active =
     results.find((result) => result.engine === engine) ?? results[0] ?? null;
+  const openedRef = useRef(false);
+  const activeEngine = active?.engine ?? null;
+  const resultCount = results.length;
+
+  useEffect(() => {
+    if (openedRef.current) {
+      return;
+    }
+    openedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.GEO_PROMPT_DETAIL_OPENED, {
+      surface: surface ?? GEO_PROMPT_DETAIL_SURFACES.PROMPTS_TABLE,
+      engine: activeEngine,
+      engine_count: resultCount,
+      prompt_id: row.id,
+    });
+  }, [activeEngine, resultCount, row.id, surface]);
   const threadTransition = reduceMotion
     ? INSTANT
     : { duration: 0.28, ease: EASE_OUT };
@@ -170,6 +190,7 @@ export function PromptDetailDialog({
   onOpenChange,
   row,
   isScanning = false,
+  surface,
 }: PromptDetailDialogProps) {
   if (!row) {
     return null;
@@ -177,7 +198,12 @@ export function PromptDetailDialog({
 
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
-      <PromptAnswerPage isScanning={isScanning} key={row.id} row={row} />
+      <PromptAnswerPage
+        isScanning={isScanning}
+        key={row.id}
+        row={row}
+        surface={surface}
+      />
     </ResponsiveDialog>
   );
 }

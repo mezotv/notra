@@ -9,8 +9,16 @@ import { buildCallbackUrl } from "@notra/utils/callback-url";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
 
+import {
+  INTEGRATION_AUTH_KINDS,
+  INTEGRATION_PROVIDERS,
+} from "@/constants/integration-analytics";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";
+import {
+  trackIntegrationConnected,
+  trackIntegrationConnectFailed,
+} from "@/lib/integrations/connect-events";
 import { getLastVisitedOrganization } from "@/utils/cookies";
 import { ratelimit } from "@/utils/ratelimit";
 
@@ -31,10 +39,18 @@ function getFallbackCallbackPath(request: NextRequest) {
 }
 
 function buildErrorRedirect(params: {
+  request: NextRequest;
   baseUrl: string;
   callbackPath: string | null;
   code: string;
 }) {
+  trackIntegrationConnectFailed({
+    headers: params.request.headers,
+    provider: INTEGRATION_PROVIDERS.GITHUB,
+    authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+    errorCode: params.code,
+  });
+
   if (params.callbackPath) {
     return NextResponse.redirect(
       buildCallbackUrl(params.baseUrl, params.callbackPath, {
@@ -81,6 +97,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       return buildErrorRedirect({
+        request,
         baseUrl,
         callbackPath,
         code:
@@ -92,6 +109,7 @@ export async function GET(request: NextRequest) {
 
     if (!(installationId && state && redis)) {
       return buildErrorRedirect({
+        request,
         baseUrl,
         callbackPath,
         code: "invalid_callback",
@@ -100,6 +118,7 @@ export async function GET(request: NextRequest) {
 
     if (!installState) {
       return buildErrorRedirect({
+        request,
         baseUrl,
         callbackPath,
         code: "expired_state",
@@ -109,6 +128,7 @@ export async function GET(request: NextRequest) {
     const { session } = await getServerSession({ headers: request.headers });
     if (!session?.userId || session.userId !== installState.userId) {
       return buildErrorRedirect({
+        request,
         baseUrl,
         callbackPath,
         code: "session_mismatch",
@@ -120,6 +140,7 @@ export async function GET(request: NextRequest) {
     );
     if (!withinLimit) {
       return buildErrorRedirect({
+        request,
         baseUrl,
         callbackPath,
         code: "too_many_requests",
@@ -134,6 +155,7 @@ export async function GET(request: NextRequest) {
     } catch (accessError) {
       if (accessError instanceof ORPCError) {
         return buildErrorRedirect({
+          request,
           baseUrl,
           callbackPath,
           code: "forbidden",
@@ -146,6 +168,14 @@ export async function GET(request: NextRequest) {
       organizationId: installState.organizationId,
       userId: installState.userId,
       installationId,
+    });
+
+    trackIntegrationConnected({
+      headers: request.headers,
+      userId: installState.userId,
+      organizationId: installState.organizationId,
+      provider: INTEGRATION_PROVIDERS.GITHUB,
+      authKind: INTEGRATION_AUTH_KINDS.OAUTH,
     });
 
     return NextResponse.redirect(
@@ -167,6 +197,7 @@ export async function GET(request: NextRequest) {
         );
       }
       return buildErrorRedirect({
+        request,
         baseUrl,
         callbackPath,
         code: "github_reauthorization_required",
@@ -174,6 +205,7 @@ export async function GET(request: NextRequest) {
     }
     if (error instanceof GitHubInstallationAccessDeniedError) {
       return buildErrorRedirect({
+        request,
         baseUrl,
         callbackPath,
         code: "github_installation_forbidden",
@@ -184,6 +216,7 @@ export async function GET(request: NextRequest) {
       error instanceof Error ? `${error.name}: ${error.message}` : String(error)
     );
     return buildErrorRedirect({
+      request,
       baseUrl,
       callbackPath,
       code: "github_callback_failed",

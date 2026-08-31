@@ -29,6 +29,7 @@ import {
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
+import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
 import type {
   PromptResultsPreviewProps,
   PromptSentimentLabelProps,
@@ -264,6 +265,7 @@ export function PromptResultsPreview({
         }}
         open={detailRow !== null}
         row={detailRow}
+        surface={GEO_PROMPT_DETAIL_SURFACES.OVERVIEW}
       />
     </>
   );

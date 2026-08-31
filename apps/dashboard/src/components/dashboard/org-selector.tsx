@@ -13,6 +13,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   Avatar,
   AvatarFallback,
@@ -48,6 +49,7 @@ import { toast } from "sonner";
 import { CreditBalanceMenuItem } from "@/components/billing/credit-balance-button";
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { useFeedback } from "@/components/dashboard/feedback-context";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
 import { cn, errorMessageOr } from "@/lib/utils";
 import type { OrganizationOptionsListProps } from "@/types/dashboard";
@@ -339,6 +341,11 @@ export function OrgSelector() {
       }
 
       await setLastVisitedOrganization(org.slug);
+      trackEvent(POSTHOG_EVENTS.ORG_SWITCHED, {
+        from_organization_id: activeOrganization?.id ?? null,
+        to_organization_id: org.id,
+        organization_count: organizations.length,
+      });
       queryClient.invalidateQueries({ refetchType: "none" });
       await Promise.all([
         queryClient.invalidateQueries({

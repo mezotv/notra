@@ -5,6 +5,7 @@ import { GEO_WRITER_TRIGGER_ID } from "@notra/geo-core/constants/geo";
 import { geoWriterWorkflowPayloadSchema } from "@notra/geo-core/schemas/geo";
 import { flattenError } from "zod";
 
+import { GEO_WRITER_FAILURE_REASONS } from "@/constants/geo-analytics";
 import type { GeoWriterContext, GeoWriterWorkflowResult } from "@/types/geo";
 
 import {
@@ -18,6 +19,7 @@ import {
   finishGeoWriter,
   loadGeoWriterContext,
   runGeoWriterStep,
+  trackGeoWriterSkipped,
 } from "./steps/geo-writer-steps";
 import { reconcileCollectionAttempt } from "./steps/on-demand-steps";
 
@@ -57,6 +59,13 @@ export async function geoWriterWorkflow(
       console.warn(
         `[${LOG_PREFIX}] Duplicate execution ${runId} for org ${organizationId}, skipping`
       );
+      await trackGeoWriterSkipped({
+        organizationId,
+        projectId,
+        briefId,
+        runId,
+        reason: GEO_WRITER_FAILURE_REASONS.DUPLICATE_EXECUTION,
+      });
       return { status: "duplicate_execution" };
     }
 
@@ -70,6 +79,13 @@ export async function geoWriterWorkflow(
       console.warn(
         `[${LOG_PREFIX}] Brief ${briefId} is not ready for writing, skipping`
       );
+      await trackGeoWriterSkipped({
+        organizationId,
+        projectId,
+        briefId,
+        runId,
+        reason: GEO_WRITER_FAILURE_REASONS.INVALID_STATE,
+      });
       return { status: "invalid_state" };
     }
 
@@ -85,6 +101,7 @@ export async function geoWriterWorkflow(
         briefId,
         runId,
         reason: describeContentBillingDenial(gate),
+        failureReason: GEO_WRITER_FAILURE_REASONS.CREDITS_EXHAUSTED,
       });
       await reconcileCollectionAttempt({
         collectionId: context.collectionId,
@@ -146,7 +163,14 @@ export async function geoWriterWorkflow(
     const reason = describeFailure(error);
     console.error(`[${LOG_PREFIX}] Run ${runId} failed:`, error);
     const cleanup = [
-      failGeoWriter({ organizationId, projectId, briefId, runId, reason }),
+      failGeoWriter({
+        organizationId,
+        projectId,
+        briefId,
+        runId,
+        reason,
+        failureReason: GEO_WRITER_FAILURE_REASONS.MODEL_ERROR,
+      }),
       billing
         ? finalizeContentBilling({
             reservation: billing,

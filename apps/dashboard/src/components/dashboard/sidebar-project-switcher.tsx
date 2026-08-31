@@ -7,6 +7,7 @@ import {
   UnfoldMoreIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,7 @@ import {
   NAV_NEW_PROJECT_LABEL,
   NAV_PROJECTS_MENU_LABEL,
 } from "@/constants/nav";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useGeoProjects } from "@/lib/hooks/use-geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
@@ -147,7 +149,15 @@ export function SidebarProjectSwitcher() {
                   <DropdownMenuItem
                     className="cursor-pointer gap-2 pr-8"
                     key={project.id}
-                    onClick={() => setProjectParam(project.id)}
+                    onClick={() => {
+                      if (project.id !== activeProject.id) {
+                        trackEvent(POSTHOG_EVENTS.GEO_PROJECT_SWITCHED, {
+                          project_id: project.id,
+                          project_count: projects.length,
+                        });
+                      }
+                      setProjectParam(project.id);
+                    }}
                   >
                     <ProjectLogo
                       domain={projectDomain(project.brandSettingsId)}

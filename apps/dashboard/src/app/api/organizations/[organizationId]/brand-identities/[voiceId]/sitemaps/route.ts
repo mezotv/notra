@@ -1,6 +1,8 @@
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { getSitemapBrandIdentity } from "@/lib/sitemap/brand-identity";
 import { getContextDevSitemap } from "@/lib/sitemap/context-dev";
@@ -88,6 +90,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       pages: result.pages,
       sitemap: result.sitemap,
       voiceId,
+    });
+
+    trackServerEvent({
+      event: POSTHOG_EVENTS.GEO_SITEMAP_ADDED,
+      headers: request.headers,
+      organizationId,
+      properties: {
+        brand_identity_id: voiceId,
+        page_count: result.pages.length,
+      },
     });
 
     return NextResponse.json(result, { status: 201 });

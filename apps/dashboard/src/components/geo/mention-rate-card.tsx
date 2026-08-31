@@ -17,6 +17,7 @@ import {
 import type { GeoEngineFamily } from "@notra/geo-core/types/geo";
 import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   HoverCard,
   HoverCardTrigger,
@@ -39,6 +40,7 @@ import {
   InstrumentModule,
 } from "@/components/instrument/instrument-module";
 import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { EASE_OUT } from "@/lib/ease";
 import { useScrollOverflow } from "@/lib/hooks/use-scroll-overflow";
 import { cn } from "@/lib/utils";
@@ -209,6 +211,16 @@ export function MentionRateCard({
   const overviewDelta = mentionStatTrends(timeseriesPoints).mentionDelta;
   const [selected, setSelected] = useState<GeoEngineFamily | null>(null);
   const reduceMotion = useReducedMotion();
+  const openFamily = (family: GeoEngineFamily) => {
+    const row = ranked.find((entry) => entry.family.family === family.family);
+    trackEvent(POSTHOG_EVENTS.GEO_ENGINE_FAMILY_OPENED, {
+      engine_family: family.family,
+      mention_rate: row?.totals.rate ?? null,
+      mentions: row?.totals.mentions ?? null,
+      tracked: row?.tracked ?? null,
+    });
+    setSelected(family);
+  };
   const { ref, hiddenBelow, atEnd, scrollToEnd } =
     useScrollOverflow<HTMLDivElement>(
       ranked.length,
@@ -258,7 +270,7 @@ export function MentionRateCard({
                   {ranked.map((row, index) => (
                     <ProviderRow
                       key={row.family.family}
-                      onOpen={setSelected}
+                      onOpen={openFamily}
                       rank={index + 1}
                       row={row}
                     />

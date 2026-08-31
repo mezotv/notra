@@ -53,6 +53,7 @@ import {
   toGeoTrafficLogPurposeFilter,
   toGeoTrafficLogVisitorFilter,
 } from "@notra/geo-core/utils/ai-traffic";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import type { QueryClient } from "@tanstack/react-query";
 import {
   keepPreviousData,
@@ -68,7 +69,9 @@ import { toast } from "sonner";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { localStorageKeys } from "@/constants/storage";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { geoDbOrgQueryKey, geoDbQueryKey } from "@/lib/db/geo-collections";
+import type { GeoScanTrigger } from "@/types/analytics/geo-events";
 import type {
   GeoGenerateFromWebsiteInput,
   GeoProjectCreateInput,
@@ -219,6 +222,7 @@ export function useGeoSettingsUpsert(
       }
     },
     onError: (error) => {
+      trackEvent(POSTHOG_EVENTS.GEO_SETTINGS_SAVE_FAILED);
       toast.error(toErrorMessage(error, "Failed to save settings"));
     },
   });
@@ -533,8 +537,8 @@ export function useGeoStartScan(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: geoStartScanMutationKey(organizationId, projectId),
-    mutationFn: () =>
-      dashboardOrpc.geo.startScan.call({ organizationId, projectId }),
+    mutationFn: (trigger?: GeoScanTrigger) =>
+      dashboardOrpc.geo.startScan.call({ organizationId, projectId, trigger }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: dashboardOrpc.geo.settings.queryKey({
@@ -990,6 +994,7 @@ export function useGscCardDismissal(organizationId: string) {
   );
   const dismiss = () => {
     localStorage.setItem(storageKey, "true");
+    trackEvent(POSTHOG_EVENTS.GSC_CARD_DISMISSED);
     for (const listener of gscCardDismissListeners) {
       listener();
     }

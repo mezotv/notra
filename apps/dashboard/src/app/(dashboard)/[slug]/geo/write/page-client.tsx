@@ -23,6 +23,7 @@ import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
 } from "@/constants/empty-state";
+import { GEO_WRITE_DIALOG_ENTRIES } from "@/constants/geo-analytics";
 import { useGeoSettings } from "@/lib/hooks/use-geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoWriterBriefs } from "@/lib/hooks/use-geo-writer";
@@ -170,6 +171,7 @@ function GeoWriterPageContent({ organizationSlug }: GeoWriterPageContentProps) {
 
       {organizationId ? (
         <WriteDialog
+          entry={GEO_WRITE_DIALOG_ENTRIES.WRITE_PAGE}
           initial={dialogInitial}
           onOpenChange={setDialogOpen}
           open={dialogOpen}

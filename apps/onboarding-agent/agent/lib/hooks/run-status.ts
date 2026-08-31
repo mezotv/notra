@@ -1,6 +1,30 @@
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { captureServerEvent, flushPostHogServer } from "@notra/posthog/server";
+import { getOrganizationId } from "@notra/tools/utils/organization";
+import type { SessionContext } from "eve/context";
 import { defineHook, type HookDefinition } from "eve/hooks";
 
 import { markOnboardingAgentRan } from "../utils/run-status";
+
+async function trackRunOutcome(
+  ctx: SessionContext,
+  outcome: "completed" | "failed",
+  properties: { stage: string; error_code?: string }
+): Promise<void> {
+  try {
+    captureServerEvent({
+      event:
+        outcome === "completed"
+          ? POSTHOG_EVENTS.ONBOARDING_AGENT_COMPLETED
+          : POSTHOG_EVENTS.ONBOARDING_AGENT_FAILED,
+      organizationId: getOrganizationId(ctx),
+      properties: { ...properties, session_id: ctx.session.id },
+    });
+    await flushPostHogServer();
+  } catch (error) {
+    console.error("[run-status] PostHog capture failed", error);
+  }
+}
 
 export function createRunStatusHook(): HookDefinition {
   return defineHook({
@@ -10,16 +34,25 @@ export function createRunStatusHook(): HookDefinition {
       },
       async "session.completed"(_event, ctx) {
         await markOnboardingAgentRan(ctx);
+        await trackRunOutcome(ctx, "completed", { stage: "session" });
       },
-      "turn.failed"(event, ctx) {
+      async "turn.failed"(event, ctx) {
         console.error(
           `[run-status] Onboarding agent turn failed for session ${ctx.session.id}: ${event.data.message}`
         );
+        await trackRunOutcome(ctx, "failed", {
+          stage: "turn",
+          error_code: event.data.code,
+        });
       },
-      "session.failed"(event, ctx) {
+      async "session.failed"(event, ctx) {
         console.error(
           `[run-status] Onboarding agent session failed for session ${ctx.session.id}: ${event.data.message}`
         );
+        await trackRunOutcome(ctx, "failed", {
+          stage: "session",
+          error_code: event.data.code,
+        });
       },
     },
   });

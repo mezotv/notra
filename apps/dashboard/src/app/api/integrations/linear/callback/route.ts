@@ -8,9 +8,17 @@ import { buildCallbackUrl } from "@notra/utils/callback-url";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
 
+import {
+  INTEGRATION_AUTH_KINDS,
+  INTEGRATION_PROVIDERS,
+} from "@/constants/integration-analytics";
 import { LINEAR_OAUTH_STATE_TTL_SECONDS } from "@/constants/linear";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";
+import {
+  trackIntegrationConnected,
+  trackIntegrationConnectFailed,
+} from "@/lib/integrations/connect-events";
 import { linearOAuthErrorParam } from "@/lib/integrations/linear/oauth-errors";
 import type {
   LinearOAuthState,
@@ -30,12 +38,24 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get("error");
 
     if (error) {
+      trackIntegrationConnectFailed({
+        headers: request.headers,
+        provider: INTEGRATION_PROVIDERS.LINEAR,
+        authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+        errorCode: error,
+      });
       return NextResponse.redirect(
         `${baseUrl}/?error=${encodeURIComponent(error)}`
       );
     }
 
     if (!code || !state || !redis) {
+      trackIntegrationConnectFailed({
+        headers: request.headers,
+        provider: INTEGRATION_PROVIDERS.LINEAR,
+        authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+        errorCode: "invalid_callback",
+      });
       return NextResponse.redirect(`${baseUrl}/?error=invalid_callback`);
     }
 
@@ -121,6 +141,14 @@ export async function GET(request: NextRequest) {
       const tokenError = await tokenRes.text();
       console.error("Linear token exchange failed:", tokenError);
       await restoreOAuthState();
+      trackIntegrationConnectFailed({
+        headers: request.headers,
+        userId: oauthState.userId,
+        organizationId: oauthState.organizationId,
+        provider: INTEGRATION_PROVIDERS.LINEAR,
+        authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+        errorCode: "token_exchange_failed",
+      });
       return NextResponse.redirect(`${baseUrl}/?error=token_exchange_failed`);
     }
 
@@ -161,6 +189,14 @@ export async function GET(request: NextRequest) {
     );
 
     if (alreadyConnected) {
+      trackIntegrationConnectFailed({
+        headers: request.headers,
+        userId: oauthState.userId,
+        organizationId: oauthState.organizationId,
+        provider: INTEGRATION_PROVIDERS.LINEAR,
+        authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+        errorCode: "workspace_already_connected",
+      });
       return NextResponse.redirect(
         buildCallbackUrl(baseUrl, oauthState.callbackPath, {
           error: "workspace_already_connected",
@@ -179,6 +215,14 @@ export async function GET(request: NextRequest) {
 
     await invalidateStandaloneChatIntegrations(oauthState.organizationId);
 
+    trackIntegrationConnected({
+      headers: request.headers,
+      userId: oauthState.userId,
+      organizationId: oauthState.organizationId,
+      provider: INTEGRATION_PROVIDERS.LINEAR,
+      authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+    });
+
     return NextResponse.redirect(
       buildCallbackUrl(baseUrl, oauthState.callbackPath, {
         linearConnected: "true",
@@ -187,6 +231,12 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error in Linear OAuth callback:", error);
     await restoreOAuthState?.();
+    trackIntegrationConnectFailed({
+      headers: request.headers,
+      provider: INTEGRATION_PROVIDERS.LINEAR,
+      authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+      errorCode: "callback_failed",
+    });
     return NextResponse.redirect(`${baseUrl}/?error=callback_failed`);
   }
 }

@@ -4,6 +4,7 @@ import { Cancel01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { GSC_OAUTH_AUTHORIZE_PATH } from "@notra/geo-core/constants/google-search-console";
 import type { GeoSearchConsoleStatus } from "@notra/geo-core/types/google-search-console";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -34,6 +35,7 @@ import { Button } from "@/components/button";
 import { ProjectLogo } from "@/components/geo/project-logo";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import {
   useGscDisconnect,
@@ -62,6 +64,10 @@ import {
 function buildAuthorizeUrl(organizationId: string, callbackPath: string) {
   const params = new URLSearchParams({ organizationId, callbackPath });
   return `${GSC_OAUTH_AUTHORIZE_PATH}?${params.toString()}`;
+}
+
+function trackConnectStarted(isReconnect: boolean) {
+  trackEvent(POSTHOG_EVENTS.GSC_CONNECT_STARTED, { is_reconnect: isReconnect });
 }
 
 function HeaderRow({
@@ -124,7 +130,10 @@ function ConnectAction({
       className="shrink-0"
       nativeButton={false}
       render={
-        <a href={buildAuthorizeUrl(organizationId, callbackPath)}>
+        <a
+          href={buildAuthorizeUrl(organizationId, callbackPath)}
+          onClick={() => trackConnectStarted(reauth)}
+        >
           {reauth ? "Reconnect Google" : "Connect Search Console"}
         </a>
       }
@@ -262,7 +271,10 @@ function SelectSiteState({
               className="w-full"
               nativeButton={false}
               render={
-                <a href={buildAuthorizeUrl(organizationId, callbackPath)}>
+                <a
+                  href={buildAuthorizeUrl(organizationId, callbackPath)}
+                  onClick={() => trackConnectStarted(true)}
+                >
                   Reconnect Google
                 </a>
               }
@@ -335,7 +347,10 @@ function ConnectedState({
           className="w-full"
           nativeButton={false}
           render={
-            <a href={buildAuthorizeUrl(organizationId, callbackPath)}>
+            <a
+              href={buildAuthorizeUrl(organizationId, callbackPath)}
+              onClick={() => trackConnectStarted(true)}
+            >
               Reconnect Google
             </a>
           }

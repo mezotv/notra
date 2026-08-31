@@ -5,6 +5,8 @@ import {
   mcpSessionToolActivations,
   mcpToolIndex,
 } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { captureServerEvent, flushPostHogServer } from "@notra/posthog/server";
 import { assertPublicHttpUrlResolution } from "@notra/utils/url";
 import {
   and,
@@ -28,6 +30,7 @@ import {
   MCP_SEARCH_LIMIT_DEFAULT,
   MCP_SEARCH_LIMIT_MAX,
   MCP_SESSION_ACTIVE_TOOL_LIMIT,
+  MCP_TOOL_ACTIVATION_OUTCOMES,
 } from "../constants/mcp-tool-index";
 import type { McpRequestAuth } from "../types/mcp-oauth";
 import type {
@@ -574,7 +577,7 @@ export async function activateSessionMcpTools({
     throw new Error("One or more MCP tools are unavailable.");
   }
 
-  return db.transaction(async (tx) => {
+  const activated = await db.transaction(async (tx) => {
     await tx.execute(
       sql`SELECT pg_advisory_xact_lock(hashtextextended(${`mcp-session-tool-activation:${organizationId}:${sessionId}:${surface}`}, 0))`
     );
@@ -621,6 +624,21 @@ export async function activateSessionMcpTools({
         },
       });
 
+    for (const tool of activeTools) {
+      captureServerEvent({
+        event: POSTHOG_EVENTS.MCP_TOOL_ACTIVATED,
+        organizationId,
+        properties: {
+          server_id: tool.serverIntegrationId,
+          tool_name: tool.serverToolName,
+          surface,
+          outcome: existingIds.has(tool.id)
+            ? MCP_TOOL_ACTIVATION_OUTCOMES.ALREADY_ACTIVE
+            : MCP_TOOL_ACTIVATION_OUTCOMES.ACTIVATED,
+        },
+      });
+    }
+
     return querySessionActivatedMcpTools({
       database: tx,
       organizationId,
@@ -629,6 +647,10 @@ export async function activateSessionMcpTools({
       serverIntegrationIds,
     });
   });
+
+  void flushPostHogServer();
+
+  return activated;
 }
 
 export async function deactivateSessionMcpTools({

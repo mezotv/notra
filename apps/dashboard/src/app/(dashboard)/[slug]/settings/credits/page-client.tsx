@@ -4,6 +4,7 @@ import { Add01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Confetti } from "@neoconfetti/react";
 import { FEATURES } from "@notra/ai/billing/features";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import type { ChartConfig } from "@notra/ui/components/ui/chart";
 import {
   ChartContainer,
@@ -38,7 +39,7 @@ import {
 import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
@@ -46,6 +47,7 @@ import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { NotFoundContent } from "@/components/not-found-content";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
 import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
 import {
@@ -139,6 +141,19 @@ export default function CreditsPageClient() {
   const [range, setRange] = useState<CreditRangeOption>("30d");
   const [topupOpen, setTopupOpen] = useState(false);
   const [topupSuccess, setTopupSuccess] = useState(false);
+  const successTrackedRef = useRef(false);
+
+  useEffect(() => {
+    if (!success || successTrackedRef.current) {
+      return;
+    }
+    successTrackedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.CREDITS_TOPUP_COMPLETED, {
+      amount_dollars: null,
+      is_preset: null,
+      via_checkout: true,
+    });
+  }, [success]);
 
   const { data: customer, isLoading: customerLoading } = useCustomer({
     expand: ["balances.feature"],

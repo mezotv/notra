@@ -1,0 +1,29 @@
+{
+  "name": "@notra/posthog",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./events": "./src/events.ts",
+    "./server": "./src/server.ts",
+    "./ai-sdk": "./src/ai-sdk.ts",
+    "./llm": "./src/llm.ts",
+    "./request": "./src/request.ts",
+    "./types/*": "./src/types/*.ts",
+    "./constants/*": "./src/constants/*.ts",
+    "./utils/*": "./src/utils/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/provider": "3.0.10",
+    "@posthog/ai": "8.8.0",
+    "posthog-node": "5.50.0"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "typescript": "5.9.2"
+  }
+}

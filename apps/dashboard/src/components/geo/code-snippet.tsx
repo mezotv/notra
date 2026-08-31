@@ -9,7 +9,7 @@ import { highlight } from "sugar-high";
 
 import { Button } from "@/components/button";
 import { cn } from "@/lib/utils";
-import type { CodeSnippetProps } from "@/types/geo";
+import type { CodeSnippetProps, CopyCodeButtonProps } from "@/types/geo";
 
 export function useCopyCode(code: string) {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -48,14 +48,17 @@ export function useCopyCode(code: string) {
   return { copied, copy };
 }
 
-function CopyCodeButton({ code, label }: { code: string; label: string }) {
+function CopyCodeButton({ code, label, onCopy }: CopyCodeButtonProps) {
   const { copied, copy } = useCopyCode(code);
 
   return (
     <Button
       aria-label={copied ? `${label} copied` : `Copy ${label}`}
       className="text-muted-foreground shrink-0"
-      onClick={copy}
+      onClick={() => {
+        onCopy?.();
+        return copy();
+      }}
       size="icon-xs"
       type="button"
       variant="ghost"
@@ -69,7 +72,8 @@ function CommandSnippet({
   code,
   className,
   label = "command",
-}: Pick<CodeSnippetProps, "code" | "className" | "label">) {
+  onCopy,
+}: Pick<CodeSnippetProps, "code" | "className" | "label" | "onCopy">) {
   return (
     <div
       className={cn(
@@ -84,7 +88,7 @@ function CommandSnippet({
         readOnly
         value={code}
       />
-      <CopyCodeButton code={code} label={label} />
+      <CopyCodeButton code={code} label={label} onCopy={onCopy} />
     </div>
   );
 }
@@ -96,9 +100,17 @@ export function CodeSnippet({
   headerEnd,
   variant = "panel",
   label,
+  onCopy,
 }: CodeSnippetProps) {
   if (variant === "command") {
-    return <CommandSnippet className={className} code={code} label={label} />;
+    return (
+      <CommandSnippet
+        className={className}
+        code={code}
+        label={label}
+        onCopy={onCopy}
+      />
+    );
   }
 
   return (
@@ -117,7 +129,7 @@ export function CodeSnippet({
       </div>
       <div className="border-border/60 bg-background relative -mt-3 min-w-0 rounded-lg border">
         <div className="absolute end-1 top-1 z-10">
-          <CopyCodeButton code={code} label="snippet" />
+          <CopyCodeButton code={code} label="snippet" onCopy={onCopy} />
         </div>
         <pre
           className="scrollbar-floating m-0 overflow-x-auto p-3 pe-10 font-mono text-xs leading-relaxed"

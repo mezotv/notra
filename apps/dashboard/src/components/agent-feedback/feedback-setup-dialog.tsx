@@ -2,6 +2,7 @@
 
 import { Settings01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -15,6 +16,7 @@ import { useState } from "react";
 
 import { AgentFeedbackSetup } from "@/components/agent-feedback/feedback-setup";
 import { Button } from "@/components/button";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useAgentFeedbackSetup } from "@/lib/hooks/use-agent-feedback";
 import type { AgentFeedbackSetupDialogProps } from "@/types/agent-feedback";
 
@@ -28,7 +30,12 @@ export function AgentFeedbackSetupDialog({
     <>
       <Button
         className="w-fit gap-1.5"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          trackEvent(POSTHOG_EVENTS.AGENT_FEEDBACK_SETUP_OPENED, {
+            has_setup: setup !== undefined,
+          });
+          setOpen(true);
+        }}
         size="sm"
         variant="outline"
       >

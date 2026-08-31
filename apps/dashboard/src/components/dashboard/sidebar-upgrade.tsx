@@ -1,12 +1,18 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { useCustomer, useListPlans } from "autumn-js/react";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { PAYWALL_KINDS, PLAN_SURFACES } from "@/constants/analytics-events";
+import { billingInterval } from "@/lib/analytics/billing-events";
+import { trackEvent } from "@/lib/analytics/posthog-client";
+import { toAnalyticsRoute } from "@/lib/analytics/route";
 import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
 import { groupBillingPlans, nextPlanGroup } from "@/utils/billing-plans";
 
@@ -61,11 +67,27 @@ export function SidebarUpgrade() {
       : "Pick a plan to unlock AI-powered workflows.";
   }
 
-  if (
-    process.env.NEXT_PUBLIC_SHOW_UPGRADE_BUTTON !== "true" ||
-    !isOnboardingDone ||
-    !targetPlan
-  ) {
+  const isVisible =
+    process.env.NEXT_PUBLIC_SHOW_UPGRADE_BUTTON === "true" &&
+    Boolean(isOnboardingDone) &&
+    targetPlan !== null;
+  const pathname = usePathname();
+  const route = toAnalyticsRoute(pathname, activeOrganization?.slug);
+  const shownRef = useRef(false);
+
+  useEffect(() => {
+    if (!isVisible || shownRef.current) {
+      return;
+    }
+    shownRef.current = true;
+    trackEvent(POSTHOG_EVENTS.PAYWALL_SHOWN, {
+      kind: PAYWALL_KINDS.UPGRADE_CARD,
+      plan_id: activePlanId ?? null,
+      route,
+    });
+  }, [isVisible, activePlanId, route]);
+
+  if (!(isVisible && targetPlan)) {
     return null;
   }
 
@@ -74,6 +96,12 @@ export function SidebarUpgrade() {
       return;
     }
     setLoading(true);
+    trackEvent(POSTHOG_EVENTS.UPGRADE_CLICKED, {
+      surface: PLAN_SURFACES.SIDEBAR,
+      target_plan: targetPlan.id,
+      interval: billingInterval(targetGroup?.monthly === null),
+      zdr: false,
+    });
     const successUrl = activeOrganization?.slug
       ? `${window.location.origin}/${activeOrganization.slug}/settings/billing/success`
       : undefined;
@@ -84,12 +112,20 @@ export function SidebarUpgrade() {
         successUrl,
       });
       if (result.paymentUrl) {
+        trackEvent(POSTHOG_EVENTS.CHECKOUT_REDIRECTED, {
+          plan_id: targetPlan.id,
+          zdr: false,
+        });
         window.location.assign(result.paymentUrl);
       } else {
         await refetch();
       }
     } catch (err) {
       setLoading(false);
+      trackEvent(POSTHOG_EVENTS.CHECKOUT_FAILED, {
+        plan_id: targetPlan.id,
+        surface: PLAN_SURFACES.SIDEBAR,
+      });
       toast.error(
         err instanceof Error
           ? err.message

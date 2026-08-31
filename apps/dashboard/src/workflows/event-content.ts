@@ -1,6 +1,7 @@
 import { getContentBillingLimitLabel } from "@notra/ai/billing/content-billing";
 import { flattenError } from "zod";
 
+import { WORKFLOW_ANALYTICS_NAMES } from "@/constants/workflow-analytics";
 import { eventWorkflowPayloadSchema } from "@/schemas/workflows";
 import type { EventContentWorkflowResult } from "@/types/workflows/event-generation";
 import { resolveContentLimitPauseReason } from "@/utils/content-billing";
@@ -54,12 +55,14 @@ export async function eventContentWorkflow(payload: {
     executionId,
   } = parseResult.data;
   const manual = eventData.manualRun === true;
+  const workflowStartedAt = Date.now();
   const resolvedExecutionId = executionId ?? crypto.randomUUID();
   const claimToken = crypto.randomUUID();
 
   const claim = await claimWorkflowExecution({
     executionId: resolvedExecutionId,
     claimToken,
+    workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
   });
   if (!claim.claimed) {
     console.warn(
@@ -182,6 +185,8 @@ export async function eventContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -213,6 +218,8 @@ export async function eventContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -265,6 +272,8 @@ export async function eventContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -317,6 +326,8 @@ export async function eventContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -353,6 +364,8 @@ export async function eventContentWorkflow(payload: {
     await finishGeneration({
       organizationId: trigger.organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+      startedAt: workflowStartedAt,
       triggerId,
       outputType: trigger.outputType,
       triggerName: automationName,
@@ -444,6 +457,8 @@ export async function eventContentWorkflow(payload: {
     await finishGeneration({
       organizationId: trigger.organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+      startedAt: workflowStartedAt,
       triggerId,
       outputType: trigger.outputType,
       triggerName: automationName,

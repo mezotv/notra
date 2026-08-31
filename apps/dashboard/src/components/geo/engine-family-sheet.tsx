@@ -43,6 +43,10 @@ import { useGeoProjectScope } from "@/components/providers/geo-project-provider"
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { CHART_PERCENT_SCALE } from "@/constants/charts";
+import {
+  GEO_PROMPT_DETAIL_SURFACES,
+  GEO_WRITE_DIALOG_ENTRIES,
+} from "@/constants/geo-analytics";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { ChartConfig } from "@/types/charts";
 import type { WriteDialogInitialState } from "@/types/components/geo-writer";
@@ -467,9 +471,11 @@ function EngineFamilySheetSession({
         }}
         open={selectedRow !== null}
         row={selectedRow}
+        surface={GEO_PROMPT_DETAIL_SURFACES.ENGINE_SHEET}
       />
       {organizationSlug && organizationId ? (
         <WriteDialog
+          entry={GEO_WRITE_DIALOG_ENTRIES.ENGINE_SHEET}
           initial={writeInitial}
           onOpenChange={setWriteOpen}
           open={writeOpen}

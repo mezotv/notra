@@ -11,6 +11,10 @@ export type {
 } from "@notra/geo-core/types/content-billing";
 
 import type {
+  WorkflowAnalyticsName,
+  WorkflowLifecycleFields,
+} from "@/types/analytics/workflow-events";
+import type {
   IntegrationType,
   LogRetentionDays,
 } from "@/types/webhooks/webhooks";
@@ -27,7 +31,14 @@ export interface NotifyContentLimitInput {
   limitLabel?: string;
 }
 
-export interface FinishGenerationInput {
+export interface ClaimWorkflowExecutionInput {
+  executionId: string;
+  claimToken: string;
+  organizationId?: string;
+  workflow?: WorkflowAnalyticsName;
+}
+
+export interface FinishGenerationInput extends WorkflowLifecycleFields {
   organizationId: string;
   runId: string;
   triggerId: string;

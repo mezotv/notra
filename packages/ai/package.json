@@ -48,6 +48,7 @@
     "@noble/hashes": "2.2.0",
     "@notra/analytics": "workspace:*",
     "@notra/db": "workspace:*",
+    "@notra/posthog": "workspace:*",
     "@notra/utils": "workspace:*",
     "@octokit/core": "^7.0.6",
     "@openrouter/ai-sdk-provider": "2.10.0",

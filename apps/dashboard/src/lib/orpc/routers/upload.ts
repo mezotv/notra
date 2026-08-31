@@ -1,6 +1,7 @@
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import { db } from "@notra/db/drizzle";
 import { members } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -9,6 +10,8 @@ import {
   COMPANY_LOGO_SOURCE_HOSTS,
 } from "@/constants/company-logo";
 import { SVG_MIME_TYPE } from "@/constants/upload";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
+import { getChatAttachmentSizeBucket } from "@/lib/analytics/studio-events";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { getFileExtension } from "@/lib/upload/mime";
 import { getR2Config } from "@/lib/upload/r2";
@@ -53,13 +56,26 @@ export const uploadRouter = {
   recordChatAttachment: authorizedProcedure
     .input(recordChatAttachmentSchema)
     .handler(async ({ context, input }) => {
-      return recordChatAttachment({
+      const result = await recordChatAttachment({
         headers: context.headers,
         key: input.key,
         filename: input.filename,
         mediaType: input.mediaType,
         size: input.size,
       });
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.CHAT_ATTACHMENT_UPLOADED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: context.session?.activeOrganizationId ?? null,
+        properties: {
+          mime: input.mediaType,
+          size_bucket: getChatAttachmentSizeBucket(input.size),
+        },
+      });
+
+      return result;
     }),
   logoFromUrl: authorizedProcedure
     .input(uploadLogoFromUrlSchema)

@@ -51,6 +51,7 @@ export function PostSocialButton({
   className,
   onContentChange,
   onPublished,
+  from,
 }: PostSocialButtonProps) {
   const params = useParams<{ slug?: string }>();
   const router = useRouter();
@@ -92,7 +93,7 @@ export function PostSocialButton({
     const contentToPublish = draft;
     setPublishedContent(contentToPublish);
     publishMutation.mutate(
-      { accountId: selectedAccount.id, content: contentToPublish },
+      { accountId: selectedAccount.id, content: contentToPublish, from },
       {
         onError: () => {
           setPublishedContent(null);

@@ -8,16 +8,18 @@ import {
   TOPUP_PRESETS,
 } from "@notra/ai/billing/features";
 import { MARKUP_PERCENT } from "@notra/ai/billing/token-pricing";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Input } from "@notra/ui/components/ui/input";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { cn } from "@notra/ui/lib/utils";
 import { useCustomer } from "autumn-js/react";
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 
 function formatDollars(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -63,11 +65,22 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
   if (isCustom) {
     activeAmount = isCustomValid ? parsedCustom : null;
   }
+  const openedTrackedRef = useRef(false);
+
+  useEffect(() => {
+    if (openedTrackedRef.current) {
+      return;
+    }
+    openedTrackedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.CREDITS_TOPUP_OPENED);
+  }, []);
 
   async function handleTopup() {
     if (!activeAmount) {
       return;
     }
+    const amountDollars = activeAmount;
+    const isPreset = !isCustom;
     setLoading(true);
     const successUrl = activeOrganization?.slug
       ? `${window.location.origin}/${activeOrganization.slug}/settings/credits?success=true`
@@ -85,15 +98,29 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
       });
 
       if (result.paymentUrl) {
+        trackEvent(POSTHOG_EVENTS.CHECKOUT_REDIRECTED, {
+          plan_id: ADDONS.AI_CREDITS_TOPUP,
+          amount_dollars: amountDollars,
+          is_preset: isPreset,
+        });
         window.location.assign(result.paymentUrl);
       } else {
         await refetch();
+        trackEvent(POSTHOG_EVENTS.CREDITS_TOPUP_COMPLETED, {
+          amount_dollars: amountDollars,
+          is_preset: isPreset,
+        });
         toast.success("Credits added successfully");
         if (onSuccess) {
           onSuccess();
         }
       }
     } catch (err) {
+      trackEvent(POSTHOG_EVENTS.CHECKOUT_FAILED, {
+        plan_id: ADDONS.AI_CREDITS_TOPUP,
+        amount_dollars: amountDollars,
+        is_preset: isPreset,
+      });
       toast.error(
         err instanceof Error
           ? err.message

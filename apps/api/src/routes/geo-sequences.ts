@@ -5,7 +5,9 @@ import {
   listGeoSequences,
   updateGeoSequence,
 } from "@notra/geo-core/geo/sequences";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 
+import { API_TRIGGER_SOURCE } from "../constants/analytics";
 import { GEO_SEQUENCE_RUN_INTERNAL_PATH } from "../constants/geo";
 import {
   GEO_COMMON_ERROR_RESPONSES,
@@ -24,6 +26,7 @@ import {
   sequenceResponseSchema,
 } from "../schemas/geo-sequences";
 import { internalGeoSequenceRunResponseSchema } from "../schemas/internal-geo";
+import { trackApiEvent } from "../utils/analytics";
 import { geoErrorResponse } from "../utils/geo";
 import { runGeoEffect, runRemoteGeoEffect } from "../utils/geo-effect";
 import {
@@ -260,6 +263,17 @@ geoSequencesRoutes.openapi(runSequenceRoute, async (c) => {
   if (!outcome.ok) {
     return geoErrorResponse(c, outcome.failure);
   }
+
+  trackApiEvent(c, {
+    event: POSTHOG_EVENTS.GEO_SEQUENCE_RUN,
+    organizationId: base.organizationId,
+    projectId,
+    properties: {
+      trigger: API_TRIGGER_SOURCE,
+      sequence_id: sequenceId,
+      check_count: outcome.value.checks,
+    },
+  });
 
   return c.json(
     {

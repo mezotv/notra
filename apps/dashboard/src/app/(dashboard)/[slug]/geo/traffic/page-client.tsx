@@ -2,9 +2,10 @@
 
 import { GEO_TRAFFIC_REVEAL_MS } from "@notra/geo-core/constants/geo";
 import { isTrafficPagePending } from "@notra/geo-core/utils/ai-traffic";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { useReducedMotion } from "motion/react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -25,6 +26,7 @@ import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
 } from "@/constants/empty-state";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   useAiTraffic,
   useGeoIngestSetup,
@@ -98,6 +100,22 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
     );
     return () => clearTimeout(timer);
   }, [ready, reduceMotion]);
+
+  const viewedRef = useRef(false);
+  const hasSettings = settings !== null;
+  const rangePreset = geoRange.preset;
+
+  useEffect(() => {
+    if (viewedRef.current || !ready) {
+      return;
+    }
+    viewedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.TRAFFIC_VIEWED, {
+      has_traffic: hasSettings && !isEmptyTraffic,
+      has_settings: hasSettings,
+      range: rangePreset,
+    });
+  }, [hasSettings, isEmptyTraffic, rangePreset, ready]);
 
   if (showSkeleton) {
     return <GeoTrafficSkeleton />;

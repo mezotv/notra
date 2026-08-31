@@ -2,6 +2,7 @@ import { FEATURES } from "@notra/ai/billing/features";
 import { Autumn } from "autumn-js";
 import type { Context, Next } from "hono";
 
+import { API_PAYWALL_FEATURES } from "../constants/analytics";
 import {
   GEO_PLAN_REQUIRED_MESSAGE,
   ORGANIZATION_SCOPED_API_KEY_ERROR,
@@ -10,6 +11,7 @@ import type {
   GeoEntitlementChecker,
   GeoEntitlementMiddlewareOptions,
 } from "../types/billing";
+import { trackApiPaywalled } from "../utils/analytics";
 import { getOrganizationId } from "../utils/auth";
 import { logError } from "../utils/logging";
 
@@ -54,6 +56,10 @@ export function geoEntitlementMiddleware(
         "AUTUMN_SECRET_KEY is not configured — rejecting GEO request",
         new Error("Missing AUTUMN_SECRET_KEY")
       );
+      trackApiPaywalled(c, {
+        feature: API_PAYWALL_FEATURES.AI_ANSWERS,
+        status: 503,
+      });
       return c.json({ error: "Billing service unavailable" }, 503);
     }
 
@@ -70,10 +76,18 @@ export function geoEntitlementMiddleware(
       });
     } catch (error) {
       logError("Failed to verify GEO plan entitlement", error);
+      trackApiPaywalled(c, {
+        feature: API_PAYWALL_FEATURES.AI_ANSWERS,
+        status: 503,
+      });
       return c.json({ error: "Billing service unavailable" }, 503);
     }
 
     if (!entitled) {
+      trackApiPaywalled(c, {
+        feature: API_PAYWALL_FEATURES.AI_ANSWERS,
+        status: 402,
+      });
       return c.json({ error: GEO_PLAN_REQUIRED_MESSAGE }, 402);
     }
 

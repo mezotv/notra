@@ -1,3 +1,4 @@
+import { WORKFLOW_ANALYTICS_NAMES } from "@/constants/workflow-analytics";
 import {
   applyBrandGuidelineBrandStep,
   applyBrandGuidelineScreenshotsStep,
@@ -5,7 +6,10 @@ import {
   markBrandGuidelinesFailed,
   startBrandGuidelineGeneration,
 } from "@/lib/brand-guidelines";
-import { isFinalStepAttempt } from "@/lib/workflows/step-errors";
+import {
+  isFinalStepAttempt,
+  reportStepError,
+} from "@/lib/workflows/step-errors";
 import type { BrandGuidelineWorkflowStepResult } from "@/types/brand-guidelines";
 import type {
   BrandGuidelineStage,
@@ -56,6 +60,10 @@ export async function runBrandGuidelineStage(
     return { success: true };
   } catch (error) {
     console.error(`[Brand Guidelines] Stage ${input.stage} failed`, error);
+    await reportStepError(error, {
+      workflow: WORKFLOW_ANALYTICS_NAMES.BRAND_GUIDELINES,
+      step: input.stage,
+    });
     if (!isFinalStepAttempt()) {
       throw error;
     }

@@ -147,7 +147,13 @@ export async function orchestrateStandaloneChat(
   const modelWithMemory = createModel(
     organizationId,
     routingDecision.model,
-    undefined,
+    {
+      posthog: {
+        feature: "standalone_chat",
+        distinctId: userId,
+        sessionId: chatId ? `chat:${chatId}` : undefined,
+      },
+    },
     log
   );
 

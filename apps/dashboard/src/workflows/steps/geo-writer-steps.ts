@@ -13,7 +13,15 @@ import {
 } from "@notra/geo-core/constants/geo";
 import { and, eq } from "drizzle-orm";
 
+import {
+  trackGeoWriterCompleted,
+  trackGeoWriterFailed,
+} from "@/lib/analytics/geo-workflow-events";
 import { completeActiveGeneration } from "@/lib/generations/tracking";
+import type {
+  GeoWriterFailureReason,
+  GeoWriterSkippedStepInput,
+} from "@/types/analytics/geo-events";
 import type { GeoWriterContext } from "@/types/geo";
 
 const BLOG_POST_CONTENT_TYPE = "blog_post";
@@ -125,7 +133,7 @@ export async function finishGeoWriter(input: {
   humanized: boolean;
 }): Promise<void> {
   "use step";
-  await db
+  const updated = await db
     .update(geoContentBriefs)
     .set({
       status: "completed",
@@ -142,7 +150,8 @@ export async function finishGeoWriter(input: {
         eq(geoContentBriefs.runId, input.runId),
         eq(geoContentBriefs.status, "writing")
       )
-    );
+    )
+    .returning({ startedAt: geoContentBriefs.startedAt });
 
   await completeActiveGeneration(input.organizationId, {
     runId: input.runId,
@@ -154,6 +163,16 @@ export async function finishGeoWriter(input: {
     completedAt: new Date().toISOString(),
     source: "dashboard",
   });
+
+  await trackGeoWriterCompleted({
+    organizationId: input.organizationId,
+    projectId: input.projectId,
+    briefId: input.briefId,
+    runId: input.runId,
+    postId: input.postId,
+    humanized: input.humanized,
+    startedAt: updated[0]?.startedAt ?? null,
+  });
 }
 
 export async function failGeoWriter(input: {
@@ -162,9 +181,10 @@ export async function failGeoWriter(input: {
   briefId: string;
   runId: string;
   reason: string;
+  failureReason: GeoWriterFailureReason;
 }): Promise<void> {
   "use step";
-  await db
+  const updated = await db
     .update(geoContentBriefs)
     .set({ status: "failed", error: input.reason, completedAt: new Date() })
     .where(
@@ -175,7 +195,8 @@ export async function failGeoWriter(input: {
         eq(geoContentBriefs.runId, input.runId),
         eq(geoContentBriefs.status, "writing")
       )
-    );
+    )
+    .returning({ startedAt: geoContentBriefs.startedAt });
 
   await completeActiveGeneration(input.organizationId, {
     runId: input.runId,
@@ -186,5 +207,28 @@ export async function failGeoWriter(input: {
     reason: input.reason,
     completedAt: new Date().toISOString(),
     source: "dashboard",
+  });
+
+  await trackGeoWriterFailed({
+    organizationId: input.organizationId,
+    projectId: input.projectId,
+    briefId: input.briefId,
+    runId: input.runId,
+    reason: input.failureReason,
+    startedAt: updated[0]?.startedAt ?? null,
+  });
+}
+
+export async function trackGeoWriterSkipped(
+  input: GeoWriterSkippedStepInput
+): Promise<void> {
+  "use step";
+  await trackGeoWriterFailed({
+    organizationId: input.organizationId,
+    projectId: input.projectId,
+    briefId: input.briefId,
+    runId: input.runId,
+    reason: input.reason,
+    startedAt: null,
   });
 }

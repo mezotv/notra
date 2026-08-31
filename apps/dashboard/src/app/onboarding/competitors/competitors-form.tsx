@@ -4,12 +4,13 @@ import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { GEO_MAX_COMPETITORS } from "@notra/geo-core/constants/geo";
 import type { GeoCompetitor } from "@notra/geo-core/types/geo";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { CompetitorBrandLogo } from "@/components/onboarding/competitor-brand-logo";
@@ -17,11 +18,17 @@ import { CompetitorChoiceRow } from "@/components/onboarding/competitor-choice-r
 import { CompetitorSearch } from "@/components/onboarding/competitor-search";
 import { CompetitorSuggestionsSkeleton } from "@/components/onboarding/competitor-suggestions-skeleton";
 import { OnboardingProgress } from "@/components/onboarding/progress";
+import { OnboardingStepViewTracker } from "@/components/onboarding/step-view-tracker";
 import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
+import {
+  ONBOARDING_STEPS,
+  SUGGESTION_OUTCOMES,
+} from "@/constants/analytics-events";
 import {
   ONBOARDING_STEP_COMPETITORS,
   ONBOARDING_VISIBLE_SUGGESTIONS,
 } from "@/constants/onboarding";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   useGeoCompetitorSuggestions,
   useGeoStartScan,
@@ -29,6 +36,7 @@ import {
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import { cn } from "@/lib/utils";
+import type { SuggestionOutcome } from "@/types/analytics/events";
 import type {
   CompetitorsFormProps,
   CompetitorsPickerProps,
@@ -63,6 +71,24 @@ function CompetitorsPicker({
   const remainingSuggestions = suggested.filter(
     (entry) => !findCompetitor(competitors, entry.domain, entry.name)
   );
+  const suggestionsTrackedRef = useRef(false);
+
+  useEffect(() => {
+    if (!domain || suggestions.isPending || suggestionsTrackedRef.current) {
+      return;
+    }
+    suggestionsTrackedRef.current = true;
+    let outcome: SuggestionOutcome = SUGGESTION_OUTCOMES.OK;
+    if (suggestions.isError) {
+      outcome = SUGGESTION_OUTCOMES.ERROR;
+    } else if (suggested.length === 0) {
+      outcome = SUGGESTION_OUTCOMES.EMPTY;
+    }
+    trackEvent(POSTHOG_EVENTS.COMPETITOR_SUGGESTIONS_LOADED, {
+      suggestion_count: suggested.length,
+      outcome,
+    });
+  }, [domain, suggestions.isPending, suggestions.isError, suggested.length]);
 
   const add = (name: string, competitorDomain: string | null) => {
     if (atLimit || findCompetitor(competitors, competitorDomain, name)) {
@@ -82,12 +108,17 @@ function CompetitorsPicker({
   };
 
   const launch = () => {
+    trackEvent(POSTHOG_EVENTS.ONBOARDING_COMPETITORS_SUBMITTED, {
+      competitor_count: competitors.length,
+      added_all: suggested.length > 0 && remainingSuggestions.length === 0,
+      started_scan: !geoLocked,
+    });
     if (geoLocked) {
       setIsLeaving(true);
       router.push(nextHref);
       return;
     }
-    startScan.mutate(undefined, {
+    startScan.mutate("onboarding", {
       onSuccess: () => {
         setIsLeaving(true);
         router.push(nextHref);
@@ -252,6 +283,10 @@ export function CompetitorsForm({
   return (
     <GeoProjectProvider projectId={projectId}>
       <div className="flex w-full flex-col gap-5">
+        <OnboardingStepViewTracker
+          inOnboardingFlow={inOnboardingFlow}
+          step={ONBOARDING_STEPS.COMPETITORS}
+        />
         {inOnboardingFlow ? (
           <div className="flex justify-center">
             <OnboardingProgress current={ONBOARDING_STEP_COMPETITORS} />

@@ -11,6 +11,7 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import type { Context } from "hono";
 
+import { trackApiRateLimited } from "./analytics";
 import { getOrganizationId } from "./auth";
 
 const redis = Redis.fromEnv();
@@ -241,6 +242,7 @@ export async function enforceRatelimitForKey(
   }
 
   c.header("Retry-After", String(resetSeconds));
+  trackApiRateLimited(c, { limit: result.limit });
 
   return c.json(
     {

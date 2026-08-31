@@ -9,6 +9,7 @@ import type { GeoRequestPayload } from "@usenotra/geo";
 import { Effect } from "effect";
 import type { NextRequest } from "next/server";
 
+import { trackGeoIngestAnalytics } from "@/lib/geo-ingest/analytics";
 import { classifyVisitor } from "@/lib/geo-ingest/classify-visitor";
 import {
   GeoIngestFailedError,
@@ -138,4 +139,5 @@ export const runGeoIngest = Effect.fn("geoIngest.run")(function* (
   }
   yield* enforceRateLimit(identity.organizationId);
   yield* ingestEvent(event);
+  yield* trackGeoIngestAnalytics({ identity, event });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { AuthEmailField } from "@notra/ui/components/shared/auth/auth-email-field";
 import { AuthFormError } from "@notra/ui/components/shared/auth/auth-form-error";
 import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
@@ -24,6 +25,7 @@ import { flushSync } from "react-dom";
 
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
 import { SHOW_SIGNUP_CREDITS_BANNER } from "@/constants/signup-credits";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   signUpWithPasswordAction,
   verifyEmailCodeAction,
@@ -112,6 +114,11 @@ export function SignupForm({
     authInFlightRef.current = true;
     flushSync(() => setAuthMethod(provider));
     persistMarketingAttribution({ ...attribution, signupMethod: provider });
+    trackEvent(POSTHOG_EVENTS.SIGNUP_STARTED, {
+      method: provider,
+      db_source: attribution.source ?? null,
+      landing_page_h1_variant: attribution.landingPageH1Variant ?? null,
+    });
     setLastUsedLoginMethod(provider);
     startSocialSignInAction({
       provider,
@@ -144,6 +151,11 @@ export function SignupForm({
       setFormError(null);
       authInFlightRef.current = true;
       flushSync(() => setAuthMethod("email"));
+      trackEvent(POSTHOG_EVENTS.SIGNUP_STARTED, {
+        method: "password",
+        db_source: attribution.source ?? null,
+        landing_page_h1_variant: attribution.landingPageH1Variant ?? null,
+      });
       const fallbackName = parsed.data.email.split("@")[0] || "User";
       try {
         const result = await signUpWithPasswordAction({

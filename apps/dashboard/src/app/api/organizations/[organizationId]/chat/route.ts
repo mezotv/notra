@@ -38,11 +38,21 @@ import {
   stampUserMessageAuthors,
 } from "@notra/ai/utils/chat";
 import { routeUsageProperties } from "@notra/ai/utils/route-usage";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { InvalidToolInputError, NoSuchToolError, type UIMessage } from "ai";
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import {
+  AI_CREDITS_SOURCE_STANDALONE_CHAT,
+  CHAT_MODEL_AUTO,
+} from "@/constants/studio-analytics";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
+import {
+  countMessageFileParts,
+  getChatContextKinds,
+} from "@/lib/analytics/studio-events";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { buildStandaloneChatTelemetryMetadata } from "@/lib/tcc";
 import { startStandaloneChatRun } from "@/lib/workflows/start";
@@ -92,9 +102,20 @@ export const POST = withEvlog(async function POST(
     );
     const chatId = parseResult.data.chatId ?? generateChatId();
 
+    const trackBlocked = (code: string) => {
+      trackServerEvent({
+        event: POSTHOG_EVENTS.CHAT_GENERATION_BLOCKED,
+        headers: request.headers,
+        userId: auth.context.user.id,
+        organizationId,
+        properties: { code, chat_id: chatId },
+      });
+    };
+
     if (parseResult.data.chatId) {
       const existingSession = await getChatSession(organizationId, chatId);
       if (existingSession?.externalChannelId?.source === "slack") {
+        trackBlocked("CHAT_READ_ONLY");
         return NextResponse.json(
           {
             error: "Slack-mirrored chats are read-only in the dashboard",
@@ -115,6 +136,7 @@ export const POST = withEvlog(async function POST(
 
     let useMarkup = false;
     let chargeAiCredits = false;
+    let billingMode: string | null = null;
     if (autumn || allowUnmeteredAiInDevelopment) {
       let billing: Awaited<ReturnType<typeof checkChatBilling>>;
       try {
@@ -125,6 +147,7 @@ export const POST = withEvlog(async function POST(
           customerId: organizationId,
           error: checkError,
         });
+        trackBlocked("BILLING_ERROR");
         return NextResponse.json(
           { error: "Failed to check usage limits", code: "BILLING_ERROR" },
           { status: 500 }
@@ -132,6 +155,7 @@ export const POST = withEvlog(async function POST(
       }
 
       if (!billing.allowed) {
+        trackBlocked("USAGE_LIMIT_REACHED");
         return NextResponse.json(
           {
             error: "Usage limit reached",
@@ -144,7 +168,9 @@ export const POST = withEvlog(async function POST(
 
       useMarkup = billing.useMarkup;
       chargeAiCredits = billing.chargeAiCredits;
+      billingMode = billing.mode;
     } else {
+      trackBlocked("BILLING_UNAVAILABLE");
       return NextResponse.json(
         { error: "Billing service is unavailable", code: "BILLING_ERROR" },
         { status: 503 }
@@ -185,6 +211,7 @@ export const POST = withEvlog(async function POST(
       latestMessage.id
     );
     if (!streamAcquired) {
+      trackBlocked("ALREADY_GENERATING");
       return NextResponse.json(
         { error: "A response is already being generated for this chat" },
         { status: 409 }
@@ -207,6 +234,24 @@ export const POST = withEvlog(async function POST(
     }
 
     const canUseWorkflowStreaming = canUseChatWorkflowStreaming();
+
+    trackServerEvent({
+      event: POSTHOG_EVENTS.CHAT_MESSAGE_SENT,
+      headers: request.headers,
+      userId: auth.context.user.id,
+      organizationId,
+      properties: {
+        chat_id: chatId,
+        model: parseResult.data.model ?? CHAT_MODEL_AUTO,
+        thinking_level: parseResult.data.thinkingLevel ?? null,
+        attachment_count: countMessageFileParts(latestMessage),
+        context_kinds: getChatContextKinds(context),
+        is_new_chat: !parseResult.data.chatId,
+        billing_mode: billingMode,
+        transport: canUseWorkflowStreaming ? "workflow" : "direct",
+      },
+    });
+
     const telemetryMetadata = buildStandaloneChatTelemetryMetadata({
       chatId,
       organizationId,
@@ -232,6 +277,7 @@ export const POST = withEvlog(async function POST(
         timezone: parseResult.data.timezone,
         abortSignal: request.signal,
         telemetryMetadata,
+        headers: request.headers,
       });
     }
 
@@ -306,6 +352,7 @@ async function createDirectStandaloneChatResponse({
   timezone,
   abortSignal,
   telemetryMetadata,
+  headers,
 }: {
   organizationId: string;
   userId: string;
@@ -323,6 +370,7 @@ async function createDirectStandaloneChatResponse({
   timezone?: string;
   abortSignal?: AbortSignal;
   telemetryMetadata: TccMetadata;
+  headers: Headers;
 }) {
   const autumnClient = autumn;
   const streamId = messages.at(-1)?.id;
@@ -443,6 +491,20 @@ async function createDirectStandaloneChatResponse({
                 total_tokens: usage.totalTokens ?? 0,
                 cost_cents: cost.costCents,
                 token_cost_cents: cost.tokenCostCents,
+              },
+            });
+            trackServerEvent({
+              event: POSTHOG_EVENTS.AI_CREDITS_CHARGED,
+              headers,
+              userId,
+              organizationId,
+              properties: {
+                cost_cents: cost.costCents,
+                source: AI_CREDITS_SOURCE_STANDALONE_CHAT,
+                model: modelId,
+                billing_basis: cost.billingBasis,
+                tokens: usage.totalTokens ?? 0,
+                chat_id: chatId,
               },
             });
           } catch (trackError) {

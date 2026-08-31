@@ -1,8 +1,18 @@
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Effect } from "effect";
 import { type NextRequest, NextResponse } from "next/server";
 
+import {
+  INTEGRATION_AUTH_KINDS,
+  SOCIAL_PLATFORM_TO_INTEGRATION_PROVIDER,
+} from "@/constants/integration-analytics";
 import { SOCIAL_CONNECTED_PARAMS } from "@/constants/social-connect";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { getServerSession } from "@/lib/auth/session";
+import {
+  trackIntegrationConnected,
+  trackIntegrationConnectFailed,
+} from "@/lib/integrations/connect-events";
 import { fromProviderPlatform } from "@/lib/social-connect/client";
 import { completeSocialConnect } from "@/lib/social-connect/connect";
 import { socialConnectCallbackQuerySchema } from "@/schemas/social-accounts";
@@ -40,7 +50,19 @@ export async function GET(request: NextRequest) {
     parsed.data.isSuccess === "false" ||
     parsed.data.accountIds.length === 0;
 
+  const requestedPlatform = parsed.data.provider
+    ? fromProviderPlatform(parsed.data.provider)
+    : null;
+
   if (failed) {
+    if (requestedPlatform) {
+      trackIntegrationConnectFailed({
+        headers: request.headers,
+        provider: SOCIAL_PLATFORM_TO_INTEGRATION_PROVIDER[requestedPlatform],
+        authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+        errorCode: parsed.data.error || "connection_failed",
+      });
+    }
     return NextResponse.redirect(`${baseUrl}/?error=connection_failed`);
   }
 
@@ -50,9 +72,7 @@ export async function GET(request: NextRequest) {
     const result = await Effect.runPromise(
       completeSocialConnect({
         accountIds: parsed.data.accountIds,
-        platform: parsed.data.provider
-          ? fromProviderPlatform(parsed.data.provider)
-          : null,
+        platform: requestedPlatform,
         userId: user?.id ?? null,
       }).pipe(
         Effect.map((value) => ({ status: "connected" as const, ...value })),
@@ -63,6 +83,15 @@ export async function GET(request: NextRequest) {
     );
 
     if (result.status === "failed") {
+      if (requestedPlatform) {
+        trackIntegrationConnectFailed({
+          headers: request.headers,
+          userId: user?.id ?? null,
+          provider: SOCIAL_PLATFORM_TO_INTEGRATION_PROVIDER[requestedPlatform],
+          authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+          errorCode: result.code,
+        });
+      }
       return NextResponse.redirect(
         `${baseUrl}/?error=${encodeURIComponent(result.code)}`
       );
@@ -73,6 +102,22 @@ export async function GET(request: NextRequest) {
       selectionUrl.searchParams.set("token", result.selectionToken);
       return NextResponse.redirect(selectionUrl.toString());
     }
+
+    trackIntegrationConnected({
+      headers: request.headers,
+      userId: user?.id ?? null,
+      provider: SOCIAL_PLATFORM_TO_INTEGRATION_PROVIDER[result.platform],
+      authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+    });
+    trackServerEvent({
+      event: POSTHOG_EVENTS.SOCIAL_ACCOUNT_CONNECTED,
+      headers: request.headers,
+      userId: user?.id ?? null,
+      properties: {
+        platform: result.platform,
+        account_count: parsed.data.accountIds.length,
+      },
+    });
 
     const rawPath = result.callbackPath || "/";
     const callbackPath =
@@ -85,6 +130,15 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error("Error in social connect callback:", error);
+    if (requestedPlatform) {
+      trackIntegrationConnectFailed({
+        headers: request.headers,
+        userId: user?.id ?? null,
+        provider: SOCIAL_PLATFORM_TO_INTEGRATION_PROVIDER[requestedPlatform],
+        authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+        errorCode: "callback_failed",
+      });
+    }
     return NextResponse.redirect(`${baseUrl}/?error=callback_failed`);
   }
 }

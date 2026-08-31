@@ -1,3 +1,4 @@
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Effect } from "effect";
 
 import type { AgentFeedbackRouterError } from "@/lib/agent-feedback/errors";
@@ -7,6 +8,7 @@ import {
   updateAgentFeedbackStatus,
 } from "@/lib/agent-feedback/programs";
 import { buildAgentFeedbackSetup } from "@/lib/agent-feedback/snippet";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { runOrpcEffect } from "@/lib/orpc/effect";
@@ -43,7 +45,33 @@ export const agentFeedbackRouter = {
     .handler(agentFeedbackHandler((input) => listAgentFeedback(input))),
   updateStatus: authorizedProcedure
     .input(agentFeedbackUpdateStatusInputSchema)
-    .handler(agentFeedbackHandler((input) => updateAgentFeedbackStatus(input))),
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const item = await runOrpcEffect(
+        updateAgentFeedbackStatus(input),
+        toAgentFeedbackOrpcError
+      );
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.AGENT_FEEDBACK_STATUS_CHANGED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          feedback_id: item.id,
+          status: item.status,
+          kind: item.kind,
+          sentiment: item.sentiment,
+        },
+      });
+
+      return item;
+    }),
   setup: authorizedProcedure
     .input(agentFeedbackOrganizationInputSchema)
     .handler(

@@ -22,6 +22,7 @@ import type {
   GeoCsvIssue,
   GeoCsvSelection,
 } from "@notra/geo-core/types/geo-import";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Dropzone } from "@notra/ui/components/kibo-ui/dropzone";
 import {
   ResponsiveDialog,
@@ -37,6 +38,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/button";
 import { StatusSpinner } from "@/components/geo/status-spinner";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   useGeoImportCompetitors,
   useGeoImportPrompts,
@@ -147,6 +149,7 @@ function GeoCsvImportDialog<TRow>({
   };
 
   const downloadTemplate = () => {
+    trackEvent(POSTHOG_EVENTS.GEO_CSV_TEMPLATE_DOWNLOADED, { kind });
     downloadBlob(
       new Blob([copy.template], { type: "text/csv;charset=utf-8" }),
       copy.templateFilename

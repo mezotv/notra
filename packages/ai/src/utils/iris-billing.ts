@@ -9,6 +9,8 @@ import {
   shouldApplyMarkup,
 } from "@notra/ai/billing/token-pricing";
 import type { TrackIrisRunUsageInput } from "@notra/ai/types/autonomy";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { captureServerEvent, flushPostHogServer } from "@notra/posthog/server";
 import { Effect } from "effect";
 
 const IRIS_USAGE_SOURCE = "iris";
@@ -127,4 +129,17 @@ export const trackIrisRunUsage = Effect.fn("iris.billing.track")(function* (
     runId: input.runId,
     costCents: billedCents,
   });
+
+  captureServerEvent({
+    event: POSTHOG_EVENTS.AI_CREDITS_CHARGED,
+    organizationId: input.organizationId,
+    properties: {
+      cost_cents: billedCents,
+      raw_cost_cents: input.costCents,
+      source: IRIS_USAGE_SOURCE,
+      run_id: input.runId,
+      billing_basis: "reported_cost",
+    },
+  });
+  yield* Effect.promise(() => flushPostHogServer());
 });

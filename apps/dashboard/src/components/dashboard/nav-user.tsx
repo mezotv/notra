@@ -2,6 +2,7 @@
 
 import { Logout01Icon, User02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   Avatar,
   AvatarFallback,
@@ -22,6 +23,7 @@ import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
 import { useHidePersonalData } from "@/lib/hooks/use-privacy-preferences";
 import { cn } from "@/lib/utils";
@@ -48,6 +50,7 @@ export function NavUser() {
 
   async function handleSignOut() {
     setIsSigningOut(true);
+    trackEvent(POSTHOG_EVENTS.LOGOUT);
     try {
       await authClient.signOut({
         fetchOptions: {

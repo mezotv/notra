@@ -17,6 +17,8 @@ import {
 import { db } from "@notra/db/drizzle";
 import { postCollections, posts } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { captureServerEvent, flushPostHogServer } from "@notra/posthog/server";
 import { and, eq, isNotNull, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -117,6 +119,24 @@ export async function trackImageGenerationUsage(params: {
         token_cost_cents: cost.tokenCostCents,
       },
     });
+    captureServerEvent({
+      event: POSTHOG_EVENTS.AI_CREDITS_CHARGED,
+      organizationId: params.organizationId,
+      properties: {
+        cost_cents: cost.costCents,
+        source: "marketing_assets",
+        model: params.usage.modelId ?? IMAGE_GEN_MODEL_ID,
+        billing_basis: cost.billingBasis,
+        input_tokens: params.usage.inputTokens,
+        output_tokens: params.usage.outputTokens,
+        cache_read_tokens: params.usage.cacheReadTokens,
+        cache_write_tokens: params.usage.cacheWriteTokens,
+        total_tokens: params.usage.totalTokens,
+        markup_applied: params.useMarkup ?? false,
+        post_id: params.postId,
+      },
+    });
+    await flushPostHogServer();
   } catch (error) {
     console.error("[Autumn] Track error after marketing asset generation:", {
       customerId: params.organizationId,

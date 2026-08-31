@@ -1,6 +1,7 @@
 import "./tcc";
 import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
 import { createDb } from "@notra/db/drizzle";
+import { shutdownPostHogServer } from "@notra/posthog/server";
 import {
   API_OPENAPI_TAGS,
   getRequiredApiScope,
@@ -13,6 +14,7 @@ import type { Context } from "hono";
 import { HTTPException } from "hono/http-exception";
 import { trimTrailingSlash } from "hono/trailing-slash";
 
+import { apiAnalyticsMiddleware } from "./middleware/analytics";
 import { authMiddleware } from "./middleware/auth";
 import {
   geoContextMiddleware,
@@ -49,6 +51,7 @@ import {
   RESOURCE_METADATA_URL,
   SITE_URL,
 } from "./utils/agent-discovery";
+import { trackApiException } from "./utils/analytics";
 import { assertRequiredEnv } from "./utils/env";
 import { isPublicFeedbackIngestRequest } from "./utils/feedback";
 import { logError } from "./utils/logging";
@@ -205,6 +208,9 @@ const unlessPublicFeedbackIngest =
       ? next()
       : middleware(c, next);
 
+app.use("/v1/*", apiAnalyticsMiddleware);
+app.use("/v2/*", apiAnalyticsMiddleware);
+
 app.use("/v1/*", unlessPublicFeedbackIngest(oauthScopeMiddleware));
 app.use("/v2/*", oauthScopeMiddleware);
 
@@ -321,8 +327,15 @@ app.onError((error, c) => {
 
   const { pathname } = new URL(c.req.url);
   logError(`Unhandled error: ${c.req.method} ${pathname}`, error);
+  trackApiException(c, error, 500);
   return c.json({ error: "Internal server error" }, 500);
 });
+
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.once(signal, () => {
+    void shutdownPostHogServer().finally(() => process.exit(0));
+  });
+}
 
 export default {
   port: process.env.PORT ?? 3000,

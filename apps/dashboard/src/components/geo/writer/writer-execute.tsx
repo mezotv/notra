@@ -2,6 +2,7 @@
 
 import { Alert02Icon, PlayIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   Alert,
   AlertDescription,
@@ -11,6 +12,7 @@ import { Button } from "@notra/ui/components/ui/button";
 import { createContext, use, useEffect, useLayoutEffect, useRef } from "react";
 
 import { StatusSpinner } from "@/components/geo/status-spinner";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   useGeoWriterBrief,
   useGeoWriterStart,
@@ -68,11 +70,14 @@ function WriterExecuteProvider({
       return;
     }
     notifiedCompletionRef.current = true;
+    trackEvent(POSTHOG_EVENTS.GEO_WRITER_ARTICLE_READY_VIEWED, {
+      brief_id: briefId,
+    });
     const ready = onArticleReadyRef.current();
     if (ready instanceof Promise) {
       ready.catch(() => undefined);
     }
-  }, [hasUnsavedChanges, status]);
+  }, [briefId, hasUnsavedChanges, status]);
 
   const value: WriterExecuteContextValue = {
     state: {

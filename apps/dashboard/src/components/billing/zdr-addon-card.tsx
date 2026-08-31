@@ -1,5 +1,6 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
@@ -21,6 +22,7 @@ import {
   ZDR_ADDON_TITLE,
   ZDR_ADDON_UNAVAILABLE,
 } from "@/constants/billing";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import {
   findActivePlanSubscription,
@@ -71,12 +73,24 @@ export function ZdrAddonCard() {
         successUrl,
       });
       if (result.paymentUrl) {
+        trackEvent(POSTHOG_EVENTS.CHECKOUT_REDIRECTED, {
+          plan_id: addonPlanId,
+          zdr: true,
+        });
         window.location.assign(result.paymentUrl);
         return;
       }
       await refetch();
+      trackEvent(POSTHOG_EVENTS.ZDR_ADDON_ATTACHED, {
+        plan_id: activePlanId ?? null,
+        addon_plan_id: addonPlanId,
+      });
       toast.success(ZDR_ADDON_ADD_SUCCESS);
     } catch (err) {
+      trackEvent(POSTHOG_EVENTS.CHECKOUT_FAILED, {
+        plan_id: addonPlanId,
+        zdr: true,
+      });
       toast.error(
         err instanceof Error
           ? err.message
@@ -97,6 +111,10 @@ export function ZdrAddonCard() {
         cancelAction: "cancel_end_of_cycle",
       });
       await refetch();
+      trackEvent(POSTHOG_EVENTS.ZDR_ADDON_REMOVED, {
+        plan_id: activePlanId ?? null,
+        addon_plan_id: zdrSubscription.planId,
+      });
       toast.success(ZDR_ADDON_REMOVE_SUCCESS);
     } catch (err) {
       toast.error(

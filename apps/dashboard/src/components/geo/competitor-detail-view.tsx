@@ -15,13 +15,14 @@ import {
 } from "@notra/geo-core/constants/geo";
 import type { GeoCompetitorPromptRow } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { EChartsBarChart } from "@/components/evilcharts/charts/echarts-bar-chart";
@@ -31,6 +32,7 @@ import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { CHART_PRIMARY_COLOR } from "@/constants/charts";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoCompetitorDetail, useGeoCompetitors } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
 import type { ChartConfig } from "@/types/charts";
@@ -180,6 +182,17 @@ export function CompetitorDetailView({
       ? activeOrganization
       : orgFromList;
   const organizationId = organization?.id ?? "";
+  const viewedRef = useRef(false);
+
+  useEffect(() => {
+    if (viewedRef.current) {
+      return;
+    }
+    viewedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.GEO_COMPETITOR_DETAIL_VIEWED, {
+      surface: variant,
+    });
+  }, [variant]);
 
   const { data: competitorList } = useGeoCompetitors(organizationId);
   const entry =

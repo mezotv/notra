@@ -16,6 +16,7 @@ import {
   UserCircleIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Shimmer } from "@notra/ui/components/ai-elements/shimmer";
 import {
   Dialog,
@@ -40,9 +41,12 @@ import { useHotkeys } from "react-hotkeys-hook";
 
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { COMMAND_PALETTE_AI_ERROR_ACTION } from "@/constants/studio-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
 import { dashboardOrpc } from "@/lib/orpc/query";
+import type { CommandPaletteOpenSource } from "@/types/analytics/studio-events";
 import type {
   AiResult,
   CommandSection,
@@ -158,6 +162,22 @@ export function CommandPalette() {
   const [, startNavigation] = useTransition();
   const { openFeedback: triggerFeedback } = useFeedback();
   const abortRef = useRef<AbortController | null>(null);
+  const openSourceRef = useRef<CommandPaletteOpenSource | null>(null);
+  const wasOpenRef = useRef(false);
+  const lastTrackedSearchRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      trackEvent(POSTHOG_EVENTS.COMMAND_PALETTE_OPENED, {
+        source: openSourceRef.current ?? "button",
+      });
+    }
+    if (!open) {
+      openSourceRef.current = null;
+      lastTrackedSearchRef.current = null;
+    }
+    wasOpenRef.current = open;
+  }, [open]);
 
   const slug = activeOrganization?.slug ?? "";
   const organizationId = activeOrganization?.id ?? "";
@@ -288,6 +308,23 @@ export function CommandPalette() {
     return hits;
   })();
 
+  const entityHitCount = entityHits.length;
+  const hasSearchData = searchResults.data !== undefined;
+
+  useEffect(() => {
+    if (
+      !(searchEnabled && hasSearchData) ||
+      lastTrackedSearchRef.current === debouncedQuery
+    ) {
+      return;
+    }
+    lastTrackedSearchRef.current = debouncedQuery;
+    trackEvent(POSTHOG_EVENTS.COMMAND_PALETTE_SEARCH, {
+      query_length: debouncedQuery.length,
+      result_count: entityHitCount,
+    });
+  }, [debouncedQuery, entityHitCount, hasSearchData, searchEnabled]);
+
   const entityHitsBySection = (() => {
     const groups = {
       Posts: [] as EntityHit[],
@@ -330,6 +367,9 @@ export function CommandPalette() {
         return;
       }
       event.preventDefault();
+      if (!open) {
+        openSourceRef.current = "hotkey";
+      }
       handleOpenChange(!open);
     },
     { enableOnFormTags: true, enableOnContentEditable: true }
@@ -360,6 +400,10 @@ export function CommandPalette() {
   };
 
   const openFeedback = () => {
+    trackEvent(POSTHOG_EVENTS.COMMAND_PALETTE_RESULT_SELECTED, {
+      kind: "route",
+      id: "feedback",
+    });
     handleOpenChange(false);
     triggerFeedback();
   };
@@ -368,6 +412,11 @@ export function CommandPalette() {
     if (!slug) {
       return;
     }
+    trackEvent(POSTHOG_EVENTS.COMMAND_PALETTE_RESULT_SELECTED, {
+      kind: "ai",
+      id: "chat",
+      query_length: text.length,
+    });
     const qs = text ? `?q=${encodeURIComponent(text)}` : "";
     navigate(`/${slug}/chat${qs}`);
   };
@@ -381,6 +430,14 @@ export function CommandPalette() {
     const controller = new AbortController();
     abortRef.current = controller;
     setAiState({ status: "loading" });
+    const startedAt = Date.now();
+    const trackAiNavigate = (action: string) => {
+      trackEvent(POSTHOG_EVENTS.COMMAND_PALETTE_AI_NAVIGATE, {
+        action,
+        latency_ms: Date.now() - startedAt,
+        query_length: trimmed.length,
+      });
+    };
     let result: AiResult | undefined;
     try {
       const response = await fetch("/api/command-palette/navigate", {
@@ -393,6 +450,7 @@ export function CommandPalette() {
         return;
       }
       if (!response.ok) {
+        trackAiNavigate(COMMAND_PALETTE_AI_ERROR_ACTION);
         setAiState({ status: "error" });
         return;
       }
@@ -401,12 +459,14 @@ export function CommandPalette() {
       if ((error as Error).name === "AbortError") {
         return;
       }
+      trackAiNavigate(COMMAND_PALETTE_AI_ERROR_ACTION);
       setAiState({ status: "error" });
       return;
     }
     if (controller.signal.aborted || !result) {
       return;
     }
+    trackAiNavigate(result.action);
     if (result.action === "navigate" && result.path) {
       navigateFromAi(result.path, "Opening");
       return;
@@ -601,7 +661,13 @@ export function CommandPalette() {
                         )}
                         key={item.id}
                         keywords={item.keywords}
-                        onSelect={() => navigate(item.path(slug))}
+                        onSelect={() => {
+                          trackEvent(
+                            POSTHOG_EVENTS.COMMAND_PALETTE_RESULT_SELECTED,
+                            { kind: "route", id: item.id }
+                          );
+                          navigate(item.path(slug));
+                        }}
                         value={item.label}
                       >
                         <HugeiconsIcon
@@ -640,7 +706,16 @@ export function CommandPalette() {
                         )}
                         key={hit.key}
                         keywords={hit.keywords}
-                        onSelect={() => navigate(hit.path)}
+                        onSelect={() => {
+                          trackEvent(
+                            POSTHOG_EVENTS.COMMAND_PALETTE_RESULT_SELECTED,
+                            {
+                              kind: "entity",
+                              entity_type: hit.key.split(":")[0] ?? null,
+                            }
+                          );
+                          navigate(hit.path);
+                        }}
                         value={`${hit.key}__${hit.label}`}
                       >
                         <HugeiconsIcon

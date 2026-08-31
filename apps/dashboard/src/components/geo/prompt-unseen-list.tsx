@@ -17,6 +17,7 @@ import { LogoStack } from "@/components/geo/logo-stack";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
+import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
 import { cn } from "@/lib/utils";
 import type { PromptUnseenListProps } from "@/types/geo";
 import { promptTableRowForId } from "@/utils/geo-prompts";
@@ -104,6 +105,7 @@ export function PromptUnseenList({
         }}
         open={detailRow !== null}
         row={detailRow}
+        surface={GEO_PROMPT_DETAIL_SURFACES.OVERVIEW}
       />
     </>
   );

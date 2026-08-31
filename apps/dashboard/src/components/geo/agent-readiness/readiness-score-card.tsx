@@ -16,10 +16,12 @@ import {
   formatAgentReadinessDate,
   getAgentReadinessScoreBand,
 } from "@notra/geo-core/utils/agent-readiness";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 
 import { Button } from "@/components/button";
 import { AgentReadinessScoreGauge } from "@/components/geo/agent-readiness/readiness-score-gauge";
 import { InstrumentModule } from "@/components/instrument/instrument-module";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { cn } from "@/lib/utils";
 import type {
   AgentReadinessBreakdownTileProps,
@@ -182,6 +184,12 @@ export function AgentReadinessScoreCard({
           <a
             className="hover:text-foreground inline-flex items-center gap-1 underline underline-offset-2"
             href={report.reportUrl}
+            onClick={() =>
+              trackEvent(POSTHOG_EVENTS.AGENT_READINESS_REPORT_OPENED, {
+                report_id: report.id,
+                score,
+              })
+            }
             rel="noopener noreferrer"
             target="_blank"
           >

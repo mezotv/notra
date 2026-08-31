@@ -17,6 +17,7 @@ import type {
   GeoSearchGapRow,
 } from "@notra/geo-core/types/geo";
 import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Input } from "@notra/ui/components/ui/input";
 import {
   PermissionOption,
@@ -36,7 +37,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import Link from "next/link";
 import { parseAsString, useQueryState } from "nuqs";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -51,8 +52,10 @@ import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
 } from "@/constants/empty-state";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { cn } from "@/lib/utils";
 import type {
+  GeoGapsWriteCellProps,
   GeoGapsEmptyProps,
   GeoGapsFiltersProps,
   GeoGapsTab,
@@ -140,19 +143,22 @@ function useFillHeight(fallback: number) {
 function WriteCell({
   action,
   postId,
+  sourceKind,
+  opportunityBucket,
   onOpenPost,
   onWrite,
-}: {
-  action: ReturnType<typeof gapWriteAction>;
-  postId: string | null | undefined;
-  onOpenPost: (postId: string) => void;
-  onWrite: () => void;
-}) {
+}: GeoGapsWriteCellProps) {
   return (
     <Button
       className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
       onClick={(event) => {
         event.stopPropagation();
+        trackEvent(POSTHOG_EVENTS.GEO_GAP_WRITE_CLICKED, {
+          source_kind: sourceKind,
+          action,
+          has_existing_post: Boolean(postId),
+          opportunity_bucket: opportunityBucket,
+        });
         if (
           (action === "open" || action === "review" || action === "writing") &&
           postId
@@ -514,7 +520,11 @@ export function GeoGapsTable({
             action={gapWriteAction(row.brief)}
             onOpenPost={onOpenPost}
             onWrite={() => onWritePrompt(row)}
+            opportunityBucket={gapMeterLevel(
+              maxOpportunity <= 0 ? 0 : row.opportunity / maxOpportunity
+            )}
             postId={row.brief?.postId}
+            sourceKind="prompt"
           />
         ),
       },
@@ -566,7 +576,9 @@ export function GeoGapsTable({
             action={gapWriteAction(row.brief)}
             onOpenPost={onOpenPost}
             onWrite={() => onWriteSearch(row)}
+            opportunityBucket={null}
             postId={row.brief?.postId}
+            sourceKind="search_console"
           />
         ),
       },
@@ -577,6 +589,35 @@ export function GeoGapsTable({
   const sourceRows = tab === "prompt" ? promptGaps : searchGaps;
   const rows = tab === "prompt" ? filteredPromptGaps : filteredSearchGaps;
   const [tableRef, tableHeight] = useFillHeight(GEO_GAPS_TABLE_HEIGHT);
+  const emptyKind =
+    rows.length === 0
+      ? geoGapsEmptyKind({
+          tab,
+          hasScanData,
+          isScanning,
+          hasSourceRows: sourceRows.length > 0,
+          hasMatches: rows.length > 0,
+        })
+      : null;
+  const viewedRef = useRef(false);
+  const rowCount = rows.length;
+  const promptGapCount = promptGaps.length;
+  const searchGapCount = searchGaps.length;
+
+  useEffect(() => {
+    if (viewedRef.current) {
+      return;
+    }
+    viewedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.GEO_GAPS_VIEWED, {
+      tab,
+      empty_kind: emptyKind,
+      gap_count: rowCount,
+      prompt_gap_count: promptGapCount,
+      search_gap_count: searchGapCount,
+      has_scan_data: hasScanData,
+    });
+  }, [emptyKind, hasScanData, promptGapCount, rowCount, searchGapCount, tab]);
   const table =
     tab === "prompt" ? (
       <Table
@@ -617,16 +658,10 @@ export function GeoGapsTable({
       </div>
 
       <div className="min-h-0 flex-1" ref={tableRef}>
-        {rows.length === 0 ? (
+        {emptyKind !== null ? (
           <GapsEmpty
             isScanning={isScanning}
-            kind={geoGapsEmptyKind({
-              tab,
-              hasScanData,
-              isScanning,
-              hasSourceRows: sourceRows.length > 0,
-              hasMatches: rows.length > 0,
-            })}
+            kind={emptyKind}
             onRunScan={onRunScan}
             organizationSlug={organizationSlug}
           />

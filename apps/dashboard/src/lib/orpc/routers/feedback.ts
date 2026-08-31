@@ -3,8 +3,10 @@ import { organizations } from "@notra/db/schema";
 import { EMAIL_CONFIG } from "@notra/email/utils/config";
 import { sendDevEmail } from "@notra/email/utils/dev";
 import { getResend } from "@notra/email/utils/resend";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { eq } from "drizzle-orm";
 
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { sendFeedbackEmail } from "@/lib/email/send";
 import { authorizedProcedure } from "@/lib/orpc/base";
@@ -56,6 +58,18 @@ export const feedbackRouter = {
       };
 
       const resend = getResend();
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.PRODUCT_FEEDBACK_SENT,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          sentiment: input.sentiment ?? null,
+          has_page_url: input.pageUrl !== undefined,
+          message_length: input.message.length,
+        },
+      });
 
       if (!resend) {
         if (!isDevelopment) {

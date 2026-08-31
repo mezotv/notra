@@ -13,14 +13,18 @@ import type {
   GeoIngestFramework,
   GeoIngestPackageManager,
 } from "@notra/geo-core/types/geo";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { Button } from "@/components/button";
 import { CodeSnippet, useCopyCode } from "@/components/geo/code-snippet";
 import { GeoPackageManagerIcon } from "@/components/geo/package-manager-icon";
+import { TRAFFIC_INSTALL_COPY_KINDS } from "@/constants/geo-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { cn } from "@/lib/utils";
+import type { TrafficInstallCopyKind } from "@/types/analytics/geo-events";
 import type { GeoIngestSetupPanelProps } from "@/types/geo";
 import {
   geoIngestAgentPrompt,
@@ -41,6 +45,28 @@ export function GeoIngestSetup({ setup, className }: GeoIngestSetupPanelProps) {
     GEO_INGEST_FRAMEWORK_OPTIONS.find((option) => option.value === framework)
       ?.file ?? "proxy.ts";
   const token = setup?.token ?? "";
+  const viewedRef = useRef(false);
+  const hasToken = token.length > 0;
+
+  useEffect(() => {
+    if (viewedRef.current) {
+      return;
+    }
+    viewedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.TRAFFIC_INSTALL_SNIPPET_VIEWED, {
+      framework,
+      package_manager: packageManager,
+      has_token: hasToken,
+    });
+  }, [framework, hasToken, packageManager]);
+
+  const trackCopied = (kind: TrafficInstallCopyKind) => {
+    trackEvent(POSTHOG_EVENTS.TRAFFIC_INSTALL_SNIPPET_COPIED, {
+      framework,
+      package_manager: packageManager,
+      kind,
+    });
+  };
 
   return (
     <div className={cn("space-y-5", className)}>
@@ -69,7 +95,11 @@ export function GeoIngestSetup({ setup, className }: GeoIngestSetupPanelProps) {
             </TabsList>
           </Tabs>
         </div>
-        <CodeSnippet code={installCommand} variant="command" />
+        <CodeSnippet
+          code={installCommand}
+          onCopy={() => trackCopied(TRAFFIC_INSTALL_COPY_KINDS.INSTALL_COMMAND)}
+          variant="command"
+        />
       </section>
       {token ? (
         <section className="space-y-2">
@@ -102,7 +132,11 @@ export function GeoIngestSetup({ setup, className }: GeoIngestSetupPanelProps) {
             </TabsList>
           </Tabs>
         </div>
-        <CodeSnippet code={snippet} filename={file} />
+        <CodeSnippet
+          code={snippet}
+          filename={file}
+          onCopy={() => trackCopied(TRAFFIC_INSTALL_COPY_KINDS.PROXY_SNIPPET)}
+        />
       </section>
       <div className="space-y-2">
         <div aria-hidden className="flex items-center gap-3 py-1">
@@ -112,7 +146,10 @@ export function GeoIngestSetup({ setup, className }: GeoIngestSetupPanelProps) {
         </div>
         <Button
           className="text-muted-foreground mx-auto flex w-fit"
-          onClick={copy}
+          onClick={() => {
+            trackCopied(TRAFFIC_INSTALL_COPY_KINDS.AGENT_PROMPT);
+            return copy();
+          }}
           size="sm"
           variant="ghost"
         >

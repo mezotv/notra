@@ -19,11 +19,14 @@ import {
   buildAgentReadinessFixPrompt,
   groupAgentReadinessIssues,
 } from "@notra/geo-core/utils/agent-readiness";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Badge } from "@notra/ui/components/ui/badge";
 
 import { Button } from "@/components/button";
 import { useCopyCode } from "@/components/geo/code-snippet";
 import { InstrumentModule } from "@/components/instrument/instrument-module";
+import { AGENT_READINESS_FIX_COPY_KINDS } from "@/constants/geo-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import type {
   AgentReadinessChecklistProps,
   AgentReadinessChecklistPromptActionsProps,
@@ -36,6 +39,8 @@ import type {
 function CopyPromptButton({
   prompt,
   label,
+  copyKind,
+  checkId,
   variant = "outline",
   size = "sm",
 }: AgentReadinessCopyPromptButtonProps) {
@@ -44,7 +49,13 @@ function CopyPromptButton({
   return (
     <Button
       className="shrink-0"
-      onClick={copy}
+      onClick={() => {
+        trackEvent(POSTHOG_EVENTS.AGENT_READINESS_FIX_COPIED, {
+          check_id: checkId ?? null,
+          kind: copyKind,
+        });
+        return copy();
+      }}
       size={size}
       type="button"
       variant={variant}
@@ -98,12 +109,14 @@ function ChecklistPromptActions({
   return (
     <>
       <CopyPromptButton
+        copyKind={AGENT_READINESS_FIX_COPY_KINDS.MASTER}
         label="Copy master prompt"
         prompt={masterPrompt}
         variant="default"
       />
       {hasMustDo && hasShouldDo ? (
         <CopyPromptButton
+          copyKind={AGENT_READINESS_FIX_COPY_KINDS.BACKLOG}
           label="Copy full backlog"
           prompt={buildFullBacklogPrompt(targetUrl, groups)}
         />
@@ -141,6 +154,8 @@ function IssueEntry({
                 Suggested fix
               </span>
               <CopyPromptButton
+                checkId={issue.id}
+                copyKind={AGENT_READINESS_FIX_COPY_KINDS.FIX}
                 label="Copy fix"
                 prompt={fixPrompt}
                 size="xs"
@@ -153,7 +168,12 @@ function IssueEntry({
           </div>
         ) : (
           <div className="mt-3">
-            <CopyPromptButton label="Copy fix" prompt={fixPrompt} />
+            <CopyPromptButton
+              checkId={issue.id}
+              copyKind={AGENT_READINESS_FIX_COPY_KINDS.FIX}
+              label="Copy fix"
+              prompt={fixPrompt}
+            />
           </div>
         )}
       </div>

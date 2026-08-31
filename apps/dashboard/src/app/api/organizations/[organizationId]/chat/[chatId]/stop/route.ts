@@ -8,9 +8,11 @@ import {
 } from "@notra/ai/chat/history";
 import { realtime } from "@notra/ai/realtime";
 import { chatIdSchema } from "@notra/ai/schemas/chat";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { ratelimit } from "@/utils/ratelimit";
 
@@ -60,6 +62,17 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   await setLastResponseStopped(organizationId, safeChatId);
 
   const activeStreamId = await getActiveChatStream(organizationId, safeChatId);
+
+  trackServerEvent({
+    event: POSTHOG_EVENTS.CHAT_GENERATION_STOPPED,
+    headers: request.headers,
+    userId: auth.context.user.id,
+    organizationId,
+    properties: {
+      chat_id: safeChatId,
+      had_active_stream: Boolean(activeStreamId),
+    },
+  });
 
   if (!activeStreamId) {
     return NextResponse.json({ ok: true, aborted: false });

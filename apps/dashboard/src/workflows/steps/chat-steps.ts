@@ -30,10 +30,16 @@ import type { ChatUsageSnapshot } from "@notra/ai/types/chat";
 import type { StandaloneChatContextItem } from "@notra/ai/types/standalone-chat";
 import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
 import { routeUsageProperties } from "@notra/ai/utils/route-usage";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { flushPostHogServer } from "@notra/posthog/server";
 import type { UIMessageChunk } from "ai";
 import { nanoid } from "nanoid";
 
+import { AI_CREDITS_SOURCE_STANDALONE_CHAT } from "@/constants/studio-analytics";
+import { WORKFLOW_ANALYTICS_NAMES } from "@/constants/workflow-analytics";
+import { trackServerEventAndFlush } from "@/lib/analytics/posthog-server";
 import { buildStandaloneChatTelemetryMetadata } from "@/lib/tcc";
+import { reportStepError } from "@/lib/workflows/step-errors";
 import type {
   ChatBillingRecheckInput,
   ChatBillingRecheckResult,
@@ -301,6 +307,19 @@ export async function streamChatResponseStep(
                 token_cost_cents: cost.tokenCostCents,
               },
             });
+            await trackServerEventAndFlush({
+              event: POSTHOG_EVENTS.AI_CREDITS_CHARGED,
+              userId,
+              organizationId,
+              properties: {
+                cost_cents: cost.costCents,
+                source: AI_CREDITS_SOURCE_STANDALONE_CHAT,
+                model: modelId,
+                billing_basis: cost.billingBasis,
+                tokens: usage.totalTokens ?? 0,
+                chat_id: chatId,
+              },
+            });
           } catch (trackError) {
             console.error("[Autumn] Track error after standalone chat:", {
               requestId,
@@ -423,6 +442,11 @@ export async function streamChatResponseStep(
         chatId,
         error: error instanceof Error ? error.message : String(error),
       });
+      await reportStepError(error, {
+        workflow: WORKFLOW_ANALYTICS_NAMES.CHAT,
+        step: "streamChatResponse",
+        organizationId,
+      });
       await channel.emit("ai.chunk", {
         type: "error",
         errorText: "An error occurred while processing your request.",
@@ -440,6 +464,7 @@ export async function streamChatResponseStep(
     await clearChatAbortFlag(organizationId, chatId, streamId).catch(
       () => undefined
     );
+    await flushPostHogServer();
   }
 }
 

@@ -4,6 +4,7 @@ import {
   GEO_UPGRADE_DESCRIPTION,
   GEO_UPGRADE_TITLE,
 } from "@notra/geo-core/constants/geo";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -19,7 +20,13 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { PlanCard } from "@/components/billing/plan-card";
+import { PAYWALL_KINDS, PLAN_SURFACES } from "@/constants/analytics-events";
 import { FEATURED_PLAN_TIER } from "@/constants/billing";
+import {
+  billingInterval,
+  planSelectedProperties,
+} from "@/lib/analytics/billing-events";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { attachPlanWithAddons } from "@/lib/billing/attach-plan";
 import type { BillingPlanGroup } from "@/types/billing/plan";
 import type { GeoUpgradeDialogProps } from "@/types/components/geo";
@@ -48,8 +55,44 @@ export function GeoUpgradeDialog({
   const planGroups = groupBillingPlans(plans);
   const intervalLabel = isYearly ? "year" : "month";
 
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      trackEvent(POSTHOG_EVENTS.PAYWALL_DISMISSED, {
+        kind: PAYWALL_KINDS.GEO_LOCKED,
+      });
+    }
+    onOpenChange(nextOpen);
+  }
+
+  function handleIntervalChange(value: string) {
+    const yearly = value === "yearly";
+    trackEvent(POSTHOG_EVENTS.PRICING_INTERVAL_TOGGLED, {
+      interval: billingInterval(yearly),
+      surface: PLAN_SURFACES.GEO_PAYWALL,
+    });
+    setIsYearly(yearly);
+  }
+
+  function handleIncludeZdrChange(checked: boolean) {
+    trackEvent(POSTHOG_EVENTS.ZDR_ADDON_TOGGLED, {
+      enabled: checked,
+      surface: PLAN_SURFACES.GEO_PAYWALL,
+    });
+    setIncludeZdr(checked);
+  }
+
   async function handleSelectPlan(planId: string) {
     setLoading(planId);
+    trackEvent(
+      POSTHOG_EVENTS.PLAN_SELECTED,
+      planSelectedProperties({
+        plans,
+        planId,
+        isYearly,
+        includeZdr,
+        surface: PLAN_SURFACES.GEO_PAYWALL,
+      })
+    );
     try {
       const result = await attachPlanWithAddons({
         attach,
@@ -64,6 +107,10 @@ export function GeoUpgradeDialog({
       }
       await refetch();
     } catch (err) {
+      trackEvent(POSTHOG_EVENTS.CHECKOUT_FAILED, {
+        plan_id: planId,
+        surface: PLAN_SURFACES.GEO_PAYWALL,
+      });
       toast.error(
         err instanceof Error
           ? err.message
@@ -89,7 +136,7 @@ export function GeoUpgradeDialog({
         addon={zdrAddonToggle(
           findZdrAddonPlan(plans, plan.id),
           includeZdr,
-          setIncludeZdr
+          handleIncludeZdrChange
         )}
         button={{
           label,
@@ -110,7 +157,7 @@ export function GeoUpgradeDialog({
   }
 
   return (
-    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+    <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
       <ResponsiveDialogContent className="flex max-h-[90svh] flex-col overflow-hidden sm:max-w-5xl">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>{GEO_UPGRADE_TITLE}</ResponsiveDialogTitle>
@@ -120,7 +167,7 @@ export function GeoUpgradeDialog({
         </ResponsiveDialogHeader>
         <div className="flex justify-center">
           <Tabs
-            onValueChange={(value) => setIsYearly(value === "yearly")}
+            onValueChange={handleIntervalChange}
             value={isYearly ? "yearly" : "monthly"}
           >
             <TabsList variant="line">

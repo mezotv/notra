@@ -199,6 +199,7 @@ export default function PageClient({
         )}
       </div>
       <CreateContentDialog
+        entry="content_list"
         hideTrigger
         onOpenChange={setCreateOpen}
         open={createOpen}

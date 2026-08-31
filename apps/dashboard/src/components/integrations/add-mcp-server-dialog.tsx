@@ -2,6 +2,7 @@
 
 import { CpuIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -27,6 +28,8 @@ import { McpAuthenticationFields } from "@/components/integrations/mcp-authentic
 import { McpConnectionTestStatus } from "@/components/integrations/mcp-connection-test-status";
 import { McpDialogFooter } from "@/components/integrations/mcp-dialog-footer";
 import { McpServerDetailsFields } from "@/components/integrations/mcp-server-details-fields";
+import { INTEGRATION_PROVIDERS } from "@/constants/integration-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useMcpServerForm } from "@/lib/hooks/use-mcp-server-form";
 import {
   buildMcpHeaders,
@@ -167,6 +170,13 @@ export function AddMcpServerDialog({
   });
 
   function submitCreate(value: AddMcpServerFormValues) {
+    trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+      provider: storeIntegrationId
+        ? INTEGRATION_PROVIDERS.MCP_STORE
+        : INTEGRATION_PROVIDERS.MCP,
+      auth_type: value.authType,
+      store_integration_id: storeIntegrationId ?? null,
+    });
     if (value.authType === "oauth") {
       const oauthPayload = beginMcpOAuthRequestSchema.safeParse({
         organizationId,

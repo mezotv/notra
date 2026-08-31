@@ -5,7 +5,9 @@ import {
   getGeoContentBrief,
   listGeoContentBriefs,
 } from "@notra/geo-core/geo/writer";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 
+import { API_TRIGGER_SOURCE } from "../constants/analytics";
 import { GEO_WRITER_PLAN_INTERNAL_PATH } from "../constants/geo";
 import {
   GEO_COMMON_ERROR_RESPONSES,
@@ -22,6 +24,7 @@ import {
 } from "../schemas/geo-content";
 import { projectParamsSchema } from "../schemas/geo-params";
 import { internalGeoWriterPlanResponseSchema } from "../schemas/internal-geo";
+import { trackApiEvent } from "../utils/analytics";
 import { geoErrorResponse } from "../utils/geo";
 import { runGeoEffect, runRemoteGeoEffect } from "../utils/geo-effect";
 import {
@@ -236,6 +239,18 @@ geoBriefsRoutes.openapi(planBriefRoute, async (c) => {
     return geoErrorResponse(c, outcome.failure);
   }
 
+  trackApiEvent(c, {
+    event: POSTHOG_EVENTS.GEO_BRIEF_PLANNED,
+    organizationId: base.organizationId,
+    projectId,
+    properties: {
+      trigger: API_TRIGGER_SOURCE,
+      brief_id: outcome.value.briefId,
+      status: outcome.value.status,
+      auto_started: outcome.value.runId !== null,
+    },
+  });
+
   return c.json({ ...outcome.value, organization: base.organization }, 200);
 });
 
@@ -263,6 +278,17 @@ geoBriefsRoutes.openapi(approveBriefRoute, async (c) => {
   if (!outcome.ok) {
     return geoErrorResponse(c, outcome.failure);
   }
+
+  trackApiEvent(c, {
+    event: POSTHOG_EVENTS.GEO_WRITER_STARTED,
+    organizationId: base.organizationId,
+    projectId,
+    properties: {
+      trigger: API_TRIGGER_SOURCE,
+      brief_id: briefId,
+      run_id: outcome.value.runId,
+    },
+  });
 
   return c.json(
     { runId: outcome.value.runId, organization: base.organization },

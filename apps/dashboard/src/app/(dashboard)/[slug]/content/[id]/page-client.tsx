@@ -25,6 +25,7 @@ import {
   contentChatSessionsPath,
   contentChatSessionsQueryKey,
 } from "@notra/ai/utils/chat";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   Avatar,
   AvatarFallback,
@@ -81,6 +82,8 @@ import {
 } from "@/constants/content-detail";
 import { IMAGE_EXPORT_TARGETS } from "@/constants/image-export";
 import { localStorageKeys } from "@/constants/storage";
+import { IMAGE_EXPORT_DOWNLOAD_TARGET } from "@/constants/studio-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { emitAutumnRefresh } from "@/lib/billing/autumn-refresh";
 import {
   copyImageAsFigma,
@@ -208,6 +211,21 @@ export default function PageClient({
   const needsNormalizationRef = useRef(false);
   const originalMarkdownRef = useRef("");
   const editedMarkdownRef = useRef<string | null>(null);
+  const hasTrackedOpenRef = useRef(false);
+
+  useEffect(() => {
+    const loadedContent = data?.content;
+    if (!loadedContent || hasTrackedOpenRef.current) {
+      return;
+    }
+    hasTrackedOpenRef.current = true;
+    trackEvent(POSTHOG_EVENTS.CONTENT_OPENED, {
+      content_id: contentId,
+      type: loadedContent.contentType,
+      status: loadedContent.status,
+      from_geo_writer: Boolean(geoWriterDraft),
+    });
+  }, [contentId, data?.content, geoWriterDraft]);
 
   useEffect(() => {
     const storedTarget = window.localStorage.getItem(
@@ -823,6 +841,7 @@ export default function PageClient({
         toolPart.output?.status === "updated"
       ) {
         processedToolCallsRef.current.add(toolPart.toolCallId);
+        trackEvent(POSTHOG_EVENTS.IMAGE_REVISED, { content_id: contentId });
         invalidateContentQueries().catch((error) => {
           console.error("Failed to refresh revised image content", error);
         });
@@ -861,15 +880,25 @@ export default function PageClient({
           );
           setWriteFocusNonce((value) => value + 1);
           setEditorKey((key) => key + 1);
+          trackEvent(POSTHOG_EVENTS.CONTENT_AGENT_EDIT_APPLIED, {
+            content_id: contentId,
+            type: data?.content?.contentType ?? null,
+          });
         } else {
           editorRef.current?.setMarkdown(fixedMarkdown);
+          trackEvent(POSTHOG_EVENTS.IMAGE_REVISED, { content_id: contentId });
         }
         invalidateContentQueries().catch((error) => {
           console.error("Failed to refresh edited content", error);
         });
       }
     }
-  }, [invalidateContentQueries, messages]);
+  }, [
+    contentId,
+    data?.content?.contentType,
+    invalidateContentQueries,
+    messages,
+  ]);
 
   const dispatchContentEdit = useCallback(
     async (
@@ -1110,6 +1139,10 @@ export default function PageClient({
       ? content.content
       : null;
   const copyImageExportFor = (target: ImageExportTarget) => {
+    trackEvent(POSTHOG_EVENTS.IMAGE_EXPORTED, {
+      content_id: contentId,
+      target,
+    });
     if (target === "figma") {
       copyImageAsFigma(
         imageExportRef.current,
@@ -1368,6 +1401,7 @@ export default function PageClient({
                 {content.contentType === "linkedin_post" && (
                   <PostSocialButton
                     content={currentMarkdown}
+                    from="editor"
                     onContentChange={setEditedMarkdown}
                     organizationId={organizationId}
                     platform="linkedin"
@@ -1376,6 +1410,7 @@ export default function PageClient({
                 {content.contentType === "twitter_post" && (
                   <PostSocialButton
                     content={currentMarkdown}
+                    from="editor"
                     onContentChange={setEditedMarkdown}
                     organizationId={organizationId}
                     platform="twitter"
@@ -1384,7 +1419,13 @@ export default function PageClient({
                 {content.contentType === "image" && (
                   <>
                     <Button
-                      onClick={() => downloadImage(imageDownloadUrl, title)}
+                      onClick={() => {
+                        trackEvent(POSTHOG_EVENTS.IMAGE_EXPORTED, {
+                          content_id: contentId,
+                          target: IMAGE_EXPORT_DOWNLOAD_TARGET,
+                        });
+                        downloadImage(imageDownloadUrl, title);
+                      }}
                       size="sm"
                       variant="outline"
                     >

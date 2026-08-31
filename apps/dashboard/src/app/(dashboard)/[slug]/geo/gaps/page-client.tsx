@@ -9,6 +9,7 @@ import { WriteDialog } from "@/components/geo/writer/write-dialog";
 import { PageContainer } from "@/components/layout/container";
 import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { GEO_WRITE_DIALOG_ENTRIES } from "@/constants/geo-analytics";
 import {
   useGeoCompetitors,
   useGeoSettings,
@@ -103,7 +104,7 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
             onOpenPost={(postId) => {
               router.push(geoContentPath(organizationSlug, postId));
             }}
-            onRunScan={() => startScan.mutate()}
+            onRunScan={() => startScan.mutate("gaps_empty")}
             onWritePrompt={(row) => {
               openDialog(
                 writeDialogStateFromGap({
@@ -128,6 +129,7 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
 
       {organizationId ? (
         <WriteDialog
+          entry={GEO_WRITE_DIALOG_ENTRIES.GAP}
           initial={dialogInitial}
           onOpenChange={setDialogOpen}
           open={dialogOpen}

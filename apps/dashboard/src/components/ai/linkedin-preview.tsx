@@ -299,6 +299,7 @@ export function LinkedInPreview({
                 <PostSocialButton
                   className="max-w-full"
                   content={draftMarkdown}
+                  from="chat_preview"
                   onContentChange={
                     isFinished
                       ? undefined

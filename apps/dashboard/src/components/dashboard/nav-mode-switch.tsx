@@ -1,6 +1,7 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   SidebarGroup,
   SidebarMenu,
@@ -15,7 +16,8 @@ import {
   SIDEBAR_MODE_PILL_CLASS,
   SIDEBAR_MODES,
 } from "@/constants/nav";
-import type { NavModeSwitchProps } from "@/types/components/nav";
+import { trackEvent } from "@/lib/analytics/posthog-client";
+import type { NavModeSwitchProps, SidebarMode } from "@/types/components/nav";
 import { geoNavHref } from "@/utils/geo-paths";
 
 import { SidebarLabel } from "./sidebar-label";
@@ -26,6 +28,16 @@ export function NavModeSwitch({
   projectId,
   onModeChange,
 }: NavModeSwitchProps) {
+  const handleModeSelect = (next: SidebarMode) => {
+    if (next !== mode) {
+      trackEvent(POSTHOG_EVENTS.SIDEBAR_MODE_SWITCHED, {
+        from: mode,
+        to: next,
+      });
+    }
+    onModeChange(next);
+  };
+
   return (
     <SidebarGroup className="pt-0">
       <div className="bg-sidebar-accent rounded-lg p-0.5 group-data-[collapsible=icon]:hidden">
@@ -54,7 +66,7 @@ export function NavModeSwitch({
                   projectId
                 )}
                 key={option.id}
-                onClick={() => onModeChange(option.id)}
+                onClick={() => handleModeSelect(option.id)}
                 prefetch={option.id === "geo"}
               >
                 <HugeiconsIcon className="size-3.5" icon={option.icon} />
@@ -76,7 +88,7 @@ export function NavModeSwitch({
                     SIDEBAR_MODE_HOME_LINKS[option.id],
                     projectId
                   )}
-                  onClick={() => onModeChange(option.id)}
+                  onClick={() => handleModeSelect(option.id)}
                   prefetch={option.id === "geo"}
                 >
                   <HugeiconsIcon icon={option.icon} />

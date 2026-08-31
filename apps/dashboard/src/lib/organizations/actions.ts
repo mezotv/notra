@@ -9,14 +9,21 @@ import {
 import { seedSystemSkills } from "@notra/ai/skills/seed";
 import { db } from "@notra/db/drizzle";
 import { members, organizations, users } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import type { Invitation } from "@workos-inc/node";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { isValid as isNotDisposableEmail } from "mailchecker";
 import { cookies } from "next/headers";
 
+import { QUOTA_FEATURES } from "@/constants/analytics-events";
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
+import {
+  identifyOrganizationGroup,
+  trackServerEvent,
+} from "@/lib/analytics/posthog-server";
+import { readRequestHeaders } from "@/lib/analytics/request-headers";
 import { readWorkOSError } from "@/lib/auth/workos-error";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import {
@@ -60,6 +67,7 @@ import type {
   UpdateMemberRoleInput,
   UpdateOrganizationInput,
 } from "@/types/organizations/actions";
+import type { OrganizationTrackingInput } from "@/types/organizations/analytics";
 
 const enforceTeamMembersLimit = Effect.fn(
   "organizations.actions.enforceTeamMembersLimit"
@@ -93,6 +101,36 @@ const tryDb = <T>(run: () => Promise<T>, message: string) =>
     try: run,
     catch: (cause) => new OrganizationActionError({ message, cause }),
   });
+
+const trackOrganizationEvent = Effect.fn(
+  "organizations.actions.trackOrganizationEvent"
+)(function* (input: OrganizationTrackingInput) {
+  const requestHeaders = yield* Effect.promise(readRequestHeaders);
+  yield* Effect.sync(() => {
+    trackServerEvent({
+      event: input.event,
+      headers: requestHeaders,
+      userId: input.userId,
+      organizationId: input.organizationId,
+      properties: input.properties,
+    });
+  });
+});
+
+const countOrganizationMembers = Effect.fn(
+  "organizations.actions.countOrganizationMembers"
+)(function* (organizationId: string) {
+  return yield* Effect.tryPromise({
+    try: async () => {
+      const [row] = await db
+        .select({ value: count() })
+        .from(members)
+        .where(eq(members.organizationId, organizationId));
+      return row?.value ?? null;
+    },
+    catch: () => null,
+  }).pipe(Effect.catch(() => Effect.succeed(null)));
+});
 
 const mapMemberRows = (
   rows: Array<{
@@ -193,7 +231,11 @@ const requireInvitationManagement = Effect.fn(
   }
 
   yield* requireManagerMembership(session, organization.id);
-  return invitation;
+  return {
+    invitation,
+    organizationId: organization.id,
+    userId: session.user.id,
+  };
 });
 
 export async function createOrganizationAction(
@@ -322,6 +364,24 @@ export async function createOrganizationAction(
         );
       }
 
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.WORKSPACE_CREATED,
+        userId: session.user.id,
+        organizationId,
+        properties: { has_logo: Boolean(input.logo) },
+      });
+      yield* Effect.sync(() => {
+        identifyOrganizationGroup({
+          organizationId,
+          userId: session.user.id,
+          properties: {
+            name: input.name,
+            slug,
+            created_at: now.toISOString(),
+          },
+        });
+      });
+
       if (!input.keepCurrentActiveOrganization) {
         const cookieStore = yield* tryDb(
           () => cookies(),
@@ -383,6 +443,16 @@ export async function updateOrganizationAction(
 
       if (updates.name !== undefined) {
         yield* syncOrganizationNameToWorkOS(input.organizationId, updates.name);
+      }
+
+      if (updates.name !== undefined || updates.slug !== undefined) {
+        yield* Effect.sync(() => {
+          identifyOrganizationGroup({
+            organizationId: input.organizationId,
+            userId: session.user.id,
+            properties: { name: organization.name, slug: organization.slug },
+          });
+        });
       }
 
       if (updates.slug) {
@@ -651,6 +721,20 @@ export async function updateMemberRoleAction(
         input.role
       );
 
+      const memberCount = yield* countOrganizationMembers(
+        member.organizationId
+      );
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.MEMBER_ROLE_CHANGED,
+        userId: session.user.id,
+        organizationId: member.organizationId,
+        properties: {
+          role: input.role,
+          previous_role: member.role,
+          member_count: memberCount,
+        },
+      });
+
       const updated = yield* tryDb(
         () =>
           db.query.members.findFirst({
@@ -741,6 +825,18 @@ export async function removeMemberAction(
 
       yield* removeMembershipFromWorkOS(organizationId, member.userId);
 
+      const memberCount = yield* countOrganizationMembers(organizationId);
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.MEMBER_REMOVED,
+        userId: session.user.id,
+        organizationId,
+        properties: {
+          role: member.role,
+          is_self_removal: isSelfRemoval,
+          member_count: memberCount,
+        },
+      });
+
       return { removed: true };
     })
   );
@@ -812,7 +908,37 @@ export async function inviteMemberAction(
         );
       }
 
-      yield* enforceTeamMembersLimit(organizationId);
+      yield* enforceTeamMembersLimit(organizationId).pipe(
+        Effect.catch((error) =>
+          Effect.gen(function* () {
+            if (error.message === TEAM_MEMBER_LIMIT_ERROR_MESSAGE) {
+              const memberCount =
+                yield* countOrganizationMembers(organizationId);
+              yield* trackOrganizationEvent({
+                event: POSTHOG_EVENTS.QUOTA_EXCEEDED,
+                userId: session.user.id,
+                organizationId,
+                properties: {
+                  feature: QUOTA_FEATURES.TEAM_MEMBERS,
+                  reason: "limit_reached",
+                  member_count: memberCount,
+                },
+              });
+              yield* trackOrganizationEvent({
+                event: POSTHOG_EVENTS.MEMBER_INVITED,
+                userId: session.user.id,
+                organizationId,
+                properties: {
+                  role: input.role,
+                  limit_hit: true,
+                  member_count: memberCount,
+                },
+              });
+            }
+            return yield* Effect.fail(error);
+          })
+        )
+      );
       const workosOrgId = yield* requireWorkOSOrganizationId(organizationId);
 
       const invitation = yield* tryWorkOS(
@@ -825,6 +951,18 @@ export async function inviteMemberAction(
           }),
         "Failed to send invitation"
       );
+
+      const memberCount = yield* countOrganizationMembers(organizationId);
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.MEMBER_INVITED,
+        userId: session.user.id,
+        organizationId,
+        properties: {
+          role: input.role,
+          limit_hit: false,
+          member_count: memberCount,
+        },
+      });
 
       return mapInvitation(invitation);
     })
@@ -840,12 +978,19 @@ export async function cancelInvitationAction(
         invitationActionInputSchema,
         rawInput
       );
-      yield* requireInvitationManagement(input.invitationId);
+      const management = yield* requireInvitationManagement(input.invitationId);
 
       const revoked = yield* tryWorkOS(
         () => getWorkOS().userManagement.revokeInvitation(input.invitationId),
         "Failed to revoke invitation"
       );
+
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.INVITE_CANCELLED,
+        userId: management.userId,
+        organizationId: management.organizationId,
+        properties: { role: revoked.roleSlug },
+      });
 
       return mapInvitation(revoked);
     })
@@ -861,12 +1006,19 @@ export async function resendInvitationAction(
         invitationActionInputSchema,
         rawInput
       );
-      yield* requireInvitationManagement(input.invitationId);
+      const management = yield* requireInvitationManagement(input.invitationId);
 
       const invitation = yield* tryWorkOS(
         () => getWorkOS().userManagement.resendInvitation(input.invitationId),
         "Failed to resend invitation"
       );
+
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.INVITE_RESENT,
+        userId: management.userId,
+        organizationId: management.organizationId,
+        properties: { role: invitation.roleSlug },
+      });
 
       return mapInvitation(invitation);
     })

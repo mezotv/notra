@@ -6,17 +6,36 @@ import {
   GEO_LOCKED_TITLE,
   GEO_UPGRADE_DESCRIPTION,
 } from "@notra/geo-core/constants/geo";
-import { useRouter } from "next/navigation";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef } from "react";
 
 import { GeoUpgradeDialog } from "@/components/billing/geo-upgrade-dialog";
 import { EmptyStateAnalyticsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
+import { PAYWALL_KINDS } from "@/constants/analytics-events";
+import { trackEvent } from "@/lib/analytics/posthog-client";
+import { toAnalyticsRoute } from "@/lib/analytics/route";
 import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import type { GeoUpgradeGateProps } from "@/types/components/geo";
 
 export function GeoUpgradeGate({ slug, children }: GeoUpgradeGateProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { isLocked, isLoading } = useHasGeoFeature();
+  const route = toAnalyticsRoute(pathname, slug);
+  const shownRef = useRef(false);
+
+  useEffect(() => {
+    if (!isLocked || shownRef.current) {
+      return;
+    }
+    shownRef.current = true;
+    trackEvent(POSTHOG_EVENTS.PAYWALL_SHOWN, {
+      kind: PAYWALL_KINDS.GEO_LOCKED,
+      route,
+    });
+  }, [isLocked, route]);
 
   if (isLoading) {
     return null;

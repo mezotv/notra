@@ -2,6 +2,7 @@ import { createRoute } from "@hono/zod-openapi";
 import { agentFeedback } from "@notra/db/schema";
 import { and, count, desc, eq } from "drizzle-orm";
 
+import { API_FEEDBACK_VIA } from "../constants/analytics";
 import {
   FEEDBACK_NOT_FOUND_ERROR,
   FEEDBACK_ORGANIZATION_NOT_FOUND_ERROR,
@@ -18,6 +19,7 @@ import {
   submitFeedbackResponseSchema,
   updateFeedbackRequestSchema,
 } from "../schemas/feedback";
+import { trackFeedbackReceived } from "../utils/analytics";
 import { getOrganizationId } from "../utils/auth";
 import {
   findOrganizationIdBySlug,
@@ -200,6 +202,13 @@ feedbackRoutes.openapi(submitOrganizationFeedbackRoute, async (c) => {
     return c.json({ error: FEEDBACK_NOT_FOUND_ERROR }, 404);
   }
 
+  trackFeedbackReceived(c, {
+    organizationId,
+    feedback: outcome.feedback,
+    deduplicated: outcome.deduplicated,
+    via: API_FEEDBACK_VIA.PUBLIC_SLUG,
+  });
+
   return c.json(
     { feedback: outcome.feedback, deduplicated: outcome.deduplicated },
     202
@@ -224,6 +233,13 @@ feedbackRoutes.openapi(submitFeedbackRoute, async (c) => {
   if (outcome.kind === "not_found") {
     return c.json({ error: FEEDBACK_NOT_FOUND_ERROR }, 404);
   }
+
+  trackFeedbackReceived(c, {
+    organizationId,
+    feedback: outcome.feedback,
+    deduplicated: outcome.deduplicated,
+    via: API_FEEDBACK_VIA.TOKEN,
+  });
 
   return c.json(
     { feedback: outcome.feedback, deduplicated: outcome.deduplicated },

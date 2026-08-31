@@ -2,6 +2,7 @@ import { describeContentBillingDenial } from "@notra/ai/billing/content-billing"
 import { contentGenerationWorkflowPayloadSchema } from "@notra/content-generation/schemas";
 import { flattenError } from "zod";
 
+import { WORKFLOW_ANALYTICS_NAMES } from "@/constants/workflow-analytics";
 import type { OnDemandContentWorkflowResult } from "@/types/workflows/on-demand-generation";
 
 import {
@@ -51,10 +52,13 @@ export async function onDemandContentWorkflow(
     source,
   } = parsed;
 
+  const workflowStartedAt = Date.now();
   const claimToken = crypto.randomUUID();
   const claim = await claimWorkflowExecution({
     executionId: runId,
     claimToken,
+    organizationId,
+    workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
   });
   if (!claim.claimed) {
     console.warn(
@@ -74,6 +78,8 @@ export async function onDemandContentWorkflow(
     await finishOnDemand({
       organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+      startedAt: workflowStartedAt,
       contentType,
       status: "failed",
       reason: describeContentBillingDenial(gate),
@@ -117,6 +123,8 @@ export async function onDemandContentWorkflow(
     await finishOnDemand({
       organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+      startedAt: workflowStartedAt,
       contentType,
       status: "failed",
       reason: "No valid data sources found",
@@ -159,6 +167,8 @@ export async function onDemandContentWorkflow(
       await finishOnDemand({
         organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+        startedAt: workflowStartedAt,
         contentType,
         status: "skipped",
         reason: contentResult.reason,
@@ -211,6 +221,8 @@ export async function onDemandContentWorkflow(
       await finishOnDemand({
         organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+        startedAt: workflowStartedAt,
         contentType,
         status: "failed",
         reason,
@@ -251,6 +263,8 @@ export async function onDemandContentWorkflow(
       await finishOnDemand({
         organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+        startedAt: workflowStartedAt,
         contentType,
         status: "failed",
         reason: "No content was generated",
@@ -294,6 +308,8 @@ export async function onDemandContentWorkflow(
     await finishOnDemand({
       organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+      startedAt: workflowStartedAt,
       contentType,
       status: "success",
       title: contentTitle,
@@ -354,6 +370,8 @@ export async function onDemandContentWorkflow(
     await finishOnDemand({
       organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+      startedAt: workflowStartedAt,
       contentType,
       status: "failed",
       reason: "Unexpected workflow error",

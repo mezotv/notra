@@ -1,6 +1,14 @@
 import type { CapturedNetworkRequest, CaptureResult } from "posthog-js";
 
-import { POSTHOG_URL_PROPERTY_PATTERN } from "@/constants/posthog-redaction";
+import {
+  POSTHOG_DEFAULT_UI_HOST,
+  POSTHOG_EU_UI_HOST,
+  POSTHOG_MASKED_ORGANIZATION_SEGMENT,
+  POSTHOG_URL_PROPERTY_PATTERN,
+} from "@/constants/posthog-redaction";
+import { maskOrganizationPathname } from "@/utils/organization-pathname";
+
+const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+.-]*:\/\//i;
 
 export function stripUrlQueryAndHash(url: string): string {
   const queryIndex = url.indexOf("?");
@@ -17,12 +25,44 @@ export function stripUrlQueryAndHash(url: string): string {
   return url.slice(0, redactionIndex);
 }
 
+export function maskOrganizationInUrl(value: string): string {
+  if (value.startsWith("/")) {
+    return maskOrganizationPathname(value, POSTHOG_MASKED_ORGANIZATION_SEGMENT);
+  }
+
+  if (!ABSOLUTE_URL_PATTERN.test(value)) {
+    return value;
+  }
+
+  try {
+    const url = new URL(value);
+    url.pathname = maskOrganizationPathname(
+      url.pathname,
+      POSTHOG_MASKED_ORGANIZATION_SEGMENT
+    );
+    return url.toString();
+  } catch {
+    return value;
+  }
+}
+
+export function redactPostHogUrl(value: string): string {
+  return maskOrganizationInUrl(stripUrlQueryAndHash(value));
+}
+
+export function resolvePostHogUiHost(apiHost: string | undefined): string {
+  if (apiHost?.includes("eu.")) {
+    return POSTHOG_EU_UI_HOST;
+  }
+  return POSTHOG_DEFAULT_UI_HOST;
+}
+
 export function redactPostHogNetworkRequest(
   request: CapturedNetworkRequest
 ): CapturedNetworkRequest {
   return {
     ...request,
-    name: stripUrlQueryAndHash(request.name),
+    name: redactPostHogUrl(request.name),
   };
 }
 
@@ -36,7 +76,7 @@ function redactUrlProperties(
   const redacted: Record<string, unknown> = { ...properties };
   for (const [key, value] of Object.entries(redacted)) {
     if (typeof value === "string" && POSTHOG_URL_PROPERTY_PATTERN.test(key)) {
-      redacted[key] = stripUrlQueryAndHash(value);
+      redacted[key] = redactPostHogUrl(value);
     }
   }
 

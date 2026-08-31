@@ -2,6 +2,7 @@
 
 import { buildBrandTerms } from "@notra/geo-core/geo/suggestion-keywords";
 import { normalizeWebsiteUrl } from "@notra/geo-core/utils/geo-website";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Input } from "@notra/ui/components/ui/input";
@@ -9,16 +10,19 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { BrandReviewSkeleton } from "@/components/onboarding/brand-review-skeleton";
 import { OnboardingProgress } from "@/components/onboarding/progress";
+import { OnboardingStepViewTracker } from "@/components/onboarding/step-view-tracker";
 import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
+import { ONBOARDING_STEPS } from "@/constants/analytics-events";
 import {
   ONBOARDING_FIELD_CLASS,
   ONBOARDING_STEP_VISIBILITY,
 } from "@/constants/onboarding";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   useGeoDiscoverWebsite,
   useGeoOnboardingBrand,
@@ -62,19 +66,21 @@ function VisibilityReview({
     if (!canSubmit) {
       return;
     }
-    save.mutate(
-      toVisibilityBrandInput({
-        companyName,
-        aliases: discovery?.aliases ?? [],
-        prompts: discovery?.prompts ?? [],
-      }),
-      {
-        onSuccess: () => {
-          setIsLeaving(true);
-          router.push(nextHref);
-        },
-      }
-    );
+    const brandInput = toVisibilityBrandInput({
+      companyName,
+      aliases: discovery?.aliases ?? [],
+      prompts: discovery?.prompts ?? [],
+    });
+    save.mutate(brandInput, {
+      onSuccess: () => {
+        trackEvent(POSTHOG_EVENTS.ONBOARDING_BRAND_SAVED, {
+          alias_count: brandInput.aliases.length,
+          prompt_count: brandInput.prompts.length,
+        });
+        setIsLeaving(true);
+        router.push(nextHref);
+      },
+    });
   };
 
   return (
@@ -125,6 +131,11 @@ function VisibilityReview({
           className="text-muted-foreground"
           disabled={busy}
           nativeButton={false}
+          onClick={() =>
+            trackEvent(POSTHOG_EVENTS.ONBOARDING_STEP_SKIPPED, {
+              step: ONBOARDING_STEPS.VISIBILITY,
+            })
+          }
           render={<Link href={skipHref} />}
           size="sm"
           variant="link"
@@ -155,10 +166,42 @@ export function VisibilityForm({
   const discover = useGeoDiscoverWebsite(organizationId, analyzedUrl);
   const isAnalyzing = analyzedUrl !== null && discover.isPending;
   const analyzedHost = analyzedUrl ? stripWebsitePrefix(analyzedUrl) : "";
+  const discoveryStartedAtRef = useRef<number | null>(null);
+  const discoveryTrackedUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (analyzedUrl && discover.isPending) {
+      discoveryStartedAtRef.current ??= Date.now();
+    }
+    if (
+      !analyzedUrl ||
+      discover.isPending ||
+      discoveryTrackedUrlRef.current === analyzedUrl
+    ) {
+      return;
+    }
+    discoveryTrackedUrlRef.current = analyzedUrl;
+    const durationMs =
+      discoveryStartedAtRef.current === null
+        ? undefined
+        : Date.now() - discoveryStartedAtRef.current;
+    if (discover.isError) {
+      trackEvent(POSTHOG_EVENTS.WEBSITE_DISCOVERY_FAILED, {
+        duration_ms: durationMs,
+      });
+      return;
+    }
+    trackEvent(POSTHOG_EVENTS.WEBSITE_DISCOVERED, {
+      prompt_count_suggested: discover.data?.discovery?.prompts.length ?? 0,
+      alias_count_suggested: discover.data?.discovery?.aliases.length ?? 0,
+      duration_ms: durationMs,
+    });
+  }, [analyzedUrl, discover.isPending, discover.isError, discover.data]);
 
   const commitWebsite = () => {
     const normalized = normalizeWebsiteUrl(websiteInput);
     if (normalized && normalized !== analyzedUrl) {
+      discoveryStartedAtRef.current = Date.now();
       setAnalyzedUrl(normalized);
     }
   };
@@ -166,6 +209,10 @@ export function VisibilityForm({
   return (
     <GeoProjectProvider projectId={projectId}>
       <div className="flex w-full flex-col gap-5">
+        <OnboardingStepViewTracker
+          inOnboardingFlow={inOnboardingFlow}
+          step={ONBOARDING_STEPS.VISIBILITY}
+        />
         {inOnboardingFlow ? (
           <div className="flex justify-center">
             <OnboardingProgress current={ONBOARDING_STEP_VISIBILITY} />

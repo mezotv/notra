@@ -2,9 +2,10 @@
 
 import { ArrowLeft02Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Button } from "@notra/ui/components/ui/button";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { ContentCard } from "@/components/content/content-card";
 import { ContentSkeletonCard } from "@/components/content/content-skeleton-card";
@@ -14,6 +15,7 @@ import { EmptyState } from "@/components/empty-state";
 import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
 import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useCollection } from "@/lib/hooks/use-collections";
 import type { CollectionDetailPageClientProps } from "@/types/content/collection";
 import { formatLongDate, getMarkdownPreview } from "@/utils/content-preview";
@@ -31,6 +33,20 @@ export default function PageClient({
     collectionId
   );
   const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const hasTrackedOpenRef = useRef(false);
+
+  useEffect(() => {
+    const loadedCollection = data?.collection;
+    if (!loadedCollection || hasTrackedOpenRef.current) {
+      return;
+    }
+    hasTrackedOpenRef.current = true;
+    trackEvent(POSTHOG_EVENTS.COLLECTION_OPENED, {
+      collection_id: collectionId,
+      post_count: loadedCollection.posts.length,
+      is_generating: loadedCollection.isGenerating,
+    });
+  }, [collectionId, data?.collection]);
 
   if (isPending) {
     return <GroupDetailSkeleton />;

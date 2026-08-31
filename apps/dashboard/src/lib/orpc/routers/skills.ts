@@ -1,10 +1,12 @@
 import { db } from "@notra/db/drizzle";
 import { skills } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { parseSkillFrontmatter } from "@/lib/skills/parse-frontmatter";
@@ -160,6 +162,17 @@ export const skillsRouter = {
           name: skills.name,
         });
 
+      trackServerEvent({
+        event: POSTHOG_EVENTS.SKILL_CREATED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          has_frontmatter:
+            parseSkillFrontmatter(input.payload.content) !== null,
+        },
+      });
+
       return { name: created?.name ?? input.payload.name };
     }),
 
@@ -219,6 +232,19 @@ export const skillsRouter = {
           )
         );
 
+      trackServerEvent({
+        event: POSTHOG_EVENTS.SKILL_UPDATED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          is_rename: isRename,
+          is_system: row.isSystem,
+          has_frontmatter:
+            parseSkillFrontmatter(input.payload.content) !== null,
+        },
+      });
+
       return { success: true as const, name: nextName };
     }),
 
@@ -256,15 +282,25 @@ export const skillsRouter = {
           )
         );
 
+      trackServerEvent({
+        event: POSTHOG_EVENTS.SKILL_DELETED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+      });
+
       return { success: true as const };
     }),
 
   importFromUrl: authorizedProcedure
     .input(importSkillFromUrlInput)
-    .handler(async ({ input }) => {
+    .handler(async ({ context, input }) => {
       let pathname: string;
+      let sourceHost: string;
       try {
-        pathname = new URL(input.url).pathname.replace(/^\/+|\/+$/g, "");
+        const sourceUrl = new URL(input.url);
+        pathname = sourceUrl.pathname.replace(/^\/+|\/+$/g, "");
+        sourceHost = sourceUrl.hostname;
       } catch {
         throw badRequest("Invalid URL");
       }
@@ -311,6 +347,17 @@ export const skillsRouter = {
       const name = parsed?.name ?? fallbackName;
       const description = parsed?.description ?? "";
       const content = parsed?.body ?? file.contents;
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.SKILL_IMPORTED_FROM_URL,
+        headers: context.headers,
+        userId: context.user.id,
+        properties: {
+          source_host: sourceHost,
+          has_frontmatter: parsed !== null,
+          file_count: data.files?.length ?? 0,
+        },
+      });
 
       return {
         name,

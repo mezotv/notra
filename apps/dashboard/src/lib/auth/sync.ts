@@ -5,12 +5,21 @@ import {
   socialConnections,
   users,
 } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import type { User } from "@workos-inc/node";
 import { and, eq, inArray } from "drizzle-orm";
 import { Effect } from "effect";
+import { isFreeEmail } from "free-email-domains-list";
 import { isValid as isNotDisposableEmail } from "mailchecker";
 
+import { FIRST_LOGIN_WINDOW_MS } from "@/constants/analytics-events";
+import { toAnalyticsAuthMethod } from "@/lib/analytics/auth-method";
+import {
+  setPersonProperties,
+  trackServerEvent,
+} from "@/lib/analytics/posthog-server";
+import { readRequestHeaders } from "@/lib/analytics/request-headers";
 import { SocialConnectionError, UserSyncError } from "@/lib/auth/errors";
 import { sendWelcomeEmailAction } from "@/lib/email/actions";
 import type {
@@ -155,7 +164,7 @@ const persistSocialConnection = Effect.fn("auth.sync.persistSocialConnection")(
 );
 
 export const ensureLocalUser = Effect.fn("auth.sync.ensureLocalUser")(
-  function* (workosUser: User) {
+  function* (workosUser: User, authenticationMethod?: string) {
     const byWorkosId = yield* Effect.tryPromise({
       try: () =>
         db.query.users.findFirst({
@@ -240,6 +249,27 @@ export const ensureLocalUser = Effect.fn("auth.sync.ensureLocalUser")(
     yield* linkWorkOSExternalId(workosUser.id, created.id);
     yield* Effect.sync(() => {
       sendWelcomeEmailAction({ userEmail: created.email });
+    });
+
+    const signupMethod = toAnalyticsAuthMethod(authenticationMethod);
+    const requestHeaders = yield* Effect.promise(readRequestHeaders);
+    yield* Effect.sync(() => {
+      trackServerEvent({
+        event: POSTHOG_EVENTS.SIGNUP_COMPLETED,
+        headers: requestHeaders,
+        userId: created.id,
+        properties: {
+          method: signupMethod,
+          email_domain_is_free: isFreeEmail(created.email.toLowerCase()),
+        },
+      });
+      setPersonProperties({
+        userId: created.id,
+        setOnce: {
+          signup_method: signupMethod,
+          signed_up_at: created.createdAt.toISOString(),
+        },
+      });
     });
 
     return created;
@@ -337,7 +367,21 @@ export const syncAuthenticatedUser = Effect.fn("auth.sync.authenticatedUser")(
     oauthTokens,
     authenticationMethod,
   }: SyncAuthenticatedUserInput) {
-    const localUser = yield* ensureLocalUser(workosUser);
+    const localUser = yield* ensureLocalUser(workosUser, authenticationMethod);
+
+    const requestHeaders = yield* Effect.promise(readRequestHeaders);
+    yield* Effect.sync(() => {
+      trackServerEvent({
+        event: POSTHOG_EVENTS.LOGIN_SUCCEEDED,
+        headers: requestHeaders,
+        userId: localUser.id,
+        properties: {
+          method: toAnalyticsAuthMethod(authenticationMethod),
+          is_first_login:
+            Date.now() - localUser.createdAt.getTime() < FIRST_LOGIN_WINDOW_MS,
+        },
+      });
+    });
 
     yield* reconcileWorkOSMemberships(localUser.id, workosUser.id).pipe(
       Effect.catch((error) =>

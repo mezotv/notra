@@ -7,6 +7,7 @@ import {
   SparklesIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import {
   TooltipContent,
@@ -20,6 +21,7 @@ import { SuggestionDetailsSheet } from "@/components/automation/suggestion-detai
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
 import { EVE_ACCENT_COLOR } from "@/constants/onboarding-agent";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   useDismissOnboardingSuggestion,
   useOnboardingAgentRun,
@@ -52,9 +54,23 @@ export function OnboardingSuggestions({
       { organizationId, suggestionId },
       {
         onError: () => toast.error("Couldn't dismiss the suggestion"),
-        onSuccess,
+        onSuccess: () => {
+          trackEvent(POSTHOG_EVENTS.ONBOARDING_SUGGESTION_DISMISSED, {
+            suggestion_id: suggestionId,
+            suggestion_kind: type,
+          });
+          onSuccess?.();
+        },
       }
     );
+  };
+
+  const createFromSuggestion = (suggestionId: string) => {
+    trackEvent(POSTHOG_EVENTS.ONBOARDING_SUGGESTION_USED, {
+      suggestion_id: suggestionId,
+      suggestion_kind: type,
+    });
+    onCreate(suggestionId);
   };
 
   const matching = (suggestions ?? []).filter(
@@ -93,7 +109,10 @@ export function OnboardingSuggestions({
                 accentColor={EVE_ACCENT_COLOR}
                 action={
                   <div className="flex items-center gap-1.5">
-                    <Button onClick={() => onCreate(suggestion.id)} size="sm">
+                    <Button
+                      onClick={() => createFromSuggestion(suggestion.id)}
+                      size="sm"
+                    >
                       Create
                     </Button>
                     <BaseTooltip.Root>
@@ -166,7 +185,7 @@ export function OnboardingSuggestions({
           dismissing={dismissPendingId === selectedSuggestion.id}
           onCreate={() => {
             setDetailsOpen(false);
-            onCreate(selectedSuggestion.id);
+            createFromSuggestion(selectedSuggestion.id);
           }}
           onDismiss={() =>
             dismissSuggestion(selectedSuggestion.id, () => {

@@ -155,7 +155,10 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
                 Latest items created today
               </p>
             </div>
-            <LazyCreateContentDialog organizationId={organizationId} />
+            <LazyCreateContentDialog
+              entry="home"
+              organizationId={organizationId}
+            />
           </div>
 
           {todayContent}

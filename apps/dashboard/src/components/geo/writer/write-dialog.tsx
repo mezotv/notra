@@ -22,6 +22,7 @@ import {
   GEO_WRITER_TOPIC_MAX_LENGTH,
   GEO_WRITER_TOPIC_MIN_LENGTH,
 } from "@notra/geo-core/constants/geo";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -51,10 +52,12 @@ import {
 import { Button } from "@/components/button";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
+import { GEO_WRITE_DIALOG_ENTRIES } from "@/constants/geo-analytics";
 import {
   GEO_WRITE_CONTENT_SUBTYPES,
   GEO_WRITE_DIALOG_SECTIONS,
 } from "@/constants/geo-writer";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useSitemaps } from "@/lib/hooks/use-brand-sitemaps";
 import { useGeoCompetitors, useGeoPrompts } from "@/lib/hooks/use-geo";
@@ -81,6 +84,7 @@ export function WriteDialog({
   organizationId,
   organizationSlug,
   initial,
+  entry,
 }: WriteDialogProps) {
   const [previousOpen, setPreviousOpen] = useState(open);
   const [session, setSession] = useState(0);
@@ -94,6 +98,7 @@ export function WriteDialog({
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
       <WriteDialogForm
+        entry={entry}
         initial={initial}
         key={`${session}:${initial?.sourceKind ?? "manual"}:${initial?.sourceId ?? ""}`}
         onOpenChange={onOpenChange}
@@ -111,6 +116,7 @@ function WriteDialogForm({
   organizationId,
   organizationSlug,
   initial,
+  entry,
 }: WriteDialogProps) {
   const router = useRouter();
   const { projectId } = useGeoProjectScope();
@@ -119,6 +125,21 @@ function WriteDialogForm({
   const [activeSection, setActiveSection] =
     useState<WriteDialogSectionId>("prompt");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const openedRef = useRef(false);
+  const initialSourceKind = initial?.sourceKind ?? "manual";
+  const hasInitialTopic = Boolean(initial?.topic);
+
+  useEffect(() => {
+    if (!open || openedRef.current) {
+      return;
+    }
+    openedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.GEO_WRITE_DIALOG_OPENED, {
+      entry: entry ?? GEO_WRITE_DIALOG_ENTRIES.WRITE_PAGE,
+      source_kind: initialSourceKind,
+      has_topic: hasInitialTopic,
+    });
+  }, [entry, hasInitialTopic, initialSourceKind, open]);
 
   useEffect(() => {
     if (!open) {

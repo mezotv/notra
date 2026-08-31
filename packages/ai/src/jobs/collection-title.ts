@@ -115,6 +115,7 @@ export async function generateCollectionTitle(
   const { object } = await generateObject({
     model: gateway(COLLECTION_TITLE_MODEL_ID, {
       organizationId: params.organizationId,
+      posthog: { feature: "collection_title" },
     }),
     schema: collectionTitleResultSchema,
     system: SYSTEM_PROMPT,

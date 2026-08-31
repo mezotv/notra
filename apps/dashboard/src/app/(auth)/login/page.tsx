@@ -1,3 +1,4 @@
+import { LoginErrorTracker } from "@/components/auth/login-error-tracker";
 import { LoginForm } from "@/components/auth/login-form";
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -22,9 +23,12 @@ export default async function Login({
   const verify = readParam("verify");
   const email = readParam("email");
   const errorKey = readParam("error");
+  const knownErrorKey =
+    errorKey && errorKey in ERROR_MESSAGES ? errorKey : undefined;
 
   return (
     <div className="mx-auto w-full max-w-md rounded-md p-6 lg:px-8 lg:py-10">
+      {knownErrorKey ? <LoginErrorTracker errorCode={knownErrorKey} /> : null}
       <LoginForm
         initialError={errorKey ? ERROR_MESSAGES[errorKey] : undefined}
         initialPendingVerification={

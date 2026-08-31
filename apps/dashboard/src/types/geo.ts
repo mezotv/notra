@@ -43,6 +43,7 @@ import type { GeoRequestPayload } from "@usenotra/geo";
 import type { ReactNode } from "react";
 
 import type { TableColumn } from "@/components/motion/table";
+import type { GeoPromptDetailSurface } from "@/types/analytics/geo-events";
 import type { ChartConfig, ChartSeriesColors } from "@/types/charts";
 import type { TablePaginationState } from "@/types/table";
 
@@ -329,6 +330,7 @@ export interface TrafficEmptyProps {
 
 export interface GeoSetupEmptyProps {
   settingsHref: string;
+  page?: string;
 }
 
 export interface GeoScanScheduleProps {
@@ -647,6 +649,13 @@ export interface CodeSnippetProps {
   headerEnd?: ReactNode;
   variant?: "command" | "panel";
   label?: string;
+  onCopy?: () => void;
+}
+
+export interface CopyCodeButtonProps {
+  code: string;
+  label: string;
+  onCopy?: () => void;
 }
 
 export interface GeoSettingsFormProps {
@@ -820,6 +829,13 @@ export interface PromptDetailDialogProps {
   onOpenChange: (open: boolean) => void;
   row: GeoPromptTableRow | null;
   isScanning?: boolean;
+  surface?: GeoPromptDetailSurface;
+}
+
+export interface PromptAnswerPageProps {
+  row: GeoPromptTableRow;
+  isScanning?: boolean;
+  surface?: GeoPromptDetailSurface;
 }
 
 export interface GeoPromptAnswerThreadProps {

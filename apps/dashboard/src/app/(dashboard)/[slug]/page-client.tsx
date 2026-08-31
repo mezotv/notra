@@ -140,7 +140,7 @@ export default function PageClient({
                 Latest items created today
               </p>
             </div>
-            <CreateContentDialog organizationId={organizationId} />
+            <CreateContentDialog entry="home" organizationId={organizationId} />
           </div>
 
           {todayContent}

@@ -12,6 +12,7 @@ import {
   organizations,
   posts,
 } from "@notra/db/schema";
+import { getPostHogRequestContext } from "@notra/posthog/request";
 import { generateObject } from "ai";
 import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
@@ -279,7 +280,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const { object } = await generateObject({
-      model: gateway("anthropic/claude-sonnet-4.6", { organizationId }),
+      model: gateway("anthropic/claude-sonnet-4.6", {
+        organizationId,
+        posthog: {
+          feature: "command_palette_navigate",
+          distinctId: user.id,
+          sessionId: getPostHogRequestContext(request.headers).sessionId,
+        },
+      }),
       schema: resultSchema,
       system: [
         "You are a navigation router for the Notra dashboard command palette.",

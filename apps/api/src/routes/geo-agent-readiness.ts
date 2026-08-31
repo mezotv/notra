@@ -7,8 +7,10 @@ import {
   startAgentReadinessScan,
 } from "@notra/geo-core/geo/agent-readiness";
 import { requireGeoProject } from "@notra/geo-core/geo/projects";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Effect } from "effect";
 
+import { API_TRIGGER_SOURCE } from "../constants/analytics";
 import {
   GEO_COMMON_ERROR_RESPONSES,
   GEO_OPENAPI_TAG,
@@ -19,6 +21,7 @@ import {
   agentReadinessScanResponseSchema,
 } from "../schemas/geo-agent-readiness";
 import { projectParamsSchema } from "../schemas/geo-params";
+import { trackApiEvent } from "../utils/analytics";
 import { geoErrorResponse } from "../utils/geo";
 import { runGeoEffect } from "../utils/geo-effect";
 import { InternalDashboardError } from "../utils/internal-workflow";
@@ -172,6 +175,12 @@ geoAgentReadinessRoutes.openapi(startScanRoute, async (c) => {
     const started = await Effect.runPromise(
       startAgentReadinessScan(scope.value).pipe(Effect.provide(geoCoreApiLayer))
     );
+    trackApiEvent(c, {
+      event: POSTHOG_EVENTS.AGENT_READINESS_SCAN_STARTED,
+      organizationId: base.organizationId,
+      projectId,
+      properties: { trigger: API_TRIGGER_SOURCE },
+    });
     return c.json({ ...started, organization: base.organization }, 202);
   } catch (error) {
     const failure = readinessFailure(error);

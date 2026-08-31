@@ -2,6 +2,7 @@ import { autumn } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { db } from "@notra/db/drizzle";
 import { members, users } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, eq, ne } from "drizzle-orm";
 import { isFreeEmail } from "free-email-domains-list";
 
@@ -9,6 +10,7 @@ import {
   SIGNUP_CREDITS_BALANCE_PREFIX,
   SIGNUP_CREDITS_GRANT_CENTS,
 } from "@/constants/signup-credits";
+import { trackServerEventAndFlush } from "@/lib/analytics/posthog-server";
 import type {
   SignupCreditsGrantInput,
   SignupCreditsGrantResult,
@@ -59,6 +61,12 @@ export async function grantSignupCredits({
     customerId: organizationId,
     featureId: FEATURES.AI_CREDITS,
     includedGrant: SIGNUP_CREDITS_GRANT_CENTS,
+  });
+  await trackServerEventAndFlush({
+    event: POSTHOG_EVENTS.SIGNUP_CREDITS_GRANTED,
+    userId: user.id,
+    organizationId,
+    properties: { cents: SIGNUP_CREDITS_GRANT_CENTS },
   });
   return { granted: true };
 }

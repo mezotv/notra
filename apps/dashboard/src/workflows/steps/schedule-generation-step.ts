@@ -2,6 +2,7 @@ import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integra
 import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
 import { getValidToneProfile } from "@notra/ai/schemas/tone";
 import type { PostSourceMetadata } from "@notra/db/schema";
+import { flushPostHogServer } from "@notra/posthog/server";
 import { createRequestLogger } from "evlog";
 
 import { buildDataPointRestrictionInstructions } from "@/lib/workflows/on-demand/helpers";
@@ -142,6 +143,7 @@ export async function runScheduledGeneration(
     });
   } finally {
     log.emit();
+    await flushPostHogServer();
   }
 }
 

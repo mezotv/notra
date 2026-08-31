@@ -8,6 +8,7 @@ import {
   formatGeoJourneySpan,
   formatGeoSource,
 } from "@notra/geo-core/utils/ai-traffic";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { useState } from "react";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -19,11 +20,21 @@ import {
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import type { JourneysCardProps } from "@/types/geo";
 import { tableHeightFor } from "@/utils/table";
 
 export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
   const [selected, setSelected] = useState<GeoJourney | null>(null);
+  const openJourney = (journey: GeoJourney) => {
+    trackEvent(POSTHOG_EVENTS.GEO_JOURNEY_OPENED, {
+      visitor_type: journey.visitorType,
+      source: journey.source,
+      pages: journey.pages,
+      distinct_paths: journey.distinctPaths,
+    });
+    setSelected(journey);
+  };
 
   const columns: TableColumn<GeoJourney>[] = [
     {
@@ -128,7 +139,7 @@ export function JourneysCard({ journeys, organizationId }: JourneysCardProps) {
             emptyState="No agent journeys captured yet"
             getRowId={(row) => row.journeyId}
             height={tableHeightFor(journeys.length)}
-            onRowClick={setSelected}
+            onRowClick={openJourney}
             resizable
             rowHeight={TABLE_ROW_HEIGHT}
           />
