@@ -49,14 +49,14 @@ export function IpCheckerTool({
   const requestIdRef = useRef(0);
 
   const runCheck = async (candidate: string) => {
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+    const isLatest = () => requestIdRef.current === requestId;
     const parsed = ipCheckRequestSchema.safeParse({ ip: candidate });
     if (!parsed.success) {
       setStatus("invalid");
       return;
     }
-    requestIdRef.current += 1;
-    const requestId = requestIdRef.current;
-    const isLatest = () => requestIdRef.current === requestId;
     setStatus("checking");
     const response = await fetch("/api/ip-checker", {
       method: "POST",

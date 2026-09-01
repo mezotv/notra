@@ -63,6 +63,15 @@ export const enforceIpCheckRateLimit = Effect.fn("enforceIpCheckRateLimit")(
   function* (request: NextRequest) {
     const ratelimit = getLimiter();
     if (!ratelimit) {
+      if (process.env.NODE_ENV === "production") {
+        return yield* Effect.fail(
+          new IpCheckRateLimitUnavailable({
+            cause: new Error(
+              "UPSTASH_REDIS_REST_URL or UPSTASH_REDIS_REST_TOKEN is not set"
+            ),
+          })
+        );
+      }
       return;
     }
     const key = createHash("sha256").update(getClientIp(request)).digest("hex");
