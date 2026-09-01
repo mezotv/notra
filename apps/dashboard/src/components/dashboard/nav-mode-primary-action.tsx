@@ -2,13 +2,13 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { GEO_WRITER_NAV_LINK } from "@notra/geo-core/constants/geo";
-import { Button } from "@notra/ui/components/ui/button";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { cn } from "@notra/ui/lib/utils";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useState } from "react";
 
+import { Button } from "@/components/button";
 import {
   NAV_PRIMARY_ACTIONS,
   SIDEBAR_MODE_ENTER_CLASS,
