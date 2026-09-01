@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "@hono/zod-openapi";
 import { BLOG_POST_SUBTYPES } from "@notra/db/constants/content";
 import {

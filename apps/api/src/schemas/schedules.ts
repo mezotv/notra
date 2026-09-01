@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "@hono/zod-openapi";
 import { SUPPORTED_CONTENT_GENERATION_TYPES } from "@notra/content-generation/schemas";
 import { lookbackWindowEnum } from "@notra/db/schema";
@@ -123,4 +124,8 @@ export const scheduleResponseSchema = z.object({
 export const deleteScheduleResponseSchema = z.object({
   id: z.string(),
   organization: organizationSchema,
+});
+
+export const scheduleTargetsRepositoryIdsSchema = z.object({
+  repositoryIds: z.array(z.string()),
 });

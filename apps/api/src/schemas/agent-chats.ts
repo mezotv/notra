@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "@hono/zod-openapi";
 
 const AGENT_MESSAGE_MAX_LENGTH = 200_000;

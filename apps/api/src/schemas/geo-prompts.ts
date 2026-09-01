@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "@hono/zod-openapi";
 import {
   GEO_CSV_IMPORT_MAX_BYTES,

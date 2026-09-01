@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "@hono/zod-openapi";
 import {
   GEO_COMPETITOR_MAX_SYNONYMS,

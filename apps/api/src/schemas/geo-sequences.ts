@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "@hono/zod-openapi";
 import { GEO_SEQUENCE_MAX_TURNS } from "@notra/geo-core/constants/geo";
 

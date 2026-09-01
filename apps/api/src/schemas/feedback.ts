@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "@hono/zod-openapi";
 import {
   AGENT_FEEDBACK_IDEMPOTENCY_KEY_MAX_LENGTH,

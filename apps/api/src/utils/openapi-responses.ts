@@ -1,6 +1,5 @@
-import { z } from "@hono/zod-openapi";
-
 import { errorResponseSchema } from "../schemas/content";
+import { rateLimitResponseSchema } from "../schemas/responses";
 
 export function errorResponse(description: string) {
   return {
@@ -12,15 +11,6 @@ export function errorResponse(description: string) {
     },
   };
 }
-
-const rateLimitResponseSchema = z
-  .object({
-    error: z.string(),
-    limit: z.number().int().min(1),
-    remaining: z.number().int().min(0),
-    reset: z.number().int(),
-  })
-  .openapi("RateLimitErrorResponse");
 
 const rateLimitHeaderDescriptors = {
   "RateLimit-Limit": {

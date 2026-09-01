@@ -1,5 +1,5 @@
 import "./tcc";
-import { createRoute, OpenAPIHono, z } from "@hono/zod-openapi";
+import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { createDb } from "@notra/db/drizzle";
 import { shutdownPostHogServer } from "@notra/posthog/server";
 import {
@@ -42,6 +42,7 @@ import { legacyRedirectRoutes } from "./routes/legacy-redirects";
 import { postsRoutes } from "./routes/posts";
 import { schedulesRoutes } from "./routes/schedules";
 import { skillsRoutes } from "./routes/skills";
+import { publicStatusResponseSchema } from "./schemas/status";
 import type { ApiEnv } from "./types/env";
 import {
   API_URL,
@@ -65,20 +66,6 @@ const FRAMER_PLUGIN_ORIGIN_PATTERN = new RegExp(
 const LOCAL_DEV_ORIGIN_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 const IS_PRODUCTION = process.env.NODE_ENV === "production";
-
-const publicStatusResponseSchema = z
-  .object({
-    status: z.literal("ok"),
-    service: z.literal("Notra API"),
-    version: z.string(),
-    public: z.literal(true),
-    authentication: z.object({
-      type: z.literal("bearer"),
-      resource_metadata: z.string().url(),
-      guide: z.string().url(),
-    }),
-  })
-  .openapi("PublicStatusResponse");
 
 const publicStatusRoute = createRoute({
   method: "get",

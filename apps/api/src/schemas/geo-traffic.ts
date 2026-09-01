@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "@hono/zod-openapi";
 import { GEO_SHORT_FIELD_MAX_LENGTH } from "@notra/geo-core/constants/geo";
 

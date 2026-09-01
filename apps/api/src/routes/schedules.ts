@@ -13,6 +13,7 @@ import * as z from "zod";
 
 import {
   createScheduleRequestSchema,
+  scheduleTargetsRepositoryIdsSchema,
   deleteScheduleResponseSchema,
   getSchedulesQuerySchema,
   getSchedulesResponseSchema,
@@ -198,9 +199,9 @@ function filterByRepositoryIds<T extends ScheduleTriggerRow>(
   const repositoryIdSet = new Set(repositoryIds);
 
   return triggers.filter((trigger) => {
-    const parsed = z
-      .object({ repositoryIds: z.array(z.string()) })
-      .safeParse(trigger.targets);
+    const parsed = scheduleTargetsRepositoryIdsSchema.safeParse(
+      trigger.targets
+    );
 
     if (!parsed.success) {
       return false;

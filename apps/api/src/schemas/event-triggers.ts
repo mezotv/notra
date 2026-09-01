@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "@hono/zod-openapi";
 import { SUPPORTED_CONTENT_GENERATION_TYPES } from "@notra/content-generation/schemas";
 

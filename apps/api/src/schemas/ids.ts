@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "@hono/zod-openapi";
 
 const RESOURCE_ID_REGEX = /^[A-Za-z0-9_-]{1,100}$/;
