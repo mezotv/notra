@@ -2,6 +2,7 @@
 
 import { Loading03Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
@@ -153,12 +154,13 @@ export function IpCheckerTool({
         </span>
         {samples.map((sample) => (
           <button
-            className="cursor-pointer rounded-lg border border-[#1E1E1E14] bg-white px-2.5 py-1 font-sans text-[0.8125rem]/5 font-medium text-[#1E1E1E] transition-colors hover:border-[#8B5CF6] hover:text-[#8B5CF6] disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:border-[#A78BFA] dark:hover:text-[#A78BFA]"
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#1E1E1E14] bg-white px-2.5 py-1 font-sans text-[0.8125rem]/5 font-medium text-[#1E1E1E] transition-colors hover:border-[#8B5CF6] hover:text-[#8B5CF6] disabled:opacity-60 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:hover:border-[#A78BFA] dark:hover:text-[#A78BFA]"
             disabled={isChecking}
             key={sample.ip}
             onClick={() => handleSample(sample.ip)}
             type="button"
           >
+            <EngineIcon className="size-3.5" engine={sample.label} />
             {sample.label}
           </button>
         ))}

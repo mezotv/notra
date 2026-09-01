@@ -135,16 +135,23 @@ export function buildIpCheckResult(
   lists: readonly CrawlerIpList[],
   ip: ParsedIp
 ): IpCheckResult {
+  let listsChecked = 0;
+  const listsUnavailable: string[] = [];
+  for (const list of lists) {
+    if (list.ok) {
+      listsChecked += 1;
+    } else {
+      listsUnavailable.push(list.source.vendor);
+    }
+  }
   return {
     ip: ip.normalized,
     version: ip.version,
     easterEgg:
       IP_CHECKER_EASTER_EGGS.find((egg) => egg.ip === ip.normalized) ?? null,
     matches: findCrawlerMatches(lists, ip),
-    listsChecked: lists.filter((list) => list.ok).length,
-    listsUnavailable: lists
-      .filter((list) => !list.ok)
-      .map((list) => list.source.vendor),
+    listsChecked,
+    listsUnavailable,
   };
 }
 

@@ -1,15 +1,12 @@
 "use client";
 
-import { m, useReducedMotion } from "motion/react";
 import { useLayoutEffect, useRef, useState } from "react";
 
-import { IP_CHECKER_MOTION } from "@/constants/ip-checker";
 import type { AnimatedHeightProps } from "@/types/ip-checker";
 
 export function AnimatedHeight({ children, className }: AnimatedHeightProps) {
-  const reduceMotion = useReducedMotion();
   const contentRef = useRef<HTMLDivElement>(null);
-  const [height, setHeight] = useState<number | "auto">("auto");
+  const [height, setHeight] = useState<number | null>(null);
 
   useLayoutEffect(() => {
     const element = contentRef.current;
@@ -27,14 +24,11 @@ export function AnimatedHeight({ children, className }: AnimatedHeightProps) {
   }, []);
 
   return (
-    <m.div
-      animate={{ height }}
-      className={className}
-      initial={false}
-      style={{ overflow: "hidden" }}
-      transition={reduceMotion ? { duration: 0 } : IP_CHECKER_MOTION.height}
+    <div
+      className={`overflow-hidden transition-[height] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${className ?? ""}`}
+      style={{ height: height ?? "auto" }}
     >
       <div ref={contentRef}>{children}</div>
-    </m.div>
+    </div>
   );
 }

@@ -37,7 +37,6 @@ const MOTION_EASE = [0.22, 1, 0.36, 1] as const;
 export const IP_CHECKER_MOTION = {
   enter: { duration: 0.4, ease: MOTION_EASE, delay: 0.08 },
   exit: { duration: 0.28, ease: MOTION_EASE },
-  height: { duration: 0.3, ease: MOTION_EASE },
 } as const;
 
 export const IP_CHECKER_PLACEHOLDER = "1.1.1.1";
