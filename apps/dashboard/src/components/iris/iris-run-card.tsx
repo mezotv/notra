@@ -8,6 +8,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import Link from "next/link";
+
 import { IrisArtifactCard } from "@/components/iris/iris-artifact-card";
 import { IrisRunStatusBadge } from "@/components/iris/iris-run-status-badge";
 import { cn } from "@/lib/utils";
@@ -60,17 +61,17 @@ export function IrisRunCard({ run, organizationSlug }: IrisRunCardProps) {
   const showTasks = run.decision === "plan" && run.tasks.length > 0;
 
   return (
-    <article className="space-y-4 rounded-xl border border-border p-4">
+    <article className="border-border space-y-4 rounded-xl border p-4">
       <div className="flex flex-wrap items-center gap-2">
         <IrisRunStatusBadge status={run.status} />
         <Badge variant="outline">{humanizeIrisTrigger(run.trigger)}</Badge>
-        <span className="ml-auto text-muted-foreground text-xs">
+        <span className="text-muted-foreground ml-auto text-xs">
           {formatIrisRelativeTime(run.startedAt)}
         </span>
       </div>
 
       <div className="space-y-1">
-        <p className="font-medium text-sm">{decision.headline}</p>
+        <p className="text-sm font-medium">{decision.headline}</p>
         {decision.detail ? (
           <p className="text-muted-foreground text-xs leading-relaxed">
             {decision.detail}
@@ -96,7 +97,7 @@ export function IrisRunCard({ run, organizationSlug }: IrisRunCardProps) {
                 {humanizeIrisTaskStatus(task.status)}
               </span>
               {task.errorMessage ? (
-                <span className="min-w-0 flex-1 truncate text-destructive">
+                <span className="text-destructive min-w-0 flex-1 truncate">
                   {task.errorMessage}
                 </span>
               ) : null}
@@ -120,14 +121,14 @@ export function IrisRunCard({ run, organizationSlug }: IrisRunCardProps) {
       {outboxNotice ? (
         <div
           className={cn(
-            "flex items-start gap-2 rounded-lg border px-3 py-2 text-muted-foreground text-xs",
+            "text-muted-foreground flex items-start gap-2 rounded-lg border px-3 py-2 text-xs",
             noticeClass(outboxNotice.tone)
           )}
         >
           <span className="flex-1">{outboxNotice.message}</span>
           {outboxNotice.needsSlackFix ? (
             <Link
-              className="inline-flex shrink-0 items-center gap-1 font-medium text-foreground hover:underline"
+              className="text-foreground inline-flex shrink-0 items-center gap-1 font-medium hover:underline"
               href={`/${organizationSlug}/integrations/slack`}
             >
               Fix Slack

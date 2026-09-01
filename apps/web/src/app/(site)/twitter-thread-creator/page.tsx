@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import ThreadBuilder from "@/components/threads/thread-builder";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
@@ -77,8 +78,8 @@ export default function ThreadsPage() {
         />
 
         <div className="w-full max-w-3xl px-4 sm:px-6">
-          <div className="rounded-3xl border border-[#1E1E1E14] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-2 sm:p-4 dark:border-white/10 dark:bg-none dark:bg-white/[0.02]">
-            <div className="rounded-2xl border border-[#1E1E1E0D] bg-background p-1 sm:p-2 dark:border-white/5">
+          <div className="rounded-3xl border border-[#1E1E1E14] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-2 sm:p-4 dark:border-white/10 dark:bg-white/[0.02] dark:bg-none">
+            <div className="bg-background rounded-2xl border border-[#1E1E1E0D] p-1 sm:p-2 dark:border-white/5">
               <ThreadBuilder />
             </div>
           </div>

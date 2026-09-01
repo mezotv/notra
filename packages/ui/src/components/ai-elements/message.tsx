@@ -539,7 +539,6 @@ function MessageMarkdownTable({
             <DropdownMenuContent
               align="end"
               className="w-44 min-w-44"
-              showBackdrop={false}
             >
               <DropdownMenuItem
                 className="whitespace-nowrap"
@@ -720,7 +719,8 @@ export const MessageResponse = memo(
       {...props}
     />
   ),
-  (prevProps, nextProps) => prevProps.children === nextProps.children
+  (prevProps, nextProps) =>
+    prevProps.children === nextProps.children && prevProps.mode === nextProps.mode
 );
 
 MessageResponse.displayName = "MessageResponse";

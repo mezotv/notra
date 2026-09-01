@@ -1,7 +1,14 @@
 import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
-import { and, count, eq, ne } from "drizzle-orm";
+import { and, count, eq, inArray, ne } from "drizzle-orm";
+import { Effect } from "effect";
+
 import { deleteAutumnCustomer } from "@/lib/billing/delete-autumn-customer";
+import {
+  deleteOrganizationFromWorkOS,
+  removeMembershipFromWorkOS,
+  updateMembershipRoleInWorkOS,
+} from "@/lib/organizations/workos-sync";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import {
   deleteOrganizationChatFiles,
@@ -16,6 +23,7 @@ import type {
   NextOwnerCandidate,
   OwnedOrganizationSummary,
 } from "@/types/user";
+
 import { badRequest, forbidden, notFound } from "../utils/errors";
 
 export const userRouter = {
@@ -31,72 +39,78 @@ export const userRouter = {
         },
       });
 
-      const ownedOrganizations: OwnedOrganizationSummary[] = [];
-
-      for (const membership of ownedMemberships) {
-        const org = membership.organizations;
-
-        const [memberCountResult] = await db
-          .select({ count: count() })
-          .from(members)
-          .where(eq(members.organizationId, org.id));
-
-        const memberCount = memberCountResult?.count ?? 0;
-
-        let nextOwnerCandidate: NextOwnerCandidate | null = null;
-
-        if (memberCount > 1) {
-          const adminCandidate = await db.query.members.findFirst({
-            where: and(
-              eq(members.organizationId, org.id),
-              ne(members.userId, context.user.id),
-              eq(members.role, "admin")
-            ),
-            with: {
-              users: true,
-            },
-          });
-
-          if (adminCandidate?.users) {
-            nextOwnerCandidate = {
-              email: adminCandidate.users.email,
-              id: adminCandidate.users.id,
-              name: adminCandidate.users.name,
-              role: adminCandidate.role,
-            };
-          } else {
-            const memberCandidate = await db.query.members.findFirst({
-              where: and(
-                eq(members.organizationId, org.id),
-                ne(members.userId, context.user.id)
-              ),
-              with: {
-                users: true,
-              },
-            });
-
-            if (memberCandidate?.users) {
-              nextOwnerCandidate = {
-                email: memberCandidate.users.email,
-                id: memberCandidate.users.id,
-                name: memberCandidate.users.name,
-                role: memberCandidate.role,
-              };
-            }
-          }
-        }
-
-        ownedOrganizations.push({
-          heardAboutNotraOther: org.heardAboutNotraOther,
-          heardAboutNotraSource: org.heardAboutNotraSource,
-          id: org.id,
-          logo: org.logo,
-          memberCount,
-          name: org.name,
-          nextOwnerCandidate,
-          slug: org.slug,
-        });
+      if (ownedMemberships.length === 0) {
+        return { ownedOrganizations: [] };
       }
+
+      const organizationIds = ownedMemberships.map(
+        (membership) => membership.organizationId
+      );
+      const [memberCountRows, ownerCandidates] = await Promise.all([
+        db
+          .select({
+            count: count(),
+            organizationId: members.organizationId,
+          })
+          .from(members)
+          .where(inArray(members.organizationId, organizationIds))
+          .groupBy(members.organizationId),
+        db.query.members.findMany({
+          columns: {
+            organizationId: true,
+            role: true,
+          },
+          where: and(
+            inArray(members.organizationId, organizationIds),
+            ne(members.userId, context.user.id)
+          ),
+          with: {
+            users: {
+              columns: {
+                email: true,
+                id: true,
+                name: true,
+              },
+            },
+          },
+        }),
+      ]);
+
+      const memberCounts = new Map(
+        memberCountRows.map((row) => [row.organizationId, row.count])
+      );
+      const candidatesByOrganization = new Map<string, NextOwnerCandidate>();
+
+      for (const candidate of ownerCandidates) {
+        const current = candidatesByOrganization.get(candidate.organizationId);
+        if (
+          !current ||
+          (current.role !== "admin" && candidate.role === "admin")
+        ) {
+          candidatesByOrganization.set(candidate.organizationId, {
+            email: candidate.users.email,
+            id: candidate.users.id,
+            name: candidate.users.name,
+            role: candidate.role,
+          });
+        }
+      }
+
+      const ownedOrganizations: OwnedOrganizationSummary[] =
+        ownedMemberships.map((membership) => {
+          const org = membership.organizations;
+
+          return {
+            heardAboutNotraOther: org.heardAboutNotraOther,
+            heardAboutNotraSource: org.heardAboutNotraSource,
+            id: org.id,
+            logo: org.logo,
+            memberCount: memberCounts.get(org.id) ?? 0,
+            name: org.name,
+            nextOwnerCandidate: candidatesByOrganization.get(org.id) ?? null,
+            slug: org.slug,
+          };
+        });
 
       return { ownedOrganizations };
     }),
@@ -147,6 +161,11 @@ export const userRouter = {
               );
             }
 
+            const organization = await tx.query.organizations.findFirst({
+              columns: { workosOrgId: true },
+              where: eq(organizations.id, input.organizationId),
+            });
+
             await tx
               .delete(organizations)
               .where(eq(organizations.id, input.organizationId));
@@ -156,6 +175,7 @@ export const userRouter = {
             return {
               action: "delete" as const,
               success: true,
+              workosOrgId: organization?.workosOrgId ?? null,
             };
           }
 
@@ -179,6 +199,16 @@ export const userRouter = {
             success: true,
           };
         });
+
+        if (result.action === "delete") {
+          await Effect.runPromise(
+            deleteOrganizationFromWorkOS(result.workosOrgId)
+          );
+        } else {
+          await Effect.runPromise(
+            removeMembershipFromWorkOS(input.organizationId, context.user.id)
+          );
+        }
 
         if (shouldCleanupDeletedOrganization) {
           await Promise.all([
@@ -212,7 +242,7 @@ export const userRouter = {
       const organizationsToCleanup: string[] = [];
 
       for (const transfer of input.transfers) {
-        await db.transaction(async (tx) => {
+        const outcome = await db.transaction(async (tx) => {
           const membership = await tx.query.members.findFirst({
             where: and(
               eq(members.organizationId, transfer.orgId),
@@ -264,25 +294,50 @@ export const userRouter = {
                   eq(members.userId, context.user.id)
                 )
               );
-          } else {
-            const existingOrganization = await tx.query.organizations.findFirst(
-              {
-                columns: { id: true },
-                where: eq(organizations.id, transfer.orgId),
-              }
-            );
 
-            if (!existingOrganization) {
-              throw notFound(`Organization ${transfer.orgId} not found`);
-            }
-
-            await tx
-              .delete(organizations)
-              .where(eq(organizations.id, transfer.orgId));
-
-            organizationsToCleanup.push(transfer.orgId);
+            return {
+              kind: "transfer" as const,
+              newOwnerUserId: newOwner.userId,
+            };
           }
+
+          const existingOrganization = await tx.query.organizations.findFirst({
+            columns: { id: true, workosOrgId: true },
+            where: eq(organizations.id, transfer.orgId),
+          });
+
+          if (!existingOrganization) {
+            throw notFound(`Organization ${transfer.orgId} not found`);
+          }
+
+          await tx
+            .delete(organizations)
+            .where(eq(organizations.id, transfer.orgId));
+
+          organizationsToCleanup.push(transfer.orgId);
+
+          return {
+            kind: "delete" as const,
+            workosOrgId: existingOrganization.workosOrgId,
+          };
         });
+
+        if (outcome.kind === "transfer") {
+          await Effect.runPromise(
+            updateMembershipRoleInWorkOS(
+              transfer.orgId,
+              outcome.newOwnerUserId,
+              "owner"
+            )
+          );
+          await Effect.runPromise(
+            removeMembershipFromWorkOS(transfer.orgId, context.user.id)
+          );
+        } else {
+          await Effect.runPromise(
+            deleteOrganizationFromWorkOS(outcome.workosOrgId)
+          );
+        }
       }
 
       await Promise.all(

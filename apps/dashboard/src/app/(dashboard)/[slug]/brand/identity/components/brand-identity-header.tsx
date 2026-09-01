@@ -4,6 +4,7 @@ import { Add01Icon, RefreshIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Loader2Icon } from "lucide-react";
+
 import { Button } from "@/components/button";
 import { BRAND_TAB_HEADERS } from "@/constants/brand-identity";
 import type {
@@ -27,7 +28,7 @@ export function BrandIdentityHeader({
       onClick: onAddIdentity,
     },
     references: {
-      label: "Create Reference",
+      label: "Add Reference",
       onClick: onAddReference,
     },
     sitemap: {
@@ -40,16 +41,16 @@ export function BrandIdentityHeader({
   return (
     <div className="flex items-start justify-between">
       <div className="space-y-1">
-        <h1 className="font-bold text-3xl tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight">
           {BRAND_TAB_HEADERS[activeTab].title}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           {BRAND_TAB_HEADERS[activeTab].description}
         </p>
       </div>
       {activeTab === "guidelines" ? (
         <Button
-          className="gap-1.5"
+          className="w-fit gap-1.5 px-3"
           disabled={isRefreshingGuidelines}
           onClick={onRefreshGuidelines}
         >
@@ -62,7 +63,7 @@ export function BrandIdentityHeader({
         </Button>
       ) : null}
       {action ? (
-        <Button className="gap-1.5" onClick={action.onClick}>
+        <Button className="w-fit gap-1.5 px-3" onClick={action.onClick}>
           <HugeiconsIcon className="size-4" icon={Add01Icon} />
           {action.label}
           <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>

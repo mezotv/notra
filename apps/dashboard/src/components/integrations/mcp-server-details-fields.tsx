@@ -7,6 +7,7 @@ import {
 } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
 import { Textarea } from "@notra/ui/components/ui/textarea";
+
 import { getMcpFormErrorMessage } from "@/lib/integrations/mcp";
 import {
   addMcpServerFormFieldsSchema,
@@ -32,7 +33,7 @@ export function McpServerDetailsFields({
         {(field) => (
           <Field>
             <FieldLabel htmlFor="mcp-name">
-              Name <span className="-ml-1 text-destructive">*</span>
+              Name <span className="text-destructive -ml-1">*</span>
             </FieldLabel>
             <Input
               autoComplete="off"
@@ -63,13 +64,13 @@ export function McpServerDetailsFields({
         {(field) => (
           <Field>
             <FieldLabel htmlFor="mcp-url">
-              Server URL <span className="-ml-1 text-destructive">*</span>
+              Server URL <span className="text-destructive -ml-1">*</span>
             </FieldLabel>
             <div
-              className={`flex w-full flex-row items-center rounded-md border transition-colors focus-within:border-ring focus-within:ring-ring/50 ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-border"}`}
+              className={`focus-within:border-ring focus-within:ring-ring/50 flex w-full flex-row items-center rounded-md border transition-colors ${field.state.meta.errors.length > 0 ? "border-destructive" : "border-border"}`}
             >
               <label
-                className="border-border border-r px-2.5 py-1.5 text-muted-foreground text-sm transition-colors"
+                className="border-border text-muted-foreground border-r px-2.5 py-1.5 text-sm transition-colors"
                 htmlFor="mcp-url"
               >
                 https://

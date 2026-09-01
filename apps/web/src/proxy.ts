@@ -1,15 +1,14 @@
-import { Tracker } from "@bydefault/vercel";
 import { createDualmarkMiddleware } from "@dualmark/nextjs";
+import { createGeoProxy } from "@usenotra/geo/next";
 import { after, type NextRequest, NextResponse } from "next/server";
+
 import { HOMEPAGE_LINK_HEADER, SITE_URL } from "@/utils/urls";
 
-const bydefaultToken = process.env.BYDEFAULT_TOKEN;
-const tracker = bydefaultToken
-  ? new Tracker({
-      token: bydefaultToken,
-      exclude: ["/api"],
-    })
-  : null;
+const geoTracker = createGeoProxy({
+  token: process.env.NOTRA_GEO_TOKEN ?? "",
+  endpoint: process.env.NOTRA_GEO_ENDPOINT,
+  tagLinks: { host: new URL(SITE_URL).hostname, html: true },
+});
 
 const dualmarkProxy = createDualmarkMiddleware({
   siteUrl: SITE_URL,
@@ -23,9 +22,13 @@ const dualmarkProxy = createDualmarkMiddleware({
       "/demo.webp",
       "/design.md",
       "/favicon.ico",
+      "/feedback.md",
       "/icon.svg",
+      "/ip-checker.md",
       "/llms-full.txt",
       "/llms.txt",
+      "/logo-dark.svg",
+      "/logo.svg",
       "/manifest.json",
       "/marketing",
       "/notra-mark.svg",
@@ -41,34 +44,34 @@ const dualmarkProxy = createDualmarkMiddleware({
   },
 });
 
+function trackAiTraffic(request: NextRequest) {
+  return geoTracker(request, {
+    waitUntil: (promise) => {
+      after(promise);
+    },
+  });
+}
+
 function appendLinkHeader(headers: Headers, value: string) {
   const existing = headers.get("Link");
   headers.set("Link", existing ? `${existing}, ${value}` : value);
 }
 
 export async function proxy(request: NextRequest) {
+  const tagged = await trackAiTraffic(request);
+
+  if (tagged) {
+    return tagged;
+  }
+
   if (
     request.nextUrl.pathname === "/" &&
     request.nextUrl.searchParams.get("mode") === "agent"
   ) {
-    const response = NextResponse.rewrite(new URL("/agent", request.url));
-
-    if (tracker) {
-      after(async () => {
-        await tracker.track(request);
-      });
-    }
-
-    return response;
+    return NextResponse.rewrite(new URL("/agent", request.url));
   }
 
   const response = await dualmarkProxy(request);
-
-  if (tracker) {
-    after(async () => {
-      await tracker.track(request);
-    });
-  }
 
   if (
     request.nextUrl.pathname === "/" &&

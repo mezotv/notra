@@ -3,7 +3,16 @@ import {
   autumn,
 } from "@notra/ai/billing/autumn";
 import { FEATURES, PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
+import type { GeoZdrEntitlement } from "@notra/geo-core/types/geo";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { ORPCError } from "@orpc/server";
+
+import {
+  ENTITLEMENT_FEATURES,
+  ENTITLEMENT_SURFACES,
+} from "@/constants/analytics-events";
+import { GEO_PLAN_REQUIRED_MESSAGE } from "@/constants/billing";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { internalServerError, paymentRequired } from "@/lib/orpc/utils/errors";
 
 async function hasAiCreditsBalance(organizationId: string): Promise<boolean> {
@@ -20,7 +29,9 @@ async function hasAiCreditsBalance(organizationId: string): Promise<boolean> {
   return data.allowed === true;
 }
 
-async function hasAiCreditsGrant(organizationId: string): Promise<boolean> {
+export async function hasAiCreditsGrant(
+  organizationId: string
+): Promise<boolean> {
   if (!autumn) {
     return false;
   }
@@ -33,8 +44,34 @@ async function hasAiCreditsGrant(organizationId: string): Promise<boolean> {
   return data.balance != null;
 }
 
-export async function assertActiveSubscription(
+/**
+ * Non-throwing lookup of the zero data retention entitlement, granted by the
+ * ZDR add-on on any plan. Development without billing counts as entitled; a
+ * billing outage answers `unknown` so each gate can decide how to fail.
+ */
+export async function resolveZdrEntitlement(
   organizationId: string
+): Promise<GeoZdrEntitlement> {
+  if (allowUnmeteredAiInDevelopment) {
+    return "entitled";
+  }
+  if (!autumn) {
+    return process.env.NODE_ENV === "production" ? "not_entitled" : "entitled";
+  }
+  try {
+    const data = await autumn.check({
+      customerId: organizationId,
+      featureId: FEATURES.ZDR,
+    });
+    return data.allowed === true ? "entitled" : "not_entitled";
+  } catch {
+    return "unknown";
+  }
+}
+
+export async function assertActiveSubscription(
+  organizationId: string,
+  procedure?: string
 ): Promise<void> {
   if (allowUnmeteredAiInDevelopment) {
     return;
@@ -48,11 +85,18 @@ export async function assertActiveSubscription(
   }
 
   let hasAccess = false;
+  let activePlanId: string | null = null;
 
   try {
     const customer = await autumn.customers.getOrCreate({
       customerId: organizationId,
     });
+
+    activePlanId =
+      customer.subscriptions.find(
+        (subscription) =>
+          !subscription.addOn && subscription.status === "active"
+      )?.planId ?? null;
 
     hasAccess = customer.subscriptions.some(
       (subscription) =>
@@ -72,6 +116,11 @@ export async function assertActiveSubscription(
   }
 
   if (!hasAccess) {
+    trackServerEvent({
+      event: POSTHOG_EVENTS.SUBSCRIPTION_REQUIRED_HIT,
+      organizationId,
+      properties: { procedure: procedure ?? null, plan_id: activePlanId },
+    });
     throw paymentRequired("Active subscription required");
   }
 }
@@ -100,5 +149,46 @@ export async function hasPaidSubscriptionHistory(
     return await hasAiCreditsGrant(organizationId);
   } catch {
     return true;
+  }
+}
+
+export async function assertGeoEntitlement(
+  organizationId: string
+): Promise<void> {
+  if (allowUnmeteredAiInDevelopment) {
+    return;
+  }
+
+  if (!autumn) {
+    if (process.env.NODE_ENV === "production") {
+      throw internalServerError("Billing is not configured");
+    }
+    return;
+  }
+
+  let entitled = false;
+  try {
+    const data = await autumn.check({
+      customerId: organizationId,
+      featureId: FEATURES.AI_ANSWERS,
+    });
+    entitled = data.balance != null;
+  } catch (error) {
+    if (error instanceof ORPCError) {
+      throw error;
+    }
+    throw internalServerError("Failed to verify plan entitlement");
+  }
+
+  if (!entitled) {
+    trackServerEvent({
+      event: POSTHOG_EVENTS.ENTITLEMENT_DENIED,
+      organizationId,
+      properties: {
+        feature: ENTITLEMENT_FEATURES.AI_ANSWERS,
+        surface: ENTITLEMENT_SURFACES.DASHBOARD,
+      },
+    });
+    throw paymentRequired(GEO_PLAN_REQUIRED_MESSAGE);
   }
 }

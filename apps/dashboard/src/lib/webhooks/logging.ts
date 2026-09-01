@@ -1,4 +1,5 @@
 import { redis } from "@notra/ai/utils/redis";
+
 import type {
   IntegrationType,
   Log,

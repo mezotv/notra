@@ -1,5 +1,6 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -13,7 +14,10 @@ import {
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import type React from "react";
 import { isValidElement, useState } from "react";
+
 import { Button } from "@/components/button";
+import { INTEGRATION_PROVIDERS } from "@/constants/integration-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 
 interface AddLinearIntegrationDialogProps {
   authorizeUrl: string;
@@ -68,6 +72,9 @@ export function AddLinearIntegrationDialog({
           </ResponsiveDialogClose>
           <Button
             onClick={() => {
+              trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+                provider: INTEGRATION_PROVIDERS.LINEAR,
+              });
               window.location.href = authorizeUrl;
             }}
           >

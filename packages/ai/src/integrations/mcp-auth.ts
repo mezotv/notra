@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { mcpServerIntegrations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
+
 import type { McpOAuthRetryParams, McpRequestAuth } from "../types/mcp-oauth";
 import { isMcpUnauthorizedError } from "../utils/mcp-auth-error";
 import { decryptMcpHeaders } from "../utils/mcp-headers";

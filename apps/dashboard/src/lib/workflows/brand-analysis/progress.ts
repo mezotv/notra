@@ -3,6 +3,7 @@ import {
   updateBrandAnalysisJob,
 } from "@notra/ai/jobs/brand-analysis";
 import { redis } from "@notra/ai/utils/redis";
+
 import type { ProgressData } from "@/types/hooks/brand-analysis";
 import {
   getStepFromCurrentStep,

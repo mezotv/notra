@@ -3,7 +3,7 @@ import type { SVGProps } from "react";
 const GeminiWordmark = (props: SVGProps<SVGSVGElement>) => (
   <svg {...props} viewBox="0 0 344 127" fill="none">
     <mask
-      id="a"
+      id="notra-gemini-wordmark-mask"
       width="344"
       height="127"
       x="0"
@@ -18,12 +18,15 @@ const GeminiWordmark = (props: SVGProps<SVGSVGElement>) => (
         clipRule="evenodd"
       />
     </mask>
-    <g mask="url(#a)">
-      <path fill="url(#b)" d="M-158.25-455.443h832.09v685.324h-832.09z" />
+    <g mask="url(#notra-gemini-wordmark-mask)">
+      <path
+        d="M-158.25-455.443h832.09v685.324h-832.09z"
+        fill="url(#notra-gemini-wordmark-fill)"
+      />
     </g>
     <defs>
       <linearGradient
-        id="b"
+        id="notra-gemini-wordmark-fill"
         x1="-57.405"
         x2="354.97"
         y1="130.441"

@@ -1,5 +1,6 @@
-import { BlogPaginationCard } from "@/components/blog-pagination-card";
 import type { BlogPostPaginationProps } from "~types/blog";
+
+import { BlogPaginationCard } from "@/components/blog-pagination-card";
 
 export function BlogPostPagination({
   previous,
@@ -12,7 +13,7 @@ export function BlogPostPagination({
   return (
     <nav
       aria-label="Blog post navigation"
-      className="mt-16 grid gap-4 border-border border-t pt-8 sm:grid-cols-2"
+      className="border-border mt-16 grid gap-4 border-t pt-8 sm:grid-cols-2"
     >
       {previous && !next ? (
         <div aria-hidden="true" className="hidden sm:block" />

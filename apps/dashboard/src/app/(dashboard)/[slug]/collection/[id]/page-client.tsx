@@ -2,19 +2,25 @@
 
 import { ArrowLeft02Icon, PencilEdit02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Button } from "@notra/ui/components/ui/button";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import { ContentCard } from "@/components/content/content-card";
 import { ContentSkeletonCard } from "@/components/content/content-skeleton-card";
 import { GroupContentTypes } from "@/components/content/group/group-content-types";
 import { RenameCollectionDialog } from "@/components/content/group/rename-collection-dialog";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
+import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useCollection } from "@/lib/hooks/use-collections";
 import type { CollectionDetailPageClientProps } from "@/types/content/collection";
 import { formatLongDate, getMarkdownPreview } from "@/utils/content-preview";
 import { resolveImagePreviewSrc } from "@/utils/markdown-image";
+
 import { GroupDetailSkeleton } from "./skeleton";
 
 export default function PageClient({
@@ -27,6 +33,20 @@ export default function PageClient({
     collectionId
   );
   const [showRenameDialog, setShowRenameDialog] = useState(false);
+  const hasTrackedOpenRef = useRef(false);
+
+  useEffect(() => {
+    const loadedCollection = data?.collection;
+    if (!loadedCollection || hasTrackedOpenRef.current) {
+      return;
+    }
+    hasTrackedOpenRef.current = true;
+    trackEvent(POSTHOG_EVENTS.COLLECTION_OPENED, {
+      collection_id: collectionId,
+      post_count: loadedCollection.posts.length,
+      is_generating: loadedCollection.isGenerating,
+    });
+  }, [collectionId, data?.collection]);
 
   if (isPending) {
     return <GroupDetailSkeleton />;
@@ -74,7 +94,7 @@ export default function PageClient({
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-4">
           <Link
-            className="inline-flex items-center gap-1.5 text-muted-foreground text-sm transition-colors hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
             href={`/${organizationSlug}/content`}
           >
             <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
@@ -84,11 +104,11 @@ export default function PageClient({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="min-w-0 space-y-2">
               <div className="flex items-center gap-2">
-                <h1 className="font-bold text-2xl tracking-tight">
+                <h1 className="text-3xl font-bold tracking-tight">
                   {collection.name}
                 </h1>
                 <Button
-                  className="size-7 shrink-0 text-muted-foreground"
+                  className="text-muted-foreground size-7 shrink-0"
                   onClick={() => setShowRenameDialog(true)}
                   size="icon-sm"
                   variant="ghost"
@@ -97,7 +117,7 @@ export default function PageClient({
                   <HugeiconsIcon className="size-4" icon={PencilEdit02Icon} />
                 </Button>
               </div>
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-muted-foreground text-sm">
+              <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                 <span>{postCountLabel}</span>
                 <span aria-hidden>·</span>
                 <time dateTime={collection.createdAt}>
@@ -113,6 +133,7 @@ export default function PageClient({
           <div className="grid gap-3 sm:gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {collection.posts.map((post) => (
               <ContentCard
+                contentSubtype={post.contentSubtype}
                 contentType={post.contentType}
                 href={`/${organizationSlug}/content/${post.id}`}
                 id={post.id}
@@ -140,6 +161,13 @@ export default function PageClient({
         {!hasContent && (
           <EmptyState
             description="This collection has no posts."
+            preview={
+              <EmptyStateCardsPreview
+                columns={3}
+                count={EMPTY_STATE_CARD_COUNT.content}
+                variant="content"
+              />
+            }
             title="Nothing here yet"
           />
         )}

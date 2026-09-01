@@ -1,5 +1,6 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import { organizationIdSchema } from "@/schemas/auth/organization";
 
 export const socialConnectPlatformSchema = z.enum(["twitter", "linkedin"]);
@@ -19,6 +20,10 @@ export type SocialConnectOAuthState = z.infer<
 
 const PUBLISH_CONTENT_MAX_LENGTH = 25_000;
 
+export const socialPublishSurfaceSchema = z.enum(["editor", "chat_preview"]);
+
+export type SocialPublishSurface = z.infer<typeof socialPublishSurfaceSchema>;
+
 export const publishSocialPostBodySchema = z.object({
   accountId: z.string().min(1),
   content: z
@@ -26,6 +31,7 @@ export const publishSocialPostBodySchema = z.object({
     .trim()
     .min(1, "Post content is required")
     .max(PUBLISH_CONTENT_MAX_LENGTH, "Post content is too long"),
+  from: socialPublishSurfaceSchema.optional(),
 });
 
 export const socialAccountsOrganizationInputSchema = z.object({

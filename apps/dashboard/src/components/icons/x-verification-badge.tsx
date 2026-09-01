@@ -1,4 +1,5 @@
 import { XVerifiedBadge } from "@notra/ui/components/ui/svgs/twitter";
+
 import { XVerifiedGoldBadge } from "@/components/icons/x-verified-gold-badge";
 import { XVerifiedGovernmentBadge } from "@/components/icons/x-verified-government-badge";
 import type { XVerificationBadgeProps } from "@/types/content/twitter-post";

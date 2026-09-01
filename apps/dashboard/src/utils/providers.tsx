@@ -3,16 +3,19 @@
 import { Databuddy } from "@databuddy/sdk/react";
 import { Toaster } from "@notra/ui/components/ui/sonner";
 import { TooltipProvider } from "@notra/ui/components/ui/tooltip";
+import { DbClient, DbProvider } from "@tanstack/react-db";
 import {
   QueryCache,
   QueryClient,
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { RealtimeProvider } from "@upstash/realtime/client";
-import dynamic from "next/dynamic";
 import { ThemeProvider } from "next-themes";
+import dynamic from "next/dynamic";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Suspense } from "react";
 import { toast } from "sonner";
+
 import { AutumnOrgProvider } from "@/components/providers/autumn-org-provider";
 import { PostHogIdentity } from "@/components/providers/posthog-identity";
 import { POSTHOG_PROJECT_TOKEN } from "@/constants/posthog";
@@ -62,6 +65,8 @@ const queryClient = new QueryClient({
   },
 });
 
+const dbClient = new DbClient({ queryClient });
+
 function DatabuddyAnalytics() {
   if (!databuddyClientID) {
     return null;
@@ -84,24 +89,32 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {ReactQueryDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
-      <ThemeProvider attribute="class" disableTransitionOnChange enableSystem>
-        <TooltipProvider>
-          <AutumnOrgProvider>
-            <NuqsAdapter>
-              <RealtimeProvider
-                api={{ url: "/api/realtime", withCredentials: true }}
-                maxReconnectAttempts={5}
-              >
-                {children}
-              </RealtimeProvider>
-              {POSTHOG_PROJECT_TOKEN ? <PostHogIdentity /> : null}
-              <DatabuddyAnalytics />
-            </NuqsAdapter>
-            <Toaster position="top-center" />
-          </AutumnOrgProvider>
-        </TooltipProvider>
-      </ThemeProvider>
+      <DbProvider client={dbClient}>
+        {ReactQueryDevtools ? (
+          <ReactQueryDevtools initialIsOpen={false} />
+        ) : null}
+        <ThemeProvider attribute="class" disableTransitionOnChange enableSystem>
+          <TooltipProvider delay={500}>
+            <AutumnOrgProvider>
+              <NuqsAdapter>
+                <RealtimeProvider
+                  api={{ url: "/api/realtime", withCredentials: true }}
+                  maxReconnectAttempts={5}
+                >
+                  {children}
+                </RealtimeProvider>
+                {POSTHOG_PROJECT_TOKEN ? (
+                  <Suspense fallback={null}>
+                    <PostHogIdentity />
+                  </Suspense>
+                ) : null}
+                <DatabuddyAnalytics />
+              </NuqsAdapter>
+              <Toaster position="top-center" />
+            </AutumnOrgProvider>
+          </TooltipProvider>
+        </ThemeProvider>
+      </DbProvider>
     </QueryClientProvider>
   );
 }

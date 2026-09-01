@@ -1,7 +1,9 @@
 import type { z } from "@hono/zod-openapi";
-import { autumn } from "@notra/ai/billing/autumn";
-import { FEATURES } from "@notra/ai/billing/features";
-import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
+import {
+  allowUnmeteredAiInDevelopment,
+  autumn,
+} from "@notra/ai/billing/autumn";
+import { checkChatBilling } from "@notra/ai/billing/chat-billing";
 import {
   claimChatSessionForExternalChannel,
   clearActiveChatStream,
@@ -15,10 +17,11 @@ import {
 } from "@notra/ai/chat/history";
 import { getStandaloneChatIntegrations } from "@notra/ai/chat/integrations-cache";
 import type { useLogger } from "@notra/ai/evlog";
+import type { ChatBillingCheck } from "@notra/ai/types/billing";
 import type { UIMessage } from "ai";
-import type { CheckResponse } from "autumn-js";
 import type { Context } from "hono";
 import { nanoid } from "nanoid";
+
 import type { sendChatMessageRequestSchema } from "../../schemas/chats";
 import { createDirectStandaloneChatResponse } from "./direct-stream";
 import { buildApiChatTelemetryMetadata } from "./tcc";
@@ -43,13 +46,11 @@ export async function runChatMessage({
   requestId,
 }: RunChatMessageArgs): Promise<Response> {
   let useMarkup = false;
-  if (autumn) {
-    let checkData: CheckResponse | null = null;
+  let chargeAiCredits = false;
+  if (autumn && !allowUnmeteredAiInDevelopment) {
+    let billing: ChatBillingCheck;
     try {
-      checkData = await autumn.check({
-        customerId: organizationId,
-        featureId: FEATURES.AI_CREDITS,
-      });
+      billing = await checkChatBilling(organizationId);
     } catch (checkError) {
       console.error("[Autumn] Check error:", {
         requestId,
@@ -62,18 +63,19 @@ export async function runChatMessage({
       );
     }
 
-    if (!checkData?.allowed) {
+    if (!billing.allowed) {
       return c.json(
         {
           error: "Usage limit reached",
           code: "USAGE_LIMIT_REACHED",
-          balance: checkData?.balance ?? 0,
+          balance: billing.balanceRemaining ?? 0,
         },
         403
       );
     }
 
-    useMarkup = shouldApplyMarkup(checkData?.balance ?? null);
+    useMarkup = billing.useMarkup;
+    chargeAiCredits = billing.chargeAiCredits;
   }
 
   const {
@@ -171,6 +173,7 @@ export async function runChatMessage({
       context,
       validatedIntegrations,
       useMarkup,
+      chargeAiCredits,
       requestId,
       log,
       model,

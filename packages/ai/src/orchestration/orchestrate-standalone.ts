@@ -18,6 +18,7 @@ import type {
   StandaloneChatInput,
 } from "@notra/ai/types/standalone-chat";
 import { normalizeMarkdownFileAttachments } from "@notra/ai/utils/message-attachments";
+import { summarizeRouteUsage } from "@notra/ai/utils/route-usage";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { withToolErrorPayloads } from "@notra/ai/utils/tool-error-payload";
 import {
@@ -34,6 +35,7 @@ import {
   type UIMessage,
 } from "ai";
 import { z } from "zod";
+
 import {
   hasEnabledGitHubIntegration,
   hasEnabledLinearIntegration,
@@ -62,7 +64,7 @@ const DEFAULT_STANDALONE_TOOL_NAMES = [
 ] as const;
 
 const NOTRA_TOOLING_DESCRIPTION =
-  "Notra app tools are available through lazy discovery. Use searchNotraTools to find built-in content, brand, GitHub, Linear, Granola, and post tools by intent, then activateNotraTools before calling them. Basic skills, integration discovery, web search, and webpage fetch tools are exposed by default. Context.dev tools require API configuration when called.";
+  "Notra app tools are available through lazy discovery. Use searchNotraTools to find built-in content, brand, GEO analytics, GitHub, Linear, Granola, and post tools by intent, then activateNotraTools before calling them. Basic skills, integration discovery, web search, and webpage fetch tools are exposed by default. Context.dev tools require API configuration when called.";
 const WHITESPACE_REGEX = /\s+/;
 const LEGACY_NOTRA_TOOL_ALIASES: Record<string, string> = {
   getBrandReferences: "getAvailableBrandReferences",
@@ -145,7 +147,7 @@ export async function orchestrateStandaloneChat(
   const modelWithMemory = createModel(
     organizationId,
     routingDecision.model,
-    undefined,
+    {},
     log
   );
 
@@ -335,8 +337,12 @@ export async function orchestrateStandaloneChat(
       });
       lazyMcpRuntime?.cleanup().catch(() => undefined);
     },
-    async onFinish({ totalUsage }) {
-      await deps?.onUsage?.(totalUsage, routingDecision.model);
+    async onFinish({ totalUsage, steps }) {
+      await deps?.onUsage?.(
+        totalUsage,
+        routingDecision.model,
+        await summarizeRouteUsage(steps)
+      );
       await lazyMcpRuntime?.cleanup();
     },
     onError({ error }) {

@@ -1,3 +1,5 @@
+import type { AgentTokenUsage } from "./agents";
+
 export interface ModelPricing {
   inputPerMillionTokens: number;
   outputPerMillionTokens: number;
@@ -17,4 +19,64 @@ export interface AiCreditCostResult {
   billingBasis: AiCreditBillingBasis;
   reportedCostCents?: number;
   tokenCostCents: number;
+}
+
+export type ContentBillingMode = "unmetered" | "plan_quota" | "ai_credits";
+
+export type ContentQuotaFeatureId =
+  | "long_form_posts"
+  | "social_posts"
+  | "image_generations"
+  | "ai_answers";
+
+export type ContentBillingFeatureId = ContentQuotaFeatureId | "ai_credits";
+
+export type ContentBillingDenialReason =
+  | "quota_exhausted"
+  | "insufficient_ai_credits"
+  | "no_entitlement";
+
+export interface ContentBillingReservation {
+  allowed: boolean;
+  mode: ContentBillingMode;
+  featureId: ContentBillingFeatureId | null;
+  reserved: boolean;
+  lockId: string | null;
+  useMarkup: boolean;
+  reason?: ContentBillingDenialReason;
+  shouldNotify?: boolean;
+  balanceRemaining?: number | null;
+}
+
+export interface ReserveContentBillingInput {
+  organizationId: string;
+  outputType: string | null;
+  quotaFeatureId?: ContentQuotaFeatureId;
+  units?: number;
+  executionId?: string;
+  lockTtlMs?: number;
+  countTowardQuota?: boolean;
+}
+
+export type ChatBillingMode = "unmetered" | "ai_credits" | "plan_included";
+
+export interface ChatBillingCheck {
+  allowed: boolean;
+  mode: ChatBillingMode;
+  chargeAiCredits: boolean;
+  useMarkup: boolean;
+  balanceRemaining: number | null;
+}
+
+export interface ConfirmContentBillingInput {
+  reservation: ContentBillingReservation;
+  units?: number;
+  usage?: AgentTokenUsage;
+  fallbackModelId?: string;
+  properties?: Record<string, string | number | boolean>;
+}
+
+export interface ContentQuotaLabel {
+  singular: string;
+  plural: string;
 }

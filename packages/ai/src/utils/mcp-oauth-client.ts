@@ -2,6 +2,7 @@ import type {
   OAuthClientInformationMixed,
   OAuthClientMetadata,
 } from "@modelcontextprotocol/sdk/shared/auth.js";
+
 import {
   MCP_OAUTH_CLIENT_NAME,
   MCP_OAUTH_CLIENT_URI,

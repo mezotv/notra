@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+
 import type { GitHubEventType } from "@/schemas/github-webhook";
 import type { InputIntegrationType } from "@/schemas/integrations";
 

@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+
 import { createRoute } from "@hono/zod-openapi";
 import type { createDb } from "@notra/db/drizzle";
 import {
@@ -9,6 +10,7 @@ import {
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import {
   createScheduleRequestSchema,
   deleteScheduleResponseSchema,

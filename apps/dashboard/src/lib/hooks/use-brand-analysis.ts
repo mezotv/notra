@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
+
 import type { UpdateBrandSettingsInput } from "@/schemas/brand";
 import type {
   AffectedTriggersData,
@@ -13,6 +14,7 @@ import type {
   ProgressResponse,
 } from "@/types/hooks/brand-analysis";
 import { QUERY_KEYS } from "@/utils/query-keys";
+
 import { dashboardOrpc } from "../orpc/query";
 
 export function useBrandSettings(organizationId: string) {

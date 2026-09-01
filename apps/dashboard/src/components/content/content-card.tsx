@@ -31,9 +31,12 @@ import Image from "next/image";
 import Link from "next/link";
 import { memo, useState } from "react";
 import { toast } from "sonner";
+
+import { BLOG_POST_SUBTYPE_LABELS } from "@/constants/content-formats";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { cn } from "@/lib/utils";
 import type { ContentCardProps, ContentCardType } from "@/types/content/card";
+import { isBlogPostSubtype } from "@/utils/content-subtype";
 import { formatSnakeCaseLabel } from "@/utils/format";
 import { OutputTypeIcon } from "@/utils/output-types";
 
@@ -45,6 +48,17 @@ const CONTENT_TYPES = [
   "investor_update",
   "image",
 ] as const satisfies readonly ContentCardType[];
+
+function getContentSubtypeLabel(
+  contentSubtype: string | null | undefined
+): string | null {
+  if (!contentSubtype) {
+    return null;
+  }
+  return isBlogPostSubtype(contentSubtype)
+    ? BLOG_POST_SUBTYPE_LABELS[contentSubtype]
+    : formatSnakeCaseLabel(contentSubtype);
+}
 
 function getContentTypeLabel(contentType: string): string {
   if (contentType === "twitter_post") {
@@ -59,12 +73,14 @@ const ContentCard = memo(function ContentCard({
   title,
   preview,
   contentType,
+  contentSubtype,
   status,
   organizationId,
   className,
   href,
   imagePreviewSrc,
 }: ContentCardProps) {
+  const subtypeLabel = getContentSubtypeLabel(contentSubtype);
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -135,14 +151,14 @@ const ContentCard = memo(function ContentCard({
   const cardContent = (
     <div
       className={cn(
-        "group relative flex flex-col rounded-lg border border-border/80 bg-muted/80 p-2",
+        "group border-border/80 bg-muted/80 relative flex flex-col rounded-lg border p-2",
         "h-full transition-colors",
-        href && "cursor-pointer hover:bg-muted/80",
+        href && "hover:bg-muted/80 cursor-pointer",
         className
       )}
     >
       <div className="flex items-start justify-between gap-4 py-1.5 pr-2 pl-2">
-        <p className="line-clamp-2 min-w-0 font-medium text-lg leading-snug">
+        <p className="line-clamp-2 min-w-0 text-lg leading-snug font-medium">
           {title}
         </p>
         <div className="flex shrink-0 items-center gap-2">
@@ -191,7 +207,7 @@ const ContentCard = memo(function ContentCard({
       </div>
       <div
         className={cn(
-          "flex-1 overflow-hidden rounded-md bg-background/60",
+          "bg-background/60 flex-1 overflow-hidden rounded-md",
           contentType === "image" && imagePreviewSrc
             ? "flex items-center justify-center"
             : "px-3 py-2.5"
@@ -207,7 +223,7 @@ const ContentCard = memo(function ContentCard({
             width={1200}
           />
         ) : (
-          <p className="line-clamp-3 text-muted-foreground text-sm">
+          <p className="text-muted-foreground line-clamp-3 text-sm">
             {preview}
           </p>
         )}
@@ -226,6 +242,7 @@ const ContentCard = memo(function ContentCard({
           <OutputTypeIcon className="size-3" outputType={contentType} />
           {getContentTypeLabel(contentType)}
         </Badge>
+        {subtypeLabel ? <Badge variant="outline">{subtypeLabel}</Badge> : null}
       </div>
     </div>
   );
@@ -234,7 +251,7 @@ const ContentCard = memo(function ContentCard({
     <>
       {href ? (
         <Link
-          className="block h-full w-full rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="focus-visible:ring-ring block h-full w-full rounded-lg focus-visible:ring-2 focus-visible:outline-none"
           href={href}
         >
           {cardContent}

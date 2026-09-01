@@ -3,6 +3,7 @@ import {
   type SlackContext,
   type SlackMessage,
 } from "eve/channels/slack";
+
 import type { ResolvedSlackInstallation } from "../types/slack";
 
 export function buildNotraSlackAuth(

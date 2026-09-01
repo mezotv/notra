@@ -31,6 +31,7 @@ import {
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { RefreshCcwIcon } from "lucide-react";
 import { useState } from "react";
+
 import { Button } from "@/components/button";
 import { getMcpFaviconUrl, MCP_ACCENT_COLOR } from "@/lib/integrations/mcp";
 import type { McpServerCardProps } from "@/types/integrations/mcp";
@@ -116,7 +117,7 @@ export function McpServerCard({
         footer={
           needsReauthorization ? (
             <>
-              <p className="text-amber-700 text-sm dark:text-amber-300">
+              <p className="text-sm text-amber-700 dark:text-amber-300">
                 Access expired. Reauthorize to keep tools working.
               </p>
               <Button
@@ -146,32 +147,32 @@ export function McpServerCard({
       >
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Badge className="font-normal text-xs" variant="secondary">
+            <Badge className="text-xs font-normal" variant="secondary">
               Streamable HTTP
             </Badge>
             <Badge
-              className="font-normal text-xs"
+              className="text-xs font-normal"
               variant={needsReauthorization ? "destructive" : "outline"}
             >
               {getAuthLabel(server)}
             </Badge>
             <Badge
-              className="font-normal text-xs"
+              className="text-xs font-normal"
               variant={
                 server.toolSyncStatus === "error" ? "destructive" : "secondary"
               }
             >
               {getSyncLabel(server.toolSyncStatus)}
             </Badge>
-            <Badge className="font-normal text-xs" variant="outline">
+            <Badge className="text-xs font-normal" variant="outline">
               {server.indexedToolCount ?? 0} tools
             </Badge>
           </div>
-          <p className="truncate font-mono text-muted-foreground text-xs">
+          <p className="text-muted-foreground truncate font-mono text-xs">
             {server.url}
           </p>
           {server.toolSyncError ? (
-            <p className="truncate text-destructive text-xs">
+            <p className="text-destructive truncate text-xs">
               {server.toolSyncError}
             </p>
           ) : null}

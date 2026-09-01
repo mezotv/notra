@@ -1,4 +1,5 @@
 import type { BrandFormProps } from "@/types/brand-identity";
+
 import { useBrandForm } from "../../../../../../lib/hooks/use-brand-form";
 import { useUserLocales } from "../../../../../../lib/hooks/use-user-locales";
 import { AudienceField } from "./audience-field";

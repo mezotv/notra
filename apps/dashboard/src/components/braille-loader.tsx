@@ -66,7 +66,7 @@ export function BrailleLoader({
   return (
     <output
       aria-label="Loading"
-      className={cn("inline-flex font-mono text-muted-foreground", className)}
+      className={cn("text-muted-foreground inline-flex font-mono", className)}
     >
       <style>{variantStyles[variant]}</style>
       {allChars.map((char, i) => (

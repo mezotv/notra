@@ -1,5 +1,11 @@
 import type { createDb } from "@notra/db/drizzle";
+import { organizations, users } from "@notra/db/schema";
+import {
+  LEGACY_API_READ_SCOPE,
+  LEGACY_API_WRITE_SCOPE,
+} from "@notra/utils/api-scopes";
 import { Unkey } from "@unkey/api";
+import { eq } from "drizzle-orm";
 import type { Context, Next } from "hono";
 import {
   createRemoteJWKSet,
@@ -7,16 +13,17 @@ import {
   errors as joseErrors,
   jwtVerify,
 } from "jose";
-import {
-  LEGACY_API_READ_SCOPE,
-  LEGACY_API_WRITE_SCOPE,
-} from "../constants/oauth-scopes";
+
+import { API_AUTH_KINDS } from "../constants/analytics";
+import type { ApiAuthKind } from "../types/analytics";
 import type { AuthData } from "../types/auth";
 import {
   API_URL,
   AUTH_GUIDE_URL,
   RESOURCE_METADATA_URL,
 } from "../utils/agent-discovery";
+import { trackApiKeyRejected, trackApiKeyVerified } from "../utils/analytics";
+import { isFeedbackToken, verifyFeedbackToken } from "../utils/feedback-token";
 
 declare module "hono" {
   interface ContextVariableMap {
@@ -32,16 +39,16 @@ interface AuthOptions {
 }
 
 const BEARER_HEADER_REGEX = /^Bearer\s+(.+)$/i;
-const DEFAULT_OAUTH_BASE_URL = "https://app.usenotra.com";
-const OAUTH_BASE_PATH = "/api/auth";
-const OAUTH_JWKS_PATH = `${OAUTH_BASE_PATH}/jwks`;
-const TRAILING_SLASH_REGEX = /\/+$/;
+const DEFAULT_AUTHKIT_DOMAIN = "auth.usenotra.com";
 const OAUTH_AUDIENCES = [
   API_URL,
   "https://mcp.usenotra.com",
   "https://mcp.usenotra.com/mcp",
 ] as const;
 const SCOPE_SEPARATOR_REGEX = /\s+/;
+const WORKOS_ID_CACHE_MAX_SIZE = 1000;
+const WORKOS_ID_CACHE_TTL_MS = 5 * 60 * 1000;
+const workosIdCache = new Map<string, { localId: string; expiresAt: number }>();
 const remoteJwksByUrl = new Map<
   string,
   ReturnType<typeof createRemoteJWKSet>
@@ -57,22 +64,141 @@ function extractBearerToken(c: Context): string | null {
   return match?.[1]?.trim() || null;
 }
 
+type AuthFailureStatus = 401 | 403 | 429 | 503;
+
 type AuthResult =
   | { success: true; auth: AuthData }
-  | { success: false; error: string; status: 401 | 403 | 503 };
+  | {
+      success: false;
+      error: string;
+      status: AuthFailureStatus;
+      kind?: ApiAuthKind;
+      code?: string;
+    };
+
+/**
+ * Unkey's verification codes, mapped onto answers a client can act on.
+ *
+ * The codes are Unkey's internal vocabulary (`Code` in `@unkey/api`): passing
+ * one through as the `error` string told the caller of an unknown key that
+ * something was `NOT_FOUND` — which reads like a missing resource, not a
+ * rejected credential — and leaked how the key store answers. Anything not
+ * listed here, including codes Unkey adds later (`Code` is an open enum), gets
+ * the generic invalid-key answer rather than its raw name.
+ */
+const UNKEY_AUTH_FAILURES: Record<
+  string,
+  { error: string; status: AuthFailureStatus }
+> = {
+  DISABLED: { error: "Invalid API key", status: 401 },
+  EXPIRED: { error: "Invalid API key", status: 401 },
+  FORBIDDEN: { error: "Forbidden", status: 403 },
+  INSUFFICIENT_PERMISSIONS: { error: "Forbidden", status: 403 },
+  NOT_FOUND: { error: "Invalid API key", status: 401 },
+  RATE_LIMITED: { error: "API key rate limit exceeded", status: 429 },
+  USAGE_EXCEEDED: { error: "API key usage limit exceeded", status: 429 },
+};
+
+const DEFAULT_UNKEY_AUTH_FAILURE = {
+  error: "Invalid API key",
+  status: 401,
+} as const;
 
 function getOAuthIssuer(c: Context) {
-  const baseUrl = (c.env.BETTER_AUTH_URL ?? DEFAULT_OAUTH_BASE_URL).replace(
-    TRAILING_SLASH_REGEX,
-    ""
-  );
-  return baseUrl.endsWith(OAUTH_BASE_PATH)
-    ? baseUrl
-    : `${baseUrl}${OAUTH_BASE_PATH}`;
+  const domain = c.env.WORKOS_AUTHKIT_DOMAIN ?? DEFAULT_AUTHKIT_DOMAIN;
+  return `https://${domain}`;
 }
 
 function getOAuthJwksUrl(c: Context) {
-  return new URL(OAUTH_JWKS_PATH, getOAuthIssuer(c)).toString();
+  return `${getOAuthIssuer(c)}/oauth2/jwks`;
+}
+
+function getCachedLocalId(cacheKey: string): string | null {
+  const entry = workosIdCache.get(cacheKey);
+  if (!entry) {
+    return null;
+  }
+
+  if (Date.now() > entry.expiresAt) {
+    workosIdCache.delete(cacheKey);
+    return null;
+  }
+
+  return entry.localId;
+}
+
+function setCachedLocalId(cacheKey: string, localId: string) {
+  if (workosIdCache.size >= WORKOS_ID_CACHE_MAX_SIZE) {
+    const oldestKey = workosIdCache.keys().next().value;
+    if (oldestKey !== undefined) {
+      workosIdCache.delete(oldestKey);
+    }
+  }
+
+  workosIdCache.set(cacheKey, {
+    localId,
+    expiresAt: Date.now() + WORKOS_ID_CACHE_TTL_MS,
+  });
+}
+
+async function resolveLocalUserId(
+  db: ReturnType<typeof createDb>,
+  workosUserId: string
+): Promise<string | null> {
+  const cacheKey = `user:${workosUserId}`;
+  const cached = getCachedLocalId(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const user = await db.query.users.findFirst({
+    where: eq(users.workosUserId, workosUserId),
+    columns: { id: true },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  setCachedLocalId(cacheKey, user.id);
+  return user.id;
+}
+
+async function resolveLocalOrganizationId(
+  db: ReturnType<typeof createDb>,
+  workosOrgId: string
+): Promise<string | null> {
+  const cacheKey = `org:${workosOrgId}`;
+  const cached = getCachedLocalId(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
+  const organization = await db.query.organizations.findFirst({
+    where: eq(organizations.workosOrgId, workosOrgId),
+    columns: { id: true },
+  });
+
+  if (!organization) {
+    return null;
+  }
+
+  setCachedLocalId(cacheKey, organization.id);
+  return organization.id;
+}
+
+/** Callers must handle a missing `aud` claim before calling this. */
+function isAllowedAudience(
+  aud: NonNullable<JWTPayload["aud"]>,
+  workosClientId: string | undefined
+) {
+  const allowed = new Set<string>(OAUTH_AUDIENCES);
+  if (workosClientId) {
+    allowed.add(workosClientId);
+  }
+
+  const audiences = Array.isArray(aud) ? aud : [aud];
+  return audiences.some((audience) => allowed.has(audience));
 }
 
 function getRemoteJwks(jwksUrl: string): ReturnType<typeof createRemoteJWKSet> {
@@ -119,8 +245,7 @@ function looksLikeJwt(token: string) {
   );
 }
 
-function extractScopes(payload: JWTPayload): string[] {
-  const rawScopes = payload.scope ?? payload.scp ?? payload.scopes;
+function normalizeScopeValue(rawScopes: unknown): string[] | null {
   if (typeof rawScopes === "string") {
     return rawScopes.split(SCOPE_SEPARATOR_REGEX).filter(Boolean);
   }
@@ -129,7 +254,20 @@ function extractScopes(payload: JWTPayload): string[] {
       (scope): scope is string => typeof scope === "string" && scope.length > 0
     );
   }
-  return [];
+  return null;
+}
+
+function extractScopes(payload: JWTPayload): string[] | null {
+  const scopeClaim = normalizeScopeValue(
+    payload.scope ?? payload.scp ?? payload.scopes
+  );
+  const permissionsClaim = normalizeScopeValue(payload.permissions);
+
+  if (scopeClaim === null && permissionsClaim === null) {
+    return null;
+  }
+
+  return [...new Set([...(scopeClaim ?? []), ...(permissionsClaim ?? [])])];
 }
 
 function hasRequiredScope(scopes: string[], requiredScope?: string) {
@@ -160,18 +298,25 @@ async function verifyOAuthToken(
       token,
       getRemoteJwks(getOAuthJwksUrl(c)),
       {
-        audience: [...OAUTH_AUDIENCES],
         issuer: getOAuthIssuer(c),
       }
     );
-    const scopes = extractScopes(payload);
-    const organizationId = payload.organizationId;
+
+    if (payload.aud === undefined) {
+      return { success: false, error: "Missing token audience", status: 401 };
+    }
+    if (!isAllowedAudience(payload.aud, c.env.WORKOS_CLIENT_ID)) {
+      return { success: false, error: "Invalid token audience", status: 401 };
+    }
+
+    const scopes = extractScopes(payload) ?? [];
+    const workosOrgId = payload.org_id;
 
     if (!payload.sub) {
       return { success: false, error: "Missing OAuth subject", status: 401 };
     }
 
-    if (!(typeof organizationId === "string" && organizationId.length > 0)) {
+    if (!(typeof workosOrgId === "string" && workosOrgId.length > 0)) {
       return {
         success: false,
         error: "Missing OAuth organization",
@@ -183,14 +328,36 @@ async function verifyOAuthToken(
       return { success: false, error: "Forbidden", status: 403 };
     }
 
+    const db = c.get("db");
+    const [localUserId, localOrgId] = await Promise.all([
+      resolveLocalUserId(db, payload.sub),
+      resolveLocalOrganizationId(db, workosOrgId),
+    ]);
+
+    if (!localUserId) {
+      return {
+        success: false,
+        error: "No local user found for OAuth subject",
+        status: 401,
+      };
+    }
+
+    if (!localOrgId) {
+      return {
+        success: false,
+        error: "No local organization found for OAuth token",
+        status: 401,
+      };
+    }
+
     return {
       success: true,
       auth: {
         type: "oauth",
-        keyId: `oauth:${payload.sub}:${organizationId}`,
-        userId: payload.sub,
+        keyId: `oauth:${localUserId}:${localOrgId}`,
+        userId: localUserId,
         scopes,
-        identity: { externalId: organizationId },
+        identity: { externalId: localOrgId },
       },
     };
   } catch (error) {
@@ -206,13 +373,17 @@ async function verifyOAuthToken(
   }
 }
 
-function getRecovery(status: 401 | 403 | 503) {
+function getRecovery(status: AuthFailureStatus) {
   if (status === 401) {
     return `Send Authorization: Bearer <NOTRA_API_KEY>. See ${AUTH_GUIDE_URL} for agent credential discovery.`;
   }
 
   if (status === 403) {
     return "Request a key with the required scope for this endpoint, then retry after verifying whether the previous mutation completed.";
+  }
+
+  if (status === 429) {
+    return "This key has exhausted its rate limit or credit allowance. Wait for the limit to reset, or use a key with more capacity.";
   }
 
   return "The authentication service is temporarily unavailable. Retry with exponential backoff.";
@@ -229,12 +400,34 @@ async function verifyRequestAuth(
     return { success: false, error: "Missing API key", status: 401 };
   }
 
+  if (isFeedbackToken(apiKey)) {
+    const tokenResult = await verifyFeedbackToken(
+      c,
+      apiKey,
+      options.permissions
+    );
+    if (!tokenResult.success) {
+      return { ...tokenResult, kind: API_AUTH_KINDS.FEEDBACK_TOKEN };
+    }
+    const { identity } = tokenResult;
+    const auth: AuthData = {
+      type: "ingest",
+      keyId: `feedback:${identity.organizationId}:${identity.projectId ?? "-"}`,
+      scopes: ["feedback.write"],
+      projectId: identity.projectId,
+      identity: { externalId: identity.organizationId },
+    };
+    c.set("auth", auth);
+    return { success: true, auth };
+  }
+
   if (looksLikeJwt(apiKey)) {
     const oauthResult = await verifyOAuthToken(c, apiKey, options.permissions);
     if (oauthResult.success) {
       c.set("auth", oauthResult.auth);
+      return oauthResult;
     }
-    return oauthResult;
+    return { ...oauthResult, kind: API_AUTH_KINDS.OAUTH };
   }
 
   try {
@@ -268,10 +461,15 @@ async function verifyRequestAuth(
     }
 
     if (!result.data.valid) {
-      if (result.data.code === "INSUFFICIENT_PERMISSIONS") {
-        return { success: false, error: "Forbidden", status: 403 };
-      }
-      return { success: false, error: result.data.code, status: 401 };
+      const failure =
+        UNKEY_AUTH_FAILURES[result.data.code] ?? DEFAULT_UNKEY_AUTH_FAILURE;
+      return {
+        success: false,
+        error: failure.error,
+        status: failure.status,
+        kind: API_AUTH_KINDS.UNKEY,
+        code: result.data.code,
+      };
     }
 
     if (!result.data.identity?.externalId) {
@@ -279,13 +477,19 @@ async function verifyRequestAuth(
         success: false,
         error: "Missing or invalid API key",
         status: 401,
+        kind: API_AUTH_KINDS.UNKEY,
       };
     }
 
     c.set("auth", result.data);
     return { success: true, auth: result.data };
   } catch {
-    return { success: false, error: "Service unavailable", status: 503 };
+    return {
+      success: false,
+      error: "Service unavailable",
+      status: 503,
+      kind: API_AUTH_KINDS.UNKEY,
+    };
   }
 }
 
@@ -293,6 +497,12 @@ export function authMiddleware(options: AuthOptions = {}) {
   return async (c: Context, next: Next) => {
     const authResult = await verifyRequestAuth(c, options);
     if (!authResult.success) {
+      trackApiKeyRejected(c, {
+        authKind: authResult.kind,
+        status: authResult.status,
+        reason: authResult.error,
+        unkeyCode: authResult.code,
+      });
       if (authResult.status === 401) {
         c.header(
           "WWW-Authenticate",
@@ -310,6 +520,7 @@ export function authMiddleware(options: AuthOptions = {}) {
       );
     }
 
+    trackApiKeyVerified(c, authResult.auth);
     await next();
   };
 }

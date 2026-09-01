@@ -3,6 +3,7 @@ import type { BrandSettings } from "@/types/hooks/brand-analysis";
 export interface BrandIdentityEmptyOption {
   label: string;
   description: string;
+  voice?: BrandSettings;
 }
 
 export interface BrandIdentityRadioGroupProps {

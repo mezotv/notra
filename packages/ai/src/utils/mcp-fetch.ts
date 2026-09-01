@@ -1,5 +1,5 @@
 import { McpUnauthorizedError } from "../integrations/mcp-auth-errors";
-import { fetchPublicMcpUrl } from "./mcp-public-fetch";
+import { fetchPublicMcpUrl } from "./public-fetch";
 
 export async function publicMcpRuntimeFetch(
   input: RequestInfo | URL,

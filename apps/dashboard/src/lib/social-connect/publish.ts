@@ -3,6 +3,8 @@ import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import type { SocialPostResult } from "post-for-me/resources/social-post-results";
+
+import { recordPublishedSocialPost } from "@/lib/analytics/record-post";
 import {
   getSocialConnectClient,
   isSocialConnectConfigured,
@@ -130,6 +132,20 @@ export const publishSocialPost = Effect.fn("publishSocialPost")(function* (
     (platformPostId && account.provider === "twitter"
       ? `https://x.com/${account.username}/status/${platformPostId}`
       : null);
+
+  if (platformPostId) {
+    yield* Effect.promise(() =>
+      recordPublishedSocialPost({
+        organizationId: params.organizationId,
+        accountId: params.accountId,
+        provider: account.provider,
+        providerAccountId: account.providerAccountId,
+        platformPostId,
+        url: postUrl,
+        content: params.content,
+      })
+    );
+  }
 
   return {
     postId: post.id,

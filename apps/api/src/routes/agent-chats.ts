@@ -8,6 +8,7 @@ import {
   listAgentSessionMappings,
 } from "@notra/ai/utils/agent-proxy";
 import type { Context } from "hono";
+
 import { createAgentClient, isAgentApiEnabled } from "../lib/agent/client";
 import {
   agentSessionParamsSchema,
@@ -121,6 +122,7 @@ agentChatsRoutes.post("/eve/v1/session", async (c) => {
     const client = await createAgentClient({
       organizationId: context.organizationId,
       useMarkup: credits.useMarkup,
+      chargeAiCredits: credits.chargeAiCredits,
     });
     const created = await createAgentSessionWithMapping({
       fetchUpstream: (path, init) => client.fetch(path, init),
@@ -213,6 +215,7 @@ agentChatsRoutes.post("/eve/v1/session/:sessionId", async (c) => {
     userId: mapping.userId ?? undefined,
     chatId: mapping.chatId ?? undefined,
     useMarkup: credits.useMarkup,
+    chargeAiCredits: credits.chargeAiCredits,
   });
   try {
     return await forwardAgentFollowUp({

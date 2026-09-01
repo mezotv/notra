@@ -1,5 +1,6 @@
 import { retrieveBrand } from "@notra/ai/utils/context-dev";
 import { defineTool } from "eve/tools";
+
 import { companyDomainInputSchema } from "../schemas/research-tools";
 import { brandSocialsResponseSchema } from "../schemas/socials";
 import { withTransientRetry } from "../utils/retry";

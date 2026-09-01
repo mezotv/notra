@@ -5,6 +5,10 @@ interface RedisEnv {
   UPSTASH_REDIS_REST_TOKEN?: string;
 }
 
+let cachedRedis: Redis | null = null;
+let cachedUrl: string | undefined;
+let cachedToken: string | undefined;
+
 export function getRedis(env: RedisEnv) {
   const url = env.UPSTASH_REDIS_REST_URL;
   const token = env.UPSTASH_REDIS_REST_TOKEN;
@@ -13,5 +17,12 @@ export function getRedis(env: RedisEnv) {
     return null;
   }
 
-  return new Redis({ url, token });
+  if (cachedRedis && cachedUrl === url && cachedToken === token) {
+    return cachedRedis;
+  }
+
+  cachedUrl = url;
+  cachedToken = token;
+  cachedRedis = new Redis({ url, token });
+  return cachedRedis;
 }

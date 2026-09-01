@@ -1,6 +1,7 @@
 import { neon } from "@neondatabase/serverless";
 import { upstashCache } from "drizzle-orm/cache/upstash";
 import { drizzle } from "drizzle-orm/neon-http";
+
 // biome-ignore lint/performance/noNamespaceImport: Required for drizzle-kit
 import * as schema from "./schema";
 

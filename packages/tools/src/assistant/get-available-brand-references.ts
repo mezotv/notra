@@ -1,5 +1,6 @@
 import { serializeBrandReference } from "@notra/ai/utils/brand-references";
 import { defineTool } from "eve/tools";
+
 import { getAvailableBrandReferencesInputSchema } from "../schemas/assistant-tools";
 import { getFilteredBrandReferences } from "../utils/brand-references";
 import { requireOrganizationId } from "../utils/organization";

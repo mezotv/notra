@@ -5,6 +5,8 @@ import {
 } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
 import { redis } from "@notra/ai/utils/redis";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { captureServerEvent, flushPostHogServer } from "@notra/posthog/server";
 import { getOrganizationId } from "@notra/tools/utils/organization";
 import {
   getBooleanSessionAttribute,
@@ -61,6 +63,29 @@ async function trackUsage(
       cost_cents: cost.costCents,
     },
   });
+  captureServerEvent({
+    event: POSTHOG_EVENTS.AI_CREDITS_CHARGED,
+    organizationId,
+    properties: {
+      cost_cents: cost.costCents,
+      source: properties.source,
+      model: modelId,
+      billing_basis: cost.billingBasis,
+      input_tokens: usage.inputTokens,
+      output_tokens: usage.outputTokens,
+      cache_read_tokens: usage.cacheReadTokens,
+      cache_write_tokens: usage.cacheWriteTokens,
+      total_tokens: totalTokens,
+      agent: properties.agent,
+      turn_id: properties.turn_id,
+      markup_applied: properties.markup_applied === "true",
+    },
+  });
+  await flushPostHogServer();
+}
+
+function shouldChargeAiCredits(ctx: Parameters<typeof getSessionAttribute>[0]) {
+  return getSessionAttribute(ctx, "chargeAiCredits") !== "false";
 }
 
 export function createUsageHook(modelId: string): HookDefinition {
@@ -68,7 +93,7 @@ export function createUsageHook(modelId: string): HookDefinition {
     events: {
       async "step.completed"(event, ctx) {
         try {
-          if (allowUnmeteredAiInDevelopment) {
+          if (allowUnmeteredAiInDevelopment || !shouldChargeAiCredits(ctx)) {
             return;
           }
           const organizationId = getOrganizationId(ctx);
@@ -120,7 +145,11 @@ export function createUsageHook(modelId: string): HookDefinition {
       async "turn.completed"(event, ctx) {
         let charged = false;
         try {
-          if (!redis || allowUnmeteredAiInDevelopment) {
+          if (
+            !redis ||
+            allowUnmeteredAiInDevelopment ||
+            !shouldChargeAiCredits(ctx)
+          ) {
             return;
           }
           const organizationId = getOrganizationId(ctx);

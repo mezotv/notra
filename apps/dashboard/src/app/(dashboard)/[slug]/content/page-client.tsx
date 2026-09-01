@@ -20,15 +20,23 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { useRouter } from "next/navigation";
 import { parseAsInteger, useQueryState } from "nuqs";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+
+import { CreateContentButton } from "@/components/content/create-content-button";
 import { CreateContentDialog } from "@/components/content/create-content-dialog";
 import { GroupContentTypes } from "@/components/content/group/group-content-types";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import {
+  EMPTY_STATE_TABLE_COLUMNS,
+  EMPTY_STATE_TABLE_ROWS,
+} from "@/constants/empty-state";
 import { useCollections } from "@/lib/hooks/use-collections";
 import type { ContentListPageClientProps } from "@/types/content/collection";
 import { formatRelativeDate, getPageNumbers } from "@/utils/content-preview";
+
 import { GroupsPageSkeleton } from "./skeleton";
 
 const HEADER_CLASS = "text-muted-foreground text-xs uppercase tracking-wider";
@@ -58,32 +66,47 @@ export default function PageClient({
     [data?.collections]
   );
   const totalPages = data?.pagination.totalPages ?? 1;
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-2xl tracking-tight">Content</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Content</h1>
             <p className="text-muted-foreground text-sm">
               Every batch of generated content, organized into collections.
             </p>
           </div>
-          <CreateContentDialog organizationId={organizationId} />
+          <CreateContentButton
+            disabled={!organizationId}
+            onClick={() => setCreateOpen(true)}
+          />
         </div>
 
         {isPending && <GroupsPageSkeleton />}
 
         {!isPending && collections.length === 0 && (
           <EmptyState
-            className="p-8"
+            action={
+              <CreateContentButton
+                disabled={!organizationId}
+                onClick={() => setCreateOpen(true)}
+              />
+            }
             description="Generate your first piece of content to get started."
+            preview={
+              <EmptyStateTablePreview
+                columns={EMPTY_STATE_TABLE_COLUMNS.content}
+                rows={EMPTY_STATE_TABLE_ROWS}
+              />
+            }
             title="No content yet"
           />
         )}
 
         {!isPending && collections.length > 0 && (
-          <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
+          <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -103,7 +126,7 @@ export default function PageClient({
                   const href = `/${organizationSlug}/collection/${collection.id}`;
                   return (
                     <TableRow
-                      className="cursor-pointer hover:bg-muted/50"
+                      className="hover:bg-muted/50 cursor-pointer"
                       key={collection.id}
                       onClick={() => router.push(href)}
                       onMouseEnter={() => router.prefetch(href)}
@@ -118,7 +141,7 @@ export default function PageClient({
                           contentTypes={collection.contentTypes}
                         />
                       </TableCell>
-                      <TableCell className="whitespace-nowrap text-muted-foreground text-sm">
+                      <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
                         {formatRelativeDate(collection.createdAt)}
                       </TableCell>
                     </TableRow>
@@ -175,6 +198,13 @@ export default function PageClient({
           </Pagination>
         )}
       </div>
+      <CreateContentDialog
+        entry="content_list"
+        hideTrigger
+        onOpenChange={setCreateOpen}
+        open={createOpen}
+        organizationId={organizationId}
+      />
     </PageContainer>
   );
 }

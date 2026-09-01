@@ -14,6 +14,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
 import { toast } from "sonner";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 
 export function useChatSessions() {

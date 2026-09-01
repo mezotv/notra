@@ -1,6 +1,11 @@
 import {
+  Activity01Icon,
+  AiBrowserIcon,
+  AiChat01Icon,
+  Analytics01Icon,
   AnalyticsUpIcon,
   Calendar03Icon,
+  ChartAnalysisIcon,
   Comment01Icon,
   CorporateIcon,
   CreditCardIcon,
@@ -9,12 +14,15 @@ import {
   Message01Icon,
   NoteIcon,
   Notification03Icon,
+  PencilEdit01Icon,
   PlugIcon,
+  SearchList01Icon,
   Settings01Icon,
   UserCircleIcon,
   UserGroupIcon,
   Wallet01Icon,
 } from "@hugeicons/core-free-icons";
+
 import type {
   CommandRoute,
   CommandSection,
@@ -41,6 +49,95 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     icon: Message01Icon,
     section: "Navigation",
     path: (slug) => `/${slug}/chat`,
+  },
+  {
+    id: "analytics",
+    label: "Analytics",
+    keywords: ["stats", "metrics", "followers", "engagement", "social"],
+    icon: Analytics01Icon,
+    section: "Navigation",
+    path: (slug) => `/${slug}/analytics`,
+  },
+  {
+    id: "geo",
+    label: "Overview",
+    keywords: ["geo", "ai", "mentions", "visibility", "chatgpt"],
+    icon: AiBrowserIcon,
+    section: "GEO",
+    path: (slug) => `/${slug}/geo`,
+  },
+  {
+    id: "geo-traffic",
+    label: "Traffic",
+    keywords: [
+      "geo",
+      "ai",
+      "traffic",
+      "crawlers",
+      "referrals",
+      "visits",
+      "citations",
+      "bots",
+    ],
+    icon: Activity01Icon,
+    section: "GEO",
+    path: (slug) => `/${slug}/geo/traffic`,
+  },
+  {
+    id: "geo-prompts",
+    label: "Prompts",
+    keywords: ["geo", "ai", "prompts", "questions", "tracking"],
+    icon: AiChat01Icon,
+    section: "GEO",
+    path: (slug) => `/${slug}/geo/prompts`,
+  },
+  {
+    id: "geo-gaps",
+    label: "Content Gaps",
+    keywords: [
+      "geo",
+      "ai",
+      "gaps",
+      "content gap",
+      "write",
+      "opportunity",
+      "mentions",
+    ],
+    icon: SearchList01Icon,
+    section: "GEO",
+    path: (slug) => `/${slug}/geo/gaps`,
+  },
+  {
+    id: "geo-competitors",
+    label: "Competitors",
+    keywords: ["geo", "ai", "competitors", "share of voice", "brands"],
+    icon: ChartAnalysisIcon,
+    section: "GEO",
+    path: (slug) => `/${slug}/geo/competitors`,
+  },
+  {
+    id: "geo-write",
+    label: "Write",
+    keywords: ["geo", "ai", "write", "writer", "article", "blog", "brief"],
+    icon: PencilEdit01Icon,
+    section: "GEO",
+    path: (slug) => `/${slug}/geo/write`,
+  },
+  {
+    id: "geo-settings",
+    label: "Settings",
+    keywords: [
+      "geo",
+      "ai",
+      "settings",
+      "tracking",
+      "models",
+      "languages",
+      "aliases",
+    ],
+    icon: Settings01Icon,
+    section: "GEO",
+    path: (slug) => `/${slug}/geo/settings`,
   },
   {
     id: "content",
@@ -103,8 +200,8 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     label: "Logs",
     keywords: ["audit", "activity", "events", "history"],
     icon: AnalyticsUpIcon,
-    section: "Manage",
-    path: (slug) => `/${slug}/logs`,
+    section: "Settings",
+    path: (slug) => `/${slug}/settings/logs`,
   },
   {
     id: "settings-account",
@@ -153,19 +250,30 @@ export const COMMAND_ROUTES: CommandRoute[] = [
     icon: Wallet01Icon,
     section: "Settings",
     path: (slug) => `/${slug}/settings/credits`,
+    requiresAiCredits: true,
   },
 ];
 
 export const COMMAND_SECTIONS: CommandSection[] = [
   "Navigation",
+  "GEO",
   "Workspace",
   "Automation",
   "Manage",
   "Settings",
 ];
 
-export function commandRoutesForAI(slug: string) {
-  return COMMAND_ROUTES.map((r) => ({
+export function isCommandRouteAvailable(
+  route: CommandRoute,
+  hasAiCredits: boolean
+): boolean {
+  return !route.requiresAiCredits || hasAiCredits;
+}
+
+export function commandRoutesForAI(slug: string, hasAiCredits: boolean) {
+  return COMMAND_ROUTES.filter((r) =>
+    isCommandRouteAvailable(r, hasAiCredits)
+  ).map((r) => ({
     id: r.id,
     label: r.label,
     path: r.path(slug),

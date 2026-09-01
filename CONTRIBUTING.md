@@ -73,13 +73,13 @@ cp .env.example .env
 4. Fill in the required values in `.env`:
 
 - `DATABASE_URL`
-- `BETTER_AUTH_SECRET`
+- `WORKOS_API_KEY`, `WORKOS_CLIENT_ID`, `WORKOS_COOKIE_PASSWORD` (auth is WorkOS AuthKit)
 - OAuth provider credentials
 - Any provider keys needed for the area you're working on
 
 Helpful provider docs:
 
-- Better Auth: https://better-auth.com
+- WorkOS AuthKit: https://workos.com/docs/authkit
 - Neon: https://neon.com
 - PlanetScale (if using PlanetScale Postgres): https://planetscale.com
 - Upstash (Redis/QStash): https://upstash.com
@@ -201,7 +201,7 @@ We keep both in sync so the website and markdown endpoint (`/markdown`) say the 
 ## Code Style
 
 - Follow existing patterns in the touched area.
-- Use `ultracite`/Biome formatting and linting via repo scripts.
+- Use Ultracite's Oxlint and Oxfmt provider via the repository scripts.
 - Prefer readable, self-documenting code.
 - Add comments only when logic is not obvious.
 

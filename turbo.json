@@ -1,33 +1,33 @@
 {
-  "$schema": "https://v2-9-18.turborepo.dev/schema.json",
+  "$schema": "https://v2-10-11.turborepo.dev/schema.json",
   "ui": "tui",
   "globalEnv": [
     "AI_GATEWAY_API_KEY",
-    "ALLOW_UNMETERED_AI_IN_DEVELOPMENT",
     "APP_URL",
     "AUTUMN_PROD_SECRET_KEY",
     "AUTUMN_SECRET_KEY",
-    "BYDEFAULT_TOKEN",
-    "BETTER_AUTH_SECRET",
-    "BETTER_AUTH_URL",
-    "CONSOLE_BETTER_AUTH_URL",
+    "WORKOS_API_KEY",
+    "WORKOS_CLIENT_ID",
+    "WORKOS_COOKIE_PASSWORD",
+    "WORKOS_COOKIE_DOMAIN",
+    "INTERNAL_WORKFLOW_SECRET",
+    "NEXT_PUBLIC_WORKOS_REDIRECT_URI",
+    "WORKOS_WEBHOOK_SECRET",
+    "WORKOS_AUTHKIT_DOMAIN",
     "DATABASE_URL",
     "CONTEXT_DEV_API_KEY",
     "GITHUB_APP_ID",
     "GITHUB_APP_PRIVATE_KEY",
     "GITHUB_APP_SLUG",
-    "GITHUB_CLIENT_ID",
-    "GITHUB_CLIENT_SECRET",
     "GITHUB_TOKEN",
     "STAR_VIDEO_GITHUB_CLIENT_ID",
     "STAR_VIDEO_GITHUB_CLIENT_SECRET",
-    "GOOGLE_CLIENT_ID",
-    "GOOGLE_CLIENT_SECRET",
+    "GOOGLE_SEARCH_CONSOLE_CLIENT_ID",
+    "GOOGLE_SEARCH_CONSOLE_CLIENT_SECRET",
     "INTEGRATION_ENCRYPTION_KEY",
     "OPENROUTER_API_KEY",
     "NEXT_PUBLIC_POSTHOG_HOST",
     "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN",
-    "QSTASH_URL",
     "QSTASH_CURRENT_SIGNING_KEY",
     "QSTASH_NEXT_SIGNING_KEY",
     "QSTASH_TOKEN",
@@ -45,7 +45,15 @@
     "DO_NOT_TRACK",
     "UNKEY_ROOT_KEY",
     "UNKEY_API_ID",
+    "PORT",
     "TWITTER_BEARER_TOKEN",
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "PERPLEXITY_API_KEY",
+    "CURSOR_API_KEY",
+    "TINYBIRD_TOKEN",
+    "TINYBIRD_BASE_URL",
+    "TINYBIRD_URL",
     "POST_FOR_ME_API_KEY",
     "POST_FOR_ME_API_KEY_TWITTER",
     "POST_FOR_ME_API_KEY_LINKEDIN",
@@ -57,6 +65,7 @@
     "LINEAR_CLIENT_SECRET",
     "AXIOM_TOKEN",
     "AXIOM_AI_DATASET",
+    "AXIOM_GEO_DATASET",
     "AXIOM_ORG_ID",
     "AI_SDK_DEVTOOLS",
     "AI_SDK_DEVTOOLS_PORT",
@@ -84,7 +93,13 @@
     "EVE_NOTRA_AGENT_PASSWORD",
     "NOTRA_AGENT_CHAT",
     "NOTRA_AGENT_CONTENT",
-    "API_VERCEL_PROJECT_NAME"
+    "API_VERCEL_PROJECT_NAME",
+    "BEACON_INGEST_SECRET",
+    "GEO_INGEST_SECRET",
+    "FEEDBACK_INGEST_SECRET",
+    "FEEDBACK_API_URL",
+    "NOTRA_GEO_TOKEN",
+    "NOTRA_GEO_ENDPOINT"
   ],
   "envMode": "strict",
   "tasks": {
@@ -92,12 +107,12 @@
       "dependsOn": ["^transit"]
     },
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["transit"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".vercel/**"]
     },
     "@notra/onboarding-agent#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "transit"],
       "outputs": [
         ".output/**",
         ".vercel/output/**",
@@ -111,12 +126,15 @@
     "knip": {
       "dependsOn": ["transit"]
     },
+    "test": {
+      "dependsOn": ["transit"]
+    },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "@notra/agent#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "transit"],
       "outputs": [
         ".output/**",
         ".vercel/output/**",

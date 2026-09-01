@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
+
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 
@@ -15,7 +16,7 @@ export function BrandIdentityPageSkeleton() {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               Brand Identity
             </h1>
             <p className="text-muted-foreground">
@@ -31,13 +32,13 @@ export function BrandIdentityPageSkeleton() {
         <div className="grid gap-6 lg:grid-cols-2">
           {Array.from({ length: 2 }).map((_, i) => (
             <div
-              className="rounded-lg border border-border/80 bg-muted/80 p-2"
+              className="border-border/80 bg-muted/80 rounded-lg border p-2"
               key={`${id}-card-${i}`}
             >
               <div className="px-2 py-1.5">
                 <Skeleton className="h-6 w-32" />
               </div>
-              <div className="space-y-3 rounded-lg border border-border/80 bg-background px-4 py-3">
+              <div className="border-border/80 bg-background space-y-3 rounded-lg border px-4 py-3">
                 {Array.from({ length: 5 }).map((_, j) => (
                   <Skeleton
                     className={`h-4 ${j === 4 ? "w-2/3" : "w-full"}`}
@@ -47,11 +48,11 @@ export function BrandIdentityPageSkeleton() {
               </div>
             </div>
           ))}
-          <div className="rounded-lg border border-border/80 bg-muted/80 p-2 lg:col-span-2">
+          <div className="border-border/80 bg-muted/80 rounded-lg border p-2 lg:col-span-2">
             <div className="px-2 py-1.5">
               <Skeleton className="h-6 w-32" />
             </div>
-            <div className="space-y-3 rounded-lg border border-border/80 bg-background px-4 py-3">
+            <div className="border-border/80 bg-background space-y-3 rounded-lg border px-4 py-3">
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-full" />
               <Skeleton className="h-4 w-2/3" />

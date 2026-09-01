@@ -11,12 +11,15 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import { Loader2Icon } from "lucide-react";
 import { useId } from "react";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { IrisReadinessList } from "@/components/iris/iris-readiness-list";
 import { IrisRunCard } from "@/components/iris/iris-run-card";
 import { IrisSignalsList } from "@/components/iris/iris-signals-list";
 import { IrisStatsRow } from "@/components/iris/iris-stats";
+import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
 import { cn } from "@/lib/utils";
 import type { IrisRunningStateProps } from "@/types/iris";
 
@@ -54,8 +57,8 @@ export function IrisRunningState({
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">Iris</h1>
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <h1 className="text-3xl font-bold tracking-tight">Iris</h1>
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <span className="relative flex size-2">
               {isPaused ? null : (
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/60" />
@@ -137,6 +140,12 @@ export function IrisRunningState({
           {!(runsState.isPending || runsState.isError) && runs.length === 0 ? (
             <EmptyState
               description="Iris is watching your sources. The first report shows up here as soon as something is worth announcing."
+              preview={
+                <EmptyStateCardsPreview
+                  count={EMPTY_STATE_CARD_COUNT.run}
+                  variant="run"
+                />
+              }
               title="No runs yet"
             />
           ) : null}

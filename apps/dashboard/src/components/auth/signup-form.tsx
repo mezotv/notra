@@ -1,24 +1,39 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { AuthEmailField } from "@notra/ui/components/shared/auth/auth-email-field";
+import { AuthFormError } from "@notra/ui/components/shared/auth/auth-form-error";
+import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
+import { AuthOrDivider } from "@notra/ui/components/shared/auth/auth-or-divider";
+import { AuthPasswordField } from "@notra/ui/components/shared/auth/auth-password-field";
+import { AuthSocialButtons } from "@notra/ui/components/shared/auth/auth-social-buttons";
+import { EmailVerificationForm } from "@notra/ui/components/shared/auth/email-verification-form";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Separator } from "@notra/ui/components/ui/separator";
+import type {
+  AuthMethod,
+  PendingVerification,
+  SocialProvider,
+} from "@notra/ui/lib/auth-types";
+import { setLastUsedLoginMethod } from "@notra/ui/lib/last-login-method";
 import { useForm } from "@tanstack/react-form";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useQueryStates } from "nuqs";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { AuthEmailField } from "@/components/auth/auth-email-field";
-import { AuthFormHeader } from "@/components/auth/auth-form-header";
-import { AuthOrDivider } from "@/components/auth/auth-or-divider";
-import { AuthPasswordField } from "@/components/auth/auth-password-field";
-import { AuthSocialButtons } from "@/components/auth/auth-social-buttons";
+
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
-import { authClient } from "@/lib/auth/client";
+import { SHOW_SIGNUP_CREDITS_BANNER } from "@/constants/signup-credits";
+import { trackEvent } from "@/lib/analytics/posthog-client";
+import {
+  signUpWithPasswordAction,
+  verifyEmailCodeAction,
+} from "@/lib/auth/password-actions";
+import { isNextRedirectError } from "@/lib/auth/redirect-error";
+import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { errorMessageOr } from "@/lib/utils";
 import { signupSchema } from "@/schemas/auth/credentials";
-import type { SocialProvider } from "@/types/auth/form-ui";
-import type { AuthMethod } from "@/types/auth/method";
 import {
   marketingAttributionSearchParams,
   persistMarketingAttribution,
@@ -47,6 +62,8 @@ export function SignupForm({
 }: SignupFormProps) {
   const [authMethod, setAuthMethod] = useState<AuthMethod | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [pendingVerification, setPendingVerification] =
+    useState<PendingVerification | null>(null);
   const authInFlightRef = useRef(false);
   const [attributionParams] = useQueryStates(marketingAttributionSearchParams, {
     history: "replace",
@@ -88,7 +105,7 @@ export function SignupForm({
     return query ? `/callback?${query}` : "/callback";
   }
 
-  async function handleSocialSignup(provider: SocialProvider) {
+  function handleSocialSignup(provider: SocialProvider) {
     if (authInFlightRef.current) {
       return;
     }
@@ -96,19 +113,24 @@ export function SignupForm({
     setFormError(null);
     authInFlightRef.current = true;
     flushSync(() => setAuthMethod(provider));
-    try {
-      persistMarketingAttribution({ ...attribution, signupMethod: provider });
-
-      await authClient.signIn.social({
-        provider,
-        callbackURL: buildCallbackUrl(provider),
-      });
-    } catch (error) {
-      console.error("Social signup error:", error);
-      setFormError(SIGNUP_ERROR_FALLBACK);
+    persistMarketingAttribution({ ...attribution, signupMethod: provider });
+    trackEvent(POSTHOG_EVENTS.SIGNUP_STARTED, {
+      method: provider,
+      db_source: attribution.source ?? null,
+      landing_page_h1_variant: attribution.landingPageH1Variant ?? null,
+    });
+    setLastUsedLoginMethod(provider);
+    startSocialSignInAction({
+      provider,
+      returnTo: buildCallbackUrl(provider),
+    }).catch((error) => {
+      if (isNextRedirectError(error)) {
+        return;
+      }
       authInFlightRef.current = false;
       setAuthMethod(null);
-    }
+      setFormError("Social sign-up failed. Please try again.");
+    });
   }
 
   const form = useForm({
@@ -129,32 +151,47 @@ export function SignupForm({
       setFormError(null);
       authInFlightRef.current = true;
       flushSync(() => setAuthMethod("email"));
+      trackEvent(POSTHOG_EVENTS.SIGNUP_STARTED, {
+        method: "password",
+        db_source: attribution.source ?? null,
+        landing_page_h1_variant: attribution.landingPageH1Variant ?? null,
+      });
       const fallbackName = parsed.data.email.split("@")[0] || "User";
       try {
-        const result = await authClient.signUp.email({
+        const result = await signUpWithPasswordAction({
           email: parsed.data.email,
           password: parsed.data.password,
           name: fallbackName,
+          returnTo: buildCallbackUrl("email"),
         });
 
-        if (result.error) {
-          setFormError(
-            errorMessageOr(result.error.message, SIGNUP_ERROR_FALLBACK)
-          );
+        if (result.status === "error") {
+          setFormError(errorMessageOr(result.message, SIGNUP_ERROR_FALLBACK));
           authInFlightRef.current = false;
           setAuthMethod(null);
           return;
         }
 
-        // Call onSuccess callback if provided, otherwise redirect through callback
+        setLastUsedLoginMethod("email");
+        persistMarketingAttribution({
+          ...attribution,
+          signupMethod: "email",
+        });
+
+        if (result.status === "verification-required") {
+          authInFlightRef.current = false;
+          setAuthMethod(null);
+          setPendingVerification({
+            pendingAuthenticationToken: result.pendingAuthenticationToken,
+            email: result.email,
+          });
+          return;
+        }
+
         if (onSuccess) {
           onSuccess();
         } else {
-          persistMarketingAttribution({
-            ...attribution,
-            signupMethod: "email",
-          });
-          window.location.assign(buildCallbackUrl("email"));
+          window.location.assign(result.redirectTo);
         }
       } catch (error) {
         console.error("Email signup error:", error);
@@ -165,11 +202,25 @@ export function SignupForm({
     },
   });
 
+  if (pendingVerification) {
+    return (
+      <EmailVerificationForm
+        email={pendingVerification.email}
+        onSuccess={onSuccess}
+        pendingAuthenticationToken={
+          pendingVerification.pendingAuthenticationToken
+        }
+        returnTo={buildCallbackUrl("email")}
+        verifyEmailCode={verifyEmailCodeAction}
+      />
+    );
+  }
+
   return (
     <div className="flex w-full flex-col gap-5">
       <AuthFormHeader description={description} title={title} />
 
-      <SignupCreditsBanner />
+      {SHOW_SIGNUP_CREDITS_BANNER && <SignupCreditsBanner />}
 
       <div className="grid gap-4">
         <AuthSocialButtons
@@ -190,7 +241,7 @@ export function SignupForm({
             form.handleSubmit();
           }}
         >
-          <div className="grid gap-1">
+          <div className="grid gap-3">
             <form.Field
               name="email"
               validators={{
@@ -234,22 +285,17 @@ export function SignupForm({
                   id={field.name}
                   onBlur={field.handleBlur}
                   onChange={field.handleChange}
-                  placeholder="At least 8 characters"
+                  placeholder="At least 10 characters"
                   value={field.state.value}
                 />
               )}
             </form.Field>
           </div>
 
-          <p
-            aria-live="polite"
-            className="mt-1 min-h-5 text-destructive text-sm"
-          >
-            {formError}
-          </p>
+          <AuthFormError className="mt-4" error={formError} />
 
           <CtaButton
-            className="mt-1 w-full"
+            className="mt-4 w-full"
             disabled={isAuthLoading}
             type="submit"
           >
@@ -266,12 +312,12 @@ export function SignupForm({
       </div>
 
       {(showForgotPasswordLink || showLoginLink) && (
-        <div className="flex flex-col gap-4 px-8 text-center text-muted-foreground text-xs">
+        <div className="text-muted-foreground flex flex-col gap-4 px-8 text-center text-xs">
           {showForgotPasswordLink && (
             <p>
               Forgot your password?{" "}
               <Link
-                className="underline underline-offset-4 hover:text-primary"
+                className="hover:text-primary underline underline-offset-4"
                 href="/forgot-password"
               >
                 Reset Your Password
@@ -283,7 +329,7 @@ export function SignupForm({
             <p>
               Already have an account?{" "}
               <Link
-                className="underline underline-offset-4 hover:text-primary"
+                className="hover:text-primary underline underline-offset-4"
                 href="/login"
               >
                 Log in

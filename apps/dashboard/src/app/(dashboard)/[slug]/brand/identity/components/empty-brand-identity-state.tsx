@@ -7,8 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@notra/ui/components/ui/card";
+
 import { PageContainer } from "@/components/layout/container";
 import { getModalDescription, getModalTitle } from "@/utils/brand-identity";
+
 import { ModalContent } from "./modal-content";
 
 interface EmptyBrandIdentityStateProps {
@@ -39,7 +41,7 @@ export function EmptyBrandIdentityState({
         <div className="relative min-h-125">
           <div className="pointer-events-none blur-sm">
             <div className="mb-6 space-y-1">
-              <h1 className="font-bold text-3xl tracking-tight">
+              <h1 className="text-3xl font-bold tracking-tight">
                 Brand Identity
               </h1>
               <p className="text-muted-foreground">
@@ -47,15 +49,15 @@ export function EmptyBrandIdentityState({
               </p>
             </div>
             <div className="space-y-8">
-              <div className="h-16 w-80 rounded-lg border bg-muted/20" />
-              <div className="h-16 w-80 rounded-lg border bg-muted/20" />
-              <div className="h-32 w-full max-w-xl rounded-lg border bg-muted/20" />
-              <div className="h-24 w-80 rounded-lg border bg-muted/20" />
+              <div className="bg-muted/20 h-16 w-80 rounded-lg border" />
+              <div className="bg-muted/20 h-16 w-80 rounded-lg border" />
+              <div className="bg-muted/20 h-32 w-full max-w-xl rounded-lg border" />
+              <div className="bg-muted/20 h-24 w-80 rounded-lg border" />
             </div>
           </div>
 
           <div className="absolute inset-0 flex items-center justify-center">
-            <Card className="w-full max-w-md border-border/50 shadow-xs">
+            <Card className="border-border/50 w-full max-w-md shadow-xs">
               <CardHeader className="text-center">
                 <CardTitle>
                   {getModalTitle(false, isAnalyzing, effectiveProgress.status)}

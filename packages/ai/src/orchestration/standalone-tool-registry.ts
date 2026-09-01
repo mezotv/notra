@@ -5,6 +5,14 @@ import {
 } from "@notra/ai/tools/brand-references";
 import { exampleTool } from "@notra/ai/tools/example";
 import {
+  createGetGeoCompetitorShareTool,
+  createGetGeoOverviewTool,
+  createGetGeoProjectContextTool,
+  createGetGeoPromptResultsTool,
+  createGetGeoTimeseriesTool,
+  createListGeoProjectsTool,
+} from "@notra/ai/tools/geo";
+import {
   createGetCommitsByTimeframeTool,
   createGetPullRequestsTool,
   createGetReleaseByTagTool,
@@ -110,6 +118,16 @@ export function buildStandaloneToolSet(
     organizationId,
   });
   tools.addBrandReference = createAddBrandReferenceTool({ organizationId });
+  tools.listGeoProjects = createListGeoProjectsTool({ organizationId });
+  tools.getGeoOverview = createGetGeoOverviewTool({ organizationId });
+  tools.getGeoTimeseries = createGetGeoTimeseriesTool({ organizationId });
+  tools.getGeoPromptResults = createGetGeoPromptResultsTool({ organizationId });
+  tools.getGeoCompetitorShare = createGetGeoCompetitorShareTool({
+    organizationId,
+  });
+  tools.getGeoProjectContext = createGetGeoProjectContextTool({
+    organizationId,
+  });
 
   descriptions.push(
     userId
@@ -121,6 +139,9 @@ export function buildStandaloneToolSet(
   );
   descriptions.push(
     "**Brand References**: When the user tells you they just published a post and shares its URL, congratulate them, then ask if they want to save it as a brand reference. Only after they agree, call addBrandReference with the post content, type, and URL."
+  );
+  descriptions.push(
+    "**GEO Analytics**: List GEO projects and inspect AI visibility summaries, trends, prompt-level results, competitor share, and detailed project context using listGeoProjects, getGeoOverview, getGeoTimeseries, getGeoPromptResults, getGeoCompetitorShare, and getGeoProjectContext"
   );
 
   tools.listAvailableSkills = listAvailableSkills({ organizationId });

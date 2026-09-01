@@ -17,6 +17,7 @@ import {
 } from "@notra/ui/components/ui/card";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { useMemo } from "react";
+
 import { Button } from "@/components/button";
 import type { GitHubAccountCardProps } from "@/types/integrations/github";
 
@@ -61,9 +62,9 @@ export function GitHubAccountCard({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex items-center justify-between">
-          <p className="font-medium text-sm">
+          <p className="text-sm font-medium">
             Connected repositories
-            <span className="ml-1.5 text-muted-foreground">
+            <span className="text-muted-foreground ml-1.5">
               {selectedRepositories.length}
             </span>
           </p>
@@ -78,23 +79,23 @@ export function GitHubAccountCard({
           </Button>
         </div>
         {selectedRepositories.length === 0 ? (
-          <p className="rounded-lg border border-dashed px-3 py-6 text-center text-muted-foreground text-sm">
+          <p className="text-muted-foreground rounded-lg border border-dashed px-3 py-6 text-center text-sm">
             No repositories selected yet.
           </p>
         ) : (
           <ul className="divide-y rounded-lg border">
             {selectedRepositories.map((repo) => (
               <li className="flex items-center gap-3 px-3 py-2.5" key={repo.id}>
-                <Github className="size-4 shrink-0 text-muted-foreground" />
+                <Github className="text-muted-foreground size-4 shrink-0" />
                 <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                  <span className="min-w-0 truncate font-medium text-sm">
+                  <span className="min-w-0 truncate text-sm font-medium">
                     {repo.fullName}
                   </span>
                   {repo.private ? (
                     <>
                       <HugeiconsIcon
                         aria-hidden="true"
-                        className="size-3.5 shrink-0 text-muted-foreground"
+                        className="text-muted-foreground size-3.5 shrink-0"
                         icon={LockKeyIcon}
                       />
                       <span className="sr-only">Private repository</span>

@@ -1,4 +1,5 @@
 import { defineAgent } from "eve";
+
 import { GPT_5_5_CONTEXT_WINDOW_TOKENS } from "../../lib/constants/models";
 import { researchBriefSchema } from "../../lib/schemas/research-brief";
 import { createAgentModel } from "../../lib/utils/model";

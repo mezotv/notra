@@ -41,9 +41,8 @@ export function markToastShown(toastKey: string) {
     return;
   }
 
-  const recentToastKeys = Array.from(dedupedToastKeys).slice(
-    -TOAST_DEDUPE_LIMIT
-  );
+  const recentToastKeys =
+    Array.from(dedupedToastKeys).slice(-TOAST_DEDUPE_LIMIT);
   dedupedToastKeys.clear();
   for (const recentToastKey of recentToastKeys) {
     dedupedToastKeys.add(recentToastKey);

@@ -1,5 +1,6 @@
 import { updatePostRecord } from "@notra/ai/utils/post-service";
 import { defineTool } from "eve/tools";
+
 import { updatePostInputSchema } from "../schemas/assistant-tools";
 import { requireOrganizationId } from "../utils/organization";
 

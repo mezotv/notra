@@ -1,11 +1,17 @@
 "use client";
 
 import { SidebarInset, SidebarProvider } from "@notra/ui/components/ui/sidebar";
+import { cn } from "@notra/ui/lib/utils";
+import { useReducedMotion } from "motion/react";
+import dynamic from "next/dynamic";
+import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { SubscriptionGate } from "@/components/billing/subscription-gate";
 import { DashboardSidebar } from "@/components/dashboard/app-sidebar";
 import { SiteHeader } from "@/components/dashboard/header";
-import { OnboardingAgentBanner } from "@/components/dashboard/onboarding-agent-banner";
+import { RestoreSidebarHome } from "@/components/dashboard/restore-sidebar-home";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { EVE_BANNER_HEIGHT } from "@/constants/onboarding-agent";
 import { RIGHT_PANEL_PORTAL_ID } from "@/constants/right-panel";
@@ -14,14 +20,23 @@ import {
   useOnboardingAgentRun,
   useRunOnboardingAgent,
 } from "@/lib/hooks/use-onboarding";
+import { useSidebarWidth } from "@/lib/hooks/use-sidebar-width";
 import type {
   DashboardShellProps,
+  DashboardSidebarStyle,
   DashboardShellStyle,
 } from "@/types/components/dashboard-shell";
+
+const OnboardingAgentBanner = dynamic(() =>
+  import("@/components/dashboard/onboarding-agent-banner").then(
+    (module) => module.OnboardingAgentBanner
+  )
+);
 
 export function DashboardShell({
   children,
   initialSidebarOpen,
+  initialSidebarWidth,
 }: DashboardShellProps) {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id ?? "";
@@ -31,12 +46,48 @@ export function DashboardShell({
     useOnboardingAgentBannerDismissal(organizationId);
   const running = data?.running ?? false;
   const canStart = !!data && !data.ran && !running && !dismissed;
-  const visible = running || canStart;
+  const bannerAvailable = running || canStart;
+  const [dismissingOrganizationId, setDismissingOrganizationId] = useState<
+    string | null
+  >(null);
+  const dismissing = dismissingOrganizationId === organizationId;
+  const visible = bannerAvailable && !dismissing;
+  const shouldReduceMotion = useReducedMotion();
   const starting =
     runAgent.isPending && runAgent.variables?.organizationId === organizationId;
   const shellStyle: DashboardShellStyle = {
     "--eve-banner-height": visible ? EVE_BANNER_HEIGHT : "0rem",
   };
+  const pathname = usePathname();
+  const mainScrollRef = useRef<HTMLDivElement>(null);
+  const [mainScrolled, setMainScrolled] = useState(false);
+  const {
+    finishSidebarResize,
+    setSidebarWidth,
+    sidebarResizing,
+    sidebarWidth,
+    startSidebarResize,
+  } = useSidebarWidth(initialSidebarWidth);
+
+  useEffect(() => {
+    setDismissingOrganizationId(null);
+  }, [organizationId]);
+
+  useEffect(() => {
+    const el = mainScrollRef.current;
+    if (!el) {
+      return;
+    }
+
+    const sync = () => {
+      const next = el.scrollTop > 0;
+      setMainScrolled((current) => (current === next ? current : next));
+    };
+
+    sync();
+    el.addEventListener("scroll", sync, { passive: true });
+    return () => el.removeEventListener("scroll", sync);
+  }, [pathname]);
 
   const handleStart = () => {
     if (!organizationId || starting) {
@@ -53,31 +104,102 @@ export function DashboardShell({
     );
   };
 
+  const handleBannerExitComplete = () => {
+    if (!dismissing) {
+      return;
+    }
+
+    setDismissingOrganizationId(null);
+  };
+
+  const handleDismiss = () => {
+    if (shouldReduceMotion) {
+      dismiss();
+      return;
+    }
+
+    setDismissingOrganizationId(organizationId);
+    dismiss();
+  };
+
+  const sidebarStyle: DashboardSidebarStyle = {
+    "--sidebar-width": `${sidebarWidth}px`,
+  };
+
   return (
     <div
       className="flex h-svh flex-col overflow-hidden overscroll-none"
       style={shellStyle}
     >
-      {visible ? (
-        <OnboardingAgentBanner
-          onDismiss={dismiss}
-          onStart={handleStart}
-          starting={starting}
-          state={running ? "running" : "idle"}
-        />
+      {bannerAvailable || dismissing ? (
+        <div
+          className={cn(
+            "w-full shrink-0 overflow-hidden transition-[max-height,opacity] duration-200 ease-out motion-reduce:transition-none",
+            visible ? "opacity-100" : "opacity-0"
+          )}
+          onTransitionEnd={(event) => {
+            if (
+              event.target === event.currentTarget &&
+              event.propertyName === "max-height"
+            ) {
+              handleBannerExitComplete();
+            }
+          }}
+          style={{ maxHeight: visible ? EVE_BANNER_HEIGHT : "0rem" }}
+        >
+          <div style={{ height: EVE_BANNER_HEIGHT }}>
+            <OnboardingAgentBanner
+              onDismiss={handleDismiss}
+              onStart={handleStart}
+              starting={starting}
+              state={running ? "running" : "idle"}
+            />
+          </div>
+        </div>
       ) : null}
       <SidebarProvider
-        className="min-h-0! flex-1 overflow-hidden overscroll-none"
+        className={cn(
+          "min-h-0! flex-1 overflow-hidden overscroll-none",
+          sidebarResizing &&
+            "[&_[data-slot=sidebar-gap]]:transition-none! [&_[data-slot=sidebar-inset]]:transition-none!"
+        )}
         defaultOpen={initialSidebarOpen}
+        style={sidebarStyle}
       >
         <DashboardSidebar
-          className="md:top-(--eve-banner-height) md:h-[calc(100svh-var(--eve-banner-height))]"
+          className={cn(
+            "transition-[left,right,width,top,height] [transition-duration:var(--sidebar-duration),var(--sidebar-duration),var(--sidebar-duration),200ms,200ms] [transition-timing-function:var(--sidebar-ease),var(--sidebar-ease),var(--sidebar-ease),ease-out,ease-out] motion-reduce:transition-none md:top-(--eve-banner-height) md:h-[calc(100svh-var(--eve-banner-height))]",
+            visible && "md:pt-0!"
+          )}
+          onWidthChange={setSidebarWidth}
+          onWidthChangeEnd={finishSidebarResize}
+          onWidthChangeStart={startSidebarResize}
+          resizing={sidebarResizing}
           variant="inset"
+          width={sidebarWidth}
         />
-        <SidebarInset className="min-h-0 min-w-0 overflow-hidden">
+        <SidebarInset
+          className={cn(
+            "border-sidebar-border min-h-0 min-w-0 overflow-hidden",
+            visible && "md:mt-0! md:rounded-t-none! md:border-t-0!"
+          )}
+        >
           <SiteHeader />
-          <div className="@container/main flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto overflow-x-hidden overscroll-contain">
-            <SubscriptionGate>{children}</SubscriptionGate>
+          <RestoreSidebarHome />
+          <div className="bg-muted relative flex min-h-0 flex-1 flex-col">
+            <div
+              className="scrollbar-stable scrollbar-floating border-sidebar-border bg-background @container/main -mx-px flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-x-hidden overflow-y-auto overscroll-contain rounded-t-2xl border border-b-0"
+              ref={mainScrollRef}
+            >
+              <SubscriptionGate>{children}</SubscriptionGate>
+            </div>
+            <div
+              aria-hidden
+              className={cn(
+                "from-background pointer-events-none absolute -inset-x-px top-px z-10 h-12 rounded-t-[calc(1rem-1px)] bg-linear-to-b from-20% to-transparent transition-opacity duration-200 ease-out motion-reduce:transition-none",
+                mainScrolled ? "opacity-100" : "opacity-0"
+              )}
+            />
           </div>
         </SidebarInset>
         <div className="contents" id={RIGHT_PANEL_PORTAL_ID} />

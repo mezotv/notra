@@ -33,6 +33,7 @@ import { RefreshCcwIcon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { MAX_MCP_HEADERS } from "@/schemas/integrations";
@@ -255,7 +256,7 @@ function CredentialEditor({
   return (
     <div className="space-y-3 rounded-lg border p-4">
       <div>
-        <h3 className="font-medium text-sm">API credentials</h3>
+        <h3 className="text-sm font-medium">API credentials</h3>
         <p className="text-muted-foreground text-xs">
           Stored values stay hidden. Enter replacements to update them.
         </p>
@@ -426,7 +427,7 @@ function ConnectionDetail({ children, label }: McpConnectionDetailProps) {
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
       <span className="font-medium">{label}</span>
-      <span className="min-w-0 text-muted-foreground">{children}</span>
+      <span className="text-muted-foreground min-w-0">{children}</span>
     </div>
   );
 }
@@ -439,14 +440,14 @@ function StoreIntegrationDialogLogo({
 
   if (!(lightLogo && darkLogo)) {
     return (
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted font-medium text-muted-foreground text-xs">
+      <span className="bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg text-xs font-medium">
         {integration.name.trim().slice(0, 2).toUpperCase() || "?"}
       </span>
     );
   }
 
   return (
-    <div className="size-9 shrink-0 overflow-hidden rounded-lg bg-muted">
+    <div className="bg-muted size-9 shrink-0 overflow-hidden rounded-lg">
       <Image
         alt={`${integration.name} logo`}
         className="size-9 object-contain dark:hidden"

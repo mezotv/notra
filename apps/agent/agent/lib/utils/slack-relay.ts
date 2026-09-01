@@ -1,6 +1,7 @@
 import { SLACK_RELAY_EVENT_TYPE } from "@notra/ai/constants/chat";
 import { slackRelayMetadataSchema } from "@notra/ai/schemas/chat";
 import type { SlackEvent, SlackEventEnvelope } from "eve/channels/slack";
+
 import type { SlackDashboardRelay } from "../types/slack";
 import {
   isChannelAllowed,

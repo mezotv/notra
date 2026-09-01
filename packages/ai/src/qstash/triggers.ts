@@ -1,19 +1,14 @@
 import { Client as QStashClient } from "@upstash/qstash";
-import { Client as WorkflowClient } from "@upstash/workflow";
-import type { BrandGuidelinesWorkflowPayload } from "../types/brand-guidelines";
-import type { OnboardingAgentWorkflowPayload } from "../types/onboarding-agent";
+
+import type {
+  CreateQstashRouteScheduleProps,
+  PublishQstashRouteProps,
+} from "../types/qstash";
 import {
   getConfiguredAppUrl,
   getConfiguredWorkflowUrl,
   requireConfiguredAppUrl,
 } from "../utils/url";
-
-export type WorkflowDelay =
-  | number
-  | `${bigint}s`
-  | `${bigint}m`
-  | `${bigint}h`
-  | `${bigint}d`;
 
 export interface CreateQstashScheduleProps {
   triggerId: string;
@@ -27,15 +22,6 @@ export interface TriggerCronConfig {
   minute?: number;
   dayOfWeek?: number;
   dayOfMonth?: number;
-}
-
-export interface EventWorkflowPayloadInput {
-  triggerId: string;
-  eventType: string;
-  eventAction: string;
-  eventData: Record<string, unknown>;
-  repositoryId: string;
-  deliveryId?: string;
 }
 
 function getQstashToken() {
@@ -56,10 +42,6 @@ export function getBaseUrl() {
 
 function getQStashClient() {
   return new QStashClient({ token: getQstashToken() });
-}
-
-function getWorkflowClient() {
-  return new WorkflowClient({ token: getQstashToken() });
 }
 
 export function buildCronExpression(config?: TriggerCronConfig) {
@@ -144,57 +126,54 @@ export async function createQstashSchedule({
   return resolvedScheduleId;
 }
 
+export async function createQstashRouteSchedule({
+  path,
+  cron,
+  body,
+  scheduleId,
+}: CreateQstashRouteScheduleProps) {
+  const client = getQStashClient();
+  const appUrl = getAppUrl();
+
+  const result = await client.schedules.create({
+    ...(scheduleId && { scheduleId }),
+    destination: `${appUrl}${path}`,
+    cron,
+    body: JSON.stringify(body),
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  const resolvedScheduleId = result.scheduleId ?? scheduleId;
+
+  if (!resolvedScheduleId) {
+    throw new Error("QStash schedule id was not returned");
+  }
+
+  return resolvedScheduleId;
+}
+
 export async function deleteQstashSchedule(scheduleId: string) {
   const client = getQStashClient();
   await client.schedules.delete(scheduleId);
 }
 
-export async function triggerScheduleNow(
-  triggerId: string,
-  options?: { delay?: WorkflowDelay; manual?: boolean }
-) {
-  const client = getWorkflowClient();
-  const appUrl = getAppUrl();
-
-  const destination = `${appUrl}/api/workflows/schedule`;
-
-  const result = await client.trigger({
-    url: destination,
-    body: { triggerId, ...(options?.manual && { manual: true }) },
-    ...(options?.delay && { delay: options.delay }),
+export async function publishQstashRoute({
+  path,
+  body,
+  delaySeconds,
+}: PublishQstashRouteProps) {
+  const client = getQStashClient();
+  const result = await client.publishJSON({
+    url: `${getAppUrl()}${path}`,
+    body,
+    delay: delaySeconds,
   });
-
-  return result.workflowRunId;
+  return result.messageId;
 }
 
-export async function triggerEventNow(
-  payload: EventWorkflowPayloadInput,
-  options?: { delay?: WorkflowDelay }
-) {
-  const client = getWorkflowClient();
-  const appUrl = getAppUrl();
-
-  const destination = `${appUrl}/api/workflows/event`;
-
-  const result = await client.trigger({
-    url: destination,
-    body: payload,
-    ...(options?.delay && { delay: options.delay }),
-  });
-
-  return result.workflowRunId;
-}
-
-export async function triggerOnDemandContent(payload: unknown) {
-  const client = getWorkflowClient();
-  const appUrl = getAppUrl();
-
-  const destination = `${appUrl}/api/workflows/on-demand-content`;
-
-  const result = await client.trigger({
-    url: destination,
-    body: payload,
-  });
-
-  return result.workflowRunId;
+export async function deleteQstashMessage(messageId: string) {
+  const client = getQStashClient();
+  await client.messages.delete(messageId);
 }

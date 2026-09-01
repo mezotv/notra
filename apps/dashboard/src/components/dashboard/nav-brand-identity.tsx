@@ -8,6 +8,8 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  SidebarGroup,
+  SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
@@ -15,6 +17,7 @@ import {
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useSyncExternalStore } from "react";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useReferences } from "@/lib/hooks/use-brand-references";
@@ -23,7 +26,8 @@ import {
   findSelectedBrandIdentity,
   readStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
-import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
+
+import { SidebarLabel } from "./sidebar-label";
 
 function subscribeToStorage(onStoreChange: () => void) {
   window.addEventListener("storage", onStoreChange);
@@ -94,7 +98,10 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
     : `${brandBasePath}?view=guidelines`;
 
   return (
-    <CollapsibleSidebarGroup label="Brand Identity">
+    <SidebarGroup>
+      <SidebarGroupLabel>
+        <SidebarLabel>Brand Identity</SidebarLabel>
+      </SidebarGroupLabel>
       <SidebarMenu>
         <SidebarMenuItem>
           <SidebarMenuButton
@@ -105,9 +112,9 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
               !isGuidelinesView
             }
             render={
-              <Link href={companyInfoHref}>
+              <Link href={companyInfoHref} replace>
                 <HugeiconsIcon icon={CorporateIcon} />
-                <span>Company Info</span>
+                <SidebarLabel>Company Info</SidebarLabel>
               </Link>
             }
             tooltip="Company Info"
@@ -117,9 +124,9 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           <SidebarMenuButton
             isActive={isGuidelinesView}
             render={
-              <Link href={guidelinesHref}>
+              <Link href={guidelinesHref} replace>
                 <HugeiconsIcon icon={PaintBoardIcon} />
-                <span>Brand Guidelines</span>
+                <SidebarLabel>Brand Guidelines</SidebarLabel>
               </Link>
             }
             tooltip="Brand Guidelines"
@@ -129,11 +136,11 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           <SidebarMenuButton
             isActive={isReferencesView}
             render={
-              <Link href={referencesHref}>
+              <Link href={referencesHref} replace>
                 <HugeiconsIcon icon={Comment01Icon} />
-                <span>References</span>
+                <SidebarLabel>References</SidebarLabel>
                 {referenceCount > 0 ? (
-                  <span className="ml-auto text-muted-foreground text-xs tabular-nums group-data-[collapsible=icon]:hidden">
+                  <span className="text-muted-foreground ml-auto text-xs tabular-nums group-data-[collapsible=icon]:hidden">
                     {referenceCount}
                   </span>
                 ) : null}
@@ -146,11 +153,11 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           <SidebarMenuButton
             isActive={isSitemapView}
             render={
-              <Link href={sitemapHref}>
+              <Link href={sitemapHref} replace>
                 <HugeiconsIcon icon={GlobalIcon} />
-                <span>Sitemap</span>
+                <SidebarLabel>Sitemap</SidebarLabel>
                 {sitemapCount > 0 ? (
-                  <span className="ml-auto text-muted-foreground text-xs tabular-nums group-data-[collapsible=icon]:hidden">
+                  <span className="text-muted-foreground ml-auto text-xs tabular-nums group-data-[collapsible=icon]:hidden">
                     {sitemapCount}
                   </span>
                 ) : null}
@@ -160,6 +167,6 @@ export function NavBrandIdentity({ slug }: { slug: string }) {
           />
         </SidebarMenuItem>
       </SidebarMenu>
-    </CollapsibleSidebarGroup>
+    </SidebarGroup>
   );
 }

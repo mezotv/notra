@@ -1,4 +1,6 @@
 import { unstable_cache } from "next/cache";
+import type { NotraAuthor, NotraBlogPost } from "~types/blog";
+
 import {
   BLOG_AUTHOR_PATH,
   MARBLE_CACHE_KEYS,
@@ -6,7 +8,6 @@ import {
   MARBLE_REVALIDATE_SECONDS,
 } from "@/utils/constants";
 import { listMarbleAuthors } from "@/utils/marble";
-import type { NotraAuthor, NotraBlogPost } from "~types/blog";
 
 function normalizeAuthor(author: {
   id: string;

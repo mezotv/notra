@@ -14,6 +14,7 @@ import {
   brandGuidelineTokens,
 } from "@notra/db/schema";
 import { asc, eq } from "drizzle-orm";
+
 import {
   BRAND_GUIDELINE_DESKTOP_SCREENSHOT_CONFIG,
   BRAND_GUIDELINE_MAX_SCREENSHOT_SLICES,
@@ -21,7 +22,6 @@ import {
 } from "@/constants/brand-guidelines";
 import type {
   BrandGuidelineGenerationStepInput,
-  BrandGuidelineWorkflowStepResult,
   NormalizedScreenshot,
 } from "@/types/brand-guidelines";
 import {
@@ -433,22 +433,6 @@ export async function applyBrandGuidelineScreenshotsStep(
     .where(eq(brandGuidelines.id, guidelineId));
 
   return { screenshotCount: screenshots.length, sliceCount: slices.length };
-}
-
-export async function runBrandGuidelineStep(
-  step: () => Promise<unknown>,
-  fallbackError: string
-): Promise<BrandGuidelineWorkflowStepResult> {
-  try {
-    await step();
-    return { success: true };
-  } catch (error) {
-    console.error(`[Brand Guidelines] ${fallbackError}:`, error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : fallbackError,
-    };
-  }
 }
 
 export async function markBrandGuidelinesFailed(input: {

@@ -11,11 +11,13 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { cn } from "@notra/ui/lib/utils";
 import { useMemo, useState } from "react";
+
 import { Button } from "@/components/button";
 import type {
   GitHubAppRepository,
   RepositoryMultiSelectProps,
 } from "@/types/integrations/github";
+
 import { GitHubAccountSelect } from "./account-select";
 
 const MAX_VISIBLE_REPOSITORIES = 50;
@@ -96,7 +98,7 @@ export function RepositoryMultiSelect({
         ) : null}
         <div className="relative flex-1">
           <HugeiconsIcon
-            className="-translate-y-1/2 pointer-events-none absolute top-1/2 left-3 size-4 text-muted-foreground"
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2"
             icon={Search01Icon}
           />
           <Input
@@ -109,7 +111,7 @@ export function RepositoryMultiSelect({
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-lg border bg-background">
+      <div className="bg-background overflow-hidden rounded-lg border">
         <div className="max-h-80 overflow-y-auto">
           {visibleRepositories.length > 0 ? (
             visibleRepositories.map((repo) => {
@@ -123,17 +125,17 @@ export function RepositoryMultiSelect({
                   )}
                   key={repo.id}
                 >
-                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full border bg-muted/30 text-foreground">
+                  <span className="bg-muted/30 text-foreground flex size-7 shrink-0 items-center justify-center rounded-full border">
                     <Github className="size-3.5" />
                   </span>
 
                   <div className="flex min-w-0 flex-1 items-center gap-1.5">
-                    <span className="min-w-0 truncate font-medium text-sm">
+                    <span className="min-w-0 truncate text-sm font-medium">
                       {repo.fullName}
                     </span>
                     {repo.private ? (
                       <HugeiconsIcon
-                        className="size-3.5 shrink-0 text-muted-foreground"
+                        className="text-muted-foreground size-3.5 shrink-0"
                         icon={LockKeyIcon}
                       />
                     ) : null}
@@ -156,7 +158,7 @@ export function RepositoryMultiSelect({
               );
             })
           ) : (
-            <div className="px-3 py-8 text-center text-muted-foreground text-sm">
+            <div className="text-muted-foreground px-3 py-8 text-center text-sm">
               No repositories found.
             </div>
           )}

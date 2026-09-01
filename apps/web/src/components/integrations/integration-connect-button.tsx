@@ -1,4 +1,5 @@
 import { cn } from "@notra/ui/lib/utils";
+
 import { getIntegrationConnectUrl } from "@/lib/integrations/helpers";
 import type { IntegrationConnectButtonProps } from "@/types/integrations";
 
@@ -12,7 +13,7 @@ export function IntegrationConnectButton({
   return (
     <a
       className={cn(
-        "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full font-sans font-semibold outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        "focus-visible:ring-primary focus-visible:ring-offset-background inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full font-sans font-semibold outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
         PRIMARY_CLASSNAME,
         className
       )}

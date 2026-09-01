@@ -1,4 +1,5 @@
 import { createDualmarkRouteHandler } from "@dualmark/nextjs";
+
 import {
   buildDualmarkCollections,
   buildDualmarkStaticPages,

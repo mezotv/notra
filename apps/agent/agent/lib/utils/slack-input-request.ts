@@ -20,6 +20,7 @@ import type {
   InputRequest,
   InputRequestedStreamEvent,
 } from "eve/client";
+
 import { POST_TO_X_CONFIRM_ACTION_PREFIX } from "../constants/slack-post-x";
 import { resolveSlackInstallation } from "./slack-installation";
 import { savePendingPostToX } from "./slack-post-x";

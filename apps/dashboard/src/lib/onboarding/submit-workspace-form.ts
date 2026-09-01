@@ -4,13 +4,43 @@ import {
   triggerOnboardingBrandAnalysis,
 } from "@/app/onboarding/workspace/actions";
 import { authClient } from "@/lib/auth/client";
+import { dashboardOrpc } from "@/lib/orpc/query";
+import { uploadFile } from "@/lib/upload/client";
 import { generateOrganizationAvatar } from "@/lib/utils";
 import { onboardingWorkspaceSchema } from "@/schemas/onboarding/workspace";
 import type { SubmitWorkspaceFormArgs } from "@/types/onboarding";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 
+async function setOrganizationLogo(organizationId: string, logoUrl: string) {
+  const result = await authClient.organization.update({
+    organizationId,
+    data: { logo: logoUrl },
+  });
+
+  if (result.error) {
+    throw new Error(result.error.message ?? "Failed to set workspace logo");
+  }
+}
+
+async function applyOrganizationLogo(organizationId: string, file: File) {
+  const { url } = await uploadFile({ file, type: "logo" });
+  await setOrganizationLogo(organizationId, url);
+}
+
+async function applyOrganizationLogoFromUrl(
+  organizationId: string,
+  sourceUrl: string
+) {
+  const { publicUrl } = await dashboardOrpc.upload.logoFromUrl.call({
+    sourceUrl,
+  });
+  await setOrganizationLogo(organizationId, publicUrl);
+}
+
 export async function submitWorkspaceForm({
   existingOrg,
+  logoFile,
+  logoSourceUrl,
   value,
 }: SubmitWorkspaceFormArgs) {
   const parsed = onboardingWorkspaceSchema.safeParse(value);
@@ -25,6 +55,11 @@ export async function submitWorkspaceForm({
 
   if (existingOrg) {
     organizationId = existingOrg.id;
+    if (logoFile || logoSourceUrl) {
+      await authClient.organization.setActive({
+        organizationId,
+      });
+    }
   } else {
     const { data, error } = await authClient.organization.create({
       name: parsed.data.name,
@@ -33,7 +68,7 @@ export async function submitWorkspaceForm({
     });
 
     if (error || !data) {
-      throw new Error(error?.message ?? "Failed to create org");
+      throw new Error(error?.message ?? "Failed to create workspace");
     }
 
     organizationId = data.id;
@@ -42,6 +77,21 @@ export async function submitWorkspaceForm({
       organizationId: data.id,
     });
     await setLastVisitedOrganization(data.slug);
+  }
+
+  if (logoFile || logoSourceUrl) {
+    try {
+      if (logoFile) {
+        await applyOrganizationLogo(organizationId, logoFile);
+      } else if (logoSourceUrl) {
+        await applyOrganizationLogoFromUrl(organizationId, logoSourceUrl);
+      }
+    } catch (error) {
+      console.error("[Onboarding] Failed to set organization logo", {
+        organizationId,
+        error,
+      });
+    }
   }
 
   const hasAttribution = Boolean(

@@ -33,7 +33,7 @@ export function ThemeToggle() {
   return (
     <Button
       aria-label={ariaLabel}
-      className="h-9 w-9 rounded-lg p-0 text-foreground"
+      className="text-foreground h-9 w-9 rounded-lg p-0"
       onClick={handleToggle}
       type="button"
       variant="ghost"

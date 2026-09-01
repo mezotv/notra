@@ -1,5 +1,6 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -18,8 +19,11 @@ import { Loader2Icon } from "lucide-react";
 import type React from "react";
 import { isValidElement, useId, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { GRANOLA_API_KEYS_DOCS_URL } from "@/constants/granola";
+import { INTEGRATION_PROVIDERS } from "@/constants/integration-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { addGranolaIntegrationFormSchema } from "@/schemas/granola";
 import type { AddGranolaIntegrationDialogProps } from "@/types/integrations";
@@ -98,6 +102,9 @@ export function AddGranolaIntegrationDialog({
     }
 
     setValidationError(null);
+    trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+      provider: INTEGRATION_PROVIDERS.GRANOLA,
+    });
     createMutation.mutate();
   };
 
@@ -148,7 +155,7 @@ export function AddGranolaIntegrationDialog({
               Create a key in the Granola app under Settings, then Connectors,
               then API keys.{" "}
               <a
-                className="underline underline-offset-2 hover:text-foreground"
+                className="hover:text-foreground underline underline-offset-2"
                 href={GRANOLA_API_KEYS_DOCS_URL}
                 rel="noopener noreferrer"
                 target="_blank"

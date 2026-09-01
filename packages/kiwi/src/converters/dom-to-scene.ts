@@ -1,4 +1,5 @@
 import type { Font } from "opentype.js";
+
 import {
   SceneBuilder,
   solidFill,
@@ -10,6 +11,7 @@ import {
   LAYER_WORD_SPLIT_RE,
   MAX_LAYER_NAME_LENGTH,
   RGB_RE,
+  SVG_GEOMETRY_SELECTOR,
   TEXT_ALIGN_MAP,
   WEIGHT_TO_STYLE,
   WHITESPACE_GLOBAL_RE,
@@ -27,10 +29,13 @@ import type {
 } from "../types/dom-to-scene";
 import type { Guid, Transform } from "../types/scene";
 import type { PathSubpath } from "../types/svg-path";
-import { parseSvgPath } from "../utils/svg-path";
+import { svgPrimitiveToSubpaths } from "../utils/svg-primitive";
 import { TextLayoutCache } from "../utils/text-layout";
 
 export type { BuildSceneFromElementOptions } from "../types/dom-to-scene";
+
+const SVG_DASH_SEPARATOR_RE = /[\s,]+/;
+const SVG_DASH_LENGTH_RE = /^(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?(?:px)?$/i;
 
 let colorParseContext: CanvasRenderingContext2D | null | undefined;
 
@@ -172,6 +177,31 @@ function svgStrokeJoin(value: string): string {
     default:
       return "MITER";
   }
+}
+
+export function parseSvgDasharray(value: string | null): number[] | undefined {
+  const trimmed = value?.trim();
+  if (!trimmed || trimmed === "none") {
+    return undefined;
+  }
+
+  const pattern: number[] = [];
+  for (const part of trimmed.split(SVG_DASH_SEPARATOR_RE)) {
+    if (!SVG_DASH_LENGTH_RE.test(part)) {
+      return undefined;
+    }
+    const parsed = Number.parseFloat(part);
+    if (!Number.isFinite(parsed)) {
+      return undefined;
+    }
+    pattern.push(parsed);
+  }
+
+  if (!pattern.some((item) => item > 0)) {
+    return undefined;
+  }
+
+  return pattern.length % 2 === 0 ? pattern : [...pattern, ...pattern];
 }
 
 function svgStrokeWeight(shape: SvgShape): number | undefined {
@@ -627,39 +657,58 @@ function extractLayout(node: Node): LayoutNode | null {
     const fallbackColor = style.color;
 
     const shapes: SvgShape[] = [];
-    const pathEls = svg.querySelectorAll("path");
-    for (const pathEl of pathEls) {
-      const d = pathEl.getAttribute("d");
-      if (!d) {
+    const geomEls = svg.querySelectorAll(SVG_GEOMETRY_SELECTOR);
+    for (const geomEl of geomEls) {
+      if (!(geomEl instanceof SVGGraphicsElement)) {
         continue;
       }
-      const ctm = pathEl.getScreenCTM();
+      const ctm = geomEl.getScreenCTM();
       if (!ctm) {
         continue;
       }
-      const subpaths = parseSvgPath(d);
+      const subpaths = svgPrimitiveToSubpaths(geomEl.tagName.toLowerCase(), {
+        d: geomEl.getAttribute("d"),
+        cx: geomEl.getAttribute("cx"),
+        cy: geomEl.getAttribute("cy"),
+        r: geomEl.getAttribute("r"),
+        rx: geomEl.getAttribute("rx"),
+        ry: geomEl.getAttribute("ry"),
+        x: geomEl.getAttribute("x"),
+        y: geomEl.getAttribute("y"),
+        width: geomEl.getAttribute("width"),
+        height: geomEl.getAttribute("height"),
+        x1: geomEl.getAttribute("x1"),
+        y1: geomEl.getAttribute("y1"),
+        x2: geomEl.getAttribute("x2"),
+        y2: geomEl.getAttribute("y2"),
+        points: geomEl.getAttribute("points"),
+      });
       if (subpaths.length === 0) {
         continue;
       }
-      const pathStyle = getComputedStyle(pathEl);
-      const pathFill = pathEl.getAttribute("fill");
-      const pathStroke = pathEl.getAttribute("stroke");
+      const geomStyle = getComputedStyle(geomEl);
+      const geomFill = geomEl.getAttribute("fill");
+      const geomStroke = geomEl.getAttribute("stroke");
       const stroke = svgPaintValue(
-        pathStroke,
-        svgStroke ?? pathStyle.stroke,
+        geomStroke,
+        svgStroke ?? geomStyle.stroke,
         fallbackColor
       );
+      const strokeDasharray =
+        parseSvgDasharray(geomEl.getAttribute("stroke-dasharray")) ??
+        parseSvgDasharray(svg.getAttribute("stroke-dasharray")) ??
+        parseSvgDasharray(geomStyle.getPropertyValue("stroke-dasharray"));
       const fill = svgPaintValue(
-        pathFill,
-        svgFill ?? (stroke || pathStroke || svgStroke ? null : pathStyle.fill),
+        geomFill,
+        svgFill ?? (stroke || geomStroke || svgStroke ? null : geomStyle.fill),
         fallbackColor
       );
       if (!fill && !stroke) {
         continue;
       }
       const fillRule: "nonzero" | "evenodd" =
-        pathEl.getAttribute("fill-rule") === "evenodd" ||
-        pathEl.getAttribute("clip-rule") === "evenodd"
+        geomEl.getAttribute("fill-rule") === "evenodd" ||
+        geomEl.getAttribute("clip-rule") === "evenodd"
           ? "evenodd"
           : "nonzero";
       const transformed: PathSubpath[] = subpaths.map((sub) => ({
@@ -669,25 +718,28 @@ function extractLayout(node: Node): LayoutNode | null {
           y: ctm.b * p.x + ctm.d * p.y + ctm.f,
         })),
       }));
+      const strokeScale = Math.hypot(ctm.a, ctm.b) || 1;
       shapes.push({
         subpaths: transformed,
         fill,
         fillRule,
         stroke,
         strokeLineCap:
-          pathEl.getAttribute("stroke-linecap") ??
+          geomEl.getAttribute("stroke-linecap") ??
           svg.getAttribute("stroke-linecap") ??
-          pathStyle.strokeLinecap,
+          geomStyle.strokeLinecap,
         strokeLineJoin:
-          pathEl.getAttribute("stroke-linejoin") ??
+          geomEl.getAttribute("stroke-linejoin") ??
           svg.getAttribute("stroke-linejoin") ??
-          pathStyle.strokeLinejoin,
+          geomStyle.strokeLinejoin,
+        strokeDasharray:
+          strokeDasharray?.map((dash) => dash * strokeScale) ?? null,
         strokeWidth:
           parsePx(
-            pathEl.getAttribute("stroke-width") ??
+            geomEl.getAttribute("stroke-width") ??
               svg.getAttribute("stroke-width") ??
-              pathStyle.strokeWidth
-          ) * (Math.hypot(ctm.a, ctm.b) || 1),
+              geomStyle.strokeWidth
+          ) * strokeScale,
       });
     }
 
@@ -841,7 +893,6 @@ function emitSvgSubpaths(
   const segments: Array<{ vStart: number; vEnd: number }> = [];
   const loops: Array<{ segmentIndices: number[] }> = [];
   const hasFill = Boolean(shape.fill);
-  const hasStroke = Boolean(shape.stroke);
 
   for (const sub of subpaths) {
     const startIdx = vertices.length;
@@ -920,6 +971,7 @@ function emitSvgSubpaths(
     fill,
     stroke,
     strokeCap: svgStrokeCap(shape.strokeLineCap),
+    dashPattern: shape.strokeDasharray ?? undefined,
     strokeJoin: svgStrokeJoin(shape.strokeLineJoin),
     strokeWeight: svgStrokeWeight(shape),
     network: {

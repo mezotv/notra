@@ -1,4 +1,7 @@
-import type { SocialConnectPlatform } from "@/schemas/social-accounts";
+import type {
+  SocialConnectPlatform,
+  SocialPublishSurface,
+} from "@/schemas/social-accounts";
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 
 export interface PublishedSocialPost {
@@ -15,6 +18,7 @@ export interface PostSocialButtonProps {
   className?: string;
   onContentChange?: (value: string) => void;
   onPublished?: (published: PublishedSocialPost) => void;
+  from?: SocialPublishSurface;
 }
 
 export interface PublishErrorInfo {

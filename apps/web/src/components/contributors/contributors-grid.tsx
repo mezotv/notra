@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { formatContributionCount } from "@/utils/github";
 import type { GitHubUser } from "~types/github";
+
+import { formatContributionCount } from "@/utils/github";
 
 export function ContributorsGrid({
   contributors,
@@ -10,7 +11,7 @@ export function ContributorsGrid({
 }) {
   if (contributors.length === 0) {
     return (
-      <div className="py-8 text-center text-muted-foreground text-sm">
+      <div className="text-muted-foreground py-8 text-center text-sm">
         Unable to load contributors right now. Try again later.
       </div>
     );
@@ -24,7 +25,7 @@ export function ContributorsGrid({
         return (
           <Link
             aria-label={`${contributor.login} — ${contributionsLabel}`}
-            className="group flex flex-col items-center gap-2 rounded-lg p-2 transition-colors hover:bg-muted"
+            className="group hover:bg-muted flex flex-col items-center gap-2 rounded-lg p-2 transition-colors"
             href={contributor.html_url}
             key={contributor.id}
             rel="noopener noreferrer"
@@ -33,15 +34,15 @@ export function ContributorsGrid({
           >
             <Image
               alt={`Avatar of ${contributor.login}`}
-              className="size-12 rounded-full ring-1 ring-border transition-transform duration-200 group-hover:scale-110"
+              className="ring-border size-12 rounded-full ring-1 transition-transform duration-200 group-hover:scale-110"
               height={96}
               src={contributor.avatar_url}
               width={96}
             />
-            <span className="w-full truncate text-center font-sans text-muted-foreground text-xs transition-colors group-hover:text-foreground">
+            <span className="text-muted-foreground group-hover:text-foreground w-full truncate text-center font-sans text-xs transition-colors">
               {contributor.login}
             </span>
-            <span className="w-full text-center font-sans text-[0.625rem] text-muted-foreground leading-none transition-colors group-hover:text-foreground">
+            <span className="text-muted-foreground group-hover:text-foreground w-full text-center font-sans text-[0.625rem] leading-none transition-colors">
               <span className="tabular-nums">
                 {formatContributionCount(contributor.contributions)}
               </span>{" "}

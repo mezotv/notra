@@ -1,11 +1,9 @@
-import { getCalApi } from "@calcom/embed-react";
-import {
-  ArrowRight01Icon,
-  Calendar03Icon,
-  Message01Icon,
-  MoreHorizontalIcon,
-} from "@hugeicons/core-free-icons";
+import { ArrowRight01Icon, SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  GEO_DEFAULT_TAB,
+  GEO_TAB_BREADCRUMB_LABELS,
+} from "@notra/geo-core/constants/geo";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -21,33 +19,24 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@notra/ui/components/ui/breadcrumb";
-import { Button } from "@notra/ui/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@notra/ui/components/ui/dropdown-menu";
-import { Kbd } from "@notra/ui/components/ui/kbd";
-import { Separator } from "@notra/ui/components/ui/separator";
-import { SidebarTrigger } from "@notra/ui/components/ui/sidebar";
+import { Kbd, KbdGroup } from "@notra/ui/components/ui/kbd";
+import { useIsApplePlatform } from "@notra/ui/hooks/use-is-apple-platform";
 import { cn } from "@notra/ui/lib/utils";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
-import {
-  CreditBalanceButton,
-  CreditBalanceMenuItem,
-} from "@/components/billing/credit-balance-button";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useId, useRef } from "react";
+
+import { useCommandPalette } from "@/components/command-palette/command-palette-context";
 import { BrandTopbarIdentitySelector } from "@/components/dashboard/brand-topbar-identity-selector";
 import { ChatTopbarTitle } from "@/components/dashboard/chat-topbar-title";
 import { ContentTopbarTitle } from "@/components/dashboard/content-topbar-title";
 import { useFeedback } from "@/components/dashboard/feedback-context";
-import {
-  FeedbackForm,
-  FeedbackPopover,
-} from "@/components/dashboard/feedback-popover";
+import { FeedbackForm } from "@/components/dashboard/feedback-popover";
+import { NavUser } from "@/components/dashboard/nav-user";
+import { SidebarToggle } from "@/components/dashboard/sidebar-toggle";
+import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
+import { withGeoProject } from "@/utils/geo-paths";
 
 const NON_ORG_PATHS: string[] = [];
 
@@ -64,15 +53,21 @@ const SEGMENT_CONFIG: Record<string, { label?: string; href?: null }> = {
 export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [geoProjectParam] = useGeoProjectQueryState();
   const id = useId();
   const segments = pathname.split("/").filter(Boolean);
   const slug = segments[0];
   const isInSettings = segments[1] === "settings";
   const preSettingsPathsRef = useRef<Record<string, string>>({});
   const activeSettingsShortcutSlugRef = useRef<string | null>(null);
-  const { openFeedback } = useFeedback();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [mobileFeedbackOpen, setMobileFeedbackOpen] = useState(false);
+  const {
+    open: feedbackOpen,
+    setOpen: setFeedbackOpen,
+    openFeedback,
+  } = useFeedback();
+  const { setOpen: setCommandPaletteOpen } = useCommandPalette();
+  const isApplePlatform = useIsApplePlatform();
 
   function triggerScheduleDemo() {
     const btn = document.querySelector<HTMLButtonElement>(
@@ -118,6 +113,7 @@ export function SiteHeader() {
 
   useEffect(() => {
     (async () => {
+      const { getCalApi } = await import("@calcom/embed-react");
       const cal = await getCalApi({ namespace: "15min" });
       cal("ui", { hideEventTypeDetails: false, layout: "month_view" });
     })();
@@ -142,7 +138,6 @@ export function SiteHeader() {
     !isNonOrgPath &&
     breadcrumbSegments[0] === "collection" &&
     breadcrumbSegments.length >= 2;
-  const collectionDetailId = isCollectionDetail ? breadcrumbSegments[1] : null;
   const isContentDetail =
     !isNonOrgPath &&
     breadcrumbSegments[0] === "content" &&
@@ -152,6 +147,7 @@ export function SiteHeader() {
     !isNonOrgPath &&
     breadcrumbSegments[0] === "brand" &&
     breadcrumbSegments[1] === "identity";
+  const isGeo = !isNonOrgPath && breadcrumbSegments[0] === "geo";
 
   const displayBreadcrumbSegments = isCollectionDetail
     ? ["content", "collection"]
@@ -250,103 +246,126 @@ export function SiteHeader() {
     }
   );
 
-  const breadcrumbs = isBrandIdentity
-    ? brandIdentityBreadcrumbs
-    : genericBreadcrumbs;
+  const geoSectionSegments = breadcrumbSegments.slice(1);
+  const geoProjectId = geoProjectParam ?? undefined;
+  const geoTabLabel =
+    GEO_TAB_BREADCRUMB_LABELS[searchParams.get("tab") ?? GEO_DEFAULT_TAB] ??
+    GEO_TAB_BREADCRUMB_LABELS[GEO_DEFAULT_TAB] ??
+    "Visibility";
+
+  const geoSectionBreadcrumbs =
+    geoSectionSegments.length > 0
+      ? geoSectionSegments.flatMap((segment, index) => {
+          const isLast = index === geoSectionSegments.length - 1;
+          const href = withGeoProject(
+            `/${segments.slice(0, index + 3).join("/")}`,
+            geoProjectId
+          );
+          const label =
+            segment.charAt(0).toUpperCase() +
+            segment.slice(1).replace(/-/g, " ");
+          return [
+            <BreadcrumbSeparator key={`${id}-geo-sep-${segment}`}>
+              <HugeiconsIcon icon={ArrowRight01Icon} />
+            </BreadcrumbSeparator>,
+            <BreadcrumbItem
+              className={cn(isLast && "min-w-0", !isLast && "hover:underline")}
+              key={`${id}-geo-item-${segment}`}
+            >
+              {isLast ? (
+                <BreadcrumbPage className="block truncate">
+                  {label}
+                </BreadcrumbPage>
+              ) : (
+                <BreadcrumbLink render={<Link href={href}>{label}</Link>} />
+              )}
+            </BreadcrumbItem>,
+          ];
+        })
+      : [
+          <BreadcrumbSeparator key={`${id}-geo-tab-sep`}>
+            <HugeiconsIcon icon={ArrowRight01Icon} />
+          </BreadcrumbSeparator>,
+          <BreadcrumbItem className="min-w-0" key={`${id}-geo-tab`}>
+            <BreadcrumbPage className="block truncate">
+              {geoTabLabel}
+            </BreadcrumbPage>
+          </BreadcrumbItem>,
+        ];
+
+  const geoBreadcrumbs = [
+    <BreadcrumbItem className="hover:underline" key={`${id}-geo-link`}>
+      <BreadcrumbLink
+        render={
+          <Link href={withGeoProject(`/${slug}/geo`, geoProjectId)}>Geo</Link>
+        }
+      />
+    </BreadcrumbItem>,
+    ...geoSectionBreadcrumbs,
+  ];
+
+  const breadcrumbs = (() => {
+    if (isBrandIdentity) {
+      return brandIdentityBreadcrumbs;
+    }
+    if (isGeo) {
+      return geoBreadcrumbs;
+    }
+    return genericBreadcrumbs;
+  })();
 
   return (
-    <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-dashed transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-      <div className="flex w-full items-center gap-1 px-4 lg:gap-2 lg:px-6">
-        <div className="flex min-w-0 flex-1 items-center gap-1 lg:gap-2">
-          <SidebarTrigger className="-ml-1" />
-          <Separator
-            className="mx-2 border-border border-l border-dashed bg-transparent"
-            orientation="vertical"
-          />
+    <header className="bg-muted flex h-12 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+      <div className="grid h-full w-full min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 px-4 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
+        <div className="flex h-full min-w-0 items-center gap-2 overflow-hidden">
+          <SidebarToggle className="-mx-1.5" />
           <Breadcrumb className="min-w-0">
-            <BreadcrumbList className="min-w-0 flex-nowrap">
+            <BreadcrumbList className="min-w-0 flex-nowrap gap-2">
               {breadcrumbs}
             </BreadcrumbList>
           </Breadcrumb>
         </div>
-        <div className="flex min-w-0 items-center justify-end gap-2">
-          <CreditBalanceButton className="hidden sm:inline-flex" />
-          <div className="hidden items-center gap-2 lg:flex">
-            <FeedbackPopover
-              sharedState
-              trigger={
-                <Button className="gap-1.5" size="sm" variant="outline">
-                  <HugeiconsIcon icon={Message01Icon} size={16} />
-                  Feedback
-                  <Kbd className="ml-1 hidden sm:inline-flex">F</Kbd>
-                </Button>
-              }
-            />
-            <Button
-              className="gap-1.5"
-              data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true"}'
-              data-cal-link="dominikkoch/15min"
-              data-cal-namespace="15min"
-              size="sm"
-              variant="outline"
+        <button
+          aria-label="Search"
+          className="bg-background/60 text-muted-foreground hover:bg-muted/60 @container/search hidden h-8 w-48 cursor-pointer items-center justify-center gap-2 rounded-lg border px-2 text-sm transition-colors md:flex lg:w-64 xl:w-80 @[8rem]/search:justify-start @[8rem]/search:px-3"
+          onClick={() => setCommandPaletteOpen(true)}
+          type="button"
+        >
+          <HugeiconsIcon className="shrink-0" icon={SearchIcon} size={16} />
+          <span className="hidden min-w-0 flex-1 truncate text-left @[8rem]/search:block">
+            Search
+          </span>
+          <KbdGroup className="hidden shrink-0 @[14rem]/search:flex">
+            <Kbd>{isApplePlatform ? "⌘" : "Ctrl"}</Kbd>
+            <Kbd>K</Kbd>
+          </KbdGroup>
+        </button>
+        <div className="flex h-full min-w-0 items-center justify-end gap-2">
+          <button
+            aria-hidden
+            className="hidden"
+            data-cal-config='{"layout":"month_view","useSlotsViewOnSmallScreen":"true"}'
+            data-cal-link="dominikkoch/15min"
+            data-cal-namespace="15min"
+            tabIndex={-1}
+            type="button"
+          />
+          <NavUser />
+          <ResponsiveDialog onOpenChange={setFeedbackOpen} open={feedbackOpen}>
+            <ResponsiveDialogContent
+              className="gap-0 p-0 sm:max-w-md"
+              showCloseButton={false}
             >
-              <HugeiconsIcon icon={Calendar03Icon} size={16} />
-              Schedule a Demo
-              <Kbd className="ml-1 hidden sm:inline-flex">S</Kbd>
-            </Button>
-          </div>
-          <DropdownMenu onOpenChange={setMobileMenuOpen} open={mobileMenuOpen}>
-            <DropdownMenuTrigger
-              render={
-                <Button
-                  aria-label="More actions"
-                  className="lg:hidden"
-                  size="icon-sm"
-                  variant="outline"
-                >
-                  <HugeiconsIcon icon={MoreHorizontalIcon} size={16} />
-                </Button>
-              }
-            />
-            <DropdownMenuContent align="end" className="w-44">
-              <CreditBalanceMenuItem className="sm:hidden" />
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setMobileFeedbackOpen(true);
-                }}
-              >
-                <HugeiconsIcon icon={Message01Icon} />
-                Feedback
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  triggerScheduleDemo();
-                }}
-              >
-                <HugeiconsIcon icon={Calendar03Icon} />
-                Schedule a Demo
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <ResponsiveDialog
-            onOpenChange={setMobileFeedbackOpen}
-            open={mobileFeedbackOpen}
-          >
-            <ResponsiveDialogContent className="gap-0 p-0 sm:max-w-md">
               <ResponsiveDialogHeader className="sr-only">
                 <ResponsiveDialogTitle>Send feedback</ResponsiveDialogTitle>
                 <ResponsiveDialogDescription>
                   Share your thoughts with us.
                 </ResponsiveDialogDescription>
               </ResponsiveDialogHeader>
-              {mobileFeedbackOpen ? (
+              {feedbackOpen ? (
                 <FeedbackForm
                   autoFocus={false}
-                  onSubmitted={() => setMobileFeedbackOpen(false)}
+                  onSubmitted={() => setFeedbackOpen(false)}
                 />
               ) : null}
             </ResponsiveDialogContent>

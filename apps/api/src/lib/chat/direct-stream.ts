@@ -12,7 +12,9 @@ import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/line
 import { orchestrateStandaloneChat } from "@notra/ai/orchestration/orchestrate-standalone";
 import type { ChatUsageSnapshot } from "@notra/ai/types/chat";
 import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
+import { routeUsageProperties } from "@notra/ai/utils/route-usage";
 import { nanoid } from "nanoid";
+
 import type { DirectStandaloneChatArgs } from "../../types/chats";
 
 export async function createDirectStandaloneChatResponse({
@@ -22,6 +24,7 @@ export async function createDirectStandaloneChatResponse({
   context,
   validatedIntegrations,
   useMarkup,
+  chargeAiCredits,
   requestId,
   log,
   model,
@@ -97,12 +100,12 @@ export async function createDirectStandaloneChatResponse({
             firstChunkAt = Date.now();
           }
         },
-        async onUsage(usage, modelId) {
+        async onUsage(usage, modelId, routeUsage) {
           usageSnapshot.inputTokens = usage.inputTokens ?? 0;
           usageSnapshot.outputTokens = usage.outputTokens ?? 0;
           usageSnapshot.totalTokens = usage.totalTokens ?? 0;
 
-          if (!autumnClient) {
+          if (!(autumnClient && chargeAiCredits)) {
             return;
           }
 
@@ -124,6 +127,7 @@ export async function createDirectStandaloneChatResponse({
               featureId: FEATURES.AI_CREDITS,
               value: cost.costCents,
               properties: {
+                ...routeUsageProperties(routeUsage),
                 source: "standalone_chat",
                 model: modelId,
                 billing_basis: cost.billingBasis,

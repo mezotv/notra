@@ -6,16 +6,24 @@ import { redis } from "@notra/ai/utils/redis";
 import { buildCallbackUrl } from "@notra/utils/callback-url";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
+
+import {
+  INTEGRATION_AUTH_KINDS,
+  INTEGRATION_PROVIDERS,
+} from "@/constants/integration-analytics";
 import { SLACK_OAUTH_STATE_TTL_SECONDS } from "@/constants/slack-integration";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";
+import {
+  trackIntegrationConnected,
+  trackIntegrationConnectFailed,
+} from "@/lib/integrations/connect-events";
 import { slackOAuthErrorParam } from "@/lib/integrations/slack/oauth-errors";
 import { slackOAuthAccessResponseSchema } from "@/schemas/slack-integration";
 import type { SlackOAuthState } from "@/types/slack-integration";
 
 export async function GET(request: NextRequest) {
-  const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   let restoreOAuthState: (() => Promise<void>) | null = null;
 
@@ -36,12 +44,24 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get("error");
 
     if (error) {
+      trackIntegrationConnectFailed({
+        headers: request.headers,
+        provider: INTEGRATION_PROVIDERS.SLACK,
+        authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+        errorCode: error,
+      });
       return NextResponse.redirect(
         `${baseUrl}/?error=${encodeURIComponent(error)}`
       );
     }
 
     if (!code || !state || !redis) {
+      trackIntegrationConnectFailed({
+        headers: request.headers,
+        provider: INTEGRATION_PROVIDERS.SLACK,
+        authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+        errorCode: "invalid_callback",
+      });
       return NextResponse.redirect(`${baseUrl}/?error=invalid_callback`);
     }
 
@@ -79,7 +99,9 @@ export async function GET(request: NextRequest) {
     const oauthState: SlackOAuthState =
       typeof raw === "string" ? JSON.parse(raw) : raw;
 
-    const { session } = await getServerSession({ headers: request.headers });
+    const { session, user } = await getServerSession({
+      headers: request.headers,
+    });
     if (!session?.userId || session.userId !== oauthState.userId) {
       await restoreOAuthState();
       return NextResponse.redirect(`${baseUrl}/?error=session_mismatch`);
@@ -89,6 +111,7 @@ export async function GET(request: NextRequest) {
       await assertOrganizationAccess({
         headers: request.headers,
         organizationId: oauthState.organizationId,
+        user,
       });
     } catch (accessError) {
       if (accessError instanceof ORPCError) {
@@ -148,6 +171,14 @@ export async function GET(request: NextRequest) {
         tokenParse.success ? tokenParse.data.error : "invalid_response"
       );
       await restoreOAuthState();
+      trackIntegrationConnectFailed({
+        headers: request.headers,
+        userId: oauthState.userId,
+        organizationId: oauthState.organizationId,
+        provider: INTEGRATION_PROVIDERS.SLACK,
+        authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+        errorCode: "token_exchange_failed",
+      });
       return NextResponse.redirect(`${baseUrl}/?error=token_exchange_failed`);
     }
 
@@ -155,12 +186,21 @@ export async function GET(request: NextRequest) {
 
     const existing = await getSlackIntegrationByTeamId(team.id);
     if (existing) {
+      const existingErrorCode =
+        existing.organizationId === oauthState.organizationId
+          ? "workspace_already_connected"
+          : "workspace_connected_elsewhere";
+      trackIntegrationConnectFailed({
+        headers: request.headers,
+        userId: oauthState.userId,
+        organizationId: oauthState.organizationId,
+        provider: INTEGRATION_PROVIDERS.SLACK,
+        authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+        errorCode: existingErrorCode,
+      });
       return NextResponse.redirect(
         buildCallbackUrl(baseUrl, oauthState.callbackPath, {
-          error:
-            existing.organizationId === oauthState.organizationId
-              ? "workspace_already_connected"
-              : "workspace_connected_elsewhere",
+          error: existingErrorCode,
         })
       );
     }
@@ -175,6 +215,14 @@ export async function GET(request: NextRequest) {
       slackBotUserId: bot_user_id,
     });
 
+    trackIntegrationConnected({
+      headers: request.headers,
+      userId: oauthState.userId,
+      organizationId: oauthState.organizationId,
+      provider: INTEGRATION_PROVIDERS.SLACK,
+      authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+    });
+
     return NextResponse.redirect(
       buildCallbackUrl(baseUrl, oauthState.callbackPath, {
         slackConnected: "true",
@@ -183,6 +231,12 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Error in Slack OAuth callback:", error);
     await restoreOAuthState?.();
+    trackIntegrationConnectFailed({
+      headers: request.headers,
+      provider: INTEGRATION_PROVIDERS.SLACK,
+      authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+      errorCode: "callback_failed",
+    });
     return NextResponse.redirect(`${baseUrl}/?error=callback_failed`);
   }
 }

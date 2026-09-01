@@ -1,6 +1,7 @@
 import { redis } from "@notra/ai/utils/redis";
 import { ORPCError } from "@orpc/server";
 import { type NextRequest, NextResponse } from "next/server";
+
 import {
   SLACK_BOT_SCOPES,
   SLACK_OAUTH_STATE_TTL_SECONDS,
@@ -10,9 +11,9 @@ import { slackOAuthErrorParam } from "@/lib/integrations/slack/oauth-errors";
 import { slackAuthorizeQuerySchema } from "@/schemas/slack-integration";
 import { ratelimit } from "@/utils/ratelimit";
 
+// react-doctor-disable-next-line nextjs-no-side-effect-in-get-handler
 export async function GET(request: NextRequest) {
-  const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   try {
     const { searchParams } = new URL(request.url);

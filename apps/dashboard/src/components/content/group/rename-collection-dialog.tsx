@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useId, useState } from "react";
 import { toast } from "sonner";
+
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { RenameCollectionDialogProps } from "@/types/content/collection";
 

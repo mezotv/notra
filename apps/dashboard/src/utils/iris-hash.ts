@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+
 import { computeStableInputHash } from "@notra/ai/utils/autonomy-hash";
 
 export const buildIrisActionIdempotencyKey = (

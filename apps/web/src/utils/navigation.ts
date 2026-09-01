@@ -1,4 +1,5 @@
 import {
+  Activity01Icon,
   AiBrain01Icon,
   BookOpen01Icon,
   CommandLineIcon,
@@ -53,24 +54,30 @@ export const MARKETING_NAV: readonly MarketingNavEntry[] = [
       {
         href: "/features",
         label: "Features",
-        description: "See what Notra can do for you",
+        description: "Prompt tracking, AI traffic and content gaps",
         icon: SparklesIcon,
       },
       {
         href: "/features/marketing/assets",
         label: "Marketing Assets",
-        description: "Generate assets from shipped work",
+        description: "Images and posts for the content you write",
         icon: PaintBoardIcon,
       },
       {
         href: "/integrations",
         label: "Integrations",
-        description: "Connect the tools you ship with",
+        description: "GitHub, Linear, Search Console and more",
         icon: PuzzleIcon,
       },
     ],
     railHeading: "Developers",
     rail: [
+      {
+        href: "https://www.npmjs.com/package/@usenotra/geo",
+        label: "GEO SDK",
+        icon: Activity01Icon,
+        external: true,
+      },
       {
         href: "/mcp",
         label: "MCP Server",
@@ -92,7 +99,7 @@ export const MARKETING_NAV: readonly MarketingNavEntry[] = [
       {
         href: "/blog",
         label: "Blog",
-        description: "Writing on shipping, voice and DX",
+        description: "Writing on GEO, AI search and DX",
         icon: QuillWrite01Icon,
       },
       {

@@ -5,9 +5,9 @@
 type: monorepo  
 langs: TypeScript, JavaScript  
 runtimes: Node.js 24.11.1, Bun  
-pkgManager: Bun 1.3.9  
+pkgManager: Bun 1.4.0  
 deliverables: web (Next.js marketing), dashboard (Next.js app), api (Hono/Workers), docs (Mint), shared libs  
-rootConfigs: `turbo.json`, `package.json`, `biome.jsonc`  
+rootConfigs: `turbo.json`, `package.json`, `oxlint.config.ts`, `oxfmt.config.ts`
 
 ---
 
@@ -112,8 +112,8 @@ consumedBy: dashboard auth/workflow emails
 - typing: strict TypeScript, Zod for runtime validation, schema-driven API  
 - errors: Zod validation errors in API responses, try-catch for async  
 - patterns: server/client split (app router), action functions in lib/email/actions.ts  
-- lint: Biome (core, next, astro presets), UltraCite for formatting  
-- formatting: auto via UltraCite, Biome rules strict except where documented (console off, etc.)  
+- lint: Ultracite's Oxlint presets with project-specific compatibility rules in `oxlint.config.ts`
+- formatting: Ultracite's Oxfmt preset with project-specific file exclusions in `oxfmt.config.ts`
 
 ---
 
@@ -142,13 +142,13 @@ workspaceScripts:
 - `db:push` → drizzle-kit push (sync schema)  
 - `db:drop` → drizzle-kit drop  
 - `db:seed` → run both seed scripts  
-- `format` → UltraCite fix  
+- `format` → Ultracite fix using Oxlint + Oxfmt
 
-ci: `.github/workflows/code-quality.yml` → bun install, ultracite check on push/PR  
+ci: `.github/workflows/code-quality.yml` → bun install, `bun check` on push/PR
 
 envFiles: `.env`, `.env.example`  
 
-envPrefixes: `DATABASE_URL`, `UPSTASH_REDIS_REST_*`, `GITHUB_CLIENT_*`, `GOOGLE_CLIENT_*`, `BETTER_AUTH_*`, `OPENROUTER_API_KEY`, `CONTEXT_DEV_API_KEY`, `RESEND_API_KEY`, `UNKEY_*`, `CLOUDFLARE_*`, `QSTASH_*`  
+envPrefixes: `DATABASE_URL`, `UPSTASH_REDIS_REST_*`, `GITHUB_CLIENT_*`, `GOOGLE_CLIENT_*`, `BETTER_AUTH_*`, `OPENROUTER_API_KEY`, `CONTEXT_DEV_API_KEY`, `RESEND_API_KEY`, `UNKEY_*`, `CLOUDFLARE_*`, `QSTASH_*`, `PERPLEXITY_API_KEY`, `CURSOR_API_KEY`
 
 ---
 
@@ -188,8 +188,9 @@ integrate external service → `apps/dashboard/src/lib/` (new module)
 `packages/typescript-config/base.json` → TypeScript base config | extended by all apps/packages | tsconfig root  
 
 `turbo.json` → Workspace tasks (build, dev, check-types), global env vars, task dependencies | orchestration  
-`biome.jsonc` → Lint rules (Biome), UltraCite presets, file exclusions | code quality  
-`.github/workflows/code-quality.yml` → CI: bun install, ultracite check | automated code quality  
+`oxlint.config.ts` → Ultracite Oxlint presets, compatibility rules, and file exclusions | code quality
+`oxfmt.config.ts` → Ultracite Oxfmt preset and project-specific file exclusions | formatting
+`.github/workflows/code-quality.yml` → CI: bun install, `bun check` | automated code quality
 
 ---
 
@@ -200,4 +201,4 @@ integrate external service → `apps/dashboard/src/lib/` (new module)
 - Better-Auth handles user sessions; Unkey handles API key auth  
 - TanStack Query is de facto state manager for async data in dashboard  
 - Drizzle ORM with PostgreSQL (Neon) is sole data layer; Upstash Redis for query caching  
-- Biome + UltraCite enforce code quality; no Jest/Vitest configured yet  
+- Ultracite with Oxlint + Oxfmt enforces code quality; no Jest/Vitest configured yet

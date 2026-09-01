@@ -1,0 +1,45 @@
+"use client";
+
+import { ScrollArea } from "@notra/ui/components/ui/scroll-area";
+import { useReducedMotion } from "motion/react";
+import { useEffect, useRef, useState } from "react";
+
+import { CitationRows } from "@/components/landing/citation-rows";
+import {
+  HERO_COLLAGE_CITATION_HEADERS,
+  HERO_COLLAGE_CITATION_ROWS,
+} from "@/constants/landing/hero-collage";
+import { LIVE_TRAFFIC_MAX_ROWS } from "@/constants/landing/live-traffic";
+import { randomLiveRow, seedLiveRows } from "@/lib/landing/live-traffic";
+import { pageClockElapsedMs, usePageClockBase } from "@/lib/landing/page-clock";
+import type { HeroCollageProps } from "@/types/landing/hero";
+
+export function LiveTrafficLog({ engine }: HeroCollageProps) {
+  const reduceMotion = useReducedMotion();
+  const base = usePageClockBase();
+  const previousEngine = useRef(engine);
+  const [rows, setRows] = useState(() =>
+    seedLiveRows(HERO_COLLAGE_CITATION_ROWS)
+  );
+  const live = !reduceMotion;
+
+  useEffect(() => {
+    if (!live || previousEngine.current === engine) {
+      return;
+    }
+    previousEngine.current = engine;
+    const row = randomLiveRow(pageClockElapsedMs(), engine);
+    setRows((previous) => [row, ...previous].slice(0, LIVE_TRAFFIC_MAX_ROWS));
+  }, [engine, live]);
+
+  return (
+    <ScrollArea className="h-full [&_[data-slot=table-container]]:overflow-visible">
+      <CitationRows
+        animated={live}
+        base={base}
+        headers={HERO_COLLAGE_CITATION_HEADERS}
+        rows={rows}
+      />
+    </ScrollArea>
+  );
+}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { changelog } from "@/../.source/server";
 import { ChangelogPageHeader } from "@/components/changelog-page-header";
 import { ShowcaseOverviewGrid } from "@/components/showcase-overview-grid";
@@ -83,7 +84,7 @@ export default async function ChangelogHubPage() {
         <ShowcaseOverviewGrid companies={companies} />
       </div>
 
-      <p className="mt-8 text-center font-sans text-muted-foreground text-xs">
+      <p className="text-muted-foreground mt-8 text-center font-sans text-xs">
         Notra is not affiliated with any of the companies listed above. These
         changelogs are generated for demonstration purposes only.
       </p>

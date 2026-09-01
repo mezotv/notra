@@ -3,15 +3,19 @@
   "version": "0.0.1",
   "private": true,
   "type": "module",
-  "scripts": {
-    "check-types": "tsc --noEmit"
-  },
   "exports": {
+    "./api-scopes": "./src/api-scopes.ts",
     "./url": "./src/url.ts",
     "./callback-url": "./src/callback-url.ts",
     "./oauth-popup": "./src/oauth-popup.ts",
     "./slugify": "./src/slugify.ts",
-    "./color": "./src/color.ts"
+    "./color": "./src/color.ts",
+    "./ingest-token": "./src/ingest-token.ts",
+    "./types/*": "./src/types/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "bun test src"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",

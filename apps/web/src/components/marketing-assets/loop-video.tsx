@@ -2,6 +2,7 @@
 
 import { cn } from "@notra/ui/lib/utils";
 import { useEffect, useRef, useState } from "react";
+
 import type { LoopVideoProps } from "@/lib/marketing-assets/types/components";
 
 export function LoopVideo({ src, poster, label, className }: LoopVideoProps) {

@@ -1,23 +1,32 @@
 "use server";
 
 import { db } from "@notra/db/drizzle";
-import { invitations, members, organizations } from "@notra/db/schema";
+import { members, organizations } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
-import { auth } from "@/lib/auth/server";
-import { retryTransientDbError } from "@/lib/db/retry";
-import type { InvitationResponse } from "@/types/auth/actions";
-import type { OAuthConsentOrganizations } from "@/types/oauth";
 
-export async function validateOrganizationAccess(slug: string) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
+import { isSessionBanned } from "@/lib/auth/banned";
+import { getAuthSession } from "@/lib/auth/server";
+import { retryTransientDbError } from "@/lib/db/retry";
+import { organizationSlugParamSchema } from "@/schemas/auth/organization";
+
+export async function validateOrganizationAccess(rawSlug: string) {
+  const slugValidation = organizationSlugParamSchema.safeParse(rawSlug);
+
+  if (!slugValidation.success) {
+    notFound();
+  }
+
+  const slug = slugValidation.data;
+  const session = await getAuthSession();
 
   if (!session?.user) {
-    redirect("/login");
+    if (await isSessionBanned()) {
+      redirect("/auth/banned");
+    }
+    redirect(`/login?returnTo=${encodeURIComponent(`/${slug}`)}`);
   }
 
   const organization = await retryTransientDbError(() =>
@@ -32,12 +41,6 @@ export async function validateOrganizationAccess(slug: string) {
   );
 
   if (!organization || organization.members.length === 0) {
-    const fallbackOrganization = await getLastActiveOrganizationForUser(
-      session.user.id
-    );
-    if (fallbackOrganization && fallbackOrganization.slug !== slug) {
-      redirect(`/${fallbackOrganization.slug}`);
-    }
     notFound();
   }
 
@@ -49,19 +52,18 @@ export async function validateOrganizationAccess(slug: string) {
 }
 
 export async function getSession() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await getAuthSession();
 
   return session;
 }
 
 export async function requireAuth() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await getAuthSession();
 
   if (!session?.user) {
+    if (await isSessionBanned()) {
+      redirect("/auth/banned");
+    }
     redirect("/login");
   }
 
@@ -121,9 +123,7 @@ async function getLastActiveOrganizationForUser(userId: string) {
 }
 
 export async function getLastActiveOrganization() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await getAuthSession();
 
   if (!session?.user) {
     return;
@@ -157,99 +157,11 @@ async function getAllOrganizationsForUser(userId: string) {
 }
 
 export async function getAllUserOrganizations() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const session = await getAuthSession();
 
   if (!session?.user) {
     return [];
   }
 
   return getAllOrganizationsForUser(session.user.id);
-}
-
-export async function getConsentOrganizations(): Promise<OAuthConsentOrganizations> {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session?.user) {
-    return { organizations: [], activeOrganizationId: null };
-  }
-
-  const memberships = await retryTransientDbError(() =>
-    db.query.members.findMany({
-      where: eq(members.userId, session.user.id),
-      columns: { organizationId: true },
-      with: {
-        organizations: {
-          columns: { id: true, name: true, slug: true, logo: true },
-        },
-      },
-      orderBy: (m, { desc }) => [desc(m.createdAt)],
-    })
-  );
-
-  const userOrganizations = memberships
-    .map((membership) => membership.organizations)
-    .filter((organization) => organization !== null);
-
-  const lastActiveOrganization = await getLastActiveOrganizationForUser(
-    session.user.id
-  );
-
-  return {
-    organizations: userOrganizations,
-    activeOrganizationId:
-      lastActiveOrganization?.id ?? userOrganizations[0]?.id ?? null,
-  };
-}
-
-export async function getInvitationById(
-  invitationId: string
-): InvitationResponse {
-  const invitation = await db.query.invitations.findFirst({
-    where: eq(invitations.id, invitationId),
-    with: {
-      organizations: {
-        columns: {
-          id: true,
-          name: true,
-          slug: true,
-        },
-      },
-      users: {
-        columns: {
-          id: true,
-          email: true,
-          name: true,
-        },
-      },
-    },
-  });
-
-  if (!invitation) {
-    return null;
-  }
-
-  const isExpired = invitation.expiresAt < new Date();
-
-  return {
-    id: invitation.id,
-    organizationId: invitation.organizationId,
-    organizationName: invitation.organizations.name,
-    organizationSlug: invitation.organizations.slug,
-    inviterEmail: invitation.users.email,
-    inviterName: invitation.users.name,
-    inviterId: invitation.inviterId,
-    email: invitation.email,
-    role: invitation.role,
-    status: invitation.status as
-      | "pending"
-      | "accepted"
-      | "rejected"
-      | "canceled",
-    expiresAt: invitation.expiresAt,
-    expired: isExpired,
-  };
 }

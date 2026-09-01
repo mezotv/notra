@@ -2,7 +2,9 @@ import type { AILogTarget } from "@notra/ai/observability";
 import type { ToneProfile } from "@notra/ai/schemas/brand";
 import type { ContentType } from "@notra/ai/schemas/content";
 import type { AgentType } from "@notra/ai/types/brand-references";
+import type { RouteMetadata } from "@notra/ai/types/router";
 import type { PostSourceMetadata } from "@notra/db/schema";
+
 import type { PostSummary } from "./posts";
 import type {
   BaseTonePromptInput,
@@ -53,6 +55,8 @@ export interface AgentTokenUsage {
   modelId?: string;
   computeMs?: number;
   totalUsd?: number;
+  /** Router metadata of the last model call (gateway, upstream provider). */
+  route?: RouteMetadata;
   raw?: unknown;
 }
 

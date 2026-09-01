@@ -2,6 +2,7 @@
 
 import { cn } from "@notra/ui/lib/utils";
 import { useState } from "react";
+
 import { FAQ_CONTENT } from "@/constants/landing/faq";
 import type { FaqItem } from "@/types/landing/faq";
 
@@ -51,7 +52,7 @@ function FaqRow({
   const triggerId = `faq-trigger-${item.id}`;
 
   return (
-    <div className="flex flex-col border-[#1E1E1E1F] border-t py-7.5 dark:border-white/10">
+    <div className="flex flex-col border-t border-[#1E1E1E1F] py-7.5 dark:border-white/10">
       <button
         aria-controls={panelId}
         aria-expanded={open}
@@ -63,7 +64,7 @@ function FaqRow({
         <span className="flex shrink-0 items-center justify-center">
           <FaqToggleIcon open={open} />
         </span>
-        <span className="grow font-medium font-sans text-[#1E1E1E] text-lg leading-7 tracking-[-0.01em] sm:text-xl sm:leading-[1.875rem] dark:text-white">
+        <span className="grow font-sans text-lg leading-7 font-medium tracking-[-0.01em] text-[#1E1E1E] sm:text-xl sm:leading-[1.875rem] dark:text-white">
           {item.question}
         </span>
       </button>
@@ -75,7 +76,7 @@ function FaqRow({
         id={panelId}
       >
         <div className="overflow-hidden">
-          <p className="whitespace-pre-wrap pt-3.5 font-sans text-[#1E1E1E99] text-base leading-6 tracking-[-0.01em] dark:text-white/60">
+          <p className="pt-3.5 font-sans text-base leading-6 tracking-[-0.01em] whitespace-pre-wrap text-[#1E1E1E99] dark:text-white/60">
             {item.answer}
           </p>
         </div>
@@ -99,10 +100,10 @@ export function FaqSection() {
     <section className="flex flex-col items-center px-6 pt-20 pb-16 antialiased sm:px-12 lg:px-20 lg:pt-35 lg:pb-24">
       <div className="flex w-full flex-col items-center gap-14 lg:gap-18">
         <div className="flex w-full max-w-[51.5625rem] flex-col items-center gap-4">
-          <h2 className="text-balance text-center font-display font-medium text-[2rem] text-black leading-[1.1] tracking-[-0.02em] sm:text-[2.75rem] lg:text-[3.0625rem] lg:leading-[3.5rem] dark:text-white">
+          <h2 className="font-display text-center text-[2rem] leading-[1.1] font-medium tracking-[-0.02em] text-balance text-black sm:text-[2.75rem] lg:text-[3.0625rem] lg:leading-[3.5rem] dark:text-white">
             {heading}
           </h2>
-          <p className="max-w-[31rem] text-balance text-center font-display font-medium text-[#1E1E1EBF] text-lg leading-7 tracking-[-0.01em] sm:text-xl sm:leading-[1.875rem] dark:text-white/70">
+          <p className="font-display max-w-[31rem] text-center text-lg leading-7 font-medium tracking-[-0.01em] text-balance text-[#1E1E1EBF] sm:text-xl sm:leading-[1.875rem] dark:text-white/70">
             {subcopy}
           </p>
         </div>

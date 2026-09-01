@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { members, organizations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
+
 import { enqueueContentEmailDigest } from "@/lib/workflows/shared/content-email-digest-enqueue";
 import type { SendAiCreditsDepletedEmailsParams } from "@/types/workflows/ai-credit-notifications";
 
@@ -8,6 +9,7 @@ export async function sendAiCreditsDepletedEmails({
   organizationId,
   automationName,
   logPrefix,
+  limitLabel,
 }: SendAiCreditsDepletedEmailsParams) {
   const org = await db.query.organizations.findFirst({
     where: eq(organizations.id, organizationId),
@@ -38,6 +40,7 @@ export async function sendAiCreditsDepletedEmails({
       organizationName,
       organizationSlug,
       automationName,
+      ...(limitLabel ? { limitLabel } : {}),
     },
     logPrefix,
   });

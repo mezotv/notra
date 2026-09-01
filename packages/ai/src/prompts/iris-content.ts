@@ -8,6 +8,7 @@ import { sanitizeUntrustedText } from "@notra/ai/utils/iris-untrusted";
 const ALT_TEXT_UNSAFE_PATTERN = /[[\]\\]/gu;
 
 import dedent from "dedent";
+
 import { prohibitedLanguage } from "./_shared";
 
 const WHITESPACE_PATTERN = /\s+/g;

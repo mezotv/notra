@@ -13,9 +13,11 @@ import { useState } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import { Button } from "@/components/button";
 import type { AddIdentityDialogProps } from "@/types/brand-identity";
 import { sanitizeBrandUrlInput } from "@/utils/brand-identity";
+
 import {
   useAnalyzeBrand,
   useCreateBrandVoice,
@@ -122,9 +124,9 @@ export function AddIdentityDialog({
           </div>
           <div className="space-y-2">
             <Label htmlFor="voice-url">Website</Label>
-            <div className="flex w-full min-w-0 flex-row items-center rounded-md border border-border transition-colors focus-within:border-ring focus-within:ring-ring/50">
+            <div className="border-border focus-within:border-ring focus-within:ring-ring/50 flex w-full min-w-0 flex-row items-center rounded-md border transition-colors">
               <label
-                className="border-border border-r px-2.5 py-1.5 text-muted-foreground text-sm transition-colors"
+                className="border-border text-muted-foreground border-r px-2.5 py-1.5 text-sm transition-colors"
                 htmlFor="voice-url"
               >
                 https://

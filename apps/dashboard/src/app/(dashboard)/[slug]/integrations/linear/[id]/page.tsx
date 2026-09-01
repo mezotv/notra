@@ -1,7 +1,9 @@
 import { getLinearIntegrationById } from "@notra/ai/integrations/linear";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+
 import { validateOrganizationAccess } from "@/lib/auth/actions";
+
 import Loading from "../../loading";
 import PageClient from "./page-client";
 

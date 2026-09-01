@@ -3,6 +3,7 @@ import { members } from "@notra/db/schema";
 import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import { type NextRequest, NextResponse } from "next/server";
+
 import { retryTransientDbError } from "@/lib/db/retry";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import type {
@@ -11,6 +12,7 @@ import type {
   OrganizationAuth,
   OrganizationAuthDependencies,
 } from "@/types/auth/organization";
+
 import { getServerSession } from "./session";
 
 const organizationAuthDependencies: OrganizationAuthDependencies = {

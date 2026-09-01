@@ -1,5 +1,6 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
 import { RESERVED_ORGANIZATION_SLUGS } from "@/constants/organization";
 
 export const organizationSlugSchema = z
@@ -25,6 +26,8 @@ export const organizationWebsiteSchema = z
   .url("Please enter a valid URL (e.g., https://example.com)")
   .optional()
   .or(z.literal(""));
+
+export const memberRoleSchema = z.enum(["owner", "admin", "member"]);
 
 export const createOrganizationSchema = z.object({
   name: organizationNameSchema,

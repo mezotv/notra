@@ -1,19 +1,23 @@
 import path from "node:path";
+
 import type { NextConfig } from "next";
 import { withWorkflow } from "workflow/next";
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: process.env.APP_URL
+    ? [new URL(process.env.APP_URL).hostname]
+    : [],
   reactCompiler: true,
+  cacheComponents: true,
+  partialPrefetching: true,
   outputFileTracingIncludes: {
     "/*": ["./src/lib/ai/skills/**/*", "../../packages/ai/src/skills/**/*"],
   },
   experimental: {
-    turbopackFileSystemCacheForDev: false,
-    useCache: true,
     optimizePackageImports: ["@hugeicons/core-free-icons", "lucide-react"],
-    staleTimes: {
-      dynamic: 30,
-      static: 180,
+    hideLogsAfterAbort: true,
+    instantInsights: {
+      validationLevel: "manual-warning",
     },
   },
   turbopack: {
@@ -21,22 +25,44 @@ const nextConfig: NextConfig = {
   },
   transpilePackages: [
     "@notra/db",
+    "@notra/geo-core",
     "@notra/ui",
     "@notra/email",
     "@notra/ai",
     "@notra/content-generation",
     "@notra/kiwi",
+    "@notra/posthog",
     "@notra/utils",
+    "@usenotra/geo",
   ],
-  serverExternalPackages: ["@resvg/resvg-js"],
+  serverExternalPackages: ["@resvg/resvg-js", "@cursor/sdk"],
+  skipTrailingSlashRedirect: true,
   async rewrites() {
+    const posthogHost =
+      process.env.NEXT_PUBLIC_POSTHOG_HOST ?? "https://us.i.posthog.com";
+    const posthogAssetsHost = posthogHost.replace(
+      /^https:\/\/(us|eu)\.i\./,
+      "https://$1-assets.i."
+    );
+    const posthogRewrites = [
+      {
+        source: "/ingest/static/:path*",
+        destination: `${posthogAssetsHost}/static/:path*`,
+      },
+      {
+        source: "/ingest/:path*",
+        destination: `${posthogHost}/:path*`,
+      },
+    ];
+
     if (process.env.NODE_ENV === "production") {
-      return [];
+      return posthogRewrites;
     }
 
     const agentUrl =
       process.env.EVE_ONBOARDING_AGENT_URL ?? "http://127.0.0.1:3100";
     return [
+      ...posthogRewrites,
       {
         source: "/eve/v1/:path*",
         destination: `${agentUrl}/eve/v1/:path*`,
@@ -63,6 +89,11 @@ const nextConfig: NextConfig = {
       {
         source: "/:slug/automation/schedule",
         destination: "/:slug/automation/schedules",
+        permanent: true,
+      },
+      {
+        source: "/:slug/logs",
+        destination: "/:slug/settings/logs",
         permanent: true,
       },
     ];
@@ -113,6 +144,14 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "pbs.twimg.com",
+      },
+      {
+        protocol: "https",
+        hostname: "media.brand.dev",
+      },
+      {
+        protocol: "https",
+        hostname: "models.dev",
       },
       {
         protocol: "https",

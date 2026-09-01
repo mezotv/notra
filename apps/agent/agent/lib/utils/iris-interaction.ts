@@ -14,6 +14,7 @@ import type {
 import { buildShippedBlocks } from "@notra/ai/utils/slack-blocks";
 import { Effect } from "effect";
 import type { SlackContext, SlackInteractionAction } from "eve/channels/slack";
+
 import {
   IrisInteractionError,
   type IrisInteractionValue,

@@ -8,7 +8,7 @@ export function EventTriggerFormatSection({
   return (
     <section className="space-y-3">
       <div className="space-y-1">
-        <h3 className="font-semibold text-base">Content format</h3>
+        <h3 className="text-base font-semibold">Content format</h3>
         <p className="text-muted-foreground text-sm">
           What should we generate?
         </p>

@@ -4,6 +4,7 @@ import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import { Reddit } from "@notra/ui/components/ui/svgs/reddit";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import { Youtube } from "@notra/ui/components/ui/svgs/youtube";
+
 import type {
   FooterDitheringConfig,
   FooterLink,
@@ -13,7 +14,7 @@ import type {
 import { SOCIAL_LINKS } from "@/utils/social-links";
 
 export const FOOTER_TAGLINE =
-  "Turn shipped work into social updates in your voice.";
+  "Find out what AI engines say about you, and fix it.";
 
 export const FOOTER_DITHERING: FooterDitheringConfig = {
   speed: 0.57,
@@ -126,7 +127,10 @@ export const FOOTER_LINK_COLUMNS: readonly FooterLinkColumn[] = [
       },
       {
         title: "Free Tools",
-        links: [{ label: "Repo Star Video", href: "/repo-star-video" }],
+        links: [
+          { label: "Repo Star Video", href: "/repo-star-video" },
+          { label: "AI Crawler IP Checker", href: "/ip-checker" },
+        ],
       },
     ],
   },

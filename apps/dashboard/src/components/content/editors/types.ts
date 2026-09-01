@@ -11,6 +11,7 @@ interface ContentData {
   rawHtml: string | null;
   contentType: string;
   date: string;
+  status: "draft" | "published";
   sourceMetadata: unknown;
 }
 
@@ -45,8 +46,11 @@ export interface ContentEditorProps {
   content: ContentData;
   state: EditorState;
   actions: EditorActions;
+  readOnly?: boolean;
   editorRef: React.RefObject<EditorRefHandle | null>;
   editorKey: number;
+  writeFocusNonce?: number;
+  reviewPreviousMarkdown?: string | null;
   organization?: OrganizationInfo;
   organizationId?: string;
   imageExportRef?: React.RefObject<HTMLDivElement | null>;

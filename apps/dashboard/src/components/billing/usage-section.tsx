@@ -19,7 +19,13 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useAggregateEvents, useCustomer } from "autumn-js/react";
+import type { ReactNode } from "react";
 import { useState } from "react";
+
+import {
+  IntegrationCardDither,
+  useIntegrationCardDither,
+} from "@/components/integrations/integration-card-dither";
 import type { FeatureData } from "@/types/hooks/billing";
 
 const ranges = ["7d", "30d", "90d", "last_cycle"] as const;
@@ -47,6 +53,31 @@ function formatDollars(cents: number) {
 
 function formatFeatureName(id: string): string {
   return id.replace(/_/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function UsageMetricCard({
+  accentColor,
+  heading,
+  children,
+}: {
+  accentColor: string;
+  heading: string;
+  children: ReactNode;
+}) {
+  const dither = useIntegrationCardDither();
+
+  return (
+    <TitleCard
+      {...dither.interactionProps}
+      accentColor={accentColor}
+      heading={heading}
+      hoverBackground={
+        <IntegrationCardDither active={dither.active} color={accentColor} />
+      }
+    >
+      {children}
+    </TitleCard>
+  );
 }
 
 function isLogRetentionFeature(feature: FeatureData) {
@@ -102,7 +133,9 @@ export function UsageSection() {
       feature.included !== null &&
       !isLogRetentionFeature(feature)
   );
-  const unlimitedFeatures = features.filter((feature) => feature.unlimited);
+  const unlimitedFeatures = features.filter(
+    (feature) => feature.unlimited && !isLogRetentionFeature(feature)
+  );
   const aiCreditsFeature = features.find(
     (feature) => feature.id === FEATURES.AI_CREDITS
   );
@@ -149,7 +182,7 @@ export function UsageSection() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <h2 className="font-semibold text-lg tracking-tight">Usage</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Usage</h2>
           <p className="text-muted-foreground text-sm">
             Track your feature usage and remaining balances
           </p>
@@ -170,19 +203,19 @@ export function UsageSection() {
 
       {aiCreditsFeature && (
         <div className="grid gap-4 sm:grid-cols-2">
-          <TitleCard accentColor="#8b5cf6" heading="Credits Used">
+          <UsageMetricCard accentColor="#8b5cf6" heading="Credits Used">
             <div className="flex items-baseline gap-2">
-              <p className="font-bold text-3xl tabular-nums tracking-tight">
+              <p className="text-3xl font-bold tracking-tight tabular-nums">
                 {formatDollars(totalUsage)}
               </p>
               <p className="text-muted-foreground text-sm">
                 in selected period
               </p>
             </div>
-          </TitleCard>
-          <TitleCard accentColor="#10b981" heading="Credits Remaining">
+          </UsageMetricCard>
+          <UsageMetricCard accentColor="#10b981" heading="Credits Remaining">
             <div className="flex items-baseline gap-2">
-              <p className="font-bold text-3xl tabular-nums tracking-tight">
+              <p className="text-3xl font-bold tracking-tight tabular-nums">
                 {aiCreditsFeature.balance !== null
                   ? formatDollars(aiCreditsFeature.balance)
                   : "-"}
@@ -193,14 +226,16 @@ export function UsageSection() {
                   : "available"}
               </p>
             </div>
-          </TitleCard>
+          </UsageMetricCard>
         </div>
       )}
 
-      {(limitedFeatures.length > 0 || hasRetentionFeature) && (
+      {(limitedFeatures.length > 0 ||
+        hasRetentionFeature ||
+        unlimitedFeatures.length > 0) && (
         <div className="space-y-4">
-          <h2 className="font-medium text-muted-foreground text-sm uppercase tracking-wider">
-            Limits
+          <h2 className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
+            Features
           </h2>
           <div className="divide-y rounded-xl border">
             {limitedFeatures.map((feature) => {
@@ -224,11 +259,11 @@ export function UsageSection() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <p className="truncate font-medium text-sm">
+                      <p className="truncate text-sm font-medium">
                         {feature.name}
                       </p>
                       <Tooltip>
-                        <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+                        <TooltipTrigger className="text-muted-foreground inline-flex cursor-help">
                           <HugeiconsIcon
                             className="size-3.5"
                             icon={InformationCircleIcon}
@@ -241,7 +276,7 @@ export function UsageSection() {
                         </TooltipContent>
                       </Tooltip>
                     </div>
-                    <p className="mt-1 text-muted-foreground text-xs">
+                    <p className="text-muted-foreground mt-1 text-xs">
                       {descriptionText}
                     </p>
                   </div>
@@ -293,11 +328,11 @@ export function UsageSection() {
               <div className="flex items-center justify-between gap-4 p-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <p className="truncate font-medium text-sm">
+                    <p className="truncate text-sm font-medium">
                       Log Retention
                     </p>
                     <Tooltip>
-                      <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+                      <TooltipTrigger className="text-muted-foreground inline-flex cursor-help">
                         <HugeiconsIcon
                           className="size-3.5"
                           icon={InformationCircleIcon}
@@ -308,32 +343,30 @@ export function UsageSection() {
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                  <p className="mt-1 text-muted-foreground text-xs">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     Your current retention window is {retentionDays} days.
                   </p>
                 </div>
-                <div className="shrink-0 rounded-full border border-border bg-muted px-2.5 py-1 font-medium text-xs">
+                <div className="border-border bg-muted shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium">
                   {retentionDays} days
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
 
-      {unlimitedFeatures.length > 0 && (
-        <div className="space-y-4">
-          <h2 className="font-medium text-muted-foreground text-sm uppercase tracking-wider">
-            Unlimited Features
-          </h2>
-          <div className="flex flex-wrap gap-2">
             {unlimitedFeatures.map((feature) => (
               <div
-                className="inline-flex items-center gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-3 py-2"
+                className="flex items-center justify-between gap-4 p-4"
                 key={feature.id}
               >
-                <div className="size-1.5 rounded-full bg-emerald-500" />
-                <span className="font-medium text-sm">{feature.name}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{feature.name}</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Included in your plan without a usage cap
+                  </p>
+                </div>
+                <div className="border-border bg-muted shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium">
+                  Unlimited
+                </div>
               </div>
             ))}
           </div>

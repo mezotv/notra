@@ -11,22 +11,24 @@ import {
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
-import type { Invitation } from "better-auth/plugins/organization";
-import { use, useState } from "react";
+import { Suspense, use, useState } from "react";
+
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
-import { columns, type Member } from "@/components/members/columns";
+import { columns } from "@/components/members/columns";
 import { DataTable } from "@/components/members/data-table";
 import { invitationColumns } from "@/components/members/invitation-columns";
 import { InviteMemberModal } from "@/components/members/invite-member-modal";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
 
+import { DashboardPageSkeleton } from "../../skeleton";
+
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-export default function MembersPage({ params }: PageProps) {
+function MembersPageContent({ params }: PageProps) {
   const { slug } = use(params);
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const organization =
@@ -55,11 +57,9 @@ export default function MembersPage({ params }: PageProps) {
     enabled: !!organization?.id,
   });
 
-  const members = membersData?.members as Member[] | undefined;
+  const members = membersData?.members;
 
-  const { data: invitations, isLoading: invitationsLoading } = useQuery<
-    Invitation[]
-  >({
+  const { data: invitations, isLoading: invitationsLoading } = useQuery({
     queryKey: ["invitations", organization?.id],
     queryFn: async () => {
       if (!organization?.id) {
@@ -84,7 +84,10 @@ export default function MembersPage({ params }: PageProps) {
 
   if (!organization) {
     return (
-      <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <PageContainer
+        className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6"
+        variant="default"
+      >
         <div className="w-full space-y-6 px-4 lg:px-6">
           <div className="space-y-1">
             <Skeleton className="h-9 w-32" />
@@ -97,11 +100,14 @@ export default function MembersPage({ params }: PageProps) {
   }
 
   return (
-    <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <PageContainer
+      className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6"
+      variant="default"
+    >
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Members</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Members</h1>
             <p className="text-muted-foreground">
               Manage who has access to this organization
             </p>
@@ -157,5 +163,13 @@ export default function MembersPage({ params }: PageProps) {
         organizationId={organization.id}
       />
     </PageContainer>
+  );
+}
+
+export default function MembersPage({ params }: PageProps) {
+  return (
+    <Suspense fallback={<DashboardPageSkeleton />}>
+      <MembersPageContent params={params} />
+    </Suspense>
   );
 }

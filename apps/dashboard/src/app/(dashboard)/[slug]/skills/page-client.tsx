@@ -22,7 +22,6 @@ import { Input } from "@notra/ui/components/ui/input";
 import {
   InputGroup,
   InputGroupAddon,
-  InputGroupButton,
   InputGroupInput,
 } from "@notra/ui/components/ui/input-group";
 import { Kbd } from "@notra/ui/components/ui/kbd";
@@ -34,12 +33,17 @@ import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
+import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseSkillFrontmatter } from "@/lib/skills/parse-frontmatter";
 import { createSkillSchema } from "@/schemas/skills";
+
 import { SkillsPageSkeleton } from "./skeleton";
 
 interface PageClientProps {
@@ -159,21 +163,39 @@ export default function PageClient({ slug }: PageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Skills</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Skills</h1>
             <p className="text-muted-foreground">
               Reusable instructions your agents load when generating content.
             </p>
           </div>
-          <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
-            <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            Create Skill
-            <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>
+          <Button className="w-fit gap-2" onClick={() => setDialogOpen(true)}>
+            <span className="inline-flex items-center gap-1.5">
+              <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+              Create Skill
+            </span>
+            <Kbd className="hidden sm:inline-flex">C</Kbd>
           </Button>
         </div>
 
         {isLoadingSkills && <SkillsPageSkeleton />}
         {!isLoadingSkills && skills.length === 0 && (
-          <p className="text-muted-foreground">No skills yet.</p>
+          <EmptyState
+            action={
+              <Button onClick={() => setDialogOpen(true)} variant="outline">
+                <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
+                Create Skill
+              </Button>
+            }
+            description="Add a skill to capture writing knowledge the AI can reuse."
+            preview={
+              <EmptyStateCardsPreview
+                columns={3}
+                count={EMPTY_STATE_CARD_COUNT.skill}
+                variant="skill"
+              />
+            }
+            title="No skills yet"
+          />
         )}
         {!isLoadingSkills && skills.length > 0 && (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -183,7 +205,7 @@ export default function PageClient({ slug }: PageClientProps) {
                 href={`/${slug}/skills/${skill.name}`}
                 key={skill.id}
               >
-                <Card className="h-full gap-3 transition-all group-hover:ring-foreground/20">
+                <Card className="group-hover:ring-foreground/20 h-full gap-3 transition-all">
                   <CardHeader>
                     <CardTitle className="font-mono text-base">
                       {skill.name}
@@ -191,7 +213,7 @@ export default function PageClient({ slug }: PageClientProps) {
                     <CardDescription className="line-clamp-3 text-pretty">
                       {skill.description}
                     </CardDescription>
-                    <p className="pt-1 text-muted-foreground text-xs">
+                    <p className="text-muted-foreground pt-1 text-xs">
                       Updated{" "}
                       {new Date(skill.updatedAt).toLocaleDateString("en-US", {
                         year: "numeric",
@@ -221,7 +243,7 @@ export default function PageClient({ slug }: PageClientProps) {
               <InputGroup className="h-9">
                 <InputGroupAddon>
                   <HugeiconsIcon
-                    className="size-4 text-muted-foreground"
+                    className="text-muted-foreground size-4"
                     icon={Link04Icon}
                   />
                 </InputGroupAddon>
@@ -245,8 +267,9 @@ export default function PageClient({ slug }: PageClientProps) {
                   placeholder="https://skills.sh/..."
                   value={quickstartUrl}
                 />
-                <InputGroupAddon align="inline-end">
-                  <InputGroupButton
+                <InputGroupAddon align="inline-end" className="pr-1">
+                  <Button
+                    className="h-7 px-2.5"
                     disabled={
                       !quickstartUrl.trim() ||
                       !!quickstartError ||
@@ -254,13 +277,13 @@ export default function PageClient({ slug }: PageClientProps) {
                       createMutation.isPending
                     }
                     onClick={() => importMutation.mutate()}
-                    variant="default"
+                    size="sm"
                   >
                     {importMutation.isPending ? (
                       <Loader2Icon className="size-3.5 animate-spin" />
                     ) : null}
                     {importMutation.isPending ? "Importing" : "Import"}
-                  </InputGroupButton>
+                  </Button>
                 </InputGroupAddon>
               </InputGroup>
               <p
@@ -275,14 +298,14 @@ export default function PageClient({ slug }: PageClientProps) {
             </Field>
             <div className="flex items-center gap-3">
               <Separator className="flex-1" />
-              <span className="text-muted-foreground text-xs uppercase tracking-wider">
+              <span className="text-muted-foreground text-xs tracking-wider uppercase">
                 or create manually
               </span>
               <Separator className="flex-1" />
             </div>
             <Field>
               <FieldLabel>
-                Name<span className="-ml-1 text-destructive">*</span>
+                Name<span className="text-destructive -ml-1">*</span>
               </FieldLabel>
               <Input
                 disabled={createMutation.isPending}
@@ -300,7 +323,7 @@ export default function PageClient({ slug }: PageClientProps) {
             </Field>
             <Field>
               <FieldLabel>
-                Description<span className="-ml-1 text-destructive">*</span>
+                Description<span className="text-destructive -ml-1">*</span>
               </FieldLabel>
               <Textarea
                 className="max-h-[5rem] min-h-[4rem] overflow-y-auto"
@@ -315,7 +338,7 @@ export default function PageClient({ slug }: PageClientProps) {
             </Field>
             <Field>
               <FieldLabel>
-                Content<span className="-ml-1 text-destructive">*</span>
+                Content<span className="text-destructive -ml-1">*</span>
               </FieldLabel>
               <Textarea
                 className="max-h-[14rem] min-h-[10rem] overflow-y-auto font-mono text-sm"

@@ -6,8 +6,10 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Loader2Icon } from "lucide-react";
 import { useEffect } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateGuidelinesPreview } from "@/components/empty-state-preview";
 import { GUIDELINES_SKELETON_KEYS } from "@/constants/brand-guideline-ui";
 import {
   useBrandGuidelines,
@@ -15,6 +17,7 @@ import {
 } from "@/lib/hooks/use-brand-guidelines";
 import type { GuidelinesPanelProps } from "@/types/brand-identity";
 import { formatRelativeTime } from "@/utils/format";
+
 import { GuidelinesAssetsSection } from "./guidelines-assets-section";
 import { GuidelinesColorsSection } from "./guidelines-colors-section";
 import { GuidelinesScreenshotsSection } from "./guidelines-screenshots-section";
@@ -84,11 +87,7 @@ export function GuidelinesPanel({
     return (
       <EmptyState
         action={
-          <Button
-            disabled={isRefreshBusy}
-            onClick={refresh.refreshGuidelines}
-            size="sm"
-          >
+          <Button disabled={isRefreshBusy} onClick={refresh.refreshGuidelines}>
             {isRefreshBusy ? (
               <Loader2Icon className="size-4 animate-spin" />
             ) : (
@@ -98,6 +97,7 @@ export function GuidelinesPanel({
           </Button>
         }
         description="Brand guidelines have not been generated yet. Generate them to pull logos, colors, typography, and landing page screenshots from your website."
+        preview={<EmptyStateGuidelinesPreview />}
         title="No guidelines yet"
       />
     );
@@ -114,7 +114,7 @@ export function GuidelinesPanel({
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between gap-3">
-          <p className="flex items-center gap-2 text-muted-foreground text-sm">
+          <p className="text-muted-foreground flex items-center gap-2 text-sm">
             <Loader2Icon className="size-4 animate-spin" />
             Generating guidelines…
           </p>
@@ -131,14 +131,14 @@ export function GuidelinesPanel({
   return (
     <div className="space-y-6">
       {isGenerating ? (
-        <p className="flex items-center justify-end gap-2 text-muted-foreground text-xs">
+        <p className="text-muted-foreground flex items-center justify-end gap-2 text-xs">
           <Loader2Icon className="size-3 animate-spin" />
           Updating guidelines…
         </p>
       ) : null}
 
       {guideline.lastGeneratedAt && !isGenerating ? (
-        <p className="text-right text-muted-foreground text-xs">
+        <p className="text-muted-foreground text-right text-xs">
           Updated {formatRelativeTime(new Date(guideline.lastGeneratedAt))}
         </p>
       ) : null}
@@ -179,7 +179,6 @@ export function GuidelinesPanel({
             <Button
               disabled={isRefreshBusy}
               onClick={refresh.refreshGuidelines}
-              size="sm"
             >
               {isRefreshBusy ? (
                 <Loader2Icon className="size-4 animate-spin" />
@@ -190,6 +189,7 @@ export function GuidelinesPanel({
             </Button>
           }
           description="No brand assets were detected for this identity yet. Refresh to pull the latest logos, colors, and screenshots."
+          preview={<EmptyStateGuidelinesPreview />}
           title="Guidelines are empty"
         />
       )}

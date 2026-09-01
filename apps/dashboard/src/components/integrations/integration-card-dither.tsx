@@ -4,6 +4,7 @@ import { cn } from "@notra/ui/lib/utils";
 import { useReducedMotion } from "motion/react";
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+
 import {
   INTEGRATION_CARD_DITHER_FADE_OUT_DURATION,
   INTEGRATION_CARD_DITHER_HEX_COLOR_PATTERN,
@@ -72,7 +73,7 @@ export function IntegrationCardDither({
     >
       {shouldRender ? (
         <Dithering
-          className="-translate-x-1/2 -translate-y-1/2 absolute top-0 left-0 h-[200%] w-[200%]"
+          className="absolute top-0 left-0 h-[200%] w-[200%] -translate-x-1/2 -translate-y-1/2"
           colorBack="#00000000"
           colorFront={colorFront}
           scale={0.74}

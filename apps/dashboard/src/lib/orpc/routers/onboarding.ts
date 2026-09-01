@@ -1,7 +1,9 @@
+import { retrieveBrand, searchBrands } from "@notra/ai/utils/context-dev";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
   contentTriggers,
+  geoSettings,
   githubIntegrations,
   onboardingSuggestions,
   organizations,
@@ -9,6 +11,7 @@ import {
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
+
 import {
   AGENT_RUN_HARD_LIMIT_MS,
   SELF_SERVE_AGENT_ERROR_MESSAGES,
@@ -18,12 +21,14 @@ import {
   getOnboardingAgentState,
   startSelfServeOnboardingAgent,
 } from "@/lib/onboarding-agent";
+import { pickCompanyLogoUrl } from "@/lib/onboarding/company-logo";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   dismissSuggestionInputSchema,
   listSuggestionsInputSchema,
 } from "@/schemas/onboarding-agent";
+import { companyLogoInputSchema } from "@/schemas/onboarding/company-logo";
 import { ratelimit } from "@/utils/ratelimit";
 
 const onboardingInputSchema = z.object({
@@ -31,6 +36,47 @@ const onboardingInputSchema = z.object({
 });
 
 export const onboardingRouter = {
+  companyLogo: authorizedProcedure
+    .input(companyLogoInputSchema)
+    .handler(async ({ context, input }) => {
+      const { success: withinLimit } = await ratelimit.companyLogo.limit(
+        `${context.user.id}:${input.query.toLowerCase()}`
+      );
+      if (!withinLimit) {
+        throw new ORPCError("TOO_MANY_REQUESTS", {
+          message: "Too many logo lookups. Please try again shortly.",
+        });
+      }
+
+      try {
+        if (!input.searchByName) {
+          const response = await retrieveBrand(input.query);
+          return {
+            domain: response.brand?.domain ?? input.query,
+            url: pickCompanyLogoUrl(response.brand?.logos),
+          };
+        }
+
+        const response = await searchBrands(input.query);
+        const key = input.query.toLowerCase();
+        const brand =
+          response.results.find(
+            (result) => result.name.trim().toLowerCase() === key
+          ) ??
+          response.results.find(
+            (result) => result.domain.trim().toLowerCase() === key
+          );
+        return {
+          domain: brand?.domain ?? null,
+          url: brand?.logo || null,
+        };
+      } catch {
+        return {
+          domain: input.searchByName ? null : input.query,
+          url: null,
+        };
+      }
+    }),
   get: authorizedProcedure
     .input(onboardingInputSchema)
     .handler(async ({ context, input }) => {
@@ -40,7 +86,7 @@ export const onboardingRouter = {
         user: context.user,
       });
 
-      const [org, brand, integration, schedule] = await Promise.all([
+      const [org, brand, integration, schedule, geo] = await Promise.all([
         db.query.organizations.findFirst({
           columns: { onboardingCompleted: true, onboardingDismissed: true },
           where: eq(organizations.id, input.organizationId),
@@ -60,11 +106,16 @@ export const onboardingRouter = {
             eq(contentTriggers.sourceType, "cron")
           ),
         }),
+        db.query.geoSettings.findFirst({
+          columns: { id: true },
+          where: eq(geoSettings.organizationId, input.organizationId),
+        }),
       ]);
 
       const hasBrandIdentity = !!brand;
       const hasIntegration = !!integration;
       const hasSchedule = !!schedule;
+      const hasGeoTracking = !!geo;
       const onboardingCompleted = org?.onboardingCompleted ?? false;
       const onboardingDismissed = org?.onboardingDismissed ?? false;
 
@@ -84,6 +135,7 @@ export const onboardingRouter = {
         hasBrandIdentity,
         hasIntegration,
         hasSchedule,
+        hasGeoTracking,
         onboardingCompleted:
           hasBrandIdentity && hasIntegration && hasSchedule
             ? true

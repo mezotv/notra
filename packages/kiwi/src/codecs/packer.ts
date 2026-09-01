@@ -41,8 +41,10 @@ export async function packBuffer(
   schemaBytes: Uint8Array,
   dataBytes: Uint8Array
 ): Promise<Uint8Array> {
-  const schemaDeflated = await deflateRaw(schemaBytes);
-  const dataDeflated = await deflateRaw(dataBytes);
+  const [schemaDeflated, dataDeflated] = await Promise.all([
+    deflateRaw(schemaBytes),
+    deflateRaw(dataBytes),
+  ]);
 
   const total =
     MAGIC.length +

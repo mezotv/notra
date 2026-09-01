@@ -1,7 +1,9 @@
 import type { AILogTarget } from "@notra/ai/observability";
 import type { StandaloneChatContextItem } from "@notra/ai/schemas/standalone-chat";
+import type { RouteUsageSummary } from "@notra/ai/types/router";
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { LanguageModelUsage, UIMessage } from "ai";
+
 import type {
   ResolveGranolaIntegrationContext,
   ResolveIntegrationContext,
@@ -9,7 +11,6 @@ import type {
 } from "./agents";
 import type {
   IntegrationFetchers,
-  OrchestrateResult,
   ValidatedIntegration,
 } from "./orchestration";
 
@@ -38,7 +39,8 @@ export interface StandaloneChatDeps {
   resolveGranolaContext?: ResolveGranolaIntegrationContext;
   onUsage?: (
     usage: LanguageModelUsage,
-    modelId: string
+    modelId: string,
+    routeUsage?: RouteUsageSummary
   ) => void | Promise<void>;
   onFirstChunk?: () => void;
   log?: AILogTarget;

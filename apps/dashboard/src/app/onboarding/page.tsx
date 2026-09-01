@@ -1,13 +1,11 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
+import { getGeoOnboardingStage } from "@notra/geo-core/geo/onboarding-status";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import {
-  getAllUserOrganizations,
-  getLastActiveOrganization,
-  getSession,
-} from "@/lib/auth/actions";
-import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
+
+import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
+import { redirectIfAnyOrganizationHasPaidHistory } from "@/lib/onboarding/billing-gate";
 
 export default async function OnboardingPage() {
   const session = await getSession();
@@ -16,12 +14,7 @@ export default async function OnboardingPage() {
     redirect("/login");
   }
 
-  const allOrgs = await getAllUserOrganizations();
-  for (const org of allOrgs) {
-    if (await hasPaidSubscriptionHistory(org.id)) {
-      redirect(`/${org.slug}`);
-    }
-  }
+  await redirectIfAnyOrganizationHasPaidHistory();
 
   const organization = await getLastActiveOrganization();
 
@@ -36,6 +29,14 @@ export default async function OnboardingPage() {
 
   if (!brand) {
     redirect("/onboarding/workspace");
+  }
+
+  const stage = await getGeoOnboardingStage(organization.id);
+  if (stage === "brand") {
+    redirect("/onboarding/visibility");
+  }
+  if (stage === "competitors") {
+    redirect("/onboarding/competitors");
   }
 
   redirect("/onboarding/pricing");

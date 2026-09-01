@@ -3,6 +3,7 @@
 import { Calendar02Icon, Clock04Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useSyncExternalStore } from "react";
+
 import type { ScheduleSummaryCardProps } from "@/types/automation/schedule";
 import {
   computeNextRun,
@@ -51,13 +52,13 @@ export function ScheduleSummaryCard({ schedule }: ScheduleSummaryCardProps) {
 
   if (!now) {
     return (
-      <div className="rounded-xl border bg-muted/30 p-4">
+      <div className="bg-muted/30 rounded-xl border p-4">
         <div className="flex items-center gap-2">
           <HugeiconsIcon
-            className="size-4 text-muted-foreground"
+            className="text-muted-foreground size-4"
             icon={Calendar02Icon}
           />
-          <p className="font-medium text-sm">{summary}</p>
+          <p className="text-sm font-medium">{summary}</p>
         </div>
       </div>
     );
@@ -69,22 +70,22 @@ export function ScheduleSummaryCard({ schedule }: ScheduleSummaryCardProps) {
   const tz = getLocalTimezone();
 
   return (
-    <div className="space-y-2 rounded-xl border bg-muted/30 p-4">
+    <div className="bg-muted/30 space-y-2 rounded-xl border p-4">
       <div className="flex items-center gap-2">
         <HugeiconsIcon
-          className="size-4 text-muted-foreground"
+          className="text-muted-foreground size-4"
           icon={Calendar02Icon}
         />
-        <p className="font-medium text-sm">
+        <p className="text-sm font-medium">
           {summary}{" "}
-          <span className="font-normal text-muted-foreground">
+          <span className="text-muted-foreground font-normal">
             &middot; UTC
           </span>
         </p>
       </div>
       <div className="flex items-center gap-2">
         <HugeiconsIcon
-          className="size-4 text-muted-foreground"
+          className="text-muted-foreground size-4"
           icon={Clock04Icon}
         />
         <p className="text-muted-foreground text-sm">

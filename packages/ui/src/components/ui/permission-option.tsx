@@ -9,6 +9,7 @@ import {
 } from "./permission-selector-context";
 
 const SPRING = { type: "spring", bounce: 0.2, duration: 0.4 } as const;
+const SMOOTH = { type: "tween", duration: 0.18, ease: "easeOut" } as const;
 
 const TONE_TEXT: Record<PermissionTone, string> = {
   neutral: "text-foreground",
@@ -45,6 +46,7 @@ export function PermissionOption({
     value: selected,
     select,
     layoutId,
+    indicatorMotion,
     disabled: rowDisabled,
   } = usePermissionRow();
   const active = selected === value;
@@ -74,8 +76,8 @@ export function PermissionOption({
             "absolute inset-0 rounded-md shadow-sm ring-1",
             TONE_PILL[tone]
           )}
-          layoutId={layoutId}
-          transition={SPRING}
+          layoutId={indicatorMotion === "none" ? undefined : layoutId}
+          transition={indicatorMotion === "smooth" ? SMOOTH : SPRING}
         />
       )}
       <span className="relative z-10 flex items-center gap-1.5">

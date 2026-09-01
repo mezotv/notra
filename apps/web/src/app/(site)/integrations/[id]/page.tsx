@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+
 import { IntegrationDetailView } from "@/components/integrations/integration-detail-view";
 import { fetchIntegration } from "@/lib/integrations/fetch";
 import type { IntegrationDetailPageProps } from "@/types/integrations";

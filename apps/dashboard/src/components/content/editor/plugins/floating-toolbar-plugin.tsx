@@ -215,7 +215,7 @@ function FloatingToolbar({
 
   return (
     <div
-      className="absolute z-50 flex items-center gap-0.5 rounded-lg border bg-popover p-1 opacity-0 shadow-lg transition-opacity"
+      className="bg-popover absolute z-50 flex items-center gap-0.5 rounded-lg border p-1 opacity-0 shadow-lg transition-opacity"
       ref={toolbarRef}
       role="toolbar"
       style={{ pointerEvents: "auto" }}
@@ -267,7 +267,7 @@ function FloatingToolbar({
       >
         <Code className="size-4" />
       </button>
-      <div className="mx-1 h-4 w-px bg-border" />
+      <div className="bg-border mx-1 h-4 w-px" />
       <button
         aria-label="Insert link"
         className={buttonClass(isLink || isLinkEditMode)}
@@ -281,7 +281,7 @@ function FloatingToolbar({
         <div className="ml-1 flex items-center gap-1">
           <input
             aria-label="URL"
-            className="h-7 w-40 rounded border bg-background px-2 text-sm outline-none focus:ring-1 focus:ring-primary"
+            className="bg-background focus:ring-primary h-7 w-40 rounded border px-2 text-sm outline-none focus:ring-1"
             onChange={(e) => setLinkUrl(e.target.value)}
             onKeyDown={handleLinkKeyDown}
             placeholder="Enter URL"
@@ -291,7 +291,7 @@ function FloatingToolbar({
           />
           <button
             aria-label="Apply link"
-            className="rounded bg-primary px-2 py-1 text-primary-foreground text-xs hover:bg-primary/90"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded px-2 py-1 text-xs"
             onClick={submitLink}
             type="button"
           >

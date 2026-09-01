@@ -1,0 +1,24 @@
+{
+  "name": "@notra/posthog",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./events": "./src/events.ts",
+    "./server": "./src/server.ts",
+    "./request": "./src/request.ts",
+    "./types/*": "./src/types/*.ts",
+    "./constants/*": "./src/constants/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "posthog-node": "5.50.0"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
+    "@types/node": "^22.15.3",
+    "typescript": "5.9.2"
+  }
+}

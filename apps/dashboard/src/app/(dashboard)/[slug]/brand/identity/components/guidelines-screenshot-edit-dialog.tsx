@@ -19,6 +19,7 @@ import {
 import { Switch } from "@notra/ui/components/ui/switch";
 import { useReducer } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { SCREENSHOT_KIND_OPTIONS } from "@/constants/brand-guideline-ui";
 import { useUpdateGuidelineScreenshot } from "@/lib/hooks/use-brand-guidelines";

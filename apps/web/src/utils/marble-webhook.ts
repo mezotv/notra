@@ -1,5 +1,11 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
+
 import { revalidatePath, revalidateTag } from "next/cache";
+import type {
+  MarbleWebhookPayload,
+  RevalidateMarbleContentOptions,
+} from "~types/marble";
+
 import {
   BLOG_AUTHOR_PATH,
   BLOG_INDEX_PATH,
@@ -14,10 +20,6 @@ import {
   SITEMAP_PATH,
 } from "@/utils/constants";
 import { getMarblePostCacheTag } from "@/utils/marble";
-import type {
-  MarbleWebhookPayload,
-  RevalidateMarbleContentOptions,
-} from "~types/marble";
 
 const SHARED_CONTENT_PATHS = [
   SITEMAP_PATH,

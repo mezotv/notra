@@ -8,6 +8,8 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+
+import { COMPANY_LOGO_STALE_TIME_MS } from "@/constants/company-logo";
 import {
   AGENT_RUN_REFETCH_INTERVAL_MS,
   AGENT_RUN_STALE_TIME_MS,
@@ -21,6 +23,7 @@ import type {
   UseOnboardingStatusOptions,
   UseOnboardingSuggestionsOptions,
 } from "@/types/hooks/onboarding";
+
 import { dashboardOrpc } from "../orpc/query";
 
 export function useOnboardingStatus(
@@ -32,6 +35,18 @@ export function useOnboardingStatus(
       input: { organizationId },
       enabled: !!organizationId,
       refetchInterval: options?.refetchInterval,
+    })
+  );
+}
+
+export function useCompanyLogo(domain: string | null, name?: string | null) {
+  const query = domain ?? name?.trim() ?? "";
+  return useQuery(
+    dashboardOrpc.onboarding.companyLogo.queryOptions({
+      input: { query, searchByName: !domain },
+      enabled: query.length > 0,
+      staleTime: COMPANY_LOGO_STALE_TIME_MS,
+      retry: false,
     })
   );
 }

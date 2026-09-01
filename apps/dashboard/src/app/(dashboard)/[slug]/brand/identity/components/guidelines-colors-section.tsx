@@ -8,6 +8,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
+
 import { Button } from "@/components/button";
 import {
   COLOR_ROLE_LABELS,
@@ -20,6 +21,7 @@ import type {
 } from "@/types/hooks/brand-guidelines";
 import { joinMeta } from "@/utils/brand-guideline-display";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
+
 import { GuidelinesColorEditDialog } from "./guidelines-color-edit-dialog";
 
 export function GuidelinesColorsSection({
@@ -43,10 +45,10 @@ export function GuidelinesColorsSection({
     <section className="space-y-3">
       <div className="flex items-center gap-2">
         <HugeiconsIcon
-          className="size-4 text-muted-foreground"
+          className="text-muted-foreground size-4"
           icon={PaintBoardIcon}
         />
-        <h2 className="font-semibold text-sm">Colors</h2>
+        <h2 className="text-sm font-semibold">Colors</h2>
         <span className="text-muted-foreground text-xs tabular-nums">
           {colors.length}
         </span>
@@ -75,19 +77,19 @@ export function GuidelinesColorsSection({
               {color.darkValue ? (
                 <span
                   aria-hidden="true"
-                  className="-ml-5 mt-5 size-5 shrink-0 rounded-md border"
+                  className="mt-5 -ml-5 size-5 shrink-0 rounded-md border"
                   style={{ backgroundColor: color.darkValue }}
                 />
               ) : null}
               <div className="min-w-0 flex-1">
-                <p className="truncate font-medium text-sm">
+                <p className="truncate text-sm font-medium">
                   {color.name ?? color.lightValue}
                 </p>
-                <p className="truncate font-mono text-muted-foreground text-xs uppercase tabular-nums">
+                <p className="text-muted-foreground truncate font-mono text-xs uppercase tabular-nums">
                   {displayValue}
                 </p>
                 {meta ? (
-                  <p className="truncate text-muted-foreground text-xs">
+                  <p className="text-muted-foreground truncate text-xs">
                     {meta}
                   </p>
                 ) : null}
@@ -117,22 +119,22 @@ export function GuidelinesColorsSection({
 
         {missingRoles.map((role) => (
           <button
-            className="flex items-center gap-3 rounded-xl border border-dashed p-3 text-left transition-colors hover:border-border hover:bg-muted/40"
+            className="hover:border-border hover:bg-muted/40 flex items-center gap-3 rounded-xl border border-dashed p-3 text-left transition-colors"
             key={`placeholder-${role}`}
             onClick={() => setCreatingRole(role)}
             type="button"
           >
             <span
               aria-hidden="true"
-              className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-dashed bg-muted/30 text-muted-foreground"
+              className="bg-muted/30 text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg border border-dashed"
             >
               <HugeiconsIcon className="size-4" icon={Add01Icon} />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-muted-foreground text-sm">
+              <p className="text-muted-foreground truncate text-sm font-medium">
                 {COLOR_ROLE_LABELS[role]}
               </p>
-              <p className="truncate text-muted-foreground/70 text-xs">
+              <p className="text-muted-foreground/70 truncate text-xs">
                 Add color
               </p>
             </div>

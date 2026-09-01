@@ -1,4 +1,5 @@
 import { cn } from "@notra/ui/lib/utils";
+
 import { MERCH_HERO_CALLOUTS } from "@/constants/merch";
 
 export function MerchHeroCallouts() {
@@ -13,15 +14,15 @@ export function MerchHeroCallouts() {
           key={callout.number}
         >
           <div className="flex flex-col items-end gap-1">
-            <span className="font-mono text-[#1E1E1EA6] text-xs tracking-[0.08em] dark:text-white/60">
+            <span className="font-mono text-xs tracking-[0.08em] text-[#1E1E1EA6] dark:text-white/60">
               {callout.number}
             </span>
-            <span className="font-medium font-sans text-[#1E1E1E] text-[0.9375rem] leading-5 tracking-[-0.005em] dark:text-white">
+            <span className="font-sans text-[0.9375rem] leading-5 font-medium tracking-[-0.005em] text-[#1E1E1E] dark:text-white">
               {callout.label}
             </span>
           </div>
           <div className="h-px w-44 bg-[#1E1E1E66] dark:bg-white/40" />
-          <div className="size-1.75 rounded-full bg-primary" />
+          <div className="bg-primary size-1.75 rounded-full" />
         </div>
       ))}
     </div>

@@ -1,10 +1,12 @@
 import { createHmac } from "node:crypto";
+
 import { SLACK_RELAY_EVENT_TYPE } from "@notra/ai/constants/chat";
 import {
   getSlackIntegrationBotToken,
   getSlackIntegrationByTeamId,
 } from "@notra/ai/integrations/slack-workspace";
 import { redis } from "@notra/ai/utils/redis";
+
 import {
   slackExternalChannelKeySchema,
   slackPermalinkResponseSchema,

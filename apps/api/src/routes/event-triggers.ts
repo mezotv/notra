@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+
 import { createRoute } from "@hono/zod-openapi";
 import {
   hashTrigger,
@@ -6,6 +7,7 @@ import {
 } from "@notra/ai/utils/trigger-hash";
 import { contentTriggers, githubIntegrations } from "@notra/db/schema";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
+
 import {
   createEventTriggerRequestSchema,
   deleteEventTriggerResponseSchema,

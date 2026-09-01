@@ -13,11 +13,14 @@ import {
   contentTriggers,
   githubIntegrations,
 } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import { DEFAULT_LOOKBACK_WINDOW } from "@/constants/workflows";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { baseProcedure } from "@/lib/orpc/base";
@@ -33,6 +36,7 @@ import {
   triggerTargetsSchema,
 } from "@/schemas/integrations";
 import type { Trigger } from "@/types/triggers/triggers";
+
 import {
   badRequest,
   conflict,
@@ -211,7 +215,7 @@ export const automationRouter = {
     create: baseProcedure
       .input(organizationIdInputSchema.and(configureEventTriggerBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -240,6 +244,18 @@ export const automationRouter = {
         });
 
         if (existing) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.EVENT_TRIGGER_DUPLICATE_REJECTED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              output_type: input.outputType,
+              auto_publish: input.autoPublish,
+              repo_count: normalized.targets.repositoryIds.length,
+              existing_trigger_id: existing.id,
+            },
+          });
           throw conflict("Duplicate trigger", { code: "DUPLICATE_TRIGGER" });
         }
 
@@ -263,12 +279,26 @@ export const automationRouter = {
           throw internalServerError("Failed to create trigger");
         }
 
+        trackServerEvent({
+          event: POSTHOG_EVENTS.EVENT_TRIGGER_CREATED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            trigger_id: trigger.id,
+            output_type: input.outputType,
+            auto_publish: input.autoPublish,
+            enabled: input.enabled,
+            repo_count: normalized.targets.repositoryIds.length,
+          },
+        });
+
         return { trigger: serializeTrigger(trigger) };
       }),
     update: baseProcedure
       .input(triggerInputSchema.and(configureEventTriggerBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -303,6 +333,19 @@ export const automationRouter = {
         });
 
         if (duplicate) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.EVENT_TRIGGER_DUPLICATE_REJECTED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              trigger_id: input.triggerId,
+              output_type: input.outputType,
+              auto_publish: input.autoPublish,
+              repo_count: normalized.targets.repositoryIds.length,
+              existing_trigger_id: duplicate.id,
+            },
+          });
           throw conflict("Duplicate trigger", { code: "DUPLICATE_TRIGGER" });
         }
 
@@ -342,12 +385,28 @@ export const automationRouter = {
           throw internalServerError("Failed to update trigger");
         }
 
+        if (existing.enabled !== input.enabled) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.EVENT_TRIGGER_TOGGLED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              trigger_id: trigger.id,
+              enabled: input.enabled,
+              output_type: input.outputType,
+              auto_publish: input.autoPublish,
+              repo_count: normalized.targets.repositoryIds.length,
+            },
+          });
+        }
+
         return { trigger: serializeTrigger(trigger) };
       }),
     delete: baseProcedure
       .input(triggerInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -375,6 +434,22 @@ export const automationRouter = {
               eq(contentTriggers.organizationId, input.organizationId)
             )
           );
+
+        trackServerEvent({
+          event:
+            existing.sourceType === "cron"
+              ? POSTHOG_EVENTS.SCHEDULE_DELETED
+              : POSTHOG_EVENTS.EVENT_TRIGGER_DELETED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            trigger_id: existing.id,
+            output_type: existing.outputType,
+            auto_publish: existing.autoPublish,
+            enabled: existing.enabled,
+          },
+        });
 
         return { success: true };
       }),
@@ -467,7 +542,7 @@ export const automationRouter = {
     create: baseProcedure
       .input(organizationIdInputSchema.and(configureScheduleBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -493,6 +568,20 @@ export const automationRouter = {
         });
 
         if (existing) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.EVENT_TRIGGER_DUPLICATE_REJECTED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              source_type: input.sourceType,
+              output_type: input.outputType,
+              auto_publish: input.autoPublish,
+              frequency: input.sourceConfig.cron.frequency,
+              repo_count: normalized.targets.repositoryIds.length,
+              existing_trigger_id: existing.id,
+            },
+          });
           throw conflict("Duplicate trigger", { code: "DUPLICATE_TRIGGER" });
         }
 
@@ -556,6 +645,22 @@ export const automationRouter = {
             };
           });
 
+          trackServerEvent({
+            event: POSTHOG_EVENTS.SCHEDULE_CREATED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              trigger_id: trigger.id,
+              output_type: input.outputType,
+              frequency: input.sourceConfig.cron.frequency,
+              auto_publish: input.autoPublish,
+              enabled: input.enabled,
+              lookback_window: persistedLookbackWindow,
+              repo_count: normalized.targets.repositoryIds.length,
+            },
+          });
+
           return { trigger: serializeTrigger(trigger) };
         } catch (error) {
           if (qstashScheduleId) {
@@ -584,7 +689,7 @@ export const automationRouter = {
     update: baseProcedure
       .input(triggerInputSchema.and(configureScheduleBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -611,6 +716,21 @@ export const automationRouter = {
         });
 
         if (duplicate) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.EVENT_TRIGGER_DUPLICATE_REJECTED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              trigger_id: input.triggerId,
+              source_type: input.sourceType,
+              output_type: input.outputType,
+              auto_publish: input.autoPublish,
+              frequency: input.sourceConfig.cron.frequency,
+              repo_count: normalized.targets.repositoryIds.length,
+              existing_trigger_id: duplicate.id,
+            },
+          });
           throw conflict("Duplicate trigger", { code: "DUPLICATE_TRIGGER" });
         }
 
@@ -701,6 +821,22 @@ export const automationRouter = {
             };
           });
 
+          if (existing.enabled !== input.enabled) {
+            trackServerEvent({
+              event: POSTHOG_EVENTS.SCHEDULE_TOGGLED,
+              headers: context.headers,
+              userId: auth.user.id,
+              organizationId: input.organizationId,
+              properties: {
+                trigger_id: trigger.id,
+                enabled: input.enabled,
+                output_type: input.outputType,
+                frequency: input.sourceConfig.cron.frequency,
+                auto_publish: input.autoPublish,
+              },
+            });
+          }
+
           return { trigger: serializeTrigger(trigger) };
         } catch (error) {
           if (qstashScheduleId && qstashScheduleId !== existingScheduleId) {
@@ -717,7 +853,7 @@ export const automationRouter = {
     delete: baseProcedure
       .input(triggerInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -746,6 +882,22 @@ export const automationRouter = {
             )
           );
 
+        trackServerEvent({
+          event:
+            existing.sourceType === "cron"
+              ? POSTHOG_EVENTS.SCHEDULE_DELETED
+              : POSTHOG_EVENTS.EVENT_TRIGGER_DELETED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            trigger_id: existing.id,
+            output_type: existing.outputType,
+            auto_publish: existing.autoPublish,
+            enabled: existing.enabled,
+          },
+        });
+
         return { success: true };
       }),
     runNow: baseProcedure
@@ -762,6 +914,17 @@ export const automationRouter = {
             organizationId: input.organizationId,
             triggerId: input.triggerId,
             triggeredBy: auth.user.id,
+          });
+
+          trackServerEvent({
+            event: POSTHOG_EVENTS.SCHEDULE_RUN_NOW,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              trigger_id: input.triggerId,
+              workflow_run_id: workflowRunId,
+            },
           });
 
           return {

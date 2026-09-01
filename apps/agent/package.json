@@ -12,9 +12,6 @@
     "agent:dev:devtools": "AI_SDK_DEVTOOLS=true dotenv -e ../../.env -- eve dev",
     "devtools": "bun x @ai-sdk/devtools"
   },
-  "engines": {
-    "node": "24.x"
-  },
   "dependencies": {
     "@ai-sdk/devtools": "1.0.1",
     "@ai-sdk/gateway": "3.0.132",
@@ -22,6 +19,7 @@
     "@linear/sdk": "^80.0.0",
     "@notra/ai": "workspace:*",
     "@notra/db": "workspace:*",
+    "@notra/posthog": "workspace:*",
     "@notra/tools": "workspace:*",
     "@octokit/core": "^7.0.6",
     "@resvg/resvg-js": "^2.6.2",
@@ -37,7 +35,7 @@
     "sanitize-html": "^2.17.1",
     "satori": "^0.26.0",
     "satori-html": "^0.3.2",
-    "zod": "^4.3.4"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",
@@ -45,5 +43,8 @@
     "dotenv-cli": "^11.0.0",
     "microsandbox": "^0.6.1",
     "typescript": "5.9.2"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

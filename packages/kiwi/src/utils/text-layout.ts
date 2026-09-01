@@ -1,4 +1,5 @@
 import type { Font, Glyph } from "opentype.js";
+
 import type { SceneBuilder } from "../builders/scene-builder";
 import type { DerivedTextData, TextGlyph } from "../types/scene";
 import type {

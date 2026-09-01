@@ -1,11 +1,21 @@
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { redirect } from "next/navigation";
 import { createLoader, createSerializer } from "nuqs/server";
+
+import { CALLBACK_DESTINATIONS } from "@/constants/analytics-events";
+import {
+  setPersonProperties,
+  trackServerEvent,
+} from "@/lib/analytics/posthog-server";
+import { readRequestHeaders } from "@/lib/analytics/request-headers";
 import {
   getAllUserOrganizations,
   getLastActiveOrganization,
   getSession,
 } from "@/lib/auth/actions";
+import { isSessionBanned } from "@/lib/auth/banned";
 import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
+import type { CallbackDestination } from "@/types/analytics/events";
 import {
   marketingAttributionServerSearchParams,
   marketingAttributionServerUrlKeys,
@@ -34,13 +44,47 @@ export default async function AuthCallback(props: {
     signup_method?: string;
   }>;
 }) {
-  const session = await getSession();
-  const searchParams = await props.searchParams;
+  const [session, searchParams, requestHeaders] = await Promise.all([
+    getSession(),
+    props.searchParams,
+    readRequestHeaders(),
+  ]);
   const marketingAttribution = await loadMarketingAttribution(searchParams);
+  const userId = session?.user?.id ?? null;
   let returnTo = searchParams.returnTo;
 
+  const trackRouted = (destination: CallbackDestination) => {
+    trackServerEvent({
+      event: POSTHOG_EVENTS.CALLBACK_ROUTED,
+      headers: requestHeaders,
+      userId,
+      properties: { destination },
+    });
+  };
+
   if (!session?.user) {
+    if (await isSessionBanned()) {
+      trackRouted(CALLBACK_DESTINATIONS.BANNED);
+      redirect("/auth/banned");
+    }
+    trackRouted(CALLBACK_DESTINATIONS.LOGIN);
     redirect("/login");
+  }
+
+  if (
+    marketingAttribution.dbSource ||
+    marketingAttribution.dbLandingPageH1Variant ||
+    marketingAttribution.signupMethod
+  ) {
+    setPersonProperties({
+      userId: session.user.id,
+      setOnce: {
+        db_source: marketingAttribution.dbSource ?? undefined,
+        landing_page_h1_variant:
+          marketingAttribution.dbLandingPageH1Variant ?? undefined,
+        signup_method_param: marketingAttribution.signupMethod ?? undefined,
+      },
+    });
   }
 
   if (returnTo && typeof returnTo === "string") {
@@ -54,6 +98,7 @@ export default async function AuthCallback(props: {
       !returnTo.startsWith("//") &&
       !returnTo.includes("\\")
     ) {
+      trackRouted(CALLBACK_DESTINATIONS.RETURN_TO);
       redirect(returnTo);
       return;
     }
@@ -62,12 +107,14 @@ export default async function AuthCallback(props: {
   const organization = await getLastActiveOrganization();
 
   if (!organization) {
+    trackRouted(CALLBACK_DESTINATIONS.ONBOARDING);
     redirect("/onboarding");
   }
 
   const hasSubHistory = await hasPaidSubscriptionHistory(organization.id);
 
   if (hasSubHistory) {
+    trackRouted(CALLBACK_DESTINATIONS.DASHBOARD);
     redirect(`/${organization.slug}`);
   }
 
@@ -77,6 +124,7 @@ export default async function AuthCallback(props: {
       org.id !== organization.id &&
       (await hasPaidSubscriptionHistory(org.id))
     ) {
+      trackRouted(CALLBACK_DESTINATIONS.DASHBOARD);
       redirect(`/${org.slug}`);
     }
   }
@@ -85,5 +133,6 @@ export default async function AuthCallback(props: {
     "/onboarding",
     marketingAttribution
   );
+  trackRouted(CALLBACK_DESTINATIONS.ONBOARDING);
   redirect(onboardingUrl);
 }

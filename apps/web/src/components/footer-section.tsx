@@ -1,8 +1,7 @@
-"use client";
-
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
+
 import { DeferredDithering } from "@/components/deferred-dithering";
 import {
   FOOTER_DITHERING,
@@ -12,6 +11,7 @@ import {
   FOOTER_TAGLINE,
 } from "@/constants/landing/footer";
 import type { FooterLink } from "@/types/landing/footer";
+
 import { NotraMark } from "./notra-mark";
 
 const LINK_CLASS =
@@ -22,7 +22,7 @@ function FooterColumnLink({ link }: { link: FooterLink }) {
     return (
       <span
         className={cn(
-          "font-medium font-sans text-[#1e1e1e99] text-base leading-6 tracking-[-0.01em] dark:text-foreground/60"
+          "dark:text-foreground/60 font-sans text-base leading-6 font-medium tracking-[-0.01em] text-[#1e1e1e99]"
         )}
       >
         {link.label}
@@ -47,7 +47,7 @@ export default function FooterSection() {
 
   return (
     <footer className="relative isolate overflow-hidden rounded-t-3xl bg-[linear-gradient(in_oklab_180deg,oklab(80.3%_0.045_-0.074/15%)_0%,oklab(71.8%_0.066_-0.109/50%)_100%)] pt-6 shadow-[0_0.0625rem_0.125rem_#28282814,0_0_0_0.0625rem_#ececec] dark:bg-[#141019] dark:bg-none dark:shadow-none">
-      <div className="-z-10 pointer-events-none absolute inset-0 overflow-hidden">
+      <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
         <DeferredDithering
           className="absolute top-[8.8125rem] left-[-5.40625rem] h-[66.125rem] w-[calc(100%+10.8125rem)] min-w-[100.8125rem]"
           colorBack={FOOTER_DITHERING.colorBack}
@@ -60,12 +60,13 @@ export default function FooterSection() {
         />
       </div>
 
-      <div className="-z-10 pointer-events-none absolute inset-x-0 bottom-0 flex justify-center overflow-hidden">
+      <div className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 flex justify-center overflow-hidden">
         <Image
           alt=""
           aria-hidden="true"
-          className="h-auto w-[121.4%] min-w-[60rem] max-w-[126rem] translate-y-[23%] dark:opacity-40"
+          className="h-auto w-[121.4%] max-w-[126rem] min-w-[60rem] translate-y-[23%] dark:opacity-40"
           height={536}
+          sizes="(max-width: 49.42rem) 60rem, (max-width: 103.79rem) 121.4vw, 126rem"
           src="/marketing/landing/footer-wordmark.svg"
           width={1748}
         />
@@ -76,14 +77,14 @@ export default function FooterSection() {
           <div className="flex w-full max-w-[18.5rem] flex-col gap-7">
             <div className="flex flex-col gap-2.5">
               <div className="flex items-center gap-2">
-                <span className="flex size-10 items-center justify-center rounded-lg dark:inset-shadow-sm dark:inset-shadow-white/8 dark:bg-[#F6F3F1] dark:shadow-black/40 dark:shadow-sm dark:ring-1 dark:ring-white/10">
+                <span className="flex size-10 items-center justify-center rounded-lg dark:bg-[#F6F3F1] dark:shadow-sm dark:ring-1 dark:inset-shadow-sm dark:shadow-black/40 dark:ring-white/10 dark:inset-shadow-white/8">
                   <NotraMark className="size-7 shrink-0" />
                 </span>
-                <span className="font-display font-semibold text-foreground text-lg leading-[1.14] tracking-[-0.015em]">
+                <span className="font-display text-foreground text-lg leading-[1.14] font-semibold tracking-[-0.015em]">
                   Notra
                 </span>
               </div>
-              <p className="font-medium font-sans text-[#1e1e1e99] text-base leading-6 tracking-[-0.01em] dark:text-foreground/70">
+              <p className="dark:text-foreground/70 font-sans text-base leading-6 font-medium tracking-[-0.01em] text-[#1e1e1e99]">
                 {FOOTER_TAGLINE}
               </p>
             </div>
@@ -92,7 +93,7 @@ export default function FooterSection() {
               {FOOTER_SOCIAL_LINKS.map((social) => (
                 <Link
                   aria-label={`Visit Notra on ${social.label}`}
-                  className="text-[#1e1e1e80] transition-colors hover:text-[#1e1e1e] dark:text-foreground/50 dark:hover:text-foreground"
+                  className="dark:text-foreground/50 dark:hover:text-foreground text-[#1e1e1e80] transition-colors hover:text-[#1e1e1e]"
                   href={social.href}
                   key={social.label}
                   rel="noopener noreferrer"
@@ -107,7 +108,7 @@ export default function FooterSection() {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 {FOOTER_LEGAL_LINKS.map((link) => (
                   <Link
-                    className="font-medium font-sans text-[#1e1e1e66] text-[0.8125rem] leading-[1.125rem] transition-colors hover:text-[#1e1e1e] dark:text-foreground/50 dark:hover:text-foreground"
+                    className="dark:text-foreground/50 dark:hover:text-foreground font-sans text-[0.8125rem] leading-[1.125rem] font-medium text-[#1e1e1e66] transition-colors hover:text-[#1e1e1e]"
                     href={link.href ?? "/"}
                     key={link.label}
                   >
@@ -115,7 +116,7 @@ export default function FooterSection() {
                   </Link>
                 ))}
               </div>
-              <p className="font-medium font-sans text-[#1e1e1e66] text-[0.8125rem] leading-[1.125rem] dark:text-foreground/50">
+              <p className="dark:text-foreground/50 font-sans text-[0.8125rem] leading-[1.125rem] font-medium text-[#1e1e1e66]">
                 {`© ${year} Notra, Inc.`}
               </p>
             </div>
@@ -129,7 +130,7 @@ export default function FooterSection() {
               >
                 {column.groups.map((group) => (
                   <div className="flex flex-col gap-4" key={group.title}>
-                    <h3 className="font-medium font-sans text-[#8b5cf6] text-base leading-6 tracking-[-0.01em] dark:text-[#a78bfa]">
+                    <h3 className="font-sans text-base leading-6 font-medium tracking-[-0.01em] text-[#8b5cf6] dark:text-[#a78bfa]">
                       {group.title}
                     </h3>
                     <ul className="flex flex-col gap-4.5">

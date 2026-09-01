@@ -1,3 +1,5 @@
+import { PUBLIC_API_SCOPES } from "@notra/utils/api-scopes";
+
 import { SITE_DESCRIPTION } from "@/utils/metadata";
 import { SOCIAL_LINKS } from "@/utils/social-links";
 import { API_URL, APP_URL, DOCS_URL, MCP_URL, SITE_URL } from "@/utils/urls";
@@ -8,6 +10,7 @@ const AGENT_DISCOVERY_PATHS = {
   apiCatalog: "/.well-known/api-catalog",
   authMarkdown: "/auth.md",
   botAuthDirectory: "/.well-known/http-message-signatures-directory",
+  feedbackMarkdown: "/feedback.md",
   mcp: "/.well-known/mcp",
   oauthProtectedResource: "/.well-known/oauth-protected-resource",
   schemaMap: "/schema-map.xml",
@@ -22,24 +25,6 @@ export const NOTRA_SAME_AS = [
   SOCIAL_LINKS.linkedin,
   SOCIAL_LINKS.youtube,
   SOCIAL_LINKS.reddit,
-] as const;
-
-const PUBLIC_API_SCOPES = [
-  "offline_access",
-  "posts.read",
-  "posts.write",
-  "brand-identities.read",
-  "brand-identities.write",
-  "integrations.read",
-  "integrations.write",
-  "schedules.read",
-  "schedules.write",
-  "event-triggers.read",
-  "event-triggers.write",
-  "chats.read",
-  "chats.write",
-  "skills.read",
-  "skills.write",
 ] as const;
 
 export const NOTRA_CAPABILITIES = [
@@ -57,19 +42,15 @@ export function apiUrl(path = "") {
   return `${API_URL}${path}`;
 }
 
-function appUrl(path = "") {
-  return `${APP_URL}${path}`;
-}
-
 function authIssuerUrl() {
-  return appUrl("/api/auth");
+  return "https://auth.usenotra.com";
 }
 
-export function buildAgentAuthMetadata() {
+function buildAgentAuthMetadata() {
   return {
-    register_uri: appUrl("/agent/auth/register"),
+    register_uri: `${authIssuerUrl()}/oauth2/register`,
     claim_uri: siteUrl("/agent/auth/claim"),
-    revocation_uri: appUrl("/agent/auth/revoke"),
+    revocation_uri: `${authIssuerUrl()}/oauth2/revoke`,
     skill: siteUrl(AGENT_DISCOVERY_PATHS.authMarkdown),
     identity_types_supported: ["anonymous", "identity_assertion"],
     anonymous: {
@@ -118,6 +99,11 @@ export function buildAgentJson() {
     },
     capabilities: NOTRA_CAPABILITIES,
     auth: buildAgentAuthMetadata(),
+    feedback: {
+      markdown: siteUrl(AGENT_DISCOVERY_PATHS.feedbackMarkdown),
+      endpoint: apiUrl("/v1/feedback/notra"),
+      docs: `${DOCS_URL}/api/agent-feedback`,
+    },
     contact: {
       email: NOTRA_CONTACT_EMAIL,
       support: NOTRA_SUPPORT_EMAIL,

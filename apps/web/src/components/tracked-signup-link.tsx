@@ -3,6 +3,7 @@
 import { track } from "@databuddy/sdk/react";
 import Link from "next/link";
 import type { ComponentProps, MouseEvent } from "react";
+
 import {
   DATABUDDY_SIGNUP_STARTED_EVENT,
   serializeSignupAttribution,

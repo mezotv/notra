@@ -1,13 +1,15 @@
 import type { ComponentType, SVGProps } from "react";
 
 export type PricingIconKey =
-  | "team"
-  | "credits"
-  | "workflows"
-  | "integrations"
+  | "tracking"
+  | "images"
+  | "content"
+  | "social"
+  | "projects"
   | "references"
   | "retention"
-  | "support";
+  | "support"
+  | "zdr";
 
 export type PricingIcon = ComponentType<SVGProps<SVGSVGElement>>;
 
@@ -44,6 +46,13 @@ export interface PricingPlan {
   hasAnnualBadge?: boolean;
   cta: PricingCta;
   features: PricingFeature[];
+}
+
+export interface TrackedEngine {
+  name: string;
+  src: string;
+  darkSrc?: string;
+  width: number;
 }
 
 export interface PricingCardProps {

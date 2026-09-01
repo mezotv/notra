@@ -1,6 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+
 import { ImageResponse } from "next/og";
+import type { OgContributor } from "~types/github";
+
 import {
   OG_EXCLUDED_CONTRIBUTOR,
   OG_MAX_CONTRIBUTORS,
@@ -8,7 +11,6 @@ import {
 } from "@/utils/constants";
 import { fetchContributorsData } from "@/utils/github";
 import { loadGoogleFont, truncate } from "@/utils/og";
-import type { OgContributor } from "~types/github";
 
 export const alt = "Notra contributors and community";
 export const size = { width: 1200, height: 630 };

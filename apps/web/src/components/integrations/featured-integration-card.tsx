@@ -1,10 +1,12 @@
 import Link from "next/link";
+
 import {
   buildAuthorCategoryLine,
   buildFeaturedMeta,
   getIntegrationHref,
 } from "@/lib/integrations/helpers";
 import type { FeaturedIntegrationCardProps } from "@/types/integrations";
+
 import { IntegrationBanner } from "./integration-banner";
 import { IntegrationConnectButton } from "./integration-connect-button";
 import { IntegrationLogo } from "./integration-logo";
@@ -21,7 +23,7 @@ export function FeaturedIntegrationCard({
     >
       <Link
         aria-label={`View ${integration.name} details`}
-        className="absolute inset-0 z-0 cursor-pointer rounded-3xl outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        className="focus-visible:ring-primary absolute inset-0 z-0 cursor-pointer rounded-3xl outline-none focus-visible:ring-2"
         href={getIntegrationHref(integration)}
       />
       <div className="pointer-events-none relative z-10 flex flex-col">
@@ -35,10 +37,10 @@ export function FeaturedIntegrationCard({
               <IntegrationLogo fill integration={integration} size={44} />
             </span>
             <div className="flex grow flex-col gap-0.5">
-              <span className="font-sans font-semibold text-[#1E1E1E] text-[1.375rem] leading-[1.18] tracking-[-0.015em] dark:text-white">
+              <span className="font-sans text-[1.375rem] leading-[1.18] font-semibold tracking-[-0.015em] text-[#1E1E1E] dark:text-white">
                 {integration.name}
               </span>
-              <span className="font-sans text-[#1E1E1EA6] text-[0.875rem] leading-[1.29] tracking-[-0.01em] dark:text-white/60">
+              <span className="font-sans text-[0.875rem] leading-[1.29] tracking-[-0.01em] text-[#1E1E1EA6] dark:text-white/60">
                 {buildAuthorCategoryLine(integration)}
               </span>
             </div>
@@ -48,11 +50,11 @@ export function FeaturedIntegrationCard({
             />
           </div>
           {integration.description ? (
-            <span className="line-clamp-2 font-sans text-[#1E1E1EBF] text-[0.9375rem] leading-[1.47] tracking-[-0.005em] dark:text-white/70">
+            <span className="line-clamp-2 font-sans text-[0.9375rem] leading-[1.47] tracking-[-0.005em] text-[#1E1E1EBF] dark:text-white/70">
               {integration.description}
             </span>
           ) : null}
-          <span className="font-medium font-sans text-[#1E1E1E80] text-[0.8125rem] leading-[1.38] tracking-[-0.005em] dark:text-white/50">
+          <span className="font-sans text-[0.8125rem] leading-[1.38] font-medium tracking-[-0.005em] text-[#1E1E1E80] dark:text-white/50">
             {buildFeaturedMeta(integration)}
           </span>
         </div>

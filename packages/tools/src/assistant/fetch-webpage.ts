@@ -1,5 +1,6 @@
 import { fetchWebpage } from "@notra/ai/utils/context-dev";
 import { defineTool } from "eve/tools";
+
 import { fetchWebpageInputSchema } from "../schemas/assistant-tools";
 
 export function createFetchWebpageTool() {

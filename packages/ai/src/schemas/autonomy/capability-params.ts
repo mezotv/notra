@@ -1,8 +1,13 @@
 import {
+  IRIS_CAPABILITY_ANALYTICS_READ,
   IRIS_CAPABILITY_BLOG_POST_CREATE,
   IRIS_CAPABILITY_CHANGELOG_CREATE,
+  IRIS_CAPABILITY_EXPERIMENT_CREATE,
+  IRIS_CAPABILITY_EXPERIMENT_READ,
   IRIS_CAPABILITY_SOCIAL_POST_CREATE,
   IRIS_CAPABILITY_SOURCE_GITHUB_READ,
+  IRIS_EXPERIMENT_DEFAULT_METRIC,
+  IRIS_EXPERIMENT_DEFAULT_PROVIDER,
   IRIS_MAX_BLOG_POST_IMAGES,
   IRIS_MIN_IMAGES_PER_POST,
 } from "@notra/ai/constants/autonomy-capabilities";
@@ -50,8 +55,70 @@ export type IrisSourceReadTaskParams = z.infer<
   typeof irisSourceReadTaskParamsSchema
 >;
 
+export const IRIS_ANALYTICS_MIN_DAYS = 1;
+export const IRIS_ANALYTICS_MAX_DAYS = 365;
+export const IRIS_ANALYTICS_MIN_TOP_POSTS = 1;
+export const IRIS_ANALYTICS_MAX_TOP_POSTS = 25;
+
+export const irisAnalyticsReadTaskParamsSchema = z.object({
+  days: z
+    .number()
+    .int()
+    .min(IRIS_ANALYTICS_MIN_DAYS)
+    .max(IRIS_ANALYTICS_MAX_DAYS)
+    .optional(),
+  topPostsLimit: z
+    .number()
+    .int()
+    .min(IRIS_ANALYTICS_MIN_TOP_POSTS)
+    .max(IRIS_ANALYTICS_MAX_TOP_POSTS)
+    .optional(),
+});
+export type IrisAnalyticsReadTaskParams = z.infer<
+  typeof irisAnalyticsReadTaskParamsSchema
+>;
+
+export const IRIS_EXPERIMENT_NAME_MAX_LENGTH = 120;
+export const IRIS_EXPERIMENT_HYPOTHESIS_MAX_LENGTH = 500;
+export const IRIS_EXPERIMENT_MIN_READ_LIMIT = 1;
+export const IRIS_EXPERIMENT_MAX_READ_LIMIT = 25;
+
+export const irisExperimentMetricSchema = z.enum([
+  "engagement",
+  "impressions",
+  "likes",
+]);
+export type IrisExperimentMetric = z.infer<typeof irisExperimentMetricSchema>;
+
+export const irisExperimentCreateTaskParamsSchema = z.object({
+  name: z.string().min(1).max(IRIS_EXPERIMENT_NAME_MAX_LENGTH),
+  hypothesis: z.string().max(IRIS_EXPERIMENT_HYPOTHESIS_MAX_LENGTH).optional(),
+  variantAPostId: z.string().min(1),
+  variantBPostId: z.string().min(1),
+  metric: irisExperimentMetricSchema.default(IRIS_EXPERIMENT_DEFAULT_METRIC),
+  provider: irisSocialPlatformSchema.default(IRIS_EXPERIMENT_DEFAULT_PROVIDER),
+});
+export type IrisExperimentCreateTaskParams = z.infer<
+  typeof irisExperimentCreateTaskParamsSchema
+>;
+
+export const irisExperimentReadTaskParamsSchema = z.object({
+  limit: z
+    .number()
+    .int()
+    .min(IRIS_EXPERIMENT_MIN_READ_LIMIT)
+    .max(IRIS_EXPERIMENT_MAX_READ_LIMIT)
+    .optional(),
+});
+export type IrisExperimentReadTaskParams = z.infer<
+  typeof irisExperimentReadTaskParamsSchema
+>;
+
 export const irisTaskParamSchemas: Record<string, z.ZodType> = {
   [IRIS_CAPABILITY_SOURCE_GITHUB_READ]: irisSourceReadTaskParamsSchema,
+  [IRIS_CAPABILITY_ANALYTICS_READ]: irisAnalyticsReadTaskParamsSchema,
+  [IRIS_CAPABILITY_EXPERIMENT_CREATE]: irisExperimentCreateTaskParamsSchema,
+  [IRIS_CAPABILITY_EXPERIMENT_READ]: irisExperimentReadTaskParamsSchema,
   [IRIS_CAPABILITY_CHANGELOG_CREATE]: irisContentTaskParamsSchema,
   [IRIS_CAPABILITY_BLOG_POST_CREATE]: irisBlogPostTaskParamsSchema,
   [IRIS_CAPABILITY_SOCIAL_POST_CREATE]: irisSocialPostTaskParamsSchema,

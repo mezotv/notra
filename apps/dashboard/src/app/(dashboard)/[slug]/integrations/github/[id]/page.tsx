@@ -1,7 +1,9 @@
 import { getGitHubIntegrationById } from "@notra/ai/integrations/github";
 import type { Metadata } from "next";
 import { Suspense } from "react";
+
 import { validateOrganizationAccess } from "@/lib/auth/actions";
+
 import Loading from "../loading";
 import PageClient from "./page-client";
 

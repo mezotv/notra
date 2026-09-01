@@ -14,7 +14,7 @@ export interface CreateModelOptions {
 }
 
 type DevToolsMiddleware =
-  typeof import("@ai-sdk/devtools")["devToolsMiddleware"];
+  (typeof import("@ai-sdk/devtools"))["devToolsMiddleware"];
 
 export function createModel(
   organizationId: string | undefined,
@@ -22,7 +22,7 @@ export function createModel(
   options?: CreateModelOptions,
   log?: AILogTarget
 ): GatewayResult {
-  const base = gateway(modelId);
+  const base = gateway(modelId, { organizationId });
 
   if (!organizationId || options?.disableMemory) {
     return wrapModelForDevTools(wrapModelWithObservability(base, log));

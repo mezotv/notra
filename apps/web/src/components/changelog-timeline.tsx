@@ -1,6 +1,7 @@
+import type { ChangelogTimelineProps } from "~types/changelog";
+
 import { ChangelogFeaturedEntry } from "@/components/changelog-featured-entry";
 import { ChangelogRow } from "@/components/changelog-row";
-import type { ChangelogTimelineProps } from "~types/changelog";
 
 export function ChangelogTimeline({
   items,
@@ -11,10 +12,10 @@ export function ChangelogTimeline({
   if (items.length === 0) {
     return (
       <div className="rounded-3xl bg-[#C8B2EE1A] px-6 py-12 text-center ring-1 ring-[#1E1E1E1A] dark:bg-white/[0.03] dark:ring-white/10">
-        <h2 className="font-display font-semibold text-foreground text-xl">
+        <h2 className="font-display text-foreground text-xl font-semibold">
           {emptyTitle}
         </h2>
-        <p className="mt-2 font-sans text-muted-foreground text-sm leading-6">
+        <p className="text-muted-foreground mt-2 font-sans text-sm leading-6">
           {emptyDescription}
         </p>
       </div>

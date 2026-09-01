@@ -33,3 +33,5 @@ export const BRAND_ANALYSIS_PAGE_WEIGHTS = [
   { pattern: /\/case-stud(y|ies)\/?$/i, weight: 55 },
   { pattern: /\/pricing\/?$/i, weight: 35 },
 ];
+export const COMPETITORS_TIMEOUT_MS = 60_000;
+export const BRAND_SEARCH_TYPO_TOLERANCE = 1;

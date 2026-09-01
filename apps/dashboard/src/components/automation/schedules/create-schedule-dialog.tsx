@@ -49,6 +49,7 @@ import { useForm, useStore } from "@tanstack/react-form";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { BrandIdentityRadioGroup } from "@/components/brand-identity-radio-group";
 import { Button } from "@/components/button";
 import { FormatCard } from "@/components/content/create/format-card";
@@ -80,6 +81,7 @@ import {
   getDefaultScheduleValues,
   parseTimeValue,
 } from "@/utils/schedule-form";
+
 import { ScheduleDayPicker } from "./schedule-day-picker";
 import { ScheduleFrequencyTabs } from "./schedule-frequency-tabs";
 import { ScheduleSummaryCard } from "./schedule-summary-card";
@@ -225,11 +227,9 @@ export function CreateScheduleDialog({
 
   const brandVoices = brandResponse?.voices ?? [];
   const nonDefaultBrandVoices = brandVoices.filter((voice) => !voice.isDefault);
-  const defaultBrandVoiceName = brandVoices.find(
-    (voice) => voice.isDefault
-  )?.name;
-  const defaultBrandVoiceLabel = defaultBrandVoiceName
-    ? `${defaultBrandVoiceName} (Default)`
+  const defaultBrandVoice = brandVoices.find((voice) => voice.isDefault);
+  const defaultBrandVoiceLabel = defaultBrandVoice
+    ? `${defaultBrandVoice.name} (Default)`
     : "Default brand voice";
 
   const { integrationOptions, githubIntegrationId } = useMemo(() => {
@@ -335,7 +335,7 @@ export function CreateScheduleDialog({
               <div className="space-y-8 p-6">
                 <section className="space-y-3">
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-base">Content format</h3>
+                    <h3 className="text-base font-semibold">Content format</h3>
                     <p className="text-muted-foreground text-sm">
                       What should we generate?
                     </p>
@@ -358,7 +358,7 @@ export function CreateScheduleDialog({
 
                 <section className="space-y-3">
                   <div className="space-y-1">
-                    <h3 className="flex items-center gap-1 font-semibold text-base">
+                    <h3 className="flex items-center gap-1 text-base font-semibold">
                       Name
                       <span aria-hidden="true" className="text-destructive">
                         *
@@ -388,7 +388,7 @@ export function CreateScheduleDialog({
 
                 <section className="space-y-3">
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-base">Schedule</h3>
+                    <h3 className="text-base font-semibold">Schedule</h3>
                     <p className="text-muted-foreground text-sm">
                       When should this run? Times use UTC.
                     </p>
@@ -416,7 +416,7 @@ export function CreateScheduleDialog({
                       Time
                     </Label>
                     <Input
-                      className="w-full appearance-none bg-background sm:w-40 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                      className="bg-background w-full appearance-none sm:w-40 [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
                       id="schedule-time"
                       onChange={(event) => {
                         const parsed = parseTimeValue(event.target.value);
@@ -434,7 +434,7 @@ export function CreateScheduleDialog({
 
                 <section className="space-y-3">
                   <div className="space-y-1">
-                    <h3 className="flex items-center gap-1 font-semibold text-base">
+                    <h3 className="flex items-center gap-1 text-base font-semibold">
                       Sources
                       <span aria-hidden="true" className="text-destructive">
                         *
@@ -447,7 +447,7 @@ export function CreateScheduleDialog({
                   {isLoadingRepos && <Skeleton className="h-10 w-full" />}
                   {!isLoadingRepos && integrationOptions.length === 0 && (
                     <div className="flex items-center gap-2 rounded-lg border border-dashed p-3">
-                      <span className="flex-1 text-muted-foreground text-xs">
+                      <span className="text-muted-foreground flex-1 text-xs">
                         No integrations connected yet.
                       </span>
                       <AddRepositoryButton
@@ -526,7 +526,7 @@ export function CreateScheduleDialog({
 
                 <section className="space-y-3">
                   <div className="space-y-1">
-                    <h3 className="font-semibold text-base">
+                    <h3 className="text-base font-semibold">
                       {FORMAT_CARD_META[outputType].label} rules
                     </h3>
                     <p className="text-muted-foreground text-sm">
@@ -582,6 +582,7 @@ export function CreateScheduleDialog({
                           emptyOption={{
                             label: defaultBrandVoiceLabel,
                             description: "Use your default brand voice.",
+                            voice: defaultBrandVoice,
                           }}
                           id={field.name}
                           label="Brand voice"
@@ -599,13 +600,13 @@ export function CreateScheduleDialog({
                         <div className="flex items-center justify-between rounded-lg border p-3">
                           <div className="flex items-center gap-1.5">
                             <Label
-                              className="cursor-pointer font-medium text-sm"
+                              className="cursor-pointer text-sm font-medium"
                               htmlFor={field.name}
                             >
                               Auto-publish
                             </Label>
                             <Tooltip>
-                              <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+                              <TooltipTrigger className="text-muted-foreground inline-flex cursor-help">
                                 <HugeiconsIcon
                                   icon={InformationCircleIcon}
                                   size={14}
@@ -632,7 +633,7 @@ export function CreateScheduleDialog({
               </div>
             </div>
 
-            <div className="shrink-0 border-t bg-muted/30 px-4 py-3">
+            <div className="bg-muted/30 shrink-0 border-t px-4 py-3">
               <div className="flex items-center justify-between gap-3">
                 <FooterStatus
                   errorMessage={formError}
@@ -700,7 +701,7 @@ interface FooterStatusProps {
 function FooterStatus({ errorMessage, repositoryCount }: FooterStatusProps) {
   if (errorMessage) {
     return (
-      <span className="flex items-center gap-1.5 font-medium text-destructive text-xs">
+      <span className="text-destructive flex items-center gap-1.5 text-xs font-medium">
         <HugeiconsIcon className="size-3.5" icon={AlertCircleIcon} />
         {errorMessage}
       </span>
@@ -708,7 +709,7 @@ function FooterStatus({ errorMessage, repositoryCount }: FooterStatusProps) {
   }
   return (
     <span
-      className={cn("flex items-center gap-1.5 text-muted-foreground text-xs")}
+      className={cn("text-muted-foreground flex items-center gap-1.5 text-xs")}
     >
       {repositoryCount === 0
         ? "No sources selected yet"

@@ -7,7 +7,10 @@ import {
   type PermissionOptionProps,
 } from "./permission-option";
 import { PermissionRow, type PermissionRowProps } from "./permission-row";
-import type { PermissionTone } from "./permission-selector-context";
+import type {
+  PermissionIndicatorMotion,
+  PermissionTone,
+} from "./permission-selector-context";
 
 export interface PermissionSelectorProps {
   children: ReactNode;
@@ -34,4 +37,9 @@ function PermissionSelector({
 }
 
 export { PermissionSelector, PermissionRow, PermissionOption };
-export type { PermissionRowProps, PermissionOptionProps, PermissionTone };
+export type {
+  PermissionIndicatorMotion,
+  PermissionOptionProps,
+  PermissionRowProps,
+  PermissionTone,
+};

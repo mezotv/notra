@@ -12,6 +12,7 @@ import {
   useRef,
   useState,
 } from "react";
+
 import { authClient } from "@/lib/auth/client";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
@@ -174,6 +175,9 @@ export function OrganizationsProvider({
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.AUTH.activeOrganization,
           });
+          queryClient.invalidateQueries({
+            queryKey: QUERY_KEYS.AUTH.session,
+          });
         }
       })
       .catch((error) => {
@@ -221,6 +225,9 @@ export function OrganizationsProvider({
               queryClient.invalidateQueries({ refetchType: "none" });
               queryClient.invalidateQueries({
                 queryKey: QUERY_KEYS.AUTH.activeOrganization,
+              });
+              queryClient.invalidateQueries({
+                queryKey: QUERY_KEYS.AUTH.session,
               });
             }
           })

@@ -1,5 +1,6 @@
 "use client";
 
+import { BlogEditor } from "./blog-editor";
 import { ChangelogEditor } from "./changelog-editor";
 import { ImageEditor } from "./image-editor";
 import { LinkedInEditor } from "./linkedin-editor";
@@ -23,6 +24,9 @@ export function ContentEditorSwitch({
 
     case "twitter_post":
       return <TwitterEditor {...props} />;
+
+    case "blog_post":
+      return <BlogEditor {...props} />;
 
     default:
       return <ChangelogEditor {...props} />;

@@ -35,3 +35,5 @@ export const IGNORED_TAGS = new Set([
   "head",
 ]);
 export const MAX_LAYER_NAME_LENGTH = 80;
+export const SVG_GEOMETRY_SELECTOR =
+  "path, circle, ellipse, rect, line, polyline, polygon";

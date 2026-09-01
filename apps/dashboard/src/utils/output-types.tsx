@@ -8,6 +8,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import type { JSX } from "react";
+
 import { FORMAT_CARD_META } from "@/constants/content-formats";
 
 const OUTPUT_TYPE_LABELS: Record<string, string> = {

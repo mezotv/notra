@@ -1,5 +1,6 @@
 import { ORPCError } from "@orpc/server";
 import z from "zod";
+
 import {
   ALLOWED_CHAT_MIME_TYPES,
   ALLOWED_MIME_TYPES,
@@ -131,6 +132,10 @@ export const uploadSvgSchema = z.discriminatedUnion("type", [
 ]);
 
 export type UploadSvgInput = z.infer<typeof uploadSvgSchema>;
+
+export const uploadLogoFromUrlSchema = z.object({
+  sourceUrl: z.url().max(2048),
+});
 
 const maxSizeByType = {
   avatar: MAX_AVATAR_FILE_SIZE,

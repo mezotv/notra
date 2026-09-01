@@ -60,6 +60,9 @@ export const IRIS_ARTIFACT_EXCERPT_LIMIT = 180;
 
 export const IRIS_CAPABILITY_LABELS: Record<string, string> = {
   "source.github.read": "Repository read",
+  "analytics.social.read": "Read social analytics",
+  "analytics.experiment.create": "Start A/B test",
+  "analytics.experiment.read": "Read A/B tests",
   "content.changelog.create": "Changelog",
   "content.blog-post.create": "Blog post",
   "content.social-post.create": "Social post",

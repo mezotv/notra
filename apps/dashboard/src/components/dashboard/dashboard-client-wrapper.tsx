@@ -14,6 +14,7 @@ interface DashboardClientWrapperProps {
   children: React.ReactNode;
   initialActiveOrganization?: InitialActiveOrganization | null;
   initialSidebarOpen?: boolean;
+  initialSidebarWidth: number;
   modal?: React.ReactNode;
 }
 
@@ -21,6 +22,7 @@ export function DashboardClientWrapper({
   children,
   initialActiveOrganization,
   initialSidebarOpen = true,
+  initialSidebarWidth,
   modal,
 }: DashboardClientWrapperProps) {
   return (
@@ -30,7 +32,10 @@ export function DashboardClientWrapper({
       <DatabuddyFlagsProvider>
         <FeedbackProvider>
           <CommandPaletteProvider>
-            <DashboardShell initialSidebarOpen={initialSidebarOpen}>
+            <DashboardShell
+              initialSidebarOpen={initialSidebarOpen}
+              initialSidebarWidth={initialSidebarWidth}
+            >
               {children}
             </DashboardShell>
             <CommandPalette />

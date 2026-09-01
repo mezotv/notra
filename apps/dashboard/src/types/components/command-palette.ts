@@ -2,6 +2,7 @@ import type { IconSvgElement } from "@hugeicons/react";
 
 export type CommandSection =
   | "Navigation"
+  | "GEO"
   | "Workspace"
   | "Automation"
   | "Manage"
@@ -14,6 +15,7 @@ export interface CommandRoute {
   icon: IconSvgElement;
   section: CommandSection;
   path: (slug: string) => string;
+  requiresAiCredits?: boolean;
 }
 
 export type AiResult =

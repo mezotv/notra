@@ -2,14 +2,19 @@
 
 import type { ContentType } from "@notra/ai/schemas/content";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import Link from "next/link";
 import { useId } from "react";
+
+import { Button } from "@/components/button";
 import { ContentCard } from "@/components/content/content-card";
 import { ContentSkeletonCard } from "@/components/content/content-skeleton-card";
 import { CreateContentDialog } from "@/components/content/create-content-dialog";
 import { ContentActivityCard } from "@/components/dashboard/content-activity-card";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
 import { authClient } from "@/lib/auth/client";
 import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useTodayPosts } from "@/lib/hooks/use-posts";
@@ -74,6 +79,7 @@ export default function PageClient({
             <div className="w-full max-w-[340px] sm:max-w-none" key={post.id}>
               <ContentCard
                 className="min-h-35"
+                contentSubtype={post.contentSubtype}
                 contentType={post.contentType as ContentType}
                 href={`/${organizationSlug}/content/${post.id}`}
                 id={post.id}
@@ -98,8 +104,22 @@ export default function PageClient({
 
     return (
       <EmptyState
-        className="p-6"
+        action={
+          <Button
+            nativeButton={false}
+            render={<Link href={`/${organizationSlug}/content`} />}
+          >
+            View content
+          </Button>
+        }
         description="You have no new posts today. Create one now or review your existing drafts on the content page."
+        preview={
+          <EmptyStateCardsPreview
+            columns={3}
+            count={EMPTY_STATE_CARD_COUNT.content}
+            variant="content"
+          />
+        }
         title="No content created today"
       />
     );
@@ -109,18 +129,18 @@ export default function PageClient({
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">{greetingText}</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{greetingText}</h1>
         </div>
 
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-semibold text-lg">Today&apos;s Content</h2>
+              <h2 className="text-lg font-semibold">Today&apos;s Content</h2>
               <p className="text-muted-foreground text-sm">
                 Latest items created today
               </p>
             </div>
-            <CreateContentDialog organizationId={organizationId} />
+            <CreateContentDialog entry="home" organizationId={organizationId} />
           </div>
 
           {todayContent}
@@ -128,7 +148,7 @@ export default function PageClient({
 
         <section className="space-y-4">
           <div>
-            <h2 className="font-semibold text-lg">Content Activity</h2>
+            <h2 className="text-lg font-semibold">Content Activity</h2>
             <p className="text-muted-foreground text-sm">
               Your content creation over the year
             </p>

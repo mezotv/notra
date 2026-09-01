@@ -1,5 +1,6 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
 import { BRAND_GUIDELINE_HEX_COLOR_REGEX } from "@/constants/brand-guidelines";
 
 export const guidelineColorRoleSchema = z.enum([

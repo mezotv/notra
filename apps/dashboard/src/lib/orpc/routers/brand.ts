@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
+
 import {
   allowUnmeteredAiInDevelopment,
   autumn,
 } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
-import { deleteQstashSchedule, getAppUrl } from "@notra/ai/qstash/triggers";
+import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import {
@@ -20,11 +21,19 @@ import {
   contentTriggers,
 } from "@notra/db/schema";
 import { deleteBrandReferenceMemory } from "@notra/db/utils/supermemory";
+import { publicWebsiteUrlSchema } from "@notra/geo-core/schemas/url";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
+import {
+  BRAND_REFERENCE_SOURCES,
+  REFERENCE_QUOTA_FEATURE,
+} from "@/constants/integration-analytics";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import {
@@ -32,6 +41,7 @@ import {
   markBrandGuidelinesFailed,
   startBrandGuidelineGeneration,
 } from "@/lib/brand-guidelines";
+import { countBrandVoices } from "@/lib/brand-voice-count";
 import { baseProcedure } from "@/lib/orpc/base";
 import {
   startBrandAnalysisRun,
@@ -54,7 +64,7 @@ import {
   updateGuidelineScreenshotSchema,
   updateGuidelineTokenSchema,
 } from "@/schemas/brand-guidelines";
-import { publicWebsiteUrlSchema } from "@/schemas/url";
+import type { BrandReferenceSource } from "@/types/analytics/integration-events";
 import type {
   BrandSettings as BrandVoiceOutput,
   ProgressData,
@@ -79,6 +89,7 @@ import {
   fetchTwitterUserWithPinnedTweet,
   twitterAppFetch,
 } from "@/utils/twitter-fetcher";
+
 import {
   badRequest,
   conflict,
@@ -163,6 +174,14 @@ async function getTriggersForBrandVoice(
   voiceId: string
 ) {
   const allTriggers = await db.query.contentTriggers.findMany({
+    columns: {
+      enabled: true,
+      id: true,
+      name: true,
+      outputConfig: true,
+      qstashScheduleId: true,
+      sourceType: true,
+    },
     where: eq(contentTriggers.organizationId, organizationId),
   });
 
@@ -316,7 +335,7 @@ export const brandRouter = {
     create: baseProcedure
       .input(voiceCreateInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -361,6 +380,19 @@ export const brandRouter = {
           if (!createdVoice) {
             throw internalServerError("Failed to create brand voice");
           }
+
+          trackServerEvent({
+            event: POSTHOG_EVENTS.BRAND_IDENTITY_CREATED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              voice_id: createdVoice.id,
+              is_default: createdVoice.isDefault,
+              has_website_url: websiteUrl !== null,
+              identity_count: await countBrandVoices(input.organizationId),
+            },
+          });
 
           return { voice: serializeBrandVoice(createdVoice) };
         } catch (error) {
@@ -425,7 +457,7 @@ export const brandRouter = {
     delete: baseProcedure
       .input(voiceInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -487,6 +519,18 @@ export const brandRouter = {
             );
         });
 
+        trackServerEvent({
+          event: POSTHOG_EVENTS.BRAND_IDENTITY_DELETED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            voice_id: input.voiceId,
+            disabled_trigger_count: affectedTriggers.length,
+            identity_count: await countBrandVoices(input.organizationId),
+          },
+        });
+
         return {
           success: true,
           disabledSchedules: affectedTriggers
@@ -500,7 +544,7 @@ export const brandRouter = {
     setDefault: baseProcedure
       .input(setDefaultVoiceInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -523,6 +567,17 @@ export const brandRouter = {
             .update(brandSettings)
             .set({ isDefault: true, updatedAt: new Date() })
             .where(eq(brandSettings.id, input.voiceId));
+        });
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.BRAND_IDENTITY_DEFAULT_SET,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            voice_id: input.voiceId,
+            identity_count: await countBrandVoices(input.organizationId),
+          },
         });
 
         const voices = await db.query.brandSettings.findMany({
@@ -596,7 +651,7 @@ export const brandRouter = {
     start: baseProcedure
       .input(analyzeInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -606,6 +661,16 @@ export const brandRouter = {
           organizationId: input.organizationId,
           url: input.url,
           voiceId: input.voiceId || undefined,
+        });
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.BRAND_ANALYSIS_STARTED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            voice_id: input.voiceId || null,
+          },
         });
 
         return {
@@ -630,7 +695,7 @@ export const brandRouter = {
     refresh: baseProcedure
       .input(guidelineInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -663,6 +728,16 @@ export const brandRouter = {
             error
           );
         }
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.BRAND_GUIDELINES_REFRESHED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            voice_id: input.voiceId,
+          },
+        });
 
         return getBrandGuidelines(input.voiceId);
       }),
@@ -941,7 +1016,7 @@ export const brandRouter = {
     create: baseProcedure
       .input(voiceInputSchema.and(createReferenceSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -959,6 +1034,13 @@ export const brandRouter = {
         const sourceUrl =
           input.sourceUrl ??
           (parsedMetadataUrl?.success ? parsedMetadataUrl.data : null);
+        let referenceSource: BrandReferenceSource =
+          BRAND_REFERENCE_SOURCES.MANUAL;
+        if (tweetId) {
+          referenceSource = BRAND_REFERENCE_SOURCES.TWEET;
+        } else if (sourceUrl) {
+          referenceSource = BRAND_REFERENCE_SOURCES.URL;
+        }
 
         if (tweetId) {
           const existing = await db.query.brandReferences.findFirst({
@@ -992,6 +1074,26 @@ export const brandRouter = {
           }
 
           if (!data?.allowed) {
+            trackServerEvent({
+              event: POSTHOG_EVENTS.BRAND_REFERENCE_LIMIT_REACHED,
+              headers: context.headers,
+              userId: auth.user.id,
+              organizationId: input.organizationId,
+              properties: {
+                voice_id: input.voiceId,
+                source: referenceSource,
+                type: input.type,
+              },
+            });
+            trackServerEvent({
+              event: POSTHOG_EVENTS.QUOTA_EXCEEDED,
+              headers: context.headers,
+              userId: auth.user.id,
+              organizationId: input.organizationId,
+              properties: {
+                feature: REFERENCE_QUOTA_FEATURE,
+              },
+            });
             throw forbidden(
               "Reference limit reached. Upgrade your plan to add more."
             );
@@ -1045,6 +1147,20 @@ export const brandRouter = {
           if (!syncedReference) {
             throw internalServerError("Reference was not created");
           }
+
+          trackServerEvent({
+            event: POSTHOG_EVENTS.BRAND_REFERENCE_ADDED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              voice_id: input.voiceId,
+              reference_id: syncedReference.id,
+              source: referenceSource,
+              type: input.type,
+              count: 1,
+            },
+          });
 
           return { reference: serializeBrandReference(syncedReference) };
         } catch (error) {
@@ -1266,7 +1382,7 @@ export const brandRouter = {
     importTweets: baseProcedure
       .input(voiceInputSchema.and(importTweetsSchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -1494,6 +1610,26 @@ export const brandRouter = {
           }
 
           if (freeImportCount === 0 && paidImportCount === 0) {
+            trackServerEvent({
+              event: POSTHOG_EVENTS.BRAND_REFERENCE_LIMIT_REACHED,
+              headers: context.headers,
+              userId: auth.user.id,
+              organizationId: input.organizationId,
+              properties: {
+                voice_id: input.voiceId,
+                source: BRAND_REFERENCE_SOURCES.TWEET,
+                requested_count: newTweets.length,
+              },
+            });
+            trackServerEvent({
+              event: POSTHOG_EVENTS.QUOTA_EXCEEDED,
+              headers: context.headers,
+              userId: auth.user.id,
+              organizationId: input.organizationId,
+              properties: {
+                feature: REFERENCE_QUOTA_FEATURE,
+              },
+            });
             throw forbidden(
               "Reference limit reached. Upgrade your plan to import more."
             );
@@ -1607,6 +1743,23 @@ export const brandRouter = {
               sql`, `
             )}]::text[])`
           ),
+        });
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.BRAND_REFERENCE_IMPORT_TWEETS,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            voice_id: input.voiceId,
+            account_id: input.accountId,
+            source: BRAND_REFERENCE_SOURCES.TWEET,
+            count: syncedReferences.length,
+            synced_count: syncedCount,
+            free_count: freeImportCount,
+            billable_count: syncedBillableCount,
+            max_results: maxResults,
+          },
         });
 
         return {

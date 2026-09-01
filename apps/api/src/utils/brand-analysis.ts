@@ -1,4 +1,5 @@
 import type { BrandAnalysisJob } from "@notra/ai/jobs/brand-analysis";
+
 import {
   getInternalWorkflowUrl,
   startDashboardWorkflow,

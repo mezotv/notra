@@ -1,3 +1,5 @@
+import { ONBOARDING_WEBSITE_PREFIX_REGEX } from "@notra/geo-core/constants/website-url";
+
 import {
   ONBOARDING_HEARD_ABOUT_NOTRA_LABELS,
   ONBOARDING_HEARD_ABOUT_NOTRA_SOURCES,
@@ -20,4 +22,8 @@ export function getHeardAboutNotraLabel(value: string | null | undefined) {
   return isHeardAboutNotraSource(value)
     ? ONBOARDING_HEARD_ABOUT_NOTRA_LABELS[value]
     : value;
+}
+
+export function stripWebsitePrefix(value: string): string {
+  return value.replace(ONBOARDING_WEBSITE_PREFIX_REGEX, "");
 }

@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+
+import { AnswerExampleSection } from "@/components/landing/answer-example-section";
 import { CtaBanner } from "@/components/landing/cta-banner";
 import { FaqSection } from "@/components/landing/faq-section";
 import { FeaturesSection } from "@/components/landing/features-section";
-import { FounderQuote } from "@/components/landing/founder-quote";
 import { HeroSection } from "@/components/landing/hero-section";
 import { LogoMarquee } from "@/components/landing/logo-marquee";
 import { LandingPricingSection } from "@/components/landing/pricing-section";
+import { TestimonialsGate } from "@/components/landing/testimonials-gate";
 import { TestimonialsSection } from "@/components/landing/testimonials-section";
 import { FAQ_CONTENT } from "@/constants/landing/faq";
 import {
@@ -78,9 +80,9 @@ const organizationJsonLd = {
 const serviceJsonLd = {
   "@context": "https://schema.org",
   "@type": "Service",
-  name: "Notra AI content generation",
+  name: "Notra GEO platform",
   provider: organizationJsonLd,
-  serviceType: "AI content-generation platform",
+  serviceType: "AI visibility tracking platform",
   areaServed: "Worldwide",
   description: SITE_DESCRIPTION,
 };
@@ -145,34 +147,38 @@ function LandingPageJsonLd() {
 
 export default function LandingPage() {
   return (
-    <div className="flex w-full flex-col items-stretch justify-start overflow-x-clip bg-white dark:bg-background">
+    <div className="dark:bg-background flex w-full flex-col items-stretch justify-start overflow-x-clip bg-white">
       <LandingPageJsonLd />
       <main className="flex w-full flex-col items-stretch justify-start">
         <HeroSection />
         <p className="sr-only" id="agent-readable-summary">
-          Notra is an AI content-generation platform for product and engineering
-          teams. It turns shipped work from tools like GitHub into changelogs,
-          launch posts, blog drafts, marketing assets, and social updates in the
-          team's saved brand voice.
+          Notra is a GEO (Generative Engine Optimization) product. It asks AI
+          engines such as ChatGPT, Claude, Gemini and Perplexity the questions a
+          brand's buyers ask, records whether the brand is mentioned and at
+          which position, compares share of voice with competitors, attributes
+          AI crawler and AI referral traffic to the brand's site through the
+          @usenotra/geo SDK, and writes content for the questions the brand is
+          missing from.
         </p>
         <LogoMarquee />
-        <FounderQuote />
-        <section className="content-defer" id="features">
+        <section id="features">
           <FeaturesSection />
         </section>
-        <section className="content-defer" id="testimonials">
-          <TestimonialsSection />
+        <section id="answers">
+          <AnswerExampleSection />
         </section>
-        <div className="content-defer">
+        <TestimonialsGate>
+          <section id="testimonials">
+            <TestimonialsSection />
+          </section>
+        </TestimonialsGate>
+        <div>
           <LandingPricingSection />
         </div>
-        <section className="content-defer" id="faq">
+        <section id="faq">
           <FaqSection />
         </section>
-        <section
-          className="px-6 pt-27.5 pb-27.5 content-defer lg:px-20"
-          id="cta"
-        >
+        <section className="px-6 pt-27.5 pb-27.5 lg:px-20" id="cta">
           <CtaBanner />
         </section>
       </main>

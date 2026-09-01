@@ -3,8 +3,12 @@ import {
   allowUnmeteredAiInDevelopment,
   autumn,
 } from "@notra/ai/billing/autumn";
+import { checkChatBilling } from "@notra/ai/billing/chat-billing";
 import { FEATURES } from "@notra/ai/billing/features";
-import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
+import {
+  listContentChatSessions,
+  replaceContentChatHistory,
+} from "@notra/ai/chat/history";
 import { useLogger, withEvlog } from "@notra/ai/evlog";
 import {
   getGitHubIntegrationById,
@@ -15,19 +19,49 @@ import {
   getLinearToolContextByIntegrationId,
 } from "@notra/ai/integrations/linear";
 import { orchestrateChat } from "@notra/ai/orchestration/orchestrate";
+import { routeUsageProperties } from "@notra/ai/utils/route-usage";
 import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
-import type { CheckResponse } from "autumn-js";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+
+import { AI_CREDITS_SOURCE_CONTENT_CHAT } from "@/constants/studio-analytics";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { withOrganizationAuth } from "@/lib/auth/organization";
 import { chatRequestSchema } from "@/schemas/content";
 import type { RouteContext } from "@/types/api/routes";
 import { enforceChatGenerationRatelimit } from "@/utils/chat-ratelimit";
 
 export const maxDuration = 60;
+
+export async function GET(
+  request: NextRequest,
+  { params }: RouteContext<{ organizationId: string; contentId: string }>
+) {
+  const { organizationId, contentId } = await params;
+  const auth = await withOrganizationAuth(request, organizationId);
+
+  if (!auth.success) {
+    return auth.response;
+  }
+
+  const contentExists = await db.query.posts.findFirst({
+    where: and(
+      eq(posts.id, contentId),
+      eq(posts.organizationId, organizationId)
+    ),
+    columns: { id: true },
+  });
+  if (!contentExists) {
+    return NextResponse.json({ error: "Content not found" }, { status: 404 });
+  }
+
+  const sessions = await listContentChatSessions(organizationId, contentId);
+  return NextResponse.json({ sessions });
+}
 
 export const POST = withEvlog(async function POST(
   request: NextRequest,
@@ -71,19 +105,11 @@ export const POST = withEvlog(async function POST(
     }
 
     let useMarkup = false;
-    if (autumn && !allowUnmeteredAiInDevelopment) {
-      console.log("[Autumn] Checking feature access:", {
-        requestId,
-        customerId: organizationId,
-        featureId: FEATURES.AI_CREDITS,
-      });
-
-      let checkData: CheckResponse | null = null;
+    let chargeAiCredits = false;
+    if (autumn || allowUnmeteredAiInDevelopment) {
+      let billing: Awaited<ReturnType<typeof checkChatBilling>>;
       try {
-        checkData = await autumn.check({
-          customerId: organizationId,
-          featureId: FEATURES.AI_CREDITS,
-        });
+        billing = await checkChatBilling(organizationId);
       } catch (checkError) {
         console.error("[Autumn] Check error:", {
           requestId,
@@ -96,39 +122,33 @@ export const POST = withEvlog(async function POST(
         );
       }
 
-      if (!checkData?.allowed) {
+      if (!billing.allowed) {
         console.log("[Autumn] Usage limit reached:", {
           requestId,
           customerId: organizationId,
-          balance: checkData?.balance ?? 0,
+          balance: billing.balanceRemaining ?? 0,
         });
         return NextResponse.json(
           {
             error: "Usage limit reached",
             code: "USAGE_LIMIT_REACHED",
-            balance: checkData?.balance ?? 0,
+            balance: billing.balanceRemaining ?? 0,
           },
           { status: 403 }
         );
       }
 
-      useMarkup = shouldApplyMarkup(checkData?.balance ?? null);
+      useMarkup = billing.useMarkup;
+      chargeAiCredits = billing.chargeAiCredits;
     } else {
-      if (!allowUnmeteredAiInDevelopment) {
-        return NextResponse.json(
-          { error: "Billing service is unavailable", code: "BILLING_ERROR" },
-          { status: 503 }
-        );
-      }
-      console.log(
-        allowUnmeteredAiInDevelopment
-          ? "[Autumn] Skipping billing check - development bypass enabled"
-          : "[Autumn] Skipping billing check - AUTUMN_SECRET_KEY not configured",
-        { requestId }
+      return NextResponse.json(
+        { error: "Billing service is unavailable", code: "BILLING_ERROR" },
+        { status: 503 }
       );
     }
 
     const {
+      chatId,
       messages,
       currentMarkdown,
       contentType,
@@ -136,6 +156,41 @@ export const POST = withEvlog(async function POST(
       context,
       timezone,
     } = parseResult.data;
+
+    const contentExists = await db.query.posts.findFirst({
+      where: and(
+        eq(posts.id, contentId),
+        eq(posts.organizationId, organizationId)
+      ),
+      columns: { id: true },
+    });
+    if (!contentExists) {
+      return NextResponse.json({ error: "Content not found" }, { status: 404 });
+    }
+
+    const historySaved = await replaceContentChatHistory(
+      organizationId,
+      contentId,
+      chatId,
+      messages
+    );
+    if (!historySaved) {
+      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+    }
+
+    trackServerEvent({
+      event: POSTHOG_EVENTS.CONTENT_AGENT_MESSAGE_SENT,
+      headers: request.headers,
+      userId: auth.context.user.id,
+      organizationId,
+      properties: {
+        content_id: contentId,
+        chat_id: chatId,
+        content_type: contentType ?? null,
+        has_selection: Boolean(selection),
+        context_count: context?.length ?? 0,
+      },
+    });
 
     const autumnClient = autumn;
     const imageDefaults =
@@ -186,8 +241,12 @@ export const POST = withEvlog(async function POST(
         },
         resolveContext: getGitHubToolRepositoryContextByIntegrationId,
         resolveLinearContext: getLinearToolContextByIntegrationId,
-        async onUsage(usage, modelId) {
-          if (!autumnClient || allowUnmeteredAiInDevelopment) {
+        async onUsage(usage, modelId, routeUsage) {
+          if (
+            !autumnClient ||
+            allowUnmeteredAiInDevelopment ||
+            !chargeAiCredits
+          ) {
             return;
           }
 
@@ -209,6 +268,7 @@ export const POST = withEvlog(async function POST(
               featureId: FEATURES.AI_CREDITS,
               value: cost.costCents,
               properties: {
+                ...routeUsageProperties(routeUsage),
                 source: "chat",
                 content_id: contentId,
                 model: modelId,
@@ -222,6 +282,20 @@ export const POST = withEvlog(async function POST(
                 total_tokens: usage.totalTokens ?? 0,
                 cost_cents: cost.costCents,
                 token_cost_cents: cost.tokenCostCents,
+              },
+            });
+            trackServerEvent({
+              event: POSTHOG_EVENTS.AI_CREDITS_CHARGED,
+              headers: request.headers,
+              userId: auth.context.user.id,
+              organizationId,
+              properties: {
+                cost_cents: cost.costCents,
+                source: AI_CREDITS_SOURCE_CONTENT_CHAT,
+                model: modelId,
+                billing_basis: cost.billingBasis,
+                tokens: usage.totalTokens ?? 0,
+                content_id: contentId,
               },
             });
           } catch (trackError) {
@@ -242,7 +316,26 @@ export const POST = withEvlog(async function POST(
     });
 
     return stream.toUIMessageStreamResponse({
+      originalMessages: messages as never,
+      generateMessageId: nanoid,
       sendReasoning: true,
+      headers: { "X-Chat-Id": chatId },
+      onFinish: async ({ messages: responseMessages }) => {
+        const saved = await replaceContentChatHistory(
+          organizationId,
+          contentId,
+          chatId,
+          responseMessages
+        );
+        if (!saved) {
+          console.warn("[Content Chat] Skipped saving response", {
+            requestId,
+            organizationId,
+            contentId,
+            chatId,
+          });
+        }
+      },
       onError: (error) => {
         console.error("[Content Chat] Stream error:", { requestId, error });
         return "An error occurred while processing your request.";

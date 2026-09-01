@@ -2,6 +2,7 @@ import { getGitHubIntegrationsByOrganization } from "@notra/ai/integrations/gith
 import { getGranolaIntegrationsByOrganization } from "@notra/ai/integrations/granola";
 import { getLinearIntegrationsByOrganization } from "@notra/ai/integrations/linear";
 import { getSlackIntegrationsByOrganization } from "@notra/ai/integrations/slack-workspace";
+
 import type { IntegrationType } from "@/schemas/integrations";
 import type {
   IntegrationFetcher,

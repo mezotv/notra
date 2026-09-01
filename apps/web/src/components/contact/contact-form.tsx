@@ -8,6 +8,7 @@ import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
 import { useState } from "react";
+
 import {
   CONTACT_FORM_ASSURANCE,
   CONTACT_MESSAGE_MIN_LENGTH,
@@ -76,7 +77,7 @@ export function ContactForm() {
         aria-live="polite"
         className="relative flex flex-col items-center gap-3 overflow-hidden rounded-3xl border border-[#ECECEC] bg-white px-6 py-16 text-center shadow-[0_0.0625rem_0.1875rem_#28282814] dark:border-white/10 dark:bg-white/[0.03] dark:shadow-none"
       >
-        <div className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2">
+        <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2">
           <Confetti
             colors={[
               "var(--primary)",
@@ -95,10 +96,10 @@ export function ContactForm() {
             stageWidth={800}
           />
         </div>
-        <h3 className="relative font-display font-medium text-2xl text-[#1E1E1E] tracking-[-0.02em] dark:text-white">
+        <h3 className="font-display relative text-2xl font-medium tracking-[-0.02em] text-[#1E1E1E] dark:text-white">
           Message sent
         </h3>
-        <p className="relative max-w-md text-pretty font-sans text-[#1E1E1EBF] text-[0.9375rem] leading-6 dark:text-white/70">
+        <p className="relative max-w-md font-sans text-[0.9375rem] leading-6 text-pretty text-[#1E1E1EBF] dark:text-white/70">
           Thanks for reaching out. A real human will write back, usually within
           one business day.
         </p>
@@ -117,7 +118,7 @@ export function ContactForm() {
         form.handleSubmit();
       }}
     >
-      <h2 className="font-display font-medium text-[#1E1E1E] text-[1.625rem]/8 tracking-[-0.02em] dark:text-white">
+      <h2 className="font-display text-[1.625rem]/8 font-medium tracking-[-0.02em] text-[#1E1E1E] dark:text-white">
         Send us a message
       </h2>
 
@@ -199,7 +200,7 @@ export function ContactForm() {
           <div className="flex flex-col gap-2">
             <Label className={labelClass} htmlFor={field.name}>
               Company{" "}
-              <span className="font-normal text-[#1E1E1E66] text-[0.8125rem]/4.25 dark:text-white/40">
+              <span className="text-[0.8125rem]/4.25 font-normal text-[#1E1E1E66] dark:text-white/40">
                 optional
               </span>
             </Label>
@@ -254,7 +255,7 @@ export function ContactForm() {
                     {field.state.meta.errors[0]}
                   </p>
                 ) : null}
-                <span className="ml-auto shrink-0 font-sans text-[#1E1E1E80] text-xs dark:text-white/40">
+                <span className="ml-auto shrink-0 font-sans text-xs text-[#1E1E1E80] dark:text-white/40">
                   {charsRemaining > 0
                     ? `${charsRemaining} more character${charsRemaining === 1 ? "" : "s"} needed`
                     : `${trimmedLength} characters`}
@@ -289,13 +290,13 @@ export function ContactForm() {
 
       <div className="mt-1 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
-          <p className="font-sans text-[#1E1E1E80] text-[0.8125rem]/4.5 dark:text-white/50">
+          <p className="font-sans text-[0.8125rem]/4.5 text-[#1E1E1E80] dark:text-white/50">
             {CONTACT_FORM_ASSURANCE}
           </p>
-          <p className="font-sans text-[#1E1E1E80] text-xs/4.5 dark:text-white/40">
+          <p className="font-sans text-xs/4.5 text-[#1E1E1E80] dark:text-white/40">
             By submitting you agree to our{" "}
             <Link
-              className="font-medium text-[#1E1E1E] underline underline-offset-2 hover:text-primary dark:text-white"
+              className="hover:text-primary font-medium text-[#1E1E1E] underline underline-offset-2 dark:text-white"
               href="/privacy"
             >
               Privacy Policy

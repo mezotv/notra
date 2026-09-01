@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+
 import { validateOrganizationAccess } from "@/lib/auth/actions";
 import type { CollectionPageProps } from "@/types/content/collection";
+
 import PageClient from "./page-client";
 import { GroupDetailSkeleton } from "./skeleton";
 

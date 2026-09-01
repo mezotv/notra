@@ -8,6 +8,7 @@ import {
   NewTwitterIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   Avatar,
   AvatarFallback,
@@ -23,13 +24,16 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useState } from "react";
+import { Suspense, use, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { DevSampleDataCard } from "@/components/settings/dev-sample-data-card";
 import { OrganizationMembershipActionDialog } from "@/components/settings/organization-membership-action-dialog";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
 import {
   useConnectedAccounts,
@@ -50,11 +54,11 @@ import type {
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";
 import { isSquareTwitterAvatar } from "@/utils/twitter";
+
+import { DashboardPageSkeleton } from "../../skeleton";
 import { OrganizationDetailsCard } from "./organization-details-card";
 
-export default function GeneralSettingsPage({
-  params,
-}: GeneralSettingsPageProps) {
+function GeneralSettingsPageContent({ params }: GeneralSettingsPageProps) {
   const { slug } = use(params);
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -106,6 +110,14 @@ export default function GeneralSettingsPage({
         action,
       });
 
+      if (action === "delete") {
+        trackEvent(POSTHOG_EVENTS.ORGANIZATION_DELETED, {
+          deleted_organization_id: organization.id,
+          had_other_members: hasOtherMembers,
+          had_paid_history: null,
+        });
+      }
+
       await queryClient.invalidateQueries({
         queryKey: QUERY_KEYS.AUTH.organizations,
       });
@@ -147,7 +159,10 @@ export default function GeneralSettingsPage({
 
   if (!organization) {
     return (
-      <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <PageContainer
+        className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6"
+        variant="default"
+      >
         <div className="w-full space-y-6 px-4 lg:px-6">
           <div className="space-y-1">
             <Skeleton className="h-9 w-48" />
@@ -160,10 +175,13 @@ export default function GeneralSettingsPage({
   }
 
   return (
-    <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <PageContainer
+      className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6"
+      variant="default"
+    >
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">General</h1>
+          <h1 className="text-3xl font-bold tracking-tight">General</h1>
           <p className="text-muted-foreground">
             Manage your organization settings
           </p>
@@ -173,11 +191,15 @@ export default function GeneralSettingsPage({
 
         <ConnectedAccountsSection organizationId={organization.id} />
 
+        {process.env.NODE_ENV === "development" && (
+          <DevSampleDataCard organizationId={organization.id} />
+        )}
+
         <TitleCard heading="Danger Zone">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium text-sm">Delete Organization</p>
+                <p className="text-sm font-medium">Delete Organization</p>
                 <p className="text-muted-foreground text-xs">
                   Permanently delete this organization and all its data
                 </p>
@@ -320,7 +342,7 @@ function ConnectedAccountsGroup({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <HugeiconsIcon className="size-4" icon={icon} />
-          <p className="font-medium text-sm">{label}</p>
+          <p className="text-sm font-medium">{label}</p>
         </div>
         {accounts.length > 0 && (
           <Button disabled={isConnecting} onClick={onConnect} size="sm">
@@ -336,7 +358,7 @@ function ConnectedAccountsGroup({
 
       {accounts.length === 0 && (
         <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed py-8">
-          <div className="flex size-10 items-center justify-center rounded-full bg-muted">
+          <div className="bg-muted flex size-10 items-center justify-center rounded-full">
             <HugeiconsIcon className="size-5" icon={icon} />
           </div>
           <div className="text-center">
@@ -388,7 +410,7 @@ function ConnectedAccountsGroup({
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <p className="flex items-center gap-1 truncate font-medium text-sm">
+              <p className="flex items-center gap-1 truncate text-sm font-medium">
                 {account.displayName}
                 <XVerificationBadge
                   className="size-4 shrink-0"
@@ -396,7 +418,7 @@ function ConnectedAccountsGroup({
                   verifiedType={account.verifiedType}
                 />
               </p>
-              <p className="truncate text-muted-foreground text-xs">
+              <p className="text-muted-foreground truncate text-xs">
                 @{account.username}
               </p>
             </div>
@@ -451,5 +473,15 @@ function ConnectedAccountsGroup({
         );
       })}
     </div>
+  );
+}
+
+export default function GeneralSettingsPage({
+  params,
+}: GeneralSettingsPageProps) {
+  return (
+    <Suspense fallback={<DashboardPageSkeleton />}>
+      <GeneralSettingsPageContent params={params} />
+    </Suspense>
   );
 }

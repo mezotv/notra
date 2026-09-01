@@ -11,6 +11,7 @@ export interface CommitWindow {
 export interface EditMarkdownContext {
   currentMarkdown: string;
   onUpdate: (markdown: string) => void;
+  filename?: string;
 }
 
 export interface GitHubToolRepositoryContext {

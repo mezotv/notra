@@ -17,6 +17,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { CheckIcon, XIcon } from "lucide-react";
 import { type ReactNode, useState } from "react";
+
 import { McpIcon } from "@/components/integrations/mcp-icon";
 import { TOOL_TIMER_THRESHOLD_SECONDS } from "@/constants/chat-tool-timer";
 import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
@@ -36,6 +37,7 @@ import {
   webSearchOutputSchema,
 } from "@/schemas/ai/chat-tool-block";
 import { formatElapsedSeconds } from "@/utils/format-elapsed-seconds";
+
 import {
   getMcpToolActionPhrase,
   getMcpToolIconUrls,
@@ -45,6 +47,9 @@ import {
 import { ToolOutputImages } from "./chat-tool-block/tool-output-images";
 import { collectToolOutputImages } from "./chat-tool-block/tool-output-images/utils";
 import type { ChatToolBlockProps, ToolCopy } from "./chat-tool-block/types";
+
+const TOOL_DETAILS_PANEL_CLASSNAME =
+  "h-[var(--collapsible-panel-height)] overflow-hidden outline-none transition-[height,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none";
 
 function firstStringValue<T extends object>(
   values: T,
@@ -304,6 +309,11 @@ function deactivatedToolsSuffix(output: unknown): string | undefined {
   );
 }
 
+function geoDaysSuffix(input: unknown): string | undefined {
+  const days = getNumericValue(input, "days");
+  return days === undefined ? undefined : `from the last ${days} days`;
+}
+
 const TOOL_COPY: Record<string, ToolCopy> = {
   searchNotraTools: {
     verbs: ["Searching", "Searched"],
@@ -442,6 +452,37 @@ const TOOL_COPY: Record<string, ToolCopy> = {
   getAvailableIntegrations: {
     verbs: ["Checking", "Checked"],
     noun: "integrations",
+  },
+  listGeoProjects: {
+    verbs: ["Listing", "Listed"],
+    noun: "GEO projects",
+    suffix: (_input, output) =>
+      countSuffix(getNumericValue(output, "count"), "project", "projects"),
+  },
+  getGeoOverview: {
+    verbs: ["Loading", "Loaded"],
+    noun: "GEO overview",
+    suffix: geoDaysSuffix,
+  },
+  getGeoTimeseries: {
+    verbs: ["Loading", "Loaded"],
+    noun: "GEO trends",
+    suffix: geoDaysSuffix,
+  },
+  getGeoPromptResults: {
+    verbs: ["Loading", "Loaded"],
+    noun: "GEO prompt results",
+    suffix: geoDaysSuffix,
+  },
+  getGeoCompetitorShare: {
+    verbs: ["Loading", "Loaded"],
+    noun: "GEO competitor share",
+    suffix: geoDaysSuffix,
+  },
+  getGeoProjectContext: {
+    verbs: ["Loading", "Loaded"],
+    noun: "GEO project context",
+    suffix: (input) => idSuffix(input, ["projectId"]),
   },
   getMarkdown: { verbs: ["Reading", "Read"], noun: "document" },
   editMarkdown: { verbs: ["Editing", "Edited"], noun: "document" },
@@ -601,7 +642,7 @@ function JsonView({ value }: { value: unknown }) {
   const raw = stringifyForDisplay(value);
   if (raw === undefined) {
     return (
-      <pre className="overflow-x-auto font-mono text-[0.75rem] text-muted-foreground">
+      <pre className="text-muted-foreground overflow-x-auto font-mono text-[0.75rem]">
         Unable to display value
       </pre>
     );
@@ -651,7 +692,7 @@ function JsonView({ value }: { value: unknown }) {
   }
 
   return (
-    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-md border border-border/50 bg-muted/30 p-3 font-mono text-[0.75rem] leading-relaxed">
+    <pre className="border-border/50 bg-muted/30 overflow-x-auto rounded-md border p-3 font-mono text-[0.75rem] leading-relaxed break-words whitespace-pre-wrap">
       {parts.map((part) => (
         <span className={part.className} key={part.key}>
           {part.text}
@@ -664,7 +705,7 @@ function JsonView({ value }: { value: unknown }) {
 function ToolDataSection({ label, value }: { label: string; value: unknown }) {
   return (
     <div>
-      <div className="mb-2 font-medium text-[0.65rem] text-muted-foreground/70 uppercase tracking-wider">
+      <div className="text-muted-foreground/70 mb-2 text-[0.65rem] font-medium tracking-wider uppercase">
         {label}
       </div>
       <JsonView value={value} />
@@ -722,7 +763,19 @@ export function ChatToolBlock({
   const hasInput = input != null;
   const hasOutput = output != null;
   const hasApprovalActions = isAwaitingApproval && (onApprove || onDeny);
-  const hasDetails = hasInput || hasOutput || hasApprovalActions;
+  const showJsonDetails = hasInput || hasOutput;
+  const hasDetails = showJsonDetails || hasApprovalActions;
+  const detailsOutput =
+    toolName === "editMarkdown" &&
+    output !== null &&
+    typeof output === "object" &&
+    !Array.isArray(output)
+      ? Object.fromEntries(
+          Object.entries(output as Record<string, unknown>).filter(
+            ([key]) => key !== "previousMarkdown" && key !== "updatedMarkdown"
+          )
+        )
+      : output;
   const outputImages =
     hasOutput && !isError && !isStreaming
       ? collectToolOutputImages(output)
@@ -755,16 +808,12 @@ export function ChatToolBlock({
   return (
     <Collapsible onOpenChange={setIsDetailsOpen} open={isOpen}>
       <CollapsibleTrigger
-        className="group flex w-full min-w-0 items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
+        className="group text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground flex w-full min-w-0 items-center gap-2 text-sm transition-colors disabled:cursor-default"
         disabled={!hasDetails}
       >
         {toolIcon}
         {isStreaming ? (
-          <Shimmer
-            as="span"
-            className="min-w-0 truncate text-sm leading-5"
-            duration={1.8}
-          >
+          <Shimmer as="span" className="min-w-0 truncate text-sm leading-5">
             {subtitle}
           </Shimmer>
         ) : (
@@ -773,14 +822,14 @@ export function ChatToolBlock({
           </span>
         )}
         {showElapsedTimer && (
-          <span className="shrink-0 text-muted-foreground/60 text-xs tabular-nums">
+          <span className="text-muted-foreground/60 shrink-0 text-xs tabular-nums">
             {formatElapsedSeconds(elapsedSeconds)}
           </span>
         )}
         <HugeiconsIcon
           aria-hidden
           className={cn(
-            "size-3.5 shrink-0 text-muted-foreground/60 transition-all",
+            "text-muted-foreground/60 size-3.5 shrink-0 transition-all",
             !hasDetails && "invisible",
             hasDetails && isOpen && "rotate-180 opacity-100",
             hasDetails &&
@@ -791,10 +840,14 @@ export function ChatToolBlock({
         />
       </CollapsibleTrigger>
       <ToolOutputImages images={outputImages} />
-      <CollapsibleContent className="h-[var(--collapsible-panel-height)] overflow-hidden outline-none transition-[height,opacity] duration-300 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0">
+      <CollapsibleContent className={TOOL_DETAILS_PANEL_CLASSNAME}>
         <div className="mt-3 space-y-4">
-          {hasInput ? <ToolDataSection label="Input" value={input} /> : null}
-          {hasOutput ? <ToolDataSection label="Output" value={output} /> : null}
+          {showJsonDetails && hasInput ? (
+            <ToolDataSection label="Input" value={input} />
+          ) : null}
+          {showJsonDetails && hasOutput ? (
+            <ToolDataSection label="Output" value={detailsOutput} />
+          ) : null}
           {hasApprovalActions ? (
             <div className="flex flex-wrap items-center gap-2">
               {onApprove ? (

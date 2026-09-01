@@ -1,7 +1,12 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Effect } from "effect";
-import { authClient } from "@/lib/auth/client";
+
+import { INTEGRATION_PROVIDERS } from "@/constants/integration-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
+import { isNextRedirectError } from "@/lib/auth/redirect-error";
+import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {
   GitHubAccountConnectionIncompleteError,
@@ -9,27 +14,26 @@ import {
   type StartGitHubInstallResult,
 } from "@/types/integrations/github";
 
-function authorizeGitHub(callbackURL: string, scopes?: string[]) {
+function authorizeGitHub(callbackURL: string) {
   return Effect.tryPromise({
-    try: () =>
-      authClient.linkSocial({
+    try: async () => {
+      await startSocialSignInAction({
         provider: "github",
-        callbackURL,
-        ...(scopes ? { scopes } : {}),
-      }),
+        returnTo: callbackURL,
+      }).catch((error) => {
+        if (!isNextRedirectError(error)) {
+          throw error;
+        }
+      });
+      return true;
+    },
     catch: (cause) => new GitHubInstallStartError({ cause }),
-  }).pipe(
-    Effect.flatMap((result) =>
-      result.error
-        ? Effect.fail(new GitHubInstallStartError({ cause: result.error }))
-        : Effect.succeed(true)
-    )
-  );
+  });
 }
 
 export function reauthorizeGitHub(callbackURL: string) {
   return Effect.runPromise(
-    authorizeGitHub(callbackURL, ["read:org"]).pipe(
+    authorizeGitHub(callbackURL).pipe(
       Effect.match({
         onFailure: () => false,
         onSuccess: () => true,
@@ -58,6 +62,11 @@ export function startGitHubInstall(params: {
   allowAccountConnection?: boolean;
 }): Promise<StartGitHubInstallResult> {
   const allowAccountConnection = params.allowAccountConnection ?? true;
+
+  trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+    provider: INTEGRATION_PROVIDERS.GITHUB,
+    allow_account_connection: allowAccountConnection,
+  });
 
   return Effect.runPromise(
     Effect.tryPromise({

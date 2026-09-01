@@ -1,5 +1,7 @@
 import { Effect } from "effect";
+
 import type { RepoStarData } from "@/types/star-video";
+
 import { fetchRepoStarData } from "./stargazers";
 
 export type LoadRepoResult =

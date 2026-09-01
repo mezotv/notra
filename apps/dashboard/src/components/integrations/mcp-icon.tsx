@@ -8,6 +8,7 @@ import {
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
 import { cn } from "@notra/ui/lib/utils";
+
 import { getMcpIconUrls } from "@/lib/integrations/mcp";
 import type { McpIconProps } from "@/types/integrations/mcp";
 

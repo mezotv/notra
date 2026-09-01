@@ -1,13 +1,17 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { openMcpOAuthPopup } from "@notra/utils/oauth-popup";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { StoreIntegrationCard } from "@/components/integrations/store-integration-card";
 import { StoreIntegrationDialogs } from "@/components/integrations/store-integration-dialogs";
+import { INTEGRATION_PROVIDERS } from "@/constants/integration-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { buildOrganizationIntegrationsPath } from "@/lib/integrations/deeplink";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
@@ -106,6 +110,13 @@ export function StoreIntegrationsSection({
       return;
     }
 
+    trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+      provider: INTEGRATION_PROVIDERS.MCP_STORE,
+      auth_type: integration.authType,
+      store_integration_id: integration.id,
+      via_deeplink: connectSlug !== null && connectSlug !== undefined,
+    });
+
     if (integration.authType === "oauth") {
       const oauthPopup = openMcpOAuthPopup();
       beginOAuthMutation.mutate(integration, {
@@ -165,7 +176,7 @@ export function StoreIntegrationsSection({
   return (
     <section className="space-y-3">
       <div>
-        <h2 className="font-semibold text-xl tracking-tight">
+        <h2 className="text-xl font-semibold tracking-tight">
           From the integration store
         </h2>
         <p className="text-muted-foreground text-sm">

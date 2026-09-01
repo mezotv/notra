@@ -6,6 +6,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { cn } from "@notra/ui/lib/utils";
+
 import type {
   GroupContentTypesProps,
   GroupTypeIconProps,

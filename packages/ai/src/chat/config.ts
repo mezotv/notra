@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+
 import type { ChatConfig } from "../types/chat";
 
 let redisClient: Redis | null | undefined;

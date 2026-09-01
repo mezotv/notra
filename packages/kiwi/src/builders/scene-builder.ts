@@ -322,6 +322,7 @@ export class SceneBuilder {
       strokeWeight: hasStroke ? (options.strokeWeight ?? 1) : 0,
       strokeAlign: "CENTER",
       strokeCap: options.strokeCap ?? "NONE",
+      dashPattern: hasStroke ? options.dashPattern : undefined,
       strokeJoin: options.strokeJoin ?? "MITER",
       fillPaints: options.fill ? [options.fill] : [],
       horizontalConstraint: "MIN",

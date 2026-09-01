@@ -9,13 +9,6 @@ import {
   SelectValue,
 } from "@notra/ui/components/ui/select";
 import { useControllableState } from "@notra/ui/hooks/use-controllable-state";
-import {
-  transformerNotationDiff,
-  transformerNotationErrorLevel,
-  transformerNotationFocus,
-  transformerNotationHighlight,
-  transformerNotationWordHighlight,
-} from "@shikijs/transformers";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import type { ComponentProps, HTMLAttributes, ReactNode } from "react";
 import { createContext, useContext, useEffect, useState } from "react";
@@ -90,11 +83,7 @@ import {
   SiVuedotjs,
   SiWebassembly,
 } from "react-icons/si";
-import {
-  type BundledLanguage,
-  type CodeOptionsMultipleThemes,
-  codeToHtml,
-} from "shiki";
+import type { BundledLanguage, CodeOptionsMultipleThemes } from "shiki";
 import { cn } from "@notra/ui/lib/utils";
 
 export type { BundledLanguage } from "shiki";
@@ -256,30 +245,23 @@ const highlight = (
   language?: BundledLanguage,
   themes?: CodeOptionsMultipleThemes["themes"]
 ) =>
-  codeToHtml(html, {
-    lang: language ?? "typescript",
-    themes: themes ?? {
-      light: "github-light",
-      dark: "github-dark-default",
-    },
-    transformers: [
-      transformerNotationDiff({
-        matchAlgorithm: "v3",
-      }),
-      transformerNotationHighlight({
-        matchAlgorithm: "v3",
-      }),
-      transformerNotationWordHighlight({
-        matchAlgorithm: "v3",
-      }),
-      transformerNotationFocus({
-        matchAlgorithm: "v3",
-      }),
-      transformerNotationErrorLevel({
-        matchAlgorithm: "v3",
-      }),
-    ],
-  });
+  Promise.all([import("shiki"), import("@shikijs/transformers")]).then(
+    ([{ codeToHtml }, transformers]) =>
+      codeToHtml(html, {
+        lang: language ?? "typescript",
+        themes: themes ?? {
+          light: "github-light",
+          dark: "github-dark-default",
+        },
+        transformers: [
+          transformers.transformerNotationDiff({ matchAlgorithm: "v3" }),
+          transformers.transformerNotationHighlight({ matchAlgorithm: "v3" }),
+          transformers.transformerNotationWordHighlight({ matchAlgorithm: "v3" }),
+          transformers.transformerNotationFocus({ matchAlgorithm: "v3" }),
+          transformers.transformerNotationErrorLevel({ matchAlgorithm: "v3" }),
+        ],
+      })
+  );
 
 interface CodeBlockData {
   language: string;

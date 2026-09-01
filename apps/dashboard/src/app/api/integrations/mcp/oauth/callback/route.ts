@@ -13,12 +13,21 @@ import { buildCallbackUrl } from "@notra/utils/callback-url";
 import { createMcpOAuthPopupCompletionResponse } from "@notra/utils/oauth-popup";
 import { Effect } from "effect";
 import type { NextRequest } from "next/server";
+
+import {
+  INTEGRATION_AUTH_KINDS,
+  INTEGRATION_PROVIDERS,
+} from "@/constants/integration-analytics";
 import { getServerSession } from "@/lib/auth/session";
+import {
+  trackIntegrationConnected,
+  trackIntegrationConnectFailed,
+} from "@/lib/integrations/connect-events";
 import { mcpOAuthCallbackQuerySchema } from "@/schemas/integrations";
 
 export async function GET(request: NextRequest) {
   const baseUrl =
-    process.env.BETTER_AUTH_URL ??
+    process.env.APP_URL ??
     process.env.NEXT_PUBLIC_SITE_URL ??
     new URL(request.url).origin;
   const { searchParams } = new URL(request.url);
@@ -48,6 +57,13 @@ export async function GET(request: NextRequest) {
 
   if (parsed.data.error || !parsed.data.code) {
     await cancelMcpOAuthAuthorization(parsed.data.state, session.userId);
+    trackIntegrationConnectFailed({
+      headers: request.headers,
+      userId: session.userId,
+      provider: INTEGRATION_PROVIDERS.MCP,
+      authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+      errorCode: "mcp_oauth_denied",
+    });
     return createMcpOAuthPopupCompletionResponse(
       buildCallbackUrl(baseUrl, callbackPath, {
         error: "mcp_oauth_denied",
@@ -68,6 +84,13 @@ export async function GET(request: NextRequest) {
       organizationId: completed.organizationId,
       integrationId: completed.integrationId,
     }).catch(() => undefined);
+    trackIntegrationConnected({
+      headers: request.headers,
+      userId: session.userId,
+      organizationId: completed.organizationId,
+      provider: INTEGRATION_PROVIDERS.MCP,
+      authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+    });
     return createMcpOAuthPopupCompletionResponse(
       buildCallbackUrl(baseUrl, callbackPath, {
         mcpConnected: "true",
@@ -84,6 +107,13 @@ export async function GET(request: NextRequest) {
     } else if (error instanceof McpOAuthAuthorizationError) {
       errorCode = "mcp_oauth_invalid_callback";
     }
+    trackIntegrationConnectFailed({
+      headers: request.headers,
+      userId: session.userId,
+      provider: INTEGRATION_PROVIDERS.MCP,
+      authKind: INTEGRATION_AUTH_KINDS.OAUTH,
+      errorCode,
+    });
     return createMcpOAuthPopupCompletionResponse(
       buildCallbackUrl(baseUrl, callbackPath, { error: errorCode })
     );

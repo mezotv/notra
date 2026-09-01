@@ -215,13 +215,23 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useState } from "react";
 import { toast } from "sonner";
+
+import { DesignSystemChatgptCatalog } from "@/app/design-system/chatgpt/page-client";
+import { DesignSystemClaudeChatCatalog } from "@/app/design-system/claude-chat/page-client";
+import { DesignSystemClaudeCatalog } from "@/app/design-system/claude/page-client";
+import { DesignSystemCodexCatalog } from "@/app/design-system/codex/page-client";
+import { DesignSystemGeminiCatalog } from "@/app/design-system/gemini/page-client";
+import { DesignSystemPerplexityCatalog } from "@/app/design-system/perplexity/page-client";
 import { BrailleLoader } from "@/components/braille-loader";
 import { Button, buttonVariants } from "@/components/button";
 import ChatInput from "@/components/chat-input";
-import { ThemeToggle } from "@/components/dashboard/theme-toggle";
-
+import { DesignSystemFrame } from "@/components/design-system/design-system-frame";
+import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
+import { GeoRangePickerDemo } from "@/components/design-system/geo-range-picker-demo";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LinkedInPost } from "@/components/linkedin-post";
+
+import { DesignSystemWriteDialogDemo } from "./write-dialog-demo";
 
 const colorGroups = [
   {
@@ -334,26 +344,9 @@ function ColorSwatch({ name, label }: { name: string; label: string }) {
         style={{ backgroundColor: `var(--${name})` }}
       />
       <div className="space-y-0.5">
-        <div className="font-medium text-sm">{label}</div>
+        <div className="text-sm font-medium">{label}</div>
         <div className="text-muted-foreground text-xs">--{name}</div>
       </div>
-    </div>
-  );
-}
-
-function SectionHeader({
-  title,
-  description,
-}: {
-  title: string;
-  description?: string;
-}) {
-  return (
-    <div className="space-y-1">
-      <h2 className="font-semibold text-xl">{title}</h2>
-      {description && (
-        <p className="text-muted-foreground text-sm">{description}</p>
-      )}
     </div>
   );
 }
@@ -373,30 +366,20 @@ export default function DesignSystemClientPage() {
   );
 
   return (
-    <main className="container mx-auto flex flex-col gap-12 py-10">
-      <header className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <h1 className="font-semibold text-3xl tracking-tight">
-            Notra UI Preview
-          </h1>
-          <SidebarProvider className="min-h-0! w-auto" defaultOpen={false}>
-            <ThemeToggle />
-          </SidebarProvider>
-        </div>
-        <p className="max-w-2xl text-muted-foreground text-sm">
-          Component and token showcase for the dashboard UI kit.
-        </p>
-      </header>
-
-      <section className="space-y-6">
-        <SectionHeader
+    <DesignSystemFrame
+      description="Full catalog: UI kit, Claude TUI, Codex TUI, ChatGPT chat, Claude chat, Gemini chat, and Perplexity. Everything is on this page."
+      title="Notra UI Preview"
+    >
+      <section className="scroll-mt-10 space-y-6" id="colors">
+        <DesignSystemSectionHeader
           description="Theme tokens from the dashboard CSS variables."
+          id="colors"
           title="Colors"
         />
         <div className="space-y-6">
           {colorGroups.map((group) => (
             <div className="space-y-3" key={group.title}>
-              <h3 className="font-medium text-muted-foreground text-sm uppercase tracking-wide">
+              <h3 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
                 {group.title}
               </h3>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -411,8 +394,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Buttons & Badges" />
+      <section className="scroll-mt-10 space-y-6" id="buttons">
+        <DesignSystemSectionHeader id="buttons" title="Buttons & Badges" />
         <Card>
           <CardHeader>
             <CardTitle>Buttons</CardTitle>
@@ -494,8 +477,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Forms & Inputs" />
+      <section className="scroll-mt-10 space-y-6" id="forms">
+        <DesignSystemSectionHeader id="forms" title="Forms & Inputs" />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -626,8 +609,11 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Navigation & Overlays" />
+      <section className="scroll-mt-10 space-y-6" id="navigation">
+        <DesignSystemSectionHeader
+          id="navigation"
+          title="Navigation & Overlays"
+        />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -808,8 +794,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Feedback & Status" />
+      <section className="scroll-mt-10 space-y-6" id="feedback">
+        <DesignSystemSectionHeader id="feedback" title="Feedback & Status" />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -907,8 +893,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Data Display" />
+      <section className="scroll-mt-10 space-y-6" id="data-display">
+        <DesignSystemSectionHeader id="data-display" title="Data Display" />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -1029,7 +1015,7 @@ export default function DesignSystemClientPage() {
                 <CarouselContent>
                   {["Reporting", "Automation", "Analytics"].map((label) => (
                     <CarouselItem key={label}>
-                      <div className="flex h-32 items-center justify-center rounded-lg border bg-muted/40 font-medium text-sm">
+                      <div className="bg-muted/40 flex h-32 items-center justify-center rounded-lg border text-sm font-medium">
                         {label} panel
                       </div>
                     </CarouselItem>
@@ -1045,8 +1031,11 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Rich Interactions" />
+      <section className="scroll-mt-10 space-y-6" id="rich-interactions">
+        <DesignSystemSectionHeader
+          id="rich-interactions"
+          title="Rich Interactions"
+        />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -1143,7 +1132,7 @@ export default function DesignSystemClientPage() {
                 <CollapsibleTrigger render={<Button variant="outline" />}>
                   {collapsibleOpen ? "Hide" : "Show"} details
                 </CollapsibleTrigger>
-                <CollapsibleContent className="pt-3 text-muted-foreground text-sm">
+                <CollapsibleContent className="text-muted-foreground pt-3 text-sm">
                   Collapsible panels are ideal for advanced settings.
                 </CollapsibleContent>
               </Collapsible>
@@ -1247,8 +1236,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Identity & Layout" />
+      <section className="scroll-mt-10 space-y-6" id="identity">
+        <DesignSystemSectionHeader id="identity" title="Identity & Layout" />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -1340,7 +1329,7 @@ export default function DesignSystemClientPage() {
                 <div className="overflow-hidden rounded-lg border">
                   <Sidebar collapsible="none">
                     <SidebarHeader>
-                      <div className="font-medium text-sm">Notra</div>
+                      <div className="text-sm font-medium">Notra</div>
                       <SidebarSeparator />
                     </SidebarHeader>
                     <SidebarContent>
@@ -1376,8 +1365,8 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader title="Utility Elements" />
+      <section className="scroll-mt-10 space-y-6" id="utility">
+        <DesignSystemSectionHeader id="utility" title="Utility Elements" />
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
@@ -1385,11 +1374,11 @@ export default function DesignSystemClientPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-3">
-                <div className="font-medium text-sm">Horizontal</div>
+                <div className="text-sm font-medium">Horizontal</div>
                 <Separator />
               </div>
               <div className="flex items-center gap-4">
-                <div className="font-medium text-sm">Vertical</div>
+                <div className="text-sm font-medium">Vertical</div>
                 <Separator orientation="vertical" />
                 <div className="text-muted-foreground text-xs">
                   Inline content split
@@ -1405,7 +1394,7 @@ export default function DesignSystemClientPage() {
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <div>
-                  <div className="font-medium text-sm">Live previews</div>
+                  <div className="text-sm font-medium">Live previews</div>
                   <div className="text-muted-foreground text-xs">
                     Toggle UI updates
                   </div>
@@ -1430,9 +1419,10 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader
+      <section className="scroll-mt-10 space-y-6" id="social">
+        <DesignSystemSectionHeader
           description="LinkedIn post preview cards for content planning."
+          id="social"
           title="Social Media Previews"
         />
         <div className="grid gap-6 lg:grid-cols-2">
@@ -1472,9 +1462,10 @@ export default function DesignSystemClientPage() {
 
       <Separator />
 
-      <section className="space-y-6">
-        <SectionHeader
+      <section className="scroll-mt-10 space-y-6" id="onboarding">
+        <DesignSystemSectionHeader
           description="Guided setup checklist for onboarding flows."
+          id="onboarding"
           title="Onboarding Checklist"
         />
         <div className="grid gap-6 lg:grid-cols-2">
@@ -1526,32 +1517,54 @@ export default function DesignSystemClientPage() {
         </div>
       </section>
 
-      <section className="space-y-6">
-        <SectionHeader
+      <section className="scroll-mt-10 space-y-6" id="geo-range-picker">
+        <DesignSystemSectionHeader
+          description="Preset rail plus a two-month calendar range, as used on the GEO pages."
+          id="geo-range-picker"
+          title="GEO Range Picker"
+        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Date range</CardTitle>
+            <CardDescription>
+              Presets (Today through Year to date) and custom calendar ranges.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <GeoRangePickerDemo />
+          </CardContent>
+        </Card>
+      </section>
+
+      <Separator />
+
+      <section className="scroll-mt-10 space-y-6" id="braille-loader">
+        <DesignSystemSectionHeader
           description="Braille animation for AI thinking state — spells ⠠⠝⠕⠞⠗⠁ (notra)."
+          id="braille-loader"
           title="Braille Loader"
         />
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
           <div className="space-y-2 p-4">
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               Wave
             </p>
             <BrailleLoader className="text-lg" variant="wave" />
           </div>
           <div className="space-y-2 p-4">
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               Typewriter
             </p>
             <BrailleLoader className="text-lg" variant="typewriter" />
           </div>
           <div className="space-y-2 p-4">
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               Shimmer
             </p>
             <BrailleLoader className="text-lg" variant="shimmer" />
           </div>
           <div className="space-y-2 p-4">
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               Pulse
             </p>
             <BrailleLoader className="text-lg" variant="pulse" />
@@ -1559,7 +1572,15 @@ export default function DesignSystemClientPage() {
         </div>
       </section>
 
+      <DesignSystemWriteDialogDemo />
+      <DesignSystemClaudeCatalog />
+      <DesignSystemCodexCatalog />
+      <DesignSystemChatgptCatalog />
+      <DesignSystemClaudeChatCatalog />
+      <DesignSystemGeminiCatalog />
+      <DesignSystemPerplexityCatalog />
+
       <Toaster richColors />
-    </main>
+    </DesignSystemFrame>
   );
 }

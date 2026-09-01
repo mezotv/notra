@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+
 import { changelog } from "@/../.source/server";
 import { fetchIntegrations } from "@/lib/integrations/fetch";
 import { getIntegrationHref } from "@/lib/integrations/helpers";
@@ -10,6 +11,7 @@ import {
 import { listNotraBlogPosts } from "@/utils/blog";
 import { listNotraChangelogPosts } from "@/utils/changelog";
 import { SITE_URL } from "@/utils/urls";
+
 import { getShowcaseEntrySlug, SHOWCASE_COMPANIES } from "../utils/showcase";
 
 const STATIC_PAGE_LAST_MODIFIED = new Date("2026-04-24");
@@ -113,6 +115,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {
+      url: `${SITE_URL}/feedback-md`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+    },
+    {
       url: `${SITE_URL}/integrations`,
       lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
@@ -142,6 +148,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     {
       url: `${SITE_URL}/html-to-figma`,
+      lastModified: STATIC_PAGE_LAST_MODIFIED,
+    },
+    {
+      url: `${SITE_URL}/ip-checker`,
       lastModified: STATIC_PAGE_LAST_MODIFIED,
     },
     {

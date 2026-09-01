@@ -14,10 +14,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+
 import { CREATE_CONTENT_FORMAT_ORDER } from "@/constants/content-formats";
 import { LOOKBACK_WINDOWS, type LookbackWindow } from "@/schemas/integrations";
 import type { FormatsStepProps } from "@/types/content/create";
 import { formatSnakeCaseLabel } from "@/utils/format";
+
 import { DataPointToggle } from "./data-point-toggle";
 import { FormatCard } from "./format-card";
 
@@ -33,7 +35,7 @@ export function StepFormats({
   return (
     <div className="space-y-8">
       <div className="space-y-1">
-        <h2 className="font-semibold text-xl tracking-tight">
+        <h2 className="text-xl font-semibold tracking-tight">
           What do you want to create?
         </h2>
         <p className="text-muted-foreground text-sm">
@@ -52,15 +54,15 @@ export function StepFormats({
         ))}
       </div>
 
-      <div className="space-y-4 rounded-xl border bg-muted/30 p-4">
+      <div className="bg-muted/30 space-y-4 rounded-xl border p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_auto]">
           <div className="min-w-0 space-y-1">
             <div className="flex items-center gap-1.5">
-              <p className="font-medium text-sm">Timeframe</p>
+              <p className="text-sm font-medium">Timeframe</p>
               <Tooltip>
                 <TooltipTrigger
                   aria-label="Timeframe timezone information"
-                  className="cursor-help text-muted-foreground transition-colors hover:text-foreground"
+                  className="text-muted-foreground hover:text-foreground cursor-help transition-colors"
                   type="button"
                 >
                   <HugeiconsIcon

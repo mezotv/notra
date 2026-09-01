@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+
 import {
   SKILL_CONTENT_MAX_LENGTH,
   SKILL_DESCRIPTION_MAX_LENGTH,

@@ -1,4 +1,5 @@
 import { DateTime, Option } from "effect";
+
 import type { LookbackWindow } from "@/schemas/integrations";
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;

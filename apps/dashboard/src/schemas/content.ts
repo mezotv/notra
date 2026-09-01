@@ -1,4 +1,8 @@
-import { UI_MESSAGES_MAX, uiMessageSchema } from "@notra/ai/schemas/chat";
+import {
+  chatIdSchema,
+  UI_MESSAGES_MAX,
+  uiMessageSchema,
+} from "@notra/ai/schemas/chat";
 import { contentTypeSchema } from "@notra/ai/schemas/content";
 import {
   POST_MARKDOWN_MAX_LENGTH,
@@ -6,8 +10,10 @@ import {
 } from "@notra/ai/schemas/limits";
 import { POST_SLUG_MAX_LENGTH } from "@notra/ai/schemas/post";
 import { createContentGenerationRequestSchema } from "@notra/content-generation/schemas";
+import { BLOG_POST_SUBTYPES } from "@notra/db/constants/content";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
 import {
   LOOKBACK_WINDOWS,
   SUPPORTED_AUTOMATION_OUTPUT_TYPES,
@@ -42,6 +48,8 @@ export const sourceMetadataSchema = z
       .optional(),
     type: z.literal("generated_image").optional(),
     chatId: z.string().nullable().optional(),
+    briefId: z.string().optional(),
+    projectId: z.string().optional(),
     sandbox: z
       .object({
         boxId: z.string().optional(),
@@ -85,6 +93,7 @@ export const postSchema = z.object({
   rawHtml: z.string().nullable(),
   recommendations: z.string().nullable(),
   contentType: contentTypeSchema,
+  contentSubtype: z.enum(BLOG_POST_SUBTYPES).nullable(),
   status: postStatusSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -191,6 +200,7 @@ export const groupPostSchema = z.object({
   content: z.string(),
   markdown: z.string().nullable(),
   contentType: contentTypeSchema,
+  contentSubtype: z.enum(BLOG_POST_SUBTYPES).nullable(),
   status: postStatusSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -239,12 +249,19 @@ export const editContentSchema = z.object({
 
 export type EditContentInput = z.infer<typeof editContentSchema>;
 
-export const contextItemSchema = z.object({
-  type: z.literal("github-repo"),
-  owner: z.string(),
-  repo: z.string(),
-  integrationId: z.string(),
-});
+export const contextItemSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("github-repo"),
+    owner: z.string(),
+    repo: z.string(),
+    integrationId: z.string(),
+  }),
+  z.object({
+    type: z.literal("linear-team"),
+    integrationId: z.string(),
+    teamName: z.string().optional(),
+  }),
+]);
 
 export type ContextItem = z.infer<typeof contextItemSchema>;
 
@@ -258,7 +275,32 @@ export const textSelectionSchema = z.object({
 
 export type TextSelection = z.infer<typeof textSelectionSchema>;
 
+const contentChatContextItemSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("github-repo"),
+    owner: z.string(),
+    repo: z.string(),
+    integrationId: z.string(),
+  }),
+  z.object({
+    type: z.literal("linear-team"),
+    integrationId: z.string(),
+    teamName: z.string().optional(),
+  }),
+  z.object({
+    type: z.literal("mcp-server"),
+    integrationId: z.string(),
+    name: z.string(),
+  }),
+]);
+
+export const contentChatMessageMetadataSchema = z.object({
+  selection: textSelectionSchema.optional(),
+  context: z.array(contentChatContextItemSchema).max(50).optional(),
+});
+
 export const chatRequestSchema = z.object({
+  chatId: chatIdSchema,
   messages: z.array(uiMessageSchema).min(1).max(UI_MESSAGES_MAX),
   currentMarkdown: z.string().max(POST_MARKDOWN_MAX_LENGTH),
   contentType: z.string().max(100).optional(),

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+
 import type { StoreIntegrationLogoProps } from "@/types/integrations/mcp";
 
 export function StoreIntegrationLogo({
@@ -31,7 +32,7 @@ export function StoreIntegrationLogo({
   }
 
   return (
-    <span className="flex size-6 items-center justify-center rounded bg-muted font-medium text-muted-foreground text-xs">
+    <span className="bg-muted text-muted-foreground flex size-6 items-center justify-center rounded text-xs font-medium">
       {integration.name.trim().slice(0, 2).toUpperCase() || "?"}
     </span>
   );

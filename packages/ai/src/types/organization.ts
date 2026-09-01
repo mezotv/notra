@@ -44,8 +44,7 @@ export interface AvailableGitHubIntegrationRecord {
   repositoryEnabled: boolean;
 }
 
-export interface AvailableGitHubIntegration
-  extends AvailableGitHubIntegrationRecord {
+export interface AvailableGitHubIntegration extends AvailableGitHubIntegrationRecord {
   owner: string;
   repo: string;
 }

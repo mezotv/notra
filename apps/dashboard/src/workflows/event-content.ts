@@ -1,6 +1,11 @@
+import { getContentBillingLimitLabel } from "@notra/ai/billing/content-billing";
 import { flattenError } from "zod";
+
+import { WORKFLOW_ANALYTICS_NAMES } from "@/constants/workflow-analytics";
 import { eventWorkflowPayloadSchema } from "@/schemas/workflows";
 import type { EventContentWorkflowResult } from "@/types/workflows/event-generation";
+import { resolveContentLimitPauseReason } from "@/utils/content-billing";
+
 import {
   appendAutomationLog,
   claimWorkflowExecution,
@@ -13,10 +18,10 @@ import {
   fetchEventTrigger,
   fetchLogRetention,
   fetchNotificationData,
-  finalizeAiCredit,
+  finalizeContentBilling,
   finishGeneration,
-  gateAndReserveAiCredits,
-  notifyAiCreditsDepleted,
+  gateContentBilling,
+  notifyContentLimitReached,
   recordWorkflowPause,
   startGenerationTracking,
   trackContentOutcome,
@@ -50,12 +55,14 @@ export async function eventContentWorkflow(payload: {
     executionId,
   } = parseResult.data;
   const manual = eventData.manualRun === true;
+  const workflowStartedAt = Date.now();
   const resolvedExecutionId = executionId ?? crypto.randomUUID();
   const claimToken = crypto.randomUUID();
 
   const claim = await claimWorkflowExecution({
     executionId: resolvedExecutionId,
     claimToken,
+    workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
   });
   if (!claim.claimed) {
     console.warn(
@@ -75,23 +82,25 @@ export async function eventContentWorkflow(payload: {
   }
   const automationName = trigger.name.trim() || `${eventType} event`;
 
-  const gate = await gateAndReserveAiCredits({
+  const gate = await gateContentBilling({
     organizationId: trigger.organizationId,
     executionId: resolvedExecutionId,
+    outputType: trigger.outputType,
   });
   if (!gate.allowed) {
     if (gate.shouldNotify) {
-      await notifyAiCreditsDepleted({
+      await notifyContentLimitReached({
         organizationId: trigger.organizationId,
         automationName,
         logPrefix: LOG_PREFIX,
+        limitLabel: getContentBillingLimitLabel(gate),
       });
       if (!manual) {
         await recordWorkflowPause({
           triggerId,
           organizationId: trigger.organizationId,
           automationName,
-          reason: "ai_credits_depleted",
+          reason: resolveContentLimitPauseReason(gate),
           logPrefix: LOG_PREFIX,
         });
       }
@@ -115,8 +124,8 @@ export async function eventContentWorkflow(payload: {
       fetchLogRetention(trigger.organizationId),
     ]);
   } catch (error) {
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -127,8 +136,8 @@ export async function eventContentWorkflow(payload: {
     console.log(
       `[Event] Repository ${repositoryId} not found for trigger ${triggerId}, canceling`
     );
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -169,20 +178,23 @@ export async function eventContentWorkflow(payload: {
       eventType,
       eventAction,
       eventData,
+      chargeAiCredits: gate.mode === "ai_credits",
     });
 
     if (contentResult.status === "unsupported_output_type") {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
         status: "failed",
         reason: "Unsupported output type",
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -206,14 +218,16 @@ export async function eventContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
         status: "failed",
         reason: contentResult.reason,
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -258,14 +272,16 @@ export async function eventContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
         status: "skipped",
         reason: contentResult.reason,
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -310,14 +326,16 @@ export async function eventContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
         status: "failed",
         reason: "Content generation returned no posts",
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -346,6 +364,8 @@ export async function eventContentWorkflow(payload: {
     await finishGeneration({
       organizationId: trigger.organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+      startedAt: workflowStartedAt,
       triggerId,
       outputType: trigger.outputType,
       triggerName: automationName,
@@ -353,12 +373,12 @@ export async function eventContentWorkflow(payload: {
       title: contentTitle,
     });
 
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "confirm",
+      units: createdPosts.length,
       usage: contentResult.usage,
       fallbackModelId: "anthropic/claude-sonnet-4.6",
-      useMarkup: gate.useMarkup,
       properties: {
         source: "workflow_event",
         output_type: trigger.outputType,
@@ -401,8 +421,7 @@ export async function eventContentWorkflow(payload: {
         setting: "scheduledContentCreation",
       });
       if (notificationData.enabled && notificationData.ownerEmails.length > 0) {
-        const baseUrl =
-          process.env.BETTER_AUTH_URL ?? "https://app.usenotra.com";
+        const baseUrl = process.env.APP_URL ?? "https://app.usenotra.com";
         const contentOverviewLink = `${baseUrl}/${notificationData.organizationSlug}/content`;
         await enqueueDigest({
           organizationId: trigger.organizationId,
@@ -438,14 +457,16 @@ export async function eventContentWorkflow(payload: {
     await finishGeneration({
       organizationId: trigger.organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.EVENT_CONTENT,
+      startedAt: workflowStartedAt,
       triggerId,
       outputType: trigger.outputType,
       triggerName: automationName,
       status: "failed",
       reason: "Unexpected workflow error",
     });
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });

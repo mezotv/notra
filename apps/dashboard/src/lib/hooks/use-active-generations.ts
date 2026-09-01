@@ -1,14 +1,16 @@
 "use client";
 
+import type {
+  ActiveGeneration,
+  GenerationResult,
+} from "@notra/geo-core/types/generation-tracking";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef } from "react";
 import { toast } from "sonner";
-import type {
-  ActiveGeneration,
-  GenerationResult,
-} from "@/types/generations/tracking";
+
 import { hasShownToast, markToastShown } from "@/utils/toast-dedupe";
+
 import { dashboardOrpc } from "../orpc/query";
 
 const ACTIVE_POLL_INTERVAL = 3000;
@@ -25,7 +27,7 @@ export function useActiveGenerations(organizationId: string) {
   const router = useRouter();
   const previousCountRef = useRef<number | null>(null);
   const slug = pathname.split("/").filter(Boolean)[0];
-  const logsPath = slug ? `/${slug}/logs` : "/logs";
+  const logsPath = slug ? `/${slug}/settings/logs` : "/settings/logs";
 
   const query = useQuery<ActiveGenerationsResponse>(
     dashboardOrpc.content.activeGenerations.list.queryOptions({

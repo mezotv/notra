@@ -1,4 +1,5 @@
 import { brandSettings } from "@notra/db/schema";
+
 import type { BrandIdentityRow } from "../types/brand-identities";
 
 export function selectBrandIdentityColumns() {

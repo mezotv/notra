@@ -66,13 +66,23 @@ import {
 import { deleteQstashSchedule } from "@notra/ai/qstash/triggers";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { PublicUrlValidationError } from "@notra/utils/url";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
+import {
+  INTEGRATION_AUTH_KINDS,
+  INTEGRATION_PROVIDERS,
+  MCP_CONNECTION_TEST_OUTCOMES,
+  SLACK_CHANNEL_KINDS,
+} from "@/constants/integration-analytics";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
+import { toMcpIntegrationAuthKind } from "@/lib/integrations/auth-kind";
 import {
   clearCachedSlackChannels,
   getCachedSlackChannels,
@@ -117,6 +127,7 @@ import type {
 import type { GitHubConnectionMethod } from "@/types/services/integrations";
 import type { SlackChannelOption } from "@/types/slack-integration";
 import { ratelimit } from "@/utils/ratelimit";
+
 import {
   badRequest,
   conflict,
@@ -323,6 +334,13 @@ async function getAffectedSchedulesForIntegration(
   integrationId: string
 ) {
   const allSchedules = await db.query.contentTriggers.findMany({
+    columns: {
+      enabled: true,
+      id: true,
+      name: true,
+      qstashScheduleId: true,
+      targets: true,
+    },
     where: and(
       eq(contentTriggers.organizationId, organizationId),
       eq(contentTriggers.sourceType, "cron")
@@ -412,6 +430,21 @@ export const integrationsRouter = {
 
         await invalidateStandaloneChatIntegrations(input.organizationId);
 
+        trackServerEvent({
+          event: POSTHOG_EVENTS.INTEGRATION_CONNECTED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            provider: INTEGRATION_PROVIDERS.GITHUB,
+            auth_kind: input.token
+              ? INTEGRATION_AUTH_KINDS.API_KEY
+              : INTEGRATION_AUTH_KINDS.PUBLIC,
+            integration_id: integration.id,
+            has_branch: Boolean(input.branch),
+          },
+        });
+
         return serializeIntegration(integration);
       } catch (error) {
         mapKnownIntegrationError(error);
@@ -435,7 +468,7 @@ export const integrationsRouter = {
   update: baseProcedure
     .input(integrationInputSchema.and(updateIntegrationBodySchema))
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      const auth = await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
       });
@@ -531,6 +564,23 @@ export const integrationsRouter = {
 
         await invalidateStandaloneChatIntegrations(input.organizationId);
 
+        if (
+          input.enabled !== undefined &&
+          input.enabled !== integration.enabled
+        ) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.INTEGRATION_TOGGLED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              provider: INTEGRATION_PROVIDERS.GITHUB,
+              integration_id: input.integrationId,
+              enabled: input.enabled,
+            },
+          });
+        }
+
         return serializeIntegration(updated);
       } catch (error) {
         mapKnownIntegrationError(error);
@@ -539,7 +589,7 @@ export const integrationsRouter = {
   delete: baseProcedure
     .input(integrationInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      const auth = await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
       });
@@ -579,6 +629,18 @@ export const integrationsRouter = {
       await deleteGitHubIntegration(input.integrationId);
 
       await invalidateStandaloneChatIntegrations(input.organizationId);
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.INTEGRATION_DISCONNECTED,
+        headers: context.headers,
+        userId: auth.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          provider: INTEGRATION_PROVIDERS.GITHUB,
+          integration_id: input.integrationId,
+          disabled_schedule_count: affectedSchedules.length,
+        },
+      });
 
       return {
         success: true,
@@ -823,10 +885,22 @@ export const integrationsRouter = {
           );
 
           try {
-            return await generateWebhookSecretForRepository(
+            const secret = await generateWebhookSecretForRepository(
               input.repositoryId,
               auth.user.id
             );
+
+            trackServerEvent({
+              event: POSTHOG_EVENTS.WEBHOOK_SECRET_REGENERATED,
+              headers: context.headers,
+              userId: auth.user.id,
+              organizationId: input.organizationId,
+              properties: {
+                repository_id: input.repositoryId,
+              },
+            });
+
+            return secret;
           } catch (error) {
             mapKnownIntegrationError(error);
           }
@@ -920,7 +994,7 @@ export const integrationsRouter = {
     update: baseProcedure
       .input(integrationInputSchema.and(updateLinearIntegrationBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -940,12 +1014,26 @@ export const integrationsRouter = {
 
         await invalidateStandaloneChatIntegrations(input.organizationId);
 
+        if (input.enabled !== undefined && input.enabled !== existing.enabled) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.INTEGRATION_TOGGLED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              provider: INTEGRATION_PROVIDERS.LINEAR,
+              integration_id: input.integrationId,
+              enabled: input.enabled,
+            },
+          });
+        }
+
         return updated;
       }),
     delete: baseProcedure
       .input(integrationInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -958,6 +1046,17 @@ export const integrationsRouter = {
         await deleteLinearIntegration(input.integrationId);
 
         await invalidateStandaloneChatIntegrations(input.organizationId);
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.INTEGRATION_DISCONNECTED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            provider: INTEGRATION_PROVIDERS.LINEAR,
+            integration_id: input.integrationId,
+          },
+        });
 
         return { success: true };
       }),
@@ -1056,7 +1155,7 @@ export const integrationsRouter = {
     update: baseProcedure
       .input(integrationInputSchema.and(updateSlackIntegrationBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -1074,6 +1173,47 @@ export const integrationsRouter = {
           throw notFound("Slack integration not found");
         }
 
+        if (input.enabled !== undefined) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.INTEGRATION_TOGGLED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              provider: INTEGRATION_PROVIDERS.SLACK,
+              integration_id: input.integrationId,
+              enabled: input.enabled,
+            },
+          });
+        }
+        if (input.notificationChannelId !== undefined) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.SLACK_CHANNEL_CONFIGURED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              integration_id: input.integrationId,
+              kind: SLACK_CHANNEL_KINDS.NOTIFICATIONS,
+              cleared: input.notificationChannelId === null,
+            },
+          });
+        }
+        if (input.allowedChannelIds !== undefined) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.SLACK_CHANNEL_CONFIGURED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              integration_id: input.integrationId,
+              kind: SLACK_CHANNEL_KINDS.ACCESS,
+              channel_count: input.allowedChannelIds?.length ?? 0,
+              cleared: input.allowedChannelIds === null,
+            },
+          });
+        }
+
         return {
           id: updated.id,
           displayName: updated.displayName,
@@ -1085,7 +1225,7 @@ export const integrationsRouter = {
     delete: baseProcedure
       .input(integrationInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -1099,6 +1239,17 @@ export const integrationsRouter = {
         }
 
         await clearCachedSlackChannels(input.integrationId);
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.INTEGRATION_DISCONNECTED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            provider: INTEGRATION_PROVIDERS.SLACK,
+            integration_id: input.integrationId,
+          },
+        });
 
         return { success: true };
       }),
@@ -1189,6 +1340,17 @@ export const integrationsRouter = {
 
         const verification = await verifyGranolaApiKey(input.apiKey);
         if (!verification.valid) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.INTEGRATION_CONNECT_FAILED,
+            headers: context.headers,
+            userId: user.id,
+            organizationId: input.organizationId,
+            properties: {
+              provider: INTEGRATION_PROVIDERS.GRANOLA,
+              auth_kind: INTEGRATION_AUTH_KINDS.API_KEY,
+              error_code: "invalid_api_key",
+            },
+          });
           throw badRequest(verification.error ?? "Invalid Granola API key");
         }
 
@@ -1206,6 +1368,18 @@ export const integrationsRouter = {
 
         await invalidateStandaloneChatIntegrations(input.organizationId);
 
+        trackServerEvent({
+          event: POSTHOG_EVENTS.INTEGRATION_CONNECTED,
+          headers: context.headers,
+          userId: user.id,
+          organizationId: input.organizationId,
+          properties: {
+            provider: INTEGRATION_PROVIDERS.GRANOLA,
+            auth_kind: INTEGRATION_AUTH_KINDS.API_KEY,
+            integration_id: integration.id,
+          },
+        });
+
         return {
           id: integration.id,
           displayName: integration.displayName,
@@ -1217,7 +1391,7 @@ export const integrationsRouter = {
     update: baseProcedure
       .input(integrationInputSchema.and(updateGranolaIntegrationBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -1240,6 +1414,20 @@ export const integrationsRouter = {
 
         await invalidateStandaloneChatIntegrations(input.organizationId);
 
+        if (input.enabled !== undefined && input.enabled !== existing.enabled) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.INTEGRATION_TOGGLED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              provider: INTEGRATION_PROVIDERS.GRANOLA,
+              integration_id: input.integrationId,
+              enabled: input.enabled,
+            },
+          });
+        }
+
         return {
           id: updated.id,
           displayName: updated.displayName,
@@ -1251,7 +1439,7 @@ export const integrationsRouter = {
     delete: baseProcedure
       .input(integrationInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -1264,6 +1452,17 @@ export const integrationsRouter = {
         await deleteGranolaIntegration(input.integrationId);
 
         await invalidateStandaloneChatIntegrations(input.organizationId);
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.INTEGRATION_DISCONNECTED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            provider: INTEGRATION_PROVIDERS.GRANOLA,
+            integration_id: input.integrationId,
+          },
+        });
 
         return { success: true };
       }),
@@ -1387,8 +1586,38 @@ export const integrationsRouter = {
             headers: input.headers,
           });
 
+          trackServerEvent({
+            event: POSTHOG_EVENTS.INTEGRATION_CONNECTED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              provider: storeIntegration
+                ? INTEGRATION_PROVIDERS.MCP_STORE
+                : INTEGRATION_PROVIDERS.MCP,
+              auth_kind: toMcpIntegrationAuthKind(input.authType),
+              integration_id: integration.id,
+              store_integration_id: storeIntegration?.id ?? null,
+            },
+          });
+
           return serializeMcpServerIntegration(integration);
         } catch (error) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.INTEGRATION_CONNECT_FAILED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              provider: storeIntegration
+                ? INTEGRATION_PROVIDERS.MCP_STORE
+                : INTEGRATION_PROVIDERS.MCP,
+              auth_kind: toMcpIntegrationAuthKind(input.authType),
+              error_code: isUniqueConstraintError(error)
+                ? "name_conflict"
+                : "create_failed",
+            },
+          });
           if (isUniqueConstraintError(error)) {
             throw conflict("An MCP server with this name already exists");
           }
@@ -1405,7 +1634,7 @@ export const integrationsRouter = {
     update: baseProcedure
       .input(mcpServerInputSchema.and(updateMcpServerBodySchema))
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -1451,6 +1680,22 @@ export const integrationsRouter = {
           throw notFound("MCP server not found");
         }
 
+        if (input.enabled !== undefined && input.enabled !== existing.enabled) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.INTEGRATION_TOGGLED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              provider: existing.storeSourceIntegrationId
+                ? INTEGRATION_PROVIDERS.MCP_STORE
+                : INTEGRATION_PROVIDERS.MCP,
+              integration_id: input.serverId,
+              enabled: input.enabled,
+            },
+          });
+        }
+
         return serializeMcpServerIntegration(updated);
       }),
     beginOAuth: baseProcedure
@@ -1463,8 +1708,7 @@ export const integrationsRouter = {
         await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);
 
-        const baseUrl =
-          process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+        const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
         if (!baseUrl) {
           throw internalServerError("MCP OAuth is not configured");
         }
@@ -1530,8 +1774,7 @@ export const integrationsRouter = {
         ) {
           throw notFound("OAuth MCP server not found");
         }
-        const baseUrl =
-          process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
+        const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL;
         if (!baseUrl) {
           throw internalServerError("MCP OAuth is not configured");
         }
@@ -1563,7 +1806,7 @@ export const integrationsRouter = {
     delete: baseProcedure
       .input(mcpServerInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -1583,12 +1826,26 @@ export const integrationsRouter = {
           throw notFound("MCP connection not found");
         }
 
+        trackServerEvent({
+          event: POSTHOG_EVENTS.INTEGRATION_DISCONNECTED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            provider: existing.storeSourceIntegrationId
+              ? INTEGRATION_PROVIDERS.MCP_STORE
+              : INTEGRATION_PROVIDERS.MCP,
+            integration_id: input.serverId,
+            auth_kind: toMcpIntegrationAuthKind(existing.authType),
+          },
+        });
+
         return { success: true };
       }),
     refreshTools: baseProcedure
       .input(mcpServerInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -1611,6 +1868,16 @@ export const integrationsRouter = {
             integrationId: input.serverId,
             organizationId: input.organizationId,
           });
+          trackServerEvent({
+            event: POSTHOG_EVENTS.MCP_TOOLS_REFRESHED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              integration_id: input.serverId,
+              tool_count: result.indexedToolCount,
+            },
+          });
           return {
             success: true,
             indexedToolCount: result.indexedToolCount,
@@ -1629,17 +1896,33 @@ export const integrationsRouter = {
     test: baseProcedure
       .input(testMcpServerRequestSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
         await assertMcpConnectionRateLimit(input.organizationId);
         await assertActiveSubscription(input.organizationId);
 
-        return testMcpServerConnection({
+        const result = await testMcpServerConnection({
           url: input.url,
           headers: input.headers,
         });
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.MCP_CONNECTION_TESTED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            outcome: result.success
+              ? MCP_CONNECTION_TEST_OUTCOMES.SUCCESS
+              : MCP_CONNECTION_TEST_OUTCOMES.FAILED,
+            tool_count: result.toolCount,
+            has_headers: Object.keys(input.headers ?? {}).length > 0,
+          },
+        });
+
+        return result;
       }),
   },
 };

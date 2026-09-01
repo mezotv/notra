@@ -1,4 +1,5 @@
 import DOMPurify from "dompurify";
+
 import { jsxToHtml } from "@/lib/html-to-figma/jsx-to-html";
 
 export function toSafeHtml(input: string): string {

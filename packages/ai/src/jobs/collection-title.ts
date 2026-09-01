@@ -96,9 +96,10 @@ export async function generateCollectionTitle(
         post.content.startsWith("http")
     )
     .slice(0, COLLECTION_TITLE_MAX_IMAGES)
-    .map(
-      (post): ImagePart => ({ type: "image", image: new URL(post.content) })
-    );
+    .map((post): ImagePart => ({
+      type: "image",
+      image: new URL(post.content),
+    }));
 
   const promptText = [
     organization ? `Organization: ${organization.name}` : null,
@@ -112,7 +113,9 @@ export async function generateCollectionTitle(
   ];
 
   const { object } = await generateObject({
-    model: gateway(COLLECTION_TITLE_MODEL_ID),
+    model: gateway(COLLECTION_TITLE_MODEL_ID, {
+      organizationId: params.organizationId,
+    }),
     schema: collectionTitleResultSchema,
     system: SYSTEM_PROMPT,
     messages: [{ role: "user", content: userContent }],

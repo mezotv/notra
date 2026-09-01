@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import type { OfferLike } from "~types/jsonld";
+
 import { CtaBanner } from "@/components/landing/cta-banner";
 import { LandingPricingSection } from "@/components/landing/pricing-section";
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
@@ -16,11 +18,10 @@ import {
   TWITTER_HANDLE,
 } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
-import type { OfferLike } from "~types/jsonld";
 
 const title = "Pricing";
 const description =
-  "Choose the right Notra plan for your team. Compare features across Basic, Pro, and Enterprise tiers.";
+  "Choose the right Notra plan for your team. Compare features across Starter, Growth, Scale, and Enterprise tiers.";
 const url = `${SITE_URL}/pricing`;
 
 const offers: OfferLike[] = Object.values(PRICING_PLANS).flatMap((plan) => {

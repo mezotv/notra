@@ -1,0 +1,1 @@
+export const GEO_TRAFFIC_HOVER_DELAY_MS = 150;

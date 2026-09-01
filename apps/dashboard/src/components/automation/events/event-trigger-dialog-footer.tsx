@@ -4,6 +4,7 @@ import {
   Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+
 import { Button } from "@/components/button";
 import type {
   EventTriggerDialogFooterProps,
@@ -16,14 +17,14 @@ function FooterStatus({
 }: EventTriggerFooterStatusProps) {
   if (errorMessage) {
     return (
-      <span className="flex items-center gap-1.5 font-medium text-destructive text-xs">
+      <span className="text-destructive flex items-center gap-1.5 text-xs font-medium">
         <HugeiconsIcon className="size-3.5" icon={AlertCircleIcon} />
         {errorMessage}
       </span>
     );
   }
   return (
-    <span className="flex items-center gap-1.5 text-muted-foreground text-xs">
+    <span className="text-muted-foreground flex items-center gap-1.5 text-xs">
       {repositoryCount === 0
         ? "No repositories selected yet"
         : `${repositoryCount} ${repositoryCount === 1 ? "repository" : "repositories"} selected`}
@@ -39,7 +40,7 @@ export function EventTriggerDialogFooter({
   repositoryCount,
 }: EventTriggerDialogFooterProps) {
   return (
-    <div className="shrink-0 border-t bg-muted/30 px-4 py-3">
+    <div className="bg-muted/30 shrink-0 border-t px-4 py-3">
       <div className="flex items-center justify-between gap-3">
         <FooterStatus
           errorMessage={errorMessage}

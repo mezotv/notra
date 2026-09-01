@@ -1,4 +1,5 @@
 import { formatDistanceToNowStrict } from "date-fns";
+
 import type { PrSelection, ReleaseSelection } from "@/types/content/preview";
 
 export function prSelectionToKey(selection: PrSelection): string {

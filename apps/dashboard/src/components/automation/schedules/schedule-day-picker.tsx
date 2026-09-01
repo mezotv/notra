@@ -9,6 +9,7 @@ import {
   SelectValue,
 } from "@notra/ui/components/ui/select";
 import { cn } from "@notra/ui/lib/utils";
+
 import { DAYS_OF_MONTH, DAYS_OF_WEEK } from "@/constants/schedule";
 import type { ScheduleDayPickerProps } from "@/types/automation/schedule";
 
@@ -35,7 +36,7 @@ export function ScheduleDayPicker({
               <button
                 aria-pressed={isActive}
                 className={cn(
-                  "h-10 min-w-12 rounded-lg border px-3 font-medium text-sm transition-colors",
+                  "h-10 min-w-12 rounded-lg border px-3 text-sm font-medium transition-colors",
                   isActive
                     ? "border-foreground bg-foreground text-background"
                     : "border-border bg-background text-muted-foreground hover:bg-muted/50 hover:text-foreground"

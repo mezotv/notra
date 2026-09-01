@@ -1,8 +1,47 @@
+import type { UIMessage } from "ai";
+
 import { CHAT_TITLE_MAX_LENGTH } from "../constants/chat";
 import type {
   BuildChatFinishMetadataInput,
+  ChatMessageMetadata,
   ChatSessionSummary,
 } from "../types/chat";
+
+function findLastUserMessageIndex(messages: UIMessage[]) {
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    if (messages[index]?.role === "user") {
+      return index;
+    }
+  }
+  return -1;
+}
+
+export function stampUserMessageAuthors<T extends UIMessage>(
+  messages: T[],
+  authorUserId: string
+): T[] {
+  const lastUserIndex = findLastUserMessageIndex(messages);
+  if (lastUserIndex === -1) {
+    return messages;
+  }
+
+  const message = messages[lastUserIndex];
+  if (!message) {
+    return messages;
+  }
+
+  const metadata = (message.metadata ?? {}) as ChatMessageMetadata;
+  if (metadata.authorUserId === authorUserId) {
+    return messages;
+  }
+
+  const nextMessages = messages.slice();
+  nextMessages[lastUserIndex] = {
+    ...message,
+    metadata: { ...metadata, authorUserId },
+  };
+  return nextMessages;
+}
 
 export function buildChatFinishMetadata({
   streamStartedAt,
@@ -73,6 +112,36 @@ export function chatSessionPath(organizationId: string, chatId: string) {
 
 export function chatSessionsPath(organizationId: string) {
   return `/api/organizations/${organizationId}/chat/sessions`;
+}
+
+export function contentChatSessionsQueryKey(
+  organizationId: string,
+  contentId: string
+) {
+  return ["content-chat-sessions", organizationId, contentId] as const;
+}
+
+export function contentChatHistoryQueryKey(
+  organizationId: string,
+  contentId: string,
+  chatId: string | null
+) {
+  return ["content-chat-history", organizationId, contentId, chatId] as const;
+}
+
+export function contentChatSessionsPath(
+  organizationId: string,
+  contentId: string
+) {
+  return `/api/organizations/${organizationId}/content/${contentId}/chat`;
+}
+
+export function contentChatHistoryPath(
+  organizationId: string,
+  contentId: string,
+  chatId: string
+) {
+  return `/api/organizations/${organizationId}/content/${contentId}/chat/${encodeURIComponent(chatId)}`;
 }
 
 export function sortChatSessions(sessions: ChatSessionSummary[]) {

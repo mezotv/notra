@@ -1,95 +1,48 @@
 "use client";
 
-import {
-  Attachment01Icon,
-  CreditCardIcon,
-  Notification03Icon,
-  Settings01Icon,
-  UserCircleIcon,
-  UserGroupIcon,
-  Wallet01Icon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
-  useSidebar,
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-interface NavSettingsItem {
-  label: string;
-  url: string;
-  icon: IconSvgElement;
-}
+import {
+  SETTINGS_ACCOUNT_NAV_ITEMS,
+  SETTINGS_ORGANIZATION_NAV_ITEMS,
+} from "@/constants/nav";
+import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
+import type { NavSettingsProps } from "@/types/components/nav";
 
-const accountItems: NavSettingsItem[] = [
-  {
-    label: "Account",
-    url: "settings/account",
-    icon: UserCircleIcon,
-  },
-];
-
-const organizationItems: NavSettingsItem[] = [
-  {
-    label: "General",
-    url: "settings/general",
-    icon: Settings01Icon,
-  },
-  {
-    label: "Members",
-    url: "settings/members",
-    icon: UserGroupIcon,
-  },
-  {
-    label: "Notifications",
-    url: "settings/notifications",
-    icon: Notification03Icon,
-  },
-  {
-    label: "Attachments",
-    url: "settings/attachments",
-    icon: Attachment01Icon,
-  },
-  {
-    label: "Billing & Usage",
-    url: "settings/billing",
-    icon: CreditCardIcon,
-  },
-  {
-    label: "Credits",
-    url: "settings/credits",
-    icon: Wallet01Icon,
-  },
-];
-
-interface NavSettingsProps {
-  slug: string;
-}
+import { SidebarLabel } from "./sidebar-label";
 
 export function NavSettings({ slug }: NavSettingsProps) {
   const pathname = usePathname();
-  const { open } = useSidebar();
+  const { hasAiCredits } = useHasAiCreditsFeature();
 
   const isActive = (url: string) => pathname === `/${slug}/${url}`;
+  const organizationItems = SETTINGS_ORGANIZATION_NAV_ITEMS.filter(
+    (item) => !item.requiresAiCredits || hasAiCredits
+  );
 
   return (
     <>
       <SidebarGroup>
-        <SidebarGroupLabel>Account</SidebarGroupLabel>
+        <SidebarGroupLabel>
+          <SidebarLabel>Account</SidebarLabel>
+        </SidebarGroupLabel>
         <SidebarMenu>
-          {accountItems.map((item) => (
+          {SETTINGS_ACCOUNT_NAV_ITEMS.map((item) => (
             <SidebarMenuButton
               isActive={isActive(item.url)}
               key={item.label}
               render={
-                <Link href={`/${slug}/${item.url}`} replace>
+                <Link href={`/${slug}/${item.url}`} prefetch={true} replace>
                   <HugeiconsIcon icon={item.icon} />
-                  <span>{item.label}</span>
+                  <SidebarLabel>{item.label}</SidebarLabel>
                 </Link>
               }
               tooltip={item.label}
@@ -99,16 +52,18 @@ export function NavSettings({ slug }: NavSettingsProps) {
       </SidebarGroup>
 
       <SidebarGroup>
-        <SidebarGroupLabel>Organization</SidebarGroupLabel>
+        <SidebarGroupLabel>
+          <SidebarLabel>Organization</SidebarLabel>
+        </SidebarGroupLabel>
         <SidebarMenu>
           {organizationItems.map((item) => (
             <SidebarMenuButton
               isActive={isActive(item.url)}
               key={item.label}
               render={
-                <Link href={`/${slug}/${item.url}`} replace>
+                <Link href={`/${slug}/${item.url}`} prefetch={true} replace>
                   <HugeiconsIcon icon={item.icon} />
-                  <span>{item.label}</span>
+                  <SidebarLabel>{item.label}</SidebarLabel>
                 </Link>
               }
               tooltip={item.label}

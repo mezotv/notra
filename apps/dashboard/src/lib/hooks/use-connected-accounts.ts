@@ -2,9 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+
 import { SOCIAL_PLATFORM_LABELS } from "@/constants/social-connect";
-import type { SocialConnectPlatform } from "@/schemas/social-accounts";
+import type {
+  SocialConnectPlatform,
+  SocialPublishSurface,
+} from "@/schemas/social-accounts";
 import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
+
 import { dashboardOrpc } from "../orpc/query";
 
 export function useConnectedAccounts(organizationId: string) {
@@ -64,11 +69,16 @@ export function usePublishSocialPost(
 ) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (input: { accountId: string; content: string }) =>
+    mutationFn: async (input: {
+      accountId: string;
+      content: string;
+      from?: SocialPublishSurface;
+    }) =>
       dashboardOrpc.socialAccounts.publish.call({
         organizationId,
         accountId: input.accountId,
         content: input.content,
+        from: input.from,
       }),
     onSuccess: (result) => {
       queryClient.invalidateQueries({

@@ -18,3 +18,7 @@ export interface TestimonialsShaderProps {
   colorFront: string;
   className: string;
 }
+
+export interface TestimonialsGateProps {
+  children: React.ReactNode;
+}

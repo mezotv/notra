@@ -11,8 +11,10 @@ import {
   m,
   useReducedMotion,
 } from "motion/react";
+import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+
 import { PricingGiftIcon } from "@/components/landing/pricing-icons";
 import { PricingProShader } from "@/components/landing/pricing-pro-shader";
 import { TrackedSignupLink } from "@/components/tracked-signup-link";
@@ -23,6 +25,8 @@ import {
   PRICING_HEADING,
   PRICING_PLANS,
   PRICING_SUBHEADING,
+  TRACKED_ENGINES,
+  TRACKED_ENGINES_CAPTION,
 } from "@/constants/landing/pricing";
 import { PRICING_ICONS } from "@/constants/landing/pricing-icons";
 import type {
@@ -39,7 +43,7 @@ function PricingBillingToggle({
   const shouldReduceMotion = useReducedMotion();
 
   return (
-    <div className="flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(180deg,#FFFFFF,#F2F2F2)] p-1.75 shadow-[0_0.0625rem_0.125rem_#28282814,0_0_0_0.0625rem_#ECECEC] dark:bg-none dark:bg-white/[0.06] dark:shadow-[0_0_0_0.0625rem] dark:shadow-white/10">
+    <div className="flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(180deg,#FFFFFF,#F2F2F2)] p-1.75 shadow-[0_0.0625rem_0.125rem_#28282814,0_0_0_0.0625rem_#ECECEC] dark:bg-white/[0.06] dark:bg-none dark:shadow-[0_0_0_0.0625rem] dark:shadow-white/10">
       {PRICING_BILLING_OPTIONS.map((option) => {
         const isActive = option.value === value;
 
@@ -47,7 +51,7 @@ function PricingBillingToggle({
           <button
             aria-pressed={isActive}
             className={cn(
-              "relative flex h-8 cursor-pointer items-center justify-center rounded-full px-3.5 py-1.75 font-sans text-base leading-6 tracking-[-0.01em]",
+              "focus-visible:ring-ring/50 relative flex h-8 cursor-pointer touch-manipulation items-center justify-center rounded-full px-3.5 py-1.75 font-sans text-base leading-6 tracking-[-0.01em] focus-visible:ring-[0.1875rem]",
               isActive ? "text-white" : "text-[#1E1E1E] dark:text-white"
             )}
             key={option.value}
@@ -79,6 +83,51 @@ function PricingBillingToggle({
   );
 }
 
+function TrackedEnginesRow() {
+  return (
+    <div className="flex flex-col items-center gap-5">
+      <p className="text-center font-sans text-sm font-medium tracking-[-0.01em] text-[#1E1E1E99] dark:text-white/50">
+        {TRACKED_ENGINES_CAPTION}
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-x-9 gap-y-5">
+        {TRACKED_ENGINES.map((engine) =>
+          engine.darkSrc ? (
+            <span className="inline-flex" key={engine.name} title={engine.name}>
+              <Image
+                alt={engine.name}
+                className="h-7 w-auto dark:hidden"
+                height={28}
+                src={engine.src}
+                unoptimized
+                width={engine.width}
+              />
+              <Image
+                alt={engine.name}
+                className="hidden h-7 w-auto dark:block"
+                height={28}
+                src={engine.darkSrc}
+                unoptimized
+                width={engine.width}
+              />
+            </span>
+          ) : (
+            <Image
+              alt={engine.name}
+              className="h-7 w-auto"
+              height={28}
+              key={engine.name}
+              src={engine.src}
+              title={engine.name}
+              unoptimized
+              width={engine.width}
+            />
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PricingCard({ plan, billingPeriod }: PricingCardProps) {
   const isFeatured = plan.variant === "featured";
   const showBadge = Boolean(plan.hasAnnualBadge) && billingPeriod === "yearly";
@@ -93,7 +142,7 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
   return (
     <article
       className={cn(
-        "relative flex h-172 w-full max-w-96 shrink-0 flex-col overflow-clip rounded-3xl lg:order-none lg:w-88 lg:max-w-none",
+        "relative flex h-184 w-full flex-col overflow-clip rounded-3xl lg:order-none",
         isFeatured
           ? "order-first bg-[#8B5CF6]"
           : "bg-[#F7F7F7] dark:bg-white/[0.04]"
@@ -113,7 +162,7 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
           <div className="flex items-center justify-between gap-2">
             <h3
               className={cn(
-                "font-display font-medium text-[1.375rem] leading-7 tracking-[0.01em]",
+                "font-display text-[1.375rem] leading-7 font-medium tracking-[0.01em]",
                 isFeatured
                   ? "font-semibold text-white"
                   : "text-black dark:text-white"
@@ -126,7 +175,7 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
                 <m.span
                   animate={{ y: 0, opacity: 1 }}
                   className={cn(
-                    "-outline-offset-1 flex items-center gap-0.75 overflow-clip rounded-full py-1 pr-2 pl-1.25 font-medium font-sans text-[0.8125rem] leading-[1.125rem] outline [backdrop-filter:blur(0.15rem)]",
+                    "flex items-center gap-0.75 overflow-clip rounded-full py-1 pr-2 pl-1.25 font-sans text-[0.8125rem] leading-[1.125rem] font-medium outline -outline-offset-1 [backdrop-filter:blur(0.15rem)]",
                     isFeatured
                       ? "bg-white/20 text-white outline-[#F6F8FA80]"
                       : "bg-[#8B5CF6BF] text-white outline-[#1E1E1E0D]"
@@ -143,7 +192,7 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
           </div>
           <p
             className={cn(
-              "font-normal font-sans text-[0.9375rem] leading-[1.125rem] tracking-[-0.015em]",
+              "font-sans text-[0.9375rem] leading-[1.125rem] font-normal tracking-[-0.015em]",
               isFeatured ? "text-white/70" : "text-[#6B6B6B] dark:text-white/60"
             )}
           >
@@ -164,7 +213,7 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
               >
                 <span
                   className={cn(
-                    "font-display font-normal text-[2.625rem] leading-13 tracking-[-0.01em]",
+                    "font-display text-[2.625rem] leading-13 font-normal tracking-[-0.01em]",
                     isFeatured ? "text-white" : "text-[#1E1E1E] dark:text-white"
                   )}
                 >
@@ -173,7 +222,7 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
                 {plan.priceSuffix ? (
                   <span
                     className={cn(
-                      "font-normal font-sans text-sm leading-[1.125rem] tracking-[-0.015em]",
+                      "font-sans text-sm leading-[1.125rem] font-normal tracking-[-0.015em]",
                       isFeatured
                         ? "text-white/70"
                         : "text-[#1E1E1EB3] dark:text-white/60"
@@ -224,7 +273,7 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
                   <div className="flex flex-col">
                     <span
                       className={cn(
-                        "font-normal font-sans text-sm leading-[1.125rem]",
+                        "font-sans text-sm leading-[1.125rem] font-normal",
                         isFeatured
                           ? "text-white"
                           : "text-[#1E1E1EBF] dark:text-white/70"
@@ -235,7 +284,7 @@ function PricingCard({ plan, billingPeriod }: PricingCardProps) {
                     {feature.subtitle ? (
                       <span
                         className={cn(
-                          "font-normal font-sans text-xs leading-4",
+                          "font-sans text-xs leading-4 font-normal",
                           isFeatured
                             ? "text-white/90"
                             : "text-[#1E1E1E99] dark:text-white/50"
@@ -270,10 +319,10 @@ export function LandingPricingSection({
       >
         {showHeader ? (
           <div className="flex flex-col items-center gap-6">
-            <h2 className="max-w-[59rem] text-balance text-center font-display font-medium text-[#1E1E1E] text-[2rem] leading-[1.12] tracking-[-0.02em] sm:text-[2.875rem] sm:leading-13 dark:text-white">
+            <h2 className="font-display max-w-[59rem] text-center text-[2rem] leading-[1.12] font-medium tracking-[-0.02em] text-balance text-[#1E1E1E] sm:text-[2.875rem] sm:leading-13 dark:text-white">
               {PRICING_HEADING}
             </h2>
-            <p className="max-w-[43rem] text-balance text-center font-medium font-sans text-[#1E1E1EBF] text-lg leading-7 sm:text-xl dark:text-white/70">
+            <p className="max-w-[43rem] text-center font-sans text-lg leading-7 font-medium text-balance text-[#1E1E1EBF] sm:text-xl dark:text-white/70">
               {PRICING_SUBHEADING}
             </p>
           </div>
@@ -285,7 +334,7 @@ export function LandingPricingSection({
             value={billingPeriod}
           />
 
-          <div className="flex w-full max-w-[69rem] flex-col items-center gap-6 lg:flex-row lg:items-stretch lg:justify-center">
+          <div className="grid w-full max-w-96 grid-cols-1 gap-4 lg:max-w-[80rem] lg:grid-cols-4">
             {PRICING_PLANS.map((plan) => (
               <PricingCard
                 billingPeriod={billingPeriod}
@@ -295,6 +344,8 @@ export function LandingPricingSection({
             ))}
           </div>
         </div>
+
+        <TrackedEnginesRow />
       </section>
     </LazyMotion>
   );

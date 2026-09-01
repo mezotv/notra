@@ -19,11 +19,18 @@ import {
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { EmptyStateTablePreview } from "@/components/empty-state-preview";
+import {
+  EMPTY_STATE_TABLE_COLUMNS,
+  EMPTY_STATE_TABLE_ROWS,
+} from "@/constants/empty-state";
 import { useDeleteSitemap, useSitemaps } from "@/lib/hooks/use-brand-sitemaps";
 import { getSafeHttpUrl } from "@/lib/sitemap/sitemap-url";
 import type { SitemapListProps } from "@/types/hooks/brand-sitemaps";
+
 import { SITEMAP_STAT_SKELETON_KEYS } from "../constants/sitemap-ui";
 import { AddSitemapDialog } from "./add-sitemap-dialog";
 import { SitemapPagesTable } from "./sitemap-pages-table";
@@ -104,6 +111,12 @@ export function SitemapList({
           actionLabel="Add Sitemap"
           description="Add a sitemap to track indexed pages and monitor site health for AI discovery."
           onActionClick={() => onDialogOpenChange(true)}
+          preview={
+            <EmptyStateTablePreview
+              columns={EMPTY_STATE_TABLE_COLUMNS.sitemap}
+              rows={EMPTY_STATE_TABLE_ROWS}
+            />
+          }
           title="No sitemaps yet"
         />
       ) : (
@@ -121,7 +134,7 @@ export function SitemapList({
                   const safeUrl = getSafeHttpUrl(selectedSitemap.url);
                   return safeUrl ? (
                     <a
-                      className="group flex min-w-0 items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground"
+                      className="group text-muted-foreground hover:text-foreground flex min-w-0 items-center gap-2 text-sm transition-colors"
                       href={safeUrl}
                       rel="noopener noreferrer"
                       target="_blank"
@@ -139,7 +152,7 @@ export function SitemapList({
                       />
                     </a>
                   ) : (
-                    <div className="flex min-w-0 items-center gap-2 text-muted-foreground text-sm">
+                    <div className="text-muted-foreground flex min-w-0 items-center gap-2 text-sm">
                       <HugeiconsIcon
                         className="size-4 shrink-0"
                         icon={GlobalIcon}
@@ -149,7 +162,7 @@ export function SitemapList({
                   );
                 })()}
                 <Button
-                  className="shrink-0 text-muted-foreground hover:text-destructive"
+                  className="text-muted-foreground hover:text-destructive shrink-0"
                   onClick={() => setDeleteTargetId(selectedSitemap.id)}
                   size="sm"
                   variant="ghost"

@@ -1,7 +1,7 @@
-export const CTA_BANNER_HEADING = "Stop shipping in silence";
+export const CTA_BANNER_HEADING = "Find out what agents say about you";
 
 export const CTA_BANNER_SUBCOPY =
-  "Connect your repo and turn this week's commits into a publish-ready changelog, in your brand's voice.";
+  "Add a few prompts, run a scan, read the answers. Free to start.";
 
 export const CTA_BANNER_PRIMARY_LABEL = "Start for free";
 

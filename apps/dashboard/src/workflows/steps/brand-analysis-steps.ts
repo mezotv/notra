@@ -6,28 +6,30 @@ import { scrapeWebsiteForBrandAnalysis } from "@notra/ai/utils/context-dev";
 import { buildExperimentalTelemetry } from "@notra/ai/utils/tcc";
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
+import { flushPostHogServer } from "@notra/posthog/server";
 import { generateText, Output } from "ai";
 import { and, eq } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
 import { createAILogger } from "evlog/ai";
+
+import { WORKFLOW_ANALYTICS_NAMES } from "@/constants/workflow-analytics";
+import { trackBrandAnalysisOutcomeAndFlush } from "@/lib/analytics/workflow-lifecycle";
 import {
   setJobProgress,
   setProgress,
 } from "@/lib/workflows/brand-analysis/progress";
-import { isFinalStepAttempt } from "@/lib/workflows/step-errors";
+import {
+  isFinalStepAttempt,
+  reportStepError,
+} from "@/lib/workflows/step-errors";
 import { brandSettingsSchema, getValidLanguage } from "@/schemas/brand";
 import type { ExtractionResult } from "@/types/brand-analysis";
-import type { ProgressData } from "@/types/hooks/brand-analysis";
 import type {
   BrandAnalysisProgressInput,
   ExtractBrandInfoInput,
   SaveBrandSettingsInput,
 } from "@/types/workflows/brand-analysis";
-import {
-  getStepFromCurrentStep,
-  getStepFromStatus,
-  updateDefaultBrandSettings,
-} from "@/utils/brand-settings";
+import { updateDefaultBrandSettings } from "@/utils/brand-settings";
 
 export async function setBrandAnalysisProgress(
   input: BrandAnalysisProgressInput
@@ -35,6 +37,7 @@ export async function setBrandAnalysisProgress(
   "use step";
   await setProgress(input.organizationId, input.progress);
   await setJobProgress(input.jobId, input.progress);
+  await trackBrandAnalysisOutcomeAndFlush(input);
 }
 
 export async function scrapeBrandWebsite(
@@ -55,7 +58,11 @@ export async function extractBrandInfo(
   const ai = createAILogger(log);
   try {
     const { output } = await generateText({
-      model: ai.wrap(gateway("anthropic/claude-sonnet-4.6")),
+      model: ai.wrap(
+        gateway("anthropic/claude-sonnet-4.6", {
+          organizationId: input.organizationId,
+        })
+      ),
       output: Output.object({ schema: brandSettingsSchema }),
       prompt: `Analyze this website content and extract brand identity information.
 
@@ -85,6 +92,11 @@ Extract the following information:
     return { success: true, brandInfo: output };
   } catch (error) {
     console.error("Error extracting brand info:", error);
+    await reportStepError(error, {
+      workflow: WORKFLOW_ANALYTICS_NAMES.BRAND_ANALYSIS,
+      step: "extractBrandInfo",
+      organizationId: input.organizationId,
+    });
     if (!isFinalStepAttempt()) {
       throw error;
     }
@@ -97,6 +109,7 @@ Extract the following information:
     };
   } finally {
     log.emit();
+    await flushPostHogServer();
   }
 }
 

@@ -4,10 +4,12 @@ import { Mail01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { createColumnHelper } from "@tanstack/react-table";
-import type { Invitation } from "better-auth/plugins/organization";
+
+import type { InvitationSummary } from "@/types/organizations/actions";
+
 import { InvitationActions } from "./invitation-actions";
 
-const columnHelper = createColumnHelper<Invitation>();
+const columnHelper = createColumnHelper<InvitationSummary>();
 
 function RoleBadge({ role }: { role: string | null | undefined }) {
   const variants: Record<string, "default" | "secondary" | "outline"> = {
@@ -32,9 +34,9 @@ export const invitationColumns = [
       const email = info.getValue();
       return (
         <div className="flex items-center gap-3">
-          <div className="flex size-8 items-center justify-center rounded-full bg-muted">
+          <div className="bg-muted flex size-8 items-center justify-center rounded-full">
             <HugeiconsIcon
-              className="size-4 text-muted-foreground"
+              className="text-muted-foreground size-4"
               icon={Mail01Icon}
             />
           </div>

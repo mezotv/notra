@@ -14,17 +14,19 @@
     "@notra/ai": "workspace:*",
     "@notra/content-generation": "workspace:*",
     "@notra/db": "workspace:*",
+    "@notra/geo-core": "workspace:*",
+    "@notra/posthog": "workspace:*",
     "@notra/utils": "workspace:*",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/sdk-node": "^0.220.0",
     "@unkey/api": "^2.3.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.35.8",
-    "@upstash/workflow": "^1.1.0",
     "@vercel/oidc": "^3.8.0",
     "ai": "6.0.206",
     "autumn-js": "^1.2.5",
     "drizzle-orm": "^0.45.2",
+    "effect": "4.0.0-beta.93",
     "eve": "0.19.0",
     "hono": "^4.12.30",
     "jose": "^6.2.3",
@@ -32,11 +34,11 @@
     "nanoid": "^5.1.11",
     "sanitize-html": "^2.17.0",
     "tsup": "^8.5.1",
-    "zod": "^4.1.5"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/sanitize-html": "^2.16.0",
     "@notra/typescript-config": "workspace:*",
+    "@types/sanitize-html": "^2.16.0",
     "knip": "^6.12.1",
     "typescript": "^5"
   }

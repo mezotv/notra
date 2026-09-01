@@ -1,11 +1,12 @@
-import { JSON_LD_SCRIPT_CLOSE_REGEX, NOTRA_LOGO_PATH } from "@/utils/constants";
-import { SITE_URL } from "@/utils/urls";
 import type {
   ArticleJsonLdInput,
   BreadcrumbItem,
   OfferLike,
   ProductJsonLdInput,
 } from "~types/jsonld";
+
+import { JSON_LD_SCRIPT_CLOSE_REGEX, NOTRA_LOGO_PATH } from "@/utils/constants";
+import { SITE_URL } from "@/utils/urls";
 
 const NOTRA_PUBLISHER = {
   "@type": "Organization",

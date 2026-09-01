@@ -26,6 +26,7 @@ export const STRING_TOOL_FIELDS = [
   "memoryId",
   "name",
   "postId",
+  "projectId",
   "q",
   "query",
   "reason",
@@ -52,6 +53,7 @@ export const stringToolFieldsSchema = z
     memoryId: optionalStringSchema,
     name: optionalStringSchema,
     postId: optionalStringSchema,
+    projectId: optionalStringSchema,
     q: optionalStringSchema,
     query: optionalStringSchema,
     reason: optionalStringSchema,
@@ -170,6 +172,18 @@ export const memoryIdentifierOutputSchema = z
     id: optionalStringSchema,
     memory: optionalIdObjectSchema,
     memoryId: optionalStringSchema,
+  })
+  .passthrough();
+
+export const editMarkdownOutputSchema = z
+  .object({
+    filename: optionalStringSchema,
+    previousMarkdown: optionalStringSchema,
+    updatedMarkdown: optionalStringSchema,
+    success: z.preprocess(
+      (value) => (typeof value === "boolean" ? value : undefined),
+      z.boolean().optional()
+    ),
   })
   .passthrough();
 

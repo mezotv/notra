@@ -3,6 +3,13 @@
 import { Copy01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  AnimatePresence,
+  domAnimation,
+  LazyMotion,
+  m,
+  useReducedMotion,
+} from "motion/react";
+import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
@@ -14,6 +21,7 @@ import {
   useState,
 } from "react";
 import { Button } from "@notra/ui/components/ui/button";
+import { COMMAND_TABS_COPY_BUTTON_TRANSITION } from "@notra/ui/constants/command-tabs";
 import { cn } from "@notra/ui/lib/utils";
 
 interface CommandTabsItem {
@@ -41,6 +49,7 @@ const COPY_FEEDBACK_MS = 2000;
 const SCROLLBAR_HIDE_MS = 800;
 const PERCENT = 100;
 const SCROLL_STEP_PX = 40;
+const MotionButton = m.create(Button);
 
 type CommandTokenType = "command" | "string" | "flag" | "plain";
 
@@ -382,6 +391,7 @@ export function CommandTabs({
   );
   const [copied, setCopied] = useState(false);
   const copyTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reduceMotion = useReducedMotion();
 
   const activeValue = value ?? internalValue;
   const activeItem = items.find((item) => item.value === activeValue);
@@ -470,15 +480,46 @@ export function CommandTabs({
             />
           )}
         </div>
-        <Button
-          className="shrink-0 cursor-pointer"
-          onClick={handleCopy}
-          size="sm"
-          variant="outline"
-        >
-          <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} />
-          {copied ? "Copied" : copyLabel}
-        </Button>
+        <LazyMotion features={domAnimation}>
+          <MotionButton
+            className="shrink-0 cursor-pointer overflow-hidden transition-[color,background-color,border-color,box-shadow,transform]"
+            layout={!reduceMotion}
+            onClick={handleCopy}
+            size="sm"
+            transition={COMMAND_TABS_COPY_BUTTON_TRANSITION}
+            variant="outline"
+          >
+            <AnimatePresence initial={false} mode="popLayout">
+              <m.span
+                animate={{
+                  filter: "blur(0px)",
+                  opacity: 1,
+                  transform: "translateY(0%)",
+                }}
+                className="flex items-center gap-1"
+                exit={{
+                  filter: reduceMotion ? "blur(0px)" : "blur(5px)",
+                  opacity: 0,
+                  transform: reduceMotion
+                    ? "translateY(0%)"
+                    : "translateY(-70%)",
+                }}
+                initial={{
+                  filter: reduceMotion ? "blur(0px)" : "blur(5px)",
+                  opacity: 0,
+                  transform: reduceMotion
+                    ? "translateY(0%)"
+                    : "translateY(70%)",
+                }}
+                key={copied ? "copied" : "copy"}
+                transition={COMMAND_TABS_COPY_BUTTON_TRANSITION}
+              >
+                <HugeiconsIcon icon={copied ? Tick02Icon : Copy01Icon} />
+                <span>{copied ? "Copied" : copyLabel}</span>
+              </m.span>
+            </AnimatePresence>
+          </MotionButton>
+        </LazyMotion>
       </div>
       {tabsPosition !== "none" && (
         <menu

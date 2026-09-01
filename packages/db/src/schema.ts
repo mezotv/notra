@@ -14,6 +14,27 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
+import {
+  AGENT_FEEDBACK_KINDS,
+  AGENT_FEEDBACK_SENTIMENTS,
+  AGENT_FEEDBACK_SOURCES,
+  AGENT_FEEDBACK_STATUSES,
+} from "./constants/agent-feedback";
+import { BLOG_POST_SUBTYPES } from "./constants/content";
+import { GEO_PROSPECT_REPORT_STATUSES } from "./constants/geo-prospect-reports";
+import {
+  GEO_CONTENT_BRIEF_STATUSES,
+  GEO_WRITER_SOURCE_KINDS,
+} from "./constants/geo-writer";
+import type { AgentFeedbackMetadata } from "./types/agent-feedback";
+import type {
+  AgentReadinessIssue,
+  AgentReadinessScoreBreakdown,
+} from "./types/agent-readiness";
+import type { GeoCheckGrounding } from "./types/geo-checks";
+import type { GeoProspectReportJson } from "./types/geo-prospect-report";
+import type { GeoContentBriefJson } from "./types/geo-writer";
+
 export const lookbackWindowEnum = pgEnum("lookback_window", [
   "current_day",
   "yesterday",
@@ -55,6 +76,7 @@ export const users = pgTable("users", {
   banExpires: timestamp("ban_expires"),
   hidePersonalData: boolean("hide_personal_data").default(false).notNull(),
   showAgentStats: boolean("show_agent_stats").default(false).notNull(),
+  workosUserId: text("workos_user_id").unique(),
 });
 
 export const chatSessions = pgTable(
@@ -64,8 +86,13 @@ export const chatSessions = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    contentId: text("content_id").references(() => posts.id, {
+      onDelete: "cascade",
+    }),
     title: text("title").notNull(),
-    messages: jsonb("messages").notNull().default(sql`'[]'::jsonb`),
+    messages: jsonb("messages")
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     pinnedAt: timestamp("pinned_at"),
     deletedAt: timestamp("deleted_at"),
     externalChannelSource: text("external_channel_source"),
@@ -81,6 +108,12 @@ export const chatSessions = pgTable(
     index("chatSessions_organizationId_deletedAt_idx").on(
       table.organizationId,
       table.deletedAt
+    ),
+    index("chatSessions_org_content_deleted_updated_idx").on(
+      table.organizationId,
+      table.contentId,
+      table.deletedAt,
+      table.updatedAt
     ),
     uniqueIndex("chatSessions_org_externalChannel_uidx")
       .on(
@@ -150,181 +183,19 @@ export const chatAttachments = pgTable(
   ]
 );
 
-export const sessions = pgTable(
-  "sessions",
+export const socialConnections = pgTable(
+  "social_connections",
   {
     id: text("id").primaryKey(),
-    expiresAt: timestamp("expires_at").notNull(),
-    token: text("token").notNull().unique(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-    ipAddress: text("ip_address"),
-    userAgent: text("user_agent"),
     userId: text("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    impersonatedBy: text("impersonated_by"),
-    activeOrganizationId: text("active_organization_id"),
-  },
-  (table) => [index("sessions_userId_idx").on(table.userId)]
-);
-
-export const accounts = pgTable(
-  "accounts",
-  {
-    id: text("id").primaryKey(),
-    accountId: text("account_id").notNull(),
-    providerId: text("provider_id").notNull(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    providerAccountId: text("provider_account_id").notNull(),
     accessToken: text("access_token"),
     refreshToken: text("refresh_token"),
-    idToken: text("id_token"),
-    accessTokenExpiresAt: timestamp("access_token_expires_at"),
-    refreshTokenExpiresAt: timestamp("refresh_token_expires_at"),
     scope: text("scope"),
-    password: text("password"),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-  },
-  (table) => [index("accounts_userId_idx").on(table.userId)]
-);
-
-export const verifications = pgTable(
-  "verifications",
-  {
-    id: text("id").primaryKey(),
-    identifier: text("identifier").notNull(),
-    value: text("value").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-  },
-  (table) => [index("verifications_identifier_idx").on(table.identifier)]
-);
-
-export const jwks = pgTable("jwks", {
-  id: text("id").primaryKey(),
-  publicKey: text("public_key").notNull(),
-  privateKey: text("private_key").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  expiresAt: timestamp("expires_at"),
-});
-
-export const oauthClients = pgTable(
-  "oauth_clients",
-  {
-    id: text("id").primaryKey(),
-    clientId: text("client_id").notNull().unique(),
-    clientSecret: text("client_secret"),
-    disabled: boolean("disabled").default(false),
-    skipConsent: boolean("skip_consent"),
-    enableEndSession: boolean("enable_end_session"),
-    subjectType: text("subject_type"),
-    scopes: text("scopes").array(),
-    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    updatedAt: timestamp("updated_at")
-      .defaultNow()
-      .$onUpdate(() => /* @__PURE__ */ new Date())
-      .notNull(),
-    name: text("name"),
-    uri: text("uri"),
-    icon: text("icon"),
-    contacts: text("contacts").array(),
-    tos: text("tos"),
-    policy: text("policy"),
-    softwareId: text("software_id"),
-    softwareVersion: text("software_version"),
-    softwareStatement: text("software_statement"),
-    redirectUris: text("redirect_uris").array().notNull(),
-    postLogoutRedirectUris: text("post_logout_redirect_uris").array(),
-    tokenEndpointAuthMethod: text("token_endpoint_auth_method"),
-    grantTypes: text("grant_types").array(),
-    responseTypes: text("response_types").array(),
-    public: boolean("public"),
-    type: text("type"),
-    requirePKCE: boolean("require_pkce"),
-    referenceId: text("reference_id"),
-    metadata: jsonb("metadata"),
-  },
-  (table) => [index("oauthClients_userId_idx").on(table.userId)]
-);
-
-export const oauthRefreshTokens = pgTable(
-  "oauth_refresh_tokens",
-  {
-    id: text("id").primaryKey(),
-    token: text("token").notNull().unique(),
-    clientId: text("client_id")
-      .notNull()
-      .references(() => oauthClients.clientId, { onDelete: "cascade" }),
-    sessionId: text("session_id").references(() => sessions.id, {
-      onDelete: "set null",
-    }),
-    userId: text("user_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-    referenceId: text("reference_id"),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    revoked: timestamp("revoked"),
-    authTime: timestamp("auth_time"),
-    scopes: text("scopes").array().notNull(),
-  },
-  (table) => [
-    index("oauthRefreshTokens_clientId_idx").on(table.clientId),
-    index("oauthRefreshTokens_sessionId_idx").on(table.sessionId),
-    index("oauthRefreshTokens_userId_idx").on(table.userId),
-  ]
-);
-
-export const oauthAccessTokens = pgTable(
-  "oauth_access_tokens",
-  {
-    id: text("id").primaryKey(),
-    token: text("token").unique(),
-    clientId: text("client_id")
-      .notNull()
-      .references(() => oauthClients.clientId, { onDelete: "cascade" }),
-    sessionId: text("session_id").references(() => sessions.id, {
-      onDelete: "set null",
-    }),
-    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
-    referenceId: text("reference_id"),
-    refreshId: text("refresh_id").references(() => oauthRefreshTokens.id, {
-      onDelete: "set null",
-    }),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    scopes: text("scopes").array().notNull(),
-  },
-  (table) => [
-    index("oauthAccessTokens_clientId_idx").on(table.clientId),
-    index("oauthAccessTokens_sessionId_idx").on(table.sessionId),
-    index("oauthAccessTokens_userId_idx").on(table.userId),
-    index("oauthAccessTokens_refreshId_idx").on(table.refreshId),
-  ]
-);
-
-export const oauthConsents = pgTable(
-  "oauth_consents",
-  {
-    id: text("id").primaryKey(),
-    clientId: text("client_id")
-      .notNull()
-      .references(() => oauthClients.clientId, { onDelete: "cascade" }),
-    userId: text("user_id").references(() => users.id, { onDelete: "cascade" }),
-    referenceId: text("reference_id"),
-    scopes: text("scopes").array().notNull(),
+    accessTokenExpiresAt: timestamp("access_token_expires_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -332,8 +203,11 @@ export const oauthConsents = pgTable(
       .notNull(),
   },
   (table) => [
-    index("oauthConsents_clientId_idx").on(table.clientId),
-    index("oauthConsents_userId_idx").on(table.userId),
+    uniqueIndex("socialConnections_userId_provider_uidx").on(
+      table.userId,
+      table.provider
+    ),
+    index("socialConnections_userId_idx").on(table.userId),
   ]
 );
 
@@ -348,6 +222,12 @@ export const organizations = pgTable(
     metadata: text("metadata"),
     heardAboutNotraSource: text("heard_about_notra_source"),
     heardAboutNotraOther: text("heard_about_notra_other"),
+    geoIngestTokenGeneration: integer("geo_ingest_token_generation")
+      .notNull()
+      .default(1),
+    feedbackIngestTokenGeneration: integer("feedback_ingest_token_generation")
+      .notNull()
+      .default(1),
     onboardingCompleted: boolean("onboarding_completed")
       .default(false)
       .notNull(),
@@ -358,6 +238,7 @@ export const organizations = pgTable(
       .default(false)
       .notNull(),
     onboardingAgentStartedAt: timestamp("onboarding_agent_started_at"),
+    workosOrgId: text("workos_org_id").unique(),
   },
   (table) => [uniqueIndex("organizations_slug_uidx").on(table.slug)]
 );
@@ -378,28 +259,6 @@ export const members = pgTable(
   (table) => [
     index("members_organizationId_idx").on(table.organizationId),
     index("members_userId_idx").on(table.userId),
-  ]
-);
-
-export const invitations = pgTable(
-  "invitations",
-  {
-    id: text("id").primaryKey(),
-    organizationId: text("organization_id")
-      .notNull()
-      .references(() => organizations.id, { onDelete: "cascade" }),
-    email: text("email").notNull(),
-    role: text("role"),
-    status: text("status").default("pending").notNull(),
-    expiresAt: timestamp("expires_at").notNull(),
-    createdAt: timestamp("created_at").defaultNow().notNull(),
-    inviterId: text("inviter_id")
-      .notNull()
-      .references(() => users.id, { onDelete: "cascade" }),
-  },
-  (table) => [
-    index("invitations_organizationId_idx").on(table.organizationId),
-    index("invitations_email_idx").on(table.email),
   ]
 );
 
@@ -1392,6 +1251,36 @@ export const connectedSocialAccounts = pgTable(
   ]
 );
 
+export const trackedSocialAccounts = pgTable(
+  "tracked_social_accounts",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    provider: text("provider").notNull(),
+    providerAccountId: text("provider_account_id").notNull(),
+    username: text("username").notNull(),
+    displayName: text("display_name"),
+    profileImageUrl: text("profile_image_url"),
+    verified: boolean("verified").notNull().default(false),
+    verifiedType: text("verified_type"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("trackedSocialAccounts_organizationId_idx").on(table.organizationId),
+    uniqueIndex("trackedSocialAccounts_org_provider_account_uidx").on(
+      table.organizationId,
+      table.provider,
+      table.providerAccountId
+    ),
+  ]
+);
+
 export const organizationNotificationSettings = pgTable(
   "organization_notification_settings",
   {
@@ -1422,6 +1311,540 @@ export const organizationNotificationSettings = pgTable(
   ]
 );
 
+export const projects = pgTable(
+  "projects",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    brandSettingsId: text("brand_settings_id")
+      .notNull()
+      .references(() => brandSettings.id),
+    isSample: boolean("is_sample").notNull().default(false),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("projects_organizationId_idx").on(table.organizationId),
+    uniqueIndex("projects_organizationId_sample_uidx")
+      .on(table.organizationId)
+      .where(sql`${table.isSample} = true`),
+  ]
+);
+
+export const agentFeedback = pgTable(
+  "agent_feedback",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
+    source: text("source", { enum: AGENT_FEEDBACK_SOURCES })
+      .notNull()
+      .default("api"),
+    kind: text("kind", { enum: AGENT_FEEDBACK_KINDS })
+      .notNull()
+      .default("other"),
+    sentiment: text("sentiment", { enum: AGENT_FEEDBACK_SENTIMENTS }),
+    status: text("status", { enum: AGENT_FEEDBACK_STATUSES })
+      .notNull()
+      .default("new"),
+    title: text("title"),
+    message: text("message").notNull(),
+    agentClient: text("agent_client"),
+    agentModel: text("agent_model"),
+    toolVersion: text("tool_version"),
+    userAgent: text("user_agent"),
+    contextUrl: text("context_url"),
+    externalId: text("external_id"),
+    idempotencyKey: text("idempotency_key"),
+    metadata: jsonb("metadata").$type<AgentFeedbackMetadata>(),
+    resolvedAt: timestamp("resolved_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("agentFeedback_organizationId_createdAt_idx").on(
+      table.organizationId,
+      table.createdAt
+    ),
+    index("agentFeedback_organizationId_status_idx").on(
+      table.organizationId,
+      table.status
+    ),
+    index("agentFeedback_projectId_idx").on(table.projectId),
+    uniqueIndex("agentFeedback_organizationId_idempotencyKey_uidx").on(
+      table.organizationId,
+      table.idempotencyKey
+    ),
+  ]
+);
+
+export const geoSettings = pgTable(
+  "geo_settings",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    companyName: text("company_name").notNull(),
+    aliases: text("aliases")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    competitors: text("competitors")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    languages: text("languages").array(),
+    // null = track the default engine set; otherwise a subset of GEO_ENGINES.
+    engines: text("engines").array(),
+    // Pro feature: ask every model host for zero data retention.
+    enforceZdr: boolean("enforce_zdr").notNull().default(true),
+    // Engines without a ZDR host the user explicitly approved anyway.
+    nonZdrApprovedEngines: text("non_zdr_approved_engines")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    enabled: boolean("enabled").notNull().default(true),
+    scanIntervalHours: integer("scan_interval_hours").notNull().default(24),
+    qstashMessageId: text("qstash_message_id"),
+    scanStartedAt: timestamp("scan_started_at"),
+    lastScanAt: timestamp("last_scan_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoSettings_organizationId_idx").on(table.organizationId),
+    uniqueIndex("geoSettings_projectId_uidx").on(table.projectId),
+  ]
+);
+
+export const geoPrompts = pgTable(
+  "geo_prompts",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    prompt: text("prompt").notNull(),
+    title: text("title"),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoPrompts_organizationId_idx").on(table.organizationId),
+    index("geoPrompts_projectId_idx").on(table.projectId),
+  ]
+);
+
+export const geoPromptSequences = pgTable(
+  "geo_prompt_sequences",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    steps: text("steps")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    enabled: boolean("enabled").notNull().default(true),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoPromptSequences_organizationId_idx").on(table.organizationId),
+    index("geoPromptSequences_projectId_idx").on(table.projectId),
+  ]
+);
+
+export const geoCompetitors = pgTable(
+  "geo_competitors",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    domain: text("domain"),
+    synonyms: text("synonyms")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    kind: text("kind", { enum: ["direct", "indirect"] })
+      .notNull()
+      .default("direct"),
+    color: text("color"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoCompetitors_organizationId_idx").on(table.organizationId),
+    index("geoCompetitors_projectId_idx").on(table.projectId),
+    uniqueIndex("geoCompetitors_projectId_name_uidx").on(
+      table.projectId,
+      table.name
+    ),
+  ]
+);
+
+export const geoScans = pgTable(
+  "geo_scans",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    status: text("status", { enum: ["running", "completed", "failed"] })
+      .notNull()
+      .default("running"),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    finishedAt: timestamp("finished_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("geoScans_organizationId_idx").on(table.organizationId),
+    index("geoScans_projectId_startedAt_idx").on(
+      table.projectId,
+      table.startedAt
+    ),
+  ]
+);
+
+export const geoMentionChecks = pgTable(
+  "geo_mention_checks",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    scanId: text("scan_id")
+      .notNull()
+      .references(() => geoScans.id, { onDelete: "cascade" }),
+    engine: text("engine").notNull(),
+    promptId: text("prompt_id").notNull(),
+    sequenceId: text("sequence_id"),
+    turn: integer("turn").notNull().default(0),
+    prompt: text("prompt").notNull(),
+    answer: text("answer").notNull(),
+    mentioned: boolean("mentioned").notNull(),
+    position: integer("position"),
+    sentiment: text("sentiment"),
+    competitors: text("competitors")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    excerpt: text("excerpt").notNull().default(""),
+    grounding: jsonb("grounding")
+      .$type<GeoCheckGrounding>()
+      .notNull()
+      .default(sql`'{"queries":[],"sources":[]}'::jsonb`),
+    language: text("language").notNull().default("English"),
+    sources: jsonb("sources")
+      .$type<{ url: string; title: string | null }[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    finishReason: text("finish_reason"),
+    promptTokens: integer("prompt_tokens"),
+    outputTokens: integer("output_tokens"),
+    reasoningTokens: integer("reasoning_tokens"),
+    // Whether the engine call ran with zero data retention enforced. Null on
+    // rows written before the column existed or when the route did not say.
+    zdrEnforced: boolean("zdr_enforced"),
+    capturedAt: timestamp("captured_at").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("geoMentionChecks_organizationId_capturedAt_idx").on(
+      table.organizationId,
+      table.capturedAt
+    ),
+    index("geoMentionChecks_projectId_capturedAt_idx").on(
+      table.projectId,
+      table.capturedAt
+    ),
+    index("geoMentionChecks_projectEnginePrompt_idx").on(
+      table.projectId,
+      table.engine,
+      table.promptId,
+      table.capturedAt
+    ),
+    index("geoMentionChecks_scanId_idx").on(table.scanId),
+    uniqueIndex("geoMentionChecks_scanEnginePromptTurnLanguage_uidx").on(
+      table.scanId,
+      table.engine,
+      table.promptId,
+      table.turn,
+      table.language
+    ),
+  ]
+);
+
+export const geoAgentReadinessReports = pgTable(
+  "geo_agent_readiness_reports",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    targetUrl: text("target_url").notNull(),
+    status: text("status", { enum: ["running", "completed", "failed"] })
+      .notNull()
+      .default("running"),
+    score: real("score"),
+    scoreLabel: text("score_label"),
+    scoreBreakdown: jsonb("score_breakdown")
+      .$type<AgentReadinessScoreBreakdown | null>()
+      .default(null),
+    issues: jsonb("issues")
+      .$type<AgentReadinessIssue[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    eligibleChecks: integer("eligible_checks"),
+    reportUrl: text("report_url"),
+    errorMessage: text("error_message"),
+    scannedAt: timestamp("scanned_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoAgentReadinessReports_organizationId_idx").on(
+      table.organizationId
+    ),
+    index("geoAgentReadinessReports_projectId_createdAt_idx").on(
+      table.projectId,
+      table.createdAt
+    ),
+    uniqueIndex("geoAgentReadinessReports_projectId_running_uidx")
+      .on(table.projectId)
+      .where(sql`${table.status} = 'running'`),
+  ]
+);
+
+export const googleSearchConsoleIntegrations = pgTable(
+  "google_search_console_integrations",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    googleAccountEmail: text("google_account_email"),
+    encryptedAccessToken: text("encrypted_access_token").notNull(),
+    encryptedRefreshToken: text("encrypted_refresh_token").notNull(),
+    accessTokenExpiresAt: timestamp("access_token_expires_at").notNull(),
+    siteUrl: text("site_url"),
+    status: text("status", { enum: ["active", "reauth_required"] })
+      .notNull()
+      .default("active"),
+    qstashScheduleId: text("qstash_schedule_id"),
+    lastSyncedAt: timestamp("last_synced_at"),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("googleSearchConsoleIntegrations_organizationId_uidx").on(
+      table.organizationId
+    ),
+    index("googleSearchConsoleIntegrations_createdByUserId_idx").on(
+      table.createdByUserId
+    ),
+  ]
+);
+
+export const geoPromptSuggestions = pgTable(
+  "geo_prompt_suggestions",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    prompt: text("prompt").notNull(),
+    title: text("title"),
+    source: text("source", { enum: ["search_console"] })
+      .notNull()
+      .default("search_console"),
+    sourceKeywords: jsonb("source_keywords")
+      .$type<
+        {
+          query: string;
+          clicks: number;
+          impressions: number;
+          position: number;
+        }[]
+      >()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    status: text("status", { enum: ["pending", "accepted", "dismissed"] })
+      .notNull()
+      .default("pending"),
+    acceptedPromptId: text("accepted_prompt_id").references(
+      () => geoPrompts.id,
+      { onDelete: "set null" }
+    ),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoPromptSuggestions_organizationId_status_idx").on(
+      table.organizationId,
+      table.status
+    ),
+    uniqueIndex("geoPromptSuggestions_organizationId_prompt_uidx").on(
+      table.organizationId,
+      table.prompt
+    ),
+  ]
+);
+
+export const geoContentBriefs = pgTable(
+  "geo_content_briefs",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    brandSettingsId: text("brand_settings_id")
+      .notNull()
+      .references(() => brandSettings.id, { onDelete: "restrict" }),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    topic: text("topic").notNull(),
+    brief: jsonb("brief").$type<GeoContentBriefJson>().notNull(),
+    status: text("status", { enum: GEO_CONTENT_BRIEF_STATUSES })
+      .notNull()
+      .default("draft"),
+    autoApproved: boolean("auto_approved").notNull().default(false),
+    runId: text("run_id"),
+    collectionId: text("collection_id").references(() => postCollections.id, {
+      onDelete: "set null",
+    }),
+    postId: text("post_id").references(() => posts.id, {
+      onDelete: "set null",
+    }),
+    humanized: boolean("humanized").notNull().default(false),
+    sourceKind: text("source_kind", { enum: GEO_WRITER_SOURCE_KINDS })
+      .notNull()
+      .default("manual"),
+    sourceId: text("source_id"),
+    error: text("error"),
+    approvedAt: timestamp("approved_at"),
+    startedAt: timestamp("started_at"),
+    completedAt: timestamp("completed_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoContentBriefs_organizationId_createdAt_idx").on(
+      table.organizationId,
+      table.createdAt
+    ),
+    index("geoContentBriefs_projectId_status_idx").on(
+      table.projectId,
+      table.status
+    ),
+    uniqueIndex("geoContentBriefs_open_source_uidx")
+      .on(table.projectId, table.sourceKind, table.sourceId)
+      .where(
+        sql`${table.sourceKind} <> 'manual' AND ${table.sourceId} IS NOT NULL AND ${table.status} IN ('draft', 'approved', 'writing', 'failed')`
+      ),
+  ]
+);
+
+export const socialExperiments = pgTable(
+  "social_experiments",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    hypothesis: text("hypothesis"),
+    provider: text("provider").notNull(),
+    variantAPostId: text("variant_a_post_id").notNull(),
+    variantBPostId: text("variant_b_post_id").notNull(),
+    metric: text("metric").notNull(),
+    status: text("status").notNull().default("running"),
+    winner: text("winner"),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    endedAt: timestamp("ended_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("socialExperiments_organizationId_idx").on(table.organizationId),
+  ]
+);
+
 export const postCollections = pgTable(
   "post_collections",
   {
@@ -1435,7 +1858,9 @@ export const postCollections = pgTable(
     nameSource: postCollectionNameSourceEnum("name_source")
       .default("generated")
       .notNull(),
-    contentTypes: jsonb("content_types").default(sql`'[]'::jsonb`).notNull(),
+    contentTypes: jsonb("content_types")
+      .default(sql`'[]'::jsonb`)
+      .notNull(),
     sourceMetadata: jsonb("source_metadata"),
     expectedPostCount: integer("expected_post_count"),
     completedPostCount: integer("completed_post_count").default(0).notNull(),
@@ -1479,6 +1904,7 @@ export const posts = pgTable(
     markdown: text("markdown"),
     recommendations: text("recommendations"),
     contentType: text("content_type").notNull(),
+    contentSubtype: text("content_subtype", { enum: BLOG_POST_SUBTYPES }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     sourceMetadata: jsonb("source_metadata"),
     status: postStatusEnum("status").default("draft").notNull(),
@@ -1520,6 +1946,45 @@ export const skills = pgTable(
   (table) => [
     index("skills_organizationId_idx").on(table.organizationId),
     uniqueIndex("skills_org_name_uidx").on(table.organizationId, table.name),
+  ]
+);
+
+/**
+ * Prospect-facing GEO reports built in the console and shared via `/r/{shareToken}`.
+ * The report body is denormalised into a few columns for listing; the JSON is
+ * the source of truth and includes the raw model answers from the scan.
+ */
+export const geoProspectReports = pgTable(
+  "geo_prospect_reports",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /** Unguessable token used in the public share link. */
+    shareToken: text("share_token").notNull(),
+    status: text("status", { enum: GEO_PROSPECT_REPORT_STATUSES })
+      .notNull()
+      .default("draft"),
+    companyName: text("company_name").notNull().default(""),
+    companyDomain: text("company_domain").notNull().default(""),
+    visibilityScore: integer("visibility_score"),
+    modelCount: integer("model_count").notNull().default(0),
+    promptCount: integer("prompt_count").notNull().default(0),
+    report: jsonb("report").$type<GeoProspectReportJson>().notNull(),
+    lastScannedAt: timestamp("last_scanned_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoProspectReports_organizationId_idx").on(table.organizationId),
+    uniqueIndex("geoProspectReports_shareToken_uidx").on(table.shareToken),
   ]
 );
 
@@ -1982,6 +2447,8 @@ export interface PostSourceMetadata {
   prNumber?: number | null;
   commitSha?: string | null;
   sourcePostId?: string | null;
+  briefId?: string;
+  projectId?: string;
   sandbox?: {
     boxId?: string;
     snapshotId?: string;
@@ -1993,10 +2460,8 @@ export interface PostSourceMetadata {
 }
 
 export const usersRelations = relations(users, ({ many }) => ({
-  sessions: many(sessions),
-  accounts: many(accounts),
+  socialConnections: many(socialConnections),
   members: many(members),
-  invitations: many(invitations),
   githubIntegrations: many(githubIntegrations),
   githubAppInstallations: many(githubAppInstallations),
   linearIntegrations: many(linearIntegrations),
@@ -2010,6 +2475,10 @@ export const chatSessionsRelations = relations(chatSessions, ({ one }) => ({
   organization: one(organizations, {
     fields: [chatSessions.organizationId],
     references: [organizations.id],
+  }),
+  content: one(posts, {
+    fields: [chatSessions.contentId],
+    references: [posts.id],
   }),
 }));
 
@@ -2027,25 +2496,20 @@ export const chatAttachmentsRelations = relations(
   })
 );
 
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-  users: one(users, {
-    fields: [sessions.userId],
-    references: [users.id],
-  }),
-}));
-
-export const accountsRelations = relations(accounts, ({ one }) => ({
-  users: one(users, {
-    fields: [accounts.userId],
-    references: [users.id],
-  }),
-}));
+export const socialConnectionsRelations = relations(
+  socialConnections,
+  ({ one }) => ({
+    users: one(users, {
+      fields: [socialConnections.userId],
+      references: [users.id],
+    }),
+  })
+);
 
 export const organizationsRelations = relations(
   organizations,
   ({ many, one }) => ({
     members: many(members),
-    invitations: many(invitations),
     githubIntegrations: many(githubIntegrations),
     githubAppInstallations: many(githubAppInstallations),
     linearIntegrations: many(linearIntegrations),
@@ -2056,10 +2520,21 @@ export const organizationsRelations = relations(
     mcpSessionToolActivations: many(mcpSessionToolActivations),
     brandSettings: many(brandSettings),
     notificationSettings: one(organizationNotificationSettings),
+    projects: many(projects),
+    agentFeedback: many(agentFeedback),
+    geoSettings: many(geoSettings),
+    geoPrompts: many(geoPrompts),
+    geoPromptSuggestions: many(geoPromptSuggestions),
+    googleSearchConsoleIntegration: one(googleSearchConsoleIntegrations),
+    geoPromptSequences: many(geoPromptSequences),
+    geoCompetitors: many(geoCompetitors),
+    geoScans: many(geoScans),
+    geoMentionChecks: many(geoMentionChecks),
     connectedSocialAccounts: many(connectedSocialAccounts),
     postCollections: many(postCollections),
     posts: many(posts),
     skills: many(skills),
+    geoProspectReports: many(geoProspectReports),
     chatSessions: many(chatSessions),
     chatAttachments: many(chatAttachments),
     onboardingSuggestions: many(onboardingSuggestions),
@@ -2093,17 +2568,6 @@ export const membersRelations = relations(members, ({ one }) => ({
   }),
   users: one(users, {
     fields: [members.userId],
-    references: [users.id],
-  }),
-}));
-
-export const invitationsRelations = relations(invitations, ({ one }) => ({
-  organizations: one(organizations, {
-    fields: [invitations.organizationId],
-    references: [organizations.id],
-  }),
-  users: one(users, {
-    fields: [invitations.inviterId],
     references: [users.id],
   }),
 }));
@@ -2416,12 +2880,176 @@ export const connectedSocialAccountsRelations = relations(
   })
 );
 
+export const trackedSocialAccountsRelations = relations(
+  trackedSocialAccounts,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [trackedSocialAccounts.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
+
 export const organizationNotificationSettingsRelations = relations(
   organizationNotificationSettings,
   ({ one }) => ({
     organization: one(organizations, {
       fields: [organizationNotificationSettings.organizationId],
       references: [organizations.id],
+    }),
+  })
+);
+
+export const geoSettingsRelations = relations(geoSettings, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [geoSettings.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [geoSettings.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const projectsRelations = relations(projects, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [projects.organizationId],
+    references: [organizations.id],
+  }),
+  geoSettings: one(geoSettings),
+  geoPrompts: many(geoPrompts),
+  geoPromptSequences: many(geoPromptSequences),
+  geoCompetitors: many(geoCompetitors),
+  geoScans: many(geoScans),
+  geoMentionChecks: many(geoMentionChecks),
+  agentFeedback: many(agentFeedback),
+}));
+
+export const agentFeedbackRelations = relations(agentFeedback, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [agentFeedback.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [agentFeedback.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const geoPromptSequencesRelations = relations(
+  geoPromptSequences,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoPromptSequences.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [geoPromptSequences.projectId],
+      references: [projects.id],
+    }),
+  })
+);
+
+export const socialExperimentsRelations = relations(
+  socialExperiments,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [socialExperiments.organizationId],
+      references: [organizations.id],
+    }),
+  })
+);
+
+export const geoPromptsRelations = relations(geoPrompts, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [geoPrompts.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [geoPrompts.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const geoCompetitorsRelations = relations(geoCompetitors, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [geoCompetitors.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [geoCompetitors.projectId],
+    references: [projects.id],
+  }),
+}));
+
+export const geoScansRelations = relations(geoScans, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [geoScans.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [geoScans.projectId],
+    references: [projects.id],
+  }),
+  checks: many(geoMentionChecks),
+}));
+
+export const geoMentionChecksRelations = relations(
+  geoMentionChecks,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoMentionChecks.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [geoMentionChecks.projectId],
+      references: [projects.id],
+    }),
+    scan: one(geoScans, {
+      fields: [geoMentionChecks.scanId],
+      references: [geoScans.id],
+    }),
+  })
+);
+
+export const geoPromptSuggestionsRelations = relations(
+  geoPromptSuggestions,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoPromptSuggestions.organizationId],
+      references: [organizations.id],
+    }),
+    acceptedPrompt: one(geoPrompts, {
+      fields: [geoPromptSuggestions.acceptedPromptId],
+      references: [geoPrompts.id],
+    }),
+  })
+);
+
+export const geoAgentReadinessReportsRelations = relations(
+  geoAgentReadinessReports,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoAgentReadinessReports.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [geoAgentReadinessReports.projectId],
+      references: [projects.id],
+    }),
+  })
+);
+
+export const googleSearchConsoleIntegrationsRelations = relations(
+  googleSearchConsoleIntegrations,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [googleSearchConsoleIntegrations.organizationId],
+      references: [organizations.id],
+    }),
+    createdByUser: one(users, {
+      fields: [googleSearchConsoleIntegrations.createdByUserId],
+      references: [users.id],
     }),
   })
 );
@@ -2437,7 +3065,7 @@ export const postCollectionsRelations = relations(
   })
 );
 
-export const postsRelations = relations(posts, ({ one }) => ({
+export const postsRelations = relations(posts, ({ many, one }) => ({
   organization: one(organizations, {
     fields: [posts.organizationId],
     references: [organizations.id],
@@ -2446,6 +3074,7 @@ export const postsRelations = relations(posts, ({ one }) => ({
     fields: [posts.collectionId],
     references: [postCollections.id],
   }),
+  chatSessions: many(chatSessions),
 }));
 
 export const skillsRelations = relations(skills, ({ one }) => ({
@@ -2607,6 +3236,20 @@ export const autonomyControllerLeasesRelations = relations(
     organization: one(organizations, {
       fields: [autonomyControllerLeases.organizationId],
       references: [organizations.id],
+    }),
+  })
+);
+
+export const geoProspectReportsRelations = relations(
+  geoProspectReports,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoProspectReports.organizationId],
+      references: [organizations.id],
+    }),
+    createdBy: one(users, {
+      fields: [geoProspectReports.createdByUserId],
+      references: [users.id],
     }),
   })
 );

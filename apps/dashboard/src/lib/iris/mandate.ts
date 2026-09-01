@@ -4,6 +4,7 @@ import { db } from "@notra/db/drizzle";
 import { autonomyMandates, organizations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import { IrisMandateLoadError } from "@/lib/iris/errors";
 import type { IrisMandateContext } from "@/types/iris";
 

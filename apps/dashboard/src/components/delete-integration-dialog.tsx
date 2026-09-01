@@ -12,6 +12,7 @@ import {
 } from "@notra/ui/components/shared/responsive-alert-dialog";
 import { Input } from "@notra/ui/components/ui/input";
 import { useState } from "react";
+
 import { AffectedTriggersWarning } from "@/components/affected-triggers-warning";
 import type { AffectedTrigger } from "@/schemas/integrations";
 

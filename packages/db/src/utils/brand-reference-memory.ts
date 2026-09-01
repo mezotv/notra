@@ -1,4 +1,5 @@
-import { and, eq, getTableColumns, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+
 import { db } from "../drizzle";
 import { brandReferences } from "../schema";
 import type {
@@ -32,7 +33,13 @@ export async function syncPersistedBrandReferenceMemory(
 
       const [reference] = await tx
         .select({
-          ...getTableColumns(brandReferences),
+          id: brandReferences.id,
+          type: brandReferences.type,
+          content: brandReferences.content,
+          note: brandReferences.note,
+          applicableTo: brandReferences.applicableTo,
+          metadata: brandReferences.metadata,
+          sourceUrl: brandReferences.sourceUrl,
           rowVersion: sql<string>`xmin::text`,
         })
         .from(brandReferences)
@@ -103,7 +110,15 @@ export async function syncPersistedBrandReferenceMemory(
 
         const [currentReference] = await tx
           .select({
-            ...getTableColumns(brandReferences),
+            id: brandReferences.id,
+            type: brandReferences.type,
+            content: brandReferences.content,
+            note: brandReferences.note,
+            applicableTo: brandReferences.applicableTo,
+            metadata: brandReferences.metadata,
+            sourceUrl: brandReferences.sourceUrl,
+            supermemoryDocumentId: brandReferences.supermemoryDocumentId,
+            supermemoryMemoryId: brandReferences.supermemoryMemoryId,
             rowVersion: sql<string>`xmin::text`,
           })
           .from(brandReferences)

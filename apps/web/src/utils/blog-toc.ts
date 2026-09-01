@@ -1,4 +1,5 @@
 import type { TOCItemType } from "fumadocs-core/toc";
+
 import { HTML_ENTITY_MAP, HTML_ENTITY_REGEX } from "@/utils/constants";
 
 const HEADING_WITH_TAG_REGEX = /<h([2-4])([^>]*)>([\s\S]*?)<\/h\1>/gi;

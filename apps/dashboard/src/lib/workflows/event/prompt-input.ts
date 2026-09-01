@@ -1,5 +1,6 @@
 import { EVENT_MAX_LISTED_COMMITS } from "@/constants/workflows";
 import type { EventGenerationContext } from "@/types/workflows/workflows";
+
 import {
   getObjectProperty,
   getStringProperty,

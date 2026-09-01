@@ -67,100 +67,170 @@ export const HTML_ENTITY_MAP: Record<string, string> = {
   nbsp: " ",
 };
 
-export const ANNUAL_DISCOUNT_PERCENT = 17;
-
-export const ANNUAL_FREE_MONTHS = 2;
-
 export const PRICING_PLANS = {
-  basic: {
-    name: "Basic",
-    description: "For solo devs and small teams getting started.",
-    pricing: { monthly: 20, annually: 200 },
-    cta: {
-      label: "Start 3 day free trial",
-      href: "https://app.usenotra.com/signup",
-    },
-    features: [
-      "2 team members",
-      "$12 in AI Credits per month",
-      "3 workflows",
-      "2 integrations",
-      { label: "30 references", subtitle: "then $0.05 per reference / mo" },
-      "14 Days Log Retention",
-    ],
-  },
-  pro: {
-    name: "Pro",
-    description: "For growing teams that need more power.",
-    pricing: { monthly: 50, annually: 500 },
+  starter: {
+    name: "Starter",
+    description: "For founders shipping their first content engine.",
+    pricing: { monthly: 100, annually: 1000 },
     cta: {
       label: "Get started",
       href: "https://app.usenotra.com/signup",
     },
     features: [
-      "5 team members",
-      "$32 in AI Credits per month",
-      "Unlimited workflows",
-      "Unlimited integrations",
+      "2,000 AI answers tracked / mo",
+      "8 image generations / mo",
+      "10 long-form posts / mo",
+      "Unlimited social posts",
+      "1 project",
       { label: "100 references", subtitle: "then $0.05 per reference / mo" },
-      "30 Days Log Retention",
+      "Standard support + Slack",
+      "ZDR available (+20%)",
+    ],
+  },
+  growth: {
+    name: "Growth",
+    description: "For teams publishing across channels every week.",
+    pricing: { monthly: 250, annually: 2500 },
+    cta: {
+      label: "Get started",
+      href: "https://app.usenotra.com/signup",
+    },
+    features: [
+      "6,000 AI answers tracked / mo",
+      "20 image generations / mo",
+      "25 long-form posts / mo",
+      "Unlimited social posts",
+      "3 projects",
+      { label: "500 references", subtitle: "then $0.04 per reference / mo" },
+      "Standard support + Slack",
+      "ZDR available (+20%)",
+    ],
+  },
+  scale: {
+    name: "Scale",
+    description: "For content teams running multiple brands at volume.",
+    pricing: { monthly: 550, annually: 5500 },
+    cta: {
+      label: "Get started",
+      href: "https://app.usenotra.com/signup",
+    },
+    features: [
+      "12,000 AI answers tracked / mo",
+      "45 image generations / mo",
+      "50 long-form posts / mo",
+      "Unlimited social posts",
+      "10 projects",
+      { label: "1,000 references", subtitle: "then $0.03 per reference / mo" },
+      "Priority support",
+      "ZDR available (+20%)",
     ],
   },
   enterprise: {
     name: "Enterprise",
-    description: "For large teams with custom needs.",
+    description: "For large orgs with custom scale and compliance needs.",
     pricing: { monthly: null, annually: null },
     cta: { label: "Contact us", href: "mailto:hello@usenotra.com" },
     features: [
-      "Unlimited team members",
-      "Unlimited AI Credits",
-      "Unlimited workflows",
-      "Custom integrations",
+      "Unlimited AI answers tracked",
+      "Unlimited image generations",
+      "Unlimited long-form posts",
+      "Unlimited social posts",
+      "Unlimited projects",
       "Unlimited references",
-      "Unlimited Log Retention",
-      "Dedicated Support",
+      "Dedicated support",
+      "ZDR included",
     ],
   },
 } as const;
 
 const FEATURES_TABLE = [
   {
-    category: "Workflows",
+    category: "AI visibility tracking",
     items: [
       {
-        name: "Workflows",
-        basic: "3",
-        pro: "Unlimited",
+        name: "AI answers tracked / mo",
+        starter: "2,000",
+        growth: "6,000",
+        scale: "12,000",
+        enterprise: "Custom",
+      },
+      {
+        name: "Prompts tracked",
+        starter: "Unlimited",
+        growth: "Unlimited",
+        scale: "Unlimited",
         enterprise: "Unlimited",
       },
       {
-        name: "AI Credits",
-        basic: "$12 / month",
-        pro: "$32 / month",
+        name: "Models tracked",
+        starter: "All major",
+        growth: "All major",
+        scale: "All major",
+        enterprise: "All major",
+      },
+    ],
+  },
+  {
+    category: "Content",
+    items: [
+      {
+        name: "Image generations",
+        starter: "8 / mo",
+        growth: "20 / mo",
+        scale: "45 / mo",
+        enterprise: "Unlimited",
+      },
+      {
+        name: "Long-form posts",
+        starter: "10 / mo",
+        growth: "25 / mo",
+        scale: "50 / mo",
+        enterprise: "Unlimited",
+      },
+      {
+        name: "Social posts",
+        starter: "Unlimited",
+        growth: "Unlimited",
+        scale: "Unlimited",
         enterprise: "Unlimited",
       },
     ],
   },
   {
-    category: "Team",
+    category: "Projects",
     items: [
       {
-        name: "Team members",
-        basic: "2",
-        pro: "5",
+        name: "Projects",
+        starter: "1",
+        growth: "3",
+        scale: "10",
         enterprise: "Unlimited",
-      },
-      {
-        name: "Integrations",
-        basic: "2",
-        pro: "Unlimited",
-        enterprise: "Custom",
       },
       {
         name: "References",
-        basic: "30",
-        pro: "100",
+        starter: "100",
+        growth: "500",
+        scale: "1,000",
         enterprise: "Unlimited",
+      },
+      {
+        name: "Reference overage",
+        starter: "$0.05 / ref",
+        growth: "$0.04 / ref",
+        scale: "$0.03 / ref",
+        enterprise: "Custom",
+      },
+    ],
+  },
+  {
+    category: "Security",
+    items: [
+      {
+        name: "Zero data retention",
+        starter: "+20%",
+        growth: "+20%",
+        scale: "+20%",
+        enterprise: "Included",
       },
     ],
   },
@@ -169,9 +239,10 @@ const FEATURES_TABLE = [
     items: [
       {
         name: "Log retention",
-        basic: "14 Days",
-        pro: "30 Days",
-        enterprise: "Unlimited",
+        starter: "30 days",
+        growth: "90 days",
+        scale: "1 year",
+        enterprise: "Custom",
       },
     ],
   },
@@ -179,22 +250,11 @@ const FEATURES_TABLE = [
     category: "Support",
     items: [
       {
-        name: "Community support",
-        basic: true,
-        pro: true,
-        enterprise: true,
-      },
-      {
-        name: "Email support",
-        basic: true,
-        pro: true,
-        enterprise: true,
-      },
-      {
-        name: "Dedicated support",
-        basic: false,
-        pro: false,
-        enterprise: true,
+        name: "Support",
+        starter: "Standard + Slack",
+        growth: "Standard + Slack",
+        scale: "Priority",
+        enterprise: "Dedicated",
       },
     ],
   },
