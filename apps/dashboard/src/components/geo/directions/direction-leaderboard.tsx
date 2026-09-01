@@ -1,15 +1,15 @@
 "use client";
 
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
+import { GEO_SEARCH_LABEL } from "@notra/ui/constants/geo";
 import { useMemo } from "react";
 import { ChartSparkline } from "@/components/charts/chart-sparkline";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { DirectionDonut } from "@/components/geo/directions/direction-donut";
 import { DirectionPagesTable } from "@/components/geo/directions/direction-pages-table";
-import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoBar } from "@/components/geo/geo-bar";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_PRIMARY_COLOR } from "@/constants/charts";
-import { GEO_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_ENGINES,
   GEO_DIRECTIONS_GROUNDED_SERIES,

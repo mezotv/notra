@@ -1,8 +1,6 @@
 import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
-import {
-  AI_TRAFFIC_CONFIDENCE_LABELS,
-  AI_TRAFFIC_PURPOSE_LABELS,
-} from "@/constants/geo";
+import { AI_TRAFFIC_PURPOSE_LABELS } from "@notra/ui/constants/geo";
+import { AI_TRAFFIC_CONFIDENCE_LABELS } from "@/constants/geo";
 import type { GeoTrafficLogEntry, GeoVisitorType } from "@/types/geo";
 import { formatGeoSource } from "@/utils/ai-traffic";
 

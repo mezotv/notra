@@ -1,3 +1,5 @@
+export type { GeoGapsMeterTone } from "@notra/ui/types/geo";
+
 import type {
   GeoCompetitor,
   GeoPromptGapRow,
@@ -5,8 +7,6 @@ import type {
 } from "@/types/geo";
 
 export type GeoGapsTab = "prompt" | "search";
-
-export type GeoGapsMeterTone = "empty" | "low" | "mid" | "high";
 
 export type GeoGapsEmptyKind =
   | "scanning"

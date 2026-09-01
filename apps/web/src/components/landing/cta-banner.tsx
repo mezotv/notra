@@ -35,9 +35,9 @@ export function CtaBanner() {
             </p>
           </div>
         </div>
-        <div className="grid w-full grid-cols-2 items-center gap-4 sm:flex sm:w-auto sm:gap-7">
+        <div className="flex items-center gap-7">
           <CtaButton
-            className="w-full min-w-0 px-3 text-lg sm:w-auto sm:px-6"
+            className="text-lg"
             nativeButton={false}
             render={<TrackedSignupLink source={CTA_BANNER_SIGNUP_SOURCE} />}
             variant="primary"
@@ -45,7 +45,7 @@ export function CtaBanner() {
             {CTA_BANNER_PRIMARY_LABEL}
           </CtaButton>
           <CtaButton
-            className="w-full min-w-0 px-3 text-lg sm:w-auto sm:px-6"
+            className="text-lg"
             nativeButton={false}
             render={<Link href={CTA_BANNER_CONTACT_HREF} />}
             variant="light"

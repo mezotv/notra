@@ -1,5 +1,6 @@
 "use client";
 
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -9,7 +10,6 @@ import {
 } from "@notra/ui/components/shared/responsive-dialog";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useMemo } from "react";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import { useGeoSequenceResults } from "@/lib/hooks/use-geo";
 import type {
   ConversationResultsDialogProps,

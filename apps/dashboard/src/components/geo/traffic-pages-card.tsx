@@ -1,13 +1,13 @@
 "use client";
 
-import { type ReactNode, useMemo } from "react";
-import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
-import { TrafficDeltaBadge } from "@/components/geo/traffic-delta-badge";
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import {
   InstrumentEmpty,
   InstrumentSection,
-} from "@/components/instrument/instrument-module";
+} from "@notra/ui/components/instrument/instrument-module";
+import { type ReactNode, useMemo } from "react";
+import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
+import { TrafficDeltaBadge } from "@/components/geo/traffic-delta-badge";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";

@@ -1,7 +1,7 @@
 import type { Testimonial } from "@/types/landing/testimonials";
 
 export const TESTIMONIALS_SUBHEADING =
-  "Teams run Notra on autopilot. Changelogs, launch posts and updates that write themselves.";
+  "They use Notra for changelogs and launch posts every week. Here is what they say.";
 
 export const FEATURED_TESTIMONIAL: Testimonial = {
   quote:
@@ -48,3 +48,5 @@ export const PAIR_TESTIMONIALS: Testimonial[] = [
     },
   },
 ];
+
+export const LANDING_TESTIMONIALS_FLAG_KEY = "landing-testimonials";

@@ -1,5 +1,6 @@
+import { GEO_SEARCH_LABEL } from "@notra/ui/constants/geo";
 import { CHART_PRIMARY_COLOR, CHART_SECONDARY_COLOR } from "@/constants/charts";
-import { GEO_SEARCH_LABEL, GEO_WITHOUT_SEARCH_LABEL } from "@/constants/geo";
+import { GEO_WITHOUT_SEARCH_LABEL } from "@/constants/geo";
 import type { ChartConfig } from "@/types/charts";
 import type {
   GeoCompetitorSharePoint,

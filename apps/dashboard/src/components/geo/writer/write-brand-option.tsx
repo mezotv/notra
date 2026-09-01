@@ -1,6 +1,6 @@
 "use client";
 
-import { CompetitorLogo } from "@/components/geo/competitor-logo";
+import { CompetitorLogo } from "@notra/ui/components/geo/competitor-logo";
 import type { WriteBrandOptionProps } from "@/types/components/geo-writer";
 import { getWebsiteDomain } from "@/utils/brand";
 

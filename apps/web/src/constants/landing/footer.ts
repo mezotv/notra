@@ -13,7 +13,7 @@ import type {
 import { SOCIAL_LINKS } from "@/utils/social-links";
 
 export const FOOTER_TAGLINE =
-  "Turn shipped work into social updates in your voice.";
+  "Find out what AI engines say about you, and fix it.";
 
 export const FOOTER_DITHERING: FooterDitheringConfig = {
   speed: 0.57,

@@ -6,7 +6,7 @@ import type {
 } from "@/types/landing/pricing";
 
 export const TRACKED_ENGINES_CAPTION =
-  "Track your brand visibility across every major AI engine";
+  "Scan ChatGPT, Claude, Gemini, Perplexity and Grok, with and without web search";
 
 const ENGINE_LOGO_BASE = "/logos/ai-engines";
 
@@ -21,17 +21,11 @@ export const TRACKED_ENGINES: TrackedEngine[] = [
   { name: "Gemini", src: `${ENGINE_LOGO_BASE}/gemini.svg`, width: 28 },
   { name: "Perplexity", src: `${ENGINE_LOGO_BASE}/perplexity.svg`, width: 28 },
   {
-    name: "Google AI Overviews",
-    src: `${ENGINE_LOGO_BASE}/google.svg`,
-    width: 27,
-  },
-  {
     name: "Grok",
     src: `${ENGINE_LOGO_BASE}/grok.svg`,
     darkSrc: `${ENGINE_LOGO_BASE}/grok-dark.svg`,
     width: 28,
   },
-  { name: "Copilot", src: `${ENGINE_LOGO_BASE}/copilot.svg`, width: 31 },
 ];
 
 export const PRICING_ANNUAL_BADGE = "2 months free";
@@ -43,10 +37,11 @@ export const PRICING_BILLING_OPTIONS: BillingToggleOption[] = [
   { value: "yearly", label: "Yearly" },
 ];
 
-export const PRICING_HEADING = "Simple pricing that scales with what you ship.";
+export const PRICING_HEADING =
+  "Simple pricing that scales with what you track.";
 
 export const PRICING_SUBHEADING =
-  "Generate on-brand content across every channel and upgrade when you need more room to ship - cancel anytime.";
+  "Every plan comes with prompt tracking, traffic attribution and the writer. The difference is how many answers you track a month. Cancel whenever.";
 
 const SIGNUP_URL = "https://app.usenotra.com/signup";
 const ENTERPRISE_MAIL_URL = "mailto:hello@usenotra.com";
@@ -55,7 +50,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: "starter",
     name: "Starter",
-    description: "For founders shipping their first content engine.",
+    description: "For founders tracking their first prompts.",
     price: { monthly: "$100", yearly: "$1,000" },
     priceSuffix: { monthly: "/month", yearly: "/year" },
     hasAnnualBadge: true,
@@ -85,7 +80,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: "growth",
     name: "Growth",
-    description: "For teams publishing across channels every week.",
+    description: "For teams tracking prompts across engines and languages.",
     price: { monthly: "$250", yearly: "$2,500" },
     priceSuffix: { monthly: "/month", yearly: "/year" },
     hasAnnualBadge: true,
@@ -115,7 +110,7 @@ export const PRICING_PLANS: PricingPlan[] = [
   {
     id: "scale",
     name: "Scale",
-    description: "For content teams running multiple brands at volume.",
+    description: "For agencies and teams running several brands.",
     price: { monthly: "$550", yearly: "$5,500" },
     priceSuffix: { monthly: "/month", yearly: "/year" },
     hasAnnualBadge: true,

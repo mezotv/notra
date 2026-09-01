@@ -2,6 +2,7 @@
 
 import { Delete02Icon, SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CompetitorLogo } from "@notra/ui/components/geo/competitor-logo";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
 import {
@@ -14,7 +15,6 @@ import {
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/button";
-import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { GeoRemoveDialog } from "@/components/geo/geo-remove-dialog";
 import { Table, type TableColumn } from "@/components/motion/table";
 import {

@@ -1,14 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { EmptyStateTrendPreview } from "@/components/empty-state-preview";
-import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
-import { engineIconHtml } from "@/components/geo/engine-icon";
-import { MentionTrendAgentsPicker } from "@/components/geo/mention-trend-agents";
 import {
   InstrumentEmpty,
   InstrumentSection,
-} from "@/components/instrument/instrument-module";
+} from "@notra/ui/components/instrument/instrument-module";
+import { useCallback, useMemo, useState } from "react";
+import { EmptyStateTrendPreview } from "@/components/empty-state-preview";
+import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
+import { engineIconHtml } from "@/components/geo/engine-icon-html";
+import { MentionTrendAgentsPicker } from "@/components/geo/mention-trend-agents";
 import { CHART_MUTED_COLOR } from "@/constants/charts";
 import {
   GEO_MENTION_TREND_AVERAGE_KEY,

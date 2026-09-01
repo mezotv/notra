@@ -85,14 +85,6 @@ export interface AgentFeedbackSetupCardProps {
   organizationId: string;
 }
 
-export interface AgentFeedbackStatusBadgeProps {
-  status: AgentFeedbackStatus;
-}
-
-export interface AgentFeedbackKindBadgeProps {
-  kind: AgentFeedbackKind;
-}
-
 export interface AgentFeedbackPageClientProps {
   organizationSlug: string;
 }

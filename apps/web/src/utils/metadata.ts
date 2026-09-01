@@ -1,9 +1,9 @@
-export const SITE_TAGLINE = "Ship more. Write less. Reach more.";
+export const SITE_TAGLINE = "Get recommended by AI engines.";
 
 export const SITE_TITLE = `Notra. ${SITE_TAGLINE}`;
 
 export const SITE_DESCRIPTION =
-  "Notra turns shipped work into changelogs, launch posts, marketing assets and social updates in your voice.";
+  "Notra asks ChatGPT, Claude, Gemini and Perplexity the questions your buyers ask, tracks which AI agents read your site, and writes the content for the questions you lose.";
 
 export const DEFAULT_SOCIAL_IMAGE = {
   url: "/og-image.png",

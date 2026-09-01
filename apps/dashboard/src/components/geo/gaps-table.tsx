@@ -2,6 +2,10 @@
 
 import { SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CompetitorLogo } from "@notra/ui/components/geo/competitor-logo";
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
+import { GapMeter } from "@notra/ui/components/geo/gap-meter";
+import { LogoStack } from "@notra/ui/components/geo/logo-stack";
 import { Input } from "@notra/ui/components/ui/input";
 import {
   Select,
@@ -16,15 +20,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import {
+  GEO_GAPS_METER_STEPS,
+  GEO_GAPS_METER_TONE_CLASS,
+} from "@notra/ui/constants/geo";
+import { gapMeterLevel, gapMeterTone } from "@notra/ui/lib/geo-gaps";
 import Link from "next/link";
 import { parseAsString, useQueryState } from "nuqs";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
-import { CompetitorLogo } from "@/components/geo/competitor-logo";
-import { EngineIcon } from "@/components/geo/engine-icon";
-import { LogoStack } from "@/components/geo/logo-stack";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
@@ -36,8 +42,6 @@ import {
   GEO_COMPETITOR_KIND_DETAIL,
   GEO_GAPS_EMPTY,
   GEO_GAPS_ENGINE_FILTER_ALL,
-  GEO_GAPS_METER_STEPS,
-  GEO_GAPS_METER_TONE_CLASS,
   GEO_GAPS_TABLE_HEIGHT,
   GEO_PROMPTS_NAV_LINK,
 } from "@/constants/geo";
@@ -56,8 +60,6 @@ import { matchTrackedCompetitorNames } from "@/utils/geo-competitors";
 import {
   filterPromptGaps,
   filterSearchGaps,
-  gapMeterLevel,
-  gapMeterTone,
   gapMissingEngineFamilies,
   gapWriteAction,
   gapWriteLabel,
@@ -159,33 +161,6 @@ function WriteCell({
     >
       {gapWriteLabel(action)}
     </Button>
-  );
-}
-
-function GapMeter({ level, label }: { level: number; label: string }) {
-  const filledClass = GEO_GAPS_METER_TONE_CLASS[gapMeterTone(level)];
-  return (
-    <Tooltip>
-      <TooltipTrigger
-        render={
-          <span
-            aria-label={label}
-            className="inline-flex h-4 cursor-default items-end gap-1"
-          />
-        }
-      >
-        {Array.from({ length: GEO_GAPS_METER_STEPS }, (_, index) => (
-          <span
-            className={cn(
-              "w-1.5 rounded-[1px]",
-              index < level ? cn("h-4", filledClass) : "h-2.5 bg-muted"
-            )}
-            key={index}
-          />
-        ))}
-      </TooltipTrigger>
-      <TooltipContent>{label}</TooltipContent>
-    </Tooltip>
   );
 }
 

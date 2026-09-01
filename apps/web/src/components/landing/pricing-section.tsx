@@ -4,7 +4,13 @@ import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { cn } from "@notra/ui/lib/utils";
-import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
+import {
+  AnimatePresence,
+  domMax,
+  LazyMotion,
+  m,
+  useReducedMotion,
+} from "motion/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
@@ -33,6 +39,8 @@ function PricingBillingToggle({
   value,
   onValueChange,
 }: PricingBillingToggleProps) {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <div className="flex items-center justify-center gap-2 rounded-full bg-[linear-gradient(180deg,#FFFFFF,#F2F2F2)] p-1.75 shadow-[0_0.0625rem_0.125rem_#28282814,0_0_0_0.0625rem_#ECECEC] dark:bg-none dark:bg-white/[0.06] dark:shadow-[0_0_0_0.0625rem] dark:shadow-white/10">
       {PRICING_BILLING_OPTIONS.map((option) => {
@@ -43,15 +51,30 @@ function PricingBillingToggle({
             aria-pressed={isActive}
             className={cn(
               "relative flex h-8 cursor-pointer touch-manipulation items-center justify-center rounded-full px-3.5 py-1.75 font-sans text-base leading-6 tracking-[-0.01em] focus-visible:ring-[0.1875rem] focus-visible:ring-ring/50",
-              isActive
-                ? "cta-gradient-primary text-white shadow-[0_0.0625rem_0.125rem_#28282814,0_0_0_0.0625rem_#1E1E1E40]"
-                : "text-[#1E1E1E] dark:text-white"
+              isActive ? "text-white" : "text-[#1E1E1E] dark:text-white"
             )}
             key={option.value}
             onClick={() => onValueChange(option.value)}
             type="button"
           >
-            {option.label}
+            {isActive ? (
+              <m.span
+                className="cta-gradient-primary absolute inset-0 rounded-full"
+                layoutId="pricing-billing-thumb"
+                style={{
+                  boxShadow:
+                    "0 0.0625rem 0.125rem #28282814, 0 0 0 0.0625rem #1E1E1E40",
+                }}
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0 }
+                    : { type: "spring", stiffness: 500, damping: 40 }
+                }
+              />
+            ) : null}
+            <span className="relative z-10 transition-colors duration-200">
+              {option.label}
+            </span>
           </button>
         );
       })}
@@ -290,7 +313,7 @@ export function LandingPricingSection({
   return (
     <LazyMotion features={domMax}>
       <section
-        className="flex w-full flex-col items-center gap-13.5 px-6 pt-12 pb-24 sm:py-24"
+        className="flex w-full flex-col items-center gap-13.5 px-6 py-24"
         id="pricing"
       >
         {showHeader ? (

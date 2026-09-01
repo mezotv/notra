@@ -2,6 +2,7 @@
 
 import { Delete02Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { ConversationRow } from "@notra/ui/components/geo/conversation-row";
 import {
   Card,
   CardAction,
@@ -59,77 +60,20 @@ export function ConversationsCard({ organizationId }: ConversationsCardProps) {
         ) : (
           <div className="divide-y divide-border/60">
             {sequences.map((sequence) => (
-              <div
-                className="flex items-center gap-3 px-4 py-2.5"
+              <ConversationRow
+                enabled={sequence.enabled}
                 key={sequence.id}
-              >
-                <button
-                  className="min-w-0 flex-1 text-left"
-                  onClick={() => setViewing(sequence)}
-                  type="button"
-                >
-                  <p className="truncate font-medium text-sm">
-                    {sequence.name}
-                  </p>
-                  <p className="truncate text-muted-foreground text-xs">
-                    {sequence.steps.length}{" "}
-                    {sequence.steps.length === 1 ? "turn" : "turns"} ·{" "}
-                    {sequence.steps[0]}
-                  </p>
-                </button>
-                <div className="flex shrink-0 items-center gap-2">
-                  <Button
-                    onClick={() => {
-                      setEditing(sequence);
-                      setBuilderOpen(true);
-                    }}
-                    size="sm"
-                    variant="ghost"
-                  >
-                    Edit
-                  </Button>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Switch
-                          aria-label={
-                            sequence.enabled
-                              ? `Pause ${sequence.name}`
-                              : `Enable ${sequence.name}`
-                          }
-                          checked={sequence.enabled}
-                          disabled={pendingSequenceIds.has(sequence.id)}
-                          onCheckedChange={(enabled) =>
-                            updateSequence(sequence.id, { enabled })
-                          }
-                          size="sm"
-                        />
-                      }
-                    />
-                    <TooltipContent>
-                      {sequence.enabled
-                        ? "Included in scans"
-                        : "Paused — skipped in scans"}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          aria-label={`Delete ${sequence.name}`}
-                          disabled={pendingSequenceIds.has(sequence.id)}
-                          onClick={() => removeSequence(sequence.id)}
-                          size="icon"
-                          variant="ghost"
-                        />
-                      }
-                    >
-                      <HugeiconsIcon icon={Delete02Icon} size={14} />
-                    </TooltipTrigger>
-                    <TooltipContent>Delete</TooltipContent>
-                  </Tooltip>
-                </div>
-              </div>
+                name={sequence.name}
+                onDelete={() => removeSequence(sequence.id)}
+                onEdit={() => {
+                  setEditing(sequence);
+                  setBuilderOpen(true);
+                }}
+                onOpen={() => setViewing(sequence)}
+                onToggle={(enabled) => updateSequence(sequence.id, { enabled })}
+                pending={pendingSequenceIds.has(sequence.id)}
+                steps={sequence.steps}
+              />
             ))}
           </div>
         )}

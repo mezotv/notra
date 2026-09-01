@@ -2,6 +2,8 @@
 
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
+import { InstrumentSection } from "@notra/ui/components/instrument/instrument-module";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -19,11 +21,9 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/button";
-import { GeoBar } from "@/components/geo/geo-bar";
 import { GeoLanguagesDialog } from "@/components/geo/geo-languages-dialog";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Twemoji } from "@/components/geo/twemoji";
-import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import {
   GEO_LANGUAGE_FLAGS,

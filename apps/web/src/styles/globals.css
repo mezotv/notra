@@ -4,6 +4,7 @@
 @import "../../../../packages/ui/src/styles/cta-button.css";
 
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
+@source "../../../../node_modules/streamdown/dist/*.js";
 
 @plugin "@toolwind/corner-shape";
 @plugin "@tailwindcss/typography";
@@ -435,4 +436,28 @@
   ::view-transition-new(*) {
     animation: none !important;
   }
+}
+
+:root {
+  --geo-search: var(--primary);
+  --geo-memory: oklch(0.606 0.099 206.2);
+  --geo-up: oklch(0.55 0.109 155);
+  --geo-down: oklch(0.59 0.192 27);
+  --geo-mid: oklch(0.57 0.113 55);
+}
+
+.dark {
+  --geo-search: oklch(0.68 0.134 292.717);
+  --geo-memory: oklch(0.68 0.111 206.2);
+  --geo-up: oklch(0.7 0.125 155);
+  --geo-down: oklch(0.7 0.138 27);
+  --geo-mid: oklch(0.7 0.125 55);
+}
+
+@theme inline {
+  --color-geo-search: var(--geo-search);
+  --color-geo-memory: var(--geo-memory);
+  --color-geo-up: var(--geo-up);
+  --color-geo-down: var(--geo-down);
+  --color-geo-mid: var(--geo-mid);
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { GeoPromptAnswerThread } from "@notra/ui/components/geo/geo-prompt-answer-thread";
+import { PromptEngineSwitcher } from "@notra/ui/components/geo/prompt-engine-switcher";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -7,10 +9,9 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { adjacentPromptEngine } from "@notra/ui/lib/geo-prompt-engines";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type KeyboardEvent, useState } from "react";
-import { GeoPromptAnswerThread } from "@/components/geo/geo-prompt-answer-thread";
-import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
 import { EASE_OUT } from "@/lib/ease";
 import type {
   GeoPromptResult,
@@ -18,8 +19,12 @@ import type {
   PromptDetailDialogProps,
 } from "@/types/geo";
 import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
-import { sharedEngineAnswerMode } from "@/utils/geo-charts";
-import { adjacentPromptEngine } from "@/utils/geo-prompt-engines";
+import {
+  engineAnswerMode,
+  formatEngineFamily,
+  formatEngineWithMode,
+  sharedEngineAnswerMode,
+} from "@/utils/geo-charts";
 import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 const INSTANT = { duration: 0 } as const;
@@ -130,9 +135,17 @@ function PromptAnswerPage({
         ) : null}
         {results.length > 0 && active ? (
           <PromptEngineSwitcher
-            active={active}
+            active={active.engine}
+            items={results.map((result) => ({
+              engine: result.engine,
+              family: formatEngineFamily(result.engine),
+              label: answerMode
+                ? formatEngineFamily(result.engine)
+                : formatEngineWithMode(result.engine),
+              showSearchIcon:
+                answerMode === null && engineAnswerMode(result.engine) !== null,
+            }))}
             onChange={selectEngine}
-            results={results}
           />
         ) : null}
       </ResponsiveDialogHeader>
@@ -149,7 +162,11 @@ function PromptAnswerPage({
               transition={threadTransition}
               variants={threadVariants(Boolean(reduceMotion))}
             >
-              <GeoPromptAnswerThread prompt={row.prompt} result={active} />
+              <GeoPromptAnswerThread
+                prompt={row.prompt}
+                result={active}
+                timestamp={formatAiTrafficTimestamp(active.lastCheckedAt)}
+              />
             </motion.div>
           ) : (
             <div className="flex h-full min-h-0 items-center justify-center px-6">

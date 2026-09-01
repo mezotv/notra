@@ -1,10 +1,10 @@
 "use client";
 
+import { CompetitorLogo } from "@notra/ui/components/geo/competitor-logo";
+import { GEO_LOGO_SIZE_PX } from "@notra/ui/constants/geo";
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
 import { useState } from "react";
-import { CompetitorLogo } from "@/components/geo/competitor-logo";
-import { GEO_LOGO_SIZE_PX } from "@/constants/geo";
 import type { CompetitorBrandLogoProps } from "@/types/onboarding";
 
 export function CompetitorBrandLogo({

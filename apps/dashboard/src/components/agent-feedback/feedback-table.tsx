@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  AgentFeedbackKindBadge,
+  AgentFeedbackStatusBadge,
+} from "@notra/ui/components/agent-feedback/feedback-badges";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Table,
@@ -10,10 +14,6 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import { cn } from "@notra/ui/lib/utils";
-import {
-  AgentFeedbackKindBadge,
-  AgentFeedbackStatusBadge,
-} from "@/components/agent-feedback/feedback-badges";
 import {
   AGENT_FEEDBACK_SENTIMENT_LABELS,
   AGENT_FEEDBACK_SKELETON_ROWS,

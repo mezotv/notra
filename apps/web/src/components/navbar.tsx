@@ -384,15 +384,14 @@ export function Navbar({ variant }: NavbarProps = {}) {
     "text-[#1E1E1EA6] hover:text-[#1E1E1E] dark:text-neutral-400 dark:hover:text-white";
   let positionClass = "w-full sticky top-4";
   if (isLanding) {
-    positionClass =
-      "fixed inset-x-4 [--navbar-top:1.5rem] sm:inset-x-6 sm:[--navbar-top:2.5rem]";
+    positionClass = "fixed inset-x-4 sm:inset-x-6";
   } else if (isStatic) {
     positionClass = "w-full";
   }
   const shellAnimate = isLanding
     ? {
         maxWidth: chrome ? "64rem" : "80.9375rem",
-        top: chrome ? "1rem" : "var(--navbar-top)",
+        top: chrome ? "1rem" : "2.5rem",
       }
     : { maxWidth: chrome ? "64rem" : "80rem" };
   const rowHeightClass = isLandingTop ? "h-11 lg:h-[2.4375rem]" : "h-16";

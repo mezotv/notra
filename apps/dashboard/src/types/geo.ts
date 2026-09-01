@@ -1,8 +1,22 @@
+export type {
+  EngineIconKey,
+  EngineIconProps,
+  EngineIconRule,
+  GeoBarProps,
+  GeoChatSkin,
+  GeoPresenceStatus,
+  ModelProviderLogoProps,
+  ParsedModelId,
+  PresenceBadgeProps,
+  PurposeBadgeProps,
+} from "@notra/ui/types/geo";
+
 import type {
   GeoContentBrief,
   GeoContentSubtype,
 } from "@notra/ai/types/geo-writer";
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
+import type { GeoPresenceStatus } from "@notra/ui/types/geo";
 import type { GeoRequestPayload } from "@usenotra/geo";
 import type { LanguageModel, ToolSet } from "ai";
 import type { ReactNode } from "react";
@@ -198,12 +212,6 @@ export interface GeoPromptResult {
   sentiment: string | null;
   excerpt: string;
   lastCheckedAt: string;
-}
-
-export interface PromptEngineSwitcherProps {
-  results: GeoPromptResult[];
-  active: GeoPromptResult;
-  onChange: (engine: string, direction: number) => void;
 }
 
 export interface GeoPromptResultsResponse {
@@ -807,15 +815,6 @@ export interface TrafficPagesCardProps {
   isPending?: boolean;
 }
 
-export type GeoPresenceStatus =
-  | "training-data"
-  | "retrieval-only"
-  | "invisible";
-
-export interface PresenceBadgeProps {
-  status: GeoPresenceStatus | null;
-}
-
 export interface GeoEngineVariant {
   model: string;
   web: GeoOverviewEngine | null;
@@ -831,14 +830,6 @@ export interface GeoEngineFamilyTotals {
   mentions: number;
   checks: number;
   rate: number;
-}
-
-export interface GeoBarProps {
-  value: number;
-  max?: number;
-  className?: string;
-  fillClassName?: string;
-  fillColor?: string;
 }
 
 export interface GeoRateSparklineProps {
@@ -1022,58 +1013,6 @@ export interface CitationsTableProps {
   loading?: boolean;
 }
 
-export interface PurposeBadgeProps {
-  category: string;
-}
-
-export type EngineIconKey =
-  | "openai"
-  | "claude"
-  | "gemini"
-  | "google"
-  | "amazon"
-  | "perplexity"
-  | "mistral"
-  | "deepseek"
-  | "meta"
-  | "grok"
-  | "qwen"
-  | "copilot"
-  | "tencent"
-  | "xiaomi"
-  | "cursor"
-  | "apple"
-  | "duckduckgo"
-  | "cloudflare"
-  | "tiktok"
-  | "mozilla"
-  | "manus"
-  | "firecrawl"
-  | "cohere"
-  | "opencode"
-  | "kimi"
-  | "zai"
-  | "exa"
-  | "commoncrawl"
-  | "youcom"
-  | "liner"
-  | "cline"
-  | "devin"
-  | "diffbot"
-  | "tavily"
-  | "timpi"
-  | "huawei"
-  | "kagi"
-  | "agent"
-  | "cli";
-
-export type GeoChatSkin = "claude" | "chatgpt" | "gemini" | "perplexity";
-
-export interface EngineIconProps {
-  engine: string;
-  className?: string;
-}
-
 export interface GeoProviderWordmarkProps {
   provider: string;
   label: string;
@@ -1082,23 +1021,6 @@ export interface GeoProviderWordmarkProps {
 
 export interface GeoModeIconProps {
   mode: GeoSparklineMode;
-  className?: string;
-}
-
-export interface EngineIconRule {
-  key: EngineIconKey;
-  patterns: readonly string[];
-  /** Values that must equal the whole engine string, for short vendor names. */
-  exact?: readonly string[];
-}
-
-export interface ParsedModelId {
-  provider: string;
-  slug: string;
-}
-
-export interface ModelProviderLogoProps {
-  provider: string;
   className?: string;
 }
 
@@ -1419,11 +1341,6 @@ export interface PromptDetailDialogProps {
   isScanning?: boolean;
 }
 
-export interface GeoPromptAnswerThreadProps {
-  prompt: string;
-  result: GeoPromptResult;
-}
-
 export type GeoCompetitorTypeFilter = "all" | GeoCompetitorKind;
 
 export interface GeoCompetitorRowEntry {
@@ -1434,13 +1351,6 @@ export interface GeoCompetitorRowEntry {
   kind: GeoCompetitorKind;
   isOwnBrand: boolean;
   color: ChartColorPair;
-}
-
-export interface CompetitorLogoProps {
-  name: string;
-  domain: string | null;
-  className?: string;
-  onSettled?: () => void;
 }
 
 export interface CompetitorLogoPreviewProps {

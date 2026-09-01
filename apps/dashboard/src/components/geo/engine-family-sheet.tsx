@@ -1,5 +1,6 @@
 "use client";
 
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import {
   Sheet,
   SheetContent,
@@ -7,9 +8,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@notra/ui/components/ui/sheet";
+import { GEO_SEARCH_LABEL } from "@notra/ui/constants/geo";
 import { useEffect, useMemo, useState } from "react";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoModeIcon } from "@/components/geo/geo-mode-icon";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
@@ -17,7 +18,6 @@ import { CHART_PERCENT_SCALE } from "@/constants/charts";
 import {
   GEO_EMPTY_PROMPT_RESULTS,
   GEO_EMPTY_TIMESERIES,
-  GEO_SEARCH_LABEL,
   GEO_SPARKLINE_MIN_POINTS,
   GEO_WITHOUT_SEARCH_LABEL,
 } from "@/constants/geo";

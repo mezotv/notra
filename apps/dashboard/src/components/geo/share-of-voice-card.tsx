@@ -1,7 +1,7 @@
 "use client";
 
+import { InstrumentSection } from "@notra/ui/components/instrument/instrument-module";
 import { ShareOfVoiceTable } from "@/components/geo/share-of-voice-table";
-import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { useGeoCompetitorRowNavigation } from "@/lib/hooks/use-geo";
 import type { ShareOfVoiceCardProps, ShareOfVoiceRow } from "@/types/geo";
 

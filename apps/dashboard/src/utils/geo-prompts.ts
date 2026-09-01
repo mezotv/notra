@@ -1,4 +1,4 @@
-import type { FunnelStage } from "@/components/charts/funnel-chart";
+import type { FunnelStage } from "@notra/ui/components/charts/funnel-chart";
 import { GEO_PROMPT_FUNNEL_TOP_POSITION } from "@/constants/geo";
 import { trackedPromptScanId } from "@/lib/geo/prompts";
 import type {

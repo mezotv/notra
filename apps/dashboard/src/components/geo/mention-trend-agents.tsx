@@ -2,13 +2,13 @@
 
 import { ArrowUpDownIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import {
   GEO_FILTER_TRIGGER_CLASS,
   GEO_MENTION_TREND_AGENT_ICON_LIMIT,

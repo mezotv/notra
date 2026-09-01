@@ -1,5 +1,12 @@
 "use client";
 
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
+import { PurposeBadge } from "@notra/ui/components/geo/purpose-badge";
+import { StatTiles } from "@notra/ui/components/geo/stat-tiles";
+import {
+  InstrumentEmpty,
+  InstrumentSection,
+} from "@notra/ui/components/instrument/instrument-module";
 import {
   Tooltip,
   TooltipContent,
@@ -7,13 +14,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
-import { PurposeBadge } from "@/components/geo/purpose-badge";
-import {
-  InstrumentEmpty,
-  InstrumentSection,
-} from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_PRIMARY_COLOR, CHART_SECONDARY_COLOR } from "@/constants/charts";
 import {
@@ -120,18 +121,7 @@ function TrafficHero({
 
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-        {metrics.map((metric) => (
-          <div className="px-5 py-4" key={metric.key}>
-            <p className="text-muted-foreground text-xs">{metric.label}</p>
-            <div className="mt-1 flex gap-x-2">
-              <span className="font-semibold text-3xl tabular-nums leading-none tracking-tight">
-                {metric.value.toLocaleString()}
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
+      <StatTiles tiles={metrics} />
       {showTrend ? (
         <div className="border-border border-t p-4">
           <EChartsAreaChart

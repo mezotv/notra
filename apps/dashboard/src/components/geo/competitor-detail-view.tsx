@@ -5,6 +5,8 @@ import {
   PencilEdit02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CompetitorLogo } from "@notra/ui/components/geo/competitor-logo";
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Tooltip,
@@ -15,8 +17,6 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { EChartsBarChart } from "@/components/evilcharts/charts/echarts-bar-chart";
 import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
-import { CompetitorLogo } from "@/components/geo/competitor-logo";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { CHART_PRIMARY_COLOR } from "@/constants/charts";

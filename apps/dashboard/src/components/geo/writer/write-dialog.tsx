@@ -13,6 +13,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
  * `/geo/write?brief=`.
  */
 import type { GeoContentSubtype } from "@notra/ai/types/geo-writer";
+import { CompetitorLogo } from "@notra/ui/components/geo/competitor-logo";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -39,7 +40,6 @@ import {
   useState,
 } from "react";
 import { Button } from "@/components/button";
-import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import {
   GEO_WRITE_CONTENT_SUBTYPES,

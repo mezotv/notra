@@ -1,5 +1,6 @@
 "use client";
 
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   Tooltip,
@@ -7,7 +8,6 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
 import {
   GEO_DIRECTIONS_POSITION_CLASS,

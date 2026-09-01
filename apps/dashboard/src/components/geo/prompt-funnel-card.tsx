@@ -1,11 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
-import { FunnelChart } from "@/components/charts/funnel-chart";
+import { FunnelChart } from "@notra/ui/components/charts/funnel-chart";
 import {
   InstrumentEmpty,
   InstrumentSection,
-} from "@/components/instrument/instrument-module";
+} from "@notra/ui/components/instrument/instrument-module";
+import { useMemo } from "react";
 import type { PromptFunnelCardProps } from "@/types/geo";
 import { buildPromptVisibilityFunnel } from "@/utils/geo-prompts";
 import { geoScanEmptyMessage } from "@/utils/geo-scan";

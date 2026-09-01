@@ -1,15 +1,15 @@
 "use client";
 
 import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@notra/ui/components/instrument/instrument-module";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
 } from "@notra/ui/components/ui/avatar";
 import { ChartSparkline } from "@/components/charts/chart-sparkline";
-import {
-  InstrumentEmpty,
-  InstrumentModule,
-} from "@/components/instrument/instrument-module";
 import { cn } from "@/lib/utils";
 import type {
   FollowerGrowthPoint,

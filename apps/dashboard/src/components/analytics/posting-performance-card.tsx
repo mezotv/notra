@@ -2,14 +2,14 @@
 
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@notra/ui/components/instrument/instrument-module";
 import { Button } from "@notra/ui/components/ui/button";
 import { domAnimation, LazyMotion, m, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 import { CursorTooltip } from "@/components/analytics/cursor-tooltip";
-import {
-  InstrumentEmpty,
-  InstrumentModule,
-} from "@/components/instrument/instrument-module";
 import {
   POSTING_ACTIVITY_BAR_CLASSES,
   POSTING_ACTIVITY_LABELS,

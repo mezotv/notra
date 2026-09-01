@@ -1,3 +1,5 @@
+import { GEO_SEARCH_LABEL } from "@notra/ui/constants/geo";
+import { resolveEngineIconKey } from "@notra/ui/lib/geo-engine-icon";
 import {
   CHART_MIN_BAR_PERCENT,
   CHART_OTHER_SLICE_LABEL,
@@ -7,7 +9,6 @@ import {
   GEO_BRAND_LABELS,
   GEO_ENGINE_LABELS,
   GEO_MENTION_TREND_TOTAL_KEY,
-  GEO_SEARCH_LABEL,
   GEO_SHARE_OF_VOICE_TOP_BRANDS,
 } from "@/constants/geo";
 import type {
@@ -30,7 +31,6 @@ import type {
 import { formatDayLabel, todayIsoDate } from "@/utils/analytics-charts";
 import { chartKey } from "@/utils/chart-keys";
 import { mergeCompetitorSharePoints } from "@/utils/geo-competitors";
-import { resolveEngineIconKey } from "@/utils/geo-engine-icon";
 import {
   GROUNDED_SUFFIX_PATTERN,
   isGroundedEngine,
@@ -96,13 +96,6 @@ export function formatUsageShare(share: number): string {
     return `<${MIN_SHARE_PERCENT}%`;
   }
   return `${Math.round(percent * SHARE_DECIMALS) / SHARE_DECIMALS}%`;
-}
-
-export function barWidthPercent(value: number, max: number): number {
-  if (max <= 0 || value <= 0) {
-    return 0;
-  }
-  return Math.max((value / max) * CHART_PERCENT_SCALE, CHART_MIN_BAR_PERCENT);
 }
 
 const DAY_MS = 86_400_000;

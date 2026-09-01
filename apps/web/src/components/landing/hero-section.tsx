@@ -1,74 +1,36 @@
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
-import { cn } from "@notra/ui/lib/utils";
 import Link from "next/link";
 import { HeroCollage } from "@/components/landing/hero-collage";
 import { HeroDither } from "@/components/landing/hero-dither";
+import { HeroHeadline } from "@/components/landing/hero-headline";
 import { TrackedSignupLink } from "@/components/tracked-signup-link";
 import {
   HERO_BOOK_A_CALL_HREF,
-  HERO_HEADLINE_MOBILE_BREAK_INDEX,
-  HERO_HEADLINE_SEGMENTS,
   HERO_SIGNUP_SOURCE,
   HERO_SUBHEAD,
 } from "@/constants/landing/hero";
 
 const CTA_BUTTON_CLASSNAME =
-  "h-auto rounded-[2.5625rem] px-4 py-2.5 font-display font-medium text-base leading-[1.14] tracking-[-0.015em] sm:px-6 sm:py-3 sm:text-[1.125rem]";
+  "h-auto rounded-[2.5625rem] px-6 py-3 font-display font-medium text-[1.125rem] leading-[1.14] tracking-[-0.015em]";
 
 export function HeroSection() {
   return (
-    <section className="w-full px-2 pt-2 antialiased [font-synthesis:none] sm:px-6 sm:pt-6">
+    <section className="w-full px-6 pt-6 antialiased [font-synthesis:none]">
       <div className="relative isolate overflow-clip rounded-3xl bg-[#C8B2EE40] lg:h-[59.9375rem] dark:bg-[#2a2140]">
         <div className="pointer-events-none absolute inset-0 overflow-clip rounded-3xl">
-          <HeroDither className="-top-1.25 -left-10.75 absolute hidden h-[calc(100%+1.25rem)] w-[calc(100%+21.5rem)] min-w-[100.8125rem] bg-[#00000000] lg:block lg:h-[66.125rem]" />
+          <HeroDither className="-top-1.25 -left-10.75 absolute h-[66.125rem] w-[calc(100%+21.5rem)] min-w-[100.8125rem] bg-[#00000000]" />
         </div>
 
         <div className="relative flex h-full w-full flex-col items-center">
           <div className="flex flex-col items-center gap-8 px-6 pt-20 pb-2 sm:gap-10 sm:pt-24 lg:pt-[7.5rem]">
             <div className="flex flex-col items-center gap-7">
-              <h1 className="max-w-[20.5rem] text-center font-display font-medium text-[#1E1E1E] text-[clamp(1.5rem,calc(10.1vw-0.42rem),2.0625rem)] leading-[1.08] tracking-[-0.015em] sm:max-w-[56.875rem] sm:font-semibold sm:text-[3.25rem] lg:text-[4.75rem] lg:leading-[1.12] dark:text-white">
-                <span className="block whitespace-nowrap sm:hidden">
-                  {HERO_HEADLINE_SEGMENTS.slice(
-                    0,
-                    HERO_HEADLINE_MOBILE_BREAK_INDEX
-                  ).map((segment) => (
-                    <span
-                      className={cn(segment.accent && "text-primary")}
-                      key={segment.text}
-                    >
-                      {segment.text}
-                    </span>
-                  ))}
-                </span>
-                <span className="block whitespace-nowrap sm:hidden">
-                  {HERO_HEADLINE_SEGMENTS.slice(
-                    HERO_HEADLINE_MOBILE_BREAK_INDEX
-                  ).map((segment) => (
-                    <span
-                      className={cn(segment.accent && "text-primary")}
-                      key={segment.text}
-                    >
-                      {segment.text}
-                    </span>
-                  ))}
-                </span>
-                <span className="hidden sm:inline">
-                  {HERO_HEADLINE_SEGMENTS.map((segment) => (
-                    <span
-                      className={cn(segment.accent && "text-primary")}
-                      key={segment.text}
-                    >
-                      {segment.text}
-                    </span>
-                  ))}
-                </span>
-              </h1>
+              <HeroHeadline />
               <p className="max-w-[42.875rem] text-center font-medium font-sans text-[#1E1E1EBF] text-[1.0625rem] leading-[1.14] tracking-[-0.005em] sm:text-[1.25rem] dark:text-white/70">
                 {HERO_SUBHEAD}
               </p>
             </div>
 
-            <div className="flex flex-row items-center gap-3 sm:gap-7">
+            <div className="flex flex-col items-center gap-7 sm:flex-row">
               <CtaButton
                 className={CTA_BUTTON_CLASSNAME}
                 nativeButton={false}

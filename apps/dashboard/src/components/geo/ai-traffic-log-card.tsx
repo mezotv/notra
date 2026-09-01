@@ -3,6 +3,10 @@
 import { PauseIcon, PlayIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  InstrumentEmpty,
+  InstrumentSection,
+} from "@notra/ui/components/instrument/instrument-module";
+import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
@@ -11,10 +15,6 @@ import {
 import { type ReactNode, useState } from "react";
 import { CitationsTable } from "@/components/geo/citations-table";
 import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
-import {
-  InstrumentEmpty,
-  InstrumentSection,
-} from "@/components/instrument/instrument-module";
 import {
   GEO_CITATIONS_LIVE_INTERVAL_MS,
   GEO_TRAFFIC_LOG_PURPOSE_OPTIONS,

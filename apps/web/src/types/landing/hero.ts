@@ -1,8 +1,10 @@
+import type { EngineId } from "@/types/landing/geo";
+
 export interface HeroDitherProps {
   className?: string;
 }
 
-export interface HeroHeadlineSegment {
+export interface HeroCycleWord {
   text: string;
-  accent?: boolean;
+  engine: EngineId;
 }

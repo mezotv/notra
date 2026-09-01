@@ -1,7 +1,7 @@
 "use client";
 
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import { useMemo } from "react";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { GEO_DIRECTIONS_PAGES } from "@/constants/geo-directions";

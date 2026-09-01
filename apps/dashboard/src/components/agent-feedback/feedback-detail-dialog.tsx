@@ -2,6 +2,10 @@
 
 import { AGENT_FEEDBACK_STATUSES } from "@notra/db/constants/agent-feedback";
 import {
+  AgentFeedbackKindBadge,
+  AgentFeedbackStatusBadge,
+} from "@notra/ui/components/agent-feedback/feedback-badges";
+import {
   ResponsiveDialog,
   ResponsiveDialogClose,
   ResponsiveDialogContent,
@@ -17,14 +21,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import {
-  AgentFeedbackKindBadge,
-  AgentFeedbackStatusBadge,
-} from "@/components/agent-feedback/feedback-badges";
+import { AGENT_FEEDBACK_STATUS_LABELS } from "@notra/ui/constants/agent-feedback";
 import { Button } from "@/components/button";
 import {
   AGENT_FEEDBACK_SENTIMENT_LABELS,
-  AGENT_FEEDBACK_STATUS_LABELS,
   AGENT_FEEDBACK_UNSPECIFIED_LABEL,
 } from "@/constants/agent-feedback";
 import type {

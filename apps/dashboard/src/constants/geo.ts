@@ -65,14 +65,6 @@ export const GEO_GAPS_MAX_CHECKS = 400;
 export const GEO_GAPS_SEARCH_LIMIT = 100;
 /** Fallback before the gaps table measures remaining viewport height. */
 export const GEO_GAPS_TABLE_HEIGHT = 420;
-export const GEO_GAPS_METER_STEPS = 5;
-export const GEO_GAPS_METER_TONE_CLASS = {
-  empty: "bg-muted",
-  low: "bg-geo-down",
-  mid: "bg-geo-mid",
-  high: "bg-geo-up",
-} as const;
-export const GEO_GAPS_LOGO_STACK_LIMIT = 4;
 export const GEO_GAPS_WRITE_LABELS = {
   write: "Write",
   review: "Review",
@@ -275,7 +267,6 @@ export const GEO_BRAND_LABELS: Record<string, string> = {
   xiaomi: "Xiaomi",
 };
 
-export const GEO_SEARCH_LABEL = "Search";
 export const GEO_WITHOUT_SEARCH_LABEL = "Without search";
 
 export const GEO_MAX_PROMPTS = 8;
@@ -509,22 +500,6 @@ export const GEO_VISITOR_TYPE_LABELS: Record<string, string> = {
   unknown: "Unknown",
 };
 
-export const AI_TRAFFIC_PURPOSE_LABELS: Record<string, string> = {
-  "training-crawler": "Model training",
-  "search-index": "Search index",
-  "assistant-browse": "Cited in answer",
-  "assistant-referral": "Referral",
-};
-
-export const AI_TRAFFIC_PURPOSE_DESCRIPTIONS: Record<string, string> = {
-  "training-crawler": "Collects pages for model training corpora",
-  "search-index": "Builds the index an AI answer engine searches",
-  "assistant-browse":
-    "Fetched while an assistant was answering someone. A fetch is not proof of a citation",
-  "assistant-referral":
-    "A person clicked through to your site from an AI answer",
-};
-
 export const GEO_TRAFFIC_TREND_CRAWLER_KEY = "crawler";
 export const GEO_TRAFFIC_TREND_REFERRAL_KEY = "aiReferral";
 export const GEO_TRAFFIC_TREND_CRAWLER_LABEL = "Crawlers";
@@ -558,11 +533,6 @@ export const AI_TRAFFIC_CONFIDENCE_LABELS: Record<string, string> = {
   verified: "Verified",
   reported: "Reported",
   heuristic: "Heuristic",
-};
-
-export const GEO_PRESENCE_LABELS: Record<string, string> = {
-  "retrieval-only": `${GEO_SEARCH_LABEL} only`,
-  invisible: "Invisible",
 };
 
 export const GEO_SENTIMENT_LABELS: Record<string, string> = {
@@ -645,12 +615,9 @@ export const GEO_TAB_BREADCRUMB_LABELS: Record<string, string> = {
 
 export const GEO_PROMPTS_TAB_PREVIEW_LIMIT = 6;
 
-export const GEO_LOGO_LINK_BASE = "https://logos.context.dev/";
 export const GEO_LOGO_LINK_CLIENT_ID_ENV = "NEXT_PUBLIC_LOGOLINK_CLIENT_ID";
-export const GEO_FAVICON_BASE = "https://icons.duckduckgo.com/ip3";
 export const GEO_AVATAR_FALLBACK_BASE =
   "https://api.dicebear.com/9.x/glass/svg";
-export const GEO_LOGO_SIZE_PX = 40;
 
 export const GEO_COMPETITOR_DETAIL_DAYS = 30;
 export const GEO_COMPETITOR_DETAIL_MIN_POINTS = 2;

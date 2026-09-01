@@ -1,15 +1,15 @@
 "use client";
 
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
+import { InstrumentModule } from "@notra/ui/components/instrument/instrument-module";
 import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { PromptResultsTable } from "@/components/geo/directions/prompt-results-table";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import { MentionRateCard } from "@/components/geo/mention-rate-card";
 import { MentionTrendCard } from "@/components/geo/mention-trend-card";
 import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { TrafficPagesCard } from "@/components/geo/traffic-pages-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
-import { InstrumentModule } from "@/components/instrument/instrument-module";
 import {
   GEO_DIRECTIONS_COMPANY,
   GEO_DIRECTIONS_ENGINES,

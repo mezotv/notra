@@ -1,17 +1,28 @@
-import type { HeroHeadlineSegment } from "@/types/landing/hero";
+import type { HeroCycleWord } from "@/types/landing/hero";
 
-export const HERO_HEADLINE_SEGMENTS: HeroHeadlineSegment[] = [
-  { text: "Turn what you " },
-  { text: "shipped", accent: true },
-  { text: " into what you " },
-  { text: "publish", accent: true },
-  { text: "." },
+export const HERO_HEADLINE_LINE_ONE = "Your next customer";
+
+export const HERO_HEADLINE_LINE_TWO_PREFIX = "is asking";
+
+export const HERO_HEADLINE_SUFFIX = ".";
+
+export const HERO_HEADLINE_CYCLE: HeroCycleWord[] = [
+  { text: "ChatGPT", engine: "chatgpt" },
+  { text: "Claude", engine: "claude" },
+  { text: "Perplexity", engine: "perplexity" },
+  { text: "Gemini", engine: "gemini" },
+  { text: "Grok", engine: "grok" },
+  { text: "Kimi", engine: "kimi" },
 ];
 
-export const HERO_HEADLINE_MOBILE_BREAK_INDEX = 2;
+export const HERO_HEADLINE_CYCLE_MS = 2600;
+
+export const HERO_WORD_SIZE_EM = 0.9;
+
+export const HERO_WORD_SIZE_DESCENDER_EM = 0.78;
 
 export const HERO_SUBHEAD =
-  "Notra turns your team's real GitHub and Linear activity into changelogs, launch posts, and social updates. In your voice, not ChatGPT's.";
+  "Notra asks ChatGPT, Claude, Gemini and Perplexity the questions your buyers ask. You see whether you come up, who comes up instead, and what to write about it.";
 
 export const HERO_SIGNUP_SOURCE = "hero";
 

@@ -1,18 +1,19 @@
 "use client";
 
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
+import { InstrumentModule } from "@notra/ui/components/instrument/instrument-module";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Card, CardContent } from "@notra/ui/components/ui/card";
+import { GEO_SEARCH_LABEL } from "@notra/ui/constants/geo";
 import { useMemo } from "react";
 import { Button } from "@/components/button";
 import { EChartsLineChart } from "@/components/evilcharts/charts/echarts-line-chart";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { PromptResultsTable } from "@/components/geo/directions/prompt-results-table";
-import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoBar } from "@/components/geo/geo-bar";
-import { InstrumentModule } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_PERCENT_SCALE } from "@/constants/charts";
-import { GEO_SEARCH_LABEL, GEO_WITHOUT_SEARCH_LABEL } from "@/constants/geo";
+import { GEO_WITHOUT_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_ENGINES,
   GEO_DIRECTIONS_KPIS,

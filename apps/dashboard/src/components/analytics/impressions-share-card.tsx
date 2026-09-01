@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
-import { ChartColorScope } from "@/components/charts/chart-color-scope";
-import { EChartsPieChart } from "@/components/evilcharts/charts/echarts-pie-chart";
 import {
   InstrumentEmpty,
   InstrumentModule,
-} from "@/components/instrument/instrument-module";
+} from "@notra/ui/components/instrument/instrument-module";
+import { useMemo } from "react";
+import { ChartColorScope } from "@/components/charts/chart-color-scope";
+import { EChartsPieChart } from "@/components/evilcharts/charts/echarts-pie-chart";
 import { DONUT_INNER_RADIUS, DONUT_OUTER_RADIUS } from "@/constants/charts";
 import { useLeaderboard } from "@/lib/hooks/use-social-analytics";
 import type {

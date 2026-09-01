@@ -1,50 +1,49 @@
 import { cn } from "@notra/ui/lib/utils";
 import {
-  FEATURES_ASSETS_COPY,
-  FEATURES_AUTOMATIONS_COPY,
-  FEATURES_BRAND_COPY,
+  FEATURES_ENGINES_COPY,
+  FEATURES_GAPS_COPY,
   FEATURES_HEADING,
-  FEATURES_PUBLISH_COPY,
+  FEATURES_SHARE_COPY,
+  FEATURES_SHARE_FRAME,
   FEATURES_SUBCOPY_LINE_ONE,
   FEATURES_SUBCOPY_LINE_TWO,
+  FEATURES_TRAFFIC_COPY,
 } from "@/constants/landing/features";
 import type { FeaturesCardShellProps } from "@/types/landing/features";
-import { FeaturesCardAssets } from "./features-card-assets";
-import { FeaturesCardAutomations } from "./features-card-automations";
-import { FeaturesCardBrand } from "./features-card-brand";
-import { FeaturesCardPublish } from "./features-card-publish";
-import { FeaturesShader } from "./features-shader";
+import { FeaturesCardEngines } from "./features-card-engines";
+import { FeaturesCardGaps } from "./features-card-gaps";
+import { FeaturesCardShare } from "./features-card-share";
+import { FeaturesCardTraffic } from "./features-card-traffic";
 
 function FeaturesCard({
   copy,
-  shaderColorFront,
-  shaderClassName,
-  containerClassName,
+  footnote,
   className,
   children,
 }: FeaturesCardShellProps) {
   return (
     <div
       className={cn(
-        "relative flex flex-col items-start overflow-clip rounded-[0.8125rem] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-6 [box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#ECECEC_0rem_0rem_0rem_0.0625rem] sm:p-8.75 dark:bg-none dark:bg-white/[0.02] dark:[box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#FFFFFF14_0rem_0rem_0rem_0.0625rem]",
+        "relative flex min-w-0 flex-col items-start overflow-clip rounded-[0.8125rem] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-6 [box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#ECECEC_0rem_0rem_0rem_0.0625rem] sm:p-8.75 dark:bg-none dark:bg-white/[0.02] dark:[box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#FFFFFF14_0rem_0rem_0rem_0.0625rem]",
         className
       )}
     >
-      <FeaturesShader
-        className={cn("h-161.5 w-186.5", shaderClassName)}
-        colorFront={shaderColorFront}
-      />
-      <div className={cn("relative shrink-0", containerClassName)}>
-        <div className="absolute top-0 left-0 z-10 flex w-full flex-col items-start gap-1.5 lg:w-110.25">
-          <h3 className="font-medium font-sans text-[#0A0D14] text-xl/7 tracking-[-0.015em] sm:text-[1.5625rem]/8 lg:h-8 dark:text-white">
-            {copy.title}
-          </h3>
-          <p className="w-full font-medium font-sans text-[#6A6B70] text-base/6 lg:w-102 dark:text-white/60">
-            {copy.description}
-          </p>
-        </div>
+      <div className="relative z-10 flex w-full flex-col items-start gap-1.5">
+        <h3 className="font-medium font-sans text-[#0A0D14] text-xl/7 tracking-[-0.015em] sm:text-[1.5625rem]/8 dark:text-white">
+          {copy.title}
+        </h3>
+        <p className="w-full max-w-[34rem] font-medium font-sans text-[#6A6B70] text-base/6 dark:text-white/60">
+          {copy.description}
+        </p>
+      </div>
+      <div className="-mx-6 relative z-10 mt-2 h-[24.5rem] min-w-0 overflow-hidden px-6 pt-6 [mask-image:linear-gradient(to_bottom,black_78%,transparent)]">
         {children}
       </div>
+      {footnote ? (
+        <p className="relative z-10 mt-2 font-sans text-[#6A6B70] text-xs dark:text-white/50">
+          {footnote}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -64,38 +63,20 @@ export function FeaturesSection() {
           </p>
         </header>
         <div className="grid w-full grid-cols-1 gap-8 lg:grid-cols-2">
-          <FeaturesCard
-            containerClassName="h-98.25 w-full lg:w-110.25"
-            copy={FEATURES_BRAND_COPY}
-            shaderClassName="-top-13.25 -left-1.5"
-            shaderColorFront="#1809FF21"
-          >
-            <FeaturesCardBrand />
+          <FeaturesCard copy={FEATURES_ENGINES_COPY}>
+            <FeaturesCardEngines />
           </FeaturesCard>
           <FeaturesCard
-            className="lg:h-115.75"
-            containerClassName="h-112.5 w-full lg:w-110.25"
-            copy={FEATURES_AUTOMATIONS_COPY}
-            shaderClassName="-top-13.25 -left-px"
-            shaderColorFront="#FF001021"
+            copy={FEATURES_SHARE_COPY}
+            footnote={FEATURES_SHARE_FRAME.footnote}
           >
-            <FeaturesCardAutomations />
+            <FeaturesCardShare />
           </FeaturesCard>
-          <FeaturesCard
-            containerClassName="h-98.25 w-full lg:self-stretch"
-            copy={FEATURES_ASSETS_COPY}
-            shaderClassName="-top-13.25 left-px"
-            shaderColorFront="#00FF3821"
-          >
-            <FeaturesCardAssets />
+          <FeaturesCard copy={FEATURES_TRAFFIC_COPY}>
+            <FeaturesCardTraffic />
           </FeaturesCard>
-          <FeaturesCard
-            containerClassName="h-120 w-full lg:h-98.25 lg:w-110.25"
-            copy={FEATURES_PUBLISH_COPY}
-            shaderClassName="-top-4.5 -left-px"
-            shaderColorFront="#FFEA0040"
-          >
-            <FeaturesCardPublish />
+          <FeaturesCard copy={FEATURES_GAPS_COPY}>
+            <FeaturesCardGaps />
           </FeaturesCard>
         </div>
       </div>

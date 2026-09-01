@@ -1,7 +1,7 @@
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
+import { GEO_GAPS_METER_STEPS } from "@notra/ui/constants/geo";
 import {
   GEO_GAPS_ENGINE_FILTER_ALL,
-  GEO_GAPS_METER_STEPS,
   GEO_GAPS_WRITE_LABELS,
 } from "@/constants/geo";
 import type {
@@ -45,28 +45,6 @@ export function gapOpportunityScore(
 }
 
 /** Map 0–1 intensity onto a 1–5 inspo-style meter (empty when intensity is 0). */
-export function gapMeterLevel(
-  intensity: number,
-  steps = GEO_GAPS_METER_STEPS
-): number {
-  if (intensity <= 0 || steps <= 0) {
-    return 0;
-  }
-  return Math.max(1, Math.min(steps, Math.round(intensity * steps)));
-}
-
-export function gapMeterTone(level: number): GeoGapsMeterTone {
-  if (level <= 0) {
-    return "empty";
-  }
-  if (level <= 2) {
-    return "low";
-  }
-  if (level === 3) {
-    return "mid";
-  }
-  return "high";
-}
 
 /** Deduplicate scan engines to brand families (openai, claude, …). */
 export function gapMissingEngineFamilies(engines: readonly string[]): string[] {

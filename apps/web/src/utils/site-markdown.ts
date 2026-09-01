@@ -1,3 +1,34 @@
+import {
+  ANSWER_EXAMPLE_HEADING,
+  ANSWER_EXAMPLE_SUBCOPY,
+} from "@/constants/landing/answer-example";
+import {
+  CTA_BANNER_HEADING,
+  CTA_BANNER_SUBCOPY,
+} from "@/constants/landing/cta-banner";
+import { FAQ_CONTENT } from "@/constants/landing/faq";
+import {
+  FEATURES_ENGINES_COPY,
+  FEATURES_GAPS_COPY,
+  FEATURES_HEADING,
+  FEATURES_SHARE_COPY,
+  FEATURES_SUBCOPY_LINE_ONE,
+  FEATURES_SUBCOPY_LINE_TWO,
+  FEATURES_TRAFFIC_COPY,
+} from "@/constants/landing/features";
+import { GEO_ENGINE_NAMES } from "@/constants/landing/geo-engines";
+import {
+  HERO_HEADLINE_CYCLE,
+  HERO_HEADLINE_LINE_ONE,
+  HERO_HEADLINE_LINE_TWO_PREFIX,
+  HERO_HEADLINE_SUFFIX,
+  HERO_SUBHEAD,
+} from "@/constants/landing/hero";
+import { MARQUEE_CAPTION } from "@/constants/landing/marquee-quote";
+import {
+  PRICING_HEADING,
+  PRICING_SUBHEADING,
+} from "@/constants/landing/pricing";
 import { BRAND_ASSETS, BRAND_COLORS, BRAND_FONTS } from "@/lib/brand/constants";
 import {
   COMPARISON_FEATURES,
@@ -7,44 +38,6 @@ import {
 import { markdownSection } from "@/utils/markdown";
 import { SITE_DESCRIPTION, SITE_TAGLINE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
-
-const FAQ_ITEMS = [
-  {
-    question: "What is Notra and who is it for?",
-    answer:
-      "Notra is a content automation tool for product and engineering teams. Connect your GitHub repos and Notra picks up merged PRs and shipped features to draft changelogs, blog posts, and social updates.",
-  },
-  {
-    question: "What kind of content does Notra generate?",
-    answer:
-      "Changelog entries from merged PRs, blog post drafts when you ship features, and social updates when you hit milestones. Every draft matches your brand voice so it reads like your team wrote it.",
-  },
-  {
-    question: "Which integrations are available right now?",
-    answer:
-      "The beta ships with GitHub. Connect your repos and Notra starts pulling in PRs, commits, and releases right away. Linear, Slack, and more are on the roadmap.",
-  },
-  {
-    question: "How does brand voice matching work?",
-    answer:
-      "During setup you provide a few examples of your existing content. Notra learns your tone, vocabulary, and style so every draft sounds like your team wrote it.",
-  },
-  {
-    question: "Is my data secure with Notra?",
-    answer:
-      "Integration tokens are encrypted at rest. Your source code is never stored. Notra only reads the metadata it needs to write drafts, like PR titles, descriptions, and commit messages.",
-  },
-  {
-    question: "Is there a free tier?",
-    answer:
-      "There is no free tier or trial. Pick the plan that fits your team and you can cancel anytime.",
-  },
-  {
-    question: "How do I get started?",
-    answer:
-      "Sign up, connect your GitHub, pick a plan, and Notra starts generating content within minutes.",
-  },
-] as const;
 
 function renderPlanPrice(
   plan: (typeof PRICING_PLANS)[keyof typeof PRICING_PLANS]
@@ -159,15 +152,31 @@ export function buildPricingMarkdown() {
   ].join("\n");
 }
 
+function listEngines(): string {
+  const names = HERO_HEADLINE_CYCLE.map(
+    (word) => GEO_ENGINE_NAMES[word.engine]
+  );
+  const last = names.at(-1);
+  if (names.length < 2 || !last) {
+    return names.join("");
+  }
+  return `${names.slice(0, -1).join(", ")} or ${last}`;
+}
+
 export function buildLandingMarkdown() {
   const socialProofLines = SOCIAL_PROOF_LOGOS.map(
     (logo) => `- [${logo.name}](${logo.href})`
   );
+  const headline = `${HERO_HEADLINE_LINE_ONE} ${HERO_HEADLINE_LINE_TWO_PREFIX} ${listEngines()}${HERO_HEADLINE_SUFFIX}`;
 
   return [
     "# Notra",
     "",
     SITE_TAGLINE,
+    "",
+    `## ${headline}`,
+    "",
+    HERO_SUBHEAD,
     "",
     SITE_DESCRIPTION,
     "",
@@ -179,31 +188,41 @@ export function buildLandingMarkdown() {
       "- [Blog](https://www.usenotra.com/blog.md)",
       "- [Changelog](https://www.usenotra.com/changelog.md)",
     ]),
-    markdownSection("Social Proof", [
-      "Fast-moving teams trust Notra to tell their story.",
-      "Startups use Notra to turn every shipped feature into a changelog, post, or update, without hiring a writer.",
+    markdownSection("Social Proof", [MARQUEE_CAPTION, "", ...socialProofLines]),
+    markdownSection(FEATURES_HEADING, [
+      FEATURES_SUBCOPY_LINE_ONE,
+      FEATURES_SUBCOPY_LINE_TWO,
       "",
-      ...socialProofLines,
-    ]),
-    markdownSection("Features", [
-      "Your team ships. Notra tells the story.",
-      "Notra quietly watches GitHub, Linear, and Slack, then drafts changelogs, posts, and announcements in your brand voice.",
+      `### ${FEATURES_ENGINES_COPY.title}`,
+      FEATURES_ENGINES_COPY.description,
       "",
-      "See the dedicated feature page: [Features](https://www.usenotra.com/features.md)",
+      `### ${FEATURES_SHARE_COPY.title}`,
+      FEATURES_SHARE_COPY.description,
+      "",
+      `### ${FEATURES_TRAFFIC_COPY.title}`,
+      FEATURES_TRAFFIC_COPY.description,
+      "",
+      `### ${FEATURES_GAPS_COPY.title}`,
+      FEATURES_GAPS_COPY.description,
     ]),
+    markdownSection(ANSWER_EXAMPLE_HEADING, [ANSWER_EXAMPLE_SUBCOPY]),
     markdownSection("Pricing", [
-      "Pricing that scales with what you ship.",
-      "Upgrade when you need more images, posts, or projects.",
+      PRICING_HEADING,
+      PRICING_SUBHEADING,
       "",
       "See the dedicated pricing page: [Pricing](https://www.usenotra.com/pricing.md)",
     ]),
     markdownSection(
-      "FAQ",
-      FAQ_ITEMS.flatMap((item) => [`### ${item.question}`, item.answer, ""])
+      FAQ_CONTENT.heading,
+      FAQ_CONTENT.items.flatMap((item) => [
+        `### ${item.question}`,
+        item.answer,
+        "",
+      ])
     ),
     markdownSection("Call to Action", [
-      "Stop letting great work go unannounced.",
-      "Your team ships every week. Let Notra turn it into the posts and announcements your audience should be seeing.",
+      CTA_BANNER_HEADING,
+      CTA_BANNER_SUBCOPY,
       "",
       "[Start for free](https://app.usenotra.com/signup)",
     ]),

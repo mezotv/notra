@@ -1,10 +1,10 @@
 "use client";
 
+import { CompetitorLogo } from "@notra/ui/components/geo/competitor-logo";
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
+import { InstrumentEmpty } from "@notra/ui/components/instrument/instrument-module";
 import { useMemo } from "react";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
-import { CompetitorLogo } from "@/components/geo/competitor-logo";
-import { GeoBar } from "@/components/geo/geo-bar";
-import { InstrumentEmpty } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { EMPTY_STATE_TABLE_COLUMNS } from "@/constants/empty-state";

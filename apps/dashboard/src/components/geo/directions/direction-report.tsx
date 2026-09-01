@@ -1,9 +1,9 @@
 "use client";
 
+import { GEO_SEARCH_LABEL } from "@notra/ui/constants/geo";
 import { DirectionDonut } from "@/components/geo/directions/direction-donut";
 import { DirectionEngineBars } from "@/components/geo/directions/direction-engine-bars";
 import { DirectionPagesTable } from "@/components/geo/directions/direction-pages-table";
-import { GEO_SEARCH_LABEL } from "@/constants/geo";
 import {
   GEO_DIRECTIONS_CHECK_COUNT,
   GEO_DIRECTIONS_COMPANY,

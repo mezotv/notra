@@ -1,19 +1,17 @@
 "use client";
 
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
+import { PurposeBadge } from "@notra/ui/components/geo/purpose-badge";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import { EngineIcon } from "@/components/geo/engine-icon";
-import { PurposeBadge } from "@/components/geo/purpose-badge";
+import { AI_TRAFFIC_PURPOSE_LABELS } from "@notra/ui/constants/geo";
 import { CountryFlag } from "@/components/geo/twemoji";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
-import {
-  AI_TRAFFIC_PURPOSE_LABELS,
-  GEO_CITATIONS_ROW_HEIGHT,
-} from "@/constants/geo";
+import { GEO_CITATIONS_ROW_HEIGHT } from "@/constants/geo";
 import type { CitationsTableProps, GeoTrafficLogEntry } from "@/types/geo";
 import { countryName } from "@/utils/country";
 import {

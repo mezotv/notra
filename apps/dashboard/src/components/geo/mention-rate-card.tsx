@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
-import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoBar } from "@/components/geo/geo-bar";
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
 import {
   InstrumentEmpty,
   InstrumentModule,
-} from "@/components/instrument/instrument-module";
+} from "@notra/ui/components/instrument/instrument-module";
+import { useMemo, useState } from "react";
+import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
 import {
   GEO_EMPTY_PROMPT_RESULTS,
   GEO_EMPTY_TIMESERIES,

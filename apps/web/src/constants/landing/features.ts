@@ -1,99 +1,300 @@
+import type { FeaturesCardCopy } from "@/types/landing/features";
 import type {
-  FeaturesCardCopy,
-  FeaturesConnectCard,
-  FeaturesPermission,
-  FeaturesToolCard,
-} from "@/types/landing/features";
+  EngineRateRow,
+  GapRow,
+  KpiTile,
+  ShareRow,
+  TrafficSourceRow,
+} from "@/types/landing/geo";
 
-export const FEATURES_HEADING = "Everything above runs without you.";
+export const FEATURES_HEADING = "Every number the dashboard shows you.";
 
 export const FEATURES_SUBCOPY_LINE_ONE =
-  "GitHub, Linear, and Slack go in. Changelogs, launch posts, and social come out.";
+  "These are the tables in the product, filled with sample data.";
 
 export const FEATURES_SUBCOPY_LINE_TWO =
-  "In your voice, on autopilot. Here's what's doing the work.";
+  "No vanity score. Mentions, positions, share of voice, and the traffic behind them.";
 
-export const FEATURES_BRAND_COPY: FeaturesCardCopy = {
-  title: "On-brand by default",
+export const FEATURES_ENGINES_COPY: FeaturesCardCopy = {
+  title: "Mention rate by engine",
   description:
-    "Trained on your voice and visual identity, so everything sounds like you wrote it: because it basically did.",
+    "Each prompt goes to each model you turn on, with web search and without. You get who mentioned you, where in the list, and whether that moved since the last scan.",
 };
 
-export const FEATURES_AUTOMATIONS_COPY: FeaturesCardCopy = {
-  title: "Event Automations",
+export const FEATURES_SHARE_COPY: FeaturesCardCopy = {
+  title: "Share of voice",
   description:
-    "Trigger content the moment you merge a PR or close a Linear issue. Your release writes itself.",
+    "Who gets recommended when you don't. Add direct and indirect competitors, plus the misspellings people use for them, and see the split per prompt, language and engine.",
 };
 
-export const FEATURES_ASSETS_COPY: FeaturesCardCopy = {
-  title: "Assets on autopilot",
+export const FEATURES_TRAFFIC_COPY: FeaturesCardCopy = {
+  title: "AI traffic, attributed",
   description:
-    "Every post ships with a matching image generated in your colors and style, not stock filler.",
+    "Hits from 63 known AI agents, sorted by what they were doing: training a model, building an index, reading a page to answer someone, or a person clicking through. We don't count a fetch as a citation.",
 };
 
-export const FEATURES_PUBLISH_COPY: FeaturesCardCopy = {
-  title: "Publish from anywhere you work",
+export const FEATURES_GAPS_COPY: FeaturesCardCopy = {
+  title: "Content Gaps to Write",
   description:
-    "Full API, MCP server and CLI. Write Notra into your stack or hand it to your agents.",
+    "The questions where engines answer and you are not in the answer, ranked by how winnable they look. Write plans a guide, listicle or comparison and the draft lands in Content.",
 };
 
-export const FEATURES_GITHUB_CONNECT: FeaturesConnectCard = {
-  name: "GitHub",
-  description:
-    "Connect GitHub repositories for AI-powered changelogs, blog posts, and tweets",
+export const FEATURES_ENGINES_FRAME = {
+  heading: "Mention rate by engine",
+  subhead: "Last 30 days, 14 prompts, English and German",
 };
 
-export const FEATURES_LINEAR_CONNECT: FeaturesConnectCard = {
-  name: "Linear",
-  description: "Sync issues and updates from Linear for automated content",
+export const FEATURES_ENGINE_HEADERS = {
+  engine: "Engine",
+  mentionRate: "Mention rate",
+  avgPosition: "Avg position",
+  lastChecked: "Last checked",
 };
 
-export const FEATURES_PERMISSIONS: FeaturesPermission[] = [
+export const FEATURES_ENGINE_ROWS: EngineRateRow[] = [
   {
-    name: "Posts",
-    description: "Read and manage your posts and drafts",
-    active: "write",
+    id: "chatgpt",
+    mentionRate: 71,
+    mentions: 20,
+    checks: 28,
+    avgPosition: 2.1,
+    lastChecked: "2h ago",
   },
   {
-    name: "Brand identities",
-    description: "Read and manage saved brand voices",
-    active: "write",
+    id: "perplexity",
+    mentionRate: 58,
+    mentions: 16,
+    checks: 28,
+    avgPosition: 2.6,
+    lastChecked: "2h ago",
   },
   {
-    name: "Integrations",
-    description: "Read and manage connected content sources",
-    active: "read",
+    id: "claude",
+    mentionRate: 52,
+    mentions: 15,
+    checks: 28,
+    avgPosition: 2.4,
+    lastChecked: "2h ago",
   },
   {
-    name: "Schedules",
-    description: "Read and manage scheduled content generation",
-    active: "write",
+    id: "gemini",
+    mentionRate: 41,
+    mentions: 12,
+    checks: 28,
+    avgPosition: 3.2,
+    lastChecked: "2h ago",
   },
   {
-    name: "Event triggers",
-    description: "Read and manage event-based content generation",
-    active: "read",
-  },
-  {
-    name: "Chats",
-    description: "Read and manage chat sessions",
-    active: "read",
-  },
-  {
-    name: "Skills",
-    description: "Read and manage your skills",
-    active: "read",
+    id: "grok",
+    mentionRate: 33,
+    mentions: 9,
+    checks: 28,
+    avgPosition: 3.8,
+    lastChecked: "3h ago",
   },
 ];
 
-export const FEATURES_MCP_TOOL: FeaturesToolCard = {
-  title: "MCP Server",
-  description:
-    "Connect Claude, Cursor, and other MCP clients to read and write your content.",
+export const FEATURES_SHARE_FRAME = {
+  heading: "Share of voice",
+  subhead: "Brands named across 312 answers",
+  footnote:
+    "Sample numbers, made up for this page. Logos belong to their owners.",
 };
 
-export const FEATURES_CLI_TOOL: FeaturesToolCard = {
-  title: "CLI",
-  description:
-    "Script and automate your workflow from the terminal with full access.",
+export const FEATURES_SHARE_HEADERS = {
+  brand: "Brand",
+  type: "Type",
+  share: "Share",
+  mentions: "Mentions",
 };
+
+export const FEATURES_SHARE_ROWS: (ShareRow & { type: string })[] = [
+  {
+    id: "notra",
+    brand: "Notra",
+    logo: { src: "/notra-mark.svg" },
+    share: 31,
+    mentions: 96,
+    color: "#8B5CF6",
+    isYou: true,
+    type: "You",
+  },
+  {
+    id: "profound",
+    brand: "Profound",
+    logo: {
+      src: "/logos/competitors/profound-light.svg",
+      darkSrc: "/logos/competitors/profound-dark.svg",
+    },
+    share: 24,
+    mentions: 74,
+    color: "#F59E0B",
+    type: "Direct",
+  },
+  {
+    id: "prompting-company",
+    brand: "The Prompting Company",
+    logo: {
+      src: "/logos/competitors/prompting-company.png",
+      invertOnDark: true,
+    },
+    share: 17,
+    mentions: 52,
+    color: "#10B981",
+    type: "Direct",
+  },
+  {
+    id: "peec",
+    brand: "Peec AI",
+    logo: { src: "/logos/competitors/peec.png", invertOnDark: true },
+    share: 12,
+    mentions: 38,
+    color: "#0EA5E9",
+    type: "Direct",
+  },
+  {
+    id: "promptwatch",
+    brand: "Promptwatch",
+    logo: { src: "/logos/competitors/promptwatch.svg" },
+    share: 9,
+    mentions: 28,
+    color: "#F43F5E",
+    type: "Direct",
+  },
+  {
+    id: "bydefault",
+    brand: "ByDefault",
+    logo: { src: "/logos/competitors/bydefault.svg" },
+    share: 7,
+    mentions: 21,
+    color: "#64748B",
+    type: "Direct",
+  },
+];
+
+export const FEATURES_TRAFFIC_FRAME = {
+  heading: "AI Traffic",
+  subhead: "AI crawlers and referrals visiting your site",
+};
+
+export const FEATURES_TRAFFIC_KPIS: KpiTile[] = [
+  { id: "crawlers", label: "Crawlers", value: "1,204" },
+  { id: "referrals", label: "Referrals", value: "318" },
+  { id: "total", label: "Total", value: "1,522" },
+];
+
+export const FEATURES_TRAFFIC_HEADERS = {
+  source: "Source",
+  purpose: "Purpose",
+  visits: "Visits",
+  lastSeen: "Last seen",
+};
+
+export const FEATURES_TRAFFIC_ROWS: TrafficSourceRow[] = [
+  {
+    id: "t-1",
+    source: "ChatGPT-User",
+    engine: "chatgpt",
+    purpose: "assistant-browse",
+    visits: 412,
+    lastSeen: "2s ago",
+  },
+  {
+    id: "t-2",
+    source: "PerplexityBot",
+    engine: "perplexity",
+    purpose: "search-index",
+    visits: 287,
+    lastSeen: "9s ago",
+  },
+  {
+    id: "t-3",
+    source: "ClaudeBot",
+    engine: "claude",
+    purpose: "training-crawler",
+    visits: 198,
+    lastSeen: "1m ago",
+  },
+  {
+    id: "t-4",
+    source: "GPTBot",
+    engine: "chatgpt",
+    purpose: "training-crawler",
+    visits: 176,
+    lastSeen: "31s ago",
+  },
+  {
+    id: "t-5",
+    source: "ChatGPT",
+    engine: "chatgpt",
+    purpose: "assistant-referral",
+    visits: 154,
+    lastSeen: "4m ago",
+  },
+  {
+    id: "t-6",
+    source: "Claude-User",
+    engine: "claude",
+    purpose: "assistant-browse",
+    visits: 91,
+    lastSeen: "14s ago",
+  },
+  {
+    id: "t-7",
+    source: "Perplexity",
+    engine: "perplexity",
+    purpose: "assistant-referral",
+    visits: 63,
+    lastSeen: "48s ago",
+  },
+];
+
+export const FEATURES_GAPS_FRAME = {
+  heading: "Content Gaps",
+  subhead: "Questions engines answer without mentioning you",
+};
+
+export const FEATURES_GAP_HEADERS = {
+  content: "Content",
+  opportunity: "Opportunity",
+  missing: "Missing engines",
+  action: "Write",
+};
+
+export const FEATURES_GAP_ROWS: GapRow[] = [
+  {
+    id: "g-1",
+    content: "What GEO metrics should a marketing team track?",
+    opportunity: 5,
+    mentionRate: 0,
+    missing: ["chatgpt", "claude", "gemini", "perplexity", "grok"],
+  },
+  {
+    id: "g-2",
+    content: "Which GEO platforms work best for B2B SaaS?",
+    opportunity: 4,
+    mentionRate: 38,
+    missing: ["claude", "gemini", "perplexity"],
+  },
+  {
+    id: "g-3",
+    content: "How do I get cited by Perplexity?",
+    opportunity: 4,
+    mentionRate: 0,
+    missing: ["chatgpt", "claude", "gemini", "perplexity"],
+  },
+  {
+    id: "g-4",
+    content: "How do AI crawlers find and cite a website?",
+    opportunity: 3,
+    mentionRate: 20,
+    missing: ["chatgpt", "gemini", "grok"],
+  },
+  {
+    id: "g-5",
+    content: "What is generative engine optimization?",
+    opportunity: 2,
+    mentionRate: 40,
+    missing: ["gemini", "grok"],
+  },
+];

@@ -3,6 +3,10 @@
 import { Linkedin02Icon, NewTwitterIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@notra/ui/components/instrument/instrument-module";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -13,10 +17,6 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
 import { DelayedTooltip } from "@/components/delayed-tooltip";
-import {
-  InstrumentEmpty,
-  InstrumentModule,
-} from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { ANALYTICS_TOOLTIP_DELAY_MS } from "@/constants/analytics";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";

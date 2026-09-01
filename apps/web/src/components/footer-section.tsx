@@ -49,7 +49,7 @@ export default function FooterSection() {
     <footer className="relative isolate overflow-hidden rounded-t-3xl bg-[linear-gradient(in_oklab_180deg,oklab(80.3%_0.045_-0.074/15%)_0%,oklab(71.8%_0.066_-0.109/50%)_100%)] pt-6 shadow-[0_0.0625rem_0.125rem_#28282814,0_0_0_0.0625rem_#ececec] dark:bg-[#141019] dark:bg-none dark:shadow-none">
       <div className="-z-10 pointer-events-none absolute inset-0 overflow-hidden">
         <DeferredDithering
-          className="absolute top-[8.8125rem] left-0 h-[calc(100%-8.8125rem)] w-full sm:left-[-5.40625rem] sm:h-[66.125rem] sm:w-[calc(100%+10.8125rem)] sm:min-w-[100.8125rem]"
+          className="absolute top-[8.8125rem] left-[-5.40625rem] h-[66.125rem] w-[calc(100%+10.8125rem)] min-w-[100.8125rem]"
           colorBack={FOOTER_DITHERING.colorBack}
           colorFront={FOOTER_DITHERING.colorFront}
           scale={FOOTER_DITHERING.scale}
@@ -60,7 +60,7 @@ export default function FooterSection() {
         />
       </div>
 
-      <div className="-z-10 pointer-events-none absolute inset-x-0 bottom-0 hidden justify-center overflow-hidden sm:flex">
+      <div className="-z-10 pointer-events-none absolute inset-x-0 bottom-0 flex justify-center overflow-hidden">
         <Image
           alt=""
           aria-hidden="true"
@@ -71,7 +71,7 @@ export default function FooterSection() {
         />
       </div>
 
-      <div className="relative mx-auto flex w-full max-w-[87rem] flex-col px-6 pb-8 sm:pb-64 md:px-8 md:pb-[30rem]">
+      <div className="relative mx-auto flex w-full max-w-[87rem] flex-col px-6 pb-64 md:px-8 md:pb-[30rem]">
         <div className="flex flex-col gap-12 py-7 lg:flex-row lg:items-start lg:justify-between lg:gap-24">
           <div className="flex w-full max-w-[18.5rem] flex-col gap-7">
             <div className="flex flex-col gap-2.5">

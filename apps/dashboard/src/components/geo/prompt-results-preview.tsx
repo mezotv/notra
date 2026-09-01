@@ -1,5 +1,11 @@
 "use client";
 
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
+import { LogoStack } from "@notra/ui/components/geo/logo-stack";
+import {
+  InstrumentEmpty,
+  InstrumentSection,
+} from "@notra/ui/components/instrument/instrument-module";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   Tooltip,
@@ -7,12 +13,6 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
-import { EngineIcon } from "@/components/geo/engine-icon";
-import { LogoStack } from "@/components/geo/logo-stack";
-import {
-  InstrumentEmpty,
-  InstrumentSection,
-} from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { GeoPromptSummary, PromptResultsPreviewProps } from "@/types/geo";

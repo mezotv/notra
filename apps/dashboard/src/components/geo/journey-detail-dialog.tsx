@@ -2,6 +2,7 @@
 
 import { Copy01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -20,7 +21,6 @@ import {
 } from "@notra/ui/components/ui/table";
 import { useMemo } from "react";
 import { Button } from "@/components/button";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import { CountryFlag } from "@/components/geo/twemoji";
 import { useGeoJourneyDetail } from "@/lib/hooks/use-geo";
 import type { JourneyDetailDialogProps } from "@/types/geo";

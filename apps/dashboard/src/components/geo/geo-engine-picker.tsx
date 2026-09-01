@@ -2,6 +2,7 @@
 
 import { ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,7 +27,6 @@ import Link from "next/link";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ZdrConsentDialog } from "@/components/billing/zdr-consent-dialog";
-import { EngineIcon } from "@/components/geo/engine-icon";
 import {
   hasProviderWordmark,
   ProviderWordmark,
