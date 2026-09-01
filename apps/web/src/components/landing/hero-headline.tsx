@@ -10,6 +10,7 @@ import {
   useReducedMotion,
 } from "motion/react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+
 import { GEO_ENGINE_NAMES } from "@/constants/landing/geo-engines";
 import {
   HERO_HEADLINE_CYCLE,
@@ -98,7 +99,7 @@ export function HeroHeadline() {
   const width = widths[word.text];
 
   return (
-    <h1 className="max-w-[20.5rem] text-center font-display font-medium text-[#1E1E1E] text-[clamp(1.5rem,calc(10.1vw-0.42rem),2.0625rem)] leading-[1.08] tracking-[-0.015em] sm:max-w-[56.875rem] sm:font-semibold sm:text-[3.25rem] lg:text-[4.75rem] lg:leading-[1.12] dark:text-white">
+    <h1 className="font-display max-w-[20.5rem] text-center text-[clamp(1.5rem,calc(10.1vw-0.42rem),2.0625rem)] leading-[1.08] font-medium tracking-[-0.015em] text-[#1E1E1E] sm:max-w-[56.875rem] sm:text-[3.25rem] sm:font-semibold lg:text-[4.75rem] lg:leading-[1.12] dark:text-white">
       <span className="block whitespace-nowrap sm:inline sm:whitespace-normal">
         {HERO_HEADLINE_LINE_ONE}{" "}
       </span>

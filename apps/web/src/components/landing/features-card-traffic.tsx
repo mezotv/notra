@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@notra/ui/components/ui/table";
+
 import { MockFrame } from "@/components/landing/mock-frame";
 import {
   FEATURES_TRAFFIC_FRAME,
@@ -55,7 +56,7 @@ export function FeaturesCardTraffic() {
           {FEATURES_TRAFFIC_ROWS.map((row) => (
             <TableRow key={row.id}>
               <TableCell className="py-3">
-                <span className="flex items-center gap-2 whitespace-nowrap font-medium text-sm">
+                <span className="flex items-center gap-2 text-sm font-medium whitespace-nowrap">
                   <EngineIcon engine={row.engine} />
                   {row.source}
                 </span>
@@ -66,7 +67,7 @@ export function FeaturesCardTraffic() {
               <TableCell className="py-3 text-sm tabular-nums">
                 {row.visits.toLocaleString()}
               </TableCell>
-              <TableCell className="whitespace-nowrap py-3 text-muted-foreground text-sm">
+              <TableCell className="text-muted-foreground py-3 text-sm whitespace-nowrap">
                 {row.lastSeen}
               </TableCell>
             </TableRow>

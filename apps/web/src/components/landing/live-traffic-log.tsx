@@ -3,6 +3,7 @@
 import { ScrollArea } from "@notra/ui/components/ui/scroll-area";
 import { useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
+
 import { CitationRows } from "@/components/landing/citation-rows";
 import {
   HERO_COLLAGE_CITATION_HEADERS,

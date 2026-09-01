@@ -9,6 +9,7 @@ import {
 } from "@notra/ui/components/ui/table";
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
+
 import type { ShareRow, ShareRowLogo } from "@/types/landing/geo";
 
 const HEADER_CLASS = "text-muted-foreground text-xs";
@@ -87,7 +88,7 @@ export function ShareOfVoiceRows({
                 <span className="text-sm tabular-nums">{row.share}%</span>
               </span>
             </TableCell>
-            <TableCell className="py-2.5 text-muted-foreground text-sm tabular-nums">
+            <TableCell className="text-muted-foreground py-2.5 text-sm tabular-nums">
               {row.mentions}
             </TableCell>
           </TableRow>

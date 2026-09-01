@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import { GEO_GAPS_METER_STEPS } from "@notra/ui/constants/geo";
+
 import { MockFrame } from "@/components/landing/mock-frame";
 import {
   FEATURES_GAP_HEADERS,
@@ -49,7 +50,7 @@ export function FeaturesCardGaps() {
           {FEATURES_GAP_ROWS.map((row) => (
             <TableRow key={row.id}>
               <TableCell className="max-w-[9rem] py-3">
-                <span className="block truncate font-medium text-sm">
+                <span className="block truncate text-sm font-medium">
                   {row.content}
                 </span>
               </TableCell>

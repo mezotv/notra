@@ -8,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from "@notra/ui/components/ui/table";
+
 import { MockFrame } from "@/components/landing/mock-frame";
 import {
   FEATURES_ENGINE_HEADERS,
@@ -47,7 +48,7 @@ export function FeaturesCardEngines() {
           {FEATURES_ENGINE_ROWS.map((row) => (
             <TableRow key={row.id}>
               <TableCell className="py-3">
-                <span className="flex items-center gap-2 whitespace-nowrap font-medium text-sm">
+                <span className="flex items-center gap-2 text-sm font-medium whitespace-nowrap">
                   <EngineIcon engine={row.id} />
                   {GEO_ENGINE_NAMES[row.id]}
                 </span>
@@ -64,10 +65,10 @@ export function FeaturesCardEngines() {
                   </span>
                 </span>
               </TableCell>
-              <TableCell className="py-3 text-muted-foreground text-sm tabular-nums">
+              <TableCell className="text-muted-foreground py-3 text-sm tabular-nums">
                 #{row.avgPosition}
               </TableCell>
-              <TableCell className="whitespace-nowrap py-3 text-muted-foreground text-sm">
+              <TableCell className="text-muted-foreground py-3 text-sm whitespace-nowrap">
                 {row.lastChecked}
               </TableCell>
             </TableRow>

@@ -12,6 +12,7 @@ import {
 } from "@notra/ui/components/ui/table";
 import { cn } from "@notra/ui/lib/utils";
 import { AnimatePresence, domAnimation, LazyMotion, m } from "motion/react";
+
 import { LIVE_TRAFFIC_TIMESTAMP_PLACEHOLDER } from "@/constants/landing/live-traffic";
 import { formatCapturedAt } from "@/lib/landing/live-traffic";
 import type { CitationRowsProps, LiveCitationRow } from "@/types/landing/geo";
@@ -34,7 +35,7 @@ function CitationCells({
 }) {
   return (
     <>
-      <TableCell className="whitespace-nowrap py-3.5 text-muted-foreground text-sm tabular-nums">
+      <TableCell className="text-muted-foreground py-3.5 text-sm whitespace-nowrap tabular-nums">
         {base === null ? (
           <span className="invisible">
             {LIVE_TRAFFIC_TIMESTAMP_PLACEHOLDER}
@@ -44,18 +45,18 @@ function CitationCells({
         )}
       </TableCell>
       <TableCell className="py-3.5">
-        <span className="flex items-center gap-2.5 whitespace-nowrap font-medium text-[0.9375rem]">
+        <span className="flex items-center gap-2.5 text-[0.9375rem] font-medium whitespace-nowrap">
           <EngineIcon className="size-4.5" engine={row.engine} />
           {row.provider}
         </span>
       </TableCell>
       <TableCell className="py-3.5">
         <span className="flex min-w-0 items-center gap-2">
-          <span className="min-w-0 truncate font-mono text-[0.8125rem] text-muted-foreground">
+          <span className="text-muted-foreground min-w-0 truncate font-mono text-[0.8125rem]">
             {row.path}
           </span>
           {row.markdown ? (
-            <span className="inline-flex h-4.5 shrink-0 items-center rounded border border-border px-1 font-mono text-[0.6875rem] text-muted-foreground leading-none">
+            <span className="border-border text-muted-foreground inline-flex h-4.5 shrink-0 items-center rounded border px-1 font-mono text-[0.6875rem] leading-none">
               MD
             </span>
           ) : null}
@@ -76,7 +77,7 @@ export function CitationRows({
 }: CitationRowsProps) {
   return (
     <Table className="table-fixed">
-      <TableHeader className="sticky top-0 z-10 bg-muted">
+      <TableHeader className="bg-muted sticky top-0 z-10">
         <TableRow>
           <TableHead className={cn(HEADER_CLASS, "w-[11.5rem]")}>
             {headers.when}
