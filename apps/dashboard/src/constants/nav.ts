@@ -156,6 +156,7 @@ export const NAV_GEO_IMPROVE_LINKS: readonly string[] = [
   GEO_WRITER_NAV_LINK,
   CONTENT_NAV_LINK,
   SCHEDULES_NAV_LINK,
+  GEO_SETTINGS_NAV_LINK,
 ];
 
 export const NAV_GEO_LINKS: readonly string[] = [
