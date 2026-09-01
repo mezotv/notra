@@ -4,9 +4,12 @@ import {
   createHash,
   randomBytes,
 } from "node:crypto";
+
 import type { NextRequest } from "next/server";
+
 import { githubAccessTokenSchema } from "@/schemas/star-video";
 import type { GithubOAuthConfig } from "@/types/star-video";
+
 import { GITHUB_TOKEN_COOKIE } from "./github-cookies";
 
 const AUTHORIZE_URL = "https://github.com/login/oauth/authorize";

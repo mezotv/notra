@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+
 import {
   GITHUB_CONNECTED_COOKIE,
   GITHUB_COOKIE_MAX_AGE_SECONDS,
