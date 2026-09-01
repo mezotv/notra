@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { geoScans, geoSettings } from "@notra/db/schema";
-import { and, eq, isNull, lt, or } from "drizzle-orm";
+import { and, eq, gte, isNull, lt, notExists, or } from "drizzle-orm";
 import { Effect, Exit } from "effect";
 
 import { GEO_SCAN_STALE_MS } from "../constants/geo";
@@ -299,10 +299,16 @@ export const createGeoScanRow = Effect.fn("geo.createScanRow")(function* (
  * poll the id the trigger handed them.
  */
 /**
- * Fails every `geo_scans` row still `running` past the claim stale window.
- * A run that old was killed without reaching its own finalizer (function
- * timeout, crashed instance); its claim has already gone stale, so the row is
- * provably dead and only misleads clients polling it.
+ * Fails every `geo_scans` row still `running` past the claim stale window
+ * whose project's scan-slot claim has also gone stale. A run in that state
+ * was killed without reaching its own finalizer (function timeout, crashed
+ * instance) and only misleads clients polling it.
+ *
+ * The row's own `started_at` is immutable, so age alone cannot distinguish a
+ * dead run from a legitimately long one: an alive batched scan renews
+ * `geo_settings.scan_started_at` as it goes. Rows are therefore left alone
+ * while their project's claim stamp is fresh — a dead run stops renewing and
+ * gets swept one stale window later.
  */
 export const sweepStaleGeoScanRows = Effect.fn("geo.sweepStaleScanRows")(
   function* () {
@@ -314,7 +320,18 @@ export const sweepStaleGeoScanRows = Effect.fn("geo.sweepStaleScanRows")(
         .where(
           and(
             eq(geoScans.status, "running"),
-            lt(geoScans.startedAt, staleBefore)
+            lt(geoScans.startedAt, staleBefore),
+            notExists(
+              db
+                .select({ id: geoSettings.id })
+                .from(geoSettings)
+                .where(
+                  and(
+                    eq(geoSettings.projectId, geoScans.projectId),
+                    gte(geoSettings.scanStartedAt, staleBefore)
+                  )
+                )
+            )
           )
         )
         .returning({

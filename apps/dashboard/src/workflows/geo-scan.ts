@@ -162,13 +162,22 @@ export async function geoScanWorkflow(
   let checks = 0;
   let mentions = 0;
   const retryProjectIds: string[] = [];
-  for (const scanProjectId of projectIds) {
-    const claimed = scanProjectId === projectId;
-    const outcome = await runGeoScanProjectRun(organizationId, scanProjectId, {
-      claimedAt: claimed ? claimedAt : undefined,
-      scanId: claimed ? scanId : undefined,
-      retried: false,
-    });
+  const outcomes = await Promise.all(
+    projectIds.map(async (scanProjectId) => {
+      const claimed = scanProjectId === projectId;
+      const outcome = await runGeoScanProjectRun(
+        organizationId,
+        scanProjectId,
+        {
+          claimedAt: claimed ? claimedAt : undefined,
+          scanId: claimed ? scanId : undefined,
+          retried: false,
+        }
+      );
+      return { scanProjectId, outcome };
+    })
+  );
+  for (const { scanProjectId, outcome } of outcomes) {
     if (!outcome) {
       continue;
     }
@@ -191,10 +200,12 @@ export async function geoScanWorkflow(
   );
   await sleep(GEO_SCAN_NO_RESULTS_RETRY_DELAY);
 
-  for (const retryProjectId of retryProjectIds) {
-    const outcome = await runGeoScanProjectRun(organizationId, retryProjectId, {
-      retried: true,
-    });
+  const retryOutcomes = await Promise.all(
+    retryProjectIds.map((retryProjectId) =>
+      runGeoScanProjectRun(organizationId, retryProjectId, { retried: true })
+    )
+  );
+  for (const outcome of retryOutcomes) {
     if (!outcome) {
       continue;
     }
