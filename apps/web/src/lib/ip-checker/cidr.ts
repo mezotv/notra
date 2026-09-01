@@ -100,8 +100,9 @@ export function parseIp(input: string): ParsedIp | null {
   if (v6 === null) {
     return null;
   }
-  if (v6 >> IPV4_BITS_BIGINT === IPV4_MAPPED_HIGH_BITS) {
-    const v4 = v6 & IPV4_MASK;
+  const highBits: bigint = v6 >> IPV4_BITS_BIGINT;
+  if (highBits === IPV4_MAPPED_HIGH_BITS) {
+    const v4: bigint = v6 & IPV4_MASK;
     return { version: "v4", value: v4, normalized: formatIpv4(v4) };
   }
   return { version: "v6", value: v6, normalized: trimmed };

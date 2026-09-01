@@ -96,6 +96,14 @@ export function IpCheckerTool({
     setIpParam(payload.data.ip);
   };
 
+  const handleInputChange = (value: string) => {
+    setIp(value);
+    requestIdRef.current += 1;
+    if (status === "checking") {
+      setStatus("idle");
+    }
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     runCheck(ip);
@@ -131,7 +139,7 @@ export function IpCheckerTool({
               id="ip-checker-input"
               inputMode="text"
               name="ip"
-              onChange={(event) => setIp(event.target.value)}
+              onChange={(event) => handleInputChange(event.target.value)}
               placeholder={IP_CHECKER_PLACEHOLDER}
               spellCheck={false}
               value={ip}
