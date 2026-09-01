@@ -9,7 +9,7 @@ import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
 
-const title = "Repo Star Video";
+const title = "GitHub Star Video Generator";
 const description =
   "Turn any GitHub repository into a celebratory star-count video, with real stargazer avatars and confetti. Free, no sign-up.";
 const url = `${SITE_URL}/repo-star-video`;
@@ -38,13 +38,13 @@ export const metadata: Metadata = {
 
 const breadcrumbJsonLd = buildBreadcrumbJsonLd([
   { name: "Home", url: SITE_URL },
-  { name: "Repo Star Video", url },
+  { name: "GitHub Star Video Generator", url },
 ]);
 
 const softwareJsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "Repo Star Video",
+  name: "GitHub Star Video Generator",
   url,
   applicationCategory: "MultimediaApplication",
   operatingSystem: "Web",
@@ -76,8 +76,8 @@ export default function RepoStarVideoPage() {
             subtitle="Drop in any repo and get a share-ready video that counts up your GitHub stars, with the whole stargazer crowd in the room."
             title={
               <>
-                GitHub <span className="text-primary">star</span> video
-                generator
+                GitHub <span className="text-primary">Star</span> Video
+                Generator
               </>
             }
           >
