@@ -394,11 +394,16 @@ const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
           ),
       })
     );
+    const grounding = extractGrounding(result);
+    const resultSources = collectGroundedSources(result.sources);
     const answer: GeoGroundedAnswer = {
       text: result.text,
-      grounding: extractGrounding(result),
+      grounding,
       finishReason: result.finishReason,
-      sources: collectGroundedSources(result.sources),
+      sources:
+        resultSources.length > 0
+          ? resultSources
+          : grounding.sources.map(({ title, url }) => ({ title, url })),
       usage: result.usage,
       zdrEnforced: GEO_DIRECT_GROUNDED_PROVIDERS.has(engine.provider)
         ? false

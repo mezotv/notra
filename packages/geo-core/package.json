@@ -13,10 +13,12 @@
     "./csv/*": "./src/csv/*.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "bun test src"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "3.0.84",
+    "@ai-sdk/google": "3.0.82",
     "@ai-sdk/openai": "3.0.71",
     "@ai-sdk/perplexity": "3.0.35",
     "@cursor/sdk": "^1.0.28",

@@ -113,6 +113,61 @@ function collectToolOutputs(
   }
 }
 
+function collectProviderMetadata(
+  providerMetadata: unknown,
+  queries: string[],
+  seenQueries: Set<string>,
+  sources: GeoCheckSource[],
+  seenUrls: Set<string>
+): void {
+  if (!isRecord(providerMetadata)) {
+    return;
+  }
+
+  for (const metadata of Object.values(providerMetadata)) {
+    if (!isRecord(metadata) || !isRecord(metadata.groundingMetadata)) {
+      continue;
+    }
+    const grounding = metadata.groundingMetadata;
+    for (const query of Array.isArray(grounding.webSearchQueries)
+      ? grounding.webSearchQueries
+      : []) {
+      addQuery(queries, seenQueries, query);
+    }
+    for (const chunk of Array.isArray(grounding.groundingChunks)
+      ? grounding.groundingChunks
+      : []) {
+      if (!isRecord(chunk)) {
+        continue;
+      }
+      if (isRecord(chunk.web)) {
+        addSource(sources, seenUrls, {
+          title: chunk.web.title,
+          url: chunk.web.uri,
+        });
+      }
+      if (isRecord(chunk.image)) {
+        addSource(sources, seenUrls, {
+          title: chunk.image.title,
+          url: chunk.image.sourceUri,
+        });
+      }
+      if (isRecord(chunk.retrievedContext)) {
+        addSource(sources, seenUrls, {
+          title: chunk.retrievedContext.title,
+          url: chunk.retrievedContext.uri,
+        });
+      }
+      if (isRecord(chunk.maps)) {
+        addSource(sources, seenUrls, {
+          title: chunk.maps.title,
+          url: chunk.maps.uri,
+        });
+      }
+    }
+  }
+}
+
 function collectTrace(
   trace: GeoGenerateTrace,
   queries: string[],
@@ -126,6 +181,13 @@ function collectTrace(
   collectToolInputs(trace.toolCalls, queries, seenQueries);
   collectToolOutputs(
     trace.toolResults,
+    queries,
+    seenQueries,
+    sources,
+    seenUrls
+  );
+  collectProviderMetadata(
+    trace.providerMetadata,
     queries,
     seenQueries,
     sources,
@@ -152,6 +214,7 @@ export function extractGrounding(result: GeoGenerateTrace): GeoCheckGrounding {
         toolResults: Array.isArray(step.toolResults)
           ? step.toolResults
           : undefined,
+        providerMetadata: step.providerMetadata,
       },
       queries,
       seenQueries,

@@ -138,6 +138,7 @@ export interface GeoGenerateTrace {
   sources?: readonly unknown[];
   toolCalls?: readonly unknown[];
   toolResults?: readonly unknown[];
+  providerMetadata?: unknown;
   steps?: readonly unknown[];
 }
 

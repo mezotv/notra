@@ -1,9 +1,8 @@
 import { anthropic, createAnthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
 import { createOpenAI, openai } from "@ai-sdk/openai";
 import { createPerplexity } from "@ai-sdk/perplexity";
 import { gateway } from "@notra/ai/gateway";
-import { tool } from "ai";
-import { z } from "zod";
 
 import {
   GEO_ANTHROPIC_API_KEY_ENV,
@@ -18,13 +17,6 @@ import type {
   GeoGroundedInvocationOptions,
 } from "../types/geo";
 import { requireApiKey } from "../utils/require-api-key";
-
-const googleSearchTool = tool({
-  type: "provider",
-  id: "google.google_search",
-  args: {},
-  inputSchema: z.object({}),
-});
 
 export function buildGroundedInvocation(
   engine: GeoGroundedEngine,
@@ -55,7 +47,7 @@ export function buildGroundedInvocation(
     case "gateway-google":
       return {
         model: gateway(engine.model, groundedGateway),
-        tools: { google_search: googleSearchTool },
+        tools: { google_search: google.tools.googleSearch({}) },
       };
     case "direct-openai": {
       const provider = createOpenAI({
