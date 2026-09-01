@@ -9,9 +9,11 @@ import type { NextRequest, NextResponse } from "next/server";
 
 import {
   githubAccessTokenSchema,
+  githubOAuthStatesSchema,
   githubViewerSchema,
+  MAX_PENDING_OAUTH_STATES,
 } from "@/schemas/star-video";
-import type { GithubOAuthConfig } from "@/types/star-video";
+import type { GithubOAuthState, GithubOAuthConfig } from "@/types/star-video";
 import { SITE_URL } from "@/utils/urls";
 
 import {
@@ -57,6 +59,27 @@ export function clearGithubCookies(response: NextResponse): void {
     name: GITHUB_CONNECTED_COOKIE,
     path: GITHUB_COOKIE_PATH,
   });
+}
+
+export function readPendingOAuthStates(
+  value: string | undefined
+): GithubOAuthState[] {
+  if (!value) {
+    return [];
+  }
+  try {
+    const parsed = githubOAuthStatesSchema.safeParse(JSON.parse(value));
+    return parsed.success ? parsed.data : [];
+  } catch {
+    return [];
+  }
+}
+
+export function appendPendingOAuthState(
+  states: GithubOAuthState[],
+  next: GithubOAuthState
+): GithubOAuthState[] {
+  return [...states, next].slice(-MAX_PENDING_OAUTH_STATES);
 }
 
 export function createOAuthState(): string {

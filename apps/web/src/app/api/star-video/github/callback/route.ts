@@ -15,30 +15,23 @@ import {
   fetchGithubLogin,
   getGithubCallbackUrl,
   getGithubOAuthConfig,
+  readPendingOAuthStates,
 } from "@/lib/star-video/github-oauth";
-import {
-  githubCallbackQuerySchema,
-  githubOAuthStateSchema,
-} from "@/schemas/star-video";
+import { githubCallbackQuerySchema } from "@/schemas/star-video";
 
 export const runtime = "nodejs";
 
-function parseStateCookie(value: string | undefined) {
-  if (!value) {
-    return null;
-  }
-  try {
-    const parsed = githubOAuthStateSchema.safeParse(JSON.parse(value));
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
-  }
-}
-
 export async function GET(request: NextRequest) {
-  const stateData = parseStateCookie(
+  const query = githubCallbackQuerySchema.safeParse({
+    code: request.nextUrl.searchParams.get("code") ?? "",
+    state: request.nextUrl.searchParams.get("state") ?? "",
+  });
+  const pendingStates = readPendingOAuthStates(
     request.cookies.get(GITHUB_STATE_COOKIE)?.value
   );
+  const stateData = query.success
+    ? pendingStates.find((entry) => entry.state === query.data.state)
+    : undefined;
 
   const returnUrl = new URL("/repo-star-video", request.nextUrl.origin);
   if (stateData?.repo) {
@@ -52,15 +45,7 @@ export async function GET(request: NextRequest) {
   });
 
   const config = getGithubOAuthConfig();
-  if (!(config && stateData)) {
-    return response;
-  }
-
-  const query = githubCallbackQuerySchema.safeParse({
-    code: request.nextUrl.searchParams.get("code") ?? "",
-    state: request.nextUrl.searchParams.get("state") ?? "",
-  });
-  if (!query.success || query.data.state !== stateData.state) {
+  if (!(config && stateData && query.success)) {
     return response;
   }
 

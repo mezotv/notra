@@ -6,10 +6,12 @@ import {
   GITHUB_STATE_MAX_AGE_SECONDS,
 } from "@/lib/star-video/github-cookies";
 import {
+  appendPendingOAuthState,
   buildGithubAuthorizeUrl,
   createOAuthState,
   getGithubCallbackUrl,
   getGithubOAuthConfig,
+  readPendingOAuthStates,
 } from "@/lib/star-video/github-oauth";
 import { githubReturnRepoSchema } from "@/schemas/star-video";
 
@@ -37,16 +39,16 @@ export function GET(request: NextRequest) {
   const response = NextResponse.redirect(
     buildGithubAuthorizeUrl(config.clientId, redirectUri, state)
   );
-  response.cookies.set(
-    GITHUB_STATE_COOKIE,
-    JSON.stringify({ state, repo: repo ?? undefined }),
-    {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: GITHUB_STATE_MAX_AGE_SECONDS,
-    }
+  const pendingStates = appendPendingOAuthState(
+    readPendingOAuthStates(request.cookies.get(GITHUB_STATE_COOKIE)?.value),
+    { state, repo: repo ?? undefined }
   );
+  response.cookies.set(GITHUB_STATE_COOKIE, JSON.stringify(pendingStates), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: GITHUB_STATE_MAX_AGE_SECONDS,
+  });
   return response;
 }

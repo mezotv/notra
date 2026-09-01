@@ -32,20 +32,30 @@ function buildFetchOptions(token: string): RequestInit {
   };
 }
 
+const HTTP_NOT_FOUND = 404;
+const HTTP_UNAUTHORIZED = 401;
+
+class TokenRejected extends Error {}
+
 async function fetchJson<T>(url: string, token: string): Promise<T | null> {
+  let res: Response;
   try {
-    const res = await fetch(url, buildFetchOptions(token));
-    if (!res.ok) {
-      return null;
-    }
+    res = await fetch(url, buildFetchOptions(token));
+  } catch {
+    return null;
+  }
+  if (res.status === HTTP_UNAUTHORIZED) {
+    throw new TokenRejected();
+  }
+  if (!res.ok) {
+    return null;
+  }
+  try {
     return (await res.json()) as T;
   } catch {
     return null;
   }
 }
-
-const HTTP_NOT_FOUND = 404;
-const HTTP_UNAUTHORIZED = 401;
 
 async function fetchRepoMeta(
   base: string,
@@ -139,7 +149,10 @@ export const fetchRepoStarData = Effect.fn("fetchRepoStarData")(function* (
     return yield* Effect.fail(new RepoNotFound({ owner, repo }));
   }
 
-  const avatars = yield* Effect.promise(() => fetchAvatars(base, token));
+  const avatars = yield* Effect.tryPromise({
+    try: () => fetchAvatars(base, token),
+    catch: () => new RepoUnauthorized({ owner, repo }),
+  });
   const resolvedOwner = repoData.full_name.split("/")[0] ?? owner;
 
   return {

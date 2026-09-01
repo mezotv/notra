@@ -86,7 +86,13 @@ export function StarVideoPreview() {
     }
     hasMounted.current = true;
 
-    if (!(parsed && githubConnected)) {
+    if (!githubConnected) {
+      setData(null);
+      setIsLoading(false);
+      return;
+    }
+
+    if (!parsed) {
       return;
     }
 
