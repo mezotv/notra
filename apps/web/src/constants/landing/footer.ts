@@ -127,7 +127,10 @@ export const FOOTER_LINK_COLUMNS: readonly FooterLinkColumn[] = [
       },
       {
         title: "Free Tools",
-        links: [{ label: "Repo Star Video", href: "/repo-star-video" }],
+        links: [
+          { label: "Repo Star Video", href: "/repo-star-video" },
+          { label: "AI Crawler IP Checker", href: "/ip-checker" },
+        ],
       },
     ],
   },
