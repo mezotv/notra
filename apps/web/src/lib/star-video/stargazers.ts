@@ -15,6 +15,11 @@ class RepoUnavailable extends Data.TaggedError("RepoUnavailable")<{
   readonly repo: string;
 }> {}
 
+class RepoUnauthorized extends Data.TaggedError("RepoUnauthorized")<{
+  readonly owner: string;
+  readonly repo: string;
+}> {}
+
 function buildFetchOptions(token: string): RequestInit {
   return {
     headers: {
@@ -40,6 +45,7 @@ async function fetchJson<T>(url: string, token: string): Promise<T | null> {
 }
 
 const HTTP_NOT_FOUND = 404;
+const HTTP_UNAUTHORIZED = 401;
 
 async function fetchRepoMeta(
   base: string,
@@ -117,6 +123,10 @@ export const fetchRepoStarData = Effect.fn("fetchRepoStarData")(function* (
 
   if (meta.status === HTTP_NOT_FOUND) {
     return yield* Effect.fail(new RepoNotFound({ owner, repo }));
+  }
+
+  if (meta.status === HTTP_UNAUTHORIZED) {
+    return yield* Effect.fail(new RepoUnauthorized({ owner, repo }));
   }
 
   const repoData = meta.data;

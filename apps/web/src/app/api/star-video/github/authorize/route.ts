@@ -8,6 +8,7 @@ import {
 import {
   buildGithubAuthorizeUrl,
   createOAuthState,
+  getGithubCallbackUrl,
   getGithubOAuthConfig,
 } from "@/lib/star-video/github-oauth";
 import { githubReturnRepoSchema } from "@/schemas/star-video";
@@ -31,10 +32,7 @@ export function GET(request: NextRequest) {
   }
 
   const state = createOAuthState();
-  const redirectUri = new URL(
-    "/api/star-video/github/callback",
-    request.nextUrl.origin
-  ).toString();
+  const redirectUri = getGithubCallbackUrl(request);
 
   const response = NextResponse.redirect(
     buildGithubAuthorizeUrl(config.clientId, redirectUri, state)

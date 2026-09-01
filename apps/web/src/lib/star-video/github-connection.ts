@@ -1,7 +1,12 @@
 import { GITHUB_CONNECTED_COOKIE } from "./github-cookies";
 
-export function subscribeToGithubConnection(): () => void {
-  return () => undefined;
+export function subscribeToGithubConnection(listener: () => void): () => void {
+  window.addEventListener("focus", listener);
+  document.addEventListener("visibilitychange", listener);
+  return () => {
+    window.removeEventListener("focus", listener);
+    document.removeEventListener("visibilitychange", listener);
+  };
 }
 
 export function getGithubLogin(): string | null {

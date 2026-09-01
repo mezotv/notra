@@ -4,13 +4,16 @@ import { NextResponse } from "next/server";
 import {
   GITHUB_CONNECTED_COOKIE,
   GITHUB_COOKIE_MAX_AGE_SECONDS,
+  GITHUB_COOKIE_PATH,
   GITHUB_STATE_COOKIE,
   GITHUB_TOKEN_COOKIE,
+  GITHUB_TOKEN_COOKIE_PATH,
 } from "@/lib/star-video/github-cookies";
 import {
   encryptGithubToken,
   exchangeGithubCode,
   fetchGithubLogin,
+  getGithubCallbackUrl,
   getGithubOAuthConfig,
 } from "@/lib/star-video/github-oauth";
 import {
@@ -43,7 +46,10 @@ export async function GET(request: NextRequest) {
   }
 
   const response = NextResponse.redirect(returnUrl);
-  response.cookies.delete(GITHUB_STATE_COOKIE);
+  response.cookies.delete({
+    name: GITHUB_STATE_COOKIE,
+    path: GITHUB_COOKIE_PATH,
+  });
 
   const config = getGithubOAuthConfig();
   if (!(config && stateData)) {
@@ -58,10 +64,7 @@ export async function GET(request: NextRequest) {
     return response;
   }
 
-  const redirectUri = new URL(
-    "/api/star-video/github/callback",
-    request.nextUrl.origin
-  ).toString();
+  const redirectUri = getGithubCallbackUrl(request);
   const token = await exchangeGithubCode(query.data.code, redirectUri, config);
   if (!token) {
     return response;
@@ -74,15 +77,17 @@ export async function GET(request: NextRequest) {
   const cookieOptions = {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    path: "/",
     maxAge: GITHUB_COOKIE_MAX_AGE_SECONDS,
   } as const;
 
   response.cookies.set(
     GITHUB_TOKEN_COOKIE,
     encryptGithubToken(token, config.clientSecret),
-    { ...cookieOptions, httpOnly: true }
+    { ...cookieOptions, httpOnly: true, path: GITHUB_TOKEN_COOKIE_PATH }
   );
-  response.cookies.set(GITHUB_CONNECTED_COOKIE, login, cookieOptions);
+  response.cookies.set(GITHUB_CONNECTED_COOKIE, login, {
+    ...cookieOptions,
+    path: GITHUB_COOKIE_PATH,
+  });
   return response;
 }

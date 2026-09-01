@@ -5,15 +5,21 @@ import {
   randomBytes,
 } from "node:crypto";
 
-import type { NextRequest } from "next/server";
+import type { NextRequest, NextResponse } from "next/server";
 
 import {
   githubAccessTokenSchema,
   githubViewerSchema,
 } from "@/schemas/star-video";
 import type { GithubOAuthConfig } from "@/types/star-video";
+import { SITE_URL } from "@/utils/urls";
 
-import { GITHUB_TOKEN_COOKIE } from "./github-cookies";
+import {
+  GITHUB_CONNECTED_COOKIE,
+  GITHUB_COOKIE_PATH,
+  GITHUB_TOKEN_COOKIE,
+  GITHUB_TOKEN_COOKIE_PATH,
+} from "./github-cookies";
 
 const AUTHORIZE_URL = "https://github.com/login/oauth/authorize";
 const TOKEN_URL = "https://github.com/login/oauth/access_token";
@@ -21,6 +27,7 @@ const VIEWER_URL = "https://api.github.com/user";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const STATE_LENGTH = 16;
+const CALLBACK_PATH = "/api/star-video/github/callback";
 
 export function getGithubOAuthConfig(): GithubOAuthConfig | null {
   const clientId = process.env.GITHUB_CLIENT_ID;
@@ -29,6 +36,27 @@ export function getGithubOAuthConfig(): GithubOAuthConfig | null {
     return null;
   }
   return { clientId, clientSecret };
+}
+
+export function getGithubCallbackUrl(request: NextRequest): string {
+  const origin =
+    process.env.VERCEL_ENV === "production" ? SITE_URL : request.nextUrl.origin;
+  return new URL(CALLBACK_PATH, origin).toString();
+}
+
+export function fingerprintGithubToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+export function clearGithubCookies(response: NextResponse): void {
+  response.cookies.delete({
+    name: GITHUB_TOKEN_COOKIE,
+    path: GITHUB_TOKEN_COOKIE_PATH,
+  });
+  response.cookies.delete({
+    name: GITHUB_CONNECTED_COOKIE,
+    path: GITHUB_COOKIE_PATH,
+  });
 }
 
 export function createOAuthState(): string {

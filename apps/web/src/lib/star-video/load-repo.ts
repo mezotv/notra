@@ -2,11 +2,24 @@ import { Effect } from "effect";
 
 import type { RepoStarData } from "@/types/star-video";
 
+import { fingerprintGithubToken } from "./github-oauth";
 import { fetchRepoStarData } from "./stargazers";
 
 export type LoadRepoResult =
   | { ok: true; data: RepoStarData }
-  | { ok: false; kind: "not-found" | "unavailable" };
+  | { ok: false; kind: "not-found" | "unavailable" | "unauthorized" };
+
+function failureKind(
+  tag: string
+): "not-found" | "unavailable" | "unauthorized" {
+  if (tag === "RepoUnavailable") {
+    return "unavailable";
+  }
+  if (tag === "RepoUnauthorized") {
+    return "unauthorized";
+  }
+  return "not-found";
+}
 
 const inflight = new Map<string, Promise<LoadRepoResult>>();
 
@@ -16,7 +29,7 @@ export function loadRepoStarData(
   id: string,
   token: string
 ): Promise<LoadRepoResult> {
-  const inflightKey = `${id}:${token}`;
+  const inflightKey = `${id}:${fingerprintGithubToken(token)}`;
   const existing = inflight.get(inflightKey);
   if (existing) {
     return existing;
@@ -28,7 +41,7 @@ export function loadRepoStarData(
         onSuccess: (data): LoadRepoResult => ({ ok: true, data }),
         onFailure: (error): LoadRepoResult => ({
           ok: false,
-          kind: error._tag === "RepoUnavailable" ? "unavailable" : "not-found",
+          kind: failureKind(error._tag),
         }),
       })
     )
