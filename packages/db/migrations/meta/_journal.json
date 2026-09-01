@@ -526,6 +526,13 @@
       "when": 1788189410069,
       "tag": "0074_lethal_molly_hayes",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1788250436683,
+      "tag": "0075_blue_triathlon",
+      "breakpoints": true
     }
   ]
 }

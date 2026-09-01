@@ -21,6 +21,7 @@ import {
   AGENT_FEEDBACK_STATUSES,
 } from "./constants/agent-feedback";
 import { BLOG_POST_SUBTYPES } from "./constants/content";
+import { GEO_PROSPECT_REPORT_STATUSES } from "./constants/geo-prospect-reports";
 import {
   GEO_CONTENT_BRIEF_STATUSES,
   GEO_WRITER_SOURCE_KINDS,
@@ -31,6 +32,7 @@ import type {
   AgentReadinessScoreBreakdown,
 } from "./types/agent-readiness";
 import type { GeoCheckGrounding } from "./types/geo-checks";
+import type { GeoProspectReportJson } from "./types/geo-prospect-report";
 import type { GeoContentBriefJson } from "./types/geo-writer";
 
 export const lookbackWindowEnum = pgEnum("lookback_window", [
@@ -1947,6 +1949,45 @@ export const skills = pgTable(
   ]
 );
 
+/**
+ * Prospect-facing GEO reports built in the console and shared via `/r/{shareToken}`.
+ * The report body is denormalised into a few columns for listing; the JSON is
+ * the source of truth and includes the raw model answers from the scan.
+ */
+export const geoProspectReports = pgTable(
+  "geo_prospect_reports",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    /** Unguessable token used in the public share link. */
+    shareToken: text("share_token").notNull(),
+    status: text("status", { enum: GEO_PROSPECT_REPORT_STATUSES })
+      .notNull()
+      .default("draft"),
+    companyName: text("company_name").notNull().default(""),
+    companyDomain: text("company_domain").notNull().default(""),
+    visibilityScore: integer("visibility_score"),
+    modelCount: integer("model_count").notNull().default(0),
+    promptCount: integer("prompt_count").notNull().default(0),
+    report: jsonb("report").$type<GeoProspectReportJson>().notNull(),
+    lastScannedAt: timestamp("last_scanned_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoProspectReports_organizationId_idx").on(table.organizationId),
+    uniqueIndex("geoProspectReports_shareToken_uidx").on(table.shareToken),
+  ]
+);
+
 export const onboardingSuggestionTypeEnum = pgEnum(
   "onboarding_suggestion_type",
   ["schedule_automation", "event_automation"]
@@ -2493,6 +2534,7 @@ export const organizationsRelations = relations(
     postCollections: many(postCollections),
     posts: many(posts),
     skills: many(skills),
+    geoProspectReports: many(geoProspectReports),
     chatSessions: many(chatSessions),
     chatAttachments: many(chatAttachments),
     onboardingSuggestions: many(onboardingSuggestions),
@@ -3194,6 +3236,20 @@ export const autonomyControllerLeasesRelations = relations(
     organization: one(organizations, {
       fields: [autonomyControllerLeases.organizationId],
       references: [organizations.id],
+    }),
+  })
+);
+
+export const geoProspectReportsRelations = relations(
+  geoProspectReports,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoProspectReports.organizationId],
+      references: [organizations.id],
+    }),
+    createdBy: one(users, {
+      fields: [geoProspectReports.createdByUserId],
+      references: [users.id],
     }),
   })
 );
