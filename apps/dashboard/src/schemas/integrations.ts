@@ -1,7 +1,9 @@
+import "zod/compile";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 
 import { GITHUB_URL_PATTERNS } from "@/constants/github";
+import { organizationIdInputSchema } from "@/schemas/auth/organization";
 
 export const INTEGRATION_CATEGORIES = ["input", "output"] as const;
 export type IntegrationCategory = (typeof INTEGRATION_CATEGORIES)[number];
@@ -155,15 +157,27 @@ export const integrationIdParamSchema = z.object({
 });
 export type IntegrationIdParam = z.infer<typeof integrationIdParamSchema>;
 
+export const integrationInputSchema = organizationIdInputSchema.extend({
+  integrationId: integrationIdParamSchema.shape.integrationId,
+});
+
 export const repositoryIdParamSchema = z.object({
   repositoryId: z.string().min(1, "Repository ID is required"),
 });
 export type RepositoryIdParam = z.infer<typeof repositoryIdParamSchema>;
 
+export const repositoryInputSchema = organizationIdInputSchema.extend({
+  repositoryId: repositoryIdParamSchema.shape.repositoryId,
+});
+
 export const outputIdParamSchema = z.object({
   outputId: z.string().min(1, "Output ID is required"),
 });
 export type OutputIdParam = z.infer<typeof outputIdParamSchema>;
+
+export const outputInputSchema = organizationIdInputSchema.extend({
+  outputId: outputIdParamSchema.shape.outputId,
+});
 
 const repoIdentifierSchema = z
   .string()
@@ -344,6 +358,14 @@ export const getSchedulesQuerySchema = z.object({
   repositoryIds: z.array(z.string().min(1)).optional(),
 });
 export type GetSchedulesQuery = z.infer<typeof getSchedulesQuerySchema>;
+
+export const triggerInputSchema = organizationIdInputSchema.extend({
+  triggerId: z.string().min(1, "Trigger ID is required"),
+});
+
+export const schedulesListInputSchema = organizationIdInputSchema.and(
+  getSchedulesQuerySchema
+);
 
 export const affectedTriggerSchema = z.object({
   id: z.string(),
@@ -570,6 +592,10 @@ export type UpdateMcpServerBody = z.infer<typeof updateMcpServerBodySchema>;
 
 export const mcpServerIdParamSchema = z.object({
   serverId: z.string().min(1, "MCP server ID is required"),
+});
+
+export const mcpServerInputSchema = organizationIdInputSchema.extend({
+  serverId: mcpServerIdParamSchema.shape.serverId,
 });
 
 export const testMcpServerRequestSchema =

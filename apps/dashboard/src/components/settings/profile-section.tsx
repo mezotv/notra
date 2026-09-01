@@ -14,17 +14,14 @@ import { useForm } from "@tanstack/react-form";
 import { Loader2Icon } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
-import * as z from "zod";
 
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import { uploadFile } from "@/lib/upload/client";
 import { errorMessageOr } from "@/lib/utils";
+import { userNameSchema } from "@/schemas/auth/user-actions";
 import type { ProfileSectionProps } from "@/types/settings/account";
 import { getUserAvatarUrl } from "@/utils/avatar";
-
-const nameSchema = z.string().trim().min(1, "Name cannot be empty");
 
 export function ProfileSection({
   user,
@@ -77,7 +74,7 @@ export function ProfileSection({
       name: user.name,
     },
     onSubmit: async ({ value }) => {
-      const validated = nameSchema.safeParse(value.name);
+      const validated = userNameSchema.safeParse(value.name);
 
       if (!validated.success) {
         const issue = validated.error?.issues[0];

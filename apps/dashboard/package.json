@@ -107,7 +107,7 @@
     "sugar-high": "^1.2.1",
     "three": "^0.167.1",
     "workflow": "^4.6.0",
-    "zod": "^4.4.3"
+    "zod": "^4.5.0"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",

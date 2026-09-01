@@ -1,7 +1,10 @@
+import "zod/compile";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 
 import { RESERVED_ORGANIZATION_SLUGS } from "@/constants/organization";
+
+export const slugSchema = z.string().slugify();
 
 export const organizationSlugSchema = z
   .string()

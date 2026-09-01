@@ -1,3 +1,4 @@
+import "zod/compile";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 
@@ -6,6 +7,8 @@ import { RETURN_TO_MAX_LENGTH } from "@/schemas/auth/return-to";
 const USER_NAME_MAX_LENGTH = 100;
 const USER_IMAGE_URL_MAX_LENGTH = 2048;
 const PROVIDER_ID_MAX_LENGTH = 64;
+
+export const userNameSchema = z.string().trim().min(1, "Name cannot be empty");
 
 export const updateUserInputSchema = z.object({
   name: z

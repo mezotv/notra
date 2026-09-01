@@ -1,3 +1,4 @@
+import "zod/compile";
 import {
   contentGenerationWorkflowPayloadSchema,
   LOOKBACK_WINDOWS,

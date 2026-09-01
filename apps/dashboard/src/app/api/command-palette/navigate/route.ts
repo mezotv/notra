@@ -16,25 +16,17 @@ import { generateObject } from "ai";
 import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
 import { type NextRequest, NextResponse } from "next/server";
-import { z } from "zod";
 
 import { commandRoutesForAI } from "@/components/command-palette/registry";
 import { getServerSession } from "@/lib/auth/session";
 import { hasAiCreditsGrant } from "@/lib/billing/subscription";
+import {
+  commandPaletteNavigateRequestSchema,
+  commandPaletteNavigateResultSchema,
+} from "@/schemas/command-palette";
 import { getClientIp, ratelimit } from "@/utils/ratelimit";
 
 export const maxDuration = 15;
-
-const requestSchema = z.object({
-  query: z.string().min(1).max(500),
-  slug: z.string().min(1).max(100),
-});
-
-const resultSchema = z.object({
-  action: z.enum(["navigate", "chat"]),
-  path: z.string().nullish(),
-  reason: z.string().max(160).default(""),
-});
 
 const LIKE_ESCAPE_PATTERN = /[\\%_]/g;
 
@@ -241,7 +233,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const parsed = requestSchema.safeParse(
+  const parsed = commandPaletteNavigateRequestSchema.safeParse(
     await request.json().catch(() => null)
   );
   if (!parsed.success) {
@@ -281,7 +273,7 @@ export async function POST(request: NextRequest) {
       model: gateway("anthropic/claude-sonnet-4.6", {
         organizationId,
       }),
-      schema: resultSchema,
+      schema: commandPaletteNavigateResultSchema,
       system: [
         "You are a navigation router for the Notra dashboard command palette.",
         "Given a natural language query, decide whether to navigate to an existing route or fall back to the AI chat.",

@@ -1,3 +1,4 @@
+import "zod/compile";
 import { ORPCError } from "@orpc/server";
 import z from "zod";
 

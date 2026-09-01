@@ -33,4 +33,5 @@ minimumReleaseAgeExcludes = [
   "@ai-sdk/provider-utils",
   "@tanstack/db-ivm",
   "@usenotra/geo",
+  "zod",
 ]

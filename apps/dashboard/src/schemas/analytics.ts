@@ -1,3 +1,4 @@
+import "zod/compile";
 import { literal, number, object, string, union } from "zod";
 
 const LEADERBOARD_USERNAME_MAX_LENGTH = 30;

@@ -70,8 +70,6 @@ import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { PublicUrlValidationError } from "@notra/utils/url";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
 
 import {
   INTEGRATION_AUTH_KINDS,
@@ -90,6 +88,7 @@ import {
 } from "@/lib/integrations/slack/channel-cache";
 import { baseProcedure } from "@/lib/orpc/base";
 import { getIntegrationsByOrganization } from "@/lib/services/integrations";
+import { organizationIdInputSchema } from "@/schemas/auth/organization";
 import {
   createGranolaIntegrationRequestSchema,
   updateGranolaIntegrationBodySchema,
@@ -101,11 +100,11 @@ import {
   createGitHubIntegrationRequestSchema,
   createMcpServerRequestSchema,
   type IntegrationType,
-  integrationIdParamSchema,
-  mcpServerIdParamSchema,
-  outputIdParamSchema,
+  integrationInputSchema,
+  mcpServerInputSchema,
+  outputInputSchema,
   reauthorizeMcpOAuthRequestSchema,
-  repositoryIdParamSchema,
+  repositoryInputSchema,
   testMcpServerRequestSchema,
   triggerTargetsSchema,
   updateIntegrationBodySchema,
@@ -135,26 +134,6 @@ import {
   notFound,
   tooManyRequests,
 } from "../utils/errors";
-
-const organizationIdInputSchema = z.object({
-  organizationId: z.string().min(1, "Organization ID is required"),
-});
-
-const integrationInputSchema = organizationIdInputSchema.extend({
-  integrationId: integrationIdParamSchema.shape.integrationId,
-});
-
-const repositoryInputSchema = organizationIdInputSchema.extend({
-  repositoryId: repositoryIdParamSchema.shape.repositoryId,
-});
-
-const outputInputSchema = organizationIdInputSchema.extend({
-  outputId: outputIdParamSchema.shape.outputId,
-});
-
-const mcpServerInputSchema = organizationIdInputSchema.extend({
-  serverId: mcpServerIdParamSchema.shape.serverId,
-});
 
 async function assertMcpConnectionRateLimit(organizationId: string) {
   const { success } = await ratelimit.mcpConnection.limit(organizationId);

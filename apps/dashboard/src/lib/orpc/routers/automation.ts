@@ -16,8 +16,6 @@ import {
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, eq, inArray, ne } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
 
 import { DEFAULT_LOOKBACK_WINDOW } from "@/constants/workflows";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
@@ -28,11 +26,13 @@ import {
   ManualTriggerRunError,
   triggerManualAutomationRun,
 } from "@/lib/triggers/manual-run";
+import { organizationIdInputSchema } from "@/schemas/auth/organization";
 import {
   configureEventTriggerBodySchema,
   configureScheduleBodySchema,
-  getSchedulesQuerySchema,
   type LookbackWindow,
+  schedulesListInputSchema,
+  triggerInputSchema,
   triggerTargetsSchema,
 } from "@/schemas/integrations";
 import type { Trigger } from "@/types/triggers/triggers";
@@ -46,18 +46,6 @@ import {
 
 const nanoid = customAlphabet("abcdefghijklmnopqrstuvwxyz0123456789", 16);
 const DEFAULT_SCHEDULE_NAME = "Untitled Schedule";
-
-const organizationIdInputSchema = z.object({
-  organizationId: z.string().min(1, "Organization ID is required"),
-});
-
-const triggerInputSchema = organizationIdInputSchema.extend({
-  triggerId: z.string().min(1, "Trigger ID is required"),
-});
-
-const schedulesListInputSchema = organizationIdInputSchema.and(
-  getSchedulesQuerySchema
-);
 
 function toEffectiveLookbackWindow(
   lookbackWindow?: LookbackWindow | null

@@ -1,3 +1,4 @@
+import "zod/compile";
 import { optionalPublicWebsiteUrlSchema } from "@notra/geo-core/schemas/url";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";

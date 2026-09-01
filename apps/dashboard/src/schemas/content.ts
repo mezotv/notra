@@ -1,3 +1,4 @@
+import "zod/compile";
 import {
   chatIdSchema,
   UI_MESSAGES_MAX,

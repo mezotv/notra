@@ -3,11 +3,14 @@ import { db } from "@notra/db/drizzle";
 import { chatAttachments, members } from "@notra/db/schema";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq, inArray, lt, notInArray, or } from "drizzle-orm";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
 
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { getR2Config, getR2PublicUrl } from "@/lib/upload/r2";
+import {
+  type AttachmentFilter,
+  deleteManyAttachmentsInputSchema,
+  listAttachmentsInputSchema,
+} from "@/schemas/attachments";
 
 const TRAILING_SLASH_REGEX = /\/$/;
 
@@ -26,26 +29,7 @@ const KNOWN_MIME_TYPES = [
   ...TEXT_MIME_TYPES,
 ] as const;
 
-const ATTACHMENT_FILTER = ["all", "image", "pdf", "text", "other"] as const;
-type AttachmentFilter = (typeof ATTACHMENT_FILTER)[number];
-
 const LIST_PAGE_SIZE = 100;
-
-const listInputSchema = z.object({
-  organizationId: z.string().min(1),
-  filter: z.enum(ATTACHMENT_FILTER).default("all"),
-  cursor: z
-    .object({
-      createdAt: z.string().datetime(),
-      id: z.string(),
-    })
-    .optional(),
-});
-
-const deleteManyInputSchema = z.object({
-  organizationId: z.string().min(1),
-  keys: z.array(z.string().min(1)).min(1).max(500),
-});
 
 function buildFilterCondition(
   organizationId: string,
@@ -131,7 +115,7 @@ async function requireOrganizationAccess(
 
 export const attachmentsRouter = {
   list: authorizedProcedure
-    .input(listInputSchema)
+    .input(listAttachmentsInputSchema)
     .handler(async ({ context, input }) => {
       const organizationId = await requireOrganizationAccess(
         context.user.id,
@@ -185,7 +169,7 @@ export const attachmentsRouter = {
       };
     }),
   deleteMany: authorizedProcedure
-    .input(deleteManyInputSchema)
+    .input(deleteManyAttachmentsInputSchema)
     .handler(async ({ context, input }) => {
       const organizationId = await requireOrganizationAccess(
         context.user.id,

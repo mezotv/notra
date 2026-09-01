@@ -1,3 +1,4 @@
+import "zod/compile";
 import {
   DEFAULT_LANGUAGE,
   type SupportedLanguage,
@@ -12,8 +13,11 @@ import {
   brandNameSchema,
 } from "@notra/ai/schemas/limits";
 import { toneProfileSchema } from "@notra/ai/schemas/tone";
+import { publicWebsiteUrlSchema } from "@notra/geo-core/schemas/url";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
+import { organizationIdInputSchema } from "@/schemas/auth/organization";
 
 export function getValidLanguage(value: unknown): SupportedLanguage {
   const parsed = supportedLanguageSchema.safeParse(value);
@@ -138,3 +142,32 @@ export const brandIdentityToolOutputSchema = z
     brandIdentities: z.array(brandIdentityWithWebsiteSchema).optional(),
   })
   .partial();
+
+export const voiceInputSchema = organizationIdInputSchema.extend({
+  voiceId: z.string().min(1, "Voice ID is required"),
+});
+
+export const voiceCreateInputSchema = organizationIdInputSchema.extend({
+  name: z.string().optional(),
+  websiteUrl: z.string().min(1, "Website URL is required"),
+});
+
+export const voiceUpdateInputSchema = organizationIdInputSchema
+  .extend({
+    voiceId: z.string().min(1, "Voice ID is required"),
+  })
+  .and(updateBrandSettingsSchema.omit({ id: true }));
+
+export const referenceInputSchema = voiceInputSchema.extend({
+  referenceId: z.string().min(1, "Reference ID is required"),
+});
+
+export const analyzeInputSchema = organizationIdInputSchema.extend({
+  voiceId: z.string().optional(),
+  url: publicWebsiteUrlSchema,
+});
+
+export const setDefaultVoiceInputSchema = organizationIdInputSchema.extend({
+  voiceId: z.string().min(1, "Voice ID is required"),
+});
+

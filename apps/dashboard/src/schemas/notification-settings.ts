@@ -1,5 +1,8 @@
+import "zod/compile";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
+import { organizationIdInputSchema } from "@/schemas/auth/organization";
 
 export const updateNotificationSettingsSchema = z.object({
   scheduledContentCreation: z.boolean().optional(),
@@ -11,3 +14,6 @@ export const updateNotificationSettingsSchema = z.object({
 export type UpdateNotificationSettings = z.infer<
   typeof updateNotificationSettingsSchema
 >;
+
+export const updateNotificationSettingsInputSchema =
+  organizationIdInputSchema.extend(updateNotificationSettingsSchema.shape);

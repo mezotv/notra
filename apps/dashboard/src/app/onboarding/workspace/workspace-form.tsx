@@ -17,8 +17,6 @@ import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
-import * as z from "zod";
 
 import { OrgLogoField } from "@/components/onboarding/org-logo-field";
 import { OnboardingProgress } from "@/components/onboarding/progress";
@@ -40,6 +38,7 @@ import {
   onboardingWorkspaceFormFieldsSchema,
   onboardingWorkspaceFormSchema,
 } from "@/schemas/onboarding/workspace";
+import { slugSchema } from "@/schemas/organization";
 import type { WorkspaceFormProps } from "@/types/onboarding";
 import {
   getHeardAboutNotraLabel,
@@ -47,7 +46,6 @@ import {
 } from "@/utils/onboarding";
 
 const WEBSITE_PREFIX_REGEX = /^https?:\/\//i;
-const slugSchema = z.string().slugify();
 
 function slugify(value: string): string {
   return slugSchema.safeParse(value).data ?? "";

@@ -1,3 +1,4 @@
+import "zod/compile";
 import { z } from "zod";
 
 const optionalStringSchema = z.preprocess(

@@ -1,3 +1,4 @@
+import "zod/compile";
 import { geoOrganizationInputSchema } from "@notra/geo-core/schemas/geo";
 import { z } from "zod";
 

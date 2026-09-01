@@ -8,23 +8,16 @@ import {
   posts,
 } from "@notra/db/schema";
 import { and, desc, eq, ilike, or } from "drizzle-orm";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
 
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { baseProcedure } from "@/lib/orpc/base";
+import { globalSearchInputSchema } from "@/schemas/search";
 
 const LIKE_ESCAPE_PATTERN = /[\\%_]/g;
 
 function toLikePattern(input: string): string {
   return `%${input.replace(LIKE_ESCAPE_PATTERN, (char) => `\\${char}`)}%`;
 }
-
-const globalSearchInputSchema = z.object({
-  organizationId: z.string().min(1, "Organization ID is required"),
-  query: z.string().trim().min(1).max(200),
-  limit: z.number().int().min(1).max(20).default(5),
-});
 
 export const searchRouter = {
   global: baseProcedure

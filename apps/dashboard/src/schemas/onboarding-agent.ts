@@ -1,3 +1,4 @@
+import "zod/compile";
 import { Schema } from "effect";
 import { z } from "zod";
 

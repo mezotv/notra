@@ -3,7 +3,6 @@ import type {
   KeyResponseData,
   V2ApisListKeysResponseBody,
 } from "@unkey/api/models/components";
-import { z } from "zod";
 
 import { API_KEY_EXPIRATION_MS } from "@/constants/api-keys";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
@@ -18,10 +17,10 @@ import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import {
   createApiKeySchema,
-  deleteApiKeySchema,
-  updateApiKeySchema,
+  deleteKeyInputSchema,
+  updateKeyInputSchema,
 } from "@/schemas/api-keys";
-import { organizationIdSchema } from "@/schemas/auth/organization";
+import { organizationIdInputSchema } from "@/schemas/auth/organization";
 
 import {
   badRequest,
@@ -29,22 +28,6 @@ import {
   notFound,
   serviceUnavailable,
 } from "../utils/errors";
-
-const organizationInputSchema = z.object({
-  organizationId: organizationIdSchema,
-});
-
-const updateKeyInputSchema = z.object({
-  keyIdParam: z.string().min(1),
-  organizationId: organizationIdSchema,
-  payload: updateApiKeySchema,
-});
-
-const deleteKeyInputSchema = z.object({
-  keyIdParam: z.string().min(1),
-  organizationId: organizationIdSchema,
-  payload: deleteApiKeySchema,
-});
 
 function inferExpirationOption(createdAt: number, expires: number | null) {
   if (expires === null) {
@@ -129,7 +112,7 @@ async function findOrganizationKey(
 
 export const apiKeysRouter = {
   list: authorizedProcedure
-    .input(organizationInputSchema)
+    .input(organizationIdInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -169,7 +152,7 @@ export const apiKeysRouter = {
       });
     }),
   create: authorizedProcedure
-    .input(organizationInputSchema.extend(createApiKeySchema.shape))
+    .input(organizationIdInputSchema.extend(createApiKeySchema.shape))
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,

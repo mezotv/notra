@@ -5,7 +5,7 @@ import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { listWebhookLogs } from "@/lib/webhooks/logging";
 import { webhookLogsQuerySchema } from "@/schemas/api-params";
-import { organizationIdSchema } from "@/schemas/auth/organization";
+import { listWebhookLogsInputSchema } from "@/schemas/logs";
 import type { Log, LogsResponse } from "@/types/webhooks/webhooks";
 
 function paginateLogs(logs: Log[], page: number, pageSize: number) {
@@ -40,17 +40,6 @@ function filterLogs(
     return true;
   });
 }
-
-const listWebhookLogsInputSchema = z.object({
-  organizationId: organizationIdSchema,
-  page: webhookLogsQuerySchema.shape.page,
-  pageSize: webhookLogsQuerySchema.shape.pageSize,
-  integrationType: webhookLogsQuerySchema.shape.integrationType,
-  integrationId: z.string().nullish(),
-  source: webhookLogsQuerySchema.shape.source,
-  status: webhookLogsQuerySchema.shape.status,
-  search: webhookLogsQuerySchema.shape.search,
-});
 
 export const logsRouter = {
   webhooks: {

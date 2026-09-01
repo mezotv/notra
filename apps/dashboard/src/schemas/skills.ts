@@ -1,5 +1,8 @@
+import "zod/compile";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
+import { organizationIdSchema } from "@/schemas/auth/organization";
 
 export const skillNameSchema = z
   .string()
@@ -49,3 +52,32 @@ export const updateSkillSchema = z.object({
 
 export type CreateSkillInput = z.infer<typeof createSkillSchema>;
 export type UpdateSkillInput = z.infer<typeof updateSkillSchema>;
+
+export const listSkillsInputSchema = z.object({
+  organizationId: organizationIdSchema,
+});
+
+export const getSkillInputSchema = z.object({
+  organizationId: organizationIdSchema,
+  name: skillNameSchema,
+});
+
+export const createSkillInputSchema = z.object({
+  organizationId: organizationIdSchema,
+  payload: createSkillSchema,
+});
+
+export const updateSkillInputSchema = z.object({
+  organizationId: organizationIdSchema,
+  name: skillNameSchema,
+  payload: updateSkillSchema,
+});
+
+export const deleteSkillInputSchema = z.object({
+  organizationId: organizationIdSchema,
+  name: skillNameSchema,
+});
+
+export const importSkillFromUrlInputSchema = z.object({
+  url: skillImportUrlSchema,
+});

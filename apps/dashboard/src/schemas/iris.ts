@@ -1,3 +1,5 @@
+import "zod/compile";
+import { irisOutboxArtifactSchema } from "@notra/ai/schemas/autonomy/outbox";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
 
@@ -33,3 +35,9 @@ export const irisListSignalsInputSchema = irisOrganizationInputSchema.extend({
     .default(IRIS_SIGNALS_PAGE_SIZE),
 });
 export type IrisListSignalsInput = z.infer<typeof irisListSignalsInputSchema>;
+
+export const irisArtifactListSchema = z.array(irisOutboxArtifactSchema);
+
+export const irisArtifactContainerSchema = z.object({
+  artifacts: irisArtifactListSchema.optional(),
+});

@@ -25,8 +25,6 @@ import { publicWebsiteUrlSchema } from "@notra/geo-core/schemas/url";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
 
 import {
   BRAND_REFERENCE_SOURCES,
@@ -47,13 +45,19 @@ import {
   startBrandAnalysisRun,
   startBrandGuidelinesRun,
 } from "@/lib/workflows/start";
+import { organizationIdInputSchema } from "@/schemas/auth/organization";
 import {
+  analyzeInputSchema,
   createReferenceSchema,
   fetchTweetSchema,
   importTweetsSchema,
+  referenceInputSchema,
   referenceSourceUrlSchema,
-  updateBrandSettingsSchema,
+  setDefaultVoiceInputSchema,
   updateReferenceSchema,
+  voiceCreateInputSchema,
+  voiceInputSchema,
+  voiceUpdateInputSchema,
 } from "@/schemas/brand";
 import {
   createGuidelineAssetSchema,
@@ -99,41 +103,7 @@ import {
   tooManyRequests,
 } from "../utils/errors";
 
-const organizationIdInputSchema = z.object({
-  organizationId: z.string().min(1, "Organization ID is required"),
-});
-
-const voiceInputSchema = organizationIdInputSchema.extend({
-  voiceId: z.string().min(1, "Voice ID is required"),
-});
-
-const voiceCreateInputSchema = organizationIdInputSchema.extend({
-  name: z.string().optional(),
-  websiteUrl: z.string().min(1, "Website URL is required"),
-});
-
 const FREE_IMPORTED_TWEET_REFERENCE_LIMIT = 10;
-
-const voiceUpdateInputSchema = organizationIdInputSchema
-  .extend({
-    voiceId: z.string().min(1, "Voice ID is required"),
-  })
-  .and(updateBrandSettingsSchema.omit({ id: true }));
-
-const referenceInputSchema = voiceInputSchema.extend({
-  referenceId: z.string().min(1, "Reference ID is required"),
-});
-
-const analyzeInputSchema = organizationIdInputSchema.extend({
-  voiceId: z.string().optional(),
-  url: publicWebsiteUrlSchema,
-});
-
-const setDefaultVoiceInputSchema = organizationIdInputSchema.extend({
-  voiceId: z.string().min(1, "Voice ID is required"),
-});
-
-const guidelineInputSchema = voiceInputSchema;
 
 const typeDefaults: Record<string, ApplicablePlatform[]> = {
   twitter_post: ["twitter"],
@@ -681,7 +651,7 @@ export const brandRouter = {
   },
   guidelines: {
     get: baseProcedure
-      .input(guidelineInputSchema)
+      .input(voiceInputSchema)
       .handler(async ({ context, input }) => {
         await assertOrganizationAccess({
           headers: context.headers,
@@ -693,7 +663,7 @@ export const brandRouter = {
         return getBrandGuidelines(input.voiceId);
       }),
     refresh: baseProcedure
-      .input(guidelineInputSchema)
+      .input(voiceInputSchema)
       .handler(async ({ context, input }) => {
         const auth = await assertOrganizationAccess({
           headers: context.headers,

@@ -12,8 +12,6 @@ import { createOctokit } from "@notra/ai/utils/octokit";
 import { redis } from "@notra/ai/utils/redis";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Data, Effect } from "effect";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
 
 import { GITHUB_INSTALL_STATE_TTL_SECONDS } from "@/constants/github";
 import {
@@ -29,31 +27,16 @@ import {
   notFound,
   tooManyRequests,
 } from "@/lib/orpc/utils/errors";
-import { githubPersonalAccessTokenSchema } from "@/schemas/integrations";
+import { organizationIdInputSchema } from "@/schemas/auth/organization";
+import {
+  disconnectGitHubAppInputSchema,
+  type PrepareInstallUrlInput,
+  prepareInstallUrlInputSchema,
+  probeRepositoryInputSchema,
+  saveGitHubAppRepositoriesInputSchema,
+} from "@/schemas/github";
 import type { GitHubAccountType } from "@/types/integrations/github";
 import { ratelimit } from "@/utils/ratelimit";
-
-const probeRepositoryInputSchema = z.object({
-  owner: z.string().trim().min(1, "owner is required"),
-  repo: z.string().trim().min(1, "repo is required"),
-  token: githubPersonalAccessTokenSchema.optional(),
-});
-
-const organizationIdInputSchema = z.object({
-  organizationId: z.string().min(1, "Organization ID is required"),
-});
-
-const saveGitHubAppRepositoriesInputSchema = organizationIdInputSchema.extend({
-  repositoryIds: z.array(z.string().min(1)).default([]),
-});
-
-const disconnectGitHubAppInputSchema = organizationIdInputSchema.extend({
-  accountId: z.string().min(1).optional(),
-});
-
-const prepareInstallUrlInputSchema = organizationIdInputSchema.extend({
-  callbackPath: z.string().trim().min(1, "Callback path is required"),
-});
 
 class GitHubAppInstallPreparationError extends Data.TaggedError(
   "GitHubAppInstallPreparationError"
@@ -134,7 +117,7 @@ function toGitHubAccountType(accountType: string): GitHubAccountType {
 }
 
 const prepareGitHubAppInstall = Effect.fn("prepareGitHubAppInstall")(function* (
-  input: z.infer<typeof prepareInstallUrlInputSchema> & {
+  input: PrepareInstallUrlInput & {
     userId: string;
   }
 ) {

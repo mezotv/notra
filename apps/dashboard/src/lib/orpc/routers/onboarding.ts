@@ -10,7 +10,6 @@ import {
 } from "@notra/db/schema";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
-import { z } from "zod";
 
 import {
   AGENT_RUN_HARD_LIMIT_MS,
@@ -23,17 +22,13 @@ import {
 } from "@/lib/onboarding-agent";
 import { pickCompanyLogoUrl } from "@/lib/onboarding/company-logo";
 import { authorizedProcedure } from "@/lib/orpc/base";
-import { organizationIdSchema } from "@/schemas/auth/organization";
+import { organizationIdInputSchema } from "@/schemas/auth/organization";
 import {
   dismissSuggestionInputSchema,
   listSuggestionsInputSchema,
 } from "@/schemas/onboarding-agent";
 import { companyLogoInputSchema } from "@/schemas/onboarding/company-logo";
 import { ratelimit } from "@/utils/ratelimit";
-
-const onboardingInputSchema = z.object({
-  organizationId: organizationIdSchema,
-});
 
 export const onboardingRouter = {
   companyLogo: authorizedProcedure
@@ -78,7 +73,7 @@ export const onboardingRouter = {
       }
     }),
   get: authorizedProcedure
-    .input(onboardingInputSchema)
+    .input(organizationIdInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -144,7 +139,7 @@ export const onboardingRouter = {
       };
     }),
   agentRun: authorizedProcedure
-    .input(onboardingInputSchema)
+    .input(organizationIdInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -163,7 +158,7 @@ export const onboardingRouter = {
       return { ran, running, startedAt };
     }),
   runAgent: authorizedProcedure
-    .input(onboardingInputSchema)
+    .input(organizationIdInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,

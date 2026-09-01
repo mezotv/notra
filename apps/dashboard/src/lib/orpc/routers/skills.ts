@@ -3,19 +3,18 @@ import { skills } from "@notra/db/schema";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { and, eq } from "drizzle-orm";
 import { nanoid } from "nanoid";
-// biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
-import * as z from "zod";
 
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { parseSkillFrontmatter } from "@/lib/skills/parse-frontmatter";
-import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
-  createSkillSchema,
-  skillImportUrlSchema,
-  skillNameSchema,
-  updateSkillSchema,
+  createSkillInputSchema,
+  deleteSkillInputSchema,
+  getSkillInputSchema,
+  importSkillFromUrlInputSchema,
+  listSkillsInputSchema,
+  updateSkillInputSchema,
 } from "@/schemas/skills";
 
 import {
@@ -25,35 +24,6 @@ import {
   notFound,
   serviceUnavailable,
 } from "../utils/errors";
-
-const listSkillsInput = z.object({
-  organizationId: organizationIdSchema,
-});
-
-const getSkillInput = z.object({
-  organizationId: organizationIdSchema,
-  name: skillNameSchema,
-});
-
-const createSkillInput = z.object({
-  organizationId: organizationIdSchema,
-  payload: createSkillSchema,
-});
-
-const updateSkillInput = z.object({
-  organizationId: organizationIdSchema,
-  name: skillNameSchema,
-  payload: updateSkillSchema,
-});
-
-const deleteSkillInput = z.object({
-  organizationId: organizationIdSchema,
-  name: skillNameSchema,
-});
-
-const importSkillFromUrlInput = z.object({
-  url: skillImportUrlSchema,
-});
 
 const SKILLS_SH_API_BASE = "https://skills.sh/api/v1/skills";
 
@@ -82,7 +52,7 @@ function pickPrimarySkillFile(files: SkillsShFile[]): SkillsShFile | null {
 
 export const skillsRouter = {
   list: authorizedProcedure
-    .input(listSkillsInput)
+    .input(listSkillsInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -105,7 +75,7 @@ export const skillsRouter = {
     }),
 
   getByName: authorizedProcedure
-    .input(getSkillInput)
+    .input(getSkillInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -128,7 +98,7 @@ export const skillsRouter = {
     }),
 
   create: authorizedProcedure
-    .input(createSkillInput)
+    .input(createSkillInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -177,7 +147,7 @@ export const skillsRouter = {
     }),
 
   update: authorizedProcedure
-    .input(updateSkillInput)
+    .input(updateSkillInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -249,7 +219,7 @@ export const skillsRouter = {
     }),
 
   delete: authorizedProcedure
-    .input(deleteSkillInput)
+    .input(deleteSkillInputSchema)
     .handler(async ({ context, input }) => {
       await assertOrganizationAccess({
         headers: context.headers,
@@ -293,7 +263,7 @@ export const skillsRouter = {
     }),
 
   importFromUrl: authorizedProcedure
-    .input(importSkillFromUrlInput)
+    .input(importSkillFromUrlInputSchema)
     .handler(async ({ context, input }) => {
       let pathname: string;
       let sourceHost: string;
