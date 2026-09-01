@@ -13,6 +13,12 @@ class IpCheckRateLimitExceeded extends Data.TaggedError(
   readonly reset: number;
 }> {}
 
+class IpCheckRateLimitUnavailable extends Data.TaggedError(
+  "IpCheckRateLimitUnavailable"
+)<{
+  readonly cause: unknown;
+}> {}
+
 let limiter: Ratelimit | null = null;
 
 function getLimiter(): Ratelimit | null {
@@ -62,9 +68,9 @@ export const enforceIpCheckRateLimit = Effect.fn("enforceIpCheckRateLimit")(
     const key = createHash("sha256").update(getClientIp(request)).digest("hex");
     const result = yield* Effect.tryPromise({
       try: () => ratelimit.limit(key),
-      catch: () => new IpCheckRateLimitExceeded({ reset: Date.now() }),
-    }).pipe(Effect.catch(() => Effect.succeed(null)));
-    if (result && !result.success) {
+      catch: (cause) => new IpCheckRateLimitUnavailable({ cause }),
+    });
+    if (!result.success) {
       return yield* Effect.fail(
         new IpCheckRateLimitExceeded({ reset: result.reset })
       );

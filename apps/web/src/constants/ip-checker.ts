@@ -60,6 +60,8 @@ export const IP_CHECKER_EASTER_EGGS: readonly IpCheckEasterEgg[] = [
 
 export const IP_CHECKER_LIST_REVALIDATE_SECONDS = 60 * 60;
 
+export const IP_CHECKER_FETCH_TIMEOUT_MS = 8000;
+
 export const IP_CHECKER_FETCH_USER_AGENT =
   "NotraIpCheck/1.0 (+https://www.usenotra.com/ip-checker)";
 

@@ -3,6 +3,7 @@ import { Data, Effect } from "effect";
 import {
   CRAWLER_IP_SOURCES,
   IP_CHECKER_EASTER_EGGS,
+  IP_CHECKER_FETCH_TIMEOUT_MS,
   IP_CHECKER_FETCH_USER_AGENT,
   IP_CHECKER_LIST_REVALIDATE_SECONDS,
 } from "@/constants/ip-checker";
@@ -46,6 +47,7 @@ const fetchCrawlerIpList = Effect.fn("fetchCrawlerIpList")(function* (
           "user-agent": IP_CHECKER_FETCH_USER_AGENT,
         },
         next: { revalidate: IP_CHECKER_LIST_REVALIDATE_SECONDS },
+        signal: AbortSignal.timeout(IP_CHECKER_FETCH_TIMEOUT_MS),
       });
       if (!response.ok) {
         throw new Error(`Unexpected status ${response.status}`);

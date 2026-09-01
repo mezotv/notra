@@ -8,7 +8,7 @@ import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { AnimatePresence, domAnimation, LazyMotion } from "motion/react";
 import { parseAsString, useQueryState } from "nuqs";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 
 import {
   IP_CHECKER_PLACEHOLDER,
@@ -46,18 +46,26 @@ export function IpCheckerTool({
     initialResult ?? null
   );
 
+  const requestIdRef = useRef(0);
+
   const runCheck = async (candidate: string) => {
     const parsed = ipCheckRequestSchema.safeParse({ ip: candidate });
     if (!parsed.success) {
       setStatus("invalid");
       return;
     }
+    requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
+    const isLatest = () => requestIdRef.current === requestId;
     setStatus("checking");
     const response = await fetch("/api/ip-checker", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(parsed.data),
     }).catch(() => null);
+    if (!isLatest()) {
+      return;
+    }
     if (!response) {
       setStatus("error");
       return;
@@ -73,6 +81,9 @@ export function IpCheckerTool({
     const payload = ipCheckResultSchema.safeParse(
       await response.json().catch(() => null)
     );
+    if (!isLatest()) {
+      return;
+    }
     if (!(response.ok && payload.success)) {
       setStatus("error");
       return;

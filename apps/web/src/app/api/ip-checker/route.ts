@@ -51,6 +51,9 @@ function respond(request: NextRequest, body: unknown) {
     }).pipe(
       Effect.match({
         onFailure: (error) => {
+          if (error._tag === "IpCheckRateLimitUnavailable") {
+            return jsonError("Rate limit service unavailable", 503);
+          }
           const retryAfter = Math.max(
             0,
             Math.ceil((error.reset - Date.now()) / 1000)
