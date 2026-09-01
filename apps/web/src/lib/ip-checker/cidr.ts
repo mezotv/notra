@@ -3,15 +3,15 @@ import type { CrawlerIpRange, IpVersion, ParsedIp } from "@/types/ip-checker";
 const IPV4_PATTERN = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
 const HEXTET_PATTERN = /^[0-9a-f]{1,4}$/;
 const IPV4_MAPPED_PREFIX = "::ffff:";
-const IPV4_MAPPED_HIGH_BITS = BigInt(0xffff);
-const IPV4_MASK = BigInt(0xffffffff);
-const CIDR_PATTERN = /^([^/\s]+)(?:\/(\d{1,3}))?$/;
+const HEXTET_BITS = 16;
 const IPV4_BITS = 32;
 const IPV4_BITS_BIGINT = BigInt(IPV4_BITS);
+const IPV4_MAPPED_HIGH_BITS = (1n << BigInt(HEXTET_BITS)) - 1n;
+const IPV4_MASK = (1n << IPV4_BITS_BIGINT) - 1n;
+const CIDR_PATTERN = /^([^/\s]+)(?:\/(\d{1,3}))?$/;
 const IPV6_BITS = 128;
 const IPV6_GROUPS = 8;
 const OCTET_MAX = 255;
-const HEXTET_BITS = 16;
 
 function parseIpv4(input: string): bigint | null {
   const match = IPV4_PATTERN.exec(input);
