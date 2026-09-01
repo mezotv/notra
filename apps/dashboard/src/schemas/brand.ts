@@ -170,4 +170,3 @@ export const analyzeInputSchema = organizationIdInputSchema.extend({
 export const setDefaultVoiceInputSchema = organizationIdInputSchema.extend({
   voiceId: z.string().min(1, "Voice ID is required"),
 });
-
