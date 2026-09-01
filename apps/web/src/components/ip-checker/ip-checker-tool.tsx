@@ -39,9 +39,12 @@ export function IpCheckerTool({
     parseAsString.withOptions({ history: "replace" })
   );
   const [ip, setIp] = useState(initialIp ?? "");
-  const [status, setStatus] = useState<IpCheckStatus>(
-    initialResult ? "done" : "idle"
-  );
+  const [status, setStatus] = useState<IpCheckStatus>(() => {
+    if (initialResult) {
+      return "done";
+    }
+    return initialIp ? "invalid" : "idle";
+  });
   const [result, setResult] = useState<IpCheckResult | null>(
     initialResult ?? null
   );

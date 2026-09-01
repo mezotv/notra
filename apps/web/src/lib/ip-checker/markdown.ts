@@ -39,9 +39,22 @@ function matchLines(match: IpCheckMatch): string[] {
   return lines;
 }
 
+function coverageLines(result: IpCheckResult): string[] {
+  const lines = [
+    `Checked ${result.listsChecked} of ${result.listsTotal} vendor lists.`,
+  ];
+  if (result.listsUnavailable.length > 0) {
+    lines.push(
+      `Could not reach the lists for ${result.listsUnavailable.join(", ")} right now, so this check is incomplete.`
+    );
+  }
+  return lines;
+}
+
 function resultLines(result: IpCheckResult): string[] {
   const version = result.version === "v4" ? "IPv4" : "IPv6";
   const header = [`Checked \`${result.ip}\` (${version}).`, ""];
+  const coverage = ["", ...coverageLines(result)];
   if (result.easterEgg) {
     return [
       ...header,
@@ -49,19 +62,20 @@ function resultLines(result: IpCheckResult): string[] {
     ];
   }
   if (result.matches.length === 0) {
-    const lines = [
+    const incomplete = result.listsUnavailable.length > 0;
+    return [
       ...header,
-      `Not in any published AI crawler range. None of the ${result.listsChecked} vendor lists include this address. It can still be a bot: many agents fetch from ordinary cloud or residential addresses, and some spoof a crawler user agent.`,
+      incomplete
+        ? "Not in any AI crawler range we could check. It can still be a bot: some lists were unreachable, many agents fetch from ordinary cloud or residential addresses, and some spoof a crawler user agent."
+        : "Not in any published AI crawler range. It can still be a bot: many agents fetch from ordinary cloud or residential addresses, and some spoof a crawler user agent.",
+      ...coverage,
     ];
-    if (result.listsUnavailable.length > 0) {
-      lines.push(
-        "",
-        `Could not reach the lists for ${result.listsUnavailable.join(", ")} right now.`
-      );
-    }
-    return lines;
   }
-  return [...header, ...result.matches.flatMap((match) => matchLines(match))];
+  return [
+    ...header,
+    ...result.matches.flatMap((match) => matchLines(match)),
+    ...coverage,
+  ];
 }
 
 function listsTable(lists: readonly CrawlerListSummary[]): string[] {
@@ -88,10 +102,12 @@ function resultSection(
   if (result) {
     return [markdownSection("Result", resultLines(result))];
   }
-  if (invalidInput) {
+  if (invalidInput !== null) {
     return [
       markdownSection("Result", [
-        `\`${invalidInput}\` is not a valid IPv4 or IPv6 address.`,
+        invalidInput.length > 0
+          ? `\`${invalidInput}\` is not a valid IPv4 or IPv6 address.`
+          : "The ip parameter is empty. Pass an IPv4 or IPv6 address.",
       ]),
     ];
   }
@@ -110,9 +126,9 @@ export function buildIpCheckerMarkdown(
     "",
     ...resultSection(result, invalidInput),
     markdownSection("How to use", [
-      `- Markdown: GET ${IP_CHECKER_MARKDOWN_URL}?ip=<address>`,
-      `- JSON: GET ${IP_CHECKER_API_URL}?ip=<address>, or POST ${IP_CHECKER_API_URL} with body {"ip": "<address>"}`,
-      `- Browser: ${IP_CHECKER_URL}?ip=<address>`,
+      `- Markdown: GET \`${IP_CHECKER_MARKDOWN_URL}?ip=<address>\``,
+      `- JSON: GET \`${IP_CHECKER_API_URL}?ip=<address>\`, or POST \`${IP_CHECKER_API_URL}\` with body \`{"ip": "<address>"}\``,
+      `- Browser: \`${IP_CHECKER_URL}?ip=<address>\``,
     ]),
     markdownSection("Lists we check", listsTable(lists)),
     markdownSection("What a match means", [

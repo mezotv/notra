@@ -14,9 +14,8 @@ export function AnimatedHeight({ children, className }: AnimatedHeightProps) {
       return;
     }
     const observer = new ResizeObserver(([entry]) => {
-      const next = entry?.contentRect.height ?? 0;
-      if (next > 0) {
-        setHeight(next);
+      if (entry) {
+        setHeight(entry.contentRect.height);
       }
     });
     observer.observe(element);

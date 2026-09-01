@@ -46,6 +46,7 @@ export const ipCheckResultSchema = z.object({
   easterEgg: ipCheckEasterEggSchema.nullable(),
   matches: z.array(ipCheckMatchSchema),
   listsChecked: z.number(),
+  listsTotal: z.number(),
   listsUnavailable: z.array(z.string()),
 });
 

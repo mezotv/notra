@@ -76,6 +76,7 @@ export interface IpCheckResult {
   easterEgg: IpCheckEasterEgg | null;
   matches: IpCheckMatch[];
   listsChecked: number;
+  listsTotal: number;
   listsUnavailable: string[];
 }
 

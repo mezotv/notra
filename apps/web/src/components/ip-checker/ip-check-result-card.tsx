@@ -34,6 +34,16 @@ export function IpCheckResultCard({ result }: IpCheckResultCardProps) {
         exit: { opacity: 0, transition: IP_CHECKER_MOTION.exit },
       };
 
+  const coverage =
+    result.listsUnavailable.length > 0 ? (
+      <p className={metaClass}>
+        Checked {result.listsChecked} of {result.listsTotal} vendor lists. Could
+        not reach {result.listsUnavailable.join(", ")} right now, so this check
+        is incomplete.
+      </p>
+    ) : null;
+  const incomplete = result.listsUnavailable.length > 0;
+
   if (result.easterEgg) {
     return (
       <m.div aria-live="polite" className={cardClass} {...cardMotion}>
@@ -63,20 +73,18 @@ export function IpCheckResultCard({ result }: IpCheckResultCardProps) {
       <m.div aria-live="polite" className={cardClass} {...cardMotion}>
         <div className="flex items-center justify-between gap-4">
           <h3 className="font-display text-[1.125rem]/6 font-medium tracking-[-0.02em] text-[#1E1E1E] dark:text-white">
-            Not in any published AI crawler range
+            {incomplete
+              ? "Not in any AI crawler range we could check"
+              : "Not in any published AI crawler range"}
           </h3>
           <span className={monoClass}>{result.ip}</span>
         </div>
         <p className="font-sans text-[0.875rem]/5.5 text-pretty text-[#1E1E1EBF] dark:text-white/70">
-          None of the {result.listsChecked} vendor lists include this address.
-          It can still be a bot: many agents fetch from ordinary cloud or
-          residential addresses, and some spoof a crawler user agent.
+          None of the {result.listsChecked} vendor lists we reached include this
+          address. It can still be a bot: many agents fetch from ordinary cloud
+          or residential addresses, and some spoof a crawler user agent.
         </p>
-        {result.listsUnavailable.length > 0 ? (
-          <p className={metaClass}>
-            Could not reach {result.listsUnavailable.join(", ")} right now.
-          </p>
-        ) : null}
+        {coverage}
       </m.div>
     );
   }
@@ -135,6 +143,7 @@ export function IpCheckResultCard({ result }: IpCheckResultCardProps) {
           </ul>
         </div>
       ))}
+      {coverage}
     </m.div>
   );
 }

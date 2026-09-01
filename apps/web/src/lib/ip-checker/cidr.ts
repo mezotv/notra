@@ -3,7 +3,11 @@ import type { CrawlerIpRange, IpVersion, ParsedIp } from "@/types/ip-checker";
 const IPV4_PATTERN = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
 const HEXTET_PATTERN = /^[0-9a-f]{1,4}$/;
 const IPV4_MAPPED_PREFIX = "::ffff:";
+const IPV4_MAPPED_HIGH_BITS = 0xffffn;
+const IPV4_MASK = 0xffffffffn;
+const CIDR_PATTERN = /^([^/\s]+)(?:\/(\d{1,3}))?$/;
 const IPV4_BITS = 32;
+const IPV4_BITS_BIGINT = 32n;
 const IPV6_BITS = 128;
 const IPV6_GROUPS = 8;
 const OCTET_MAX = 255;
@@ -68,6 +72,12 @@ function parseIpv6(input: string): bigint | null {
   return value;
 }
 
+function formatIpv4(value: bigint): string {
+  return [24n, 16n, 8n, 0n]
+    .map((shift) => String((value >> shift) & 0xffn))
+    .join(".");
+}
+
 export function parseIp(input: string): ParsedIp | null {
   const trimmed = input.trim().toLowerCase();
   if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
@@ -90,11 +100,19 @@ export function parseIp(input: string): ParsedIp | null {
   if (v6 === null) {
     return null;
   }
+  if (v6 >> IPV4_BITS_BIGINT === IPV4_MAPPED_HIGH_BITS) {
+    const v4 = v6 & IPV4_MASK;
+    return { version: "v4", value: v4, normalized: formatIpv4(v4) };
+  }
   return { version: "v6", value: v6, normalized: trimmed };
 }
 
 export function parseCidr(prefix: string): CrawlerIpRange | null {
-  const [address, lengthText] = prefix.trim().split("/");
+  const match = CIDR_PATTERN.exec(prefix.trim());
+  if (!match) {
+    return null;
+  }
+  const [, address, lengthText] = match;
   if (!address) {
     return null;
   }

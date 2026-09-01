@@ -3,10 +3,9 @@ import { Redis } from "@upstash/redis";
 import { IP_CHECKER_LIST_REVALIDATE_SECONDS } from "@/constants/ip-checker";
 import type { CrawlerIpList, CrawlerIpListPayload } from "@/types/ip-checker";
 
-const MEMORY_TTL_MS = IP_CHECKER_LIST_REVALIDATE_SECONDS * 1000;
 const REDIS_KEY_PREFIX = "ip-checker:list:";
 
-let memory: { lists: CrawlerIpList[]; expiresAt: number } | null = null;
+const memory = new Map<string, { list: CrawlerIpList; expiresAt: number }>();
 let redis: Redis | null = null;
 
 function getRedis(): Redis | null {
@@ -22,15 +21,19 @@ function getRedis(): Redis | null {
   return redis;
 }
 
-export function readListsFromMemory(): CrawlerIpList[] | null {
-  if (memory && memory.expiresAt > Date.now()) {
-    return memory.lists;
+export function readListFromMemory(sourceId: string): CrawlerIpList | null {
+  const entry = memory.get(sourceId);
+  if (entry && entry.expiresAt > Date.now()) {
+    return entry.list;
   }
   return null;
 }
 
-export function writeListsToMemory(lists: CrawlerIpList[]): void {
-  memory = { lists, expiresAt: Date.now() + MEMORY_TTL_MS };
+export function writeListToMemory(list: CrawlerIpList, ttlSeconds: number) {
+  memory.set(list.source.id, {
+    list,
+    expiresAt: Date.now() + ttlSeconds * 1000,
+  });
 }
 
 export async function readPayloadFromRedis(

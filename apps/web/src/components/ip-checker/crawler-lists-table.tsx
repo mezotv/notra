@@ -16,6 +16,9 @@ export function CrawlerListsTable({ lists }: CrawlerListsTableProps) {
   return (
     <div className="overflow-x-auto rounded-2xl border border-[#1E1E1E14] bg-white dark:border-white/10 dark:bg-white/[0.03]">
       <table className="w-full min-w-[52rem] border-collapse">
+        <caption className="sr-only">
+          AI crawler IP range lists published by each vendor
+        </caption>
         <thead>
           <tr className="border-b border-[#1E1E1E0D] dark:border-white/10">
             <th className={headCellClass} scope="col">

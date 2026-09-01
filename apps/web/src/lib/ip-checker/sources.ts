@@ -3,14 +3,15 @@ import { Data, Effect } from "effect";
 import {
   CRAWLER_IP_SOURCES,
   IP_CHECKER_EASTER_EGGS,
+  IP_CHECKER_FAILURE_CACHE_SECONDS,
   IP_CHECKER_FETCH_TIMEOUT_MS,
   IP_CHECKER_FETCH_USER_AGENT,
   IP_CHECKER_LIST_REVALIDATE_SECONDS,
 } from "@/constants/ip-checker";
 import {
-  readListsFromMemory,
+  readListFromMemory,
   readPayloadFromRedis,
-  writeListsToMemory,
+  writeListToMemory,
   writePayloadToRedis,
 } from "@/lib/ip-checker/cache";
 import { parseCidr, rangeContains } from "@/lib/ip-checker/cidr";
@@ -64,9 +65,15 @@ const fetchCrawlerIpList = Effect.fn("fetchCrawlerIpList")(function* (
   for (const entry of payload.prefixes) {
     const prefix = entry.ipv4Prefix ?? entry.ipv6Prefix;
     const range = prefix ? parseCidr(prefix) : null;
-    if (range) {
-      ranges.push(range);
+    if (!range) {
+      return yield* Effect.fail(
+        new CrawlerIpListFetchError({
+          sourceId: source.id,
+          cause: new Error(`Malformed prefix in ${source.url}: ${prefix}`),
+        })
+      );
     }
+    ranges.push(range);
   }
 
   return {
@@ -80,7 +87,11 @@ const fetchCrawlerIpList = Effect.fn("fetchCrawlerIpList")(function* (
 const loadCrawlerIpList = Effect.fn("loadCrawlerIpList")(function* (
   source: CrawlerIpSource
 ) {
-  return yield* fetchCrawlerIpList(source).pipe(
+  const cached = readListFromMemory(source.id);
+  if (cached) {
+    return cached;
+  }
+  const list = yield* fetchCrawlerIpList(source).pipe(
     Effect.catch(() =>
       Effect.succeed({
         source,
@@ -90,21 +101,20 @@ const loadCrawlerIpList = Effect.fn("loadCrawlerIpList")(function* (
       } satisfies CrawlerIpList)
     )
   );
+  writeListToMemory(
+    list,
+    list.ok
+      ? IP_CHECKER_LIST_REVALIDATE_SECONDS
+      : IP_CHECKER_FAILURE_CACHE_SECONDS
+  );
+  return list;
 });
 
 export const loadCrawlerIpLists = Effect.fn("loadCrawlerIpLists")(function* () {
-  const cached = readListsFromMemory();
-  if (cached) {
-    return cached;
-  }
-  const lists = yield* Effect.all(
+  return yield* Effect.all(
     CRAWLER_IP_SOURCES.map((source) => loadCrawlerIpList(source)),
     { concurrency: "unbounded" }
   );
-  if (lists.every((list) => list.ok)) {
-    writeListsToMemory(lists);
-  }
-  return lists;
 });
 
 function findCrawlerMatches(
@@ -138,12 +148,12 @@ export function buildIpCheckResult(
   ip: ParsedIp
 ): IpCheckResult {
   let listsChecked = 0;
-  const listsUnavailable: string[] = [];
+  const unavailableVendors = new Set<string>();
   for (const list of lists) {
     if (list.ok) {
       listsChecked += 1;
     } else {
-      listsUnavailable.push(list.source.vendor);
+      unavailableVendors.add(list.source.vendor);
     }
   }
   return {
@@ -153,7 +163,8 @@ export function buildIpCheckResult(
       IP_CHECKER_EASTER_EGGS.find((egg) => egg.ip === ip.normalized) ?? null,
     matches: findCrawlerMatches(lists, ip),
     listsChecked,
-    listsUnavailable,
+    listsTotal: lists.length,
+    listsUnavailable: [...unavailableVendors],
   };
 }
 
