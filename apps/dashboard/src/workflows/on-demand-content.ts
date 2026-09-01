@@ -1,11 +1,15 @@
+import { describeContentBillingDenial } from "@notra/ai/billing/content-billing";
 import { contentGenerationWorkflowPayloadSchema } from "@notra/content-generation/schemas";
 import { flattenError } from "zod";
+
+import { WORKFLOW_ANALYTICS_NAMES } from "@/constants/workflow-analytics";
 import type { OnDemandContentWorkflowResult } from "@/types/workflows/on-demand-generation";
+
 import {
   appendAutomationLog,
   claimWorkflowExecution,
-  finalizeAiCredit,
-  gateAndReserveAiCredits,
+  finalizeContentBilling,
+  gateContentBilling,
   trackContentOutcome,
 } from "./steps/content-generation-steps";
 import { runOnDemandGeneration } from "./steps/on-demand-generation-step";
@@ -48,10 +52,13 @@ export async function onDemandContentWorkflow(
     source,
   } = parsed;
 
+  const workflowStartedAt = Date.now();
   const claimToken = crypto.randomUUID();
   const claim = await claimWorkflowExecution({
     executionId: runId,
     claimToken,
+    organizationId,
+    workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
   });
   if (!claim.claimed) {
     console.warn(
@@ -62,17 +69,20 @@ export async function onDemandContentWorkflow(
 
   await markOnDemandJobRunning({ jobId, contentType });
 
-  const gate = await gateAndReserveAiCredits({
+  const gate = await gateContentBilling({
     organizationId,
     executionId: runId,
+    outputType: contentType,
   });
   if (!gate.allowed) {
     await finishOnDemand({
       organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+      startedAt: workflowStartedAt,
       contentType,
       status: "failed",
-      reason: "AI credit limit reached",
+      reason: describeContentBillingDenial(gate),
       source,
       jobId,
     });
@@ -92,8 +102,8 @@ export async function onDemandContentWorkflow(
       resolveManualBrandSettings({ organizationId, brandVoiceId }),
     ]);
   } catch (error) {
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -102,8 +112,8 @@ export async function onDemandContentWorkflow(
 
   const hasLinearSources = Boolean(
     dataPoints.includeLinearData &&
-      linearIntegrationIds &&
-      linearIntegrationIds.length > 0
+    linearIntegrationIds &&
+    linearIntegrationIds.length > 0
   );
 
   if (repositories.length === 0 && !hasLinearSources) {
@@ -113,14 +123,16 @@ export async function onDemandContentWorkflow(
     await finishOnDemand({
       organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+      startedAt: workflowStartedAt,
       contentType,
       status: "failed",
       reason: "No valid data sources found",
       source,
       jobId,
     });
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -148,12 +160,15 @@ export async function onDemandContentWorkflow(
       repositories,
       brand,
       hasLinearSources,
+      chargeAiCredits: gate.mode === "ai_credits",
     });
 
     if (contentResult.status === "skipped") {
       await finishOnDemand({
         organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+        startedAt: workflowStartedAt,
         contentType,
         status: "skipped",
         reason: contentResult.reason,
@@ -168,8 +183,8 @@ export async function onDemandContentWorkflow(
         status: "skipped",
         errorMessage: contentResult.reason,
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -206,6 +221,8 @@ export async function onDemandContentWorkflow(
       await finishOnDemand({
         organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+        startedAt: workflowStartedAt,
         contentType,
         status: "failed",
         reason,
@@ -220,8 +237,8 @@ export async function onDemandContentWorkflow(
         status: "failed",
         errorMessage: reason,
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -246,6 +263,8 @@ export async function onDemandContentWorkflow(
       await finishOnDemand({
         organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+        startedAt: workflowStartedAt,
         contentType,
         status: "failed",
         reason: "No content was generated",
@@ -260,8 +279,8 @@ export async function onDemandContentWorkflow(
         status: "failed",
         errorMessage: "No content was generated",
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -289,6 +308,8 @@ export async function onDemandContentWorkflow(
     await finishOnDemand({
       organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+      startedAt: workflowStartedAt,
       contentType,
       status: "success",
       title: contentTitle,
@@ -299,12 +320,12 @@ export async function onDemandContentWorkflow(
     });
 
     try {
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "confirm",
+        units: createdPosts.length,
         usage: contentResult.usage,
         fallbackModelId: "anthropic/claude-sonnet-4.6",
-        useMarkup: gate.useMarkup,
         properties: {
           source: "manual",
           output_type: contentType,
@@ -349,14 +370,16 @@ export async function onDemandContentWorkflow(
     await finishOnDemand({
       organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.ON_DEMAND_CONTENT,
+      startedAt: workflowStartedAt,
       contentType,
       status: "failed",
       reason: "Unexpected workflow error",
       source,
       jobId,
     });
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });

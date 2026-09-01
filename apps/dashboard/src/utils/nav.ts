@@ -1,7 +1,9 @@
-import { GEO_WRITER_NAV_LINK } from "@/constants/geo";
+import { GEO_WRITER_NAV_LINK } from "@notra/geo-core/constants/geo";
+
 import {
   ANALYTICS_NAV_LINK,
   DEFAULT_NAV_VISIBILITY,
+  GEO_OVERVIEW_NAV_LINK,
   GEO_ROUTE_SECTIONS,
   NAV_GEO_IMPROVE_LINKS,
   NAV_MAIN_ITEMS,
@@ -13,7 +15,8 @@ import type {
   NavVisibility,
   SidebarMode,
 } from "@/types/components/nav";
-import { filterGeoWriterNavItems } from "./geo-writer-flag";
+
+import { geoNavHref } from "./geo-paths";
 import { filterIrisNavItems } from "./iris-flag";
 
 const NAV_ITEMS_BY_LINK = new Map(
@@ -28,8 +31,11 @@ export function resolveSidebarMode(
   section: string | undefined,
   storedMode: SidebarMode | null
 ): SidebarMode {
+  // Org root is both Studio home and the dashboard entry URL. Keep a stored
+  // GEO pick so opening `/{slug}` can restore that mode instead of writing
+  // studio over it.
   if (section === undefined) {
-    return "studio";
+    return storedMode ?? "studio";
   }
   if (GEO_ROUTE_SECTIONS.has(section)) {
     return "geo";
@@ -38,6 +44,22 @@ export function resolveSidebarMode(
     return "studio";
   }
   return storedMode ?? SIDEBAR_DEFAULT_MODE;
+}
+
+export function isOrgRootPath(pathname: string, slug: string): boolean {
+  return pathname === `/${slug}` || pathname === `/${slug}/`;
+}
+
+/** Path to send a bare dashboard open to, or null to stay on Studio home. */
+export function resolveOrgRootRedirect(
+  slug: string,
+  storedMode: SidebarMode | null,
+  projectId?: string
+): string | null {
+  if (storedMode !== "geo") {
+    return null;
+  }
+  return geoNavHref(slug, GEO_OVERVIEW_NAV_LINK, projectId);
 }
 
 export function resolveNavItems(
@@ -54,10 +76,7 @@ export function resolveNavItems(
   const withAnalytics = visibility.analytics
     ? items
     : items.filter((item) => item.link !== ANALYTICS_NAV_LINK);
-  return filterGeoWriterNavItems(
-    filterIrisNavItems(withAnalytics, visibility.iris),
-    visibility.writer
-  );
+  return filterIrisNavItems(withAnalytics, visibility.iris);
 }
 
 export function resolveGeoImproveLinks(

@@ -301,11 +301,6 @@ brandIdentitiesRoutes.openapi(createBrandIdentityRoute, async (c) => {
     );
   }
 
-  const rateLimited = await enforceRatelimit(c, ratelimit.brandGeneration);
-  if (rateLimited) {
-    return rateLimited;
-  }
-
   const body = c.req.valid("json");
   const runtimeEnv = c.env ?? {};
   const redis = getRedis(runtimeEnv);
@@ -339,6 +334,13 @@ brandIdentitiesRoutes.openapi(createBrandIdentityRoute, async (c) => {
       { error: "A brand identity with this name already exists" },
       409
     );
+  }
+
+  // Charged immediately before the brand analysis workflow is queued: the 404,
+  // 503 and 409 above must not spend the caller's budget.
+  const rateLimited = await enforceRatelimit(c, ratelimit.brandGeneration);
+  if (rateLimited) {
+    return rateLimited;
   }
 
   try {

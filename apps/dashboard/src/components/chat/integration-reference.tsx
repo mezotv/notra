@@ -5,6 +5,7 @@ import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Fragment, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+
 import { McpIcon } from "@/components/integrations/mcp-icon";
 import { INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX } from "@/constants/integration-reference";
 import type { McpIconUrls } from "@/types/integrations/mcp";

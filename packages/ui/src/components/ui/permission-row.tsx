@@ -5,6 +5,7 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { useId, useState } from "react";
 import { cn } from "@notra/ui/lib/utils";
 import {
+  type PermissionIndicatorMotion,
   PermissionRowContext,
   type PermissionRowContextValue,
 } from "./permission-selector-context";
@@ -62,6 +63,8 @@ export interface PermissionRowProps {
   onValueChange?: (value: string) => void;
   disabled?: boolean;
   className?: string;
+  layout?: "row" | "compact";
+  indicatorMotion?: PermissionIndicatorMotion;
 }
 
 export function PermissionRow({
@@ -73,6 +76,8 @@ export function PermissionRow({
   onValueChange,
   disabled = false,
   className,
+  layout = "row",
+  indicatorMotion = "spring",
 }: PermissionRowProps) {
   const layoutId = useId();
   const [internalValue, setInternalValue] = useState(defaultValue);
@@ -87,36 +92,51 @@ export function PermissionRow({
     value: activeValue,
     select,
     layoutId,
+    indicatorMotion,
     disabled,
   };
+
+  const ariaLabel = typeof label === "string" ? label : undefined;
+  const optionGroup = (
+    <div
+      aria-label={ariaLabel}
+      className={cn(
+        "flex shrink-0 items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5",
+        layout === "compact" && className
+      )}
+      onKeyDown={handlePermissionRowKeyDown}
+      role="radiogroup"
+      tabIndex={disabled ? -1 : 0}
+    >
+      {children}
+    </div>
+  );
 
   return (
     <PermissionRowContext.Provider value={context}>
       <LazyMotion features={domMax}>
-        <div
-          className={cn(
-            "flex items-center justify-between gap-4 px-4 py-3",
-            className
-          )}
-        >
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="font-medium text-foreground text-sm">{label}</span>
-            {description && (
-              <span className="text-muted-foreground text-xs">
-                {description}
-              </span>
-            )}
-          </div>
+        {layout === "compact" ? (
+          optionGroup
+        ) : (
           <div
-            aria-label={typeof label === "string" ? label : undefined}
-            className="flex shrink-0 items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5"
-            onKeyDown={handlePermissionRowKeyDown}
-            role="radiogroup"
-            tabIndex={disabled ? -1 : 0}
+            className={cn(
+              "flex items-center justify-between gap-4 px-4 py-3",
+              className
+            )}
           >
-            {children}
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span className="font-medium text-foreground text-sm">
+                {label}
+              </span>
+              {description && (
+                <span className="text-muted-foreground text-xs">
+                  {description}
+                </span>
+              )}
+            </div>
+            {optionGroup}
           </div>
-        </div>
+        )}
       </LazyMotion>
     </PermissionRowContext.Provider>
   );

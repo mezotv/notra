@@ -2,8 +2,17 @@
 
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { GeoBar } from "@notra/ui/components/geo/geo-bar";
-import { InstrumentSection } from "@notra/ui/components/instrument/instrument-module";
+import {
+  GEO_MAX_LANGUAGES,
+  GEO_SPARKLINE_MIN_POINTS,
+  GEO_VISIBILITY_TABLE_ROWS,
+} from "@notra/geo-core/constants/geo";
+import type { LanguagePerformanceRow } from "@notra/geo-core/types/geo";
+import {
+  buildLanguagePerformanceRows,
+  trackedGeoLanguages,
+  withAddedGeoLanguage,
+} from "@notra/geo-core/utils/geo-language-rows";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -20,44 +29,21 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useCallback, useMemo, useState } from "react";
+
 import { Button } from "@/components/button";
-import { GeoLanguagesDialog } from "@/components/geo/geo-languages-dialog";
+import { GeoBar } from "@/components/geo/geo-bar";
+import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Twemoji } from "@/components/geo/twemoji";
+import { InstrumentSection } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
-import {
-  GEO_LANGUAGE_FLAGS,
-  GEO_MAX_LANGUAGES,
-  GEO_VISIBILITY_TABLE_ROWS,
-} from "@/constants/geo";
+import { LANGUAGE_FLAGS } from "@/constants/language-flags";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
-import type {
-  LanguagePerformanceCardProps,
-  LanguagePerformanceRow,
-} from "@/types/geo";
+import type { LanguagePerformanceCardProps } from "@/types/geo";
 import { formatMentionRate } from "@/utils/geo-charts";
-import {
-  buildLanguagePerformanceRows,
-  trackedGeoLanguages,
-  withAddedGeoLanguage,
-} from "@/utils/geo-language-rows";
 import { GEO_VISIBILITY_TABLE_HEIGHT } from "@/utils/table";
-
-function trackedChecksLabel(
-  mentions: number,
-  checks: number,
-  isScanning: boolean
-) {
-  if (checks > 0) {
-    return `${mentions}/${checks} checks`;
-  }
-  if (isScanning) {
-    return "Scanning…";
-  }
-  return "No checks yet";
-}
 
 function LanguageNameCell({
   language,
@@ -75,7 +61,7 @@ function LanguageNameCell({
     >
       <Twemoji
         className={cn("size-4 shrink-0", muted && "opacity-40")}
-        emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+        emoji={LANGUAGE_FLAGS[language as keyof typeof LANGUAGE_FLAGS] ?? ""}
         label={language}
       />
       <span className={cn("min-w-0 truncate", !muted && "font-medium")}>
@@ -150,13 +136,11 @@ function LanguageAddButton({
 function languagePerformanceColumns({
   adding,
   atLimit,
-  isScanning,
   pendingLanguage,
   onAddLanguage,
 }: {
   adding: boolean;
   atLimit: boolean;
-  isScanning: boolean;
   pendingLanguage: string | undefined;
   onAddLanguage: (language: string) => void;
 }): TableColumn<LanguagePerformanceRow>[] {
@@ -197,12 +181,9 @@ function languagePerformanceColumns({
         ),
     },
     {
-      key: "checks",
-      header: "Checks",
+      key: "trend",
+      header: "Trend",
       width: "7.5rem",
-      sortable: true,
-      sortValue: (row) =>
-        row.kind === "tracked" ? row.checks : Number.NEGATIVE_INFINITY,
       cell: (row) =>
         row.kind === "suggested" ? (
           <LanguageAddButton
@@ -212,10 +193,14 @@ function languagePerformanceColumns({
             onAdd={onAddLanguage}
             pending={pendingLanguage === row.language}
           />
+        ) : (row.trend?.length ?? 0) >= GEO_SPARKLINE_MIN_POINTS ? (
+          <GeoRateSparkline
+            className="text-geo-search"
+            label={`${row.language} mention rate trend`}
+            points={row.trend ?? []}
+          />
         ) : (
-          <span className="text-[0.6875rem] text-muted-foreground tabular-nums">
-            {trackedChecksLabel(row.mentions, row.checks, isScanning)}
-          </span>
+          <span className="text-muted-foreground text-xs">-</span>
         ),
     },
   ];
@@ -225,9 +210,7 @@ export function LanguagePerformanceCard({
   points,
   organizationId,
   settings,
-  isScanning = false,
 }: LanguagePerformanceCardProps) {
-  const [languagesOpen, setLanguagesOpen] = useState(false);
   const [languageToAdd, setLanguageToAdd] = useState<string>();
   const upsert = useGeoSettingsUpsert(organizationId);
   const savedExtras = trackedGeoLanguages(settings.languages);
@@ -236,9 +219,10 @@ export function LanguagePerformanceCard({
     upsert.isPending && upsert.variables
       ? trackedGeoLanguages(upsert.variables.languages)
       : savedExtras;
+  const configuredLanguageSet = new Set(configuredLanguages);
   const pendingLanguage =
     configuredLanguages.find((language) => !savedExtraSet.has(language)) ??
-    savedExtras.find((language) => !configuredLanguages.includes(language));
+    savedExtras.find((language) => !configuredLanguageSet.has(language));
   const atLimit = configuredLanguages.length >= GEO_MAX_LANGUAGES;
 
   const rows = buildLanguagePerformanceRows({
@@ -296,25 +280,15 @@ export function LanguagePerformanceCard({
       languagePerformanceColumns({
         adding: upsert.isPending,
         atLimit,
-        isScanning,
         onAddLanguage: setLanguageToAdd,
         pendingLanguage,
       }),
-    [atLimit, isScanning, pendingLanguage, upsert.isPending]
+    [atLimit, pendingLanguage, upsert.isPending]
   );
 
   return (
     <>
       <InstrumentSection
-        action={
-          <button
-            className="text-muted-foreground text-xs underline-offset-4 hover:text-foreground hover:underline"
-            onClick={() => setLanguagesOpen(true)}
-            type="button"
-          >
-            Languages
-          </button>
-        }
         bodyClassName="flex min-h-0 flex-1 flex-col"
         className="h-full"
         eyebrow="Performance by language"
@@ -358,14 +332,6 @@ export function LanguagePerformanceCard({
           </ResponsiveAlertDialogFooter>
         </ResponsiveAlertDialogContent>
       </ResponsiveAlertDialog>
-      <GeoLanguagesDialog
-        companyName={settings.companyName}
-        enabled={settings.enabled}
-        onOpenChange={setLanguagesOpen}
-        open={languagesOpen}
-        organizationId={organizationId}
-        settings={settings}
-      />
     </>
   );
 }

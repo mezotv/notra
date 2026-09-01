@@ -1,4 +1,5 @@
 import type { ContextItem, TextSelection } from "@notra/ai/types/chat";
+
 import { contentChatMessageMetadataSchema } from "@/schemas/content";
 import type {
   ContentChatAttachments,

@@ -11,6 +11,7 @@ import {
 } from "@notra/ui/components/ui/combobox";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Github } from "@notra/ui/components/ui/svgs/github";
+
 import { AddRepositoryButton } from "@/components/integrations/add-repository-button";
 import type { EventTriggerRepositoriesSectionProps } from "@/types/automation/event-trigger";
 
@@ -25,7 +26,7 @@ export function EventTriggerRepositoriesSection({
   return (
     <section className="space-y-3">
       <div className="space-y-1">
-        <h3 className="flex items-center gap-1 font-semibold text-base">
+        <h3 className="flex items-center gap-1 text-base font-semibold">
           Repositories
           <span aria-hidden="true" className="text-destructive">
             *
@@ -38,7 +39,7 @@ export function EventTriggerRepositoriesSection({
       {isLoading && <Skeleton className="h-10 w-full" />}
       {!isLoading && options.length === 0 && (
         <div className="flex items-center gap-2 rounded-lg border border-dashed p-3">
-          <span className="flex-1 text-muted-foreground text-xs">
+          <span className="text-muted-foreground flex-1 text-xs">
             No GitHub repositories connected yet.
           </span>
           <AddRepositoryButton onAdd={onAddRepository} />

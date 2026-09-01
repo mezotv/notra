@@ -23,7 +23,7 @@ export function ThemeToggle() {
       <SidebarMenuButton>
         <div className="size-4" />
         {!isCollapsed && (
-          <span className="flex-1 text-sidebar-foreground text-sm">
+          <span className="text-sidebar-foreground flex-1 text-sm">
             Dark Mode
           </span>
         )}

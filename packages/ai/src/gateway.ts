@@ -1,5 +1,6 @@
 import type { SharedV3ProviderMetadata } from "@ai-sdk/provider";
 import { resolveOrganizationPlan } from "@notra/ai/billing/plan";
+import { resolveOrganizationZdrMode } from "@notra/ai/billing/zdr";
 import { AGENT_DEFAULT_MODEL } from "@notra/ai/constants/models";
 import { ROUTER_POLICY } from "@notra/ai/constants/router";
 import { log } from "@notra/ai/evlog";
@@ -75,6 +76,7 @@ function createRouter(): ModelRouter {
   return createModelRouter({
     adapters: buildAdapters(),
     resolvePlan: resolveOrganizationPlan,
+    resolveZdr: resolveOrganizationZdrMode,
     policy: ROUTER_POLICY,
     logger: routerLogger,
   });

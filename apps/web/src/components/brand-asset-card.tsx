@@ -4,8 +4,9 @@ import { Copy01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button, buttonVariants } from "@notra/ui/components/ui/button";
 import { cn } from "@notra/ui/lib/utils";
-import { copySvgAsset } from "@/utils/copy-svg-asset";
 import type { BrandAssetCardProps } from "~types/brand";
+
+import { copySvgAsset } from "@/utils/copy-svg-asset";
 
 export function BrandAssetCard({
   variant,
@@ -17,7 +18,7 @@ export function BrandAssetCard({
   return (
     <div
       className={cn(
-        "group relative flex h-48 items-center justify-center rounded-2xl border border-border/70",
+        "group border-border/70 relative flex h-48 items-center justify-center rounded-2xl border",
         variant === "light" ? "bg-white" : "bg-[#131316]"
       )}
     >

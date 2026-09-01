@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+
 import { getAllUserOrganizations } from "@/lib/auth/actions";
 import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
 

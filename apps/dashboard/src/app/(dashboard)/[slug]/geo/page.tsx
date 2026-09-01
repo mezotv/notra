@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+
 import PageClient from "./page-client";
 import { GeoPageSkeleton } from "./skeleton";
 

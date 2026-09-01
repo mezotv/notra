@@ -24,4 +24,5 @@ export interface AgentContentTaskOptions {
   commitWindow?: { since: string; until: string };
   autoPublish?: boolean;
   voiceId?: string;
+  chargeAiCredits?: boolean;
 }

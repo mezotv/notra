@@ -8,6 +8,8 @@ export type ChatgptModelId =
 
 export type ChatgptEffortId = "instant" | "medium" | "high" | "extra-high";
 
+export type ChatgptMessageRole = "user" | "assistant";
+
 export interface ChatgptModelOption {
   id: ChatgptModelId;
   label: string;

@@ -1,4 +1,3 @@
-import { hasZdrEntitlement } from "@notra/ai/billing/zdr";
 import {
   FEEDBACK_CLASSIFIER_FEATURE,
   FEEDBACK_CLASSIFIER_MAX_MESSAGE_CHARS,
@@ -33,11 +32,9 @@ export async function classifyAgentFeedback(
   params: ClassifyAgentFeedbackParams
 ): Promise<AgentFeedbackClassification | null> {
   try {
-    const zdr = await hasZdrEntitlement(params.organizationId);
     const { object } = await generateObject({
       model: gateway(FEEDBACK_CLASSIFIER_MODEL_ID, {
         organizationId: params.organizationId,
-        zdr: zdr ? "required" : "preferred",
       }),
       schema: feedbackClassificationSchema,
       system: FEEDBACK_CLASSIFIER_SYSTEM_PROMPT,

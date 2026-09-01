@@ -5,6 +5,7 @@ import {
 import type {
   CreditSnapshot,
   CreditTracker,
+  FallbackReason,
   GatewayId,
   UnavailableMark,
 } from "@notra/ai/types/router";
@@ -15,7 +16,22 @@ export function createCreditTracker(
   unavailableTtlMs: number = DEFAULT_UNAVAILABLE_TTL_MS
 ): CreditTracker {
   const snapshots = new Map<GatewayId, CreditSnapshot>();
-  const marks = new Map<GatewayId, UnavailableMark>();
+  const marks = new Map<string, UnavailableMark>();
+
+  const markKey = (gateway: GatewayId, modelId?: string): string =>
+    modelId ? `${gateway}:${modelId}` : gateway;
+
+  const readMark = (key: string): FallbackReason | undefined => {
+    const mark = marks.get(key);
+    if (!mark) {
+      return undefined;
+    }
+    if (mark.until > now()) {
+      return mark.reason;
+    }
+    marks.delete(key);
+    return undefined;
+  };
 
   const isFresh = (snapshot: CreditSnapshot | undefined): boolean =>
     snapshot !== undefined && now() - snapshot.checkedAt < ttlMs;
@@ -35,22 +51,22 @@ export function createCreditTracker(
     markExhausted(gateway) {
       snapshots.set(gateway, { balance: 0, checkedAt: now() });
     },
-    markUnavailable(gateway, reason) {
-      marks.set(gateway, { reason, until: now() + unavailableTtlMs });
+    markUnavailable(gateway, reason, modelId) {
+      marks.set(markKey(gateway, modelId), {
+        reason,
+        until: now() + unavailableTtlMs,
+      });
     },
     isExhausted,
-    unavailableReason(gateway) {
+    unavailableReason(gateway, modelId) {
       if (isExhausted(gateway)) {
         return "no-credits";
       }
-      const mark = marks.get(gateway);
-      if (mark && mark.until > now()) {
-        return mark.reason;
+      const gatewayWide = readMark(markKey(gateway));
+      if (gatewayWide) {
+        return gatewayWide;
       }
-      if (mark) {
-        marks.delete(gateway);
-      }
-      return undefined;
+      return modelId ? readMark(markKey(gateway, modelId)) : undefined;
     },
     isStale(gateway) {
       return !isFresh(snapshots.get(gateway));

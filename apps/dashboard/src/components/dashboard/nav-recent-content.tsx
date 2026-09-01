@@ -11,16 +11,19 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import {
   CONTENT_NAV_LINK,
   NAV_RECENT_LABEL,
   NAV_RECENT_LIMIT,
   NAV_RECENT_SKELETON_IDS,
+  NAV_RECENT_TITLE_CLASS,
   POST_STATUS_DOT_CLASS,
   POST_STATUS_LABELS,
 } from "@/constants/nav";
 import { usePosts } from "@/lib/hooks/use-posts";
 import type { NavRecentContentProps } from "@/types/components/nav";
+
 import { SidebarLabel } from "./sidebar-label";
 
 export function NavRecentContent({
@@ -62,16 +65,15 @@ export function NavRecentContent({
                             POST_STATUS_DOT_CLASS[post.status]
                           )}
                         />
-                        <span className="min-w-0 flex-1 truncate">
+                        <span className={NAV_RECENT_TITLE_CLASS}>
                           {post.title}
                         </span>
-                        <span className="ml-auto shrink-0 text-[0.625rem] text-muted-foreground">
+                        <span className="text-muted-foreground ml-auto shrink-0 text-[0.625rem]">
                           {POST_STATUS_LABELS[post.status]}
                         </span>
                       </Link>
                     }
                     size="sm"
-                    tooltip={post.title}
                   />
                 </SidebarMenuItem>
               );

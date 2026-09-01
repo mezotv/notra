@@ -79,7 +79,6 @@ export function ChatgptModelSelector({
       <DropdownMenuContent
         align="end"
         className={cn("w-64", MENU_SURFACE)}
-        showBackdrop={false}
         side="top"
         sideOffset={8}
       >

@@ -303,7 +303,9 @@ async function humanizeMarkdown(
   const model = createModel(
     options.organizationId,
     GEO_WRITER_MODEL,
-    { disableMemory: true },
+    {
+      disableMemory: true,
+    },
     options.log
   );
 
@@ -366,7 +368,9 @@ export async function runGeoWriter(
   const model = createModel(
     organizationId,
     GEO_WRITER_MODEL,
-    { disableMemory: true },
+    {
+      disableMemory: true,
+    },
     log
   );
 

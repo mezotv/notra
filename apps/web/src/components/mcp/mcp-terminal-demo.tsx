@@ -3,6 +3,7 @@ import { ClaudeMessage } from "@notra/ui/components/brainless/claude/claude-mess
 import { ClaudePrompt } from "@notra/ui/components/brainless/claude/claude-prompt";
 import { ClaudeTodoList } from "@notra/ui/components/brainless/claude/claude-todo-list";
 import { ClaudeToolCall } from "@notra/ui/components/brainless/claude/claude-tool-call";
+
 import {
   MCP_TERMINAL_ASSISTANT_MESSAGE,
   MCP_TERMINAL_HEADER,
@@ -26,7 +27,7 @@ export function McpTerminalDemo({ toolCount }: McpTerminalDemoProps) {
           <div className="size-2.5 shrink-0 rounded-full bg-[#4A4A4A]" />
           <div className="size-2.5 shrink-0 rounded-full bg-[#4A4A4A]" />
         </div>
-        <span className="font-mono text-[#FFFFFF66] text-[0.75rem] leading-4">
+        <span className="font-mono text-[0.75rem] leading-4 text-[#FFFFFF66]">
           {MCP_TERMINAL_TITLE}
         </span>
       </div>

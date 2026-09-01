@@ -4,6 +4,7 @@ import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import { Reddit } from "@notra/ui/components/ui/svgs/reddit";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
 import { Youtube } from "@notra/ui/components/ui/svgs/youtube";
+
 import type {
   FooterDitheringConfig,
   FooterLink,

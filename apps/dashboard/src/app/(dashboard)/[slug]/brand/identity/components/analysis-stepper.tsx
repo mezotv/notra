@@ -11,6 +11,7 @@ import {
 } from "@notra/ui/components/ui/stepper";
 import { Loader2Icon } from "lucide-react";
 import type { ReactNode } from "react";
+
 import { ANALYSIS_STEPS } from "@/constants/brand-identity";
 import type { StepIconState } from "@/types/brand-identity";
 import { getStepIconState, getStepperValue } from "@/utils/brand-identity";
@@ -20,7 +21,7 @@ const STEP_ICONS: Record<StepIconState, () => ReactNode> = {
   active: () => <Loader2Icon className="size-4 animate-spin" />,
   pending: () => (
     <HugeiconsIcon
-      className="size-4 text-muted-foreground"
+      className="text-muted-foreground size-4"
       icon={MinusSignIcon}
     />
   ),

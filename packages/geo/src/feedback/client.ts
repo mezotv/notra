@@ -1,6 +1,7 @@
 import {
   DEFAULT_ENDPOINT,
   FEEDBACK_PATH,
+  MISSING_URL_MESSAGE,
   SUBMIT_TIMEOUT_MS,
 } from "./constants";
 import type {
@@ -19,13 +20,31 @@ export class FeedbackSubmitError extends Error {
   }
 }
 
-function feedbackUrl(endpoint: string | undefined): string {
-  const value = endpoint ?? DEFAULT_ENDPOINT;
+function feedbackUrl(options: FeedbackClientOptions): string {
+  if (options.url) {
+    return options.url;
+  }
+  if (!options.token) {
+    throw new Error(MISSING_URL_MESSAGE);
+  }
+  const value = options.endpoint ?? DEFAULT_ENDPOINT;
   let end = value.length;
   while (end > 0 && value[end - 1] === "/") {
     end -= 1;
   }
   return `${value.slice(0, end)}${FEEDBACK_PATH}`;
+}
+
+function feedbackHeaders(
+  options: FeedbackClientOptions
+): Record<string, string> {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+  if (!options.url && options.token) {
+    headers.authorization = `Bearer ${options.token}`;
+  }
+  return headers;
 }
 
 async function readErrorMessage(response: Response): Promise<string> {
@@ -50,12 +69,9 @@ export async function submitFeedback(
   options: FeedbackClientOptions
 ): Promise<FeedbackSubmitResult> {
   const send = options.fetch ?? globalThis.fetch;
-  const response = await send(feedbackUrl(options.endpoint), {
+  const response = await send(feedbackUrl(options), {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      authorization: `Bearer ${options.token}`,
-    },
+    headers: feedbackHeaders(options),
     body: JSON.stringify(input),
     signal: AbortSignal.timeout(options.timeoutMs ?? SUBMIT_TIMEOUT_MS),
   });

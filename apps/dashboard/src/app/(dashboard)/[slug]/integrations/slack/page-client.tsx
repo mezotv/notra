@@ -37,6 +37,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
 import { EmptyState } from "@/components/empty-state";
@@ -53,15 +54,16 @@ import type {
   SlackNotificationChannelPickerProps,
   SlackSettingRowProps,
 } from "@/types/slack-integration";
+
 import { SlackIntegrationsPageSkeleton } from "./skeleton";
 
 const NO_NOTIFICATION_CHANNEL = "__none__";
 
 function SettingRow({ title, description, children }: SlackSettingRowProps) {
   return (
-    <div className="flex flex-col gap-3 border-border/60 border-t py-5 first:border-t-0 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
+    <div className="border-border/60 flex flex-col gap-3 border-t py-5 first:border-t-0 sm:flex-row sm:items-start sm:justify-between sm:gap-8">
       <div className="max-w-sm space-y-1">
-        <p className="font-medium text-sm">{title}</p>
+        <p className="text-sm font-medium">{title}</p>
         <p className="text-muted-foreground text-sm">{description}</p>
       </div>
       <div className="w-full sm:max-w-md">{children}</div>
@@ -316,7 +318,7 @@ function SlackChannelAccessEditor({
         description="Everyone in your workspace can use the agent. People outside your workspace, including Slack Connect guests, cannot and never will. Optionally limit the agent to specific channels."
         title="Channel access"
       >
-        <div className="flex items-center justify-between gap-4 rounded-lg border border-border px-3 py-2.5">
+        <div className="border-border flex items-center justify-between gap-4 rounded-lg border px-3 py-2.5">
           <div className="min-w-0">
             <p className="text-sm">Limit to specific channels</p>
             <p className="text-muted-foreground text-xs">
@@ -334,12 +336,12 @@ function SlackChannelAccessEditor({
 
       {isRestricted && (
         <div className="space-y-3 pb-5">
-          <div className="overflow-hidden rounded-lg border border-border">
-            <div className="relative flex items-center gap-1.5 border-border/60 border-b pr-1.5 pl-2.5">
+          <div className="border-border overflow-hidden rounded-lg border">
+            <div className="border-border/60 relative flex items-center gap-1.5 border-b pr-1.5 pl-2.5">
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <label className="flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border border-input transition-colors hover:border-ring has-checked:border-primary has-checked:bg-primary">
+                    <label className="border-input hover:border-ring has-checked:border-primary has-checked:bg-primary flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm border transition-colors">
                       <input
                         aria-label="Select all channels"
                         checked={allFilteredSelected}
@@ -352,7 +354,7 @@ function SlackChannelAccessEditor({
                 >
                   {allFilteredSelected && (
                     <HugeiconsIcon
-                      className="size-3 text-primary-foreground"
+                      className="text-primary-foreground size-3"
                       icon={Tick02Icon}
                       strokeWidth={3}
                     />
@@ -365,7 +367,7 @@ function SlackChannelAccessEditor({
                 </TooltipContent>
               </Tooltip>
               <HugeiconsIcon
-                className="size-3.5 shrink-0 text-muted-foreground"
+                className="text-muted-foreground size-3.5 shrink-0"
                 icon={Search01Icon}
               />
               <Input
@@ -388,13 +390,13 @@ function SlackChannelAccessEditor({
                 </div>
               )}
               {!isLoading && filteredChannels.length === 0 && (
-                <p className="p-3 text-muted-foreground text-sm">
+                <p className="text-muted-foreground p-3 text-sm">
                   No channels match.
                 </p>
               )}
               {filteredChannels.map((channel) => (
                 <button
-                  className="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left transition-colors hover:bg-accent/50"
+                  className="hover:bg-accent/50 flex w-full items-center justify-between rounded-md px-2.5 py-2 text-left transition-colors"
                   key={channel.id}
                   onClick={() => toggleChannel(channel.id)}
                   type="button"
@@ -402,7 +404,7 @@ function SlackChannelAccessEditor({
                   <span className="flex min-w-0 items-center gap-2">
                     <span className="truncate text-sm">#{channel.name}</span>
                     {channel.memberCount !== null && (
-                      <span className="shrink-0 text-muted-foreground text-xs">
+                      <span className="text-muted-foreground shrink-0 text-xs">
                         {channel.memberCount} members
                       </span>
                     )}
@@ -496,12 +498,12 @@ function SlackIntegrationCard({
       <Card className="gap-0 py-0">
         <div className="flex items-center justify-between gap-4 px-6 py-5">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40">
+            <div className="border-border bg-muted/40 flex size-10 shrink-0 items-center justify-center rounded-lg border">
               <Slack className="size-5" />
             </div>
             <div className="min-w-0">
               <p className="truncate font-medium">{integration.displayName}</p>
-              <p className="truncate text-muted-foreground text-sm">
+              <p className="text-muted-foreground truncate text-sm">
                 {integration.createdByUser
                   ? `Connected by ${integration.createdByUser.name} on ${connectedOn}`
                   : `Connected on ${connectedOn}`}
@@ -625,7 +627,7 @@ export default function PageClient({
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               Slack Integration
             </h1>
             <p className="text-muted-foreground">

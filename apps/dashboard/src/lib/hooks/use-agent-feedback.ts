@@ -9,6 +9,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { toast } from "sonner";
+
 import { AGENT_FEEDBACK_PAGE_SIZE } from "@/constants/agent-feedback";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
@@ -65,6 +66,26 @@ export function useAgentFeedbackUpdateStatus(organizationId: string) {
   });
 }
 
+export function useAgentFeedbackDelete(organizationId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (feedbackId: string) =>
+      dashboardOrpc.agentFeedback.delete.call({
+        organizationId,
+        feedbackId,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.agentFeedback.list.key(),
+      });
+      toast.success("Feedback deleted");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete feedback");
+    },
+  });
+}
+
 export function useAgentFeedbackSetup(organizationId: string) {
   return useQuery<AgentFeedbackSetupResponse>({
     ...dashboardOrpc.agentFeedback.setup.queryOptions({
@@ -72,30 +93,5 @@ export function useAgentFeedbackSetup(organizationId: string) {
     }),
     enabled: !!organizationId,
     retry: false,
-  });
-}
-
-export function useAgentFeedbackTokenRotate(organizationId: string) {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: (): Promise<AgentFeedbackSetupResponse> =>
-      dashboardOrpc.agentFeedback.rotateToken.call({ organizationId }),
-    onSuccess: async (setup) => {
-      queryClient.setQueryData(
-        dashboardOrpc.agentFeedback.setup.queryKey({
-          input: { organizationId },
-        }),
-        setup
-      );
-      await queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.agentFeedback.setup.queryKey({
-          input: { organizationId },
-        }),
-      });
-      toast.success("Feedback token rotated");
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || "Failed to rotate the token");
-    },
   });
 }

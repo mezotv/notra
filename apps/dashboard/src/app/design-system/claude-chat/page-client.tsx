@@ -20,6 +20,7 @@ import { cn } from "@notra/ui/lib/utils";
 import { useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useRef } from "react";
+
 import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
 import { useClaudeChatPlayback } from "@/components/design-system/use-claude-chat-playback";
 import {
@@ -55,7 +56,7 @@ function ClaudeChatFrame({
       {onPlay ? (
         <button
           aria-label={playing ? "Stop playback" : "Play conversation"}
-          className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full border border-black/8 bg-[#faf9f5]/90 text-[#8a8680] shadow-sm backdrop-blur-sm transition-colors hover:text-[#1f1e1b] dark:border-white/10 dark:bg-[#1c1b18]/90 dark:hover:text-foreground"
+          className="dark:hover:text-foreground absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full border border-black/8 bg-[#faf9f5]/90 text-[#8a8680] shadow-sm backdrop-blur-sm transition-colors hover:text-[#1f1e1b] dark:border-white/10 dark:bg-[#1c1b18]/90"
           onClick={onPlay}
           type="button"
         >

@@ -3,11 +3,13 @@ import { organizationNotificationSettings } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import { updateNotificationSettingsSchema } from "@/schemas/notification-settings";
+
 import { forbidden } from "../utils/errors";
 
 const notificationSettingsInputSchema = z.object({

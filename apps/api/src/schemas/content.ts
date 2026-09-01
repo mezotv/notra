@@ -17,6 +17,7 @@ import { toneProfileSchema } from "@notra/ai/schemas/tone";
 import { SUPPORTED_CONTENT_GENERATION_TYPES } from "@notra/content-generation/schemas";
 import { lookbackWindowEnum, postStatusEnum } from "@notra/db/schema";
 import { assertPublicHttpUrl } from "@notra/utils/url";
+
 import { resourceIdSchema } from "./ids";
 
 const HTTP_PROTOCOL_REGEX = /^https?:\/\//i;
@@ -225,7 +226,7 @@ export const errorResponseSchema = z
   })
   .openapi("ErrorResponse");
 
-const organizationResponseSchema = z.object({
+export const organizationResponseSchema = z.object({
   id: z.string(),
   slug: z.string(),
   name: z.string(),

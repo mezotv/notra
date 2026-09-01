@@ -17,6 +17,7 @@ import { and, desc, eq, ilike, or } from "drizzle-orm";
 import { createRequestLogger } from "evlog";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+
 import { commandRoutesForAI } from "@/components/command-palette/registry";
 import { getServerSession } from "@/lib/auth/session";
 import { hasAiCreditsGrant } from "@/lib/billing/subscription";
@@ -264,12 +265,11 @@ export async function POST(request: NextRequest) {
   }
 
   const organizationId = member.organizationId;
-  const hasAiCredits = await hasAiCreditsGrant(organizationId).catch(
-    () => false
-  );
+  const [hasAiCredits, entities] = await Promise.all([
+    hasAiCreditsGrant(organizationId).catch(() => false),
+    fetchEntityContext(organizationId, query, slug),
+  ]);
   const routes = commandRoutesForAI(slug, hasAiCredits);
-
-  const entities = await fetchEntityContext(organizationId, query, slug);
 
   const allPaths = [
     ...routes.map((r) => r.path),
@@ -278,7 +278,9 @@ export async function POST(request: NextRequest) {
 
   try {
     const { object } = await generateObject({
-      model: gateway("anthropic/claude-sonnet-4.6", { organizationId }),
+      model: gateway("anthropic/claude-sonnet-4.6", {
+        organizationId,
+      }),
       schema: resultSchema,
       system: [
         "You are a navigation router for the Notra dashboard command palette.",

@@ -53,7 +53,9 @@ const generatePlannerDraft = Effect.fn("iris.planner.generate")(function* (
   const generated = yield* Effect.tryPromise({
     try: async () => {
       const result = await generateText({
-        model: gateway(IRIS_PLANNER_MODEL_ID, { organizationId }),
+        model: gateway(IRIS_PLANNER_MODEL_ID, {
+          organizationId,
+        }),
         output: Output.object({ schema: plannerDraftOutputSchema }),
         system: buildIrisPlannerSystemPrompt(),
         prompt,

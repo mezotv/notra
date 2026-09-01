@@ -2,7 +2,9 @@ import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integra
 import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
 import { getValidToneProfile } from "@notra/ai/schemas/tone";
 import type { PostSourceMetadata } from "@notra/db/schema";
+import { flushPostHogServer } from "@notra/posthog/server";
 import { createRequestLogger } from "evlog";
+
 import {
   buildDataPointRestrictionInstructions,
   buildSelectedItemsInstructions,
@@ -18,7 +20,8 @@ export async function runOnDemandGeneration(
   input: OnDemandGenerationStepInput
 ): Promise<ContentGenerationResult> {
   "use step";
-  const { payload, repositories, brand, hasLinearSources } = input;
+  const { payload, repositories, brand, hasLinearSources, chargeAiCredits } =
+    input;
   const {
     organizationId,
     userId,
@@ -132,6 +135,7 @@ export async function runOnDemandGeneration(
       organizationId,
       userId,
       collectionId,
+      chargeAiCredits,
       repositories: repositories.map((repository) => ({
         integrationId: repository.id,
         owner: repository.owner,
@@ -178,6 +182,7 @@ export async function runOnDemandGeneration(
     });
   } finally {
     log.emit();
+    await flushPostHogServer();
   }
 }
 

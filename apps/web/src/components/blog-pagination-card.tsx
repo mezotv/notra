@@ -26,9 +26,9 @@ export function BlogPaginationCard({
   return (
     <Link className="group block h-full" href={link.href}>
       <Card
-        className={`h-full gap-3 p-5 transition-colors hover:bg-[#C8B2EE26] hover:ring-primary/40 dark:hover:bg-white/[0.04] ${containerAlignment}`}
+        className={`hover:ring-primary/40 h-full gap-3 p-5 transition-colors hover:bg-[#C8B2EE26] dark:hover:bg-white/[0.04] ${containerAlignment}`}
       >
-        <span className="flex items-center gap-1 font-mono text-neutral-500 text-xs dark:text-neutral-400">
+        <span className="flex items-center gap-1 font-mono text-xs text-neutral-500 dark:text-neutral-400">
           {isRight ? (
             <>
               {label}
@@ -41,7 +41,7 @@ export function BlogPaginationCard({
           ) : (
             <>
               <HugeiconsIcon
-                className="group-hover:-translate-x-0.5 size-3.5 transition-transform"
+                className="size-3.5 transition-transform group-hover:-translate-x-0.5"
                 icon={icon}
                 strokeWidth={2}
               />
@@ -49,12 +49,12 @@ export function BlogPaginationCard({
             </>
           )}
         </span>
-        <h3 className="line-clamp-2 font-display font-medium text-[#1E1E1E] text-base leading-snug tracking-[-0.01em] transition-colors group-hover:text-primary dark:text-white">
+        <h3 className="font-display group-hover:text-primary line-clamp-2 text-base leading-snug font-medium tracking-[-0.01em] text-[#1E1E1E] transition-colors dark:text-white">
           {link.title}
         </h3>
         {link.author ? (
           <div
-            className={`mt-auto flex items-center gap-2 font-sans text-muted-foreground text-sm ${authorRowDirection}`}
+            className={`text-muted-foreground mt-auto flex items-center gap-2 font-sans text-sm ${authorRowDirection}`}
           >
             <Avatar className="size-6" size="sm">
               {link.author.image ? (

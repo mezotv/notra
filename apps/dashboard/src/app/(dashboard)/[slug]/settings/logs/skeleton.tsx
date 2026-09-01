@@ -7,8 +7,8 @@ export function LogsPageSkeleton() {
   const id = useId();
   return (
     <div className="space-y-3">
-      <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
-        <div className="space-y-3 rounded-t-lg bg-background p-4">
+      <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
+        <div className="bg-background space-y-3 rounded-t-lg p-4">
           {Array.from({ length: 10 }).map((_, i) => (
             <div
               className="flex items-center gap-4 py-2"

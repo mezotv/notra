@@ -15,7 +15,7 @@ export function DiffView({ originalMarkdown, currentMarkdown }: DiffViewProps) {
 
   if (!hasChanges) {
     return (
-      <div className="flex items-center justify-center py-12 text-muted-foreground">
+      <div className="text-muted-foreground flex items-center justify-center py-12">
         No changes to display
       </div>
     );

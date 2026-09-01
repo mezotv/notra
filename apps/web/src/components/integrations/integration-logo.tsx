@@ -1,5 +1,6 @@
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
+
 import type { IntegrationLogoProps } from "@/types/integrations";
 
 export function IntegrationLogo({
@@ -23,7 +24,7 @@ export function IntegrationLogo({
         className={cn("flex items-center justify-center", boxClass, className)}
         style={{ ...boxStyle, color: integration.brandColor ?? "#7C3AED" }}
       >
-        <span className="font-sans font-semibold text-[0.9em]">
+        <span className="font-sans text-[0.9em] font-semibold">
           {integration.name.charAt(0).toUpperCase()}
         </span>
       </span>

@@ -2,6 +2,7 @@ import { Alert02Icon, RainbowIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loader2Icon } from "lucide-react";
 import Link from "next/link";
+
 import { Button } from "@/components/button";
 import { IrisReadinessList } from "@/components/iris/iris-readiness-list";
 import { IRIS_EXPLAINER_STEPS } from "@/constants/iris-ui";
@@ -17,11 +18,11 @@ export function IrisStartState({
   return (
     <div className="mx-auto w-full max-w-3xl space-y-10 py-6">
       <div className="space-y-5 text-center">
-        <span className="inline-flex size-11 items-center justify-center rounded-2xl border border-border">
+        <span className="border-border inline-flex size-11 items-center justify-center rounded-2xl border">
           <HugeiconsIcon className="size-5" icon={RainbowIcon} />
         </span>
-        <h1 className="font-bold text-4xl tracking-tight sm:text-5xl">Iris</h1>
-        <p className="mx-auto max-w-xl text-balance text-muted-foreground">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Iris</h1>
+        <p className="text-muted-foreground mx-auto max-w-xl text-balance">
           Iris watches what you ship and does your marketing: it drafts
           changelogs, blog posts with images, and social posts, then asks you on
           Slack before anything goes live.
@@ -48,14 +49,14 @@ export function IrisStartState({
       <div className="grid gap-3 sm:grid-cols-3">
         {IRIS_EXPLAINER_STEPS.map((step) => (
           <div
-            className="space-y-2 rounded-xl border border-border p-4"
+            className="border-border space-y-2 rounded-xl border p-4"
             key={step.key}
           >
             <HugeiconsIcon
-              className="size-4 text-muted-foreground"
+              className="text-muted-foreground size-4"
               icon={step.icon}
             />
-            <p className="font-medium text-sm">{step.title}</p>
+            <p className="text-sm font-medium">{step.title}</p>
             <p className="text-muted-foreground text-xs leading-relaxed">
               {step.description}
             </p>
@@ -64,7 +65,7 @@ export function IrisStartState({
       </div>
 
       <div className="space-y-3">
-        <h2 className="font-medium text-muted-foreground text-sm">
+        <h2 className="text-muted-foreground text-sm font-medium">
           Before you start
         </h2>
         <IrisReadinessList items={readiness} />
@@ -78,7 +79,7 @@ export function IrisStartState({
               Connect a Slack notification channel so Iris can report to you.
               You can still start now and connect it later.{" "}
               <Link
-                className="font-medium text-foreground underline underline-offset-4"
+                className="text-foreground font-medium underline underline-offset-4"
                 href={`/${organizationSlug}/integrations/slack`}
               >
                 Connect Slack

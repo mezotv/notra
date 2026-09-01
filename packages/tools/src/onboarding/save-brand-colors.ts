@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+
 import { db } from "@notra/db/drizzle";
 import {
   brandGuidelineColors,
@@ -7,6 +8,7 @@ import {
 } from "@notra/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { defineTool } from "eve/tools";
+
 import { saveBrandColorsInputSchema } from "../schemas/onboarding-tools";
 import { requireOrganizationId } from "../utils/organization";
 

@@ -1,4 +1,4 @@
-import { GEO_MARKDOWN_ACCEPT_MATCHERS } from "@/constants/geo-accept";
+import { GEO_MARKDOWN_ACCEPT_MATCHERS } from "@notra/geo-core/constants/geo-accept";
 
 const HTML_TYPES = new Set(["text/html", "application/xhtml+xml"]);
 const DEFAULT_QUALITY = 1;

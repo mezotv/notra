@@ -1,6 +1,14 @@
 "use client";
 
 import {
+  GEO_PROMPT_MAX_LENGTH,
+  GEO_PROMPT_MIN_LENGTH,
+} from "@notra/geo-core/constants/geo";
+import {
+  normalizeWebsiteUrl,
+  stripWebsiteProtocol,
+} from "@notra/geo-core/utils/geo-website";
+import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
@@ -23,14 +31,13 @@ import {
 } from "@notra/ui/components/ui/tabs";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { type FormEvent, useId, useRef, useState } from "react";
+
 import { Button } from "@/components/button";
 import { StatusSpinner } from "@/components/geo/status-spinner";
-import { GEO_PROMPT_MAX_LENGTH, GEO_PROMPT_MIN_LENGTH } from "@/constants/geo";
 import { useGeoGenerateFromWebsite } from "@/lib/hooks/use-geo";
 import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import { cn } from "@/lib/utils";
 import type { PromptAddDialogProps, PromptAddMode } from "@/types/geo";
-import { normalizeWebsiteUrl, stripWebsiteProtocol } from "@/utils/geo-website";
 
 function toPromptAddMode(value: string): PromptAddMode {
   return value === "website" ? "website" : "write";
@@ -188,7 +195,7 @@ export function PromptAddDialog({
                         handleAdd();
                       }
                     }}
-                    placeholder="What's the best tool for automating changelogs?"
+                    placeholder="what tools should I use for automating changelogs"
                     ref={promptRef}
                     rows={4}
                     value={draft}

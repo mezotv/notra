@@ -9,7 +9,7 @@ export function GeoRangePickerDemo() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between rounded-lg border p-3">
-        <div className="font-medium text-sm">Time range</div>
+        <div className="text-sm font-medium">Time range</div>
         <GeoRangePicker control={control} />
       </div>
       <div className="grid gap-2 text-sm sm:grid-cols-3">

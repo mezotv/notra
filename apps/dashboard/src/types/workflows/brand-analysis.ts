@@ -5,6 +5,7 @@ export interface BrandAnalysisProgressInput {
   organizationId: string;
   jobId?: string;
   progress: ProgressData;
+  startedAt?: number;
 }
 
 export interface ExtractBrandInfoInput {

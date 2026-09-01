@@ -1,27 +1,35 @@
 "use client";
 
-import { GEO_LOGO_SIZE_PX } from "@notra/ui/constants/geo";
+import { GEO_LOGO_SIZE_PX } from "@notra/geo-core/constants/geo";
+import { projectLogoSources } from "@notra/geo-core/geo/logo";
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
-import { useMemo, useState } from "react";
-import { projectLogoSources } from "@/lib/geo/logo";
+import { useState } from "react";
+
+import { useCompanyLogo } from "@/lib/hooks/use-onboarding";
 import type { GeoProjectLogoProps } from "@/types/geo";
 
-function ProjectLogoInner({ name, domain, className }: GeoProjectLogoProps) {
-  const sources = useMemo(
-    () => projectLogoSources(domain, name.toLowerCase()),
-    [domain, name]
-  );
+function ProjectLogoInner({
+  name,
+  domain,
+  logo,
+  className,
+  fallbackClassName,
+}: GeoProjectLogoProps & { logo: string | null }) {
+  const sources = projectLogoSources(domain, name.toLowerCase(), logo);
   const [sourceIndex, setSourceIndex] = useState(0);
-  const src =
-    sources[Math.min(sourceIndex, sources.length - 1)] ?? sources.at(-1) ?? "";
+  const activeIndex = Math.min(sourceIndex, sources.length - 1);
+  const src = sources[activeIndex] ?? sources.at(-1) ?? "";
+  const isFallback = activeIndex === sources.length - 1;
 
   return (
     <span
       className={cn(
         "inline-flex size-4 shrink-0 items-center justify-center overflow-hidden rounded-sm",
-        className
+        className,
+        isFallback && fallbackClassName
       )}
+      data-slot="avatar"
     >
       <Image
         alt={`${name} logo`}
@@ -40,12 +48,22 @@ function ProjectLogoInner({ name, domain, className }: GeoProjectLogoProps) {
   );
 }
 
-export function ProjectLogo({ name, domain, className }: GeoProjectLogoProps) {
+export function ProjectLogo({
+  name,
+  domain,
+  className,
+  fallbackClassName,
+}: GeoProjectLogoProps) {
+  const { data } = useCompanyLogo(domain);
+  const logo = data?.url ?? null;
+
   return (
     <ProjectLogoInner
       className={className}
       domain={domain}
-      key={`${domain ?? ""}:${name}`}
+      fallbackClassName={fallbackClassName}
+      key={`${domain ?? ""}:${name}:${logo ?? ""}`}
+      logo={logo}
       name={name}
     />
   );

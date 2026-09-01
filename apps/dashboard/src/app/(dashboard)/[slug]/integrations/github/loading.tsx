@@ -1,8 +1,10 @@
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
+
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
+
 import {
   GitHubIntegrationSkeleton,
   GitHubLegacyIntegrationsSkeleton,
@@ -14,7 +16,7 @@ export default function Loading() {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">GitHub</h1>
+            <h1 className="text-3xl font-bold tracking-tight">GitHub</h1>
             <p className="text-muted-foreground">
               Connect your repositories through the Notra GitHub App to generate
               changelogs, blog posts, and more.

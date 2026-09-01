@@ -1,5 +1,6 @@
 import { getGranolaToolContextByIntegrationId } from "@notra/ai/integrations/granola";
 import { defineTool } from "eve/tools";
+
 import { getGranolaNoteInputSchema } from "../schemas/assistant-tools";
 import { granolaApiRequest } from "../utils/granola";
 import { requireOrganizationId } from "../utils/organization";

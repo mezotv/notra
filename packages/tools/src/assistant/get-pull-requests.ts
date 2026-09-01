@@ -1,6 +1,7 @@
 import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integrations/github";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { defineTool } from "eve/tools";
+
 import { getPullRequestsInputSchema } from "../schemas/assistant-tools";
 import {
   assertPullRequestAllowed,

@@ -3,6 +3,7 @@
 import { Copy01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useState } from "react";
+
 import { CONTACT_PURPOSE, CONTACT_RECIPIENT } from "@/constants/contact";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
 
@@ -24,15 +25,15 @@ export function ContactEmail() {
   };
 
   return (
-    <div className="flex items-center justify-between gap-4 rounded-3xl bg-[#F1ECFB66] px-7 py-6 dark:bg-primary/10">
+    <div className="dark:bg-primary/10 flex items-center justify-between gap-4 rounded-3xl bg-[#F1ECFB66] px-7 py-6">
       <div className="flex flex-col gap-1">
         <a
-          className="font-display font-semibold text-[#1E1E1E] text-[1.1875rem]/6 tracking-[-0.015em] transition-colors hover:text-primary dark:text-white"
+          className="font-display hover:text-primary text-[1.1875rem]/6 font-semibold tracking-[-0.015em] text-[#1E1E1E] transition-colors dark:text-white"
           href={`mailto:${CONTACT_RECIPIENT}`}
         >
           {CONTACT_RECIPIENT}
         </a>
-        <p className="font-sans text-[#1E1E1EA6] text-[0.8125rem]/4.75 dark:text-white/60">
+        <p className="font-sans text-[0.8125rem]/4.75 text-[#1E1E1EA6] dark:text-white/60">
           {CONTACT_PURPOSE}
         </p>
       </div>
@@ -47,7 +48,7 @@ export function ContactEmail() {
           icon={copied ? Tick02Icon : Copy01Icon}
           strokeWidth={2}
         />
-        <span className="font-display font-medium text-[#1E1E1E] text-[0.8125rem]/4.25 dark:text-white">
+        <span className="font-display text-[0.8125rem]/4.25 font-medium text-[#1E1E1E] dark:text-white">
           {copied ? "Copied" : "Copy"}
         </span>
       </button>

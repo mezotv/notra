@@ -13,9 +13,9 @@ export function DesignSystemSectionHeader({
 
   return (
     <div className="space-y-1">
-      <h2 className="font-semibold text-xl tracking-tight">
+      <h2 className="text-xl font-semibold tracking-tight">
         {item ? (
-          <span className="mr-3 font-mono text-muted-foreground text-xs tabular-nums">
+          <span className="text-muted-foreground mr-3 font-mono text-xs tabular-nums">
             {item.number}
           </span>
         ) : null}

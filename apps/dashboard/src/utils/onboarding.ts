@@ -1,7 +1,8 @@
+import { ONBOARDING_WEBSITE_PREFIX_REGEX } from "@notra/geo-core/constants/website-url";
+
 import {
   ONBOARDING_HEARD_ABOUT_NOTRA_LABELS,
   ONBOARDING_HEARD_ABOUT_NOTRA_SOURCES,
-  ONBOARDING_WEBSITE_PREFIX_REGEX,
 } from "@/constants/onboarding";
 import type { OnboardingHeardAboutNotraSource } from "@/types/onboarding";
 

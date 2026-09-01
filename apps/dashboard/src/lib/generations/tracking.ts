@@ -2,7 +2,7 @@ import { redis } from "@notra/ai/utils/redis";
 import type {
   ActiveGeneration,
   GenerationResult,
-} from "@/types/generations/tracking";
+} from "@notra/geo-core/types/generation-tracking";
 
 const ACTIVE_KEY_PREFIX = "generations:active";
 const RESULTS_KEY_PREFIX = "generations:results";

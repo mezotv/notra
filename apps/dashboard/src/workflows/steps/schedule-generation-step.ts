@@ -2,7 +2,9 @@ import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integra
 import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
 import { getValidToneProfile } from "@notra/ai/schemas/tone";
 import type { PostSourceMetadata } from "@notra/db/schema";
+import { flushPostHogServer } from "@notra/posthog/server";
 import { createRequestLogger } from "evlog";
+
 import { buildDataPointRestrictionInstructions } from "@/lib/workflows/on-demand/helpers";
 import { generateScheduledContent } from "@/lib/workflows/schedule/handlers";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
@@ -22,6 +24,7 @@ export async function runScheduledGeneration(
     collectionId,
     generationUserId,
     manual,
+    chargeAiCredits,
   } = input;
 
   const lookbackRange = resolveLookbackRange(lookbackWindow);
@@ -110,6 +113,7 @@ export async function runScheduledGeneration(
       organizationId: trigger.organizationId,
       userId: generationUserId,
       collectionId,
+      chargeAiCredits,
       repositories: repositoryParams,
       linearIntegrations: linearIntegrationRefs,
       tone,
@@ -139,6 +143,7 @@ export async function runScheduledGeneration(
     });
   } finally {
     log.emit();
+    await flushPostHogServer();
   }
 }
 

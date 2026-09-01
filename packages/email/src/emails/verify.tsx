@@ -69,22 +69,22 @@ export const VerifyUserEmail = ({
               />
             </Section>
 
-            <Heading className="my-6 text-center font-medium text-2xl text-black">
+            <Heading className="my-6 text-center text-2xl font-medium text-black">
               {heading}
             </Heading>
 
-            <Text className="text-center text-[#737373] text-base leading-relaxed">
+            <Text className="text-center text-base leading-relaxed text-[#737373]">
               {description}
             </Text>
 
             <Section className="mt-[32px] mb-[32px] text-center">
-              <Text className="font-mono font-semibold text-[28px] tracking-wide">
+              <Text className="font-mono text-[28px] font-semibold tracking-wide">
                 {otp}
               </Text>
             </Section>
 
-            <Hr className="mx-0 mt-[26px] w-full border border-[#eaeaea] border-solid" />
-            <Text className="text-[#666666] text-[12px] leading-[24px]">
+            <Hr className="mx-0 mt-[26px] w-full border border-solid border-[#eaeaea]" />
+            <Text className="text-[12px] leading-[24px] text-[#666666]">
               This email was intended for{" "}
               <span className="text-black">{userEmail}</span>. If you didn't
               request this code, you can safely ignore this email. Need help?

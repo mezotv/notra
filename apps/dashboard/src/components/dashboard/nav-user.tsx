@@ -2,6 +2,7 @@
 
 import { Logout01Icon, User02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   Avatar,
   AvatarFallback,
@@ -20,10 +21,13 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { authClient } from "@/lib/auth/client";
 import { useHidePersonalData } from "@/lib/hooks/use-privacy-preferences";
 import { cn } from "@/lib/utils";
+import { getUserAvatarUrl } from "@/utils/avatar";
 
 const emptySubscribe = () => () => undefined;
 const getClientSnapshot = () => true;
@@ -46,6 +50,7 @@ export function NavUser() {
 
   async function handleSignOut() {
     setIsSigningOut(true);
+    trackEvent(POSTHOG_EVENTS.LOGOUT);
     try {
       await authClient.signOut({
         fetchOptions: {
@@ -77,7 +82,7 @@ export function NavUser() {
         render={
           <button
             aria-label="Account"
-            className="shrink-0 cursor-pointer rounded-lg outline-none ring-sidebar-ring focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 data-popup-open:ring-1 data-popup-open:ring-sidebar-border/70"
+            className="ring-sidebar-ring data-popup-open:ring-sidebar-border/70 shrink-0 cursor-pointer rounded-lg outline-none focus-visible:ring-2 disabled:pointer-events-none disabled:opacity-50 data-popup-open:ring-1"
             disabled={isSigningOut}
             type="button"
           >
@@ -85,9 +90,9 @@ export function NavUser() {
               <AvatarImage
                 alt={user.name}
                 className="rounded-lg"
-                src={user.image ?? undefined}
+                src={getUserAvatarUrl(user.image, user.email)}
               />
-              <AvatarFallback className="flex items-center justify-center rounded-lg bg-foreground/10 font-medium text-[0.6875rem] text-foreground leading-none">
+              <AvatarFallback className="bg-foreground/10 text-foreground flex items-center justify-center rounded-lg text-[0.6875rem] leading-none font-medium">
                 <span className="-translate-y-px">{userInitial}</span>
               </AvatarFallback>
             </Avatar>
@@ -107,25 +112,25 @@ export function NavUser() {
                 <AvatarImage
                   alt={user.name}
                   className="rounded-lg"
-                  src={user.image ?? undefined}
+                  src={getUserAvatarUrl(user.image, user.email)}
                 />
-                <AvatarFallback className="flex items-center justify-center rounded-lg bg-foreground/10 font-medium text-foreground text-xs leading-none">
+                <AvatarFallback className="bg-foreground/10 text-foreground flex items-center justify-center rounded-lg text-xs leading-none font-medium">
                   <span className="-translate-y-px">{userInitial}</span>
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span
                   className={cn(
-                    "truncate font-medium text-foreground transition-[filter] duration-200",
-                    hidePersonalData && "select-none blur-[5px] hover:blur-0"
+                    "text-foreground truncate font-medium transition-[filter] duration-200",
+                    hidePersonalData && "hover:blur-0 blur-[5px] select-none"
                   )}
                 >
                   {user.name}
                 </span>
                 <span
                   className={cn(
-                    "truncate text-muted-foreground text-xs transition-[filter] duration-200",
-                    hidePersonalData && "select-none blur-[5px] hover:blur-0"
+                    "text-muted-foreground truncate text-xs transition-[filter] duration-200",
+                    hidePersonalData && "hover:blur-0 blur-[5px] select-none"
                   )}
                 >
                   {user.email}

@@ -1,4 +1,5 @@
 import { Badge } from "@notra/ui/components/ui/badge";
+
 import type { StatusWithCode } from "@/types/webhooks/webhooks";
 
 const STATUS_VARIANTS: Record<

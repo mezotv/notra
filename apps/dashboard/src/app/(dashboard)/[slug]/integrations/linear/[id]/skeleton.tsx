@@ -12,11 +12,11 @@ export function LinearIntegrationDetailSkeleton() {
           <Skeleton className="h-9 w-48" />
           <Skeleton className="h-5 w-80" />
         </div>
-        <div className="rounded-lg border border-border/80 bg-muted/80 p-2">
+        <div className="border-border/80 bg-muted/80 rounded-lg border p-2">
           <div className="px-2 py-1.5">
             <Skeleton className="h-6 w-32" />
           </div>
-          <div className="space-y-3 rounded-lg border border-border/80 bg-background px-4 py-3">
+          <div className="border-border/80 bg-background space-y-3 rounded-lg border px-4 py-3">
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton
                 className={`h-4 ${i === 2 ? "w-2/3" : "w-full"}`}

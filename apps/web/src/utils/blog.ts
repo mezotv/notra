@@ -1,4 +1,12 @@
 import { unstable_cache } from "next/cache";
+import type {
+  BlogCardAuthor,
+  BlogCardItem,
+  BlogPaginationLink,
+  NotraBlogAuthor,
+  NotraBlogPost,
+} from "~types/blog";
+
 import { getAuthorHref } from "@/utils/authors";
 import {
   BLOG_INDEX_PATH,
@@ -12,13 +20,6 @@ import {
   listMarblePublishedPosts,
   type MarblePublishedPost,
 } from "@/utils/marble";
-import type {
-  BlogCardAuthor,
-  BlogCardItem,
-  BlogPaginationLink,
-  NotraBlogAuthor,
-  NotraBlogPost,
-} from "~types/blog";
 
 const BLOG_CONTENT_TYPE = "blog_post";
 const FALLBACK_EXCERPT_MAX_LENGTH = 160;

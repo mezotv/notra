@@ -39,6 +39,7 @@ export interface TestRouterOptions {
   openrouter?: FakeAdapter | null;
   plans?: Record<string, Plan>;
   resolvePlan?: ModelRouterConfig["resolvePlan"];
+  resolveZdr?: ModelRouterConfig["resolveZdr"];
   policy?: Partial<RouterPolicyConfig>;
   now?: () => number;
   planCacheTtlMs?: number;

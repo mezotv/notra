@@ -2,10 +2,7 @@
 
 import { Linkedin02Icon, NewTwitterIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  InstrumentEmpty,
-  InstrumentModule,
-} from "@notra/ui/components/instrument/instrument-module";
+import { formatDayLabel } from "@notra/geo-core/utils/day-label";
 import {
   Avatar,
   AvatarFallback,
@@ -16,16 +13,17 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
+
 import { DelayedTooltip } from "@/components/delayed-tooltip";
+import {
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { ANALYTICS_TOOLTIP_DELAY_MS } from "@/constants/analytics";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import type { TopPostItem, TopPostsCardProps } from "@/types/analytics";
-import {
-  formatDayLabel,
-  formatMetric,
-  previewPostContent,
-} from "@/utils/analytics-charts";
+import { formatMetric, previewPostContent } from "@/utils/analytics-charts";
 import { tableHeightFor } from "@/utils/table";
 
 function PostAvatar({ post }: { post: TopPostItem }) {
@@ -99,7 +97,7 @@ export function TopPostsCard({ posts, action }: TopPostsCardProps) {
         width: "7.5rem",
         sortable: true,
         cell: (row) => (
-          <span className="whitespace-nowrap font-mono text-[0.6875rem] text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground font-mono text-[0.6875rem] whitespace-nowrap tabular-nums">
             {formatDayLabel(row.postedAt.slice(0, 10))}
           </span>
         ),
@@ -111,7 +109,7 @@ export function TopPostsCard({ posts, action }: TopPostsCardProps) {
         align: "right",
         sortable: true,
         cell: (row) => (
-          <span className="font-mono text-muted-foreground text-sm tabular-nums">
+          <span className="text-muted-foreground font-mono text-sm tabular-nums">
             {row.impressions === null ? "-" : formatMetric(row.impressions)}
           </span>
         ),

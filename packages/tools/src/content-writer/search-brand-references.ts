@@ -3,6 +3,7 @@ import {
   searchBrandReferenceMemories,
 } from "@notra/db/utils/supermemory";
 import { defineTool } from "eve/tools";
+
 import { searchBrandReferencesInputSchema } from "../schemas/assistant-tools";
 import { getFilteredBrandReferences } from "../utils/brand-references";
 import { requireOrganizationId } from "../utils/organization";

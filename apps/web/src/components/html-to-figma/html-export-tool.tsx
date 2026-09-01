@@ -8,6 +8,7 @@ import { Figma } from "@notra/ui/components/ui/svgs/figma";
 import { Paper } from "@notra/ui/components/ui/svgs/paper";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import HtmlCodeEditor from "@/components/html-to-figma/html-code-editor";
 import HtmlPreview from "@/components/html-to-figma/html-preview";
 import {
@@ -75,7 +76,7 @@ export default function HtmlExportTool({ target }: HtmlExportToolProps) {
         />
 
         <Button
-          className="gap-2 border border-border bg-white text-neutral-900 shadow-sm hover:bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700"
+          className="border-border gap-2 border bg-white text-neutral-900 shadow-sm hover:bg-neutral-50 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700"
           disabled={isEmpty || pending}
           onClick={handleCopy}
           size="lg"
@@ -103,7 +104,7 @@ export default function HtmlExportTool({ target }: HtmlExportToolProps) {
         />
       )}
 
-      <p className="font-mono text-muted-foreground text-xs">
+      <p className="text-muted-foreground font-mono text-xs">
         Runs in your browser. Nothing is uploaded. Not affiliated with{" "}
         {copy.productName}.
       </p>

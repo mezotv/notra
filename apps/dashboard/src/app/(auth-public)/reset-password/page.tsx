@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { resetPasswordAction } from "@/lib/auth/password-actions";
 
@@ -25,7 +26,7 @@ function ResetPasswordForm() {
     return (
       <div className="mx-auto flex min-w-[300px] flex-col gap-8 rounded-md p-6 lg:w-[384px] lg:px-8 lg:py-10">
         <div className="text-center">
-          <h1 className="font-semibold text-xl lg:text-2xl">Invalid link</h1>
+          <h1 className="text-xl font-semibold lg:text-2xl">Invalid link</h1>
           <p className="text-muted-foreground text-sm">
             This password reset link is invalid or has expired.
           </p>
@@ -33,9 +34,9 @@ function ResetPasswordForm() {
         <Link href="/forgot-password">
           <Button className="w-full">Request a new link</Button>
         </Link>
-        <div className="px-8 text-center text-muted-foreground text-xs">
+        <div className="text-muted-foreground px-8 text-center text-xs">
           <Link
-            className="underline underline-offset-4 hover:text-primary"
+            className="hover:text-primary underline underline-offset-4"
             href="/login"
           >
             Back to login
@@ -49,7 +50,7 @@ function ResetPasswordForm() {
     return (
       <div className="mx-auto flex min-w-[300px] flex-col gap-8 rounded-md p-6 lg:w-[384px] lg:px-8 lg:py-10">
         <div className="text-center">
-          <h1 className="font-semibold text-xl lg:text-2xl">Missing token</h1>
+          <h1 className="text-xl font-semibold lg:text-2xl">Missing token</h1>
           <p className="text-muted-foreground text-sm">
             No reset token found. Please use the link from your email.
           </p>
@@ -57,9 +58,9 @@ function ResetPasswordForm() {
         <Link href="/forgot-password">
           <Button className="w-full">Request a new link</Button>
         </Link>
-        <div className="px-8 text-center text-muted-foreground text-xs">
+        <div className="text-muted-foreground px-8 text-center text-xs">
           <Link
-            className="underline underline-offset-4 hover:text-primary"
+            className="hover:text-primary underline underline-offset-4"
             href="/login"
           >
             Back to login
@@ -131,7 +132,7 @@ function ResetPasswordForm() {
   return (
     <div className="mx-auto flex min-w-[300px] flex-col gap-8 rounded-md p-6 lg:w-[384px] lg:px-8 lg:py-10">
       <div className="text-center">
-        <h1 className="font-semibold text-xl lg:text-2xl">Set new password</h1>
+        <h1 className="text-xl font-semibold lg:text-2xl">Set new password</h1>
         <p className="text-muted-foreground text-sm">
           Enter your new password below.
         </p>
@@ -157,7 +158,7 @@ function ResetPasswordForm() {
               />
               <button
                 aria-label={showPassword ? "Hide password" : "Show password"}
-                className="-translate-y-1/2 absolute top-1/2 right-4 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-4 -translate-y-1/2 disabled:opacity-50"
                 disabled={isLoading}
                 onClick={() => setShowPassword(!showPassword)}
                 type="button"
@@ -192,7 +193,7 @@ function ResetPasswordForm() {
                     ? "Hide confirm password"
                     : "Show confirm password"
                 }
-                className="-translate-y-1/2 absolute top-1/2 right-4 text-muted-foreground hover:text-foreground disabled:opacity-50"
+                className="text-muted-foreground hover:text-foreground absolute top-1/2 right-4 -translate-y-1/2 disabled:opacity-50"
                 disabled={isLoading}
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                 type="button"
@@ -206,7 +207,7 @@ function ResetPasswordForm() {
             </div>
           </div>
         </div>
-        <p className="mt-2 text-muted-foreground text-xs">
+        <p className="text-muted-foreground mt-2 text-xs">
           Password must be at least 8 characters long.
         </p>
         <Button className="mt-4 w-full" disabled={isLoading} type="submit">
@@ -214,9 +215,9 @@ function ResetPasswordForm() {
         </Button>
       </form>
 
-      <div className="px-8 text-center text-muted-foreground text-xs">
+      <div className="text-muted-foreground px-8 text-center text-xs">
         <Link
-          className="underline underline-offset-4 hover:text-primary"
+          className="hover:text-primary underline underline-offset-4"
           href="/login"
         >
           Back to login
@@ -232,7 +233,7 @@ export default function ResetPassword() {
       fallback={
         <div className="mx-auto flex min-w-[300px] flex-col gap-8 rounded-md p-6 lg:w-[384px] lg:px-8 lg:py-10">
           <div className="text-center">
-            <h1 className="font-semibold text-xl lg:text-2xl">Loading…</h1>
+            <h1 className="text-xl font-semibold lg:text-2xl">Loading…</h1>
           </div>
         </div>
       }

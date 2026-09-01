@@ -9,6 +9,7 @@ import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { defineTool } from "eve/tools";
+
 import { deriveDeterministicPostId } from "../utils/idempotency";
 import { requireOrganizationId } from "../utils/organization";
 import {
@@ -26,6 +27,8 @@ export function createGenerateImageTool() {
       const userId = getSessionAttribute(ctx, "userId") ?? null;
       const chatId = getSessionAttribute(ctx, "chatId") ?? undefined;
       const useMarkup = getBooleanSessionAttribute(ctx, "useMarkup");
+      const chargeAiCredits =
+        getSessionAttribute(ctx, "chargeAiCredits") !== "false";
 
       const deterministicPostId = deriveDeterministicPostId(
         ctx,
@@ -99,6 +102,7 @@ export function createGenerateImageTool() {
         postId,
         usage: result.usage,
         useMarkup,
+        chargeAiCredits,
       });
 
       return {

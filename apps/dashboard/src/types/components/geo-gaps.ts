@@ -1,12 +1,23 @@
-export type { GeoGapsMeterTone } from "@notra/ui/types/geo";
-
 import type {
   GeoCompetitor,
+  GeoGapWriteAction,
   GeoPromptGapRow,
   GeoSearchGapRow,
-} from "@/types/geo";
+  GeoWriterSourceKind,
+} from "@notra/geo-core/types/geo";
+
+export interface GeoGapsWriteCellProps {
+  action: GeoGapWriteAction;
+  postId: string | null | undefined;
+  sourceKind: GeoWriterSourceKind;
+  opportunityBucket: number | null;
+  onOpenPost: (postId: string) => void;
+  onWrite: () => void;
+}
 
 export type GeoGapsTab = "prompt" | "search";
+
+export type GeoGapsMeterTone = "empty" | "low" | "mid" | "high";
 
 export type GeoGapsEmptyKind =
   | "scanning"

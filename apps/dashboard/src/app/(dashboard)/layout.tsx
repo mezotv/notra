@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { requireAuth } from "@/lib/auth/actions";
 
 export const instant = false;

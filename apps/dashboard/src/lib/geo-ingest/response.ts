@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+
 import type { GeoIngestError } from "@/lib/geo-ingest/errors";
 
 const NO_STORE = { "Cache-Control": "no-store" };

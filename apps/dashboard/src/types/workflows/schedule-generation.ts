@@ -14,6 +14,7 @@ export interface ScheduleGenerationStepInput {
   collectionId: string;
   generationUserId?: string;
   manual: boolean;
+  chargeAiCredits?: boolean;
 }
 
 export type ScheduleContentWorkflowResult =

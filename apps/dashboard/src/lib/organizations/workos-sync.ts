@@ -3,6 +3,7 @@ import { members, organizations, users } from "@notra/db/schema";
 import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import { WorkOSSyncError } from "@/lib/organizations/errors";
 
 const logSyncFailure = (context: Record<string, unknown>) =>

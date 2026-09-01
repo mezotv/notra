@@ -2,6 +2,7 @@
 
 import { useParams } from "next/navigation";
 import { Suspense } from "react";
+
 import { CompetitorDetailView } from "@/components/geo/competitor-detail-view";
 import { CompetitorModal } from "@/components/geo/competitor-modal";
 

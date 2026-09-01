@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+
 import type { PathSubpath } from "../types/svg-path";
 import { svgPrimitiveToSubpaths } from "./svg-primitive";
 

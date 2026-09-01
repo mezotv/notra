@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 
 export const metadata: Metadata = {
@@ -21,7 +22,7 @@ export default function AboutPage() {
       />
 
       <div className="flex w-full max-w-3xl flex-col gap-6 px-6">
-        <p className="font-sans text-[#1E1E1EBF] text-base leading-8 dark:text-white/70">
+        <p className="font-sans text-base leading-8 text-[#1E1E1EBF] dark:text-white/70">
           Notra is an AI content-generation platform for product and engineering
           teams. It turns shipped work into changelogs, launch posts, blog
           drafts, marketing assets, and social updates that match a team's own
@@ -29,7 +30,7 @@ export default function AboutPage() {
           lose time collecting context, asking engineers what changed, and
           rewriting rough notes into publishable updates.
         </p>
-        <p className="font-sans text-[#1E1E1EBF] text-base leading-8 dark:text-white/70">
+        <p className="font-sans text-base leading-8 text-[#1E1E1EBF] dark:text-white/70">
           Notra connects to the systems where product work happens, including
           GitHub today and additional workflow tools over time. It uses those
           signals to assemble a timeline of changes, draft content from the
@@ -38,20 +39,20 @@ export default function AboutPage() {
         </p>
 
         <div className="mt-2 flex flex-col gap-3 rounded-2xl border border-[#1E1E1E14] bg-[#C8B2EE1F] p-6 dark:border-white/10 dark:bg-white/[0.03]">
-          <h2 className="font-display font-medium text-[#1E1E1E] text-lg tracking-[-0.01em] dark:text-white">
+          <h2 className="font-display text-lg font-medium tracking-[-0.01em] text-[#1E1E1E] dark:text-white">
             Built for agents, too
           </h2>
-          <p className="font-sans text-[#1E1E1EBF] text-base leading-7 dark:text-white/70">
+          <p className="font-sans text-base leading-7 text-[#1E1E1EBF] dark:text-white/70">
             Agents can discover Notra through{" "}
             <Link
-              className="font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
+              className="text-primary hover:text-primary-hover font-medium underline underline-offset-2"
               href="/llms.txt"
             >
               llms.txt
             </Link>
             ,{" "}
             <Link
-              className="font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
+              className="text-primary hover:text-primary-hover font-medium underline underline-offset-2"
               href="/.well-known/agent.json"
             >
               agent.json

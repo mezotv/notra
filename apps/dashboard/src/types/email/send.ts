@@ -50,6 +50,7 @@ export interface SendAiCreditsDepletedEmailProps {
   organizationName: string;
   organizationSlug: string;
   automationName: string;
+  limitLabel?: string;
   subject?: string;
 }
 

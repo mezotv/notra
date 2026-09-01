@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
+
 import { getGlobalDispatcher } from "undici";
+
 import { withLongFetchTimeouts } from "./undici-dispatcher";
 
 describe("withLongFetchTimeouts", () => {

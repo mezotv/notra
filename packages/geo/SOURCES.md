@@ -31,6 +31,12 @@ those checks.
 
 Last fully audited: **2026-08-22** (previous full audit 2026-08-05).
 
+- 2026-08-30: added Parallel's vendor-documented `ShapBot` search crawler and
+  published IP list plus its user-triggered `Shap-User` fetcher. Split Exa's
+  vendor-documented, Web Bot Auth-signed `ExaSearchBot` from the legacy reported
+  `ExaBot` token. Reclassified `FirecrawlAgent` as heuristic using Firecrawl's
+  official scraping documentation; Firecrawl explicitly publishes no fixed crawler
+  IPs and does not document the search-index purpose directly.
 - 2026-08-22: re-checked OpenAI, Meta, Amazon, Google (user-triggered fetchers and
   special-case crawlers), Perplexity, Ai2, Mozilla Tabstack and Cloudflare AutoRAG
   documentation, plus the `ai-robots-txt` catalog. Added eight vendor-documented
@@ -40,10 +46,10 @@ Last fully audited: **2026-08-22** (previous full audit 2026-08-05).
   OpenCode's fallback) and ten `reported` catalog tokens for major AI assistants and
   AI data providers. OpenAI, Anthropic and Perplexity publish no new tokens since the
   previous audit; `OAI-AdsBot` and Meta's crawlers were explicitly re-verified.
-- Total shipped signatures: 63.
+- Total shipped signatures: 66.
 
-- All 38 shipped signatures and every matched token were checked against the cited
-  evidence below.
+- All 63 signatures shipped at the full audit and every matched token were checked
+  against the cited evidence below.
 - Every cited source was reachable during the audit. Fourteen machine-readable
   origin endpoints returned parseable JSON with non-empty keys or prefixes; Amazon's
   separately published HTML IP list was also reachable and non-empty.
@@ -117,9 +123,12 @@ Last fully audited: **2026-08-22** (previous full audit 2026-08-05).
 | TikTokSpider | ByteDance | training-crawler | `TikTokSpider` | reported | [ai.robots.txt catalog](https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json) | — |
 | PanguBot | Huawei | training-crawler | `PanguBot` | reported | [ai.robots.txt catalog](https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json) | — |
 | Cloudflare-AutoRAG | Cloudflare | search-index | `Cloudflare-AutoRAG` | reported | [AutoRAG website source docs](https://developers.cloudflare.com/autorag/configuration/data-source/website/) (bot directory id 122933950; token from catalog) | — |
-| ExaBot | Exa | search-index | `ExaBot`<br>`ExaSearchBot` | reported | [ai.robots.txt catalog](https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json) | — |
+| ExaSearchBot | Exa | search-index | `ExaSearchBot` | verified | [Exa crawler docs](https://crawler.exa.ai/) | [Web Bot Auth key directory](https://crawler.exa.ai/.well-known/http-message-signatures-directory) |
+| ExaBot | Exa | search-index | `ExaBot` | reported | [ai.robots.txt catalog](https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json) | — |
+| ShapBot | Parallel | search-index | `ShapBot` | verified | [Parallel crawler docs](https://docs.parallel.ai/resources/crawler) | [IP ranges](https://docs.parallel.ai/resources/shapbot.json) |
+| Shap-User | Parallel | assistant-browse | `Shap-User` | verified | [Parallel bot docs](https://parallel.ai/parallel-web-systems-bots) | — |
 | TavilyBot | Tavily | search-index | `TavilyBot` | reported | [ai.robots.txt catalog](https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json) | — |
-| FirecrawlAgent | Firecrawl | search-index | `FirecrawlAgent` | reported | [ai.robots.txt catalog](https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json) | — |
+| FirecrawlAgent | Firecrawl | search-index | `FirecrawlAgent` | heuristic | [Firecrawl scraping guide](https://docs.firecrawl.dev/advanced-scraping-guide) | No fixed outbound IPs |
 
 ## Matching and ordering notes
 
@@ -155,10 +164,10 @@ Last fully audited: **2026-08-22** (previous full audit 2026-08-05).
   Google does not document it, so it stays `reported`. Exact matching keeps it from
   claiming every other Google token.
 - The `reported` catalog tokens added on 2026-08-22 (`TongyiBot`, `YiyanBot`,
-  `Manus-User`, `kagi-fetcher`, `DeepSeekBot`, `TikTokSpider`, `PanguBot`, `ExaBot`,
-  `TavilyBot`, `FirecrawlAgent`) are vendor-branded strings whose operators are named
-  in the catalog; none of those vendors publishes a crawler page with an IP list yet.
-  Treat them as attribution leads.
+  `Manus-User`, `kagi-fetcher`, `DeepSeekBot`, `TikTokSpider`, `PanguBot`, legacy
+  `ExaBot`, `TavilyBot`) are vendor-branded strings whose operators are named in the
+  catalog; none of those vendors publishes a crawler page with an IP list yet. Treat
+  them as attribution leads.
 - Moonshot has published an official Kimi crawler policy with IP JSON files since
   2026. As of May 2026, each list contains four individual `/32` addresses in Alibaba
   Cloud ranges.

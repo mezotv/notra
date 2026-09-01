@@ -37,3 +37,10 @@ export interface PerplexityFocusOption {
   label: string;
   description: string;
 }
+
+export interface PerplexitySearchSource {
+  title: string;
+  domain: string;
+  verified?: boolean;
+  url?: string;
+}

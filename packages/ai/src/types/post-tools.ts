@@ -1,6 +1,7 @@
 import type { ContentType } from "@notra/ai/schemas/content";
 import type { PostSourceMetadata } from "@notra/db/schema";
 import type { BlogPostSubtype } from "@notra/db/types/content";
+
 import type { PostSummary } from "./posts";
 
 export interface PostToolsConfig {

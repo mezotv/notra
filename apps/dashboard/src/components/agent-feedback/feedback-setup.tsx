@@ -2,36 +2,35 @@
 
 import { AiMagicIcon, Tick01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  GEO_INGEST_DEFAULT_PACKAGE_MANAGER,
+  GEO_INGEST_PACKAGE_MANAGER_OPTIONS,
+} from "@notra/geo-core/constants/geo";
+import type { GeoIngestPackageManager } from "@notra/geo-core/types/geo";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { useState } from "react";
-import { AgentFeedbackRotateButton } from "@/components/agent-feedback/feedback-rotate-button";
-import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
+
 import { Button } from "@/components/button";
 import { CodeSnippet, useCopyCode } from "@/components/geo/code-snippet";
+import { GeoPackageManagerIcon } from "@/components/geo/package-manager-icon";
 import {
   AGENT_FEEDBACK_DEFAULT_SNIPPET_TAB,
   AGENT_FEEDBACK_SNIPPET_FILENAMES,
   AGENT_FEEDBACK_SNIPPET_TABS,
-  AGENT_FEEDBACK_TOKEN_ENV,
 } from "@/constants/agent-feedback";
-import {
-  GEO_INGEST_DEFAULT_PACKAGE_MANAGER,
-  GEO_INGEST_PACKAGE_MANAGER_OPTIONS,
-} from "@/constants/geo";
 import { cn } from "@/lib/utils";
 import type {
   AgentFeedbackSetupPanelProps,
   AgentFeedbackSnippetKey,
 } from "@/types/agent-feedback";
-import type { GeoIngestPackageManager } from "@/types/geo";
 import { isAgentFeedbackSnippetKey } from "@/utils/agent-feedback";
 import { isGeoIngestPackageManager } from "@/utils/geo-ingest";
 
 export function AgentFeedbackSetup({
   setup,
-  organizationId,
   className,
+  showPromptAction = true,
 }: AgentFeedbackSetupPanelProps) {
   const [snippetKey, setSnippetKey] = useState<AgentFeedbackSnippetKey>(
     AGENT_FEEDBACK_DEFAULT_SNIPPET_TAB
@@ -49,7 +48,7 @@ export function AgentFeedbackSetup({
     <div className={cn("space-y-5", className)}>
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2 pe-1">
-          <h3 className="font-medium text-sm">Install the package</h3>
+          <h3 className="text-sm font-medium">Install the package</h3>
           <Tabs
             className="shrink-0 gap-0"
             onValueChange={(value) => {
@@ -62,10 +61,12 @@ export function AgentFeedbackSetup({
             <TabsList aria-label="Package manager">
               {GEO_INGEST_PACKAGE_MANAGER_OPTIONS.map((option) => (
                 <TabsTrigger
-                  className="px-2 text-xs dark:data-active:bg-background"
+                  aria-label={option.label}
+                  className="gap-1 px-2 text-xs"
                   key={option.value}
                   value={option.value}
                 >
+                  <GeoPackageManagerIcon manager={option.value} />
                   {option.label}
                 </TabsTrigger>
               ))}
@@ -75,26 +76,24 @@ export function AgentFeedbackSetup({
         <CodeSnippet code={installCommand} variant="command" />
       </section>
       <section className="space-y-2">
-        <div className="flex items-center justify-between gap-2 pe-1">
-          <h3 className="font-medium text-sm">Set your token</h3>
-          <AgentFeedbackRotateButton
-            disabled={!setup}
-            organizationId={organizationId}
-          />
-        </div>
+        <h3 className="text-sm font-medium">Your feedback URL</h3>
         <p className="text-muted-foreground text-xs">
-          Add this as {AGENT_FEEDBACK_TOKEN_ENV} in your MCP server's
-          environment. It can only submit feedback.
+          Agents POST JSON to this URL. It is unique to your organization and
+          needs no token or API key.
         </p>
         {setup ? (
-          <ApiKeyRevealField value={setup.token} />
+          <CodeSnippet
+            code={setup.apiUrl}
+            label="feedback URL"
+            variant="command"
+          />
         ) : (
-          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-9 w-full rounded-lg" />
         )}
       </section>
       <section className="space-y-2">
         <div className="flex flex-wrap items-center justify-between gap-2 pe-1">
-          <h3 className="font-medium text-sm">
+          <h3 className="text-sm font-medium">
             Add the tool to your MCP server
           </h3>
           <Tabs
@@ -109,7 +108,7 @@ export function AgentFeedbackSetup({
             <TabsList aria-label="Snippet">
               {AGENT_FEEDBACK_SNIPPET_TABS.map((item) => (
                 <TabsTrigger
-                  className="px-2 text-xs dark:data-active:bg-background"
+                  className="px-2 text-xs"
                   key={item.value}
                   value={item.value}
                 >
@@ -128,23 +127,25 @@ export function AgentFeedbackSetup({
           <Skeleton className="h-44 w-full rounded-lg" />
         )}
       </section>
-      <div className="space-y-2">
-        <div aria-hidden className="flex items-center gap-3 py-1">
-          <span className="h-px flex-1 bg-border/80" />
-          <span className="text-muted-foreground text-xs">or</span>
-          <span className="h-px flex-1 bg-border/80" />
+      {showPromptAction ? (
+        <div className="space-y-2">
+          <div aria-hidden className="flex items-center gap-3 py-1">
+            <span className="bg-border/80 h-px flex-1" />
+            <span className="text-muted-foreground text-xs">or</span>
+            <span className="bg-border/80 h-px flex-1" />
+          </div>
+          <Button
+            className="text-muted-foreground mx-auto flex w-fit"
+            disabled={!setup}
+            onClick={copy}
+            size="sm"
+            variant="ghost"
+          >
+            <HugeiconsIcon icon={copied ? Tick01Icon : AiMagicIcon} size={14} />
+            {copied ? "Prompt copied" : "Copy agent prompt"}
+          </Button>
         </div>
-        <Button
-          className="mx-auto flex w-fit text-muted-foreground"
-          disabled={!setup}
-          onClick={copy}
-          size="sm"
-          variant="ghost"
-        >
-          <HugeiconsIcon icon={copied ? Tick01Icon : AiMagicIcon} size={14} />
-          {copied ? "Prompt copied" : "Copy agent prompt"}
-        </Button>
-      </div>
+      ) : null}
     </div>
   );
 }

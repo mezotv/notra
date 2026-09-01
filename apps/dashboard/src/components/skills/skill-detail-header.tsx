@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import Link from "next/link";
+
 import { Button } from "@/components/button";
 import type { SkillDetailHeaderProps } from "@/types/skills/page";
 
@@ -24,7 +25,7 @@ export function SkillDetailHeader({
   return (
     <div className="space-y-4">
       <Link
-        className="inline-flex items-center gap-1.5 text-muted-foreground text-sm transition-colors hover:text-foreground"
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-sm transition-colors"
         href={`/${slug}/skills`}
       >
         <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
@@ -33,7 +34,7 @@ export function SkillDetailHeader({
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex min-w-0 items-center gap-2.5">
-          <h1 className="truncate font-bold font-mono text-2xl tracking-tight">
+          <h1 className="truncate font-mono text-2xl font-bold tracking-tight">
             {name}
           </h1>
           {isSystem ? (
@@ -55,7 +56,7 @@ export function SkillDetailHeader({
         </div>
         {canDelete ? (
           <Button
-            className="w-fit gap-1.5 border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive w-fit gap-1.5"
             disabled={deleteDisabled}
             onClick={onDelete}
             variant="outline"

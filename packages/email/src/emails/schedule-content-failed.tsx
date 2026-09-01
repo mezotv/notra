@@ -50,21 +50,21 @@ export const ScheduledContentFailedEmail = ({
               />
             </Section>
 
-            <Heading className="my-6 text-center font-medium text-2xl text-black">
+            <Heading className="my-6 text-center text-2xl font-medium text-black">
               Scheduled content generation failed
             </Heading>
 
-            <Text className="text-center text-[#737373] text-base leading-relaxed">
+            <Text className="text-center text-base leading-relaxed text-[#737373]">
               Your <strong>{scheduleName}</strong> schedule in{" "}
               <strong>{organizationName}</strong> was unable to generate
               content.
             </Text>
 
             <Section className="mt-8">
-              <Text className="m-0 text-[#666666] text-[12px] uppercase tracking-wide">
+              <Text className="m-0 text-[12px] tracking-wide text-[#666666] uppercase">
                 Reason:
               </Text>
-              <Text className="mt-2 mb-0 text-[14px] text-black leading-[22px]">
+              <Text className="mt-2 mb-0 text-[14px] leading-[22px] text-black">
                 {reason}
               </Text>
             </Section>
@@ -73,13 +73,13 @@ export const ScheduledContentFailedEmail = ({
               <EmailButton href={settingsLink}>View Schedule</EmailButton>
             </Section>
 
-            <Text className="text-[14px] text-black leading-[24px]">
+            <Text className="text-[14px] leading-[24px] text-black">
               If the button does not work, copy and paste this URL into your
               browser: <Link href={settingsLink}>{settingsLink}</Link>
             </Text>
 
             <Section className="mt-8">
-              <Text className="m-0 text-center text-[#666666] text-[12px] uppercase tracking-wide">
+              <Text className="m-0 text-center text-[12px] tracking-wide text-[#666666] uppercase">
                 If you don't want to receive these emails, you can click{" "}
                 <Link
                   href={`${EMAIL_CONFIG.getAppUrl()}/${organizationSlug}/settings/notifications`}

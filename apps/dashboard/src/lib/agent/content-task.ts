@@ -4,6 +4,7 @@ import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
+
 import { runAgentTask } from "@/lib/agent/client";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
 import type { AgentContentTaskOptions } from "@/types/agent-content-task";
@@ -48,6 +49,7 @@ export async function generateContentViaAgentTask(
         contentType: options.contentType,
         autoPublish: options.autoPublish,
         voiceId: options.voiceId,
+        chargeAiCredits: options.chargeAiCredits,
         brandAgentType: options.brandAgentType,
         sourceMetadata: options.sourceMetadata,
         generationConfig: {

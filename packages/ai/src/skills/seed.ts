@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { skills } from "@notra/db/schema";
 import { nanoid } from "nanoid";
+
 import { getConversationalBlogPostPrompt } from "../prompts/blog_post/conversational";
 import { getConversationalChangelogPrompt } from "../prompts/changelog/conversational";
 import { getConversationalLinkedInPrompt } from "../prompts/linkedin/conversational";

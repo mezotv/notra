@@ -4,6 +4,7 @@ import { log } from "@notra/ai/evlog";
 import { db } from "@notra/db/drizzle";
 import { chatAttachments } from "@notra/db/schema";
 import { inArray } from "drizzle-orm";
+
 import { getR2Config } from "./r2";
 
 const TRAILING_SLASH_REGEX = /\/$/;

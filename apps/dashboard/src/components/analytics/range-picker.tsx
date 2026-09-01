@@ -10,6 +10,7 @@ import {
 } from "@notra/ui/components/ui/popover";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
+
 import { Calendar } from "@/components/calendar";
 import { ANALYTICS_RANGE_PRESETS } from "@/constants/analytics";
 import { localDayString, parseLocalDay } from "@/lib/analytics/date-range";
@@ -46,7 +47,7 @@ export function AnalyticsRangePicker({ control }: AnalyticsRangePickerProps) {
       </PopoverTrigger>
       <PopoverContent align="end" className="w-auto p-0">
         <div className="flex">
-          <div className="flex flex-col gap-1 border-border border-r p-2">
+          <div className="border-border flex flex-col gap-1 border-r p-2">
             {ANALYTICS_RANGE_PRESETS.map((preset) => (
               <Button
                 className="justify-start"

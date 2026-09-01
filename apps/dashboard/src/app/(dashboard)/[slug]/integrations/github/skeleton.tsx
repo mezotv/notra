@@ -55,7 +55,7 @@ export function GitHubLegacyIntegrationsSkeleton() {
   return (
     <section className="space-y-3">
       <div className="space-y-0.5">
-        <h2 className="font-semibold text-lg">
+        <h2 className="text-lg font-semibold">
           Personal access token (Legacy)
         </h2>
         <p className="text-muted-foreground text-sm">

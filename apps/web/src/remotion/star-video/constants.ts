@@ -1,4 +1,5 @@
 import { random } from "remotion";
+
 import type { AvatarSlot, ConfettiPiece } from "../../types/star-video";
 
 export const FONT_FAMILY =

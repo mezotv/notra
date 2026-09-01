@@ -27,6 +27,12 @@ export function GET() {
               type: "text/markdown",
               title: "Notra agent authentication guide",
             },
+            {
+              href: siteUrl("/feedback.md"),
+              rel: "feedback",
+              type: "text/markdown",
+              title: "Notra agent feedback guide",
+            },
           ],
         },
       ],

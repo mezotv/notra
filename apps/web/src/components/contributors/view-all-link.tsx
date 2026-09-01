@@ -9,7 +9,7 @@ export function ViewAllLink({
 }) {
   return (
     <Link
-      className="group inline-flex items-center gap-1 font-medium font-sans text-primary text-sm hover:underline"
+      className="group text-primary inline-flex items-center gap-1 font-sans text-sm font-medium hover:underline"
       href={href}
       rel="noopener noreferrer"
       target="_blank"

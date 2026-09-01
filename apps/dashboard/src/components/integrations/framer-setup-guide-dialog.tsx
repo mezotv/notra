@@ -13,6 +13,7 @@ import { Framer } from "@notra/ui/components/ui/svgs/framer";
 import { CheckIcon, ExternalLinkIcon } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+
 import { Button } from "@/components/button";
 
 interface FramerSetupGuideDialogProps {
@@ -91,13 +92,13 @@ export function FramerSetupGuideDialog({
 
             return (
               <button
-                className="group flex w-full gap-3 rounded-lg p-3 text-left transition-colors hover:bg-muted/60"
+                className="group hover:bg-muted/60 flex w-full gap-3 rounded-lg p-3 text-left transition-colors"
                 key={step.title}
                 onClick={() => toggleStep(index)}
                 type="button"
               >
                 <div
-                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border font-medium text-xs transition-colors ${
+                  className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-medium transition-colors ${
                     isCompleted
                       ? "border-primary bg-primary text-primary-foreground"
                       : "border-border text-muted-foreground"
@@ -111,16 +112,16 @@ export function FramerSetupGuideDialog({
                 </div>
                 <div className="min-w-0 flex-1">
                   <p
-                    className={`font-medium text-sm ${isCompleted ? "text-muted-foreground line-through" : "text-foreground"}`}
+                    className={`text-sm font-medium ${isCompleted ? "text-muted-foreground line-through" : "text-foreground"}`}
                   >
                     {step.title}
                   </p>
-                  <p className="mt-0.5 text-muted-foreground text-xs leading-relaxed">
+                  <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
                     {step.description}
                   </p>
                   {"link" in step && step.link ? (
                     <a
-                      className="mt-1.5 inline-flex items-center gap-1 text-primary text-xs hover:underline"
+                      className="text-primary mt-1.5 inline-flex items-center gap-1 text-xs hover:underline"
                       href={step.link.href}
                       onClick={(e) => e.stopPropagation()}
                       rel="noopener noreferrer"
@@ -132,7 +133,7 @@ export function FramerSetupGuideDialog({
                   ) : null}
                   {"internalLink" in step && step.internalLink ? (
                     <Link
-                      className="mt-1.5 inline-flex items-center gap-1 text-primary text-xs hover:underline"
+                      className="text-primary mt-1.5 inline-flex items-center gap-1 text-xs hover:underline"
                       href={`/${organizationSlug}/api-keys`}
                       onClick={(e) => e.stopPropagation()}
                     >

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import HtmlExportShell from "@/components/html-to-figma/html-export-shell";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { DEFAULT_SOCIAL_IMAGE, TWITTER_HANDLE } from "@/utils/metadata";

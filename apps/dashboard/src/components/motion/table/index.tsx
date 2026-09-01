@@ -4,7 +4,9 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
 import { cn } from "@/lib/utils";
+
 import { RowHandle } from "./row-handle";
 import { SkeletonRows } from "./skeleton-rows";
 import { TableBodyRow } from "./table-body-row";
@@ -58,8 +60,16 @@ export function Table<T>({
   skeletonRows = 3,
   emptyState = "No data",
   onRowClick,
+  renderRowContextMenu,
   onRowPointerEnter,
   isRowPinned,
+  toolbar,
+  footer,
+  page = 1,
+  pageSize,
+  flushTop = false,
+  flushBottom = false,
+  overlapTop = false,
   className,
 }: TableProps<T>) {
   "use no memo";
@@ -115,11 +125,19 @@ export function Table<T>({
     () => pinRowsFirst(sortedRows, isRowPinned),
     [sortedRows, isRowPinned]
   );
+  const pagedRows = useMemo(() => {
+    if (pageSize == null) {
+      return displayRows;
+    }
+    const start = Math.max(0, page - 1) * pageSize;
+    return displayRows.slice(start, start + pageSize);
+  }, [displayRows, page, pageSize]);
 
   const virtualizer = useVirtualizer({
-    count: displayRows.length,
+    count: pagedRows.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: () => rowHeight,
+    initialRect: { height, width: 0 },
     overscan,
   });
 
@@ -175,15 +193,21 @@ export function Table<T>({
         rowHeight;
   const contentHeight = Math.max(
     rowHeight,
-    Math.min(bodyHeight, sortedRows.length * rowHeight)
+    Math.min(bodyHeight, pagedRows.length * rowHeight)
   );
-  const scrolls = sortedRows.length * rowHeight > bodyHeight;
+  const scrolls = pagedRows.length * rowHeight > bodyHeight;
   const viewportHeight = scrolls
     ? bodyHeight
     : Math.max(
-        sortedRows.length === 0 ? bodyHeight : contentHeight,
+        pagedRows.length === 0 ? bodyHeight : contentHeight,
         minBodyHeight
       );
+  const renderedRows = scrolls
+    ? virtualItems.flatMap((item) => {
+        const entry = pagedRows[item.index];
+        return entry ? [{ entry, index: item.index }] : [];
+      })
+    : pagedRows.map((entry, index) => ({ entry, index }));
 
   const hasRowMenu = !!(onInsertRow || onDeleteRow);
   const hasColumnMenu = !!(onInsertColumn || onDeleteColumn);
@@ -285,54 +309,66 @@ export function Table<T>({
     <div className={cn("w-full text-sm", className)}>
       {/* Overlap (>= rounded-2xl) hides the header's side border in the body radius. */}
       <div
-        className="overflow-hidden rounded-t-2xl border border-border border-b-0 bg-muted pb-5"
-        ref={headerScrollRef}
-        style={scrolls ? { scrollbarGutter: "stable" } : undefined}
+        className={cn(
+          "border-border bg-muted overflow-hidden rounded-t-2xl border border-b-0 pb-5",
+          flushTop && "rounded-t-none border-t-0",
+          overlapTop && "pt-5"
+        )}
       >
-        <table
-          className={cn(
-            "border-collapse",
-            sized ? "w-max min-w-full" : "w-full"
-          )}
-          style={{ tableLayout: "fixed" }}
+        {toolbar ? (
+          <div className="border-border bg-background border-b">{toolbar}</div>
+        ) : null}
+        <div
+          className="overflow-hidden"
+          ref={headerScrollRef}
+          style={scrolls ? { scrollbarGutter: "stable" } : undefined}
         >
-          {columnGroup}
-          <TableHeader
-            activeColumn={hasColumnMenu ? activeColumn : null}
-            allSelected={allSelected}
-            columns={orderedColumns}
-            dragKey={dragKey}
-            dropIndex={dropIndex}
-            minColumnWidth={minColumnWidth}
-            onColumnActivate={hasColumnMenu ? activateColumn : undefined}
-            onColumnDeactivate={hasColumnMenu ? deactivateColumn : undefined}
-            onColumnRename={onColumnRename}
-            onDeleteColumn={onDeleteColumn}
-            onInsertColumn={onInsertColumn}
-            onReorderEnd={endReorder}
-            onReorderMove={moveReorder}
-            onReorderStart={startReorder}
-            onResizeEnd={endResize}
-            onResizeMove={moveResize}
-            onResizeStart={startResize}
-            onToggleAll={toggleAll}
-            onToggleSort={toggleSort}
-            reduce={!!reduce}
-            reorderable={reorderable}
-            resizable={resizable}
-            rowHeight={rowHeight}
-            selectable={selectable}
-            someSelected={someSelected}
-            sort={sort}
-            thRefs={thRefs}
-          />
-        </table>
+          <table
+            className={cn(
+              "border-collapse",
+              sized ? "w-max min-w-full" : "w-full"
+            )}
+            style={{ tableLayout: "fixed" }}
+          >
+            {columnGroup}
+            <TableHeader
+              activeColumn={hasColumnMenu ? activeColumn : null}
+              allSelected={allSelected}
+              columns={orderedColumns}
+              dragKey={dragKey}
+              dropIndex={dropIndex}
+              minColumnWidth={minColumnWidth}
+              onColumnActivate={hasColumnMenu ? activateColumn : undefined}
+              onColumnDeactivate={hasColumnMenu ? deactivateColumn : undefined}
+              onColumnRename={onColumnRename}
+              onDeleteColumn={onDeleteColumn}
+              onInsertColumn={onInsertColumn}
+              onReorderEnd={endReorder}
+              onReorderMove={moveReorder}
+              onReorderStart={startReorder}
+              onResizeEnd={endResize}
+              onResizeMove={moveResize}
+              onResizeStart={startResize}
+              onToggleAll={toggleAll}
+              onToggleSort={toggleSort}
+              reduce={!!reduce}
+              reorderable={reorderable}
+              resizable={resizable}
+              rowHeight={rowHeight}
+              selectable={selectable}
+              someSelected={someSelected}
+              sort={sort}
+              thRefs={thRefs}
+            />
+          </table>
+        </div>
       </div>
 
       <div
         className={cn(
-          "-mt-5 scrollbar-floating relative box-content rounded-2xl border border-border bg-background outline-none",
-          scrolls ? "overflow-auto" : "overflow-x-auto overflow-y-hidden"
+          "scrollbar-floating border-border bg-background relative -mt-5 box-content rounded-2xl border outline-none",
+          scrolls ? "overflow-auto" : "overflow-x-auto overflow-y-hidden",
+          flushBottom && !footer && "rounded-b-none"
         )}
         onScroll={handleScroll}
         ref={scrollRef}
@@ -354,7 +390,7 @@ export function Table<T>({
         >
           {columnGroup}
           <tbody>
-            {sortedRows.length === 0 ? (
+            {pagedRows.length === 0 ? (
               loading ? (
                 <SkeletonRows
                   columns={orderedColumns}
@@ -366,7 +402,7 @@ export function Table<T>({
                 <tr>
                   <td className="p-0" colSpan={leadColumns + 1}>
                     <div
-                      className="flex items-center justify-center px-6 text-center text-muted-foreground"
+                      className="text-muted-foreground flex items-center justify-center px-6 text-center"
                       style={{ height: bodyHeight }}
                     >
                       {emptyState}
@@ -376,23 +412,19 @@ export function Table<T>({
               )
             ) : (
               <>
-                {paddingTop > 0 ? (
+                {scrolls && paddingTop > 0 ? (
                   <tr aria-hidden style={{ height: paddingTop }}>
                     <td colSpan={leadColumns + 1} />
                   </tr>
                 ) : null}
-                {virtualItems.map((vItem) => {
-                  const entry = displayRows[vItem.index];
-                  if (!entry) {
-                    return null;
-                  }
+                {renderedRows.map(({ entry, index }) => {
                   return (
                     <TableBodyRow
                       columns={orderedColumns}
                       entry={entry}
                       hasRowMenu={hasRowMenu}
-                      index={vItem.index}
-                      isLastRow={vItem.index === displayRows.length - 1}
+                      index={index}
+                      isLastRow={index === pagedRows.length - 1}
                       isSelected={selected.has(entry.id)}
                       key={entry.id}
                       onActivate={activateRow}
@@ -401,6 +433,7 @@ export function Table<T>({
                       onRowClick={onRowClick}
                       onRowPointerEnter={onRowPointerEnter}
                       onToggleRow={toggleRow}
+                      renderRowContextMenu={renderRowContextMenu}
                       rowHeight={rowHeight}
                       rowRef={(el) => {
                         rowRefs.current[entry.id] = el;
@@ -409,7 +442,7 @@ export function Table<T>({
                     />
                   );
                 })}
-                {paddingBottom > 0 ? (
+                {scrolls && paddingBottom > 0 ? (
                   <tr aria-hidden style={{ height: paddingBottom }}>
                     <td colSpan={leadColumns + 1} />
                   </tr>
@@ -427,6 +460,16 @@ export function Table<T>({
           </tbody>
         </table>
       </div>
+      {footer ? (
+        <div
+          className={cn(
+            "border-border bg-muted -mt-5 rounded-b-2xl border border-t-0 pt-5",
+            flushBottom && "rounded-b-none border-b-0"
+          )}
+        >
+          {footer}
+        </div>
+      ) : null}
       {hasRowMenu && activeRow ? (
         <RowHandle
           id={activeRow.id}

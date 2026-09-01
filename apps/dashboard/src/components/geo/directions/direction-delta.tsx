@@ -1,6 +1,7 @@
 "use client";
 
 import { Badge } from "@notra/ui/components/ui/badge";
+
 import {
   GEO_DIRECTIONS_DELTA_CLASS,
   GEO_DIRECTIONS_DELTA_GLYPH,

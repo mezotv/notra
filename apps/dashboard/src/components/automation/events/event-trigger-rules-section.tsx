@@ -1,8 +1,10 @@
 import { useStore } from "@tanstack/react-form";
+
 import { BrandIdentityRadioGroup } from "@/components/brand-identity-radio-group";
 import { FORMAT_CARD_META } from "@/constants/content-formats";
 import { supportsAutoPublish } from "@/constants/schedule-output-types";
 import type { EventTriggerRulesSectionProps } from "@/types/automation/event-trigger";
+
 import { TriggerSwitchRow } from "./trigger-switch-row";
 
 export function EventTriggerRulesSection({
@@ -12,11 +14,9 @@ export function EventTriggerRulesSection({
   const outputType = useStore(form.store, (s) => s.values.outputType);
 
   const nonDefaultBrandVoices = brandVoices.filter((voice) => !voice.isDefault);
-  const defaultBrandVoiceName = brandVoices.find(
-    (voice) => voice.isDefault
-  )?.name;
-  const defaultBrandVoiceLabel = defaultBrandVoiceName
-    ? `${defaultBrandVoiceName} (Default)`
+  const defaultBrandVoice = brandVoices.find((voice) => voice.isDefault);
+  const defaultBrandVoiceLabel = defaultBrandVoice
+    ? `${defaultBrandVoice.name} (Default)`
     : "Default brand voice";
 
   if (!(brandVoices.length > 1 || supportsAutoPublish(outputType))) {
@@ -26,7 +26,7 @@ export function EventTriggerRulesSection({
   return (
     <section className="space-y-3">
       <div className="space-y-1">
-        <h3 className="font-semibold text-base">
+        <h3 className="text-base font-semibold">
           {FORMAT_CARD_META[outputType].label} rules
         </h3>
         <p className="text-muted-foreground text-sm">
@@ -42,6 +42,7 @@ export function EventTriggerRulesSection({
               emptyOption={{
                 label: defaultBrandVoiceLabel,
                 description: "Use your default brand voice.",
+                voice: defaultBrandVoice,
               }}
               id={field.name}
               label="Brand voice"

@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { Github } from "@notra/ui/components/ui/svgs/github";
+
 import { Button } from "@/components/button";
 import type { GitHubAccountSelectProps } from "@/types/integrations/github";
 
@@ -46,7 +47,7 @@ export function GitHubAccountSelect({
           </span>
         </span>
         <HugeiconsIcon
-          className="size-4 shrink-0 text-muted-foreground"
+          className="text-muted-foreground size-4 shrink-0"
           icon={ArrowDown01Icon}
         />
       </DropdownMenuTrigger>

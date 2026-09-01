@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+
 import { toSafeHtml } from "@/lib/html-to-figma/sanitize";
 import type { HtmlPreviewProps } from "@/types/html-to-figma";
 
@@ -37,7 +38,7 @@ export default function HtmlPreview({ html }: HtmlPreviewProps) {
     >
       {trimmed ? (
         <div
-          className="overflow-hidden rounded-lg ring-1 ring-border"
+          className="ring-border overflow-hidden rounded-lg ring-1"
           style={{ width: CANVAS_WIDTH * scale, height: CANVAS_HEIGHT * scale }}
         >
           <iframe
@@ -53,7 +54,7 @@ export default function HtmlPreview({ html }: HtmlPreviewProps) {
           />
         </div>
       ) : (
-        <p className="font-mono text-muted-foreground text-sm">
+        <p className="text-muted-foreground font-mono text-sm">
           Paste HTML to see a preview
         </p>
       )}

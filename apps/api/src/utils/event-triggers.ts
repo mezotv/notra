@@ -2,6 +2,7 @@ import { githubIntegrations } from "@notra/db/schema";
 import { and, eq, inArray } from "drizzle-orm";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import {
   createEventTriggerRequestSchema,
   eventTriggerOutputConfigSchema,

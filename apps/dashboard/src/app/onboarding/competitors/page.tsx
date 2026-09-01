@@ -1,14 +1,16 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
+import { normalizeCompetitorDomain } from "@notra/geo-core/geo/domain";
+import { getGeoOnboardingStage } from "@notra/geo-core/geo/onboarding-status";
 import { eq } from "drizzle-orm";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
 import { hasPaidSubscriptionHistory } from "@/lib/billing/subscription";
-import { normalizeCompetitorDomain } from "@/lib/geo/domain";
-import { getGeoOnboardingStage } from "@/lib/geo/onboarding-status";
 import type { OnboardingGeoPageProps } from "@/types/onboarding";
 import { geoDashboardPath, geoOnboardingPath } from "@/utils/geo-paths";
+
 import { CompetitorsForm } from "./competitors-form";
 
 export const metadata: Metadata = {

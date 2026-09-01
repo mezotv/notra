@@ -13,12 +13,13 @@ import type {
   RouteRequest,
   RouterLogger,
 } from "@notra/ai/types/router";
+
 import { createCreditTracker } from "./credits";
 import { GatewayCreditBalanceError } from "./errors";
 import { RoutedLanguageModel } from "./lazy-model";
-import { createMemoryPlanCache } from "./plan-cache";
 import { otherGateway } from "./policy";
 import { resolveRoute } from "./resolve";
+import { createMemoryTtlCache } from "./ttl-cache";
 
 const noopLogger: RouterLogger = {
   info: () => undefined,
@@ -51,7 +52,9 @@ export function createModelRouter(config: ModelRouterConfig): ModelRouter {
     adapters: config.adapters,
     policy: config.policy,
     resolvePlan: config.resolvePlan,
-    planCache: config.planCache ?? createMemoryPlanCache(now),
+    resolveZdr: config.resolveZdr ?? (() => Promise.resolve("required")),
+    planCache: config.planCache ?? createMemoryTtlCache(now),
+    zdrCache: config.zdrCache ?? createMemoryTtlCache(now),
     planCacheTtlMs: config.planCacheTtlMs ?? DEFAULT_PLAN_CACHE_TTL_MS,
     logger,
     credits,

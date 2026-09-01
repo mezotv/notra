@@ -1,6 +1,8 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { AuthEmailField } from "@notra/ui/components/shared/auth/auth-email-field";
+import { AuthFormError } from "@notra/ui/components/shared/auth/auth-form-error";
 import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
 import { AuthOrDivider } from "@notra/ui/components/shared/auth/auth-or-divider";
 import { AuthPasswordField } from "@notra/ui/components/shared/auth/auth-password-field";
@@ -20,8 +22,10 @@ import Link from "next/link";
 import { useQueryStates } from "nuqs";
 import { useRef, useState } from "react";
 import { flushSync } from "react-dom";
+
 import { SignupCreditsBanner } from "@/components/auth/signup-credits-banner";
 import { SHOW_SIGNUP_CREDITS_BANNER } from "@/constants/signup-credits";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   signUpWithPasswordAction,
   verifyEmailCodeAction,
@@ -110,6 +114,11 @@ export function SignupForm({
     authInFlightRef.current = true;
     flushSync(() => setAuthMethod(provider));
     persistMarketingAttribution({ ...attribution, signupMethod: provider });
+    trackEvent(POSTHOG_EVENTS.SIGNUP_STARTED, {
+      method: provider,
+      db_source: attribution.source ?? null,
+      landing_page_h1_variant: attribution.landingPageH1Variant ?? null,
+    });
     setLastUsedLoginMethod(provider);
     startSocialSignInAction({
       provider,
@@ -142,6 +151,11 @@ export function SignupForm({
       setFormError(null);
       authInFlightRef.current = true;
       flushSync(() => setAuthMethod("email"));
+      trackEvent(POSTHOG_EVENTS.SIGNUP_STARTED, {
+        method: "password",
+        db_source: attribution.source ?? null,
+        landing_page_h1_variant: attribution.landingPageH1Variant ?? null,
+      });
       const fallbackName = parsed.data.email.split("@")[0] || "User";
       try {
         const result = await signUpWithPasswordAction({
@@ -227,7 +241,7 @@ export function SignupForm({
             form.handleSubmit();
           }}
         >
-          <div className="grid gap-1">
+          <div className="grid gap-3">
             <form.Field
               name="email"
               validators={{
@@ -278,12 +292,7 @@ export function SignupForm({
             </form.Field>
           </div>
 
-          <p
-            aria-live="polite"
-            className="mt-3 text-destructive text-sm empty:hidden"
-          >
-            {formError}
-          </p>
+          <AuthFormError className="mt-4" error={formError} />
 
           <CtaButton
             className="mt-4 w-full"
@@ -303,12 +312,12 @@ export function SignupForm({
       </div>
 
       {(showForgotPasswordLink || showLoginLink) && (
-        <div className="flex flex-col gap-4 px-8 text-center text-muted-foreground text-xs">
+        <div className="text-muted-foreground flex flex-col gap-4 px-8 text-center text-xs">
           {showForgotPasswordLink && (
             <p>
               Forgot your password?{" "}
               <Link
-                className="underline underline-offset-4 hover:text-primary"
+                className="hover:text-primary underline underline-offset-4"
                 href="/forgot-password"
               >
                 Reset Your Password
@@ -320,7 +329,7 @@ export function SignupForm({
             <p>
               Already have an account?{" "}
               <Link
-                className="underline underline-offset-4 hover:text-primary"
+                className="hover:text-primary underline underline-offset-4"
                 href="/login"
               >
                 Log in

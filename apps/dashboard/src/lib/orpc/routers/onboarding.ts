@@ -1,4 +1,4 @@
-import { retrieveBrand } from "@notra/ai/utils/context-dev";
+import { retrieveBrand, searchBrands } from "@notra/ai/utils/context-dev";
 import { db } from "@notra/db/drizzle";
 import {
   brandSettings,
@@ -11,23 +11,24 @@ import {
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
+
 import {
   AGENT_RUN_HARD_LIMIT_MS,
   SELF_SERVE_AGENT_ERROR_MESSAGES,
 } from "@/constants/onboarding-agent";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
-import { pickCompanyLogoUrl } from "@/lib/onboarding/company-logo";
 import {
   getOnboardingAgentState,
   startSelfServeOnboardingAgent,
 } from "@/lib/onboarding-agent";
+import { pickCompanyLogoUrl } from "@/lib/onboarding/company-logo";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { organizationIdSchema } from "@/schemas/auth/organization";
-import { companyLogoInputSchema } from "@/schemas/onboarding/company-logo";
 import {
   dismissSuggestionInputSchema,
   listSuggestionsInputSchema,
 } from "@/schemas/onboarding-agent";
+import { companyLogoInputSchema } from "@/schemas/onboarding/company-logo";
 import { ratelimit } from "@/utils/ratelimit";
 
 const onboardingInputSchema = z.object({
@@ -39,7 +40,7 @@ export const onboardingRouter = {
     .input(companyLogoInputSchema)
     .handler(async ({ context, input }) => {
       const { success: withinLimit } = await ratelimit.companyLogo.limit(
-        context.user.id
+        `${context.user.id}:${input.query.toLowerCase()}`
       );
       if (!withinLimit) {
         throw new ORPCError("TOO_MANY_REQUESTS", {
@@ -48,10 +49,32 @@ export const onboardingRouter = {
       }
 
       try {
-        const response = await retrieveBrand(input.domain);
-        return { url: pickCompanyLogoUrl(response.brand?.logos) };
+        if (!input.searchByName) {
+          const response = await retrieveBrand(input.query);
+          return {
+            domain: response.brand?.domain ?? input.query,
+            url: pickCompanyLogoUrl(response.brand?.logos),
+          };
+        }
+
+        const response = await searchBrands(input.query);
+        const key = input.query.toLowerCase();
+        const brand =
+          response.results.find(
+            (result) => result.name.trim().toLowerCase() === key
+          ) ??
+          response.results.find(
+            (result) => result.domain.trim().toLowerCase() === key
+          );
+        return {
+          domain: brand?.domain ?? null,
+          url: brand?.logo || null,
+        };
       } catch {
-        return { url: null };
+        return {
+          domain: input.searchByName ? null : input.query,
+          url: null,
+        };
       }
     }),
   get: authorizedProcedure

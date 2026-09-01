@@ -1,20 +1,21 @@
 "use client";
 
-import { PlusSignIcon } from "@hugeicons/core-free-icons";
+import { PlusSignIcon, Upload01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import Link from "next/link";
 import { useState } from "react";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { ConversationsCard } from "@/components/geo/conversations-card";
+import { PromptsCsvImportDialog } from "@/components/geo/geo-csv-import-dialog";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { PromptAddDialog } from "@/components/geo/prompt-add-dialog";
 import { PromptSuggestions } from "@/components/geo/prompt-suggestions";
 import { PromptsTable } from "@/components/geo/prompts-table";
-import { SearchConsoleCard } from "@/components/geo/search-console-card";
 import { PageContainer } from "@/components/layout/container";
 import {
   GeoProjectProvider,
@@ -34,6 +35,7 @@ import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import { withGeoProject } from "@/utils/geo-paths";
+
 import { GeoPromptsSkeleton } from "./skeleton";
 
 interface PageClientProps {
@@ -69,8 +71,9 @@ function GeoPromptsPageContent({ organizationSlug }: PageClientProps) {
   );
   const isScanning = useIsGeoScanning(organizationId);
   const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
-  useHotkey("P", () => setAddOpen(true), { enabled: !addOpen });
+  useHotkey("P", () => setAddOpen(true), { enabled: !addOpen && !importOpen });
 
   if (isPending) {
     return <GeoPromptsSkeleton />;
@@ -81,7 +84,7 @@ function GeoPromptsPageContent({ organizationSlug }: PageClientProps) {
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full space-y-6 px-4 lg:px-6">
           <header className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Prompts</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Prompts</h1>
             <p className="text-muted-foreground">
               The questions we ask AI engines on your behalf
             </p>
@@ -118,13 +121,21 @@ function GeoPromptsPageContent({ organizationSlug }: PageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <header className="flex flex-wrap items-center justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Prompts</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Prompts</h1>
             <p className="text-muted-foreground">
               The questions we ask AI engines on your behalf
             </p>
           </div>
           <div className="flex items-center gap-2">
             <GeoRangePicker control={geoRange} />
+            <Button
+              className="gap-1.5"
+              onClick={() => setImportOpen(true)}
+              variant="outline"
+            >
+              <HugeiconsIcon className="size-4" icon={Upload01Icon} />
+              Import CSV
+            </Button>
             <Button className="gap-1.5" onClick={() => setAddOpen(true)}>
               <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
               Add Prompt
@@ -132,14 +143,6 @@ function GeoPromptsPageContent({ organizationSlug }: PageClientProps) {
             </Button>
           </div>
         </header>
-        <PromptSuggestions organizationId={organizationId} />
-        <SearchConsoleCard
-          callbackPath={withGeoProject(
-            `/${organizationSlug}/geo/prompts`,
-            projectId
-          )}
-          organizationId={organizationId}
-        />
         <PromptsTable
           isScanning={isScanning}
           organizationId={organizationId}
@@ -147,10 +150,22 @@ function GeoPromptsPageContent({ organizationSlug }: PageClientProps) {
           results={promptResults?.results ?? []}
         />
         <ConversationsCard organizationId={organizationId} />
+        <PromptSuggestions
+          callbackPath={withGeoProject(
+            `/${organizationSlug}/geo/prompts`,
+            projectId
+          )}
+          organizationId={organizationId}
+        />
       </div>
       <PromptAddDialog
         onOpenChange={setAddOpen}
         open={addOpen}
+        organizationId={organizationId}
+      />
+      <PromptsCsvImportDialog
+        onOpenChange={setImportOpen}
+        open={importOpen}
         organizationId={organizationId}
       />
     </PageContainer>

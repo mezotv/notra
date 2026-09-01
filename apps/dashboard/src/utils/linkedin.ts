@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+
 import type { LinkedInPostAuthor } from "@/types/content/linkedin-post";
 import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
 

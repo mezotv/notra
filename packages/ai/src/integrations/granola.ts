@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { granolaIntegrations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+
 import { GRANOLA_API_BASE_URL } from "../constants/granola";
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
 import type {

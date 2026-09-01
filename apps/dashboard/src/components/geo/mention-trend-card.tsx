@@ -1,39 +1,42 @@
 "use client";
 
 import {
-  InstrumentEmpty,
-  InstrumentSection,
-} from "@notra/ui/components/instrument/instrument-module";
+  GEO_MENTION_ACTIVITY_LABEL,
+  GEO_MENTION_TREND_LINE_KEY,
+  GEO_MENTION_TREND_LINE_LABEL,
+  GEO_MENTION_TREND_TOTAL_KEY,
+  GEO_MENTION_TREND_TOTAL_LABEL,
+} from "@notra/geo-core/constants/geo";
+import type { MentionTrendRow } from "@notra/geo-core/types/geo";
+import { todayIsoDate } from "@notra/geo-core/utils/day-label";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { useCallback, useMemo, useState } from "react";
+
 import { EmptyStateTrendPreview } from "@/components/empty-state-preview";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
-import { engineIconHtml } from "@/components/geo/engine-icon-html";
 import { MentionTrendAgentsPicker } from "@/components/geo/mention-trend-agents";
-import { CHART_MUTED_COLOR } from "@/constants/charts";
 import {
-  GEO_MENTION_TREND_AVERAGE_KEY,
-  GEO_MENTION_TREND_AVERAGE_LABEL,
-} from "@/constants/geo";
+  InstrumentEmpty,
+  InstrumentModule,
+} from "@/components/instrument/instrument-module";
+import { CHART_MUTED_COLOR, CHART_PRIMARY_COLOR } from "@/constants/charts";
 import type { ChartConfig } from "@/types/charts";
-import type {
-  MentionTrendCardProps,
-  MentionTrendRow,
-  MentionTrendSeries,
-} from "@/types/geo";
-import { todayIsoDate } from "@/utils/analytics-charts";
+import type { MentionTrendCardProps, MentionTrendSeries } from "@/types/geo";
+import { formatFullDayLabel } from "@/utils/analytics-charts";
 import { accountSeriesColors, seriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";
+import { engineIconHtml } from "@/utils/engine-icon-html";
 import {
   buildMentionTrendRows,
-  fitMentionTrendAverage,
+  fitMentionTrendLine,
   formatChartInteger,
   formatEngineFamily,
   mentionTrendEmptyLabel,
 } from "@/utils/geo-charts";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
+const TOTAL_STROKE_WIDTH = 2;
 const ENGINE_STROKE_WIDTH = 1.5;
-const AVERAGE_STROKE_WIDTH = 2;
+const TREND_STROKE_WIDTH = 1.5;
 
 function mentionTrendSeries(engines: readonly string[]): MentionTrendSeries[] {
   return engines.map((engine) => ({
@@ -53,25 +56,15 @@ function sampledDayCount(
 }
 
 function hasIncompleteTail(rows: readonly MentionTrendRow[]): boolean {
-  const last = rows.at(-1);
-  if (!last) {
-    return false;
-  }
-  return last.rawDay === todayIsoDate();
+  return rows.at(-1)?.rawDay === todayIsoDate();
 }
 
-function toggleHiddenSeries(
-  hiddenKeys: ReadonlySet<string>,
-  key: string,
-  allKeys: readonly string[]
+function toggleActiveSeries(
+  activeKeys: ReadonlySet<string>,
+  key: string
 ): Set<string> {
-  const next = new Set(hiddenKeys);
-  if (next.has(key)) {
-    next.delete(key);
-    return next;
-  }
-  const visibleCount = allKeys.filter((item) => !next.has(item)).length;
-  if (visibleCount <= 1) {
+  const next = new Set(activeKeys);
+  if (next.delete(key)) {
     return next;
   }
   next.add(key);
@@ -82,7 +75,7 @@ export function MentionTrendCard({
   points,
   isScanning = false,
 }: MentionTrendCardProps) {
-  const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(() => new Set());
+  const [activeKeys, setActiveKeys] = useState<Set<string>>(() => new Set());
 
   const { rows, engines } = useMemo(
     () => buildMentionTrendRows(points),
@@ -90,33 +83,31 @@ export function MentionTrendCard({
   );
   const series = useMemo(() => mentionTrendSeries(engines), [engines]);
   const allKeys = useMemo(() => series.map((entry) => entry.key), [series]);
-  const effectiveHiddenKeys = useMemo(() => {
-    const current = new Set(allKeys);
-    const hidden = new Set([...hiddenKeys].filter((key) => current.has(key)));
-    if (allKeys.length > 0 && hidden.size >= allKeys.length) {
-      return new Set<string>();
-    }
-    return hidden;
-  }, [allKeys, hiddenKeys]);
-  const visibleSeries = useMemo(
-    () => series.filter((entry) => !effectiveHiddenKeys.has(entry.key)),
-    [series, effectiveHiddenKeys]
-  );
-  const visibleKeys = useMemo(
-    () => visibleSeries.map((entry) => entry.key),
-    [visibleSeries]
-  );
   const chartRows = useMemo(() => {
-    const averages = fitMentionTrendAverage(rows, visibleKeys);
-    return rows.map((row, index) => ({
-      ...row,
-      [GEO_MENTION_TREND_AVERAGE_KEY]: averages[index] ?? null,
-    }));
-  }, [rows, visibleKeys]);
+    const observedRows = rows.map((row) =>
+      allKeys.some((key) => typeof row[key] === "number")
+        ? row
+        : { ...row, [GEO_MENTION_TREND_TOTAL_KEY]: null }
+    );
+    const trend = fitMentionTrendLine(
+      observedRows,
+      GEO_MENTION_TREND_TOTAL_KEY
+    );
+    return rows.map((row, index) => {
+      const trendValue = trend[index];
+      return typeof trendValue === "number"
+        ? { ...row, [GEO_MENTION_TREND_LINE_KEY]: trendValue }
+        : row;
+    });
+  }, [allKeys, rows]);
   const config = useMemo(() => {
     const trendConfig: ChartConfig = {
-      [GEO_MENTION_TREND_AVERAGE_KEY]: {
-        label: GEO_MENTION_TREND_AVERAGE_LABEL,
+      [GEO_MENTION_TREND_TOTAL_KEY]: {
+        label: GEO_MENTION_TREND_TOTAL_LABEL,
+        colors: seriesColors(CHART_PRIMARY_COLOR),
+      },
+      [GEO_MENTION_TREND_LINE_KEY]: {
+        label: GEO_MENTION_TREND_LINE_LABEL,
         colors: seriesColors(CHART_MUTED_COLOR),
       },
     };
@@ -132,81 +123,98 @@ export function MentionTrendCard({
   const markIncompleteTail = hasIncompleteTail(rows);
   const sampledDays = sampledDayCount(rows, engines);
 
-  const handleToggle = useCallback(
-    (key: string) => {
-      setHiddenKeys((previous) => toggleHiddenSeries(previous, key, allKeys));
-    },
-    [allKeys]
-  );
+  const handleToggle = useCallback((key: string) => {
+    setActiveKeys((previous) => toggleActiveSeries(previous, key));
+  }, []);
 
   const emptyMessage =
-    sampledDays === 0 || visibleSeries.length === 0
+    sampledDays === 0
       ? geoScanEmptyMessage(isScanning, "Run a scan to see your mention trend")
       : null;
 
   return (
-    <InstrumentSection
+    <InstrumentModule
       action={
         <MentionTrendAgentsPicker
+          activeKeys={activeKeys}
           disabled={emptyMessage !== null}
-          hiddenKeys={effectiveHiddenKeys}
           onToggle={handleToggle}
           series={series}
         />
       }
-      bodyClassName="flex flex-col"
-      eyebrow="Mention trend"
+      bodyClassName="flex min-h-0 flex-1 flex-col px-4 pt-1 pb-4"
+      className="h-full"
+      eyebrow={GEO_MENTION_ACTIVITY_LABEL}
+      variant="table"
     >
       {emptyMessage ? (
         <InstrumentEmpty
           busy={isScanning}
-          className="h-80"
+          className="min-h-64 flex-1"
           message={emptyMessage}
           preview={<EmptyStateTrendPreview />}
-          seed="Mention trend"
+          seed="Mention activity"
         />
       ) : (
         <EChartsAreaChart
           animation={false}
-          className="h-80 w-full"
+          className="min-h-64 w-full flex-1"
           config={config}
           curveType="monotone"
           data={chartRows}
           xDataKey="day"
         >
-          <EChartsAreaChart.Grid />
+          <EChartsAreaChart.Grid variant="solid" />
           <EChartsAreaChart.XAxis dataKey="day" />
-          <EChartsAreaChart.YAxis />
-          {visibleSeries.map((entry) => (
-            <EChartsAreaChart.Area
-              dataKey={entry.key}
-              enableBufferLine={markIncompleteTail}
-              key={entry.key}
-              strokeVariant="solid"
-              strokeWidth={ENGINE_STROKE_WIDTH}
-              variant="gradient"
-            >
-              <EChartsAreaChart.ActiveDot variant="border" />
-            </EChartsAreaChart.Area>
-          ))}
+          <EChartsAreaChart.YAxis scale />
+          <EChartsAreaChart.Area
+            dataKey={GEO_MENTION_TREND_TOTAL_KEY}
+            enableBufferLine={markIncompleteTail}
+            gapMissing
+            strokeVariant="solid"
+            strokeWidth={TOTAL_STROKE_WIDTH}
+            variant="gradient"
+          >
+            <EChartsAreaChart.ActiveDot variant="border" />
+          </EChartsAreaChart.Area>
+          {series.map((entry) =>
+            activeKeys.has(entry.key) ? (
+              <EChartsAreaChart.Area
+                dataKey={entry.key}
+                connectNulls
+                enableBufferLine={markIncompleteTail}
+                gapMissing
+                key={entry.key}
+                strokeVariant="solid"
+                strokeWidth={ENGINE_STROKE_WIDTH}
+                variant="none"
+              >
+                <EChartsAreaChart.ActiveDot variant="border" />
+              </EChartsAreaChart.Area>
+            ) : null
+          )}
           <EChartsAreaChart.Area
             curveType="linear"
-            dataKey={GEO_MENTION_TREND_AVERAGE_KEY}
+            dataKey={GEO_MENTION_TREND_LINE_KEY}
+            gapMissing
             strokeVariant="dashed"
-            strokeWidth={AVERAGE_STROKE_WIDTH}
+            strokeWidth={TREND_STROKE_WIDTH}
             variant="none"
           />
           <EChartsAreaChart.Tooltip
             confine={false}
-            emptyLabel={(row) => mentionTrendEmptyLabel(row, visibleKeys)}
+            emptyLabel={(row) => mentionTrendEmptyLabel(row, allKeys)}
             hideZeros
-            layout="bars"
+            labelFormatter={formatFullDayLabel}
+            labelKey="rawDay"
+            layout="activity"
             position="fixed"
-            rowKeys={visibleKeys}
+            roundness="xl"
+            rowKeys={allKeys}
             valueFormatter={formatChartInteger}
           />
         </EChartsAreaChart>
       )}
-    </InstrumentSection>
+    </InstrumentModule>
   );
 }

@@ -11,6 +11,7 @@ import {
   trackedSocialAccounts,
 } from "@notra/db/schema";
 import { eq } from "drizzle-orm";
+
 import { isAnalyticsEnabledForOrganization } from "@/lib/analytics/flag";
 import { buildAccountRow } from "@/lib/analytics/rows";
 import { collectTwitterRows } from "@/lib/analytics/twitter-sync";
@@ -46,36 +47,37 @@ export async function listSyncableAccounts(
   if (!isTinybirdConfigured()) {
     return [];
   }
-  const accounts = await db.query.connectedSocialAccounts.findMany({
-    columns: {
-      id: true,
-      organizationId: true,
-      provider: true,
-      providerAccountId: true,
-      username: true,
-      displayName: true,
-      profileImageUrl: true,
-      verified: true,
-    },
-    ...(organizationId
-      ? { where: eq(connectedSocialAccounts.organizationId, organizationId) }
-      : {}),
-  });
-
-  const tracked = await db.query.trackedSocialAccounts.findMany({
-    columns: {
-      id: true,
-      organizationId: true,
-      provider: true,
-      providerAccountId: true,
-      username: true,
-      displayName: true,
-      profileImageUrl: true,
-    },
-    ...(organizationId
-      ? { where: eq(trackedSocialAccounts.organizationId, organizationId) }
-      : {}),
-  });
+  const [accounts, tracked] = await Promise.all([
+    db.query.connectedSocialAccounts.findMany({
+      columns: {
+        id: true,
+        organizationId: true,
+        provider: true,
+        providerAccountId: true,
+        username: true,
+        displayName: true,
+        profileImageUrl: true,
+        verified: true,
+      },
+      ...(organizationId
+        ? { where: eq(connectedSocialAccounts.organizationId, organizationId) }
+        : {}),
+    }),
+    db.query.trackedSocialAccounts.findMany({
+      columns: {
+        id: true,
+        organizationId: true,
+        provider: true,
+        providerAccountId: true,
+        username: true,
+        displayName: true,
+        profileImageUrl: true,
+      },
+      ...(organizationId
+        ? { where: eq(trackedSocialAccounts.organizationId, organizationId) }
+        : {}),
+    }),
+  ]);
 
   const connected: SyncableSocialAccount[] = accounts.map((account) => ({
     id: account.id,

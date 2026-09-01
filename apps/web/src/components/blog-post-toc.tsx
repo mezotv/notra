@@ -3,6 +3,8 @@
 import { ArrowUp01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { BlogPostTocProps, TocPosition } from "~types/blog";
+
 import {
   TOC_DEPTHS,
   TOC_PATH_TRACK_WIDTH,
@@ -16,7 +18,6 @@ import {
   scrollToHeading,
   scrollToTop,
 } from "@/lib/blog/toc";
-import type { BlogPostTocProps, TocPosition } from "~types/blog";
 
 export function BlogPostToc({ toc }: BlogPostTocProps) {
   const items = useMemo(
@@ -168,7 +169,7 @@ export function BlogPostToc({ toc }: BlogPostTocProps) {
 
   return (
     <nav aria-label="On this page" className="not-prose" ref={navRef}>
-      <p className="mb-3 font-medium font-sans text-foreground text-sm">
+      <p className="text-foreground mb-3 font-sans text-sm font-medium">
         On this page
       </p>
       <div className="relative">
@@ -176,7 +177,7 @@ export function BlogPostToc({ toc }: BlogPostTocProps) {
           <>
             <svg
               aria-hidden="true"
-              className="pointer-events-none absolute top-0 left-0 text-border"
+              className="text-border pointer-events-none absolute top-0 left-0"
               height={containerHeight}
               preserveAspectRatio="none"
               viewBox={`0 0 ${TOC_PATH_TRACK_WIDTH} ${containerHeight}`}
@@ -193,7 +194,7 @@ export function BlogPostToc({ toc }: BlogPostTocProps) {
             </svg>
             <svg
               aria-hidden="true"
-              className="pointer-events-none absolute top-0 left-0 text-foreground transition-[clip-path] duration-300 ease-out"
+              className="text-foreground pointer-events-none absolute top-0 left-0 transition-[clip-path] duration-300 ease-out"
               height={containerHeight}
               preserveAspectRatio="none"
               style={{ clipPath }}
@@ -222,7 +223,7 @@ export function BlogPostToc({ toc }: BlogPostTocProps) {
                   className={`block py-1.5 font-sans text-sm leading-snug transition-colors ${indent} ${
                     isActive
                       ? "text-foreground"
-                      : "text-neutral-500 hover:text-foreground dark:text-neutral-400"
+                      : "hover:text-foreground text-neutral-500 dark:text-neutral-400"
                   }`}
                   href={item.url}
                   onClick={(event) => {
@@ -248,7 +249,7 @@ export function BlogPostToc({ toc }: BlogPostTocProps) {
       </div>
       {hasScrolled ? (
         <button
-          className="mt-6 flex w-full cursor-pointer items-center gap-2 border-border/70 border-t pt-4 font-medium font-sans text-muted-foreground text-sm transition-colors hover:text-foreground"
+          className="border-border/70 text-muted-foreground hover:text-foreground mt-6 flex w-full cursor-pointer items-center gap-2 border-t pt-4 font-sans text-sm font-medium transition-colors"
           onClick={scrollToTop}
           type="button"
         >

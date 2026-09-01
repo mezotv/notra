@@ -1,24 +1,39 @@
+import type { ZdrEntitlement, ZdrMode } from "@notra/ai/types/router";
+
 import { autumn } from "./autumn";
 import { FEATURES } from "./features";
 
 /**
- * Whether the organization is entitled to zero data retention. Mirrors the
- * dashboard check: without Autumn only non-production environments count as
- * entitled, and a billing outage counts as not entitled so gates fail closed.
+ * Look up the zero data retention entitlement. Without Autumn only
+ * non-production environments count as entitled; a billing outage answers
+ * `unknown` so each caller can decide how to fail.
  */
-export async function hasZdrEntitlement(
+export async function resolveZdrEntitlement(
   organizationId: string
-): Promise<boolean> {
+): Promise<ZdrEntitlement> {
   if (!autumn) {
-    return process.env.NODE_ENV !== "production";
+    return process.env.NODE_ENV === "production" ? "not_entitled" : "entitled";
   }
   try {
     const data = await autumn.check({
       customerId: organizationId,
       featureId: FEATURES.ZDR,
     });
-    return data.allowed === true;
+    return data.allowed === true ? "entitled" : "not_entitled";
   } catch {
-    return false;
+    return "unknown";
   }
+}
+
+/**
+ * Router default for callers that do not pick a ZDR mode. Entitled
+ * organizations fail closed; organizations without the add-on do not get
+ * the ZDR flag at all. A billing outage keeps ZDR strict so a paying
+ * organization never loses it to a blip.
+ */
+export async function resolveOrganizationZdrMode(
+  organizationId: string
+): Promise<ZdrMode> {
+  const entitlement = await resolveZdrEntitlement(organizationId);
+  return entitlement === "not_entitled" ? "none" : "required";
 }

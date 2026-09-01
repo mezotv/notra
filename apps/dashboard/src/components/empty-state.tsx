@@ -4,6 +4,7 @@ import type { EmptyStateProps } from "@/types/components/empty-state";
 
 function EmptyState({
   title,
+  titleIcon,
   description,
   action,
   actionLabel,
@@ -33,7 +34,7 @@ function EmptyState({
         "relative flex min-h-72 w-full flex-col items-center overflow-hidden text-center",
         preview
           ? "rounded-2xl"
-          : "justify-center rounded-2xl border border-dashed bg-muted/15 px-6 py-16",
+          : "bg-muted/15 justify-center rounded-2xl border border-dashed px-6 py-16",
         className
       )}
       {...props}
@@ -41,9 +42,9 @@ function EmptyState({
       {preview ? (
         <div
           aria-hidden
-          className="pointer-events-none w-full shrink-0 select-none px-3 pt-3 sm:px-4 sm:pt-4"
+          className="pointer-events-none w-full shrink-0 px-3 pt-3 select-none sm:px-4 sm:pt-4"
         >
-          <div className="opacity-[0.38] [mask-image:linear-gradient(to_bottom,black_0%,transparent_100%)]">
+          <div className="[mask-image:linear-gradient(to_bottom,black_0%,transparent_100%)] opacity-[0.38]">
             {preview}
           </div>
         </div>
@@ -55,8 +56,11 @@ function EmptyState({
           preview && "-mt-4 px-6 pt-2 pb-10"
         )}
       >
-        <h3 className="text-balance font-semibold text-lg">{title}</h3>
-        <p className="mt-1.5 text-pretty text-muted-foreground text-sm leading-relaxed">
+        <h3 className="flex items-center justify-center gap-2 text-lg font-semibold text-balance">
+          {titleIcon}
+          {title}
+        </h3>
+        <p className="text-muted-foreground mt-1.5 text-sm leading-relaxed text-pretty">
           {description}
         </p>
         {renderedAction ? (

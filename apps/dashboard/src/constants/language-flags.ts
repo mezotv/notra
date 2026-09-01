@@ -1,0 +1,35 @@
+import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
+
+export const LANGUAGE_FLAGS: Record<
+  (typeof SUPPORTED_LANGUAGES)[number],
+  string
+> = {
+  English: "🇺🇸",
+  Spanish: "🇪🇸",
+  French: "🇫🇷",
+  German: "🇩🇪",
+  Portuguese: "🇵🇹",
+  Dutch: "🇳🇱",
+  Italian: "🇮🇹",
+  Japanese: "🇯🇵",
+  Korean: "🇰🇷",
+  Chinese: "🇨🇳",
+  Arabic: "🇸🇦",
+  Hindi: "🇮🇳",
+  Russian: "🇷🇺",
+  Turkish: "🇹🇷",
+  Polish: "🇵🇱",
+  Swedish: "🇸🇪",
+  Danish: "🇩🇰",
+  Norwegian: "🇳🇴",
+  Finnish: "🇫🇮",
+  Czech: "🇨🇿",
+  Romanian: "🇷🇴",
+  Hungarian: "🇭🇺",
+  Greek: "🇬🇷",
+  Thai: "🇹🇭",
+  Vietnamese: "🇻🇳",
+  Indonesian: "🇮🇩",
+  Ukrainian: "🇺🇦",
+  Hebrew: "🇮🇱",
+};

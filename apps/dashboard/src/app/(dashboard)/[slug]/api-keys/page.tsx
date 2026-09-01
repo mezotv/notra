@@ -86,6 +86,7 @@ import {
   useReducer,
 } from "react";
 import { toast } from "sonner";
+
 import { ApiKeyRevealField } from "@/components/api-keys/api-key-reveal-field";
 import { ApiKeyPermissionSelector } from "@/components/api-keys/permission-selector";
 import { TrackingTokenCard } from "@/components/api-keys/tracking-token-card";
@@ -344,7 +345,7 @@ function ApiKeysTableContent({
     return (
       <TableRow>
         <TableCell
-          className="h-24 text-center text-muted-foreground"
+          className="text-muted-foreground h-24 text-center"
           colSpan={6}
         >
           No API keys yet
@@ -356,7 +357,7 @@ function ApiKeysTableContent({
   return keys.map((apiKey) => (
     <TableRow key={apiKey.keyId}>
       <TableCell className="font-medium">{apiKey.name}</TableCell>
-      <TableCell className="font-mono text-muted-foreground text-sm">
+      <TableCell className="text-muted-foreground font-mono text-sm">
         {apiKey.start}…
       </TableCell>
       <TableCell>{formatPermissionLabel(apiKey)}</TableCell>
@@ -405,7 +406,7 @@ function ApiKeysHeader({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="flex items-center justify-between">
       <div className="space-y-1">
-        <h1 className="font-bold text-3xl tracking-tight">API Keys</h1>
+        <h1 className="text-3xl font-bold tracking-tight">API Keys</h1>
         <p className="text-muted-foreground">
           Manage API keys for programmatic access to your organization
         </p>
@@ -461,7 +462,7 @@ function ApiKeysTable({
   onSort: () => void;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
+    <div className="smooth-shadow-ring-xs bg-muted/80 overflow-hidden rounded-lg">
       <Table>
         <TableHeader>
           <TableRow>
@@ -499,7 +500,7 @@ function ApiKeyQuickStart({ onSelect }: { onSelect: (id: string) => void }) {
   return (
     <div className="space-y-3">
       <div className="space-y-1">
-        <h2 className="font-semibold text-lg tracking-tight">Quick start</h2>
+        <h2 className="text-lg font-semibold tracking-tight">Quick start</h2>
         <p className="text-muted-foreground text-sm">
           Spin up a key preconfigured for how you plan to use the API.
         </p>
@@ -517,6 +518,7 @@ function CreateApiKeyDialog({
   onExpirationChange,
   onNameChange,
   onOpenChange,
+  onOpenChangeComplete,
   onScopesChange,
   onSubmit,
   open,
@@ -528,18 +530,28 @@ function CreateApiKeyDialog({
   onExpirationChange: (expiration: ApiKeyExpiration) => void;
   onNameChange: (name: string | null) => void;
   onOpenChange: (open: boolean) => void;
+  onOpenChangeComplete: (open: boolean) => void;
   onScopesChange: (scopes: string[]) => void;
   onSubmit: () => void;
   open: boolean;
 }) {
   return (
-    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+    <ResponsiveDialog
+      onOpenChange={onOpenChange}
+      onOpenChangeComplete={onOpenChangeComplete}
+      open={open}
+    >
       <ResponsiveDialogContent
-        className={createdKey ? "sm:max-w-md" : "sm:max-w-2xl"}
+        className={
+          createdKey
+            ? "sm:max-w-md"
+            : "flex max-h-[85svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+        }
+        drawerClassName="[&>form]:px-0"
       >
         {createdKey ? (
           <>
-            <ResponsiveDialogHeader>
+            <ResponsiveDialogHeader className="shrink-0">
               <ResponsiveDialogTitle>View API Key</ResponsiveDialogTitle>
             </ResponsiveDialogHeader>
             <div className="space-y-4">
@@ -547,7 +559,7 @@ function CreateApiKeyDialog({
                 <HugeiconsIcon icon={InformationCircleIcon} />
                 <AlertDescription className="text-blue-700 dark:text-blue-300">
                   You can only see this key once.{" "}
-                  <span className="font-medium text-foreground">
+                  <span className="text-foreground font-medium">
                     Store it safely.
                   </span>
                 </AlertDescription>
@@ -563,7 +575,7 @@ function CreateApiKeyDialog({
           </>
         ) : (
           <>
-            <ResponsiveDialogHeader>
+            <ResponsiveDialogHeader className="shrink-0 border-b p-4 pr-14">
               <ResponsiveDialogTitle className="text-2xl">
                 Create API Key
               </ResponsiveDialogTitle>
@@ -571,11 +583,11 @@ function CreateApiKeyDialog({
                 Create a new API key for your organization.
               </ResponsiveDialogDescription>
             </ResponsiveDialogHeader>
-            <form action={onSubmit}>
-              <div className="space-y-4 py-4">
-                <Field>
+            <form action={onSubmit} className="flex min-h-0 flex-1 flex-col">
+              <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
+                <Field className="shrink-0">
                   <FieldLabel>
-                    Name<span className="-ml-1 text-destructive">*</span>
+                    Name<span className="text-destructive -ml-1">*</span>
                   </FieldLabel>
                   <Input
                     disabled={isPending}
@@ -590,22 +602,10 @@ function CreateApiKeyDialog({
                   ) : null}
                 </Field>
 
-                <Field>
-                  <FieldLabel>
-                    Permission
-                    <span className="-ml-1 text-destructive">*</span>
-                  </FieldLabel>
-                  <ApiKeyPermissionSelector
-                    disabled={isPending}
-                    onValueChange={onScopesChange}
-                    value={input.scopes}
-                  />
-                </Field>
-
-                <Field>
+                <Field className="shrink-0">
                   <FieldLabel>
                     Expiration
-                    <span className="-ml-1 text-muted-foreground text-xs">
+                    <span className="text-muted-foreground -ml-1 text-xs">
                       (Optional)
                     </span>
                   </FieldLabel>
@@ -628,8 +628,21 @@ function CreateApiKeyDialog({
                     </SelectContent>
                   </Select>
                 </Field>
+
+                <Field className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                  <FieldLabel>
+                    Permissions
+                    <span className="text-destructive -ml-1">*</span>
+                  </FieldLabel>
+                  <ApiKeyPermissionSelector
+                    className="[&>div]:py-2.5"
+                    disabled={isPending}
+                    onValueChange={onScopesChange}
+                    value={input.scopes}
+                  />
+                </Field>
               </div>
-              <ResponsiveDialogFooter>
+              <ResponsiveDialogFooter className="bg-background/95 supports-backdrop-filter:bg-background/80 mx-0 mb-0 shrink-0 rounded-b-xl border-t p-4 sm:justify-between">
                 <ResponsiveDialogClose
                   disabled={isPending}
                   render={<Button variant="outline">Cancel</Button>}
@@ -661,22 +674,25 @@ function EditApiKeyDialog({
 }) {
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
-      <ResponsiveDialogContent className="sm:max-w-2xl">
-        <form action={onSubmit}>
-          <ResponsiveDialogHeader>
+      <ResponsiveDialogContent
+        className="flex max-h-[85svh] flex-col gap-0 overflow-hidden p-0 sm:max-w-3xl"
+        drawerClassName="[&>form]:px-0"
+      >
+        <form action={onSubmit} className="flex min-h-0 flex-1 flex-col">
+          <ResponsiveDialogHeader className="shrink-0 border-b p-4 pr-14">
             <ResponsiveDialogTitle className="text-2xl">
               Edit API Key
             </ResponsiveDialogTitle>
           </ResponsiveDialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 p-4">
             <editForm.Field
               name="name"
               validators={{ onChange: updateApiKeySchema.shape.name }}
             >
               {(field) => (
-                <Field>
+                <Field className="shrink-0">
                   <FieldLabel>
-                    Name<span className="-ml-1 text-destructive">*</span>
+                    Name<span className="text-destructive -ml-1">*</span>
                   </FieldLabel>
                   <Input
                     autoFocus
@@ -700,25 +716,9 @@ function EditApiKeyDialog({
               )}
             </editForm.Field>
 
-            <editForm.Field name="scopes">
-              {(field) => (
-                <Field>
-                  <FieldLabel>
-                    Permission
-                    <span className="-ml-1 text-destructive">*</span>
-                  </FieldLabel>
-                  <ApiKeyPermissionSelector
-                    disabled={isPending}
-                    onValueChange={(scopes) => field.handleChange(scopes)}
-                    value={field.state.value as string[]}
-                  />
-                </Field>
-              )}
-            </editForm.Field>
-
             <editForm.Field name="expiration">
               {(field) => (
-                <Field>
+                <Field className="shrink-0">
                   <FieldLabel>Expiration</FieldLabel>
                   <Select
                     disabled={isPending}
@@ -741,8 +741,25 @@ function EditApiKeyDialog({
                 </Field>
               )}
             </editForm.Field>
+
+            <editForm.Field name="scopes">
+              {(field) => (
+                <Field className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+                  <FieldLabel>
+                    Permissions
+                    <span className="text-destructive -ml-1">*</span>
+                  </FieldLabel>
+                  <ApiKeyPermissionSelector
+                    className="[&>div]:py-2.5"
+                    disabled={isPending}
+                    onValueChange={(scopes) => field.handleChange(scopes)}
+                    value={field.state.value as string[]}
+                  />
+                </Field>
+              )}
+            </editForm.Field>
           </div>
-          <ResponsiveDialogFooter>
+          <ResponsiveDialogFooter className="bg-background/95 supports-backdrop-filter:bg-background/80 mx-0 mb-0 shrink-0 rounded-b-xl border-t p-4">
             <ResponsiveDialogClose
               disabled={isPending}
               render={<Button variant="outline">Cancel</Button>}
@@ -984,13 +1001,17 @@ export default function ApiKeysPage() {
       return;
     }
 
-    if (!open) {
-      dispatchUi({ type: "createErrorChanged", createError: null });
-      mutation.reset();
-      dispatchUi({ type: "createdKeyChanged", createdKey: null });
-      setNewKeyConfig(null);
-    }
     dispatchUi({ type: "createDialogChanged", open });
+  };
+
+  const handleDialogOpenChangeComplete = (open: boolean) => {
+    if (open) {
+      return;
+    }
+
+    mutation.reset();
+    setNewKeyConfig(null);
+    dispatchUi({ type: "createDialogReset" });
   };
 
   const handleEditDialogClose = (open: boolean) => {
@@ -1073,6 +1094,7 @@ export default function ApiKeysPage() {
           setNewKeyConfig({ name });
         }}
         onOpenChange={handleDialogClose}
+        onOpenChangeComplete={handleDialogOpenChangeComplete}
         onScopesChange={(scopes) => setNewKeyConfig({ scopes })}
         onSubmit={handleCreateSubmit}
         open={dialogOpen}

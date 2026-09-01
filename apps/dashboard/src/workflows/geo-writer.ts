@@ -1,19 +1,25 @@
+import { describeContentBillingDenial } from "@notra/ai/billing/content-billing";
 import { GEO_WRITER_MODEL } from "@notra/ai/constants/models";
+import type { ContentBillingReservation } from "@notra/ai/types/billing";
+import { GEO_WRITER_TRIGGER_ID } from "@notra/geo-core/constants/geo";
+import { geoWriterWorkflowPayloadSchema } from "@notra/geo-core/schemas/geo";
 import { flattenError } from "zod";
-import { GEO_WRITER_TRIGGER_ID } from "@/constants/geo";
-import { geoWriterWorkflowPayloadSchema } from "@/schemas/geo";
+
+import { GEO_WRITER_FAILURE_REASONS } from "@/constants/geo-analytics";
 import type { GeoWriterContext, GeoWriterWorkflowResult } from "@/types/geo";
+
 import {
   appendAutomationLog,
   claimWorkflowExecution,
-  finalizeAiCredit,
-  gateAndReserveAiCredits,
+  finalizeContentBilling,
+  gateContentBilling,
 } from "./steps/content-generation-steps";
 import {
   failGeoWriter,
   finishGeoWriter,
   loadGeoWriterContext,
   runGeoWriterStep,
+  trackGeoWriterSkipped,
 } from "./steps/geo-writer-steps";
 import { reconcileCollectionAttempt } from "./steps/on-demand-steps";
 
@@ -39,10 +45,10 @@ export async function geoWriterWorkflow(
     );
     return { status: "invalid_payload" };
   }
-  const { organizationId, briefId, runId } = parseResult.data;
+  const { organizationId, projectId, briefId, runId } = parseResult.data;
 
   let context: GeoWriterContext | null = null;
-  let creditLockId: string | null = null;
+  let billing: ContentBillingReservation | null = null;
   try {
     const claimToken = crypto.randomUUID();
     const claim = await claimWorkflowExecution({
@@ -53,27 +59,49 @@ export async function geoWriterWorkflow(
       console.warn(
         `[${LOG_PREFIX}] Duplicate execution ${runId} for org ${organizationId}, skipping`
       );
+      await trackGeoWriterSkipped({
+        organizationId,
+        projectId,
+        briefId,
+        runId,
+        reason: GEO_WRITER_FAILURE_REASONS.DUPLICATE_EXECUTION,
+      });
       return { status: "duplicate_execution" };
     }
 
-    context = await loadGeoWriterContext({ organizationId, briefId, runId });
+    context = await loadGeoWriterContext({
+      organizationId,
+      projectId,
+      briefId,
+      runId,
+    });
     if (!context) {
       console.warn(
         `[${LOG_PREFIX}] Brief ${briefId} is not ready for writing, skipping`
       );
+      await trackGeoWriterSkipped({
+        organizationId,
+        projectId,
+        briefId,
+        runId,
+        reason: GEO_WRITER_FAILURE_REASONS.INVALID_STATE,
+      });
       return { status: "invalid_state" };
     }
 
-    const gate = await gateAndReserveAiCredits({
+    const gate = await gateContentBilling({
       organizationId,
       executionId: runId,
+      outputType: "blog_post",
     });
     if (!gate.allowed) {
       await failGeoWriter({
         organizationId,
+        projectId,
         briefId,
         runId,
-        reason: "AI credit limit reached",
+        reason: describeContentBillingDenial(gate),
+        failureReason: GEO_WRITER_FAILURE_REASONS.CREDITS_EXHAUSTED,
       });
       await reconcileCollectionAttempt({
         collectionId: context.collectionId,
@@ -82,12 +110,13 @@ export async function geoWriterWorkflow(
       });
       return { status: "credits_exhausted" };
     }
-    creditLockId = gate.lockId;
+    billing = gate;
 
     const result = await runGeoWriterStep(context, runId);
 
     await finishGeoWriter({
       organizationId,
+      projectId,
       briefId,
       runId,
       postId: result.postId,
@@ -96,12 +125,11 @@ export async function geoWriterWorkflow(
     });
 
     try {
-      await finalizeAiCredit({
-        lockId: creditLockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "confirm",
         usage: result.usage,
         fallbackModelId: GEO_WRITER_MODEL,
-        useMarkup: gate.useMarkup,
         properties: {
           source: "geo_writer",
           output_type: "blog_post",
@@ -135,12 +163,21 @@ export async function geoWriterWorkflow(
     const reason = describeFailure(error);
     console.error(`[${LOG_PREFIX}] Run ${runId} failed:`, error);
     const cleanup = [
-      failGeoWriter({ organizationId, briefId, runId, reason }),
-      finalizeAiCredit({
-        lockId: creditLockId,
-        action: "release",
-        logPrefix: LOG_PREFIX,
+      failGeoWriter({
+        organizationId,
+        projectId,
+        briefId,
+        runId,
+        reason,
+        failureReason: GEO_WRITER_FAILURE_REASONS.MODEL_ERROR,
       }),
+      billing
+        ? finalizeContentBilling({
+            reservation: billing,
+            action: "release",
+            logPrefix: LOG_PREFIX,
+          })
+        : Promise.resolve(),
       appendAutomationLog({
         organizationId,
         integrationId: GEO_WRITER_TRIGGER_ID,

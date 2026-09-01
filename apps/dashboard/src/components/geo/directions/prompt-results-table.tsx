@@ -1,14 +1,11 @@
 "use client";
 
-import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import { Badge } from "@notra/ui/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
+
+import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import {
   GEO_DIRECTIONS_POSITION_CLASS,
   GEO_DIRECTIONS_PROMPT_ENGINES,
@@ -57,16 +54,9 @@ export function PromptResultsTable({ className }: PromptResultsTableProps) {
         width: "1fr",
         sortable: true,
         cell: (row) => (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="block w-full min-w-0 truncate text-sm">
-                  {row.prompt}
-                </span>
-              }
-            />
-            <TooltipContent className="max-w-sm">{row.prompt}</TooltipContent>
-          </Tooltip>
+          <TruncateWithTooltip className="text-sm">
+            {row.prompt}
+          </TruncateWithTooltip>
         ),
       },
       ...GEO_DIRECTIONS_PROMPT_ENGINES.map<TableColumn<GeoDirectionPrompt>>(
@@ -94,7 +84,7 @@ export function PromptResultsTable({ className }: PromptResultsTableProps) {
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
+      <div className="text-muted-foreground flex items-center justify-between px-1 text-xs">
         <span>{GEO_DIRECTIONS_PROMPTS.length.toLocaleString()} prompts</span>
       </div>
       <Table

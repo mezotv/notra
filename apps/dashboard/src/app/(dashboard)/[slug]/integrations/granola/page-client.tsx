@@ -22,6 +22,7 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { DeleteIntegrationDialog } from "@/components/delete-integration-dialog";
 import { EmptyState } from "@/components/empty-state";
@@ -32,6 +33,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { formatGranolaIntegrationDate } from "@/lib/granola/format";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { GranolaIntegrationCardProps } from "@/types/integrations";
+
 import { GranolaIntegrationsPageSkeleton } from "./skeleton";
 
 interface PageClientProps {
@@ -213,7 +215,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               Granola Integrations
             </h1>
             <p className="text-muted-foreground">

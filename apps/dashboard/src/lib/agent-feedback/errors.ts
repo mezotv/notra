@@ -13,10 +13,6 @@ export class AgentFeedbackNotFoundError extends Data.TaggedError(
   readonly feedbackId: string;
 }> {}
 
-export class AgentFeedbackTokenUnavailableError extends Data.TaggedError(
-  "AgentFeedbackTokenUnavailableError"
-)<Record<string, never>> {}
-
 export class AgentFeedbackOrganizationNotFoundError extends Data.TaggedError(
   "AgentFeedbackOrganizationNotFoundError"
 )<{
@@ -26,5 +22,4 @@ export class AgentFeedbackOrganizationNotFoundError extends Data.TaggedError(
 export type AgentFeedbackRouterError =
   | AgentFeedbackDatabaseError
   | AgentFeedbackNotFoundError
-  | AgentFeedbackTokenUnavailableError
   | AgentFeedbackOrganizationNotFoundError;

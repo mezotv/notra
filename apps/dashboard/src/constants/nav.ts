@@ -20,18 +20,21 @@ import {
   PlugIcon,
   PlusSignIcon,
   RainbowIcon,
+  Robot01Icon,
   SearchList01Icon,
   Settings01Icon,
   UserCircleIcon,
   UserGroupIcon,
   Wallet01Icon,
 } from "@hugeicons/core-free-icons";
-import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import {
+  GEO_AGENT_READINESS_NAV_LINK,
   GEO_GAPS_NAV_LINK,
   GEO_PROMPTS_NAV_LINK,
   GEO_WRITER_NAV_LINK,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+
+import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import { IRIS_NAV_LINK } from "@/constants/iris";
 import type { PostStatus } from "@/schemas/content";
 import type {
@@ -60,6 +63,11 @@ export const GEO_COMPETITORS_NAV_LINK = "/geo/competitors";
 export const GEO_SETTINGS_NAV_LINK = "/geo/settings";
 
 export const SIDEBAR_DEFAULT_MODE: SidebarMode = "geo";
+export const SIDEBAR_DEFAULT_WIDTH = 256;
+export const SIDEBAR_MIN_WIDTH = 240;
+export const SIDEBAR_MAX_WIDTH = 400;
+export const SIDEBAR_RESIZE_STEP = 8;
+export const SIDEBAR_WIDTH_COOKIE_NAME = "sidebar_width";
 
 export const SIDEBAR_MODES: SidebarModeOption[] = [
   { id: "geo", label: "GEO", icon: AiBrowserIcon },
@@ -118,6 +126,11 @@ export const NAV_MAIN_ITEMS: NavMainItem[] = [
   { link: GEO_PROMPTS_NAV_LINK, icon: AiChat01Icon, label: "Prompts" },
   { link: GEO_GAPS_NAV_LINK, icon: SearchList01Icon, label: "Content Gaps" },
   {
+    link: GEO_AGENT_READINESS_NAV_LINK,
+    icon: Robot01Icon,
+    label: "Agent Readiness",
+  },
+  {
     link: GEO_COMPETITORS_NAV_LINK,
     icon: ChartAnalysisIcon,
     label: "Competitors",
@@ -138,6 +151,7 @@ export const NAV_GEO_VISIBILITY_LINKS: readonly string[] = [
 
 export const NAV_GEO_IMPROVE_LINKS: readonly string[] = [
   GEO_GAPS_NAV_LINK,
+  GEO_AGENT_READINESS_NAV_LINK,
   GEO_WRITER_NAV_LINK,
   CONTENT_NAV_LINK,
   SCHEDULES_NAV_LINK,
@@ -175,7 +189,6 @@ export const NAV_UTILITY_LINKS: readonly string[] = [
 
 export const DEFAULT_NAV_VISIBILITY: NavVisibility = {
   iris: true,
-  writer: true,
   analytics: true,
 };
 
@@ -185,11 +198,59 @@ export const NAV_PRIMARY_ACTIONS: Record<SidebarMode, NavPrimaryActionConfig> =
     studio: { label: "New post", icon: PlusSignIcon },
   };
 
-export const NAV_SEARCH_LABEL = "Search";
-export const NAV_SEARCH_SHORTCUT_KEY = "K";
+// Shared sidebar panel swap (GEO <-> Studio, main <-> chat/settings/brand).
+// Both layers travel their own side while the outgoing one blurs out and the
+// incoming one resolves — the blur is what lets them overlap for the full
+// window without the two lists colliding into an unreadable double image, so
+// neither layer has to wait for the other.
+//
+// Two things these classes have to get right:
+//   1. Tailwind v4 compiles `translate-x-*` to the standalone `translate`
+//      property, not to `transform`. Transitioning `transform` animates nothing
+//      and the panels snap sideways — `translate` has to be named explicitly.
+//   2. Every nav label is split into one <span> per character for the collapse
+//      animation. Without an up-front compositor layer the browser re-rasterises
+//      all of them on every frame of the fade, which is what makes it stutter.
+//
+// The outgoing layer eases *out*, not in. Accelerating away is the tempting
+// reading of a swoosh, but a single timing function drives opacity and blur too,
+// and an ease-in barely moves them for the first half of the window — the old
+// panel then sits there sharp and opaque long enough to read as a ghost behind
+// the new one. Easing out dumps opacity and smears the blur in the first frames,
+// so the leftovers are gone before the eye lands on them.
+const SIDEBAR_MODE_SWOOSH_IN = "ease-[cubic-bezier(0.16,1,0.3,1)]";
+const SIDEBAR_MODE_SWOOSH_OUT = "ease-[cubic-bezier(0.23,1,0.32,1)]";
+const SIDEBAR_MODE_ENTER_TIMING = `duration-[320ms] ${SIDEBAR_MODE_SWOOSH_IN} motion-reduce:duration-150`;
+const SIDEBAR_MODE_EXIT_TIMING = `duration-[150ms] ${SIDEBAR_MODE_SWOOSH_OUT}`;
+
+/** Must match `duration-[150ms]` on the exit classes. */
+export const SIDEBAR_MODE_EXIT_MS = 150;
+
+/** Base class for a layer that participates in the mode swoosh. */
+export const SIDEBAR_MODE_FADE_CLASS =
+  "transition-[opacity,translate,filter] will-change-[opacity,translate,filter] motion-reduce:translate-x-0 motion-reduce:blur-none motion-reduce:transition-opacity";
+
+/** Applied to the layer belonging to the mode that is now active. */
+export const SIDEBAR_MODE_ENTER_CLASS = `z-10 translate-x-0 opacity-100 blur-[0px] ${SIDEBAR_MODE_ENTER_TIMING}`;
+
+/** Applied to the hidden layer of the left-hand (GEO) mode. */
+export const SIDEBAR_MODE_EXIT_LEFT_CLASS = `pointer-events-none z-0 -translate-x-5 opacity-0 blur-[8px] ${SIDEBAR_MODE_EXIT_TIMING}`;
+
+/** Applied to the hidden layer of the right-hand (Studio) mode. */
+export const SIDEBAR_MODE_EXIT_RIGHT_CLASS = `pointer-events-none z-0 translate-x-5 opacity-0 blur-[8px] ${SIDEBAR_MODE_EXIT_TIMING}`;
+
+/** Indicator that slides between the two tabs of the mode switch. */
+export const SIDEBAR_MODE_PILL_CLASS = `pointer-events-none absolute inset-y-0 left-0 w-1/2 rounded-md bg-background ring-1 ring-border transition-[translate] will-change-[translate] duration-[320ms] ${SIDEBAR_MODE_SWOOSH_IN} motion-reduce:transition-none`;
+
+export const SIDEBAR_MODE_PANEL_CLASS = `flex min-h-0 w-full flex-col ${SIDEBAR_MODE_FADE_CLASS}`;
+
+/** Collapses the primary-action row when the active mode has no action to offer. */
+export const SIDEBAR_MODE_SLOT_CLASS = `grid transition-[grid-template-rows,opacity] duration-[320ms] ${SIDEBAR_MODE_SWOOSH_IN} motion-reduce:transition-none`;
+
 export const NAV_RECENT_LABEL = "Recent";
 export const NAV_RECENT_LIMIT = 3;
 export const NAV_RECENT_SKELETON_IDS = ["first", "second", "third"] as const;
+export const NAV_RECENT_TITLE_CLASS = "min-w-0 max-w-[8.5rem] flex-1 truncate";
 export const NAV_PROJECTS_MENU_LABEL = "Projects";
 export const NAV_NEW_PROJECT_LABEL = "New project";
 

@@ -1,9 +1,31 @@
 import type { agentFeedback } from "@notra/db/schema";
 import type {
   AgentFeedbackKind,
+  AgentFeedbackSentiment,
   AgentFeedbackStatus,
 } from "@notra/db/types/agent-feedback";
+import type { ReactNode } from "react";
+
 import type { AuthenticatedUser } from "@/types/auth/organization";
+
+export type AgentFeedbackClientBrand =
+  | "claude"
+  | "cursor"
+  | "openai"
+  | "vercel"
+  | "windsurf"
+  | "amp"
+  | "playwright"
+  | "notra"
+  | "cline"
+  | "devin"
+  | "copilot"
+  | "gemini";
+
+export interface AgentFeedbackClientBrandRule {
+  brand: AgentFeedbackClientBrand;
+  aliases: readonly string[];
+}
 
 export type AgentFeedbackRow = typeof agentFeedback.$inferSelect;
 
@@ -33,29 +55,23 @@ export type AgentFeedbackSetupSnippets = Record<
 
 export interface AgentFeedbackSetupResponse {
   apiUrl: string;
-  token: string;
   prompt: string;
   snippets: AgentFeedbackSetupSnippets;
 }
 
 export interface AgentFeedbackSetupPanelProps {
   setup: AgentFeedbackSetupResponse | undefined;
-  organizationId: string;
   className?: string;
+  showPromptAction?: boolean;
 }
 
 export interface AgentFeedbackEmptyProps {
   organizationId: string;
 }
 
-export interface AgentFeedbackRotateButtonProps {
-  organizationId: string;
-  disabled?: boolean;
-}
-
-export interface AgentFeedbackTokenResult {
-  token: string;
+export interface AgentFeedbackSetupSource {
   organizationName: string;
+  organizationSlug: string;
 }
 
 export interface AgentFeedbackListInput {
@@ -69,8 +85,15 @@ export interface AgentFeedbackListInput {
 export interface AgentFeedbackTableProps {
   items: AgentFeedbackItem[];
   isPending: boolean;
+  isDeleting: boolean;
+  isUpdatingStatus: boolean;
   selectedId: string | null;
   onSelect: (item: AgentFeedbackItem) => void;
+  onStatusChange: (
+    item: AgentFeedbackItem,
+    status: AgentFeedbackStatus
+  ) => void;
+  onDelete: (item: AgentFeedbackItem) => void;
 }
 
 export interface AgentFeedbackDetailDialogProps {
@@ -85,6 +108,34 @@ export interface AgentFeedbackSetupCardProps {
   organizationId: string;
 }
 
+export interface AgentFeedbackStatusBadgeProps {
+  status: AgentFeedbackStatus;
+  showLabel?: boolean;
+}
+
+export interface AgentFeedbackKindBadgeProps {
+  kind: AgentFeedbackKind;
+}
+
+export interface AgentFeedbackSentimentLabelProps {
+  sentiment: AgentFeedbackSentiment | null;
+}
+
+export interface AgentFeedbackAgentIconProps {
+  client: string | null;
+  className?: string;
+}
+
+export interface AgentFeedbackAgentProps {
+  client: string | null;
+  className?: string;
+}
+
+export interface AgentFeedbackStatusIconProps {
+  status: AgentFeedbackStatus;
+  className?: string;
+}
+
 export interface AgentFeedbackPageClientProps {
   organizationSlug: string;
 }
@@ -94,15 +145,15 @@ export interface AgentFeedbackHandlerOptions<TInput> {
   input: TInput;
 }
 
-export interface AgentFeedbackOrganizationTokenState {
-  generation: number;
-  name: string;
-}
-
 export interface AgentFeedbackUpdateStatusInput {
   organizationId: string;
   feedbackId: string;
   status: AgentFeedbackStatus;
+}
+
+export interface AgentFeedbackDeleteInput {
+  organizationId: string;
+  feedbackId: string;
 }
 
 export interface AgentFeedbackCursor {
@@ -112,12 +163,11 @@ export interface AgentFeedbackCursor {
 
 export interface AgentFeedbackDetailFieldProps {
   label: string;
-  value: string | null;
+  value?: string | null;
+  children?: ReactNode;
   mono?: boolean;
 }
 
 export interface AgentFeedbackSetupDialogProps {
   organizationId: string;
 }
-
-export type AgentFeedbackGenerationCacheMode = "fill" | "overwrite";

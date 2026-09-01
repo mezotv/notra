@@ -14,6 +14,7 @@ import type { ChatUsageSnapshot } from "@notra/ai/types/chat";
 import { buildChatFinishMetadata } from "@notra/ai/utils/chat";
 import { routeUsageProperties } from "@notra/ai/utils/route-usage";
 import { nanoid } from "nanoid";
+
 import type { DirectStandaloneChatArgs } from "../../types/chats";
 
 export async function createDirectStandaloneChatResponse({
@@ -23,6 +24,7 @@ export async function createDirectStandaloneChatResponse({
   context,
   validatedIntegrations,
   useMarkup,
+  chargeAiCredits,
   requestId,
   log,
   model,
@@ -103,7 +105,7 @@ export async function createDirectStandaloneChatResponse({
           usageSnapshot.outputTokens = usage.outputTokens ?? 0;
           usageSnapshot.totalTokens = usage.totalTokens ?? 0;
 
-          if (!autumnClient) {
+          if (!(autumnClient && chargeAiCredits)) {
             return;
           }
 

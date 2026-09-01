@@ -1,5 +1,4 @@
 import "server-only";
-
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";

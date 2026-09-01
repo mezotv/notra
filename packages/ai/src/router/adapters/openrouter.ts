@@ -10,6 +10,7 @@ import type {
   OpenRouterAdapterConfig,
 } from "@notra/ai/types/router";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+
 import { isModelSupported, toOpenRouterModelId } from "../model-ids";
 import { buildOpenRouterProviderOptions } from "../provider-options";
 

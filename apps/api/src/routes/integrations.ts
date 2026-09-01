@@ -144,36 +144,43 @@ integrationsRoutes.openapi(getIntegrationsRoute, async (c) => {
     return c.json({ error: "Organization not found" }, 404);
   }
 
-  const github = await db.query.githubIntegrations.findMany({
-    where: and(
-      eq(githubIntegrations.organizationId, orgId),
-      eq(githubIntegrations.enabled, true)
-    ),
-    orderBy: [asc(githubIntegrations.displayName), asc(githubIntegrations.id)],
-    columns: {
-      id: true,
-      displayName: true,
-      owner: true,
-      repo: true,
-      defaultBranch: true,
-    },
-  });
-
-  const linear = await db.query.linearIntegrations.findMany({
-    where: and(
-      eq(linearIntegrations.organizationId, orgId),
-      eq(linearIntegrations.enabled, true)
-    ),
-    orderBy: [asc(linearIntegrations.displayName), asc(linearIntegrations.id)],
-    columns: {
-      id: true,
-      displayName: true,
-      linearOrganizationId: true,
-      linearOrganizationName: true,
-      linearTeamId: true,
-      linearTeamName: true,
-    },
-  });
+  const [github, linear] = await Promise.all([
+    db.query.githubIntegrations.findMany({
+      where: and(
+        eq(githubIntegrations.organizationId, orgId),
+        eq(githubIntegrations.enabled, true)
+      ),
+      orderBy: [
+        asc(githubIntegrations.displayName),
+        asc(githubIntegrations.id),
+      ],
+      columns: {
+        id: true,
+        displayName: true,
+        owner: true,
+        repo: true,
+        defaultBranch: true,
+      },
+    }),
+    db.query.linearIntegrations.findMany({
+      where: and(
+        eq(linearIntegrations.organizationId, orgId),
+        eq(linearIntegrations.enabled, true)
+      ),
+      orderBy: [
+        asc(linearIntegrations.displayName),
+        asc(linearIntegrations.id),
+      ],
+      columns: {
+        id: true,
+        displayName: true,
+        linearOrganizationId: true,
+        linearOrganizationName: true,
+        linearTeamId: true,
+        linearTeamName: true,
+      },
+    }),
+  ]);
 
   return c.json(
     {
@@ -193,11 +200,6 @@ integrationsRoutes.openapi(createGitHubIntegrationRoute, async (c) => {
       { error: "Forbidden: API key must be scoped to an organization" },
       403
     );
-  }
-
-  const rateLimited = await enforceRatelimit(c, ratelimit.integrationCreate);
-  if (rateLimited) {
-    return rateLimited;
   }
 
   const body = c.req.valid("json");
@@ -223,6 +225,13 @@ integrationsRoutes.openapi(createGitHubIntegrationRoute, async (c) => {
 
     if (existingIntegration) {
       return c.json({ error: "Repository already connected" }, 409);
+    }
+
+    // Charged immediately before the GitHub round-trip and the write: the 404
+    // and 409 above must not spend the caller's budget.
+    const rateLimited = await enforceRatelimit(c, ratelimit.integrationCreate);
+    if (rateLimited) {
+      return rateLimited;
     }
 
     await validateGitHubRepositoryAccess({ owner, repo, token });

@@ -15,6 +15,7 @@ import { LoaderCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import {
   type Organization,
@@ -209,10 +210,10 @@ export function OrganizationsSection() {
                   </Avatar>
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="font-medium text-sm">{org.name}</p>
+                      <p className="text-sm font-medium">{org.name}</p>
                       {isActive && (
                         <Badge
-                          className="bg-emerald-500/15 px-1.5 py-0 font-semibold text-[10px] text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400"
+                          className="bg-emerald-500/15 px-1.5 py-0 text-[10px] font-semibold text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400"
                           variant="secondary"
                         >
                           Active
@@ -221,7 +222,7 @@ export function OrganizationsSection() {
                     </div>
                     <p className="text-muted-foreground text-xs">{org.slug}</p>
                     {isOwnedByCurrentUser && heardAboutLabel ? (
-                      <p className="mt-1 text-muted-foreground text-xs">
+                      <p className="text-muted-foreground mt-1 text-xs">
                         Heard about Notra: {heardAboutLabel}
                         {ownedOrg?.heardAboutNotraSource === "other" &&
                         ownedOrg.heardAboutNotraOther

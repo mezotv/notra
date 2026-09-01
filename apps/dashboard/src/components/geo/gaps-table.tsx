@@ -2,11 +2,27 @@
 
 import { SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CompetitorLogo } from "@notra/ui/components/geo/competitor-logo";
-import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
-import { GapMeter } from "@notra/ui/components/geo/gap-meter";
-import { LogoStack } from "@notra/ui/components/geo/logo-stack";
+import {
+  GEO_COMPETITOR_KIND_DETAIL,
+  GEO_GAPS_EMPTY,
+  GEO_GAPS_ENGINE_FILTER_ALL,
+  GEO_GAPS_METER_STEPS,
+  GEO_GAPS_METER_TONE_CLASS,
+  GEO_GAPS_TABLE_HEIGHT,
+  GEO_PROMPTS_NAV_LINK,
+} from "@notra/geo-core/constants/geo";
+import { findCompetitor } from "@notra/geo-core/geo/domain";
+import type {
+  GeoPromptGapRow,
+  GeoSearchGapRow,
+} from "@notra/geo-core/types/geo";
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Input } from "@notra/ui/components/ui/input";
+import {
+  PermissionOption,
+  PermissionRow,
+} from "@notra/ui/components/ui/permission-selector";
 import {
   Select,
   SelectContent,
@@ -14,23 +30,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@notra/ui/components/ui/select";
-import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
-import {
-  GEO_GAPS_METER_STEPS,
-  GEO_GAPS_METER_TONE_CLASS,
-} from "@notra/ui/constants/geo";
-import { gapMeterLevel, gapMeterTone } from "@notra/ui/lib/geo-gaps";
 import Link from "next/link";
 import { parseAsString, useQueryState } from "nuqs";
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
+import { CompetitorLogo } from "@/components/geo/competitor-logo";
+import { EngineIcon } from "@/components/geo/engine-icon";
+import { LogoStack } from "@/components/geo/logo-stack";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
@@ -38,28 +52,23 @@ import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
 } from "@/constants/empty-state";
-import {
-  GEO_COMPETITOR_KIND_DETAIL,
-  GEO_GAPS_EMPTY,
-  GEO_GAPS_ENGINE_FILTER_ALL,
-  GEO_GAPS_TABLE_HEIGHT,
-  GEO_PROMPTS_NAV_LINK,
-} from "@/constants/geo";
-import { findCompetitor } from "@/lib/geo/domain";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { cn } from "@/lib/utils";
 import type {
+  GeoGapsWriteCellProps,
   GeoGapsEmptyProps,
   GeoGapsFiltersProps,
   GeoGapsTab,
   GeoGapsTableProps,
   GeoGapsTabsProps,
 } from "@/types/components/geo-gaps";
-import type { GeoPromptGapRow, GeoSearchGapRow } from "@/types/geo";
-import { engineFamilyLabel, formatMentionRate } from "@/utils/geo-charts";
+import { formatMentionRate } from "@/utils/geo-charts";
 import { matchTrackedCompetitorNames } from "@/utils/geo-competitors";
 import {
   filterPromptGaps,
   filterSearchGaps,
+  gapMeterLevel,
+  gapMeterTone,
   gapMissingEngineFamilies,
   gapWriteAction,
   gapWriteLabel,
@@ -134,19 +143,22 @@ function useFillHeight(fallback: number) {
 function WriteCell({
   action,
   postId,
+  sourceKind,
+  opportunityBucket,
   onOpenPost,
   onWrite,
-}: {
-  action: ReturnType<typeof gapWriteAction>;
-  postId: string | null | undefined;
-  onOpenPost: (postId: string) => void;
-  onWrite: () => void;
-}) {
+}: GeoGapsWriteCellProps) {
   return (
     <Button
-      className="opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+      className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
       onClick={(event) => {
         event.stopPropagation();
+        trackEvent(POSTHOG_EVENTS.GEO_GAP_WRITE_CLICKED, {
+          source_kind: sourceKind,
+          action,
+          has_existing_post: Boolean(postId),
+          opportunity_bucket: opportunityBucket,
+        });
         if (
           (action === "open" || action === "review" || action === "writing") &&
           postId
@@ -164,6 +176,33 @@ function WriteCell({
   );
 }
 
+function GapMeter({ level, label }: { level: number; label: string }) {
+  const filledClass = GEO_GAPS_METER_TONE_CLASS[gapMeterTone(level)];
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            aria-label={label}
+            className="inline-flex h-4 cursor-default items-end gap-1"
+          />
+        }
+      >
+        {Array.from({ length: GEO_GAPS_METER_STEPS }, (_, index) => (
+          <span
+            className={cn(
+              "w-1.5 rounded-[1px]",
+              index < level ? cn("h-4", filledClass) : "bg-muted h-2.5"
+            )}
+            key={index}
+          />
+        ))}
+      </TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  );
+}
+
 function ContentCell({
   title,
   subtitle,
@@ -173,9 +212,9 @@ function ContentCell({
 }) {
   return (
     <span className="flex min-w-0 flex-col gap-0.5">
-      <span className="truncate font-medium text-sm leading-snug">{title}</span>
+      <span className="truncate text-sm leading-snug font-medium">{title}</span>
       {subtitle ? (
-        <span className="truncate text-muted-foreground text-xs">
+        <span className="text-muted-foreground truncate text-xs">
           {subtitle}
         </span>
       ) : null}
@@ -243,14 +282,6 @@ function GapsEmpty({
   );
 }
 
-function GapsTabCount({ count }: { count: number }) {
-  return (
-    <span className="text-muted-foreground tabular-nums">
-      ({count.toLocaleString()})
-    </span>
-  );
-}
-
 function GapsTabs({
   tab,
   onTabChange,
@@ -258,7 +289,10 @@ function GapsTabs({
   searchCount,
 }: GeoGapsTabsProps) {
   return (
-    <Tabs
+    <PermissionRow
+      className="w-fit shrink-0"
+      label="Gap type"
+      layout="compact"
       onValueChange={(value) => {
         if (value === "prompt" || value === "search") {
           onTabChange(value);
@@ -266,17 +300,19 @@ function GapsTabs({
       }}
       value={tab}
     >
-      <TabsList variant="line">
-        <TabsTrigger value="prompt">
-          Prompt Gaps
-          <GapsTabCount count={promptCount} />
-        </TabsTrigger>
-        <TabsTrigger value="search">
-          Search Gaps
-          <GapsTabCount count={searchCount} />
-        </TabsTrigger>
-      </TabsList>
-    </Tabs>
+      <PermissionOption value="prompt">
+        Prompt Gaps
+        <span className="text-xs tabular-nums opacity-70">
+          {promptCount.toLocaleString()}
+        </span>
+      </PermissionOption>
+      <PermissionOption value="search">
+        Search Gaps
+        <span className="text-xs tabular-nums opacity-70">
+          {searchCount.toLocaleString()}
+        </span>
+      </PermissionOption>
+    </PermissionRow>
   );
 }
 
@@ -294,7 +330,7 @@ function GapsFilters({
     <div className="flex min-w-0 flex-wrap items-center gap-2">
       <div className="relative min-w-0 flex-1 sm:max-w-72">
         <HugeiconsIcon
-          className="-translate-y-1/2 absolute top-1/2 left-3 text-muted-foreground"
+          className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2"
           icon={SearchIcon}
           size={15}
         />
@@ -484,7 +520,11 @@ export function GeoGapsTable({
             action={gapWriteAction(row.brief)}
             onOpenPost={onOpenPost}
             onWrite={() => onWritePrompt(row)}
+            opportunityBucket={gapMeterLevel(
+              maxOpportunity <= 0 ? 0 : row.opportunity / maxOpportunity
+            )}
             postId={row.brief?.postId}
+            sourceKind="prompt"
           />
         ),
       },
@@ -536,7 +576,9 @@ export function GeoGapsTable({
             action={gapWriteAction(row.brief)}
             onOpenPost={onOpenPost}
             onWrite={() => onWriteSearch(row)}
+            opportunityBucket={null}
             postId={row.brief?.postId}
+            sourceKind="search_console"
           />
         ),
       },
@@ -547,6 +589,35 @@ export function GeoGapsTable({
   const sourceRows = tab === "prompt" ? promptGaps : searchGaps;
   const rows = tab === "prompt" ? filteredPromptGaps : filteredSearchGaps;
   const [tableRef, tableHeight] = useFillHeight(GEO_GAPS_TABLE_HEIGHT);
+  const emptyKind =
+    rows.length === 0
+      ? geoGapsEmptyKind({
+          tab,
+          hasScanData,
+          isScanning,
+          hasSourceRows: sourceRows.length > 0,
+          hasMatches: rows.length > 0,
+        })
+      : null;
+  const viewedRef = useRef(false);
+  const rowCount = rows.length;
+  const promptGapCount = promptGaps.length;
+  const searchGapCount = searchGaps.length;
+
+  useEffect(() => {
+    if (viewedRef.current) {
+      return;
+    }
+    viewedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.GEO_GAPS_VIEWED, {
+      tab,
+      empty_kind: emptyKind,
+      gap_count: rowCount,
+      prompt_gap_count: promptGapCount,
+      search_gap_count: searchGapCount,
+      has_scan_data: hasScanData,
+    });
+  }, [emptyKind, hasScanData, promptGapCount, rowCount, searchGapCount, tab]);
   const table =
     tab === "prompt" ? (
       <Table
@@ -587,16 +658,10 @@ export function GeoGapsTable({
       </div>
 
       <div className="min-h-0 flex-1" ref={tableRef}>
-        {rows.length === 0 ? (
+        {emptyKind !== null ? (
           <GapsEmpty
             isScanning={isScanning}
-            kind={geoGapsEmptyKind({
-              tab,
-              hasScanData,
-              isScanning,
-              hasSourceRows: sourceRows.length > 0,
-              hasMatches: rows.length > 0,
-            })}
+            kind={emptyKind}
             onRunScan={onRunScan}
             organizationSlug={organizationSlug}
           />

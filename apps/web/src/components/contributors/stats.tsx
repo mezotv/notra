@@ -3,10 +3,10 @@ import type { ContributorsStats } from "~types/github";
 function Stat({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-2 px-4 py-6">
-      <div className="font-display font-medium text-3xl text-foreground leading-tight tracking-[-0.02em] md:text-4xl">
+      <div className="font-display text-foreground text-3xl leading-tight font-medium tracking-[-0.02em] md:text-4xl">
         {value.toLocaleString()}
       </div>
-      <div className="font-medium font-sans text-muted-foreground text-sm">
+      <div className="text-muted-foreground font-sans text-sm font-medium">
         {label}
       </div>
     </div>
@@ -15,7 +15,7 @@ function Stat({ value, label }: { value: number; label: string }) {
 
 export function Stats({ stats }: { stats: ContributorsStats }) {
   return (
-    <div className="grid w-full grid-cols-2 gap-0 border-border border-y md:grid-cols-4">
+    <div className="border-border grid w-full grid-cols-2 gap-0 border-y md:grid-cols-4">
       <div className="border-border border-r md:border-r">
         <Stat label="Contributors" value={stats.totalContributors} />
       </div>

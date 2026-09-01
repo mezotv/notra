@@ -588,14 +588,42 @@ export const AI_AGENT_SIGNATURES: readonly AiAgentSignature[] = [
       "https://developers.cloudflare.com/autorag/configuration/data-source/website/",
   },
   {
+    agent: "ExaSearchBot",
+    vendor: "Exa",
+    category: "search-index",
+    userAgents: ["ExaSearchBot"],
+    confidence: "verified",
+    verification:
+      "https://crawler.exa.ai/.well-known/http-message-signatures-directory",
+    source: "https://crawler.exa.ai/",
+  },
+  {
     agent: "ExaBot",
     vendor: "Exa",
     category: "search-index",
-    userAgents: ["ExaBot", "ExaSearchBot"],
+    userAgents: ["ExaBot"],
     confidence: "reported",
     verification: null,
     source:
       "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+  },
+  {
+    agent: "ShapBot",
+    vendor: "Parallel",
+    category: "search-index",
+    userAgents: ["ShapBot"],
+    confidence: "verified",
+    verification: "https://docs.parallel.ai/resources/shapbot.json",
+    source: "https://docs.parallel.ai/resources/crawler",
+  },
+  {
+    agent: "Shap-User",
+    vendor: "Parallel",
+    category: "assistant-browse",
+    userAgents: ["Shap-User"],
+    confidence: "verified",
+    verification: null,
+    source: "https://parallel.ai/parallel-web-systems-bots",
   },
   {
     agent: "TavilyBot",
@@ -612,9 +640,8 @@ export const AI_AGENT_SIGNATURES: readonly AiAgentSignature[] = [
     vendor: "Firecrawl",
     category: "search-index",
     userAgents: ["FirecrawlAgent"],
-    confidence: "reported",
+    confidence: "heuristic",
     verification: null,
-    source:
-      "https://raw.githubusercontent.com/ai-robots-txt/ai.robots.txt/main/robots.json",
+    source: "https://docs.firecrawl.dev/advanced-scraping-guide",
   },
 ];

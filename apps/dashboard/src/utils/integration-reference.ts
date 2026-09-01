@@ -1,4 +1,5 @@
 import type { ContextItem } from "@notra/ai/types/chat";
+
 import {
   GITHUB_REFERENCE_VALUE_PATTERN,
   INTEGRATION_REFERENCE_TOKEN_SPLIT_REGEX,

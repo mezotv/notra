@@ -2,6 +2,7 @@
 
 import { CpuIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -22,10 +23,13 @@ import Image from "next/image";
 import type React from "react";
 import { isValidElement, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { McpAuthenticationFields } from "@/components/integrations/mcp-authentication-fields";
 import { McpConnectionTestStatus } from "@/components/integrations/mcp-connection-test-status";
 import { McpDialogFooter } from "@/components/integrations/mcp-dialog-footer";
 import { McpServerDetailsFields } from "@/components/integrations/mcp-server-details-fields";
+import { INTEGRATION_PROVIDERS } from "@/constants/integration-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useMcpServerForm } from "@/lib/hooks/use-mcp-server-form";
 import {
   buildMcpHeaders,
@@ -166,6 +170,13 @@ export function AddMcpServerDialog({
   });
 
   function submitCreate(value: AddMcpServerFormValues) {
+    trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+      provider: storeIntegrationId
+        ? INTEGRATION_PROVIDERS.MCP_STORE
+        : INTEGRATION_PROVIDERS.MCP,
+      auth_type: value.authType,
+      store_integration_id: storeIntegrationId ?? null,
+    });
     if (value.authType === "oauth") {
       const oauthPayload = beginMcpOAuthRequestSchema.safeParse({
         organizationId,
@@ -341,7 +352,7 @@ function McpDialogLogo({
 
   if (lightLogo && darkLogo) {
     return (
-      <div className="size-9 shrink-0 overflow-hidden rounded-lg bg-muted">
+      <div className="bg-muted size-9 shrink-0 overflow-hidden rounded-lg">
         <Image
           alt={`${name} logo`}
           className="size-9 object-contain dark:hidden"
@@ -361,9 +372,9 @@ function McpDialogLogo({
   }
 
   return (
-    <Avatar className="size-9 shrink-0 rounded-lg bg-muted after:hidden">
+    <Avatar className="bg-muted size-9 shrink-0 rounded-lg after:hidden">
       <AvatarImage className="rounded-lg" src={getMcpFaviconUrl(url)} />
-      <AvatarFallback className="rounded-lg bg-transparent text-foreground">
+      <AvatarFallback className="text-foreground rounded-lg bg-transparent">
         <HugeiconsIcon className="size-5" icon={CpuIcon} />
       </AvatarFallback>
     </Avatar>

@@ -1,11 +1,12 @@
+import { optionalPublicWebsiteUrlSchema } from "@notra/geo-core/schemas/url";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
 import { ONBOARDING_HEARD_ABOUT_NOTRA_SOURCES } from "@/constants/onboarding";
 import {
   organizationNameSchema,
   organizationSlugSchema,
 } from "@/schemas/organization";
-import { optionalPublicWebsiteUrlSchema } from "@/schemas/url";
 import type { OnboardingAttributionValue } from "@/types/onboarding";
 
 const heardAboutNotraSourceSchema = z.union([

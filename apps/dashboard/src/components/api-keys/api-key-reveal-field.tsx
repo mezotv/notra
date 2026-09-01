@@ -11,6 +11,7 @@ import { Input } from "@notra/ui/components/ui/input";
 import { cn } from "@notra/ui/lib/utils";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import type { ApiKeyRevealFieldProps } from "@/types/api-keys";
 
@@ -65,7 +66,7 @@ export function ApiKeyRevealField({
       <div className="absolute inset-y-0 right-1.5 flex items-center gap-0.5">
         <Button
           aria-label={revealed ? "Hide API key" : "Show API key"}
-          className="size-7 text-muted-foreground"
+          className="text-muted-foreground size-7"
           onClick={() => setRevealed((current) => !current)}
           size="icon"
           type="button"
@@ -79,7 +80,7 @@ export function ApiKeyRevealField({
         <Button
           aria-label="Copy API key"
           className={cn(
-            "size-7 text-muted-foreground",
+            "text-muted-foreground size-7",
             copied && "text-emerald-600 dark:text-emerald-400"
           )}
           onClick={handleCopy}

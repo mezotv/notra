@@ -15,6 +15,7 @@ import {
   streamText,
   type UIMessage,
 } from "ai";
+
 import {
   hasEnabledGitHubIntegration,
   hasEnabledLinearIntegration,
@@ -81,7 +82,7 @@ export async function orchestrateChat(
   const modelWithMemory = createModel(
     organizationId,
     routingDecision.model,
-    undefined,
+    {},
     log
   );
 

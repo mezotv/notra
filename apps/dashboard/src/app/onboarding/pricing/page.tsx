@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+
 import { getLastActiveOrganization, getSession } from "@/lib/auth/actions";
 import { redirectIfAnyOrganizationHasPaidHistory } from "@/lib/onboarding/billing-gate";
+
 import { PricingClient } from "../pricing-client";
 
 export default async function OnboardingPricingPage() {

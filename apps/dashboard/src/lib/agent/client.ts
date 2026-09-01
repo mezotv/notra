@@ -1,6 +1,7 @@
 import {
   AGENT_AUTO_PUBLISH_HEADER,
   AGENT_BRAND_AGENT_TYPE_HEADER,
+  AGENT_CHARGE_AI_CREDITS_HEADER,
   AGENT_CHAT_HEADER,
   AGENT_COLLECTION_HEADER,
   AGENT_CONTENT_HEADER,
@@ -20,6 +21,7 @@ import { agentSessions } from "@notra/db/schema";
 import { getVercelOidcToken } from "@vercel/oidc";
 import { eq } from "drizzle-orm";
 import { Client } from "eve/client";
+
 import {
   AGENT_CREATE_SESSION_PATH,
   AGENT_TASK_POLL_INTERVAL_MS,
@@ -73,6 +75,11 @@ function buildAgentScopeHeaders(
   }
   if (scope.useMarkup !== undefined) {
     headers[AGENT_USE_MARKUP_HEADER] = scope.useMarkup ? "true" : "false";
+  }
+  if (scope.chargeAiCredits !== undefined) {
+    headers[AGENT_CHARGE_AI_CREDITS_HEADER] = scope.chargeAiCredits
+      ? "true"
+      : "false";
   }
   if (scope.voiceId) {
     headers[AGENT_VOICE_HEADER] = scope.voiceId;

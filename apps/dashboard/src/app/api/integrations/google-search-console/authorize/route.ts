@@ -4,25 +4,25 @@ import {
 } from "@notra/ai/constants/google-search-console";
 import { getGscOAuthCredentials } from "@notra/ai/integrations/google-search-console";
 import { redis } from "@notra/ai/utils/redis";
-import { ORPCError } from "@orpc/server";
-import { type NextRequest, NextResponse } from "next/server";
 import {
-  GSC_OAUTH_CALLBACK_PATH,
   GSC_OAUTH_STATE_KEY_PREFIX,
   GSC_OAUTH_STATE_TTL_SECONDS,
-} from "@/constants/google-search-console";
+} from "@notra/geo-core/constants/google-search-console";
+import { gscAuthorizeQuerySchema } from "@notra/geo-core/schemas/google-search-console";
+import type { GscOAuthState } from "@notra/geo-core/types/google-search-console";
+import { ORPCError } from "@orpc/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { gscOAuthErrorParam } from "@/lib/integrations/google-search-console/oauth-errors";
-import { gscAuthorizeQuerySchema } from "@/schemas/google-search-console";
-import type { GscOAuthState } from "@/types/google-search-console";
+import { getGscRedirectUri } from "@/lib/integrations/google-search-console/redirect-uri";
 import { ratelimit } from "@/utils/ratelimit";
 
 // OAuth authorize endpoints are GET by spec; the only side effect is storing
 // a random, short-lived CSRF state nonce in Redis.
 // react-doctor-disable-next-line nextjs-no-side-effect-in-get-handler
 export async function GET(request: NextRequest) {
-  const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   try {
     const { searchParams } = new URL(request.url);
@@ -83,10 +83,7 @@ export async function GET(request: NextRequest) {
 
     const authUrl = new URL(GSC_OAUTH_AUTHORIZE_URL);
     authUrl.searchParams.set("client_id", credentials.clientId);
-    authUrl.searchParams.set(
-      "redirect_uri",
-      `${baseUrl}${GSC_OAUTH_CALLBACK_PATH}`
-    );
+    authUrl.searchParams.set("redirect_uri", getGscRedirectUri(baseUrl));
     authUrl.searchParams.set("response_type", "code");
     authUrl.searchParams.set("scope", GSC_OAUTH_SCOPES.join(" "));
     authUrl.searchParams.set("access_type", "offline");

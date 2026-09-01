@@ -9,6 +9,12 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  COMPETITOR_KIND_HINT,
+  GEO_COLOR_DEBOUNCE_MS,
+} from "@notra/geo-core/constants/geo";
+import { normalizeCompetitorDomain } from "@notra/geo-core/geo/domain";
+import type { GeoCompetitorKind } from "@notra/geo-core/types/geo";
+import {
   ColorPicker,
   ColorPickerEyeDropper,
   ColorPickerFormat,
@@ -29,14 +35,13 @@ import { useDebouncedCallback } from "@tanstack/react-pacer";
 import Color from "color";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { type ComponentProps, useEffect, useId, useRef, useState } from "react";
+
 import { Button } from "@/components/button";
 import { CompetitorLogoPreview } from "@/components/geo/competitor-logo-preview";
 import { COMPETITOR_SWATCHES } from "@/constants/charts";
-import { COMPETITOR_KIND_HINT, GEO_COLOR_DEBOUNCE_MS } from "@/constants/geo";
-import { normalizeCompetitorDomain } from "@/lib/geo/domain";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { cn } from "@/lib/utils";
-import type { CompetitorEditFormProps, GeoCompetitorKind } from "@/types/geo";
+import type { CompetitorEditFormProps } from "@/types/geo";
 
 const COMPOSER_TRANSITION = {
   type: "spring",
@@ -72,7 +77,7 @@ function CompetitorKindToggle({
   return (
     <div
       aria-label="Competitor type"
-      className="grid grid-cols-2 rounded-lg bg-muted p-[3px]"
+      className="bg-muted grid grid-cols-2 rounded-lg p-[3px]"
       onKeyDown={(event) => {
         if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") {
           return;
@@ -89,9 +94,9 @@ function CompetitorKindToggle({
           <button
             aria-checked={active}
             className={cn(
-              "relative isolate h-7 rounded-md px-2.5 font-medium text-sm",
+              "relative isolate h-7 rounded-md px-2.5 text-sm font-medium",
               "transition-colors duration-150 ease-out",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+              "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
               active
                 ? "text-foreground"
                 : "text-muted-foreground hover:text-foreground"
@@ -104,7 +109,7 @@ function CompetitorKindToggle({
           >
             {active ? (
               <motion.span
-                className="absolute inset-0 rounded-md bg-background shadow-sm"
+                className="bg-background absolute inset-0 rounded-md shadow-sm"
                 layoutId={layoutId}
                 transition={
                   reduceMotion ? INSTANT_TRANSITION : COMPOSER_TRANSITION
@@ -136,8 +141,8 @@ function CompetitorSwatch({
       aria-label={label}
       aria-pressed={selected}
       className={cn(
-        "-outline-offset-1 relative size-6 rounded-full outline outline-1 outline-black/10 transition-transform duration-150 ease-out dark:outline-white/10",
-        "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/70 focus-visible:ring-inset",
+        "relative size-6 rounded-full outline outline-1 -outline-offset-1 outline-black/10 transition-transform duration-150 ease-out dark:outline-white/10",
+        "focus-visible:ring-1 focus-visible:ring-white/70 focus-visible:outline-none focus-visible:ring-inset",
         "active:scale-[0.96]",
         !selected && "hover:scale-105",
         className
@@ -229,7 +234,7 @@ function CompetitorSynonymsField({
             {synonym}
             <button
               aria-label={`Remove ${synonym}`}
-              className="rounded-sm p-0.5 hover:bg-background"
+              className="hover:bg-background rounded-sm p-0.5"
               onClick={() =>
                 onChange(synonyms.filter((item) => item !== synonym))
               }
@@ -283,7 +288,7 @@ function CompetitorSynonymsField({
             <motion.button
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               aria-label="Add synonym"
-              className="inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-lg border border-border border-dashed px-2.5 text-muted-foreground text-xs transition-colors hover:border-foreground/40 hover:text-foreground active:scale-[0.96]"
+              className="border-border text-muted-foreground hover:border-foreground/40 hover:text-foreground inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-lg border border-dashed px-2.5 text-xs transition-colors active:scale-[0.96]"
               exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
               initial={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
               key="synonym-add"
@@ -462,7 +467,7 @@ export function CompetitorEditForm({
                 render={
                   <Label className="inline-flex w-fit items-center gap-1">
                     Type
-                    <span className="font-normal text-muted-foreground">
+                    <span className="text-muted-foreground font-normal">
                       (Optional)
                     </span>
                     <HugeiconsIcon

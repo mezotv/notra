@@ -25,6 +25,7 @@ import {
   contentChatSessionsPath,
   contentChatSessionsQueryKey,
 } from "@notra/ai/utils/chat";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   Avatar,
   AvatarFallback,
@@ -59,8 +60,9 @@ import {
 } from "react";
 import remend from "remend";
 import { toast } from "sonner";
-import { ChatQueue, type QueuedMessage } from "@/components/chat/chat-queue";
+
 import ChatInput from "@/components/chat-input";
+import { ChatQueue, type QueuedMessage } from "@/components/chat/chat-queue";
 import { getContentTypeLabel } from "@/components/content/content-card";
 import { ContentChatActivityPanel } from "@/components/content/content-chat-activity-panel";
 import type { EditorRefHandle } from "@/components/content/editor/plugins/editor-ref-plugin";
@@ -80,6 +82,8 @@ import {
 } from "@/constants/content-detail";
 import { IMAGE_EXPORT_TARGETS } from "@/constants/image-export";
 import { localStorageKeys } from "@/constants/storage";
+import { IMAGE_EXPORT_DOWNLOAD_TARGET } from "@/constants/studio-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { emitAutumnRefresh } from "@/lib/billing/autumn-refresh";
 import {
   copyImageAsFigma,
@@ -105,6 +109,7 @@ import {
   isImageExportTarget,
 } from "@/utils/image-export";
 import { shakeElements } from "@/utils/shake-element";
+
 import { useContent } from "../../../../../lib/hooks/use-content";
 import { ContentDetailSkeleton } from "./skeleton";
 
@@ -206,6 +211,21 @@ export default function PageClient({
   const needsNormalizationRef = useRef(false);
   const originalMarkdownRef = useRef("");
   const editedMarkdownRef = useRef<string | null>(null);
+  const hasTrackedOpenRef = useRef(false);
+
+  useEffect(() => {
+    const loadedContent = data?.content;
+    if (!loadedContent || hasTrackedOpenRef.current) {
+      return;
+    }
+    hasTrackedOpenRef.current = true;
+    trackEvent(POSTHOG_EVENTS.CONTENT_OPENED, {
+      content_id: contentId,
+      type: loadedContent.contentType,
+      status: loadedContent.status,
+      from_geo_writer: Boolean(geoWriterDraft),
+    });
+  }, [contentId, data?.content, geoWriterDraft]);
 
   useEffect(() => {
     const storedTarget = window.localStorage.getItem(
@@ -451,10 +471,10 @@ export default function PageClient({
         saveToastIdRef.current = toast.custom(
           (t) => (
             <div
-              className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm"
+              className="border-border bg-background rounded-[14px] border p-0.5 shadow-sm"
               data-save-bar
             >
-              <div className="flex items-center gap-3 rounded-lg bg-background px-4 py-3">
+              <div className="bg-background flex items-center gap-3 rounded-lg px-4 py-3">
                 <span className="text-muted-foreground text-sm">
                   Unsaved changes
                 </span>
@@ -821,6 +841,7 @@ export default function PageClient({
         toolPart.output?.status === "updated"
       ) {
         processedToolCallsRef.current.add(toolPart.toolCallId);
+        trackEvent(POSTHOG_EVENTS.IMAGE_REVISED, { content_id: contentId });
         invalidateContentQueries().catch((error) => {
           console.error("Failed to refresh revised image content", error);
         });
@@ -859,15 +880,25 @@ export default function PageClient({
           );
           setWriteFocusNonce((value) => value + 1);
           setEditorKey((key) => key + 1);
+          trackEvent(POSTHOG_EVENTS.CONTENT_AGENT_EDIT_APPLIED, {
+            content_id: contentId,
+            type: data?.content?.contentType ?? null,
+          });
         } else {
           editorRef.current?.setMarkdown(fixedMarkdown);
+          trackEvent(POSTHOG_EVENTS.IMAGE_REVISED, { content_id: contentId });
         }
         invalidateContentQueries().catch((error) => {
           console.error("Failed to refresh edited content", error);
         });
       }
     }
-  }, [invalidateContentQueries, messages]);
+  }, [
+    contentId,
+    data?.content?.contentType,
+    invalidateContentQueries,
+    messages,
+  ]);
 
   const dispatchContentEdit = useCallback(
     async (
@@ -1000,11 +1031,11 @@ export default function PageClient({
       >
         <div className="pointer-events-auto mx-auto w-full max-w-xl px-4">
           <div
-            className="rounded-[14px] border border-border bg-background p-0.5 shadow-sm"
+            className="border-border bg-background rounded-[14px] border p-0.5 shadow-sm"
             data-save-bar
           >
-            <div className="flex items-center gap-3 rounded-lg bg-background py-2 pr-2 pl-4">
-              <span className="flex-1 text-muted-foreground text-sm">
+            <div className="bg-background flex items-center gap-3 rounded-lg py-2 pr-2 pl-4">
+              <span className="text-muted-foreground flex-1 text-sm">
                 You have unsaved changes
               </span>
               <Button onClick={handleDiscard} size="sm" variant="ghost">
@@ -1077,13 +1108,13 @@ export default function PageClient({
         <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
           <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
             <div className="rounded-xl border border-dashed p-12 text-center">
-              <h3 className="font-medium text-lg">Content not found</h3>
+              <h3 className="text-lg font-medium">Content not found</h3>
               <p className="text-muted-foreground text-sm">
                 This content may have been deleted or you don't have access to
                 it.
               </p>
               <Link
-                className="rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="focus-visible:ring-ring rounded-sm focus-visible:ring-2 focus-visible:outline-none"
                 href={`/${organizationSlug}/content`}
               >
                 <Button className="mt-4" tabIndex={-1} variant="outline">
@@ -1108,6 +1139,10 @@ export default function PageClient({
       ? content.content
       : null;
   const copyImageExportFor = (target: ImageExportTarget) => {
+    trackEvent(POSTHOG_EVENTS.IMAGE_EXPORTED, {
+      content_id: contentId,
+      target,
+    });
     if (target === "figma") {
       copyImageAsFigma(
         imageExportRef.current,
@@ -1145,7 +1180,7 @@ export default function PageClient({
       <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
           <Link
-            className="inline-flex w-fit items-center gap-1.5 rounded-sm text-muted-foreground text-sm transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex w-fit items-center gap-1.5 rounded-sm text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
             href={backHref}
           >
             <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
@@ -1366,6 +1401,7 @@ export default function PageClient({
                 {content.contentType === "linkedin_post" && (
                   <PostSocialButton
                     content={currentMarkdown}
+                    from="editor"
                     onContentChange={setEditedMarkdown}
                     organizationId={organizationId}
                     platform="linkedin"
@@ -1374,6 +1410,7 @@ export default function PageClient({
                 {content.contentType === "twitter_post" && (
                   <PostSocialButton
                     content={currentMarkdown}
+                    from="editor"
                     onContentChange={setEditedMarkdown}
                     organizationId={organizationId}
                     platform="twitter"
@@ -1382,7 +1419,13 @@ export default function PageClient({
                 {content.contentType === "image" && (
                   <>
                     <Button
-                      onClick={() => downloadImage(imageDownloadUrl, title)}
+                      onClick={() => {
+                        trackEvent(POSTHOG_EVENTS.IMAGE_EXPORTED, {
+                          content_id: contentId,
+                          target: IMAGE_EXPORT_DOWNLOAD_TARGET,
+                        });
+                        downloadImage(imageDownloadUrl, title);
+                      }}
                       size="sm"
                       variant="outline"
                     >

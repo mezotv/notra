@@ -168,8 +168,7 @@ export interface McpServerIntegrationScope {
   organizationId: string;
 }
 
-export interface McpTypedServerIntegrationScope
-  extends McpServerIntegrationScope {
+export interface McpTypedServerIntegrationScope extends McpServerIntegrationScope {
   resourceType: McpIntegrationResourceType;
 }
 

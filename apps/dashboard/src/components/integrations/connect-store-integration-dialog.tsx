@@ -8,6 +8,7 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+
 import { Button } from "@/components/button";
 import { StoreIntegrationLogo } from "@/components/integrations/store-integration-logo";
 import { getStoreIntegrationConnectHint } from "@/lib/integrations/mcp";
@@ -33,7 +34,7 @@ export function ConnectStoreIntegrationDialog({
                 Connect {integration.name}
               </ResponsiveDialogTitle>
               {integration.author ? (
-                <span className="truncate text-muted-foreground text-xs">
+                <span className="text-muted-foreground truncate text-xs">
                   By {integration.author}
                 </span>
               ) : null}

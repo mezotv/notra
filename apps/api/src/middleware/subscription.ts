@@ -1,7 +1,10 @@
 import { PAID_OR_LEGACY_PLAN_IDS } from "@notra/ai/billing/features";
 import { Autumn } from "autumn-js";
 import type { Context, Next } from "hono";
+
+import { API_PAYWALL_FEATURES } from "../constants/analytics";
 import { isIngestAuth } from "../types/auth";
+import { trackApiPaywalled } from "../utils/analytics";
 import { getOrganizationId } from "../utils/auth";
 
 // DELETE and GET are intentionally unrestricted so lapsed/unsubscribed orgs
@@ -25,6 +28,10 @@ export function subscriptionMiddleware() {
       console.error(
         "AUTUMN_SECRET_KEY is not configured — rejecting write request"
       );
+      trackApiPaywalled(c, {
+        feature: API_PAYWALL_FEATURES.SUBSCRIPTION,
+        status: 503,
+      });
       return c.json({ error: "Billing service unavailable" }, 503);
     }
 
@@ -60,6 +67,10 @@ export function subscriptionMiddleware() {
       }
 
       if (!hasAccess) {
+        trackApiPaywalled(c, {
+          feature: API_PAYWALL_FEATURES.SUBSCRIPTION,
+          status: 402,
+        });
         return c.json({ error: "Active subscription required" }, 402);
       }
     } catch {

@@ -10,10 +10,12 @@ import {
   QueryClientProvider,
 } from "@tanstack/react-query";
 import { RealtimeProvider } from "@upstash/realtime/client";
-import dynamic from "next/dynamic";
 import { ThemeProvider } from "next-themes";
+import dynamic from "next/dynamic";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Suspense } from "react";
 import { toast } from "sonner";
+
 import { AutumnOrgProvider } from "@/components/providers/autumn-org-provider";
 import { PostHogIdentity } from "@/components/providers/posthog-identity";
 import { POSTHOG_PROJECT_TOKEN } from "@/constants/posthog";
@@ -101,7 +103,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 >
                   {children}
                 </RealtimeProvider>
-                {POSTHOG_PROJECT_TOKEN ? <PostHogIdentity /> : null}
+                {POSTHOG_PROJECT_TOKEN ? (
+                  <Suspense fallback={null}>
+                    <PostHogIdentity />
+                  </Suspense>
+                ) : null}
                 <DatabuddyAnalytics />
               </NuqsAdapter>
               <Toaster position="top-center" />

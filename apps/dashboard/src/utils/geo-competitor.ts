@@ -1,9 +1,10 @@
+import type { GeoCompetitorTimeseriesPoint } from "@notra/geo-core/types/geo";
+import { formatDayLabel, todayIsoDate } from "@notra/geo-core/utils/day-label";
+
 import type {
   GeoCompetitorDetailPoint,
   GeoCompetitorMentionStats,
-  GeoCompetitorTimeseriesPoint,
 } from "@/types/geo";
-import { formatDayLabel, todayIsoDate } from "@/utils/analytics-charts";
 import { latestChartDay, listDaysThrough } from "@/utils/geo-charts";
 
 export function buildGeoCompetitorPoints(

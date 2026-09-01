@@ -1,27 +1,16 @@
-import {
-  allowUnmeteredAiInDevelopment,
-  autumn,
-} from "@notra/ai/billing/autumn";
-import { FEATURES } from "@notra/ai/billing/features";
-import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
-import type { CheckResponse } from "autumn-js";
+import { checkChatBilling } from "@notra/ai/billing/chat-billing";
+import type { ChatBillingCheck } from "@notra/ai/types/billing";
 
 export type AgentCreditCheck =
-  | { allowed: true; useMarkup: boolean }
+  | { allowed: true; useMarkup: boolean; chargeAiCredits: boolean }
   | { allowed: false; status: 403 | 500; error: string; code: string };
 
 export async function checkAgentAiCredits(
   organizationId: string
 ): Promise<AgentCreditCheck> {
-  if (!autumn || allowUnmeteredAiInDevelopment) {
-    return { allowed: true, useMarkup: false };
-  }
-  let checkData: CheckResponse | null = null;
+  let billing: ChatBillingCheck;
   try {
-    checkData = await autumn.check({
-      customerId: organizationId,
-      featureId: FEATURES.AI_CREDITS,
-    });
+    billing = await checkChatBilling(organizationId);
   } catch (checkError) {
     console.error("[Autumn] Check error:", {
       customerId: organizationId,
@@ -35,7 +24,7 @@ export async function checkAgentAiCredits(
     };
   }
 
-  if (!checkData?.allowed) {
+  if (!billing.allowed) {
     return {
       allowed: false,
       status: 403,
@@ -46,6 +35,7 @@ export async function checkAgentAiCredits(
 
   return {
     allowed: true,
-    useMarkup: shouldApplyMarkup(checkData.balance ?? null),
+    useMarkup: billing.useMarkup,
+    chargeAiCredits: billing.chargeAiCredits,
   };
 }

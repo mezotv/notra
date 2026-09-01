@@ -1,32 +1,43 @@
 "use client";
 
-import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
-import { GeoBar } from "@notra/ui/components/geo/geo-bar";
-import {
-  InstrumentEmpty,
-  InstrumentSection,
-} from "@notra/ui/components/instrument/instrument-module";
-import { useMemo, useState } from "react";
-import { EmptyStateTablePreview } from "@/components/empty-state-preview";
-import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
-import { Table, type TableColumn } from "@/components/motion/table";
-import { EMPTY_STATE_TABLE_COLUMNS } from "@/constants/empty-state";
+import { SearchIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GEO_EMPTY_PROMPT_RESULTS,
   GEO_EMPTY_TIMESERIES,
-} from "@/constants/geo";
+  GEO_FAMILY_STAT_TREND_HINT,
+  GEO_SPARKLINE_MIN_POINTS,
+} from "@notra/geo-core/constants/geo";
+import type { GeoEngineFamily } from "@notra/geo-core/types/geo";
+import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import { Input } from "@notra/ui/components/ui/input";
+import { useMemo, useState } from "react";
+
+import { EmptyStateTablePreview } from "@/components/empty-state-preview";
+import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
+import { EngineIcon } from "@/components/geo/engine-icon";
+import { GeoBar } from "@/components/geo/geo-bar";
+import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
+import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
+import {
+  InstrumentEmpty,
+  InstrumentSection,
+} from "@/components/instrument/instrument-module";
+import { Table, type TableColumn } from "@/components/motion/table";
+import { EMPTY_STATE_TABLE_COLUMNS } from "@/constants/empty-state";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
-import type { EngineRateTableProps, GeoEngineFamily } from "@/types/geo";
-import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
+import type { EngineRateTableProps } from "@/types/geo";
 import {
   engineFamilyAvgPosition,
-  engineFamilyLabel,
   engineFamilyLastCheckedAt,
+  engineFamilyStatTrends,
   engineFamilyTotals,
   formatMentionRate,
   groupEngineFamilies,
+  mentionRateSparkline,
 } from "@/utils/geo-charts";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 import { tableHeightFor } from "@/utils/table";
 
 const NOT_SCANNED_RATE = -1;
@@ -62,17 +73,29 @@ export function EngineRateTable({
   timeseriesPoints = GEO_EMPTY_TIMESERIES,
   promptResults = GEO_EMPTY_PROMPT_RESULTS,
   isScanning = false,
+  organizationSlug,
 }: EngineRateTableProps) {
   const families = useMemo(() => groupEngineFamilies(engines), [engines]);
   const [selected, setSelected] = useState<GeoEngineFamily | null>(null);
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) {
+      return families;
+    }
+    return families.filter((family) =>
+      engineFamilyLabel(family.family).toLowerCase().includes(needle)
+    );
+  }, [families, query]);
 
   const columns = useMemo<TableColumn<GeoEngineFamily>[]>(
     () => [
       {
         key: "family",
         header:
-          families.length > 0
-            ? `Engine (${families.length.toLocaleString()})`
+          filtered.length > 0
+            ? `Engine (${filtered.length.toLocaleString()})`
             : "Engine",
         width: "1fr",
         sortable: true,
@@ -83,6 +106,34 @@ export function EngineRateTable({
           </span>
         ),
         sortValue: (row) => engineFamilyLabel(row.family),
+      },
+      {
+        key: "mentions",
+        header: "Mentions",
+        width: "10rem",
+        sortable: true,
+        cell: (row) => {
+          const totals = engineFamilyTotals(row);
+          const trends = engineFamilyStatTrends(timeseriesPoints, row.family);
+          if (!totals) {
+            return (
+              <span className="text-muted-foreground text-xs">Not scanned</span>
+            );
+          }
+          return (
+            <span className="flex items-center gap-2">
+              <span className="text-sm tabular-nums">
+                {totals.mentions.toLocaleString()}
+              </span>
+              <GeoStatDelta
+                delta={trends.mentionDelta}
+                hint={GEO_FAMILY_STAT_TREND_HINT}
+                label={`${engineFamilyLabel(row.family)} mentions`}
+              />
+            </span>
+          );
+        },
+        sortValue: (row) => engineFamilyTotals(row)?.mentions ?? -1,
       },
       {
         key: "rate",
@@ -108,22 +159,59 @@ export function EngineRateTable({
         header: "Last checked",
         width: "9.375rem",
         cell: (row) => (
-          <span className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+          <span className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
             {lastCheckedOf(row)}
           </span>
         ),
       },
+      {
+        key: "trend",
+        header: "Trend",
+        width: "5.5rem",
+        cell: (row) => {
+          const points = mentionRateSparkline(timeseriesPoints, {
+            family: row.family,
+          });
+          if (points.length < GEO_SPARKLINE_MIN_POINTS) {
+            return <span className="text-muted-foreground text-xs">-</span>;
+          }
+          return <GeoRateSparkline className="text-primary" points={points} />;
+        },
+      },
     ],
-    [families.length]
+    [filtered.length, timeseriesPoints]
   );
 
   const emptyReadout = isScanning ? "scanning now" : "no scans yet";
   const readout = families.length > 0 ? undefined : emptyReadout;
+  const engineCount = families.length;
 
   return (
     <InstrumentSection
+      action={
+        families.length > 0 ? (
+          <div className="relative w-full sm:w-56">
+            <HugeiconsIcon
+              className="text-muted-foreground absolute top-1/2 left-2.5 -translate-y-1/2"
+              icon={SearchIcon}
+              size={14}
+            />
+            <Input
+              aria-label="Filter engines"
+              className="h-7 pr-2.5 pl-8 text-xs"
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Filter by engine..."
+              value={query}
+            />
+          </div>
+        ) : undefined
+      }
       className="h-full"
-      eyebrow="Mention rate by engine"
+      eyebrow={
+        engineCount > 0
+          ? `Engines (${engineCount.toLocaleString()})`
+          : "Mention rate by engine"
+      }
       readout={readout}
     >
       {families.length === 0 ? (
@@ -149,11 +237,11 @@ export function EngineRateTable({
           <Table
             className="rounded-2xl"
             columns={columns}
-            data={families}
-            defaultSort={{ key: "rate", direction: "desc" }}
-            emptyState="No engines scanned yet"
+            data={filtered}
+            defaultSort={{ key: "mentions", direction: "desc" }}
+            emptyState="No engines match this filter"
             getRowId={(row) => row.family}
-            height={tableHeightFor(families.length)}
+            height={tableHeightFor(filtered.length)}
             onRowClick={setSelected}
             resizable
             rowHeight={TABLE_ROW_HEIGHT}
@@ -168,6 +256,7 @@ export function EngineRateTable({
           }
         }}
         open={selected !== null}
+        organizationSlug={organizationSlug}
         promptResults={promptResults}
         timeseriesPoints={timeseriesPoints}
       />

@@ -6,6 +6,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
+
 import { DirectionCockpit } from "@/components/geo/directions/direction-cockpit";
 import { DirectionInstrument } from "@/components/geo/directions/direction-instrument";
 import { DirectionLeaderboard } from "@/components/geo/directions/direction-leaderboard";
@@ -20,7 +21,7 @@ export default function PageClient() {
         <Tabs defaultValue="instrument">
           <header className="flex flex-wrap items-end justify-between gap-3">
             <div className="space-y-1">
-              <h1 className="font-bold text-3xl tracking-tight">
+              <h1 className="text-3xl font-bold tracking-tight">
                 GEO directions
               </h1>
               <p className="text-muted-foreground text-sm">

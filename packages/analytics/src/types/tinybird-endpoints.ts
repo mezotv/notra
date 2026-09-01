@@ -1,4 +1,5 @@
 import type { InferOutputRow, InferParams } from "@tinybirdco/sdk";
+
 import type {
   aiTrafficLog,
   aiTrafficOverview,

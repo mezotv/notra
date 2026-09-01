@@ -1,17 +1,19 @@
-import type { FunnelStage } from "@notra/ui/components/charts/funnel-chart";
-import { GEO_PROMPT_FUNNEL_TOP_POSITION } from "@/constants/geo";
-import { trackedPromptScanId } from "@/lib/geo/prompts";
+import { GEO_PROMPT_FUNNEL_TOP_POSITION } from "@notra/geo-core/constants/geo";
+import { trackedPromptScanId } from "@notra/geo-core/geo/prompts";
+import type {
+  GeoPresenceStatus,
+  GeoPromptResult,
+  GeoTrackedPrompt,
+} from "@notra/geo-core/types/geo";
+import { engineFamilyOf } from "@notra/geo-core/utils/geo-engine-family";
+import { summarizePromptResults } from "@notra/geo-core/utils/geo-presence";
+
 import type {
   EngineFamilyPromptHit,
-  GeoPresenceStatus,
   GeoPromptCoverage,
-  GeoPromptResult,
   GeoPromptTableRow,
-  GeoTrackedPrompt,
 } from "@/types/geo";
 import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
-import { engineFamilyOf } from "@/utils/geo-charts";
-import { summarizePromptResults } from "@/utils/geo-presence";
 
 function promptMentionSets(results: readonly GeoPromptResult[]): {
   mentioned: Set<string>;
@@ -57,22 +59,6 @@ export function promptCoverageInsight(coverage: GeoPromptCoverage): string {
     return "no tracked prompts mentioned yet";
   }
   return `${coverage.mentioned} of ${coverage.total} tracked prompts`;
-}
-
-export function buildPromptVisibilityFunnel(
-  promptCount: number,
-  results: readonly GeoPromptResult[]
-): FunnelStage[] {
-  const { mentioned, topRanked } = promptMentionSets(results);
-
-  return [
-    { label: "Tracked prompts", value: promptCount },
-    { label: "Mentioned in an answer", value: mentioned.size },
-    {
-      label: `Ranked top ${GEO_PROMPT_FUNNEL_TOP_POSITION}`,
-      value: topRanked.size,
-    },
-  ];
 }
 
 const PRESENCE_SORT_VALUE: Record<GeoPresenceStatus, number> = {
@@ -132,7 +118,7 @@ export function buildPromptTableRows(
     .map((entry) => entry.row);
 }
 
-function bestMentionedResult(
+export function bestMentionedResult(
   results: readonly GeoPromptResult[]
 ): GeoPromptResult | null {
   let best: GeoPromptResult | null = null;

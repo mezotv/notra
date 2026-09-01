@@ -1,18 +1,15 @@
 "use client";
 
-import { useFlag } from "@databuddy/sdk/react";
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
+
 import { GeoGapsTable } from "@/components/geo/gaps-table";
-import {
-  GeoWriterNeedsSetup,
-  GeoWriterUnavailable,
-} from "@/components/geo/writer/page-gate";
+import { GeoWriterNeedsSetup } from "@/components/geo/writer/page-gate";
 import { WriteDialog } from "@/components/geo/writer/write-dialog";
 import { PageContainer } from "@/components/layout/container";
 import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { GEO_WRITER_FLAG_KEY } from "@/constants/geo";
+import { GEO_WRITE_DIALOG_ENTRIES } from "@/constants/geo-analytics";
 import {
   useGeoCompetitors,
   useGeoSettings,
@@ -29,7 +26,7 @@ import {
   geoContentPath,
   writeDialogStateFromGap,
 } from "@/utils/geo-write-entry";
-import { isGeoWriterVisibleInNav } from "@/utils/geo-writer-flag";
+
 import { GeoGapsSkeleton } from "./skeleton";
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
@@ -52,9 +49,6 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
       : orgFromList;
   const organizationId = organization?.id ?? "";
 
-  const writerFlag = useFlag(GEO_WRITER_FLAG_KEY);
-  const writerVisible = isGeoWriterVisibleInNav(writerFlag.on);
-
   const { data: settingsData, isPending: isSettingsPending } =
     useGeoSettings(organizationId);
   const gapsQuery = useGeoWriterGaps(organizationId);
@@ -70,10 +64,6 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
     setDialogInitial(initial ?? emptyWriteDialogState());
     setDialogOpen(true);
   }, []);
-
-  if (!writerVisible) {
-    return <GeoWriterUnavailable />;
-  }
 
   if (!(isSettingsPending || settingsData?.settings)) {
     return (
@@ -97,7 +87,7 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
       <div className="flex min-h-0 w-full flex-1 flex-col gap-6 px-4 lg:px-6">
         <header className="flex shrink-0 flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Content Gaps</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Content Gaps</h1>
             <p className="text-muted-foreground">
               Questions engines answer without mentioning you
             </p>
@@ -114,7 +104,7 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
             onOpenPost={(postId) => {
               router.push(geoContentPath(organizationSlug, postId));
             }}
-            onRunScan={() => startScan.mutate()}
+            onRunScan={() => startScan.mutate("gaps_empty")}
             onWritePrompt={(row) => {
               openDialog(
                 writeDialogStateFromGap({
@@ -139,6 +129,7 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
 
       {organizationId ? (
         <WriteDialog
+          entry={GEO_WRITE_DIALOG_ENTRIES.GAP}
           initial={dialogInitial}
           onOpenChange={setDialogOpen}
           open={dialogOpen}

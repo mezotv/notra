@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+
 import { isNextRedirectError } from "@/lib/auth/redirect-error";
 import {
   deleteUserAction,

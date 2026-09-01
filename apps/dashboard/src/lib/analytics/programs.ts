@@ -22,6 +22,7 @@ import {
 } from "@notra/db/schema";
 import { and, asc, eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import {
   analyticsDb,
   analyticsQuery,

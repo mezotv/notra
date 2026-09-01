@@ -3,9 +3,18 @@
 import { PauseIcon, PlayIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  InstrumentEmpty,
-  InstrumentSection,
-} from "@notra/ui/components/instrument/instrument-module";
+  GEO_CITATIONS_LIVE_INTERVAL_MS,
+  GEO_CITATIONS_ROW_HEIGHT,
+  GEO_TRAFFIC_LOG_PAGE_PARAM,
+  GEO_TRAFFIC_LOG_PURPOSE_OPTIONS,
+  GEO_TRAFFIC_LOG_VISITOR_OPTIONS,
+} from "@notra/geo-core/constants/geo";
+import type { GeoTrafficLogFilters } from "@notra/geo-core/types/geo";
+import {
+  formatGeoTrafficFilterLabel,
+  toggleGeoTrafficFilterValue,
+} from "@notra/geo-core/utils/ai-traffic";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -13,25 +22,22 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { type ReactNode, useState } from "react";
+
+import { Button } from "@/components/button";
 import { CitationsTable } from "@/components/geo/citations-table";
 import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
 import {
-  GEO_CITATIONS_LIVE_INTERVAL_MS,
-  GEO_TRAFFIC_LOG_PURPOSE_OPTIONS,
-  GEO_TRAFFIC_LOG_VISITOR_OPTIONS,
-} from "@/constants/geo";
+  InstrumentEmpty,
+  InstrumentSection,
+} from "@/components/instrument/instrument-module";
+import { TRAFFIC_LOG_FILTER_KINDS } from "@/constants/geo-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoTrafficLog } from "@/lib/hooks/use-geo";
-import type { AiTrafficLogCardProps, GeoTrafficLogFilters } from "@/types/geo";
-import {
-  formatGeoTrafficFilterLabel,
-  toggleGeoTrafficFilterValue,
-} from "@/utils/ai-traffic";
+import { useTablePagination } from "@/lib/hooks/use-table-pagination";
+import type { AiTrafficLogCardProps } from "@/types/geo";
+import { paginatedTableHeightFor } from "@/utils/table";
 
-const TRAFFIC_LOG_HEIGHT = 416;
 const LOG_SKELETON_ROWS = 6;
-
-const FILTER_TRIGGER_CLASS =
-  "flex h-6 items-center gap-1 rounded-sm border border-border bg-background px-2 text-xs hover:bg-muted";
 
 export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
   const [filters, setFilters] = useState<GeoTrafficLogFilters>({
@@ -44,6 +50,11 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
   });
   const log = data?.log ?? [];
   const total = data?.total ?? log.length;
+  const pagination = useTablePagination({
+    key: GEO_TRAFFIC_LOG_PAGE_PARAM,
+    totalItems: log.length,
+    isReady: !isPending,
+  });
   let readout: string | undefined;
   if (!isPending) {
     readout =
@@ -61,13 +72,22 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
       />
     );
   } else {
-    body = <CitationsTable entries={log} height={TRAFFIC_LOG_HEIGHT} />;
+    body = (
+      <CitationsTable
+        entries={log}
+        height={paginatedTableHeightFor(
+          pagination.pageRowCount,
+          GEO_CITATIONS_ROW_HEIGHT
+        )}
+        pagination={pagination}
+      />
+    );
   }
 
   const filterRow = (
     <div className="flex items-center gap-2">
       <DropdownMenu>
-        <DropdownMenuTrigger className={FILTER_TRIGGER_CLASS}>
+        <DropdownMenuTrigger render={<Button size="sm" variant="outline" />}>
           {formatGeoTrafficFilterLabel(
             "All visitors",
             "visitors",
@@ -81,6 +101,12 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
               checked={filters.visitorTypes.includes(option.value)}
               key={option.value}
               onCheckedChange={() => {
+                pagination.setPage(1);
+                trackEvent(POSTHOG_EVENTS.TRAFFIC_LOG_FILTER_CHANGED, {
+                  filter: TRAFFIC_LOG_FILTER_KINDS.VISITOR_TYPE,
+                  value: option.value,
+                  active: !filters.visitorTypes.includes(option.value),
+                });
                 setFilters((previous) => ({
                   ...previous,
                   visitorTypes: toggleGeoTrafficFilterValue(
@@ -96,7 +122,7 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
         </DropdownMenuContent>
       </DropdownMenu>
       <DropdownMenu>
-        <DropdownMenuTrigger className={FILTER_TRIGGER_CLASS}>
+        <DropdownMenuTrigger render={<Button size="sm" variant="outline" />}>
           {formatGeoTrafficFilterLabel(
             "All purposes",
             "purposes",
@@ -110,6 +136,12 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
               checked={filters.categories.includes(option.value)}
               key={option.value}
               onCheckedChange={() => {
+                pagination.setPage(1);
+                trackEvent(POSTHOG_EVENTS.TRAFFIC_LOG_FILTER_CHANGED, {
+                  filter: TRAFFIC_LOG_FILTER_KINDS.PURPOSE,
+                  value: option.value,
+                  active: !filters.categories.includes(option.value),
+                });
                 setFilters((previous) => ({
                   ...previous,
                   categories: toggleGeoTrafficFilterValue(
@@ -125,18 +157,21 @@ export function AiTrafficLogCard({ organizationId }: AiTrafficLogCardProps) {
         </DropdownMenuContent>
       </DropdownMenu>
       {total > 0 && (
-        <button
-          className={FILTER_TRIGGER_CLASS}
-          onClick={() => setLive((current) => !current)}
-          type="button"
+        <Button
+          onClick={() => {
+            trackEvent(POSTHOG_EVENTS.TRAFFIC_LIVE_TOGGLED, { live: !live });
+            setLive((current) => !current);
+          }}
+          size="sm"
+          variant="outline"
         >
           <HugeiconsIcon
+            data-icon="inline-start"
             icon={live ? PauseIcon : PlayIcon}
-            size={12}
             strokeWidth={2}
           />
           {live ? "Pause live updates" : "Resume live updates"}
-        </button>
+        </Button>
       )}
     </div>
   );

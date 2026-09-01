@@ -1,9 +1,21 @@
+import {
+  Bug01Icon,
+  HelpCircleIcon,
+  MoreHorizontalCircle01Icon,
+  NeutralIcon,
+  Sad01Icon,
+  SmileIcon,
+  SparklesIcon,
+  ThumbsUpIcon,
+} from "@hugeicons/core-free-icons";
 import type {
   AgentFeedbackKind,
   AgentFeedbackSentiment,
   AgentFeedbackStatus,
 } from "@notra/db/types/agent-feedback";
+
 import type {
+  AgentFeedbackClientBrandRule,
   AgentFeedbackSnippetKey,
   AgentFeedbackStatusFilter,
 } from "@/types/agent-feedback";
@@ -17,14 +29,6 @@ export const AGENT_FEEDBACK_API_URL_ENV = "FEEDBACK_API_URL";
 export const AGENT_FEEDBACK_PACKAGE = "@usenotra/geo";
 export const AGENT_FEEDBACK_PACKAGE_ENTRY = `${AGENT_FEEDBACK_PACKAGE}/feedback`;
 export const AGENT_FEEDBACK_PAGE_SIZE = 50;
-export const AGENT_FEEDBACK_SKELETON_ROWS = [
-  "r1",
-  "r2",
-  "r3",
-  "r4",
-  "r5",
-  "r6",
-];
 
 export const AGENT_FEEDBACK_STATUS_FILTERS: {
   value: AgentFeedbackStatusFilter;
@@ -37,6 +41,33 @@ export const AGENT_FEEDBACK_STATUS_FILTERS: {
   { value: "archived", label: "Archived" },
 ];
 
+export const AGENT_FEEDBACK_STATUS_LABELS: Record<AgentFeedbackStatus, string> =
+  {
+    new: "New",
+    triaged: "Triaged",
+    resolved: "Resolved",
+    archived: "Archived",
+  };
+
+export const AGENT_FEEDBACK_KIND_LABELS: Record<AgentFeedbackKind, string> = {
+  bug: "Bug",
+  feature: "Feature",
+  praise: "Praise",
+  question: "Question",
+  other: "Other",
+};
+
+export const AGENT_FEEDBACK_KIND_ICONS: Record<
+  AgentFeedbackKind,
+  typeof Bug01Icon
+> = {
+  bug: Bug01Icon,
+  feature: SparklesIcon,
+  praise: ThumbsUpIcon,
+  question: HelpCircleIcon,
+  other: MoreHorizontalCircle01Icon,
+};
+
 export const AGENT_FEEDBACK_SENTIMENT_LABELS: Record<
   AgentFeedbackSentiment,
   string
@@ -46,7 +77,14 @@ export const AGENT_FEEDBACK_SENTIMENT_LABELS: Record<
   positive: "Positive",
 };
 
-export const AGENT_FEEDBACK_TOKEN_ENV = "NOTRA_FEEDBACK_TOKEN";
+export const AGENT_FEEDBACK_SENTIMENT_ICONS: Record<
+  AgentFeedbackSentiment,
+  typeof Sad01Icon
+> = {
+  negative: Sad01Icon,
+  neutral: NeutralIcon,
+  positive: SmileIcon,
+};
 
 export const AGENT_FEEDBACK_DEFAULT_SNIPPET_TAB: AgentFeedbackSnippetKey =
   "mcp";
@@ -70,6 +108,56 @@ export const AGENT_FEEDBACK_SNIPPET_FILENAMES: Record<
   curl: "terminal",
 };
 
-export const AGENT_FEEDBACK_TABLE_COLUMN_COUNT = 6;
-export const AGENT_FEEDBACK_TOKEN_GENERATION_MISSING = "missing";
 export const AGENT_FEEDBACK_UNSPECIFIED_LABEL = "Unspecified";
+
+export const AGENT_FEEDBACK_STATUS_ICON_CLASS: Record<
+  AgentFeedbackStatus,
+  string
+> = {
+  new: "text-violet-500",
+  triaged: "text-amber-500",
+  resolved: "text-emerald-500",
+  archived: "text-muted-foreground",
+};
+
+export const AGENT_FEEDBACK_LABEL_PILL_CLASS =
+  "inline-flex h-6 items-center gap-1.5 rounded-full border px-2 text-xs font-medium";
+
+export const AGENT_FEEDBACK_KIND_PILL_CLASS: Record<AgentFeedbackKind, string> =
+  {
+    bug: "border-red-200/80 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200",
+    feature:
+      "border-sky-200/80 bg-sky-50 text-sky-800 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-200",
+    praise:
+      "border-emerald-200/80 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200",
+    question:
+      "border-amber-200/80 bg-amber-50 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200",
+    other: "border-border bg-muted/50 text-muted-foreground dark:bg-muted/30",
+  };
+
+export const AGENT_FEEDBACK_SENTIMENT_PILL_CLASS: Record<
+  AgentFeedbackSentiment,
+  string
+> = {
+  negative:
+    "border-red-200/80 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200",
+  neutral: "border-border bg-muted/50 text-muted-foreground dark:bg-muted/30",
+  positive:
+    "border-emerald-200/80 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200",
+};
+
+export const AGENT_FEEDBACK_CLIENT_BRAND_RULES: readonly AgentFeedbackClientBrandRule[] =
+  [
+    { brand: "claude", aliases: ["claude", "anthropic"] },
+    { brand: "cursor", aliases: ["cursor"] },
+    { brand: "openai", aliases: ["openai", "chatgpt"] },
+    { brand: "vercel", aliases: ["vercel"] },
+    { brand: "windsurf", aliases: ["windsurf", "cascade"] },
+    { brand: "amp", aliases: ["amp", "sourcegraph"] },
+    { brand: "playwright", aliases: ["playwright"] },
+    { brand: "notra", aliases: ["notra"] },
+    { brand: "cline", aliases: ["cline"] },
+    { brand: "devin", aliases: ["devin"] },
+    { brand: "copilot", aliases: ["copilot"] },
+    { brand: "gemini", aliases: ["gemini"] },
+  ];

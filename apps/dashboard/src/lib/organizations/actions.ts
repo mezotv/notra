@@ -9,13 +9,24 @@ import {
 import { seedSystemSkills } from "@notra/ai/skills/seed";
 import { db } from "@notra/db/drizzle";
 import { members, organizations, users } from "@notra/db/schema";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import type { Invitation } from "@workos-inc/node";
-import { and, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import { isValid as isNotDisposableEmail } from "mailchecker";
 import { cookies } from "next/headers";
-import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
+
+import { QUOTA_FEATURES } from "@/constants/analytics-events";
+import {
+  LAST_VISITED_ORGANIZATION_COOKIE,
+  LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
+} from "@/constants/cookies";
+import {
+  identifyOrganizationGroup,
+  trackServerEvent,
+} from "@/lib/analytics/posthog-server";
+import { readRequestHeaders } from "@/lib/analytics/request-headers";
 import { readWorkOSError } from "@/lib/auth/workos-error";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import {
@@ -25,6 +36,7 @@ import {
   resolveOrganizationId,
 } from "@/lib/organizations/guards";
 import { runOrganizationAction } from "@/lib/organizations/run-action";
+import { validateActionInput } from "@/lib/organizations/validate-input";
 import {
   ensureWorkOSOrganizationWithMembers,
   removeMembershipFromWorkOS,
@@ -32,9 +44,16 @@ import {
   updateMembershipRoleInWorkOS,
 } from "@/lib/organizations/workos-sync";
 import {
-  memberRoleSchema,
-  organizationSlugSchema,
-} from "@/schemas/organization";
+  createOrganizationInputSchema,
+  invitationActionInputSchema,
+  inviteMemberInputSchema,
+  organizationLookupQueryInputSchema,
+  organizationScopedQueryInputSchema,
+  removeMemberInputSchema,
+  setActiveOrganizationInputSchema,
+  updateMemberRoleInputSchema,
+  updateOrganizationInputSchema,
+} from "@/schemas/organizations/actions";
 import type {
   ActionResult,
   CreateOrganizationInput,
@@ -51,23 +70,7 @@ import type {
   UpdateMemberRoleInput,
   UpdateOrganizationInput,
 } from "@/types/organizations/actions";
-
-const validateSlug = Effect.fn("organizations.actions.validateSlug")(function* (
-  rawSlug: string
-) {
-  const validation = organizationSlugSchema.safeParse(rawSlug.trim());
-
-  if (!validation.success) {
-    return yield* Effect.fail(
-      new OrganizationActionError({
-        message:
-          validation.error.issues[0]?.message ?? "Invalid organization slug",
-      })
-    );
-  }
-
-  return validation.data;
-});
+import type { OrganizationTrackingInput } from "@/types/organizations/analytics";
 
 const enforceTeamMembersLimit = Effect.fn(
   "organizations.actions.enforceTeamMembersLimit"
@@ -101,6 +104,36 @@ const tryDb = <T>(run: () => Promise<T>, message: string) =>
     try: run,
     catch: (cause) => new OrganizationActionError({ message, cause }),
   });
+
+const trackOrganizationEvent = Effect.fn(
+  "organizations.actions.trackOrganizationEvent"
+)(function* (input: OrganizationTrackingInput) {
+  const requestHeaders = yield* Effect.promise(readRequestHeaders);
+  yield* Effect.sync(() => {
+    trackServerEvent({
+      event: input.event,
+      headers: requestHeaders,
+      userId: input.userId,
+      organizationId: input.organizationId,
+      properties: input.properties,
+    });
+  });
+});
+
+const countOrganizationMembers = Effect.fn(
+  "organizations.actions.countOrganizationMembers"
+)(function* (organizationId: string) {
+  return yield* Effect.tryPromise({
+    try: async () => {
+      const [row] = await db
+        .select({ value: count() })
+        .from(members)
+        .where(eq(members.organizationId, organizationId));
+      return row?.value ?? null;
+    },
+    catch: () => null,
+  }).pipe(Effect.catch(() => Effect.succeed(null)));
+});
 
 const mapMemberRows = (
   rows: Array<{
@@ -201,16 +234,24 @@ const requireInvitationManagement = Effect.fn(
   }
 
   yield* requireManagerMembership(session, organization.id);
-  return invitation;
+  return {
+    invitation,
+    organizationId: organization.id,
+    userId: session.user.id,
+  };
 });
 
 export async function createOrganizationAction(
-  input: CreateOrganizationInput
+  rawInput: CreateOrganizationInput
 ): Promise<ActionResult<OrganizationRow>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
-      const slug = yield* validateSlug(input.slug);
+      const input = yield* validateActionInput(
+        createOrganizationInputSchema,
+        rawInput
+      );
+      const { slug } = input;
 
       const existing = yield* tryDb(
         () =>
@@ -326,6 +367,24 @@ export async function createOrganizationAction(
         );
       }
 
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.WORKSPACE_CREATED,
+        userId: session.user.id,
+        organizationId,
+        properties: { has_logo: Boolean(input.logo) },
+      });
+      yield* Effect.sync(() => {
+        identifyOrganizationGroup({
+          organizationId,
+          userId: session.user.id,
+          properties: {
+            name: input.name,
+            slug,
+            created_at: now.toISOString(),
+          },
+        });
+      });
+
       if (!input.keepCurrentActiveOrganization) {
         const cookieStore = yield* tryDb(
           () => cookies(),
@@ -340,11 +399,15 @@ export async function createOrganizationAction(
 }
 
 export async function updateOrganizationAction(
-  input: UpdateOrganizationInput
+  rawInput: UpdateOrganizationInput
 ): Promise<ActionResult<OrganizationRow>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        updateOrganizationInputSchema,
+        rawInput
+      );
       yield* requireManagerMembership(session, input.organizationId);
 
       const updates: Partial<{
@@ -362,7 +425,7 @@ export async function updateOrganizationAction(
       }
 
       if (input.data.slug !== undefined) {
-        updates.slug = yield* validateSlug(input.data.slug);
+        updates.slug = input.data.slug;
       }
 
       const [organization] = yield* tryDb(
@@ -383,6 +446,16 @@ export async function updateOrganizationAction(
 
       if (updates.name !== undefined) {
         yield* syncOrganizationNameToWorkOS(input.organizationId, updates.name);
+      }
+
+      if (updates.name !== undefined || updates.slug !== undefined) {
+        yield* Effect.sync(() => {
+          identifyOrganizationGroup({
+            organizationId: input.organizationId,
+            userId: session.user.id,
+            properties: { name: organization.name, slug: organization.slug },
+          });
+        });
       }
 
       if (updates.slug) {
@@ -447,11 +520,15 @@ function findOrganizationForSelection(input: SetActiveOrganizationInput) {
 }
 
 export async function setActiveOrganizationAction(
-  input: SetActiveOrganizationInput
+  rawInput: SetActiveOrganizationInput
 ): Promise<ActionResult<OrganizationRow>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        setActiveOrganizationInputSchema,
+        rawInput
+      );
 
       const organization = yield* tryDb(
         () => findOrganizationForSelection(input),
@@ -472,6 +549,7 @@ export async function setActiveOrganizationAction(
       );
       cookieStore.set(LAST_VISITED_ORGANIZATION_COOKIE, organization.slug, {
         path: "/",
+        maxAge: LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
       });
 
       return organization;
@@ -479,12 +557,16 @@ export async function setActiveOrganizationAction(
   );
 }
 
-export async function getFullOrganizationAction(input?: {
+export async function getFullOrganizationAction(rawInput?: {
   query?: { organizationId?: string; organizationSlug?: string };
 }): Promise<ActionResult<FullOrganization | null>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        organizationLookupQueryInputSchema,
+        rawInput
+      );
 
       let organizationId = input?.query?.organizationId;
 
@@ -547,11 +629,15 @@ export async function getFullOrganizationAction(input?: {
 }
 
 export async function listMembersAction(
-  input?: ListMembersInput
+  rawInput?: ListMembersInput
 ): Promise<ActionResult<MembersListResult>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        organizationScopedQueryInputSchema,
+        rawInput
+      );
       const organizationId = yield* resolveOrganizationId(
         session,
         input?.query?.organizationId
@@ -579,11 +665,15 @@ export async function listMembersAction(
 }
 
 export async function updateMemberRoleAction(
-  input: UpdateMemberRoleInput
+  rawInput: UpdateMemberRoleInput
 ): Promise<ActionResult<MemberWithUser | null>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        updateMemberRoleInputSchema,
+        rawInput
+      );
 
       const member = yield* tryDb(
         () =>
@@ -604,18 +694,7 @@ export async function updateMemberRoleAction(
         member.organizationId
       );
 
-      const roleValidation = memberRoleSchema.safeParse(input.role);
-
-      if (!roleValidation.success) {
-        return yield* Effect.fail(
-          new OrganizationActionError({ message: "Invalid role" })
-        );
-      }
-
-      if (
-        roleValidation.data === "owner" &&
-        callerMembership.role !== "owner"
-      ) {
+      if (input.role === "owner" && callerMembership.role !== "owner") {
         return yield* Effect.fail(
           new OrganizationActionError({
             message: "Only the organization owner can assign the owner role",
@@ -646,6 +725,20 @@ export async function updateMemberRoleAction(
         input.role
       );
 
+      const memberCount = yield* countOrganizationMembers(
+        member.organizationId
+      );
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.MEMBER_ROLE_CHANGED,
+        userId: session.user.id,
+        organizationId: member.organizationId,
+        properties: {
+          role: input.role,
+          previous_role: member.role,
+          member_count: memberCount,
+        },
+      });
+
       const updated = yield* tryDb(
         () =>
           db.query.members.findFirst({
@@ -665,11 +758,15 @@ export async function updateMemberRoleAction(
 }
 
 export async function removeMemberAction(
-  input: RemoveMemberInput
+  rawInput: RemoveMemberInput
 ): Promise<ActionResult<{ removed: boolean }>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        removeMemberInputSchema,
+        rawInput
+      );
       const organizationId = yield* resolveOrganizationId(
         session,
         input.organizationId
@@ -732,17 +829,33 @@ export async function removeMemberAction(
 
       yield* removeMembershipFromWorkOS(organizationId, member.userId);
 
+      const memberCount = yield* countOrganizationMembers(organizationId);
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.MEMBER_REMOVED,
+        userId: session.user.id,
+        organizationId,
+        properties: {
+          role: member.role,
+          is_self_removal: isSelfRemoval,
+          member_count: memberCount,
+        },
+      });
+
       return { removed: true };
     })
   );
 }
 
-export async function listInvitationsAction(input?: {
+export async function listInvitationsAction(rawInput?: {
   query?: { organizationId?: string };
 }): Promise<ActionResult<InvitationSummary[]>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        organizationScopedQueryInputSchema,
+        rawInput
+      );
       const organizationId = yield* resolveOrganizationId(
         session,
         input?.query?.organizationId
@@ -765,11 +878,15 @@ export async function listInvitationsAction(input?: {
 }
 
 export async function inviteMemberAction(
-  input: InviteMemberInput
+  rawInput: InviteMemberInput
 ): Promise<ActionResult<InvitationSummary>> {
   return runOrganizationAction(
     Effect.gen(function* () {
       const session = yield* requireSession();
+      const input = yield* validateActionInput(
+        inviteMemberInputSchema,
+        rawInput
+      );
       const organizationId = yield* resolveOrganizationId(
         session,
         input.organizationId
@@ -779,18 +896,7 @@ export async function inviteMemberAction(
         organizationId
       );
 
-      const roleValidation = memberRoleSchema.safeParse(input.role);
-
-      if (!roleValidation.success) {
-        return yield* Effect.fail(
-          new OrganizationActionError({ message: "Invalid role" })
-        );
-      }
-
-      if (
-        roleValidation.data === "owner" &&
-        callerMembership.role !== "owner"
-      ) {
+      if (input.role === "owner" && callerMembership.role !== "owner") {
         return yield* Effect.fail(
           new OrganizationActionError({
             message: "Only the organization owner can assign the owner role",
@@ -806,7 +912,37 @@ export async function inviteMemberAction(
         );
       }
 
-      yield* enforceTeamMembersLimit(organizationId);
+      yield* enforceTeamMembersLimit(organizationId).pipe(
+        Effect.catch((error) =>
+          Effect.gen(function* () {
+            if (error.message === TEAM_MEMBER_LIMIT_ERROR_MESSAGE) {
+              const memberCount =
+                yield* countOrganizationMembers(organizationId);
+              yield* trackOrganizationEvent({
+                event: POSTHOG_EVENTS.QUOTA_EXCEEDED,
+                userId: session.user.id,
+                organizationId,
+                properties: {
+                  feature: QUOTA_FEATURES.TEAM_MEMBERS,
+                  reason: "limit_reached",
+                  member_count: memberCount,
+                },
+              });
+              yield* trackOrganizationEvent({
+                event: POSTHOG_EVENTS.MEMBER_INVITED,
+                userId: session.user.id,
+                organizationId,
+                properties: {
+                  role: input.role,
+                  limit_hit: true,
+                  member_count: memberCount,
+                },
+              });
+            }
+            return yield* Effect.fail(error);
+          })
+        )
+      );
       const workosOrgId = yield* requireWorkOSOrganizationId(organizationId);
 
       const invitation = yield* tryWorkOS(
@@ -820,22 +956,45 @@ export async function inviteMemberAction(
         "Failed to send invitation"
       );
 
+      const memberCount = yield* countOrganizationMembers(organizationId);
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.MEMBER_INVITED,
+        userId: session.user.id,
+        organizationId,
+        properties: {
+          role: input.role,
+          limit_hit: false,
+          member_count: memberCount,
+        },
+      });
+
       return mapInvitation(invitation);
     })
   );
 }
 
 export async function cancelInvitationAction(
-  input: InvitationActionInput
+  rawInput: InvitationActionInput
 ): Promise<ActionResult<InvitationSummary>> {
   return runOrganizationAction(
     Effect.gen(function* () {
-      yield* requireInvitationManagement(input.invitationId);
+      const input = yield* validateActionInput(
+        invitationActionInputSchema,
+        rawInput
+      );
+      const management = yield* requireInvitationManagement(input.invitationId);
 
       const revoked = yield* tryWorkOS(
         () => getWorkOS().userManagement.revokeInvitation(input.invitationId),
         "Failed to revoke invitation"
       );
+
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.INVITE_CANCELLED,
+        userId: management.userId,
+        organizationId: management.organizationId,
+        properties: { role: revoked.roleSlug },
+      });
 
       return mapInvitation(revoked);
     })
@@ -843,16 +1002,27 @@ export async function cancelInvitationAction(
 }
 
 export async function resendInvitationAction(
-  input: InvitationActionInput
+  rawInput: InvitationActionInput
 ): Promise<ActionResult<InvitationSummary>> {
   return runOrganizationAction(
     Effect.gen(function* () {
-      yield* requireInvitationManagement(input.invitationId);
+      const input = yield* validateActionInput(
+        invitationActionInputSchema,
+        rawInput
+      );
+      const management = yield* requireInvitationManagement(input.invitationId);
 
       const invitation = yield* tryWorkOS(
         () => getWorkOS().userManagement.resendInvitation(input.invitationId),
         "Failed to resend invitation"
       );
+
+      yield* trackOrganizationEvent({
+        event: POSTHOG_EVENTS.INVITE_RESENT,
+        userId: management.userId,
+        organizationId: management.organizationId,
+        properties: { role: invitation.roleSlug },
+      });
 
       return mapInvitation(invitation);
     })

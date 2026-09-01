@@ -42,7 +42,7 @@ function formatCompactNumber(num: number): string {
 
 function MockReferenceCard({ tweet }: { tweet: MockTweet }) {
   return (
-    <div className="flex break-inside-avoid flex-col overflow-hidden rounded-xl border border-border/80">
+    <div className="border-border/80 flex break-inside-avoid flex-col overflow-hidden rounded-xl border">
       <div className="flex flex-col gap-2.5 p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5">
@@ -54,15 +54,15 @@ function MockReferenceCard({ tweet }: { tweet: MockTweet }) {
               width={36}
             />
             <div className="min-w-0">
-              <span className="truncate font-semibold text-sm leading-tight">
+              <span className="truncate text-sm leading-tight font-semibold">
                 {tweet.authorName}
               </span>
               <div className="flex items-center gap-1">
-                <span className="truncate text-muted-foreground text-xs">
+                <span className="text-muted-foreground truncate text-xs">
                   @{tweet.authorHandle}
                 </span>
                 <span className="text-muted-foreground/50 text-xs">·</span>
-                <span className="shrink-0 text-muted-foreground/70 text-xs">
+                <span className="text-muted-foreground/70 shrink-0 text-xs">
                   {tweet.date}
                 </span>
               </div>
@@ -71,7 +71,7 @@ function MockReferenceCard({ tweet }: { tweet: MockTweet }) {
           <div className="flex shrink-0 items-center gap-1">
             {tweet.platforms.map((platform) => (
               <span
-                className="rounded-full bg-muted px-2 py-0.5 text-[0.6875rem] text-muted-foreground"
+                className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-[0.6875rem]"
                 key={platform}
               >
                 {platform}
@@ -80,27 +80,27 @@ function MockReferenceCard({ tweet }: { tweet: MockTweet }) {
           </div>
         </div>
 
-        <p className="whitespace-pre-wrap text-[0.8125rem] leading-relaxed">
+        <p className="text-[0.8125rem] leading-relaxed whitespace-pre-wrap">
           {tweet.content}
         </p>
 
         <div className="flex items-center gap-3 pt-0.5">
-          <span className="flex items-center gap-1 text-muted-foreground text-xs">
+          <span className="text-muted-foreground flex items-center gap-1 text-xs">
             <HugeiconsIcon className="size-3.5" icon={Comment01Icon} />
             {formatCompactNumber(tweet.replies)}
           </span>
-          <span className="flex items-center gap-1 text-muted-foreground text-xs">
+          <span className="text-muted-foreground flex items-center gap-1 text-xs">
             <HugeiconsIcon className="size-3.5" icon={RepeatIcon} />
             {formatCompactNumber(tweet.retweets)}
           </span>
-          <span className="flex items-center gap-1 text-muted-foreground text-xs">
+          <span className="text-muted-foreground flex items-center gap-1 text-xs">
             <HugeiconsIcon className="size-3.5" icon={FavouriteIcon} />
             {formatCompactNumber(tweet.likes)}
           </span>
         </div>
       </div>
 
-      <div className="border-t bg-muted/50 px-4 py-2.5">
+      <div className="bg-muted/50 border-t px-4 py-2.5">
         <span className="text-muted-foreground/50 text-xs">Add a note...</span>
       </div>
     </div>
@@ -114,8 +114,8 @@ export default function ReferencesPreview() {
         <MockReferenceCard tweet={MOCK_TWEET} />
       </div>
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-8 bg-linear-to-b from-background to-transparent" />
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t from-background to-transparent" />
+      <div className="from-background pointer-events-none absolute inset-x-0 top-0 h-8 bg-linear-to-b to-transparent" />
+      <div className="from-background pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t to-transparent" />
     </div>
   );
 }

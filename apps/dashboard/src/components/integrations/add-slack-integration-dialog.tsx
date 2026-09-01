@@ -1,5 +1,6 @@
 "use client";
 
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -13,7 +14,10 @@ import {
 import { Slack } from "@notra/ui/components/ui/svgs/slack";
 import type React from "react";
 import { isValidElement, useState } from "react";
+
 import { Button } from "@/components/button";
+import { INTEGRATION_PROVIDERS } from "@/constants/integration-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import type { AddSlackIntegrationDialogProps } from "@/types/slack-integration";
 
 export function AddSlackIntegrationDialog({
@@ -61,6 +65,9 @@ export function AddSlackIntegrationDialog({
           </ResponsiveDialogClose>
           <Button
             onClick={() => {
+              trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+                provider: INTEGRATION_PROVIDERS.SLACK,
+              });
               window.location.href = authorizeUrl;
             }}
           >

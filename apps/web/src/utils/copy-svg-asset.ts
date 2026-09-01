@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
 
 export async function copySvgAsset(

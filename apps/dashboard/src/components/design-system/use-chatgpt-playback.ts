@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import type { ChatgptStoryMessage } from "@/types/design-system-chatgpt";
 
 const WHITESPACE_PATTERN = /(\s+)/;

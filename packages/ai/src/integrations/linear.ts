@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { linearIntegrations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
+
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
 import type { CreateLinearIntegrationParams } from "../types/integrations";
 import type { LinearToolContext } from "../types/tools";

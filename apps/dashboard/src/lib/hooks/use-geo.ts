@@ -1,5 +1,59 @@
 "use client";
 
+import { AGENT_READINESS_POLL_INTERVAL_MS } from "@notra/geo-core/constants/agent-readiness";
+import {
+  AI_TRAFFIC_LOG_FETCH_LIMIT,
+  AI_TRAFFIC_PAGES_FETCH_LIMIT,
+  GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
+  GEO_BRAND_SEARCH_STALE_MS,
+  GEO_MODEL_CATALOG_STALE_MS,
+  GEO_SCAN_POLL_INTERVAL_MS,
+  GEO_START_SCAN_MUTATION_KEY,
+} from "@notra/geo-core/constants/geo";
+import type { AgentReadinessResponse } from "@notra/geo-core/types/agent-readiness";
+import type {
+  AiTrafficResponse,
+  GeoBrandSearchResponse,
+  GeoCompetitorDetailResponse,
+  GeoCompetitorShareResponse,
+  GeoCompetitorSuggestionsResponse,
+  GeoCompetitorsResponse,
+  GeoDiscoverWebsiteResult,
+  GeoJourneyDetailResponse,
+  GeoLanguageShareResponse,
+  GeoModelCatalog,
+  GeoOnboardingBrandInput,
+  GeoOnboardingBrandResult,
+  GeoOverviewResponse,
+  GeoProject,
+  GeoProjectsResponse,
+  GeoIngestSetupResponse,
+  GeoPromptResultsResponse,
+  GeoSequenceResultsResponse,
+  GeoSettingsResponse,
+  GeoSettingsUpsertInput,
+  GeoTimeseriesResponse,
+  GeoTrackedPromptsResponse,
+  GeoTrafficJourneysResponse,
+  GeoTrafficLogFilters,
+  GeoTrafficLogResponse,
+  GeoTrafficPagesResponse,
+} from "@notra/geo-core/types/geo";
+import type {
+  GeoCompetitorImportRow,
+  GeoPromptImportRow,
+} from "@notra/geo-core/types/geo-import";
+import type {
+  GeoSearchConsoleStatus,
+  GscSelectSiteInput,
+  GscSitesResponse,
+  GscSyncResult,
+} from "@notra/geo-core/types/google-search-console";
+import {
+  toGeoTrafficLogPurposeFilter,
+  toGeoTrafficLogVisitorFilter,
+} from "@notra/geo-core/utils/ai-traffic";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import type { QueryClient } from "@tanstack/react-query";
 import {
   keepPreviousData,
@@ -11,65 +65,28 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { toast } from "sonner";
+
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
-import {
-  GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
-  GEO_BRAND_SEARCH_STALE_MS,
-  GEO_MODEL_CATALOG_STALE_MS,
-  GEO_SCAN_POLL_INTERVAL_MS,
-  GEO_START_SCAN_MUTATION_KEY,
-} from "@/constants/geo";
 import { localStorageKeys } from "@/constants/storage";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { geoDbOrgQueryKey, geoDbQueryKey } from "@/lib/db/geo-collections";
+import type { GeoScanTrigger } from "@/types/analytics/geo-events";
 import type {
-  AiTrafficResponse,
-  GeoBrandSearchResponse,
-  GeoCompetitorDetailResponse,
-  GeoCompetitorShareResponse,
-  GeoCompetitorSuggestionsResponse,
-  GeoCompetitorsResponse,
-  GeoDiscoverWebsiteResult,
   GeoGenerateFromWebsiteInput,
-  GeoIngestSetupResponse,
-  GeoJourneyDetailResponse,
-  GeoLanguageShareResponse,
-  GeoModelCatalog,
-  GeoOnboardingBrandInput,
-  GeoOnboardingBrandResult,
-  GeoOverviewResponse,
-  GeoProject,
   GeoProjectCreateInput,
-  GeoProjectsResponse,
-  GeoPromptResultsResponse,
   GeoPromptSuggestionsResponse,
   GeoRangeQuery,
-  GeoSequenceResultsResponse,
-  GeoSettingsResponse,
-  GeoSettingsUpsertInput,
   GeoSettingsUpsertOptions,
   GeoSuggestionIdInput,
-  GeoTimeseriesResponse,
-  GeoTrackedPromptsResponse,
-  GeoTrafficJourneysResponse,
-  GeoTrafficLogFilters,
   GeoTrafficLogQueryOptions,
-  GeoTrafficLogResponse,
-  GeoTrafficPagesResponse,
 } from "@/types/geo";
-import type {
-  GeoSearchConsoleStatus,
-  GscSelectSiteInput,
-  GscSyncResult,
-} from "@/types/google-search-console";
-import {
-  toGeoTrafficLogPurposeFilter,
-  toGeoTrafficLogVisitorFilter,
-} from "@/utils/ai-traffic";
 import { toErrorMessage } from "@/utils/error-message";
 import { geoCompetitorDetailPath } from "@/utils/geo-competitors";
+import { describeGeoImportResult } from "@/utils/geo-import";
 import { withGeoProject } from "@/utils/geo-paths";
 import { toGeoWindowInput } from "@/utils/geo-range";
+
 import { dashboardOrpc } from "../orpc/query";
 
 const GSC_ANALYZE_MUTATION_KEY = "gsc-analyze" as const;
@@ -205,6 +222,7 @@ export function useGeoSettingsUpsert(
       }
     },
     onError: (error) => {
+      trackEvent(POSTHOG_EVENTS.GEO_SETTINGS_SAVE_FAILED);
       toast.error(toErrorMessage(error, "Failed to save settings"));
     },
   });
@@ -254,12 +272,18 @@ export function useGeoPromptResults(
 
 export function useGeoCompetitorShare(
   organizationId: string,
-  range?: GeoRangeQuery
+  range?: GeoRangeQuery,
+  summaryOnly = false
 ) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoCompetitorShareResponse>({
     ...dashboardOrpc.geo.competitorShare.queryOptions({
-      input: { organizationId, projectId, ...toGeoWindowInput(range) },
+      input: {
+        organizationId,
+        projectId,
+        ...toGeoWindowInput(range),
+        summaryOnly: summaryOnly || undefined,
+      },
     }),
     enabled: !!organizationId,
     placeholderData: keepPreviousData,
@@ -417,6 +441,42 @@ export function useGeoGenerateFromWebsite(organizationId: string) {
   });
 }
 
+export function useGeoImportPrompts(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: GeoPromptImportRow[]) =>
+      dashboardOrpc.geo.promptsImport.call({ organizationId, projectId, rows }),
+    onSuccess: async (result) => {
+      await invalidatePromptQueries(queryClient, organizationId, projectId);
+      toast.success(describeGeoImportResult("prompts", result));
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to import prompts"));
+    },
+  });
+}
+
+export function useGeoImportCompetitors(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (rows: GeoCompetitorImportRow[]) =>
+      dashboardOrpc.geo.competitorsImport.call({
+        organizationId,
+        projectId,
+        rows,
+      }),
+    onSuccess: async (result) => {
+      await invalidateCompetitorQueries(queryClient, organizationId, projectId);
+      toast.success(describeGeoImportResult("competitors", result));
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to import competitors"));
+    },
+  });
+}
+
 export function useGeoDiscoverWebsite(
   organizationId: string,
   url: string | null
@@ -483,8 +543,8 @@ export function useGeoStartScan(organizationId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationKey: geoStartScanMutationKey(organizationId, projectId),
-    mutationFn: () =>
-      dashboardOrpc.geo.startScan.call({ organizationId, projectId }),
+    mutationFn: (trigger?: GeoScanTrigger) =>
+      dashboardOrpc.geo.startScan.call({ organizationId, projectId, trigger }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: dashboardOrpc.geo.settings.queryKey({
@@ -505,6 +565,40 @@ export function useIsGeoScanning(organizationId: string) {
     mutationKey: geoStartScanMutationKey(organizationId, projectId),
   });
   return pendingCount > 0 || Boolean(data?.settings?.isScanning);
+}
+
+export function useAgentReadiness(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  return useQuery<AgentReadinessResponse>({
+    ...dashboardOrpc.geo.agentReadiness.queryOptions({
+      input: { organizationId, projectId },
+    }),
+    enabled: !!organizationId,
+    refetchInterval: (query) =>
+      query.state.data?.scan?.status === "running"
+        ? AGENT_READINESS_POLL_INTERVAL_MS
+        : false,
+    meta: { errorMessage: "Failed to load agent readiness" },
+  });
+}
+
+export function useAgentReadinessScan(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      dashboardOrpc.geo.agentReadinessScan.call({ organizationId, projectId }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.agentReadiness.queryKey({
+          input: { organizationId, projectId },
+        }),
+      });
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to start scan"));
+    },
+  });
 }
 
 export function useAiTraffic(organizationId: string, range?: GeoRangeQuery) {
@@ -529,6 +623,7 @@ export function useGeoTrafficLog(
       input: {
         organizationId,
         projectId,
+        limit: AI_TRAFFIC_LOG_FETCH_LIMIT,
         visitorTypes: toGeoTrafficLogVisitorFilter(filters.visitorTypes),
         categories: toGeoTrafficLogPurposeFilter(filters.categories),
       },
@@ -547,7 +642,12 @@ export function useGeoTrafficPages(
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrafficPagesResponse>({
     ...dashboardOrpc.geo.trafficPages.queryOptions({
-      input: { organizationId, projectId, ...toGeoWindowInput(range) },
+      input: {
+        organizationId,
+        projectId,
+        limit: AI_TRAFFIC_PAGES_FETCH_LIMIT,
+        ...toGeoWindowInput(range),
+      },
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load top AI pages" },
@@ -655,6 +755,31 @@ export function useGeoProjectCreate(organizationId: string) {
   });
 }
 
+export function useGeoRunSequence(organizationId: string) {
+  const { projectId } = useGeoProjectScope();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sequenceId: string) =>
+      dashboardOrpc.geo.sequenceRun.call({
+        organizationId,
+        projectId,
+        sequenceId,
+      }),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.sequenceResults.key(),
+      });
+      const engineCount = result.engines.length;
+      toast.success(
+        `Conversation played against ${engineCount} engine${engineCount === 1 ? "" : "s"}`
+      );
+    },
+    onError: (error) => {
+      toast.error(toErrorMessage(error, "Failed to run the conversation"));
+    },
+  });
+}
+
 export function useGeoSequenceResults(
   organizationId: string,
   sequenceId?: string
@@ -664,7 +789,7 @@ export function useGeoSequenceResults(
     ...dashboardOrpc.geo.sequenceResults.queryOptions({
       input: { organizationId, projectId, sequenceId },
     }),
-    enabled: !!organizationId,
+    enabled: Boolean(organizationId && sequenceId),
     meta: { errorMessage: "Failed to load conversation results" },
   });
 }
@@ -689,6 +814,16 @@ export function useGscStatus(organizationId: string) {
     }),
     enabled: !!organizationId,
     meta: { errorMessage: "Failed to load Search Console status" },
+  });
+}
+
+export function useGscSites(organizationId: string, enabled: boolean) {
+  return useQuery<GscSitesResponse>({
+    ...dashboardOrpc.geo.searchConsoleSites.queryOptions({
+      input: { organizationId },
+    }),
+    enabled: !!organizationId && enabled,
+    meta: { errorMessage: "Failed to load Search Console properties" },
   });
 }
 
@@ -749,20 +884,6 @@ export function useGscSync(organizationId: string) {
     },
     onError: (error) => {
       toast.error(toErrorMessage(error, "Failed to sync Search Console"));
-    },
-  });
-}
-
-export function useGscClearSite(organizationId: string) {
-  const invalidate = useInvalidateGscQueries(organizationId);
-  return useMutation({
-    mutationFn: () =>
-      dashboardOrpc.geo.searchConsoleClearSite.call({ organizationId }),
-    onSuccess: async () => {
-      await invalidate();
-    },
-    onError: (error) => {
-      toast.error(toErrorMessage(error, "Failed to change property"));
     },
   });
 }
@@ -879,6 +1000,7 @@ export function useGscCardDismissal(organizationId: string) {
   );
   const dismiss = () => {
     localStorage.setItem(storageKey, "true");
+    trackEvent(POSTHOG_EVENTS.GSC_CARD_DISMISSED);
     for (const listener of gscCardDismissListeners) {
       listener();
     }

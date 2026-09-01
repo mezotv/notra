@@ -2,6 +2,7 @@
 
 import { Linkedin } from "@notra/ui/components/ui/svgs/linkedin";
 import { XTwitter } from "@notra/ui/components/ui/svgs/twitter";
+
 import { Button } from "@/components/button";
 import { LINKEDIN_BRAND_PRIMARY } from "@/constants/linkedin";
 import { SOCIAL_PLATFORM_LABELS } from "@/constants/social-connect";

@@ -20,6 +20,7 @@ import { cn } from "@notra/ui/lib/utils";
 import { useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useRef } from "react";
+
 import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
 import { usePerplexityPlayback } from "@/components/design-system/use-perplexity-playback";
 import {
@@ -61,7 +62,7 @@ function PerplexityFrame({
       {onPlay ? (
         <button
           aria-label={playing ? "Stop playback" : "Play conversation"}
-          className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full border border-black/8 bg-white/90 text-[#8d8d8d] shadow-sm backdrop-blur-sm transition-colors hover:text-[#1a1a1a] dark:border-white/10 dark:bg-[#111]/90 dark:hover:text-foreground"
+          className="dark:hover:text-foreground absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full border border-black/8 bg-white/90 text-[#8d8d8d] shadow-sm backdrop-blur-sm transition-colors hover:text-[#1a1a1a] dark:border-white/10 dark:bg-[#111]/90"
           onClick={onPlay}
           type="button"
         >
@@ -149,7 +150,7 @@ function PerplexityStoryText({
         if (isHeading) {
           return (
             <strong
-              className="mt-1 block font-semibold font-serif text-[18px] leading-7"
+              className="mt-1 block font-serif text-[18px] leading-7 font-semibold"
               key={block.offset}
             >
               {block.text.slice(2, -2)}

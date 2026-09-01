@@ -1,19 +1,17 @@
 "use client";
 
-import { useFlag } from "@databuddy/sdk/react";
 import { PencilEdit01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_GAPS_NAV_LINK } from "@notra/geo-core/constants/geo";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type ReactNode, useCallback, useState } from "react";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { BriefHistory } from "@/components/geo/writer/brief-history";
-import {
-  GeoWriterNeedsSetup,
-  GeoWriterUnavailable,
-} from "@/components/geo/writer/page-gate";
+import { GeoWriterNeedsSetup } from "@/components/geo/writer/page-gate";
 import { WriteDialog } from "@/components/geo/writer/write-dialog";
 import { PageContainer } from "@/components/layout/container";
 import {
@@ -25,7 +23,7 @@ import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
 } from "@/constants/empty-state";
-import { GEO_GAPS_NAV_LINK, GEO_WRITER_FLAG_KEY } from "@/constants/geo";
+import { GEO_WRITE_DIALOG_ENTRIES } from "@/constants/geo-analytics";
 import { useGeoSettings } from "@/lib/hooks/use-geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoWriterBriefs } from "@/lib/hooks/use-geo-writer";
@@ -36,7 +34,7 @@ import type {
 import type { GeoPageClientProps } from "@/types/geo";
 import { withGeoProject } from "@/utils/geo-paths";
 import { emptyWriteDialogState, geoContentPath } from "@/utils/geo-write-entry";
-import { isGeoWriterVisibleInNav } from "@/utils/geo-writer-flag";
+
 import { GeoWriterSkeleton } from "./skeleton";
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
@@ -60,9 +58,6 @@ function GeoWriterPageContent({ organizationSlug }: GeoWriterPageContentProps) {
       : orgFromList;
   const organizationId = organization?.id ?? "";
 
-  const writerFlag = useFlag(GEO_WRITER_FLAG_KEY);
-  const writerVisible = isGeoWriterVisibleInNav(writerFlag.on);
-
   const { data: settingsData, isPending: isSettingsPending } =
     useGeoSettings(organizationId);
   const briefsQuery = useGeoWriterBriefs(organizationId);
@@ -80,10 +75,6 @@ function GeoWriterPageContent({ organizationSlug }: GeoWriterPageContentProps) {
     setDialogInitial(initial ?? emptyWriteDialogState());
     setDialogOpen(true);
   }, []);
-
-  if (!writerVisible) {
-    return <GeoWriterUnavailable />;
-  }
 
   if (!(isSettingsPending || settingsData?.settings)) {
     return (
@@ -156,12 +147,12 @@ function GeoWriterPageContent({ organizationSlug }: GeoWriterPageContentProps) {
       <div className="flex min-h-0 w-full flex-1 flex-col gap-6 px-4 lg:px-6">
         <header className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Write</h1>
-            <p className="max-w-2xl text-pretty text-muted-foreground text-sm">
+            <h1 className="text-3xl font-bold tracking-tight">Write</h1>
+            <p className="text-muted-foreground max-w-2xl text-sm text-pretty">
               Plan a custom article from a topic, type, and brand. Questions
               engines already answer live on{" "}
               <Link
-                className="underline decoration-from-font underline-offset-4 hover:text-foreground"
+                className="hover:text-foreground underline decoration-from-font underline-offset-4"
                 href={gapsHref}
               >
                 Content Gaps
@@ -180,6 +171,7 @@ function GeoWriterPageContent({ organizationSlug }: GeoWriterPageContentProps) {
 
       {organizationId ? (
         <WriteDialog
+          entry={GEO_WRITE_DIALOG_ENTRIES.WRITE_PAGE}
           initial={dialogInitial}
           onOpenChange={setDialogOpen}
           open={dialogOpen}

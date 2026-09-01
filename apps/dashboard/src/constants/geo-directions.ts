@@ -1,12 +1,16 @@
-import { GEO_SEARCH_LABEL } from "@notra/ui/constants/geo";
-import { CHART_PRIMARY_COLOR, CHART_SECONDARY_COLOR } from "@/constants/charts";
-import { GEO_WITHOUT_SEARCH_LABEL } from "@/constants/geo";
-import type { ChartConfig } from "@/types/charts";
+import {
+  GEO_SEARCH_LABEL,
+  GEO_WITHOUT_SEARCH_LABEL,
+} from "@notra/geo-core/constants/geo";
 import type {
   GeoCompetitorSharePoint,
   GeoJourney,
   GeoTrafficPage,
-} from "@/types/geo";
+} from "@notra/geo-core/types/geo";
+import { formatDayLabel } from "@notra/geo-core/utils/day-label";
+
+import { CHART_PRIMARY_COLOR, CHART_SECONDARY_COLOR } from "@/constants/charts";
+import type { ChartConfig } from "@/types/charts";
 import type {
   GeoDirectionEngineRow,
   GeoDirectionKpi,
@@ -16,7 +20,6 @@ import type {
   GeoDirectionTab,
   GeoDirectionTone,
 } from "@/types/geo-directions";
-import { formatDayLabel } from "@/utils/analytics-charts";
 import { seriesColors } from "@/utils/chart-colors";
 import { chartKey } from "@/utils/chart-keys";
 import {

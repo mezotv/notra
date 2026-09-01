@@ -79,11 +79,27 @@ export interface TableProps<T> {
   skeletonRows?: number;
   /** Called when a row is clicked or activated with Enter/Space. */
   onRowClick?: (row: T) => void;
+  /** Menu content shown when a row is opened with the context-menu gesture. */
+  renderRowContextMenu?: (row: T) => ReactNode;
   /** Called when a pointer enters a row — prefetch, hover menus, etc. */
   onRowPointerEnter?: (row: T) => void;
   /** Keep matching rows first after sort. They scroll with the table (not sticky). */
   isRowPinned?: (row: T) => boolean;
+  /** Content rendered above the column headers inside the table surface. */
+  toolbar?: ReactNode;
+  /** Content rendered below the body on a muted footer surface that mirrors the header. */
+  footer?: ReactNode;
+  /** 1-based page to render when `pageSize` is set. Rows are sliced after sorting. */
+  page?: number;
+  /** Rows per page. Omit to render every row. */
+  pageSize?: number;
   emptyState?: ReactNode;
+  /** Square off the top edge so the table can sit flush under another surface. */
+  flushTop?: boolean;
+  /** Square off the bottom edge so another surface can sit flush beneath the table. */
+  flushBottom?: boolean;
+  /** Pad the header band so the table can tuck 20px under the rounded bottom of a surface above it. */
+  overlapTop?: boolean;
   className?: string;
 }
 

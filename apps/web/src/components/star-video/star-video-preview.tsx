@@ -21,6 +21,7 @@ import { Player } from "@remotion/player";
 import { useQueryState } from "nuqs";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { normalizeHex } from "@/lib/star-video/color";
 import { parseRepoInput } from "@/lib/star-video/parse-repo";
 import {
@@ -175,8 +176,8 @@ export function StarVideoPreview() {
       className="flex w-full max-w-5xl scroll-mt-24 flex-col items-center gap-6 px-4 sm:px-6"
       ref={containerRef}
     >
-      <div className="w-full rounded-3xl border border-[#1E1E1E14] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-2 sm:p-4 dark:border-white/10 dark:bg-none dark:bg-white/[0.02]">
-        <div className="overflow-hidden rounded-2xl border border-[#1E1E1E0D] bg-background dark:border-white/5">
+      <div className="w-full rounded-3xl border border-[#1E1E1E14] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-2 sm:p-4 dark:border-white/10 dark:bg-white/[0.02] dark:bg-none">
+        <div className="bg-background overflow-hidden rounded-2xl border border-[#1E1E1E0D] dark:border-white/5">
           {isLoading && (
             <Skeleton className="aspect-video w-full rounded-none" />
           )}
@@ -185,7 +186,7 @@ export function StarVideoPreview() {
             <Player
               acknowledgeRemotionLicense
               autoPlay
-              className="!h-auto !w-full aspect-video"
+              className="aspect-video !h-auto !w-full"
               component={StarVideo}
               compositionHeight={VIDEO_HEIGHT}
               compositionWidth={VIDEO_WIDTH}
@@ -205,7 +206,7 @@ export function StarVideoPreview() {
                 className="size-7 text-[#1E1E1E4D] dark:text-white/30"
                 icon={StarIcon}
               />
-              <p className="max-w-xs font-sans text-[#1E1E1E99] text-sm dark:text-white/50">
+              <p className="max-w-xs font-sans text-sm text-[#1E1E1E99] dark:text-white/50">
                 Enter a repository above to render its star celebration.
               </p>
             </div>
@@ -215,7 +216,7 @@ export function StarVideoPreview() {
 
       <div className="flex w-full flex-col items-center gap-5 sm:flex-row sm:justify-between">
         <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-3">
-          <span className="font-sans text-[#1E1E1E99] text-sm dark:text-white/50">
+          <span className="font-sans text-sm text-[#1E1E1E99] dark:text-white/50">
             Background
           </span>
           <div className="flex flex-wrap items-center justify-center gap-2">
@@ -271,7 +272,7 @@ export function StarVideoPreview() {
 
         <div className="flex flex-col items-center gap-2 sm:items-end">
           <CtaButton
-            className="h-12 rounded-2xl px-6 font-display font-medium text-[1.0625rem] tracking-[-0.015em]"
+            className="font-display h-12 rounded-2xl px-6 text-[1.0625rem] font-medium tracking-[-0.015em]"
             disabled={!inputProps || isRendering}
             onClick={onDownload}
             variant="light"
@@ -280,7 +281,7 @@ export function StarVideoPreview() {
             {isRendering ? "Rendering" : "Download MP4"}
           </CtaButton>
           {inputProps ? (
-            <p className="font-sans text-[#1E1E1E99] text-xs dark:text-white/50">
+            <p className="font-sans text-xs text-[#1E1E1E99] dark:text-white/50">
               {inputProps.stars.toLocaleString()} stars · {inputProps.owner}/
               {inputProps.repo}
             </p>

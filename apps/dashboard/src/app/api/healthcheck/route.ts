@@ -1,17 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { getClientIp, ratelimit } from "@/utils/ratelimit";
+import { NextResponse } from "next/server";
 
-export async function GET(request: NextRequest) {
+export function GET() {
   const cacheControlHeaders = { "Cache-Control": "no-store" };
-
-  const { success, reset } = await ratelimit.free.limit(getClientIp(request));
-
-  if (!success) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded", reset },
-      { status: 429, headers: cacheControlHeaders }
-    );
-  }
 
   return NextResponse.json(
     {

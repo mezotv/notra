@@ -1,6 +1,7 @@
 import type { UIMessage } from "ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import { CHAT_TITLE_MAX_LENGTH } from "../constants/chat";
 import { standaloneChatContextSchema } from "./standalone-chat";
 
@@ -52,6 +53,7 @@ export const slackRelayMetadataSchema = z.object({
 
 export const chatMessageMetadataSchema = z.object({
   chatId: z.string().min(1).optional(),
+  authorUserId: z.string().min(1).max(200).optional(),
   model: chatModelSchema.optional(),
   requestedModel: chatModelSchema.optional(),
   thinkingLevel: thinkingLevelSchema.optional(),
@@ -113,7 +115,6 @@ export const updateChatSessionSchema = z
   );
 
 export const chatWorkflowPayloadSchema = z.object({
-  workflowSignature: z.string().regex(/^[a-f0-9]{64}$/),
   requestId: z.string().min(1),
   organizationId: z.string().min(1),
   chatId: z.string().min(1),

@@ -1,6 +1,7 @@
 "use client";
 
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+
 import { PageContainer } from "@/components/layout/container";
 import type { GeoSettingsSkeletonSectionProps } from "@/types/geo";
 
@@ -16,8 +17,8 @@ function SettingsSectionSkeleton({
   return (
     <section className="min-w-0 space-y-4">
       <div className="space-y-1">
-        <h2 className="font-medium text-sm">{title}</h2>
-        <p className="text-pretty text-muted-foreground text-sm">
+        <h2 className="text-sm font-medium">{title}</h2>
+        <p className="text-muted-foreground text-sm text-pretty">
           {description}
         </p>
       </div>
@@ -31,7 +32,7 @@ export function GeoSettingsSkeleton() {
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-8 px-4 lg:px-6">
         <header className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">
             How your brand is identified and where prompts are scanned.
           </p>
@@ -75,7 +76,7 @@ export function GeoSettingsSkeleton() {
             <ul className="overflow-hidden rounded-md border">
               {Array.from({ length: PROVIDER_ROW_COUNT }, (_, index) => (
                 <li
-                  className="flex items-center justify-between gap-3 border-border/60 border-b bg-muted px-3 py-2 last:border-b-0"
+                  className="border-border/60 bg-muted flex items-center justify-between gap-3 border-b px-3 py-2 last:border-b-0"
                   key={`provider-${index + 1}`}
                 >
                   <div className="flex items-center gap-2.5">
@@ -86,7 +87,7 @@ export function GeoSettingsSkeleton() {
                 </li>
               ))}
             </ul>
-            <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ring-1 ring-foreground/10">
+            <div className="ring-foreground/10 flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 ring-1">
               <div className="space-y-1.5">
                 <Skeleton className="h-4 w-28" />
                 <Skeleton className="h-3 w-48" />

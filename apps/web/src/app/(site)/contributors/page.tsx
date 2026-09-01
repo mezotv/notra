@@ -3,6 +3,7 @@ import { Github } from "@notra/ui/components/ui/svgs/github";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+
 import { ContributorsContent } from "@/components/contributors/contributors-content";
 import { ContributorsPageSkeleton } from "@/components/contributors/skeleton";
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
@@ -40,7 +41,7 @@ export const metadata: Metadata = {
 
 export default function ContributorsPage() {
   return (
-    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
+    <div className="border-border/70 flex w-full flex-col items-center justify-start overflow-hidden border-b">
       <MarketingHeroWash
         className="mb-12 md:mb-16"
         subtitle="Meet the developers who build Notra and the sponsors who back it. Browse open issues, check in on pull requests, and jump in anytime."

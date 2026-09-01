@@ -6,6 +6,7 @@ import {
   DEFAULT_LANGUAGE,
   SUPPORTED_LANGUAGES,
 } from "@notra/ai/constants/languages";
+import { GEO_MAX_LANGUAGES } from "@notra/geo-core/constants/geo";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   Combobox,
@@ -16,8 +17,9 @@ import {
   ComboboxList,
 } from "@notra/ui/components/ui/combobox";
 import { useState } from "react";
+
 import { Twemoji } from "@/components/geo/twemoji";
-import { GEO_LANGUAGE_FLAGS, GEO_MAX_LANGUAGES } from "@/constants/geo";
+import { LANGUAGE_FLAGS } from "@/constants/language-flags";
 import type { GeoLanguagePickerProps } from "@/types/geo";
 
 function LanguageLabel({ language }: { language: string }) {
@@ -25,7 +27,7 @@ function LanguageLabel({ language }: { language: string }) {
     <span className="flex items-center gap-1.5">
       <Twemoji
         className="size-3.5 shrink-0"
-        emoji={GEO_LANGUAGE_FLAGS[language] ?? ""}
+        emoji={LANGUAGE_FLAGS[language as keyof typeof LANGUAGE_FLAGS] ?? ""}
         label={language}
       />
       {language}
@@ -50,7 +52,7 @@ export function GeoLanguagePicker({
     <div className="w-full min-w-0 space-y-2">
       {labeled ? (
         <div className="space-y-1">
-          <p className="font-medium text-sm">Languages</p>
+          <p className="text-sm font-medium">Languages</p>
           <p className="text-muted-foreground text-xs">
             {DEFAULT_LANGUAGE} is on by default. Scan up to {GEO_MAX_LANGUAGES}{" "}
             languages.
@@ -92,7 +94,7 @@ export function GeoLanguagePicker({
               <LanguageLabel language={language} />
               <button
                 aria-label={`Remove ${language}`}
-                className="cursor-pointer rounded-sm p-0.5 hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+                className="hover:bg-background cursor-pointer rounded-sm p-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={disabled || lastLanguage}
                 onClick={() =>
                   onChange(selected.filter((item) => item !== language))

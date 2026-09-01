@@ -2,8 +2,10 @@
 
 import { GlobalIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+
 import { cn } from "@/lib/utils";
 import type { SitemapSelectorProps } from "@/types/hooks/brand-sitemaps";
+
 import { SITEMAP_STATUS_META } from "../constants/sitemap-ui";
 
 export function SitemapSelector({
@@ -39,12 +41,12 @@ export function SitemapSelector({
               onChange={() => onSelect(sitemap.id)}
               type="radio"
             />
-            <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-muted">
+            <div className="bg-muted flex size-8 shrink-0 items-center justify-center rounded-md">
               <HugeiconsIcon className="size-4" icon={GlobalIcon} />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-sm">{sitemap.label}</p>
-              <p className="flex items-center gap-1.5 text-muted-foreground text-xs">
+              <p className="truncate text-sm font-medium">{sitemap.label}</p>
+              <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
                 <span
                   className={cn(
                     "size-1.5 shrink-0 rounded-full",

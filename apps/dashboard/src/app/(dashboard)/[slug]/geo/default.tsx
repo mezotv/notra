@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+
 import PageClient from "./page-client";
 import { GeoPageSkeleton } from "./skeleton";
 

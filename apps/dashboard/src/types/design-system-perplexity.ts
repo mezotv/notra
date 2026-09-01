@@ -1,5 +1,5 @@
 import type { PerplexityMessageRole } from "@notra/ui/components/brainless/perplexity/perplexity-message";
-import type { PerplexitySearchSource } from "@notra/ui/components/brainless/perplexity/perplexity-search";
+import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
 
 export interface PerplexityStoryCitation {
   id: string;

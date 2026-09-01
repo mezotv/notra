@@ -4,6 +4,7 @@ import {
   toGeoCheckWindow,
 } from "@notra/db/utils/geo-checks";
 import { defineTool } from "eve/tools";
+
 import { ANALYTICS_QUERY_FAILED_MESSAGE } from "../constants/analytics";
 import { getGeoOverviewInputSchema } from "../schemas/analytics-tools";
 import { requireOrganizationId } from "../utils/organization";

@@ -4,6 +4,7 @@ import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import type { SocialAccount } from "post-for-me/resources/social-accounts";
+
 import { SOCIAL_CONNECT_STATE_TTL_SECONDS } from "@/constants/social-connect";
 import { normalizeTwitterProfileImageUrl } from "@/constants/twitter";
 import {

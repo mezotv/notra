@@ -4,6 +4,7 @@ import { MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
+
 import { Button } from "@/components/button";
 import {
   IntegrationCardDither,
@@ -53,7 +54,7 @@ export function StoreIntegrationCard({
       }
       className={
         integration.connected
-          ? "h-full cursor-pointer transition-colors hover:bg-muted/80"
+          ? "hover:bg-muted/80 h-full cursor-pointer transition-colors"
           : "h-full"
       }
       heading={integration.name}
@@ -81,7 +82,7 @@ export function StoreIntegrationCard({
       role={integration.connected ? "button" : undefined}
       tabIndex={integration.connected ? 0 : undefined}
     >
-      <p className="line-clamp-2 text-muted-foreground text-sm">
+      <p className="text-muted-foreground line-clamp-2 text-sm">
         {integration.description ??
           (integration.author
             ? `By ${integration.author}`

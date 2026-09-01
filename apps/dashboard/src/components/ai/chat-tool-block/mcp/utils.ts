@@ -1,6 +1,7 @@
 import { getMcpFaviconUrl, getMcpIconUrls } from "@/lib/integrations/mcp";
 import { mcpToolMetadataSchema } from "@/schemas/ai/chat-tool-block";
 import type { McpIconUrls } from "@/types/integrations/mcp";
+
 import {
   MCP_TOOL_NAME_REGEX,
   NON_ALPHANUMERIC_WORD_SEPARATOR_REGEX,

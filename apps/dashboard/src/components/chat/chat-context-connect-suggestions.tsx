@@ -7,6 +7,7 @@ import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
+
 import { CHAT_CONTEXT_SUGGESTED_INTEGRATIONS } from "@/constants/chat-context";
 import { buildOrganizationIntegrationConnectPath } from "@/lib/integrations/deeplink";
 import type {
@@ -46,12 +47,12 @@ export function ChatContextConnectSuggestions({
             {SUGGESTION_ICONS[integration.id]}
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="truncate text-sm">{integration.name}</span>
-              <span className="truncate text-muted-foreground text-xs">
+              <span className="text-muted-foreground truncate text-xs">
                 {integration.description}
               </span>
             </span>
             <span
-              className="ml-auto text-muted-foreground text-xs"
+              className="text-muted-foreground ml-auto text-xs"
               data-slot="command-shortcut"
             >
               Connect

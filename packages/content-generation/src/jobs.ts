@@ -1,4 +1,5 @@
 import type { Redis } from "@upstash/redis";
+
 import {
   type ContentGenerationJob,
   type ContentGenerationJobEvent,

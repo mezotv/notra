@@ -1,4 +1,5 @@
 import { unstable_rethrow } from "next/navigation";
+
 import { getAuthSession } from "@/lib/auth/server";
 import type { GetServerSessionParams } from "@/types/auth/session";
 

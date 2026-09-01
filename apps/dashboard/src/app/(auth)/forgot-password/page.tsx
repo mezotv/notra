@@ -5,6 +5,7 @@ import { Label } from "@notra/ui/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { forgotPasswordAction } from "@/lib/auth/password-actions";
 
@@ -36,10 +37,10 @@ export default function ForgotPassword() {
     return (
       <div className="mx-auto flex min-w-[300px] flex-col gap-8 rounded-md p-6 lg:w-[384px] lg:px-8 lg:py-10">
         <div className="text-center">
-          <h1 className="font-semibold text-xl lg:text-2xl">
+          <h1 className="text-xl font-semibold lg:text-2xl">
             Check your email
           </h1>
-          <p className="mt-2 text-muted-foreground text-sm">
+          <p className="text-muted-foreground mt-2 text-sm">
             If an account exists with that email, we&apos;ve sent you a link to
             reset your password.
           </p>
@@ -58,9 +59,9 @@ export default function ForgotPassword() {
           </Button>
         </div>
 
-        <div className="px-8 text-center text-muted-foreground text-xs">
+        <div className="text-muted-foreground px-8 text-center text-xs">
           <Link
-            className="underline underline-offset-4 hover:text-primary"
+            className="hover:text-primary underline underline-offset-4"
             href="/login"
           >
             Back to login
@@ -73,7 +74,7 @@ export default function ForgotPassword() {
   return (
     <div className="mx-auto flex min-w-[300px] flex-col gap-8 rounded-md p-6 lg:w-[384px] lg:px-8 lg:py-10">
       <div className="text-center">
-        <h1 className="font-semibold text-xl lg:text-2xl">
+        <h1 className="text-xl font-semibold lg:text-2xl">
           Forgot your password?
         </h1>
         <p className="text-muted-foreground text-sm">
@@ -104,9 +105,9 @@ export default function ForgotPassword() {
         </Button>
       </form>
 
-      <div className="px-8 text-center text-muted-foreground text-xs">
+      <div className="text-muted-foreground px-8 text-center text-xs">
         <Link
-          className="underline underline-offset-4 hover:text-primary"
+          className="hover:text-primary underline underline-offset-4"
           href="/login"
         >
           Back to login

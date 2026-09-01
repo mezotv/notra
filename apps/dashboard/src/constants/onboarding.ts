@@ -11,11 +11,6 @@ export const ONBOARDING_VISIBLE_SUGGESTIONS = 3;
 export const ONBOARDING_SUGGESTION_SKELETON_ROWS = [0, 1, 2, 3] as const;
 export const ONBOARDING_FIELD_CLASS = "h-11 rounded-xl px-3.5";
 
-export const ONBOARDING_WEBSITE_TOP_LEVEL_DOMAIN_REGEX = /^[a-z]{2,63}$/i;
-export const ONBOARDING_WEBSITE_IPV4_REGEX = /^\d{1,3}(?:\.\d{1,3}){3}$/;
-export const ONBOARDING_WEBSITE_IPV6_REGEX = /^[0-9a-f:]+$/i;
-export const ONBOARDING_WEBSITE_PREFIX_REGEX = /^https?:\/\//i;
-
 export const ONBOARDING_HEARD_ABOUT_NOTRA_SOURCES = [
   "x",
   "github",

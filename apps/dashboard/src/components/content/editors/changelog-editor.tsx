@@ -10,8 +10,10 @@ import {
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useCallback, useEffect, useRef } from "react";
+
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import { buildReviewMarkdown } from "@/utils/review-markdown";
+
 import type { ContentEditorProps } from "./types";
 
 const VIEW_OPTIONS = ["rendered", "markdown"] as const;
@@ -139,12 +141,12 @@ export function ChangelogEditor({
                 value={title}
               />
               <span className="flex items-center gap-1">
-                <span className="shrink-0 font-mono text-muted-foreground text-xs">
+                <span className="text-muted-foreground shrink-0 font-mono text-xs">
                   /
                 </span>
                 <input
                   aria-label="Post slug"
-                  className="w-full bg-transparent font-mono text-muted-foreground text-xs outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus:ring-0"
+                  className="text-muted-foreground placeholder:text-muted-foreground/50 focus:text-foreground w-full bg-transparent font-mono text-xs outline-none focus:ring-0"
                   onBlur={() => {
                     if (state.editingSlug !== null) {
                       actions.setEditingSlug(
@@ -230,7 +232,7 @@ export function ChangelogEditor({
         <TabsContent className="mt-0" value="markdown">
           <textarea
             aria-label="Markdown content editor"
-            className="field-sizing-content w-full resize-none whitespace-pre-wrap rounded-lg border-0 bg-transparent font-mono text-sm selection:bg-primary/30 focus:outline-none focus:ring-0"
+            className="selection:bg-primary/30 field-sizing-content w-full resize-none rounded-lg border-0 bg-transparent font-mono text-sm whitespace-pre-wrap focus:ring-0 focus:outline-none"
             onChange={(e) => {
               actions.setEditedMarkdown(e.target.value);
             }}

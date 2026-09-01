@@ -20,9 +20,7 @@ export function ChatgptThinking({
       {reducedMotion ? (
         "Thinking"
       ) : (
-        <Shimmer className="font-medium" duration={1.6} spread={1.4}>
-          Thinking
-        </Shimmer>
+        <Shimmer className="font-medium">Thinking</Shimmer>
       )}
     </div>
   );

@@ -2,6 +2,7 @@ import { disableSlackIntegrationByTeamId } from "@notra/ai/integrations/slack-wo
 import { getLinkedTwitterAccounts } from "@notra/tools/utils/social-accounts";
 import { Effect } from "effect";
 import { type SlackChannelConfig, slackChannel } from "eve/channels/slack";
+
 import { CREATE_POST_TOOL_NAMES } from "../lib/constants/slack";
 import {
   POST_TO_X_ACCOUNT_ACTION_PREFIX,

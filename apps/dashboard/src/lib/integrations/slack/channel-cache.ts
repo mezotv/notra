@@ -1,4 +1,5 @@
 import { redis } from "@notra/ai/utils/redis";
+
 import { SLACK_CHANNEL_CACHE_TTL_SECONDS } from "@/constants/slack-integration";
 import type { SlackChannelOption } from "@/types/slack-integration";
 

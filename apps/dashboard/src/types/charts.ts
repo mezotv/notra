@@ -1,5 +1,10 @@
 import type { ComponentType, ReactNode } from "react";
 
+export interface ChartColorPair {
+  light: string;
+  dark: string;
+}
+
 // Require at least one theme key — identical constraint to the repo's ChartConfig.
 export type AtLeastOneThemeColor =
   | { light: string[]; dark?: string[] }
@@ -15,11 +20,6 @@ export type ChartConfig = Record<
     indicatorHtml?: string;
   }
 >;
-
-export interface ChartColorPair {
-  light: string;
-  dark: string;
-}
 
 export interface ChartSeriesColors {
   light: string[];
@@ -53,9 +53,15 @@ export interface ChartMarker {
   label: string;
 }
 
-export type TooltipLayout = "rows" | "bars";
+export interface GridProps {
+  lineType?: "solid" | "dashed";
+}
+
+export type TooltipLayout = "rows" | "bars" | "activity";
 
 export type TooltipValueFormatter = (value: number) => string;
+
+export type TooltipLabelFormatter = (value: string) => string;
 
 export type TooltipEmptyLabel =
   | string
@@ -71,4 +77,14 @@ export interface TooltipBodyItem {
   indicatorHtml?: string;
   /** Resolved CSS background. Required when the tooltip mounts outside `[data-chart]`. */
   paint?: string;
+}
+
+export interface TooltipRowGroup {
+  headingKey: string;
+  rowKeys: readonly string[];
+}
+
+export interface TooltipBodyGroup {
+  heading: TooltipBodyItem;
+  items: TooltipBodyItem[];
 }

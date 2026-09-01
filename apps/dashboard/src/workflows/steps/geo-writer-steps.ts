@@ -7,18 +7,28 @@ import {
   geoSettings,
   projects,
 } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
 import {
   GEO_WRITER_TRIGGER_ID,
   GEO_WRITER_TRIGGER_NAME,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+import { and, eq } from "drizzle-orm";
+
+import {
+  trackGeoWriterCompleted,
+  trackGeoWriterFailed,
+} from "@/lib/analytics/geo-workflow-events";
 import { completeActiveGeneration } from "@/lib/generations/tracking";
+import type {
+  GeoWriterFailureReason,
+  GeoWriterSkippedStepInput,
+} from "@/types/analytics/geo-events";
 import type { GeoWriterContext } from "@/types/geo";
 
 const BLOG_POST_CONTENT_TYPE = "blog_post";
 
 export async function loadGeoWriterContext(input: {
   organizationId: string;
+  projectId: string;
   briefId: string;
   runId: string;
 }): Promise<GeoWriterContext | null> {
@@ -27,17 +37,19 @@ export async function loadGeoWriterContext(input: {
     where: and(
       eq(geoContentBriefs.id, input.briefId),
       eq(geoContentBriefs.organizationId, input.organizationId),
-      eq(geoContentBriefs.runId, input.runId)
+      eq(geoContentBriefs.projectId, input.projectId),
+      eq(geoContentBriefs.runId, input.runId),
+      eq(geoContentBriefs.status, "writing")
     ),
   });
-  if (!(brief?.collectionId && brief.status === "writing")) {
+  if (!brief?.collectionId) {
     return null;
   }
 
   const project = await db.query.projects.findFirst({
     columns: { id: true },
     where: and(
-      eq(projects.id, brief.projectId),
+      eq(projects.id, input.projectId),
       eq(projects.organizationId, input.organizationId)
     ),
   });
@@ -48,17 +60,23 @@ export async function loadGeoWriterContext(input: {
   const [brand, settings] = await Promise.all([
     db.query.brandSettings.findFirst({
       columns: { companyName: true, language: true },
-      where: eq(brandSettings.id, brief.brandSettingsId),
+      where: and(
+        eq(brandSettings.id, brief.brandSettingsId),
+        eq(brandSettings.organizationId, input.organizationId)
+      ),
     }),
     db.query.geoSettings.findFirst({
       columns: { companyName: true },
-      where: eq(geoSettings.projectId, brief.projectId),
+      where: and(
+        eq(geoSettings.organizationId, input.organizationId),
+        eq(geoSettings.projectId, input.projectId)
+      ),
     }),
   ]);
 
   return {
-    organizationId: brief.organizationId,
-    projectId: brief.projectId,
+    organizationId: input.organizationId,
+    projectId: input.projectId,
     briefId: brief.id,
     brandSettingsId: brief.brandSettingsId,
     collectionId: brief.collectionId,
@@ -107,6 +125,7 @@ export async function runGeoWriterStep(
 
 export async function finishGeoWriter(input: {
   organizationId: string;
+  projectId: string;
   briefId: string;
   runId: string;
   postId: string;
@@ -114,7 +133,7 @@ export async function finishGeoWriter(input: {
   humanized: boolean;
 }): Promise<void> {
   "use step";
-  await db
+  const updated = await db
     .update(geoContentBriefs)
     .set({
       status: "completed",
@@ -126,11 +145,13 @@ export async function finishGeoWriter(input: {
     .where(
       and(
         eq(geoContentBriefs.organizationId, input.organizationId),
+        eq(geoContentBriefs.projectId, input.projectId),
         eq(geoContentBriefs.id, input.briefId),
         eq(geoContentBriefs.runId, input.runId),
         eq(geoContentBriefs.status, "writing")
       )
-    );
+    )
+    .returning({ startedAt: geoContentBriefs.startedAt });
 
   await completeActiveGeneration(input.organizationId, {
     runId: input.runId,
@@ -142,26 +163,40 @@ export async function finishGeoWriter(input: {
     completedAt: new Date().toISOString(),
     source: "dashboard",
   });
+
+  await trackGeoWriterCompleted({
+    organizationId: input.organizationId,
+    projectId: input.projectId,
+    briefId: input.briefId,
+    runId: input.runId,
+    postId: input.postId,
+    humanized: input.humanized,
+    startedAt: updated[0]?.startedAt ?? null,
+  });
 }
 
 export async function failGeoWriter(input: {
   organizationId: string;
+  projectId: string;
   briefId: string;
   runId: string;
   reason: string;
+  failureReason: GeoWriterFailureReason;
 }): Promise<void> {
   "use step";
-  await db
+  const updated = await db
     .update(geoContentBriefs)
     .set({ status: "failed", error: input.reason, completedAt: new Date() })
     .where(
       and(
         eq(geoContentBriefs.organizationId, input.organizationId),
+        eq(geoContentBriefs.projectId, input.projectId),
         eq(geoContentBriefs.id, input.briefId),
         eq(geoContentBriefs.runId, input.runId),
         eq(geoContentBriefs.status, "writing")
       )
-    );
+    )
+    .returning({ startedAt: geoContentBriefs.startedAt });
 
   await completeActiveGeneration(input.organizationId, {
     runId: input.runId,
@@ -172,5 +207,28 @@ export async function failGeoWriter(input: {
     reason: input.reason,
     completedAt: new Date().toISOString(),
     source: "dashboard",
+  });
+
+  await trackGeoWriterFailed({
+    organizationId: input.organizationId,
+    projectId: input.projectId,
+    briefId: input.briefId,
+    runId: input.runId,
+    reason: input.failureReason,
+    startedAt: updated[0]?.startedAt ?? null,
+  });
+}
+
+export async function trackGeoWriterSkipped(
+  input: GeoWriterSkippedStepInput
+): Promise<void> {
+  "use step";
+  await trackGeoWriterFailed({
+    organizationId: input.organizationId,
+    projectId: input.projectId,
+    briefId: input.briefId,
+    runId: input.runId,
+    reason: input.reason,
+    startedAt: null,
   });
 }

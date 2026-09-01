@@ -2,6 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { chatSessions } from "@notra/db/schema";
 import { generateText, type UIMessage } from "ai";
 import { and, eq, isNull, sql } from "drizzle-orm";
+
 import {
   CHAT_ABORT_FLAG_TTL_SECONDS,
   CHAT_ACTIVE_STREAM_TTL_SECONDS,
@@ -981,7 +982,9 @@ export async function generateAndSetChatTitle(
     }
 
     const { text } = await generateText({
-      model: gateway("openai/gpt-5.4-nano", { organizationId }),
+      model: gateway("openai/gpt-5.4-nano", {
+        organizationId,
+      }),
       system: `Generate a short, descriptive title (max 50 chars) for a chat conversation based on the user's first message. Return ONLY the title text, nothing else. No quotes, no prefix. Be specific and concise.`,
       prompt: userMessage,
       maxOutputTokens: 30,

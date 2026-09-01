@@ -12,6 +12,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useId, useState } from "react";
+
 import { ZdrConsentDialog } from "@/components/billing/zdr-consent-dialog";
 import { Button } from "@/components/button";
 import type { PlanCardProps } from "@/types/billing/plan";
@@ -52,11 +53,11 @@ export function PlanCard({
     >
       <div className="space-y-4">
         <div>
-          <p className="line-clamp-2 min-h-10 text-muted-foreground text-sm">
+          <p className="text-muted-foreground line-clamp-2 min-h-10 text-sm">
             {description}
           </p>
           <div className="mt-2 flex items-end">
-            <span className="font-bold text-3xl leading-none">$</span>
+            <span className="text-3xl leading-none font-bold">$</span>
             <Counter
               fontSize={30}
               fontWeight={700}
@@ -65,14 +66,14 @@ export function PlanCard({
               padding={0}
               value={price}
             />
-            <span className="mb-0.5 ml-1 font-normal text-muted-foreground text-sm">
+            <span className="text-muted-foreground mb-0.5 ml-1 text-sm font-normal">
               /{intervalLabel}
             </span>
           </div>
         </div>
 
         {addon ? (
-          <div className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 ring-1 ring-foreground/10">
+          <div className="ring-foreground/10 flex items-center justify-between gap-3 rounded-lg px-3 py-2 ring-1">
             <div className="space-y-0.5">
               <Label className="text-sm" htmlFor={addonId}>
                 {addon.label}
@@ -125,7 +126,7 @@ export function PlanCard({
                   (feature.overageTooltip ? (
                     <Tooltip>
                       <TooltipTrigger
-                        className="cursor-help border-muted-foreground/30 border-b border-dashed text-muted-foreground text-xs"
+                        className="border-muted-foreground/30 text-muted-foreground cursor-help border-b border-dashed text-xs"
                         render={<p />}
                       >
                         {feature.overageText}

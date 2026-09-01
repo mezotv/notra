@@ -1,11 +1,13 @@
 "use client";
 
+import { normalizePublicWebsiteUrl } from "@notra/geo-core/schemas/url";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useReducer, useRef } from "react";
 import { toast } from "sonner";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { BRAND_IDENTITY_TAB_VALUES } from "@/constants/brand-identity";
 import type { PageClientProps } from "@/types/brand-identity";
@@ -20,6 +22,7 @@ import {
   readStoredBrandIdentityId,
   writeStoredBrandIdentityId,
 } from "@/utils/brand-identity-selection";
+
 import {
   useAnalyzeBrand,
   useBrandAnalysisProgress,
@@ -31,7 +34,6 @@ import {
 import { useRefreshBrandGuidelinesAction } from "../../../../../lib/hooks/use-brand-guidelines";
 import { useReferences } from "../../../../../lib/hooks/use-brand-references";
 import { useSitemaps } from "../../../../../lib/hooks/use-brand-sitemaps";
-import { normalizePublicWebsiteUrl } from "../../../../../schemas/url";
 import { BrandIdentityWorkspace } from "./components/brand-identity-workspace";
 import { EmptyBrandIdentityState } from "./components/empty-brand-identity-state";
 import { BrandIdentityPageSkeleton } from "./skeleton";

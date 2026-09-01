@@ -1,5 +1,6 @@
 import { Effect } from "effect";
 import { notFound, redirect } from "next/navigation";
+
 import { resolveIntegrationConnectDeeplink } from "@/lib/integrations/deeplink-resolution";
 
 async function Page({

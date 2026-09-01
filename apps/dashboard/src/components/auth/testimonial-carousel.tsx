@@ -4,6 +4,7 @@ import { CarouselProgress } from "@notra/ui/components/ui/carousel-progress";
 import { useReducedMotion } from "motion/react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+
 import {
   AUTH_TESTIMONIAL_INTERVAL_MS,
   AUTH_TESTIMONIALS,
@@ -54,10 +55,10 @@ export function TestimonialCarousel() {
         <figure
           aria-label={`Testimonial ${activeIndex + 1} of ${AUTH_TESTIMONIALS.length}`}
           aria-roledescription="slide"
-          className="fade-in-0 slide-in-from-bottom-2 flex min-h-[15rem] animate-in flex-col justify-between gap-5 rounded-3xl bg-white/10 p-7 shadow-[0_0_0_0.0625rem_rgba(255,255,255,0.2)] duration-500 motion-reduce:animate-none"
+          className="fade-in-0 slide-in-from-bottom-2 animate-in flex min-h-[15rem] flex-col justify-between gap-5 rounded-3xl bg-white/10 p-7 shadow-[0_0_0_0.0625rem_rgba(255,255,255,0.2)] duration-500 motion-reduce:animate-none"
           key={activeIndex}
         >
-          <blockquote className="text-base text-white leading-relaxed">
+          <blockquote className="text-base leading-relaxed text-white">
             "{testimonial.quote}"
           </blockquote>
           <figcaption className="flex items-center gap-3">
@@ -69,7 +70,7 @@ export function TestimonialCarousel() {
               width={40}
             />
             <div className="flex flex-col">
-              <span className="font-semibold text-sm text-white">
+              <span className="text-sm font-semibold text-white">
                 {testimonial.name}
               </span>
               <span className="text-sm text-violet-100/75">

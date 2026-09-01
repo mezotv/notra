@@ -3,13 +3,17 @@
 import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Confetti } from "@neoconfetti/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { cn } from "@notra/ui/lib/utils";
 import { useCustomer } from "autumn-js/react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { buttonVariants } from "@/components/button";
+import { CHECKOUT_SURFACES } from "@/constants/analytics-events";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { planDisplayName } from "@/utils/billing-plans";
 
 function BillingSuccessPageContent() {
@@ -23,8 +27,29 @@ function BillingSuccessPageContent() {
   );
   const planName =
     planDisplayName(activeSubscription?.plan?.name) ?? "your new plan";
+  const [now] = useState(() => Date.now());
+  const completedRef = useRef(false);
+  const activePlanId =
+    activeSubscription?.plan?.id ?? activeSubscription?.planId ?? null;
+  const isTrial =
+    activeSubscription?.trialEndsAt != null &&
+    activeSubscription.trialEndsAt > now;
+
+  useEffect(() => {
+    if (!activeSubscription || completedRef.current) {
+      return;
+    }
+    completedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.CHECKOUT_COMPLETED, {
+      plan_id: activePlanId,
+      is_trial: isTrial,
+    });
+  }, [activeSubscription, activePlanId, isTrial]);
 
   async function handleManageBilling() {
+    trackEvent(POSTHOG_EVENTS.CUSTOMER_PORTAL_OPENED, {
+      surface: CHECKOUT_SURFACES.SUCCESS_PAGE,
+    });
     try {
       await openCustomerPortal({
         returnUrl: `${window.location.origin}/${slug}/settings/billing`,
@@ -40,7 +65,7 @@ function BillingSuccessPageContent() {
 
   return (
     <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden px-4">
-      <div className="-translate-x-1/2 pointer-events-none absolute top-0 left-1/2">
+      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2">
         <Confetti
           colors={[
             "var(--primary)",
@@ -63,10 +88,10 @@ function BillingSuccessPageContent() {
       <div className="flex max-w-md flex-col items-center text-center">
         <HugeiconsIcon className="size-12 text-emerald-500" icon={Tick02Icon} />
 
-        <h1 className="mt-6 font-bold text-4xl text-foreground tracking-tight">
+        <h1 className="text-foreground mt-6 text-4xl font-bold tracking-tight">
           Payment Successful!
         </h1>
-        <p className="mt-3 text-base text-muted-foreground leading-relaxed">
+        <p className="text-muted-foreground mt-3 text-base leading-relaxed">
           Thanks for subscribing to {planName}. Your plan is active and all
           features are ready to use.
         </p>
@@ -88,7 +113,7 @@ function BillingSuccessPageContent() {
         </div>
 
         <Link
-          className="mt-6 text-muted-foreground text-sm underline underline-offset-4 transition-colors hover:text-foreground"
+          className="text-muted-foreground hover:text-foreground mt-6 text-sm underline underline-offset-4 transition-colors"
           href={`/${slug}/settings/billing`}
         >
           View invoices & usage

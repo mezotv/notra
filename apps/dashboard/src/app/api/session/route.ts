@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+
 import { getAuthSession } from "@/lib/auth/server";
 import { buildSessionCorsHeaders } from "@/lib/auth/session-cors";
 import type { ClientSessionData } from "@/types/auth/session";

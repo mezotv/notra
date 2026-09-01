@@ -1,6 +1,7 @@
 import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { Metadata } from "next";
+
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import { PAGE_SOCIAL_IMAGES, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
@@ -67,7 +68,7 @@ const ELIGIBILITY = [
       <>
         It's licensed under an{" "}
         <a
-          className="font-medium text-primary underline underline-offset-2 hover:text-primary-hover"
+          className="text-primary hover:text-primary-hover font-medium underline underline-offset-2"
           href={OSI_LICENSES_URL}
           rel="noopener noreferrer"
           target="_blank"
@@ -95,7 +96,7 @@ const ELIGIBILITY = [
 
 export default function OssProgramPage() {
   return (
-    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
+    <div className="border-border/70 flex w-full flex-col items-center justify-start overflow-hidden border-b">
       <MarketingHeroWash
         className="mb-4"
         subtitle="Notra is free for open source builders. Get the Growth plan at no cost in exchange for honest feedback, and let your shipped work do the marketing."
@@ -106,13 +107,13 @@ export default function OssProgramPage() {
         }
       />
 
-      <section className="w-full border-border/70 border-t px-6 py-12 md:px-24 md:py-16">
+      <section className="border-border/70 w-full border-t px-6 py-12 md:px-24 md:py-16">
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
           <div className="flex flex-col gap-2">
-            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em] md:text-3xl">
+            <h2 className="font-display text-foreground text-2xl font-medium tracking-[-0.02em] md:text-3xl">
               What you get
             </h2>
-            <p className="max-w-2xl font-normal font-sans text-muted-foreground text-sm leading-6">
+            <p className="text-muted-foreground max-w-2xl font-sans text-sm leading-6 font-normal">
               Accepted projects use Notra free. The only ask is that you tell us
               what works and what doesn't.
             </p>
@@ -125,15 +126,15 @@ export default function OssProgramPage() {
               >
                 <div className="flex items-center gap-2.5">
                   <HugeiconsIcon
-                    className="size-4 text-primary"
+                    className="text-primary size-4"
                     icon={Tick02Icon}
                     strokeWidth={2.5}
                   />
-                  <h3 className="font-medium font-sans text-base text-foreground">
+                  <h3 className="text-foreground font-sans text-base font-medium">
                     {benefit.label}
                   </h3>
                 </div>
-                <p className="font-normal font-sans text-muted-foreground text-sm leading-6">
+                <p className="text-muted-foreground font-sans text-sm leading-6 font-normal">
                   {benefit.detail}
                 </p>
               </div>
@@ -142,20 +143,20 @@ export default function OssProgramPage() {
         </div>
       </section>
 
-      <section className="w-full border-border/70 border-t px-6 py-12 md:px-24 md:py-16">
+      <section className="border-border/70 w-full border-t px-6 py-12 md:px-24 md:py-16">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-          <h2 className="font-sans font-semibold text-2xl text-foreground tracking-tight md:text-3xl">
+          <h2 className="text-foreground font-sans text-2xl font-semibold tracking-tight md:text-3xl">
             Who's eligible
           </h2>
           <ul className="flex flex-col gap-3">
             {ELIGIBILITY.map((item) => (
               <li className="flex items-start gap-3" key={item.id}>
                 <HugeiconsIcon
-                  className="mt-1 size-4 shrink-0 text-primary"
+                  className="text-primary mt-1 size-4 shrink-0"
                   icon={Tick02Icon}
                   strokeWidth={2.5}
                 />
-                <span className="font-normal font-sans text-foreground text-sm leading-6">
+                <span className="text-foreground font-sans text-sm leading-6 font-normal">
                   {item.content}
                 </span>
               </li>
@@ -164,13 +165,13 @@ export default function OssProgramPage() {
         </div>
       </section>
 
-      <section className="w-full border-border/70 border-t px-6 py-12 md:px-24 md:py-16">
+      <section className="border-border/70 w-full border-t px-6 py-12 md:px-24 md:py-16">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
           <div className="flex flex-col gap-2">
-            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em] md:text-3xl">
+            <h2 className="font-display text-foreground text-2xl font-medium tracking-[-0.02em] md:text-3xl">
               Applications are closed
             </h2>
-            <p className="font-normal font-sans text-muted-foreground text-sm leading-6">
+            <p className="text-muted-foreground font-sans text-sm leading-6 font-normal">
               We're not accepting new applications at this time. Check back
               soon, we'll reopen the program once we have room for more
               projects.

@@ -1,8 +1,10 @@
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
+
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
+
 import { SchedulePageSkeleton } from "./skeleton";
 
 export default function Loading() {
@@ -11,7 +13,7 @@ export default function Loading() {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Schedules</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Schedules</h1>
             <p className="text-muted-foreground">
               Configure cron schedules that run daily, weekly, or monthly
             </p>

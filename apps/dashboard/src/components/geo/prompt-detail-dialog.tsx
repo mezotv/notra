@@ -1,7 +1,9 @@
 "use client";
 
-import { GeoPromptAnswerThread } from "@notra/ui/components/geo/geo-prompt-answer-thread";
-import { PromptEngineSwitcher } from "@notra/ui/components/geo/prompt-engine-switcher";
+import type { GeoPromptResult } from "@notra/geo-core/types/geo";
+import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -9,23 +11,20 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { adjacentPromptEngine } from "@notra/ui/lib/geo-prompt-engines";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { type KeyboardEvent, useState } from "react";
+import { type KeyboardEvent, useEffect, useRef, useState } from "react";
+
+import { GeoPromptAnswerThread } from "@/components/geo/geo-prompt-answer-thread";
+import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
+import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { EASE_OUT } from "@/lib/ease";
 import type {
-  GeoPromptResult,
-  GeoPromptTableRow,
+  PromptAnswerPageProps,
   PromptDetailDialogProps,
 } from "@/types/geo";
-import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
-import {
-  engineAnswerMode,
-  formatEngineFamily,
-  formatEngineWithMode,
-  sharedEngineAnswerMode,
-} from "@/utils/geo-charts";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
+import { sharedEngineAnswerMode } from "@/utils/geo-charts";
+import { adjacentPromptEngine } from "@/utils/geo-prompt-engines";
 
 const INSTANT = { duration: 0 } as const;
 const SLIDE_PX = 18;
@@ -59,10 +58,8 @@ function latestPromptCheckAt(
 function PromptAnswerPage({
   row,
   isScanning = false,
-}: {
-  row: GeoPromptTableRow;
-  isScanning?: boolean;
-}) {
+  surface,
+}: PromptAnswerPageProps) {
   const results = row.results;
   const engines = results.map((result) => result.engine);
   const [engine, setEngine] = useState(engines[0] ?? "");
@@ -72,6 +69,22 @@ function PromptAnswerPage({
   const latestCheck = latestPromptCheckAt(results);
   const active =
     results.find((result) => result.engine === engine) ?? results[0] ?? null;
+  const openedRef = useRef(false);
+  const activeEngine = active?.engine ?? null;
+  const resultCount = results.length;
+
+  useEffect(() => {
+    if (openedRef.current) {
+      return;
+    }
+    openedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.GEO_PROMPT_DETAIL_OPENED, {
+      surface: surface ?? GEO_PROMPT_DETAIL_SURFACES.PROMPTS_TABLE,
+      engine: activeEngine,
+      engine_count: resultCount,
+      prompt_id: row.id,
+    });
+  }, [activeEngine, resultCount, row.id, surface]);
   const threadTransition = reduceMotion
     ? INSTANT
     : { duration: 0.28, ease: EASE_OUT };
@@ -120,7 +133,7 @@ function PromptAnswerPage({
       onKeyDown={handleArrowNavigation}
     >
       <ResponsiveDialogHeader className="shrink-0 gap-3 overflow-visible px-6 pt-5 pr-12 pb-3">
-        <ResponsiveDialogTitle className="text-balance font-semibold text-xl leading-snug">
+        <ResponsiveDialogTitle className="text-xl leading-snug font-semibold text-balance">
           {row.prompt}
         </ResponsiveDialogTitle>
         <ResponsiveDialogDescription className="sr-only">
@@ -135,17 +148,9 @@ function PromptAnswerPage({
         ) : null}
         {results.length > 0 && active ? (
           <PromptEngineSwitcher
-            active={active.engine}
-            items={results.map((result) => ({
-              engine: result.engine,
-              family: formatEngineFamily(result.engine),
-              label: answerMode
-                ? formatEngineFamily(result.engine)
-                : formatEngineWithMode(result.engine),
-              showSearchIcon:
-                answerMode === null && engineAnswerMode(result.engine) !== null,
-            }))}
+            active={active}
             onChange={selectEngine}
+            results={results}
           />
         ) : null}
       </ResponsiveDialogHeader>
@@ -162,15 +167,11 @@ function PromptAnswerPage({
               transition={threadTransition}
               variants={threadVariants(Boolean(reduceMotion))}
             >
-              <GeoPromptAnswerThread
-                prompt={row.prompt}
-                result={active}
-                timestamp={formatAiTrafficTimestamp(active.lastCheckedAt)}
-              />
+              <GeoPromptAnswerThread prompt={row.prompt} result={active} />
             </motion.div>
           ) : (
             <div className="flex h-full min-h-0 items-center justify-center px-6">
-              <p className="text-pretty text-center text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-center text-sm text-pretty">
                 {geoScanEmptyMessage(
                   isScanning,
                   "Run a scan to see how engines answer this"
@@ -189,6 +190,7 @@ export function PromptDetailDialog({
   onOpenChange,
   row,
   isScanning = false,
+  surface,
 }: PromptDetailDialogProps) {
   if (!row) {
     return null;
@@ -196,7 +198,12 @@ export function PromptDetailDialog({
 
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
-      <PromptAnswerPage isScanning={isScanning} key={row.id} row={row} />
+      <PromptAnswerPage
+        isScanning={isScanning}
+        key={row.id}
+        row={row}
+        surface={surface}
+      />
     </ResponsiveDialog>
   );
 }

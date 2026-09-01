@@ -3,6 +3,7 @@
 import type { AuthEmailFieldProps } from "../../../lib/auth-types";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
+import { AuthFieldError } from "./auth-field-error";
 
 export function AuthEmailField({
   id,
@@ -31,13 +32,7 @@ export function AuthEmailField({
         type="email"
         value={value}
       />
-      <p
-        aria-live="polite"
-        className="min-h-5 text-destructive text-sm"
-        id={`${id}-error`}
-      >
-        {error}
-      </p>
+      <AuthFieldError error={error} id={`${id}-error`} />
     </div>
   );
 }

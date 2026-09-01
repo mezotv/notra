@@ -6,6 +6,7 @@ import { CodexHeader } from "@notra/ui/components/brainless/codex/codex-header";
 import { CodexMessage } from "@notra/ui/components/brainless/codex/codex-message";
 import { cn } from "@notra/ui/lib/utils";
 import type { ReactNode } from "react";
+
 import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
 import {
   CODEX_STORY_EXECS,
@@ -35,7 +36,7 @@ function CodexTerminal({
           <div className="size-2.5 shrink-0 rounded-full bg-[#4A4A4A]" />
         </div>
         {title ? (
-          <span className="font-mono text-[#FFFFFF66] text-[0.75rem] leading-4">
+          <span className="font-mono text-[0.75rem] leading-4 text-[#FFFFFF66]">
             {title}
           </span>
         ) : null}

@@ -1,6 +1,8 @@
 import type { IconSvgElement } from "@hugeicons/react";
 import type { PermissionTone } from "@notra/ui/components/ui/permission-selector";
+
 import type {
+  API_KEY_ACCESS_MODE_VALUES,
   API_KEY_EXPIRATION_VALUES,
   API_KEY_GRANULAR_PERMISSIONS,
   API_KEY_PERMISSIONS,
@@ -11,6 +13,7 @@ export type ApiKeyPermission = (typeof API_KEY_PERMISSIONS)[number];
 export type ApiKeyGranularScope = (typeof API_KEY_GRANULAR_PERMISSIONS)[number];
 export type ApiKeyPresetId = (typeof API_KEY_PRESET_IDS)[number];
 export type ApiKeyExpiration = (typeof API_KEY_EXPIRATION_VALUES)[number];
+export type ApiKeyAccessMode = (typeof API_KEY_ACCESS_MODE_VALUES)[number];
 
 export interface ApiKeyPreset {
   id: ApiKeyPresetId;

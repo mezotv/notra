@@ -9,12 +9,14 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+
 import {
   SETTINGS_ACCOUNT_NAV_ITEMS,
   SETTINGS_ORGANIZATION_NAV_ITEMS,
 } from "@/constants/nav";
 import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
 import type { NavSettingsProps } from "@/types/components/nav";
+
 import { SidebarLabel } from "./sidebar-label";
 
 export function NavSettings({ slug }: NavSettingsProps) {

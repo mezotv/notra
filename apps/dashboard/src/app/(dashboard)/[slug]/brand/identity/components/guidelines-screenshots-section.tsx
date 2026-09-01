@@ -5,10 +5,12 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { ImageZoom } from "@notra/ui/components/kibo-ui/image-zoom";
 import Image from "next/image";
 import { useState } from "react";
+
 import { SCREENSHOT_KIND_LABELS } from "@/constants/brand-guideline-ui";
 import type { GuidelinesScreenshotsSectionProps } from "@/types/brand-identity";
 import type { BrandGuidelineScreenshot } from "@/types/hooks/brand-guidelines";
 import { joinMeta } from "@/utils/brand-guideline-display";
+
 import { GuidelinesResourceActions } from "./guidelines-resource-actions";
 import { GuidelinesScreenshotEditDialog } from "./guidelines-screenshot-edit-dialog";
 
@@ -112,10 +114,10 @@ export function GuidelinesScreenshotsSection({
     <section className="space-y-3">
       <div className="flex items-center gap-2">
         <HugeiconsIcon
-          className="size-4 text-muted-foreground"
+          className="text-muted-foreground size-4"
           icon={ComputerIcon}
         />
-        <h2 className="font-semibold text-sm">Desktop Screenshots</h2>
+        <h2 className="text-sm font-semibold">Desktop Screenshots</h2>
         <span className="text-muted-foreground text-xs tabular-nums">
           {displayScreenshots.length}
         </span>
@@ -148,10 +150,10 @@ export function GuidelinesScreenshotsSection({
 
               <div className="flex items-center justify-between gap-2 border-t p-3">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-sm">
+                  <p className="truncate text-sm font-medium">
                     {screenshot.label}
                   </p>
-                  <p className="truncate text-muted-foreground text-xs tabular-nums">
+                  <p className="text-muted-foreground truncate text-xs tabular-nums">
                     {meta}
                   </p>
                 </div>

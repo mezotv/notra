@@ -37,10 +37,17 @@ export type RouterErrorCode =
 /**
  * How strictly zero data retention is required for a request.
  * - `required` (default): fail closed, never send a non-ZDR request.
- * - `preferred`: try with ZDR; when the gateway rejects the ZDR requirement
- *   for this model, retry the same route without it (no-training stays on).
+ * - `preferred`: try with ZDR; when no gateway has a ZDR host for the model,
+ *   run without it (no-training stays on).
+ * - `none`: never send the ZDR flag (no-training stays on).
  */
-export type ZdrMode = "required" | "preferred";
+export type ZdrMode = "required" | "preferred" | "none";
+
+/**
+ * Outcome of a zero-data-retention entitlement lookup. `unknown` means the
+ * billing provider could not answer; callers decide how to fail.
+ */
+export type ZdrEntitlement = "entitled" | "not_entitled" | "unknown";
 
 export interface RouteRequest {
   modelId: string;
@@ -62,7 +69,15 @@ export interface RouteDecision {
   reason: RouteReason;
   fallbackFrom?: GatewayId;
   fallbackReason?: FallbackReason;
+  /** Mode the request resolved to (explicit override or entitlement lookup). */
+  zdr: ZdrMode;
+  /** True when the adapter sends the ZDR flag and the route insists on it. */
   zdrEnforced: boolean;
+  /**
+   * True when the route drops the ZDR flag up front: `none` requests always,
+   * `preferred` requests once the gateway is known to lack a ZDR host.
+   */
+  zdrRelaxed?: boolean;
 }
 
 export interface RouteMetadata {
@@ -75,6 +90,8 @@ export interface RouteMetadata {
   upstreamProvider?: string;
   fallbackFrom?: GatewayId;
   fallbackReason?: FallbackReason;
+  /** Whether the call that produced this metadata ran with ZDR enforced. */
+  zdrEnforced?: boolean;
 }
 
 export interface GatewayBalance {
@@ -160,17 +177,33 @@ export interface RouterLogger {
   error(event: string, fields?: RouterLogFields): void;
 }
 
-export interface PlanCacheStore {
-  get(organizationId: string): Promise<Plan | undefined>;
-  set(organizationId: string, plan: Plan, ttlMs: number): Promise<void>;
+export interface TtlCacheStore<T> {
+  get(organizationId: string): Promise<T | undefined>;
+  set(organizationId: string, value: T, ttlMs: number): Promise<void>;
 }
+
+export type PlanCacheStore = TtlCacheStore<Plan>;
+
+export type ZdrCacheStore = TtlCacheStore<ZdrMode>;
 
 export interface CreditTracker {
   record(gateway: GatewayId, balance: number | null): void;
   markExhausted(gateway: GatewayId): void;
-  markUnavailable(gateway: GatewayId, reason: FallbackReason): void;
+  /**
+   * Mark a gateway unavailable for a while. With `modelId` the mark only
+   * covers that model (a missing ZDR host is a per-model fact); without it
+   * the whole gateway is affected.
+   */
+  markUnavailable(
+    gateway: GatewayId,
+    reason: FallbackReason,
+    modelId?: string
+  ): void;
   isExhausted(gateway: GatewayId): boolean;
-  unavailableReason(gateway: GatewayId): FallbackReason | undefined;
+  unavailableReason(
+    gateway: GatewayId,
+    modelId?: string
+  ): FallbackReason | undefined;
   isStale(gateway: GatewayId): boolean;
   snapshot(gateway: GatewayId): CreditSnapshot | undefined;
 }
@@ -185,18 +218,24 @@ export interface UnavailableMark {
   until: number;
 }
 
-export interface PlanCacheEntry {
-  plan: Plan;
+export interface TtlCacheEntry<T> {
+  value: T;
   expiresAt: number;
 }
 
 export interface ModelRouterConfig {
   adapters: Partial<Record<GatewayId, GatewayAdapter>>;
   resolvePlan: (organizationId: string) => Promise<Plan>;
+  /**
+   * How strictly an organization wants zero data retention when the caller
+   * does not say. Defaults to `required` for every organization.
+   */
+  resolveZdr?: (organizationId: string) => Promise<ZdrMode>;
   policy: RouterPolicyConfig;
   logger?: RouterLogger;
   planCacheTtlMs?: number;
   planCache?: PlanCacheStore;
+  zdrCache?: ZdrCacheStore;
   creditCheckTtlMs?: number;
   now?: () => number;
 }
@@ -235,7 +274,9 @@ export interface ResolverContext {
   adapters: Partial<Record<GatewayId, GatewayAdapter>>;
   policy: ModelRouterConfig["policy"];
   resolvePlan: ModelRouterConfig["resolvePlan"];
+  resolveZdr: NonNullable<ModelRouterConfig["resolveZdr"]>;
   planCache: PlanCacheStore;
+  zdrCache: ZdrCacheStore;
   planCacheTtlMs: number;
   logger: RouterLogger;
   credits: CreditTracker;
@@ -249,6 +290,7 @@ export interface PlanLookup {
 export interface UsableAdapter {
   adapter: GatewayAdapter;
   zdrEnforced: boolean;
+  zdrRelaxed?: boolean;
 }
 
 export interface ResolvedRoute {

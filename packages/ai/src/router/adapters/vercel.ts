@@ -6,6 +6,7 @@ import type {
   GatewayHealth,
   VercelAdapterConfig,
 } from "@notra/ai/types/router";
+
 import { isModelSupported, toVercelModelId } from "../model-ids";
 import { buildVercelProviderOptions } from "../provider-options";
 

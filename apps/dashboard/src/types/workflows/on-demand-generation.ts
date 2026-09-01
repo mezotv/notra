@@ -1,4 +1,6 @@
 import type { ContentGenerationWorkflowPayload } from "@notra/content-generation/schemas";
+
+import type { WorkflowLifecycleFields } from "@/types/analytics/workflow-events";
 import type {
   ScheduleBrandSettingsData,
   ScheduleRepositoryData,
@@ -15,7 +17,7 @@ export interface OnDemandJobEventInput {
     | "skipped";
 }
 
-export interface FinishOnDemandInput {
+export interface FinishOnDemandInput extends WorkflowLifecycleFields {
   organizationId: string;
   runId: string;
   contentType: string;
@@ -33,6 +35,7 @@ export interface OnDemandGenerationStepInput {
   repositories: ScheduleRepositoryData[];
   brand: ScheduleBrandSettingsData;
   hasLinearSources: boolean;
+  chargeAiCredits?: boolean;
 }
 
 export type OnDemandContentWorkflowResult =

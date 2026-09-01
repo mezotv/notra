@@ -1,5 +1,8 @@
+import { getContentBillingLimitLabel } from "@notra/ai/billing/content-billing";
 import { sleep } from "workflow";
 import { flattenError } from "zod";
+
+import { WORKFLOW_ANALYTICS_NAMES } from "@/constants/workflow-analytics";
 import {
   GITHUB_RATE_LIMIT_RETRY_DELAY,
   SCHEDULE_AI_CREDIT_LOCK_TTL_MS,
@@ -7,8 +10,10 @@ import {
 } from "@/constants/workflows";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
 import { scheduleWorkflowPayloadSchema } from "@/schemas/workflows";
-import type { WorkflowAiCreditGate } from "@/types/workflows/content-generation-steps";
+import type { WorkflowContentBillingGate } from "@/types/workflows/content-generation-steps";
 import type { ScheduleContentWorkflowResult } from "@/types/workflows/schedule-generation";
+import { resolveContentLimitPauseReason } from "@/utils/content-billing";
+
 import {
   appendAutomationLog,
   claimWorkflowExecution,
@@ -21,10 +26,10 @@ import {
   fetchNotificationData,
   fetchScheduleSources,
   fetchScheduleTriggerContext,
-  finalizeAiCredit,
+  finalizeContentBilling,
   finishGeneration,
-  gateAndReserveAiCredits,
-  notifyAiCreditsDepleted,
+  gateContentBilling,
+  notifyContentLimitReached,
   recordWorkflowPause,
   startGenerationTracking,
   trackContentOutcome,
@@ -51,6 +56,7 @@ export async function scheduleContentWorkflow(payload: {
   }
   const { triggerId, manual, executionId, delaySeconds } = parseResult.data;
   const creationMode = manual ? "manual" : "automatic";
+  const workflowStartedAt = Date.now();
   const resolvedExecutionId = executionId ?? crypto.randomUUID();
   const claimToken = crypto.randomUUID();
 
@@ -61,6 +67,7 @@ export async function scheduleContentWorkflow(payload: {
   const claim = await claimWorkflowExecution({
     executionId: resolvedExecutionId,
     claimToken,
+    workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
   });
   if (!claim.claimed) {
     console.warn(
@@ -81,24 +88,26 @@ export async function scheduleContentWorkflow(payload: {
   }
   const automationName = trigger.name.trim() || trigger.outputType;
 
-  const gate = await gateAndReserveAiCredits({
+  const gate = await gateContentBilling({
     organizationId: trigger.organizationId,
     executionId: resolvedExecutionId,
+    outputType: trigger.outputType,
     lockTtlMs: SCHEDULE_AI_CREDIT_LOCK_TTL_MS,
   });
   if (!gate.allowed) {
     if (gate.shouldNotify) {
-      await notifyAiCreditsDepleted({
+      await notifyContentLimitReached({
         organizationId: trigger.organizationId,
         automationName,
         logPrefix: LOG_PREFIX,
+        limitLabel: getContentBillingLimitLabel(gate),
       });
       if (!manual) {
         await recordWorkflowPause({
           triggerId,
           organizationId: trigger.organizationId,
           automationName,
-          reason: "ai_credits_depleted",
+          reason: resolveContentLimitPauseReason(gate),
           logPrefix: LOG_PREFIX,
         });
       }
@@ -122,8 +131,8 @@ export async function scheduleContentWorkflow(payload: {
       fetchGenerationUserId(trigger.organizationId),
     ]);
   } catch (error) {
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -135,8 +144,8 @@ export async function scheduleContentWorkflow(payload: {
     console.log(
       `[Schedule] No valid data sources for trigger ${triggerId}, canceling`
     );
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -183,6 +192,7 @@ export async function scheduleContentWorkflow(payload: {
         collectionId,
         generationUserId,
         manual,
+        chargeAiCredits: gate.mode === "ai_credits",
       });
       if (contentResult.status !== "rate_limited") {
         break;
@@ -202,14 +212,16 @@ export async function scheduleContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
         status: "failed",
         reason: "GitHub API rate limit hit repeatedly",
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -224,14 +236,16 @@ export async function scheduleContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
         status: "failed",
         reason: "Unsupported output type",
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -252,14 +266,16 @@ export async function scheduleContentWorkflow(payload: {
     }
 
     if (contentResult.status === "generation_failed") {
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -324,14 +340,16 @@ export async function scheduleContentWorkflow(payload: {
     }
 
     if (contentResult.status === "skipped") {
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
@@ -399,14 +417,16 @@ export async function scheduleContentWorkflow(payload: {
       await finishGeneration({
         organizationId: trigger.organizationId,
         runId,
+        workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+        startedAt: workflowStartedAt,
         triggerId,
         outputType: trigger.outputType,
         triggerName: automationName,
         status: "failed",
         reason: "Content generation returned no posts",
       });
-      await finalizeAiCredit({
-        lockId: gate.lockId,
+      await finalizeContentBilling({
+        reservation: gate,
         action: "release",
         logPrefix: LOG_PREFIX,
       });
@@ -435,6 +455,8 @@ export async function scheduleContentWorkflow(payload: {
     await finishGeneration({
       organizationId: trigger.organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+      startedAt: workflowStartedAt,
       triggerId,
       outputType: trigger.outputType,
       triggerName: automationName,
@@ -442,12 +464,12 @@ export async function scheduleContentWorkflow(payload: {
       title: contentTitle,
     });
 
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "confirm",
+      units: createdPosts.length,
       usage: contentResult.usage,
       fallbackModelId: "anthropic/claude-sonnet-4.6",
-      useMarkup: gate.useMarkup,
       properties: buildCreditProperties(
         gate,
         trigger.outputType,
@@ -525,14 +547,16 @@ export async function scheduleContentWorkflow(payload: {
     await finishGeneration({
       organizationId: trigger.organizationId,
       runId,
+      workflow: WORKFLOW_ANALYTICS_NAMES.SCHEDULE_CONTENT,
+      startedAt: workflowStartedAt,
       triggerId,
       outputType: trigger.outputType,
       triggerName: automationName,
       status: "failed",
       reason: "Unexpected workflow error",
     });
-    await finalizeAiCredit({
-      lockId: gate.lockId,
+    await finalizeContentBilling({
+      reservation: gate,
       action: "release",
       logPrefix: LOG_PREFIX,
     });
@@ -554,7 +578,7 @@ export async function scheduleContentWorkflow(payload: {
 }
 
 function buildCreditProperties(
-  gate: WorkflowAiCreditGate,
+  gate: WorkflowContentBillingGate,
   outputType: string,
   triggerName: string,
   triggerId: string,

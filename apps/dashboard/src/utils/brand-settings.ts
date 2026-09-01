@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
+
 import { DEFAULT_BRAND_CONSTRAINT } from "@/constants/brand";
 import type {
   BrandAnalysisStep,

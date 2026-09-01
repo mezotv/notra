@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useMemo } from "react";
+
 import { buildChartCss } from "@/components/evilcharts/ui/echarts-chart";
 import type { ChartColorScopeProps } from "@/types/charts";
 

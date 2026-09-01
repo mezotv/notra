@@ -54,7 +54,7 @@ export function DirectionDonut({
               className="size-2 shrink-0 rounded-[0.0625rem]"
               style={{ backgroundColor: `var(--color-${row.slice}-0)` }}
             />
-            <span className="min-w-0 flex-1 truncate text-muted-foreground">
+            <span className="text-muted-foreground min-w-0 flex-1 truncate">
               {row.brand}
             </span>
             <span className="shrink-0 tabular-nums">

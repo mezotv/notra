@@ -2,17 +2,14 @@ import {
   createServerFlagsManager,
   type ServerFlagsManager,
 } from "@databuddy/sdk/node";
-import { Effect } from "effect";
 import {
   GEO_CURSOR_FLAG_CACHE_TTL_MS,
   GEO_CURSOR_FLAG_ERROR_REASON,
   GEO_CURSOR_FLAG_STALE_TIME_MS,
-  GEO_WRITER_FLAG_KEY,
-} from "@/constants/geo";
-import {
-  GeoCursorFlagEvaluationError,
-  GeoWriterDisabledError,
-} from "@/lib/geo/errors";
+} from "@notra/geo-core/constants/geo";
+import { GeoCursorFlagEvaluationError } from "@notra/geo-core/geo/errors";
+import { Effect } from "effect";
+
 import type { GeoCursorFlagState } from "@/types/geo";
 
 const clientId = process.env.NEXT_PUBLIC_DATABUDDY_DASHBOARD_WEBSITE_ID ?? "";
@@ -69,27 +66,3 @@ export function resolveGeoFlagState(
     );
   });
 }
-
-/**
- * The GEO writer is visible in development regardless of the flag so the
- * flow can be exercised locally without a Databuddy project.
- */
-function isGeoWriterEnabledForOrganization(
-  organizationId: string
-): Effect.Effect<boolean> {
-  if (process.env.NODE_ENV === "development") {
-    return Effect.succeed(true);
-  }
-  return resolveGeoFlagState(GEO_WRITER_FLAG_KEY, organizationId).pipe(
-    Effect.map((state) => state === "enabled")
-  );
-}
-
-export const requireWriterEnabled = Effect.fn("geo.writer.flag")(function* (
-  organizationId: string
-) {
-  const enabled = yield* isGeoWriterEnabledForOrganization(organizationId);
-  if (!enabled) {
-    return yield* Effect.fail(new GeoWriterDisabledError({ organizationId }));
-  }
-});

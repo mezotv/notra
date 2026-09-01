@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+
 import { db } from "@notra/db/drizzle";
 import { brandReferences, brandSettings } from "@notra/db/schema";
 import type { BrandReferenceMemorySyncResult } from "@notra/db/types/brand-reference-memory";
@@ -6,6 +7,7 @@ import { syncPersistedBrandReferenceMemory } from "@notra/db/utils/brand-referen
 import { canonicalizeReferenceSourceUrl } from "@notra/db/utils/reference-source-url";
 import { desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
+
 import { REFERENCE_INSERT_BATCH_SIZE } from "../constants/references";
 import { REFERENCE_MEMORY_SYNC_CONCURRENCY } from "../constants/supermemory";
 import type { ReferenceInput } from "../types/references";

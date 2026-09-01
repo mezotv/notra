@@ -1,3 +1,5 @@
+import { formatDayLabel } from "@notra/geo-core/utils/day-label";
+
 import {
   CURSOR_TOOLTIP_EDGE_PX,
   TOP_POST_CONTENT_PREVIEW_LENGTH,
@@ -24,14 +26,16 @@ const compactFormatter = new Intl.NumberFormat("en", {
   maximumFractionDigits: 1,
 });
 
-const dayLabelFormatter = new Intl.DateTimeFormat("en-US", {
-  month: "short",
-  day: "numeric",
-});
-
 const sparklineDayLabelFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "short",
   month: "short",
+  day: "numeric",
+  timeZone: "UTC",
+});
+
+const fullDayLabelFormatter = new Intl.DateTimeFormat("en-NZ", {
+  weekday: "long",
+  month: "long",
   day: "numeric",
   timeZone: "UTC",
 });
@@ -45,24 +49,20 @@ export function formatMetric(value: number | null): string {
   return compactFormatter.format(value);
 }
 
-export function todayIsoDate(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-export function formatDayLabel(day: string): string {
-  const date = new Date(`${day}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) {
-    return day;
-  }
-  return dayLabelFormatter.format(date);
-}
-
 export function formatSparklineDayLabel(day: string): string {
   const date = new Date(`${day}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) {
     return day;
   }
   return sparklineDayLabelFormatter.format(date);
+}
+
+export function formatFullDayLabel(day: string): string {
+  const date = new Date(`${day}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) {
+    return day;
+  }
+  return fullDayLabelFormatter.format(date);
 }
 
 export function accountSeriesKey(

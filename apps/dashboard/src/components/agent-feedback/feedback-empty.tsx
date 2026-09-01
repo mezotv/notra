@@ -1,7 +1,12 @@
 "use client";
 
+import { AiMagicIcon, Tick01Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+
 import { AgentFeedbackSetup } from "@/components/agent-feedback/feedback-setup";
+import { Button } from "@/components/button";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
+import { useCopyCode } from "@/components/geo/code-snippet";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
@@ -13,12 +18,13 @@ export function AgentFeedbackEmpty({
   organizationId,
 }: AgentFeedbackEmptyProps) {
   const { data: setup } = useAgentFeedbackSetup(organizationId);
+  const { copied, copy } = useCopyCode(setup?.prompt ?? "");
 
   return (
     <div className="relative w-full overflow-hidden rounded-2xl">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 select-none px-3 pt-3 sm:px-4 sm:pt-4"
+        className="pointer-events-none absolute inset-x-0 top-0 px-3 pt-3 select-none sm:px-4 sm:pt-4"
       >
         <div className="mask-[linear-gradient(to_bottom,black_0%,transparent_100%)] opacity-[0.38]">
           <EmptyStateTablePreview
@@ -27,19 +33,33 @@ export function AgentFeedbackEmpty({
           />
         </div>
       </div>
-      <div className="relative z-10 mx-auto flex w-full max-w-2xl flex-col items-center px-6 pt-8 pb-4 text-center">
-        <h3 className="text-balance font-semibold text-lg">No feedback yet</h3>
-        <p className="mt-1.5 max-w-md text-pretty text-muted-foreground text-sm leading-relaxed">
-          Add the feedback tool to your MCP server and agents using your product
-          can report bugs, ideas and praise straight into this inbox.
-        </p>
-        <div className="mt-6 w-full text-left">
-          <AgentFeedbackSetup
-            className="rounded-2xl border border-border/80 bg-card p-4 sm:p-5"
-            organizationId={organizationId}
-            setup={setup}
-          />
+      <div className="relative z-10 mx-auto w-full max-w-2xl px-6 py-12 md:py-16">
+        <div className="mb-6 text-center">
+          <h3 className="text-xl font-semibold text-balance">
+            Your feedback inbox is empty
+          </h3>
+          <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-sm text-pretty">
+            Feedback submitted by AI agents will appear here.
+          </p>
         </div>
+        <div className="border-border bg-muted flex h-[4.25rem] items-center justify-between gap-3 rounded-t-2xl border border-b-0 px-4 pb-5 text-left sm:px-5">
+          <h4 className="text-sm font-semibold text-balance">Feedback setup</h4>
+          <Button
+            className="h-8 shrink-0 gap-1.5 px-3"
+            disabled={!setup}
+            onClick={copy}
+            size="sm"
+            variant="outline"
+          >
+            <HugeiconsIcon icon={copied ? Tick01Icon : AiMagicIcon} size={14} />
+            {copied ? "Prompt copied" : "Copy agent prompt"}
+          </Button>
+        </div>
+        <AgentFeedbackSetup
+          className="border-border bg-card relative -mt-5 rounded-2xl border p-4 text-left sm:p-5"
+          setup={setup}
+          showPromptAction={false}
+        />
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 import { Calendar03Icon, SentIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+
 import type { AffectedTrigger } from "@/schemas/integrations";
 
 interface AffectedTriggersWarningProps {
@@ -67,7 +68,8 @@ export function AffectedTriggersWarning({
             return `These schedules use this ${resourceLabel} and will be disabled.`;
           }
           return `These events use this ${resourceLabel} and will be disabled.`;
-        })()} You&apos;ll need to edit them before re-enabling.
+        })()}{" "}
+        You&apos;ll need to edit them before re-enabling.
       </p>
     </div>
   );
@@ -82,9 +84,9 @@ interface TriggerGroupProps {
 function TriggerGroup({ icon, label, items }: TriggerGroupProps) {
   return (
     <>
-      <div className="flex items-center gap-2 text-muted-foreground">
+      <div className="text-muted-foreground flex items-center gap-2">
         <HugeiconsIcon icon={icon} size={18} />
-        <p className="font-medium text-sm">{label}</p>
+        <p className="text-sm font-medium">{label}</p>
       </div>
       <div className="space-y-2 rounded-lg border border-dashed p-3">
         {items.slice(0, 3).map((item) => (

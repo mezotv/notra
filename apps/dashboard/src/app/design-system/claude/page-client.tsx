@@ -15,6 +15,7 @@ import { ClaudeToolCall } from "@notra/ui/components/brainless/claude/claude-too
 import { cn } from "@notra/ui/lib/utils";
 import type { ReactNode } from "react";
 import { useState } from "react";
+
 import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
 import {
   CLAUDE_STORY_EFFORTS,
@@ -49,7 +50,7 @@ function ClaudeTerminal({
           <div className="size-2.5 shrink-0 rounded-full bg-[#4A4A4A]" />
         </div>
         {title ? (
-          <span className="font-mono text-[#FFFFFF66] text-[0.75rem] leading-4">
+          <span className="font-mono text-[0.75rem] leading-4 text-[#FFFFFF66]">
             {title}
           </span>
         ) : null}
@@ -86,7 +87,7 @@ function ClaudePromptPlayground() {
           value={value}
         />
       </ClaudeTerminal>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground text-xs">
+      <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
         <span>Effort</span>
         <div className="flex flex-wrap gap-2">
           {CLAUDE_STORY_EFFORTS.map((item) => (

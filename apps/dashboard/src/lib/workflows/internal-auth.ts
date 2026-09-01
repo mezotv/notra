@@ -1,4 +1,5 @@
 import { timingSafeEqual } from "node:crypto";
+
 import {
   extractBearerToken,
   localDev,
@@ -6,6 +7,7 @@ import {
   vercelSubject,
   verifyVercelOidc,
 } from "eve/channels/auth";
+
 import { ALLOWED_VERCEL_ENVIRONMENTS } from "@/constants/internal-auth";
 
 function matchesInternalWorkflowSecret(token: string | null): boolean {

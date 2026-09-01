@@ -8,6 +8,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+
 import type { BrandSettings } from "@/types/hooks/brand-analysis";
 import { getBrandFaviconUrl } from "@/utils/brand";
 
@@ -42,7 +43,7 @@ export function BrandVoiceCell({
       <TooltipTrigger className="cursor-help truncate text-sm">
         {voice.name}
         {isDefault && (
-          <span className="ml-1 text-muted-foreground/60 text-xs">
+          <span className="text-muted-foreground/60 ml-1 text-xs">
             (Default)
           </span>
         )}

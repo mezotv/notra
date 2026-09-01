@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+
 import { SceneBuilder, solidFill } from "../builders/scene-builder";
 import { parseSvgDasharray } from "./dom-to-scene";
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import LeaderboardPageClient from "./page-client";
 
 export const metadata: Metadata = {

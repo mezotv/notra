@@ -4,3 +4,11 @@ export interface UpdateUserInput {
   hidePersonalData?: boolean;
   showAgentStats?: boolean;
 }
+
+export interface UnlinkAccountInput {
+  providerId: string;
+}
+
+export interface SignOutActionOptions {
+  returnTo?: string;
+}

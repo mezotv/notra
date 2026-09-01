@@ -1,14 +1,14 @@
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { projects } from "@notra/db/schema";
-import { and, eq } from "drizzle-orm";
 import {
   GEO_INGEST_IDENTITY_ACTIVE_TTL_SECONDS,
   GEO_INGEST_IDENTITY_CACHE_PREFIX,
   GEO_INGEST_IDENTITY_INACTIVE_TTL_SECONDS,
-} from "@/constants/geo";
-import { getGeoIngestTokenGeneration } from "@/lib/geo-ingest/generation";
-import type { GeoIngestIdentity } from "@/types/geo";
+} from "@notra/geo-core/constants/geo";
+import { getGeoIngestTokenGeneration } from "@notra/geo-core/geo/ingest";
+import type { GeoIngestIdentity } from "@notra/geo-core/types/geo";
+import { and, eq } from "drizzle-orm";
 
 function identityCacheKey(identity: GeoIngestIdentity): string {
   return `${GEO_INGEST_IDENTITY_CACHE_PREFIX}:${identity.organizationId}:${identity.projectId ?? "-"}`;

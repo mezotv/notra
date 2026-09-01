@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from "react";
+
 import type { ConnectedAccount } from "@/types/hooks/connected-accounts";
 
 export interface SocialPostAccountSelector {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+
 import { useSocialAccounts } from "@/lib/hooks/use-connected-accounts";
 import {
   getSelectedSocialAccountId,

@@ -6,12 +6,12 @@ import {
   GEO_INGEST_PACKAGE_MANAGER_OPTIONS,
   GEO_INGEST_SNIPPET_FALLBACK,
   GEO_INGEST_TOKEN_ENV,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
 import type {
   GeoIngestFramework,
   GeoIngestPackageManager,
   GeoIngestSetupResponse,
-} from "@/types/geo";
+} from "@notra/geo-core/types/geo";
 
 export function geoIngestSnippet(
   setup: GeoIngestSetupResponse | undefined,

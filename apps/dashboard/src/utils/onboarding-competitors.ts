@@ -1,5 +1,5 @@
-import { competitorKey } from "@/lib/geo/domain";
-import type { GeoCompetitor } from "@/types/geo";
+import { competitorKey } from "@notra/geo-core/geo/domain";
+import type { GeoCompetitor } from "@notra/geo-core/types/geo";
 
 export function findCompetitor(
   competitors: readonly GeoCompetitor[],

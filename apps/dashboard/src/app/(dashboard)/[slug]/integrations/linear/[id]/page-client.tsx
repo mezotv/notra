@@ -11,10 +11,12 @@ import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
 import dynamic from "next/dynamic";
 import { useState } from "react";
+
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { LinearIntegration } from "@/types/integrations";
+
 import { LinearIntegrationDetailSkeleton } from "./skeleton";
 
 const EditLinearIntegrationDialog = dynamic(
@@ -64,7 +66,7 @@ export default function PageClient({ integrationId }: PageClientProps) {
       <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full space-y-6 px-4 lg:px-6">
           <div className="rounded-xl border border-dashed p-12 text-center">
-            <h3 className="font-medium text-lg">Integration not found</h3>
+            <h3 className="text-lg font-medium">Integration not found</h3>
             <p className="text-muted-foreground text-sm">
               This integration may have been deleted or you don't have access to
               it.
@@ -90,7 +92,7 @@ export default function PageClient({ integrationId }: PageClientProps) {
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <h1 className="font-bold text-3xl tracking-tight">
+                    <h1 className="text-3xl font-bold tracking-tight">
                       <span className="cursor-help">
                         {integration.displayName}
                       </span>
@@ -104,14 +106,14 @@ export default function PageClient({ integrationId }: PageClientProps) {
               </Badge>
             </div>
             {integration.linearOrganizationName ? (
-              <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <div className="text-muted-foreground flex items-center gap-2 text-sm">
                 <Linear className="size-4 shrink-0" />
                 <span>{integration.linearOrganizationName}</span>
                 {integration.linearTeamName ? (
                   <>
                     <span
                       aria-hidden="true"
-                      className="size-1 rounded-full bg-muted-foreground/70"
+                      className="bg-muted-foreground/70 size-1 rounded-full"
                     />
                     <span>{integration.linearTeamName}</span>
                   </>
@@ -154,11 +156,11 @@ export default function PageClient({ integrationId }: PageClientProps) {
 
         <div className="space-y-6">
           <div className="space-y-4">
-            <h2 className="font-semibold text-lg">Details</h2>
+            <h2 className="text-lg font-semibold">Details</h2>
             <div className="divide-y rounded-lg border">
               {integration.linearOrganizationName ? (
                 <div className="flex items-center justify-between gap-4 px-4 py-3">
-                  <span className="font-medium text-sm">Workspace</span>
+                  <span className="text-sm font-medium">Workspace</span>
                   <span className="text-muted-foreground text-sm">
                     {integration.linearOrganizationName}
                   </span>
@@ -166,20 +168,20 @@ export default function PageClient({ integrationId }: PageClientProps) {
               ) : null}
               {integration.linearTeamName ? (
                 <div className="flex items-center justify-between gap-4 px-4 py-3">
-                  <span className="font-medium text-sm">Team</span>
+                  <span className="text-sm font-medium">Team</span>
                   <span className="text-muted-foreground text-sm">
                     {integration.linearTeamName}
                   </span>
                 </div>
               ) : null}
               <div className="flex items-center justify-between gap-4 px-4 py-3">
-                <span className="font-medium text-sm">Status</span>
+                <span className="text-sm font-medium">Status</span>
                 <Badge variant={integration.enabled ? "default" : "secondary"}>
                   {statusLabel}
                 </Badge>
               </div>
               <div className="flex items-center justify-between gap-4 px-4 py-3">
-                <span className="font-medium text-sm">Created</span>
+                <span className="text-sm font-medium">Created</span>
                 <span className="text-muted-foreground text-sm">
                   {createdLabel}
                 </span>

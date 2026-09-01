@@ -17,6 +17,7 @@ import {
 } from "@tanstack/react-table";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { useState } from "react";
+
 import { Button } from "@/components/button";
 import { cn } from "@/lib/utils";
 import type { DataTableProps } from "@/types/logs/data-table";
@@ -78,7 +79,7 @@ export function DataTable<TData>({
 
   return (
     <div>
-      <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
+      <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
         <Table aria-busy={isLoading} className="table-fixed">
           <colgroup>
             <col className="w-[40%]" />
@@ -124,7 +125,7 @@ export function DataTable<TData>({
                   aria-label="View log details"
                   className={cn(
                     onRowClick &&
-                      "cursor-pointer hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none"
+                      "hover:bg-muted/60 focus-visible:bg-muted/60 cursor-pointer focus-visible:outline-none"
                   )}
                   data-state={row.getIsSelected() && "selected"}
                   key={row.id}
@@ -150,7 +151,7 @@ export function DataTable<TData>({
                 >
                   {emptyState ? (
                     <div className="flex flex-col items-center justify-center gap-2 py-2">
-                      <p className="font-medium text-sm">{emptyState.title}</p>
+                      <p className="text-sm font-medium">{emptyState.title}</p>
                       {emptyState.description && (
                         <p className="text-muted-foreground text-sm">
                           {emptyState.description}

@@ -1,5 +1,9 @@
 import type { createDb } from "@notra/db/drizzle";
 import { organizations, users } from "@notra/db/schema";
+import {
+  LEGACY_API_READ_SCOPE,
+  LEGACY_API_WRITE_SCOPE,
+} from "@notra/utils/api-scopes";
 import { Unkey } from "@unkey/api";
 import { eq } from "drizzle-orm";
 import type { Context, Next } from "hono";
@@ -9,16 +13,16 @@ import {
   errors as joseErrors,
   jwtVerify,
 } from "jose";
-import {
-  LEGACY_API_READ_SCOPE,
-  LEGACY_API_WRITE_SCOPE,
-} from "../constants/oauth-scopes";
+
+import { API_AUTH_KINDS } from "../constants/analytics";
+import type { ApiAuthKind } from "../types/analytics";
 import type { AuthData } from "../types/auth";
 import {
   API_URL,
   AUTH_GUIDE_URL,
   RESOURCE_METADATA_URL,
 } from "../utils/agent-discovery";
+import { trackApiKeyRejected, trackApiKeyVerified } from "../utils/analytics";
 import { isFeedbackToken, verifyFeedbackToken } from "../utils/feedback-token";
 
 declare module "hono" {
@@ -60,9 +64,45 @@ function extractBearerToken(c: Context): string | null {
   return match?.[1]?.trim() || null;
 }
 
+type AuthFailureStatus = 401 | 403 | 429 | 503;
+
 type AuthResult =
   | { success: true; auth: AuthData }
-  | { success: false; error: string; status: 401 | 403 | 503 };
+  | {
+      success: false;
+      error: string;
+      status: AuthFailureStatus;
+      kind?: ApiAuthKind;
+      code?: string;
+    };
+
+/**
+ * Unkey's verification codes, mapped onto answers a client can act on.
+ *
+ * The codes are Unkey's internal vocabulary (`Code` in `@unkey/api`): passing
+ * one through as the `error` string told the caller of an unknown key that
+ * something was `NOT_FOUND` — which reads like a missing resource, not a
+ * rejected credential — and leaked how the key store answers. Anything not
+ * listed here, including codes Unkey adds later (`Code` is an open enum), gets
+ * the generic invalid-key answer rather than its raw name.
+ */
+const UNKEY_AUTH_FAILURES: Record<
+  string,
+  { error: string; status: AuthFailureStatus }
+> = {
+  DISABLED: { error: "Invalid API key", status: 401 },
+  EXPIRED: { error: "Invalid API key", status: 401 },
+  FORBIDDEN: { error: "Forbidden", status: 403 },
+  INSUFFICIENT_PERMISSIONS: { error: "Forbidden", status: 403 },
+  NOT_FOUND: { error: "Invalid API key", status: 401 },
+  RATE_LIMITED: { error: "API key rate limit exceeded", status: 429 },
+  USAGE_EXCEEDED: { error: "API key usage limit exceeded", status: 429 },
+};
+
+const DEFAULT_UNKEY_AUTH_FAILURE = {
+  error: "Invalid API key",
+  status: 401,
+} as const;
 
 function getOAuthIssuer(c: Context) {
   const domain = c.env.WORKOS_AUTHKIT_DOMAIN ?? DEFAULT_AUTHKIT_DOMAIN;
@@ -147,14 +187,11 @@ async function resolveLocalOrganizationId(
   return organization.id;
 }
 
+/** Callers must handle a missing `aud` claim before calling this. */
 function isAllowedAudience(
-  aud: JWTPayload["aud"],
+  aud: NonNullable<JWTPayload["aud"]>,
   workosClientId: string | undefined
 ) {
-  if (aud === undefined) {
-    return true;
-  }
-
   const allowed = new Set<string>(OAUTH_AUDIENCES);
   if (workosClientId) {
     allowed.add(workosClientId);
@@ -233,12 +270,8 @@ function extractScopes(payload: JWTPayload): string[] | null {
   return [...new Set([...(scopeClaim ?? []), ...(permissionsClaim ?? [])])];
 }
 
-function hasRequiredScope(scopes: string[] | null, requiredScope?: string) {
+function hasRequiredScope(scopes: string[], requiredScope?: string) {
   if (!requiredScope) {
-    return true;
-  }
-
-  if (scopes === null) {
     return true;
   }
 
@@ -269,11 +302,14 @@ async function verifyOAuthToken(
       }
     );
 
+    if (payload.aud === undefined) {
+      return { success: false, error: "Missing token audience", status: 401 };
+    }
     if (!isAllowedAudience(payload.aud, c.env.WORKOS_CLIENT_ID)) {
       return { success: false, error: "Invalid token audience", status: 401 };
     }
 
-    const scopes = extractScopes(payload);
+    const scopes = extractScopes(payload) ?? [];
     const workosOrgId = payload.org_id;
 
     if (!payload.sub) {
@@ -320,7 +356,7 @@ async function verifyOAuthToken(
         type: "oauth",
         keyId: `oauth:${localUserId}:${localOrgId}`,
         userId: localUserId,
-        scopes: scopes ?? ["*"],
+        scopes,
         identity: { externalId: localOrgId },
       },
     };
@@ -337,13 +373,17 @@ async function verifyOAuthToken(
   }
 }
 
-function getRecovery(status: 401 | 403 | 503) {
+function getRecovery(status: AuthFailureStatus) {
   if (status === 401) {
     return `Send Authorization: Bearer <NOTRA_API_KEY>. See ${AUTH_GUIDE_URL} for agent credential discovery.`;
   }
 
   if (status === 403) {
     return "Request a key with the required scope for this endpoint, then retry after verifying whether the previous mutation completed.";
+  }
+
+  if (status === 429) {
+    return "This key has exhausted its rate limit or credit allowance. Wait for the limit to reset, or use a key with more capacity.";
   }
 
   return "The authentication service is temporarily unavailable. Retry with exponential backoff.";
@@ -367,7 +407,7 @@ async function verifyRequestAuth(
       options.permissions
     );
     if (!tokenResult.success) {
-      return tokenResult;
+      return { ...tokenResult, kind: API_AUTH_KINDS.FEEDBACK_TOKEN };
     }
     const { identity } = tokenResult;
     const auth: AuthData = {
@@ -385,8 +425,9 @@ async function verifyRequestAuth(
     const oauthResult = await verifyOAuthToken(c, apiKey, options.permissions);
     if (oauthResult.success) {
       c.set("auth", oauthResult.auth);
+      return oauthResult;
     }
-    return oauthResult;
+    return { ...oauthResult, kind: API_AUTH_KINDS.OAUTH };
   }
 
   try {
@@ -420,10 +461,15 @@ async function verifyRequestAuth(
     }
 
     if (!result.data.valid) {
-      if (result.data.code === "INSUFFICIENT_PERMISSIONS") {
-        return { success: false, error: "Forbidden", status: 403 };
-      }
-      return { success: false, error: result.data.code, status: 401 };
+      const failure =
+        UNKEY_AUTH_FAILURES[result.data.code] ?? DEFAULT_UNKEY_AUTH_FAILURE;
+      return {
+        success: false,
+        error: failure.error,
+        status: failure.status,
+        kind: API_AUTH_KINDS.UNKEY,
+        code: result.data.code,
+      };
     }
 
     if (!result.data.identity?.externalId) {
@@ -431,13 +477,19 @@ async function verifyRequestAuth(
         success: false,
         error: "Missing or invalid API key",
         status: 401,
+        kind: API_AUTH_KINDS.UNKEY,
       };
     }
 
     c.set("auth", result.data);
     return { success: true, auth: result.data };
   } catch {
-    return { success: false, error: "Service unavailable", status: 503 };
+    return {
+      success: false,
+      error: "Service unavailable",
+      status: 503,
+      kind: API_AUTH_KINDS.UNKEY,
+    };
   }
 }
 
@@ -445,6 +497,12 @@ export function authMiddleware(options: AuthOptions = {}) {
   return async (c: Context, next: Next) => {
     const authResult = await verifyRequestAuth(c, options);
     if (!authResult.success) {
+      trackApiKeyRejected(c, {
+        authKind: authResult.kind,
+        status: authResult.status,
+        reason: authResult.error,
+        unkeyCode: authResult.code,
+      });
       if (authResult.status === 401) {
         c.header(
           "WWW-Authenticate",
@@ -462,6 +520,7 @@ export function authMiddleware(options: AuthOptions = {}) {
       );
     }
 
+    trackApiKeyVerified(c, authResult.auth);
     await next();
   };
 }

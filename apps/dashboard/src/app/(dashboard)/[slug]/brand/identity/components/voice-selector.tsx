@@ -36,6 +36,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { AffectedTriggersWarning } from "@/components/affected-triggers-warning";
 import { Button } from "@/components/button";
 import { IDENTITY_NAME_MAX_LENGTH } from "@/constants/brand-identity";
@@ -43,6 +44,7 @@ import type { VoiceSelectorProps } from "@/types/brand-identity";
 import { getBrandFaviconUrl } from "@/utils/brand";
 import { getWebsiteDisplayText } from "@/utils/brand-identity";
 import { truncateText } from "@/utils/format";
+
 import { useUpdateBrandSettings } from "../../../../../../lib/hooks/use-brand-analysis";
 
 export function VoiceSelector({
@@ -124,7 +126,7 @@ export function VoiceSelector({
                   <Tooltip>
                     <TooltipTrigger
                       render={
-                        <span className="block cursor-help truncate font-medium text-sm leading-5">
+                        <span className="block cursor-help truncate text-sm leading-5 font-medium">
                           {truncateText(voice.name, IDENTITY_NAME_MAX_LENGTH)}
                         </span>
                       }
@@ -143,19 +145,19 @@ export function VoiceSelector({
                     </TooltipContent>
                   </Tooltip>
                 ) : (
-                  <span className="block truncate font-medium text-sm leading-5">
+                  <span className="block truncate text-sm leading-5 font-medium">
                     {truncateText(voice.name, IDENTITY_NAME_MAX_LENGTH)}
                   </span>
                 )}
                 {voice.websiteUrl ? (
-                  <p className="truncate text-muted-foreground text-xs leading-4">
+                  <p className="text-muted-foreground truncate text-xs leading-4">
                     {getWebsiteDisplayText(voice.websiteUrl)}
                   </p>
                 ) : null}
               </div>
               <DropdownMenu>
                 <DropdownMenuTrigger
-                  className={`flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md hover:bg-accent ${
+                  className={`hover:bg-accent flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md ${
                     isActive
                       ? "opacity-100"
                       : "opacity-0 group-hover:opacity-100"
@@ -171,7 +173,7 @@ export function VoiceSelector({
                   render={<span />}
                 >
                   <HugeiconsIcon
-                    className="size-3.5 text-muted-foreground"
+                    className="text-muted-foreground size-3.5"
                     icon={MoreVerticalIcon}
                   />
                 </DropdownMenuTrigger>

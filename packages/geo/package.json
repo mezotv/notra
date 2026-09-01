@@ -1,38 +1,35 @@
 {
   "name": "@usenotra/geo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": false,
-  "type": "module",
   "description": "Request capture SDK for AI traffic attribution and agent feedback collection",
-  "license": "MIT",
+  "keywords": [
+    "agents",
+    "ai",
+    "analytics",
+    "attribution",
+    "crawler",
+    "edge",
+    "feedback",
+    "geo",
+    "llms.txt",
+    "mcp",
+    "netlify",
+    "nextjs",
+    "nuxt"
+  ],
   "homepage": "https://github.com/usenotra/notra/tree/main/packages/geo",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/usenotra/notra.git",
     "directory": "packages/geo"
   },
-  "keywords": [
-    "ai",
-    "geo",
-    "crawler",
-    "llms.txt",
-    "analytics",
-    "attribution",
-    "nextjs",
-    "nuxt",
-    "netlify",
-    "edge",
-    "mcp",
-    "feedback",
-    "agents"
-  ],
-  "sideEffects": false,
-  "engines": {
-    "node": ">=18"
-  },
   "files": [
     "dist"
   ],
+  "type": "module",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -78,14 +75,13 @@
   "scripts": {
     "build": "tsup",
     "check-types": "tsc --noEmit",
-    "test": "bun test test",
-    "prepublishOnly": "bun run build && bun run test"
+    "prepublishOnly": "bun run build"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",
     "tsup": "^8.5.1",
     "typescript": "5.9.2",
-    "zod": "^4.1.5"
+    "zod": "^4.4.3"
   },
   "peerDependencies": {
     "zod": "^4.0.0"
@@ -94,5 +90,8 @@
     "zod": {
       "optional": true
     }
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

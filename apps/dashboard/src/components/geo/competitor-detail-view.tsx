@@ -5,21 +5,6 @@ import {
   PencilEdit02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { CompetitorLogo } from "@notra/ui/components/geo/competitor-logo";
-import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
-import { useMemo, useState } from "react";
-import { Button } from "@/components/button";
-import { EChartsBarChart } from "@/components/evilcharts/charts/echarts-bar-chart";
-import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
-import { Table, type TableColumn } from "@/components/motion/table";
-import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { CHART_PRIMARY_COLOR } from "@/constants/charts";
 import {
   COMPETITOR_PROMPTS_PAGE_TABLE_HEIGHT,
   COMPETITOR_PROMPTS_TABLE_HEIGHT,
@@ -27,7 +12,27 @@ import {
   GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS,
   GEO_COMPETITOR_DETAIL_MIN_POINTS,
   GEO_COMPETITOR_DETAIL_SERIES_KEY,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+import type { GeoCompetitorPromptRow } from "@notra/geo-core/types/geo";
+import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { Button } from "@/components/button";
+import { EChartsBarChart } from "@/components/evilcharts/charts/echarts-bar-chart";
+import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
+import { CompetitorLogo } from "@/components/geo/competitor-logo";
+import { EngineIcon } from "@/components/geo/engine-icon";
+import { Table, type TableColumn } from "@/components/motion/table";
+import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { CHART_PRIMARY_COLOR } from "@/constants/charts";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoCompetitorDetail, useGeoCompetitors } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
 import type { ChartConfig } from "@/types/charts";
@@ -35,9 +40,7 @@ import type {
   CompetitorDetailViewProps,
   GeoCompetitorDetailPoint,
   GeoCompetitorMentionStats,
-  GeoCompetitorPromptRow,
 } from "@/types/geo";
-import { formatAiTrafficTimestamp } from "@/utils/ai-traffic";
 import { seriesColors } from "@/utils/chart-colors";
 import { formatEngineFamily } from "@/utils/geo-charts";
 import {
@@ -112,7 +115,7 @@ function CompetitorMentionStats({
       <div className="flex items-baseline gap-1.5">
         <dt className="sr-only">Latest on {stats.latestDay}</dt>
         <dd>
-          <span className="font-semibold text-foreground">
+          <span className="text-foreground font-semibold">
             {stats.latest.toLocaleString()}
           </span>{" "}
           <span className="text-muted-foreground">{stats.latestDay}</span>
@@ -120,7 +123,7 @@ function CompetitorMentionStats({
       </div>
       <div className="flex items-baseline gap-1.5">
         <dt className="text-muted-foreground">Peak</dt>
-        <dd className="font-medium text-foreground">
+        <dd className="text-foreground font-medium">
           {stats.peak.toLocaleString()}
         </dd>
       </div>
@@ -179,6 +182,17 @@ export function CompetitorDetailView({
       ? activeOrganization
       : orgFromList;
   const organizationId = organization?.id ?? "";
+  const viewedRef = useRef(false);
+
+  useEffect(() => {
+    if (viewedRef.current) {
+      return;
+    }
+    viewedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.GEO_COMPETITOR_DETAIL_VIEWED, {
+      surface: variant,
+    });
+  }, [variant]);
 
   const { data: competitorList } = useGeoCompetitors(organizationId);
   const entry =
@@ -210,7 +224,7 @@ export function CompetitorDetailView({
         header: (
           <span className="inline-flex items-center gap-1.5">
             Prompt
-            <span className="font-normal text-muted-foreground tabular-nums">
+            <span className="text-muted-foreground font-normal tabular-nums">
               ({prompts.length.toLocaleString()})
             </span>
           </span>
@@ -291,20 +305,20 @@ export function CompetitorDetailView({
         )}
       >
         <CompetitorLogo
-          className="-outline-offset-1 size-10 rounded-lg outline outline-1 outline-black/10 dark:outline-white/10"
+          className="size-10 rounded-lg outline outline-1 -outline-offset-1 outline-black/10 dark:outline-white/10"
           domain={domain}
           name={competitor}
         />
         <div className="min-w-0 flex-1 leading-tight">
           <div className="flex min-w-0 items-center gap-1">
-            <p className="truncate font-semibold text-lg">{competitor}</p>
+            <p className="truncate text-lg font-semibold">{competitor}</p>
             {entry ? (
               <Tooltip>
                 <TooltipTrigger
                   render={
                     <Button
                       aria-label={`Edit ${competitor}`}
-                      className="size-7 shrink-0 text-muted-foreground"
+                      className="text-muted-foreground size-7 shrink-0"
                       onClick={() => setEditOpen(true)}
                       size="icon-sm"
                       variant="ghost"
@@ -323,7 +337,7 @@ export function CompetitorDetailView({
           </div>
           {domain ? (
             <a
-              className="group inline-flex items-center gap-1 text-muted-foreground text-xs transition-colors hover:text-foreground"
+              className="group text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-xs transition-colors"
               href={`https://${domain}`}
               rel="noopener"
               target="_blank"
@@ -345,7 +359,7 @@ export function CompetitorDetailView({
 
       <div className="space-y-2">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-pretty font-semibold text-base">
+          <h2 className="text-base font-semibold text-pretty">
             Mentions over time
           </h2>
           {stats ? <CompetitorMentionStats stats={stats} /> : null}
@@ -359,7 +373,7 @@ export function CompetitorDetailView({
       </div>
 
       <div className="space-y-2">
-        <h2 className="font-semibold text-base">Where {competitor} shows up</h2>
+        <h2 className="text-base font-semibold">Where {competitor} shows up</h2>
         <CompetitorPromptAppearances
           columns={columns}
           competitor={competitor}

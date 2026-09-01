@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+
 import type { TableColumn, TableRow } from "./types";
 
 export const CHECKBOX_WIDTH = "3rem";

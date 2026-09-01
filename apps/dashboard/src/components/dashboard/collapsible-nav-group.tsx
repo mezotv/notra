@@ -15,6 +15,7 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import type { ReactNode } from "react";
 import { useState } from "react";
+
 import { SidebarLabel } from "./sidebar-label";
 
 export function CollapsibleSidebarGroup({
@@ -37,12 +38,12 @@ export function CollapsibleSidebarGroup({
           render={
             <CollapsibleTrigger
               aria-hidden={isIconMode}
-              className="w-full cursor-pointer hover:text-sidebar-foreground [&[data-panel-open]>svg]:rotate-0"
+              className="hover:text-sidebar-foreground w-full cursor-pointer [&[data-panel-open]>svg]:rotate-0"
               tabIndex={isIconMode ? -1 : undefined}
             >
               <SidebarLabel>{label}</SidebarLabel>
               <HugeiconsIcon
-                className="-rotate-90 ml-1 size-3.5! text-sidebar-foreground/50 transition-transform"
+                className="text-sidebar-foreground/50 ml-1 size-3.5! -rotate-90 transition-transform"
                 icon={ArrowDown01Icon}
               />
             </CollapsibleTrigger>

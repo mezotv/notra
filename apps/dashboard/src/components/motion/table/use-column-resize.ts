@@ -4,6 +4,7 @@ import {
   useRef,
   useState,
 } from "react";
+
 import type { HeaderCellRefs, TableColumn } from "./types";
 
 export function useColumnResize<T>({

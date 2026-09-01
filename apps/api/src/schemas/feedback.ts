@@ -11,11 +11,14 @@ import {
   AGENT_FEEDBACK_TITLE_MAX_LENGTH,
   AGENT_FEEDBACK_URL_MAX_LENGTH,
 } from "@notra/db/constants/agent-feedback";
+
 import {
   FEEDBACK_LIST_DEFAULT_LIMIT,
   FEEDBACK_LIST_MAX_LIMIT,
 } from "../constants/feedback";
 import { resourceIdSchema } from "./ids";
+
+const ORGANIZATION_SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/i;
 
 const feedbackKindSchema = z.enum(AGENT_FEEDBACK_KINDS).openapi({
   description: "What kind of feedback this is.",
@@ -88,8 +91,7 @@ export const submitFeedbackRequestSchema = z
     }),
     source: feedbackSourceSchema.default("api"),
     projectId: resourceIdSchema("projectId").optional().openapi({
-      description:
-        "Project to file the feedback under. Ignored for project-scoped feedback tokens.",
+      description: "Project to file the feedback under.",
     }),
     agentClient: shortFieldSchema.optional().openapi({
       description: "The agent or client that submitted the feedback.",
@@ -131,6 +133,21 @@ export const submitFeedbackRequestSchema = z
     metadata: metadataSchema.optional(),
   })
   .openapi("SubmitFeedbackRequest");
+
+export const feedbackOrganizationParamsSchema = z.object({
+  organizationSlug: z
+    .string()
+    .trim()
+    .min(1, "organizationSlug is required")
+    .max(63)
+    .regex(ORGANIZATION_SLUG_REGEX, "organizationSlug has an invalid format")
+    .openapi({
+      param: { in: "path", name: "organizationSlug" },
+      description:
+        "Your organization slug, as shown in your feedback URL on the Feedback page.",
+      example: "acme",
+    }),
+});
 
 export const feedbackParamsSchema = z.object({
   feedbackId: resourceIdSchema("feedbackId").openapi({

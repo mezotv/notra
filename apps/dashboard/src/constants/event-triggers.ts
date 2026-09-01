@@ -1,4 +1,5 @@
 import { GitBranchIcon, Package01Icon } from "@hugeicons/core-free-icons";
+
 import type { WebhookEventType } from "@/schemas/integrations";
 
 interface EventTypeMeta {

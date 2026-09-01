@@ -1,4 +1,5 @@
 [install]
+linkWorkspacePackages = false
 # Only install package versions published at least 7 days ago
 minimumReleaseAge = 604800
 minimumReleaseAgeExcludes = [
@@ -31,4 +32,5 @@ minimumReleaseAgeExcludes = [
   "@ai-sdk/provider",
   "@ai-sdk/provider-utils",
   "@tanstack/db-ivm",
+  "@usenotra/geo",
 ]

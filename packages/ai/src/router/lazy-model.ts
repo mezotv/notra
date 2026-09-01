@@ -8,7 +8,6 @@ import type {
   SharedV3ProviderMetadata,
 } from "@ai-sdk/provider";
 import {
-  HTTP_FORBIDDEN,
   HTTP_NOT_FOUND,
   HTTP_PAYMENT_REQUIRED,
   HTTP_SERVER_ERROR_MIN,
@@ -17,6 +16,7 @@ import {
   ROUTED_MODEL_PROVIDER,
   ROUTER_METADATA_KEY,
   ZDR_ERROR_PATTERN,
+  ZDR_REJECTION_STATUS_CODES,
 } from "@notra/ai/constants/router";
 import type {
   FallbackReason,
@@ -27,6 +27,7 @@ import type {
   RoutedModelContext,
   RouteMetadata,
 } from "@notra/ai/types/router";
+
 import { otherGateway } from "./policy";
 import {
   splitRouterOptions,
@@ -42,11 +43,40 @@ function readStatusCode(error: unknown): number | undefined {
   return typeof candidate === "number" ? candidate : undefined;
 }
 
-function readMessage(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
+function readBodyText(value: unknown): string {
+  if (typeof value === "string") {
+    return value;
   }
-  return typeof error === "string" ? error : "";
+  if (typeof value !== "object" || value === null) {
+    return "";
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Message plus any response body the SDK attached. The gateway error classes
+ * keep an unparsed body on `response` (and the core `APICallError` on
+ * `responseBody`), and that is where rejection types like
+ * `no_providers_available` live when the body does not fit the SDK's schema.
+ */
+function readMessage(error: unknown): string {
+  if (typeof error === "string") {
+    return error;
+  }
+  if (typeof error !== "object" || error === null) {
+    return "";
+  }
+  const record = error as Record<string, unknown>;
+  const parts = [
+    error instanceof Error ? error.message : "",
+    readBodyText(record.response),
+    readBodyText(record.responseBody),
+  ];
+  return parts.filter((part) => part.length > 0).join(" ");
 }
 
 function readIsRetryable(error: unknown): boolean {
@@ -71,9 +101,14 @@ export function classifyUpstreamFailure(
   if (status === HTTP_PAYMENT_REQUIRED) {
     return "no-credits";
   }
-  if (status === HTTP_FORBIDDEN && ZDR_ERROR_PATTERN.test(readMessage(error))) {
-    // The gateway refused to honour the zero-data-retention requirement
-    // (e.g. Vercel ZDR is Pro/Enterprise only). The route is not compliant.
+  if (
+    status !== undefined &&
+    ZDR_REJECTION_STATUS_CODES.has(status) &&
+    ZDR_ERROR_PATTERN.test(readMessage(error))
+  ) {
+    // The gateway refused to honour the zero-data-retention requirement:
+    // Vercel answers 400 when no ZDR provider serves the model and 403 when
+    // the team plan lacks ZDR. Either way the route is not compliant.
     return "non-compliant";
   }
   if (
@@ -122,6 +157,7 @@ export function buildRouteMetadata(
     ...(decision.fallbackReason
       ? { fallbackReason: decision.fallbackReason }
       : {}),
+    zdrEnforced: decision.zdrEnforced,
   };
 }
 
@@ -181,7 +217,9 @@ function decisionLogFields(decision: RouteDecision) {
     reason: decision.reason,
     fallbackFrom: decision.fallbackFrom,
     fallbackReason: decision.fallbackReason,
+    zdr: decision.zdr,
     zdrEnforced: decision.zdrEnforced,
+    zdrRelaxed: decision.zdrRelaxed,
   };
 }
 
@@ -284,7 +322,7 @@ export class RoutedLanguageModel implements LanguageModelV3 {
       providerOptions: stripForeignGatewayOptions(route.decision.gateway, rest),
       router,
       allowNonZdr: this.context.policy.allowNonZdr,
-      relaxZdr: this.zdrRelaxed,
+      relaxZdr: this.zdrRelaxed || route.decision.zdrRelaxed === true,
     });
     return { ...options, providerOptions };
   }
@@ -308,8 +346,12 @@ export class RoutedLanguageModel implements LanguageModelV3 {
     }
   }
 
-  private canRelaxZdr(): boolean {
-    return this.context.request.zdr === "preferred" && !this.zdrRelaxed;
+  private canRelaxZdr(route: ResolvedRoute): boolean {
+    return (
+      route.decision.zdr === "preferred" &&
+      !this.zdrRelaxed &&
+      route.decision.zdrRelaxed !== true
+    );
   }
 
   /**
@@ -319,7 +361,11 @@ export class RoutedLanguageModel implements LanguageModelV3 {
    */
   private relaxZdr(route: ResolvedRoute, error: unknown): ResolvedRoute {
     this.zdrRelaxed = true;
-    const decision: RouteDecision = { ...route.decision, zdrEnforced: false };
+    const decision: RouteDecision = {
+      ...route.decision,
+      zdrEnforced: false,
+      zdrRelaxed: true,
+    };
     this.context.logger.warn("ai.router.zdr_bypassed", {
       ...decisionLogFields(decision),
       bypassReason: "caller-preferred",
@@ -360,21 +406,43 @@ export class RoutedLanguageModel implements LanguageModelV3 {
     if (!reason) {
       return undefined;
     }
-    if (reason === "non-compliant" && this.canRelaxZdr()) {
-      return this.relaxZdr(route, error);
-    }
     if (reason === "no-credits") {
       this.context.credits.markExhausted(route.decision.gateway);
       this.verifyExhaustion(route.decision.gateway);
     } else if (reason === "non-compliant") {
-      this.context.credits.markUnavailable(route.decision.gateway, reason);
+      // A missing ZDR host is a fact about this model on this gateway, so the
+      // mark is model-scoped: other models keep routing here.
+      this.context.credits.markUnavailable(
+        route.decision.gateway,
+        reason,
+        route.decision.requestedModelId
+      );
       this.context.logger.error("ai.router.zdr_rejected", {
         gateway: route.decision.gateway,
         requestedModel: route.decision.requestedModelId,
         organizationId: route.decision.organizationId,
+        zdr: route.decision.zdr,
         message: readMessage(error),
       });
     }
+
+    // Prefer a ZDR-capable route on the other gateway over dropping the
+    // flag; a `preferred` request only relaxes once no such route exists.
+    const crossGateway = this.crossGatewayRoute(route, reason, error);
+    if (crossGateway) {
+      return crossGateway;
+    }
+    if (reason === "non-compliant" && this.canRelaxZdr(route)) {
+      return this.relaxZdr(route, error);
+    }
+    return undefined;
+  }
+
+  private crossGatewayRoute(
+    route: ResolvedRoute,
+    reason: FallbackReason,
+    error: unknown
+  ): ResolvedRoute | undefined {
     if (
       !this.context.policy.crossGatewayFallback ||
       this.context.request.gateway
@@ -392,6 +460,21 @@ export class RoutedLanguageModel implements LanguageModelV3 {
         from: route.decision.gateway,
         to: target,
         fallbackReason: reason,
+        errorName,
+        status,
+      });
+      return undefined;
+    }
+    const targetUnavailable = this.context.credits.unavailableReason(
+      target,
+      route.decision.requestedModelId
+    );
+    if (targetUnavailable) {
+      this.context.logger.warn("ai.router.fallback_unavailable", {
+        from: route.decision.gateway,
+        to: target,
+        fallbackReason: reason,
+        targetReason: targetUnavailable,
         errorName,
         status,
       });
@@ -415,7 +498,8 @@ export class RoutedLanguageModel implements LanguageModelV3 {
       reason: "fallback",
       fallbackFrom: route.decision.gateway,
       fallbackReason: reason,
-      zdrEnforced: adapter.enforcesZdr,
+      zdrEnforced: adapter.enforcesZdr && !this.zdrRelaxed,
+      zdrRelaxed: this.zdrRelaxed,
     };
     this.context.logger.warn("ai.router.fallback", {
       ...decisionLogFields(decision),

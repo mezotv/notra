@@ -1,11 +1,14 @@
 "use client";
 
+import { GEO_DEFAULT_TAB, GEO_TAB_VALUES } from "@notra/geo-core/constants/geo";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { Loader2Icon } from "lucide-react";
 import { useReducedMotion } from "motion/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
 import { Button } from "@/components/button";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { GeoSetupEmpty } from "@/components/geo/geo-setup-empty";
@@ -15,7 +18,7 @@ import {
   useGeoProjectScope,
 } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { GEO_DEFAULT_TAB, GEO_TAB_VALUES } from "@/constants/geo";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   useGeoCompetitorShare,
   useGeoCompetitors,
@@ -33,6 +36,7 @@ import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
 import { geoNavHref } from "@/utils/geo-paths";
+
 import { GeoTabs } from "./components/geo-tabs";
 import { GeoPageSkeleton } from "./skeleton";
 
@@ -84,7 +88,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
   const startScan = useGeoStartScan(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
 
-  useHotkey("R", () => startScan.mutate(), { enabled: !isScanning });
+  useHotkey("R", () => startScan.mutate("hotkey"), { enabled: !isScanning });
 
   const [activeTab, setActiveTab] = useQueryState(
     "tab",
@@ -104,6 +108,29 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
     return () => clearTimeout(timer);
   }, [ready, reduceMotion]);
 
+  const overviewViewedRef = useRef(false);
+  const hasSettings = Boolean(settingsData?.settings);
+  const overviewLoaded = overview !== undefined;
+  const engineCount = overview?.engines.length ?? 0;
+  const rangePreset = geoRange.preset;
+
+  useEffect(() => {
+    if (
+      overviewViewedRef.current ||
+      !ready ||
+      (hasSettings && !overviewLoaded)
+    ) {
+      return;
+    }
+    overviewViewedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.GEO_OVERVIEW_VIEWED, {
+      has_data: engineCount > 0,
+      has_settings: hasSettings,
+      range: rangePreset,
+      tab: activeTab,
+    });
+  }, [activeTab, engineCount, hasSettings, overviewLoaded, rangePreset, ready]);
+
   if (isSettingsPending) {
     return <GeoPageSkeleton />;
   }
@@ -115,6 +142,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full px-4 lg:px-6">
           <GeoSetupEmpty
+            page="overview"
             settingsHref={geoNavHref(
               organizationSlug,
               "/geo/settings",
@@ -128,11 +156,11 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
-      <div className="w-full space-y-4 px-4 lg:px-6">
+      <div className="w-full space-y-6 px-4 lg:px-6">
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">GEO</h1>
-            <p className="text-muted-foreground text-sm">
+            <h1 className="text-3xl font-bold tracking-tight">GEO</h1>
+            <p className="text-muted-foreground">
               How AI engines talk about {settings.companyName}
             </p>
           </div>
@@ -141,7 +169,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
             <Button
               className="w-fit gap-2"
               disabled={isScanning}
-              onClick={() => startScan.mutate()}
+              onClick={() => startScan.mutate("manual")}
               size="sm"
             >
               <span className="inline-flex items-center gap-1.5">
@@ -156,6 +184,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
         <GeoTabs
           activeTab={activeTab}
           competitorPoints={competitorShare?.points ?? []}
+          competitorShareTimeseries={competitorShare?.timeseries ?? []}
           competitors={competitorList?.competitors ?? []}
           engines={overview?.engines ?? []}
           isScanning={isScanning}

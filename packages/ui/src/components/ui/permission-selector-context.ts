@@ -3,11 +3,13 @@
 import { createContext, use } from "react";
 
 export type PermissionTone = "neutral" | "success" | "danger" | "warning";
+export type PermissionIndicatorMotion = "spring" | "smooth" | "none";
 
 export interface PermissionRowContextValue {
   value: string | undefined;
   select: (value: string) => void;
   layoutId: string;
+  indicatorMotion: PermissionIndicatorMotion;
   disabled: boolean;
 }
 

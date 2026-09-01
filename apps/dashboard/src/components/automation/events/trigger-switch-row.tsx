@@ -7,6 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+
 import type { TriggerSwitchRowProps } from "@/types/automation/event-trigger";
 
 export function TriggerSwitchRow({
@@ -19,11 +20,11 @@ export function TriggerSwitchRow({
   return (
     <div className="flex items-center justify-between rounded-lg border p-3">
       <div className="flex items-center gap-1.5">
-        <Label className="cursor-pointer font-medium text-sm" htmlFor={id}>
+        <Label className="cursor-pointer text-sm font-medium" htmlFor={id}>
           {label}
         </Label>
         <Tooltip>
-          <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+          <TooltipTrigger className="text-muted-foreground inline-flex cursor-help">
             <HugeiconsIcon icon={InformationCircleIcon} size={14} />
           </TooltipTrigger>
           <TooltipContent side="top">

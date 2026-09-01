@@ -3,32 +3,42 @@
 import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { brandSettings, members, organizations } from "@notra/db/schema";
+import { warmGeoOnboardingCache } from "@notra/geo-core/geo/onboarding";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { ORPCError } from "@orpc/server";
 import { and, eq, isNull } from "drizzle-orm";
 import { Effect } from "effect";
 import { headers } from "next/headers";
 import { after } from "next/server";
 import { z } from "zod";
+
+import { ONBOARDING_BRAND_ANALYSIS_FAILURE_REASONS } from "@/constants/analytics-events";
+import {
+  identifyOrganizationGroup,
+  setPersonProperties,
+  trackServerEvent,
+  trackServerEventAndFlush,
+} from "@/lib/analytics/posthog-server";
+import { readRequestHeaders } from "@/lib/analytics/request-headers";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getAuthSession } from "@/lib/auth/server";
 import { queueBrandAnalysisForOnboarding } from "@/lib/brand-analysis";
-import { warmGeoOnboardingCache } from "@/lib/geo/onboarding";
-import {
-  resolveCompanyDomain,
-  resolveReachableWebsiteUrl,
-} from "@/lib/onboarding/company-domain";
 import {
   ensureDefaultBrandIdentity,
   launchReservedOnboardingAgent,
   reserveInitialOnboardingAgentRun,
 } from "@/lib/onboarding-agent";
+import {
+  resolveCompanyDomain,
+  resolveReachableWebsiteUrl,
+} from "@/lib/onboarding/company-domain";
 import { organizationIdSchema } from "@/schemas/auth/organization";
 import {
   type OnboardingBrandAnalysisInput,
   onboardingBrandAnalysisSchema,
 } from "@/schemas/brand-analysis";
-import { onboardingWorkspaceAttributionSchema } from "@/schemas/onboarding/workspace";
 import { triggerOnboardingAgentSetupSchema } from "@/schemas/onboarding-agent";
+import { onboardingWorkspaceAttributionSchema } from "@/schemas/onboarding/workspace";
 import type {
   SaveOnboardingAttributionInput,
   SaveOnboardingAttributionResult,
@@ -66,6 +76,13 @@ async function runOnboardingAgentSetup({
 }: OnboardingAgentSetupTaskInput) {
   const websiteUrl = await resolveReachableWebsiteUrl(domain);
   if (!websiteUrl) {
+    await trackServerEventAndFlush({
+      event: POSTHOG_EVENTS.ONBOARDING_BRAND_ANALYSIS_FAILED,
+      organizationId,
+      properties: {
+        reason: ONBOARDING_BRAND_ANALYSIS_FAILURE_REASONS.WEBSITE_UNREACHABLE,
+      },
+    });
     return;
   }
 
@@ -123,10 +140,21 @@ export async function triggerOnboardingBrandAnalysis(
     throw new Error("Forbidden");
   }
 
-  const { success: withinLimit } =
-    await ratelimit.onboardingBrandAnalysis.limit(input.organizationId);
+  const [{ success: withinLimit }, requestHeaders] = await Promise.all([
+    ratelimit.onboardingBrandAnalysis.limit(input.organizationId),
+    readRequestHeaders(),
+  ]);
 
   if (!withinLimit) {
+    trackServerEvent({
+      event: POSTHOG_EVENTS.ONBOARDING_BRAND_ANALYSIS_FAILED,
+      headers: requestHeaders,
+      userId: session.user.id,
+      organizationId: input.organizationId,
+      properties: {
+        reason: ONBOARDING_BRAND_ANALYSIS_FAILURE_REASONS.RATE_LIMITED,
+      },
+    });
     throw new Error(
       "Too many onboarding brand analysis requests. Please try again shortly."
     );
@@ -160,10 +188,26 @@ export async function triggerOnboardingBrandAnalysis(
       organizationId: input.organizationId,
       error,
     });
+    trackServerEvent({
+      event: POSTHOG_EVENTS.ONBOARDING_BRAND_ANALYSIS_FAILED,
+      headers: requestHeaders,
+      userId: session.user.id,
+      organizationId: input.organizationId,
+      properties: {
+        reason: ONBOARDING_BRAND_ANALYSIS_FAILURE_REASONS.QUEUE_FAILED,
+      },
+    });
     throw new Error(
       "Couldn't kick off the brand analysis. Please try again in a moment."
     );
   }
+
+  trackServerEvent({
+    event: POSTHOG_EVENTS.ONBOARDING_BRAND_ANALYSIS_STARTED,
+    headers: requestHeaders,
+    userId: session.user.id,
+    organizationId: input.organizationId,
+  });
 
   return { success: true };
 }
@@ -205,6 +249,15 @@ export async function triggerOnboardingAgentSetup(
     websiteUrl: input.websiteUrl,
   });
   if (!resolution) {
+    trackServerEvent({
+      event: POSTHOG_EVENTS.ONBOARDING_BRAND_ANALYSIS_FAILED,
+      headers: await readRequestHeaders(),
+      userId: session.user.id,
+      organizationId: input.organizationId,
+      properties: {
+        reason: ONBOARDING_BRAND_ANALYSIS_FAILURE_REASONS.NO_COMPANY_DOMAIN,
+      },
+    });
     return { skipped: "no-company-domain", success: true };
   }
 
@@ -247,6 +300,7 @@ export async function saveOnboardingAttribution(
   }
 
   let membershipRole: string;
+  let userId: string;
 
   try {
     const access = await assertOrganizationAccess({
@@ -254,6 +308,7 @@ export async function saveOnboardingAttribution(
       organizationId: parsed.data.organizationId,
     });
     membershipRole = access.membership.role;
+    userId = access.user.id;
   } catch (error) {
     if (error instanceof ORPCError) {
       return {
@@ -291,6 +346,17 @@ export async function saveOnboardingAttribution(
         isNull(organizations.heardAboutNotraOther)
       )
     );
+
+  const heardAbout = parsed.data.heardAboutNotraSource ?? "other";
+  identifyOrganizationGroup({
+    organizationId: parsed.data.organizationId,
+    userId,
+    properties: { heard_about_notra: heardAbout },
+  });
+  setPersonProperties({
+    userId,
+    setOnce: { heard_about_notra: heardAbout },
+  });
 
   return { success: true };
 }

@@ -1,5 +1,6 @@
 import { listSkillCatalog } from "@notra/ai/skills/functions/service";
 import { defineTool } from "eve/tools";
+
 import { listAvailableSkillsInputSchema } from "../schemas/assistant-tools";
 import { requireOrganizationId } from "../utils/organization";
 

@@ -35,7 +35,8 @@ Limits are scoped per organization, with a sliding window. Requests made with di
 | `POST /v1/brand-identities/generate` | 5 requests / minute |
 | `POST /v1/integrations/github` | 20 requests / minute |
 | `POST /v1/chats` and `POST /v1/chats/{chatId}` | 30 requests / minute |
-| `POST /v1/feedback` | 120 requests / minute per credential, plus 60 requests / minute per IP address |
+| `POST /v1/feedback/{organizationSlug}` | 30 requests / 10 minutes per IP address, plus 200 requests / hour per organization |
+| `POST /v1/feedback` | 120 requests / minute per credential |
 
 All other endpoints (post list/get/delete, brand list/get/delete, chat list/get, integrations list/remove, schedules) have no rate limit at this time.
 
@@ -44,7 +45,7 @@ All other endpoints (post list/get/delete, brand list/get/delete, chat list/get,
 </Note>
 
 <Note>
-  `POST /v1/feedback` is the one endpoint that agents call with a write-only feedback token, so it is limited per token and per source IP rather than per organization. Both limits apply at the same time. See [Agent Feedback](/api/agent-feedback).
+  `POST /v1/feedback/{organizationSlug}` is the one endpoint agents call without credentials, so it is limited per source IP address and per organization. Both limits apply at the same time. See [Agent Feedback](/api/agent-feedback).
 </Note>
 
 ## Response headers

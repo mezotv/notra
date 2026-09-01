@@ -1,6 +1,7 @@
 "use client";
 
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+
 import {
   GeoSectionSkeleton,
   GeoTableSkeleton,
@@ -16,14 +17,14 @@ export function GeoTrafficSkeleton() {
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
         <header className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">AI Traffic</h1>
+          <h1 className="text-3xl font-bold tracking-tight">AI Traffic</h1>
           <p className="text-muted-foreground text-sm">
             AI crawlers and referrals visiting your site
           </p>
         </header>
         <div className="flex flex-col gap-6">
-          <div className="overflow-hidden rounded-2xl border border-border bg-card">
-            <div className="grid grid-cols-1 divide-y divide-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+          <div className="border-border bg-card overflow-hidden rounded-2xl border">
+            <div className="divide-border grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
               {["Crawlers", "Referrals", "Total"].map((label) => (
                 <div className="space-y-2 px-5 py-4" key={label}>
                   <Skeleton className="h-3 w-16" />

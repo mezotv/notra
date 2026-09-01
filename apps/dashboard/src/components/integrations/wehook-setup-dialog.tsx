@@ -18,6 +18,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type React from "react";
 import { isValidElement, useEffect, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { WebhookSetupDialogProps } from "@/types/integrations";
@@ -187,7 +188,7 @@ export function WebhookSetupDialog({
           ) : webhookConfig ? (
             <>
               <fieldset className="space-y-1.5">
-                <p className="font-medium text-sm">Payload URL</p>
+                <p className="text-sm font-medium">Payload URL</p>
                 <div className="flex gap-2">
                   <Input
                     className="font-mono text-xs"
@@ -199,12 +200,12 @@ export function WebhookSetupDialog({
               </fieldset>
 
               <fieldset className="space-y-1.5">
-                <p className="font-medium text-sm">Content type</p>
+                <p className="text-sm font-medium">Content type</p>
                 <Input className="text-xs" disabled value="application/json" />
               </fieldset>
 
               <fieldset className="space-y-1.5">
-                <p className="font-medium text-sm">Secret</p>
+                <p className="text-sm font-medium">Secret</p>
                 <div className="flex gap-2">
                   <Input
                     className="font-mono text-xs"
@@ -223,12 +224,12 @@ export function WebhookSetupDialog({
             </>
           ) : (
             <div className="space-y-4">
-              <div className="rounded-md border border-destructive/50 bg-destructive/10 p-4 text-center">
-                <p className="font-medium text-destructive text-sm">
+              <div className="border-destructive/50 bg-destructive/10 rounded-md border p-4 text-center">
+                <p className="text-destructive text-sm font-medium">
                   Failed to load webhook configuration
                 </p>
                 {generateMutation.error ? (
-                  <p className="mt-1 text-muted-foreground text-xs">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     {generateMutation.error.message}
                   </p>
                 ) : null}

@@ -35,6 +35,7 @@ import {
   type UIMessage,
 } from "ai";
 import { z } from "zod";
+
 import {
   hasEnabledGitHubIntegration,
   hasEnabledLinearIntegration,
@@ -146,7 +147,7 @@ export async function orchestrateStandaloneChat(
   const modelWithMemory = createModel(
     organizationId,
     routingDecision.model,
-    undefined,
+    {},
     log
   );
 

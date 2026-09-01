@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { ImageZoom } from "@notra/ui/components/kibo-ui/image-zoom";
 import Image from "next/image";
 import { useState } from "react";
+
 import {
   ASSET_KIND_LABELS,
   ASSET_SLOTS,
@@ -18,6 +19,7 @@ import type {
 } from "@/types/hooks/brand-guidelines";
 import { getBrandGuidelineAssetName } from "@/utils/brand-guideline-assets";
 import { formatDimensions, joinMeta } from "@/utils/brand-guideline-display";
+
 import { GuidelinesAssetEditDialog } from "./guidelines-asset-edit-dialog";
 import { GuidelinesResourceActions } from "./guidelines-resource-actions";
 
@@ -43,10 +45,10 @@ export function GuidelinesAssetsSection({
     <section className="space-y-3">
       <div className="flex items-center gap-2">
         <HugeiconsIcon
-          className="size-4 text-muted-foreground"
+          className="text-muted-foreground size-4"
           icon={Image01Icon}
         />
-        <h2 className="font-semibold text-sm">Logo Assets</h2>
+        <h2 className="text-sm font-semibold">Logo Assets</h2>
         <span className="text-muted-foreground text-xs tabular-nums">
           {assets.length}
         </span>
@@ -71,7 +73,7 @@ export function GuidelinesAssetsSection({
               className="flex flex-col overflow-hidden rounded-xl border"
               key={asset.id}
             >
-              <div className="flex h-40 items-center justify-center bg-muted/40 p-4">
+              <div className="bg-muted/40 flex h-40 items-center justify-center p-4">
                 <ImageZoom className="inline-block max-w-full" zoomMargin={24}>
                   <Image
                     alt={displayName}
@@ -85,9 +87,9 @@ export function GuidelinesAssetsSection({
 
               <div className="flex items-center justify-between gap-2 border-t p-3">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-sm">{displayName}</p>
+                  <p className="truncate text-sm font-medium">{displayName}</p>
                   {meta ? (
-                    <p className="truncate text-muted-foreground text-xs">
+                    <p className="text-muted-foreground truncate text-xs">
                       {meta}
                     </p>
                   ) : null}
@@ -105,25 +107,25 @@ export function GuidelinesAssetsSection({
 
         {missingSlots.map((slot) => (
           <button
-            className="flex flex-col overflow-hidden rounded-xl border border-dashed text-left transition-colors hover:border-border hover:bg-muted/40"
+            className="hover:border-border hover:bg-muted/40 flex flex-col overflow-hidden rounded-xl border border-dashed text-left transition-colors"
             key={`${slot.kind}-${slot.variant}`}
             onClick={() =>
               setCreatingSlot({ kind: slot.kind, variant: slot.variant })
             }
             type="button"
           >
-            <div className="flex h-40 items-center justify-center bg-muted/20">
+            <div className="bg-muted/20 flex h-40 items-center justify-center">
               <HugeiconsIcon
-                className="size-6 text-muted-foreground/40"
+                className="text-muted-foreground/40 size-6"
                 icon={Add01Icon}
               />
             </div>
             <div className="w-full border-t border-dashed p-3">
-              <p className="truncate font-medium text-muted-foreground text-sm">
+              <p className="text-muted-foreground truncate text-sm font-medium">
                 {ASSET_VARIANT_LABELS[slot.variant]}{" "}
                 {ASSET_KIND_LABELS[slot.kind]}
               </p>
-              <p className="truncate text-muted-foreground/70 text-xs">
+              <p className="text-muted-foreground/70 truncate text-xs">
                 Add asset
               </p>
             </div>

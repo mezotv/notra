@@ -3,6 +3,7 @@ import { getConfiguredAppUrl } from "@notra/ai/utils/url";
 import { getSessionAttribute } from "@notra/tools/utils/session";
 import { Effect } from "effect";
 import type { SessionContext } from "eve/context";
+
 import { CHANNEL_NOT_ENABLED_MESSAGE } from "../constants/slack";
 import { DRAFT_NOTIFICATION_LABELS } from "../constants/slack-notifications";
 

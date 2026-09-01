@@ -1,6 +1,7 @@
+import type { BlogPostSidebarProps } from "~types/blog";
+
 import { BlogPostAuthorCard } from "@/components/blog-post-author-card";
 import { BlogPostToc } from "@/components/blog-post-toc";
-import type { BlogPostSidebarProps } from "~types/blog";
 
 export function BlogPostSidebar({ authors, toc }: BlogPostSidebarProps) {
   return (

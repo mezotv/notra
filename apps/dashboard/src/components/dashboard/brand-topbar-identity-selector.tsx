@@ -24,6 +24,7 @@ import {
 } from "@notra/ui/components/ui/dropdown-menu";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSyncExternalStore } from "react";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { getBrandFaviconUrl } from "@/utils/brand";
@@ -115,7 +116,7 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
       <DropdownMenuTrigger
         render={
           <button
-            className="-mx-1.5 flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-0.5 font-normal text-foreground outline-none transition-colors hover:bg-accent data-popup-open:bg-accent"
+            className="text-foreground hover:bg-accent data-popup-open:bg-accent -mx-1.5 flex min-w-0 cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-0.5 font-normal transition-colors outline-none"
             type="button"
           >
             <BrandIdentityAvatar
@@ -124,7 +125,7 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
             />
             <span className="truncate">{activeVoice.name}</span>
             <HugeiconsIcon
-              className="size-3.5 shrink-0 text-muted-foreground"
+              className="text-muted-foreground size-3.5 shrink-0"
               icon={ArrowDown01Icon}
             />
           </button>
@@ -150,7 +151,7 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
               <span className="min-w-0 flex-1 truncate">{voice.name}</span>
               {voice.isDefault ? (
                 <Badge
-                  className="shrink-0 px-1.5 py-0 font-medium text-[10px]"
+                  className="shrink-0 px-1.5 py-0 text-[10px] font-medium"
                   variant="secondary"
                 >
                   Default
@@ -158,7 +159,7 @@ export function BrandTopbarIdentitySelector({ slug }: { slug: string }) {
               ) : null}
               {activeVoice.id === voice.id ? (
                 <HugeiconsIcon
-                  className="absolute right-2 size-4 text-muted-foreground"
+                  className="text-muted-foreground absolute right-2 size-4"
                   icon={Tick02Icon}
                 />
               ) : null}

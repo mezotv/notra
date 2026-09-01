@@ -2,10 +2,6 @@
   "name": "@notra/ai",
   "version": "0.0.1",
   "private": true,
-  "scripts": {
-    "check-types": "tsc --noEmit",
-    "test": "bun test src"
-  },
   "exports": {
     "./gateway": "./src/gateway.ts",
     "./model": "./src/model.ts",
@@ -38,6 +34,10 @@
     "./integrations/*": "./src/integrations/*.ts",
     "./crypto/*": "./src/crypto/*.ts"
   },
+  "scripts": {
+    "check-types": "tsc --noEmit",
+    "test": "bun test src"
+  },
   "dependencies": {
     "@ai-sdk/gateway": "3.0.132",
     "@ai-sdk/mcp": "1.0.51",
@@ -48,6 +48,7 @@
     "@noble/hashes": "2.2.0",
     "@notra/analytics": "workspace:*",
     "@notra/db": "workspace:*",
+    "@notra/posthog": "workspace:*",
     "@notra/utils": "workspace:*",
     "@octokit/core": "^7.0.6",
     "@openrouter/ai-sdk-provider": "2.10.0",
@@ -57,7 +58,6 @@
     "@upstash/qstash": "2.9.0-rc",
     "@upstash/realtime": "^1.0.3",
     "@upstash/redis": "^1.35.8",
-    "@upstash/workflow": "^1.1.0",
     "ai": "6.0.206",
     "autumn-js": "^1.2.7",
     "dedent": "^1.7.1",
@@ -72,7 +72,7 @@
     "satori": "^0.26.0",
     "satori-html": "^0.3.2",
     "undici": "^7.16.0",
-    "zod": "^4.3.4"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@ai-sdk/devtools": "^0.0.18",

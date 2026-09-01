@@ -215,9 +215,10 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { DesignSystemChatgptCatalog } from "@/app/design-system/chatgpt/page-client";
-import { DesignSystemClaudeCatalog } from "@/app/design-system/claude/page-client";
 import { DesignSystemClaudeChatCatalog } from "@/app/design-system/claude-chat/page-client";
+import { DesignSystemClaudeCatalog } from "@/app/design-system/claude/page-client";
 import { DesignSystemCodexCatalog } from "@/app/design-system/codex/page-client";
 import { DesignSystemGeminiCatalog } from "@/app/design-system/gemini/page-client";
 import { DesignSystemPerplexityCatalog } from "@/app/design-system/perplexity/page-client";
@@ -229,6 +230,7 @@ import { DesignSystemSectionHeader } from "@/components/design-system/design-sys
 import { GeoRangePickerDemo } from "@/components/design-system/geo-range-picker-demo";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LinkedInPost } from "@/components/linkedin-post";
+
 import { DesignSystemWriteDialogDemo } from "./write-dialog-demo";
 
 const colorGroups = [
@@ -342,7 +344,7 @@ function ColorSwatch({ name, label }: { name: string; label: string }) {
         style={{ backgroundColor: `var(--${name})` }}
       />
       <div className="space-y-0.5">
-        <div className="font-medium text-sm">{label}</div>
+        <div className="text-sm font-medium">{label}</div>
         <div className="text-muted-foreground text-xs">--{name}</div>
       </div>
     </div>
@@ -377,7 +379,7 @@ export default function DesignSystemClientPage() {
         <div className="space-y-6">
           {colorGroups.map((group) => (
             <div className="space-y-3" key={group.title}>
-              <h3 className="font-medium text-muted-foreground text-sm uppercase tracking-wide">
+              <h3 className="text-muted-foreground text-sm font-medium tracking-wide uppercase">
                 {group.title}
               </h3>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1013,7 +1015,7 @@ export default function DesignSystemClientPage() {
                 <CarouselContent>
                   {["Reporting", "Automation", "Analytics"].map((label) => (
                     <CarouselItem key={label}>
-                      <div className="flex h-32 items-center justify-center rounded-lg border bg-muted/40 font-medium text-sm">
+                      <div className="bg-muted/40 flex h-32 items-center justify-center rounded-lg border text-sm font-medium">
                         {label} panel
                       </div>
                     </CarouselItem>
@@ -1130,7 +1132,7 @@ export default function DesignSystemClientPage() {
                 <CollapsibleTrigger render={<Button variant="outline" />}>
                   {collapsibleOpen ? "Hide" : "Show"} details
                 </CollapsibleTrigger>
-                <CollapsibleContent className="pt-3 text-muted-foreground text-sm">
+                <CollapsibleContent className="text-muted-foreground pt-3 text-sm">
                   Collapsible panels are ideal for advanced settings.
                 </CollapsibleContent>
               </Collapsible>
@@ -1327,7 +1329,7 @@ export default function DesignSystemClientPage() {
                 <div className="overflow-hidden rounded-lg border">
                   <Sidebar collapsible="none">
                     <SidebarHeader>
-                      <div className="font-medium text-sm">Notra</div>
+                      <div className="text-sm font-medium">Notra</div>
                       <SidebarSeparator />
                     </SidebarHeader>
                     <SidebarContent>
@@ -1372,11 +1374,11 @@ export default function DesignSystemClientPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-3">
-                <div className="font-medium text-sm">Horizontal</div>
+                <div className="text-sm font-medium">Horizontal</div>
                 <Separator />
               </div>
               <div className="flex items-center gap-4">
-                <div className="font-medium text-sm">Vertical</div>
+                <div className="text-sm font-medium">Vertical</div>
                 <Separator orientation="vertical" />
                 <div className="text-muted-foreground text-xs">
                   Inline content split
@@ -1392,7 +1394,7 @@ export default function DesignSystemClientPage() {
             <CardContent className="space-y-3">
               <div className="flex items-center justify-between rounded-lg border p-3">
                 <div>
-                  <div className="font-medium text-sm">Live previews</div>
+                  <div className="text-sm font-medium">Live previews</div>
                   <div className="text-muted-foreground text-xs">
                     Toggle UI updates
                   </div>
@@ -1544,25 +1546,25 @@ export default function DesignSystemClientPage() {
         />
         <div className="grid grid-cols-2 gap-6 sm:grid-cols-4">
           <div className="space-y-2 p-4">
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               Wave
             </p>
             <BrailleLoader className="text-lg" variant="wave" />
           </div>
           <div className="space-y-2 p-4">
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               Typewriter
             </p>
             <BrailleLoader className="text-lg" variant="typewriter" />
           </div>
           <div className="space-y-2 p-4">
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               Shimmer
             </p>
             <BrailleLoader className="text-lg" variant="shimmer" />
           </div>
           <div className="space-y-2 p-4">
-            <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+            <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               Pulse
             </p>
             <BrailleLoader className="text-lg" variant="pulse" />

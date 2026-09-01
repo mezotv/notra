@@ -16,6 +16,7 @@ import {
 } from "@notra/db/schema";
 import { desc, eq } from "drizzle-orm";
 import { defineTool } from "eve/tools";
+
 import { getAvailableIntegrationsInputSchema } from "../schemas/assistant-tools";
 import { requireOrganizationId } from "../utils/organization";
 

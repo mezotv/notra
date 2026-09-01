@@ -5,22 +5,23 @@ import {
   upsertGscIntegration,
 } from "@notra/ai/integrations/google-search-console";
 import { redis } from "@notra/ai/utils/redis";
-import { buildCallbackUrl } from "@notra/utils/callback-url";
-import { ORPCError } from "@orpc/server";
-import { type NextRequest, NextResponse } from "next/server";
 import {
   GSC_OAUTH_CALLBACK_PATH,
   GSC_OAUTH_STATE_KEY_PREFIX,
   GSC_OAUTH_STATE_TTL_SECONDS,
-} from "@/constants/google-search-console";
+} from "@notra/geo-core/constants/google-search-console";
+import type { GscOAuthState } from "@notra/geo-core/types/google-search-console";
+import { buildCallbackUrl } from "@notra/utils/callback-url";
+import { ORPCError } from "@orpc/server";
+import { type NextRequest, NextResponse } from "next/server";
+
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { getServerSession } from "@/lib/auth/session";
 import { gscOAuthErrorParam } from "@/lib/integrations/google-search-console/oauth-errors";
-import type { GscOAuthState } from "@/types/google-search-console";
+import { getGscRedirectUri } from "@/lib/integrations/google-search-console/redirect-uri";
 
 export async function GET(request: NextRequest) {
-  const baseUrl =
-    process.env.BETTER_AUTH_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const baseUrl = process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL ?? "";
 
   let restoreOAuthState: (() => Promise<void>) | null = null;
   let callbackPath = "/";
@@ -95,7 +96,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { session } = await getServerSession({ headers: request.headers });
+    const { session, user } = await getServerSession({
+      headers: request.headers,
+    });
     if (!session?.userId || session.userId !== oauthState.userId) {
       await restoreOAuthState();
       return NextResponse.redirect(
@@ -109,6 +112,7 @@ export async function GET(request: NextRequest) {
       await assertOrganizationAccess({
         headers: request.headers,
         organizationId: oauthState.organizationId,
+        user,
       });
     } catch (accessError) {
       if (accessError instanceof ORPCError) {
@@ -135,7 +139,7 @@ export async function GET(request: NextRequest) {
     try {
       tokens = await exchangeGscAuthorizationCode({
         code,
-        redirectUri: `${baseUrl}${GSC_OAUTH_CALLBACK_PATH}`,
+        redirectUri: getGscRedirectUri(baseUrl),
       });
     } catch (exchangeError) {
       console.error(

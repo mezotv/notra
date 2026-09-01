@@ -153,7 +153,7 @@ function TableActionMenu({
 
   return (
     <div
-      className="absolute z-50 flex items-center gap-0.5 rounded-lg border bg-popover p-1 opacity-0 shadow-lg transition-opacity"
+      className="bg-popover absolute z-50 flex items-center gap-0.5 rounded-lg border p-1 opacity-0 shadow-lg transition-opacity"
       ref={toolbarRef}
       role="toolbar"
       style={{ pointerEvents: "auto" }}
@@ -194,7 +194,7 @@ function TableActionMenu({
       >
         <ArrowRight className="size-4" />
       </button>
-      <div className="mx-0.5 h-4 w-px bg-border" />
+      <div className="bg-border mx-0.5 h-4 w-px" />
       <button
         aria-label="Delete row"
         className={buttonClass}
@@ -215,7 +215,7 @@ function TableActionMenu({
       </button>
       <button
         aria-label="Delete table"
-        className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+        className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded p-1.5 transition-colors"
         onClick={deleteTable}
         title="Delete table"
         type="button"

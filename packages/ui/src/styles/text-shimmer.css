@@ -1,0 +1,65 @@
+@layer components {
+  .text-shimmer {
+    position: relative;
+    display: inline-block;
+    color: var(--muted-foreground);
+  }
+
+  .text-shimmer__text {
+    display: inline-block;
+  }
+
+  .text-shimmer__mask {
+    position: absolute;
+    inset: 0;
+    contain: strict;
+    overflow: clip;
+    color: transparent;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  @supports (-webkit-mask-clip: text) {
+    .text-shimmer__mask {
+      mask-image: linear-gradient(white, white);
+      -webkit-mask-clip: text;
+    }
+  }
+
+  @supports (mask-image: -moz-element(#text)) {
+    .text-shimmer__mask {
+      mask-image: var(--text-shimmer-firefox-mask);
+    }
+  }
+
+  .text-shimmer__mask::after {
+    position: absolute;
+    inset: 0;
+    content: "";
+    background: linear-gradient(
+      90deg,
+      transparent calc(50% - var(--text-shimmer-spread)),
+      var(--foreground) 50%,
+      transparent calc(50% + var(--text-shimmer-spread))
+    );
+    pointer-events: none;
+    will-change: transform;
+    animation: text-shimmer var(--text-shimmer-duration) linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .text-shimmer__mask {
+      display: none;
+    }
+  }
+}
+
+@keyframes text-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(100%);
+  }
+}

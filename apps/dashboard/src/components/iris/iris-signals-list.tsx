@@ -1,6 +1,7 @@
 import { Github01Icon, RssIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Badge } from "@notra/ui/components/ui/badge";
+
 import type { IrisSignalsListProps } from "@/types/iris";
 import {
   formatIrisRelativeTime,
@@ -15,27 +16,27 @@ function sourceIcon(source: string) {
 export function IrisSignalsList({ signals }: IrisSignalsListProps) {
   if (signals.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed p-8 text-center text-muted-foreground text-sm">
+      <div className="text-muted-foreground rounded-xl border border-dashed p-8 text-center text-sm">
         Nothing has come in yet. Iris starts watching as soon as you ship.
       </div>
     );
   }
 
   return (
-    <ul className="divide-y divide-border rounded-xl border border-border">
+    <ul className="divide-border border-border divide-y rounded-xl border">
       {signals.map((signal) => (
         <li className="flex items-center gap-3 px-4 py-3" key={signal.id}>
           <HugeiconsIcon
-            className="size-4 shrink-0 text-muted-foreground"
+            className="text-muted-foreground size-4 shrink-0"
             icon={sourceIcon(signal.source)}
           />
-          <span className="min-w-0 flex-1 truncate font-medium text-sm">
+          <span className="min-w-0 flex-1 truncate text-sm font-medium">
             {humanizeIrisSignalKind(signal.kind)}
           </span>
           <Badge variant="outline">
             {humanizeIrisSignalStatus(signal.status)}
           </Badge>
-          <span className="shrink-0 text-muted-foreground text-xs">
+          <span className="text-muted-foreground shrink-0 text-xs">
             {formatIrisRelativeTime(signal.occurredAt)}
           </span>
         </li>

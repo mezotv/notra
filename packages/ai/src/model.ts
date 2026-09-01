@@ -14,7 +14,7 @@ export interface CreateModelOptions {
 }
 
 type DevToolsMiddleware =
-  typeof import("@ai-sdk/devtools")["devToolsMiddleware"];
+  (typeof import("@ai-sdk/devtools"))["devToolsMiddleware"];
 
 export function createModel(
   organizationId: string | undefined,

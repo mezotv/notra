@@ -4,6 +4,7 @@ import {
   type QueryResult,
   Tinybird,
 } from "@tinybirdco/sdk";
+
 import { bumpAnalyticsVersions, cachedQuery } from "../cache/query-cache";
 import type { AnalyticsCacheScope } from "../types/cache";
 import type {

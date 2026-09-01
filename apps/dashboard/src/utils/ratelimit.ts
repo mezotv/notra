@@ -2,15 +2,11 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import type { NextRequest } from "next/server";
 
+import { COMPANY_LOGO_RATE_LIMIT_PER_QUERY_PER_MINUTE } from "@/constants/company-logo";
+
 const redis = Redis.fromEnv();
 
 export const ratelimit = {
-  free: new Ratelimit({
-    redis,
-    analytics: true,
-    prefix: "ratelimit:healthcheck",
-    limiter: Ratelimit.slidingWindow(2, "1m"),
-  }),
   fetchTweet: new Ratelimit({
     redis,
     analytics: true,
@@ -69,7 +65,10 @@ export const ratelimit = {
     redis,
     analytics: true,
     prefix: "ratelimit:company-logo",
-    limiter: Ratelimit.slidingWindow(20, "1m"),
+    limiter: Ratelimit.slidingWindow(
+      COMPANY_LOGO_RATE_LIMIT_PER_QUERY_PER_MINUTE,
+      "1m"
+    ),
   }),
   onboardingAgent: new Ratelimit({
     redis,
@@ -123,6 +122,12 @@ export const ratelimit = {
     redis,
     analytics: true,
     prefix: "ratelimit:geo-writer-plan",
+    limiter: Ratelimit.slidingWindow(10, "10m"),
+  }),
+  geoSequenceRun: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:geo-sequence-run",
     limiter: Ratelimit.slidingWindow(10, "10m"),
   }),
   geoCompetitorSuggestions: new Ratelimit({

@@ -51,12 +51,16 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { CHAT_HISTORY_PINNED_LABEL } from "@/constants/chat-history";
 import {
   useChatSessionMutations,
   useChatSessions,
 } from "@/lib/hooks/use-chat-sessions";
 import { cn } from "@/lib/utils";
+import { getChatHistoryGroups } from "@/utils/chat-history-groups";
+
 import { SidebarLabel } from "./sidebar-label";
 
 export function ChatHistoryNav() {
@@ -121,7 +125,9 @@ export function ChatHistoryNav() {
   const pinnedSessions = sessions.filter((session) =>
     Boolean(session.pinnedAt)
   );
-  const recentSessions = sessions.filter((session) => !session.pinnedAt);
+  const historyGroups = getChatHistoryGroups(
+    sessions.filter((session) => !session.pinnedAt)
+  );
 
   useEffect(() => {
     if (!editingChatId) {
@@ -200,7 +206,7 @@ export function ChatHistoryNav() {
     }
 
     return (
-      <SidebarGroup>
+      <SidebarGroup key={label}>
         <SidebarGroupLabel>{label}</SidebarGroupLabel>
         <SidebarGroupContent>
           <SidebarMenu>
@@ -267,7 +273,7 @@ export function ChatHistoryNav() {
                       <DropdownMenu>
                         <DropdownMenuTrigger
                           aria-label="Chat options"
-                          className="-translate-y-1/2 absolute top-1/2 right-1.5 flex size-6 cursor-pointer items-center justify-center rounded-md text-muted-foreground opacity-0 outline-hidden ring-sidebar-ring transition-opacity duration-150 ease-out hover:bg-sidebar-accent hover:text-foreground focus-visible:opacity-100 focus-visible:ring-2 group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-popup-open:bg-sidebar-accent data-popup-open:text-foreground data-popup-open:opacity-100 [&>svg]:size-4 [&>svg]:shrink-0"
+                          className="text-muted-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-foreground data-popup-open:bg-sidebar-accent data-popup-open:text-foreground absolute top-1/2 right-1.5 flex size-6 -translate-y-1/2 cursor-pointer items-center justify-center rounded-md opacity-0 outline-hidden transition-opacity duration-150 ease-out group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 focus-visible:opacity-100 focus-visible:ring-2 data-popup-open:opacity-100 [&>svg]:size-4 [&>svg]:shrink-0"
                           onClick={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -278,7 +284,6 @@ export function ChatHistoryNav() {
                         <DropdownMenuContent
                           align="start"
                           className="w-44"
-                          showBackdrop={false}
                           side="right"
                           sideOffset={6}
                         >
@@ -368,7 +373,7 @@ export function ChatHistoryNav() {
       </SidebarGroup>
 
       {!isCollapsed && (
-        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="flex-1 overflow-x-hidden overflow-y-auto">
           <AnimatePresence initial={false}>
             {!isLoading && (
               <motion.div
@@ -378,8 +383,10 @@ export function ChatHistoryNav() {
                 key="chat-sessions"
                 transition={{ duration: 0.25, ease: "easeOut" }}
               >
-                {renderSessions("Pinned", pinnedSessions)}
-                {renderSessions("Recents", recentSessions)}
+                {renderSessions(CHAT_HISTORY_PINNED_LABEL, pinnedSessions)}
+                {historyGroups.map((group) =>
+                  renderSessions(group.label, group.sessions)
+                )}
               </motion.div>
             )}
           </AnimatePresence>

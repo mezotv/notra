@@ -1,5 +1,6 @@
 import { searchWeb } from "@notra/ai/utils/context-dev";
 import { defineTool } from "eve/tools";
+
 import { searchWebInputSchema } from "../schemas/assistant-tools";
 
 export function createSearchWebTool() {

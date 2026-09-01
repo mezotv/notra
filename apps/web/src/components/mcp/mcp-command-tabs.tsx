@@ -7,6 +7,7 @@ import { ExpandableTabs } from "@notra/ui/components/ui/expandable-tabs";
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
 import { useState } from "react";
+
 import { MCP_CLIENTS } from "@/constants/mcp";
 import type { McpClient, McpCommandTabsProps } from "@/types/mcp";
 
@@ -14,7 +15,7 @@ function clientIcon(client: McpClient) {
   if (!client.iconSrc) {
     return (
       <HugeiconsIcon
-        className="size-4 shrink-0 text-foreground"
+        className="text-foreground size-4 shrink-0"
         icon={CommandLineIcon}
       />
     );

@@ -2,34 +2,37 @@
 
 import { ArrowUpDownIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
+import {
+  GEO_FILTER_TRIGGER_CLASS,
+  GEO_MENTION_TREND_AGENT_ICON_LIMIT,
+  GEO_MENTION_TREND_ALL_PROVIDERS_LABEL,
+} from "@notra/geo-core/constants/geo";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import {
-  GEO_FILTER_TRIGGER_CLASS,
-  GEO_MENTION_TREND_AGENT_ICON_LIMIT,
-} from "@/constants/geo";
+
+import { EngineIcon } from "@/components/geo/engine-icon";
 import { cn } from "@/lib/utils";
 import type { MentionTrendAgentsPickerProps } from "@/types/geo";
 
 export function MentionTrendAgentsPicker({
   series,
-  hiddenKeys,
+  activeKeys,
   onToggle,
   disabled = false,
 }: MentionTrendAgentsPickerProps) {
-  const visible = series.filter((entry) => !hiddenKeys.has(entry.key));
-  const preview = visible.slice(0, GEO_MENTION_TREND_AGENT_ICON_LIMIT);
-  const count = visible.length;
-  const label = `${count} ${count === 1 ? "agent" : "agents"}`;
-  const accessibleLabel =
-    visible.length > 0
-      ? `Mention trend agents: ${visible.map((entry) => entry.label).join(", ")}`
-      : "Mention trend agents: none selected";
+  const preview = series.slice(0, GEO_MENTION_TREND_AGENT_ICON_LIMIT);
+  const active = series.filter((entry) => activeKeys.has(entry.key));
+  const accessibleLabel = `Mention activity for all providers. ${
+    active.length === 0
+      ? "No individual lines shown"
+      : `Individual lines shown for ${active.map((entry) => entry.label).join(", ")}`
+  }`;
 
   return (
     <DropdownMenu>
@@ -42,18 +45,18 @@ export function MentionTrendAgentsPicker({
         disabled={disabled}
       >
         {preview.length > 0 ? (
-          <span className="-space-x-1.5 flex items-center pr-0.5">
+          <span className="flex -space-x-1 pr-1">
             {preview.map((entry) => (
               <span
-                className="relative flex size-4 items-center justify-center overflow-hidden rounded-full bg-background ring-2 ring-background"
+                className="bg-background flex size-5 shrink-0 items-center justify-center rounded-full"
                 key={entry.key}
               >
-                <EngineIcon className="size-3.5" engine={entry.engine} />
+                <EngineIcon className="size-4" engine={entry.engine} />
               </span>
             ))}
           </span>
         ) : null}
-        <span>{label}</span>
+        <span>{GEO_MENTION_TREND_ALL_PROVIDERS_LABEL}</span>
         <HugeiconsIcon
           className="text-muted-foreground"
           icon={ArrowUpDownIcon}
@@ -61,20 +64,19 @@ export function MentionTrendAgentsPicker({
         />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        {series.map((entry) => {
-          const hidden = hiddenKeys.has(entry.key);
-          return (
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Show individual activity</DropdownMenuLabel>
+          {series.map((entry) => (
             <DropdownMenuCheckboxItem
-              checked={!hidden}
-              disabled={!hidden && visible.length <= 1}
+              checked={activeKeys.has(entry.key)}
               key={entry.key}
               onCheckedChange={() => onToggle(entry.key)}
             >
               <EngineIcon className="size-3.5" engine={entry.engine} />
               {entry.label}
             </DropdownMenuCheckboxItem>
-          );
-        })}
+          ))}
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   );

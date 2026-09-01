@@ -1,4 +1,7 @@
-export type WorkflowPausedReason = "ai_credits_depleted" | "workflow_errors";
+export type WorkflowPausedReason =
+  | "ai_credits_depleted"
+  | "plan_limit_reached"
+  | "workflow_errors";
 
 export interface WorkflowPausedEmailProps {
   organizationName: string;

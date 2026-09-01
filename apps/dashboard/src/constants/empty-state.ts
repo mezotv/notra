@@ -7,8 +7,8 @@ export const EMPTY_STATE_TABLE_COLUMNS = {
   sitemap: [220, 72, 96],
   prompts: [240, 72, 56],
   competitors: [160, 120, 72, 88],
-  engines: [160, 180, 100, 120],
-  shareOfVoice: [180, 240, 80],
+  engines: [180, 160, 100, 120],
+  shareOfVoice: [180, 200, 80, 72],
   traffic: [128, 96, 72, 80, 88],
   write: [220, 72, 88],
   gaps: [220, 72, 96, 88],
@@ -107,3 +107,13 @@ export const EMPTY_STATE_SKILL_CARD_LAYOUTS = [
     ],
   },
 ] as const satisfies readonly EmptyStateSkillCardLayout[];
+
+export const EMPTY_STATE_READINESS_TIER_KEYS = [
+  "tier-a",
+  "tier-b",
+  "tier-c",
+] as const;
+
+export const EMPTY_STATE_READINESS_ISSUE_COUNT = 3;
+
+export const EMPTY_STATE_READINESS_SCORE_PERCENT = "68%";

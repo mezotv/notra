@@ -1,9 +1,12 @@
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import type {
   KeyResponseData,
   V2ApisListKeysResponseBody,
 } from "@unkey/api/models/components";
 import { z } from "zod";
+
 import { API_KEY_EXPIRATION_MS } from "@/constants/api-keys";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import {
   expandLegacyApiKeyScopes,
   getUnknownApiKeyPermissions,
@@ -19,6 +22,7 @@ import {
   updateApiKeySchema,
 } from "@/schemas/api-keys";
 import { organizationIdSchema } from "@/schemas/auth/organization";
+
 import {
   badRequest,
   internalServerError,
@@ -197,6 +201,19 @@ export const apiKeysRouter = {
         throw internalServerError("Failed to create API key");
       }
 
+      trackServerEvent({
+        event: POSTHOG_EVENTS.API_KEY_CREATED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          key_id: keyId,
+          permission_preset: summarizeApiKeyScopes(input.scopes),
+          scope_count: input.scopes.length,
+          expiration: input.expiration,
+        },
+      });
+
       return {
         key: fullKey,
         keyId,
@@ -266,6 +283,20 @@ export const apiKeysRouter = {
         permissions: [...input.payload.scopes, ...unknownPermissions],
       });
 
+      trackServerEvent({
+        event: POSTHOG_EVENTS.API_KEY_UPDATED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          key_id: input.payload.keyId,
+          permission_preset: summarizeApiKeyScopes(input.payload.scopes),
+          scope_count: input.payload.scopes.length,
+          expiration: input.payload.expiration,
+          expiration_changed: input.payload.expiration !== currentExpiration,
+        },
+      });
+
       return { success: true };
     }),
   delete: authorizedProcedure
@@ -295,6 +326,16 @@ export const apiKeysRouter = {
       }
 
       await client.keys.deleteKey({ keyId: input.payload.keyId });
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.API_KEY_DELETED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          key_id: input.payload.keyId,
+        },
+      });
 
       return { success: true };
     }),

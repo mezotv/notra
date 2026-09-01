@@ -1,9 +1,15 @@
 import { ingestGeoTrafficEvents } from "@notra/analytics/tinybird/client";
 import type { GeoTrafficEventRow } from "@notra/analytics/tinybird/datasources";
+import { GEO_INGEST_BEARER_PREFIX } from "@notra/geo-core/constants/geo";
+import { verifyGeoIngestToken } from "@notra/geo-core/geo/ingest";
+import { geoRequestPayloadSchema } from "@notra/geo-core/schemas/geo";
+import type { GeoIngestIdentity } from "@notra/geo-core/types/geo";
+import { isTrackedGeoVisitorType } from "@notra/geo-core/utils/ai-traffic";
 import type { GeoRequestPayload } from "@usenotra/geo";
 import { Effect } from "effect";
 import type { NextRequest } from "next/server";
-import { GEO_INGEST_BEARER_PREFIX } from "@/constants/geo";
+
+import { trackGeoIngestAnalytics } from "@/lib/geo-ingest/analytics";
 import { classifyVisitor } from "@/lib/geo-ingest/classify-visitor";
 import {
   GeoIngestFailedError,
@@ -16,10 +22,6 @@ import {
 import { buildGeoTrafficEvent, toCapturedDate } from "@/lib/geo-ingest/event";
 import { isGeoIngestIdentityActive } from "@/lib/geo-ingest/identity";
 import { resolveJourneyId } from "@/lib/geo-ingest/journey";
-import { verifyGeoIngestToken } from "@/lib/geo-ingest/token";
-import { geoRequestPayloadSchema } from "@/schemas/geo";
-import type { GeoIngestIdentity } from "@/types/geo";
-import { isTrackedGeoVisitorType } from "@/utils/ai-traffic";
 import { ratelimit } from "@/utils/ratelimit";
 
 const authenticate = Effect.fn("geoIngest.authenticate")(function* (
@@ -137,4 +139,5 @@ export const runGeoIngest = Effect.fn("geoIngest.run")(function* (
   }
   yield* enforceRateLimit(identity.organizationId);
   yield* ingestEvent(event);
+  yield* trackGeoIngestAnalytics({ identity, event });
 });

@@ -13,10 +13,12 @@ import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { cn } from "@notra/ui/lib/utils";
 import { useMemo } from "react";
+
 import { Button } from "@/components/button";
 import type { ActivityStepProps } from "@/types/content/create";
 import type { RepositoryPreview } from "@/types/content/preview";
 import { formatEventDate } from "@/utils/content-preview";
+
 import { EventRow } from "./event-row";
 import { RepoSection } from "./repo-section";
 
@@ -115,7 +117,7 @@ export function StepActivity(props: ActivityStepProps) {
   return (
     <div className="flex h-full min-h-0 flex-col gap-4">
       <div className="space-y-1">
-        <h2 className="font-semibold text-xl tracking-tight">
+        <h2 className="text-xl font-semibold tracking-tight">
           Pick the activity to include
         </h2>
         <p className="text-muted-foreground text-sm">
@@ -125,7 +127,7 @@ export function StepActivity(props: ActivityStepProps) {
 
       <div className="relative">
         <HugeiconsIcon
-          className="-translate-y-1/2 absolute top-1/2 left-3 size-4 text-muted-foreground"
+          className="text-muted-foreground absolute top-1/2 left-3 size-4 -translate-y-1/2"
           icon={Search01Icon}
         />
         <Input
@@ -156,7 +158,7 @@ export function StepActivity(props: ActivityStepProps) {
               <button
                 aria-pressed={allSourcesSelected}
                 className={cn(
-                  "flex h-8 shrink-0 items-center gap-2 rounded-md border bg-card px-2.5 font-medium text-xs transition-colors hover:border-foreground/20",
+                  "bg-card hover:border-foreground/20 flex h-8 shrink-0 items-center gap-2 rounded-md border px-2.5 text-xs font-medium transition-colors",
                   allSourcesSelected
                     ? "border-foreground/40 bg-foreground/5"
                     : "border-border"
@@ -191,7 +193,7 @@ export function StepActivity(props: ActivityStepProps) {
                   <button
                     aria-pressed={isSelected}
                     className={cn(
-                      "flex h-8 shrink-0 items-center gap-2 rounded-md border bg-card px-2.5 text-xs transition-colors hover:border-foreground/20",
+                      "bg-card hover:border-foreground/20 flex h-8 shrink-0 items-center gap-2 rounded-md border px-2.5 text-xs transition-colors",
                       isSelected
                         ? "border-foreground/40 bg-foreground/5"
                         : "border-border"
@@ -241,7 +243,7 @@ export function StepActivity(props: ActivityStepProps) {
 
       <div className="min-h-0 flex-1 overflow-y-auto">
         {!hasSelectedIntegrations && (
-          <div className="flex h-full items-center justify-center p-8 text-center text-muted-foreground text-sm">
+          <div className="text-muted-foreground flex h-full items-center justify-center p-8 text-center text-sm">
             Pick a source above to load activity.
           </div>
         )}
@@ -255,7 +257,7 @@ export function StepActivity(props: ActivityStepProps) {
         )}
 
         {hasSelectedIntegrations && !isLoadingPreview && isPreviewError && (
-          <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/50 bg-destructive/10 p-6 text-center text-sm">
+          <div className="border-destructive/50 bg-destructive/10 flex flex-col items-center gap-3 rounded-xl border p-6 text-center text-sm">
             <p>Failed to load events.</p>
             <Button
               onClick={onRetryPreview}
@@ -296,9 +298,9 @@ export function StepActivity(props: ActivityStepProps) {
                       className="overflow-hidden rounded-lg border"
                       key={li.integrationId}
                     >
-                      <div className="flex items-center gap-2 bg-muted/30 px-3 py-2">
+                      <div className="bg-muted/30 flex items-center gap-2 px-3 py-2">
                         <Linear className="size-4 shrink-0" />
-                        <span className="font-medium text-sm">
+                        <span className="text-sm font-medium">
                           {li.displayName}
                         </span>
                       </div>
@@ -326,7 +328,7 @@ export function StepActivity(props: ActivityStepProps) {
               )}
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center p-8 text-center text-muted-foreground text-sm">
+            <div className="text-muted-foreground flex h-full items-center justify-center p-8 text-center text-sm">
               {searchQuery
                 ? "No events match your search."
                 : "No events in this timeframe."}

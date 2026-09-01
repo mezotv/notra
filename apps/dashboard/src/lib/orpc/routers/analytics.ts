@@ -1,4 +1,7 @@
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+
 import { assertAnalyticsEnabled } from "@/lib/analytics/access";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import {
   loadEngagementTimeseries,
   loadFollowerGrowth,
@@ -190,10 +193,24 @@ export const analyticsRouter = {
       });
       await assertAnalyticsEnabled(input.organizationId);
 
-      return await runOrpcEffect(
+      const result = await runOrpcEffect(
         untrackTwitterAccount(input.organizationId, input.trackedAccountId),
         toAnalyticsOrpcError
       );
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.ANALYTICS_ACCOUNT_UNTRACKED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          tracked_account_id: input.trackedAccountId,
+          bulk: false,
+          count: 1,
+        },
+      });
+
+      return result;
     }),
   followerGrowth: authorizedProcedure
     .input(analyticsTimeseriesInputSchema)

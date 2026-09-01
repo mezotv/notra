@@ -8,6 +8,7 @@ import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import { isNextRedirectError } from "@/lib/auth/redirect-error";
@@ -73,7 +74,7 @@ export function ConnectedAccountsSection({
   if (isError) {
     return (
       <TitleCard className="lg:col-span-2" heading="Connected Accounts">
-        <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-center">
+        <div className="border-destructive/50 bg-destructive/10 rounded-lg border p-4 text-center">
           <p className="text-destructive text-sm">
             Failed to load connected accounts. Please refresh the page.
           </p>
@@ -92,11 +93,11 @@ export function ConnectedAccountsSection({
         <div className="space-y-3">
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <Google className="size-5" />
               </div>
               <div>
-                <p className="font-medium text-sm">Google</p>
+                <p className="text-sm font-medium">Google</p>
                 <p className="text-muted-foreground text-xs">
                   {hasGoogleLinked
                     ? "Connected to your Google account"
@@ -138,11 +139,11 @@ export function ConnectedAccountsSection({
 
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
+              <div className="bg-muted flex size-10 items-center justify-center rounded-lg">
                 <Github className="size-5" />
               </div>
               <div>
-                <p className="font-medium text-sm">GitHub</p>
+                <p className="text-sm font-medium">GitHub</p>
                 <p className="text-muted-foreground text-xs">
                   {hasGithubLinked
                     ? "Connected to your GitHub account"

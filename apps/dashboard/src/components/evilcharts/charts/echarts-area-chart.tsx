@@ -62,6 +62,7 @@ import {
   type TooltipRoundness,
   type TooltipVariant,
   composeTooltipBody,
+  composeTooltipGroupedBody,
   configIndicatorHtml,
   formatTooltipValue,
   tooltipBaseOption,
@@ -72,9 +73,12 @@ import {
 import type {
   ChartConfig,
   ChartMarker,
+  TooltipBodyGroup,
   TooltipBodyItem,
   TooltipEmptyLabel,
+  TooltipLabelFormatter,
   TooltipLayout,
+  TooltipRowGroup,
   TooltipValueFormatter,
 } from "@/types/charts";
 
@@ -117,6 +121,7 @@ type YAxisOption = ArrayItem<NonNullable<EChartsOption["yAxis"]>>;
 const STROKE_WIDTH = 0.8; // default series stroke — <Area strokeWidth> overrides it
 const LOADING_ANIMATION_DURATION = 2000; // shimmer loop, in milliseconds
 const REVEAL_DURATION = 1000; // intro draw-in length, in milliseconds
+const CHART_UPDATE_MS = 420; // opacity / layout transitions after the intro
 // NOTE: the intro draw-in runs ECharts' RAW default entrance animation. Custom
 // easing was tried and abandoned — ECharts hardcodes the line-entrance clip to
 // linear and ignores animationEasing at every level (verified empirically).
@@ -163,6 +168,7 @@ export type AreaVariant =
   | "hatched"
   | "none"; // stroke only — no fill at all
 export type StrokeVariant = "solid" | "dashed" | "animated-dashed";
+export type GridLineVariant = "dashed" | "solid";
 export type StackType = "default" | "stacked" | "expanded";
 export type AreaAnimationType =
   | "none"
@@ -221,6 +227,8 @@ export interface AreaProps {
   connectNulls?: boolean; // join segments across null/missing values
   isClickable?: boolean; // lets this area be selected by clicking it
   enableBufferLine?: boolean; // renders this area's last segment as a dashed, fill-less buffer
+  gapMissing?: boolean; // render absent data keys as gaps instead of zeroes
+  visible?: boolean; // when false, keeps the series mounted but fades it out for smooth toggles
   children?: ReactNode; // optional <Dot> and <ActiveDot> config
 }
 
@@ -258,13 +266,19 @@ export interface YAxisProps {
   tickFormatter?: (value: number, index: number) => string; // formats y tick labels
   label?: string; // axis title, rotated alongside the tick labels
   hideDots?: boolean; // hides the tick dots beside this axis's labels
+  scale?: boolean; // when true, choose a data-relative range instead of forcing zero into view
 }
 
 /** Presence shows the y value axis. Renders nothing. */
 const YAxis: FC<YAxisProps> = () => null;
 
-/** Presence shows the dashed horizontal split lines. Renders nothing. */
-const Grid: FC = () => null;
+export interface GridProps {
+  variant?: GridLineVariant; // "dashed" (default) or unbroken "solid" split lines
+  lineType?: GridLineVariant; // alias used by the shared chart API
+}
+
+/** Presence shows the horizontal split lines. Renders nothing. */
+const Grid: FC<GridProps> = () => null;
 
 export interface TooltipProps {
   variant?: TooltipVariant; // visual style of the tooltip surface
@@ -274,12 +288,17 @@ export interface TooltipProps {
   position?: TooltipPosition; // "variable" follows both axes (default); "fixed" pins the tooltip near the top and sits beside the pointer's X
   layout?: TooltipLayout; // "rows" is the default swatch list; "bars" ranks series as a mini bar chart
   valueFormatter?: TooltipValueFormatter;
+  labelKey?: string; // optional row key used for the tooltip heading instead of the x-axis value
+  labelFormatter?: TooltipLabelFormatter;
   barMax?: number; // bar layout: scale tracks to this ceiling (e.g. 100 for percents); omit to scale to the hovered max
   confine?: boolean; // keep the tooltip inside the chart rect (default true); false lets small sparklines overflow
   // When set, tooltip rows come from these data keys at the hovered index
   // instead of the visible series — so a single total line can still list a
   // per-engine breakdown on hover.
   rowKeys?: readonly string[];
+  // Sectioned rows: each group heading is a data key rendered as a full bar,
+  // followed by its row keys scaled to the heading value.
+  rowGroups?: readonly TooltipRowGroup[];
   hideZeros?: boolean; // drop series whose hovered value is 0 / empty
   excludeKeys?: readonly string[]; // series drawn on the chart but omitted from the tooltip
   emptyLabel?: TooltipEmptyLabel; // shown when hideZeros / missing values leave no rows
@@ -314,6 +333,8 @@ type AreaSeriesConfig = {
   connectNulls: boolean;
   isClickable: boolean;
   enableBufferLine: boolean;
+  gapMissing: boolean;
+  visible: boolean;
   dotVariant: DotVariant; // "none" when no <Dot> child is present
   activeDotVariant: DotVariant; // "none" when no <ActiveDot> child is present
 };
@@ -331,6 +352,7 @@ type YAxisSlot = {
   tickFormatter?: (value: number, index: number) => string;
   label?: string;
   hideDots: boolean;
+  scale: boolean;
 };
 type TooltipSlot = {
   present: boolean;
@@ -341,9 +363,12 @@ type TooltipSlot = {
   position: TooltipPosition;
   layout: TooltipLayout;
   valueFormatter?: TooltipValueFormatter;
+  labelKey?: string;
+  labelFormatter?: TooltipLabelFormatter;
   barMax?: number;
   confine: boolean;
   rowKeys?: readonly string[];
+  rowGroups?: readonly TooltipRowGroup[];
   hideZeros: boolean;
   excludeKeys: readonly string[];
   emptyLabel?: TooltipEmptyLabel;
@@ -367,6 +392,7 @@ type CollectedConfig = {
   xAxis: XAxisSlot;
   yAxis: YAxisSlot;
   showGrid: boolean;
+  gridVariant: GridLineVariant;
   tooltip: TooltipSlot;
   legend: LegendSlot;
   brush: BrushSlot;
@@ -375,8 +401,9 @@ type CollectedConfig = {
 function collectConfig(children: ReactNode): CollectedConfig {
   const areas: AreaSeriesConfig[] = [];
   let xAxis: XAxisSlot = { present: false, hideDots: false };
-  let yAxis: YAxisSlot = { present: false, hideDots: false };
+  let yAxis: YAxisSlot = { present: false, hideDots: false, scale: false };
   let showGrid = false;
+  let gridVariant: GridLineVariant = "dashed";
   let tooltip: TooltipSlot = {
     present: false,
     variant: "default",
@@ -423,6 +450,8 @@ function collectConfig(children: ReactNode): CollectedConfig {
         connectNulls: props.connectNulls ?? false,
         isClickable: props.isClickable ?? false,
         enableBufferLine: props.enableBufferLine ?? false,
+        gapMissing: props.gapMissing ?? false,
+        visible: props.visible ?? true,
         dotVariant,
         activeDotVariant,
       });
@@ -443,9 +472,12 @@ function collectConfig(children: ReactNode): CollectedConfig {
         tickFormatter: props.tickFormatter,
         label: props.label,
         hideDots: props.hideDots ?? false,
+        scale: props.scale ?? false,
       };
     } else if (type === Grid) {
       showGrid = true;
+      const props = child.props as GridProps;
+      gridVariant = props.lineType ?? props.variant ?? "dashed";
     } else if (type === Tooltip) {
       const props = child.props as TooltipProps;
       tooltip = {
@@ -457,9 +489,12 @@ function collectConfig(children: ReactNode): CollectedConfig {
         position: props.position ?? "variable",
         layout: props.layout ?? "rows",
         valueFormatter: props.valueFormatter,
+        labelKey: props.labelKey,
+        labelFormatter: props.labelFormatter,
         barMax: props.barMax,
         confine: props.confine ?? true,
         rowKeys: props.rowKeys,
+        rowGroups: props.rowGroups,
         hideZeros: props.hideZeros ?? false,
         excludeKeys: props.excludeKeys ?? [],
         emptyLabel: props.emptyLabel,
@@ -484,7 +519,16 @@ function collectConfig(children: ReactNode): CollectedConfig {
     }
   });
 
-  return { areas, xAxis, yAxis, showGrid, tooltip, legend, brush };
+  return {
+    areas,
+    xAxis,
+    yAxis,
+    showGrid,
+    gridVariant,
+    tooltip,
+    legend,
+    brush,
+  };
 }
 
 // Color plumbing (ChartConfig, getColorsCount, distributeColors, buildChartCss,
@@ -826,6 +870,7 @@ type OptionBuildContext = {
   selectedDataKey: string | null;
   hasSelection: boolean;
   showGrid: boolean;
+  gridVariant: GridLineVariant;
   xAxisSlot: XAxisSlot;
   yAxisSlot: YAxisSlot;
   tooltipSlot: TooltipSlot;
@@ -886,6 +931,7 @@ function buildMainAxes(ctx: OptionBuildContext): {
     xAxisSlot,
     yAxisSlot,
     showGrid,
+    gridVariant,
     isLoading,
     isExpanded,
     categories,
@@ -942,6 +988,7 @@ function buildMainAxes(ctx: OptionBuildContext): {
     type: "value",
     show: yAxisSlot.present || showGrid,
     max: isExpanded ? 1 : undefined,
+    scale: !isExpanded && yAxisSlot.scale,
     // Axis title — rendered rotated alongside the tick labels, same styling.
     name: isLoading ? undefined : yAxisSlot.label,
     nameLocation: "middle",
@@ -961,7 +1008,7 @@ function buildMainAxes(ctx: OptionBuildContext): {
       show: showGrid && !isLoading,
       lineStyle: {
         color: splitLineColor,
-        type: [3, 3] as [number, number],
+        type: gridVariant === "solid" ? "solid" : ([3, 3] as [number, number]),
         width: 1,
       },
     },
@@ -1014,11 +1061,55 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
       name?: string;
       dataIndex?: number;
     };
-    // Label shows the RAW axis value — matches ChartTooltipContent (no tick formatter).
-    const axisValue = first.axisValue ?? first.name ?? "";
-    const label = String(axisValue);
     const hoveredRow =
       typeof first.dataIndex === "number" ? data[first.dataIndex] : undefined;
+    // Label shows the raw axis value unless the tooltip opts into a more
+    // descriptive value held on the hovered row.
+    const axisValue = first.axisValue ?? first.name ?? "";
+    const labelValue =
+      tooltipSlot.labelKey && hoveredRow?.[tooltipSlot.labelKey] != null
+        ? hoveredRow[tooltipSlot.labelKey]
+        : axisValue;
+    const rawLabel = String(labelValue);
+    const label = tooltipSlot.labelFormatter
+      ? tooltipSlot.labelFormatter(rawLabel)
+      : rawLabel;
+    const rowGroups = tooltipSlot.rowGroups;
+    if (rowGroups && rowGroups.length > 0 && typeof first.dataIndex === "number") {
+      const groups: TooltipBodyGroup[] = [];
+      for (const group of rowGroups) {
+        const [heading] = tooltipItemsFromRow(
+          hoveredRow,
+          [group.headingKey],
+          config,
+          tooltipSlot.valueFormatter,
+          resolved.series
+        );
+        if (heading === undefined) {
+          continue;
+        }
+        groups.push({
+          heading,
+          items: tooltipItemsFromRow(
+            hoveredRow,
+            group.rowKeys,
+            config,
+            tooltipSlot.valueFormatter,
+            resolved.series
+          ),
+        });
+      }
+      return tooltipShell({
+        label,
+        body:
+          groups.length > 0
+            ? composeTooltipGroupedBody(groups)
+            : tooltipBodyHtml([], tooltipSlot, hoveredRow),
+        roundness: tooltipSlot.roundness,
+        variant: tooltipSlot.variant,
+        layout: "bars",
+      });
+    }
     const rowKeys = tooltipSlot.rowKeys;
     if (rowKeys && rowKeys.length > 0 && typeof first.dataIndex === "number") {
       const items = tooltipItemsFromRow(
@@ -1196,7 +1287,7 @@ function buildBrushOption(
       type: "line",
       xAxisIndex: 1,
       yAxisIndex: 1,
-      data: data.map((row) => Number(row[key]) || 0),
+      data: data.map((row) => areaPointValue(row, key, area.gapMissing)),
       stack: isStacked ? "__mini-total" : undefined,
       smooth: curve.smooth,
       step: curve.step,
@@ -1299,16 +1390,17 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
     const curve = curveConfig(area.curveType ?? curveType);
 
     const values = data.map((row, i) => {
-      const value = Number(row[key]) || 0;
+      const value = areaPointValue(row, key, area.gapMissing);
       if (!isExpanded) return value;
+      if (value === null) return null;
       const total = rowTotals[i];
       return total ? value / total : 0;
     });
-    const n = values.length;
+    const lastPresent = lastPresentIndex(values);
     // Hover-reveal is a root-level mode and owns the whole area rendering, so it
     // takes precedence over a per-area buffer tail when both are set.
     const reveal = enableHoverReveal;
-    const buffer = !reveal && area.enableBufferLine && n >= 2;
+    const buffer = !reveal && area.enableBufferLine && lastPresent >= 1;
     const revealActive = reveal && revealIndex !== null;
 
     const restingDot = dotStyle(
@@ -1402,7 +1494,7 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
     if (reveal) revealSink[key] = toPoints(values);
 
     const mainValues: (number | null)[] = buffer
-      ? values.map((v, i) => (i === n - 1 ? null : v))
+      ? values.map((v, i) => (i === lastPresent ? null : v))
       : revealActive
         ? sliceToNull(values, revealIndex as number)
         : values;
@@ -1417,6 +1509,11 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
 
     const z = isSelected ? 3 : hasSelection ? 1 : 2;
 
+    const isHidden = area.visible === false;
+    const strokeOpacity = isHidden ? 0 : opacity.stroke;
+    const fillOpacity = isHidden ? 0 : opacity.fill;
+    const dotVisibleOpacity = isHidden ? 0 : dotOpacity;
+
     const mainSeries: LineSeriesOption = {
       id: key,
       name: typeof config[key]?.label === "string" ? config[key]?.label : key,
@@ -1426,35 +1523,51 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
       smooth: curve.smooth,
       step: curve.step,
       connectNulls: area.connectNulls,
-      cursor: area.isClickable ? "pointer" : "default",
+      cursor: area.isClickable && !isHidden ? "pointer" : "default",
       // By default ECharts only fires mouse events on the symbols — this makes
       // the line AND the filled area clickable, like the Recharts <Area>.
       // (`true` covers both; the deprecated `triggerLineEvent` did the same.)
-      triggerEvent: area.isClickable,
+      triggerEvent: area.isClickable && !isHidden,
       // Resting dots stay on the line; ActiveDot-only series keep symbols
       // invisible until the axis pointer highlights the scrubbed index.
-      showSymbol: restingVisible || hoverSymbol,
+      showSymbol: !isHidden && (restingVisible || hoverSymbol),
       symbol: "circle",
       symbolSize: restingVisible ? restingDot.size : activeDot.size,
       z,
       lineStyle: {
         color: strokePaint,
         width: area.strokeWidth,
-        opacity: opacity.stroke,
+        opacity: strokeOpacity,
         type: mainDash,
         dashOffset: 0,
       },
       itemStyle: multiColor
-        ? { opacity: restingVisible ? dotOpacity : hoverSymbol ? 0 : dotOpacity }
+        ? {
+            opacity: isHidden
+              ? 0
+              : restingVisible
+                ? dotVisibleOpacity
+                : hoverSymbol
+                  ? 0
+                  : dotVisibleOpacity,
+          }
         : {
             ...(restingVisible ? restingDot.itemStyle : activeDot.itemStyle),
-            opacity: restingVisible ? dotOpacity : hoverSymbol ? 0 : dotOpacity,
+            opacity: isHidden
+              ? 0
+              : restingVisible
+                ? dotVisibleOpacity
+                : hoverSymbol
+                  ? 0
+                  : dotVisibleOpacity,
           },
       areaStyle: {
         color: fillPaint(area.variant, showUnselected, slots, rendererSize),
-        opacity: opacity.fill,
+        opacity: fillOpacity,
       },
-      emphasis: {
+      emphasis: isHidden
+        ? { disabled: true }
+        : {
         // focus "series" blurs every other series in this grid while one is
         // hovered — the hover twin of the click selection. Suppressed entirely
         // while a series is click-selected: the selection dim owns the canvas,
@@ -1474,12 +1587,21 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
           : { itemStyle: { ...activeDot.itemStyle, opacity: 1 } }),
       },
       // Blur styling mirrors the click-selection dim (fill 0.1 / stroke 0.3 / dot 0.3).
-      blur: {
+      blur: isHidden
+        ? {
+            lineStyle: { opacity: 0 },
+            areaStyle: { opacity: 0 },
+            itemStyle: { opacity: 0 },
+          }
+        : {
         lineStyle: { opacity: 0.3 },
         areaStyle: { opacity: 0.1 },
         itemStyle: { opacity: 0.3 },
       },
+      ...(isHidden ? { tooltip: { show: false } } : {}),
     };
+
+    if (isHidden) return [mainSeries];
 
     // Hover-reveal: a muted gray BASE layer of the FULL series sits one z below
     // the real one. It is invisible while idle (opacity 0 → the chart looks
@@ -1526,7 +1648,7 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
     // intercepts clicks/hover; it still feeds the axis tooltip (silent series
     // are aggregated by axis), which is why the last point keeps its number.
     const bufferValues: (number | null)[] = values.map((v, i) =>
-      i >= n - 2 ? v : null
+      i >= lastPresent - 1 && i <= lastPresent ? v : null
     );
     const bufferSeries: LineSeriesOption = {
       id: `${BUFFER_PREFIX}${key}`,
@@ -1607,6 +1729,22 @@ function buildAreaSeries(ctx: OptionBuildContext): LineSeriesOption[] {
   });
 }
 
+function areaPointValue(
+  row: Record<string, unknown>,
+  key: string,
+  gapMissing: boolean
+): number | null {
+  if (gapMissing && (!(key in row) || row[key] === null)) return null;
+  return Number(row[key]) || 0;
+}
+
+function lastPresentIndex(values: readonly (number | null)[]): number {
+  for (let index = values.length - 1; index >= 0; index -= 1) {
+    if (values[index] !== null) return index;
+  }
+  return -1;
+}
+
 // Copy a value list with everything AFTER `idx` nulled — the hover-reveal cut:
 // the colored real series keeps its data up to the cursor and drops the rest, so
 // (with connectNulls false) its line and fill stop dead at the pointer.
@@ -1636,7 +1774,7 @@ function computePlottedTops(ctx: OptionBuildContext): Record<string, number[]> {
   for (const area of areas) {
     const key = area.dataKey;
     tops[key] = data.map((row, i) => {
-      let value = Number(row[key]) || 0;
+      let value = areaPointValue(row, key, area.gapMissing) ?? 0;
       if (isExpanded) value = rowTotals[i] ? value / rowTotals[i] : 0;
       return isStacked ? (running[i] += value) : value;
     });
@@ -1832,6 +1970,7 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
     xAxis: xAxisSlot,
     yAxis: yAxisSlot,
     showGrid,
+    gridVariant,
     tooltip: tooltipSlot,
     legend: legendSlot,
     brush: brushSlot,
@@ -1974,6 +2113,7 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
       selectedDataKey,
       hasSelection,
       showGrid,
+      gridVariant,
       xAxisSlot,
       yAxisSlot,
       tooltipSlot,
@@ -2064,6 +2204,7 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
     selectedDataKey,
     hasSelection,
     showGrid,
+    gridVariant,
     xAxisSlot,
     yAxisSlot,
     tooltipSlot,
@@ -2391,7 +2532,8 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
         // Duration 0 still skips the intro draw-in when withEntrance is false.
         animation: true,
         animationDuration: withEntrance ? REVEAL_DURATION : 0,
-        animationDurationUpdate: 0,
+        animationDurationUpdate: withEntrance ? 0 : CHART_UPDATE_MS,
+        animationEasingUpdate: "cubicInOut",
       });
       // chartOptions is an untyped escape hatch — the spread erases the option's
       // shape, so re-assert it. The only cast in the file.

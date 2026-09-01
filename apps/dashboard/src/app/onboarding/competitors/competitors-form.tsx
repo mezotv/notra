@@ -2,24 +2,33 @@
 
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_MAX_COMPETITORS } from "@notra/geo-core/constants/geo";
+import type { GeoCompetitor } from "@notra/geo-core/types/geo";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { AuthFormHeader } from "@notra/ui/components/shared/auth/auth-form-header";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import { Label } from "@notra/ui/components/ui/label";
 import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+
 import { Button } from "@/components/button";
 import { CompetitorBrandLogo } from "@/components/onboarding/competitor-brand-logo";
 import { CompetitorChoiceRow } from "@/components/onboarding/competitor-choice-row";
 import { CompetitorSearch } from "@/components/onboarding/competitor-search";
 import { CompetitorSuggestionsSkeleton } from "@/components/onboarding/competitor-suggestions-skeleton";
 import { OnboardingProgress } from "@/components/onboarding/progress";
+import { OnboardingStepViewTracker } from "@/components/onboarding/step-view-tracker";
 import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
-import { GEO_MAX_COMPETITORS } from "@/constants/geo";
+import {
+  ONBOARDING_STEPS,
+  SUGGESTION_OUTCOMES,
+} from "@/constants/analytics-events";
 import {
   ONBOARDING_STEP_COMPETITORS,
   ONBOARDING_VISIBLE_SUGGESTIONS,
 } from "@/constants/onboarding";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
   useGeoCompetitorSuggestions,
   useGeoStartScan,
@@ -27,7 +36,7 @@ import {
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import { cn } from "@/lib/utils";
-import type { GeoCompetitor } from "@/types/geo";
+import type { SuggestionOutcome } from "@/types/analytics/events";
 import type {
   CompetitorsFormProps,
   CompetitorsPickerProps,
@@ -62,6 +71,24 @@ function CompetitorsPicker({
   const remainingSuggestions = suggested.filter(
     (entry) => !findCompetitor(competitors, entry.domain, entry.name)
   );
+  const suggestionsTrackedRef = useRef(false);
+
+  useEffect(() => {
+    if (!domain || suggestions.isPending || suggestionsTrackedRef.current) {
+      return;
+    }
+    suggestionsTrackedRef.current = true;
+    let outcome: SuggestionOutcome = SUGGESTION_OUTCOMES.OK;
+    if (suggestions.isError) {
+      outcome = SUGGESTION_OUTCOMES.ERROR;
+    } else if (suggested.length === 0) {
+      outcome = SUGGESTION_OUTCOMES.EMPTY;
+    }
+    trackEvent(POSTHOG_EVENTS.COMPETITOR_SUGGESTIONS_LOADED, {
+      suggestion_count: suggested.length,
+      outcome,
+    });
+  }, [domain, suggestions.isPending, suggestions.isError, suggested.length]);
 
   const add = (name: string, competitorDomain: string | null) => {
     if (atLimit || findCompetitor(competitors, competitorDomain, name)) {
@@ -81,12 +108,17 @@ function CompetitorsPicker({
   };
 
   const launch = () => {
+    trackEvent(POSTHOG_EVENTS.ONBOARDING_COMPETITORS_SUBMITTED, {
+      competitor_count: competitors.length,
+      added_all: suggested.length > 0 && remainingSuggestions.length === 0,
+      started_scan: !geoLocked,
+    });
     if (geoLocked) {
       setIsLeaving(true);
       router.push(nextHref);
       return;
     }
-    startScan.mutate(undefined, {
+    startScan.mutate("onboarding", {
       onSuccess: () => {
         setIsLeaving(true);
         router.push(nextHref);
@@ -116,16 +148,16 @@ function CompetitorsPicker({
 
       {competitors.length > 0 ? (
         <div className="grid gap-2">
-          <p className="font-medium text-sm">
+          <p className="text-sm font-medium">
             Your competitors{" "}
-            <span className="font-normal text-muted-foreground text-xs">
+            <span className="text-muted-foreground text-xs font-normal">
               ({competitors.length} of {GEO_MAX_COMPETITORS})
             </span>
           </p>
           <ul className="flex flex-wrap gap-1.5">
             {competitors.map((entry) => (
               <li
-                className="flex items-center gap-1.5 rounded-full border border-input py-1 pr-1 pl-1.5 text-sm"
+                className="border-input flex items-center gap-1.5 rounded-full border py-1 pr-1 pl-1.5 text-sm"
                 key={entry.id}
               >
                 <CompetitorBrandLogo
@@ -137,7 +169,7 @@ function CompetitorsPicker({
                 <span className="max-w-40 truncate">{entry.name}</span>
                 <button
                   aria-label={`Remove ${entry.name}`}
-                  className="cursor-pointer rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground disabled:cursor-not-allowed"
+                  className="text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer rounded-full p-0.5 disabled:cursor-not-allowed"
                   disabled={busy}
                   onClick={() => remove(entry)}
                   type="button"
@@ -153,12 +185,12 @@ function CompetitorsPicker({
       {domain ? (
         <div className="grid gap-2">
           <div className="flex items-center justify-between gap-3">
-            <p className="truncate font-medium text-sm">
+            <p className="truncate text-sm font-medium">
               Suggested for {domain}
             </p>
             {remainingSuggestions.length > 1 ? (
               <Button
-                className="h-auto px-0 text-muted-foreground"
+                className="text-muted-foreground h-auto px-0"
                 disabled={busy || atLimit}
                 onClick={addAllSuggestions}
                 size="sm"
@@ -170,7 +202,7 @@ function CompetitorsPicker({
             ) : null}
           </div>
           {suggestions.data?.field ? (
-            <p className="-mt-1 text-muted-foreground text-xs">
+            <p className="text-muted-foreground -mt-1 text-xs">
               Other companies in {suggestions.data.field}
             </p>
           ) : null}
@@ -251,6 +283,10 @@ export function CompetitorsForm({
   return (
     <GeoProjectProvider projectId={projectId}>
       <div className="flex w-full flex-col gap-5">
+        <OnboardingStepViewTracker
+          inOnboardingFlow={inOnboardingFlow}
+          step={ONBOARDING_STEPS.COMPETITORS}
+        />
         {inOnboardingFlow ? (
           <div className="flex justify-center">
             <OnboardingProgress current={ONBOARDING_STEP_COMPETITORS} />

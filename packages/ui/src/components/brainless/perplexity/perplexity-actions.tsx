@@ -12,7 +12,7 @@ import {
   Tick01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import type { PerplexitySearchSource } from "@notra/ui/components/brainless/perplexity/perplexity-search";
+import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
 import { PerplexitySourcesSheet } from "@notra/ui/components/brainless/perplexity/perplexity-sources-sheet";
 import {
   TooltipContent,

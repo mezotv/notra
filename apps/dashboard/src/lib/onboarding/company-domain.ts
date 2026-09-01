@@ -2,9 +2,11 @@ import type { LookupAddress } from "node:dns";
 import { request as httpRequest } from "node:http";
 import { request as httpsRequest } from "node:https";
 import { isIP } from "node:net";
+
 import { assertPublicHttpUrl, resolvePublicHttpUrl } from "@notra/utils/url";
 import { DOMAINS } from "free-email-domains-list";
 import { isValid as isNotDisposableEmail } from "mailchecker";
+
 import {
   SERVER_ERROR_STATUS,
   WEBSITE_REACHABILITY_MAX_REDIRECTS,

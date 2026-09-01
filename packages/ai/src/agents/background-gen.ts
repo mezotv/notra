@@ -108,12 +108,7 @@ export async function runBackgroundGen(
 
   await assertRouteHasCredits({ organizationId, modelId: AGENT_DEFAULT_MODEL });
 
-  const model = createModel(
-    organizationId,
-    AGENT_DEFAULT_MODEL,
-    undefined,
-    log
-  );
+  const model = createModel(organizationId, AGENT_DEFAULT_MODEL, {}, log);
 
   const prompt = getUserPrompt(contentLabel, promptInput);
 

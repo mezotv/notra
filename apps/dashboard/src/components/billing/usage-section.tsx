@@ -21,6 +21,7 @@ import {
 import { useAggregateEvents, useCustomer } from "autumn-js/react";
 import type { ReactNode } from "react";
 import { useState } from "react";
+
 import {
   IntegrationCardDither,
   useIntegrationCardDither,
@@ -181,7 +182,7 @@ export function UsageSection() {
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
-          <h2 className="font-semibold text-lg tracking-tight">Usage</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Usage</h2>
           <p className="text-muted-foreground text-sm">
             Track your feature usage and remaining balances
           </p>
@@ -204,7 +205,7 @@ export function UsageSection() {
         <div className="grid gap-4 sm:grid-cols-2">
           <UsageMetricCard accentColor="#8b5cf6" heading="Credits Used">
             <div className="flex items-baseline gap-2">
-              <p className="font-bold text-3xl tabular-nums tracking-tight">
+              <p className="text-3xl font-bold tracking-tight tabular-nums">
                 {formatDollars(totalUsage)}
               </p>
               <p className="text-muted-foreground text-sm">
@@ -214,7 +215,7 @@ export function UsageSection() {
           </UsageMetricCard>
           <UsageMetricCard accentColor="#10b981" heading="Credits Remaining">
             <div className="flex items-baseline gap-2">
-              <p className="font-bold text-3xl tabular-nums tracking-tight">
+              <p className="text-3xl font-bold tracking-tight tabular-nums">
                 {aiCreditsFeature.balance !== null
                   ? formatDollars(aiCreditsFeature.balance)
                   : "-"}
@@ -233,7 +234,7 @@ export function UsageSection() {
         hasRetentionFeature ||
         unlimitedFeatures.length > 0) && (
         <div className="space-y-4">
-          <h2 className="font-medium text-muted-foreground text-sm uppercase tracking-wider">
+          <h2 className="text-muted-foreground text-sm font-medium tracking-wider uppercase">
             Features
           </h2>
           <div className="divide-y rounded-xl border">
@@ -258,11 +259,11 @@ export function UsageSection() {
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <p className="truncate font-medium text-sm">
+                      <p className="truncate text-sm font-medium">
                         {feature.name}
                       </p>
                       <Tooltip>
-                        <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+                        <TooltipTrigger className="text-muted-foreground inline-flex cursor-help">
                           <HugeiconsIcon
                             className="size-3.5"
                             icon={InformationCircleIcon}
@@ -275,7 +276,7 @@ export function UsageSection() {
                         </TooltipContent>
                       </Tooltip>
                     </div>
-                    <p className="mt-1 text-muted-foreground text-xs">
+                    <p className="text-muted-foreground mt-1 text-xs">
                       {descriptionText}
                     </p>
                   </div>
@@ -327,11 +328,11 @@ export function UsageSection() {
               <div className="flex items-center justify-between gap-4 p-4">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
-                    <p className="truncate font-medium text-sm">
+                    <p className="truncate text-sm font-medium">
                       Log Retention
                     </p>
                     <Tooltip>
-                      <TooltipTrigger className="inline-flex cursor-help text-muted-foreground">
+                      <TooltipTrigger className="text-muted-foreground inline-flex cursor-help">
                         <HugeiconsIcon
                           className="size-3.5"
                           icon={InformationCircleIcon}
@@ -342,11 +343,11 @@ export function UsageSection() {
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                  <p className="mt-1 text-muted-foreground text-xs">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     Your current retention window is {retentionDays} days.
                   </p>
                 </div>
-                <div className="shrink-0 rounded-full border border-border bg-muted px-2.5 py-1 font-medium text-xs">
+                <div className="border-border bg-muted shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium">
                   {retentionDays} days
                 </div>
               </div>
@@ -358,12 +359,12 @@ export function UsageSection() {
                 key={feature.id}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">{feature.name}</p>
-                  <p className="mt-1 text-muted-foreground text-xs">
+                  <p className="truncate text-sm font-medium">{feature.name}</p>
+                  <p className="text-muted-foreground mt-1 text-xs">
                     Included in your plan without a usage cap
                   </p>
                 </div>
-                <div className="shrink-0 rounded-full border border-border bg-muted px-2.5 py-1 font-medium text-xs">
+                <div className="border-border bg-muted shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium">
                   Unlimited
                 </div>
               </div>

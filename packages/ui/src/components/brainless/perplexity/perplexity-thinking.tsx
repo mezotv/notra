@@ -23,9 +23,7 @@ export function PerplexityThinking({
       {reducedMotion ? (
         label
       ) : (
-        <Shimmer className="font-medium" duration={1.6} spread={1.4}>
-          {label}
-        </Shimmer>
+        <Shimmer className="font-medium">{label}</Shimmer>
       )}
     </div>
   );

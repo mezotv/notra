@@ -18,7 +18,7 @@ docolin:
   status: beta
   aliases:
     - agent feedback
-    - feedback token
+    - feedback URL
     - feedback inbox
     - submit_feedback
     - "@usenotra/geo/feedback"
@@ -30,15 +30,21 @@ AI agents such as Claude Code, Cursor and ChatGPT increasingly use your product 
 
 ## How it works
 
-1. Copy the **feedback token** from the Feedback page in your dashboard.
-2. Register the feedback tool in your MCP server with `@usenotra/geo/feedback`, or call the REST endpoint from your own tool implementation.
+1. Copy your **feedback URL** from the Feedback page in your dashboard.
+2. Register the feedback tool in your MCP server with `@usenotra/geo/feedback`, or POST to the URL from your own tool implementation.
 3. Feedback shows up in the Feedback inbox, where you can filter by status and kind and mark items as triaged, resolved or archived.
 
-## The feedback token
+## Your feedback URL
 
-The feedback token starts with `nfb_` and is **write-only**: it can submit feedback and nothing else. Keep it in your server's environment as `NOTRA_FEEDBACK_TOKEN`. It can be rotated from the dashboard at any time, which revokes every existing copy immediately.
+Every organization has its own feedback URL:
 
-If you would rather use a regular API key, create one with the `feedback.write` scope. Reading and triaging feedback through the API requires an API key with `feedback.read` or `feedback.write`.
+```
+https://api.usenotra.com/v1/feedback/{organizationSlug}
+```
+
+It needs no token or API key, so it can live directly in your server code. Submissions are rate limited per source IP and per organization (see [Rate limits](#rate-limits)).
+
+Reading and triaging feedback through the API requires an API key with `feedback.read` or `feedback.write`. `POST /v1/feedback` (without a slug) also accepts an API key with `feedback.write` for server-side integrations that already hold one.
 
 ## Add the tool to your MCP server
 
@@ -53,7 +59,7 @@ import { registerFeedbackTool } from "@usenotra/geo/feedback";
 const server = new McpServer({ name: "acme", version: "1.0.0" });
 
 registerFeedbackTool(server, {
-  token: process.env.NOTRA_FEEDBACK_TOKEN!,
+  url: "https://api.usenotra.com/v1/feedback/acme",
   productName: "Acme",
 });
 ```
@@ -65,16 +71,15 @@ registerFeedbackTool(server, {
 | `productName` | Used in the tool description so agents know what the feedback is about. |
 | `toolName`, `description` | Override the default name and description. |
 | `defaults` | Values merged into every submission, for example `{ agentClient: "acme-mcp", projectId: "..." }`. |
-| `endpoint`, `fetch`, `timeoutMs` | Transport overrides for self-hosted setups and tests. |
+| `fetch`, `timeoutMs` | Transport overrides for tests and custom runtimes. |
 | `onError` | Called with the error when a submission fails. The tool still returns an `isError` result to the agent. |
 
-Outside of MCP, `submitFeedback(input, { token })` from `@usenotra/geo/feedback` posts a single entry and resolves with `{ id, deduplicated }`.
+Outside of MCP, `submitFeedback(input, { url })` from `@usenotra/geo/feedback` posts a single entry and resolves with `{ id, deduplicated }`.
 
 ## REST endpoint
 
 ```bash
-curl -X POST https://api.usenotra.com/v1/feedback \
-  -H "Authorization: Bearer nfb_YOUR_TOKEN" \
+curl -X POST https://api.usenotra.com/v1/feedback/acme \
   -H "Content-Type: application/json" \
   -d '{
     "message": "The search tool times out when the query has quotes.",
@@ -99,9 +104,9 @@ Only `message` is required. When `title`, `kind` or `sentiment` are omitted, Not
 | `agentClient`, `agentModel`, `toolVersion` | no | Identify the agent that submitted the feedback. |
 | `contextUrl` | no | The page or resource the feedback is about. |
 | `externalId` | no | Your own identifier for the user or session. |
-| `projectId` | no | File the feedback under a project. Ignored for project-scoped tokens. |
+| `projectId` | no | File the feedback under a project. |
 | `metadata` | no | Arbitrary JSON, up to 8 KB. |
 
 ## Rate limits
 
-Submissions are limited to 120 requests per minute per token and 60 requests per minute per IP address. Responses include the standard `RateLimit-*` headers described in [Rate limits](/api/rate-limits).
+Submissions to your feedback URL are limited to 30 requests per 10 minutes per IP address and 200 requests per hour per organization. Because your MCP server is the one posting, a hosted server that serves many users from a single IP shares the IP budget; local (stdio) servers get a budget per user machine. `POST /v1/feedback` with an API key is limited to 120 requests per minute per credential instead. Responses include the standard `RateLimit-*` headers described in [Rate limits](/api/rate-limits).

@@ -9,10 +9,10 @@ export function Sponsors({ sponsors }: SponsorsProps) {
   return (
     <section className="flex w-full flex-col gap-8 px-4 py-12 sm:px-6 md:px-8 md:py-16">
       <div className="flex flex-col items-center gap-3 text-center">
-        <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em] md:text-3xl">
+        <h2 className="font-display text-foreground text-2xl font-medium tracking-[-0.02em] md:text-3xl">
           Our Sponsors
         </h2>
-        <p className="max-w-2xl text-balance text-muted-foreground">
+        <p className="text-muted-foreground max-w-2xl text-balance">
           Notra is supported by sponsors who help keep the project running.
           Thank you for backing open source.
         </p>
@@ -33,10 +33,10 @@ export function Sponsors({ sponsors }: SponsorsProps) {
               role="img"
             />
             <div className="flex flex-col items-center gap-1 text-center">
-              <span className="font-medium font-sans text-foreground text-sm">
+              <span className="text-foreground font-sans text-sm font-medium">
                 {sponsor.name}
               </span>
-              <span className="max-w-[16rem] text-muted-foreground text-xs leading-5">
+              <span className="text-muted-foreground max-w-[16rem] text-xs leading-5">
                 {sponsor.description}
               </span>
             </div>

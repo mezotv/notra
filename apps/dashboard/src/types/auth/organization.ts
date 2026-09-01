@@ -1,4 +1,5 @@
 import type { NextResponse } from "next/server";
+
 import type { getServerSession } from "@/lib/auth/session";
 
 export type AuthSession = Awaited<ReturnType<typeof getServerSession>>;

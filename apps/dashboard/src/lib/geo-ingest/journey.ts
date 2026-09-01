@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { getJourneyId } from "@usenotra/geo/markdown";
+
 import {
   GEO_JOURNEY_BROWSE_BUCKET_SECONDS,
   GEO_JOURNEY_BROWSE_CATEGORY,
@@ -10,8 +10,10 @@ import {
   GEO_JOURNEY_IPV4_OCTETS,
   GEO_JOURNEY_IPV6_GROUPS,
   GEO_JOURNEY_PARAM,
-} from "@/constants/geo";
-import { getGeoIngestSecret } from "@/lib/geo-ingest/token";
+} from "@notra/geo-core/constants/geo";
+import { getGeoIngestSecret } from "@notra/geo-core/geo/ingest";
+import { getJourneyId } from "@usenotra/geo/markdown";
+
 import type {
   GeoJourneyInput,
   GeoJourneyResolution,

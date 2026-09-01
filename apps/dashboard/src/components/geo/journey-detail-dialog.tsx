@@ -2,7 +2,11 @@
 
 import { Copy01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
+import { GEO_JOURNEY_TRAIL_DETAIL_LIMIT } from "@notra/geo-core/constants/geo";
+import {
+  formatGeoJourneySpan,
+  formatGeoSource,
+} from "@notra/geo-core/utils/ai-traffic";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -20,11 +24,13 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import { useMemo } from "react";
+
 import { Button } from "@/components/button";
+import { EngineIcon } from "@/components/geo/engine-icon";
+import { JourneyPathTrail } from "@/components/geo/journey-path-trail";
 import { CountryFlag } from "@/components/geo/twemoji";
 import { useGeoJourneyDetail } from "@/lib/hooks/use-geo";
 import type { JourneyDetailDialogProps } from "@/types/geo";
-import { formatGeoJourneySpan, formatGeoSource } from "@/utils/ai-traffic";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
 import { countryName } from "@/utils/country";
 import {
@@ -83,6 +89,7 @@ export function JourneyDetailDialog({
   );
 
   const events = useMemo(() => data?.events ?? [], [data]);
+  const eventPaths = useMemo(() => events.map((event) => event.path), [events]);
 
   if (!journey) {
     return null;
@@ -107,7 +114,7 @@ export function JourneyDetailDialog({
         </ResponsiveDialogHeader>
         <div className="space-y-4 px-4 md:px-0">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-muted-foreground text-xs">
+            <span className="bg-muted text-muted-foreground rounded-sm px-1.5 py-0.5 font-mono text-xs">
               {journey.journeyId}
             </span>
             <Button
@@ -120,7 +127,7 @@ export function JourneyDetailDialog({
             </Button>
             <span className="inline-flex items-center gap-2 text-sm">
               <EngineIcon engine={journey.source} />
-              {formatGeoSource(journey.source, journey.visitorType)}
+              {formatGeoSource(journey.source)}
             </span>
           </div>
           <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -145,6 +152,25 @@ export function JourneyDetailDialog({
               <dd className="text-sm tabular-nums">{journey.distinctPaths}</dd>
             </div>
           </dl>
+          {isLoading ? (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {JOURNEY_EVENT_SKELETON_ROW_KEYS.slice(0, skeletonRows).map(
+                (key) => (
+                  <Skeleton className="h-5 w-20 rounded-full" key={key} />
+                )
+              )}
+            </div>
+          ) : eventPaths.length > 0 ? (
+            <JourneyPathTrail
+              limit={GEO_JOURNEY_TRAIL_DETAIL_LIMIT}
+              paths={eventPaths}
+            />
+          ) : (
+            <JourneyPathTrail
+              limit={GEO_JOURNEY_TRAIL_DETAIL_LIMIT}
+              paths={journey.samplePaths}
+            />
+          )}
           <div aria-busy={isLoading} className="max-h-96 overflow-auto">
             <Table>
               <TableHeader>
@@ -174,7 +200,7 @@ export function JourneyDetailDialog({
                 )}
                 {events.map((event) => (
                   <TableRow key={`${event.capturedAt}-${event.path}`}>
-                    <TableCell className="whitespace-nowrap text-[0.6875rem] text-muted-foreground tabular-nums">
+                    <TableCell className="text-muted-foreground text-[0.6875rem] whitespace-nowrap tabular-nums">
                       {formatGeoJourneyClock(event.capturedAt)}
                     </TableCell>
                     <TableCell

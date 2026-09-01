@@ -1,10 +1,12 @@
 import type { GeoContentSubtype } from "@notra/ai/types/geo-writer";
-import type { ReactNode } from "react";
 import type {
   GeoContentBriefDetail,
   GeoContentBriefSummary,
   GeoWriterSourceKind,
-} from "@/types/geo";
+} from "@notra/geo-core/types/geo";
+import type { ReactNode } from "react";
+
+import type { GeoWriteDialogEntry } from "@/types/analytics/geo-events";
 import type { Sitemap } from "@/types/hooks/brand-sitemaps";
 
 export interface BriefHistoryProps {
@@ -75,6 +77,7 @@ export interface WriteDialogProps {
   organizationId: string;
   organizationSlug: string;
   initial?: WriteDialogInitialState | null;
+  entry?: GeoWriteDialogEntry;
 }
 
 /** Input for opening WriteDialog from a GEO gap row. */

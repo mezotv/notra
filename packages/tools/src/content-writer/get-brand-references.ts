@@ -1,4 +1,5 @@
 import { defineTool } from "eve/tools";
+
 import { getBrandReferencesInputSchema } from "../schemas/assistant-tools";
 import { getFilteredBrandReferences } from "../utils/brand-references";
 import { requireOrganizationId } from "../utils/organization";

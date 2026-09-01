@@ -338,37 +338,38 @@ postsRoutes.openapi(getPostsRoute, async (c) => {
       : undefined
   );
 
-  const [countResult] = await db
-    .select({ totalItems: count(posts.id) })
-    .from(posts)
-    .where(whereClause);
+  const [[countResult], results] = await Promise.all([
+    db
+      .select({ totalItems: count(posts.id) })
+      .from(posts)
+      .where(whereClause),
+    db.query.posts.findMany({
+      where: whereClause,
+      orderBy: (table, { asc, desc }) =>
+        sort === "asc"
+          ? [asc(table.createdAt), asc(table.id)]
+          : [desc(table.createdAt), desc(table.id)],
+      limit,
+      offset,
+      columns: {
+        id: true,
+        title: true,
+        slug: true,
+        content: true,
+        htmlUrl: true,
+        markdown: true,
+        recommendations: true,
+        contentType: true,
+        sourceMetadata: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    }),
+  ]);
 
   const totalItems = countResult?.totalItems ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalItems / limit));
-
-  const results = await db.query.posts.findMany({
-    where: whereClause,
-    orderBy: (table, { asc, desc }) =>
-      sort === "asc"
-        ? [asc(table.createdAt), asc(table.id)]
-        : [desc(table.createdAt), desc(table.id)],
-    limit,
-    offset,
-    columns: {
-      id: true,
-      title: true,
-      slug: true,
-      content: true,
-      htmlUrl: true,
-      markdown: true,
-      recommendations: true,
-      contentType: true,
-      sourceMetadata: true,
-      status: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
 
   return c.json(
     {
@@ -469,11 +470,6 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
     );
   }
 
-  const rateLimited = await enforceRatelimit(c, ratelimit.postUpdate);
-  if (rateLimited) {
-    return rateLimited;
-  }
-
   const { postId } = c.req.valid("param");
   const body = c.req.valid("json");
   const db = c.get("db");
@@ -554,6 +550,13 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
     updatedAt: Date;
   }> = [];
 
+  // Charged immediately before the write: the 404s and 400s above must not
+  // spend the caller's update budget.
+  const rateLimited = await enforceRatelimit(c, ratelimit.postUpdate);
+  if (rateLimited) {
+    return rateLimited;
+  }
+
   try {
     updatedRows = await db
       .update(posts)
@@ -600,11 +603,6 @@ postsRoutes.openapi(createPostGenerationRoute, async (c) => {
       { error: "Forbidden: API key must be scoped to an organization" },
       403
     );
-  }
-
-  const rateLimited = await enforceRatelimit(c, ratelimit.postGeneration);
-  if (rateLimited) {
-    return rateLimited;
   }
 
   const runtimeEnv = c.env ?? {};
@@ -664,6 +662,13 @@ postsRoutes.openapi(createPostGenerationRoute, async (c) => {
       },
       400
     );
+  }
+
+  // Charged immediately before the billable generation is queued: the 503, 404
+  // and 400 responses above must not spend the caller's budget.
+  const rateLimited = await enforceRatelimit(c, ratelimit.postGeneration);
+  if (rateLimited) {
+    return rateLimited;
   }
 
   const now = new Date().toISOString();

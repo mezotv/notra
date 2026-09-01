@@ -1,9 +1,11 @@
-import { CHART_PERCENT_SCALE } from "@/constants/charts";
 import type {
   GeoCompetitorSharePoint,
   GeoOverviewEngine,
   GeoTimeseriesPoint,
-} from "@/types/geo";
+} from "@notra/geo-core/types/geo";
+import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
+
+import { CHART_PERCENT_SCALE } from "@/constants/charts";
 import type {
   GeoDirectionEngineRow,
   GeoDirectionTone,
@@ -11,7 +13,6 @@ import type {
 } from "@/types/geo-directions";
 import {
   engineFamilyAvgPosition,
-  engineFamilyLabel,
   engineFamilySources,
   engineFamilyTotals,
   groupEngineFamilies,

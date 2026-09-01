@@ -2,6 +2,7 @@
 
 import { FlagsProvider } from "@databuddy/sdk/react";
 import type { ReactNode } from "react";
+
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { authClient } from "@/lib/auth/client";
 

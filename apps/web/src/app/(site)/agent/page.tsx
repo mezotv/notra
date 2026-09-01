@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import { apiUrl, buildAgentJson, siteUrl } from "@/utils/agent-metadata";
 
@@ -22,8 +23,8 @@ export default function AgentPage() {
         }
       />
       <section className="mx-auto grid w-[min(100%-3rem,56rem)] gap-4 text-sm md:grid-cols-2">
-        <div className="rounded-3xl border border-[#1E1E1E14] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-6 dark:border-white/10 dark:bg-none dark:bg-white/[0.02]">
-          <h2 className="font-medium font-sans text-[#1E1E1E] text-lg tracking-[-0.015em] dark:text-white">
+        <div className="rounded-3xl border border-[#1E1E1E14] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-6 dark:border-white/10 dark:bg-white/[0.02] dark:bg-none">
+          <h2 className="font-sans text-lg font-medium tracking-[-0.015em] text-[#1E1E1E] dark:text-white">
             Discovery
           </h2>
           <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[#1E1E1E99] dark:text-white/60">
@@ -33,8 +34,8 @@ export default function AgentPage() {
             <li>Auth guide: {siteUrl("/auth.md")}</li>
           </ul>
         </div>
-        <div className="rounded-3xl border border-[#1E1E1E14] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-6 dark:border-white/10 dark:bg-none dark:bg-white/[0.02]">
-          <h2 className="font-medium font-sans text-[#1E1E1E] text-lg tracking-[-0.015em] dark:text-white">
+        <div className="rounded-3xl border border-[#1E1E1E14] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-6 dark:border-white/10 dark:bg-white/[0.02] dark:bg-none">
+          <h2 className="font-sans text-lg font-medium tracking-[-0.015em] text-[#1E1E1E] dark:text-white">
             Endpoints
           </h2>
           <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[#1E1E1E99] dark:text-white/60">
@@ -45,7 +46,7 @@ export default function AgentPage() {
           </ul>
         </div>
       </section>
-      <pre className="overflow-auto rounded-2xl border border-[#1E1E1E14] bg-background p-5 font-mono text-[#1E1E1E] text-xs leading-6 dark:border-white/10 dark:text-white/80">
+      <pre className="bg-background overflow-auto rounded-2xl border border-[#1E1E1E14] p-5 font-mono text-xs leading-6 text-[#1E1E1E] dark:border-white/10 dark:text-white/80">
         {JSON.stringify(agent, null, 2)}
       </pre>
     </main>

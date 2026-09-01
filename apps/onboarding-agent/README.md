@@ -15,7 +15,7 @@ dashboard: triggerOnboardingAgentSetup (server action)
   - verifies the website responds
         │
         ▼
-Upstash Workflow: POST /api/workflows/onboarding-agent   (dashboard deployment)
+Vercel Workflow: onboardingAgentWorkflow (src/workflows/onboarding-agent.ts, dashboard deployment)
   - sends the Slack Connect invite when the workflow starts
   - start-session: POST {EVE_ONBOARDING_AGENT_URL}/eve/v1/session
   - polls organizations.onboarding_agent_ran every 30s

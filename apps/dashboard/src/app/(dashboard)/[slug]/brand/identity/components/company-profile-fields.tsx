@@ -2,6 +2,7 @@ import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
+
 import type { CompanyProfileFieldsProps } from "@/types/brand-identity";
 
 export function CompanyProfileFields({ form }: CompanyProfileFieldsProps) {
@@ -27,9 +28,9 @@ export function CompanyProfileFields({ form }: CompanyProfileFieldsProps) {
           {(field) => (
             <div className="space-y-2">
               <Label htmlFor={field.name}>Website</Label>
-              <div className="flex w-full flex-row items-center rounded-md border border-border transition-colors focus-within:border-ring focus-within:ring-ring/50">
+              <div className="border-border focus-within:border-ring focus-within:ring-ring/50 flex w-full flex-row items-center rounded-md border transition-colors">
                 <label
-                  className="border-border border-r px-2.5 py-1.5 text-muted-foreground text-sm transition-colors"
+                  className="border-border text-muted-foreground border-r px-2.5 py-1.5 text-sm transition-colors"
                   htmlFor={field.name}
                 >
                   https://

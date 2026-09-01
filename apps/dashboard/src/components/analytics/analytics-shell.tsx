@@ -1,6 +1,8 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { type ReactNode, useEffect, useRef } from "react";
+
 import { AnalyticsPageSkeleton } from "@/app/(dashboard)/[slug]/analytics/skeleton";
 import { AccountFilter } from "@/components/analytics/account-filter";
 import { useAnalyticsAccounts } from "@/components/analytics/analytics-context";
@@ -10,16 +12,22 @@ import { SummaryStats } from "@/components/analytics/summary-stats";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateAnalyticsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
+import { ANALYTICS_VIEW_STATES } from "@/constants/integration-analytics";
 import { rangeHintLabel } from "@/lib/analytics/date-range";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useAnalyticsRange } from "@/lib/hooks/use-analytics-range";
-import { useEngagementTimeseries } from "@/lib/hooks/use-social-analytics";
+import {
+  useEngagementTimeseries,
+  useSocialOverview,
+} from "@/lib/hooks/use-social-analytics";
+import type { AnalyticsViewState } from "@/types/analytics/integration-events";
 import { accountSeriesKey } from "@/utils/analytics-charts";
 
 function AnalyticsHeader({ organizationId }: { organizationId: string }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="space-y-1">
-        <h1 className="font-bold text-3xl tracking-tight">Analytics</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
         <p className="text-muted-foreground">
           How your X and LinkedIn accounts are performing
         </p>
@@ -46,6 +54,28 @@ export function AnalyticsShell({ children }: { children: ReactNode }) {
     organizationId,
     engagementRange.range
   );
+  const { isError: overviewFailed } = useSocialOverview(organizationId);
+  const viewedRef = useRef(false);
+
+  let viewState: AnalyticsViewState = ANALYTICS_VIEW_STATES.OK;
+  if (overviewFailed) {
+    viewState = ANALYTICS_VIEW_STATES.FLAG_OFF;
+  } else if (accounts.length === 0) {
+    viewState = ANALYTICS_VIEW_STATES.NO_ACCOUNTS;
+  } else if (!configured) {
+    viewState = ANALYTICS_VIEW_STATES.NOT_CONFIGURED;
+  }
+
+  useEffect(() => {
+    if (isPending || !organizationId || viewedRef.current) {
+      return;
+    }
+    viewedRef.current = true;
+    trackEvent(POSTHOG_EVENTS.ANALYTICS_VIEWED, {
+      state: viewState,
+      account_count: accounts.length,
+    });
+  }, [isPending, organizationId, viewState, accounts.length]);
 
   const visiblePoints = (engagement?.points ?? []).filter((point) =>
     selectedKeys.has(accountSeriesKey(point.provider, point.providerAccountId))
@@ -60,7 +90,7 @@ export function AnalyticsShell({ children }: { children: ReactNode }) {
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full space-y-6 px-4 lg:px-6">
           <header className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">Analytics</h1>
+            <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
             <p className="text-muted-foreground">
               How your X and LinkedIn accounts are performing
             </p>
@@ -89,7 +119,7 @@ export function AnalyticsShell({ children }: { children: ReactNode }) {
         </header>
 
         {!configured && (
-          <p className="rounded-md border border-border px-3 py-2 font-mono text-[0.6875rem] text-muted-foreground">
+          <p className="border-border text-muted-foreground rounded-md border px-3 py-2 font-mono text-[0.6875rem]">
             Analytics ingestion is not configured yet. Connected accounts are
             shown, but stats will appear once the analytics backend is set up.
           </p>

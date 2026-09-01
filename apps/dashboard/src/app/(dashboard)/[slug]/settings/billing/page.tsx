@@ -2,6 +2,7 @@
 
 import { ArrowDown01Icon, ArrowUp01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
@@ -23,18 +24,25 @@ import { useCustomer, useListPlans } from "autumn-js/react";
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { Suspense, useEffect, useId, useMemo, useState } from "react";
 import { toast } from "sonner";
+
 import { PlanCard } from "@/components/billing/plan-card";
 import { UsageSection } from "@/components/billing/usage-section";
 import { ZdrAddonCard } from "@/components/billing/zdr-addon-card";
 import { Button } from "@/components/button";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { PLAN_SURFACES } from "@/constants/analytics-events";
 import {
   BILLING_SECTION_VALUES,
   FEATURED_PLAN_TIER,
   INVOICE_TABLE_COLUMN_COUNT,
   PLANS_ANCHOR,
 } from "@/constants/billing";
+import {
+  billingInterval,
+  planSelectedProperties,
+} from "@/lib/analytics/billing-events";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { attachPlanWithAddons } from "@/lib/billing/attach-plan";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import type { BillingPlanGroup, PlanCardButton } from "@/types/billing/plan";
@@ -51,6 +59,7 @@ import {
   selectPlanVariant,
   zdrAddonToggle,
 } from "@/utils/billing-plans";
+
 import { DashboardPageSkeleton } from "../../skeleton";
 
 const noop = () => undefined;
@@ -107,8 +116,35 @@ function BillingPageContent() {
     activeSubscription?.trialEndsAt != null &&
     activeSubscription.trialEndsAt > now;
 
+  function handleIntervalChange(value: string) {
+    const yearly = value === "yearly";
+    trackEvent(POSTHOG_EVENTS.PRICING_INTERVAL_TOGGLED, {
+      interval: billingInterval(yearly),
+      surface: PLAN_SURFACES.BILLING_PAGE,
+    });
+    setIsYearly(yearly);
+  }
+
+  function handleIncludeZdrChange(checked: boolean) {
+    trackEvent(POSTHOG_EVENTS.ZDR_ADDON_TOGGLED, {
+      enabled: checked,
+      surface: PLAN_SURFACES.BILLING_PAGE,
+    });
+    setIncludeZdr(checked);
+  }
+
   async function handleCheckout(planId: string) {
     setLoading(planId);
+    trackEvent(
+      POSTHOG_EVENTS.PLAN_SELECTED,
+      planSelectedProperties({
+        plans,
+        planId,
+        isYearly,
+        includeZdr,
+        surface: PLAN_SURFACES.BILLING_PAGE,
+      })
+    );
     const successUrl = activeOrganization?.slug
       ? `${window.location.origin}/${activeOrganization.slug}/settings/billing/success`
       : undefined;
@@ -128,6 +164,10 @@ function BillingPageContent() {
       }
     } catch (err) {
       console.error("Attach error:", err);
+      trackEvent(POSTHOG_EVENTS.CHECKOUT_FAILED, {
+        plan_id: planId,
+        surface: PLAN_SURFACES.BILLING_PAGE,
+      });
       toast.error(
         err instanceof Error
           ? err.message
@@ -139,6 +179,9 @@ function BillingPageContent() {
 
   async function handleManageSubscription() {
     setPortalLoading(true);
+    trackEvent(POSTHOG_EVENTS.CUSTOMER_PORTAL_OPENED, {
+      surface: PLAN_SURFACES.BILLING_PAGE,
+    });
     const returnUrl = `${window.location.origin}/${activeOrganization?.slug}/settings/billing`;
     try {
       await openCustomerPortal({
@@ -207,7 +250,7 @@ function BillingPageContent() {
             </Badge>
           ) : undefined
         }
-        addon={zdrAddonToggle(addonPlan, includeZdr, setIncludeZdr)}
+        addon={zdrAddonToggle(addonPlan, includeZdr, handleIncludeZdrChange)}
         button={planButton(group)}
         description={planGroupDescription(group)}
         featured={group.id === FEATURED_PLAN_TIER}
@@ -229,7 +272,7 @@ function BillingPageContent() {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="space-y-1">
           <div className="flex items-center justify-between gap-4">
-            <h1 className="font-bold text-3xl tracking-tight">
+            <h1 className="text-3xl font-bold tracking-tight">
               Billing & Usage
             </h1>
             {activeSubscription && (
@@ -270,7 +313,7 @@ function BillingPageContent() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h2
-                        className="scroll-mt-24 font-semibold text-lg"
+                        className="scroll-mt-24 text-lg font-semibold"
                         id={PLANS_ANCHOR}
                       >
                         Plans
@@ -280,7 +323,7 @@ function BillingPageContent() {
                       </p>
                     </div>
                     <Tabs
-                      onValueChange={(value) => setIsYearly(value === "yearly")}
+                      onValueChange={handleIntervalChange}
                       value={isYearly ? "yearly" : "monthly"}
                     >
                       <TabsList variant="line">
@@ -290,7 +333,7 @@ function BillingPageContent() {
                           value="yearly"
                         >
                           Yearly
-                          <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 font-medium text-[10px] text-emerald-600">
+                          <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
                             Save 20%
                           </span>
                         </TabsTrigger>
@@ -304,18 +347,18 @@ function BillingPageContent() {
                 </div>
 
                 <div className="space-y-3">
-                  <h2 className="font-semibold text-lg">Add-ons</h2>
+                  <h2 className="text-lg font-semibold">Add-ons</h2>
                   <ZdrAddonCard />
                 </div>
 
                 <div className="space-y-3">
-                  <h2 className="font-semibold text-lg">Invoices</h2>
-                  <div className="overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs">
+                  <h2 className="text-lg font-semibold">Invoices</h2>
+                  <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
                     <Table>
                       <TableHeader>
                         <TableRow>
                           <TableHead
-                            className="w-[140px] cursor-pointer select-none transition-colors hover:text-foreground"
+                            className="hover:text-foreground w-[140px] cursor-pointer transition-colors select-none"
                             onClick={() =>
                               setDateSortOrder(
                                 dateSortOrder === "desc" ? "asc" : "desc"
@@ -343,7 +386,7 @@ function BillingPageContent() {
                         {sortedInvoices.length === 0 ? (
                           <TableRow>
                             <TableCell
-                              className="h-24 text-center text-muted-foreground"
+                              className="text-muted-foreground h-24 text-center"
                               colSpan={INVOICE_TABLE_COLUMN_COUNT}
                             >
                               No invoices yet

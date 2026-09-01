@@ -23,10 +23,10 @@ export function DraggableBlockPlugin({
   const menuComponent = useMemo(
     () => (
       <div
-        className={`${DRAGGABLE_BLOCK_MENU_CLASSNAME} absolute top-0 left-0 cursor-grab rounded p-0.5 opacity-0 transition-opacity will-change-transform hover:bg-muted active:cursor-grabbing`}
+        className={`${DRAGGABLE_BLOCK_MENU_CLASSNAME} hover:bg-muted absolute top-0 left-0 cursor-grab rounded p-0.5 opacity-0 transition-opacity will-change-transform active:cursor-grabbing`}
         ref={menuRef}
       >
-        <GripVertical className="size-4 text-muted-foreground" />
+        <GripVertical className="text-muted-foreground size-4" />
       </div>
     ),
     []
@@ -35,7 +35,7 @@ export function DraggableBlockPlugin({
   const targetLineComponent = useMemo(
     () => (
       <div
-        className="pointer-events-none absolute top-0 left-0 h-1 w-full bg-primary opacity-0 will-change-transform"
+        className="bg-primary pointer-events-none absolute top-0 left-0 h-1 w-full opacity-0 will-change-transform"
         ref={targetLineRef}
       />
     ),

@@ -1,19 +1,21 @@
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { Effect } from "effect";
+
 import type { AgentFeedbackRouterError } from "@/lib/agent-feedback/errors";
+import { readAgentFeedbackOrganization } from "@/lib/agent-feedback/organization";
 import {
+  deleteAgentFeedback,
   listAgentFeedback,
   updateAgentFeedbackStatus,
 } from "@/lib/agent-feedback/programs";
 import { buildAgentFeedbackSetup } from "@/lib/agent-feedback/snippet";
-import {
-  buildAgentFeedbackToken,
-  rotateAgentFeedbackToken,
-} from "@/lib/agent-feedback/token";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { runOrpcEffect } from "@/lib/orpc/effect";
 import { toAgentFeedbackOrpcError } from "@/lib/orpc/utils/agent-feedback-errors";
 import {
+  agentFeedbackItemInputSchema,
   agentFeedbackListInputSchema,
   agentFeedbackOrganizationInputSchema,
   agentFeedbackUpdateStatusInputSchema,
@@ -45,23 +47,42 @@ export const agentFeedbackRouter = {
     .handler(agentFeedbackHandler((input) => listAgentFeedback(input))),
   updateStatus: authorizedProcedure
     .input(agentFeedbackUpdateStatusInputSchema)
-    .handler(agentFeedbackHandler((input) => updateAgentFeedbackStatus(input))),
+    .handler(async ({ context, input }) => {
+      await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const item = await runOrpcEffect(
+        updateAgentFeedbackStatus(input),
+        toAgentFeedbackOrpcError
+      );
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.AGENT_FEEDBACK_STATUS_CHANGED,
+        headers: context.headers,
+        userId: context.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          feedback_id: item.id,
+          status: item.status,
+          kind: item.kind,
+          sentiment: item.sentiment,
+        },
+      });
+
+      return item;
+    }),
+  delete: authorizedProcedure
+    .input(agentFeedbackItemInputSchema)
+    .handler(agentFeedbackHandler((input) => deleteAgentFeedback(input))),
   setup: authorizedProcedure
     .input(agentFeedbackOrganizationInputSchema)
     .handler(
       agentFeedbackHandler((input) =>
         Effect.map(
-          buildAgentFeedbackToken(input.organizationId),
-          buildAgentFeedbackSetup
-        )
-      )
-    ),
-  rotateToken: authorizedProcedure
-    .input(agentFeedbackOrganizationInputSchema)
-    .handler(
-      agentFeedbackHandler((input) =>
-        Effect.map(
-          rotateAgentFeedbackToken(input.organizationId),
+          readAgentFeedbackOrganization(input.organizationId),
           buildAgentFeedbackSetup
         )
       )

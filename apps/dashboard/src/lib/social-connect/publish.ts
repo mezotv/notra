@@ -3,6 +3,7 @@ import { connectedSocialAccounts } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import type { SocialPostResult } from "post-for-me/resources/social-post-results";
+
 import { recordPublishedSocialPost } from "@/lib/analytics/record-post";
 import {
   getSocialConnectClient,

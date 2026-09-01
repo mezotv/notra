@@ -3,13 +3,10 @@ import {
   GEO_DEFAULT_RANGE,
   GEO_RANGE_PRESET_DAYS,
   GEO_RANGE_PRESETS,
-} from "@/constants/geo";
-import type {
-  GeoDateRange,
-  GeoRangePreset,
-  GeoRangeQuery,
-  GeoRangeState,
-} from "@/types/geo";
+} from "@notra/geo-core/constants/geo";
+import type { GeoRangePreset } from "@notra/geo-core/types/geo";
+
+import type { GeoDateRange, GeoRangeQuery, GeoRangeState } from "@/types/geo";
 
 const DAY_PAD_LENGTH = 2;
 const DAY_MS = 86_400_000;

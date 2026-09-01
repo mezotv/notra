@@ -1,10 +1,12 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+
 import type {
   PostCollectionDetail,
   PostCollectionListResponse,
 } from "@/schemas/content";
+
 import { dashboardOrpc } from "../orpc/query";
 
 const DEFAULT_PAGE_SIZE = 20;

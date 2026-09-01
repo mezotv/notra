@@ -24,12 +24,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { AttachmentPreviewDialog } from "@/components/chat/attachment-preview";
 import { EmptyState } from "@/components/empty-state";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { AttachmentRow } from "@/types/settings/attachments";
+
 import { AttachmentCard } from "./attachment-card";
 
 type Filter = "all" | "image" | "pdf" | "text" | "other";
@@ -171,7 +173,7 @@ export function AttachmentsSection() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
           {LOADING_SKELETON_KEYS.map((skeletonKey) => (
             <div
-              className="overflow-hidden rounded-lg border border-border/80"
+              className="border-border/80 overflow-hidden rounded-lg border"
               key={skeletonKey}
             >
               <Skeleton className="aspect-square w-full rounded-none" />

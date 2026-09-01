@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+
 import {
   exchangeAuthorization,
   registerClient,
@@ -17,6 +18,7 @@ import {
 import { and, eq, gt, lt, sql } from "drizzle-orm";
 import { Effect } from "effect";
 import { customAlphabet } from "nanoid";
+
 import { MCP_OAUTH_PENDING_TTL_MS } from "../constants/mcp-auth";
 import {
   mcpOAuthClientInformationSchema,

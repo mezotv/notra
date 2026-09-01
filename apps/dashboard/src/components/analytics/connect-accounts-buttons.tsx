@@ -6,6 +6,7 @@ import {
   NewTwitterIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,8 +14,11 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { Loader2Icon } from "lucide-react";
+
 import { Button } from "@/components/button";
 import { CONNECT_X_CLASS } from "@/constants/analytics";
+import { INTEGRATION_PROVIDERS } from "@/constants/integration-analytics";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useHandleConnectSocialAccount } from "@/lib/hooks/use-connected-accounts";
 import { cn } from "@/lib/utils";
 import type { ConnectAccountsButtonsProps } from "@/types/analytics";
@@ -36,7 +40,12 @@ export function ConnectAccountsButtons({
       <Button
         className={cn(CONNECT_X_CLASS, SPLIT_SEGMENT_CLASS, "gap-2")}
         disabled={twitter.isPending}
-        onClick={twitter.handleConnect}
+        onClick={() => {
+          trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+            provider: INTEGRATION_PROVIDERS.X,
+          });
+          void twitter.handleConnect();
+        }}
       >
         {twitter.isPending ? (
           <Loader2Icon className="size-4 animate-spin" />
@@ -53,7 +62,7 @@ export function ConnectAccountsButtons({
               className={cn(
                 CONNECT_X_CLASS,
                 SPLIT_SEGMENT_CLASS,
-                "border-white/20 border-l px-2.5! dark:border-black/15"
+                "border-l border-white/20 px-2.5! dark:border-black/15"
               )}
             />
           }
@@ -63,7 +72,12 @@ export function ConnectAccountsButtons({
         <DropdownMenuContent align="end" className="min-w-52">
           <DropdownMenuItem
             disabled={linkedin.isPending}
-            onClick={linkedin.handleConnect}
+            onClick={() => {
+              trackEvent(POSTHOG_EVENTS.INTEGRATION_CONNECT_STARTED, {
+                provider: INTEGRATION_PROVIDERS.LINKEDIN,
+              });
+              void linkedin.handleConnect();
+            }}
           >
             {linkedin.isPending ? (
               <Loader2Icon className="size-4 animate-spin" />

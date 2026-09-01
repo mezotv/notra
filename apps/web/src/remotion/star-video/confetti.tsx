@@ -1,4 +1,5 @@
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
+
 import type { ConfettiPiece } from "../../types/star-video";
 import { VIDEO_HEIGHT } from "./constants";
 

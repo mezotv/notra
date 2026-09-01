@@ -3,4 +3,5 @@ export interface ApiAgentScope {
   userId?: string;
   chatId?: string;
   useMarkup?: boolean;
+  chargeAiCredits?: boolean;
 }

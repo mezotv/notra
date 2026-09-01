@@ -10,9 +10,11 @@ import {
 import { useStore } from "@tanstack/react-form";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+
 import { useEventTriggerForm } from "@/lib/hooks/use-event-trigger-form";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { CreateEventTriggerDialogProps } from "@/types/automation/event-trigger";
+
 import { EventTriggerDialogFooter } from "./event-trigger-dialog-footer";
 import { EventTriggerEventSection } from "./event-trigger-event-section";
 import { EventTriggerFormatSection } from "./event-trigger-format-section";

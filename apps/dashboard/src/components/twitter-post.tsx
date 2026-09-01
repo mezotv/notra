@@ -25,6 +25,7 @@ import {
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import type * as React from "react";
 import { useEffect, useRef, useState } from "react";
+
 import { Button } from "@/components/button";
 import { SocialAccountSelector } from "@/components/content/social-account-selector";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
@@ -131,7 +132,7 @@ function TweetContent({
 
   return (
     <div
-      className="whitespace-pre-wrap text-[0.9375rem] leading-snug"
+      className="text-[0.9375rem] leading-snug whitespace-pre-wrap"
       ref={contentRef}
     >
       {formatTweetContent(content)}
@@ -155,7 +156,7 @@ function CharacterCounter({ count, limit }: { count: number; limit: number }) {
         <span
           className={cn(
             "text-xs tabular-nums",
-            isOver ? "font-medium text-destructive" : "text-amber-500"
+            isOver ? "text-destructive font-medium" : "text-amber-500"
           )}
         >
           {remaining}
@@ -219,7 +220,7 @@ function TwitterPost({
 
   const authorIdentity = (
     <>
-      <span className="truncate font-bold text-[0.9375rem] leading-tight">
+      <span className="truncate text-[0.9375rem] leading-tight font-bold">
         {author.name}
       </span>
       <XVerificationBadge
@@ -228,7 +229,7 @@ function TwitterPost({
         verifiedType={author.verifiedType ?? null}
       />
       {author.handle && (
-        <span className="truncate text-[0.9375rem] text-muted-foreground">
+        <span className="text-muted-foreground truncate text-[0.9375rem]">
           @{author.handle}
         </span>
       )}
@@ -263,7 +264,7 @@ function TwitterPost({
                   <>
                     {authorIdentity}
                     <HugeiconsIcon
-                      className="size-3.5 shrink-0 text-muted-foreground"
+                      className="text-muted-foreground size-3.5 shrink-0"
                       icon={ArrowDown01Icon}
                     />
                   </>
@@ -275,14 +276,14 @@ function TwitterPost({
             {timestamp && (
               <>
                 <span className="text-muted-foreground">·</span>
-                <span className="shrink-0 text-[0.9375rem] text-muted-foreground">
+                <span className="text-muted-foreground shrink-0 text-[0.9375rem]">
                   {timestamp}
                 </span>
               </>
             )}
             {menuItems && menuItems.length > 0 ? (
               <DropdownMenu>
-                <DropdownMenuTrigger className="ml-auto flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground hover:bg-accent">
+                <DropdownMenuTrigger className="text-muted-foreground hover:bg-accent ml-auto flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full">
                   <HugeiconsIcon className="size-4" icon={MoreHorizontalIcon} />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -300,7 +301,7 @@ function TwitterPost({
               </DropdownMenu>
             ) : (
               <Button
-                className="ml-auto text-muted-foreground"
+                className="text-muted-foreground ml-auto"
                 size="icon-sm"
                 variant="ghost"
               >
@@ -322,7 +323,7 @@ function TwitterPost({
                     {"\u200b"}
                   </div>
                   <Textarea
-                    className="field-sizing-content col-start-1 row-start-1 min-h-[4rem] min-w-0 resize-none overflow-hidden rounded-none border-none bg-transparent p-0 caret-foreground shadow-none focus-visible:ring-0 dark:bg-transparent"
+                    className="caret-foreground col-start-1 row-start-1 field-sizing-content min-h-[4rem] min-w-0 resize-none overflow-hidden rounded-none border-none bg-transparent p-0 shadow-none focus-visible:ring-0 dark:bg-transparent"
                     onChange={(e) => {
                       const value = e.target.value;
                       setLocalValue(value);
@@ -347,21 +348,21 @@ function TwitterPost({
 
             <div className="mt-auto flex items-center justify-between pt-2">
               <Button
-                className="gap-1.5 text-muted-foreground"
+                className="text-muted-foreground gap-1.5"
                 size="icon-sm"
                 variant="ghost"
               >
                 <HugeiconsIcon className="size-4" icon={Comment01Icon} />
               </Button>
               <Button
-                className="gap-1.5 text-muted-foreground"
+                className="text-muted-foreground gap-1.5"
                 size="icon-sm"
                 variant="ghost"
               >
                 <HugeiconsIcon className="size-4" icon={RepeatIcon} />
               </Button>
               <Button
-                className="gap-1.5 text-muted-foreground"
+                className="text-muted-foreground gap-1.5"
                 size="icon-sm"
                 variant="ghost"
               >

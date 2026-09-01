@@ -8,6 +8,7 @@ import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
@@ -16,6 +17,7 @@ import { McpServerCard } from "@/components/integrations/mcp-server-card";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { dashboardOrpc } from "@/lib/orpc/query";
+
 import { IntegrationsPageSkeleton } from "../skeleton";
 
 interface PageClientProps {
@@ -127,7 +129,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       <div className="w-full space-y-6 px-4 lg:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="font-bold text-3xl tracking-tight">MCP Servers</h1>
+            <h1 className="text-3xl font-bold tracking-tight">MCP Servers</h1>
             <p className="text-muted-foreground">
               Connect custom Model Context Protocol servers to bring your own
               tools and context into Notra

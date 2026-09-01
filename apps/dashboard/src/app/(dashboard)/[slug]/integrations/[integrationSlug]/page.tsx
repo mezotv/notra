@@ -2,7 +2,9 @@ import { Effect } from "effect";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+
 import { resolveOrganizationIntegrationConnect } from "@/lib/integrations/deeplink-resolution";
+
 import PageClient from "../page-client";
 
 export const metadata: Metadata = {

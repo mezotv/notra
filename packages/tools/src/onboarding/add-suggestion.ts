@@ -1,8 +1,10 @@
 import { randomUUID } from "node:crypto";
+
 import { db } from "@notra/db/drizzle";
 import { onboardingSuggestions, organizations } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
 import { defineTool } from "eve/tools";
+
 import { addSuggestionInputSchema } from "../schemas/onboarding-tools";
 import { requireOrganizationId } from "../utils/organization";
 

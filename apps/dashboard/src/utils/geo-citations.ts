@@ -1,8 +1,10 @@
 import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
-import { AI_TRAFFIC_PURPOSE_LABELS } from "@notra/ui/constants/geo";
-import { AI_TRAFFIC_CONFIDENCE_LABELS } from "@/constants/geo";
-import type { GeoTrafficLogEntry, GeoVisitorType } from "@/types/geo";
-import { formatGeoSource } from "@/utils/ai-traffic";
+import {
+  AI_TRAFFIC_CONFIDENCE_LABELS,
+  AI_TRAFFIC_PURPOSE_LABELS,
+} from "@notra/geo-core/constants/geo";
+import type { GeoTrafficLogEntry } from "@notra/geo-core/types/geo";
+import { formatGeoSource } from "@notra/geo-core/utils/ai-traffic";
 
 export interface CitationProviderTooltip {
   title: string;
@@ -24,29 +26,21 @@ export function formatCitationTimestamp(value: string): string {
   return `${month}/${day}/${date.getUTCFullYear()} ${hours}:${minutes}:${seconds}`;
 }
 
-export function formatCitationProvider(
-  agent: string,
-  source: string,
-  visitorType: GeoVisitorType
-): string {
+export function formatCitationProvider(agent: string, source: string): string {
   const trimmed = agent.trim();
   if (trimmed.length > 0) {
     return trimmed;
   }
-  return formatGeoSource(source, visitorType);
+  return formatGeoSource(source);
 }
 
 export function citationProviderTooltip(
   entry: Pick<
     GeoTrafficLogEntry,
-    "agent" | "source" | "visitorType" | "category" | "confidence"
+    "agent" | "source" | "category" | "confidence"
   >
 ): CitationProviderTooltip {
-  const title = formatCitationProvider(
-    entry.agent,
-    entry.source,
-    entry.visitorType
-  );
+  const title = formatCitationProvider(entry.agent, entry.source);
   const raw = (entry.agent || entry.source).trim();
   const showRaw = raw.length > 0 && raw.toLowerCase() !== title.toLowerCase();
 

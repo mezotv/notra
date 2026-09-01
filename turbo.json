@@ -1,19 +1,17 @@
 {
-  "$schema": "https://v2-9-18.turborepo.dev/schema.json",
+  "$schema": "https://v2-10-11.turborepo.dev/schema.json",
   "ui": "tui",
   "globalEnv": [
     "AI_GATEWAY_API_KEY",
     "APP_URL",
     "AUTUMN_PROD_SECRET_KEY",
     "AUTUMN_SECRET_KEY",
-    "CONSOLE_APP_URL",
     "WORKOS_API_KEY",
     "WORKOS_CLIENT_ID",
     "WORKOS_COOKIE_PASSWORD",
     "WORKOS_COOKIE_DOMAIN",
     "INTERNAL_WORKFLOW_SECRET",
     "NEXT_PUBLIC_WORKOS_REDIRECT_URI",
-    "CONSOLE_WORKOS_REDIRECT_URI",
     "WORKOS_WEBHOOK_SECRET",
     "WORKOS_AUTHKIT_DOMAIN",
     "DATABASE_URL",
@@ -22,16 +20,12 @@
     "GITHUB_APP_PRIVATE_KEY",
     "GITHUB_APP_SLUG",
     "GITHUB_TOKEN",
-    "GOOGLE_CLIENT_ID",
-    "GOOGLE_CLIENT_SECRET",
     "GOOGLE_SEARCH_CONSOLE_CLIENT_ID",
     "GOOGLE_SEARCH_CONSOLE_CLIENT_SECRET",
     "INTEGRATION_ENCRYPTION_KEY",
     "OPENROUTER_API_KEY",
-    "NEXT_PUBLIC_LOGOLINK_CLIENT_ID",
     "NEXT_PUBLIC_POSTHOG_HOST",
     "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN",
-    "QSTASH_URL",
     "QSTASH_CURRENT_SIGNING_KEY",
     "QSTASH_NEXT_SIGNING_KEY",
     "QSTASH_TOKEN",
@@ -49,6 +43,7 @@
     "DO_NOT_TRACK",
     "UNKEY_ROOT_KEY",
     "UNKEY_API_ID",
+    "PORT",
     "TWITTER_BEARER_TOKEN",
     "OPENAI_API_KEY",
     "ANTHROPIC_API_KEY",
@@ -68,6 +63,7 @@
     "LINEAR_CLIENT_SECRET",
     "AXIOM_TOKEN",
     "AXIOM_AI_DATASET",
+    "AXIOM_GEO_DATASET",
     "AXIOM_ORG_ID",
     "AI_SDK_DEVTOOLS",
     "AI_SDK_DEVTOOLS_PORT",
@@ -109,12 +105,12 @@
       "dependsOn": ["^transit"]
     },
     "build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["transit"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**", ".vercel/**"]
     },
     "@notra/onboarding-agent#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "transit"],
       "outputs": [
         ".output/**",
         ".vercel/output/**",
@@ -123,18 +119,20 @@
       ]
     },
     "check-types": {
-      "dependsOn": ["transit", "^build"]
+      "dependsOn": ["transit"]
     },
     "knip": {
-      "dependsOn": ["transit", "^build"]
+      "dependsOn": ["transit"]
+    },
+    "test": {
+      "dependsOn": ["transit"]
     },
     "dev": {
-      "dependsOn": ["^build"],
       "cache": false,
       "persistent": true
     },
     "@notra/agent#build": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build", "transit"],
       "outputs": [
         ".output/**",
         ".vercel/output/**",

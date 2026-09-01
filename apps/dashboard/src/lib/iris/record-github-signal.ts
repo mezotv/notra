@@ -1,6 +1,7 @@
 import { recordSignal } from "@notra/ai/autonomy/signals";
 import { SIGNAL_SOURCE_GITHUB } from "@notra/ai/constants/autonomy-signals";
 import { Effect } from "effect";
+
 import { IrisSignalRecordingError } from "@/lib/iris/errors";
 import { loadActiveMandateRow } from "@/lib/iris/mandate";
 import { startIrisRun } from "@/lib/workflows/start";

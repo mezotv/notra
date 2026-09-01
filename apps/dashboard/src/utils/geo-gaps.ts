@@ -1,50 +1,50 @@
-import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
-import { GEO_GAPS_METER_STEPS } from "@notra/ui/constants/geo";
 import {
   GEO_GAPS_ENGINE_FILTER_ALL,
+  GEO_GAPS_METER_STEPS,
   GEO_GAPS_WRITE_LABELS,
-} from "@/constants/geo";
-import type {
-  GeoGapsEmptyKind,
-  GeoGapsMeterTone,
-  GeoGapsTab,
-} from "@/types/components/geo-gaps";
+} from "@notra/geo-core/constants/geo";
 import type {
   GeoGapBriefRef,
   GeoGapWriteAction,
   GeoPromptGapRow,
   GeoSearchGapRow,
-} from "@/types/geo";
-import { bestFuzzyScore, fuzzyMatches } from "@/utils/fuzzy";
-import { engineFamilyLabel, engineFamilyOf } from "@/utils/geo-charts";
+} from "@notra/geo-core/types/geo";
+import {
+  engineFamilyLabel,
+  engineFamilyOf,
+} from "@notra/geo-core/utils/geo-engine-family";
 
-export const REUSABLE_BRIEF_STATUSES = [
-  "draft",
-  "approved",
-  "writing",
-  "failed",
-] as const satisfies readonly GeoContentBriefStatus[];
+import type {
+  GeoGapsEmptyKind,
+  GeoGapsMeterTone,
+  GeoGapsTab,
+} from "@/types/components/geo-gaps";
 
-const OPEN_BRIEF_STATUSES = new Set<GeoContentBriefStatus>(
-  REUSABLE_BRIEF_STATUSES
-);
-
-export function isMissingMajority(
-  missingCount: number,
-  total: number
-): boolean {
-  return missingCount * 2 >= total;
-}
-
-export function gapOpportunityScore(
-  ownMentionRate: number,
-  competitorCount: number,
-  engineCoverage: number
-): number {
-  return (1 - ownMentionRate) * competitorCount * engineCoverage;
-}
+import { bestFuzzyScore, fuzzyMatches } from "./fuzzy";
 
 /** Map 0–1 intensity onto a 1–5 inspo-style meter (empty when intensity is 0). */
+export function gapMeterLevel(
+  intensity: number,
+  steps = GEO_GAPS_METER_STEPS
+): number {
+  if (intensity <= 0 || steps <= 0) {
+    return 0;
+  }
+  return Math.max(1, Math.min(steps, Math.round(intensity * steps)));
+}
+
+export function gapMeterTone(level: number): GeoGapsMeterTone {
+  if (level <= 0) {
+    return "empty";
+  }
+  if (level <= 2) {
+    return "low";
+  }
+  if (level === 3) {
+    return "mid";
+  }
+  return "high";
+}
 
 /** Deduplicate scan engines to brand families (openai, claude, …). */
 export function gapMissingEngineFamilies(engines: readonly string[]): string[] {
@@ -84,19 +84,6 @@ export function gapWriteAction(
 
 export function gapWriteLabel(action: GeoGapWriteAction): string {
   return GEO_GAPS_WRITE_LABELS[action];
-}
-
-export function isReusableBriefStatus(status: GeoContentBriefStatus): boolean {
-  return OPEN_BRIEF_STATUSES.has(status);
-}
-
-export function searchGapImpressions(
-  keywords: Array<{ impressions: number }> | null | undefined
-): number | null {
-  if (!keywords || keywords.length === 0) {
-    return null;
-  }
-  return keywords.reduce((sum, keyword) => sum + keyword.impressions, 0);
 }
 
 export function geoGapsEmptyKind({

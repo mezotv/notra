@@ -1,11 +1,12 @@
 import type { TOCItemType } from "fumadocs-core/toc";
+import type { TocPosition } from "~types/blog";
+
 import {
   TOC_FALLBACK_X,
   TOC_SCROLL_OFFSET_PX,
   TOC_TRANSITION_INSET,
   TOC_X_BY_DEPTH,
 } from "@/lib/blog/constants";
-import type { TocPosition } from "~types/blog";
 
 export function getHeadingId(item: TOCItemType) {
   return item.url.startsWith("#") ? item.url.slice(1) : item.url;

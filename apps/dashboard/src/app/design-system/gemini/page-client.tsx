@@ -18,6 +18,7 @@ import { cn } from "@notra/ui/lib/utils";
 import { useReducedMotion } from "motion/react";
 import type { ReactNode } from "react";
 import { useRef } from "react";
+
 import { DesignSystemSectionHeader } from "@/components/design-system/design-system-section-header";
 import { useGeminiPlayback } from "@/components/design-system/use-gemini-playback";
 import {
@@ -53,7 +54,7 @@ function GeminiFrame({
       {onPlay ? (
         <button
           aria-label={playing ? "Stop playback" : "Play conversation"}
-          className="absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full border border-black/8 bg-white/90 text-[#5f6368] shadow-sm backdrop-blur-sm transition-colors hover:text-[#1f1f1f] dark:border-white/10 dark:bg-[#1f1f1f]/90 dark:hover:text-foreground"
+          className="dark:hover:text-foreground absolute top-3 right-3 z-10 flex size-8 items-center justify-center rounded-full border border-black/8 bg-white/90 text-[#5f6368] shadow-sm backdrop-blur-sm transition-colors hover:text-[#1f1f1f] dark:border-white/10 dark:bg-[#1f1f1f]/90"
           onClick={onPlay}
           type="button"
         >

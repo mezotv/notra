@@ -14,6 +14,7 @@ import { Loader2Icon } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 import { toast } from "sonner";
+
 import { MIME_DISPLAY_LABELS } from "@/constants/upload";
 import {
   isImageMimeType,
@@ -42,7 +43,7 @@ function TextPreview({ url }: { url: string }) {
 
   if (error) {
     return (
-      <div className="flex h-full items-center justify-center text-destructive text-sm">
+      <div className="text-destructive flex h-full items-center justify-center text-sm">
         {error.message}
       </div>
     );
@@ -50,14 +51,14 @@ function TextPreview({ url }: { url: string }) {
 
   if (content === undefined) {
     return (
-      <div className="flex h-full items-center justify-center text-muted-foreground">
+      <div className="text-muted-foreground flex h-full items-center justify-center">
         <Loader2Icon className="size-4 animate-spin" />
       </div>
     );
   }
 
   return (
-    <pre className="h-full overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/40 p-3 font-mono text-xs leading-relaxed">
+    <pre className="bg-muted/40 h-full overflow-auto rounded-md p-3 font-mono text-xs leading-relaxed break-words whitespace-pre-wrap">
       {content}
     </pre>
   );
@@ -131,7 +132,7 @@ export function AttachmentPreviewDialog({
             <DialogTitle className="truncate text-sm">
               {attachment.filename}
             </DialogTitle>
-            <p className="mt-1 text-muted-foreground text-xs">
+            <p className="text-muted-foreground mt-1 text-xs">
               {typeof attachment.size === "number"
                 ? `${typeLabel} · ${formatBytes(attachment.size)}`
                 : typeLabel}
@@ -160,9 +161,9 @@ export function AttachmentPreviewDialog({
             </Button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-hidden rounded-md border border-border">
+        <div className="border-border min-h-0 flex-1 overflow-hidden rounded-md border">
           {isImage ? (
-            <div className="relative flex h-full w-full items-center justify-center bg-muted/20">
+            <div className="bg-muted/20 relative flex h-full w-full items-center justify-center">
               <Image
                 alt={attachment.filename}
                 className="h-full w-full object-contain"
@@ -184,8 +185,8 @@ export function AttachmentPreviewDialog({
           ) : null}
           {isText ? <TextPreview url={attachment.url} /> : null}
           {canPreview ? null : (
-            <div className="flex h-full flex-col items-center justify-center gap-1 bg-muted/20 px-6 text-center">
-              <p className="font-medium text-sm">Preview isn't available</p>
+            <div className="bg-muted/20 flex h-full flex-col items-center justify-center gap-1 px-6 text-center">
+              <p className="text-sm font-medium">Preview isn't available</p>
               <p className="text-muted-foreground text-xs">
                 Download this file to open it on your device.
               </p>

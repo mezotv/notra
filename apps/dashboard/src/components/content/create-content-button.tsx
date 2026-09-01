@@ -4,6 +4,7 @@ import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import type { ComponentProps } from "react";
+
 import { Button } from "@/components/button";
 
 type CreateContentButtonProps = Omit<ComponentProps<typeof Button>, "children">;

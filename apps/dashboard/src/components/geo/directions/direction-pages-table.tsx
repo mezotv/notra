@@ -1,65 +1,60 @@
 "use client";
 
-import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
-import { useMemo } from "react";
+import type { GeoTrafficPage } from "@notra/geo-core/types/geo";
+import { formatGeoSource } from "@notra/geo-core/utils/ai-traffic";
+
+import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { GEO_DIRECTIONS_PAGES } from "@/constants/geo-directions";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { cn } from "@/lib/utils";
-import type { GeoTrafficPage } from "@/types/geo";
 import type { DirectionBlockProps } from "@/types/geo-directions";
-import { formatGeoSource } from "@/utils/ai-traffic";
 import { formatDirectionCount } from "@/utils/geo-directions";
 import { tableHeightFor } from "@/utils/table";
 
 export function DirectionPagesTable({ className }: DirectionBlockProps) {
-  const columns = useMemo<TableColumn<GeoTrafficPage>[]>(
-    () => [
-      {
-        key: "path",
-        header: "Page",
-        width: "1.5fr",
-        sortable: true,
-        cell: (row) => (
-          <TruncateWithTooltip className="font-mono text-xs">
-            {row.path}
-          </TruncateWithTooltip>
-        ),
-      },
-      {
-        key: "source",
-        header: "Source",
-        width: "1fr",
-        sortable: true,
-        cell: (row) => (
-          <span className="flex min-w-0 items-center gap-2 text-sm">
-            <EngineIcon engine={row.source} />
-            <span className="truncate">
-              {formatGeoSource(row.source, row.visitorType)}
-            </span>
-          </span>
-        ),
-        sortValue: (row) => formatGeoSource(row.source, row.visitorType),
-      },
-      {
-        key: "visits",
-        header: "Visits",
-        width: "6.5rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-sm tabular-nums">
-            {formatDirectionCount(row.visits)}
-          </span>
-        ),
-      },
-    ],
-    []
-  );
+  const columns: TableColumn<GeoTrafficPage>[] = [
+    {
+      key: "path",
+      header: "Page",
+      width: "1.5fr",
+      sortable: true,
+      cell: (row) => (
+        <TruncateWithTooltip className="font-mono text-xs">
+          {row.path}
+        </TruncateWithTooltip>
+      ),
+    },
+    {
+      key: "source",
+      header: "Source",
+      width: "1fr",
+      sortable: true,
+      cell: (row) => (
+        <span className="flex min-w-0 items-center gap-2 text-sm">
+          <EngineIcon engine={row.source} />
+          <span className="truncate">{formatGeoSource(row.source)}</span>
+        </span>
+      ),
+      sortValue: (row) => formatGeoSource(row.source),
+    },
+    {
+      key: "visits",
+      header: "Visits",
+      width: "6.5rem",
+      sortable: true,
+      cell: (row) => (
+        <span className="text-sm tabular-nums">
+          {formatDirectionCount(row.visits)}
+        </span>
+      ),
+    },
+  ];
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <div className="flex items-center justify-between px-1 text-muted-foreground text-xs">
+      <div className="text-muted-foreground flex items-center justify-between px-1 text-xs">
         <span>{GEO_DIRECTIONS_PAGES.length.toLocaleString()} pages</span>
       </div>
       <Table

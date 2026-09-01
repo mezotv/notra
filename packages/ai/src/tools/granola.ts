@@ -7,6 +7,7 @@ import type {
 import { type Tool, tool } from "ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
 import { getAICachedTools } from "./tool-cache";
 
 function createGranolaIntegrationContextResolver(

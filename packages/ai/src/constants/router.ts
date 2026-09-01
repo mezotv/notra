@@ -46,6 +46,7 @@ export const OPENROUTER_EFFORTS: ReadonlySet<string> = new Set([
   "none",
 ]);
 
+export const HTTP_BAD_REQUEST = 400;
 export const HTTP_PAYMENT_REQUIRED = 402;
 export const HTTP_FORBIDDEN = 403;
 export const HTTP_NOT_FOUND = 404;
@@ -54,7 +55,17 @@ export const HTTP_CONFLICT = 409;
 export const HTTP_TOO_EARLY = 425;
 export const HTTP_TOO_MANY_REQUESTS = 429;
 export const HTTP_SERVER_ERROR_MIN = 500;
-export const ZDR_ERROR_PATTERN = /zero data retention|\bzdr\b/i;
+/**
+ * Vercel AI Gateway rejects a request that has no ZDR-capable provider with
+ * 400 `no_providers_available` ("No ZDR (Zero Data Retention) providers
+ * available for model: ..."); team-plan gating surfaces as 403.
+ */
+export const ZDR_ERROR_PATTERN =
+  /zero data retention|\bzdr\b|no_providers_available/i;
+export const ZDR_REJECTION_STATUS_CODES: ReadonlySet<number> = new Set([
+  HTTP_BAD_REQUEST,
+  HTTP_FORBIDDEN,
+]);
 /**
  * OpenRouter answers 404 "No endpoints found matching your data policy" when
  * `provider.zdr` filters every host away. That is a ZDR rejection, not an

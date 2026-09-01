@@ -1,0 +1,40 @@
+{
+  "name": "@notra/geo-core",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./deps": "./src/deps.ts",
+    "./geo/*": "./src/geo/*.ts",
+    "./types/*": "./src/types/*.ts",
+    "./constants/*": "./src/constants/*.ts",
+    "./schemas/*": "./src/schemas/*.ts",
+    "./utils/*": "./src/utils/*.ts",
+    "./csv/*": "./src/csv/*.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "3.0.84",
+    "@ai-sdk/google": "3.0.82",
+    "@ai-sdk/openai": "3.0.71",
+    "@ai-sdk/perplexity": "3.0.35",
+    "@cursor/sdk": "^1.0.28",
+    "@notra/ai": "workspace:*",
+    "@notra/analytics": "workspace:*",
+    "@notra/db": "workspace:*",
+    "@notra/utils": "workspace:*",
+    "@usenotra/geo": "npm:@usenotra/geo@^0.3.0",
+    "ai": "6.0.206",
+    "drizzle-orm": "^0.45.2",
+    "effect": "4.0.0-beta.93",
+    "evlog": "2.13.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@notra/typescript-config": "workspace:*",
+    "@types/node": "^20",
+    "typescript": "5.9.2"
+  }
+}

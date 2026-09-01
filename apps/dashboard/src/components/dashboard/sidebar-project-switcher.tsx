@@ -7,6 +7,7 @@ import {
   UnfoldMoreIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,7 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
 import { GeoProjectCreateDialog } from "@/components/geo/project-create-dialog";
 import { ProjectLogo } from "@/components/geo/project-logo";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -32,12 +34,14 @@ import {
   NAV_NEW_PROJECT_LABEL,
   NAV_PROJECTS_MENU_LABEL,
 } from "@/constants/nav";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
 import { useGeoProjects } from "@/lib/hooks/use-geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { getWebsiteDomain } from "@/utils/brand";
 import { geoNavHref } from "@/utils/geo-paths";
 import { isStaleGeoProjectParam, resolveNavItems } from "@/utils/nav";
+
 import { SidebarBrandHeader } from "./sidebar-brand-header";
 import { SidebarLabel } from "./sidebar-label";
 
@@ -111,28 +115,24 @@ export function SidebarProjectSwitcher() {
                   size="lg"
                   tooltip={activeProject.name}
                 >
-                  <div
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-background ring-1 ring-foreground/10"
-                    data-slot="avatar"
-                  >
-                    <ProjectLogo
-                      className="size-5 rounded-sm"
-                      domain={activeDomain}
-                      name={activeProject.name}
-                    />
-                  </div>
+                  <ProjectLogo
+                    className="size-7 rounded-lg"
+                    domain={activeDomain}
+                    fallbackClassName="bg-background p-1 ring-1 ring-foreground/10"
+                    name={activeProject.name}
+                  />
                   <div className="grid min-w-0 flex-1 leading-tight">
-                    <SidebarLabel className="truncate font-semibold text-sm">
+                    <SidebarLabel className="truncate text-sm font-semibold">
                       {activeProject.name}
                     </SidebarLabel>
                     {activeDomain ? (
-                      <SidebarLabel className="truncate text-muted-foreground text-xs">
+                      <SidebarLabel className="text-muted-foreground truncate text-xs">
                         {activeDomain}
                       </SidebarLabel>
                     ) : null}
                   </div>
                   <HugeiconsIcon
-                    className="ml-auto text-muted-foreground"
+                    className="text-muted-foreground ml-auto"
                     icon={UnfoldMoreIcon}
                   />
                 </SidebarMenuButton>
@@ -149,7 +149,15 @@ export function SidebarProjectSwitcher() {
                   <DropdownMenuItem
                     className="cursor-pointer gap-2 pr-8"
                     key={project.id}
-                    onClick={() => setProjectParam(project.id)}
+                    onClick={() => {
+                      if (project.id !== activeProject.id) {
+                        trackEvent(POSTHOG_EVENTS.GEO_PROJECT_SWITCHED, {
+                          project_id: project.id,
+                          project_count: projects.length,
+                        });
+                      }
+                      setProjectParam(project.id);
+                    }}
                   >
                     <ProjectLogo
                       domain={projectDomain(project.brandSettingsId)}
@@ -160,7 +168,7 @@ export function SidebarProjectSwitcher() {
                     </span>
                     {activeProject.id === project.id ? (
                       <HugeiconsIcon
-                        className="absolute right-2 size-4 text-muted-foreground"
+                        className="text-muted-foreground absolute right-2 size-4"
                         icon={Tick02Icon}
                       />
                     ) : null}

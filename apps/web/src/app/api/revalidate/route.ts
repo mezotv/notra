@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+
+import { marbleWebhookPayloadSchema } from "@/schemas/marble-webhook";
 import {
   handleMarbleWebhookEvent,
   revalidateMarbleContent,
   verifyMarbleSignature,
 } from "@/utils/marble-webhook";
 import { getManualRevalidateParams, jsonError } from "@/utils/revalidate-route";
-import type { MarbleWebhookPayload } from "~types/marble";
 
 export const runtime = "nodejs";
 
@@ -36,13 +37,21 @@ export async function POST(request: Request) {
     return jsonError("Invalid signature", 400);
   }
 
-  let payload: MarbleWebhookPayload;
+  let rawPayload: unknown;
 
   try {
-    payload = JSON.parse(bodyText) as MarbleWebhookPayload;
+    rawPayload = JSON.parse(bodyText);
   } catch {
     return jsonError("Invalid JSON payload", 400);
   }
+
+  const parsed = marbleWebhookPayloadSchema.safeParse(rawPayload);
+
+  if (!parsed.success) {
+    return jsonError("Invalid payload structure", 400);
+  }
+
+  const payload = parsed.data;
 
   if (!((payload.event ?? payload.type) && payload.data)) {
     return jsonError("Invalid payload structure", 400);

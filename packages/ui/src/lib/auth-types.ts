@@ -57,6 +57,16 @@ export interface AuthSocialButtonsProps {
   onSelect: (provider: SocialProvider) => void;
 }
 
+export interface AuthFieldErrorProps {
+  id: string;
+  error?: string;
+}
+
+export interface AuthFormErrorProps {
+  error: string | null;
+  className?: string;
+}
+
 export interface AuthEmailFieldProps {
   id: string;
   label: string;

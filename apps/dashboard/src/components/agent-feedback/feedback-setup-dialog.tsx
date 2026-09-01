@@ -2,6 +2,7 @@
 
 import { Settings01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   ResponsiveDialog,
   ResponsiveDialogClose,
@@ -12,8 +13,10 @@ import {
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
 import { useState } from "react";
+
 import { AgentFeedbackSetup } from "@/components/agent-feedback/feedback-setup";
 import { Button } from "@/components/button";
+import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useAgentFeedbackSetup } from "@/lib/hooks/use-agent-feedback";
 import type { AgentFeedbackSetupDialogProps } from "@/types/agent-feedback";
 
@@ -27,7 +30,12 @@ export function AgentFeedbackSetupDialog({
     <>
       <Button
         className="w-fit gap-1.5"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          trackEvent(POSTHOG_EVENTS.AGENT_FEEDBACK_SETUP_OPENED, {
+            has_setup: setup !== undefined,
+          });
+          setOpen(true);
+        }}
         size="sm"
         variant="outline"
       >
@@ -39,14 +47,14 @@ export function AgentFeedbackSetupDialog({
           <ResponsiveDialogHeader className="shrink-0 border-b p-4 pr-14">
             <ResponsiveDialogTitle>Feedback setup</ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
-              Add the feedback tool to another MCP server or update the token
-              you ship with it.
+              Add the feedback tool to another MCP server or copy your feedback
+              URL.
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
           <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            <AgentFeedbackSetup organizationId={organizationId} setup={setup} />
+            <AgentFeedbackSetup setup={setup} />
           </div>
-          <ResponsiveDialogFooter className="mx-0 mb-0 shrink-0 rounded-b-xl border-t bg-muted/50 p-4">
+          <ResponsiveDialogFooter className="bg-muted/50 mx-0 mb-0 shrink-0 rounded-b-xl border-t p-4">
             <ResponsiveDialogClose render={<Button variant="outline" />}>
               Done
             </ResponsiveDialogClose>

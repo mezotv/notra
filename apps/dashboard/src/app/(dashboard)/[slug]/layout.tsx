@@ -3,8 +3,11 @@ import {
   SIDEBAR_COOKIE_NAME,
 } from "@notra/ui/lib/sidebar-state";
 import { cookies } from "next/headers";
+
 import { DashboardClientWrapper } from "@/components/dashboard/dashboard-client-wrapper";
+import { SIDEBAR_WIDTH_COOKIE_NAME } from "@/constants/nav";
 import { validateOrganizationAccess } from "@/lib/auth/actions";
+import { getSidebarWidthFromCookie } from "@/utils/sidebar-width";
 
 export const instant = false;
 
@@ -19,18 +22,25 @@ export default async function OrganizationLayout({
   modal,
   params,
 }: OrganizationLayoutProps) {
-  const { slug } = await params;
-  const cookieStore = await cookies();
+  const [cookieStore, { slug, organization }] = await Promise.all([
+    cookies(),
+    params.then(async ({ slug }) => ({
+      slug,
+      ...(await validateOrganizationAccess(slug)),
+    })),
+  ]);
   const initialSidebarOpen = getSidebarOpenFromCookie(
     cookieStore.get(SIDEBAR_COOKIE_NAME)?.value
   );
-
-  const { organization } = await validateOrganizationAccess(slug);
+  const initialSidebarWidth = getSidebarWidthFromCookie(
+    cookieStore.get(SIDEBAR_WIDTH_COOKIE_NAME)?.value
+  );
 
   return (
     <DashboardClientWrapper
       initialActiveOrganization={organization}
       initialSidebarOpen={initialSidebarOpen}
+      initialSidebarWidth={initialSidebarWidth}
       modal={modal}
     >
       {children}

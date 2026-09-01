@@ -1,6 +1,12 @@
 "use client";
 
 import {
+  GEO_BRAND_SEARCH_DEBOUNCE_MS,
+  GEO_BRAND_SEARCH_MAX_QUERY_LENGTH,
+  GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
+} from "@notra/geo-core/constants/geo";
+import type { GeoBrandSearchResult } from "@notra/geo-core/types/geo";
+import {
   Combobox,
   ComboboxContent,
   ComboboxEmpty,
@@ -11,14 +17,9 @@ import {
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Loader2Icon } from "lucide-react";
 import { useState } from "react";
+
 import { CompetitorBrandLogo } from "@/components/onboarding/competitor-brand-logo";
-import {
-  GEO_BRAND_SEARCH_DEBOUNCE_MS,
-  GEO_BRAND_SEARCH_MAX_QUERY_LENGTH,
-  GEO_BRAND_SEARCH_MIN_QUERY_LENGTH,
-} from "@/constants/geo";
 import { useGeoBrandSearch } from "@/lib/hooks/use-geo";
-import type { GeoBrandSearchResult } from "@/types/geo";
 import type { CompetitorSearchProps } from "@/types/onboarding";
 import { findCompetitor } from "@/utils/onboarding-competitors";
 
@@ -67,7 +68,7 @@ export function CompetitorSearch({
         showTrigger={false}
       >
         {searching ? (
-          <span className="flex items-center pr-3 text-muted-foreground">
+          <span className="text-muted-foreground flex items-center pr-3">
             <Loader2Icon className="size-4 animate-spin" />
           </span>
         ) : null}
@@ -88,7 +89,7 @@ export function CompetitorSearch({
                     name={entry.name}
                   />
                   <span className="truncate font-medium">{entry.name}</span>
-                  <span className="truncate text-muted-foreground text-xs">
+                  <span className="text-muted-foreground truncate text-xs">
                     {entry.domain}
                   </span>
                 </span>

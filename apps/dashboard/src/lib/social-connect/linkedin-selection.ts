@@ -1,5 +1,6 @@
 import { redis } from "@notra/ai/utils/redis";
 import { Effect } from "effect";
+
 import {
   getLinkedInSelectionKey,
   upsertConnectedAccount,

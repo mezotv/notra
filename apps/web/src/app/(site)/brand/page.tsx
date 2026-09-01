@@ -1,6 +1,7 @@
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
 import type { Metadata } from "next";
 import Link from "next/link";
+
 import { BrandAssetCard } from "@/components/brand-asset-card";
 import { BrandColorSwatch } from "@/components/brand-color-swatch";
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
@@ -51,7 +52,7 @@ export const metadata: Metadata = {
 
 export default function BrandPage() {
   return (
-    <div className="flex w-full flex-col items-center justify-start overflow-hidden border-border/70 border-b">
+    <div className="border-border/70 flex w-full flex-col items-center justify-start overflow-hidden border-b">
       <script
         // biome-ignore lint/security/noDangerouslySetInnerHtml: server-built JSON-LD
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(breadcrumbJsonLd) }}
@@ -79,7 +80,7 @@ export default function BrandPage() {
       <div className="flex w-full max-w-5xl flex-col gap-16 px-6 pb-20 md:pb-24">
         <section className="flex flex-col gap-6">
           <div className="flex flex-col gap-1">
-            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em]">
+            <h2 className="font-display text-foreground text-2xl font-medium tracking-[-0.02em]">
               Logo
             </h2>
             <p className="text-muted-foreground text-sm leading-6">
@@ -111,7 +112,7 @@ export default function BrandPage() {
 
         <section className="flex flex-col gap-6">
           <div className="flex flex-col gap-1">
-            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em]">
+            <h2 className="font-display text-foreground text-2xl font-medium tracking-[-0.02em]">
               Wordmark
             </h2>
             <p className="text-muted-foreground text-sm leading-6">
@@ -129,7 +130,7 @@ export default function BrandPage() {
             >
               <span className="flex items-center gap-3">
                 <NotraMark className="size-10 shrink-0" />
-                <span className="font-semibold text-3xl text-neutral-950">
+                <span className="text-3xl font-semibold text-neutral-950">
                   Notra
                 </span>
               </span>
@@ -144,7 +145,7 @@ export default function BrandPage() {
                 <span className="flex size-14 items-center justify-center rounded-xl bg-[#F6F3F1]">
                   <NotraMark className="size-10 shrink-0" />
                 </span>
-                <span className="font-semibold text-3xl text-white">Notra</span>
+                <span className="text-3xl font-semibold text-white">Notra</span>
               </span>
             </BrandAssetCard>
           </div>
@@ -152,7 +153,7 @@ export default function BrandPage() {
 
         <section className="flex flex-col gap-6">
           <div className="flex flex-col gap-1">
-            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em]">
+            <h2 className="font-display text-foreground text-2xl font-medium tracking-[-0.02em]">
               Colors
             </h2>
             <p className="text-muted-foreground text-sm leading-6">
@@ -169,7 +170,7 @@ export default function BrandPage() {
 
         <section className="flex flex-col gap-6">
           <div className="flex flex-col gap-1">
-            <h2 className="font-display font-medium text-2xl text-foreground tracking-[-0.02em]">
+            <h2 className="font-display text-foreground text-2xl font-medium tracking-[-0.02em]">
               Typography
             </h2>
             <p className="text-muted-foreground text-sm leading-6">
@@ -180,16 +181,16 @@ export default function BrandPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             {BRAND_FONTS.map((font) => (
               <div
-                className="flex flex-col gap-4 rounded-2xl border border-border/70 bg-background p-6"
+                className="border-border/70 bg-background flex flex-col gap-4 rounded-2xl border p-6"
                 key={font.name}
               >
                 <span
-                  className={`${font.fontClassName} text-6xl text-foreground`}
+                  className={`${font.fontClassName} text-foreground text-6xl`}
                 >
                   Aa
                 </span>
                 <div className="flex flex-col gap-1">
-                  <span className="font-medium text-foreground text-sm">
+                  <span className="text-foreground text-sm font-medium">
                     {font.name}
                   </span>
                   <span className="text-muted-foreground text-xs leading-5">

@@ -1,26 +1,44 @@
-import type { AgentTokenUsage } from "@notra/ai/types/agents";
 import type {
   ContentCreationMode,
   DatabuddyWorkflowSource,
 } from "@notra/content-generation/databuddy";
 import type { PostSourceMetadata } from "@notra/db/schema";
-import type { AiCreditReservation } from "@/types/billing/ai-credit-lock";
+
+export type {
+  FinalizeContentBillingInput,
+  GateContentBillingInput,
+  WorkflowContentBillingGate,
+} from "@notra/geo-core/types/content-billing";
+
+import type {
+  WorkflowAnalyticsName,
+  WorkflowLifecycleFields,
+} from "@/types/analytics/workflow-events";
 import type {
   IntegrationType,
   LogRetentionDays,
 } from "@/types/webhooks/webhooks";
+import type { AutomatedWorkflowPauseReason } from "@/types/workflows/auto-pause";
 import type {
   ContentEmailDigestKind,
   EnqueueContentEmailDigestEvent,
 } from "@/types/workflows/content-email-digest";
 
-export interface WorkflowAiCreditGate extends AiCreditReservation {
-  reason?: "no_active_paid_plan" | "insufficient_ai_credits";
-  shouldNotify?: boolean;
-  balanceRemaining?: number | null;
+export interface NotifyContentLimitInput {
+  organizationId: string;
+  automationName: string;
+  logPrefix: string;
+  limitLabel?: string;
 }
 
-export interface FinishGenerationInput {
+export interface ClaimWorkflowExecutionInput {
+  executionId: string;
+  claimToken: string;
+  organizationId?: string;
+  workflow?: WorkflowAnalyticsName;
+}
+
+export interface FinishGenerationInput extends WorkflowLifecycleFields {
   organizationId: string;
   runId: string;
   triggerId: string;
@@ -29,16 +47,6 @@ export interface FinishGenerationInput {
   status: "success" | "failed" | "skipped";
   reason?: string;
   title?: string;
-}
-
-export interface FinalizeAiCreditInput {
-  lockId: string | null;
-  action: "confirm" | "release";
-  usage?: AgentTokenUsage;
-  fallbackModelId?: string;
-  useMarkup?: boolean;
-  properties?: Record<string, string | number | boolean>;
-  logPrefix: string;
 }
 
 export interface AppendAutomationLogInput {
@@ -99,6 +107,6 @@ export interface WorkflowPauseInput {
   triggerId: string;
   organizationId: string;
   automationName: string;
-  reason: "ai_credits_depleted" | "workflow_errors";
+  reason: AutomatedWorkflowPauseReason;
   logPrefix: string;
 }

@@ -1,23 +1,25 @@
 "use client";
 
-import { Input } from "@notra/ui/components/ui/input";
-import { Label } from "@notra/ui/components/ui/label";
-import { useAsyncDebouncer } from "@tanstack/react-pacer";
-import { type ReactNode, useEffect, useId, useRef, useState } from "react";
-import { GeoEnginePicker } from "@/components/geo/geo-engine-picker";
-import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
-import { GeoScanSchedule } from "@/components/geo/geo-scan-schedule";
-import { GeoTagList } from "@/components/geo/geo-tag-list";
 import {
   GEO_MAX_ALIASES,
   GEO_SCAN_DEFAULT_INTERVAL_HOURS,
   GEO_SETTINGS_AUTO_SAVE_MS,
-} from "@/constants/geo";
+} from "@notra/geo-core/constants/geo";
+import type { GeoSettingsUpsertInput } from "@notra/geo-core/types/geo";
+import { resolveTrackedEngines } from "@notra/geo-core/utils/geo-engines";
+import { trackedGeoLanguages } from "@notra/geo-core/utils/geo-language-rows";
+import { Input } from "@notra/ui/components/ui/input";
+import { Label } from "@notra/ui/components/ui/label";
+import { useAsyncDebouncer } from "@tanstack/react-pacer";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
+
+import { GeoEnginePicker } from "@/components/geo/geo-engine-picker";
+import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
+import { GeoScanSchedule } from "@/components/geo/geo-scan-schedule";
+import { GeoTagList } from "@/components/geo/geo-tag-list";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
-import type { GeoSettingsFormProps, GeoSettingsUpsertInput } from "@/types/geo";
-import { resolveTrackedEngines } from "@/utils/geo-engines";
-import { trackedGeoLanguages } from "@/utils/geo-language-rows";
+import type { GeoSettingsFormProps } from "@/types/geo";
 
 export function GeoSettingsForm({
   organizationId,
@@ -164,7 +166,7 @@ export function GeoSettingsForm({
     <div className="w-full space-y-8">
       <header className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="font-bold text-3xl tracking-tight">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
           <p className="text-muted-foreground">
             How your brand is identified and where prompts are scanned.
           </p>
@@ -172,7 +174,7 @@ export function GeoSettingsForm({
         {saveStatus ? (
           <p
             aria-live="polite"
-            className="pt-2 text-muted-foreground text-xs tabular-nums"
+            className="text-muted-foreground pt-2 text-xs tabular-nums"
           >
             {saveStatus}
           </p>
@@ -276,15 +278,15 @@ function SettingsSection({
   return (
     <section className="min-w-0 space-y-4">
       <div className="space-y-1">
-        <h2 className="flex items-center gap-2 font-medium text-sm">
+        <h2 className="flex items-center gap-2 text-sm font-medium">
           {title}
           {meta ? (
-            <span className="font-normal text-muted-foreground tabular-nums">
+            <span className="text-muted-foreground font-normal tabular-nums">
               {meta}
             </span>
           ) : null}
         </h2>
-        <p className="text-pretty text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-sm text-pretty">
           {description}
         </p>
       </div>

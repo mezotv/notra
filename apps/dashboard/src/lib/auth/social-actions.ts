@@ -4,6 +4,7 @@ import type { StartSocialSignInInput } from "@notra/ui/lib/auth-types";
 import { getWorkOS } from "@workos-inc/authkit-nextjs";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+
 import {
   SOCIAL_AUTH_CALLBACK_PATH,
   SOCIAL_AUTH_PROVIDERS,
@@ -11,9 +12,19 @@ import {
   SOCIAL_AUTH_STATE_MAX_AGE_SECONDS,
 } from "@/constants/social-auth";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
+import { startSocialSignInInputSchema } from "@/schemas/auth/social";
 import { getClientIpFromHeaders, ratelimit } from "@/utils/ratelimit";
 
-export async function startSocialSignInAction(input: StartSocialSignInInput) {
+export async function startSocialSignInAction(
+  rawInput: StartSocialSignInInput
+) {
+  const parsed = startSocialSignInInputSchema.safeParse(rawInput);
+
+  if (!parsed.success) {
+    redirect("/login");
+  }
+
+  const input = parsed.data;
   const mappedProvider = SOCIAL_AUTH_PROVIDERS[input.provider];
 
   if (!mappedProvider) {

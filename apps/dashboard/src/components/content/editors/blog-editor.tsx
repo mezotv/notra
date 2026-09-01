@@ -2,6 +2,7 @@
 
 import { parseAsStringLiteral, useQueryState } from "nuqs";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+
 import { blogEditorTheme } from "@/components/content/editor/blog-editor-theme";
 import { LexicalEditor } from "@/components/content/editor/lexical-editor";
 import {
@@ -11,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import { formatArticleDate } from "@/utils/format";
 import { buildReviewMarkdown } from "@/utils/review-markdown";
+
 import type { ContentEditorProps } from "./types";
 
 const VIEW_LABELS: Record<ContentEditorView, string> = {
@@ -113,7 +115,7 @@ export function BlogEditor({
     <div className="w-full">
       <textarea
         aria-label="Post title"
-        className="block h-auto min-h-0 w-full resize-none overflow-hidden bg-transparent p-0 font-semibold text-3xl leading-tight tracking-tight outline-none placeholder:text-muted-foreground/40 focus:ring-0 md:text-4xl"
+        className="placeholder:text-muted-foreground/40 block h-auto min-h-0 w-full resize-none overflow-hidden bg-transparent p-0 text-3xl leading-tight font-semibold tracking-tight outline-none focus:ring-0 md:text-4xl"
         onChange={(e) => actions.setEditingTitle(e.target.value)}
         onFocus={(e) => {
           if (state.editingTitle === null) {
@@ -137,11 +139,11 @@ export function BlogEditor({
         value={title}
       />
       <div className="mt-3 flex items-start justify-between gap-6">
-        <div className="flex min-w-0 flex-1 items-start gap-1 font-mono text-muted-foreground text-xs">
+        <div className="text-muted-foreground flex min-w-0 flex-1 items-start gap-1 font-mono text-xs">
           <span className="shrink-0 leading-5">/</span>
           <textarea
             aria-label="Post slug"
-            className="min-h-0 min-w-0 flex-1 resize-none overflow-hidden break-all bg-transparent p-0 leading-5 outline-none placeholder:text-muted-foreground/50 focus:text-foreground focus:ring-0"
+            className="placeholder:text-muted-foreground/50 focus:text-foreground min-h-0 min-w-0 flex-1 resize-none overflow-hidden bg-transparent p-0 leading-5 break-all outline-none focus:ring-0"
             onBlur={() => {
               if (state.editingSlug !== null) {
                 actions.setEditingSlug(
@@ -200,14 +202,14 @@ export function BlogEditor({
         </div>
       </div>
       <time
-        className="mt-2 block text-muted-foreground text-sm"
+        className="text-muted-foreground mt-2 block text-sm"
         dateTime={content.date}
       >
         {formatArticleDate(new Date(content.date))}
       </time>
 
       {view === "rendered" ? (
-        <div className="[&_.draggable-block-menu]:-left-6 mt-8">
+        <div className="mt-8 [&_.draggable-block-menu]:-left-6">
           <LexicalEditor
             className="min-h-[24rem]"
             cleanReviewMarks={Boolean(reviewPreviousMarkdown)}
@@ -225,7 +227,7 @@ export function BlogEditor({
       {view === "markdown" ? (
         <textarea
           aria-label="Markdown content editor"
-          className="field-sizing-content mt-8 min-h-[24rem] w-full resize-none overflow-hidden whitespace-pre-wrap border-0 bg-transparent font-mono text-sm outline-none selection:bg-primary/30 focus:ring-0"
+          className="selection:bg-primary/30 mt-8 field-sizing-content min-h-[24rem] w-full resize-none overflow-hidden border-0 bg-transparent font-mono text-sm whitespace-pre-wrap outline-none focus:ring-0"
           onChange={(e) => {
             actions.setEditedMarkdown(e.target.value);
           }}

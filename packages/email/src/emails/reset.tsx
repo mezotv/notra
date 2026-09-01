@@ -43,11 +43,11 @@ export const ResetPasswordEmail = ({
               />
             </Section>
 
-            <Heading className="my-6 text-center font-medium text-2xl text-black">
+            <Heading className="my-6 text-center text-2xl font-medium text-black">
               Reset your password
             </Heading>
 
-            <Text className="text-center text-[#737373] text-base leading-relaxed">
+            <Text className="text-center text-base leading-relaxed text-[#737373]">
               We received a request to reset the password for your account.
               Click the button below to choose a new password:
             </Text>
@@ -56,8 +56,8 @@ export const ResetPasswordEmail = ({
               <EmailButton href={resetLink}>Reset Your Password</EmailButton>
             </Section>
 
-            <Hr className="mx-0 mt-[26px] w-full border border-[#eaeaea] border-solid" />
-            <Text className="text-[#666666] text-[12px] leading-[24px]">
+            <Hr className="mx-0 mt-[26px] w-full border border-solid border-[#eaeaea]" />
+            <Text className="text-[12px] leading-[24px] text-[#666666]">
               This email was intended for{" "}
               <span className="text-black">{userEmail}</span>. If you didn't
               request this, you can safely ignore this email. This link will

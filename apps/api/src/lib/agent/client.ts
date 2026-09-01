@@ -1,4 +1,5 @@
 import {
+  AGENT_CHARGE_AI_CREDITS_HEADER,
   AGENT_CHAT_HEADER,
   AGENT_ORGANIZATION_HEADER,
   AGENT_SERVICE_USERNAME,
@@ -8,6 +9,7 @@ import {
 } from "@notra/ai/constants/agent";
 import { getVercelOidcToken } from "@vercel/oidc";
 import { Client } from "eve/client";
+
 import type { ApiAgentScope } from "../../types/agent";
 
 const TRAILING_SLASH_PATTERN = /\/+$/;
@@ -38,6 +40,11 @@ export async function createAgentClient(scope: ApiAgentScope): Promise<Client> {
 
   if (scope.useMarkup !== undefined) {
     headers[AGENT_USE_MARKUP_HEADER] = scope.useMarkup ? "true" : "false";
+  }
+  if (scope.chargeAiCredits !== undefined) {
+    headers[AGENT_CHARGE_AI_CREDITS_HEADER] = scope.chargeAiCredits
+      ? "true"
+      : "false";
   }
 
   const clientOptions = {

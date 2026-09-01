@@ -17,8 +17,10 @@ import { HeadingNode, QuoteNode } from "@lexical/rich-text";
 import { TableCellNode, TableNode, TableRowNode } from "@lexical/table";
 import type { EditorThemeClasses } from "lexical";
 import { type RefObject, useCallback, useMemo, useRef, useState } from "react";
+
 import { cn } from "@/lib/utils";
 import type { TextSelection } from "@/schemas/content";
+
 import { editorTheme } from "./editor-theme";
 import { EDITOR_TRANSFORMERS } from "./markdown-transformers";
 import { KiboCodeBlockNode } from "./nodes/kibo-code-block-node";

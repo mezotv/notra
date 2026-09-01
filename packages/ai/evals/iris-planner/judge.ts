@@ -3,6 +3,7 @@ import type { PlannerOutput } from "@notra/ai/schemas/autonomy/planner";
 import { generateText, Output } from "ai";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
+
 import type { IrisEvalScenario } from "./fixtures";
 
 export const JUDGE_MODEL_ID = "anthropic/claude-sonnet-4.6";

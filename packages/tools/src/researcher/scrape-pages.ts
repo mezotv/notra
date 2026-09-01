@@ -1,6 +1,7 @@
 import { fetchWebpage } from "@notra/ai/utils/context-dev";
 import { Effect } from "effect";
 import { defineTool } from "eve/tools";
+
 import {
   SCRAPE_BATCH_MIN_PAGE_LENGTH,
   SCRAPE_MARKDOWN_MAX_LENGTH,

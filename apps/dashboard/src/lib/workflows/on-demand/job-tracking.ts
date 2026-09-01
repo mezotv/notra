@@ -3,6 +3,7 @@ import {
   appendContentGenerationJobEvent,
   setContentGenerationJobStatus,
 } from "@notra/content-generation/jobs";
+
 import type { OnDemandJobEventInput } from "@/types/workflows/on-demand-generation";
 
 export async function setTrackedJobStatus(

@@ -2,7 +2,11 @@
 
 import { Delete02Icon, SearchIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PresenceBadge } from "@notra/ui/components/geo/presence-badge";
+import {
+  PROMPTS_TABLE_HEIGHT,
+  PROMPTS_TABLE_ROW_HEIGHT,
+} from "@notra/geo-core/constants/geo";
+import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { Input } from "@notra/ui/components/ui/input";
 import { Switch } from "@notra/ui/components/ui/switch";
 import {
@@ -12,21 +16,20 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { parseAsString, useQueryState } from "nuqs";
 import { useCallback, useMemo, useState } from "react";
+
 import { Button } from "@/components/button";
 import { GeoRemoveDialog } from "@/components/geo/geo-remove-dialog";
+import { PresenceBadge } from "@/components/geo/presence-badge";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { Table, type TableColumn } from "@/components/motion/table";
-import {
-  PROMPTS_TABLE_HEIGHT,
-  PROMPTS_TABLE_ROW_HEIGHT,
-} from "@/constants/geo";
+import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
+import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
 import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import type { GeoPromptTableRow, PromptsTableProps } from "@/types/geo";
 import {
   buildPromptTableRows,
   promptPresenceSortValue,
 } from "@/utils/geo-prompts";
-import { geoScanEmptyMessage } from "@/utils/geo-scan";
 
 const PROMPT_NOUNS = { singular: "prompt", plural: "prompts" } as const;
 const PROMPT_ACTIONS_WIDTH = "6.5rem";
@@ -51,7 +54,7 @@ function PromptRowActions({
           render={
             <button
               aria-label="Auto-generated prompts cannot be paused or removed"
-              className="inline-flex size-8 cursor-help items-center justify-center text-muted-foreground"
+              className="text-muted-foreground inline-flex size-8 cursor-help items-center justify-center"
               onClick={(event) => event.stopPropagation()}
               onPointerDown={(event) => event.stopPropagation()}
               type="button"
@@ -149,24 +152,18 @@ export function PromptsTable({
         header: (
           <span className="inline-flex items-center gap-1.5">
             Prompt
-            <span className="font-normal text-muted-foreground tabular-nums">
+            <span className="text-muted-foreground font-normal tabular-nums">
               ({rows.length})
             </span>
           </span>
         ),
         sortable: true,
         width: "1fr",
+        minWidth: "10rem",
         cell: (row) => (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="block w-full min-w-0 truncate font-medium">
-                  {row.prompt}
-                </span>
-              }
-            />
-            <TooltipContent className="max-w-sm">{row.prompt}</TooltipContent>
-          </Tooltip>
+          <TruncateWithTooltip className="font-medium">
+            {row.prompt}
+          </TruncateWithTooltip>
         ),
       },
       {
@@ -235,7 +232,7 @@ export function PromptsTable({
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-0 flex-1 sm:max-w-72">
           <HugeiconsIcon
-            className="-translate-y-1/2 absolute top-1/2 left-3 text-muted-foreground"
+            className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2"
             icon={SearchIcon}
             size={15}
           />
@@ -309,6 +306,7 @@ export function PromptsTable({
         }}
         open={detail !== null}
         row={detail}
+        surface={GEO_PROMPT_DETAIL_SURFACES.PROMPTS_TABLE}
       />
     </div>
   );

@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
+
 import { marketingChatOgQuerySchema } from "@/schemas/marketing-chat";
 import { loadGoogleFont } from "@/utils/og";
 

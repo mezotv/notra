@@ -1,4 +1,5 @@
 import { z } from "@hono/zod-openapi";
+
 import { errorResponseSchema } from "../schemas/content";
 
 export function errorResponse(description: string) {
@@ -40,9 +41,13 @@ const rateLimitHeaderDescriptors = {
   },
 };
 
-export function rateLimitResponse(limit: number, window: string) {
+export function rateLimitResponse(
+  limit: number,
+  window: string,
+  scope = "organization"
+) {
   return {
-    description: `Rate limit exceeded. This endpoint allows ${limit} requests per ${window} per organization.`,
+    description: `Rate limit exceeded. This endpoint allows ${limit} requests per ${window} per ${scope}.`,
     headers: rateLimitHeaderDescriptors,
     content: {
       "application/json": {

@@ -1,9 +1,7 @@
 import {
-  allowUnmeteredAiInDevelopment,
-  autumn,
-} from "@notra/ai/billing/autumn";
-import { FEATURES } from "@notra/ai/billing/features";
-import { shouldApplyMarkup } from "@notra/ai/billing/token-pricing";
+  checkContentBilling,
+  describeContentBillingDenial,
+} from "@notra/ai/billing/content-billing";
 import { getTokenForIntegrationId } from "@notra/ai/integrations/github";
 import {
   getDecryptedLinearToken,
@@ -18,16 +16,19 @@ import { db } from "@notra/db/drizzle";
 import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
 import type { BlogPostSubtype } from "@notra/db/types/content";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
-import type { CheckResponse } from "autumn-js";
+import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import { and, asc, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { marked } from "marked";
 import { nanoid } from "nanoid";
+
 import {
   GITHUB_API_MAX_PAGES,
   GITHUB_API_MAX_RESULTS,
   GITHUB_API_PAGE_SIZE,
 } from "@/constants/content-preview";
+import { trackServerEvent } from "@/lib/analytics/posthog-server";
+import { getEnabledDataPoints } from "@/lib/analytics/studio-events";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import {
@@ -63,6 +64,7 @@ import type {
   RepositoryPreviewFailure,
 } from "@/types/content/preview";
 import { resolveLookbackRange } from "@/utils/lookback";
+
 import {
   badRequest,
   conflict,
@@ -560,7 +562,7 @@ export const contentRouter = {
   update: baseProcedure
     .input(contentInputSchema.and(updateContentSchema))
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      const auth = await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
       });
@@ -574,6 +576,7 @@ export const contentRouter = {
         columns: {
           title: true,
           contentType: true,
+          status: true,
         },
       });
 
@@ -626,6 +629,38 @@ export const contentRouter = {
           throw internalServerError("Failed to update content");
         }
 
+        if (input.markdown !== undefined) {
+          trackServerEvent({
+            event: POSTHOG_EVENTS.CONTENT_SAVED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              content_id: input.contentId,
+              type: existingPost.contentType,
+            },
+          });
+        }
+
+        if (
+          input.status !== undefined &&
+          input.status !== existingPost.status
+        ) {
+          trackServerEvent({
+            event:
+              input.status === "published"
+                ? POSTHOG_EVENTS.CONTENT_PUBLISHED
+                : POSTHOG_EVENTS.CONTENT_UNPUBLISHED,
+            headers: context.headers,
+            userId: auth.user.id,
+            organizationId: input.organizationId,
+            properties: {
+              content_id: input.contentId,
+              type: existingPost.contentType,
+            },
+          });
+        }
+
         return {
           success: true,
           content: serializeContent(updatedPost),
@@ -645,7 +680,7 @@ export const contentRouter = {
   delete: baseProcedure
     .input(contentInputSchema)
     .handler(async ({ context, input }) => {
-      await assertOrganizationAccess({
+      const auth = await assertOrganizationAccess({
         headers: context.headers,
         organizationId: input.organizationId,
       });
@@ -657,6 +692,7 @@ export const contentRouter = {
         ),
         columns: {
           id: true,
+          contentType: true,
         },
       });
 
@@ -672,6 +708,17 @@ export const contentRouter = {
             eq(posts.organizationId, input.organizationId)
           )
         );
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.CONTENT_DELETED,
+        headers: context.headers,
+        userId: auth.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          content_id: input.contentId,
+          type: existingPost.contentType,
+        },
+      });
 
       return { success: true };
     }),
@@ -869,7 +916,7 @@ export const contentRouter = {
     rename: baseProcedure
       .input(renamePostCollectionInputSchema)
       .handler(async ({ context, input }) => {
-        await assertOrganizationAccess({
+        const auth = await assertOrganizationAccess({
           headers: context.headers,
           organizationId: input.organizationId,
         });
@@ -893,6 +940,16 @@ export const contentRouter = {
         if (!updatedCollection) {
           throw notFound("Post collection not found");
         }
+
+        trackServerEvent({
+          event: POSTHOG_EVENTS.COLLECTION_RENAMED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            collection_id: updatedCollection.id,
+          },
+        });
 
         return {
           collection: {
@@ -1407,31 +1464,50 @@ export const contentRouter = {
         }
       }
 
-      let aiCreditChecked = false;
-      let aiCreditMarkup = false;
+      let billing: Awaited<ReturnType<typeof checkContentBilling>>;
+      try {
+        billing = await checkContentBilling({
+          organizationId: input.organizationId,
+          outputType: input.contentType,
+        });
+      } catch {
+        throw internalServerError("Failed to verify plan limits");
+      }
 
-      if (autumn && !allowUnmeteredAiInDevelopment) {
-        let data: CheckResponse | null = null;
-
-        try {
-          data = await autumn.check({
-            customerId: input.organizationId,
-            featureId: FEATURES.AI_CREDITS,
-            requiredBalance: 1,
-          });
-        } catch {
-          throw internalServerError("Failed to verify AI credits");
-        }
-
-        if (!data?.allowed) {
-          throw paymentRequired("AI credit limit reached");
-        }
-
-        aiCreditChecked = true;
-        aiCreditMarkup = shouldApplyMarkup(data?.balance ?? null);
+      if (!billing.allowed) {
+        trackServerEvent({
+          event: POSTHOG_EVENTS.CONTENT_GENERATION_DENIED,
+          headers: context.headers,
+          userId: auth.user.id,
+          organizationId: input.organizationId,
+          properties: {
+            reason: billing.reason ?? null,
+            format: input.contentType,
+          },
+        });
+        throw paymentRequired(describeContentBillingDenial(billing));
       }
 
       const runId = generateRunId("manual_on_demand");
+
+      trackServerEvent({
+        event: POSTHOG_EVENTS.CONTENT_GENERATION_REQUESTED,
+        headers: context.headers,
+        userId: auth.user.id,
+        organizationId: input.organizationId,
+        properties: {
+          format: input.contentType,
+          voice_id: input.brandIdentityId ?? input.brandVoiceId ?? null,
+          source_count:
+            (input.repositoryIds ?? input.integrations?.github ?? []).length +
+            (input.linearIntegrationIds ?? input.integrations?.linear ?? [])
+              .length,
+          data_points: getEnabledDataPoints(input.dataPoints),
+          lookback: input.lookbackWindow,
+          collection_id: input.collectionId,
+          run_id: runId,
+        },
+      });
 
       await addActiveGeneration(input.organizationId, {
         runId,
@@ -1474,8 +1550,8 @@ export const contentRouter = {
         brandVoiceId: input.brandIdentityId ?? input.brandVoiceId,
         dataPoints: input.dataPoints,
         selectedItems: input.selectedItems,
-        aiCreditReserved: aiCreditChecked,
-        aiCreditMarkup,
+        aiCreditReserved: billing.mode === "ai_credits",
+        aiCreditMarkup: billing.useMarkup,
         source: "dashboard",
       });
 

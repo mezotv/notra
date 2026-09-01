@@ -19,6 +19,7 @@ import type {
   RouterTestLogEntry,
   TestRouterOptions,
 } from "@notra/ai/types/router-test";
+
 import { createModelRouter } from "./create-router";
 import {
   buildOpenRouterProviderOptions,
@@ -206,6 +207,7 @@ export function createTestRouter(options: TestRouterOptions = {}): {
         planLookups.push(organizationId);
         return Promise.resolve(plans[organizationId] ?? "free");
       }),
+    resolveZdr: options.resolveZdr,
     policy: createPolicy(options.policy),
     logger,
     now: options.now,

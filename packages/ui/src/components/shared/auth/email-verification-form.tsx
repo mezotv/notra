@@ -6,6 +6,7 @@ import type { EmailVerificationFormProps } from "../../../lib/auth-types";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
 import { CtaButton } from "../cta-button";
+import { AuthFormError } from "./auth-form-error";
 import { AuthFormHeader } from "./auth-form-header";
 
 const NON_DIGIT_REGEX = /\D/g;
@@ -91,24 +92,24 @@ export function EmailVerificationForm({
           />
         </div>
 
-        <p aria-live="polite" className="text-destructive text-sm empty:hidden">
-          {formError}
-        </p>
+        <div>
+          <AuthFormError className="mb-4" error={formError} />
 
-        <CtaButton
-          className="w-full"
-          disabled={isPending || code.length !== 6}
-          type="submit"
-        >
-          {isPending ? (
-            <>
-              <Loader2Icon className="size-4 animate-spin" />
-              Verifying...
-            </>
-          ) : (
-            "Verify email"
-          )}
-        </CtaButton>
+          <CtaButton
+            className="w-full"
+            disabled={isPending || code.length !== 6}
+            type="submit"
+          >
+            {isPending ? (
+              <>
+                <Loader2Icon className="size-4 animate-spin" />
+                Verifying...
+              </>
+            ) : (
+              "Verify email"
+            )}
+          </CtaButton>
+        </div>
       </form>
     </div>
   );

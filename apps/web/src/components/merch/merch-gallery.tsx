@@ -1,5 +1,6 @@
 import { cn } from "@notra/ui/lib/utils";
 import Image from "next/image";
+
 import { MERCH_GALLERY_IMAGES, MERCH_PHOTO_CREDIT } from "@/constants/merch";
 
 export function MerchGallery() {
@@ -19,13 +20,14 @@ export function MerchGallery() {
                 alt={image.alt}
                 className="aspect-3/4 w-full object-cover sm:aspect-4/5"
                 height={1440}
+                sizes="(max-width: 40rem) calc(100vw - 3rem), min(33vw, 26rem)"
                 src={image.src}
                 width={1080}
               />
             </div>
           ))}
         </div>
-        <p className="text-right font-sans text-[#1E1E1EA6] text-[0.8125rem] leading-4.5 tracking-[-0.005em] dark:text-white/60">
+        <p className="text-right font-sans text-[0.8125rem] leading-4.5 tracking-[-0.005em] text-[#1E1E1EA6] dark:text-white/60">
           {MERCH_PHOTO_CREDIT}
         </p>
       </div>

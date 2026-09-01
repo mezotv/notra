@@ -1,13 +1,20 @@
 import type { OnboardingAgentWorkflowPayload } from "@notra/ai/types/onboarding-agent";
 import { sleep } from "workflow";
 import { flattenError } from "zod";
+
 import {
   AGENT_RUN_BACKEND_SLEEP_SECONDS,
   AGENT_RUN_HARD_LIMIT_POLLS,
   AGENT_RUN_SOFT_LIMIT_POLLS,
 } from "@/constants/onboarding-agent";
+import {
+  WORKFLOW_ANALYTICS_NAMES,
+  WORKFLOW_OUTCOMES,
+  WORKFLOW_UNEXPECTED_FAILURE_REASON,
+} from "@/constants/workflow-analytics";
 import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/workflows/onboarding-agent-payload";
 import type { OnboardingAgentWorkflowResult } from "@/types/workflows/onboarding-agent";
+
 import {
   getOnboardingAgentStateStep,
   grantSignupCreditsStep,
@@ -15,6 +22,10 @@ import {
   sendOnboardingSlackInviteStep,
   startOnboardingAgentSessionStep,
 } from "./steps/onboarding-agent-steps";
+import {
+  trackOnboardingAgentStarted,
+  trackWorkflowOutcome,
+} from "./steps/workflow-lifecycle-steps";
 
 export async function onboardingAgentWorkflow(
   payload: OnboardingAgentWorkflowPayload
@@ -31,8 +42,11 @@ export async function onboardingAgentWorkflow(
   }
   const { organizationId, domain, email, organizationName, reservedAt } =
     parseResult.data;
+  const workflowStartedAt = Date.now();
 
   try {
+    await trackOnboardingAgentStarted({ organizationId });
+
     if (email && organizationName) {
       await sendOnboardingSlackInviteStep({ email, organizationName });
     }
@@ -56,6 +70,13 @@ export async function onboardingAgentWorkflow(
         softLimitPolls: AGENT_RUN_SOFT_LIMIT_POLLS,
       });
       if (state.ran) {
+        await trackWorkflowOutcome({
+          workflow: WORKFLOW_ANALYTICS_NAMES.ONBOARDING_AGENT,
+          outcome: WORKFLOW_OUTCOMES.COMPLETED,
+          organizationId,
+          startedAt: workflowStartedAt,
+          properties: { polls: poll },
+        });
         return { status: "completed", polls: poll };
       }
     }
@@ -67,6 +88,13 @@ export async function onboardingAgentWorkflow(
       organizationId,
       reservedAt,
     });
+    await trackWorkflowOutcome({
+      workflow: WORKFLOW_ANALYTICS_NAMES.ONBOARDING_AGENT,
+      outcome: WORKFLOW_OUTCOMES.FAILED,
+      organizationId,
+      startedAt: workflowStartedAt,
+      reason: "timed_out",
+    });
     return { status: "timed_out" };
   } catch (error) {
     console.error(
@@ -75,6 +103,13 @@ export async function onboardingAgentWorkflow(
     await releaseOnboardingAgentReservationStep({
       organizationId,
       reservedAt,
+    });
+    await trackWorkflowOutcome({
+      workflow: WORKFLOW_ANALYTICS_NAMES.ONBOARDING_AGENT,
+      outcome: WORKFLOW_OUTCOMES.FAILED,
+      organizationId,
+      startedAt: workflowStartedAt,
+      reason: WORKFLOW_UNEXPECTED_FAILURE_REASON,
     });
     throw error;
   }

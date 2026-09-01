@@ -1,5 +1,6 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way of importing
 import * as z from "zod";
+
 import { FEEDBACK_MAX_MESSAGE_LENGTH } from "@/constants/feedback";
 
 export const feedbackSentimentSchema = z.enum([
