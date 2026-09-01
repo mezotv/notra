@@ -76,8 +76,8 @@ export default function RepoStarVideoPage() {
             subtitle="Drop in any repo and get a share-ready video that counts up your GitHub stars, with the whole stargazer crowd in the room."
             title={
               <>
-                Turn your <span className="text-primary">stars</span> into a
-                moment.
+                GitHub <span className="text-primary">star</span> video
+                generator
               </>
             }
           >

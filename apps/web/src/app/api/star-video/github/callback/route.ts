@@ -10,6 +10,7 @@ import {
 import {
   encryptGithubToken,
   exchangeGithubCode,
+  fetchGithubLogin,
   getGithubOAuthConfig,
 } from "@/lib/star-video/github-oauth";
 import {
@@ -65,6 +66,10 @@ export async function GET(request: NextRequest) {
   if (!token) {
     return response;
   }
+  const login = await fetchGithubLogin(token);
+  if (!login) {
+    return response;
+  }
 
   const cookieOptions = {
     secure: process.env.NODE_ENV === "production",
@@ -78,6 +83,6 @@ export async function GET(request: NextRequest) {
     encryptGithubToken(token, config.clientSecret),
     { ...cookieOptions, httpOnly: true }
   );
-  response.cookies.set(GITHUB_CONNECTED_COOKIE, "1", cookieOptions);
+  response.cookies.set(GITHUB_CONNECTED_COOKIE, login, cookieOptions);
   return response;
 }

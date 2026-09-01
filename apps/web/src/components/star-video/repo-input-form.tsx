@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useQueryState } from "nuqs";
 import { type FormEvent, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
@@ -7,22 +8,24 @@ import { toast } from "sonner";
 import { GitHubMark } from "@/components/star-video/github-mark";
 import {
   buildGithubConnectHref,
-  getServerGithubConnected,
-  isGithubConnected,
+  getGithubLogin,
+  getServerGithubLogin,
   subscribeToGithubConnection,
 } from "@/lib/star-video/github-connection";
 import { parseRepoInput } from "@/lib/star-video/parse-repo";
 
 const DEFAULT_INPUT = "usenotra/notra";
+const AVATAR_SIZE_PX = 40;
 
 export function RepoInputForm() {
   const [repoParam, setRepoParam] = useQueryState("repo");
   const [value, setValue] = useState(repoParam ?? DEFAULT_INPUT);
-  const githubConnected = useSyncExternalStore(
+  const githubLogin = useSyncExternalStore(
     subscribeToGithubConnection,
-    isGithubConnected,
-    getServerGithubConnected
+    getGithubLogin,
+    getServerGithubLogin
   );
+  const githubConnected = githubLogin !== null;
 
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -31,7 +34,12 @@ export function RepoInputForm() {
       toast.error("Enter a repo as owner/name or a GitHub URL.");
       return;
     }
-    setRepoParam(`${parsed.owner}/${parsed.repo}`.toLowerCase());
+    const repoId = `${parsed.owner}/${parsed.repo}`.toLowerCase();
+    if (!githubConnected) {
+      window.location.assign(buildGithubConnectHref(repoId));
+      return;
+    }
+    setRepoParam(repoId);
   };
 
   return (
@@ -54,21 +62,28 @@ export function RepoInputForm() {
           className="cta-gradient-primary-flat flex shrink-0 cursor-pointer items-center justify-center rounded-full px-5 py-3 font-sans text-[0.9375rem] leading-[1.29] font-semibold text-white sm:px-4.5 sm:py-2 sm:text-[0.875rem]"
           type="submit"
         >
-          Generate video
+          {githubConnected ? "Generate video" : "Connect GitHub"}
         </button>
       </form>
-      {githubConnected ? (
-        <p className="font-sans text-xs text-[#1E1E1E66] dark:text-white/40">
-          GitHub connected. Lookups run with your account.
-        </p>
-      ) : (
-        <a
-          className="font-sans text-xs text-[#1E1E1E66] underline underline-offset-2 transition-colors hover:text-[#1E1E1E99] dark:text-white/40 dark:hover:text-white/60"
-          href={buildGithubConnectHref(repoParam)}
-        >
-          Connect GitHub for the full stargazer crowd
-        </a>
-      )}
+      <p className="font-sans text-sm text-[#1E1E1E99] dark:text-white/60">
+        {githubLogin ? (
+          <span className="inline-flex items-center gap-1.5">
+            Connected as
+            <Image
+              alt=""
+              className="size-4 rounded-full"
+              height={AVATAR_SIZE_PX}
+              src={`https://avatars.githubusercontent.com/${githubLogin}?size=${AVATAR_SIZE_PX}`}
+              width={AVATAR_SIZE_PX}
+            />
+            <span className="font-semibold text-[#1E1E1E] dark:text-white">
+              {githubLogin}
+            </span>
+          </span>
+        ) : (
+          "A GitHub connection is required to look up repos and render the video."
+        )}
+      </p>
     </div>
   );
 }

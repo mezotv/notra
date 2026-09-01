@@ -19,10 +19,22 @@ import { cn } from "@notra/ui/lib/utils";
 import { rgbaToHex } from "@notra/utils/color";
 import { Player } from "@remotion/player";
 import { useQueryState } from "nuqs";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { toast } from "sonner";
 
 import { normalizeHex } from "@/lib/star-video/color";
+import {
+  getGithubLogin,
+  getServerGithubLogin,
+  subscribeToGithubConnection,
+} from "@/lib/star-video/github-connection";
 import { parseRepoInput } from "@/lib/star-video/parse-repo";
 import {
   DEFAULT_BACKGROUND_COLOR,
@@ -46,6 +58,12 @@ const BACKGROUND_PRESETS = [
 export function StarVideoPreview() {
   const [repoParam] = useQueryState("repo");
   const [bgParam, setBgParam] = useQueryState("bg");
+  const githubLogin = useSyncExternalStore(
+    subscribeToGithubConnection,
+    getGithubLogin,
+    getServerGithubLogin
+  );
+  const githubConnected = githubLogin !== null;
 
   const [isLoading, setIsLoading] = useState(false);
   const [isRendering, setIsRendering] = useState(false);
@@ -68,7 +86,7 @@ export function StarVideoPreview() {
     }
     hasMounted.current = true;
 
-    if (!parsed) {
+    if (!(parsed && githubConnected)) {
       return;
     }
 
@@ -103,7 +121,7 @@ export function StarVideoPreview() {
     })();
 
     return () => controller.abort();
-  }, [repoParam]);
+  }, [repoParam, githubConnected]);
 
   const applyBackground = useCallback(
     (color: string) => {

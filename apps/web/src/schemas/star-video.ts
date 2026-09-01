@@ -73,3 +73,7 @@ export const githubCallbackQuerySchema = z.object({
 export const githubAccessTokenSchema = z.object({
   access_token: z.string().min(1),
 });
+
+export const githubViewerSchema = z.object({
+  login: z.string().min(1),
+});

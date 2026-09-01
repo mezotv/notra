@@ -2,6 +2,8 @@ import { Effect } from "effect";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { GITHUB_CONNECTION_REQUIRED_MESSAGE } from "@/lib/star-video/github-cookies";
+import { readGithubToken } from "@/lib/star-video/github-oauth";
 import {
   enforceGlobalRenderLimit,
   enforceStarVideoRateLimit,
@@ -13,6 +15,13 @@ export const runtime = "nodejs";
 export const maxDuration = 300;
 
 export async function POST(request: NextRequest) {
+  if (!readGithubToken(request)) {
+    return NextResponse.json(
+      { error: GITHUB_CONNECTION_REQUIRED_MESSAGE },
+      { status: 401 }
+    );
+  }
+
   let body: unknown;
   try {
     body = await request.json();

@@ -4,12 +4,20 @@ export function subscribeToGithubConnection(): () => void {
   return () => undefined;
 }
 
-export function isGithubConnected(): boolean {
-  return document.cookie.split("; ").includes(`${GITHUB_CONNECTED_COOKIE}=1`);
+export function getGithubLogin(): string | null {
+  const prefix = `${GITHUB_CONNECTED_COOKIE}=`;
+  const entry = document.cookie
+    .split("; ")
+    .find((cookie) => cookie.startsWith(prefix));
+  if (!entry) {
+    return null;
+  }
+  const value = decodeURIComponent(entry.slice(prefix.length));
+  return value.length > 0 ? value : null;
 }
 
-export function getServerGithubConnected(): boolean {
-  return false;
+export function getServerGithubLogin(): string | null {
+  return null;
 }
 
 export function buildGithubConnectHref(repoParam: string | null): string {

@@ -14,9 +14,9 @@ export function loadRepoStarData(
   owner: string,
   repo: string,
   id: string,
-  token?: string
+  token: string
 ): Promise<LoadRepoResult> {
-  const inflightKey = token ? `${id}:user` : id;
+  const inflightKey = `${id}:${token}`;
   const existing = inflight.get(inflightKey);
   if (existing) {
     return existing;

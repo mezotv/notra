@@ -7,20 +7,24 @@ import {
 
 import type { NextRequest } from "next/server";
 
-import { githubAccessTokenSchema } from "@/schemas/star-video";
+import {
+  githubAccessTokenSchema,
+  githubViewerSchema,
+} from "@/schemas/star-video";
 import type { GithubOAuthConfig } from "@/types/star-video";
 
 import { GITHUB_TOKEN_COOKIE } from "./github-cookies";
 
 const AUTHORIZE_URL = "https://github.com/login/oauth/authorize";
 const TOKEN_URL = "https://github.com/login/oauth/access_token";
+const VIEWER_URL = "https://api.github.com/user";
 const IV_LENGTH = 12;
 const AUTH_TAG_LENGTH = 16;
 const STATE_LENGTH = 16;
 
 export function getGithubOAuthConfig(): GithubOAuthConfig | null {
-  const clientId = process.env.STAR_VIDEO_GITHUB_CLIENT_ID;
-  const clientSecret = process.env.STAR_VIDEO_GITHUB_CLIENT_SECRET;
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
   if (!(clientId && clientSecret)) {
     return null;
   }
@@ -67,6 +71,27 @@ export async function exchangeGithubCode(
     }
     const parsed = githubAccessTokenSchema.safeParse(await res.json());
     return parsed.success ? parsed.data.access_token : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchGithubLogin(token: string): Promise<string | null> {
+  try {
+    const res = await fetch(VIEWER_URL, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: `Bearer ${token}`,
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "notra-star-video",
+      },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const parsed = githubViewerSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data.login : null;
   } catch {
     return null;
   }

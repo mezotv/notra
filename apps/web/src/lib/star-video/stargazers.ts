@@ -4,7 +4,6 @@ import type { GitHubRepo, GitHubUser } from "~types/github";
 import type { RepoStarData } from "@/types/star-video";
 
 const MAX_AVATARS = 60;
-const REVALIDATE_SECONDS = 60 * 60 * 24;
 
 class RepoNotFound extends Data.TaggedError("RepoNotFound")<{
   readonly owner: string;
@@ -16,30 +15,19 @@ class RepoUnavailable extends Data.TaggedError("RepoUnavailable")<{
   readonly repo: string;
 }> {}
 
-function buildHeaders(token?: string): Record<string, string> {
-  const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
-    "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "notra-star-video",
-  };
-  const auth = token ?? process.env.GITHUB_TOKEN;
-  if (auth) {
-    headers.Authorization = `Bearer ${auth}`;
-  }
-  return headers;
-}
-
-function buildFetchOptions(token?: string): RequestInit {
-  if (token) {
-    return { headers: buildHeaders(token), cache: "no-store" };
-  }
+function buildFetchOptions(token: string): RequestInit {
   return {
-    headers: buildHeaders(),
-    next: { revalidate: REVALIDATE_SECONDS },
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "notra-star-video",
+    },
+    cache: "no-store",
   };
 }
 
-async function fetchJson<T>(url: string, token?: string): Promise<T | null> {
+async function fetchJson<T>(url: string, token: string): Promise<T | null> {
   try {
     const res = await fetch(url, buildFetchOptions(token));
     if (!res.ok) {
@@ -55,7 +43,7 @@ const HTTP_NOT_FOUND = 404;
 
 async function fetchRepoMeta(
   base: string,
-  token?: string
+  token: string
 ): Promise<{ status: number; data: GitHubRepo | null }> {
   try {
     const res = await fetch(base, buildFetchOptions(token));
@@ -88,16 +76,14 @@ function toAvatarUrls(users: GitHubUser[] | null): string[] {
   return urls;
 }
 
-async function fetchAvatars(base: string, token?: string): Promise<string[]> {
-  if (token || process.env.GITHUB_TOKEN) {
-    const stargazers = await fetchJson<GitHubUser[]>(
-      `${base}/stargazers?per_page=100`,
-      token
-    );
-    const fromStars = toAvatarUrls(stargazers);
-    if (fromStars.length > 0) {
-      return fromStars;
-    }
+async function fetchAvatars(base: string, token: string): Promise<string[]> {
+  const stargazers = await fetchJson<GitHubUser[]>(
+    `${base}/stargazers?per_page=100`,
+    token
+  );
+  const fromStars = toAvatarUrls(stargazers);
+  if (fromStars.length > 0) {
+    return fromStars;
   }
 
   const contributors = await fetchJson<GitHubUser[]>(
@@ -123,7 +109,7 @@ async function fetchAvatars(base: string, token?: string): Promise<string[]> {
 export const fetchRepoStarData = Effect.fn("fetchRepoStarData")(function* (
   owner: string,
   repo: string,
-  token?: string
+  token: string
 ) {
   const base = `https://api.github.com/repos/${owner}/${repo}`;
 
