@@ -100,10 +100,8 @@ export function HeroHeadline() {
 
   return (
     <h1 className="font-display max-w-[20.5rem] text-center text-[clamp(1.5rem,calc(10.1vw-0.42rem),2.0625rem)] leading-[1.08] font-medium tracking-[-0.015em] text-[#1E1E1E] sm:max-w-[56.875rem] sm:text-[3.25rem] sm:font-semibold lg:text-[4.75rem] lg:leading-[1.12] dark:text-white">
-      <span className="block whitespace-nowrap sm:inline sm:whitespace-normal">
-        {HERO_HEADLINE_LINE_ONE}{" "}
-      </span>
-      <span className="block whitespace-nowrap sm:inline sm:whitespace-normal">
+      <span className="block whitespace-nowrap">{HERO_HEADLINE_LINE_ONE} </span>
+      <span className="block whitespace-nowrap">
         {HERO_HEADLINE_LINE_TWO_PREFIX}{" "}
         <span className="sr-only">{listEngineNames()}</span>
         <span
