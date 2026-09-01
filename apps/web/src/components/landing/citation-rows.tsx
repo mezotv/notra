@@ -91,11 +91,11 @@ export function CitationRows({
           </TableHead>
         </TableRow>
       </TableHeader>
-      {animated ? (
-        <LazyMotion features={domAnimation}>
-          <TableBody className={BODY_CLASS}>
-            <AnimatePresence initial={false}>
-              {rows.map((row) => (
+      <LazyMotion features={domAnimation}>
+        <TableBody className={BODY_CLASS}>
+          <AnimatePresence initial={false}>
+            {rows.map((row) =>
+              animated ? (
                 <m.tr
                   animate={ROW_VISIBLE}
                   className="[&>td]:border-border [&>td]:border-b"
@@ -107,19 +107,15 @@ export function CitationRows({
                 >
                   <CitationCells base={base} row={row} />
                 </m.tr>
-              ))}
-            </AnimatePresence>
-          </TableBody>
-        </LazyMotion>
-      ) : (
-        <TableBody className={BODY_CLASS}>
-          {rows.map((row) => (
-            <TableRow key={row.id}>
-              <CitationCells base={base} row={row} />
-            </TableRow>
-          ))}
+              ) : (
+                <TableRow key={row.id}>
+                  <CitationCells base={base} row={row} />
+                </TableRow>
+              )
+            )}
+          </AnimatePresence>
         </TableBody>
-      )}
+      </LazyMotion>
     </Table>
   );
 }

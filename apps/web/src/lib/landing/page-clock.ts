@@ -1,13 +1,18 @@
 import { useSyncExternalStore } from "react";
 
-const PAGE_LOADED_AT = Date.now();
+let pageLoadedAt: number | null = null;
+
+function loadedAt(): number {
+  pageLoadedAt ??= Date.now();
+  return pageLoadedAt;
+}
 
 function subscribe(): () => void {
   return () => {};
 }
 
 function getSnapshot(): number {
-  return PAGE_LOADED_AT;
+  return loadedAt();
 }
 
 function getServerSnapshot(): null {
@@ -19,5 +24,5 @@ export function usePageClockBase(): number | null {
 }
 
 export function pageClockElapsedMs(): number {
-  return Date.now() - PAGE_LOADED_AT;
+  return Date.now() - loadedAt();
 }
