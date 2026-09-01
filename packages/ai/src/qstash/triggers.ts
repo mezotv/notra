@@ -1,9 +1,6 @@
 import { Client as QStashClient } from "@upstash/qstash";
 
-import type {
-  CreateQstashRouteScheduleProps,
-  PublishQstashRouteProps,
-} from "../types/qstash";
+import type { CreateQstashRouteScheduleProps } from "../types/qstash";
 import {
   getConfiguredAppUrl,
   getConfiguredWorkflowUrl,
@@ -157,23 +154,4 @@ export async function createQstashRouteSchedule({
 export async function deleteQstashSchedule(scheduleId: string) {
   const client = getQStashClient();
   await client.schedules.delete(scheduleId);
-}
-
-export async function publishQstashRoute({
-  path,
-  body,
-  delaySeconds,
-}: PublishQstashRouteProps) {
-  const client = getQStashClient();
-  const result = await client.publishJSON({
-    url: `${getAppUrl()}${path}`,
-    body,
-    delay: delaySeconds,
-  });
-  return result.messageId;
-}
-
-export async function deleteQstashMessage(messageId: string) {
-  const client = getQStashClient();
-  await client.messages.delete(messageId);
 }

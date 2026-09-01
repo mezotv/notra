@@ -1,4 +1,5 @@
 import type { AgentTokenUsage } from "@notra/ai/types/agents";
+import type { ContentBillingReservation } from "@notra/ai/types/billing";
 import type { GeoLogEventName } from "@notra/ai/types/evlog";
 import type {
   GeoContentBrief,
@@ -94,7 +95,7 @@ export interface GeoSettingsRow {
   nonZdrApprovedEngines: string[];
   enabled: boolean;
   scanIntervalHours: number;
-  qstashMessageId: string | null;
+  nextScanAt: Date | null;
   scanStartedAt: Date | null;
   lastScanAt: Date | null;
   createdAt: Date;
@@ -177,7 +178,7 @@ export type GeoScanSkipReason =
   | "billing"
   | "zdr"
   | "disabled"
-  | "superseded"
+  | "claim_lost"
   | "already_running";
 
 export interface GeoErrorFields {
@@ -297,13 +298,11 @@ export interface GeoSettingsLanguageAddInput extends GeoScopeInput {
   language: string;
 }
 
-export interface SyncGeoScanScheduleInput {
-  organizationId: string;
-  projectId: string;
-  enabled: boolean;
-  scanIntervalHours: number;
-  existingMessageId: string | null;
-  reschedule?: boolean;
+export interface GeoScanCronSweepResult {
+  due: number;
+  started: number;
+  skipped: number;
+  staleScansFailed: number;
 }
 
 export interface GeoSampleDataResponse {
@@ -417,21 +416,61 @@ export interface GeoScanResult {
   mentions?: number;
 }
 
-export interface GeoScanRetryResult {
-  status: "retry_no_successful_checks";
-  retryProjectIds: string[];
-  checks: number;
-  mentions: number;
+export interface GeoScanPlannedTask {
+  engine: string;
+  groundedKey: string | null;
+  prompt: GeoPromptDefinition;
+  language: string;
+  zdr: GeoZdrMode;
 }
 
-export type GeoScanRunResult = GeoScanResult | GeoScanRetryResult;
+export interface GeoScanPlannedSequence {
+  sequenceId: string;
+  steps: string[];
+  groundedKey: string;
+  zdr: GeoZdrMode;
+}
 
-export interface GeoScanProgramOptions {
-  projectId?: string;
-  claimedAt?: Date;
-  scanId?: string;
-  /** Explicit project subset for a retry pass; overrides `projectId` scoping. */
-  projectIds?: readonly string[];
+export interface GeoScanProjectContext {
+  organizationId: string;
+  projectId: string;
+  scanId: string;
+  runId: string;
+  companyName: string;
+  aliases: string[];
+  gate: ContentBillingReservation;
+  startedAtMs: number;
+}
+
+export interface GeoScanProjectPlan {
+  context: GeoScanProjectContext;
+  /** ISO stamp of the claim token the batches rotate as they renew it. */
+  claimedAt: string;
+  tasks: GeoScanPlannedTask[];
+  sequences: GeoScanPlannedSequence[];
+  promptCount: number;
+  languages: string[];
+  engines: string[];
+}
+
+export type GeoScanProjectPlanResult =
+  | { status: "planned"; plan: GeoScanProjectPlan }
+  | { status: "skipped"; reason: GeoScanSkipReason };
+
+export interface GeoScanBatchOutcome {
+  checks: number;
+  mentions: number;
+  dropped: number;
+  usage: AgentTokenUsage;
+  /** Renewed claim token the next batch must use. */
+  claimedAt: string;
+}
+
+export interface GeoScanProjectTotals {
+  checks: number;
+  mentions: number;
+  dropped: number;
+  usage: AgentTokenUsage;
 }
 
 export interface GeoProjectScanOutcome {

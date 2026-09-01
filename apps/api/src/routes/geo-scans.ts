@@ -128,7 +128,7 @@ geoScansRoutes.openapi(createScanRoute, async (c) => {
 
   // No read-then-check here on purpose: `startGeoScan` takes an atomic claim on
   // the settings row (`claimGeoScanRun`) that every trigger — this route, the
-  // dashboard and the QStash schedule — shares, and fails with
+  // dashboard and the cron sweep — shares, and fails with
   // `GeoScanAlreadyRunningError` when it loses. That maps to the 409 below.
   const outcome = await runGeoEffect(
     "startScan",

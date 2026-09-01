@@ -1,43 +1,211 @@
-import { GEO_SCAN_NO_RESULTS_RETRY_DELAY } from "@notra/geo-core/constants/geo";
+import {
+  GEO_SCAN_NO_RESULTS_RETRY_DELAY,
+  GEO_SCAN_SEQUENCE_BATCH_SIZE,
+  GEO_SCAN_TASK_BATCH_SIZE,
+} from "@notra/geo-core/constants/geo";
 import { geoScanWorkflowPayloadSchema } from "@notra/geo-core/schemas/geo";
-import type { GeoScanResult } from "@notra/geo-core/types/geo";
-import { sleep } from "workflow";
+import type {
+  GeoScanProjectTotals,
+  GeoScanResult,
+} from "@notra/geo-core/types/geo";
+import {
+  chunkGeoScanItems,
+  describeGeoScanFailure,
+} from "@notra/geo-core/utils/geo-scan";
+import {
+  addAgentTokenUsage,
+  EMPTY_AGENT_TOKEN_USAGE,
+} from "@notra/geo-core/utils/token-usage";
+import { FatalError, sleep } from "workflow";
 import { flattenError } from "zod";
 
 import type { GeoScanPayload } from "@/types/geo";
 
-import { retryGeoScanStep, runGeoScanStep } from "./steps/geo-scan-steps";
+import {
+  finalizeGeoScanProjectStep,
+  listGeoScanProjectsStep,
+  prepareGeoScanProjectStep,
+  runGeoScanSequenceBatchStep,
+  runGeoScanTaskBatchStep,
+  trackGeoScanRetryScheduledStep,
+} from "./steps/geo-scan-steps";
+
+interface GeoScanProjectOutcome {
+  totals: GeoScanProjectTotals;
+  attempted: number;
+  noSuccessfulChecks: boolean;
+}
+
+/**
+ * One project scan as a chain of small steps: plan → task batches → sequence
+ * batches → finalize. Each batch persists its own results and rotates the
+ * claim token, so a killed invocation costs one batch, not the scan — the
+ * previous single-step design was killed wholesale by the function timeout
+ * once an organization tracked enough engines, leaving the scan on "running"
+ * forever with zero rows written.
+ */
+async function runGeoScanProjectRun(
+  organizationId: string,
+  projectId: string,
+  options: { claimedAt?: string; scanId?: string; retried: boolean }
+): Promise<GeoScanProjectOutcome | null> {
+  const planResult = await prepareGeoScanProjectStep(
+    organizationId,
+    projectId,
+    options
+  );
+  if (planResult.status === "skipped") {
+    return null;
+  }
+
+  const { plan } = planResult;
+  let claimedAt = plan.claimedAt;
+  const totals: GeoScanProjectTotals = {
+    checks: 0,
+    mentions: 0,
+    dropped: 0,
+    usage: EMPTY_AGENT_TOKEN_USAGE,
+  };
+  const attempted = plan.tasks.length + plan.sequences.length;
+
+  try {
+    for (const batch of chunkGeoScanItems(
+      plan.tasks,
+      GEO_SCAN_TASK_BATCH_SIZE
+    )) {
+      const outcome = await runGeoScanTaskBatchStep(
+        plan.context,
+        batch,
+        claimedAt
+      );
+      claimedAt = outcome.claimedAt;
+      totals.checks += outcome.checks;
+      totals.mentions += outcome.mentions;
+      totals.dropped += outcome.dropped;
+      totals.usage = addAgentTokenUsage(totals.usage, outcome.usage);
+    }
+    for (const batch of chunkGeoScanItems(
+      plan.sequences,
+      GEO_SCAN_SEQUENCE_BATCH_SIZE
+    )) {
+      const outcome = await runGeoScanSequenceBatchStep(
+        plan.context,
+        batch,
+        claimedAt
+      );
+      claimedAt = outcome.claimedAt;
+      totals.checks += outcome.checks;
+      totals.mentions += outcome.mentions;
+      totals.dropped += outcome.dropped;
+      totals.usage = addAgentTokenUsage(totals.usage, outcome.usage);
+    }
+  } catch (error) {
+    await finalizeGeoScanProjectStep(
+      plan.context,
+      totals,
+      "failed",
+      claimedAt,
+      {
+        retried: options.retried,
+        failureReason: describeGeoScanFailure(error),
+      }
+    );
+    return { totals, attempted, noSuccessfulChecks: totals.checks === 0 };
+  }
+
+  if (totals.checks === 0 && attempted > 0) {
+    await finalizeGeoScanProjectStep(
+      plan.context,
+      totals,
+      "failed",
+      claimedAt,
+      {
+        retried: options.retried,
+      }
+    );
+    return { totals, attempted, noSuccessfulChecks: true };
+  }
+
+  await finalizeGeoScanProjectStep(
+    plan.context,
+    totals,
+    "completed",
+    claimedAt,
+    {
+      retried: options.retried,
+    }
+  );
+  return { totals, attempted, noSuccessfulChecks: false };
+}
 
 export async function geoScanWorkflow(
   payload: GeoScanPayload
 ): Promise<GeoScanResult> {
   "use workflow";
 
+  const startedAt = Date.now();
   const parseResult = geoScanWorkflowPayloadSchema.safeParse(payload);
   if (!parseResult.success) {
     console.error("[GEO] Invalid payload:", flattenError(parseResult.error));
     return { status: "invalid_payload" };
   }
+  const { organizationId, projectId, claimedAt, scanId } = parseResult.data;
 
-  const result = await runGeoScanStep(
-    parseResult.data.organizationId,
-    parseResult.data.projectId,
-    parseResult.data.claimedAt,
-    parseResult.data.scanId
-  );
-  if (result.status !== "retry_no_successful_checks") {
-    return result;
+  const projectIds = await listGeoScanProjectsStep(organizationId, {
+    projectId,
+    claimedAt,
+  });
+  if (projectIds.length === 0) {
+    return { status: "skipped" };
   }
 
-  await sleep(GEO_SCAN_NO_RESULTS_RETRY_DELAY);
-  const retryResult = await retryGeoScanStep(
-    parseResult.data.organizationId,
-    result.retryProjectIds,
-    result.checks > 0
+  let checks = 0;
+  let mentions = 0;
+  const retryProjectIds: string[] = [];
+  for (const scanProjectId of projectIds) {
+    const claimed = scanProjectId === projectId;
+    const outcome = await runGeoScanProjectRun(organizationId, scanProjectId, {
+      claimedAt: claimed ? claimedAt : undefined,
+      scanId: claimed ? scanId : undefined,
+      retried: false,
+    });
+    if (!outcome) {
+      continue;
+    }
+    checks += outcome.totals.checks;
+    mentions += outcome.totals.mentions;
+    if (outcome.noSuccessfulChecks && outcome.attempted > 0) {
+      retryProjectIds.push(scanProjectId);
+    }
+  }
+
+  if (retryProjectIds.length === 0) {
+    return { status: "completed", checks, mentions };
+  }
+
+  await trackGeoScanRetryScheduledStep(
+    organizationId,
+    retryProjectIds,
+    checks,
+    Date.now() - startedAt
   );
-  return {
-    status: "completed",
-    checks: result.checks + (retryResult.checks ?? 0),
-    mentions: result.mentions + (retryResult.mentions ?? 0),
-  };
+  await sleep(GEO_SCAN_NO_RESULTS_RETRY_DELAY);
+
+  for (const retryProjectId of retryProjectIds) {
+    const outcome = await runGeoScanProjectRun(organizationId, retryProjectId, {
+      retried: true,
+    });
+    if (!outcome) {
+      continue;
+    }
+    checks += outcome.totals.checks;
+    mentions += outcome.totals.mentions;
+  }
+
+  if (checks === 0) {
+    const message = `GEO scan retry produced no successful checks for ${retryProjectIds.length} projects`;
+    console.error(`[GEO] ${message}`);
+    throw new FatalError(message);
+  }
+  return { status: "completed", checks, mentions };
 }

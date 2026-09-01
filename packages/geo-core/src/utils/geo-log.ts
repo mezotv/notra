@@ -11,7 +11,6 @@ import {
 import type {
   GeoCheckFailureReason,
   GeoErrorFields,
-  GeoScanSkipReason,
   GeoSkipFields,
 } from "../types/geo";
 
@@ -111,11 +110,3 @@ export function geoLogError(event: GeoLogEvent): Effect.Effect<void> {
 export const flushGeoLogEffect: Effect.Effect<void> = Effect.promise(() =>
   flushGeoLog()
 );
-
-export async function logGeoScanSkipped(
-  reason: GeoScanSkipReason,
-  fields: Record<string, unknown>
-): Promise<void> {
-  geoLog.warn({ event: "geo.scan.skipped", reason, ...fields });
-  await flushGeoLog();
-}

@@ -93,6 +93,21 @@ export function isDefiniteGeoScanHandoffRejection(cause: unknown): boolean {
   return false;
 }
 
+export function chunkGeoScanItems<T>(items: readonly T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) {
+    chunks.push(items.slice(index, index + size));
+  }
+  return chunks;
+}
+
+export function describeGeoScanFailure(error: unknown): string {
+  if (error instanceof Error && error.name.length > 0) {
+    return error.name;
+  }
+  return "unknown";
+}
+
 export function geoScanIntervalNoun(intervalHours: number): string {
   const option = GEO_SCAN_INTERVAL_OPTIONS.find(
     (entry) => entry.value === intervalHours

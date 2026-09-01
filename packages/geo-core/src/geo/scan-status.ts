@@ -13,7 +13,7 @@ import { type GeoDatabaseError, GeoScanStartError } from "./errors";
  * scan already holds it and the claim token when it does not.
  *
  * This single conditional `UPDATE … RETURNING` *is* the guard, and every entry
- * point that starts a scan (public API, dashboard trigger, QStash schedule)
+ * point that starts a scan (public API, dashboard trigger, cron sweep)
  * has to go through it. A read-then-check cannot work: concurrent triggers all
  * read "idle" before any of them writes, so they all proceed and the
  * organization gets billed for duplicate scans. Postgres instead serializes
@@ -298,6 +298,44 @@ export const createGeoScanRow = Effect.fn("geo.createScanRow")(function* (
  * finalizer and keeps a phantom "running" scan from lingering for clients that
  * poll the id the trigger handed them.
  */
+/**
+ * Fails every `geo_scans` row still `running` past the claim stale window.
+ * A run that old was killed without reaching its own finalizer (function
+ * timeout, crashed instance); its claim has already gone stale, so the row is
+ * provably dead and only misleads clients polling it.
+ */
+export const sweepStaleGeoScanRows = Effect.fn("geo.sweepStaleScanRows")(
+  function* () {
+    const staleBefore = new Date(Date.now() - GEO_SCAN_STALE_MS);
+    const failed = yield* geoDb("stale scan sweep failed", () =>
+      db
+        .update(geoScans)
+        .set({ status: "failed", finishedAt: new Date() })
+        .where(
+          and(
+            eq(geoScans.status, "running"),
+            lt(geoScans.startedAt, staleBefore)
+          )
+        )
+        .returning({
+          id: geoScans.id,
+          organizationId: geoScans.organizationId,
+          projectId: geoScans.projectId,
+        })
+    );
+    for (const row of failed) {
+      yield* geoLogError({
+        event: "geo.scan.failed",
+        reason: "stale_running_row",
+        organizationId: row.organizationId,
+        projectId: row.projectId,
+        scanId: row.id,
+      });
+    }
+    return failed.length;
+  }
+);
+
 export const failPendingGeoScanRow = Effect.fn("geo.failPendingScanRow")(
   function* (scope: GeoScanRunScope, scanId: string) {
     yield* geoDb("scan row fail stamp failed", () =>
@@ -316,7 +354,7 @@ export const failPendingGeoScanRow = Effect.fn("geo.failPendingScanRow")(
   }
 );
 
-const finishGeoScanRow = Effect.fn("geo.finishScanRow")(function* (
+export const finishGeoScanRow = Effect.fn("geo.finishScanRow")(function* (
   scope: GeoScanRunScope,
   scanId: string,
   status: "completed" | "failed"

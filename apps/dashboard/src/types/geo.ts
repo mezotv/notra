@@ -181,7 +181,7 @@ export interface GeoScanPayload {
   /**
    * `geo_scans` row the trigger inserted so its caller could poll it. The run
    * adopts this id rather than creating a row of its own. Absent when nobody
-   * is waiting on an id (the QStash schedule) or on runs queued before the
+   * is waiting on an id or on runs queued before the
    * field existed.
    */
   scanId?: string;

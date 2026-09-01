@@ -78,7 +78,7 @@ export const geoOrganizationInputSchema = object({
  *
  * `scanId` is the `geo_scans` row the trigger already inserted so its caller
  * could be handed a pollable id. The run adopts it instead of creating a row
- * of its own. Optional: the QStash schedule starts a run with nobody waiting
+ * of its own. Optional: the scheduled sweep starts a run with nobody waiting
  * on an id, and so does any workflow queued before this field existed.
  */
 export const geoScanWorkflowPayloadSchema = geoOrganizationInputSchema

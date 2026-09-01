@@ -1422,7 +1422,7 @@ export const geoSettings = pgTable(
       .default(sql`ARRAY[]::text[]`),
     enabled: boolean("enabled").notNull().default(true),
     scanIntervalHours: integer("scan_interval_hours").notNull().default(24),
-    qstashMessageId: text("qstash_message_id"),
+    nextScanAt: timestamp("next_scan_at"),
     scanStartedAt: timestamp("scan_started_at"),
     lastScanAt: timestamp("last_scan_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),

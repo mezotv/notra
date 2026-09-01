@@ -108,18 +108,6 @@ export class GeoScanAlreadyRunningError extends Data.TaggedError(
   readonly projectId: string;
 }> {}
 
-/**
- * A pending QStash message could not be cancelled, so the operation that
- * depends on the cancellation (project deletion) was refused rather than
- * leaving a delayed job pointed at a row that no longer exists. Retryable:
- * the caller should try the same request again.
- */
-export class GeoScheduleCancelError extends Data.TaggedError(
-  "GeoScheduleCancelError"
-)<{
-  readonly projectId: string;
-}> {}
-
 export class GeoProjectNotFoundError extends Data.TaggedError(
   "GeoProjectNotFoundError"
 )<{
@@ -238,7 +226,6 @@ export type GeoRouterError =
   | GeoSampleDataDisabledError
   | GeoScanAlreadyRunningError
   | GeoScanStartError
-  | GeoScheduleCancelError
   | GeoSequenceCreateFailedError
   | GeoSequenceNotFoundError
   | GeoSequenceRunError

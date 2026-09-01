@@ -70,14 +70,6 @@ function toGeoFailure(failure: GeoFailureWire): GeoFailure {
         status: 409,
         error: "A scan is already running for this project",
       };
-    case "GeoScheduleCancelError":
-      // Retryable: the project still exists and its scheduled scan is still
-      // pending, so the delete simply has not happened yet.
-      return {
-        status: 503,
-        error:
-          "Could not cancel this project's scheduled scan. Retry the delete.",
-      };
     case "GeoCompetitorLimitError":
       return {
         status: 400,

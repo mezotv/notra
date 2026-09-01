@@ -533,6 +533,13 @@
       "when": 1788250436683,
       "tag": "0075_blue_triathlon",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1788303822268,
+      "tag": "0076_great_frightful_four",
+      "breakpoints": true
     }
   ]
 }

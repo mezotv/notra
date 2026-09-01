@@ -22,13 +22,6 @@ function durationSince(startedAt: Date | null): number | null {
   return startedAt ? Math.max(0, Date.now() - startedAt.getTime()) : null;
 }
 
-export function describeScanFailure(error: unknown): string {
-  if (error instanceof Error && error.name.length > 0) {
-    return error.name;
-  }
-  return "unknown";
-}
-
 export async function trackGeoScanStepResult({
   organizationId,
   projectId,

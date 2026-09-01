@@ -119,8 +119,8 @@ import {
 import { promptKey } from "./prompt-key";
 import { buildGeoPrompts } from "./prompts";
 import { startClaimedGeoScanRun } from "./scan-handoff";
+import { nextGeoScanAt } from "./scan-schedule";
 import { claimGeoScanRun } from "./scan-status";
-import { reconcileGeoScanSchedule } from "./schedule-reconcile";
 import { geoTrafficWindowParams } from "./window";
 
 function mergeLegacyCompetitors(
@@ -620,7 +620,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
         engines: true,
         nonZdrApprovedEngines: true,
         enabled: true,
-        qstashMessageId: true,
+        nextScanAt: true,
         scanIntervalHours: true,
       },
       where: eq(geoSettings.projectId, projectId),
@@ -642,6 +642,21 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
     ]),
   ].filter((engine) => engineSet.has(engine));
 
+  // The schedule is a plain due stamp the cron sweep polls. A fresh enable or
+  // an interval change re-arms it a full interval out (matching the old
+  // delayed-message behaviour); an unchanged enabled row keeps its pending
+  // due time, and disabling clears it.
+  const keepNextScanAt =
+    input.enabled &&
+    existingSettings?.enabled === true &&
+    existingSettings.scanIntervalHours === input.scanIntervalHours;
+  let nextScanAt: Date | null = null;
+  if (input.enabled) {
+    nextScanAt = keepNextScanAt
+      ? (existingSettings?.nextScanAt ?? nextGeoScanAt(input.scanIntervalHours))
+      : nextGeoScanAt(input.scanIntervalHours);
+  }
+
   yield* geoDb("settings upsert failed", () =>
     db
       .insert(geoSettings)
@@ -658,6 +673,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
         nonZdrApprovedEngines,
         enabled: input.enabled,
         scanIntervalHours: input.scanIntervalHours,
+        nextScanAt,
       })
       .onConflictDoUpdate({
         target: geoSettings.projectId,
@@ -670,6 +686,7 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
           nonZdrApprovedEngines,
           enabled: input.enabled,
           scanIntervalHours: input.scanIntervalHours,
+          nextScanAt,
         },
       })
   );
@@ -678,20 +695,6 @@ export const upsertGeoSettings = Effect.fn("geo.settingsUpsert")(function* (
     { organizationId: input.organizationId, projectId },
     (current) => current
   );
-
-  const existingMessageId = existingSettings?.qstashMessageId ?? null;
-  yield* reconcileGeoScanSchedule({
-    organizationId: input.organizationId,
-    projectId,
-    snapshot: {
-      qstashMessageId: existingMessageId,
-      enabled: input.enabled,
-      scanIntervalHours: input.scanIntervalHours,
-    },
-    reschedule:
-      existingSettings?.enabled === false ||
-      existingSettings?.scanIntervalHours !== input.scanIntervalHours,
-  });
 
   const rows = yield* geoDb("settings lookup failed", () =>
     db.select().from(geoSettings).where(eq(geoSettings.projectId, projectId))
@@ -1418,7 +1421,7 @@ export const startGeoScan = Effect.fn("geo.startScan")(function* (
 
   // Claim the scan slot atomically *before* handing off. Reading the settings
   // row and checking `isGeoScanRunning` cannot serialize anything: concurrent
-  // triggers (public API, dashboard, QStash schedule) all read "idle" before
+  // triggers (public API, dashboard, cron sweep) all read "idle" before
   // any of them stamps, and all of them start a scan the organization pays
   // for. Losing the claim means someone else is already scanning.
   const claim = yield* claimGeoScanRun(projectId);

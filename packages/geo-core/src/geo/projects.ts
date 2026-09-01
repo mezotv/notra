@@ -10,21 +10,17 @@ import type {
   GeoProjectUpdateInput,
   GeoScopeInput,
 } from "../types/geo";
-import { geoDb, geoSkip } from "./effect";
+import { geoDb } from "./effect";
 import {
   GeoBrandIdentityMissingError,
   GeoBrandIdentityNotFoundError,
   GeoProjectCreateFailedError,
   GeoProjectDeleteBlockedError,
   GeoProjectNotFoundError,
-  GeoScheduleCancelError,
   GeoSettingsMissingError,
 } from "./errors";
 import { lockGeoOrganization, lockGeoProject } from "./lock";
 import { toGeoProject } from "./mappers";
-import { runProjectDeleteAfterCancellation } from "./project-delete-compensation";
-import { syncGeoScanSchedule } from "./schedule";
-import { reconcileGeoScanSchedule } from "./schedule-reconcile";
 
 export const listGeoProjects = Effect.fn("geo.projectsList")(function* (
   organizationId: string
@@ -162,93 +158,6 @@ export const updateGeoProject = Effect.fn("geo.projectUpdate")(function* (
   return toGeoProject(row);
 });
 
-interface GeoScanScheduleRow {
-  qstashMessageId: string | null;
-  enabled: boolean;
-  scanIntervalHours: number;
-}
-
-const loadGeoScanSchedule = Effect.fn("geo.loadScanSchedule")(function* (
-  organizationId: string,
-  projectId: string
-) {
-  return yield* geoDb("settings lookup failed", () =>
-    db.query.geoSettings.findFirst({
-      columns: {
-        qstashMessageId: true,
-        enabled: true,
-        scanIntervalHours: true,
-      },
-      where: and(
-        eq(geoSettings.organizationId, organizationId),
-        eq(geoSettings.projectId, projectId)
-      ),
-    })
-  );
-});
-
-/**
- * Re-arms the scan schedule of a project whose delete was refused *after* its
- * pending QStash message was already cancelled.
- *
- * Without this, the loser of a concurrent last-two-projects delete keeps its
- * project but silently loses its scans: the message is gone, yet
- * `geo_settings.qstash_message_id` still names it, and
- * `syncGeoScanSchedule` hands a non-null `existingMessageId` straight back
- * unless it is asked to reschedule — so the next settings save "keeps" a
- * message that no longer exists and the project never scans again.
- *
- * Order matters: the dead id is cleared first, so even if publishing a
- * replacement fails the row is left in the honest "nothing scheduled" state
- * that the next settings save repairs. Every step is best-effort — the caller
- * is about to fail with the delete refusal, and that error must not be
- * replaced by a QStash hiccup.
- */
-const restoreGeoScanSchedule = Effect.fn("geo.restoreScanSchedule")(function* (
-  organizationId: string,
-  projectId: string,
-  settingsRow: GeoScanScheduleRow | undefined
-) {
-  if (!settingsRow?.qstashMessageId) {
-    // Nothing was cancelled, so there is nothing to put back.
-    return;
-  }
-
-  const cancelledMessageId = settingsRow.qstashMessageId;
-  const clearedRows = yield* geoDb("scan schedule clear failed", () =>
-    db
-      .update(geoSettings)
-      .set({ qstashMessageId: null })
-      .where(
-        and(
-          eq(geoSettings.organizationId, organizationId),
-          eq(geoSettings.projectId, projectId),
-          eq(geoSettings.enabled, settingsRow.enabled),
-          eq(geoSettings.scanIntervalHours, settingsRow.scanIntervalHours),
-          eq(geoSettings.qstashMessageId, cancelledMessageId)
-        )
-      )
-      .returning({ id: geoSettings.id })
-  ).pipe(geoSkip("scan schedule clear failed"));
-
-  // The project may have been deleted concurrently, or another request may
-  // already have installed a new message. Neither case should be overwritten.
-  if (!clearedRows?.length || !settingsRow.enabled) {
-    return;
-  }
-
-  yield* reconcileGeoScanSchedule({
-    organizationId,
-    projectId,
-    snapshot: {
-      qstashMessageId: null,
-      enabled: true,
-      scanIntervalHours: settingsRow.scanIntervalHours,
-    },
-    reschedule: true,
-  }).pipe(geoSkip("scan schedule restore failed"));
-});
-
 /**
  * Deletes a project and everything hanging off it.
  *
@@ -260,9 +169,8 @@ const restoreGeoScanSchedule = Effect.fn("geo.restoreScanSchedule")(function* (
  * - `brand_settings` is NOT deleted: `projects.brand_settings_id` points *at*
  *   it, several projects can share one identity, and it is reachable from the
  *   organization independently of any project.
- * - A pending QStash scan message is cancelled first, and a *failed*
- *   cancellation aborts the delete. Swallowing it would leave a delayed job
- *   that wakes up against a project that no longer exists.
+ * - The scan schedule needs no teardown: the cron sweep reads `geo_settings`
+ *   live, and the settings row cascades away with the project.
  * - The organization's last project cannot be deleted: `resolveGeoScope` falls
  *   back to the oldest project, so removing the final one leaves every GEO
  *   read unresolvable. The count is re-taken inside the deleting transaction
@@ -303,94 +211,54 @@ export const deleteGeoProject = Effect.fn("geo.projectDelete")(function* (
     );
   }
 
-  let settingsRow = yield* loadGeoScanSchedule(organizationId, projectId);
+  const outcome = yield* geoDb("project delete failed", () =>
+    db.transaction(async (tx) => {
+      await Effect.runPromise(lockGeoOrganization(tx, organizationId));
+      await Effect.runPromise(lockGeoProject(tx, projectId));
 
-  while (true) {
-    const cancelledMessageId = settingsRow?.qstashMessageId ?? null;
-    const pendingMessageId = yield* Effect.promise(() =>
-      syncGeoScanSchedule({
-        organizationId,
-        projectId,
-        enabled: false,
-        scanIntervalHours: 0,
-        existingMessageId: cancelledMessageId,
-      })
+      const target = await tx
+        .select({ id: projects.id })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, projectId),
+            eq(projects.organizationId, organizationId)
+          )
+        )
+        .limit(1)
+        .for("update");
+      if (!target.length) {
+        return "not_found" as const;
+      }
+
+      const remaining = await tx
+        .select({ count: count() })
+        .from(projects)
+        .where(eq(projects.organizationId, organizationId));
+      if ((remaining.at(0)?.count ?? 0) <= 1) {
+        return "last_project" as const;
+      }
+
+      const deleted = await tx
+        .delete(projects)
+        .where(
+          and(
+            eq(projects.id, projectId),
+            eq(projects.organizationId, organizationId)
+          )
+        )
+        .returning({ id: projects.id });
+      return deleted.length ? ("deleted" as const) : ("not_found" as const);
+    })
+  );
+
+  if (outcome === "last_project") {
+    return yield* Effect.fail(
+      new GeoProjectDeleteBlockedError({ projectId, reason: "last_project" })
     );
-    if (pendingMessageId) {
-      return yield* Effect.fail(new GeoScheduleCancelError({ projectId }));
-    }
-
-    // External QStash I/O stays outside the transaction. The locked database
-    // phase verifies that the cancelled id is still current; if a settings
-    // update installed another job, the loop cancels that newer id first.
-    const outcome = yield* runProjectDeleteAfterCancellation(
-      projectId,
-      geoDb("project delete failed", () =>
-        db.transaction(async (tx) => {
-          await Effect.runPromise(lockGeoOrganization(tx, organizationId));
-          await Effect.runPromise(lockGeoProject(tx, projectId));
-
-          const target = await tx
-            .select({ id: projects.id })
-            .from(projects)
-            .where(
-              and(
-                eq(projects.id, projectId),
-                eq(projects.organizationId, organizationId)
-              )
-            )
-            .limit(1)
-            .for("update");
-          if (!target.length) {
-            return "not_found" as const;
-          }
-
-          const currentSchedule = await tx
-            .select({ qstashMessageId: geoSettings.qstashMessageId })
-            .from(geoSettings)
-            .where(
-              and(
-                eq(geoSettings.organizationId, organizationId),
-                eq(geoSettings.projectId, projectId)
-              )
-            )
-            .limit(1)
-            .for("update");
-          if (
-            (currentSchedule.at(0)?.qstashMessageId ?? null) !==
-            cancelledMessageId
-          ) {
-            return "schedule_changed" as const;
-          }
-
-          const remaining = await tx
-            .select({ count: count() })
-            .from(projects)
-            .where(eq(projects.organizationId, organizationId));
-          if ((remaining.at(0)?.count ?? 0) <= 1) {
-            return "last_project" as const;
-          }
-
-          const deleted = await tx
-            .delete(projects)
-            .where(
-              and(
-                eq(projects.id, projectId),
-                eq(projects.organizationId, organizationId)
-              )
-            )
-            .returning({ id: projects.id });
-          return deleted.length ? ("deleted" as const) : ("not_found" as const);
-        })
-      ),
-      restoreGeoScanSchedule(organizationId, projectId, settingsRow)
-    );
-
-    if (outcome !== "schedule_changed") {
-      return { id: projectId, success: true as const };
-    }
-    settingsRow = yield* loadGeoScanSchedule(organizationId, projectId);
   }
+
+  return { id: projectId, success: true as const };
 });
 
 export const resolveGeoScope = Effect.fn("geo.resolveScope")(function* (

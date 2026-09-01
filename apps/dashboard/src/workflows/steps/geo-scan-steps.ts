@@ -1,26 +1,28 @@
 import { flushGeoLog } from "@notra/ai/evlog";
-import { retryGeoScan, runGeoScan } from "@notra/geo-core/geo/scan";
+import {
+  finalizeGeoScanProject,
+  listGeoScanProjects,
+  prepareGeoScanProject,
+  runGeoScanSequenceBatch,
+  runGeoScanTaskBatch,
+} from "@notra/geo-core/geo/scan";
 import type {
-  GeoScanResult,
-  GeoScanRunResult,
+  GeoScanBatchOutcome,
+  GeoScanPlannedSequence,
+  GeoScanPlannedTask,
+  GeoScanProjectContext,
+  GeoScanProjectPlanResult,
+  GeoScanProjectTotals,
 } from "@notra/geo-core/types/geo";
 import { flushPostHogServer } from "@notra/posthog/server";
 import { Effect } from "effect";
-import { FatalError } from "workflow";
 
-import { GEO_SCAN_FAILURE_REASONS } from "@/constants/geo-analytics";
 import {
-  describeScanFailure,
   trackGeoScanFailure,
   trackGeoScanStepResult,
 } from "@/lib/analytics/geo-workflow-events";
 import { geoCoreDashboardLayer } from "@/lib/geo/configure";
 
-/**
- * `claimedAt` arrives as an ISO string because workflow payloads are JSON.
- * A value that does not parse is dropped rather than passed on: a bogus token
- * would fail every compare-and-set and silently disable the claim hand-back.
- */
 function parseClaimedAt(claimedAt?: string): Date | undefined {
   if (!claimedAt) {
     return;
@@ -29,95 +31,151 @@ function parseClaimedAt(claimedAt?: string): Date | undefined {
   return Number.isNaN(parsed.getTime()) ? undefined : parsed;
 }
 
-export async function runGeoScanStep(
+async function flushObservability(): Promise<void> {
+  await flushGeoLog();
+  await flushPostHogServer();
+}
+
+export async function listGeoScanProjectsStep(
   organizationId: string,
-  projectId?: string,
-  claimedAt?: string,
-  scanId?: string
-): Promise<GeoScanRunResult> {
+  options: { projectId?: string; projectIds?: string[]; claimedAt?: string }
+): Promise<string[]> {
   "use step";
-  const startedAt = Date.now();
   try {
-    const result = await Effect.runPromise(
-      runGeoScan(
-        organizationId,
-        projectId,
-        parseClaimedAt(claimedAt),
-        scanId
-      ).pipe(Effect.provide(geoCoreDashboardLayer))
+    return await Effect.runPromise(
+      listGeoScanProjects(organizationId, {
+        projectId: options.projectId,
+        projectIds: options.projectIds,
+        claimedAt: parseClaimedAt(options.claimedAt),
+      }).pipe(Effect.provide(geoCoreDashboardLayer))
     );
-    await trackGeoScanStepResult({
-      organizationId,
-      projectId,
-      scanId,
-      result,
-      durationMs: Date.now() - startedAt,
-      retried: false,
-    });
-    return result;
-  } catch (error) {
-    await trackGeoScanFailure({
-      organizationId,
-      projectId,
-      scanId,
-      reason: describeScanFailure(error),
-      durationMs: Date.now() - startedAt,
-      retried: false,
-    });
-    throw error;
   } finally {
-    await flushGeoLog();
-    await flushPostHogServer();
+    await flushObservability();
   }
 }
 
-export async function retryGeoScanStep(
+export async function prepareGeoScanProjectStep(
   organizationId: string,
-  projectIds: string[],
-  hadSuccessfulChecks: boolean
-): Promise<GeoScanResult> {
+  projectId: string,
+  options: { claimedAt?: string; scanId?: string; retried: boolean }
+): Promise<GeoScanProjectPlanResult> {
   "use step";
   const startedAt = Date.now();
   try {
     const result = await Effect.runPromise(
-      retryGeoScan(organizationId, projectIds).pipe(
+      prepareGeoScanProject(organizationId, projectId, {
+        claimedAt: parseClaimedAt(options.claimedAt),
+        scanId: options.scanId,
+      }).pipe(Effect.provide(geoCoreDashboardLayer))
+    );
+    if (result.status === "skipped") {
+      await trackGeoScanStepResult({
+        organizationId,
+        projectId,
+        scanId: options.scanId,
+        result: { status: "skipped" },
+        durationMs: Date.now() - startedAt,
+        retried: options.retried,
+      });
+    }
+    return result;
+  } finally {
+    await flushObservability();
+  }
+}
+
+export async function runGeoScanTaskBatchStep(
+  context: GeoScanProjectContext,
+  tasks: GeoScanPlannedTask[],
+  claimedAt: string
+): Promise<GeoScanBatchOutcome> {
+  "use step";
+  try {
+    return await Effect.runPromise(
+      runGeoScanTaskBatch(context, tasks, claimedAt).pipe(
         Effect.provide(geoCoreDashboardLayer)
       )
     );
-    if (result.status === "retry_no_successful_checks") {
-      if (!hadSuccessfulChecks && result.checks === 0) {
-        const message = `GEO scan retry produced no successful checks for ${result.retryProjectIds.length} projects`;
-        console.error(`[GEO] ${message}`);
-        await trackGeoScanFailure({
-          organizationId,
-          reason: GEO_SCAN_FAILURE_REASONS.RETRY_NO_SUCCESSFUL_CHECKS,
-          durationMs: Date.now() - startedAt,
-          retried: true,
-        });
-        throw new FatalError(message);
-      }
-      const completed: GeoScanResult = {
-        status: "completed",
-        checks: result.checks,
-        mentions: result.mentions,
-      };
+  } finally {
+    await flushObservability();
+  }
+}
+
+export async function runGeoScanSequenceBatchStep(
+  context: GeoScanProjectContext,
+  sequences: GeoScanPlannedSequence[],
+  claimedAt: string
+): Promise<GeoScanBatchOutcome> {
+  "use step";
+  try {
+    return await Effect.runPromise(
+      runGeoScanSequenceBatch(context, sequences, claimedAt).pipe(
+        Effect.provide(geoCoreDashboardLayer)
+      )
+    );
+  } finally {
+    await flushObservability();
+  }
+}
+
+export async function finalizeGeoScanProjectStep(
+  context: GeoScanProjectContext,
+  totals: GeoScanProjectTotals,
+  status: "completed" | "failed",
+  claimedAt: string,
+  options: { retried: boolean; failureReason?: string }
+): Promise<void> {
+  "use step";
+  try {
+    await Effect.runPromise(
+      finalizeGeoScanProject(context, totals, status, claimedAt).pipe(
+        Effect.provide(geoCoreDashboardLayer)
+      )
+    );
+    const durationMs = Date.now() - context.startedAtMs;
+    if (status === "completed") {
       await trackGeoScanStepResult({
-        organizationId,
-        result: completed,
-        durationMs: Date.now() - startedAt,
-        retried: true,
+        organizationId: context.organizationId,
+        projectId: context.projectId,
+        scanId: context.scanId,
+        result: {
+          status: "completed",
+          checks: totals.checks,
+          mentions: totals.mentions,
+        },
+        durationMs,
+        retried: options.retried,
       });
-      return completed;
+    } else {
+      await trackGeoScanFailure({
+        organizationId: context.organizationId,
+        projectId: context.projectId,
+        scanId: context.scanId,
+        reason: options.failureReason ?? "no_successful_checks",
+        durationMs,
+        retried: options.retried,
+      });
     }
+  } finally {
+    await flushObservability();
+  }
+}
+
+export async function trackGeoScanRetryScheduledStep(
+  organizationId: string,
+  retryProjectIds: string[],
+  checks: number,
+  durationMs: number
+): Promise<void> {
+  "use step";
+  try {
     await trackGeoScanStepResult({
       organizationId,
-      result,
-      durationMs: Date.now() - startedAt,
-      retried: true,
+      result: { status: "retry_no_successful_checks", checks, retryProjectIds },
+      durationMs,
+      retried: false,
     });
-    return result;
   } finally {
-    await flushGeoLog();
-    await flushPostHogServer();
+    await flushObservability();
   }
 }

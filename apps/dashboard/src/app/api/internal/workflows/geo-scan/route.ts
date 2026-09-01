@@ -7,8 +7,8 @@ import { ratelimit } from "@/utils/ratelimit";
 /**
  * Starts the GEO scan workflow on behalf of the public API.
  *
- * Deliberately has no already-running guard, unlike the QStash route next
- * door. The caller (`startGeoScan` in `@notra/geo-core`, running inside
+ * Deliberately has no already-running guard, unlike the cron sweep. The
+ * caller (`startGeoScan` in `@notra/geo-core`, running inside
  * `apps/api`) stamps `geo_settings.scanStartedAt` *before* it reaches this
  * endpoint, so an `isGeoScanRunning` check here would reject every request it
  * was meant to admit. The overlap guard lives in the public scan route, which

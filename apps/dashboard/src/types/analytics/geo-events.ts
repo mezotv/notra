@@ -2,7 +2,6 @@ import type { GeoTrafficEventRow } from "@notra/analytics/tinybird/datasources";
 import type { AgentReadinessWorkflowPayload } from "@notra/geo-core/types/agent-readiness";
 import type {
   GeoIngestIdentity,
-  GeoScanRunResult,
   GeoSuggestionKeyword,
 } from "@notra/geo-core/types/geo";
 import type { PostHogEventName } from "@notra/posthog/events";
@@ -99,11 +98,21 @@ export interface GeoSuggestionKeywordSummary {
 
 export type GeoSuggestionKeywordList = readonly GeoSuggestionKeyword[];
 
+export type GeoScanTrackResult =
+  | { status: "completed"; checks?: number; mentions?: number }
+  | { status: "skipped" }
+  | { status: "invalid_payload" }
+  | {
+      status: "retry_no_successful_checks";
+      checks: number;
+      retryProjectIds: string[];
+    };
+
 export interface GeoScanStepTrackInput {
   organizationId: string;
   projectId?: string;
   scanId?: string;
-  result: GeoScanRunResult;
+  result: GeoScanTrackResult;
   durationMs: number;
   retried: boolean;
 }
