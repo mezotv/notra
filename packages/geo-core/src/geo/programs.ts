@@ -507,7 +507,7 @@ export const addGeoTrackedEngine = Effect.fn("geo.settingsEngineAdd")(
           engines: sql<string[]>`
             CASE
               WHEN ${geoSettings.engines} IS NULL OR cardinality(${geoSettings.engines}) = 0
-                THEN ${initialEngines}::text[]
+                THEN ${sql.param(initialEngines)}::text[]
               WHEN ${input.engine} = ANY(${geoSettings.engines})
                 THEN ${geoSettings.engines}
               WHEN (
@@ -557,7 +557,7 @@ export const addGeoTrackedLanguage = Effect.fn("geo.settingsLanguageAdd")(
           languages: sql<string[]>`
             CASE
               WHEN ${geoSettings.languages} IS NULL OR cardinality(${geoSettings.languages}) = 0
-                THEN ${initialLanguages}::text[]
+                THEN ${sql.param(initialLanguages)}::text[]
               WHEN ${input.language} = ANY(${geoSettings.languages})
                 THEN ${geoSettings.languages}
               WHEN (
