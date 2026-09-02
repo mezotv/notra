@@ -238,7 +238,16 @@ export const ensureLocalUser = Effect.fn("auth.sync.ensureLocalUser")(
       Effect.retry({
         times: WORKOS_USER_VERIFY_RETRIES,
         while: (error) => !isWorkOSNotFound(error.cause),
-      })
+      }),
+      Effect.tapError((error) =>
+        Effect.logWarning("Could not verify WorkOS user").pipe(
+          Effect.annotateLogs({
+            workosUserId: workosUser.id,
+            notFound: isWorkOSNotFound(error.cause),
+            error: error.message,
+          })
+        )
+      )
     );
 
     const [created] = yield* Effect.tryPromise({
