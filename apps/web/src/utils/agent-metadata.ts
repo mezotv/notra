@@ -28,10 +28,13 @@ export const NOTRA_SAME_AS = [
 ] as const;
 
 export const NOTRA_CAPABILITIES = [
-  "Generate changelog entries from shipped product work",
-  "Draft launch posts, blog posts, and social updates in a saved brand voice",
-  "Read and manage generated posts through the Notra API",
-  "Use Notra MCP tools for authenticated content workflows",
+  "Track how often ChatGPT, Claude, Gemini, Perplexity and other AI engines mention a brand for tracked buyer prompts",
+  "Report share of voice against tracked competitors, per prompt, engine and language",
+  "Attribute AI agent traffic on a website by purpose: training, search index, cited in answer or referral",
+  "Find content gaps and plan or write articles for prompts where the brand is missing",
+  "Score a website's agent readiness and collect agent feedback through a public endpoint",
+  "Draft changelogs, launch posts and social updates in a saved brand voice",
+  "Read and manage projects, prompts, scans and posts through the Notra API and MCP tools",
 ] as const;
 
 export function siteUrl(path = "") {

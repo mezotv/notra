@@ -30,7 +30,7 @@ export const FEATURES_SHARE_COPY: FeaturesCardCopy = {
 export const FEATURES_TRAFFIC_COPY: FeaturesCardCopy = {
   title: "AI traffic, attributed",
   description:
-    "Hits from 63 known AI agents, sorted by what they were doing: training a model, building an index, reading a page to answer someone, or a person clicking through. We don't count a fetch as a citation.",
+    "Hits from 66 known AI agents, sorted by what they were doing: training a model, building an index, reading a page to answer someone or a person clicking through. We don't count a fetch as a citation.",
 };
 
 export const FEATURES_GAPS_COPY: FeaturesCardCopy = {

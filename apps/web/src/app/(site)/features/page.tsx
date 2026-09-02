@@ -3,9 +3,31 @@ import dynamic from "next/dynamic";
 
 import { ActivityFeed } from "@/components/activity-feed";
 import BrandVoicePreview from "@/components/brand-voice-preview";
+import { AnswerExampleSection } from "@/components/landing/answer-example-section";
 import { CtaBanner } from "@/components/landing/cta-banner";
+import { FeaturesSection } from "@/components/landing/features-section";
 import { MarketingHeroWash } from "@/components/marketing-hero-wash";
 import ReferencesPreview from "@/components/references-preview";
+import {
+  FEATURES_PAGE_DESCRIPTION,
+  FEATURES_PAGE_DEVELOPER_CARDS,
+  FEATURES_PAGE_DEVELOPERS,
+  FEATURES_PAGE_HERO_SUBTITLE,
+  FEATURES_PAGE_HERO_TITLE_HIGHLIGHT,
+  FEATURES_PAGE_HERO_TITLE_PREFIX,
+  FEATURES_PAGE_IMPROVE,
+  FEATURES_PAGE_IMPROVE_CARDS,
+  FEATURES_PAGE_STUDIO,
+  FEATURES_PAGE_STUDIO_CARDS,
+  FEATURES_PAGE_TITLE,
+  FEATURES_PAGE_TRACKING,
+  FEATURES_PAGE_TRACKING_CARDS,
+} from "@/constants/features-page";
+import type {
+  FeaturesPageCard,
+  FeaturesPageSectionCopy,
+  FeaturesPageStudioVisual,
+} from "@/types/features-page";
 import { buildBreadcrumbJsonLd, serializeJsonLd } from "@/utils/jsonld";
 import { PAGE_SOCIAL_IMAGES, TWITTER_HANDLE } from "@/utils/metadata";
 import { SITE_URL } from "@/utils/urls";
@@ -15,20 +37,29 @@ const IntegrationOrbit = dynamic(
 );
 
 const CARD_SHELL_CLASS =
+  "flex flex-col gap-2 rounded-[1.5rem] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-8 [box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#ECECEC_0rem_0rem_0rem_0.0625rem] dark:bg-white/[0.02] dark:bg-none dark:[box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#FFFFFF14_0rem_0rem_0rem_0.0625rem]";
+
+const VISUAL_CARD_SHELL_CLASS =
   "flex flex-col gap-6 overflow-clip rounded-[1.5rem] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-6 [box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#ECECEC_0rem_0rem_0rem_0.0625rem] sm:p-8 dark:bg-none dark:bg-white/[0.02] dark:[box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#FFFFFF14_0rem_0rem_0rem_0.0625rem]";
 
-const title = "Features";
-const description =
-  "See how Notra turns shipped engineering work into changelogs, launch posts, and social updates that match your brand voice.";
+const SECTION_CLASS =
+  "mx-auto flex w-full max-w-360 flex-col items-center px-6 lg:px-20";
+
+const CARD_TITLE_CLASS =
+  "font-sans text-[1.375rem]/7 font-medium tracking-[-0.015em] text-[#0A0D14] dark:text-white";
+
+const CARD_DESCRIPTION_CLASS =
+  "font-sans text-base/6 font-medium text-[#6A6B70] dark:text-white/60";
+
 const url = `${SITE_URL}/features`;
 
 export const metadata: Metadata = {
-  title,
-  description,
+  title: FEATURES_PAGE_TITLE,
+  description: FEATURES_PAGE_DESCRIPTION,
   alternates: { canonical: url },
   openGraph: {
-    title,
-    description,
+    title: FEATURES_PAGE_TITLE,
+    description: FEATURES_PAGE_DESCRIPTION,
     url,
     type: "website",
     siteName: "Notra",
@@ -36,63 +67,21 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title,
-    description,
+    title: FEATURES_PAGE_TITLE,
+    description: FEATURES_PAGE_DESCRIPTION,
     images: [PAGE_SOCIAL_IMAGES.features.url],
     site: TWITTER_HANDLE,
     creator: TWITTER_HANDLE,
   },
 };
 
-const CORE_FEATURES = [
-  {
-    title: "One timeline of everything you shipped",
-    description:
-      "PRs, issues, and decisions from GitHub, Linear, and Slack land in one place, so nothing worth writing about slips through.",
-    visual: "activity",
-  },
-  {
-    title: "Drafts that don't sound like AI",
-    description:
-      "Notra learns your brand voice from your real posts and tweets. Every draft reads like your best writer wrote it.",
-    visual: "brandVoice",
-  },
-  {
-    title: "Set up in under a minute",
-    description:
-      "One click connects GitHub, Linear, and Slack. No pipelines, no prompts to engineer, no Zapier spaghetti.",
-    visual: "integrations",
-  },
-  {
-    title: "Train it on your best writing",
-    description:
-      "Drop in your tweets, launch posts, or blog snippets. Notra matches tone, cadence, and vocabulary. Yours, not ChatGPT's.",
-    visual: "references",
-  },
-] as const;
-
-const PUBLISHING_WORKFLOWS = [
-  {
-    title: "Auto-generate changelogs",
-    description:
-      "Every merged PR becomes a changelog entry. Kill the “what did we ship this week?” meeting.",
-  },
-  {
-    title: "Draft launch posts from features",
-    description:
-      "Ship a feature, get a first-draft announcement waiting for you. Review, polish, publish.",
-  },
-  {
-    title: "Social updates on autopilot",
-    description:
-      "Milestones and releases become short posts for X and LinkedIn. Stay visible without context-switching.",
-  },
-] as const;
-
 const featuresJsonLd = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  itemListElement: CORE_FEATURES.map((feature, index) => ({
+  itemListElement: [
+    ...FEATURES_PAGE_TRACKING_CARDS,
+    ...FEATURES_PAGE_IMPROVE_CARDS,
+  ].map((feature, index) => ({
     "@type": "ListItem",
     position: index + 1,
     name: feature.title,
@@ -102,14 +91,32 @@ const featuresJsonLd = {
 
 const breadcrumbJsonLd = buildBreadcrumbJsonLd([
   { name: "Home", url: SITE_URL },
-  { name: "Features", url },
+  { name: FEATURES_PAGE_TITLE, url },
 ]);
 
-function FeatureVisual({
-  kind,
-}: {
-  kind: (typeof CORE_FEATURES)[number]["visual"];
-}) {
+function SectionHeader({ heading, subcopy }: FeaturesPageSectionCopy) {
+  return (
+    <header className="flex flex-col items-center gap-4 pb-12 text-center md:pb-16">
+      <h2 className="font-display text-[2rem] leading-[1.15] font-medium tracking-[-0.02em] text-balance text-black md:text-[2.75rem]/13 dark:text-white">
+        {heading}
+      </h2>
+      <p className="font-display max-w-206.25 text-xl/7.5 font-medium tracking-[-0.01em] text-balance text-[#1E1E1EBF] dark:text-white/70">
+        {subcopy}
+      </p>
+    </header>
+  );
+}
+
+function TextCard({ title, description }: FeaturesPageCard) {
+  return (
+    <div className={CARD_SHELL_CLASS}>
+      <h3 className={CARD_TITLE_CLASS}>{title}</h3>
+      <p className={CARD_DESCRIPTION_CLASS}>{description}</p>
+    </div>
+  );
+}
+
+function StudioVisual({ kind }: { kind: FeaturesPageStudioVisual }) {
   if (kind === "activity") {
     return (
       <div className="bg-background relative flex w-full items-end justify-center overflow-hidden rounded-[1rem] border border-[#1E1E1E14] p-4 dark:border-white/10">
@@ -157,56 +164,62 @@ export default function FeaturesPage() {
       />
 
       <MarketingHeroWash
-        subtitle="No new dashboards to babysit. Notra fits the workflow you already have."
+        subtitle={FEATURES_PAGE_HERO_SUBTITLE}
         title={
           <>
-            Built around how your team{" "}
-            <span className="text-primary">actually ships</span>
+            {FEATURES_PAGE_HERO_TITLE_PREFIX}{" "}
+            <span className="text-primary">
+              {FEATURES_PAGE_HERO_TITLE_HIGHLIGHT}
+            </span>
           </>
         }
       />
 
-      <section className="mx-auto flex w-full max-w-360 flex-col items-center px-6 lg:px-20">
-        <div className="grid w-full grid-cols-1 gap-8 lg:grid-cols-2">
-          {CORE_FEATURES.map((feature) => (
-            <div className={CARD_SHELL_CLASS} key={feature.title}>
-              <div className="flex flex-col gap-1.5">
-                <h3 className="font-sans text-[1.375rem]/7 font-medium tracking-[-0.015em] text-[#0A0D14] sm:text-[1.5625rem]/8 dark:text-white">
-                  {feature.title}
-                </h3>
-                <p className="font-sans text-base/6 font-medium text-[#6A6B70] dark:text-white/60">
-                  {feature.description}
-                </p>
-              </div>
-              <FeatureVisual kind={feature.visual} />
-            </div>
+      <section className="-mt-20 w-full lg:-mt-28" id="dashboard">
+        <FeaturesSection />
+      </section>
+
+      <section className={SECTION_CLASS} id="tracking">
+        <SectionHeader {...FEATURES_PAGE_TRACKING} />
+        <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {FEATURES_PAGE_TRACKING_CARDS.map((card) => (
+            <TextCard key={card.title} {...card} />
           ))}
         </div>
       </section>
 
-      <section className="mx-auto flex w-full max-w-360 flex-col items-center px-6 lg:px-20">
-        <header className="flex flex-col items-center gap-4 pb-12 text-center md:pb-16">
-          <h2 className="font-display text-[2rem] leading-[1.15] font-medium tracking-[-0.02em] text-balance text-black md:text-[2.75rem]/13 dark:text-white">
-            Publishing workflows that{" "}
-            <span className="text-primary">run themselves</span>
-          </h2>
-          <p className="font-display max-w-206.25 text-xl/7.5 font-medium tracking-[-0.01em] text-balance text-[#1E1E1EBF] dark:text-white/70">
-            Pick the surfaces you care about. Notra keeps them filled.
-          </p>
-        </header>
+      <section className="w-full" id="answers">
+        <AnswerExampleSection />
+      </section>
 
+      <section className={SECTION_CLASS} id="improve">
+        <SectionHeader {...FEATURES_PAGE_IMPROVE} />
+        <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-2">
+          {FEATURES_PAGE_IMPROVE_CARDS.map((card) => (
+            <TextCard key={card.title} {...card} />
+          ))}
+        </div>
+      </section>
+
+      <section className={SECTION_CLASS} id="developers">
+        <SectionHeader {...FEATURES_PAGE_DEVELOPERS} />
         <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">
-          {PUBLISHING_WORKFLOWS.map((workflow) => (
-            <div
-              className="flex flex-col gap-2 rounded-[1.5rem] bg-[linear-gradient(in_oklab_180deg,oklab(95.1%_0.011_-0.018_/_15%)_0%,oklab(93.7%_0.019_-0.031_/_75%)_100%)] p-8 [box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#ECECEC_0rem_0rem_0rem_0.0625rem] dark:bg-white/[0.02] dark:bg-none dark:[box-shadow:#0A0D1408_0rem_0.0625rem_0.125rem,#0A0D1408_0rem_0.0625rem_0.125rem,#FFFFFF14_0rem_0rem_0rem_0.0625rem]"
-              key={workflow.title}
-            >
-              <h3 className="font-sans text-[1.375rem]/7 font-medium tracking-[-0.015em] text-[#0A0D14] dark:text-white">
-                {workflow.title}
-              </h3>
-              <p className="font-sans text-base/6 font-medium text-[#6A6B70] dark:text-white/60">
-                {workflow.description}
-              </p>
+          {FEATURES_PAGE_DEVELOPER_CARDS.map((card) => (
+            <TextCard key={card.title} {...card} />
+          ))}
+        </div>
+      </section>
+
+      <section className={SECTION_CLASS} id="studio">
+        <SectionHeader {...FEATURES_PAGE_STUDIO} />
+        <div className="grid w-full grid-cols-1 gap-8 lg:grid-cols-2">
+          {FEATURES_PAGE_STUDIO_CARDS.map((card) => (
+            <div className={VISUAL_CARD_SHELL_CLASS} key={card.title}>
+              <div className="flex flex-col gap-1.5">
+                <h3 className={CARD_TITLE_CLASS}>{card.title}</h3>
+                <p className={CARD_DESCRIPTION_CLASS}>{card.description}</p>
+              </div>
+              <StudioVisual kind={card.visual} />
             </div>
           ))}
         </div>
