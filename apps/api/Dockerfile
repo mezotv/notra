@@ -8,7 +8,7 @@ FROM oven/bun:1.4.0-alpine@sha256:07235578f79ef8c6f97d94aee7938e76f5cdba5f21ae5d
 WORKDIR /app
 
 # Copy workspace manifests needed to resolve the full dependency graph
-COPY package.json bun.lock ./
+COPY package.json bun.lock bunfig.toml ./
 COPY apps/api/package.json ./apps/api/package.json
 COPY apps/dashboard/package.json ./apps/dashboard/package.json
 COPY apps/docs/package.json ./apps/docs/package.json
@@ -19,7 +19,9 @@ COPY packages/content-generation/package.json ./packages/content-generation/pack
 COPY packages/db/package.json ./packages/db/package.json
 COPY packages/email/package.json ./packages/email/package.json
 COPY packages/geo/package.json ./packages/geo/package.json
+COPY packages/geo-core/package.json ./packages/geo-core/package.json
 COPY packages/kiwi/package.json ./packages/kiwi/package.json
+COPY packages/posthog/package.json ./packages/posthog/package.json
 COPY packages/typescript-config/package.json ./packages/typescript-config/package.json
 COPY packages/ui/package.json ./packages/ui/package.json
 COPY packages/utils/package.json ./packages/utils/package.json
@@ -36,6 +38,8 @@ COPY packages/analytics ./packages/analytics
 COPY packages/content-generation ./packages/content-generation
 COPY packages/typescript-config ./packages/typescript-config
 COPY packages/db ./packages/db
+COPY packages/geo-core ./packages/geo-core
+COPY packages/posthog ./packages/posthog
 COPY packages/utils ./packages/utils
 COPY apps/api ./apps/api
 
