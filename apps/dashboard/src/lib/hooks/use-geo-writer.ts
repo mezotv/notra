@@ -121,10 +121,7 @@ export function useGeoWriterStart(organizationId: string) {
   });
 }
 
-export function useGeoWriterUpdate(
-  organizationId: string,
-  contentId: string
-) {
+export function useGeoWriterUpdate(organizationId: string, contentId: string) {
   const { projectId } = useGeoProjectScope();
   const queryClient = useQueryClient();
   const invalidate = useInvalidateWriterQueries(organizationId);
@@ -149,16 +146,8 @@ export function useGeoWriterUpdate(
         latestRevisionByBrief.current.set(input.briefId, result.updatedAt);
         return result;
       } catch (error) {
-        const conflict = getConflictRevision(error);
-        if (conflict.isConflict) {
-          if (conflict.updatedAt) {
-            latestRevisionByBrief.current.set(
-              input.briefId,
-              conflict.updatedAt
-            );
-          } else {
-            latestRevisionByBrief.current.delete(input.briefId);
-          }
+        if (getConflictRevision(error).isConflict) {
+          latestRevisionByBrief.current.delete(input.briefId);
         }
         throw error;
       }

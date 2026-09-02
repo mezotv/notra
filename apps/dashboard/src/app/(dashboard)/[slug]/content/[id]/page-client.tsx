@@ -121,6 +121,7 @@ import {
   getImageExportTargetLabel,
   isImageExportTarget,
 } from "@/utils/image-export";
+import { getConflictRevision } from "@/utils/orpc-errors";
 import { shakeElements } from "@/utils/shake-element";
 
 import { useContent } from "../../../../../lib/hooks/use-content";
@@ -185,6 +186,7 @@ export default function PageClient({
   );
   const geoWriterUpdate = useGeoWriterUpdate(organizationId, contentId);
   const [isPlanDirty, setIsPlanDirty] = useState(false);
+  const [planConflictVersion, setPlanConflictVersion] = useState(0);
   const briefStatus = geoWriterBriefQuery.data?.status;
   const isGeoWriterPlanMode = Boolean(
     geoWriterDraft && briefStatus !== "completed"
@@ -341,6 +343,11 @@ export default function PageClient({
                 }),
               })
               .catch(() => undefined);
+          },
+          onError: (error) => {
+            if (getConflictRevision(error).isConflict) {
+              setPlanConflictVersion((version) => version + 1);
+            }
           },
         }
       );
@@ -1331,7 +1338,7 @@ export default function PageClient({
       <ContentPlanView
         brief={planBrief}
         isWriting={briefStatus === "writing" || briefStatus === "approved"}
-        key={geoWriterDraft?.briefId ?? contentId}
+        key={`${geoWriterDraft?.briefId ?? contentId}:${planConflictVersion}`}
         onChange={
           isGeoWriterPlanReviewableNow ? handlePlanBriefChange : undefined
         }
