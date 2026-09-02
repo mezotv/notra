@@ -84,9 +84,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(
         buildCallbackUrl(baseUrl, callbackPath, {
           error:
-            error === "access_denied"
-              ? "gsc_access_denied"
-              : "gsc_auth_failed",
+            error === "access_denied" ? "gsc_access_denied" : "gsc_auth_failed",
         })
       );
     }

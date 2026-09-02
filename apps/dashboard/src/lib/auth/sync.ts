@@ -223,6 +223,15 @@ export const ensureLocalUser = Effect.fn("auth.sync.ensureLocalUser")(
       );
     }
 
+    yield* Effect.tryPromise({
+      try: () => getWorkOS().userManagement.getUser(workosUser.id),
+      catch: (cause) =>
+        new UserSyncError({
+          message: "WorkOS user no longer exists",
+          cause,
+        }),
+    });
+
     const [created] = yield* Effect.tryPromise({
       try: () =>
         db
