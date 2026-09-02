@@ -10,6 +10,7 @@ const EMPTY_CLAIMS = "(no required claims)";
 const EMPTY_LIST = "(none listed)";
 const EMPTY_CHECKLIST = "(follow the GEO writing rules)";
 const HEADER_PREFIXES = [
+  "working title",
   "target prompt",
   "intent",
   "type",
@@ -34,35 +35,57 @@ function unescapeMarkdownLinkUrl(url: string): string {
   return url.replaceAll(/\\([\\()])/g, "$1");
 }
 
+function escapeMarkdownLinkLabel(label: string): string {
+  return label
+    .replaceAll("\\", "\\\\")
+    .replaceAll("[", "\\[")
+    .replaceAll("]", "\\]");
+}
+
+function unescapeMarkdownLinkLabel(label: string): string {
+  return label.replaceAll(/\\([\\[\]])/g, "$1");
+}
+
+function formatListItem(value: string, emptyToken: string): string {
+  return `- ${value === emptyToken ? `\\${value}` : value}`;
+}
+
 export function geoBriefToMarkdown(brief: GeoContentBrief): string {
   const sections = brief.sections
     .map((section) => {
       const claims =
         section.claims.length > 0
-          ? section.claims.map((claim) => `- ${claim}`).join("\n")
+          ? section.claims
+              .map((claim) => formatListItem(claim, EMPTY_CLAIMS))
+              .join("\n")
           : `- ${EMPTY_CLAIMS}`;
       return `## ${section.heading}\n\n${section.goal}\n\n${claims}`;
     })
     .join("\n\n");
   const questions =
     brief.questionsToAnswer.length > 0
-      ? brief.questionsToAnswer.map((question) => `- ${question}`).join("\n")
+      ? brief.questionsToAnswer
+          .map((question) => formatListItem(question, EMPTY_LIST))
+          .join("\n")
       : `- ${EMPTY_LIST}`;
   const links =
     brief.internalLinks.length > 0
       ? brief.internalLinks
           .map(
             (link) =>
-              `- [${link.anchor}](${escapeMarkdownLinkUrl(link.url)}): ${link.why}`
+              `- [${escapeMarkdownLinkLabel(link.anchor)}](${escapeMarkdownLinkUrl(link.url)}): ${link.why}`
           )
           .join("\n")
       : `- ${EMPTY_LIST}`;
   const checklist =
     brief.acceptanceChecklist.length > 0
-      ? brief.acceptanceChecklist.map((item) => `- ${item}`).join("\n")
+      ? brief.acceptanceChecklist
+          .map((item) => formatListItem(item, EMPTY_CHECKLIST))
+          .join("\n")
       : `- ${EMPTY_CHECKLIST}`;
 
   return [
+    `Working title: ${brief.workingTitle}`,
     `Target prompt: ${brief.targetPrompt}`,
     `Intent: ${brief.intent}`,
     `Type: blog post (${brief.contentSubtype})`,
@@ -101,13 +124,13 @@ export function markdownToGeoBrief(
       blocks.headers.get("type"),
       fallback.contentSubtype
     ),
-    workingTitle: fallback.workingTitle,
+    workingTitle: blocks.headers.get("working title") ?? fallback.workingTitle,
     audience: blocks.headers.get("audience") ?? "",
     jobToBeDone: blocks.headers.get("job to be done") ?? "",
     sections: blocks.sections,
-    questionsToAnswer: parseListItems(blocks.faq, EMPTY_LIST),
-    internalLinks: parseInternalLinks(blocks.links),
-    acceptanceChecklist: parseListItems(blocks.checklist, EMPTY_CHECKLIST),
+    questionsToAnswer: blocks.questionsToAnswer,
+    internalLinks: blocks.internalLinks,
+    acceptanceChecklist: blocks.acceptanceChecklist,
   });
 
   return parsed.success ? parsed.data : null;
@@ -133,9 +156,9 @@ function parseContentSubtype(
 function splitMarkdownBlocks(markdown: string): {
   headers: Map<string, string>;
   sections: GeoBriefSection[];
-  faq: string[];
-  links: string[];
-  checklist: string[];
+  questionsToAnswer: string[];
+  internalLinks: GeoBriefInternalLink[];
+  acceptanceChecklist: string[];
 } | null {
   const lines = markdown.replaceAll("\r\n", "\n").split("\n");
   const headers = new Map<string, string>();
@@ -193,7 +216,8 @@ function splitMarkdownBlocks(markdown: string): {
   }
 
   const outlineHeadings = headingIndexes.slice(0, faqIndex);
-  const sections = outlineHeadings.flatMap((item, outlineIndex) => {
+  const sections: GeoBriefSection[] = [];
+  for (const [outlineIndex, item] of outlineHeadings.entries()) {
     const start = item.index + 1;
     const nextHeading = outlineHeadings[outlineIndex + 1] ?? faqHeading;
     const end = nextHeading.index;
@@ -204,23 +228,40 @@ function splitMarkdownBlocks(markdown: string): {
       .join(" ")
       .trim();
     if (!goal) {
-      return [];
+      return null;
     }
     const claims = parseListItems(bullets, EMPTY_CLAIMS);
-    const section: GeoBriefSection = {
+    if (!claims) {
+      return null;
+    }
+    sections.push({
       heading: item.heading,
       goal,
       claims,
-    };
-    return [section];
-  });
+    });
+  }
+
+  const faq = parseListItems(
+    linesBetween(lines, faqHeading, linksHeading),
+    EMPTY_LIST
+  );
+  const links = parseInternalLinks(
+    linesBetween(lines, linksHeading, checklistHeading)
+  );
+  const checklist = parseListItems(
+    lines.slice(checklistHeading.index + 1),
+    EMPTY_CHECKLIST
+  );
+  if (!(faq && links && checklist)) {
+    return null;
+  }
 
   return {
     headers,
     sections,
-    faq: linesBetween(lines, faqHeading, linksHeading),
-    links: linesBetween(lines, linksHeading, checklistHeading),
-    checklist: lines.slice(checklistHeading.index + 1),
+    questionsToAnswer: faq,
+    internalLinks: links,
+    acceptanceChecklist: checklist,
   };
 }
 
@@ -232,36 +273,69 @@ function linesBetween(
   return lines.slice(start.index + 1, end.index);
 }
 
-function parseListItems(lines: string[], emptyToken: string): string[] {
-  return lines.flatMap((line) => {
+function parseListItems(lines: string[], emptyToken: string): string[] | null {
+  const content = lines.map((line) => line.trim()).filter(Boolean);
+  if (content.length === 0) {
+    return [];
+  }
+  if (content.length === 1 && content[0] === `- ${emptyToken}`) {
+    return [];
+  }
+
+  const items: string[] = [];
+  for (const line of content) {
     const match = BULLET_LINE_REGEX.exec(line.trim());
     if (!match?.[1]) {
-      return [];
+      return null;
     }
     const value = match[1].trim();
     if (value === emptyToken) {
-      return [];
+      return null;
     }
-    return [value];
-  });
+    items.push(value === `\\${emptyToken}` ? emptyToken : value);
+  }
+  return items;
 }
 
-function parseInternalLinks(lines: string[]): GeoBriefInternalLink[] {
-  return lines.flatMap((line) => {
-    const link = parseInternalLink(line.trim());
-    return link ? [link] : [];
-  });
+function parseInternalLinks(lines: string[]): GeoBriefInternalLink[] | null {
+  const content = lines.map((line) => line.trim()).filter(Boolean);
+  if (content.length === 0) {
+    return [];
+  }
+  if (content.length === 1 && content[0] === `- ${EMPTY_LIST}`) {
+    return [];
+  }
+
+  const links: GeoBriefInternalLink[] = [];
+  for (const line of content) {
+    const link = parseInternalLink(line);
+    if (!link) {
+      return null;
+    }
+    links.push(link);
+  }
+  return links;
 }
 
 function parseInternalLink(line: string): GeoBriefInternalLink | null {
   if (!line.startsWith("- [")) {
     return null;
   }
-  const anchorEnd = line.indexOf("](", 3);
+  let anchorEnd = -1;
+  for (let index = 3; index < line.length - 1; index += 1) {
+    if (line[index] === "\\") {
+      index += 1;
+      continue;
+    }
+    if (line[index] === "]" && line[index + 1] === "(") {
+      anchorEnd = index;
+      break;
+    }
+  }
   if (anchorEnd < 0) {
     return null;
   }
-  const anchor = line.slice(3, anchorEnd).trim();
+  const anchor = unescapeMarkdownLinkLabel(line.slice(3, anchorEnd).trim());
   const urlStart = anchorEnd + 2;
   let depth = 0;
   for (let index = urlStart; index < line.length; index += 1) {

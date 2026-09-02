@@ -50,10 +50,7 @@ import type {
   GeoWriterUpdateInput,
 } from "../types/geo";
 import { REUSABLE_BRIEF_STATUSES } from "../utils/geo-gaps";
-import {
-  geoBriefToMarkdown,
-  markdownToGeoBrief,
-} from "../utils/geo-writer-brief-markdown";
+import { geoBriefToMarkdown } from "../utils/geo-writer-brief-markdown";
 import { geoDb } from "./effect";
 import {
   GeoContentBriefConflictError,
@@ -351,19 +348,7 @@ export const updateGeoContentBrief = Effect.fn("geo.writer.briefUpdate")(
       );
     }
 
-    const brief = markdownToGeoBrief(input.markdown, {
-      workingTitle: input.workingTitle?.trim() || row.brief.workingTitle,
-      contentSubtype: row.brief.contentSubtype,
-    });
-    if (!brief) {
-      return yield* Effect.fail(
-        new GeoWriterPlanError({
-          message:
-            "Could not read this as a content plan. Keep the plan field structure and try again.",
-        })
-      );
-    }
-
+    const brief = input.brief;
     const markdown = geoBriefToMarkdown(brief);
     const updated = yield* Effect.tryPromise({
       try: () =>

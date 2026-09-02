@@ -7,6 +7,7 @@ import type { Ref } from "react";
 
 export interface ContentPlanViewProps {
   brief: GeoContentBrief;
+  initialBrief?: GeoContentBrief;
   isWriting?: boolean;
   onChange?: (brief: GeoContentBrief) => void;
   onDirtyChange?: (dirty: boolean) => void;

@@ -446,12 +446,13 @@ function PlanLinkList({
 
 export function ContentPlanView({
   brief,
+  initialBrief,
   isWriting = false,
   onChange,
   onDirtyChange,
 }: ContentPlanViewProps) {
   const readOnly = isWriting || !onChange;
-  const [draft, setDraft] = useState(() => toKeyedPlan(brief));
+  const [draft, setDraft] = useState(() => toKeyedPlan(initialBrief ?? brief));
   const briefRef = useRef(brief);
 
   const commit = (next = draft) => {

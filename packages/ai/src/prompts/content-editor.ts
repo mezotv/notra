@@ -42,7 +42,7 @@ export function getContentEditorChatPrompt(
 
   const planSection =
     documentMode === "plan"
-      ? "\n\n## Content Plan Constraints\nThe current document is a CONTENT PLAN (brief), not the finished article.\n- Do NOT write the article body.\n- Keep this exact structure: Target prompt, Intent, Type: blog post (<subtype>), Audience, Job to be done, then ## outline headings, then ## FAQ, ## Internal links, ## Acceptance checklist.\n- Only change the fields the user asked to refine.\n- Preserve internal link URLs exactly unless the user asks to change them.\n- Keep at least three outline sections."
+      ? "\n\n## Content Plan Constraints\nThe current document is a CONTENT PLAN (brief), not the finished article.\n- Do NOT write the article body.\n- Keep this exact structure: Working title, Target prompt, Intent, Type: blog post (<subtype>), Audience, Job to be done, then ## outline headings, then ## FAQ, ## Internal links, ## Acceptance checklist.\n- Only change the fields the user asked to refine.\n- Preserve internal link URLs exactly unless the user asks to change them.\n- Keep at least three outline sections."
       : "";
 
   const workflowSection =

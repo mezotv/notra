@@ -26,7 +26,10 @@ import {
   contentChatSessionsPath,
   contentChatSessionsQueryKey,
 } from "@notra/ai/utils/chat";
-import { geoBriefToMarkdown } from "@notra/geo-core/utils/geo-writer-brief-markdown";
+import {
+  geoBriefToMarkdown,
+  markdownToGeoBrief,
+} from "@notra/geo-core/utils/geo-writer-brief-markdown";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import {
   Avatar,
@@ -187,6 +190,8 @@ export default function PageClient({
   const geoWriterUpdate = useGeoWriterUpdate(organizationId, contentId);
   const [isPlanDirty, setIsPlanDirty] = useState(false);
   const [hasPlanConflict, setHasPlanConflict] = useState(false);
+  const [initialPlanBrief, setInitialPlanBrief] =
+    useState<GeoContentBrief | null>(null);
   const [planEditorVersion, setPlanEditorVersion] = useState(0);
   const briefStatus = geoWriterBriefQuery.data?.status;
   const isGeoWriterPlanMode = Boolean(
@@ -315,6 +320,9 @@ export default function PageClient({
   const hasMarkdownChanges =
     editedMarkdown !== null && editedMarkdown !== originalMarkdown;
   const hasChanges = hasMarkdownChanges || hasTitleChanges || hasSlugChanges;
+  const hasUnsavedChanges = isGeoWriterPlanMode
+    ? isPlanDirty || geoWriterUpdate.isPending
+    : hasChanges;
 
   const handlePlanBriefChange = useCallback(
     (nextBrief: GeoContentBrief) => {
@@ -326,10 +334,9 @@ export default function PageClient({
       const markdown = geoBriefToMarkdown(nextBrief);
       geoWriterUpdate.mutate(
         {
+          brief: nextBrief,
           briefId,
           expectedUpdatedAt,
-          markdown,
-          workingTitle: nextBrief.workingTitle,
         },
         {
           onSuccess: () => {
@@ -337,6 +344,7 @@ export default function PageClient({
             setOriginalMarkdown(markdown);
             originalMarkdownRef.current = markdown;
             editedMarkdownRef.current = markdown;
+            setInitialPlanBrief(null);
             queryClient
               .invalidateQueries({
                 queryKey: dashboardOrpc.content.get.queryKey({
@@ -384,7 +392,7 @@ export default function PageClient({
   }, [contentId, organizationId, queryClient]);
 
   useEffect(() => {
-    if (!hasChanges) {
+    if (!hasUnsavedChanges) {
       return;
     }
 
@@ -399,7 +407,7 @@ export default function PageClient({
     return () => {
       window.removeEventListener("beforeunload", handleBeforeUnload);
     };
-  }, [hasChanges]);
+  }, [hasUnsavedChanges]);
 
   const handleSave = useCallback(async () => {
     if (!hasChanges) {
@@ -941,6 +949,7 @@ export default function PageClient({
           part.type === "tool-editMarkdown" && previousMarkdown
             ? remend(previousMarkdown)
             : previousMarkdown;
+        const previousEditedMarkdown = editedMarkdownRef.current;
         setEditedMarkdown(fixedMarkdown);
         editedMarkdownRef.current = fixedMarkdown;
         if (part.type === "tool-editMarkdown") {
@@ -949,21 +958,19 @@ export default function PageClient({
             geoWriterDraft?.briefId &&
             geoWriterBriefQuery.data
           ) {
+            const nextBrief = markdownToGeoBrief(fixedMarkdown, {
+              contentSubtype: geoWriterBriefQuery.data.brief.contentSubtype,
+              workingTitle: geoWriterBriefQuery.data.brief.workingTitle,
+            });
+            if (!nextBrief) {
+              setEditedMarkdown(previousEditedMarkdown);
+              editedMarkdownRef.current = previousEditedMarkdown;
+              toast.error("The suggested edit is not a valid content plan");
+              continue;
+            }
             setReviewPreviousMarkdown(null);
-            geoWriterUpdate.mutate(
-              {
-                briefId: geoWriterDraft.briefId,
-                expectedUpdatedAt: geoWriterBriefQuery.data.updatedAt,
-                markdown: fixedMarkdown,
-                workingTitle: geoWriterBriefQuery.data?.brief.workingTitle,
-              },
-              {
-                onSuccess: () => {
-                  setOriginalMarkdown(fixedMarkdown);
-                  originalMarkdownRef.current = fixedMarkdown;
-                },
-              }
-            );
+            setInitialPlanBrief(nextBrief);
+            setPlanEditorVersion((version) => version + 1);
           } else {
             setReviewPreviousMarkdown(
               reviewPrevious && reviewPrevious !== fixedMarkdown
@@ -1007,6 +1014,14 @@ export default function PageClient({
       }
       const nextSelection = attachments.selection;
       const nextContext = attachments.context ?? [];
+      let contentChatMarkdown = editedMarkdown ?? data?.content?.markdown ?? "";
+      if (data?.content?.contentType === "image") {
+        contentChatMarkdown = "";
+      } else if (isGeoWriterPlanReviewableNow && geoWriterBriefQuery.data) {
+        contentChatMarkdown = geoBriefToMarkdown(
+          geoWriterBriefQuery.data.brief
+        );
+      }
       await sendMessage(
         {
           text: instruction,
@@ -1018,10 +1033,7 @@ export default function PageClient({
         {
           body: {
             chatId: activeChatId,
-            currentMarkdown:
-              data?.content?.contentType === "image"
-                ? ""
-                : (editedMarkdown ?? data?.content?.markdown ?? ""),
+            currentMarkdown: contentChatMarkdown,
             contentType: data?.content?.contentType,
             documentMode: isGeoWriterPlanReviewableNow ? "plan" : undefined,
             selection: nextSelection,
@@ -1037,6 +1049,7 @@ export default function PageClient({
       data?.content?.contentType,
       editedMarkdown,
       data?.content?.markdown,
+      geoWriterBriefQuery.data,
       isGeoWriterPlanReviewableNow,
     ]
   );
@@ -1356,6 +1369,7 @@ export default function PageClient({
                     toast.error("Failed to load the latest plan");
                     return;
                   }
+                  setInitialPlanBrief(null);
                   setPlanEditorVersion((version) => version + 1);
                   setHasPlanConflict(false);
                 }}
@@ -1382,6 +1396,7 @@ export default function PageClient({
         ) : null}
         <ContentPlanView
           brief={planBrief}
+          initialBrief={initialPlanBrief ?? undefined}
           isWriting={briefStatus === "writing" || briefStatus === "approved"}
           key={`${geoWriterDraft?.briefId ?? contentId}:${planEditorVersion}`}
           onChange={
@@ -1418,11 +1433,7 @@ export default function PageClient({
           </Link>
           <WriterExecute.Root
             briefId={geoWriterDraft?.briefId ?? null}
-            hasUnsavedChanges={
-              isGeoWriterPlanMode
-                ? isPlanDirty || geoWriterUpdate.isPending
-                : hasChanges
-            }
+            hasUnsavedChanges={hasUnsavedChanges}
             onArticleReady={handleGeoArticleReady}
             organizationId={organizationId}
           >

@@ -1,6 +1,8 @@
-import { GEO_BRIEF_MAX_TITLE_LENGTH } from "@notra/ai/constants/geo-writer";
 import { SUPPORTED_LANGUAGES } from "@notra/ai/constants/languages";
-import { geoContentSubtypeSchema } from "@notra/ai/schemas/geo-writer";
+import {
+  geoContentBriefSchema,
+  geoContentSubtypeSchema,
+} from "@notra/ai/schemas/geo-writer";
 import { POST_MARKDOWN_MAX_LENGTH } from "@notra/ai/schemas/limits";
 import {
   array,
@@ -408,12 +410,10 @@ export const geoWriterBriefIdInputSchema = geoOrganizationInputSchema.extend({
 
 export const geoWriterUpdateInputSchema = geoWriterBriefIdInputSchema.extend({
   expectedUpdatedAt: string().datetime(),
-  markdown: string().trim().min(1).max(POST_MARKDOWN_MAX_LENGTH),
-  workingTitle: string()
-    .trim()
-    .min(1)
-    .max(GEO_BRIEF_MAX_TITLE_LENGTH)
-    .optional(),
+  brief: geoContentBriefSchema.refine(
+    (brief) => JSON.stringify(brief).length <= POST_MARKDOWN_MAX_LENGTH,
+    "Content plan is too long"
+  ),
 });
 
 export const geoWriterWorkflowPayloadSchema = object({

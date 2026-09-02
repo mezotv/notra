@@ -6,6 +6,7 @@ import type {
   GeoContentBriefsResponse,
   GeoContentGapsResponse,
   GeoWriterPlanInput,
+  GeoWriterUpdateInput,
 } from "@notra/geo-core/types/geo";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRef } from "react";
@@ -128,12 +129,7 @@ export function useGeoWriterUpdate(organizationId: string, contentId: string) {
   const latestRevisionByBrief = useRef(new Map<string, string>());
   return useMutation({
     scope: { id: `geo-writer-update:${organizationId}:${projectId}` },
-    mutationFn: async (input: {
-      briefId: string;
-      expectedUpdatedAt: string;
-      markdown: string;
-      workingTitle?: string;
-    }) => {
+    mutationFn: async (input: GeoWriterUpdateInput) => {
       try {
         const result = await dashboardOrpc.geo.writerUpdate.call({
           ...input,
