@@ -49,6 +49,4 @@ export const MODELS_DEV_LOGO_ALIASES: Record<string, string> = {
   zhipuai: "zai",
 };
 
-export const GEO_LOGO_LINK_BASE = "https://logos.context.dev/";
-
 export const GEO_LOGO_SIZE_PX = 40;

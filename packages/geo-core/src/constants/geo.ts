@@ -806,7 +806,6 @@ export const GEO_TAB_BREADCRUMB_LABELS: Record<string, string> = {
   journeys: "Journeys",
 };
 
-export const GEO_LOGO_LINK_BASE = "https://logos.context.dev/";
 export const GEO_AVATAR_FALLBACK_BASE =
   "https://api.dicebear.com/9.x/glass/svg";
 export const GEO_LOGO_SIZE_PX = 40;

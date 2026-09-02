@@ -24,6 +24,9 @@ import type { GeoCompetitorRowEntry } from "@/types/geo-competitors";
 import { bestFuzzyScore, fuzzyMatches } from "./fuzzy";
 
 const DOMAIN_LIKE_REGEX = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
+const URL_PROTOCOL_PREFIX_REGEX = /^https?:\/\//;
+const WWW_PREFIX_REGEX = /^www\./;
+const TRAILING_SLASH_REGEX = /\/+$/;
 
 export function formatCompetitorKind(kind: GeoCompetitorKind): string {
   return kind === "direct" ? "Direct" : "Indirect";
@@ -268,13 +271,23 @@ export function geoCompetitorDetailPath(
   return `/${organizationSlug}/geo/competitors/${encodeURIComponent(brand)}`;
 }
 
+function normalizeDomainAlias(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(URL_PROTOCOL_PREFIX_REGEX, "")
+    .replace(WWW_PREFIX_REGEX, "")
+    .replace(TRAILING_SLASH_REGEX, "");
+}
+
 function ownBrandSynonyms(
   aliases: readonly string[],
   ownDomain: string | null
 ): string[] {
+  const ownDomainKey = ownDomain ? normalizeDomainAlias(ownDomain) : null;
   return aliases.filter((alias) => {
-    const trimmed = alias.trim();
-    return trimmed.length > 0 && trimmed.toLowerCase() !== ownDomain;
+    const key = normalizeDomainAlias(alias);
+    return key.length > 0 && key !== ownDomainKey;
   });
 }
 

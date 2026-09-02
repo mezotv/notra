@@ -6,6 +6,7 @@
   "exports": {
     "./api-scopes": "./src/api-scopes.ts",
     "./url": "./src/url.ts",
+    "./logo-link": "./src/logo-link.ts",
     "./callback-url": "./src/callback-url.ts",
     "./oauth-popup": "./src/oauth-popup.ts",
     "./slugify": "./src/slugify.ts",

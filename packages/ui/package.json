@@ -63,6 +63,7 @@
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",
+    "@notra/utils": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.15.3",
     "@types/react": "^19.2.18",

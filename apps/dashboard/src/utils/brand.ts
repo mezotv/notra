@@ -1,4 +1,4 @@
-import { logoLinkUrl } from "@notra/geo-core/geo/logo";
+import { logoLinkUrl } from "@notra/utils/logo-link";
 
 import { brandIdentityToolOutputSchema } from "@/schemas/brand";
 

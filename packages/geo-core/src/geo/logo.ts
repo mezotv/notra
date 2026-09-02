@@ -1,16 +1,6 @@
-import { GEO_AVATAR_FALLBACK_BASE, GEO_LOGO_LINK_BASE } from "../constants/geo";
+import { logoLinkUrl } from "@notra/utils/logo-link";
 
-export function logoLinkUrl(domain: string | null): string | null {
-  const clientId = process.env.NEXT_PUBLIC_LOGOLINK_CLIENT_ID?.trim();
-  if (!domain || !clientId) {
-    return null;
-  }
-
-  const url = new URL(GEO_LOGO_LINK_BASE);
-  url.searchParams.set("publicClientId", clientId);
-  url.searchParams.set("domain", domain);
-  return url.toString();
-}
+import { GEO_AVATAR_FALLBACK_BASE } from "../constants/geo";
 
 export function competitorLogoSources(
   domain: string | null,

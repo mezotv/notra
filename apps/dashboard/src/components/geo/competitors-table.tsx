@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@notra/ui/components/ui/select";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/button";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
@@ -87,149 +87,137 @@ export function CompetitorsTable({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [pendingDeleteNames, setPendingDeleteNames] = useState<string[]>([]);
 
-  const requestDelete = useCallback((names: string[]) => {
+  const requestDelete = (names: string[]) => {
     setPendingDeleteNames(names);
     setDeleteOpen(true);
-  }, []);
+  };
 
-  const ownDomain = useMemo(
-    () => projectDomain ?? findOwnBrandDomain(aliases),
-    [projectDomain, aliases]
+  const ownDomain = projectDomain ?? findOwnBrandDomain(aliases);
+
+  const rows = buildCompetitorRows(
+    competitors,
+    companyName,
+    aliases,
+    ownDomain,
+    search,
+    typeFilter
   );
 
-  const rows = useMemo(
-    () =>
-      buildCompetitorRows(
-        competitors,
-        companyName,
-        aliases,
-        ownDomain,
-        search,
-        typeFilter
+  const selectedIdSet = new Set(selectedIds);
+  const selectedNames = rows.flatMap((row) =>
+    !row.isOwnBrand && selectedIdSet.has(row.id) ? [row.name] : []
+  );
+
+  const columns: TableColumn<GeoCompetitorRowEntry>[] = [
+    {
+      key: "name",
+      header: (
+        <span className="inline-flex items-center gap-1.5">
+          Brand
+          <span className="text-muted-foreground font-normal tabular-nums">
+            ({rows.length})
+          </span>
+        </span>
       ),
-    [competitors, companyName, aliases, ownDomain, search, typeFilter]
-  );
-
-  const selectedNames = useMemo(() => {
-    const selectedIdSet = new Set(selectedIds);
-    return rows.flatMap((row) =>
-      !row.isOwnBrand && selectedIdSet.has(row.id) ? [row.name] : []
-    );
-  }, [rows, selectedIds]);
-
-  const columns = useMemo<TableColumn<GeoCompetitorRowEntry>[]>(
-    () => [
-      {
-        key: "name",
-        header: (
-          <span className="inline-flex items-center gap-1.5">
-            Brand
-            <span className="text-muted-foreground font-normal tabular-nums">
-              ({rows.length})
-            </span>
-          </span>
-        ),
-        sortable: true,
-        width: "1.4fr",
-        cell: (row) => (
-          <span className="flex min-w-0 items-center gap-2.5">
-            {row.isOwnBrand ? (
-              <ProjectLogo
-                className="size-6 shrink-0 rounded-md"
-                domain={row.domain}
-                fallbackClassName="bg-background p-1 ring-1 ring-foreground/10"
-                name={row.name}
-              />
-            ) : (
-              <CompetitorLogo
-                className="size-6 shrink-0 rounded-md"
-                domain={row.domain}
-                name={row.name}
-              />
+      sortable: true,
+      width: "1.4fr",
+      cell: (row) => (
+        <span className="flex min-w-0 items-center gap-2.5">
+          {row.isOwnBrand ? (
+            <ProjectLogo
+              className="size-6 shrink-0 rounded-md"
+              domain={row.domain}
+              fallbackClassName="bg-background p-1 ring-1 ring-foreground/10"
+              name={row.name}
+            />
+          ) : (
+            <CompetitorLogo
+              className="size-6 shrink-0 rounded-md"
+              domain={row.domain}
+              name={row.name}
+            />
+          )}
+          <span className="truncate font-medium">
+            {row.name}
+            {row.isOwnBrand && (
+              <span className="text-muted-foreground ml-1">(You)</span>
             )}
-            <span className="truncate font-medium">
-              {row.name}
-              {row.isOwnBrand && (
-                <span className="text-muted-foreground ml-1">(You)</span>
-              )}
-            </span>
           </span>
+        </span>
+      ),
+    },
+    {
+      key: "domain",
+      header: "Domain",
+      width: "1.2fr",
+      cell: (row) =>
+        row.domain ? (
+          <a
+            className="text-muted-foreground hover:text-foreground hover:underline"
+            href={`https://${row.domain}`}
+            onClick={(event) => event.stopPropagation()}
+            rel="noopener"
+            target="_blank"
+          >
+            {row.domain}
+          </a>
+        ) : (
+          <span className="text-muted-foreground">-</span>
         ),
-      },
-      {
-        key: "domain",
-        header: "Domain",
-        width: "1.2fr",
-        cell: (row) =>
-          row.domain ? (
-            <a
-              className="text-muted-foreground hover:text-foreground hover:underline"
-              href={`https://${row.domain}`}
-              onClick={(event) => event.stopPropagation()}
-              rel="noopener"
-              target="_blank"
-            >
-              {row.domain}
-            </a>
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          ),
-      },
-      {
-        key: "kind",
-        header: "Type",
-        width: "7rem",
-        sortable: true,
-        cell: (row) =>
-          row.isOwnBrand ? (
-            <span className="text-muted-foreground">-</span>
-          ) : (
-            <Badge variant={row.kind === "direct" ? "default" : "secondary"}>
-              {formatCompetitorKind(row.kind)}
-            </Badge>
-          ),
-      },
-      {
-        key: "synonyms",
-        header: "Synonyms",
-        width: "1fr",
-        cell: (row) =>
-          row.synonyms.length > 0 ? (
-            <span
-              className="text-muted-foreground truncate"
-              title={row.synonyms.join(", ")}
-            >
-              {row.synonyms.join(", ")}
-            </span>
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          ),
-        sortValue: (row) => row.synonyms.length,
-      },
-      {
-        key: "actions",
-        header: "",
-        width: "4rem",
-        align: "right",
-        cell: (row) =>
-          row.isOwnBrand ? null : (
-            <Button
-              aria-label={`Remove ${row.name}`}
-              disabled={pendingCompetitorIds.has(row.id)}
-              onClick={(event) => {
-                event.stopPropagation();
-                requestDelete([row.name]);
-              }}
-              size="icon"
-              variant="ghost"
-            >
-              <HugeiconsIcon icon={Delete02Icon} size={14} />
-            </Button>
-          ),
-      },
-    ],
-    [pendingCompetitorIds, rows.length, requestDelete]
-  );
+    },
+    {
+      key: "kind",
+      header: "Type",
+      width: "7rem",
+      sortable: true,
+      cell: (row) =>
+        row.isOwnBrand ? (
+          <span className="text-muted-foreground">-</span>
+        ) : (
+          <Badge variant={row.kind === "direct" ? "default" : "secondary"}>
+            {formatCompetitorKind(row.kind)}
+          </Badge>
+        ),
+    },
+    {
+      key: "synonyms",
+      header: "Synonyms",
+      width: "1fr",
+      cell: (row) =>
+        row.synonyms.length > 0 ? (
+          <span
+            className="text-muted-foreground truncate"
+            title={row.synonyms.join(", ")}
+          >
+            {row.synonyms.join(", ")}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        ),
+      sortValue: (row) => row.synonyms.length,
+    },
+    {
+      key: "actions",
+      header: "",
+      width: "4rem",
+      align: "right",
+      cell: (row) =>
+        row.isOwnBrand ? null : (
+          <Button
+            aria-label={`Remove ${row.name}`}
+            disabled={pendingCompetitorIds.has(row.id)}
+            onClick={(event) => {
+              event.stopPropagation();
+              requestDelete([row.name]);
+            }}
+            size="icon"
+            variant="ghost"
+          >
+            <HugeiconsIcon icon={Delete02Icon} size={14} />
+          </Button>
+        ),
+    },
+  ];
 
   return (
     <div className="space-y-3">
