@@ -1,27 +1,8 @@
 "use client";
 
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
-import { useId } from "react";
+import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
+import { COLLECTION_TABLE_SKELETON_ROWS } from "@/constants/content-collections";
 
-export function GroupsPageSkeleton() {
-  const id = useId();
-  return (
-    <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
-      <div className="border-border/60 bg-muted/80 flex items-center gap-4 border-b px-4 py-2.5">
-        <Skeleton className="h-3.5 w-40" />
-        <Skeleton className="h-3.5 w-20" />
-        <Skeleton className="h-3.5 w-24" />
-      </div>
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          className="border-border/60 bg-background flex items-center gap-4 border-b px-4 py-3 first:rounded-t-lg last:border-b-0"
-          key={`${id}-row-${i}`}
-        >
-          <Skeleton className="h-4 w-48" />
-          <Skeleton className="h-6 w-20" />
-          <Skeleton className="h-4 w-24" />
-        </div>
-      ))}
-    </div>
-  );
+export function CollectionsPageSkeleton() {
+  return <GeoTableSkeleton rows={COLLECTION_TABLE_SKELETON_ROWS} />;
 }

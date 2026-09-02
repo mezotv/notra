@@ -195,7 +195,11 @@ export function Table<T>({
     rowHeight,
     Math.min(bodyHeight, pagedRows.length * rowHeight)
   );
+  const isEmpty = pagedRows.length === 0 && !loading;
   const scrolls = pagedRows.length * rowHeight > bodyHeight;
+  const overflowClass = scrolls
+    ? "overflow-auto"
+    : "overflow-x-auto overflow-y-hidden";
   const viewportHeight = scrolls
     ? bodyHeight
     : Math.max(
@@ -367,7 +371,7 @@ export function Table<T>({
       <div
         className={cn(
           "scrollbar-floating border-border bg-background relative -mt-5 box-content rounded-2xl border outline-none",
-          scrolls ? "overflow-auto" : "overflow-x-auto overflow-y-hidden",
+          isEmpty ? "overflow-hidden" : overflowClass,
           flushBottom && !footer && "rounded-b-none"
         )}
         onScroll={handleScroll}

@@ -1,3 +1,6 @@
+import type { PostCollectionSummary } from "@/schemas/content";
+import type { TablePaginationState } from "@/types/table";
+
 export interface CollectionPageProps {
   params: Promise<{
     slug: string;
@@ -30,4 +33,13 @@ export interface GroupTypeIconProps {
 
 export interface GroupContentTypesProps {
   contentTypes: string[];
+}
+
+export type CollectionStatus = "generating" | "published" | "draft" | "empty";
+
+export interface CollectionsTableProps {
+  collections: PostCollectionSummary[];
+  pagination: TablePaginationState;
+  onOpen: (collectionId: string) => void;
+  onHover?: (collectionId: string) => void;
 }
