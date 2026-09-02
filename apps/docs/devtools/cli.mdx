@@ -295,7 +295,7 @@ GEO commands are scoped to a project. Run `notra geo projects list` first to fin
 | `notra geo gaps` | `list <projectId>` |
 | `notra geo briefs` | `list <projectId>`, `get <projectId> <briefId>`, `create <projectId> --topic <text> [--auto-approve]`, `approve <projectId> <briefId>` |
 | `notra geo agent-readiness` | `get <projectId>`, `scan <projectId>` |
-| `notra geo traffic` | `overview <projectId>`, `log <projectId>`, `journeys <projectId>`, `journey <projectId> <journeyId>`, `pages <projectId>`, `setup`, `token`, `rotate-token` |
+| `notra geo traffic` | `overview <projectId>`, `log <projectId>`, `journeys <projectId>`, `journey <projectId> <journeyId>`, `pages <projectId>`. The ingest commands are organization-level and take no positional project ID: `setup`, `token [--project <projectId>] [--show-token]`, `rotate-token [--project <projectId>] [-y]` |
 
 Examples:
 
