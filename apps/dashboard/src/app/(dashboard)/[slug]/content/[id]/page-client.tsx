@@ -186,7 +186,8 @@ export default function PageClient({
   );
   const geoWriterUpdate = useGeoWriterUpdate(organizationId, contentId);
   const [isPlanDirty, setIsPlanDirty] = useState(false);
-  const [planConflictVersion, setPlanConflictVersion] = useState(0);
+  const [hasPlanConflict, setHasPlanConflict] = useState(false);
+  const [planEditorVersion, setPlanEditorVersion] = useState(0);
   const briefStatus = geoWriterBriefQuery.data?.status;
   const isGeoWriterPlanMode = Boolean(
     geoWriterDraft && briefStatus !== "completed"
@@ -346,7 +347,7 @@ export default function PageClient({
           },
           onError: (error) => {
             if (getConflictRevision(error).isConflict) {
-              setPlanConflictVersion((version) => version + 1);
+              setHasPlanConflict(true);
             }
           },
         }
@@ -1335,17 +1336,64 @@ export default function PageClient({
   );
   if (isGeoWriterPlanMode && planBrief) {
     mainDocument = (
-      <ContentPlanView
-        brief={planBrief}
-        isWriting={briefStatus === "writing" || briefStatus === "approved"}
-        key={`${geoWriterDraft?.briefId ?? contentId}:${planConflictVersion}`}
-        onChange={
-          isGeoWriterPlanReviewableNow ? handlePlanBriefChange : undefined
-        }
-        onDirtyChange={
-          isGeoWriterPlanReviewableNow ? setIsPlanDirty : undefined
-        }
-      />
+      <>
+        {hasPlanConflict ? (
+          <div
+            className="border-border bg-muted/50 mx-auto mb-6 flex w-full max-w-3xl flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between"
+            role="alert"
+          >
+            <div>
+              <p className="text-sm font-medium">This plan changed elsewhere</p>
+              <p className="text-muted-foreground text-sm">
+                Your edits are preserved. Choose which version to keep.
+              </p>
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <Button
+                onClick={async () => {
+                  const result = await geoWriterBriefQuery.refetch();
+                  if (result.isError) {
+                    toast.error("Failed to load the latest plan");
+                    return;
+                  }
+                  setPlanEditorVersion((version) => version + 1);
+                  setHasPlanConflict(false);
+                }}
+                size="sm"
+                variant="outline"
+              >
+                Load latest
+              </Button>
+              <Button
+                onClick={async () => {
+                  const result = await geoWriterBriefQuery.refetch();
+                  if (result.isError) {
+                    toast.error("Failed to refresh the plan");
+                    return;
+                  }
+                  setHasPlanConflict(false);
+                }}
+                size="sm"
+              >
+                Save my version
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        <ContentPlanView
+          brief={planBrief}
+          isWriting={briefStatus === "writing" || briefStatus === "approved"}
+          key={`${geoWriterDraft?.briefId ?? contentId}:${planEditorVersion}`}
+          onChange={
+            isGeoWriterPlanReviewableNow && !hasPlanConflict
+              ? handlePlanBriefChange
+              : undefined
+          }
+          onDirtyChange={
+            isGeoWriterPlanReviewableNow ? setIsPlanDirty : undefined
+          }
+        />
+      </>
     );
   } else if (isGeoWriterPlanMode) {
     mainDocument = (
