@@ -52,19 +52,15 @@ export default function PageClient({
     enabled: !createOpen && Boolean(organizationId),
   });
 
-  const pagination = useMemo<TablePaginationState>(() => {
-    const pageCount = data?.pagination.totalPages ?? 1;
-    const pageSize = data?.pagination.pageSize ?? collections.length;
-    const totalItems = data?.pagination.totalCount ?? collections.length;
-    return {
-      page,
-      pageCount,
-      pageSize,
-      totalItems,
-      pageRowCount: collections.length,
-      setPage: (next) => setPage(Math.min(Math.max(1, next), pageCount)),
-    };
-  }, [collections.length, data?.pagination, page, setPage]);
+  const pageCount = data?.pagination.totalPages ?? 1;
+  const pagination: TablePaginationState = {
+    page,
+    pageCount,
+    pageSize: data?.pagination.pageSize ?? collections.length,
+    totalItems: data?.pagination.totalCount ?? collections.length,
+    pageRowCount: collections.length,
+    setPage: (next) => setPage(Math.min(Math.max(1, next), pageCount)),
+  };
 
   const collectionPath = (collectionId: string) =>
     `/${organizationSlug}/collection/${collectionId}`;

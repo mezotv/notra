@@ -1,7 +1,6 @@
 "use client";
 
 import { Badge } from "@notra/ui/components/ui/badge";
-import { useMemo } from "react";
 
 import { LogoStack } from "@/components/geo/logo-stack";
 import { StatusSpinner } from "@/components/geo/status-spinner";
@@ -88,55 +87,52 @@ function CollectionNameCell({
   );
 }
 
+const COLLECTION_COLUMNS: TableColumn<PostCollectionSummary>[] = [
+  {
+    key: "name",
+    header: "Name",
+    width: "1fr",
+    minWidth: "16rem",
+    cell: (collection) => <CollectionNameCell collection={collection} />,
+  },
+  {
+    key: "types",
+    header: "Types",
+    width: "9rem",
+    cell: (collection) => (
+      <CollectionTypesCell contentTypes={collection.contentTypes} />
+    ),
+  },
+  {
+    key: "status",
+    header: "Status",
+    width: "8rem",
+    cell: (collection) => (
+      <CollectionStatusBadge status={collectionStatus(collection)} />
+    ),
+  },
+  {
+    key: "createdAt",
+    header: "Created",
+    width: "8.5rem",
+    cell: (collection) => (
+      <span className="text-muted-foreground whitespace-nowrap tabular-nums">
+        {formatRelativeDate(collection.createdAt)}
+      </span>
+    ),
+  },
+];
+
 export function CollectionsTable({
   collections,
   pagination,
   onOpen,
   onHover,
 }: CollectionsTableProps) {
-  const columns = useMemo<TableColumn<PostCollectionSummary>[]>(
-    () => [
-      {
-        key: "name",
-        header: "Name",
-        width: "1fr",
-        minWidth: "16rem",
-        cell: (collection) => <CollectionNameCell collection={collection} />,
-      },
-      {
-        key: "types",
-        header: "Types",
-        width: "9rem",
-        cell: (collection) => (
-          <CollectionTypesCell contentTypes={collection.contentTypes} />
-        ),
-      },
-      {
-        key: "status",
-        header: "Status",
-        width: "8rem",
-        cell: (collection) => (
-          <CollectionStatusBadge status={collectionStatus(collection)} />
-        ),
-      },
-      {
-        key: "createdAt",
-        header: "Created",
-        width: "8.5rem",
-        cell: (collection) => (
-          <span className="text-muted-foreground whitespace-nowrap tabular-nums">
-            {formatRelativeDate(collection.createdAt)}
-          </span>
-        ),
-      },
-    ],
-    []
-  );
-
   return (
     <Table
       className="rounded-2xl"
-      columns={columns}
+      columns={COLLECTION_COLUMNS}
       data={collections}
       emptyState="No content on this page"
       footer={<TablePagination {...pagination} itemLabel="collections" />}

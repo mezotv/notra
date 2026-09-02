@@ -46,7 +46,6 @@ export function useAnswerReplay(
 
   useEffect(() => {
     if (playToken === 0 || turns.length === 0 || skipReplay) {
-      setProgress(null);
       return;
     }
     let cancelled = false;
