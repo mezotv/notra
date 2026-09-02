@@ -21,6 +21,7 @@ import {
 } from "@/lib/analytics/posthog-server";
 import { readRequestHeaders } from "@/lib/analytics/request-headers";
 import { SocialConnectionError, UserSyncError } from "@/lib/auth/errors";
+import { isWorkOSNotFound } from "@/lib/auth/workos-error";
 import { sendWelcomeEmailAction } from "@/lib/email/actions";
 import type {
   OAuthProviderTokens,
@@ -227,10 +228,23 @@ export const ensureLocalUser = Effect.fn("auth.sync.ensureLocalUser")(
       try: () => getWorkOS().userManagement.getUser(workosUser.id),
       catch: (cause) =>
         new UserSyncError({
-          message: "WorkOS user no longer exists",
+          message: isWorkOSNotFound(cause)
+            ? "WorkOS user no longer exists"
+            : "Failed to verify WorkOS user",
           cause,
         }),
-    });
+    }).pipe(
+      Effect.catch((error) =>
+        isWorkOSNotFound(error.cause)
+          ? Effect.fail(error)
+          : Effect.logWarning("Could not verify WorkOS user").pipe(
+              Effect.annotateLogs({
+                workosUserId: workosUser.id,
+                error: error.message,
+              })
+            )
+      )
+    );
 
     const [created] = yield* Effect.tryPromise({
       try: () =>

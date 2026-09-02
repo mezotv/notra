@@ -1,3 +1,5 @@
+import { NotFoundException } from "@workos-inc/node";
+
 import { workosErrorSchema } from "@/schemas/auth/workos-error";
 
 export interface WorkOSErrorInfo {
@@ -31,4 +33,8 @@ export function readWorkOSError(error: unknown): WorkOSErrorInfo {
     organizationIds:
       rawData?.organizations?.map((organization) => organization.id) ?? [],
   };
+}
+
+export function isWorkOSNotFound(error: unknown): boolean {
+  return error instanceof NotFoundException;
 }

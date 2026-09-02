@@ -10,6 +10,7 @@ import { Effect } from "effect";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { readRequestHeaders } from "@/lib/analytics/request-headers";
 import { clearAuthSessionCookie } from "@/lib/auth/session-cookie";
+import { isWorkOSNotFound } from "@/lib/auth/workos-error";
 import { sendResetPasswordAction } from "@/lib/email/actions";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import { requireSession } from "@/lib/organizations/guards";
@@ -144,12 +145,11 @@ export async function deleteUserAction(): Promise<
           "Failed to delete WorkOS user"
         ).pipe(
           Effect.catch((error) =>
-            Effect.logWarning("Could not delete WorkOS user").pipe(
-              Effect.annotateLogs({
-                userId: session.user.id,
-                error: error.message,
-              })
-            )
+            isWorkOSNotFound(error.cause)
+              ? Effect.logWarning("WorkOS user was already deleted").pipe(
+                  Effect.annotateLogs({ userId: session.user.id })
+                )
+              : Effect.fail(error)
           )
         );
       }
