@@ -1,5 +1,6 @@
 import {
   FEEDBACK_MD_ADOPTERS,
+  FEEDBACK_MD_ADOPTERS_CTA_LABEL,
   FEEDBACK_MD_ADOPTERS_DESCRIPTION,
   FEEDBACK_MD_DESCRIPTION,
   FEEDBACK_MD_EXAMPLE_DISCLAIMER,
@@ -103,6 +104,13 @@ export function buildFeedbackMdPageMarkdown() {
     "",
     `Notra's own file: ${SITE_URL}${FEEDBACK_MD_PATH}`,
     "",
+    markdownSection("Adopted by", [
+      FEEDBACK_MD_ADOPTERS_DESCRIPTION,
+      "",
+      ...adopters,
+      "",
+      `${FEEDBACK_MD_ADOPTERS_CTA_LABEL}: serve your own feedback.md and email ${NOTRA_SUPPORT_EMAIL}.`,
+    ]),
     markdownSection("What it is", principles),
     markdownSection("Template", [
       "```markdown",
@@ -113,11 +121,6 @@ export function buildFeedbackMdPageMarkdown() {
     ]),
     markdownSection("Sections", sections),
     markdownSection("Where it sits", siblings),
-    markdownSection("Adopted by", [
-      FEEDBACK_MD_ADOPTERS_DESCRIPTION,
-      "",
-      ...adopters,
-    ]),
     markdownSection("Add it to your site", [
       "Paste this into your agent:",
       "",

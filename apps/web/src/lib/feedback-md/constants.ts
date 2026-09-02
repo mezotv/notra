@@ -11,6 +11,7 @@ import type {
   FeedbackMdTerminalHeader,
   FeedbackMdTerminalToolCall,
 } from "@/types/feedback-md";
+import { NOTRA_SUPPORT_EMAIL } from "@/utils/agent-metadata";
 import { DOCS_URL, SITE_URL } from "@/utils/urls";
 
 export const FEEDBACK_MD_PATH = "/feedback.md";
@@ -221,8 +222,14 @@ export const FEEDBACK_MD_ADOPTERS: FeedbackMdAdopter[] = [
   },
 ];
 
+export const FEEDBACK_MD_ADOPTERS_CAPTION = "Adopted by";
+
 export const FEEDBACK_MD_ADOPTERS_DESCRIPTION =
   "Teams already serving a feedback.md at their root. Each one links to the live file.";
+
+export const FEEDBACK_MD_ADOPTERS_CTA_LABEL = "This could be you";
+
+export const FEEDBACK_MD_ADOPTERS_CTA_HREF = `mailto:${NOTRA_SUPPORT_EMAIL}?subject=${encodeURIComponent("We adopted feedback.md")}`;
 
 const FEEDBACK_MD_PAGE_URL = `${SITE_URL}${FEEDBACK_MD_PAGE_PATH}`;
 
