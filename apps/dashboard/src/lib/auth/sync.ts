@@ -29,6 +29,7 @@ import type {
 } from "@/types/auth/sync";
 
 const GITHUB_USER_ENDPOINT = "https://api.github.com/user";
+const WORKOS_USER_VERIFY_RETRIES = 2;
 
 const AUTH_METHOD_PROVIDERS: Record<string, string> = {
   GitHubOAuth: "github",
@@ -234,16 +235,10 @@ export const ensureLocalUser = Effect.fn("auth.sync.ensureLocalUser")(
           cause,
         }),
     }).pipe(
-      Effect.catch((error) =>
-        isWorkOSNotFound(error.cause)
-          ? Effect.fail(error)
-          : Effect.logWarning("Could not verify WorkOS user").pipe(
-              Effect.annotateLogs({
-                workosUserId: workosUser.id,
-                error: error.message,
-              })
-            )
-      )
+      Effect.retry({
+        times: WORKOS_USER_VERIFY_RETRIES,
+        while: (error) => !isWorkOSNotFound(error.cause),
+      })
     );
 
     const [created] = yield* Effect.tryPromise({
