@@ -24,7 +24,9 @@ export function normalizeWebsiteUrl(value: string): string | null {
 export function getWebsiteUrlLookupVariants(value: string): string[] {
   const suffixIndex = value.search(URL_SUFFIX);
   if (suffixIndex === -1) {
-    return [value];
+    return value.endsWith("/")
+      ? [value, value.slice(0, -1)]
+      : [value, `${value}/`];
   }
 
   const pathname = value.slice(0, suffixIndex);
