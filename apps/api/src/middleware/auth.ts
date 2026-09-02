@@ -39,7 +39,7 @@ interface AuthOptions {
 }
 
 const BEARER_HEADER_REGEX = /^Bearer\s+(.+)$/i;
-const DEFAULT_AUTHKIT_DOMAIN = "auth.usenotra.com";
+const DEFAULT_AUTHKIT_DOMAIN = "oauth.usenotra.com";
 const OAUTH_AUDIENCES = [
   API_URL,
   "https://mcp.usenotra.com",

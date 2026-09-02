@@ -9,6 +9,6 @@ export function OPTIONS() {
 export function POST(request: NextRequest) {
   return redirectToAuthServer(
     request,
-    "https://auth.usenotra.com/oauth2/token"
+    "https://oauth.usenotra.com/oauth2/token"
   );
 }

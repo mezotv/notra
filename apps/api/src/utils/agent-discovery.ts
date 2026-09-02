@@ -1,7 +1,7 @@
 import { PUBLIC_API_SCOPES } from "@notra/utils/api-scopes";
 
 export const API_URL = "https://api.usenotra.com";
-const DEFAULT_AUTHKIT_DOMAIN = "auth.usenotra.com";
+const DEFAULT_AUTHKIT_DOMAIN = "oauth.usenotra.com";
 const AUTH_SERVER_URL = `https://${DEFAULT_AUTHKIT_DOMAIN}`;
 const AUTH_ISSUER_URL = AUTH_SERVER_URL;
 const MCP_ORIGIN_URL = "https://mcp.usenotra.com";

@@ -43,7 +43,7 @@ export function apiUrl(path = "") {
 }
 
 function authIssuerUrl() {
-  return "https://auth.usenotra.com";
+  return "https://oauth.usenotra.com";
 }
 
 function buildAgentAuthMetadata() {
