@@ -45,6 +45,7 @@ export function DeleteAccountDialog({
   onOpenChange,
 }: DeleteAccountDialogProps): ReactElement {
   const router = useRouter();
+  const invalidateSession = authClient.useSessionInvalidation();
   const [internalOpen, setInternalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [decisions, setDecisions] = useState<
@@ -121,10 +122,13 @@ export function DeleteAccountDialog({
     }
     if (deleteError) {
       toast.error(deleteError.message ?? "Failed to delete account");
-    } else {
-      toast.success("Account deleted successfully");
-      router.push("/");
+      setIsDeleting(false);
+      return;
     }
+    toast.success("Account deleted successfully");
+    handleOpenChange(false);
+    invalidateSession();
+    router.push("/login");
     setIsDeleting(false);
   }
 
