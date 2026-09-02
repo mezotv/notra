@@ -122,6 +122,7 @@ const STROKE_WIDTH = 0.8; // default series stroke — <Area strokeWidth> overri
 const LOADING_ANIMATION_DURATION = 2000; // shimmer loop, in milliseconds
 const REVEAL_DURATION = 1000; // intro draw-in length, in milliseconds
 const CHART_UPDATE_MS = 420; // opacity / layout transitions after the intro
+const HOVER_DOT_STATE_MS = 120; // emphasis fade of the active dot between categories (ECharts default is 300)
 // NOTE: the intro draw-in runs ECharts' RAW default entrance animation. Custom
 // easing was tried and abandoned — ECharts hardcodes the line-entrance clip to
 // linear and ignores animationEasing at every level (verified empirically).
@@ -142,7 +143,7 @@ const BUFFER_DASH: [number, number] = [4, 3];
 // perceived intensity. Using the border token's full alpha lands both engines at
 // the same apparent brightness.
 const GRID_LINE_OPACITY = 1; // dashed y-axis split lines, × border alpha
-const AXIS_POINTER_OPACITY = 0.28; // tooltip cursor line alpha
+const AXIS_POINTER_OPACITY = 0.2; // tooltip cursor line alpha
 const AXIS_POINTER_WIDTH = 1; // tooltip cursor line thickness
 // The skeleton is CLIPPED to a small sweeping window — only the wave section
 // inside it exists (stroke + fill), everything outside is fully transparent,
@@ -1107,7 +1108,7 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
             : tooltipBodyHtml([], tooltipSlot, hoveredRow),
         roundness: tooltipSlot.roundness,
         variant: tooltipSlot.variant,
-        layout: "bars",
+        layout: "activity",
       });
     }
     const rowKeys = tooltipSlot.rowKeys;
@@ -2528,12 +2529,15 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
         live.resolved?.tokens.background ?? "rgba(255, 255, 255, 1)"
       );
       Object.assign(merged, {
-        // Keep animation on so the hover cursor can ease between categories.
+        // Keep animation on for series updates (the axis pointer itself snaps).
         // Duration 0 still skips the intro draw-in when withEntrance is false.
         animation: true,
         animationDuration: withEntrance ? REVEAL_DURATION : 0,
         animationDurationUpdate: withEntrance ? 0 : CHART_UPDATE_MS,
         animationEasingUpdate: "cubicInOut",
+        // The active dot is the emphasis state of an invisible symbol, so its
+        // hop between categories is the state transition — keep it brisk.
+        stateAnimation: { duration: HOVER_DOT_STATE_MS, easing: "cubicOut" },
       });
       // chartOptions is an untyped escape hatch — the spread erases the option's
       // shape, so re-assert it. The only cast in the file.

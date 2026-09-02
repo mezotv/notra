@@ -11,17 +11,21 @@ import {
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import { useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/button";
 import { ConversationReplayThread } from "@/components/geo/conversation-replay-thread";
 import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
+import { useAnswerReplay } from "@/lib/hooks/use-answer-replay";
 import { useGeoSequenceResults } from "@/lib/hooks/use-geo";
 import type {
   ConversationResultsDialogProps,
   GeoSequenceEngineThread,
 } from "@/types/geo";
 import { buildSequenceEngineThreads } from "@/utils/geo-sequences";
+
+const EMPTY_TURNS: GeoSequenceEngineThread["turns"] = [];
 
 function latestCheckAt(threads: GeoSequenceEngineThread[]): string | null {
   let latest: string | null = null;
@@ -70,6 +74,8 @@ export function ConversationResultsDialog({
   );
   const [engine, setEngine] = useState<string | null>(null);
   const [playToken, setPlayToken] = useState(1);
+  const [skipReplay, setSkipReplay] = useState(false);
+  const reducedMotion = useReducedMotion();
 
   const threads = useMemo(
     () => buildSequenceEngineThreads(data?.results ?? [], sequence?.id),
@@ -77,6 +83,13 @@ export function ConversationResultsDialog({
   );
   const active =
     threads.find((thread) => thread.engine === engine) ?? threads[0] ?? null;
+  const progress = useAnswerReplay(
+    active?.turns ?? EMPTY_TURNS,
+    playToken,
+    Boolean(reducedMotion),
+    skipReplay
+  );
+  const isReplaying = progress !== null;
   const latestCheck = latestCheckAt(threads);
 
   if (!sequence) {
@@ -107,17 +120,35 @@ export function ConversationResultsDialog({
                 active={active}
                 onChange={(next) => {
                   setEngine(next);
+                  setSkipReplay(false);
+                  setPlayToken((token) => token + 1);
                 }}
                 results={threads}
               />
-              <Button
-                onClick={() => setPlayToken((token) => token + 1)}
-                size="sm"
-                variant="outline"
-              >
-                <HugeiconsIcon icon={PlayIcon} size={14} />
-                Replay
-              </Button>
+              <div className="flex items-center gap-2">
+                {isReplaying ? (
+                  <Button
+                    onClick={() => {
+                      setSkipReplay(true);
+                    }}
+                    size="sm"
+                    variant="outline"
+                  >
+                    Skip
+                  </Button>
+                ) : null}
+                <Button
+                  onClick={() => {
+                    setSkipReplay(false);
+                    setPlayToken((token) => token + 1);
+                  }}
+                  size="sm"
+                  variant="outline"
+                >
+                  <HugeiconsIcon icon={PlayIcon} size={14} />
+                  Replay
+                </Button>
+              </div>
             </div>
           ) : null}
         </ResponsiveDialogHeader>
@@ -131,7 +162,7 @@ export function ConversationResultsDialog({
             <ConversationReplayThread
               engine={active.engine}
               key={active.engine}
-              playToken={playToken}
+              progress={progress}
               turns={active.turns}
             />
           )}

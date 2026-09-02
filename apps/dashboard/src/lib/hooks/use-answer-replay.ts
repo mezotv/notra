@@ -35,16 +35,18 @@ function typeInterval(tokenCount: number): number {
 export function useAnswerReplay(
   turns: readonly AnswerReplayTurn[],
   playToken: number,
-  reducedMotion: boolean
+  reducedMotion: boolean,
+  skipReplay = false
 ) {
   const [progress, setProgress] = useState<AnswerReplayProgress | null>(() =>
-    playToken === 0 || turns.length === 0
+    playToken === 0 || turns.length === 0 || skipReplay
       ? null
       : { index: 0, stage: "user", typed: "" }
   );
 
   useEffect(() => {
-    if (playToken === 0 || turns.length === 0) {
+    if (playToken === 0 || turns.length === 0 || skipReplay) {
+      setProgress(null);
       return;
     }
     let cancelled = false;
@@ -93,7 +95,7 @@ export function useAnswerReplay(
     return () => {
       cancelled = true;
     };
-  }, [playToken, reducedMotion, turns]);
+  }, [playToken, reducedMotion, skipReplay, turns]);
 
-  return progress;
+  return skipReplay ? null : progress;
 }

@@ -7,12 +7,10 @@ import type {
 } from "@notra/geo-core/types/geo";
 import { perplexitySourcesFromStoredOrExcerpt } from "@notra/geo-core/utils/geo-perplexity-sources";
 import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
-import { useReducedMotion } from "motion/react";
 
 import { GeoAnswerSearch } from "@/components/geo/geo-answer-search";
 import { AnswerMarkdown } from "@/components/geo/geo-prompt-answer-thread";
 import { GeoSkinMessage } from "@/components/geo/geo-skin-message";
-import { useAnswerReplay } from "@/lib/hooks/use-answer-replay";
 import { cn } from "@/lib/utils";
 import type {
   AnswerReplayProgress,
@@ -147,11 +145,9 @@ function ReplayTurn({
 export function ConversationReplayThread({
   engine,
   turns,
-  playToken,
+  progress,
 }: ConversationReplayThreadProps) {
   const skin = geoChatSkin(engine);
-  const reducedMotion = useReducedMotion();
-  const progress = useAnswerReplay(turns, playToken, Boolean(reducedMotion));
 
   return (
     <div

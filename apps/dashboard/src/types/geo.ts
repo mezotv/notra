@@ -160,7 +160,7 @@ export interface GeoSequenceEngineThread {
 export interface ConversationReplayThreadProps {
   engine: string;
   turns: GeoSequenceTurnResult[];
-  playToken: number;
+  progress: AnswerReplayProgress | null;
 }
 
 export type AnswerReplayStage = "user" | "thinking" | "typing";

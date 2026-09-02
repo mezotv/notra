@@ -205,8 +205,8 @@ export function TrafficHero({
               layout="bars"
               position="fixed"
               rowGroups={tooltipGroups}
+              roundness="xl"
               valueFormatter={formatChartInteger}
-              variant="duotone"
             />
           </EChartsAreaChart>
           <TrafficProviderLegend

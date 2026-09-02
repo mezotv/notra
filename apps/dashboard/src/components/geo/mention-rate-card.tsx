@@ -353,7 +353,7 @@ export function MentionRateCard({
               </div>
               <div className="relative flex-1">
                 <div
-                  className="border-border relative overflow-y-auto [&::-webkit-scrollbar]:hidden [&>button:last-of-type]:border-b-0"
+                  className="border-border relative [scrollbar-width:none] overflow-y-auto [&::-webkit-scrollbar]:hidden [&>button:last-of-type]:border-b-0"
                   ref={ref}
                   style={LIST_STYLE}
                 >

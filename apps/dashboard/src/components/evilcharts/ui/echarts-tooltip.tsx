@@ -25,7 +25,7 @@ import { echartsDatumValue } from "@/utils/echarts-datum";
 // chart composes its own rows but shares the shell/styling and base option.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type TooltipVariant = "default" | "frosted-glass" | "duotone";
+export type TooltipVariant = "default" | "frosted-glass";
 export type TooltipRoundness = "sm" | "md" | "lg" | "xl";
 // Tooltip anchoring: "variable" follows both axes (ECharts default, current
 // behavior); "fixed" sits beside the pointer's X so the hover line stays
@@ -33,10 +33,10 @@ export type TooltipRoundness = "sm" | "md" | "lg" | "xl";
 export type TooltipPosition = "fixed" | "variable";
 export type TooltipAxisPointer = "none" | "line" | "shadow" | "cross";
 
-// Hover motion — keep the cursor line and tooltip sliding between categories
-// even when the chart itself skips its intro animation.
-export const TOOLTIP_MOVE_DURATION_S = 0.42;
-export const AXIS_POINTER_MOVE_MS = 420;
+// Hover motion — the cursor line snaps to the hovered category (an eased line
+// trails the pointer and smears); the tooltip box and its bars get a short
+// ease so values do not pop.
+export const TOOLTIP_MOVE_DURATION_S = 0.16;
 const TOOLTIP_MOVE_EASING = "cubic-bezier(0.16, 1, 0.3, 1)";
 export const TOOLTIP_BAR_MOTION_STYLE = `transition:width ${TOOLTIP_MOVE_DURATION_S}s ${TOOLTIP_MOVE_EASING}`;
 export const TOOLTIP_VALUE_MOTION_STYLE =
@@ -66,9 +66,8 @@ export const roundnessClass: Record<TooltipRoundness, string> = {
 };
 
 export const tooltipVariantClass: Record<TooltipVariant, string> = {
-  default: "bg-background",
-  "frosted-glass": "bg-background/50 backdrop-blur-md",
-  duotone: "bg-popover",
+  default: "bg-popover",
+  "frosted-glass": "bg-popover/70 backdrop-blur-md",
 };
 
 // The standard series indicator swatch — a rounded square filled with the
@@ -109,16 +108,9 @@ export function tooltipRow({
 const TOOLTIP_BAR_TRACK = 100;
 const TOOLTIP_BAR_MIN = 2;
 
-const TOOLTIP_BAR_GLOSS =
-  "linear-gradient(180deg, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.1) 38%, rgba(255,255,255,0) 54%, rgba(0,0,0,0.16) 100%)";
-
-/** Layered fill for tooltip bar tracks — gloss highlight over the series color. */
-export function tooltipBarFillStyle(paint: string): string {
-  const base = paint.includes("gradient")
-    ? paint
-    : `linear-gradient(180deg, ${paint} 0%, ${paint} 100%)`;
-  return `${TOOLTIP_BAR_GLOSS}, ${base}`;
-}
+// Shared flat track + fill for every bar-style tooltip row.
+const TOOLTIP_BAR_TRACK_CLASS = "h-1 overflow-hidden rounded-full bg-muted";
+const TOOLTIP_BAR_FILL_CLASS = "ec-tooltip-bar-fill h-full rounded-full";
 
 export function formatTooltipValue(
   value: unknown,
@@ -177,13 +169,14 @@ export function tooltipBarRow({
   paint?: string;
 }): string {
   const fill = paint ?? indicatorBackground(key, colorsCount);
-  const barFill = escapeHtml(tooltipBarFillStyle(fill));
-  return `<div class="grid w-full grid-cols-[1rem_minmax(0,1fr)_auto] gap-x-2 gap-y-1.5${dimmed}">
-          <span class="flex size-4 items-center justify-center self-center">${indicatorHtml ?? ""}</span>
-          <span class="self-center truncate text-muted-foreground leading-none">${escapeHtml(labelText)}</span>
-          <span class="self-center font-mono font-medium text-foreground tabular-nums leading-none" style="${TOOLTIP_VALUE_MOTION_STYLE}">${escapeHtml(valueText)}</span>
-          <div class="col-span-2 col-start-2 h-2 overflow-hidden rounded-full bg-muted/45 shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)]">
-            <div class="ec-tooltip-bar-fill h-full rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.32),inset_0_-1px_1px_rgba(0,0,0,0.22)]" style="width:${widthPercent}%;background:${barFill};${TOOLTIP_BAR_MOTION_STYLE}"></div>
+  const barFill = escapeHtml(fill);
+  const indicator = indicatorHtml ?? tooltipColorSwatchHtml(fill);
+  return `<div class="grid w-full grid-cols-[0.875rem_minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1${dimmed}">
+          <span class="flex size-3.5 items-center justify-center">${indicator}</span>
+          <span class="truncate text-foreground leading-none">${escapeHtml(labelText)}</span>
+          <span class="font-mono text-muted-foreground tabular-nums leading-none" style="${TOOLTIP_VALUE_MOTION_STYLE}">${escapeHtml(valueText)}</span>
+          <div class="col-span-2 col-start-2 ${TOOLTIP_BAR_TRACK_CLASS}">
+            <div class="${TOOLTIP_BAR_FILL_CLASS}" style="width:${widthPercent}%;background:${barFill};${TOOLTIP_BAR_MOTION_STYLE}"></div>
           </div>
         </div>`;
 }
@@ -232,10 +225,10 @@ function tooltipActivityRow(item: TooltipBodyItem, max: number): string {
       ? tooltipColorSwatchHtml(item.paint)
       : tooltipIndicatorHtml(item.key, item.colorsCount));
   const width = tooltipBarWidth(item.value ?? 0, max);
-  return `<div class="relative grid h-8 grid-cols-[minmax(0,1fr)_auto] overflow-hidden rounded-[7px] border border-white/[0.14] bg-white/[0.025]${item.dimmed}">
-          <span class="absolute inset-y-0 left-0 rounded-r-[5px] bg-white/[0.16]" style="width:${width}%;${TOOLTIP_BAR_MOTION_STYLE}"></span>
-          <span class="relative flex min-w-0 items-center gap-2 px-2.5 text-[11px] font-medium text-zinc-200">${indicatorHtml}<span class="truncate">${escapeHtml(item.labelText)}</span></span>
-          <span class="relative flex min-w-9 items-center justify-end px-2.5 font-mono text-[11px] font-semibold text-white tabular-nums" style="${TOOLTIP_VALUE_MOTION_STYLE}">${escapeHtml(item.valueText)}</span>
+  return `<div class="relative grid h-7 grid-cols-[minmax(0,1fr)_auto] overflow-hidden rounded-md bg-muted/40${item.dimmed}">
+          <span class="absolute inset-y-0 left-0 bg-foreground/[0.08]" style="width:${width}%;${TOOLTIP_BAR_MOTION_STYLE}"></span>
+          <span class="relative flex min-w-0 items-center gap-2 px-2 text-foreground">${indicatorHtml}<span class="truncate">${escapeHtml(item.labelText)}</span></span>
+          <span class="relative flex min-w-9 items-center justify-end px-2 font-mono text-muted-foreground tabular-nums" style="${TOOLTIP_VALUE_MOTION_STYLE}">${escapeHtml(item.valueText)}</span>
         </div>`;
 }
 
@@ -317,18 +310,19 @@ export function tooltipShell({
   variant: TooltipVariant;
   layout?: TooltipLayout;
 }): string {
-  const isBars = layout === "bars";
-  const isActivity = layout === "activity";
-  if (variant === "duotone") {
-    return tooltipDuotoneShell(label, body, isBars);
-  }
+  const isRows = layout === "rows";
   const header =
     label.length > 0
-      ? `<div class="${isActivity ? "px-0.5 text-[11px] font-medium text-zinc-400" : "font-medium text-foreground"}">${escapeHtml(label)}</div>`
+      ? `<div class="text-[11px] font-medium text-muted-foreground">${escapeHtml(label)}</div>`
       : "";
-  return `<div class="grid ${isActivity ? "min-w-60 gap-2 border-white/10 bg-[#111113] px-2.5 py-2.5" : `${isBars ? "min-w-56 gap-2.5 px-3 py-2.5" : "min-w-32 gap-1.5 px-2.5 py-1.5"} border-border/50 ${tooltipVariantClass[variant]}`} items-start border text-xs shadow-[0_12px_40px_-8px_rgba(0,0,0,0.55),0_0_0_1px_rgba(255,255,255,0.04)_inset] ${roundnessClass[roundness]}">
+  const surface = isRows
+    ? "min-w-32 gap-1.5 px-2.5 py-2"
+    : "min-w-52 gap-2 px-3 py-2.5";
+  const bodyGap =
+    layout === "activity" ? "gap-1" : isRows ? "gap-1.5" : "gap-2";
+  return `<div class="grid ${surface} items-start border border-border ${tooltipVariantClass[variant]} text-xs shadow-md ${roundnessClass[roundness]}">
       ${header}
-      <div class="grid ${isBars ? "gap-2.5" : isActivity ? "gap-1" : "gap-1.5"}" style="transition:opacity 0.24s ease">${body}</div>
+      <div class="grid ${bodyGap}" style="transition:opacity 0.24s ease">${body}</div>
     </div>`;
 }
 
@@ -386,9 +380,7 @@ export function tooltipBaseOption(params: {
 
   const linePointer = {
     type: pointer === "cross" ? ("cross" as const) : ("line" as const),
-    animation: true,
-    animationDurationUpdate: AXIS_POINTER_MOVE_MS,
-    animationEasingUpdate: "cubicInOut" as const,
+    animation: false,
     label: { show: false },
     lineStyle: {
       color: axisPointerColor,
@@ -403,7 +395,7 @@ export function tooltipBaseOption(params: {
   };
 
   // Custom `position` normally disables ECharts' transform transition — keep
-  // one anyway so the box eases between days instead of teleporting.
+  // a short one so the box settles instead of teleporting.
   const tooltipMotionCss = `box-shadow:none;pointer-events:none;will-change:transform;transition:transform ${TOOLTIP_MOVE_DURATION_S}s ${TOOLTIP_MOVE_EASING},opacity 0.28s ease;`;
 
   return {
@@ -434,29 +426,9 @@ export function tooltipBaseOption(params: {
   };
 }
 
-// Dual-tone surface: a muted header band carrying the axis label, with the
-// rows on a popover card that overlaps it, mirroring the hover breakdown cards.
-function tooltipDuotoneShell(
-  label: string,
-  body: string,
-  isBars: boolean
-): string {
-  const header =
-    label.length > 0
-      ? `<div class="border-border bg-muted rounded-t-2xl border border-b-0 px-3 pt-2 pb-6"><span class="text-foreground text-sm font-semibold">${escapeHtml(label)}</span></div>`
-      : "";
-  return `<div class="grid ${isBars ? "min-w-56" : "min-w-40"} text-xs">
-      ${header}
-      <div class="border-border bg-popover ${label.length > 0 ? "-mt-4" : ""} rounded-2xl border px-3 py-2.5 shadow-md">
-        <div class="grid ${isBars ? "gap-2.5" : "gap-1.5"}" style="transition:opacity 0.24s ease">${body}</div>
-      </div>
-    </div>`;
-}
-
-const TOOLTIP_GROUP_FULL_WIDTH = 100;
-
-// Sectioned bars: each group renders its heading as a full-width bar followed
-// by its rows scaled to the heading value, so children read as shares of it.
+// Sectioned activity list: each group renders a heading (swatch, label, total)
+// followed by activity rows scaled to the heading value, so children read as
+// shares of it — the same rows the single-group "activity" layout uses.
 export function composeTooltipGroupedBody(
   groups: readonly TooltipBodyGroup[]
 ): string {
@@ -471,30 +443,18 @@ export function composeTooltipGroupedBody(
         colorsCount: group.heading.colorsCount,
         labelText: group.heading.labelText,
         valueText: group.heading.valueText,
-        widthPercent: headingValue > 0 ? TOOLTIP_GROUP_FULL_WIDTH : 0,
         paint: group.heading.paint,
       });
       const rowsHtml = rows
-        .map((item) =>
-          tooltipBarRow({
-            key: item.key,
-            colorsCount: item.colorsCount,
-            labelText: item.labelText,
-            valueText: item.valueText,
-            widthPercent: tooltipBarWidth(item.value ?? 0, headingValue),
-            dimmed: item.dimmed,
-            indicatorHtml: item.indicatorHtml,
-            paint: item.paint,
-          })
-        )
+        .map((item) => tooltipActivityRow(item, headingValue))
         .join("");
       const separator =
         index > 0
-          ? `<div class="border-border -mx-3 my-1 border-t" role="separator"></div>`
+          ? `<div class="border-border my-1 border-t" role="separator"></div>`
           : "";
-      return `${separator}<div class="grid gap-2.5">
+      return `${separator}<div class="grid gap-1">
           ${headingHtml}
-          ${rowsHtml.length > 0 ? `<div class="grid gap-2 pl-3">${rowsHtml}</div>` : ""}
+          ${rowsHtml}
         </div>`;
     })
     .join("");
@@ -505,23 +465,17 @@ function tooltipGroupHeadingRow({
   colorsCount,
   labelText,
   valueText,
-  widthPercent,
   paint,
 }: {
   key: string;
   colorsCount: number;
   labelText: string;
   valueText: string;
-  widthPercent: number;
   paint?: string;
 }): string {
   const fill = paint ?? indicatorBackground(key, colorsCount);
-  const barFill = escapeHtml(tooltipBarFillStyle(fill));
-  return `<div class="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-x-2 gap-y-1.5">
-          <span class="self-center truncate font-semibold text-foreground leading-none">${escapeHtml(labelText)}</span>
-          <span class="self-center font-mono font-semibold text-foreground tabular-nums leading-none" style="${TOOLTIP_VALUE_MOTION_STYLE}">${escapeHtml(valueText)}</span>
-          <div class="col-span-2 h-2 overflow-hidden rounded-full bg-muted/45 shadow-[inset_0_1px_2px_rgba(0,0,0,0.28)]">
-            <div class="ec-tooltip-bar-fill h-full rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.32),inset_0_-1px_1px_rgba(0,0,0,0.22)]" style="width:${widthPercent}%;background:${barFill};${TOOLTIP_BAR_MOTION_STYLE}"></div>
-          </div>
+  return `<div class="grid h-7 grid-cols-[minmax(0,1fr)_auto] items-center">
+          <span class="flex min-w-0 items-center gap-2 px-2 font-medium text-foreground">${tooltipColorSwatchHtml(fill)}<span class="truncate">${escapeHtml(labelText)}</span></span>
+          <span class="flex min-w-9 items-center justify-end px-2 font-mono font-semibold text-foreground tabular-nums" style="${TOOLTIP_VALUE_MOTION_STYLE}">${escapeHtml(valueText)}</span>
         </div>`;
 }
