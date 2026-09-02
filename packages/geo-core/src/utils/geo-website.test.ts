@@ -11,7 +11,7 @@ describe("stripWebsiteProtocol", () => {
 
   test("preserves URLs containing a query or fragment", () => {
     expect(stripWebsiteProtocol("https://example.com/path/?page=1")).toBe(
-      "example.com/path/?page=1"
+      "example.com/path?page=1"
     );
     expect(stripWebsiteProtocol("https://example.com?next=/docs/")).toBe(
       "example.com?next=/docs/"

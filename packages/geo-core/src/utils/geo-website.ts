@@ -6,7 +6,9 @@ export function stripWebsiteProtocol(value: string): string {
   const withoutProtocol = value.trim().replace(URL_PREFIX, "");
   const suffixIndex = withoutProtocol.search(URL_SUFFIX);
   if (suffixIndex !== -1) {
-    return withoutProtocol;
+    const pathname = withoutProtocol.slice(0, suffixIndex);
+    const suffix = withoutProtocol.slice(suffixIndex);
+    return `${pathname.replace(TRAILING_SLASH, "")}${suffix}`;
   }
   return withoutProtocol.replace(TRAILING_SLASH, "");
 }
