@@ -13,10 +13,8 @@ Zero dependencies. No Node APIs in the core, so it runs on edge runtimes.
 ## Install
 
 ```bash
-bun add @usenotra/geo@beta
+bun add @usenotra/geo
 ```
-
-The package is in beta. Pin the `beta` tag until `0.1.0` ships.
 
 ## Next.js
 

@@ -47,7 +47,7 @@ const feedbackAcceptedResponse = {
 const feedbackRateLimitedResponse = rateLimitResponse(
   RATE_LIMITS.feedbackIngest.requests,
   RATE_LIMITS.feedbackIngest.window,
-  "credential"
+  "API key"
 );
 
 const publicFeedbackRateLimitedResponse = rateLimitResponse(

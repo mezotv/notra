@@ -1,6 +1,6 @@
 ---
 title: "TypeScript Types"
-description: "TypeScript type definitions for Notra API responses."
+description: "TypeScript type definitions and Zod schemas for Notra API post responses and errors."
 authors:
   - handle: dominik
 
@@ -21,6 +21,7 @@ docolin:
     - Zod schemas
     - API types
   prev: ./pagination.mdx
+  next: ./agent-feedback.mdx
 ---
 
 ## Using the SDK
@@ -39,11 +40,13 @@ import type {
   The SDK ships with full type definitions, so there is no need to maintain your own. The types below are only needed if you're calling the API with raw `fetch`.
 </Tip>
 
+For any endpoint, including the GEO group that the SDK does not cover yet, the [OpenAPI document](https://api.usenotra.com/openapi.json) is the source of truth. Tools such as `openapi-typescript` can turn it into a complete set of types.
+
 ---
 
 ## Using `fetch`
 
-If you call the API directly with `fetch`, these types are a good starting point:
+If you call the post endpoints directly with `fetch`, these types match the current responses:
 
 ```typescript
 // Multiple posts
@@ -92,16 +95,32 @@ export type Organization = {
   logo: string | null;
 };
 
+export type PostContentType =
+  | "changelog"
+  | "linkedin_post"
+  | "twitter_post"
+  | "blog_post"
+  | "investor_update"
+  | "image";
+
+export type PostStatus = "draft" | "published";
+
 export type Post = {
   id: string;
   title: string;
   slug: string | null;
+  /** Rendered HTML for text posts. For image posts, the public URL of the rendered image. */
   content: string;
-  markdown: string;
+  /** Public URL of the generated HTML artifact for image posts. Null for text posts. */
+  htmlUrl: string | null;
+  /** Markdown source for text posts. Null for image posts. */
+  markdown: string | null;
+  /** Legacy inline HTML for older image posts. Null otherwise. */
+  rawHtml: string | null;
   recommendations: string | null;
-  contentType: string;
-  sourceMetadata: unknown | null;
-  status: "draft" | "published";
+  contentType: PostContentType;
+  sourceMetadata: unknown;
+  status: PostStatus;
   createdAt: string;
   updatedAt: string;
 };
@@ -130,12 +149,28 @@ export type NotraPostUpdateRequest = {
   title?: string;
   slug?: string | null;
   markdown?: string;
-  status?: "draft" | "published";
+  status?: PostStatus;
 };
 
 export type NotraPostUpdateResponse = {
   organization: Organization;
   post: Post;
+};
+
+export type NotraErrorResponse = {
+  error: string;
+  /** Present on authentication and authorization failures. */
+  code?: string;
+  /** Present on authentication and authorization failures. */
+  recovery?: string;
+};
+
+export type NotraRateLimitErrorResponse = {
+  error: string;
+  limit: number;
+  remaining: number;
+  /** Unix timestamp in milliseconds when the window resets. */
+  reset: number;
 };
 ```
 
@@ -145,7 +180,7 @@ export type NotraPostUpdateResponse = {
 
 ### Zod Schemas
 
-For runtime validation, you can use these Zod schemas:
+For runtime validation, you can use these Zod schemas. The request limits mirror the API: titles up to 120 characters, slugs up to 160 characters of lowercase letters, numbers and hyphens, markdown up to 100,000 characters, and at least one field per update.
 
 ```typescript
 import * as z from "zod";
@@ -157,16 +192,29 @@ export const OrganizationSchema = z.object({
   logo: z.string().nullable(),
 });
 
+export const PostContentTypeSchema = z.enum([
+  "changelog",
+  "linkedin_post",
+  "twitter_post",
+  "blog_post",
+  "investor_update",
+  "image",
+]);
+
+export const PostStatusSchema = z.enum(["draft", "published"]);
+
 export const PostSchema = z.object({
   id: z.string(),
   title: z.string(),
   slug: z.string().nullable(),
   content: z.string(),
-  markdown: z.string(),
+  htmlUrl: z.string().nullable(),
+  markdown: z.string().nullable(),
+  rawHtml: z.string().nullable(),
   recommendations: z.string().nullable(),
-  contentType: z.string(),
+  contentType: PostContentTypeSchema,
   sourceMetadata: z.unknown().nullable(),
-  status: z.enum(["draft", "published"]),
+  status: PostStatusSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -198,7 +246,7 @@ export const PostUpdateRequestSchema = z
     title: z.string().trim().min(1).max(120).optional(),
     slug: z.string().trim().min(1).max(160).regex(SLUG_REGEX).nullable().optional(),
     markdown: z.string().min(1).max(100_000).optional(),
-    status: z.enum(["draft", "published"]).optional(),
+    status: PostStatusSchema.optional(),
   })
   .refine(
     (data) =>
@@ -212,5 +260,18 @@ export const PostUpdateRequestSchema = z
 export const PostUpdateResponseSchema = z.object({
   organization: OrganizationSchema,
   post: PostSchema,
+});
+
+export const ErrorResponseSchema = z.object({
+  error: z.string(),
+  code: z.string().optional(),
+  recovery: z.string().optional(),
+});
+
+export const RateLimitErrorResponseSchema = z.object({
+  error: z.string(),
+  limit: z.number().int().min(1),
+  remaining: z.number().int().min(0),
+  reset: z.number().int(),
 });
 ```

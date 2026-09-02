@@ -19,16 +19,16 @@ docolin:
     - Framer plugin
     - import to Framer
     - Framer marketplace
-  prev: ./slack.mdx
+  prev: ./google-search-console.mdx
   next: ./featul.mdx
 ---
 
-This guide shows how to connect Notra to [Framer](https://www.framer.com/) and pull your content into a Framer site with the official Notra plugin.
+This guide shows how to connect Notra to [Framer](https://www.framer.com/) and pull your posts into a Framer site with the official Notra plugin. Framer is listed under **Output** on the Integrations page; its card opens the same four-step setup guide described here.
 
 ## Prerequisites
 
 - Access to a Framer project.
-- A Notra API key with read access to posts.
+- A Notra API key with read access to posts (`posts.read`).
 - Posts in Notra that you want to import.
 
 ## Install
@@ -46,8 +46,8 @@ Install the official Notra plugin from the [Framer Marketplace](https://www.fram
 
 ## Connect Notra to Framer
 
-1. In Notra, go to **Developer** > **API Keys**.
-2. Create a new API key with **Read** access for posts.
+1. In the Notra dashboard sidebar, open **API Keys**.
+2. Create a new key with read-only access to posts.
 
 <img
   src="/images/api/api-keys-light.webp"
@@ -63,3 +63,7 @@ Install the official Notra plugin from the [Framer Marketplace](https://www.fram
 3. Open the Notra plugin in Framer.
 4. Paste your API key when prompted.
 5. Browse your posts in the plugin and choose which ones to pull into your Framer site.
+
+<Note>
+  The plugin only reads from Notra. A key with `posts.read` is enough; it cannot change anything in your workspace.
+</Note>

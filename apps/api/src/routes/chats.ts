@@ -32,6 +32,8 @@ const listChatsRoute = createRoute({
   tags: ["Chats"],
   operationId: "listChats",
   summary: "List chats",
+  description:
+    "Returns the organization's chat sessions without their messages. Use GET /v1/chats/{chatId} to load a conversation.",
   responses: {
     200: {
       description: "Chats fetched successfully",
@@ -49,6 +51,8 @@ const getChatByExternalRoute = createRoute({
   tags: ["Chats"],
   operationId: "getChatByExternalChannel",
   summary: "Get a chat by external channel id",
+  description:
+    "Looks up the chat session linked to a Discord or Slack channel. Link a chat by passing externalChannelId when you create it.",
   request: { query: getChatByExternalQuerySchema },
   responses: {
     200: {
@@ -69,6 +73,8 @@ const getChatRoute = createRoute({
   tags: ["Chats"],
   operationId: "getChat",
   summary: "Get a single chat with messages",
+  description:
+    "Returns the chat session and its full message history in UI message format.",
   request: { params: getChatParamsSchema },
   responses: {
     200: {
@@ -238,6 +244,8 @@ chatsRoutes.openAPIRegistry.registerPath({
   tags: ["Chats"],
   operationId: "createChat",
   summary: "Start a new chat and stream the reply",
+  description:
+    "Creates a chat session, sends the first message, and streams the assistant reply. Read the X-Chat-Id response header to continue the conversation with POST /v1/chats/{chatId}.",
   request: {
     body: {
       required: true,
@@ -255,6 +263,8 @@ chatsRoutes.openAPIRegistry.registerPath({
   tags: ["Chats"],
   operationId: "postChatMessage",
   summary: "Post a message to an existing chat and stream the reply",
+  description:
+    "Appends a user message to the chat and streams the assistant reply. Earlier messages in the chat are included as context automatically.",
   request: {
     params: sendChatParamsSchema,
     body: {

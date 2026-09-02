@@ -1,6 +1,6 @@
 ---
 title: "Rate Limits"
-description: "Per-organization rate limits on generation, integration, and update endpoints."
+description: "Per-key, per-organization and per-IP rate limits on generation, chat, GEO and feedback endpoints, and the headers that report them."
 authors:
   - handle: dominik
 
@@ -19,30 +19,59 @@ docolin:
     - 429 errors
     - API throttling
     - retry-after
+    - RateLimit headers
   prev: ./authentication.mdx
 ---
 
-The Notra API enforces rate limits on a small set of write-heavy endpoints to protect the service. Read endpoints (listing posts, fetching brand identities, etc.) are not currently rate limited.
+The Notra API rate limits the endpoints that start model runs, scans or other expensive work. Plain reads (listing posts, visibility data, feedback, schedules and so on) and deletes are not rate limited.
 
-Limits are scoped per organization, with a sliding window. Requests made with different API keys for the same organization share the same quota. If your request would exceed the limit, the API returns `429 Too Many Requests` and the request is not executed.
+Each limited endpoint has its own bucket with a sliding window. Hitting the post-generation limit does not affect post updates or GEO scans. When a request would exceed a limit, the API returns `429 Too Many Requests` and the request is not executed.
 
 ## Limits
 
-| Endpoint | Limit |
-| --- | --- |
-| `POST /v1/posts/generate` | 10 requests / minute |
-| `PATCH /v1/posts/{postId}` | 60 requests / minute |
-| `POST /v1/brand-identities/generate` | 5 requests / minute |
-| `POST /v1/integrations/github` | 20 requests / minute |
-| `POST /v1/chats` and `POST /v1/chats/{chatId}` | 30 requests / minute |
-| `POST /v1/feedback/{organizationSlug}` | 30 requests / 10 minutes per IP address, plus 200 requests / hour per organization |
-| `POST /v1/feedback` | 120 requests / minute per credential |
+Limits are keyed in one of three ways:
 
-All other endpoints (post list/get/delete, brand list/get/delete, chat list/get, integrations list/remove, schedules) have no rate limit at this time.
+- **per key**: the bucket belongs to the API key making the request. Two keys in the same organization have separate budgets.
+- **per organization**: every key in the organization shares one bucket.
+- **per IP**: the bucket belongs to the caller's source address.
 
-<Note>
-  Limits are tracked per organization. If a request arrives without an authenticated organization, the limit is applied per IP instead. Each endpoint has its own bucket, so hitting the post-generation limit does not affect post updates.
-</Note>
+### Content
+
+| Endpoint | Limit | Keyed |
+| --- | --- | --- |
+| `POST /v1/posts/generate` | 10 requests / minute | per key |
+| `PATCH /v1/posts/{postId}` | 60 requests / minute | per key |
+| `POST /v1/brand-identities/generate` | 5 requests / minute | per key |
+| `POST /v1/integrations/github` | 20 requests / minute | per key |
+
+### Chats and Agent
+
+| Endpoint | Limit | Keyed |
+| --- | --- | --- |
+| `POST /v1/chats`, `POST /v1/chats/{chatId}` | 30 requests / minute | per organization |
+| `POST /v2/eve/v1/session`, `POST /v2/eve/v1/session/{sessionId}` | 30 requests / minute (shared with chats) | per organization |
+
+### GEO
+
+| Endpoint | Limit | Keyed |
+| --- | --- | --- |
+| `POST /v1/projects/{projectId}/geo/scans` | 4 requests / hour | per organization |
+| `POST /v1/projects/{projectId}/geo/sequences/{sequenceId}/run` | 10 requests / 10 minutes | per organization |
+| `POST /v1/projects/{projectId}/geo/prompts/import` | 10 requests / 10 minutes | per organization |
+| `POST /v1/projects/{projectId}/geo/competitors/import` | 10 requests / 10 minutes | per organization |
+| `GET /v1/projects/{projectId}/geo/competitors/suggestions` | 10 requests / 10 minutes | per organization |
+| `POST /v1/projects/{projectId}/geo/briefs` | 10 requests / 10 minutes | per organization |
+| `POST /v1/projects/{projectId}/geo/briefs/{briefId}/approve` | 20 requests / 10 minutes | per organization |
+| `POST /v1/projects/{projectId}/geo/agent-readiness/scan` | 10 requests / hour | per organization |
+
+GEO limits span all projects in the organization: four scans per hour is the total across every project, not four per project.
+
+### Feedback
+
+| Endpoint | Limit | Keyed |
+| --- | --- | --- |
+| `POST /v1/feedback/{organizationSlug}` | 30 requests / 10 minutes, plus 200 requests / hour | per IP, plus per organization |
+| `POST /v1/feedback` | 120 requests / minute | per key |
 
 <Note>
   `POST /v1/feedback/{organizationSlug}` is the one endpoint agents call without credentials, so it is limited per source IP address and per organization. Both limits apply at the same time. See [Agent Feedback](/api/agent-feedback).
@@ -50,7 +79,7 @@ All other endpoints (post list/get/delete, brand list/get/delete, chat list/get,
 
 ## Response headers
 
-Every rate-limited response (success or failure) includes both the IETF draft and legacy `X-` header names:
+Every response from a rate-limited endpoint, successful or not, includes both the IETF draft header names and the legacy `X-` names:
 
 | Header | Meaning |
 | --- | --- |
@@ -59,6 +88,8 @@ Every rate-limited response (success or failure) includes both the IETF draft an
 | `RateLimit-Reset` | Seconds until the window resets |
 | `X-RateLimit-Reset` | Unix timestamp (seconds) when the window resets |
 | `Retry-After` | Seconds to wait before retrying (only sent on `429`) |
+
+Endpoints that are not rate limited do not send these headers.
 
 ## 429 response
 
@@ -69,18 +100,23 @@ When a request is rejected, the API returns:
   "error": "Rate limit exceeded",
   "limit": 10,
   "remaining": 0,
-  "reset": 1709654400000
+  "reset": 1756800000000
 }
 ```
 
-`reset` is a Unix timestamp in **milliseconds**. The `Retry-After` header gives you the same value in seconds and is the simplest field to act on.
+`reset` is a Unix timestamp in **milliseconds**. The `Retry-After` header gives the same moment as a number of seconds to wait and is the simplest field to act on.
+
+<Note>
+  A `429` with `error: "API key rate limit exceeded"` and a `code` field comes from the authentication layer rather than an endpoint bucket. It means the key itself is throttled. See [Authentication](/api/authentication#error-responses).
+</Note>
 
 ## Best practices
 
 - Read `RateLimit-Remaining` proactively and slow down before you hit zero.
 - On `429`, wait for `Retry-After` seconds before retrying. Do not retry immediately.
 - Use exponential backoff with jitter for `5xx` responses; treat `429` as a hard wait, not a retry signal.
-- For bulk work (e.g. backfilling many posts), space requests evenly across the window rather than bursting.
+- GEO scans are the most expensive thing a key can trigger. Poll `GET /v1/projects/{projectId}/geo/scans/{scanId}` for the result instead of re-triggering.
+- For bulk work (for example backfilling many posts), space requests evenly across the window rather than bursting.
 
 ## Need higher limits?
 
@@ -89,11 +125,11 @@ If your workload genuinely needs higher limits, reach out via [GitHub](https://g
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="API Reference" icon="code" href="/api/getting-started">
-    Explore available endpoints
+  <Card title="Getting Started" icon="code" href="/api/getting-started">
+    Explore the endpoint groups
   </Card>
 
   <Card title="Authentication" icon="key" href="/api/authentication">
-    Learn about API key management
+    Scopes and auth errors
   </Card>
 </CardGroup>

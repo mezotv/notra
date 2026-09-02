@@ -46,19 +46,44 @@ export const getChatParamsSchema = z.object({
 
 export const sendChatMessageRequestSchema = z
   .object({
-    message: z.string().trim().min(1).max(50_000),
-    model: chatModelSchema.optional(),
-    enableThinking: z.boolean().optional(),
-    thinkingLevel: thinkingLevelSchema.optional(),
-    timezone: z.string().min(1).max(100).optional(),
-    context: z.array(standaloneChatContextSchema).optional(),
-    externalChannelId: externalChannelIdSchema.optional(),
+    message: z.string().trim().min(1).max(50_000).openapi({
+      description: "The user message to send.",
+      example: "Summarize what shipped in the last week.",
+    }),
+    model: chatModelSchema.optional().openapi({
+      description:
+        "Model to respond with. Defaults to auto, which lets Notra choose.",
+      example: "auto",
+    }),
+    enableThinking: z.boolean().optional().openapi({
+      description: "Allow the model to reason before answering.",
+      example: false,
+    }),
+    thinkingLevel: thinkingLevelSchema.optional().openapi({
+      description:
+        "How much reasoning effort to spend when thinking is enabled.",
+      example: "medium",
+    }),
+    timezone: z.string().min(1).max(100).optional().openapi({
+      description:
+        "IANA time zone used to interpret dates in the conversation.",
+      example: "Europe/Berlin",
+    }),
+    context: z.array(standaloneChatContextSchema).optional().openapi({
+      description:
+        "Integrations the assistant may use as tools in this chat: connected GitHub repositories, Linear teams, or MCP servers.",
+    }),
+    externalChannelId: externalChannelIdSchema.optional().openapi({
+      description:
+        "Link the chat to a Discord or Slack channel so it can be found later with GET /v1/chats/by-external.",
+    }),
   })
   .openapi("SendChatMessageRequest");
 
 export const getChatByExternalQuerySchema = z.object({
   source: externalChannelLookupSourceSchema.openapi({
     param: { name: "source", in: "query" },
+    description: "Messaging platform the channel belongs to.",
     example: "discord",
   }),
   id: z
@@ -67,6 +92,7 @@ export const getChatByExternalQuerySchema = z.object({
     .max(200)
     .openapi({
       param: { name: "id", in: "query" },
+      description: "Channel ID on that platform.",
       example: "channel_123",
     }),
 });

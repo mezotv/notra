@@ -1,6 +1,6 @@
 ---
 title: "Welcome to Notra"
-description: "Turn your team's work into ready-to-publish content with AI-powered automation"
+description: "See how AI answer engines talk about your brand, track competitors and AI traffic, and close the gaps with content"
 authors:
   - handle: dominik
 
@@ -12,16 +12,19 @@ docolin:
     - notra
   language: en
   difficulty: beginner
-  time_estimate: 6m
+  time_estimate: 7m
   status: stable
   aliases:
     - Notra overview
     - What is Notra
+    - Generative Engine Optimization
+    - GEO
+    - AI visibility
     - content automation
   next: ./quickstart.mdx
 ---
 
-Notra helps teams transform daily work, including merged pull requests, releases, commits, and Linear issues, into polished content for changelogs, blog posts, and social media updates.
+Notra is a Generative Engine Optimization (GEO) platform. It asks AI answer engines such as ChatGPT, Claude, Gemini and Perplexity the questions your buyers ask, checks whether your brand comes up, and shows you who gets recommended instead. Then it helps you fix the gaps: content gaps, a writer for briefs and articles, and a Studio that turns your GitHub and Linear activity into changelogs, blog posts and social posts.
 
 <img
   src="/images/dashboard/dashboard-light.webp"
@@ -36,37 +39,35 @@ Notra helps teams transform daily work, including merged pull requests, releases
 
 ## What is Notra?
 
-Notra is a SaaS platform that automates content creation by connecting to your team's tools and using AI to analyze activity and generate drafts. It eliminates manual effort by working in the background and adapting content to match your brand voice.
+Notra has two sides. The sidebar switches between them.
 
 <CardGroup cols={2}>
-  <Card title="Connect your tools" icon="plug">
-    Integrate GitHub and Linear to pull product and engineering activity. Slack support is planned.
+  <Card title="GEO" icon="robot">
+    Track how AI engines answer prompts about your category, measure share of voice against competitors, watch AI crawlers and referrals hit your site, score how ready your website is for AI agents, and find the questions you are missing from.
   </Card>
-  <Card title="AI-powered analysis" icon="sparkles">
-    Automatically identify high-signal updates worth sharing with your audience.
-  </Card>
-  <Card title="Generate content" icon="pen-fancy">
-    Create drafts for changelogs, blog posts, and social media in your brand voice.
-  </Card>
-  <Card title="Automate workflows" icon="bolt">
-    Set up event-driven triggers or scheduled workflows to run in the background.
+  <Card title="Studio" icon="pen-fancy">
+    Generate changelogs, blog posts, social posts and images from GitHub, Linear and meeting notes, in your brand voice, on a schedule or when something ships.
   </Card>
 </CardGroup>
 
+Every workspace lives at `app.usenotra.com/{your-slug}`. GEO tracking is scoped by **projects**, so one workspace can track several brands.
+
 ## Get started
 
+Onboarding takes four steps and ends with your first scan.
+
 <Steps>
-  <Step title="Create your organization">
-    Sign up and create your organization workspace to get started with Notra.
+  <Step title="Set up your workspace">
+    Pick a name and slug, and add your website. Notra reads the site to pick up your brand voice.
   </Step>
-  <Step title="Connect GitHub">
-    Link your first GitHub repository to start tracking meaningful activity.
+  <Step title="See what AI says about you">
+    Notra reads your website, suggests your brand name and aliases, and pulls a starter set of prompts your buyers might ask.
   </Step>
-  <Step title="Set your brand voice">
-    Configure your brand identity so AI generates content that sounds like you.
+  <Step title="Pick your competitors">
+    Choose the brands you want to be measured against. Notra suggests companies in your field.
   </Step>
-  <Step title="Generate content">
-    Create your first changelog or blog post from recent GitHub activity.
+  <Step title="Choose a plan and run your first scan">
+    Pick a plan, then run a scan from the GEO Overview to see how each engine answers.
   </Step>
 </Steps>
 
@@ -76,128 +77,151 @@ Notra is a SaaS platform that automates content creation by connecting to your t
   href="/quickstart"
   horizontal
 >
-  Follow our step-by-step guide to generate your first content in minutes.
+  Walk through onboarding, your first GEO scan, and your first generated post.
 </Card>
 
-## How Notra works
+## GEO
 
-Notra runs as an event-driven content pipeline that transforms technical activity into audience-ready content.
+The GEO sidebar has two groups: **Visibility** and **Improve**.
 
-### Generation pipeline
-
-<CardGroup cols={3}>
-  <Card title="Ingest activity" icon="download">
-    Pull updates from GitHub and Linear into a normalized format.
-  </Card>
-  <Card title="Analyze context" icon="magnifying-glass">
-    AI identifies what changed, why it matters, and what's worth sharing.
-  </Card>
-  <Card title="Generate drafts" icon="file-lines">
-    Create structured content for changelogs, blog posts, and social media.
-  </Card>
-</CardGroup>
-
-### Brand and publishing
+### Visibility
 
 <CardGroup cols={2}>
-  <Card title="Apply brand voice" icon="microphone">
-    Adapt output to your preferred tone while keeping technical accuracy.
+  <Card title="Overview" icon="chart-line" href="/geo/overview">
+    How AI engines talk about your brand: visibility over time, share of voice per engine, and the Visibility, Prompts and Journeys tabs. Run a scan from here at any time.
   </Card>
-  <Card title="Review and publish" icon="check">
-    Access ready-to-review content in your dashboard and copy it for publishing.
+  <Card title="Prompts" icon="message" href="/geo/prompts-and-competitors">
+    The questions Notra asks AI engines on your behalf. Add prompts, import a CSV, or accept suggestions from your Google Search Console queries.
+  </Card>
+  <Card title="Competitors" icon="users" href="/geo/prompts-and-competitors">
+    Who AI engines recommend instead of you, split into direct and indirect competitors.
+  </Card>
+  <Card title="Traffic" icon="wave-pulse" href="/geo/traffic">
+    AI crawlers and referrals visiting your site, captured by a small ingest package for Next.js, Nuxt or Netlify.
   </Card>
 </CardGroup>
 
-## Core features
+Feedback (Beta) also sits in this group. It collects feedback that AI agents send about your product through a public endpoint. See [Agent feedback](/api/agent-feedback).
+
+### Improve
+
+<CardGroup cols={2}>
+  <Card title="Content Gaps" icon="magnifying-glass" href="/geo/content-gaps-and-writer">
+    Questions engines answer without mentioning you, ranked so you know what to write first.
+  </Card>
+  <Card title="Agent Readiness" icon="robot" href="/geo/agent-readiness">
+    A public scan of how well AI agents can discover, understand and use your website, with a score and a Must do / Should do checklist.
+  </Card>
+  <Card title="Write" icon="pen" href="/geo/content-gaps-and-writer">
+    Plan an article from a prompt, type, brand and competitors. Approve the brief and the draft opens in Content.
+  </Card>
+  <Card title="Settings" icon="gear" href="/geo/overview">
+    Company name and aliases, scan schedule, languages, and the models each prompt runs on.
+  </Card>
+</CardGroup>
+
+## Studio
+
+Studio is the content side. Its sidebar has Home, Chat (Beta), Content, Analytics and Brand Identity, an **Automation** group with Iris, Schedules and Events, and a **Utility** group with Integrations, Skills and API Keys.
 
 ### Integrations
 
-Connect the tools your team already uses to automatically track product updates.
-
 <CardGroup cols={3}>
   <Card title="GitHub" icon="github" href="/integrations/github">
-    Track pull requests, releases, and repository activity.
+    Install the Notra GitHub App and pick repositories. Pull requests, commits and releases become content.
   </Card>
   <Card title="Linear" icon="list-check" href="/integrations/linear">
-    Monitor issue status and project progress.
+    Sync issues and updates from Linear for issue context.
   </Card>
   <Card title="Slack" icon="slack" href="/integrations/slack">
-    Capture important conversations and announcements. Coming soon.
+    Add the Notra agent to your Slack workspace to chat, draft and approve content from threads.
+  </Card>
+  <Card title="Granola" icon="microphone" href="/integrations/overview">
+    Pull meeting notes, transcripts and AI summaries from Granola.
+  </Card>
+  <Card title="Google Search Console" icon="google" href="/integrations/overview">
+    Turn the queries you already rank for into prompt suggestions for GEO tracking.
+  </Card>
+  <Card title="Framer" icon="paintbrush" href="/integrations/framer">
+    Import published content into Framer automatically.
   </Card>
 </CardGroup>
 
+Raycast and external MCP servers are also available from the Integrations page. See [Raycast](/devtools/raycast).
+
 ### Automation
 
-Set up workflows that run automatically without manual intervention.
-
-<CardGroup cols={2}>
-  <Card title="Event-based triggers" icon="bolt" href="/automation/event-based">
-    React to GitHub webhooks and generate content when releases are published or commits are pushed to the default branch.
+<CardGroup cols={3}>
+  <Card title="Iris" icon="rainbow">
+    Iris watches what you ship and drafts changelogs, blog posts with images and social posts, then asks you on Slack before anything goes live.
   </Card>
   <Card title="Scheduled workflows" icon="clock" href="/automation/scheduled">
-    Run daily, weekly, or monthly summaries on a cron schedule.
+    Run daily, weekly or monthly generation over a lookback window of up to 30 days.
+  </Card>
+  <Card title="Event-based triggers" icon="bolt" href="/automation/event-based">
+    React to GitHub release and push events and generate content when something ships.
   </Card>
 </CardGroup>
 
 ### Content types
 
-Generate multiple content formats from the same source activity.
-
 <CardGroup cols={2}>
   <Card title="Changelogs" icon="list" href="/content/changelogs">
-    Technical release notes for developers and product teams.
+    Release notes with a summary, Highlights and categorized More Updates.
   </Card>
   <Card title="Blog posts" icon="newspaper" href="/content/blog-posts">
-    Feature announcements and product updates for your blog.
+    Long-form feature announcements and product updates.
   </Card>
   <Card title="Social media" icon="share-nodes" href="/content/social-media">
-    Twitter and LinkedIn posts optimized for engagement.
+    Tweets and LinkedIn posts, publishable to connected X and LinkedIn accounts.
   </Card>
-  <Card title="Investor updates" icon="chart-line">
-    Planned progress summaries for stakeholders and investors.
+  <Card title="Images" icon="image">
+    Generated images to accompany posts, with a monthly quota per plan.
   </Card>
 </CardGroup>
 
 ### Brand identity
 
-Train Notra to write in your unique voice and style.
+Notra writes in your voice. A workspace can hold several brand identities (for example Default, Marketing, Technical), and you choose one when generating content.
 
 <Info>
-  Configure your **company profile**, **tone settings**, and **target audience** in the Brand Identity section to ensure all generated content matches your brand.
+  Each identity stores a **company name**, **website**, **description**, **tone** (Conversational, Professional, Casual or Formal, plus custom tone notes), **language**, **custom instructions**, and a description of **who you are writing for**.
 </Info>
 
 <CardGroup cols={2}>
-  <Card title="Company profile" icon="building">
-    Set your company name, description, and website URL.
+  <Card title="Company Info" icon="building">
+    The fields above. Notra can fill them by analyzing your website.
   </Card>
-  <Card title="Tone and language" icon="volume-high">
-    Choose from preset tones or define custom voice guidelines.
+  <Card title="References" icon="quote-left">
+    Real posts and writing samples that help the AI match your style.
   </Card>
-  <Card title="Target audience" icon="users">
-    Describe who you're writing for to optimize messaging.
+  <Card title="Sitemap" icon="sitemap">
+    Track indexed pages and monitor site health for AI discovery.
   </Card>
-  <Card title="Custom instructions" icon="list-check">
-    Add specific rules for AI-generated content.
+  <Card title="Brand Guidelines" icon="palette">
+    Logos, colors, typography and landing page screenshots pulled from your site.
   </Card>
 </CardGroup>
+
+Read more in [Brand Voice](/concepts/brand-voice).
 
 ## What you can build
 
 <AccordionGroup>
-  <Accordion title="Automated weekly changelogs" icon="calendar">
-    Set up a **scheduled workflow** that runs every Friday at 5 PM UTC to generate a changelog from the week's merged PRs across your repositories. Content is created in draft status for review and manual publishing.
+  <Accordion title="Weekly AI visibility check" icon="calendar">
+    Set the scan schedule to **Every week** in GEO Settings, keep 10 to 20 prompts and your top competitors tracked, and review share of voice on the Overview each Monday. Content Gaps shows which questions to write for next.
+  </Accordion>
+
+  <Accordion title="Fill a content gap" icon="pen">
+    Open **Content Gaps**, pick a question where competitors are mentioned and you are not, and click **Write**. Approve the brief, wait for the draft to land in Content, edit it, and publish.
   </Accordion>
 
   <Accordion title="Instant release notes" icon="rocket">
-    Configure an **event-based trigger** that listens for GitHub release events and immediately generates formatted release notes with feature highlights, bug fixes, and breaking changes.
+    Create an **event-based trigger** for GitHub release events with the Changelog output type. Every published release becomes a draft changelog in your brand voice.
   </Accordion>
 
-  <Accordion title="Social media pipeline" icon="megaphone">
-    Create **multiple content types** from the same source activity. When a release is published, generate a technical changelog entry, a blog post draft, and Twitter/LinkedIn announcements.
-  </Accordion>
-
-  <Accordion title="Monthly product summaries" icon="chart-simple">
-    Schedule a **monthly summary** that analyzes activity across all repositories and generates a blog post or changelog highlighting shipped work and key achievements.
+  <Accordion title="Weekly engineering update" icon="chart-simple">
+    Create a **schedule** that runs weekly with a last 7 days lookback across your repositories and the Blog post output type. Turn on auto-publish once you trust the output.
   </Accordion>
 </AccordionGroup>
 
@@ -205,16 +229,15 @@ Train Notra to write in your unique voice and style.
 
 <CardGroup cols={2}>
   <Card title="Quickstart" icon="bolt" href="/quickstart">
-    Generate your first content in under 5 minutes.
+    Onboarding, first scan, first post.
+  </Card>
+  <Card title="GEO overview" icon="robot" href="/geo/overview">
+    How scans, prompts, engines and share of voice work.
   </Card>
   <Card title="API reference" icon="code" href="/api/getting-started">
-    Programmatically access content and trigger workflows.
+    Read visibility data, manage prompts and competitors, and trigger workflows.
   </Card>
   <Card title="MCP server" icon="sparkles" href="/devtools/mcp">
     Let AI agents manage Notra on your behalf.
   </Card>
 </CardGroup>
-
-<Note>
-  **Need help getting started?** Check out our [Quickstart guide](/quickstart) or explore our [GitHub repository](https://github.com/usenotra/notra) to see the open-source codebase.
-</Note>

@@ -1,6 +1,6 @@
 ---
 title: "Pagination"
-description: "Learn how to use pagination in the Notra API."
+description: "Page through posts, feedback and GEO scan history with page and limit."
 authors:
   - handle: dominik
 
@@ -13,7 +13,7 @@ docolin:
     - typescript
   language: en
   difficulty: beginner
-  time_estimate: 10m
+  time_estimate: 8m
   status: stable
   aliases:
     - API pagination
@@ -24,29 +24,31 @@ docolin:
   next: ./types.mdx
 ---
 
-Notra uses offset-based pagination for list endpoints. Each response includes a
-`pagination` object so you can build paging controls in your UI.
+Notra uses page-based pagination on the list endpoints that can grow without bound. Each of them takes `page` and `limit` query parameters and returns a `pagination` object you can build paging controls from.
 
-## How Pagination Works
+## Paginated endpoints
 
-When you request a list of posts, the response includes pagination metadata so
-you can:
+| Endpoint | Default `limit` | Max `limit` | Items key |
+| --- | --- | --- | --- |
+| `GET /v1/posts` | 10 | 100 | `posts` |
+| `GET /v1/feedback` | 25 | 100 | `feedback` |
+| `GET /v1/projects/{projectId}/geo/scans` | 20 | 100 | `scans` |
 
-- Control how many items each request returns
-- Move between pages
-- Know how many total items exist
-- Build clear pagination controls
+Other list endpoints are not paginated. Brand identities, integrations, schedules, event triggers, chats, skills, GEO projects, prompts, sequences, competitors and briefs return the full list. GEO traffic endpoints (`traffic/log`, `traffic/journeys`, `traffic/pages`) and `GET /v2/agent-chats` accept a `limit` only and return the most recent items. Visibility and traffic reads are windowed by `days` or `from`/`to` instead.
 
 ## Query Parameters
 
 <ParamField query="limit" type="integer" default="10">
-  The maximum number of items to return per page. **Range:** 1-100 items per
-  page
+  Items per page. **Range:** 1 to 100. The default depends on the endpoint (see the table above).
 </ParamField>
 
 <ParamField query="page" type="integer" default="1">
-  The page number to retrieve. Pages start at 1. **Minimum:** 1
+  The page number to retrieve. Pages start at 1.
 </ParamField>
+
+Out-of-range values are rejected rather than clamped: `limit=500` or `page=0` returns `400` with an `error` such as `limit: Too big: expected number to be <=100`.
+
+`GET /v1/posts` also accepts `sort` (`asc` or `desc` by creation date, default `desc`) and the comma-separated filters `status`, `contentType` and `brandIdentityId`. `GET /v1/feedback` accepts `status`, `kind` and `projectId`.
 
 ## Pagination Response
 
@@ -57,27 +59,27 @@ Every paginated response includes a `pagination` object:
 
   <Expandable title="Pagination properties">
     <ResponseField name="limit" type="integer">
-      The number of items requested per page (matches your query parameter).
+      The number of items per page (matches your query parameter or the endpoint default).
     </ResponseField>
 
     <ResponseField name="currentPage" type="integer">
-      The current page number being returned.
+      The page number being returned.
     </ResponseField>
 
     <ResponseField name="nextPage" type="integer | null">
-      The next page number, or `null` if you're on the last page.
+      The next page number, or `null` when there is no next page.
     </ResponseField>
 
     <ResponseField name="previousPage" type="integer | null">
-      The previous page number, or `null` if you're on the first page.
+      The previous page number, or `null` on page 1.
     </ResponseField>
 
     <ResponseField name="totalPages" type="integer">
-      The total number of pages available.
+      The total number of pages. Always at least `1`, even when there are no items.
     </ResponseField>
 
     <ResponseField name="totalItems" type="integer">
-      The total number of items across all pages.
+      The total number of items across all pages after filters are applied.
     </ResponseField>
 
   </Expandable>
@@ -138,6 +140,16 @@ const result = await notra.content.listPosts({
 </CodeGroup>
 
 </Tab>
+
+<Tab title="Feedback">
+Page through new feedback, 50 per page:
+
+```bash cURL
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+  "https://api.usenotra.com/v1/feedback?status=new&limit=50&page=1"
+```
+
+</Tab>
 </Tabs>
 
 ## Building Pagination Controls
@@ -165,8 +177,6 @@ const itemCount = `${pagination.totalItems} total items`;
 ```
 
 ```typescript SDK
-import type { Pagination } from "@usenotra/sdk/models/operations";
-
 const result = await notra.content.listPosts({
   page: 1,
   limit: 10,
@@ -186,15 +196,19 @@ const itemCount = `${pagination.totalItems} total items`;
 {
   "posts": [
     {
-      "id": "YOUR_POST_ID",
-      "title": "February 12-19, 2026 Release",
-      "content": "<p>This week brought meaningful improvements to organization management, scheduling, and mobile responsiveness.</p><h2>Highlights</h2><h3>Organization membership unification with server validation</h3><p>Leave and delete operations now use consistent, validated server logic with atomic operations to prevent race conditions on concurrent requests.</p>",
-      "markdown": "This week brought meaningful improvements to organization management, scheduling, and mobile responsiveness.\n\n## Highlights\n\n### Organization membership unification with server validation\nLeave and delete operations now use consistent, validated server logic with atomic operations to prevent race conditions on concurrent requests.",
+      "id": "post_abc",
+      "title": "August 24-31, 2026 Release",
+      "slug": "august-24-31-2026-release",
+      "content": "<p>This week brought meaningful improvements to scheduling and mobile responsiveness.</p>",
+      "htmlUrl": null,
+      "markdown": "This week brought meaningful improvements to scheduling and mobile responsiveness.",
+      "rawHtml": null,
+      "recommendations": null,
       "contentType": "changelog",
       "sourceMetadata": null,
       "status": "published",
-      "createdAt": "2026-02-19T11:32:54.082Z",
-      "updatedAt": "2026-02-19T11:32:54.082Z"
+      "createdAt": "2026-08-31T11:32:54.082Z",
+      "updatedAt": "2026-08-31T11:32:54.082Z"
     }
   ],
   "pagination": {
@@ -204,6 +218,12 @@ const itemCount = `${pagination.totalItems} total items`;
     "previousPage": null,
     "totalPages": 1,
     "totalItems": 1
+  },
+  "organization": {
+    "id": "org_123",
+    "slug": "acme",
+    "name": "Acme",
+    "logo": null
   }
 }
 ```
@@ -220,19 +240,12 @@ const itemCount = `${pagination.totalItems} total items`;
     "previousPage": null,
     "totalPages": 1,
     "totalItems": 0
-  }
-}
-```
-</ResponseExample>
-
-<ResponseExample>
-```json Error - Invalid Page
-{
-  "error": "Invalid page number",
-  "details": {
-    "message": "Page 2 does not exist.",
-    "totalPages": 1,
-    "requestedPage": 2
+  },
+  "organization": {
+    "id": "org_123",
+    "slug": "acme",
+    "name": "Acme",
+    "logo": null
   }
 }
 ```
@@ -240,17 +253,17 @@ const itemCount = `${pagination.totalItems} total items`;
 
 ## Best Practices
 
-- Use a distinct cache key for each combination of `page`, `limit`, `sort`, `status`, and `contentType`.
+- Use a distinct cache key for each combination of `page`, `limit`, `sort` and filters.
 - Invalidate paginated list caches after post updates, deletes, and completed generation jobs.
 - For a fuller strategy, see [Caching](/api/caching).
 
 <Tip>
-  **Performance:** Use smaller page sizes (5-20 items), especially for mobile
+  **Performance:** Use smaller page sizes (5 to 20 items), especially for mobile
   clients.
 </Tip>
 
 <Tip>
-  **Empty states:** Always handle `posts: []` in your UI.
+  **Empty states:** Always handle an empty items array in your UI.
 </Tip>
 
 <Note>
@@ -258,39 +271,22 @@ const itemCount = `${pagination.totalItems} total items`;
   These values are `null` when movement is not possible.
 </Note>
 
-<Tip>
-  **UI state:** `pagination` already contains everything you need for page state:
-  current page, total pages, next, and previous.
-</Tip>
-
-## Error Handling
+## Edge Cases
 
 <AccordionGroup>
-<Accordion title="Invalid page number">
-  If you request a page that does not exist, the API returns an error response:
-  
-  ```json
-  {
-    "error": "Invalid page number",
-    "details": {
-      "message": "Page 2 does not exist.",
-      "totalPages": 1,
-      "requestedPage": 2
-    }
-  }
-  ```
-  
-  Check for an `error` field before reading pagination values.
+<Accordion title="Page past the end">
+  Requesting a page beyond `totalPages` is not an error. The API returns `200` with an empty items array, `nextPage: null` and `previousPage` set to the page before the one you asked for. Stop paging when `nextPage` is `null` rather than guessing page numbers.
 </Accordion>
 
-<Accordion title="Invalid limit value">
-  - Values below `1` default to `1`
-  - Values above `100` are capped at `100`
-  - Non-numeric values default to `10`
+<Accordion title="Invalid limit or page">
+  Values outside the allowed range are rejected with `400` and an `error` message naming the parameter. Non-numeric values fail the same way. Nothing is silently clamped.
 </Accordion>
 
 <Accordion title="Empty datasets">
-  When there are no items, `totalPages` is `0`, `totalItems` is `0`, and
-  `posts` is an empty array.
+  When there are no items, `totalItems` is `0`, `totalPages` is `1`, the items array is empty, and both `nextPage` and `previousPage` are `null`.
+</Accordion>
+
+<Accordion title="Filters and totals">
+  `totalItems` and `totalPages` reflect the filtered result set. On `GET /v1/posts`, omitting `status` returns only `published` posts; pass `status=draft,published` to count drafts too.
 </Accordion>
 </AccordionGroup>

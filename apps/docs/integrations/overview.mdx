@@ -1,6 +1,6 @@
 ---
 title: "Integrations Overview"
-description: "Connect your tools to Notra for AI-powered content automation"
+description: "Connect GitHub, Linear, Slack, Granola, Google Search Console, Framer, Raycast, and MCP servers to Notra"
 authors:
   - handle: dominik
 
@@ -18,121 +18,144 @@ docolin:
     - integrations overview
     - input sources
     - output destinations
+    - MCP servers
+    - integration store
   next: ./github.mdx
 ---
 
-Notra connects to your existing workflow tools to gather information for AI-generated content. Integrations are organized into input sources and planned output destinations.
+Integrations live at **Integrations** in the dashboard sidebar (`app.usenotra.com/{org-slug}/integrations`). The page has four tabs: **All**, **Input**, **Output**, and **Extensions**. Below the tabs, a section called **From the integration store** lists MCP servers published by the Notra community.
 
-## Input Sources
+## Input sources
 
-Input sources provide the raw material for your AI-generated content. Notra analyzes activity from these tools to create changelogs, blog posts, social media updates, and more.
+Input sources feed data into Notra. GitHub and Linear power the Studio content pipeline (changelogs, blog posts, social posts). Slack gives you a chat channel with the Notra agent. Granola brings meeting notes into chat and content workflows. Google Search Console feeds GEO prompt suggestions.
 
 <CardGroup cols={2}>
   <Card title="GitHub" icon="github" href="/integrations/github">
-    Pull data from pull requests, issues, and releases to generate technical content
+    Install the Notra GitHub App and pick repositories. Commits, merged pull requests, and releases become changelogs, blog posts, and social posts.
   </Card>
 
   <Card title="Linear" icon="infinity" href="/integrations/linear" iconType="duotone">
-    Sync issues and project updates
+    Authorize a Linear workspace with OAuth. Completed issues are a data source next to GitHub activity.
   </Card>
 
   <Card title="Slack" icon="slack" href="/integrations/slack">
-    Track announcements and team updates (Coming Soon)
+    Install the Notra agent in your workspace. Mention it in a thread to chat, draft, and approve content from Slack.
+  </Card>
+
+  <Card title="Granola" icon="microphone" href="/integrations/granola">
+    Connect Granola with an API key. The agent can read meeting notes, AI summaries, and transcripts.
+  </Card>
+
+  <Card title="Google Search Console" icon="google" href="/integrations/google-search-console">
+    Turn the search queries you already rank for into suggested GEO prompts. Managed from the GEO Prompts page.
   </Card>
 </CardGroup>
 
-### What Notra Pulls from Input Sources
-
-* **Pull Requests**: Code changes, descriptions, and merged features
-* **Issues**: Bug reports, feature requests, and their resolutions
-* **Releases**: Version tags and release notes
-* **Commits**: Code activity and development progress
-* **Linear Issues**: Project updates and completed work from connected Linear workspaces
-
-## Output Destinations
-
-Output destinations are planned publishing integrations for your generated content.
+## Output destinations
 
 <CardGroup cols={2}>
-  <Card title="Framer" icon="square" iconType="duotone">
-    Publish directly to your Framer site (Coming Soon)
-  </Card>
-
-  <Card title="Marble" icon="circle" iconType="duotone">
-    Sync to Marble CMS (Coming Soon)
-  </Card>
-
-  <Card title="Webflow" icon="cube" iconType="duotone">
-    Push content to Webflow CMS (Coming Soon)
+  <Card title="Framer" icon="square" href="/integrations/framer" iconType="duotone">
+    Pull posts into a Framer site with the Notra plugin from the Framer Marketplace. Uses a read-only API key.
   </Card>
 </CardGroup>
 
 <Info>
-  Currently, all generated content is available in your Notra dashboard for review and manual publishing. Output integrations will publish content automatically when they become available.
+  Framer is the only output integration in the dashboard today. Other publishing paths run through Notra itself: social posts publish to X and LinkedIn from the Content page, and any CMS can read posts through the [API](/api/getting-started).
 </Info>
 
-## Content Types
+## Extensions
 
-Notra can generate four active content types from your connected integrations:
+<CardGroup cols={2}>
+  <Card title="Raycast" icon="terminal" href="/devtools/raycast">
+    Search posts, copy content, and manage workflows from Raycast. The Integrations page shows a setup guide; the extension itself needs a read and write API key.
+  </Card>
+</CardGroup>
+
+## MCP servers
+
+The **MCP Servers** card on the Integrations page opens `integrations/mcp`, where you connect external MCP servers so the Notra agent can use their tools and data.
+
+* **Custom servers**: add any remote MCP server by name and URL (`https://` is prepended for you). Authentication is one of **None** (public server), **Headers** (an API key, bearer token, or custom headers), or **OAuth** (you are redirected to the server to approve access, and Notra stores an encrypted refresh token and renews access automatically).
+* **Integration store**: servers published by the Notra community appear under **From the integration store**. Connecting one either needs no credentials, asks for your own headers, or starts an OAuth flow, depending on how the listing was published. Deep links of the form `app.usenotra.com/{org-slug}/integrations/{listing-slug}` open the connect dialog for a listing directly.
+* Notra tests the connection while you add a server. Each connected server can be enabled, disabled, deleted, or have its tool list refreshed from its card.
+
+<Note>
+  This is the reverse direction from Notra's own MCP server, which lets AI tools like Claude or Cursor call Notra. For that, see [MCP Server](/devtools/mcp).
+</Note>
+
+## Community integrations
+
+<CardGroup cols={2}>
+  <Card title="Featul" icon="list" href="/integrations/featul">
+    Import Notra changelog content into Featul. Built and supported by Featul.
+  </Card>
+
+  <Card title="Kontentspace" icon="robot" href="/integrations/kontentspace">
+    A former community connector for the Notra MCP. The service is no longer reachable.
+  </Card>
+</CardGroup>
+
+## Content types from input sources
+
+When you create content from GitHub or Linear activity, Notra can generate:
 
 <Steps>
   <Step title="Changelog">
-    Automatically generated release notes highlighting new features, bug fixes, and improvements from your GitHub activity.
+    Release notes grouped from merged pull requests, pushes, and releases.
   </Step>
 
-  <Step title="Blog Post">
-    In-depth articles about features, technical decisions, and product updates based on merged pull requests and releases.
+  <Step title="Blog post">
+    Long-form articles about a feature or release.
   </Step>
 
-  <Step title="Twitter Post">
-    Short-form social media updates announcing new releases and features.
+  <Step title="X post">
+    Short updates announcing releases and features.
   </Step>
 
-  <Step title="LinkedIn Post">
-    Professional social media content highlighting product updates and team achievements.
+  <Step title="LinkedIn post">
+    Professional updates about product and engineering progress.
   </Step>
-
 </Steps>
 
-## Getting Started
+Each repository you add through the GitHub App starts with changelog, blog post, and X post outputs enabled. LinkedIn posts and images are available when you create content or schedules.
+
+## Getting started
 
 <Steps>
-  <Step title="Connect a Source">
-    Start by connecting GitHub to pull in your development activity. This provides the foundation for all automated content.
+  <Step title="Connect a source">
+    Install the GitHub App, or connect Linear, and pick what Notra can read.
   </Step>
 
-  <Step title="Configure Content Types">
-    Choose which content types to generate. Enable changelog for release notes, blog posts for feature announcements, or social posts for quick updates.
+  <Step title="Generate content">
+    Open **Content** and create a changelog, blog post, or social post from recent activity. Pick the repositories and Linear workspaces to include.
   </Step>
 
-  <Step title="Set Up Automation">
-    Create triggers to automatically generate content when events occur, like publishing a release or merging to your main branch.
+  <Step title="Automate">
+    Use [schedules](/automation/scheduled) for recurring content, or [event triggers](/automation/event-based) that fire on GitHub webhooks.
   </Step>
 
-  <Step title="Review and Publish">
-    Generated content appears in your dashboard. Review, edit, and copy it for publishing. Output integrations are planned.
+  <Step title="Publish">
+    Review drafts in the dashboard, publish social posts, or pull posts into Framer or your own site through the API.
   </Step>
 </Steps>
 
-## Permissions and Security
-
-Notra takes security seriously. Here's what you need to know:
+## Permissions and security
 
 <Note>
-  * **Read-only access**: Notra only reads data from your integrations. We never write, modify, or delete your data.
-  * **Selective permissions**: You control which repositories and integrations Notra can access.
-  * **Token storage**: All authentication tokens are encrypted at rest.
-  * **Remove anytime**: Disconnect integrations from your dashboard at any time.
+  * **Read access to your sources**: GitHub, Linear, Granola, and Google Search Console are read-only connections. Slack needs write access to post replies in threads.
+  * **Selective access**: you choose which repositories the GitHub App can see, which Search Console property to analyze, and which Slack channels the agent may respond in.
+  * **Encrypted credentials**: access tokens, API keys, webhook secrets, and MCP OAuth refresh tokens are encrypted at rest.
+  * **Remove anytime**: every integration can be disabled or deleted from its page in the dashboard.
 </Note>
 
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
   <Card title="Connect GitHub" icon="github" href="/integrations/github">
-    Set up your first integration to start generating content
+    Install the GitHub App and pick repositories
   </Card>
 
-  <Card title="Create Automation" icon="wand-magic-sparkles" href="/automation/overview">
-    Learn how to automate content generation with triggers
+  <Card title="Create automation" icon="wand-magic-sparkles" href="/automation/overview">
+    Schedules and event triggers for generated content
   </Card>
 </CardGroup>

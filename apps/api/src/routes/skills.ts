@@ -36,6 +36,8 @@ const listSkillsRoute = createRoute({
   tags: ["Skills"],
   operationId: "listSkills",
   summary: "List skills",
+  description:
+    "Returns the organization's skills sorted by name, including built-in system skills (isSystem: true). Skill content is omitted; use GET /v1/skills/{name} to read it.",
   responses: {
     200: {
       description: "Skills fetched successfully",
@@ -73,6 +75,8 @@ const createSkillRoute = createRoute({
   tags: ["Skills"],
   operationId: "createSkill",
   summary: "Create a skill",
+  description:
+    "Creates a custom skill. Names must be unique within the organization.",
   request: {
     body: {
       required: true,
@@ -98,6 +102,8 @@ const patchSkillRoute = createRoute({
   tags: ["Skills"],
   operationId: "patchSkill",
   summary: "Update a skill",
+  description:
+    "Updates the name, description, or content of a skill. System skills can be edited but not renamed.",
   request: {
     params: skillParamsSchema,
     body: {
@@ -112,7 +118,7 @@ const patchSkillRoute = createRoute({
     },
     400: errorResponse("Invalid path params or request body"),
     401: errorResponse("Missing or invalid API key"),
-    403: errorResponse("Forbidden"),
+    403: errorResponse("Forbidden, or attempt to rename a system skill"),
     404: errorResponse(SKILL_NOT_FOUND_ERROR),
     409: errorResponse("Skill name already exists"),
     503: errorResponse("Authentication service unavailable"),
@@ -125,6 +131,7 @@ const deleteSkillRoute = createRoute({
   tags: ["Skills"],
   operationId: "deleteSkill",
   summary: "Delete a skill",
+  description: "Deletes a custom skill. System skills cannot be deleted.",
   request: { params: skillParamsSchema },
   responses: {
     200: {
@@ -133,7 +140,7 @@ const deleteSkillRoute = createRoute({
     },
     400: errorResponse("Invalid path params"),
     401: errorResponse("Missing or invalid API key"),
-    403: errorResponse("Forbidden"),
+    403: errorResponse("Forbidden, or attempt to delete a system skill"),
     404: errorResponse(SKILL_NOT_FOUND_ERROR),
     503: errorResponse("Authentication service unavailable"),
   },

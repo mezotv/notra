@@ -24,16 +24,16 @@ docolin:
 ---
 
 <Warning>
-  This integration is community-supported. We are not affiliated with Featul and do not provide official support for this integration.
+  This integration is built and maintained by Featul. Notra is not affiliated with Featul and does not provide support for it. It does not appear on the Integrations page in the Notra dashboard.
 </Warning>
 
-This guide explains how to connect Notra to [Featul](https://www.featul.com/) and import changelog content.
+This guide explains how to connect Notra to [Featul](https://www.featul.com/) and import changelog content. Featul reads your posts through the Notra public API.
 
 ## Prerequisites
 
 - Access to a Featul workspace.
-- A Notra Organization ID.
-- A Notra API key.
+- Your Notra Organization ID.
+- A Notra API key with read access to posts (`posts.read`).
 
 ## Connect Notra to Featul
 
@@ -47,10 +47,10 @@ This guide explains how to connect Notra to [Featul](https://www.featul.com/) an
 
 ### Where to find your Notra credentials
 
-1. Open Notra and select your organization.
+1. Open the Notra dashboard and select your organization.
 2. Copy the **Organization ID** from **Settings** > **General**.
-3. Create an **API Key** under **Developer** > **API Keys**.
-4. Return to Featul and paste both values into the **Import from Notra** dialog as seen above.
+3. Create an API key under **API Keys** in the sidebar. Read access to posts is enough.
+4. Return to Featul and paste both values into the **Import from Notra** dialog.
 
 ## Notes
 
@@ -59,4 +59,7 @@ This guide explains how to connect Notra to [Featul](https://www.featul.com/) an
 </Note>
 <Note>
   You can update previously imported entries by enabling **Update existing imports**.
+</Note>
+<Note>
+  Questions about the import dialog itself go to Featul. Questions about API keys or the posts API go to Notra support.
 </Note>

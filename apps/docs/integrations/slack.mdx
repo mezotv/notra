@@ -1,240 +1,109 @@
 ---
 title: "Slack Integration"
-description: "Track updates and announcements from Slack to generate automated content"
+description: "Install the Notra agent in Slack to chat, draft, and approve content from threads, mirrored into the dashboard"
 authors:
   - handle: dominik
 
 docolin:
   schema_version: 1
   kind: tools/notra/integrations/slack
-  type: explanation
+  type: how-to
   applies_to:
     - notra
     - slack-workspace
   language: en
   difficulty: beginner
   time_estimate: 8m
-  status: draft
+  status: stable
   aliases:
     - Slack integration
-    - Slack coming soon
-    - monitor channels
+    - Notra agent in Slack
+    - Slack channel access
+    - Add to Slack
   prev: ./linear.mdx
-  next: ./framer.mdx
+  next: ./granola.mdx
 ---
 
-<Note>
-  The Slack integration is **coming soon**. This feature is under active development and will be available in a future release.
-</Note>
+The Slack integration installs the Notra agent in your workspace. Mention it in a channel or message it directly to chat, turn a thread into a draft, save references, and approve actions with buttons. Public-channel conversations are mirrored into the dashboard so the rest of your team can read them.
 
-The Slack integration will enable Notra to monitor your workspace for important updates, announcements, and decisions that can be transformed into external-facing content.
+## What you can do
 
-## Planned Features
+* **Chat with the agent in threads**: mention the app in a channel. Once the agent owns a thread, plain replies in that thread continue the same conversation without another mention.
+* **Direct messages**: message the app directly from its Messages tab.
+* **Draft from a thread**: ask the agent to turn a discussion or announcement into a post. Drafts are saved to your Notra content library and the agent confirms with "Saved as a draft".
+* **Save references**: ask the agent to remember something for brand context. It confirms with "Saved as a reference".
+* **Approve with buttons**: actions that need a human decision, including posting to X, show confirmation buttons in the thread.
+* **Mirrored history**: public-channel threads with the agent appear as read-only sessions under **Chat** in the dashboard.
+* **Notifications**: pick a channel where the agent posts activity updates, such as new drafts and completed work.
 
-When the Slack integration launches, you'll be able to:
+## Install
 
-* **Monitor specific channels**: Track announcement channels, product updates, or engineering discussions
-* **Capture decisions**: Turn internal discussions into external-facing content
-* **Track milestones**: Monitor team achievements and product launches
-* **Aggregate updates**: Compile weekly or monthly summaries from Slack activity
+<Steps>
+  <Step title="Open the Slack card">
+    In the dashboard sidebar, open **Integrations** and click **Connect** on the **Slack** card, or open the Slack page and click **Add to Slack**.
+  </Step>
 
-## What Content Can Be Generated
+  <Step title="Approve the installation">
+    The **Add Slack Integration** dialog explains what happens next. Click **Add to Slack**. Slack shows the permissions listed below; approve them for the workspace you want to connect. The link is valid for 10 minutes.
+  </Step>
 
-The Slack integration will support these content types:
+  <Step title="Choose where the agent responds">
+    Back in Notra, the Slack page shows the connected workspace with two settings cards, **Channel access** and **Notifications channel**. See below.
+  </Step>
+
+  <Step title="Mention the app">
+    In Slack, mention the app in an allowed channel or open a DM with it. If the agent is not enabled in a channel it replies: "The Notra agent is not enabled in this channel. An admin can enable it from the Slack integration settings in the Notra dashboard."
+  </Step>
+</Steps>
+
+## Settings
+
+### Channel access
+
+Everyone in your workspace can use the agent. People outside your workspace, including Slack Connect guests, cannot. By default the agent responds anywhere it is mentioned. Turn on **Limit to specific channels** and select channels to restrict it; use **Refresh channels from Slack** if a new channel is missing from the list. Click **Save changes** to apply.
+
+<Tip>
+  Approval buttons in a shared channel can be pressed by anyone who can see them. Limit the agent to channels whose members you trust to approve actions.
+</Tip>
+
+### Notifications channel
+
+Choose a channel where the agent posts activity updates. Set it to none to turn notifications off.
+
+### Enable, disable, delete
+
+From the workspace card menu you can disable the integration (the agent stops responding), re-enable it, or delete it. Deleting removes the stored bot token from Notra; also remove the app from Slack to revoke access there.
+
+## Permissions
+
+The Slack app requests these bot scopes:
+
+| Scope                              | Why                                                                            |
+| ---------------------------------- | ------------------------------------------------------------------------------ |
+| `app_mentions:read`                | Receive mentions of the app                                                    |
+| `chat:write`                       | Reply in threads and post notifications                                        |
+| `channels:history`, `groups:history` | Read the thread the agent was mentioned in, in public and private channels   |
+| `channels:read`, `groups:read`     | Resolve channel names and visibility for the channel picker and mirroring     |
+| `im:history`                       | Read direct messages sent to the app                                           |
+| `files:read`                       | Read attachments shared with the agent                                         |
+| `assistant:write`                  | Enable Slack's assistant experience for the app                                |
+
+The agent only reads a thread once it is mentioned or messaged in it. It does not scan channels for keywords or emoji reactions, and it does not read other threads. Private-channel and DM conversations are not mirrored into the dashboard.
+
+## Limits
+
+- One connection per Slack workspace, and a workspace can belong to only one Notra organization. Connecting it again shows "This Slack workspace is already connected".
+- Slack conversations count against your organization's agent usage like dashboard chat does.
+- Slack is a chat channel for the agent, not a data source for schedules. Use GitHub, Linear, or Granola for that.
+
+## Related
 
 <CardGroup cols={2}>
-  <Card title="Blog Post" icon="newspaper">
-    Transform internal product updates and launch announcements into customer-facing blog posts.
+  <Card title="GitHub integration" icon="github" href="/integrations/github">
+    Turn commits, merged pull requests, and releases into content
   </Card>
 
-  <Card title="Changelog" icon="list-check">
-    Convert engineering updates and release notes into formatted changelogs.
-  </Card>
-
-  <Card title="Social Posts" icon="share-nodes">
-    Create Twitter and LinkedIn posts from team announcements and achievements.
-  </Card>
-
-  <Card title="Investor Update" icon="chart-line">
-    Compile milestone updates and progress summaries for investors.
+  <Card title="Granola" icon="microphone" href="/integrations/granola">
+    Give the agent access to meeting notes and transcripts
   </Card>
 </CardGroup>
-
-## Expected Setup Process
-
-When available, connecting Slack will involve:
-
-<Steps>
-  <Step title="Install Slack App">
-    Add the Notra app to your Slack workspace using the Slack App Directory.
-  </Step>
-
-  <Step title="Select Channels">
-    Choose which channels Notra can monitor. Typically announcement or product update channels.
-  </Step>
-
-  <Step title="Configure Triggers">
-    Set up keywords or emoji reactions that signal content-worthy updates.
-  </Step>
-
-  <Step title="Set Content Preferences">
-    Choose what types of content to generate from Slack activity and how to handle mentions or threads.
-  </Step>
-</Steps>
-
-## Planned Permissions
-
-The Slack integration will request:
-
-* **Read access to messages**: View messages in channels you authorize
-* **Read channel information**: Access channel names and descriptions
-* **Read user profiles**: Attribute quotes and updates to team members
-
-<Warning>
-  Notra will **never** read private messages or direct messages. Only public channels you explicitly authorize will be accessible.
-</Warning>
-
-## Use Cases
-
-### Product Launch Announcements
-
-Turn internal launch announcements into external content:
-
-1. Team announces a new feature in `#product-updates`
-2. Message is tagged with a specific emoji (e.g., 📢)
-3. Notra generates a customer-facing blog post
-4. Content includes feature benefits, screenshots, and usage examples
-
-### Weekly Engineering Updates
-
-Aggregate engineering progress into changelogs:
-
-1. Engineers post daily updates in `#engineering`
-2. At week's end, Notra compiles all updates
-3. Generate a formatted changelog of shipped features
-4. Publish to your documentation or blog
-
-### Investor Reporting
-
-Create quarterly updates from milestone announcements:
-
-1. Monitor `#milestones` channel for key achievements
-2. Track metrics shared in `#analytics`
-3. Aggregate into quarterly summary
-4. Generate a comprehensive investor update with context and supporting details
-
-## How Content Selection Will Work
-
-Several mechanisms will help Notra identify content-worthy updates:
-
-### Emoji Reactions
-
-React to messages with a specific emoji (e.g., 📝 or ✨) to flag them for content generation.
-
-### Keywords
-
-Configure keywords like "shipped", "launched", or "released" that trigger content creation.
-
-### Thread Detection
-
-Important discussions in threads can be transformed into blog posts or documentation.
-
-### Channel Monitoring
-
-Monitor entire channels dedicated to announcements or updates.
-
-<Info>
-  You'll have full control over what gets turned into content. Notra will show you the source messages and let you approve or reject suggestions.
-</Info>
-
-## Data Privacy and Security
-
-Slack integration will prioritize privacy:
-
-<Steps>
-  <Step title="Explicit Authorization">
-    You choose exactly which channels Notra can access. No blanket workspace access.
-  </Step>
-
-  <Step title="No DM Access">
-    Notra will never access direct messages or private channels unless explicitly shared.
-  </Step>
-
-  <Step title="Content Review">
-    All generated content will be reviewable before publishing. Internal discussions stay internal until you approve.
-  </Step>
-
-  <Step title="Token Security">
-    Slack authentication tokens will be encrypted and can be revoked at any time.
-  </Step>
-</Steps>
-
-## Webhook Events
-
-Planned events that will trigger content generation:
-
-* **Message posted in monitored channel**: With matching keywords or emoji reactions
-* **Thread marked as important**: Using specific emoji or slash commands
-* **Scheduled aggregation**: Daily or weekly summaries of channel activity
-
-## Filtering and Control
-
-You'll have fine-grained control over what gets processed:
-
-| Filter Type           | Description                                      |
-| --------------------- | ------------------------------------------------ |
-| **Channel whitelist** | Only monitor specific channels                   |
-| **User filtering**    | Ignore or prioritize messages from certain users |
-| **Keyword matching**  | Trigger on specific words or phrases             |
-| **Emoji reactions**   | Flag messages for content generation             |
-| **Time-based**        | Only process messages during business hours      |
-
-## Best Practices (When Available)
-
-To get the most from the Slack integration:
-
-<Steps>
-  <Step title="Use Dedicated Channels">
-    Create channels specifically for announcements that should become external content. For example, `#public-updates` or `#changelog-items`.
-  </Step>
-
-  <Step title="Write Clear Messages">
-    When posting updates you want to share externally, write them clearly and professionally. Notra will enhance them, but starting with quality content helps.
-  </Step>
-
-  <Step title="Establish Emoji Conventions">
-    Agree on team conventions for flagging content. For example, 📝 means "turn this into a blog post" and 📋 means "add to changelog".
-  </Step>
-
-  <Step title="Review Before Publishing">
-    Always review Slack-sourced content before publishing. Internal tone might need adjustment for external audiences.
-  </Step>
-</Steps>
-
-## Get Notified
-
-Interested in early access to the Slack integration?
-
-<CardGroup cols={1}>
-  <Card title="Join the Waitlist" icon="envelope">
-    Sign up to be notified when Slack integration is ready. We'll give waitlist members early access.
-  </Card>
-</CardGroup>
-
-## Current Alternatives
-
-While Slack integration is in development:
-
-<CardGroup cols={2}>
-  <Card title="GitHub Integration" icon="github" href="/integrations/github">
-    Connect GitHub to generate content from development activity
-  </Card>
-
-  <Card title="Manual Content" icon="play" href="/content/blog-posts">
-    Create content manually from any source
-  </Card>
-</CardGroup>
-
-<Info>
-  Many product updates that appear in Slack are related to code changes. The [GitHub integration](/integrations/github) can automatically generate content when those changes are merged and released.
-</Info>

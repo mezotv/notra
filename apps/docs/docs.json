@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "maple",
   "name": "Notra Documentation",
-  "description": "Documentation for Notra, the content pipeline for teams.",
+  "description": "Documentation for Notra: track your brand across AI answer engines and turn your team's work into content.",
   "colors": {
     "primary": "#8b5cf6",
     "light": "#8b5cf6",
@@ -86,12 +86,24 @@
             ]
           },
           {
+            "group": "GEO",
+            "pages": [
+              "geo/overview",
+              "geo/prompts-and-competitors",
+              "geo/traffic",
+              "geo/agent-readiness",
+              "geo/content-gaps-and-writer"
+            ]
+          },
+          {
             "group": "Integrations",
             "pages": [
               "integrations/overview",
               "integrations/github",
               "integrations/linear",
               "integrations/slack",
+              "integrations/granola",
+              "integrations/google-search-console",
               "integrations/framer",
               "integrations/featul",
               "integrations/kontentspace"
@@ -162,6 +174,11 @@
             },
             "pages": [
               {
+                "group": "Discovery",
+                "expanded": true,
+                "pages": ["GET /v1/status"]
+              },
+              {
                 "group": "Posts",
                 "expanded": true,
                 "pages": [
@@ -217,6 +234,17 @@
                 ]
               },
               {
+                "group": "Event Triggers",
+                "expanded": true,
+                "pages": [
+                  "GET /v1/event-triggers",
+                  "POST /v1/event-triggers",
+                  "GET /v1/event-triggers/{triggerId}",
+                  "PATCH /v1/event-triggers/{triggerId}",
+                  "DELETE /v1/event-triggers/{triggerId}"
+                ]
+              },
+              {
                 "group": "Skills",
                 "expanded": true,
                 "pages": [
@@ -233,8 +261,148 @@
                 "pages": [
                   "GET /v1/chats",
                   "POST /v1/chats",
+                  "GET /v1/chats/by-external",
                   "GET /v1/chats/{chatId}",
                   "POST /v1/chats/{chatId}"
+                ]
+              },
+              {
+                "group": "Feedback",
+                "expanded": true,
+                "pages": [
+                  "POST /v1/feedback/{organizationSlug}",
+                  "POST /v1/feedback",
+                  "GET /v1/feedback",
+                  "GET /v1/feedback/{feedbackId}",
+                  "PATCH /v1/feedback/{feedbackId}"
+                ]
+              },
+              {
+                "group": "GEO",
+                "expanded": true,
+                "pages": [
+                  {
+                    "group": "Projects",
+                    "expanded": true,
+                    "pages": [
+                      "GET /v1/projects",
+                      "POST /v1/projects",
+                      "GET /v1/projects/{projectId}",
+                      "PATCH /v1/projects/{projectId}",
+                      "DELETE /v1/projects/{projectId}"
+                    ]
+                  },
+                  {
+                    "group": "Settings",
+                    "expanded": true,
+                    "pages": [
+                      "GET /v1/projects/{projectId}/geo/settings",
+                      "PATCH /v1/projects/{projectId}/geo/settings"
+                    ]
+                  },
+                  {
+                    "group": "Prompts",
+                    "expanded": true,
+                    "pages": [
+                      "GET /v1/projects/{projectId}/geo/prompts",
+                      "POST /v1/projects/{projectId}/geo/prompts",
+                      "PATCH /v1/projects/{projectId}/geo/prompts/{promptId}",
+                      "DELETE /v1/projects/{projectId}/geo/prompts/{promptId}",
+                      "POST /v1/projects/{projectId}/geo/prompts/import"
+                    ]
+                  },
+                  {
+                    "group": "Sequences",
+                    "expanded": true,
+                    "pages": [
+                      "GET /v1/projects/{projectId}/geo/sequences",
+                      "POST /v1/projects/{projectId}/geo/sequences",
+                      "PATCH /v1/projects/{projectId}/geo/sequences/{sequenceId}",
+                      "DELETE /v1/projects/{projectId}/geo/sequences/{sequenceId}",
+                      "POST /v1/projects/{projectId}/geo/sequences/{sequenceId}/run"
+                    ]
+                  },
+                  {
+                    "group": "Competitors",
+                    "expanded": true,
+                    "pages": [
+                      "GET /v1/projects/{projectId}/geo/competitors",
+                      "PUT /v1/projects/{projectId}/geo/competitors",
+                      "GET /v1/projects/{projectId}/geo/competitors/suggestions",
+                      "DELETE /v1/projects/{projectId}/geo/competitors/{name}",
+                      "POST /v1/projects/{projectId}/geo/competitors/import"
+                    ]
+                  },
+                  {
+                    "group": "Scans",
+                    "expanded": true,
+                    "pages": [
+                      "POST /v1/projects/{projectId}/geo/scans",
+                      "GET /v1/projects/{projectId}/geo/scans",
+                      "GET /v1/projects/{projectId}/geo/scans/{scanId}"
+                    ]
+                  },
+                  {
+                    "group": "Visibility",
+                    "expanded": true,
+                    "pages": [
+                      "GET /v1/projects/{projectId}/geo/visibility/overview",
+                      "GET /v1/projects/{projectId}/geo/visibility/timeseries",
+                      "GET /v1/projects/{projectId}/geo/visibility/prompt-results",
+                      "GET /v1/projects/{projectId}/geo/visibility/competitor-share",
+                      "GET /v1/projects/{projectId}/geo/visibility/language-share",
+                      "GET /v1/projects/{projectId}/geo/visibility/competitors/{brand}"
+                    ]
+                  },
+                  {
+                    "group": "Content Gaps and Briefs",
+                    "expanded": true,
+                    "pages": [
+                      "GET /v1/projects/{projectId}/geo/gaps",
+                      "GET /v1/projects/{projectId}/geo/briefs",
+                      "POST /v1/projects/{projectId}/geo/briefs",
+                      "GET /v1/projects/{projectId}/geo/briefs/{briefId}",
+                      "POST /v1/projects/{projectId}/geo/briefs/{briefId}/approve"
+                    ]
+                  },
+                  {
+                    "group": "Agent Readiness",
+                    "expanded": true,
+                    "pages": [
+                      "GET /v1/projects/{projectId}/geo/agent-readiness",
+                      "POST /v1/projects/{projectId}/geo/agent-readiness/scan"
+                    ]
+                  },
+                  {
+                    "group": "Traffic",
+                    "expanded": true,
+                    "pages": [
+                      "GET /v1/projects/{projectId}/geo/traffic/overview",
+                      "GET /v1/projects/{projectId}/geo/traffic/log",
+                      "GET /v1/projects/{projectId}/geo/traffic/journeys",
+                      "GET /v1/projects/{projectId}/geo/traffic/journeys/{journeyId}",
+                      "GET /v1/projects/{projectId}/geo/traffic/pages"
+                    ]
+                  },
+                  {
+                    "group": "Traffic Ingest",
+                    "expanded": true,
+                    "pages": [
+                      "GET /v1/geo/ingest/setup",
+                      "POST /v1/geo/ingest/token",
+                      "POST /v1/geo/ingest/rotate-token"
+                    ]
+                  }
+                ]
+              },
+              {
+                "group": "Agent",
+                "expanded": true,
+                "pages": [
+                  "POST /v2/eve/v1/session",
+                  "POST /v2/eve/v1/session/{sessionId}",
+                  "GET /v2/eve/v1/session/{sessionId}/stream",
+                  "GET /v2/agent-chats"
                 ]
               }
             ]

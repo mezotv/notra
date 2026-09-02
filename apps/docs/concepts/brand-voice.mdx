@@ -1,6 +1,6 @@
 ---
 title: "Brand Voice"
-description: "Learn how Notra adapts generated content to match your team's tone, style, and audience preferences."
+description: "Learn how brand identities shape generated content: company profile, tone, language, audience, custom instructions, references and guidelines."
 authors:
   - handle: dominik
 
@@ -16,79 +16,74 @@ docolin:
   status: stable
   aliases:
     - brand voice
+    - brand identity
     - tone profiles
     - custom instructions
     - target audience
+    - references
   prev: ./content-pipeline.mdx
 ---
 
-Brand voice is what makes your content sound like *you*. Notra ensures every generated draft reflects your team's unique communication style through brand settings and AI-powered adaptation.
+Brand voice is what makes generated content sound like *you*. In Notra it lives in **Brand Identity**, and every generation path, the Create Content wizard, schedules, event triggers, Iris and GEO Write, picks one identity and writes with it.
 
-## What is Brand Voice?
+## What is a Brand Identity?
 
-Your brand voice encompasses:
+A brand identity is a named profile. A workspace starts with one called **Default**, created from the website you entered during onboarding, and you can add more, for example Marketing, Technical or Internal. Each identity stores:
 
-* **Tone**: The emotional quality of your writing (friendly, formal, casual, authoritative)
-* **Style**: How you structure sentences and use language
-* **Terminology**: The words you choose and technical level
-* **Audience awareness**: Who you're speaking to and what they care about
+* **Company name**: your product or company name
+* **Website**: the site Notra analyzes for the profile, sitemap and guidelines
+* **Description**: what you build and why it matters
+* **Tone profile**: Conversational, Professional, Casual or Formal
+* **Custom tone notes**: free-text guidance layered on top of the profile
+* **Language**: the language content is written in
+* **Custom instructions**: rules the writer must follow
+* **Who are you writing for?**: your target audience
 
-Notra learns your brand voice and applies it consistently across all generated content, whether it's a technical changelog for developers or a LinkedIn post for a broader audience.
+The Brand Identity page has four tabs: **Company Info** (the fields above), **References**, **Sitemap** and **Brand Guidelines**.
 
 ## How Notra Learns Your Brand
 
-You can configure brand voice in two ways:
+### Automated analysis
 
-### Manual Configuration
-
-Navigate to Brand Settings in your dashboard and provide:
-
-* **Company name**: Your product or company name
-* **Company description**: What you build and why it matters (2-4 sentences)
-* **Tone profile**: Choose from Conversational, Professional, Casual, or Formal
-* **Target audience**: Who you're writing for (e.g., "developers and engineering teams")
-* **Custom instructions**: Additional guidelines specific to your needs
-
-### Automated Analysis
-
-Notra can analyze your website to extract brand identity automatically:
+When you add a website, Notra runs a three-step analysis and fills in Company Info for you:
 
 <Steps>
-  <Step title="Enter your website URL">
-    Provide the URL to your homepage, about page, or product page.
-  </Step>
-
   <Step title="Scraping">
-    Notra uses Context.dev to extract clean markdown content from the page, focusing on main content and filtering out navigation and footer elements.
+    Notra fetches your homepage and key pages and extracts the main content.
   </Step>
 
-  <Step title="AI extraction">
-    Claude analyzes the content to identify:
-
-    * Company name and mission
-    * Communication tone and style patterns
-    * Target audience based on messaging
-    * Key value propositions and differentiators
+  <Step title="Extracting">
+    An AI model reads the content and identifies your company name, description, tone and style patterns, and the audience your messaging speaks to.
   </Step>
 
-  <Step title="Save settings">
-    Extracted information populates your brand settings. You can review and refine before saving.
+  <Step title="Saving">
+    The results are written into the identity. Review and adjust any field afterwards.
   </Step>
 </Steps>
 
-<Info>
-  Website analysis takes 10-30 seconds. The system analyzes content deeply to understand not just what you say, but how you say it.
-</Info>
+During onboarding this runs in the background right after you create the workspace. On the Brand Identity page you can re-run it whenever your site changes, and adding a new identity with a website runs it for that identity.
+
+### Manual configuration
+
+Every field is editable. Changes auto-save a moment after you stop typing, and a toast confirms the update.
+
+### References
+
+The **References** tab holds real posts and writing samples, for example tweets, that help the AI match your style beyond what a tone profile can express. Add a few pieces you are proud of; plans differ in how many references are included.
+
+### Sitemap and Brand Guidelines
+
+The **Sitemap** tab tracks your indexed pages and monitors site health for AI discovery. GEO Write uses it to pick internal links for new articles.
+
+The **Brand Guidelines** tab pulls logos, colors, typography and landing page screenshots from your website. Generate them once, refresh when your design changes, and edit individual entries.
 
 ## Tone Profiles Explained
 
-Notra offers four preset tone profiles. Each uses a different AI prompt template optimized for that style:
+Each tone profile selects a different prompt template for every format:
 
 ### Conversational
 
-**Best for**: Developer tools, startups, open source projects
-
-**Characteristics**:
+**Best for**: developer tools, startups, open source projects
 
 * Warm and authentic
 * Direct address ("we" and "you")
@@ -101,14 +96,11 @@ Notra offers four preset tone profiles. Each uses a different AI prompt template
 
 ### Professional
 
-**Best for**: Enterprise products, B2B SaaS, corporate communications
-
-**Characteristics**:
+**Best for**: enterprise products, B2B SaaS, corporate communications
 
 * Clear and confident
 * Polished without being stiff
 * Focus on business value
-* Authoritative tone
 
 **Example**:
 
@@ -116,14 +108,11 @@ Notra offers four preset tone profiles. Each uses a different AI prompt template
 
 ### Casual
 
-**Best for**: Consumer apps, community-driven products, creative tools
-
-**Characteristics**:
+**Best for**: consumer apps, community-driven products, creative tools
 
 * Friendly and approachable
 * Relaxed language
 * Enthusiasm visible
-* Emojis acceptable (if requested)
 
 **Example**:
 
@@ -131,9 +120,7 @@ Notra offers four preset tone profiles. Each uses a different AI prompt template
 
 ### Formal
 
-**Best for**: Finance, healthcare, compliance-heavy industries, academic tools
-
-**Characteristics**:
+**Best for**: finance, healthcare, compliance-heavy industries, academic tools
 
 * Precise and structured
 * Traditional language
@@ -145,127 +132,112 @@ Notra offers four preset tone profiles. Each uses a different AI prompt template
 > The engineering team has completed several deliverables for this release cycle. Runtime validation capabilities have been enhanced to detect unsupported authentication patterns in cached contexts. Email-based verification procedures have been implemented with comprehensive error state handling.
 
 <Tip>
-  You can switch tone profiles at any time. New content will use the updated profile, but existing drafts remain unchanged.
+  **Custom tone notes** refine the profile without replacing it. "Technical but enthusiastic about developer experience" on top of Conversational works better than trying to describe the whole voice from scratch.
 </Tip>
+
+## Language
+
+The **Language** field tells the writer which language to produce. The rule is strict: the final text is written primarily in that language, and English is only used for terms that the language commonly borrows, such as technical terms and product names. This applies even when your custom instructions and references are in English.
 
 ## Target Audience Impact
 
-Who you're writing for dramatically affects content structure and detail:
+**Who are you writing for?** changes both filtering and formatting.
 
-### Developer Audience
+### Developer audience
 
-When your audience is "developers", "engineers", or "technical teams":
+When the audience is developers, engineers or technical teams:
 
-* **PR links included**: Every change references the pull request number with link
-* **Technical terminology**: Uses proper technical terms without over-explaining
-* **Implementation details**: Mentions APIs, components, and architectural changes
-* **Author attribution**: Credits contributors with GitHub handles
+* **PR links included**: every referenced change links to its pull request when one is available
+* **Technical terminology**: proper terms without over-explaining
+* **Implementation detail**: APIs, components and architectural changes are fair game
+* **Author attribution**: contributors are credited with their GitHub handle
 
 **Example**:
 
 > **Cache component support with actionable error guidance** [#423](https://github.com/org/repo/pull/423) - Runtime guardrails now catch unsupported auth calls in cached contexts and provide clear migration guidance with the correct usage pattern. (Author: [@alex](https://github.com/alex/))
 
-### Non-Developer Audience
+### Non-developer audience
 
-When your audience is "customers", "end users", or "stakeholders":
+When the audience is customers, end users or stakeholders:
 
-* **No PR links**: Technical references removed
-* **Plain language**: Explains what changed in terms of user benefits
-* **Outcome focus**: Emphasizes what users can now do
-* **Author attribution still included**: Credits contributors but without PR numbers
+* **No PR numbers or links** anywhere in the output
+* **Plain language** that explains what changed in terms of benefits
+* **Outcome focus**: what users can now do
+* **Author attribution still included**
 
 **Example**:
 
 > **Improved error messages**: When you use authentication features incorrectly, you'll now see helpful guidance on how to fix it. (Author: [@alex](https://github.com/alex/))
 
+The audience also decides what gets filtered out. A change that only matters to engineers is dropped entirely for a customer audience rather than being translated into vague copy.
+
 ## Custom Instructions
 
-Custom instructions let you add specific guidelines beyond the tone profile:
-
-**Common use cases**:
+Custom instructions add rules beyond the tone profile:
 
 ```
 Avoid cryptocurrency and blockchain jargon
-Emphasize security and compliance improvements  
+Emphasize security and compliance improvements
 Include performance metrics when available
 Mention customer impact explicitly for each feature
 Use "we" instead of "the team" or third person
-Keep technical accuracy while being approachable
 ```
 
-Custom instructions are injected into the AI prompt and applied during content generation.
-
 <Note>
-  Be specific with custom instructions. "Use simple language" is vague. "Explain technical concepts using analogies from everyday life" gives the AI clearer direction.
+  Be specific. "Use simple language" is vague. "Explain technical concepts using analogies from everyday life" gives the writer a rule it can follow.
 </Note>
 
 ## How Brand Voice is Applied
 
-When generating content, here's what happens behind the scenes:
-
-1. **Context injection**: Brand settings are formatted into structured XML tags
-2. **Prompt assembly**: System prompt includes tone-specific guidelines
-3. **User prompt**: Includes company context, audience, and custom instructions
-4. **AI generation**: Model generates content following all constraints
-5. **Humanization**: Optional "humanizer" skill polishes the output further
-
-**Technical view of prompt structure**:
+When generating content, the identity is formatted into structured tags and placed in the prompt:
 
 ```xml
-<task-context>
-You are generating a changelog for developers.
-</task-context>
-
-<tone-context>
-Write with warmth and authenticity. Keep the writing conversational, 
-clear, and specific.
-</tone-context>
-
-<background-data>
 <company>Acme Corp - Building developer tools for modern web apps</company>
 <target-audience>Software developers and engineering teams</target-audience>
-</background-data>
-
+<language>English</language>
 <custom-instructions>
 Keep technical accuracy while being approachable
-Include PR links for all changes  
 Emphasize security and performance improvements
 </custom-instructions>
+
+<background-data>
+<sources>github:acme/platform</sources>
+<today-utc>2026-09-02</today-utc>
+</background-data>
 ```
 
-The AI uses this structured context to make decisions about:
+Two rules travel with these tags:
 
-* Word choice ("shipped" vs "delivered" vs "released")
-* Sentence structure (short and punchy vs longer and descriptive)
-* Detail level (deep technical explanation vs high-level summary)
-* Formatting (bullet points vs paragraphs, headings vs inline)
+1. `<company>` is the publishing identity. Sources are evidence only, so a repository, workspace or team with a different name never causes the writer to hesitate or attribute the work elsewhere.
+2. If `<language>` is present, the final text is written in that language.
+
+The tone-specific system prompt for the chosen format wraps all of this, and any skills you enabled on the Skills page, such as the human-writer skill, run on the result.
+
+## Multiple Identities
+
+Use separate identities when one voice does not fit every channel:
+
+* **Marketing** for blog posts and LinkedIn, Conversational, customer audience
+* **Technical** for changelogs, Professional, developer audience
+* **Internal** for team updates, Casual
+
+The Create Content wizard, schedules, event triggers and GEO Write each let you pick the identity for that run. One identity is marked as the default and is used when nothing else is selected.
 
 ## Maintaining Consistency
 
-Notra ensures consistency across all your content:
+**Same voice everywhere**: a changelog and the tweet announcing it come from the same identity, and scheduled, event-triggered and manual runs all use the same rules.
 
-**Same voice everywhere**:
-
-* Changelogs use the same tone as LinkedIn posts
-* Event-triggered content matches scheduled content
-* Multi-repository updates maintain unified style
-
-**Consistent structure**:
-
-* Changelogs always follow the same outline (Summary → Highlights → More Updates)
-* Categories appear in priority order (Security → Features → Bug Fixes...)
-* Metadata formatting is standardized
+**Consistent structure**: changelogs always follow Summary, Highlights, More Updates, with categories in a fixed priority order.
 
 **Quality controls**:
 
-* Strict word count limits prevent rambling (120-180 words for summaries)
-* No emojis in headings (unless explicitly requested)
+* Summaries target 120 to 180 words
 * No made-up PR numbers or commit details
-* Technical accuracy preserved even in casual tones
+* Runs with nothing audience-relevant are skipped instead of padded
 
 ## Examples Across Tones
 
-Same feature, four different tones:
+Same feature, four tones:
 
 **Feature**: New GitHub webhook verification for enhanced security
 
@@ -289,61 +261,28 @@ Same feature, four different tones:
 
 ## Updating Your Brand Voice
 
-Your communication style may evolve over time. Update brand settings whenever:
-
-* You rebrand or change positioning
-* Your target audience shifts
-* You want to experiment with different tones
-* You refine your company description
-
-All future content generation will use the new settings. Existing drafts in your dashboard remain unchanged. They reflect the brand voice settings that were active when they were created.
+Update an identity whenever you rebrand, your audience shifts, or you want to try a different tone. Future runs use the new settings; existing drafts keep the voice they were generated with.
 
 <Tip>
-  Run a test changelog after updating brand settings to see how the changes affect output before switching back to event-driven automation.
+  After changing an identity, generate one post from the Create Content wizard to check the result before your schedules run with it.
 </Tip>
 
 ## Best Practices
 
-**For tone selection**:
+**Tone**: match your existing marketing and documentation. Fintech tends toward Formal, developer tools toward Conversational. Change it rarely.
 
-* Match your existing marketing and documentation tone
-* Consider your industry norms (fintech tends toward formal, dev tools toward conversational)
-* Test different profiles with sample generations
-* Be consistent, as frequent tone changes confuse your audience
+**Custom instructions**: start small and add rules as you notice yourself making the same manual edit twice. Keep them about style, not content.
 
-**For custom instructions**:
+**Audience**: be specific. "Senior engineering leaders at enterprise companies" beats "technical people", and it decides whether PR links appear.
 
-* Start simple, add specificity over time
-* Reference concrete examples: "like this" not "avoid being vague"
-* Update instructions based on manual edits you make to drafts
-* Keep instructions focused on style, not content (content comes from your actual work)
-
-**For audience definition**:
-
-* Be specific: "Senior engineering leaders at enterprise companies" vs "technical people"
-* Consider what they care about: outcomes, implementation details, business impact?
-* Align with where you publish: developer blog = dev audience, company blog = broader
+**References**: add real posts. Three good samples do more for style than a paragraph of description.
 
 ## Troubleshooting Voice Issues
 
-If generated content doesn't match your expectations:
+**Too technical or not technical enough**: adjust the audience description first, then add a custom instruction about detail level.
 
-**Too technical / not technical enough**:
+**Wrong tone**: check the profile, then make sure custom tone notes and custom instructions do not contradict it.
 
-* Adjust target audience description
-* Add custom instructions about detail level
-* Review examples in generated drafts and specify what to change
+**Wrong language**: set the Language field. Instructions written in English do not switch the output language.
 
-**Wrong tone**:
-
-* Verify tone profile selection matches intent
-* Check that custom instructions don't contradict the tone
-* Consider that content type affects tone (changelogs are naturally more technical)
-
-**Inconsistent style**:
-
-* Ensure brand settings are complete (missing fields reduce quality)
-* Check that multiple team members aren't making conflicting updates
-* Review custom instructions for clarity and specificity
-
-Your brand voice is powerful. Notra ensures it shines through in every piece of content.
+**Inconsistent style across posts**: make sure every schedule and trigger points at the same identity, and that the identity has all fields filled in.

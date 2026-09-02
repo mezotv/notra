@@ -1,6 +1,6 @@
 ---
 title: "How Notra Works"
-description: "Understand how Notra transforms your team's work into ready-to-publish content through automated activity ingestion, AI analysis, and brand voice adaptation."
+description: "Understand the two loops inside Notra: the GEO visibility loop that scans AI engines, and the Studio content loop that turns activity into publish-ready drafts."
 authors:
   - handle: dominik
 
@@ -12,158 +12,150 @@ docolin:
     - notra
   language: en
   difficulty: beginner
-  time_estimate: 8m
+  time_estimate: 9m
   status: stable
   aliases:
     - how Notra works
+    - GEO scan
+    - visibility loop
     - content pipeline overview
     - AI analysis
   next: ./content-pipeline.mdx
 ---
 
-Notra automates content creation by connecting to your team's tools, analyzing activity with AI, and generating drafts tailored to your brand voice. Here's how the system works from start to finish.
+Notra runs two loops. The **visibility loop** asks AI engines the questions your buyers ask and measures whether you show up. The **content loop** produces the content that changes those answers, either from what you ship (Studio) or from the gaps the visibility loop found (Write). Both loops share your brand identity and land their output in Content.
 
 ## System Overview
 
-Notra operates as an event-driven content pipeline that transforms engineering and product work into polished content. The system runs continuously in the background, monitoring your connected tools and generating content when meaningful activity occurs.
-
 <Steps>
-  <Step title="Connect your tools">
-    Link GitHub and Linear to Notra. GitHub repositories can send webhook events, and Linear workspaces provide issue context. Slack support is planned.
+  <Step title="Set up tracking">
+    Your GEO project holds a brand name, aliases, competitors, prompts, the languages to scan in, the models to run, and a scan schedule. Onboarding fills most of this in by reading your website.
   </Step>
 
-  <Step title="Activity ingestion">
-    Notra pulls updates from connected tools like merged pull requests, releases, commits, and completed Linear issues. Activity is normalized into a common internal format for consistent processing.
+  <Step title="Scan">
+    On every scan Notra sends each prompt to each enabled model, with web search enabled where the provider supports it, and keeps the full answer. A separate judge step checks every answer for mentions of your brand, your aliases and each tracked competitor.
   </Step>
 
-  <Step title="AI analysis">
-    AI analyzes incoming activity to identify what changed and why it matters. The system prioritizes high-signal updates including major features, bug fixes, security improvements, and performance enhancements.
+  <Step title="Measure">
+    Mentions roll up into visibility per engine, share of voice against competitors, and per-prompt results over time. Prompts where competitors are mentioned and you are not become Content Gaps.
   </Step>
 
-  <Step title="Content generation">
-    Based on the analysis, Notra produces structured drafts for changelogs, blog posts, and social media updates. The system uses prompt templates and can make tool calls to fill in missing context.
+  <Step title="Observe traffic and readiness">
+    An ingest package on your site reports AI crawler hits and AI referrals, and Agent Readiness scans your public site for what AI agents need to discover and use it.
   </Step>
 
-  <Step title="Brand voice adaptation">
-    Generated content is adapted to match your workspace's preferred tone and custom instructions while maintaining technical accuracy and readability.
+  <Step title="Write">
+    Write turns a gap or a custom topic into a brief. Once you approve it, an agent drafts the article and opens it in Content. Studio does the same for changelogs, blog posts, social posts and images from your GitHub, Linear and meeting activity.
   </Step>
 
   <Step title="Review and publish">
-    Drafts appear in your dashboard as publish-ready content. Review, edit if needed, and share with your audience.
+    Everything starts as a draft in Content. You edit, publish, and optionally push to Framer or your connected X and LinkedIn accounts. The next scan shows whether the answers moved.
   </Step>
 </Steps>
 
-## Content Generation Modes
+## The Visibility Loop
 
-Notra generates content in two primary ways:
+### Prompts
 
-### Event-Driven Generation
+A prompt is a question a buyer might ask an AI assistant, such as "best tools for automated release notes". Prompts come from three places:
 
-When significant events occur in your connected tools, Notra automatically triggers content generation:
+* The starter set Notra extracts from your website during onboarding
+* Prompts you add by hand or import from CSV
+* Suggestions built from the queries you already rank for in Google Search Console
 
-* **GitHub releases**: New version published
-* **Push events**: Commits merged to main branch
-* **Pull request merges**: Feature work completed
+### Engines and models
 
-The system analyzes the event context, retrieves relevant data (commits, PR details, release notes), and generates appropriate content.
+Onboarding tracks ChatGPT, Claude, Gemini and Perplexity. GEO Settings exposes a larger model catalog across providers, and every enabled model runs on every prompt. Scans in additional languages run a translated copy of each prompt.
+
+### Judging
+
+Each answer is passed to a judge model that returns which of your brand terms and competitors are mentioned. This is what makes results comparable across engines: the same rule decides what counts as a mention, and aliases let you count product names or your bare domain.
+
+### Scheduling
+
+Scans run on the interval in GEO Settings: every day by default, or every 48 hours, 3 days, week, 2 weeks or 30 days. **Run Scan** on the Overview starts one at any time. Results appear as they arrive; a scan that returns nothing is retried after a short delay.
+
+### Projects
+
+GEO settings, prompts, competitors, scans and traffic are scoped to a **project**, so one workspace can track several brands. The project switcher sits in the sidebar; plans differ in how many projects they include.
+
+## The Content Loop
+
+### Studio generation
+
+Studio generates content from activity in your connected tools:
+
+* **GitHub**: pull requests, commits and releases, through the Notra GitHub App
+* **Linear**: issues and updates
+* **Granola**: meeting notes, transcripts and summaries
+
+You can create content by hand from the Create Content wizard, on a **schedule** (daily, weekly or monthly over a lookback window), or from **GitHub release and push events**. Iris adds an autonomous layer on top: it watches what you ship, drafts content, and asks for approval on Slack before anything is published.
 
 <Info>
-  Event-driven generation typically focuses on a narrow time window around the event (approximately 1 hour) to ensure the content is directly related to the triggering activity.
+  Event-based triggers react to a single event and generate right away. Scheduled workflows look back over a window of up to 30 days and summarize everything inside it.
 </Info>
 
-### Scheduled Generation
+### GEO Write
 
-Notra can run on a schedule to create periodic content summaries:
+Write starts from a prompt you are losing, a competitor comparison, or a custom topic. It plans a brief (working title, search intent, audience, section headings, internal links and an acceptance checklist), waits for your approval, then writes the article with the same brand identity Studio uses. The brief moves through Draft, Queued, Writing and Done, and the finished draft opens in Content.
 
-* Weekly changelog updates
-* Monthly product highlights
-* Regular social media posts
+### Brand voice
 
-Scheduled workflows look back over a configured timeframe (e.g., 7 days, 30 days) to gather all relevant activity and create comprehensive summaries.
-
-## AI-Powered Analysis
-
-The AI layer does more than just summarize commits. It understands context:
-
-**What the AI evaluates:**
-
-* Technical significance (breaking changes, new features, security fixes)
-* User impact (customer-facing improvements, bug fixes)
-* Relevance to target audience (developer vs. end-user facing)
-* Priority ordering (security > breaking changes > features > performance)
-
-**What gets filtered out:**
-
-* Internal maintenance work
-* Dependency updates without user impact
-* Code formatting and linting changes
-* Test-only updates
-* Routine infrastructure chores
-
-<Tip>
-  Notra uses different AI prompts based on your selected tone profile (Conversational, Professional, Casual, or Formal) to ensure the output matches your communication style.
-</Tip>
+Every generation run receives the selected brand identity: company name and description, tone, language, custom instructions and audience. The full detail is in [Brand Voice](/concepts/brand-voice).
 
 ## Data Flow
 
-Here's how information flows through the system:
-
 ```mermaid
 graph LR
-    A[Connected Tools] --> B[Webhooks/API]
-    B --> C[Activity Ingestion]
-    C --> D[AI Analysis]
-    D --> E[Content Generator]
-    E --> F[Brand Voice Adapter]
-    F --> G[Dashboard]
-    G --> H[Published Content]
-    
-    I[Brand Settings] --> F
-    J[Prompt Templates] --> E
+    subgraph Visibility
+      P[Prompts] --> S[Scan]
+      M[Models] --> S
+      S --> J[Judge]
+      J --> V[Visibility and share of voice]
+      J --> G[Content Gaps]
+    end
+
+    subgraph Content
+      G --> W[Write]
+      A[GitHub, Linear, Granola] --> ST[Studio generation]
+      B[Brand identity] --> W
+      B --> ST
+      W --> C[Content]
+      ST --> C
+    end
+
+    C --> PUB[Publish]
+    T[Site traffic ingest] --> TR[Traffic and Journeys]
 ```
 
-**Key components:**
+## AI Analysis in Studio
 
-* **Connected Tools**: GitHub and Linear provide raw activity data. Slack is planned.
-* **Activity Ingestion**: Normalizes different data formats into a unified structure
-* **AI Analysis**: Evaluates significance and extracts key information
-* **Content Generator**: Creates structured drafts using specialized agents
-* **Brand Voice Adapter**: Applies tone and custom instructions
-* **Dashboard**: Stores publish-ready content for review
+The generation agent does more than summarize commits. For a changelog it:
 
-## GitHub Integration Deep Dive
+* Calls `getCommitsByTimeframe` for each source repository over the exact lookback window
+* Calls `getPullRequests` and `getReleaseByTag` to fill in PR descriptions, authors and release notes
+* Drops internal-only work: small refactors, formatting and lint changes, dependency churn, test-only updates and routine infra chores
+* Orders what is left by Security, then Bug Fixes, Features and Enhancements, Performance, Infrastructure, Internal Changes, Testing and Documentation
+* Includes PR links for developer audiences and leaves them out for non-developer audiences
+* Skips the run entirely when nothing audience-relevant remains, instead of publishing filler
 
-Since most content comes from code activity, the GitHub integration is particularly sophisticated:
-
-**Available tools for AI agents:**
-
-* `getPullRequests`: Fetches detailed PR context including title, description, reviewers, and merge status
-* `getReleaseByTag`: Retrieves release notes and version information
-* `getCommitsByTimeframe`: Gathers commit history with pagination support
-
-The AI agent can call these tools during content generation to fill gaps in understanding. For example, if a webhook only provides commit IDs, the agent can fetch full commit messages and author information.
-
-<Note>
-  Notra respects GitHub API rate limits and implements intelligent caching to minimize redundant requests during content generation.
-</Note>
+<Tip>
+  The tone you pick in Brand Identity selects a different prompt template (Conversational, Professional, Casual or Formal), so the same activity reads differently for each.
+</Tip>
 
 ## Security and Privacy
 
-**How Notra handles your data:**
-
-* OAuth tokens are encrypted and stored securely
-* Only repositories you explicitly connect are accessed
-* Integration IDs enforce access control, so agents can only query allowed repositories
-* Webhook payloads are sanitized before being passed to AI
-* Custom instructions are isolated to prevent prompt injection
+* GitHub access goes through the Notra GitHub App, scoped to the repositories you grant. Legacy personal access token integrations are still honored.
+* Only repositories, workspaces and channels you explicitly connect are read.
+* GEO scans send only your prompts to AI providers. A zero data retention add-on is available per plan for the providers that support it.
+* Agent Readiness uses a public scanning service and only reads the public parts of your website. Notra asks for confirmation before starting a scan because the resulting report is publicly retrievable.
+* Slack access is limited to members of your Slack workspace, and can be limited further to specific channels.
 
 ## Continuous Operation
 
-Once configured, Notra works autonomously:
+Once configured, Notra keeps going on its own:
 
-1. Monitors connected tools 24/7 for relevant activity
-2. Triggers content generation based on events or schedule
-3. Stores drafts in your dashboard
-4. Continues background generation without manual intervention
-
-You control when and what to publish. Notra handles the heavy lifting of content creation.
+1. Scans run on your schedule and update visibility, share of voice and gaps
+2. Traffic ingest records AI crawlers and referrals as they arrive
+3. Schedules, event triggers and Iris generate drafts in the background
+4. You decide what to publish, and the next scan shows the effect

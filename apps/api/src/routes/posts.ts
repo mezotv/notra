@@ -121,6 +121,8 @@ const getPostsRoute = createRoute({
   tags: ["Content"],
   operationId: "listPosts",
   summary: "List posts",
+  description:
+    "Returns posts for the organization the API key belongs to, newest first by default. Only published posts are included unless you pass status=draft,published.",
   request: {
     params: getPostsParamsSchema,
     query: getPostsOpenApiQuerySchema,
@@ -148,6 +150,8 @@ const getPostRoute = createRoute({
   tags: ["Content"],
   operationId: "getPost",
   summary: "Get a single post",
+  description:
+    "Returns the post. When no post with this ID exists in your organization, the response is still 200 with post set to null.",
   request: {
     params: getPostParamsSchema,
   },
@@ -163,7 +167,7 @@ const getPostRoute = createRoute({
     400: errorResponse("Invalid path params"),
     401: errorResponse("Missing or invalid API key"),
     403: errorResponse("Forbidden"),
-    404: errorResponse("Post or organization not found"),
+    404: errorResponse("Organization not found"),
     503: errorResponse("Authentication service unavailable"),
   },
 });
@@ -200,6 +204,8 @@ const patchPostRoute = createRoute({
   tags: ["Content"],
   operationId: "updatePost",
   summary: "Update a single post",
+  description:
+    "Updates any combination of title, slug, markdown, and status. Sending markdown re-renders the stored HTML, and when title is omitted the title is taken from the first heading in the markdown. Slugs are only accepted for blog posts and changelogs.",
   request: {
     params: getPostParamsSchema,
     body: {
@@ -227,7 +233,8 @@ const patchPostRoute = createRoute({
     409: errorResponse("Post slug already exists"),
     429: rateLimitResponse(
       RATE_LIMITS.postUpdate.requests,
-      RATE_LIMITS.postUpdate.window
+      RATE_LIMITS.postUpdate.window,
+      "API key"
     ),
     503: errorResponse("Authentication service unavailable"),
   },
@@ -239,6 +246,8 @@ const createPostGenerationRoute = createRoute({
   tags: ["Content"],
   operationId: "createPostGeneration",
   summary: "Queue async post generation",
+  description:
+    "Queues a generation job for one content type and returns 202 with the job. Select sources with integrations.github, integrations.linear, or github.repositories; when no selector is given at all, every connected GitHub integration is used. Poll GET /v1/posts/generate/{jobId} until job.status is completed, failed, or skipped. Notra does not send webhooks when the job finishes.",
   request: {
     body: {
       content: {
@@ -264,7 +273,8 @@ const createPostGenerationRoute = createRoute({
     404: errorResponse("Organization not found"),
     429: rateLimitResponse(
       RATE_LIMITS.postGeneration.requests,
-      RATE_LIMITS.postGeneration.window
+      RATE_LIMITS.postGeneration.window,
+      "API key"
     ),
     503: {
       description: "Content generation is unavailable",
@@ -283,6 +293,8 @@ const getPostGenerationRoute = createRoute({
   tags: ["Content"],
   operationId: "getPostGeneration",
   summary: "Get async post generation status",
+  description:
+    "Returns the job and its event log. job.status moves from queued to running and ends as completed, failed, or skipped. job.postId is set once the post has been created; fetch it with GET /v1/posts/{postId}.",
   request: {
     params: getPostGenerationParamsSchema,
   },

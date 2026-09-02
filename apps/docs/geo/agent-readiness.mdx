@@ -1,0 +1,170 @@
+---
+title: "Agent Readiness"
+description: "Score how well AI agents can discover, understand, and use your website, and track the score over time"
+authors:
+  - handle: dominik
+
+docolin:
+  schema_version: 1
+  kind: tools/notra/geo/agent-readiness
+  type: how-to
+  applies_to:
+    - notra
+  language: en
+  difficulty: beginner
+  time_estimate: 6m
+  status: stable
+  aliases:
+    - agent readiness
+    - readiness score
+    - is-agentic
+    - feedback.md
+    - llms.txt check
+  prev: ./traffic.mdx
+  next: ./content-gaps-and-writer.mdx
+---
+
+The **Agent Readiness** page answers one question: "How well AI agents can discover, understand, and use your website". It runs a public scan of the website URL on your brand identity, stores the resulting report per project, and keeps a history so you can see whether fixes moved the score.
+
+## What the scan checks
+
+The scan is executed by is-agentic.com, an open service by Vercel Labs. It only reads the public parts of your website and changes nothing. It returns a score from 0 to 100, a score label, and a list of issues. Each issue has:
+
+- `id` and `name`, the check that did not fully pass.
+- `tier`: `essential`, `recommended`, or `bonus`.
+- `result`: `failed` (nothing in place) or `partial` (some of the pieces are there).
+- `details`: what was found (called **Evidence** in the dashboard).
+- `recommendation`: the fix.
+
+The score breaks down into three tiers. The dashboard shows them as:
+
+| Tier | Dashboard label | Hint |
+| --- | --- | --- |
+| `essential` | **Must do** | Agents need these to use the site |
+| `recommended` | **Should do** | Makes the site easier for agents |
+| `bonus` | **Bonus** | Positive signals that add points on top |
+
+For each of the essential and recommended tiers the report carries `earned`, `available`, `passing`, and `total`; the bonus tier carries `points` and `positiveSignals`. `eligibleChecks` is the number of checks that applied to your site.
+
+<Note>
+  The check list itself is owned by is-agentic.com and evolves over time. Notra stores whatever the current report contains rather than a fixed list, so the checks you see may change between scans.
+</Note>
+
+### The Notra `feedback.md` bonus check
+
+On top of the external report, Notra adds one check of its own named **feedback.md**. It fetches `/feedback.md` from your site and evaluates it:
+
+- **Failed** when the file is missing, returns a non-2xx status, is empty, or is served as HTML.
+- **Partial** when the file exists but has no "Where to send it" heading, or is served with a content type other than `text/markdown`.
+- Passes when it is served as `text/markdown` and includes a "Where to send it" section that tells agents which MCP tool, HTTP endpoint, email address, or issue tracker to use.
+
+This check is added as a `bonus` issue and does not alter the externally computed score or breakdown. Notra's own feedback endpoint is documented under [Agent Feedback](/api/agent-feedback).
+
+## Score bands
+
+The score card shows the number, a gauge, and a band label based on the same thresholds the report uses:
+
+| Score | Band |
+| --- | --- |
+| 90 and above | Great |
+| 50 to 89 | Needs improvement |
+| Below 50 | Poor |
+
+When a previous completed scan exists, the card also shows the change against it.
+
+## Score history
+
+Every completed scan for the current website URL is kept. The page loads up to 60 completed scans, oldest first, to draw the trend. Each history point carries the `score`, the number of `failed` and `partial` issues, and `scannedAt`. Changing the website URL in your brand identity starts a fresh history for the new URL; the old reports remain but are no longer shown.
+
+## Start a scan in the dashboard
+
+<Steps>
+  <Step title="Add a website URL">
+    The scan targets the website URL on the brand identity linked to the active project. If it is missing the page says "Make sure your brand settings include a website URL". Set it under **Brand Identity** in Studio mode.
+  </Step>
+  <Step title="Open Agent Readiness">
+    With no report yet the page shows **No scan yet** and a **Scan your website** button. With a report it shows the **Readiness score** card with a **Rescan** button and the **Checklist** below it.
+  </Step>
+  <Step title="Confirm the public scan">
+    A dialog titled **Run a public scan?** explains: "The scan runs through is-agentic.com, an open service by Vercel Labs. It only reads the public parts of your website and changes nothing. The resulting report is publicly retrievable on is-agentic.com by anyone who knows your domain." Press **Start scan**.
+  </Step>
+  <Step title="Wait a few minutes">
+    Scans usually finish in one to three minutes. The page polls every five seconds while the scan is running. If the scan fails, the page shows **Scan failed** with the reason and a **Try again** button; when a rescan fails after an earlier success, the last completed report stays visible with a notice above it.
+  </Step>
+</Steps>
+
+### Working through the checklist
+
+The **Checklist** groups issues under **Must do** and **Should do**, failed items first. Each item shows its evidence and recommendation with a **Copy fix** button. At the top, **Copy master prompt** copies a single instruction block for a coding agent that lists every open item with these rules:
+
+1. Finish every item in Must do before starting Should do.
+2. A failed check needs a complete implementation. A partial check already has some of the pieces; close the gap described in Evidence.
+3. Stay scoped: implement the recommended fix. Do not refactor unrelated code.
+4. After each item, note the files you changed in one line.
+
+**Copy full backlog** copies the same items as a plain list.
+
+## Start a scan from the API
+
+Both routes are project-scoped and need the `agent-readiness` scope.
+
+```bash
+curl -X POST https://api.usenotra.com/v1/projects/$PROJECT_ID/geo/agent-readiness/scan \
+  -H "Authorization: Bearer $NOTRA_API_KEY"
+```
+
+```json
+{
+  "reportId": "rpt_01J...",
+  "alreadyRunning": false,
+  "organization": { "id": "org_123", "slug": "acme", "name": "Acme", "logo": null }
+}
+```
+
+The response is `202 Accepted`. A scan already running against the same URL is reused rather than duplicated, in which case `alreadyRunning` is `true`. A running scan older than ten minutes is treated as stuck and replaced. If the brand identity has no website URL the request fails with "Add a website URL in brand settings before scanning".
+
+Notra first asks is-agentic.com for a stored report of your URL. If that report is newer than the last one Notra has, it is adopted without a rescan; otherwise a fresh scan is streamed and the finished report is fetched afterwards. Scans abort after eight minutes.
+
+Then poll the read route. It returns stored data only and never starts a scan:
+
+```typescript
+const response = await fetch(
+  `https://api.usenotra.com/v1/projects/${projectId}/geo/agent-readiness`,
+  { headers: { Authorization: `Bearer ${process.env.NOTRA_API_KEY}` } }
+);
+const { targetUrl, report, scan, history } = await response.json();
+
+if (scan?.status === "running") {
+  console.log("still scanning", targetUrl);
+} else if (report) {
+  console.log(report.score, report.scoreLabel, report.issues.length, "issues");
+}
+```
+
+<ResponseField name="targetUrl" type="string">
+  The normalised website URL the reports belong to.
+</ResponseField>
+<ResponseField name="report" type="object | null">
+  The latest completed report: `id`, `status`, `targetUrl`, `score`, `scoreLabel`, `scoreBreakdown`, `issues[]`, `eligibleChecks`, `reportUrl`, `errorMessage`, `scannedAt`, `createdAt`.
+</ResponseField>
+<ResponseField name="scan" type="object | null">
+  A run newer than the completed report that is still `running` or has `failed`, in the same shape.
+</ResponseField>
+<ResponseField name="history" type="array">
+  Completed scans, oldest first, each with `id`, `score`, `failedCount`, `partialCount`, `scannedAt`.
+</ResponseField>
+
+`reportUrl` links to the public report on is-agentic.com.
+
+## Rate limits
+
+The dashboard does not throttle readiness scans; it relies on reusing an in-flight scan for the same URL. The API caps `POST /geo/agent-readiness/scan` at 10 requests per hour per organization and answers `429` beyond that. See [Rate limits](/api/rate-limits) for the headers that accompany every limited response.
+
+<CardGroup cols={2}>
+  <Card title="Start an agent readiness scan" icon="code" href="/api-reference/geo/start-an-agent-readiness-scan">
+    API reference for the scan route.
+  </Card>
+  <Card title="AI Traffic" icon="chart-line" href="/geo/traffic">
+    See whether agents actually reach the pages you fixed.
+  </Card>
+</CardGroup>

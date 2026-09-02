@@ -1,6 +1,6 @@
 ---
 title: "Getting Started"
-description: "Get started with the Notra API."
+description: "Call the Notra API: base URL, API keys, the TypeScript SDK, and a map of every endpoint group."
 authors:
   - handle: dominik
 
@@ -13,41 +13,76 @@ docolin:
     - typescript
   language: en
   difficulty: beginner
-  time_estimate: 8m
+  time_estimate: 10m
   status: stable
   aliases:
     - API getting started
     - Notra API setup
     - REST API
     - TypeScript SDK
+    - API endpoints
+    - OAuth
   next: ./authentication.mdx
 ---
 
-We provide two ways to interact with Notra:
+The Notra API is a REST API served from `https://api.usenotra.com`. Everything the dashboard can do with GEO tracking, content, schedules, chats, skills and agent feedback is available over HTTP, and the full contract is published as an OpenAPI 3.1 document at [api.usenotra.com/openapi.json](https://api.usenotra.com/openapi.json).
 
 <CardGroup cols={2}>
   <Card title="REST API" icon="globe">
-    Use raw `fetch` or `cURL` to call endpoints directly. Full control, no dependencies.
+    Call endpoints directly with `curl` or `fetch`. Every endpoint group is available this way.
   </Card>
   <Card title="TypeScript SDK" icon="code">
-    Use the official `@usenotra/sdk` package for a type-safe, ergonomic integration.
+    Use `@usenotra/sdk` for typed requests and responses. Covers Content, Schedules, Event Triggers, Chats, Skills, Feedback and Agent endpoints.
   </Card>
 </CardGroup>
 
 ## Quick Start
 
 Base URL:
+
 ```bash
-https://api.usenotra.com/v1/:resource
+https://api.usenotra.com
 ```
 
-`:resource` is the endpoint path (e.g., `posts`, `posts/{postId}`). The
-organization is inferred from your API key, so there is no need to pass it in the URL.
+Paths are versioned (`/v1/...`, and `/v2/...` for the Agent group). Requests authenticate with a bearer credential: either an API key from the dashboard or an OAuth access token from the Notra authorization server. The organization is inferred from the credential, so there is no organization segment in the URL.
+
+Check that the API is reachable without a key:
+
+```bash
+curl https://api.usenotra.com/v1/status
+```
+
+```json
+{
+  "status": "ok",
+  "service": "Notra API",
+  "version": "1.0.0",
+  "public": true,
+  "authentication": {
+    "type": "bearer",
+    "resource_metadata": "https://api.usenotra.com/.well-known/oauth-protected-resource",
+    "guide": "https://www.usenotra.com/auth.md"
+  }
+}
+```
+
+Then make an authenticated request:
 
 <CodeGroup>
 ```bash cURL
 curl -H "Authorization: Bearer YOUR_API_KEY" \
   "https://api.usenotra.com/v1/posts"
+```
+
+```typescript fetch
+const response = await fetch("https://api.usenotra.com/v1/posts", {
+  headers: {
+    Authorization: `Bearer ${process.env.NOTRA_API_KEY}`,
+  },
+});
+
+const data = await response.json();
+console.log(data.posts);
 ```
 
 ```typescript SDK
@@ -63,12 +98,19 @@ console.log(result.posts);
 ```
 </CodeGroup>
 
-<Tip>
-  Replace `YOUR_API_KEY` with your API key. Keys are scoped to an organization
-  (set via `externalId` when created).
-</Tip>
+## Create an API key
 
-Create and manage API keys in [Authentication](/api/authentication).
+<Steps>
+  <Step title="Open API Keys">
+    In the [dashboard](https://app.usenotra.com), open **API Keys** at the bottom of the sidebar. The page lives at `app.usenotra.com/{org-slug}/api-keys`.
+  </Step>
+  <Step title="Click Create API Key">
+    Pick a name, an expiration (no expiry, 7, 30, 60 or 90 days) and the permissions the key needs. Start from one of the presets (MCP Server, SDK, CLI) or choose **Restricted** to set read or write access per resource.
+  </Step>
+  <Step title="Copy the key">
+    Keys start with `ntra_` and are shown once. Store the value in a server-side environment variable such as `NOTRA_API_KEY`.
+  </Step>
+</Steps>
 
 <img
   src="/images/api/api-keys-light.webp"
@@ -81,15 +123,19 @@ Create and manage API keys in [Authentication](/api/authentication).
   className="hidden dark:block"
 />
 
+Scopes, presets and error responses are covered in [Authentication](/api/authentication).
+
+<Note>
+  Building a CLI, MCP client or agent that acts for a signed-in user? Use OAuth instead of a pasted key: register a client, run the authorization code flow with PKCE (or the device flow on headless machines), and send the access token in the same `Authorization: Bearer` header. The Notra MCP server accepts the same tokens. See [OAuth](/api/authentication#oauth).
+</Note>
+
 <Warning>
   Keep API keys private. Even read-only keys can be abused and burn through your
-  [rate limits](/api/rate-limits) if exposed in client-side code. Use server-side
-  requests whenever possible.
+  [rate limits](/api/rate-limits) if exposed in client-side code. Make requests
+  from your backend.
 </Warning>
 
 ## SDK Installation
-
-Install the Notra SDK:
 
 <CodeGroup>
 
@@ -119,55 +165,86 @@ import { Notra } from "@usenotra/sdk";
 const notra = new Notra({
   bearerAuth: process.env.NOTRA_API_KEY ?? "",
 });
+
+const post = await notra.content.getPost({ postId: "post_abc" });
 ```
 
-<Tip>
-  Store your API key in an environment variable. Create and manage keys in your
-  [dashboard](https://app.usenotra.com) under **Developer → API Keys**.
-</Tip>
+The SDK exposes one namespace per endpoint group: `notra.content`, `notra.schedules`, `notra.eventTriggers`, `notra.chats`, `notra.skills`, `notra.feedback` and `notra.agent`. It is generated from the OpenAPI document and published at [github.com/usenotra/typescript-sdk](https://github.com/usenotra/typescript-sdk).
 
-For single-post lookups:
+<Note>
+  GEO endpoints (projects, prompts, competitors, scans, visibility, gaps, briefs, agent readiness, traffic) are not in the SDK yet. Call them with `fetch` or generate a client from the OpenAPI document, see [Generate a client](/api/rust-sdk).
+</Note>
 
-```typescript
-const post = await notra.content.getPost({
-  postId: "post_abc",
-});
-```
-
-## Common Tasks
-
-See [Common Tasks](/api/common-tasks) for copy-paste examples such as updating an existing post and guidance on unsupported create-post patterns.
-
-## Available Endpoints
+## API groups
 
 <CardGroup cols={2}>
-  <Card title="Posts" icon="file-text" href="/api-reference/content/list-posts">
-    Browse the post listing, single-post, update, and delete routes.
+  <Card title="Discovery" icon="signal" href="/api-reference/discovery/check-public-api-reachability">
+    `GET /v1/status`. Public reachability check plus the authentication discovery metadata agents use to find out how to get a credential.
   </Card>
-  <Card title="Generation" icon="sparkles" href="/api-reference/content/queue-async-post-generation">
-    Queue generation jobs and poll their status updates.
+  <Card title="Content" icon="file-text" href="/api-reference/content/list-posts">
+    Posts (list, get, update, delete, queue generation and poll its status), brand identities (list, generate, update, delete) and integrations (list, connect a GitHub repository, remove).
   </Card>
-  <Card title="Brand Identities" icon="palette" href="/api-reference/content/list-available-brand-identities">
-    Browse the brand identity list and single-identity routes.
+  <Card title="Schedules" icon="calendar" href="/api-reference/schedules/list-schedules">
+    Recurring content generation: list, create, update and delete schedules that turn repository activity into posts on a cadence.
   </Card>
-  <Card title="Integrations" icon="plug" href="/api-reference/content/list-available-integrations">
-    Discover available integrations to use in generation requests.
+  <Card title="Event Triggers" icon="bolt" href="/api-reference/event-triggers/list-event-triggers">
+    Event-based generation fired by GitHub webhooks: list, create, get, update and delete triggers.
+  </Card>
+  <Card title="Chats" icon="message" href="/api-reference/chats/list-chats">
+    Start a chat and stream the reply, continue an existing chat, list chats, or look a chat up by an external channel id.
+  </Card>
+  <Card title="Skills" icon="wand-magic-sparkles" href="/api-reference/skills/list-skills">
+    Reusable writing skills, addressed by name: list, create, get, update and delete.
+  </Card>
+  <Card title="Feedback" icon="inbox" href="/api-reference/feedback/list-feedback">
+    Feedback submitted by AI agents. Agents post to your public feedback URL without credentials; list, get and triage entries with an API key. See [Agent Feedback](/api/agent-feedback).
+  </Card>
+  <Card title="GEO" icon="chart-line" href="/api-reference/geo/list-geo-projects">
+    Generative engine optimization per project: settings, tracked prompts and prompt sequences, competitors, scans, visibility reads (mention rates, timeseries, share of voice), content gaps and briefs, agent readiness, AI traffic and the traffic ingest token. Requires a GEO plan.
+  </Card>
+  <Card title="Agent" icon="robot" href="/api-reference/agent/list-agent-sessions">
+    Durable agent sessions under `/v2`: start a session, send follow-up messages or answer input requests, stream session events, and list sessions.
   </Card>
 </CardGroup>
+
+## Responses and errors
+
+Successful responses are JSON. List and detail responses in the Content and GEO groups also include an `organization` object (`id`, `slug`, `name`, `logo`) describing the organization the key belongs to.
+
+Errors are JSON with an `error` message. Authentication failures add a machine-readable `code` and a `recovery` hint:
+
+```json
+{
+  "error": "Invalid API key",
+  "code": "INVALID_API_KEY",
+  "recovery": "Send Authorization: Bearer <NOTRA_API_KEY>. See https://www.usenotra.com/auth.md for agent credential discovery."
+}
+```
+
+| Status | When |
+| --- | --- |
+| `400` | Validation failed. `error` names the field, for example `limit: Too big: expected number to be <=100`. |
+| `401` | Missing, invalid or expired credential (API key or OAuth token). The response also carries a `WWW-Authenticate` header with the OAuth discovery URL. |
+| `402` | The organization has no active paid plan or AI credits for a write, or no GEO plan for a GEO endpoint. |
+| `403` | The key lacks the scope the endpoint needs. |
+| `404` | Resource not found, or an unknown route. |
+| `409` | Conflict, for example a duplicate name. |
+| `429` | Rate limited. See [Rate Limits](/api/rate-limits). |
+| `503` | The authentication or billing service is temporarily unavailable. Retry with backoff. |
 
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="Pagination" icon="book-open" href="/api/pagination">
-    Learn how to paginate through large result sets.
-  </Card>
-  <Card title="TypeScript Types" icon="code" href="/api/types">
-    Use our TypeScript definitions for type-safe development.
-  </Card>
-  <Card title="Caching" icon="database" href="/api/caching">
-    Learn how to cache paginated post data and invalidate it safely.
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    API keys, OAuth, scopes and the exact error envelope.
   </Card>
   <Card title="Common Tasks" icon="sparkles" href="/api/common-tasks">
-    Find practical examples for updates and other common implementation questions.
+    Copy-paste examples for posts, generation jobs and GEO reads.
+  </Card>
+  <Card title="Pagination" icon="book-open" href="/api/pagination">
+    Page through posts, feedback and scan history.
+  </Card>
+  <Card title="TypeScript Types" icon="code" href="/api/types">
+    Types and Zod schemas for the post endpoints.
   </Card>
 </CardGroup>

@@ -1,6 +1,6 @@
 ---
 title: "Linear"
-description: "Integrate Linear with Notra to pull issues, projects, and cycles into your content pipeline."
+description: "Authorize a Linear workspace with OAuth and use completed issues as a data source for changelogs, blog posts, and social posts."
 authors:
   - handle: dominik
 
@@ -19,40 +19,45 @@ docolin:
     - Linear integration
     - connect Linear
     - Linear issues
+    - Linear OAuth
   prev: ./github.mdx
   next: ./slack.mdx
 ---
 
-Connect your Linear workspace to Notra to use completed issues, projects, and development cycles as data sources for AI-powered content generation.
+Connect a Linear workspace so Notra can read completed issues and use them, next to GitHub activity, when generating changelogs, blog posts, and social posts.
 
 ## What you can do
 
-Once connected, the Linear integration enables Notra to:
+Once connected, Notra can:
 
-- Pull completed issues from your Linear workspace
-- Use issue data alongside GitHub activity for richer changelogs and blog posts
-- Include project and cycle context in generated content
-- Filter by team when your workspace has multiple teams
+- Read completed issues from the workspace.
+- Offer the workspace as a source in the **Create Content** dialog and in schedules.
+- Combine issue data with GitHub activity in one generated post.
+- Make the workspace available to the agent in **Chat**.
+
+The connection is read-only. Notra requests Linear's `read` scope and nothing else.
 
 ## Setup
 
-1. Navigate to the **Integrations** page in your Notra dashboard.
-
-2. Click **Connect** on the Linear card, then click **Add Integration** in the dialog.
-
-3. You will be redirected to Linear to authorize read access to your workspace.
-
-4. Once authorized, the integration is created automatically and you are redirected back to Notra.
+1. In the dashboard sidebar, open **Integrations** and click **Connect** on the **Linear** card, or open the Linear page and click **Connect Linear**.
+2. In the **Add Linear Integration** dialog, click **Add Integration**. You are redirected to Linear to authorize read access.
+3. Approve the request in Linear. You must complete this within 10 minutes; otherwise the link expires and you start again.
+4. Notra creates the integration automatically, names it after the Linear workspace, and redirects you back to the page you started from.
 
 ## Usage
 
-After connecting, Linear issues appear as a data source when creating content:
+- **Create Content**: in the **Integrations** selector, Linear workspaces are listed next to GitHub repositories. Select one and Notra loads completed issues from the chosen lookback window into the review step, where you can tick or untick individual issues.
+- **Schedules**: when you create a schedule, pick the Linear workspaces to include alongside repositories. Only the sources you select are used.
+- **Chat**: the agent can read from connected Linear workspaces when you ask it about recent work.
 
-- In the **Create Content** dialog, select your Linear workspace from the **Integrations** combobox.
-- Completed issues within the selected timeframe will appear in the review step with checkboxes.
-- In **Schedules**, all enabled Linear integrations are automatically included.
+## Managing the integration
+
+The Linear page lists every connected workspace. From the card menu you can enable or disable the workspace, open its detail page, or delete it. The edit dialog lets you rename the integration and toggle it on or off. The detail page shows the Linear workspace name and when the connection was created.
+
+The API exposes the same integrations: `GET /v1/integrations` returns connected Linear workspaces with their `linearOrganizationId` and `linearOrganizationName`, and `DELETE /v1/integrations/{integrationId}` removes one.
 
 ## Limits
 
-- Only one connection per Linear workspace per Notra organization.
-- The integration requests read-only access to your workspace.
+- One connection per Linear workspace per Notra organization. Connecting the same workspace twice returns a `workspace_already_connected` error.
+- Team filtering is not available. Notra reads completed issues across the whole workspace.
+- Linear webhooks are accepted and logged, but they do not trigger content generation. Use GitHub webhooks for [event-based automation](/automation/event-based).

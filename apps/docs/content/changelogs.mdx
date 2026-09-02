@@ -1,6 +1,6 @@
 ---
 title: "Changelogs"
-description: "Auto-generate comprehensive changelogs from your GitHub activity with AI-powered formatting and customization"
+description: "Generate changelogs from GitHub and Linear activity, review them in the editor, and publish them to your site"
 authors:
   - handle: dominik
 
@@ -23,146 +23,164 @@ docolin:
   next: ./blog-posts.mdx
 ---
 
-Notra automatically generates changelogs from your GitHub pull requests, commits, and releases. Transform your development activity into polished, well-organized updates that keep your users informed.
+Notra generates changelogs from your GitHub pull requests, commits, and releases, and optionally from Linear issues. Each changelog is created as a draft post that you review, refine with the content agent, and publish when ready.
+
+Changelogs live in the Studio content pipeline. In the dashboard, switch the sidebar to **Studio** and open **Content**.
 
 ## How It Works
 
-Notra analyzes your repository activity and creates structured changelogs with intelligent categorization and prioritization.
+<Steps>
+  <Step title="Connect a source">
+    Install the Notra GitHub app on the repositories you want to cover. You can also connect Linear so issues show up as source material. See [GitHub](/integrations/github) and [Linear](/integrations/linear).
+  </Step>
+
+  <Step title="Create on demand or automate">
+    Click **New post** on the Content page to generate a changelog right now, or set up a schedule or an event trigger so Notra generates one for you. See [Scheduled Automation](/automation/scheduled) and [Event-Based Automation](/automation/event-based).
+  </Step>
+
+  <Step title="Notra reads your activity">
+    The changelog agent pulls the activity inside the lookback window, filters out work that is only relevant internally, and groups the rest by impact and category.
+  </Step>
+
+  <Step title="Review and publish">
+    The changelog appears as a draft in a collection. Open it, edit it directly or ask the content agent for changes, then click **Publish**.
+  </Step>
+</Steps>
+
+## Creating a Changelog Manually
 
 <Steps>
-  <Step title="Connect Your Repository">
-    Link your GitHub repository to Notra. The system will start tracking pull requests, commits, and releases.
+  <Step title="Open the create dialog">
+    Go to **Content** and click **New post**.
   </Step>
 
-  <Step title="Configure Your Schedule">
-    Set up automatic changelog generation on a schedule (daily, weekly, or monthly) or trigger it manually based on events like releases.
+  <Step title="Formats">
+    Pick **Changelog entry**. You can select several formats at once (for example a changelog plus a LinkedIn post) and Notra generates all of them from the same activity. Choose a lookback window and toggle which data points to include: **Pull Requests**, **Commits**, and **Releases**.
   </Step>
 
-  <Step title="AI Analyzes Activity">
-    Notra's AI agent examines your repository activity within the specified lookback window, categorizing changes by type and impact.
+  <Step title="Activity">
+    Pick the repositories and Linear integrations to draw from. Notra previews the releases, pull requests, commits, and issues in the window and lets you deselect anything you do not want mentioned. You can search by title, author, or label.
   </Step>
 
-  <Step title="Review and Publish">
-    Generated changelogs appear as drafts in your dashboard. Review, edit with AI assistance, and publish when ready.
+  <Step title="Identity">
+    Choose which brand identity should write the post. The posts are generated into a new collection, and each post opens in the editor when it is ready.
   </Step>
 </Steps>
 
 ## Changelog Structure
 
-Every changelog follows a consistent, reader-friendly format:
+Every generated changelog follows the same shape.
 
 ### Summary
 
-A concise overview (120-180 words) that captures the essence of what changed and why it matters.
+A single paragraph directly under the title. The agent targets 120 to 180 words and goes shorter when there is less to cover.
 
 ### Highlights
 
-Up to five most important changes, selected based on:
-
-* Security fixes and improvements
-* Breaking changes
-* Major new features
-* Reliability and performance improvements
+Up to five changes, chosen by importance in this order: security, breaking changes, major features, reliability fixes, performance. If there are fewer than five genuinely high-impact changes, the list is shorter. It is never padded.
 
 <Note>
-  Highlights are filtered for high-signal updates with clear user impact. Low-impact maintenance work is automatically excluded.
+  Low-signal work such as small refactors, dependency bumps, wording tweaks, and test-only changes is excluded from Highlights, and is left out of the changelog entirely unless it has a clear effect on your audience.
 </Note>
 
 ### More Updates
 
-Remaining changes organized by category:
+Every remaining change appears exactly once as a bullet under one of these categories:
 
-* **Security**: Security patches and improvements
-* **Features & Enhancements**: New capabilities and improvements
-* **Bug Fixes**: Resolved issues
-* **Performance Improvements**: Speed and efficiency gains
-* **Infrastructure**: Backend and deployment changes
-* **Internal Changes**: Refactoring and code quality
-* **Testing**: Test coverage and quality improvements
-* **Documentation**: Docs updates and additions
+* **Security**
+* **Features & Enhancements**
+* **Bug Fixes**
+* **Performance Improvements**
+* **Infrastructure**
+* **Internal Changes**
+* **Testing**
+* **Documentation**
+
+When a change fits several categories, it is filed under the first match in this order: Security, Bug Fixes, Features & Enhancements, Performance Improvements, Infrastructure, Internal Changes, Testing, Documentation.
 
 ## Lookback Windows
 
-Control how far back Notra looks for changes when generating scheduled changelogs:
+The lookback window controls how far back Notra looks for activity when it generates a changelog on demand or on a schedule.
 
 | Window         | Description             | Best For                |
 | -------------- | ----------------------- | ----------------------- |
 | `current_day`  | Today's changes only    | Real-time daily updates |
 | `yesterday`    | Previous day's activity | Morning recaps          |
-| `last_7_days`  | Past week               | Weekly team updates     |
+| `last_7_days`  | Past week (default)     | Weekly team updates     |
 | `last_14_days` | Past two weeks          | Bi-weekly releases      |
 | `last_30_days` | Past month              | Monthly summaries       |
 
 <Info>
-  For event-based triggers (like GitHub releases), Notra automatically determines the relevant timeframe by comparing the current release with the previous one.
+  Event triggers do not use a lookback window. For a GitHub release event, Notra compares the new release with the previous one and uses that range.
 </Info>
 
-## Tone Customization
+## Tone
 
-Choose the tone that matches your brand voice:
+The changelog is written in the tone profile of the brand identity you pick: **Conversational**, **Professional**, **Casual**, or **Formal**. Set it under **Studio > Brand Identity**, together with your target audience and custom instructions. See [Brand Voice](/concepts/brand-voice).
 
-**Conversational** (Default)\
-Warm and authentic, like a founder sharing updates with the developer community.
+## Automation Settings
 
-**Professional**\
-Polished and precise, ideal for enterprise audiences.
+Schedules and event triggers that produce changelogs accept these options. The same fields are available in the dashboard and in the public API (`POST /v1/schedules` and `POST /v1/event-triggers`).
 
-**Casual**\
-Friendly and approachable, great for community-driven projects.
-
-**Formal**\
-Structured and technical, perfect for regulated industries.
-
-<Tip>
-  Set your organization's tone profile in **Settings** → **Brand Voice**. All generated content will automatically match your selected tone.
-</Tip>
-
-## Configuration Options
-
-### Output Settings
-
-Customize how changelogs are generated:
+**Scheduled generation**
 
 ```json
 {
+  "name": "Weekly changelog",
+  "sourceType": "cron",
+  "sourceConfig": {
+    "cron": { "frequency": "weekly", "hour": 9, "minute": 0, "dayOfWeek": 1 }
+  },
+  "targets": { "repositoryIds": ["repo_123"] },
   "outputType": "changelog",
-  "outputConfig": {
-    "brandVoiceId": "brand-voice-id" // Optional: apply a specific brand voice profile
-  }
+  "outputConfig": { "brandVoiceId": "bv_123" },
+  "lookbackWindow": "last_7_days",
+  "enabled": true,
+  "autoPublish": false
 }
 ```
 
-### Source Configuration
+`frequency` is `daily`, `weekly` (requires `dayOfWeek`, 0 to 6), or `monthly` (requires `dayOfMonth`, 1 to 31). `hour` is 0 to 23 and `minute` is 0 to 59.
 
-Control what triggers changelog generation:
-
-**Event-Based Triggers**
+**Event-based generation**
 
 ```json
 {
   "sourceType": "github_webhook",
-  "sourceConfig": {
-    "eventTypes": ["release", "push"]
-  }
+  "sourceConfig": { "eventTypes": ["release"], "includePreReleases": true },
+  "targets": { "repositoryIds": ["repo_123"] },
+  "outputType": "changelog",
+  "outputConfig": { "brandVoiceId": "bv_123" },
+  "enabled": true,
+  "autoPublish": false
 }
 ```
 
-**Scheduled Generation**
+`eventTypes` accepts `release` and `push`.
 
-```json
-{
-  "sourceType": "cron",
-  "sourceConfig": {
-    "cron": {
-      "frequency": "weekly",
-      "hour": 9,
-      "minute": 0,
-      "dayOfWeek": 1 // Monday
-    }
-  },
-  "lookbackWindow": "last_7_days"
-}
-```
+### Auto-publish
+
+Changelogs and blog posts support **Auto-publish**. When it is on, generated posts are saved with the `published` status immediately instead of as drafts. Social posts and images are always saved as drafts.
+
+## Publishing
+
+Clicking **Publish** in the editor (or enabling auto-publish) sets the post status to `published`. It does not push the post anywhere by itself. Published posts are what your publishing destinations pick up:
+
+* **Framer**: the Notra plugin imports your posts into a Framer site. See [Framer](/integrations/framer).
+* **Your own site or CMS**: fetch posts from the API with `GET /v1/posts?status=published` and render them however you like. See [API Getting Started](/api/getting-started).
+* **Manual**: copy the Markdown from the editor.
+
+**Move to draft** takes a published post back to `draft`.
+
+## Editing with the Content Agent
+
+Every post has a content agent in the right-hand panel. Select text in the editor to give the agent context, then ask for changes such as:
+
+* "Expand the summary to mention the pricing change"
+* "Simplify the Highlights for a non-technical audience"
+* "Move the caching change into Performance Improvements"
+
+The agent edits the post in place and you can review the diff before it is saved.
 
 ## Best Practices
 
@@ -176,19 +194,7 @@ Notra uses your PR titles and descriptions as source material. Clear, descriptiv
 **Poor PR Title**\
 `Fix bug`
 
-### Use Labels for Better Categorization
-
-While Notra intelligently categorizes changes, GitHub labels help ensure accuracy:
-
-* `security`: Security-related changes
-* `breaking-change`: Breaking changes
-* `enhancement`: New features
-* `bug`: Bug fixes
-* `performance`: Performance improvements
-
-### Set Appropriate Lookback Windows
-
-Match your lookback window to your release cadence:
+### Match the Lookback Window to Your Release Cadence
 
 * Ship daily? Use `yesterday` or `current_day`
 * Weekly releases? Use `last_7_days`
@@ -196,20 +202,13 @@ Match your lookback window to your release cadence:
 
 ### Review Before Publishing
 
-All changelogs are created as drafts. Review them to:
+Changelogs are drafts until you publish them. Use the review to:
 
 * Verify technical accuracy
-* Add context that GitHub activity might not capture
-* Adjust highlights for your audience
-* Use the AI editor to refine specific sections
-
-<Info>
-  The AI editor can help you expand sections, adjust tone, or simplify technical language for non-technical readers.
-</Info>
+* Add context that GitHub activity does not capture
+* Adjust the Highlights for your audience
 
 ## Example Changelog
-
-Here's what a generated changelog looks like:
 
 ```markdown
 # Product Updates - Week of March 2, 2026
@@ -230,10 +229,6 @@ and provide clear migration guidance with the correct usage pattern.
 Signup verification now supports secure email-link completion flows
 with clear status handling for expiration and mismatch cases.
 
-### Async initial state support for modern React apps
-Initial auth state can resolve asynchronously at hook usage points,
-reducing root layout complexity and keeping top-level rendering predictable.
-
 ## More Updates
 
 ### Security
@@ -251,36 +246,32 @@ reducing root layout complexity and keeping top-level rendering predictable.
 
 ## Common Issues
 
-### Changelog is Too Short or Missing Expected Changes
+### Changelog Is Too Short or Missing Expected Changes
 
-**Cause**: Lookback window might not cover the relevant timeframe, or PRs lack sufficient detail.
-
-**Solution**:
-
-1. Verify your lookback window settings match your release cadence
-2. Check that PRs have descriptive titles and descriptions
-3. Ensure releases are published or commits are pushed within the lookback period
-
-### Too Many Low-Impact Items in Highlights
-
-**Cause**: Limited high-impact changes during the timeframe.
+**Cause**: The lookback window does not cover the relevant timeframe, the activity was deselected in the Activity step, or the PRs lack detail.
 
 **Solution**:
 
-* Notra automatically limits highlights to truly important changes
-* If you see maintenance items in highlights, adjust your brand voice settings to be more selective
-* Consider a longer lookback window to capture more significant work
+1. Check the lookback window against when the work was merged
+2. Make sure the PRs, commits, or releases were selected in the Activity step
+3. Add descriptive titles and descriptions to your PRs
+
+### Nothing Was Generated
+
+**Cause**: Every plan includes a monthly quota of long-form posts (changelogs and blog posts count against it). When the quota is used up, Notra falls back to AI credits, and if none are available the generation is blocked.
+
+**Solution**: Check **Settings > Billing & Usage > Usage**, and top up credits under **Settings > Credits** or upgrade the plan. See [Billing & Plans](/organization/billing).
 
 ### Changes from Private Repositories Not Appearing
 
-**Cause**: Missing or expired GitHub token.
+**Cause**: The GitHub app is not installed on the repository, or the repository is disabled in the integration.
 
 **Solution**:
 
-1. Navigate to **Integrations** → **GitHub**
-2. Re-authenticate your GitHub connection
-3. Ensure the token has access to private repositories
+1. Navigate to **Integrations > GitHub**
+2. Add the repository, or enable it if it is already listed
+3. Re-run the generation
 
 <Tip>
-  Need help? Check out [Brand Voice Configuration](/concepts/brand-voice) to customize how your changelogs are written and prioritized.
+  See [Brand Voice](/concepts/brand-voice) to control how changelogs are written and which changes get emphasised.
 </Tip>

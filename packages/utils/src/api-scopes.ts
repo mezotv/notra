@@ -69,7 +69,7 @@ export const API_OPENAPI_TAGS = [
   {
     name: "Content",
     description:
-      "Read content. Organization is inferred from the API key (identity.externalId).",
+      "Manage posts, brand identities, and GitHub or Linear integrations, and queue content generation. Organization is inferred from the API key (identity.externalId).",
   },
   {
     name: "Schedules",

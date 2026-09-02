@@ -44,6 +44,8 @@ const getIntegrationsRoute = createRoute({
   tags: ["Content"],
   operationId: "listIntegrations",
   summary: "List available integrations",
+  description:
+    "Returns the enabled GitHub and Linear integrations for the organization. The slack array is always empty.",
   responses: {
     200: {
       description: "Integrations fetched successfully",
@@ -66,6 +68,8 @@ const createGitHubIntegrationRoute = createRoute({
   tags: ["Content"],
   operationId: "createGitHubIntegration",
   summary: "Create a GitHub integration",
+  description:
+    "Checks that the repository can be read (a personal access token is required for private repositories), connects it, and enables changelog generation for it; blog post and X post outputs start disabled. A webhook secret is generated on creation. Copy the payload URL and secret from the dashboard to receive push and release events.",
   request: {
     body: {
       content: {
@@ -94,7 +98,8 @@ const createGitHubIntegrationRoute = createRoute({
     409: errorResponse("Repository already connected"),
     429: rateLimitResponse(
       RATE_LIMITS.integrationCreate.requests,
-      RATE_LIMITS.integrationCreate.window
+      RATE_LIMITS.integrationCreate.window,
+      "API key"
     ),
     503: errorResponse("Authentication or integration service unavailable"),
   },
@@ -107,7 +112,7 @@ const deleteIntegrationRoute = createRoute({
   operationId: "deleteIntegration",
   summary: "Delete a single integration",
   description:
-    "Deletes a GitHub or Linear integration. Any automation triggers targeting a deleted GitHub integration are disabled.",
+    "Deletes a GitHub or Linear integration. Schedules and event triggers that target the integration are disabled and listed in the response.",
   request: {
     params: getIntegrationParamsSchema,
   },

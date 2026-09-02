@@ -1,6 +1,6 @@
 ---
 title: "Blog Posts"
-description: "Generate in-depth technical blog posts from your development work and product updates"
+description: "Generate blog posts from your development activity or from a GEO content brief, refine them with the content agent, and publish"
 authors:
   - handle: dominik
 
@@ -13,7 +13,7 @@ docolin:
     - github-account
   language: en
   difficulty: beginner
-  time_estimate: 12m
+  time_estimate: 10m
   status: stable
   aliases:
     - blog posts
@@ -24,35 +24,28 @@ docolin:
   next: ./social-media.mdx
 ---
 
-Notra can transform significant features, architectural decisions, and product milestones into comprehensive blog posts that tell the story behind your work.
+Notra writes blog posts in two ways:
 
-## Overview
+* **From your activity (Studio)**: turn pull requests, commits, releases, and Linear issues into a narrative post about what you shipped.
+* **From a prompt (GEO Write)**: write an article that targets a prompt AI answer engines are asked about, using your brand identity, sitemap, and competitor data as context.
 
-Blog posts in Notra are designed for deeper storytelling than changelogs. They're ideal for:
+Both produce a post with the content type `blog_post` that you review and publish from **Content**.
 
-* **Feature announcements**: Deep dives into major new capabilities
-* **Technical deep dives**: Architecture decisions, performance optimizations, and engineering challenges
-* **Release highlights**: Combining multiple features into a cohesive product update
-* **Behind-the-scenes**: The story of how and why you built something
+## Content Types
 
-<Info>
-  Blog posts pull from the same GitHub data as changelogs but use a different narrative structure focused on storytelling and context rather than comprehensive change lists.
-</Info>
+Posts in Notra have one of these content types:
 
-## Content Type
+| Type            | What it is                                         |
+| --------------- | -------------------------------------------------- |
+| `changelog`     | Categorised list of what changed                   |
+| `blog_post`     | Long-form article                                  |
+| `linkedin_post` | LinkedIn post                                      |
+| `twitter_post`  | Post for X                                         |
+| `image`         | Generated social image (1200 x 630)                |
 
-In Notra's database, blog posts are stored with the content type `blog_post`:
+Every post has a status of `draft` or `published`. The API also accepts `investor_update` as a filter value for older posts, but the dashboard no longer generates that type.
 
-```typescript
-contentType: "blog_post"
-```
-
-This distinguishes them from other content types like:
-
-* `changelog`: Comprehensive update lists
-* `linkedin_post`: Social media updates
-* `twitter_post`: Short-form social content
-* `investor_update`: Investor updates
+Blog posts can additionally carry a subtype: `guide`, `comparison`, `listicle`, `how-to`, `faq`, or `alternatives`. Posts written through GEO Write get one of these; posts generated from repository activity do not.
 
 ## How Blog Posts Differ from Changelogs
 
@@ -60,124 +53,127 @@ This distinguishes them from other content types like:
 | ------------- | ----------------------------- | ------------------------------------- |
 | **Purpose**   | Comprehensive list of changes | Narrative around specific features    |
 | **Scope**     | All changes in a timeframe    | Selected highlights worth exploring   |
-| **Structure** | Summary + categorized lists   | Introduction + deep dive + conclusion |
-| **Tone**      | Informative and complete      | Engaging and explanatory              |
-| **Length**    | 500-1500 words                | 1000-3000+ words                      |
-| **Frequency** | Regular (weekly/monthly)      | Occasional (as needed)                |
+| **Structure** | Summary + categorised lists   | Introduction + deep dive + conclusion |
+| **Length**    | Fixed structure               | Around 400 to 800 words in the body   |
+| **Quota**     | Long-form post                | Long-form post                        |
 
-## Generation Options
+<Info>
+  Both count against the long-form posts quota of your plan. See [Billing & Plans](/organization/billing).
+</Info>
 
-### Manual Triggers
+## Writing from Repository Activity
 
-Blog posts work best when triggered manually for specific features or milestones:
+<Steps>
+  <Step title="Open the create dialog">
+    Switch the sidebar to **Studio**, open **Content**, and click **New post**.
+  </Step>
 
-1. Navigate to **Content** in your dashboard
-2. Click **Create** → **Blog Post**
-3. Select relevant repositories and timeframe
-4. Provide context about what to focus on
-5. Let Notra's AI generate the first draft
+  <Step title="Formats">
+    Select **Blog post**. You can combine it with other formats in the same run. Pick the lookback window and toggle **Pull Requests**, **Commits**, and **Releases**.
+  </Step>
 
-<Tip>
-  The more context you provide, the better the output. Include details about user impact, technical challenges overcome, and the "why" behind decisions.
-</Tip>
+  <Step title="Activity">
+    Choose repositories and Linear integrations, then deselect anything you do not want in the post. Keeping the selection focused on one feature produces a much better article.
+  </Step>
 
-### Event-Based Triggers
+  <Step title="Identity">
+    Choose the brand identity that should write the post. Notra creates a collection and generates the draft.
+  </Step>
+</Steps>
 
-You can also configure blog post generation for major releases:
+The blog agent targets 400 to 800 words for the body, goes shorter when there is less to say, and includes code snippets, API examples, or before-and-after comparisons where they make the post more concrete.
+
+### Automating Blog Posts
+
+Blog posts can also be generated by schedules and event triggers. A release trigger is the most common setup:
 
 ```json
 {
   "sourceType": "github_webhook",
-  "sourceConfig": {
-    "eventTypes": ["release"]
-  },
+  "sourceConfig": { "eventTypes": ["release"], "includePreReleases": false },
+  "targets": { "repositoryIds": ["repo_123"] },
   "outputType": "blog_post",
-  "targets": {
-    "repositoryIds": ["repo-id-1"]
-  }
+  "outputConfig": { "brandVoiceId": "bv_123" },
+  "enabled": true,
+  "autoPublish": false
 }
 ```
 
-<Note>
-  Event-based blog post generation is best suited for major releases where you want automatic draft creation. You'll still review and refine before publishing.
-</Note>
+Blog posts support **Auto-publish**: when it is on, generated posts are saved as `published` instead of `draft`. See [Event-Based Automation](/automation/event-based) and [Scheduled Automation](/automation/scheduled).
 
-## Writing with AI Assistance
+## Writing from a Prompt (GEO Write)
 
-Notra's AI editor helps you craft compelling blog posts:
+When you want an article that improves how AI answer engines describe your brand, use **Write** in the GEO sidebar.
 
-### Expand on Technical Details
+<Steps>
+  <Step title="Prompt">
+    Enter the prompt you want the article to answer, or start from a content gap.
+  </Step>
 
-Select a section and ask the AI to:
+  <Step title="Format">
+    Choose **Guide** (a long article that answers the prompt directly), **Listicle** (a numbered list buyers can scan and cite), or **Comparison** (compares your brand with its alternatives).
+  </Step>
 
-* "Explain the technical implementation in more detail"
-* "Add code examples for this feature"
-* "Describe the performance improvements with metrics"
+  <Step title="Context">
+    Optionally attach a brand identity, a sitemap so the writer can link to your existing pages, and competitors to position against.
+  </Step>
 
-### Adjust Tone and Audience
+  <Step title="Brief and draft">
+    Notra first writes a content brief, then drafts the article from it. The finished post opens in the editor with the brief available alongside it.
+  </Step>
+</Steps>
+
+## Editing with the Content Agent
+
+Open any post and use the content agent in the right-hand panel. Select a passage to give it context, then ask for changes:
+
+**Expand on technical details**
+
+* "Explain the implementation in more detail"
+* "Add a code example for this feature"
+
+**Adjust tone and audience**
 
 * "Make this section more accessible for non-technical readers"
-* "Add more technical depth for a developer audience"
 * "Rewrite this in a more conversational tone"
 
-### Improve Structure
+**Improve structure**
 
 * "Add a section about migration steps"
-* "Include a comparison with the previous approach"
-* "Add a conclusion section with next steps"
+* "Add a conclusion with next steps"
+
+The agent edits the document directly. You can also edit the Markdown yourself at any time.
+
+## Publishing
+
+Clicking **Publish** sets the post status to `published`. Notra does not push the post to a site by itself. Published posts are picked up by:
+
+* **Framer**: the Notra plugin imports posts into a Framer site. See [Framer](/integrations/framer).
+* **Your own site or CMS**: fetch posts with `GET /v1/posts?status=published&contentType=blog_post` and render them. See [API Getting Started](/api/getting-started).
+* **Manual**: copy the Markdown from the editor.
+
+**Move to draft** takes a post back to `draft`.
 
 ## Best Practices
 
 ### Focus on One Main Topic
 
-Unlike changelogs that cover everything, blog posts should have a clear narrative thread:
+Blog posts should have a clear narrative thread. Deselect unrelated activity in the Activity step instead of asking the writer to cover everything.
 
 **Good**: "How We Reduced API Response Time by 60%"\
 **Poor**: "March 2026 Product Updates"
 
 ### Include Context and Motivation
 
-Help readers understand:
+Good posts explain the problem, the solution, the impact for users, and what you learned. The writer can only include what your PRs, commits, issues, and brand identity contain, so descriptive PR bodies matter.
 
-* **The problem**: What challenge were you solving?
-* **The solution**: How did you approach it?
-* **The impact**: What changed for users?
-* **The learnings**: What would you do differently?
+### Keep Your Brand Identity Current
 
-### Use Your GitHub Data Strategically
+The writer reads your company description, tone, target audience, custom instructions, and reference posts. See [Brand Voice](/concepts/brand-voice).
 
-Notra can pull:
+### Review Before Publishing
 
-* PR descriptions for implementation details
-* Commit messages for technical context
-* Release notes for version history
-* Issue discussions for problem background
-
-But you decide what to highlight and how to frame it.
-
-### Add Visual Context
-
-While Notra generates the text, consider adding:
-
-* Architecture diagrams
-* Before/after screenshots
-* Performance charts
-* Code snippets
-
-<Info>
-  You can upload images to your Notra workspace and reference them in your blog posts using standard Markdown image syntax.
-</Info>
-
-### Plan Your Publishing Workflow
-
-Blog posts typically need more review and polish than changelogs:
-
-1. **Generate**: Let Notra create the first draft
-2. **Structure**: Verify the narrative flow and organization
-3. **Expand**: Use AI to add detail where needed
-4. **Polish**: Refine tone, add examples, check technical accuracy
-5. **Review**: Get team feedback on technical accuracy
-6. **Publish**: Copy the Markdown to your blog platform
+Check technical accuracy, add screenshots or diagrams on your site, and get a teammate to read it. Posts stay in `draft` until you publish them.
 
 ## Example Blog Post Structure
 
@@ -187,143 +183,33 @@ Blog posts typically need more review and polish than changelogs:
 ## The Challenge
 
 User registration flows have always presented a tension between
-security and user experience. Traditional password-based flows
-require users to...
-
-[Context about the problem and user pain points]
+security and user experience...
 
 ## Our Solution
 
 We built a passwordless email verification system that balances
 security with convenience...
 
-[Technical overview of the approach]
-
 ### How It Works
 
 1. User enters their email address
 2. System generates a secure, time-limited verification token
 3. Email is sent with a magic link
-4. User clicks link and is authenticated
-
-[Detailed technical implementation]
+4. User clicks the link and is authenticated
 
 ### Security Considerations
-
-We implemented several safeguards:
 
 - **Time-limited tokens**: Links expire after 15 minutes
 - **Single-use tokens**: Each link can only be used once
 - **Rate limiting**: Prevents enumeration attacks
-- **Secure token generation**: Cryptographically random tokens
-
-[Deep dive into security measures]
 
 ## Implementation Details
 
 ```typescript
 // Example code showing key implementation
-````
-
-\[Technical details developers care about]
-
-## Impact
-
-Since launching email verification:
-
-* 40% increase in registration completion
-* 60% reduction in password reset requests
-* 95% user satisfaction score
-
-\[Metrics and user feedback]
+```
 
 ## What's Next
 
 We're already working on social authentication and passkey support...
-
-\[Future roadmap and next steps]
-
-```
-
-## Publishing Workflow
-
-Generated blog posts are available in the dashboard as Markdown. Review the draft, make any edits, then copy the Markdown to your blog platform or CMS.
-
-Output publishing integrations such as Webflow and Framer are planned, but generated content is currently reviewed and published manually.
-
-## Common Use Cases
-
-### Feature Announcements
-
-**When to use**: You've shipped a major new capability
-
-**Focus on**:
-- What the feature does and why it matters
-- How users benefit
-- Quick start guide
-- Migration steps (if applicable)
-
-### Technical Deep Dives
-
-**When to use**: You've solved an interesting technical challenge
-
-**Focus on**:
-- The problem and constraints
-- Solution evaluation and decision-making
-- Implementation details
-- Performance results
-- Lessons learned
-
-### Architecture Changes
-
-**When to use**: Major refactoring or architectural improvements
-
-**Focus on**:
-- Why the change was needed
-- Alternative approaches considered
-- Migration strategy
-- Performance and reliability impacts
-
-### Release Highlights
-
-**When to use**: Major version releases with multiple significant features
-
-**Focus on**:
-- Top 3-5 most important features
-- Theme connecting the features
-- Upgrade instructions
-- Deprecation notices
-
-## Tips for Better Blog Posts
-
-### Start with a Strong Hook
-
-First paragraph should grab attention:
-- State the problem you solved
-- Share a surprising metric
-- Ask a relatable question
-- Make a bold statement
-
-### Use Subheadings Strategically
-
-Break up long sections with descriptive subheadings that:
-- Guide readers through the narrative
-- Allow scanning for specific topics
-- Create natural breaking points
-
-### Show, Don't Just Tell
-
-Instead of "We improved performance," say:
-"We reduced API response time from 450ms to 180ms by implementing request coalescing and aggressive caching."
-
-### End with a Call to Action
-
-- Try the new feature
-- Read related documentation
-- Share feedback
-- Contribute to the project
-
-<Note>
-  Blog posts are drafts until you publish them. Take your time refining the content - this is storytelling, not just documentation.
-</Note>
-```
+````

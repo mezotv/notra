@@ -305,17 +305,33 @@ const githubPersonalAccessTokenSchema = z
   );
 
 export const createGitHubIntegrationRequestSchema = z.object({
-  owner: z.string().trim().min(1, "Repository owner is required"),
-  repo: z.string().trim().min(1, "Repository name is required"),
-  branch: z.string().trim().min(1).nullable().optional(),
-  token: z.preprocess((value) => {
-    if (typeof value !== "string") {
-      return value;
-    }
+  owner: z.string().trim().min(1, "Repository owner is required").openapi({
+    description: "GitHub user or organization that owns the repository.",
+    example: "usenotra",
+  }),
+  repo: z.string().trim().min(1, "Repository name is required").openapi({
+    description: "Repository name without the owner.",
+    example: "notra",
+  }),
+  branch: z.string().trim().min(1).nullable().optional().openapi({
+    description:
+      "Branch to read activity from. Defaults to the repository's default branch.",
+    example: "main",
+  }),
+  token: z
+    .preprocess((value) => {
+      if (typeof value !== "string") {
+        return value;
+      }
 
-    const trimmed = value.trim();
-    return trimmed.length > 0 ? trimmed : undefined;
-  }, githubPersonalAccessTokenSchema.optional().nullable()),
+      const trimmed = value.trim();
+      return trimmed.length > 0 ? trimmed : undefined;
+    }, githubPersonalAccessTokenSchema.optional().nullable())
+    .openapi({
+      description:
+        "GitHub personal access token with read access to the repository. Required for private repositories; public repositories work without one.",
+      example: "github_pat_11ABCDEFG...",
+    }),
 });
 
 export const createGitHubIntegrationResponseSchema = z.object({
@@ -425,9 +441,13 @@ export const patchPostResponseSchema = z.object({
 
 export const createBrandIdentityRequestSchema = z.object({
   name: z.string().trim().min(1).max(BRAND_NAME_MAX_LENGTH).optional().openapi({
+    description:
+      'Display name. Must be unique within the organization. Defaults to "Untitled Brand Voice".',
     example: "Notra",
   }),
   websiteUrl: websiteUrlSchema.openapi({
+    description:
+      "Public website to analyze for company details, tone, and audience. The scheme is optional; https is assumed.",
     example: "https://usenotra.com",
   }),
 });
@@ -435,9 +455,16 @@ export const createBrandIdentityRequestSchema = z.object({
 const brandAnalysisJobSchema = z.object({
   id: z.string(),
   organizationId: z.string(),
-  brandIdentityId: z.string(),
-  status: z.enum(["queued", "running", "completed", "failed"]),
-  step: z.enum(["scraping", "extracting", "saving"]).nullable(),
+  brandIdentityId: z.string().openapi({
+    description:
+      "ID of the brand identity being analyzed. It exists as soon as the job is queued and is filled in when the job completes.",
+  }),
+  status: z.enum(["queued", "running", "completed", "failed"]).openapi({
+    description: "Job state. Stop polling once it is completed or failed.",
+  }),
+  step: z.enum(["scraping", "extracting", "saving"]).nullable().openapi({
+    description: "Current analysis step while the job is running.",
+  }),
   currentStep: z.number().int().min(0),
   totalSteps: z.number().int().min(1),
   workflowRunId: z.string().nullable(),
@@ -458,7 +485,8 @@ export const getBrandAnalysisJobParamsSchema = z.object({
       in: "path",
       name: "jobId",
     },
-    example: "brand_job_123",
+    description: "Job ID returned by POST /v1/brand-identities/generate.",
+    example: "brand_job_5f0c3b2a9d4e4c1f8a7b6c5d4e3f2a1b",
   }),
 });
 
@@ -602,9 +630,17 @@ export const getBrandIdentityResponseSchema = z.object({
 });
 
 export const getIntegrationsResponseSchema = z.object({
-  github: z.array(githubIntegrationResponseSchema),
-  slack: z.array(z.unknown()),
-  linear: z.array(linearIntegrationResponseSchema),
+  github: z.array(githubIntegrationResponseSchema).openapi({
+    description:
+      "Enabled GitHub integrations. One entry per connected repository.",
+  }),
+  slack: z.array(z.unknown()).openapi({
+    description:
+      "Always empty. Slack is connected from the dashboard and is not exposed through the API.",
+  }),
+  linear: z.array(linearIntegrationResponseSchema).openapi({
+    description: "Enabled Linear integrations.",
+  }),
   organization: organizationResponseSchema,
 });
 
@@ -630,16 +666,24 @@ const contentGenerationTypeSchema = z.enum(SUPPORTED_CONTENT_GENERATION_TYPES);
 export const createPostGenerationRequestSchema = z
   .object({
     contentType: contentGenerationTypeSchema.openapi({
+      description: "Type of content to generate.",
       example: "blog_post",
     }),
     lookbackWindow: contentGenerationLookbackWindowSchema
       .default("last_7_days")
-      .openapi({ example: "last_7_days" }),
+      .openapi({
+        description:
+          "How far back to collect source activity (commits, pull requests, releases, Linear issues).",
+        example: "last_7_days",
+      }),
     brandVoiceId: z.string().min(1).optional().openapi({
-      example: "voice_123",
+      description: "Deprecated. Use brandIdentityId instead.",
+      example: "51c2f3aa-efdd-4e28-8e69-23fa2dfd3561",
     }),
     brandIdentityId: z.string().min(1).nullable().optional().openapi({
-      example: "voice_123",
+      description:
+        "Brand identity to write in. Defaults to the organization's default brand identity.",
+      example: "51c2f3aa-efdd-4e28-8e69-23fa2dfd3561",
     }),
     repositoryIds: z
       .array(z.string().min(1))
@@ -664,6 +708,8 @@ export const createPostGenerationRequestSchema = z
           .min(1)
           .optional()
           .openapi({
+            description:
+              "GitHub integration IDs to use as sources, as returned by GET /v1/integrations.",
             example: ["integration_1", "integration_2"],
           }),
         linear: z
@@ -671,10 +717,16 @@ export const createPostGenerationRequestSchema = z
           .min(1)
           .optional()
           .openapi({
+            description:
+              "Linear integration IDs to use as sources, as returned by GET /v1/integrations.",
             example: ["linear_integration_1"],
           }),
       })
-      .optional(),
+      .optional()
+      .openapi({
+        description:
+          "Source integrations to draw activity from. Omit this and github.repositories to use every connected GitHub integration.",
+      }),
     github: z
       .object({
         repositories: z
@@ -688,6 +740,8 @@ export const createPostGenerationRequestSchema = z
       })
       .optional()
       .openapi({
+        description:
+          "Select connected repositories by owner and name instead of integration ID. Cannot be combined with integrations.github.",
         example: {
           repositories: [{ owner: "usenotra", repo: "notra" }],
         },
@@ -704,6 +758,10 @@ export const createPostGenerationRequestSchema = z
         includeCommits: true,
         includeReleases: true,
         includeLinearData: false,
+      })
+      .openapi({
+        description:
+          "Which kinds of activity to collect from the selected sources.",
       }),
     selectedItems: z
       .object({
@@ -736,7 +794,11 @@ export const createPostGenerationRequestSchema = z
           )
           .optional(),
       })
-      .optional(),
+      .optional()
+      .openapi({
+        description:
+          "Restrict generation to specific commits, pull requests, releases, or Linear issues instead of everything in the lookback window.",
+      }),
   })
   .refine(
     (value) => {
@@ -800,14 +862,22 @@ const contentGenerationJobEventSchema = z.object({
 const contentGenerationJobSchema = z.object({
   id: z.string(),
   organizationId: z.string(),
-  status: contentGenerationStatusSchema,
+  status: contentGenerationStatusSchema.openapi({
+    description:
+      "Job state. Terminal states are completed, failed, and skipped.",
+  }),
   contentType: contentGenerationTypeSchema,
   lookbackWindow: contentGenerationLookbackWindowSchema,
   repositoryIds: z.array(z.string()),
   brandVoiceId: z.string().nullable(),
   workflowRunId: z.string().nullable(),
-  postId: z.string().nullable(),
-  error: z.string().nullable(),
+  postId: z.string().nullable().openapi({
+    description:
+      "ID of the generated post. Set once the job reaches completed.",
+  }),
+  error: z.string().nullable().openapi({
+    description: "Failure reason when status is failed.",
+  }),
   source: z.enum(["api", "dashboard"]),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -825,7 +895,8 @@ export const getPostGenerationParamsSchema = z.object({
       in: "path",
       name: "jobId",
     },
-    example: "job_123",
+    description: "Job ID returned by POST /v1/posts/generate.",
+    example: "job_5f0c3b2a9d4e4c1f8a7b6c5d4e3f2a1b",
   }),
 });
 

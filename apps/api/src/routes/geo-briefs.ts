@@ -232,7 +232,7 @@ geoBriefsRoutes.openapi(planBriefRoute, async (c) => {
       responseSchema: internalGeoWriterPlanResponseSchema,
       timeoutMs: SYNCHRONOUS_INTERNAL_CALL_TIMEOUT_MS,
       timeoutMessage:
-        "Brief planning is taking longer than expected and is still in progress. Do not retry — list the project's GEO briefs to find the result.",
+        "Brief planning is taking longer than expected and is still in progress. Do not retry. List the project's GEO briefs to find the result.",
     }
   );
   if (!outcome.ok) {

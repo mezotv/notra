@@ -125,7 +125,7 @@ const runSequenceRoute = createRoute({
   operationId: "runGeoSequence",
   summary: "Run a GEO prompt sequence now",
   description:
-    "Runs the sequence synchronously and answers with its result. The call is not queued: the request stays open for the whole run, which plays every turn against every available answer engine and can take several minutes. Use a client timeout of at least five minutes; after four minutes the API stops waiting and answers 409 while the run finishes on its own — do not retry, read the result from the project's GEO checks. The work happens inside the Notra dashboard, which owns the model credentials and billing gates; the public API never calls an answer engine itself. Results also land in the project's GEO checks.",
+    "Runs the sequence synchronously and answers with its result. The call is not queued: the request stays open for the whole run, which plays every turn against every available answer engine and can take several minutes. Use a client timeout of at least five minutes; after four minutes the API stops waiting and answers 409 while the run finishes on its own. Do not retry; read the result from the project's GEO checks. The work happens inside the Notra dashboard, which owns the model credentials and billing gates; the public API never calls an answer engine itself. Results also land in the project's GEO checks.",
   request: { params: sequenceParamsSchema },
   responses: {
     200: {
@@ -257,7 +257,7 @@ geoSequencesRoutes.openapi(runSequenceRoute, async (c) => {
       responseSchema: internalGeoSequenceRunResponseSchema,
       timeoutMs: SYNCHRONOUS_INTERNAL_CALL_TIMEOUT_MS,
       timeoutMessage:
-        "The sequence run is taking longer than expected and is still in progress. Do not retry — check the project's GEO checks for the result.",
+        "The sequence run is taking longer than expected and is still in progress. Do not retry. Check the project's GEO checks for the result.",
     }
   );
   if (!outcome.ok) {

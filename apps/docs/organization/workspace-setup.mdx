@@ -1,6 +1,6 @@
 ---
 title: "Workspace Setup"
-description: "Create and configure your workspace to get started with Notra"
+description: "Create your organization, complete onboarding, and configure workspace settings and brand identity"
 authors:
   - handle: dominik
 
@@ -17,6 +17,7 @@ docolin:
   aliases:
     - workspace setup
     - create organization
+    - onboarding
     - brand identity setup
     - organization slug
   next: ./team-management.mdx
@@ -24,180 +25,193 @@ docolin:
 
 ## Creating Your First Workspace
 
-When you first sign up for Notra, you'll be prompted to create an organization workspace. This workspace is your team's home base where all content, automations, and integrations are managed.
+When you sign up for Notra you are taken through a four-step onboarding flow. The first step creates your organization, which is the workspace where content, GEO tracking, automations, integrations, and team members live. Every workspace URL starts with its slug: `app.usenotra.com/your-slug`.
 
 <Steps>
-  <Step title="Enter organization details">
-    Provide your organization name, a unique slug for URLs, and optionally your website URL. The slug will be used in all your workspace URLs: `app.usenotra.com/your-slug`
+  <Step title="Workspace">
+    Enter an organization name and a slug. The slug is generated from the name and you can edit it. Add your website so Notra can pick up your brand voice from it, and tell us where you heard about Notra.
   </Step>
 
-  <Step title="Configure workspace settings">
-    After creation, customize your workspace logo, name, and URL slug from the **Settings > General** page.
+  <Step title="Visibility">
+    Notra asks ChatGPT, Claude, Gemini, and Perplexity what your buyers ask them and checks whether your brand comes up. Pick up to 20 prompts to track from the suggestions or add your own.
   </Step>
 
-  <Step title="Set up your brand identity">
-    Navigate to **Brand > Identity** to configure your company profile and tone of voice for AI-generated content.
+  <Step title="Competitors">
+    Confirm the competitors Notra detected or add the ones you want to track share of voice against.
+  </Step>
+
+  <Step title="Pricing">
+    Choose a plan. GEO tracking requires a Starter, Growth, or Scale plan. If a plan offers a free trial the button reads **Start free trial**. See [Billing & Plans](/organization/billing).
   </Step>
 </Steps>
 
+<Info>
+  While the visibility and competitor steps run, Notra also analyzes your website in the background to create a default brand identity. If you already have a workspace with a paid subscription, onboarding is skipped and you land in that workspace.
+</Info>
+
+### Creating Additional Workspaces
+
+Click the organization name at the top of the sidebar and choose the option to create a new organization. The dialog asks for a name, a slug, and an optional website. You can belong to as many organizations as you like, with a different role in each.
+
 ## Organization Settings
 
-Manage your workspace settings from the **Settings > General** page.
+Manage your workspace from **Settings > General**.
 
 ### Basic Information
 
 <ParamField path="Name" type="string" required>
-  The display name of your organization as it appears across the platform. Must be between 2-100 characters.
+  The display name of your organization. Must be between 2 and 100 characters.
 </ParamField>
 
 <ParamField path="Slug" type="string" required>
-  A URL-friendly identifier used in workspace URLs. Must be 3-63 characters, lowercase letters, numbers, and hyphens only.
+  A URL-friendly identifier used in workspace URLs. Must be 3 to 63 characters: lowercase letters, numbers, and hyphens only.
 
-  <Warning>Reserved slugs like `api`, `auth`, `admin`, `settings`, and `dashboard` cannot be used.</Warning>
+  <Warning>Reserved slugs cannot be used: `api`, `auth`, `login`, `signup`, `forgot-password`, `reset-password`, `invitation`, `callback`, `onboarding`, `dashboard`, `rpc`, `design-system`, `settings`, `admin`, `help`, `support`, `docs`, `blog`, `about`, `terms`, `privacy`, `contact`.</Warning>
 </ParamField>
 
 <ParamField path="Logo" type="image">
-  Upload a custom logo for your organization. Accepted formats: JPEG, PNG, GIF, WebP, AVIF.
+  Click the logo to upload a new one. Accepted formats: JPEG, PNG, GIF, WebP, AVIF.
 </ParamField>
 
-<ParamField path="Organization ID" type="string">
-  A unique identifier for your organization. This is read-only and used for API integrations.
+<ParamField path="ID" type="string">
+  The organization ID. Read-only; use it when a request or support ticket needs to identify the workspace.
 </ParamField>
 
 ### Updating Workspace Settings
 
 1. Navigate to **Settings > General**
-2. Click on the logo to upload a new image
-3. Update the name or slug fields
-4. Click **Save Changes** to apply
+2. Click the logo to upload a new image; it saves immediately
+3. Update the name or slug
+4. Click **Save Changes**
 
 <Note>
-  Changing your organization slug will update all workspace URLs. Make sure to update any bookmarks or links.
+  Changing the slug changes every workspace URL. Notra redirects you to the new slug after saving; update bookmarks and any links you have shared.
 </Note>
 
-## Brand Identity Configuration
+Only owners and admins can save organization settings.
 
-Notra uses AI to generate content that matches your brand voice. Configure your brand settings to ensure all generated content is on-brand.
+### Other Settings Pages
+
+| Page                | What it does                                                                                       |
+| ------------------- | -------------------------------------------------------------------------------------------------- |
+| **Account**         | Your profile, login details, connected sign-in accounts, privacy options, the organizations you belong to, and account deletion |
+| **Members**         | Invite people, change roles, remove members, manage pending invitations. See [Team Management](/organization/team-management) |
+| **Notifications**   | Email notifications for the organization, sent to owner email addresses                          |
+| **Attachments**     | Manage the files you have uploaded                                                                  |
+| **Billing & Usage** | Plans, add-ons, invoices, and feature usage. See [Billing & Plans](/organization/billing)         |
+| **Credits**         | AI credit balance and top-ups; shown when your plan includes AI credits                            |
+| **Logs**            | Automation and API activity for the workspace. Retention depends on your plan                     |
+
+## Brand Identity
+
+Notra writes content in your voice. Brand identities live under **Studio > Brand Identity** in the sidebar. A workspace can have several identities (for example Marketing, Technical, Internal), one of which is the default.
+
+The page has four tabs:
+
+* **Company Info**: profile, tone, language, and audience for the selected identity
+* **References**: real posts that teach the writer your style
+* **Sitemap**: pages Notra can link to and monitor for AI discovery
+* **Brand Guidelines**: logos, colors, typography, and screenshots pulled from your site
 
 ### Website Analysis
 
-Notra can automatically extract your brand identity from your website:
-
 <Steps>
   <Step title="Enter your website URL">
-    Go to **Brand > Identity** and enter your website URL (e.g., `example.com`)
+    On a new workspace, or when adding an identity, enter your website (for example `example.com`) and click **Analyze**.
   </Step>
 
-  <Step title="Run analysis">
-    Click **Analyze** to start the automated brand extraction process. This typically takes 30-60 seconds.
+  <Step title="Wait for the analysis">
+    Notra scrapes the site, extracts the profile, and saves it. The stepper shows **Scraping**, **Extracting**, and **Saving**.
   </Step>
 
-  <Step title="Review extracted information">
-    Notra will extract your company name, description, and tone from your website content.
+  <Step title="Review the result">
+    The company name, description, and tone are filled in from your site. Adjust anything that is off.
   </Step>
 </Steps>
 
-### Manual Configuration
+To run it again later, open the identity menu and choose **Re-analyze**.
 
-You can also manually configure your brand identity:
+### Company Info Fields
 
-#### Company Profile
-
-<ParamField path="Company Name" type="string" required>
-  Your official company or brand name.
+<ParamField path="Company name" type="string" required>
+  Your company or brand name.
 </ParamField>
 
 <ParamField path="Website" type="url">
-  Your company website URL. Used for brand analysis and reference.
+  Your website. Used for analysis and as reference material.
 </ParamField>
 
 <ParamField path="Description" type="string">
-  A short overview of your company, what you do, and who you serve. This helps AI understand your business context.
+  A short overview of your company: what you do and who you serve.
 </ParamField>
 
-#### Tone & Language
+<ParamField path="Tone Profile" type="enum">
+  One of **Conversational**, **Professional**, **Casual**, or **Formal**. Switch to a custom tone to describe the voice in your own words instead.
+</ParamField>
 
-Choose how AI should write on behalf of your brand:
-
-**Tone Profile** (preset options):
-
-* **Conversational** - Friendly, approachable, and casual
-* **Professional** - Polished and business-appropriate
-* **Casual** - Relaxed and informal
-* **Formal** - Traditional and authoritative
-
-**Custom Tone**:
-Provide specific instructions about your brand voice (e.g., "Friendly but authoritative, use technical terms but explain them clearly")
+<ParamField path="Language" type="enum">
+  The language generated content is written in.
+</ParamField>
 
 <ParamField path="Custom Instructions" type="string">
-  Add specific guidelines for AI-generated content, such as:
-
-  * Phrases to avoid
-  * Required terminology
-  * Formatting preferences
-  * Brand-specific requirements
+  Rules the writer must follow: phrases to avoid, required terminology, formatting preferences.
 </ParamField>
 
-#### Target Audience
-
-<ParamField path="Target Audience" type="string">
-  Describe who you're writing for - their interests, pain points, expertise level, and what matters to them. This ensures content resonates with your readers.
+<ParamField path="Who are you writing for?" type="string">
+  Your target audience: their interests, pain points, and what matters to them.
 </ParamField>
 
 <Info>
-  All brand settings auto-save as you edit. Changes apply immediately to new content generation.
+  Company Info auto-saves a few seconds after you stop typing. Changes apply to the next piece of content you generate.
 </Info>
 
-### Re-analyzing Your Brand
+See [Brand Voice](/concepts/brand-voice) for how each setting affects the output.
 
-If your website or brand has changed, you can re-run the analysis:
+### Managing Identities
 
-1. Go to **Brand > Identity**
-2. Click **Re-analyze** next to the Company Profile heading
-3. Wait for the analysis to complete
-4. Review and adjust any auto-populated fields
+From the identity selector you can add an identity (name and website), set one as the default, re-analyze it, or delete it. Automations and the create dialog let you pick which identity writes each post.
 
 ## Workspace Management
 
 ### Switching Between Workspaces
 
-If you're a member of multiple organizations:
+Click the organization name at the top of the sidebar and pick another organization. Notra remembers the workspace you visited last and opens it on your next sign-in.
 
-1. Click your organization name in the sidebar
-2. Select a different organization from the dropdown
-3. The workspace will switch automatically
+You can also switch from **Settings > Account**, where every organization you belong to is listed with a **View** button.
 
-Your last visited workspace is remembered for your next session.
+### Leaving a Workspace
+
+In **Settings > Account**, use **Leave** next to an organization you do not own. Owners cannot leave; they delete the organization instead. You must always keep at least one organization.
 
 ### Deleting a Workspace
 
 <Warning>
-  Deleting a workspace permanently removes all associated data including content, automations, integrations, and team members. This action cannot be undone.
+  Deleting a workspace permanently removes all of its data: posts, GEO tracking, automations, integrations, uploaded files, and memberships. The subscription is cancelled. This cannot be undone.
 </Warning>
 
 To delete a workspace:
 
 1. Navigate to **Settings > General**
-2. Scroll to the **Danger Zone** section
+2. Scroll to **Danger Zone**
 3. Click **Delete Organization**
-4. Confirm the deletion
+4. Confirm
 
 **Requirements:**
 
 * You must be the workspace owner
-* You must have at least one other organization to switch to
-* If other members exist, you'll be warned before deletion
+* You must belong to at least one other organization
+* If other members exist, you are warned before the deletion goes through
 
 ## Best Practices
 
 <Tip>
-  **Choose a memorable slug** - Your organization slug appears in all workspace URLs. Pick something short, recognizable, and related to your brand.
+  **Choose a memorable slug.** It appears in every workspace URL. Pick something short and recognizable.
 </Tip>
 
 <Tip>
-  **Complete your brand profile** - The more detailed your brand identity, the better AI-generated content will match your voice and style.
+  **Add references.** A few real posts on the References tab do more for output quality than any amount of tone description.
 </Tip>
 
 <Tip>
-  **Update brand settings regularly** - As your brand evolves, keep your Notra settings current by re-running website analysis or updating manual fields.
+  **Keep the brand identity current.** Re-analyze after a site redesign or a change in positioning, and review the auto-filled fields.
 </Tip>

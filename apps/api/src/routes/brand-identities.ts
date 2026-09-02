@@ -49,6 +49,8 @@ const getBrandIdentitiesRoute = createRoute({
   tags: ["Content"],
   operationId: "listBrandIdentities",
   summary: "List available brand identities",
+  description:
+    "Returns every brand identity in the organization, default identity first.",
   responses: {
     200: {
       description: "Brand identities fetched successfully",
@@ -71,6 +73,8 @@ const createBrandIdentityRoute = createRoute({
   tags: ["Content"],
   operationId: "createBrandIdentity",
   summary: "Queue async brand identity generation",
+  description:
+    "Creates the brand identity immediately, then queues a website analysis that fills in company details, tone, and audience. The first brand identity in an organization becomes the default. Poll GET /v1/brand-identities/generate/{jobId} until job.status is completed or failed.",
   request: {
     body: {
       content: {
@@ -97,9 +101,10 @@ const createBrandIdentityRoute = createRoute({
     409: errorResponse("Brand identity name already exists"),
     429: rateLimitResponse(
       RATE_LIMITS.brandGeneration.requests,
-      RATE_LIMITS.brandGeneration.window
+      RATE_LIMITS.brandGeneration.window,
+      "API key"
     ),
-    503: errorResponse("Authentication service unavailable"),
+    503: errorResponse("Authentication service or brand analysis unavailable"),
   },
 });
 
@@ -109,6 +114,8 @@ const getBrandAnalysisJobRoute = createRoute({
   tags: ["Content"],
   operationId: "getBrandIdentityGeneration",
   summary: "Get async brand identity generation status",
+  description:
+    "Returns the analysis job. job.status moves from queued to running and ends as completed or failed; job.step shows the current stage while running. Fetch the finished identity with GET /v1/brand-identities/{brandIdentityId}.",
   request: {
     params: getBrandAnalysisJobParamsSchema,
   },
@@ -135,6 +142,8 @@ const getBrandIdentityRoute = createRoute({
   tags: ["Content"],
   operationId: "getBrandIdentity",
   summary: "Get a single brand identity",
+  description:
+    "Returns the brand identity. When no brand identity with this ID exists in your organization, the response is still 200 with brandIdentity set to null.",
   request: {
     params: getBrandIdentityParamsSchema,
   },
