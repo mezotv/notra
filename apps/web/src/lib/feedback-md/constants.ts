@@ -1,6 +1,8 @@
 import type { ClaudeTodo } from "@notra/ui/components/brainless/claude/claude-todo-list";
 
+import { DatabuddyLogo } from "@/components/landing/marquee-logos/databuddy-logo";
 import type {
+  FeedbackMdAdopter,
   FeedbackMdClient,
   FeedbackMdPrinciple,
   FeedbackMdQuestion,
@@ -208,6 +210,19 @@ export const FEEDBACK_MD_SIBLINGS: FeedbackMdSibling[] = [
     href: FEEDBACK_MD_PATH,
   },
 ];
+
+export const FEEDBACK_MD_ADOPTERS: FeedbackMdAdopter[] = [
+  {
+    name: "databuddy",
+    label: "Databuddy",
+    siteUrl: "https://www.databuddy.cc",
+    feedbackUrl: "https://www.databuddy.cc/feedback.md",
+    Logo: DatabuddyLogo,
+  },
+];
+
+export const FEEDBACK_MD_ADOPTERS_DESCRIPTION =
+  "Teams already serving a feedback.md at their root. Each one links to the live file.";
 
 const FEEDBACK_MD_PAGE_URL = `${SITE_URL}${FEEDBACK_MD_PAGE_PATH}`;
 

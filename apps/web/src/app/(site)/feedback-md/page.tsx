@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { FeedbackMdAdopters } from "@/components/feedback-md/feedback-md-adopters";
 import { FeedbackMdAnatomy } from "@/components/feedback-md/feedback-md-anatomy";
 import { FeedbackMdFaq } from "@/components/feedback-md/feedback-md-faq";
 import { FeedbackMdHero } from "@/components/feedback-md/feedback-md-hero";
@@ -10,6 +11,7 @@ import { FeedbackMdSteps } from "@/components/feedback-md/feedback-md-steps";
 import { FeedbackMdTerminalDemo } from "@/components/feedback-md/feedback-md-terminal-demo";
 import { FeedbackMdUpsell } from "@/components/feedback-md/feedback-md-upsell";
 import {
+  FEEDBACK_MD_ADOPTERS_DESCRIPTION,
   FEEDBACK_MD_DESCRIPTION,
   FEEDBACK_MD_PAGE_PATH,
   FEEDBACK_MD_TITLE,
@@ -89,6 +91,13 @@ export default function FeedbackMdPage() {
           title="Where it sits"
         >
           <FeedbackMdSiblingsTable />
+        </FeedbackMdSection>
+
+        <FeedbackMdSection
+          description={FEEDBACK_MD_ADOPTERS_DESCRIPTION}
+          title="Adopted by"
+        >
+          <FeedbackMdAdopters />
         </FeedbackMdSection>
 
         <FeedbackMdSection

@@ -1,5 +1,5 @@
 import type { ClaudeToolCallStatus } from "@notra/ui/components/brainless/claude/claude-tool-call";
-import type { ReactNode } from "react";
+import type { ComponentType, ReactNode, SVGProps } from "react";
 
 export interface FeedbackMdPrinciple {
   title: string;
@@ -17,6 +17,14 @@ export interface FeedbackMdSibling {
   answers: string;
   direction: "site to agent" | "agent to site";
   href: string;
+}
+
+export interface FeedbackMdAdopter {
+  name: string;
+  label: string;
+  siteUrl: string;
+  feedbackUrl: string;
+  Logo: ComponentType<SVGProps<SVGSVGElement>>;
 }
 
 export interface FeedbackMdQuestion {

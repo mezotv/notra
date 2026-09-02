@@ -1,4 +1,6 @@
 import {
+  FEEDBACK_MD_ADOPTERS,
+  FEEDBACK_MD_ADOPTERS_DESCRIPTION,
   FEEDBACK_MD_DESCRIPTION,
   FEEDBACK_MD_EXAMPLE_DISCLAIMER,
   FEEDBACK_MD_HERO_LEAD,
@@ -83,6 +85,9 @@ export function buildFeedbackMdPageMarkdown() {
   const siblings = FEEDBACK_MD_SIBLINGS.map(
     (sibling) => `- ${sibling.file}: ${sibling.answers} (${sibling.direction})`
   );
+  const adopters = FEEDBACK_MD_ADOPTERS.map(
+    (adopter) => `- ${adopter.label}: ${adopter.feedbackUrl}`
+  );
   const questions = FEEDBACK_MD_QUESTIONS.flatMap((item) => [
     `### ${item.question}`,
     item.answer,
@@ -108,6 +113,11 @@ export function buildFeedbackMdPageMarkdown() {
     ]),
     markdownSection("Sections", sections),
     markdownSection("Where it sits", siblings),
+    markdownSection("Adopted by", [
+      FEEDBACK_MD_ADOPTERS_DESCRIPTION,
+      "",
+      ...adopters,
+    ]),
     markdownSection("Add it to your site", [
       "Paste this into your agent:",
       "",
