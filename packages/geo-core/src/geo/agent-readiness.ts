@@ -36,6 +36,7 @@ import {
 } from "../utils/agent-readiness";
 import { checkFeedbackMarkdown } from "../utils/feedback-md";
 import {
+  areWebsiteUrlsEquivalent,
   getWebsiteUrlLookupVariants,
   normalizeWebsiteUrl,
 } from "../utils/geo-website";
@@ -332,7 +333,10 @@ export const startAgentReadinessScan = Effect.fn("geo.agentReadiness.start")(
       }
 
       if (running) {
-        const targetChanged = running.targetUrl !== targetUrl;
+        const targetChanged = !areWebsiteUrlsEquivalent(
+          running.targetUrl,
+          targetUrl
+        );
         await db
           .update(geoAgentReadinessReports)
           .set({
@@ -422,7 +426,10 @@ async function latestCompletedBefore(
   return await db.query.geoAgentReadinessReports.findFirst({
     where: and(
       eq(geoAgentReadinessReports.projectId, projectId),
-      eq(geoAgentReadinessReports.targetUrl, targetUrl),
+      inArray(
+        geoAgentReadinessReports.targetUrl,
+        getWebsiteUrlLookupVariants(targetUrl)
+      ),
       eq(geoAgentReadinessReports.status, "completed"),
       ne(geoAgentReadinessReports.id, excludeReportId)
     ),

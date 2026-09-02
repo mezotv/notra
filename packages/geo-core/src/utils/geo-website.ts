@@ -29,8 +29,12 @@ export function getWebsiteUrlLookupVariants(value: string): string[] {
 
   const pathname = value.slice(0, suffixIndex);
   if (pathname.endsWith("/")) {
-    return [value];
+    return [value, `${pathname.slice(0, -1)}${value.slice(suffixIndex)}`];
   }
 
   return [value, `${pathname}/${value.slice(suffixIndex)}`];
+}
+
+export function areWebsiteUrlsEquivalent(left: string, right: string): boolean {
+  return getWebsiteUrlLookupVariants(left).includes(right);
 }

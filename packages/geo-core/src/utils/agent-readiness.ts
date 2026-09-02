@@ -12,7 +12,7 @@ import type {
   AgentReadinessRunningScan,
   AgentReadinessScoreBand,
 } from "../types/agent-readiness";
-import { stripWebsiteProtocol } from "./geo-website";
+import { areWebsiteUrlsEquivalent, stripWebsiteProtocol } from "./geo-website";
 
 export function canReuseAgentReadinessScan(
   running: AgentReadinessRunningScan,
@@ -20,7 +20,7 @@ export function canReuseAgentReadinessScan(
   now = Date.now()
 ): boolean {
   return (
-    running.targetUrl === targetUrl &&
+    areWebsiteUrlsEquivalent(running.targetUrl, targetUrl) &&
     now - running.createdAt.getTime() < AGENT_READINESS_STALE_RUNNING_MS
   );
 }
