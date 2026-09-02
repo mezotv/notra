@@ -13,6 +13,7 @@ import {
   signInWithPasswordAction,
   verifyEmailCodeAction,
 } from "@/lib/auth/password-actions";
+import { buildPostAuthRedirectPath } from "@/lib/auth/return-to";
 import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { loginSchema } from "@/schemas/auth/credentials";
 import type { LoginFormProps } from "@/types/auth/login-form";
@@ -49,11 +50,7 @@ export function LoginForm({ returnTo, ...props }: LoginFormProps) {
     <SharedLoginForm
       {...props}
       callbackPath="/callback"
-      returnTo={
-        returnTo
-          ? `/callback?returnTo=${encodeURIComponent(returnTo)}`
-          : undefined
-      }
+      returnTo={returnTo ? buildPostAuthRedirectPath(returnTo) : undefined}
       signInWithPassword={signInWithPasswordTracked}
       startSocialSignIn={startSocialSignInAction}
       validators={validators}
