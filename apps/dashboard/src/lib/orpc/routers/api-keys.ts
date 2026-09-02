@@ -271,10 +271,7 @@ export const apiKeysRouter = {
       const unknownPermissions =
         getUnknownApiKeyPermissions(currentPermissions);
       const permissions = [
-        ...getApiKeyPermissionsForAccessMode(
-          accessMode,
-          input.payload.scopes
-        ),
+        ...getApiKeyPermissionsForAccessMode(accessMode, input.payload.scopes),
         ...unknownPermissions,
       ];
       const scopes = expandLegacyApiKeyScopes(permissions);
