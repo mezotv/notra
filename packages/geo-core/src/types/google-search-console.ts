@@ -44,6 +44,8 @@ export interface GscSyncPayload {
 
 export interface GscSuggestionGenerationParams {
   companyName: string | null;
+  companyDescription: string | null;
+  competitors: string[];
   siteUrl: string;
   keywords: GscQueryRow[];
   existingPrompts: string[];

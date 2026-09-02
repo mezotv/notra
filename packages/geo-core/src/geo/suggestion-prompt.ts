@@ -17,11 +17,18 @@ function formatKeywordLine(row: GscQueryRow): string {
   return `- "${row.query}" (impressions ${row.impressions}, clicks ${row.clicks}, avg position ${row.position.toFixed(1)})`;
 }
 
-function formatExistingPrompts(prompts: string[]): string {
-  if (prompts.length === 0) {
+function formatList(values: string[]): string {
+  if (values.length === 0) {
     return "- (none)";
   }
-  return prompts.map((prompt) => `- ${prompt}`).join("\n");
+  return values.map((value) => `- ${value}`).join("\n");
+}
+
+function formatCompanyDescription(description: string | null): string {
+  if (!description) {
+    return "(not provided - infer the category from the tracked prompts below)";
+  }
+  return description.trim();
 }
 
 export function buildGscSuggestionPrompt(
@@ -32,29 +39,43 @@ export function buildGscSuggestionPrompt(
   const year = new Date().getFullYear();
 
   return `Company: ${brand}
+What ${brand} sells: ${formatCompanyDescription(params.companyDescription)}
 Search Console property: ${params.siteUrl}
 
-These are Google Search queries the website already ranks for (last ${GSC_SYNC_LOOKBACK_DAYS} days):
+Tracked competitors of ${brand}:
+${formatList(params.competitors)}
+
+Google Search queries the website ranked for in the last ${GSC_SYNC_LOOKBACK_DAYS} days. They are evidence of what people search around ${brand}, not text to rewrite:
 ${keywordLines}
 
-Prompts already used (do not repeat or paraphrase these):
-${formatExistingPrompts(params.existingPrompts)}
+Prompts already tracked (do not repeat or paraphrase these):
+${formatList(params.existingPrompts)}
 
-Write up to ${GSC_SUGGESTIONS_MAX_PER_SYNC} entries. Each entry has a "prompt", a "title", and "keywords".
+Your job: find the buyer questions hidden in these queries that ${brand} could plausibly be the recommended answer to and that are not tracked yet. Write at most ${GSC_SUGGESTIONS_MAX_PER_SYNC} entries. Fewer, sharper entries beat a full list: if the queries only support four distinct intents, write four. Each entry has a "prompt", a "title", and "keywords".
+
+Selection rules (apply before writing anything):
+- Skip navigational queries: someone looking for a specific product's own pages, such as its changelog, release notes, docs, pricing, login, or status page. An assistant answers those by pointing at that product's website, so ${brand} can never win them, even when the site ranks well for them.
+- Skip queries about a third-party product unless that product is a tracked competitor listed above. Never turn "<product> changelog", "<product> release notes", or "<product> updates" into a prompt.
+- Skip queries outside the category ${brand} sells in.
+- Keep queries that express a need ${brand} could fulfil: which tools to use for a task, how to do something in the category, what to compare, or which alternatives exist.
+
+Grouping rules:
+- One entry is one distinct buyer intent. Merge queries that share an intent into a single entry.
+- Each source query belongs to at most one entry. If two entries would rest on the same queries, they are duplicates: keep one.
+- When you must cut, keep the intents backed by the most impressions.
 
 Prompt rules:
-- A prompt is the exact text a real buyer would type into ChatGPT while researching this category - before they know this company exists. ${GEO_TRACKED_PROMPT_VOICE}
-- Treat the source queries as evidence of topics and buyer intent, not as copy. Rewrite the underlying intent in natural language. Never concatenate keywords, never mix languages within a prompt, and never write anything you would not plausibly type yourself.
-- Group related queries into one prompt; do not write one prompt per keyword.
-- Never mention "${brand}", its domain, or any brand name owned by ${brand} in the prompt. Never describe what ${brand} is or does. Frame each question around the topic, problem, or buying decision so the answer reveals whether an assistant recommends ${brand} unprompted.
-- Only mention a competitor when its name appears verbatim in an exact source query attributed to that entry, and only in an alternative or comparison prompt. Never infer or invent a competitor.
-- Cover different intents supported by the source queries in that same voice, such as what tools to use, how to do a task, or what to compare. Do not force an intent that the source queries do not support. Use impressions to prioritize topics only after producing a balanced set. Do not append "${year}".
-- Each prompt must be between ${GEO_PROMPT_MIN_LENGTH} and ${GEO_PROMPT_MAX_LENGTH} characters, in the same language as the underlying queries.
+- A prompt is the exact text a real buyer would type into ChatGPT while researching this category, before they know ${brand} exists. ${GEO_TRACKED_PROMPT_VOICE}
+- Never mention "${brand}", its domain, or any brand name owned by ${brand}. Never describe what ${brand} is or does.
+- Name a competitor only in an alternative or comparison prompt, and only if it is a tracked competitor or its name appears verbatim in a source query attributed to that entry. Never infer or invent a competitor.
+- Write in the same language as the underlying queries and never mix languages. Each prompt must be between ${GEO_PROMPT_MIN_LENGTH} and ${GEO_PROMPT_MAX_LENGTH} characters.
 
 Title rules:
-- The title is the headline of the article that would win this prompt: specific, publishable and in Title Case, following proven formats such as "Best {Category} Tools in ${year}: {Facets} Compared", "Best {Competitor} Alternatives for {Use Case} in ${year}", "{A} vs {B}: Features, Pricing & Which to Choose in ${year}", "{Product} Pricing: Plans & Cost Breakdown for ${year}", "How to {Task} (Step-by-Step ${year})", or "What Is {Term}? Definition, Examples & How to Measure It".
+- The title is the headline of the article that would win this prompt: specific, publishable and in Title Case, following proven formats such as "Best {Category} Tools in ${year}: {Facets} Compared", "Best {Competitor} Alternatives for {Use Case}", "{A} vs {B}: Features, Pricing & Which to Choose", "How to {Task} (Step-by-Step)", or "What Is {Term}? Definition, Examples & How to Measure It".
+- Use "${year}" only in ranking or comparison titles, never in how-to or definition titles.
+- Never put a third-party product name in a title unless it is a tracked competitor.
 - Write titles in the same language as the prompt and keep each under ${GEO_GAP_TITLE_MAX_LENGTH} characters.
 
 Keyword rules:
-- For each entry, list up to ${GSC_MAX_KEYWORDS_PER_SUGGESTION} exact source queries (copied verbatim from the list above) it was derived from.`;
+- For each entry, list up to ${GSC_MAX_KEYWORDS_PER_SUGGESTION} exact source queries (copied verbatim from the list above) it was derived from. A query may appear in only one entry.`;
 }

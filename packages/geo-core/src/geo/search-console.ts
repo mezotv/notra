@@ -9,6 +9,8 @@ import {
 import type { GscIntegrationRow } from "@notra/ai/types/google-search-console";
 import { db } from "@notra/db/drizzle";
 import {
+  brandSettings,
+  geoCompetitors,
   geoPromptSuggestions,
   geoPrompts,
   geoSettings,
@@ -98,13 +100,45 @@ export async function syncGscSuggestions(
   }
 }
 
+/**
+ * Tracked competitors are the only third-party names the model may use in a
+ * prompt. Everything else the site ranks for (e.g. "<product> changelog") is
+ * navigational and not a gap the company can win.
+ */
+function mergeCompetitorNames(
+  competitorRows: { name: string }[],
+  settingsCompetitors: string[]
+): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const name of [
+    ...competitorRows.map((row) => row.name),
+    ...settingsCompetitors,
+  ]) {
+    const key = normalizeSuggestionKey(name);
+    if (key.length === 0 || seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    names.push(name.trim());
+  }
+  return names;
+}
+
 async function runSync(
   integration: GscIntegrationRow,
   siteUrl: string
 ): Promise<GscSyncResult> {
   const organizationId = integration.organizationId;
 
-  const [rows, settingsRow, trackedRows, suggestionRows] = await Promise.all([
+  const [
+    rows,
+    settingsRow,
+    brandRow,
+    competitorRows,
+    trackedRows,
+    suggestionRows,
+  ] = await Promise.all([
     queryGscTopQueries(integration, {
       siteUrl,
       days: GSC_SYNC_LOOKBACK_DAYS,
@@ -112,7 +146,18 @@ async function runSync(
     }),
     db.query.geoSettings.findFirst({
       where: eq(geoSettings.organizationId, organizationId),
-      columns: { companyName: true, aliases: true },
+      columns: { companyName: true, aliases: true, competitors: true },
+    }),
+    db.query.brandSettings.findFirst({
+      where: and(
+        eq(brandSettings.organizationId, organizationId),
+        eq(brandSettings.isDefault, true)
+      ),
+      columns: { companyDescription: true },
+    }),
+    db.query.geoCompetitors.findMany({
+      where: eq(geoCompetitors.organizationId, organizationId),
+      columns: { name: true },
     }),
     db.query.geoPrompts.findMany({
       where: eq(geoPrompts.organizationId, organizationId),
@@ -144,14 +189,22 @@ async function runSync(
     keywords.map((row) => [normalizeSuggestionKey(row.query), row] as const)
   );
 
+  const competitors = mergeCompetitorNames(
+    competitorRows,
+    settingsRow?.competitors ?? []
+  );
+
   const generated = await generateSuggestions({
     companyName: settingsRow?.companyName ?? null,
+    companyDescription: brandRow?.companyDescription ?? null,
+    competitors,
     siteUrl,
     keywords,
     existingPrompts,
   });
 
   const values: (typeof geoPromptSuggestions.$inferInsert)[] = [];
+  const claimedQueries = new Set<string>();
   for (const item of generated) {
     const prompt = item.prompt.trim();
     const key = normalizeSuggestionKey(prompt);
@@ -163,7 +216,11 @@ async function runSync(
     ) {
       continue;
     }
-    const sourceKeywords = resolveSourceKeywords(item.keywords, keywordByQuery);
+    const sourceKeywords = resolveSourceKeywords(
+      item.keywords,
+      keywordByQuery,
+      claimedQueries
+    );
     if (sourceKeywords.length === 0) {
       continue;
     }

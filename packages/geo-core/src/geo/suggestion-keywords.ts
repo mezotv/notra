@@ -85,12 +85,17 @@ export function selectKeywordsForModel(
     .slice(0, GSC_SYNC_MAX_KEYWORDS_FOR_MODEL);
 }
 
+/**
+ * `used` is shared across all entries of one sync so a source query backs at
+ * most one suggestion. Otherwise the model spreads one keyword cluster over
+ * several near-identical prompts and their impressions get counted repeatedly.
+ */
 export function resolveSourceKeywords(
   claimed: string[],
-  keywordByQuery: Map<string, GscQueryRow>
+  keywordByQuery: Map<string, GscQueryRow>,
+  used: Set<string>
 ): GeoSuggestionKeyword[] {
   const sourceKeywords: GeoSuggestionKeyword[] = [];
-  const used = new Set<string>();
   for (const keyword of claimed) {
     const key = normalizeSuggestionKey(keyword);
     const match = keywordByQuery.get(key);
