@@ -67,7 +67,7 @@ function createPostsCacheKey(params: ListPostsParams) {
     params.page ?? 1,
     params.limit ?? 10,
     params.sort ?? "desc",
-    [...(params.status ?? [])].sort().join(","),
+    [...(params.status ?? ["published"])].sort().join(","),
     [...(params.contentType ?? [])].sort().join(","),
     [...(params.brandIdentityId ?? [])].sort().join(","),
   ] as const;
@@ -77,7 +77,7 @@ function createPostsCacheKey(params: ListPostsParams) {
 Sorting array filters before building the key avoids duplicate cache entries for equivalent queries.
 
 <Note>
-  When `status` is omitted the API returns only `published` posts. Pass `status=draft,published` explicitly if you want both, and treat "omitted" and "published" as the same cache entry.
+  When `status` is omitted the API returns only `published` posts. Pass `status=draft,published` explicitly if you want both. The key above defaults an omitted `status` to `published`, so both spellings of the same query share one cache entry.
 </Note>
 
 ## Recommended strategy

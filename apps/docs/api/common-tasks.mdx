@@ -194,6 +194,11 @@ async function waitForPost(jobId: string): Promise<string> {
       `https://api.usenotra.com/v1/posts/generate/${jobId}`,
       { headers: { Authorization: `Bearer ${process.env.NOTRA_API_KEY}` } }
     );
+    if (!response.ok) {
+      throw new Error(
+        `Polling failed: ${response.status} ${await response.text()}`
+      );
+    }
     const data: GenerationStatusResponse = await response.json();
 
     if (data.job.status === "completed" && data.job.postId) {

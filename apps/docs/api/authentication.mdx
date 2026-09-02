@@ -30,7 +30,7 @@ docolin:
   next: ./rate-limits.mdx
 ---
 
-Every endpoint except `GET /v1/status` requires a bearer credential in the `Authorization` header. Two kinds of credential are accepted, and both are checked against the same [scopes](#scopes):
+Every endpoint except `GET /v1/status` and the public feedback URL (`POST /v1/feedback/{organizationSlug}`) requires a bearer credential in the `Authorization` header. Two kinds of credential are accepted, and both are checked against the same [scopes](#scopes):
 
 | Credential | Looks like | Best for |
 | --- | --- | --- |

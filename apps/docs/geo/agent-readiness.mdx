@@ -106,7 +106,7 @@ The **Checklist** groups issues under **Must do** and **Should do**, failed item
 
 ## Start a scan from the API
 
-Both routes are project-scoped and need the `agent-readiness` scope.
+Both routes are project-scoped and need the `agent-readiness.read` scope to read reports and `agent-readiness.write` to start scans.
 
 ```bash
 curl -X POST https://api.usenotra.com/v1/projects/$PROJECT_ID/geo/agent-readiness/scan \

@@ -457,7 +457,7 @@ const brandAnalysisJobSchema = z.object({
   organizationId: z.string(),
   brandIdentityId: z.string().openapi({
     description:
-      "ID of the brand identity being analyzed. It exists as soon as the job is queued and is filled in when the job completes.",
+      "ID of the brand identity being analyzed. The identity is created immediately and its details are filled in as the job completes.",
   }),
   status: z.enum(["queued", "running", "completed", "failed"]).openapi({
     description: "Job state. Stop polling once it is completed or failed.",

@@ -335,7 +335,20 @@ Each delivery writes one entry to **Settings**, then **Logs**. The `integrationT
     "payload": {
       "event": "push",
       "action": "pushed",
-      "data": { "ref": "refs/heads/main", "branch": "main", "commits": [] , "headCommit": null }
+      "data": {
+        "ref": "refs/heads/main",
+        "branch": "main",
+        "commits": [
+          {
+            "id": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+            "message": "Add new feature",
+            "author": { "name": "Jane Developer", "email": "jane@example.com", "username": "janedev" },
+            "timestamp": "2026-09-01T10:30:00Z",
+            "url": "https://github.com/owner/repo/commit/7fd1a60b01f91b314f59955a4e4d4e80d8edf11d"
+          }
+        ],
+        "headCommit": { "id": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d", "message": "Add new feature" }
+      }
     },
     "createdAt": "2026-09-01T10:30:00.000Z"
   }

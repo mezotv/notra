@@ -267,7 +267,7 @@ notra schedules create \
   --enabled
 ```
 
-For weekly schedules pass `--day-of-week` (0-6, Sunday is 0); for monthly schedules pass `--day-of-month` (1-31). `--output-type` is one of `changelog`, `blog_post`, `linkedin_post`, or `twitter_post`. `--repository` is repeatable. Add `--brand-voice <brandIdentityId>` to pin a brand identity and `--auto-publish` to publish changelogs and blog posts instead of saving drafts. Times are in UTC.
+For weekly schedules pass `--day-of-week` (0-6, Sunday is 0); for monthly schedules pass `--day-of-month` (1-31). `--output-type` is one of `changelog`, `blog_post`, `linkedin_post`, or `twitter_post`; image schedules are not available from the CLI yet, so create those in the dashboard or through `POST /v1/schedules`. `--repository` is repeatable. Add `--brand-voice <brandIdentityId>` to pin a brand identity and `--auto-publish` to publish changelogs and blog posts instead of saving drafts. Times are in UTC.
 
 ### From a JSON file
 
@@ -287,15 +287,15 @@ GEO commands are scoped to a project. Run `notra geo projects list` first to fin
 | --- | --- |
 | `notra geo projects` | `list`, `get <projectId>`, `create --name <name> [--brand-settings-id <id>]`, `update <projectId>`, `delete <projectId>` |
 | `notra geo settings` | `get <projectId>`, `update <projectId> --config-file <file>` (replaces the whole settings document) |
-| `notra geo prompts` | `list`, `create --prompt <text>`, `update <promptId> --enabled` or `--no-enabled`, `delete <promptId>`, `import --config-file <json or csv>` |
-| `notra geo sequences` | `list`, `create --name <name> --step <text>...`, `update <sequenceId>`, `run <sequenceId>`, `delete <sequenceId>` |
-| `notra geo competitors` | `list`, `upsert --name <name> [--domain ...] [--kind direct or indirect]`, `suggestions --domain <domain>`, `import --config-file <file>`, `delete <name>` |
-| `notra geo scans` | `start [--wait]`, `list [--page] [--limit]`, `get <scanId>` |
-| `notra geo visibility` | `overview`, `timeseries`, `prompt-results`, `competitor-share`, `competitor <brand>`, `language-share` (all accept `--days` or `--from` and `--to`) |
-| `notra geo gaps` | `list` |
-| `notra geo briefs` | `list`, `get <briefId>`, `create --topic <text> [--auto-approve]`, `approve <briefId>` |
-| `notra geo agent-readiness` | `get`, `scan` |
-| `notra geo traffic` | `overview`, `log`, `journeys`, `journey <journeyId>`, `pages`, `setup`, `token`, `rotate-token` |
+| `notra geo prompts` | `list <projectId>`, `create <projectId> --prompt <text>`, `update <projectId> <promptId> --enabled` or `--no-enabled`, `delete <projectId> <promptId>`, `import <projectId> --config-file <json or csv>` |
+| `notra geo sequences` | `list <projectId>`, `create <projectId> --name <name> --step <text>...`, `update <projectId> <sequenceId>`, `run <projectId> <sequenceId>`, `delete <projectId> <sequenceId>` |
+| `notra geo competitors` | `list <projectId>`, `upsert <projectId> --name <name> [--domain ...] [--kind direct or indirect]`, `suggestions <projectId> --domain <domain>`, `import <projectId> --config-file <file>`, `delete <projectId> <name>` |
+| `notra geo scans` | `start <projectId> [--wait]`, `list <projectId> [--page] [--limit]`, `get <projectId> <scanId>` |
+| `notra geo visibility` | `overview <projectId>`, `timeseries <projectId>`, `prompt-results <projectId>`, `competitor-share <projectId>`, `competitor <projectId> <brand>`, `language-share <projectId>` (all accept `--days` or `--from` and `--to`) |
+| `notra geo gaps` | `list <projectId>` |
+| `notra geo briefs` | `list <projectId>`, `get <projectId> <briefId>`, `create <projectId> --topic <text> [--auto-approve]`, `approve <projectId> <briefId>` |
+| `notra geo agent-readiness` | `get <projectId>`, `scan <projectId>` |
+| `notra geo traffic` | `overview <projectId>`, `log <projectId>`, `journeys <projectId>`, `journey <projectId> <journeyId>`, `pages <projectId>`, `setup`, `token`, `rotate-token` |
 
 Examples:
 
