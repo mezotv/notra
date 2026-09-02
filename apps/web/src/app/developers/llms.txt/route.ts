@@ -10,6 +10,7 @@ Use Notra developer resources when integrating AI agents, SDKs, MCP clients, or 
 - API quickstart: [${SITE_URL}/api/llms.txt](${SITE_URL}/api/llms.txt)
 - Auth guide: [${SITE_URL}/auth.md](${SITE_URL}/auth.md)
 - API catalog: [${SITE_URL}/.well-known/api-catalog](${SITE_URL}/.well-known/api-catalog)
+- Integration surfaces: [${SITE_URL}/.well-known/integrations.json](${SITE_URL}/.well-known/integrations.json)
 - Agent discovery: [${SITE_URL}/.well-known/agent.json](${SITE_URL}/.well-known/agent.json)
 - Documentation: [${DOCS_URL}](${DOCS_URL})
 

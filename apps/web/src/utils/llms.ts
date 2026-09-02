@@ -105,6 +105,11 @@ export async function buildLlmsText() {
       "/.well-known/api-catalog",
       "RFC 9727 linkset for API descriptions"
     ),
+    formatLink(
+      "Integration Surfaces",
+      "/.well-known/integrations.json",
+      "integrations.sh manifest of API, MCP, and CLI surfaces with credentials"
+    ),
     "",
     "## Agent Instructions",
     "",

@@ -31,6 +31,9 @@ export default function AgentPage() {
             <li>Agent JSON: {siteUrl("/.well-known/agent.json")}</li>
             <li>Agent Card: {siteUrl("/.well-known/agent-card.json")}</li>
             <li>API Catalog: {siteUrl("/.well-known/api-catalog")}</li>
+            <li>
+              Integration Surfaces: {siteUrl("/.well-known/integrations.json")}
+            </li>
             <li>Auth guide: {siteUrl("/auth.md")}</li>
           </ul>
         </div>

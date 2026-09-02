@@ -9,6 +9,7 @@ Notra's public API is served from ${API_URL}. Use it when an agent needs to read
 
 - OpenAPI: [${API_URL}/openapi.json](${API_URL}/openapi.json)
 - API catalog: [${SITE_URL}/.well-known/api-catalog](${SITE_URL}/.well-known/api-catalog)
+- Integration surfaces: [${SITE_URL}/.well-known/integrations.json](${SITE_URL}/.well-known/integrations.json)
 - Authentication guide: [${SITE_URL}/auth.md](${SITE_URL}/auth.md)
 - Developer docs: [${DOCS_URL}](${DOCS_URL})
 
