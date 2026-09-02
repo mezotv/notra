@@ -20,3 +20,17 @@ export function normalizeWebsiteUrl(value: string): string | null {
   }
   return `https://${host}`;
 }
+
+export function getWebsiteUrlLookupVariants(value: string): string[] {
+  const suffixIndex = value.search(URL_SUFFIX);
+  if (suffixIndex === -1) {
+    return [value];
+  }
+
+  const pathname = value.slice(0, suffixIndex);
+  if (pathname.endsWith("/")) {
+    return [value];
+  }
+
+  return [value, `${pathname}/${value.slice(suffixIndex)}`];
+}

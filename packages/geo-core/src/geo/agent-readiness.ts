@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings, geoAgentReadinessReports } from "@notra/db/schema";
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { Effect } from "effect";
 
 import {
@@ -35,7 +35,10 @@ import {
   toAgentReadinessApiErrorMessage,
 } from "../utils/agent-readiness";
 import { checkFeedbackMarkdown } from "../utils/feedback-md";
-import { normalizeWebsiteUrl } from "../utils/geo-website";
+import {
+  getWebsiteUrlLookupVariants,
+  normalizeWebsiteUrl,
+} from "../utils/geo-website";
 
 export class AgentReadinessApiError extends Error {}
 
@@ -248,7 +251,12 @@ async function latestRowWhere(
     conditions.push(eq(geoAgentReadinessReports.status, status));
   }
   if (targetUrl) {
-    conditions.push(eq(geoAgentReadinessReports.targetUrl, targetUrl));
+    conditions.push(
+      inArray(
+        geoAgentReadinessReports.targetUrl,
+        getWebsiteUrlLookupVariants(targetUrl)
+      )
+    );
   }
   return await db.query.geoAgentReadinessReports.findFirst({
     where: and(...conditions),
@@ -270,7 +278,10 @@ async function loadHistory(
     },
     where: and(
       eq(geoAgentReadinessReports.projectId, projectId),
-      eq(geoAgentReadinessReports.targetUrl, targetUrl),
+      inArray(
+        geoAgentReadinessReports.targetUrl,
+        getWebsiteUrlLookupVariants(targetUrl)
+      ),
       eq(geoAgentReadinessReports.status, "completed")
     ),
     orderBy: desc(geoAgentReadinessReports.createdAt),
