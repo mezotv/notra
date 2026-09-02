@@ -11,7 +11,6 @@ import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { readRequestHeaders } from "@/lib/analytics/request-headers";
 import { clearAuthSessionCookie } from "@/lib/auth/session-cookie";
 import { isWorkOSNotFound } from "@/lib/auth/workos-error";
-import { sendResetPasswordAction } from "@/lib/email/actions";
 import { OrganizationActionError } from "@/lib/organizations/errors";
 import { requireSession } from "@/lib/organizations/guards";
 import { runOrganizationAction } from "@/lib/organizations/run-action";
@@ -183,21 +182,12 @@ export async function requestPasswordResetAction(): Promise<
     Effect.gen(function* () {
       const session = yield* requireSession();
 
-      const reset = yield* tryAction(
+      yield* tryAction(
         () =>
           getWorkOS().userManagement.createPasswordReset({
             email: session.user.email,
           }),
         "Failed to create password reset"
-      );
-
-      yield* tryAction(
-        () =>
-          sendResetPasswordAction({
-            userEmail: session.user.email,
-            resetLink: reset.passwordResetUrl,
-          }),
-        "Failed to send password reset email"
       );
 
       return { sent: true };

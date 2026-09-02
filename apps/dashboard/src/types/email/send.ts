@@ -18,15 +18,6 @@ export interface SendFeedbackEmailProps {
   userAgent?: string;
 }
 
-export interface SendInviteEmailProps {
-  inviteeEmail: string;
-  inviteeUsername?: string;
-  inviterName: string;
-  inviterEmail: string;
-  organizationName: string;
-  inviteLink: string;
-}
-
 export interface SendScheduledContentFailedEmailProps {
   recipientEmail: string;
   organizationName: string;

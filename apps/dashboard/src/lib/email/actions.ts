@@ -1,53 +1,13 @@
 import "server-only";
-import { EMAIL_CONFIG } from "@notra/email/utils/config";
 import { sendDevEmail } from "@notra/email/utils/dev";
 import { getResend } from "@notra/email/utils/resend";
 
-import type {
-  SendResetPasswordProps,
-  SendWelcomeEmailProps,
-} from "@/types/email/actions";
+import type { SendWelcomeEmailProps } from "@/types/email/actions";
 
-import { sendResetPassword, sendWelcomeEmail } from "./send";
+import { sendWelcomeEmail } from "./send";
 
 const isDevelopment = process.env.NODE_ENV === "development";
 const resend = getResend();
-
-export async function sendResetPasswordAction({
-  userEmail,
-  resetLink,
-}: SendResetPasswordProps) {
-  if (!resend && isDevelopment) {
-    return sendDevEmail({
-      from: EMAIL_CONFIG.from,
-      to: userEmail,
-      text: "This is a mock reset password email",
-      subject: "Reset your password",
-      _mockContext: { type: "reset", data: { userEmail, resetLink } },
-    });
-  }
-
-  if (!resend) {
-    throw new Error("Resend API key not set");
-  }
-
-  try {
-    const { error } = await sendResetPassword(resend, {
-      userEmail,
-      resetLink,
-    });
-
-    if (error) {
-      console.error("Failed to send reset email:", userEmail, error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true };
-  } catch (error) {
-    console.error("Unexpected error sending reset email:", userEmail, error);
-    return { success: false, error: "Failed to send email" };
-  }
-}
 
 export async function sendWelcomeEmailAction({
   userEmail,

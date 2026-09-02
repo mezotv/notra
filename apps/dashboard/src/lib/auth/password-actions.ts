@@ -24,7 +24,6 @@ import { authenticateResolvingOrgSelection } from "@/lib/auth/org-selection";
 import { sanitizeReturnTo } from "@/lib/auth/return-to";
 import { syncAuthenticatedUser } from "@/lib/auth/sync";
 import { readWorkOSError } from "@/lib/auth/workos-error";
-import { sendResetPasswordAction } from "@/lib/email/actions";
 import {
   forgotPasswordInputSchema,
   resetPasswordInputSchema,
@@ -306,15 +305,8 @@ export async function forgotPasswordAction(
 
   return Effect.runPromise(
     Effect.gen(function* () {
-      const reset = yield* tryWorkOSAuth(() =>
-        getWorkOS().userManagement.createPasswordReset({ email: input.email })
-      );
-
       yield* tryWorkOSAuth(() =>
-        sendResetPasswordAction({
-          userEmail: input.email,
-          resetLink: reset.passwordResetUrl,
-        })
+        getWorkOS().userManagement.createPasswordReset({ email: input.email })
       );
 
       yield* Effect.promise(() =>

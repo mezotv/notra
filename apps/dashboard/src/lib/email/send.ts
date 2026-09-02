@@ -2,7 +2,6 @@ import { createHash } from "node:crypto";
 
 import { AiCreditsDepletedEmail } from "@notra/email/emails/ai-credits-depleted";
 import { FeedbackEmail } from "@notra/email/emails/feedback";
-import { ResetPasswordEmail } from "@notra/email/emails/reset";
 import { ScheduledContentCreatedEmail } from "@notra/email/emails/schedule-content-created";
 import { ScheduledContentFailedEmail } from "@notra/email/emails/schedule-content-failed";
 import { ScheduledContentSkippedEmail } from "@notra/email/emails/schedule-content-skipped";
@@ -107,33 +106,6 @@ async function sendWithRetry(
 }
 
 // --- Send Functions ---
-
-export async function sendResetPassword(
-  resend: Resend,
-  {
-    userEmail,
-    resetLink,
-  }: {
-    userEmail: string;
-    resetLink: string;
-  }
-) {
-  return sendWithRetry(
-    resend,
-    {
-      from: EMAIL_CONFIG.from,
-      replyTo: EMAIL_CONFIG.replyTo,
-      to: userEmail,
-      subject: "Reset your password",
-      react: ResetPasswordEmail({
-        userEmail,
-        resetLink,
-      }),
-      tags: [{ name: "category", value: "password-reset" }],
-    },
-    `notra:reset:${userEmail}:${resetLink}`
-  );
-}
 
 export async function sendWelcomeEmail(
   resend: Resend,
