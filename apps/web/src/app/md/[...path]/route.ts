@@ -3,6 +3,7 @@ import {
   type DualmarkRouteHandler,
 } from "@dualmark/nextjs";
 
+import { MARKDOWN_CACHE_CONTROL } from "@/constants/not-found";
 import {
   buildDualmarkCollections,
   buildDualmarkStaticPages,
@@ -15,7 +16,7 @@ const handler = createDualmarkRouteHandler({
   collections: buildDualmarkCollections(),
   staticPages: buildDualmarkStaticPages(),
   headers: {
-    cacheControl: "public, max-age=300",
+    cacheControl: MARKDOWN_CACHE_CONTROL,
   },
 });
 
