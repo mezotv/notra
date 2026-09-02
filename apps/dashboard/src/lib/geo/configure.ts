@@ -1,4 +1,8 @@
 import {
+  GEO_CURSOR_FLAG_KEY,
+  GEO_OPENCODE_FLAG_KEY,
+} from "@notra/geo-core/constants/geo";
+import {
   GeoContentBillingService,
   GeoEntitlementService,
   GeoFeatureFlagService,
@@ -9,7 +13,7 @@ import { Effect, Layer } from "effect";
 
 import { resolveZdrEntitlement } from "@/lib/billing/subscription";
 import { addActiveGeneration, generateRunId } from "@/lib/generations/tracking";
-import { isCursorEngineEnabledForOrganization } from "@/lib/geo/cursor-flag";
+import { resolveGeoFlagState } from "@/lib/geo/flag";
 
 const workflowLayer = Layer.succeed(GeoWorkflowService, {
   // Lazy imports keep the workflow modules from closing a module cycle through
@@ -73,7 +77,16 @@ const featureFlagLayer = Layer.succeed(GeoFeatureFlagService, {
   isCursorEngineEnabledForOrganization: Effect.fn(
     "GeoDashboardFeatureFlags.isCursorEnabled"
   )((organizationId) =>
-    Effect.promise(() => isCursorEngineEnabledForOrganization(organizationId))
+    resolveGeoFlagState(GEO_CURSOR_FLAG_KEY, organizationId).pipe(
+      Effect.map((state) => state === "enabled")
+    )
+  ),
+  isOpenCodeEngineEnabledForOrganization: Effect.fn(
+    "GeoDashboardFeatureFlags.isOpenCodeEnabled"
+  )((organizationId) =>
+    resolveGeoFlagState(GEO_OPENCODE_FLAG_KEY, organizationId).pipe(
+      Effect.map((state) => state === "enabled")
+    )
   ),
 });
 

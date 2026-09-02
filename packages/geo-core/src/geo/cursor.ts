@@ -9,6 +9,7 @@ import {
   type RunResult,
   type SDKAgent,
 } from "@cursor/sdk";
+import { requireApiKey } from "@notra/utils/require-api-key";
 import { Effect } from "effect";
 
 import {
@@ -16,7 +17,6 @@ import {
   GEO_CURSOR_API_KEY_ENV,
   GEO_CURSOR_MODEL_ID,
 } from "../constants/geo";
-import { requireApiKey } from "../utils/require-api-key";
 
 const CURSOR_TEMP_DIR_PREFIX = "geo-cursor-";
 

@@ -265,11 +265,14 @@ export const apiKeysRouter = {
             (permission): permission is string => typeof permission === "string"
           )
         : [];
+      const accessMode =
+        input.payload.accessMode ??
+        getApiKeyAccessMode(currentPermissions, meta.accessMode);
       const unknownPermissions =
         getUnknownApiKeyPermissions(currentPermissions);
       const permissions = [
         ...getApiKeyPermissionsForAccessMode(
-          input.payload.accessMode,
+          accessMode,
           input.payload.scopes
         ),
         ...unknownPermissions,
@@ -281,7 +284,7 @@ export const apiKeysRouter = {
         keyId: input.payload.keyId,
         meta: {
           ...meta,
-          accessMode: input.payload.accessMode,
+          accessMode,
         },
         name: input.payload.name,
         permissions,

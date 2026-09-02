@@ -4,7 +4,6 @@ import { GEO_CHAT_SKIN_SURFACE } from "@notra/geo-core/constants/geo";
 import type { GeoChatSkin, GeoPromptResult } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { perplexitySourcesFromExcerpt } from "@notra/geo-core/utils/geo-perplexity-sources";
-import { isGroundedEngine } from "@notra/geo-core/utils/geo-presence";
 import { MessageResponse } from "@notra/ui/components/ai-elements/message";
 import { ChatgptActions } from "@notra/ui/components/brainless/chatgpt/chatgpt-actions";
 import { ChatgptComposer } from "@notra/ui/components/brainless/chatgpt/chatgpt-composer";
@@ -271,7 +270,9 @@ export function GeoPromptAnswerThread({
   const reducedMotion = useReducedMotion();
   const progress = useAnswerReplay(replayTurns, 1, Boolean(reducedMotion));
   const sources = threadSources(result, answer);
-  const search = isGroundedEngine(result.engine) ? (
+  const hasRecordedSearch =
+    result.searchQueries.length > 0 || result.sources.length > 0;
+  const search = hasRecordedSearch ? (
     <GeoAnswerSearch
       queries={result.searchQueries}
       skin={skin}

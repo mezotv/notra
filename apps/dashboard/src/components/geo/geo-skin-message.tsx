@@ -23,7 +23,7 @@ export function GeoSkinMessage({
   }
   if (skin === "gemini") {
     return (
-      <GeminiMessage actions={actions} from={from}>
+      <GeminiMessage actions={actions} from={from} status={search}>
         {children}
       </GeminiMessage>
     );
@@ -36,7 +36,7 @@ export function GeoSkinMessage({
     );
   }
   return (
-    <ChatgptMessage actions={actions} from={from}>
+    <ChatgptMessage actions={actions} from={from} reasoning={search}>
       {children}
     </ChatgptMessage>
   );

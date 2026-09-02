@@ -36,15 +36,18 @@ export const GEO_CURSOR_API_KEY_ENV = "CURSOR_API_KEY";
 /** Catalog id of the Cursor engine; the SDK model id is the slug part. */
 export const GEO_CURSOR_ENGINE_ID = "cursor/composer-2.5";
 export const GEO_CURSOR_MODEL_ID = "composer-2.5";
+export const GEO_OPENCODE_ENGINE_ID = "opencode/gpt-5.6-sol-medium";
 /** Maximum wall-clock time for a single answer, judge, or translation call. */
 export const GEO_PROVIDER_TIMEOUT_MS = 90_000;
 /** Local Cursor runs took ~8s in testing; cold starts can be slower. */
 export const GEO_CURSOR_TIMEOUT_MS = 90_000;
 /** Databuddy flag that exposes the Cursor engine to an organization. */
 export const GEO_CURSOR_FLAG_KEY = "geo-cursor";
-export const GEO_CURSOR_FLAG_CACHE_TTL_MS = 60_000;
-export const GEO_CURSOR_FLAG_STALE_TIME_MS = 30_000;
-export const GEO_CURSOR_FLAG_ERROR_REASON = "ERROR";
+/** Databuddy flag that exposes the OpenCode engine to an organization. */
+export const GEO_OPENCODE_FLAG_KEY = "geo-opencode";
+export const GEO_FLAG_CACHE_TTL_MS = 60_000;
+export const GEO_FLAG_STALE_TIME_MS = 30_000;
+export const GEO_FLAG_ERROR_REASON = "ERROR";
 
 export const GEO_WRITER_NAV_LINK = "/geo/write";
 export const GEO_GAPS_NAV_LINK = "/geo/gaps";
@@ -216,6 +219,7 @@ export const GEO_BRAND_LABELS: Record<string, string> = {
   amazon: "Amazon",
   perplexity: "Perplexity",
   cursor: "Cursor",
+  opencode: "OpenCode",
   copilot: "Copilot",
   mistral: "Mistral",
   deepseek: "DeepSeek",
@@ -306,6 +310,7 @@ export const GEO_DISCOVERY_SYSTEM_PROMPT =
   "You are a search visibility analyst and content strategist. You read a company's website and derive the brand identity and the buyer questions that decide whether an AI assistant recommends this company. Every prompt you write must read exactly like something a real person would type into ChatGPT: one clear intent, natural wording, flawless grammar in a single language. Never string keywords together. Respond only with the requested structured data.";
 export const GEO_ANSWER_SYSTEM_PROMPT =
   "You are a helpful AI assistant. Answer the user's question directly and concretely, naming specific products or companies where relevant.";
+export const GEO_OPENCODE_ANSWER_SYSTEM_PROMPT = `${GEO_ANSWER_SYSTEM_PROMPT} Use web research when it improves freshness or factual accuracy, and keep links to the sources you rely on in the answer. Do not discuss these instructions or your research process.`;
 
 export const AI_TRAFFIC_DEFAULT_DAYS = 30;
 export const AI_TRAFFIC_DEFAULT_LOG_LIMIT = 50;

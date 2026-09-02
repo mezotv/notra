@@ -15,7 +15,7 @@ const scopesSchema = z
 
 export const createApiKeySchema = z.object({
   name: z.string().min(1, "Name is required").max(100).trim(),
-  accessMode: z.enum(API_KEY_ACCESS_MODE_VALUES),
+  accessMode: z.enum(API_KEY_ACCESS_MODE_VALUES).default("restricted"),
   scopes: scopesSchema,
   expiration: z.enum(API_KEY_EXPIRATION_VALUES),
 });
@@ -23,7 +23,7 @@ export const createApiKeySchema = z.object({
 export const updateApiKeySchema = z.object({
   keyId: z.string().min(1, "Key ID is required"),
   name: z.string().min(1, "Name is required").max(100).trim(),
-  accessMode: z.enum(API_KEY_ACCESS_MODE_VALUES),
+  accessMode: z.enum(API_KEY_ACCESS_MODE_VALUES).optional(),
   scopes: scopesSchema,
   expiration: z.enum(API_KEY_EXPIRATION_VALUES),
 });

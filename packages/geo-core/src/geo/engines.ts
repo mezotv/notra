@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import { createOpenAI, openai } from "@ai-sdk/openai";
 import { createPerplexity } from "@ai-sdk/perplexity";
 import { gateway } from "@notra/ai/gateway";
+import { requireApiKey } from "@notra/utils/require-api-key";
 
 import {
   GEO_ANTHROPIC_API_KEY_ENV,
@@ -16,7 +17,6 @@ import type {
   GeoGroundedInvocation,
   GeoGroundedInvocationOptions,
 } from "../types/geo";
-import { requireApiKey } from "../utils/require-api-key";
 
 export function buildGroundedInvocation(
   engine: GeoGroundedEngine,

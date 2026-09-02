@@ -1,3 +1,7 @@
+import {
+  askGeoOpenCode,
+  askGeoOpenCodeConversation,
+} from "@notra/ai/agents/geo-opencode";
 import { describeContentBillingDenial } from "@notra/ai/billing/content-billing";
 import { FEATURES } from "@notra/ai/billing/features";
 import { DEFAULT_LANGUAGE } from "@notra/ai/constants/languages";
@@ -36,6 +40,8 @@ import {
   GEO_MAX_LANGUAGES,
   GEO_MAX_PROMPTS,
   GEO_MAX_SEQUENCES,
+  GEO_OPENCODE_ANSWER_SYSTEM_PROMPT,
+  GEO_OPENCODE_ENGINE_ID,
   GEO_PROVIDER_TIMEOUT_MS,
   GEO_SCAN_CONCURRENCY,
   GEO_SCAN_CLAIM_RENEW_AFTER_MS,
@@ -152,18 +158,19 @@ function checkFailureFields(
 function sequenceFailureFields(
   context: GeoCheckContext,
   sequence: GeoSequenceDefinition,
-  grounded: GeoGroundedEngine
+  engine: string,
+  grounded: boolean
 ): GeoSkipFields {
   return {
     event: "geo.check.failed",
     organizationId: context.organizationId,
     projectId: context.projectId,
     scanId: context.scanId,
-    engine: grounded.key,
+    engine,
     promptId: sequencePromptId(sequence.id),
     sequenceId: sequence.id,
     language: DEFAULT_LANGUAGE,
-    grounded: true,
+    grounded,
   };
 }
 
@@ -249,7 +256,7 @@ const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
   engine: string,
   promptText: string,
   zdr: GeoZdrMode,
-  gatewayPin: Exclude<GeoModelGateway, "cursor"> | undefined
+  gatewayPin: Exclude<GeoModelGateway, "cursor" | "box"> | undefined
 ) {
   const result = yield* Effect.tryPromise({
     try: (signal) =>
@@ -283,9 +290,63 @@ const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
   const answer: GeoEngineAnswer = {
     text: result.text,
     grounding: extractGrounding(result),
+    sources: collectGroundedSources(result.sources),
     finishReason: result.finishReason,
     usage: result.usage,
     zdrEnforced: getRouteMetadata(result.providerMetadata)?.zdrEnforced ?? null,
+  };
+  return answer;
+});
+
+const askOpenCodeEngineEffect = Effect.fn("geo.askOpenCodeEngine")(function* (
+  engine: string,
+  promptText: string
+) {
+  const deadlineAtMs = Date.now() + GEO_PROVIDER_TIMEOUT_MS;
+  let openCodePromise: ReturnType<typeof askGeoOpenCode> | null = null;
+  const result = yield* Effect.tryPromise({
+    try: (signal) => {
+      openCodePromise = askGeoOpenCode(
+        `${GEO_OPENCODE_ANSWER_SYSTEM_PROMPT}\n\nUser question:\n${promptText}`,
+        signal,
+        deadlineAtMs
+      );
+      return openCodePromise;
+    },
+    catch: (cause) =>
+      new GeoScanError({
+        message: `Engine ${engine} failed to answer`,
+        cause,
+      }),
+  }).pipe(
+    Effect.ensuring(
+      Effect.uninterruptible(
+        Effect.promise(
+          () =>
+            openCodePromise?.then(
+              () => undefined,
+              () => undefined
+            ) ?? Promise.resolve()
+        )
+      )
+    ),
+    Effect.timeoutOrElse({
+      duration: Math.max(1, deadlineAtMs - Date.now()),
+      orElse: () =>
+        Effect.fail(
+          new GeoScanError({
+            message: `Engine ${engine} timed out after ${GEO_PROVIDER_TIMEOUT_MS}ms`,
+          })
+        ),
+    })
+  );
+  const answer: GeoEngineAnswer = {
+    text: result.text,
+    grounding: extractGrounding(result),
+    sources: result.sources,
+    finishReason: "stop",
+    usage: result.usage,
+    zdrEnforced: false,
   };
   return answer;
 });
@@ -320,6 +381,7 @@ const askCursorEngineEffect = Effect.fn("geo.askCursorEngine")(function* (
   const answer: GeoEngineAnswer = {
     text,
     grounding: EMPTY_GEO_CHECK_GROUNDING,
+    sources: [],
     finishReason: null,
     zdrEnforced: false,
   };
@@ -335,6 +397,9 @@ const askEngine = Effect.fn("geo.askEngine")(function* (
 ) {
   if (gatewayPin === "cursor") {
     return yield* askCursorEngineEffect(engine, promptText);
+  }
+  if (gatewayPin === "box") {
+    return yield* askOpenCodeEngineEffect(engine, promptText);
   }
   return yield* askGatewayEngine(
     organizationId,
@@ -588,7 +653,7 @@ const runGeoCheck = Effect.fn("geo.runCheck")(function* (
     reasoningTokens: answer.usage?.reasoningTokens ?? null,
     zdrEnforced: answer.zdrEnforced,
     language: task.language,
-    sources: grounded?.sources ?? [],
+    sources: answer.sources,
   };
 
   const outcome: GeoCheckOutcome = { row, usage };
@@ -1045,15 +1110,30 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
       catch: (cause) =>
         new GeoScanError({ message: "Failed to load GEO sequences", cause }),
     });
+    const trackedOpenCode = trackedEngines.find(
+      ({ engine }) => engine === GEO_OPENCODE_ENGINE_ID
+    );
     const sequences: GeoScanPlannedSequence[] = scanEnglish
-      ? sequenceRows.flatMap((sequence) =>
-          groundedEngines.map(({ grounded, zdr }) => ({
+      ? sequenceRows.flatMap((sequence) => [
+          ...groundedEngines.map(({ grounded, zdr }) => ({
             sequenceId: sequence.id,
             steps: sequence.steps,
+            engine: grounded.key,
             groundedKey: grounded.key,
             zdr,
-          }))
-        )
+          })),
+          ...(trackedOpenCode
+            ? [
+                {
+                  sequenceId: sequence.id,
+                  steps: sequence.steps,
+                  engine: trackedOpenCode.engine,
+                  groundedKey: null,
+                  zdr: trackedOpenCode.zdr,
+                },
+              ]
+            : []),
+        ])
       : [];
 
     const engines = [
@@ -1217,7 +1297,7 @@ export const runGeoScanTaskBatch = Effect.fn("geo.runScanTaskBatch")(function* (
   return outcome;
 });
 
-/** Runs one batch of grounded conversation sequences; same contract as `runGeoScanTaskBatch`. */
+/** Runs one batch of conversation sequences; same contract as `runGeoScanTaskBatch`. */
 export const runGeoScanSequenceBatch = Effect.fn("geo.runScanSequenceBatch")(
   function* (
     context: GeoScanProjectContext,
@@ -1243,6 +1323,27 @@ export const runGeoScanSequenceBatch = Effect.fn("geo.runScanSequenceBatch")(
           id: planned.sequenceId,
           steps: planned.steps,
         };
+        if (!planned.groundedKey) {
+          if (planned.engine !== GEO_OPENCODE_ENGINE_ID) {
+            return Effect.succeed({ sequence, result: null });
+          }
+          return runGeoOpenCodeSequenceCheck(
+            checkContext,
+            sequence,
+            planned.zdr
+          ).pipe(
+            geoSkip(
+              "sequence failed",
+              sequenceFailureFields(
+                checkContext,
+                sequence,
+                planned.engine,
+                false
+              )
+            ),
+            Effect.map((result) => ({ sequence, result }))
+          );
+        }
         const grounded = resolveGroundedEngineByKey(planned.groundedKey);
         if (!grounded) {
           return Effect.succeed({ sequence, result: null });
@@ -1264,7 +1365,7 @@ export const runGeoScanSequenceBatch = Effect.fn("geo.runScanSequenceBatch")(
           }),
           geoSkip(
             "sequence failed",
-            sequenceFailureFields(checkContext, sequence, grounded)
+            sequenceFailureFields(checkContext, sequence, grounded.key, true)
           ),
           Effect.map((result) => ({ sequence, result }))
         );
@@ -1463,7 +1564,12 @@ const runGeoSequenceCheck = Effect.fn("geo.runSequenceCheck")(function* (
   const rows: GeoCheckWrite[] = [];
   const messages: ModelMessage[] = [];
   const steps = sequence.steps.slice(0, GEO_SEQUENCE_MAX_TURNS);
-  const failureFields = sequenceFailureFields(context, sequence, grounded);
+  const failureFields = sequenceFailureFields(
+    context,
+    sequence,
+    grounded.key,
+    true
+  );
   let usage = EMPTY_TOKEN_USAGE;
   let droppedTurns = 0;
 
@@ -1539,8 +1645,166 @@ const runGeoSequenceCheck = Effect.fn("geo.runSequenceCheck")(function* (
   return outcome;
 });
 
+const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
+  function* (
+    context: GeoCheckContext,
+    sequence: GeoSequenceDefinition,
+    zdr: GeoZdrMode
+  ) {
+    const rows: GeoCheckWrite[] = [];
+    const steps = sequence.steps.slice(0, GEO_SEQUENCE_MAX_TURNS);
+    const deadlineAtMs = Date.now() + GEO_SEQUENCE_PAIR_TIMEOUT_MS;
+    const failureFields = sequenceFailureFields(
+      context,
+      sequence,
+      GEO_OPENCODE_ENGINE_ID,
+      false
+    );
+    let conversationPromise: ReturnType<
+      typeof askGeoOpenCodeConversation
+    > | null = null;
+    const results = yield* Effect.tryPromise({
+      try: (signal) => {
+        conversationPromise = askGeoOpenCodeConversation(
+          steps.map(
+            (step) =>
+              `${GEO_OPENCODE_ANSWER_SYSTEM_PROMPT}\n\nUser question:\n${step}`
+          ),
+          signal,
+          deadlineAtMs
+        );
+        return conversationPromise;
+      },
+      catch: (cause) =>
+        new GeoScanError({
+          message: `Engine ${GEO_OPENCODE_ENGINE_ID} failed to answer the conversation`,
+          cause,
+        }),
+    }).pipe(
+      Effect.ensuring(
+        Effect.uninterruptible(
+          Effect.promise(
+            () =>
+              conversationPromise?.then(
+                () => undefined,
+                () => undefined
+              ) ?? Promise.resolve()
+          )
+        )
+      ),
+      Effect.timeoutOrElse({
+        duration: Math.max(1, deadlineAtMs - Date.now()),
+        orElse: () =>
+          Effect.fail(
+            new GeoScanError({
+              message: `Sequence ${sequence.id} on ${GEO_OPENCODE_ENGINE_ID} timed out after ${GEO_SEQUENCE_PAIR_TIMEOUT_MS}ms`,
+            })
+          ),
+      })
+    );
+    const usage = results.reduce(
+      (total, result) => addTokenUsage(total, result.usage),
+      EMPTY_TOKEN_USAGE
+    );
+    let droppedTurns = 0;
+
+    for (const [index, step] of steps.entries()) {
+      const result = results[index];
+      if (!result) {
+        droppedTurns = steps.length - index;
+        break;
+      }
+      const answer: GeoEngineAnswer = {
+        text: result.text,
+        grounding: extractGrounding(result),
+        sources: result.sources,
+        finishReason: "stop",
+        usage: result.usage,
+        zdrEnforced: false,
+      };
+      if (zdr !== "none") {
+        yield* geoLogWarn({
+          ...failureFields,
+          event: "geo.check.zdr_relaxed",
+          turn: index,
+          zdr,
+        });
+      }
+      const answerText = yield* requireAnswerText(
+        GEO_OPENCODE_ENGINE_ID,
+        sequencePromptId(sequence.id),
+        DEFAULT_LANGUAGE,
+        answer
+      ).pipe(
+        Effect.catchTag("GeoEmptyAnswerError", (error) =>
+          Effect.sync(() => {
+            logGeoSkip(
+              "sequence turn failed",
+              { ...failureFields, turn: index + 1 },
+              error
+            );
+            return null;
+          })
+        )
+      );
+      if (answerText === null) {
+        droppedTurns = steps.length - index;
+        break;
+      }
+      const judgeTimeoutMs = deadlineAtMs - Date.now();
+      if (judgeTimeoutMs <= 0) {
+        return yield* Effect.fail(
+          new GeoScanError({
+            message: `Sequence ${sequence.id} on ${GEO_OPENCODE_ENGINE_ID} timed out after ${GEO_SEQUENCE_PAIR_TIMEOUT_MS}ms`,
+          })
+        );
+      }
+      const judged = yield* judgeAnswer(context, step, answerText).pipe(
+        Effect.timeoutOrElse({
+          duration: judgeTimeoutMs,
+          orElse: () =>
+            Effect.fail(
+              new GeoScanError({
+                message: `Sequence ${sequence.id} on ${GEO_OPENCODE_ENGINE_ID} timed out after ${GEO_SEQUENCE_PAIR_TIMEOUT_MS}ms`,
+              })
+            ),
+        })
+      );
+
+      rows.push({
+        organizationId: context.organizationId,
+        projectId: context.projectId,
+        scanId: context.scanId,
+        engine: GEO_OPENCODE_ENGINE_ID,
+        promptId: sequencePromptId(sequence.id),
+        sequenceId: sequence.id,
+        turn: index + 1,
+        prompt: step,
+        answer: answerText,
+        capturedAt: context.capturedAt,
+        mentioned: judged.mentioned,
+        position: normalizePosition(judged.position),
+        sentiment: judged.sentiment,
+        competitors: judged.competitors.slice(0, MAX_JUDGE_COMPETITORS),
+        excerpt: judged.excerpt.slice(0, GEO_EXCERPT_MAX_LENGTH),
+        grounding: answer.grounding,
+        finishReason: answer.finishReason,
+        promptTokens: answer.usage?.inputTokens ?? null,
+        outputTokens: answer.usage?.outputTokens ?? null,
+        reasoningTokens: answer.usage?.reasoningTokens ?? null,
+        zdrEnforced: answer.zdrEnforced,
+        language: DEFAULT_LANGUAGE,
+        sources: answer.sources,
+      });
+    }
+
+    const outcome: GeoSequenceCheckOutcome = { rows, usage, droppedTurns };
+    return outcome;
+  }
+);
+
 /**
- * Plays a single conversation against every available grounded engine right
+ * Plays a single conversation against every available replay engine right
  * away, outside the scheduled scan. The run is recorded as a regular
  * `geo_scans` row so its checks show up alongside scan results, and it is
  * charged against the organization's AI credits.
@@ -1614,7 +1878,30 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
     }
     groundedEngines.push({ grounded, zdr });
   }
-  if (groundedEngines.length === 0) {
+  let openCodeZdr: GeoZdrMode | null = null;
+  if (settings.engines.includes(GEO_OPENCODE_ENGINE_ID)) {
+    openCodeZdr = resolveGeoZdrMode(catalog, GEO_OPENCODE_ENGINE_ID, zdrPolicy);
+    if (openCodeZdr === null) {
+      yield* geoLogWarn({
+        event: "geo.scan.skipped",
+        reason: "zdr",
+        organizationId: scope.organizationId,
+        projectId,
+        sequenceId,
+        engine: GEO_OPENCODE_ENGINE_ID,
+      });
+    }
+  }
+  const replayEngines = [
+    ...groundedEngines.map((pair) => ({
+      kind: "grounded" as const,
+      ...pair,
+    })),
+    ...(openCodeZdr === null
+      ? []
+      : [{ kind: "opencode" as const, zdr: openCodeZdr }]),
+  ];
+  if (replayEngines.length === 0) {
     return yield* Effect.fail(new GeoSequenceRunUnavailableError({}));
   }
 
@@ -1665,19 +1952,40 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
           aliases: settings.aliases,
         };
         const outcomes = yield* Effect.forEach(
-          groundedEngines,
-          (pair) =>
-            runGeoSequenceCheck(
-              context,
-              sequenceRow,
-              pair.grounded,
-              pair.zdr
-            ).pipe(
-              geoSkip(
-                "sequence run failed",
-                sequenceFailureFields(context, sequenceRow, pair.grounded)
-              )
-            ),
+          replayEngines,
+          (replayEngine) =>
+            replayEngine.kind === "grounded"
+              ? runGeoSequenceCheck(
+                  context,
+                  sequenceRow,
+                  replayEngine.grounded,
+                  replayEngine.zdr
+                ).pipe(
+                  geoSkip(
+                    "sequence run failed",
+                    sequenceFailureFields(
+                      context,
+                      sequenceRow,
+                      replayEngine.grounded.key,
+                      true
+                    )
+                  )
+                )
+              : runGeoOpenCodeSequenceCheck(
+                  context,
+                  sequenceRow,
+                  replayEngine.zdr
+                ).pipe(
+                  geoSkip(
+                    "sequence run failed",
+                    sequenceFailureFields(
+                      context,
+                      sequenceRow,
+                      GEO_OPENCODE_ENGINE_ID,
+                      false
+                    )
+                  )
+                ),
           { concurrency: GEO_SCAN_CONCURRENCY }
         );
         const succeeded = outcomes.filter(
@@ -1711,7 +2019,9 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
         action: "confirm",
         units,
         usage,
-        fallbackModelId: groundedEngines[0]?.grounded.model ?? GEO_JUDGE_MODEL,
+        fallbackModelId:
+          groundedEngines[0]?.grounded.model ??
+          (openCodeZdr === null ? GEO_JUDGE_MODEL : GEO_OPENCODE_ENGINE_ID),
         properties: {
           source: "geo_sequence_run",
           run_id: runId,
@@ -1765,7 +2075,11 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
   const response: GeoSequenceRunResponse = {
     checks: result.rows.length,
     mentions: result.rows.filter((row) => row.mentioned).length,
-    engines: groundedEngines.map((pair) => pair.grounded.key),
+    engines: replayEngines.map((replayEngine) =>
+      replayEngine.kind === "grounded"
+        ? replayEngine.grounded.key
+        : GEO_OPENCODE_ENGINE_ID
+    ),
   };
   return response;
 });

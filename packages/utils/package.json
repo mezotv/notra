@@ -11,6 +11,7 @@
     "./slugify": "./src/slugify.ts",
     "./color": "./src/color.ts",
     "./ingest-token": "./src/ingest-token.ts",
+    "./require-api-key": "./src/require-api-key.ts",
     "./types/*": "./src/types/*.ts"
   },
   "scripts": {

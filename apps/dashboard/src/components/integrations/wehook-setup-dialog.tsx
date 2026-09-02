@@ -248,14 +248,10 @@ export function WebhookSetupDialog({
         </div>
 
         <ResponsiveDialogFooter className="gap-2">
-          <ResponsiveDialogClose
-            className="h-9"
-            render={<Button variant="outline" />}
-          >
+          <ResponsiveDialogClose render={<Button variant="outline" />}>
             Skip for now
           </ResponsiveDialogClose>
           <Button
-            className="h-9"
             disabled={!webhookConfig}
             onClick={() => setOpen(false)}
             type="button"

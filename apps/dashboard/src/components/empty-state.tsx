@@ -18,11 +18,7 @@ function EmptyState({
   const renderedAction =
     action ??
     (actionLabel ? (
-      <Button
-        className="w-fit gap-1.5 px-3"
-        onClick={onActionClick}
-        variant={actionVariant}
-      >
+      <Button onClick={onActionClick} variant={actionVariant}>
         {actionIcon}
         {actionLabel}
       </Button>
@@ -64,7 +60,7 @@ function EmptyState({
           {description}
         </p>
         {renderedAction ? (
-          <div className="relative z-10 mt-5 flex flex-wrap items-center justify-center gap-2 [&_a]:inline-flex [&_a]:items-center [&_a]:justify-center [&_button]:h-8 [&_button]:w-fit [&_button]:gap-1.5 [&_button]:px-3 [&_button]:text-sm">
+          <div className="relative z-10 mt-5 flex flex-wrap items-center justify-center gap-2">
             {renderedAction}
           </div>
         ) : null}

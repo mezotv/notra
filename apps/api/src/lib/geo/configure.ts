@@ -107,9 +107,13 @@ const entitlementLayer = Layer.succeed(GeoEntitlementService, {
 
 const featureFlagLayer = Layer.succeed(GeoFeatureFlagService, {
   // The API has no feature-flag client. Hidden engines are preserved when
-  // settings are saved, so reporting Cursor as disabled cannot remove access.
+  // settings are saved, so reporting direct engines as disabled cannot remove
+  // access.
   isCursorEngineEnabledForOrganization: Effect.fn(
     "GeoApiFeatureFlags.isCursorEnabled"
+  )(() => Effect.succeed(false)),
+  isOpenCodeEngineEnabledForOrganization: Effect.fn(
+    "GeoApiFeatureFlags.isOpenCodeEnabled"
   )(() => Effect.succeed(false)),
 });
 

@@ -3,14 +3,14 @@ import {
   type ServerFlagsManager,
 } from "@databuddy/sdk/node";
 import {
-  GEO_CURSOR_FLAG_CACHE_TTL_MS,
-  GEO_CURSOR_FLAG_ERROR_REASON,
-  GEO_CURSOR_FLAG_STALE_TIME_MS,
+  GEO_FLAG_CACHE_TTL_MS,
+  GEO_FLAG_ERROR_REASON,
+  GEO_FLAG_STALE_TIME_MS,
 } from "@notra/geo-core/constants/geo";
-import { GeoCursorFlagEvaluationError } from "@notra/geo-core/geo/errors";
+import { GeoFlagEvaluationError } from "@notra/geo-core/geo/errors";
 import { Effect } from "effect";
 
-import type { GeoCursorFlagState } from "@/types/geo";
+import type { GeoFlagState } from "@/types/geo";
 
 const clientId = process.env.NEXT_PUBLIC_DATABUDDY_DASHBOARD_WEBSITE_ID ?? "";
 
@@ -25,8 +25,8 @@ function getFlagsManager(): ServerFlagsManager | null {
     cachedManager = createServerFlagsManager({
       clientId,
       autoFetch: false,
-      cacheTtl: GEO_CURSOR_FLAG_CACHE_TTL_MS,
-      staleTime: GEO_CURSOR_FLAG_STALE_TIME_MS,
+      cacheTtl: GEO_FLAG_CACHE_TTL_MS,
+      staleTime: GEO_FLAG_STALE_TIME_MS,
       skipStorage: true,
     });
   }
@@ -37,7 +37,7 @@ function getFlagsManager(): ServerFlagsManager | null {
 export function resolveGeoFlagState(
   flagKey: string,
   organizationId: string
-): Effect.Effect<GeoCursorFlagState> {
+): Effect.Effect<GeoFlagState> {
   return Effect.gen(function* () {
     const manager = getFlagsManager();
     if (!manager) {
@@ -51,18 +51,18 @@ export function resolveGeoFlagState(
           properties: { organizationId },
         }),
       catch: (cause) =>
-        new GeoCursorFlagEvaluationError({
+        new GeoFlagEvaluationError({
           message: `Failed to evaluate the GEO feature flag "${flagKey}"`,
           cause,
         }),
     }).pipe(
-      Effect.map((result): GeoCursorFlagState => {
-        if (result.reason === GEO_CURSOR_FLAG_ERROR_REASON) {
+      Effect.map((result): GeoFlagState => {
+        if (result.reason === GEO_FLAG_ERROR_REASON) {
           return "unavailable";
         }
         return result.enabled ? "enabled" : "disabled";
       }),
-      Effect.catch(() => Effect.succeed<GeoCursorFlagState>("unavailable"))
+      Effect.catch(() => Effect.succeed<GeoFlagState>("unavailable"))
     );
   });
 }

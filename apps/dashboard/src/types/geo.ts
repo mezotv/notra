@@ -711,7 +711,7 @@ export interface GeoEnginePickerProps {
   labeled?: boolean;
 }
 
-export type GeoCursorFlagState = "enabled" | "disabled" | "unavailable";
+export type GeoFlagState = "enabled" | "disabled" | "unavailable";
 
 export interface GeoLanguagePickerProps {
   selected: string[];

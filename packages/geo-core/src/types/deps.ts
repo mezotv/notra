@@ -43,6 +43,9 @@ export interface GeoFeatureFlagServiceShape {
   readonly isCursorEngineEnabledForOrganization: (
     organizationId: string
   ) => Effect.Effect<boolean>;
+  readonly isOpenCodeEngineEnabledForOrganization: (
+    organizationId: string
+  ) => Effect.Effect<boolean>;
 }
 
 export interface GeoGenerationServiceShape {

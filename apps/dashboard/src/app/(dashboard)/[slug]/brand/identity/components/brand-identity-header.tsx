@@ -49,11 +49,7 @@ export function BrandIdentityHeader({
         </p>
       </div>
       {activeTab === "guidelines" ? (
-        <Button
-          className="w-fit gap-1.5 px-3"
-          disabled={isRefreshingGuidelines}
-          onClick={onRefreshGuidelines}
-        >
+        <Button disabled={isRefreshingGuidelines} onClick={onRefreshGuidelines}>
           {isRefreshingGuidelines ? (
             <Loader2Icon className="size-4 animate-spin" />
           ) : (
@@ -63,7 +59,7 @@ export function BrandIdentityHeader({
         </Button>
       ) : null}
       {action ? (
-        <Button className="w-fit gap-1.5 px-3" onClick={action.onClick}>
+        <Button onClick={action.onClick}>
           <HugeiconsIcon className="size-4" icon={Add01Icon} />
           {action.label}
           <Kbd className="ml-1 hidden sm:inline-flex">C</Kbd>

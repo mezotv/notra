@@ -59,11 +59,13 @@ function toDayString(seconds: number): string {
  * applied on top of this by `withoutGeoModelCatalogEntries`.
  */
 function isGeoStaticEngineAvailable(entry: GeoModelCatalogEntry): boolean {
-  const envKey = GEO_STATIC_ENGINE_ENV[entry.id];
-  if (!envKey) {
+  const envKeys = GEO_STATIC_ENGINE_ENV[entry.id];
+  if (!envKeys) {
     return true;
   }
-  return (process.env[envKey] ?? "").trim().length > 0;
+  return envKeys.every(
+    (envKey) => (process.env[envKey] ?? "").trim().length > 0
+  );
 }
 
 function staticEntriesForProvider(

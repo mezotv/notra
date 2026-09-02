@@ -146,6 +146,7 @@ export interface GeoGenerateTrace {
 export interface GeoEngineAnswer {
   text: string;
   grounding: GeoCheckGrounding;
+  sources: GeoCheckSourceItem[];
   finishReason: FinishReason | null;
   usage?: LanguageModelUsage;
   /** Whether the call ran with ZDR enforced; null when the route did not say. */
@@ -153,7 +154,6 @@ export interface GeoEngineAnswer {
 }
 
 export interface GeoGroundedAnswer extends GeoEngineAnswer {
-  sources: GeoCheckSourceItem[];
   usage: LanguageModelUsage;
 }
 
@@ -427,7 +427,8 @@ export interface GeoScanPlannedTask {
 export interface GeoScanPlannedSequence {
   sequenceId: string;
   steps: string[];
-  groundedKey: string;
+  engine: string;
+  groundedKey: string | null;
   zdr: GeoZdrMode;
 }
 
@@ -982,16 +983,17 @@ export type GeoModelProviderId =
   | "spacexai"
   | "deepseek"
   | "mistral"
-  | "cursor";
+  | "cursor"
+  | "opencode";
 
 /** Zero-data-retention coverage as reported by the Vercel AI Gateway feed. */
 export type GeoModelZdr = "all" | "some" | "none";
 
 /**
- * Where a model is served. `cursor` runs through the Cursor SDK instead of
- * the AI router (see `lib/geo/cursor.ts`).
+ * Where a model is served. `cursor` runs through the Cursor SDK and `box`
+ * through OpenCode in Upstash Box instead of the AI router.
  */
-export type GeoModelGateway = "vercel" | "openrouter" | "cursor";
+export type GeoModelGateway = "vercel" | "openrouter" | "cursor" | "box";
 
 export interface GeoModelProvider {
   id: GeoModelProviderId;

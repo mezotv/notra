@@ -256,33 +256,16 @@ export function PromptAddDialog({
           >
             Cancel
           </Button>
-          <div className="grid">
-            <Button
-              className={cn(
-                "col-start-1 row-start-1",
-                !writeMode && "invisible"
-              )}
-              disabled={!writeMode || !canAdd}
-              form={formId}
-              tabIndex={writeMode ? undefined : -1}
-              type="submit"
-            >
+          {writeMode ? (
+            <Button disabled={!canAdd} form={formId} type="submit">
               Add prompt
             </Button>
-            <Button
-              className={cn(
-                "col-start-1 row-start-1",
-                writeMode && "invisible"
-              )}
-              disabled={writeMode || !canGenerate}
-              form={formId}
-              tabIndex={writeMode ? -1 : undefined}
-              type="submit"
-            >
+          ) : (
+            <Button disabled={!canGenerate} form={formId} type="submit">
               {generate.isPending ? <StatusSpinner /> : null}
               Generate prompts
             </Button>
-          </div>
+          )}
         </ResponsiveDialogFooter>
       </ResponsiveDialogContent>
     </ResponsiveDialog>

@@ -78,6 +78,7 @@ export interface GeoCheckPromptResultRow {
   sentiment: string | null;
   excerpt: string;
   grounding: GeoCheckGrounding;
+  sources: GeoCheckSourceItem[];
   finishReason: string | null;
   promptTokens: number | null;
   outputTokens: number | null;

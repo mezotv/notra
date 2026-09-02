@@ -173,8 +173,8 @@ export class GeoSampleDataDisabledError extends Data.TaggedError(
   "GeoSampleDataDisabledError"
 )<Record<string, never>> {}
 
-export class GeoCursorFlagEvaluationError extends Data.TaggedError(
-  "GeoCursorFlagEvaluationError"
+export class GeoFlagEvaluationError extends Data.TaggedError(
+  "GeoFlagEvaluationError"
 )<{
   readonly message: string;
   readonly cause: unknown;

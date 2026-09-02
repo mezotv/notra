@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 
-import { GEO_CURSOR_ENGINE_ID } from "../constants/geo";
+import { GEO_CURSOR_ENGINE_ID, GEO_OPENCODE_ENGINE_ID } from "../constants/geo";
 import {
   GEO_MODEL_FEED_REVALIDATE_SECONDS,
   GEO_MODEL_FEED_URL,
@@ -60,19 +60,20 @@ async function loadSharedGeoModelCatalog(): Promise<GeoModelCatalog> {
 }
 
 /**
- * The shared catalog narrowed to what one organization may see. Cursor is
- * flag-gated per organization on top of its credential check.
+ * The shared catalog narrowed to what one organization may see. Direct
+ * engines are flag-gated per organization on top of their credential checks.
  */
 export const loadGeoModelCatalog = Effect.fn("geo.modelCatalog")(function* (
   organizationId: string
 ) {
   const featureFlags = yield* GeoFeatureFlagService;
-  const [catalog, cursorEnabled] = yield* Effect.all([
+  const [catalog, cursorEnabled, openCodeEnabled] = yield* Effect.all([
     Effect.promise(loadSharedGeoModelCatalog),
     featureFlags.isCursorEngineEnabledForOrganization(organizationId),
+    featureFlags.isOpenCodeEngineEnabledForOrganization(organizationId),
   ]);
-  if (cursorEnabled) {
-    return catalog;
-  }
-  return withoutGeoModelCatalogEntries(catalog, [GEO_CURSOR_ENGINE_ID]);
+  return withoutGeoModelCatalogEntries(catalog, [
+    ...(cursorEnabled ? [] : [GEO_CURSOR_ENGINE_ID]),
+    ...(openCodeEnabled ? [] : [GEO_OPENCODE_ENGINE_ID]),
+  ]);
 });

@@ -1,3 +1,4 @@
+import { deleteStaleGeoOpenCodeBoxes } from "@notra/ai/utils/geo-opencode-box";
 import { db } from "@notra/db/drizzle";
 import { geoSettings } from "@notra/db/schema";
 import { and, asc, eq, isNull, lte, or, sql } from "drizzle-orm";
@@ -55,6 +56,11 @@ const claimDueGeoScanTick = Effect.fn("geo.claimDueScanTick")(function* (row: {
  */
 export const runGeoScanCronSweep = Effect.fn("geo.runScanCronSweep")(
   function* () {
+    yield* Effect.tryPromise({
+      try: deleteStaleGeoOpenCodeBoxes,
+      catch: (cause) => cause,
+    }).pipe(geoSkip("stale OpenCode box sweep failed"));
+
     const staleScansFailed = yield* sweepStaleGeoScanRows().pipe(
       geoSkip("stale scan sweep failed"),
       Effect.map((count) => count ?? 0)

@@ -68,6 +68,12 @@ export const GEO_MODEL_PROVIDERS: readonly GeoModelProvider[] = [
     brand: "cursor",
     featured: false,
   },
+  {
+    id: "opencode",
+    label: "OpenCode",
+    brand: "opencode",
+    featured: false,
+  },
 ];
 
 export const GEO_MODEL_CATALOG_SEED: readonly GeoModelCatalogEntry[] = [
@@ -335,11 +341,10 @@ export const GEO_MODEL_CATALOG_SEED: readonly GeoModelCatalogEntry[] = [
 ];
 
 /**
- * Models that no gateway serves. Cursor's Composer runs through the Cursor SDK
- * (`lib/geo/cursor.ts`) with its own API key, so it is appended to the catalog
- * instead of coming from the feed. `zdr: "none"` because Cursor publishes no
- * zero-data-retention guarantee for API runs — under enforced ZDR the engine
- * therefore needs explicit approval before it is scanned.
+ * Models that do not run through the Notra AI router. They are appended to the
+ * catalog instead of coming from the gateway feed. `zdr: "none"` because
+ * neither direct runner exposes an enforceable ZDR route to GEO; under enforced
+ * ZDR each engine therefore needs explicit approval before it is scanned.
  */
 export const GEO_MODEL_CATALOG_STATIC: readonly GeoModelCatalogEntry[] = [
   {
@@ -351,14 +356,26 @@ export const GEO_MODEL_CATALOG_STATIC: readonly GeoModelCatalogEntry[] = [
     default: false,
     gateways: ["cursor"],
   },
+  {
+    id: "opencode/gpt-5.6-sol-medium",
+    provider: "opencode",
+    label: "GPT-5.6 Sol · medium",
+    zdr: "none",
+    released: "2026-08-21",
+    default: false,
+    gateways: ["box"],
+  },
 ];
 
 /**
- * Environment variable that has to be set for a static engine to be runnable.
- * Static entries are hidden from the catalog while their key is missing.
+ * Environment variables that have to be set for a static engine to be
+ * runnable. Static entries are hidden from the catalog while a key is missing.
  */
-export const GEO_STATIC_ENGINE_ENV: Readonly<Record<string, string>> = {
-  "cursor/composer-2.5": "CURSOR_API_KEY",
+export const GEO_STATIC_ENGINE_ENV: Readonly<
+  Record<string, readonly string[]>
+> = {
+  "cursor/composer-2.5": ["CURSOR_API_KEY"],
+  "opencode/gpt-5.6-sol-medium": ["UPSTASH_BOX_API_KEY", "OPENROUTER_API_KEY"],
 };
 
 /** Engines scanned when a project has not picked its own set. */
