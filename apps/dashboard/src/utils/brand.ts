@@ -1,3 +1,5 @@
+import { logoLinkUrl } from "@notra/geo-core/geo/logo";
+
 import { brandIdentityToolOutputSchema } from "@/schemas/brand";
 
 export function getWebsiteDomain(websiteUrl: string | null): string | null {
@@ -15,17 +17,7 @@ export function getWebsiteDomain(websiteUrl: string | null): string | null {
 }
 
 export function getBrandFaviconUrl(websiteUrl: string | null) {
-  if (!websiteUrl) {
-    return undefined;
-  }
-  const normalizedUrl = websiteUrl.startsWith("http")
-    ? websiteUrl
-    : `https://${websiteUrl}`;
-  try {
-    return `https://icons.duckduckgo.com/ip3/${new URL(normalizedUrl).hostname}.ico`;
-  } catch {
-    return undefined;
-  }
+  return logoLinkUrl(getWebsiteDomain(websiteUrl)) ?? undefined;
 }
 
 export function getBrandFaviconFromToolOutput(

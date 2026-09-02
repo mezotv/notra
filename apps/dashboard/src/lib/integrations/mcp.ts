@@ -1,3 +1,5 @@
+import { logoLinkUrl } from "@notra/geo-core/geo/logo";
+
 import {
   type AddMcpServerFormValues,
   MCP_URL_PROTOCOL_REGEX,
@@ -24,8 +26,7 @@ export function getMcpFaviconUrl(url: string | null | undefined) {
   }
   const normalizedUrl = url.startsWith("http") ? url : `https://${url}`;
   try {
-    const domain = new URL(normalizedUrl).hostname;
-    return `https://icons.duckduckgo.com/ip3/${domain}.ico`;
+    return logoLinkUrl(new URL(normalizedUrl).hostname) ?? undefined;
   } catch {
     return undefined;
   }

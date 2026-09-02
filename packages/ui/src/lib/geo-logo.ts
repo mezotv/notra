@@ -1,7 +1,7 @@
-import { GEO_FAVICON_BASE, GEO_LOGO_LINK_BASE } from "@notra/ui/constants/geo";
+import { GEO_LOGO_LINK_BASE } from "@notra/ui/constants/geo";
 
 function buildCompetitorLogoUrl(domain: string): string | null {
-  const clientId = process.env.NEXT_PUBLIC_LOGOLINK_CLIENT_ID;
+  const clientId = process.env.NEXT_PUBLIC_LOGOLINK_CLIENT_ID?.trim();
   if (!clientId) {
     return null;
   }
@@ -12,16 +12,11 @@ function buildCompetitorLogoUrl(domain: string): string | null {
   return url.toString();
 }
 
-function buildCompetitorFaviconUrl(domain: string): string {
-  return `${GEO_FAVICON_BASE}/${encodeURIComponent(domain)}.ico`;
-}
-
 export function competitorLogoSources(domain: string | null): string[] {
   if (!domain) {
     return [];
   }
 
   const logoLink = buildCompetitorLogoUrl(domain);
-  const favicon = buildCompetitorFaviconUrl(domain);
-  return logoLink ? [logoLink, favicon] : [favicon];
+  return logoLink ? [logoLink] : [];
 }

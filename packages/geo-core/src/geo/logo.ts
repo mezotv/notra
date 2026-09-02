@@ -1,19 +1,30 @@
-import { GEO_AVATAR_FALLBACK_BASE, GEO_FAVICON_BASE } from "../constants/geo";
+import { GEO_AVATAR_FALLBACK_BASE, GEO_LOGO_LINK_BASE } from "../constants/geo";
 
-function buildCompetitorFaviconUrl(domain: string): string {
-  return `${GEO_FAVICON_BASE}/${encodeURIComponent(domain)}.ico`;
+export function logoLinkUrl(domain: string | null): string | null {
+  const clientId = process.env.NEXT_PUBLIC_LOGOLINK_CLIENT_ID?.trim();
+  if (!domain || !clientId) {
+    return null;
+  }
+
+  const url = new URL(GEO_LOGO_LINK_BASE);
+  url.searchParams.set("publicClientId", clientId);
+  url.searchParams.set("domain", domain);
+  return url.toString();
 }
 
 export function competitorLogoSources(
   domain: string | null,
   logo: string | null
 ): string[] {
-  if (!domain) {
-    return logo ? [logo] : [];
+  const sources: string[] = [];
+  if (logo) {
+    sources.push(logo);
   }
-
-  const favicon = buildCompetitorFaviconUrl(domain);
-  return logo ? [logo, favicon] : [favicon];
+  const logoLink = logoLinkUrl(domain);
+  if (logoLink) {
+    sources.push(logoLink);
+  }
+  return sources;
 }
 
 export function projectLogoSources(

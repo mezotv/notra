@@ -51,6 +51,4 @@ export const MODELS_DEV_LOGO_ALIASES: Record<string, string> = {
 
 export const GEO_LOGO_LINK_BASE = "https://logos.context.dev/";
 
-export const GEO_FAVICON_BASE = "https://icons.duckduckgo.com/ip3";
-
 export const GEO_LOGO_SIZE_PX = 40;

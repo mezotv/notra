@@ -24,6 +24,7 @@ import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/button";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { GeoRemoveDialog } from "@/components/geo/geo-remove-dialog";
+import { ProjectLogo } from "@/components/geo/project-logo";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useGeoCompetitorRowNavigation } from "@/lib/hooks/use-geo";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
@@ -64,6 +65,7 @@ export function CompetitorsTable({
   organizationSlug,
   companyName,
   aliases,
+  ownDomain: projectDomain,
 }: CompetitorsTableProps) {
   const { pendingCompetitorIds, removeCompetitor } =
     useGeoCompetitorsDb(organizationId);
@@ -90,18 +92,22 @@ export function CompetitorsTable({
     setDeleteOpen(true);
   }, []);
 
-  const ownDomain = useMemo(() => findOwnBrandDomain(aliases), [aliases]);
+  const ownDomain = useMemo(
+    () => projectDomain ?? findOwnBrandDomain(aliases),
+    [projectDomain, aliases]
+  );
 
   const rows = useMemo(
     () =>
       buildCompetitorRows(
         competitors,
         companyName,
+        aliases,
         ownDomain,
         search,
         typeFilter
       ),
-    [competitors, companyName, ownDomain, search, typeFilter]
+    [competitors, companyName, aliases, ownDomain, search, typeFilter]
   );
 
   const selectedNames = useMemo(() => {
@@ -127,11 +133,20 @@ export function CompetitorsTable({
         width: "1.4fr",
         cell: (row) => (
           <span className="flex min-w-0 items-center gap-2.5">
-            <CompetitorLogo
-              className="size-6 shrink-0 rounded-md"
-              domain={row.domain}
-              name={row.name}
-            />
+            {row.isOwnBrand ? (
+              <ProjectLogo
+                className="size-6 shrink-0 rounded-md"
+                domain={row.domain}
+                fallbackClassName="bg-background p-1 ring-1 ring-foreground/10"
+                name={row.name}
+              />
+            ) : (
+              <CompetitorLogo
+                className="size-6 shrink-0 rounded-md"
+                domain={row.domain}
+                name={row.name}
+              />
+            )}
             <span className="truncate font-medium">
               {row.name}
               {row.isOwnBrand && (

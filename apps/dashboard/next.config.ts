@@ -139,7 +139,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "icons.duckduckgo.com",
+        hostname: "logos.context.dev",
       },
       {
         protocol: "https",

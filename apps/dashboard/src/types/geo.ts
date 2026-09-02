@@ -16,6 +16,7 @@ import type {
   GeoModelCatalog,
   GeoOverviewEngine,
   GeoPresenceStatus,
+  GeoProject,
   GeoPromptResult,
   GeoPromptSequence,
   GeoRangePreset,
@@ -54,6 +55,11 @@ export interface GeoProjectCreateInput {
 
 export interface GeoProjectContextValue {
   projectId: string | undefined;
+}
+
+export interface GeoActiveProject {
+  project: GeoProject | null;
+  domain: string | null;
 }
 
 export interface GeoProjectProviderProps {
@@ -809,6 +815,7 @@ export interface CompetitorsTableProps {
   organizationSlug: string;
   companyName: string;
   aliases: string[];
+  ownDomain: string | null;
 }
 
 export interface PromptsTableProps {

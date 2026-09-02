@@ -32,6 +32,7 @@ import {
   useGeoSettings,
   useIsGeoScanning,
 } from "@/lib/hooks/use-geo";
+import { useGeoActiveProject } from "@/lib/hooks/use-geo-active-project";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
@@ -86,6 +87,7 @@ function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
     true
   );
   const { competitors } = useGeoCompetitorsDb(organizationId);
+  const { domain: ownDomain } = useGeoActiveProject(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
   const [managerOpen, setManagerOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -170,6 +172,7 @@ function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
           competitors={competitors}
           organizationId={organizationId}
           organizationSlug={organizationSlug}
+          ownDomain={ownDomain}
         />
         <CompetitorShareCard
           aliases={settings.aliases}

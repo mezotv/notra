@@ -268,9 +268,20 @@ export function geoCompetitorDetailPath(
   return `/${organizationSlug}/geo/competitors/${encodeURIComponent(brand)}`;
 }
 
+function ownBrandSynonyms(
+  aliases: readonly string[],
+  ownDomain: string | null
+): string[] {
+  return aliases.filter((alias) => {
+    const trimmed = alias.trim();
+    return trimmed.length > 0 && trimmed.toLowerCase() !== ownDomain;
+  });
+}
+
 export function buildCompetitorRows(
   competitors: readonly GeoCompetitor[],
   companyName: string,
+  aliases: readonly string[],
   ownDomain: string | null,
   search: string,
   typeFilter: GeoCompetitorTypeFilter
@@ -281,7 +292,7 @@ export function buildCompetitorRows(
       id: OWN_BRAND_ROW_ID,
       name: companyName,
       domain: ownDomain,
-      synonyms: [],
+      synonyms: ownBrandSynonyms(aliases, ownDomain),
       kind: "direct",
       isOwnBrand: true,
       color: CHART_PRIMARY_COLOR,
