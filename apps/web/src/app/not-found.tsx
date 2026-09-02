@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import FooterSection from "@/components/footer-section";
 import { Navbar } from "@/components/navbar";
+import { NOT_FOUND_AGENT_LINKS } from "@/constants/not-found";
 
 export default function NotFound() {
   return (
@@ -23,6 +24,21 @@ export default function NotFound() {
           >
             Back to home
           </Link>
+          <nav
+            aria-label="Site indexes"
+            className="text-muted-foreground flex flex-wrap items-center justify-center gap-x-4 gap-y-2 font-sans text-xs"
+          >
+            <span>Looking for an index?</span>
+            {NOT_FOUND_AGENT_LINKS.map((link) => (
+              <a
+                className="hover:text-foreground underline underline-offset-4 transition-colors"
+                href={link.href}
+                key={link.href}
+              >
+                {link.label}
+              </a>
+            ))}
+          </nav>
         </div>
         <FooterSection />
       </div>
