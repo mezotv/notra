@@ -6,17 +6,13 @@ describe("getWebsiteUrlLookupVariants", () => {
   test("adds a trailing-slash variant to a suffix-free URL", () => {
     const variants = getWebsiteUrlLookupVariants("https://example.com");
 
-    expect(variants.join(",")).toBe(
-      "https://example.com,https://example.com/"
-    );
+    expect(variants.join(",")).toBe("https://example.com,https://example.com/");
   });
 
   test("adds a non-trailing-slash variant to a suffix-free URL", () => {
     const variants = getWebsiteUrlLookupVariants("https://example.com/");
 
-    expect(variants.join(",")).toBe(
-      "https://example.com/,https://example.com"
-    );
+    expect(variants.join(",")).toBe("https://example.com/,https://example.com");
   });
 
   test("keeps query and fragment suffixes after the slash variant", () => {
