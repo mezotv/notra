@@ -72,6 +72,7 @@ export function OrganizationSwitchProvider({
     slug: string | null;
   }>({ generation: 0, id: null, outcome: null, slug: null });
 
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- public context action identity is stable
   const startOrganizationSwitch = useCallback(
     (targetSlug: string, targetOrganizationId: string) => {
       const switchId = nextSwitchIdRef.current + 1;
@@ -92,6 +93,7 @@ export function OrganizationSwitchProvider({
     },
     []
   );
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- public context action identity is stable
   const markOrganizationSwitchActivated = useCallback((switchId: number) => {
     const currentState = activeSwitchStateRef.current;
     const nextState = markOrganizationSwitchStateActivated(
@@ -104,6 +106,7 @@ export function OrganizationSwitchProvider({
     activeSwitchStateRef.current = nextState;
     setSwitchState(nextState);
   }, []);
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- used by the recovery timer and consumers
   const unblockOrganizationSwitch = useCallback(
     (switchId: number, reason?: OrganizationSwitchState["recoveryReason"]) => {
       const currentState = activeSwitchStateRef.current;
@@ -120,6 +123,7 @@ export function OrganizationSwitchProvider({
     },
     []
   );
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- public context action identity is stable
   const finishOrganizationSwitch = useCallback(
     (switchId: number, outcome: OrganizationSwitchOutcome) => {
       const currentState = activeSwitchStateRef.current;
@@ -144,6 +148,7 @@ export function OrganizationSwitchProvider({
     },
     []
   );
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- public context action identity is stable
   const cancelOrganizationSwitch = useCallback((switchId: number) => {
     if (activeSwitchIdRef.current !== switchId) {
       return;
@@ -153,14 +158,17 @@ export function OrganizationSwitchProvider({
     targetSlugRef.current = null;
     setSwitchState(null);
   }, []);
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- async stale guards require a stable callback
   const isOrganizationSwitchCurrent = useCallback(
     (switchId: number) => activeSwitchIdRef.current === switchId,
     []
   );
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- public context action identity is stable
   const getOrganizationSwitchTargetSlug = useCallback(
     () => targetSlugRef.current,
     []
   );
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- consumed by URL synchronization effects
   const markOrganizationPathSettled = useCallback(
     (slug: string | null, organizationId: string | null) => {
       if (
@@ -181,6 +189,7 @@ export function OrganizationSwitchProvider({
     },
     []
   );
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- consumed by analytics gating effects
   const isOrganizationStateSettled = useCallback(
     (pathname: string, organizationId: string | null) => {
       if (activeSwitchIdRef.current !== null) {
@@ -218,6 +227,7 @@ export function OrganizationSwitchProvider({
     return () => globalThis.clearTimeout(recoveryTimer);
   }, [switchState?.id, switchState?.phase, unblockOrganizationSwitch]);
 
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- prevents unrelated context consumer renders
   const value = useMemo<OrganizationSwitchContextValue>(
     () => ({
       isOrganizationSwitching: switchState !== null,

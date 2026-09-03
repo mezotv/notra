@@ -106,7 +106,7 @@ function GeneralSettingsPageContent({ params }: GeneralSettingsPageProps) {
         ? `Deleted ${organization.name}`
         : `Left ${organization.name}`;
 
-    try {
+    const error = await (async () => {
       await dashboardOrpc.user.membership.applyAction.call({
         organizationId: organization.id,
         action,
@@ -153,12 +153,15 @@ function GeneralSettingsPageContent({ params }: GeneralSettingsPageProps) {
 
       toast.success(successMessage);
       router.push(`/${firstOrg.slug}/settings/account`);
-    } catch (error) {
+    })().then(
+      () => null,
+      (caught: unknown) => caught
+    );
+    if (error !== null) {
       toast.error("Failed to update organization membership");
       console.error(error);
-    } finally {
-      setIsRemovingOrganization(false);
     }
+    setIsRemovingOrganization(false);
   }
 
   if (!organization) {

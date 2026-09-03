@@ -112,7 +112,7 @@ export function OrganizationsSection() {
     setIsProcessingOrgAction(org.id);
     const activeOrganizationId = activeOrganization?.id;
 
-    try {
+    const error = await (async () => {
       await dashboardOrpc.user.membership.applyAction.call({
         organizationId: org.id,
         action,
@@ -157,12 +157,15 @@ export function OrganizationsSection() {
           router.push(`/${firstOrg.slug}/settings/account`);
         }
       }
-    } catch (error) {
+    })().then(
+      () => null,
+      (caught: unknown) => caught
+    );
+    if (error !== null) {
       toast.error("Failed to update organization membership");
       console.error(error);
-    } finally {
-      setIsProcessingOrgAction(null);
     }
+    setIsProcessingOrgAction(null);
   }
 
   if (isLoading) {

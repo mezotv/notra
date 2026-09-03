@@ -61,6 +61,7 @@ export function LazyCreateContentDialog({
   );
   const open = controlledOpen ?? uncontrolledOpen;
   const openEntry = entryOverride ?? entry;
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- passed through the lazy dialog boundary
   const setOpen = useCallback(
     (nextOpen: boolean) => {
       if (!nextOpen) {

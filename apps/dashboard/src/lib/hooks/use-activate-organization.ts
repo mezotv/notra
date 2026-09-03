@@ -29,6 +29,7 @@ export function useActivateOrganization({
 >) {
   const queryClient = useQueryClient();
 
+  // react-doctor-disable-next-line react-compiler-no-manual-memoization -- exported through a context action
   return useCallback(
     async (
       targetSlug: string,
