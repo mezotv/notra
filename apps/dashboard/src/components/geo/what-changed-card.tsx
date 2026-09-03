@@ -9,6 +9,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GEO_CHANGE_KIND_LABELS,
   GEO_CHANGE_KIND_ORDER,
+  GEO_CHANGES_CITATIONS_ADDED_PREFIX,
+  GEO_CHANGES_CITATIONS_REMOVED_PREFIX,
   GEO_CHANGES_COLUMN_LABELS,
   GEO_CHANGES_EMPTY_DETAIL,
   GEO_CHANGES_EMPTY_NEEDS_SCANS,
@@ -78,6 +80,7 @@ import { paginatedTableHeightFor } from "@/utils/table";
 const STAT_ICON_SIZE = 10;
 const STAT_ICON_STROKE = 2.5;
 const POSITION_ARROW_SIZE = 12;
+const DOMAIN_ICON_SIZE = 14;
 
 const STAT_TONE_CLASS = {
   up: "bg-geo-up/10 text-geo-up",
@@ -200,6 +203,16 @@ function EngineCell({ event }: GeoChangeCellProps) {
 
 function PositionCell({ event }: GeoChangeCellProps) {
   const detail = describeGeoChangeDetail(event);
+  const isUnchanged = detail.before === detail.after;
+
+  if (isUnchanged) {
+    return (
+      <span className="text-muted-foreground whitespace-nowrap tabular-nums">
+        {detail.after}
+      </span>
+    );
+  }
+
   return (
     <span className="flex items-center gap-1.5 whitespace-nowrap tabular-nums">
       <span className="text-muted-foreground">{detail.before}</span>
@@ -238,22 +251,70 @@ function CompetitorLogosCell({
   return <LogoStack items={items} />;
 }
 
+function DomainsCell({ event }: GeoChangeCellProps) {
+  const isRemoved = event.kind === "citation_removed";
+  const label = isRemoved
+    ? GEO_CHANGES_CITATIONS_REMOVED_PREFIX
+    : GEO_CHANGES_CITATIONS_ADDED_PREFIX;
+  const [first, ...rest] = event.domains;
+
+  return (
+    <span className="flex min-w-0 items-center gap-1.5">
+      <Tooltip>
+        <TooltipTrigger
+          aria-label={label}
+          render={
+            <span
+              className={cn(
+                "flex size-4 shrink-0 cursor-default items-center justify-center",
+                GEO_CHANGE_KIND_TONE_CLASSES[event.kind]
+              )}
+            />
+          }
+        >
+          <HugeiconsIcon
+            icon={GEO_CHANGE_KIND_ICONS[event.kind]}
+            size={DOMAIN_ICON_SIZE}
+          />
+        </TooltipTrigger>
+        <TooltipContent>{label}</TooltipContent>
+      </Tooltip>
+      <TruncateWithTooltip className="text-muted-foreground text-xs">
+        {first ?? ""}
+      </TruncateWithTooltip>
+      {rest.length > 0 ? (
+        <Tooltip>
+          <TooltipTrigger
+            aria-label={`${label}: ${event.domains.join(", ")}`}
+            render={
+              <span className="text-muted-foreground shrink-0 cursor-default text-xs tabular-nums" />
+            }
+          >
+            +{rest.length}
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <span className="block font-medium">{label}</span>
+            <span className="text-muted-foreground block text-pretty">
+              {event.domains.join(", ")}
+            </span>
+          </TooltipContent>
+        </Tooltip>
+      ) : null}
+    </span>
+  );
+}
+
 function DetailCell({ event, competitors }: GeoChangeCompetitorsCellProps) {
   if (event.competitors.length > 0) {
     return <CompetitorLogosCell competitors={competitors} event={event} />;
   }
-  const detail = describeGeoChangeDetail(event);
-  if (!detail.note) {
-    return (
-      <span className="text-muted-foreground text-xs">
-        {GEO_CHANGES_EMPTY_DETAIL}
-      </span>
-    );
+  if (event.domains.length > 0) {
+    return <DomainsCell event={event} />;
   }
   return (
-    <TruncateWithTooltip className="text-muted-foreground text-xs">
-      {detail.note}
-    </TruncateWithTooltip>
+    <span className="text-muted-foreground text-xs">
+      {GEO_CHANGES_EMPTY_DETAIL}
+    </span>
   );
 }
 
@@ -291,7 +352,7 @@ function changeColumnsFor(
     {
       key: "position",
       header: GEO_CHANGES_COLUMN_LABELS.position,
-      width: "12rem",
+      width: "14rem",
       sortable: true,
       cell: (row) => <PositionCell event={row} />,
       sortValue: geoChangePositionSortValue,
