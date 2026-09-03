@@ -774,6 +774,8 @@ export function useGeoProjects(organizationId: string) {
       errorMessage: "Failed to load projects",
       showRetryAction: true,
     },
+    refetchInterval: (query) =>
+      query.state.status === "error" ? 30_000 : false,
   });
 }
 
