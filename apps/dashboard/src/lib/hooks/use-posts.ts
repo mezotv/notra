@@ -5,30 +5,39 @@ import { useQuery } from "@tanstack/react-query";
 import type { PostsResponse } from "@/schemas/content";
 
 import { dashboardOrpc } from "../orpc/query";
+import { useActiveProject } from "./use-active-project";
 
 const DEFAULT_PAGE_SIZE = 12;
 
 export function usePosts(organizationId: string, page: number) {
+  const { projectId, isResolved } = useActiveProject();
   return useQuery<PostsResponse>({
     ...dashboardOrpc.content.list.queryOptions({
-      input: { organizationId, page, pageSize: DEFAULT_PAGE_SIZE },
+      input: {
+        organizationId,
+        projectId: projectId ?? undefined,
+        page,
+        pageSize: DEFAULT_PAGE_SIZE,
+      },
     }),
-    enabled: !!organizationId,
+    enabled: !!organizationId && isResolved,
     meta: { errorMessage: "Failed to load content" },
   });
 }
 
 export function useTodayPosts(organizationId: string) {
+  const { projectId, isResolved } = useActiveProject();
   return useQuery<PostsResponse>({
     ...dashboardOrpc.content.list.queryOptions({
       input: {
         organizationId,
+        projectId: projectId ?? undefined,
         page: 1,
         pageSize: DEFAULT_PAGE_SIZE,
         date: "today",
       },
     }),
-    enabled: !!organizationId,
+    enabled: !!organizationId && isResolved,
     meta: { errorMessage: "Failed to load today's content" },
   });
 }

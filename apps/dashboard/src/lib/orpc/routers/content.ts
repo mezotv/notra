@@ -16,6 +16,10 @@ import { db } from "@notra/db/drizzle";
 import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
 import type { BlogPostSubtype } from "@notra/db/types/content";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
+import {
+  isProjectInOrganization,
+  projectScopeFilter,
+} from "@notra/db/utils/projects";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import { and, asc, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
@@ -31,6 +35,7 @@ import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { getEnabledDataPoints } from "@/lib/analytics/studio-events";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
+import { projectScopedCollectionIds } from "@/lib/content/project-scope";
 import {
   addActiveGeneration,
   clearCompletedGeneration,
@@ -467,6 +472,13 @@ export const contentRouter = {
       }
 
       const baseFilters = [eq(posts.organizationId, input.organizationId)];
+      const projectCollectionIds = projectScopedCollectionIds(
+        input.organizationId,
+        input.projectId
+      );
+      if (projectCollectionIds) {
+        baseFilters.push(inArray(posts.collectionId, projectCollectionIds));
+      }
 
       if (dateRange) {
         baseFilters.push(
@@ -731,9 +743,9 @@ export const contentRouter = {
           organizationId: input.organizationId,
         });
 
-        const whereClause = eq(
-          postCollections.organizationId,
-          input.organizationId
+        const whereClause = and(
+          eq(postCollections.organizationId, input.organizationId),
+          projectScopeFilter(postCollections.projectId, input.projectId)
         );
         const offset = (input.page - 1) * input.pageSize;
 
@@ -1404,12 +1416,20 @@ export const contentRouter = {
       });
       await assertActiveSubscription(input.organizationId);
 
+      if (
+        input.projectId &&
+        !(await isProjectInOrganization(input.organizationId, input.projectId))
+      ) {
+        throw badRequest("Project not found");
+      }
+
       const now = new Date();
       const collectionId = nanoid();
 
       await db.insert(postCollections).values({
         id: collectionId,
         organizationId: input.organizationId,
+        projectId: input.projectId ?? null,
         source: "manual",
         sourceId: collectionId,
         name: buildPostCollectionName(input.contentTypes, now),

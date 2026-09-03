@@ -540,6 +540,13 @@
       "when": 1788303822268,
       "tag": "0076_great_frightful_four",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1788383460388,
+      "tag": "0077_studio_project_scope",
+      "breakpoints": true
     }
   ]
 }

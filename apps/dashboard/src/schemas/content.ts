@@ -131,6 +131,10 @@ export const contentOrganizationIdInputSchema = z.object({
   organizationId: z.string().min(1, "Organization ID is required"),
 });
 
+export const contentProjectIdInputSchema = z.object({
+  projectId: z.string().min(1).optional(),
+});
+
 export const contentInputSchema = contentOrganizationIdInputSchema.extend({
   contentId: z.string().min(1, "Content ID is required"),
 });
@@ -341,14 +345,16 @@ export const onDemandContentTypeSchema = z.enum([
 ] as const);
 export type OnDemandContentType = z.infer<typeof onDemandContentTypeSchema>;
 
-export const createPostCollectionInputSchema =
-  contentOrganizationIdInputSchema.extend({
+export const createPostCollectionInputSchema = contentOrganizationIdInputSchema
+  .extend(contentProjectIdInputSchema.shape)
+  .extend({
     contentTypes: z.array(onDemandContentTypeSchema).min(1),
     expectedPostCount: z.number().int().positive(),
   });
 
-export const postCollectionsListInputSchema =
-  contentOrganizationIdInputSchema.extend({
+export const postCollectionsListInputSchema = contentOrganizationIdInputSchema
+  .extend(contentProjectIdInputSchema.shape)
+  .extend({
     page: z.coerce.number().int().min(1).default(1),
     pageSize: z.coerce.number().int().min(1).max(100).default(20),
   });

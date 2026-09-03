@@ -104,6 +104,7 @@ const createBriefDraftPost = Effect.fn("geo.writer.draftPost")(
         db.insert(postCollections).values({
           id: collectionId,
           organizationId: input.organizationId,
+          projectId: input.projectId,
           source: "manual",
           sourceId: input.briefId,
           name: buildPostCollectionName([BLOG_POST_CONTENT_TYPE], now),

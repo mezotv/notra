@@ -93,6 +93,7 @@ import {
   relaySlackApproval,
   relaySlackMirrorMessage,
 } from "@/lib/chat/slack-relay";
+import { useActiveProject } from "@/lib/hooks/use-active-project";
 import { useElapsedSeconds } from "@/lib/hooks/use-elapsed-seconds";
 import { useSlackMirrorStream } from "@/lib/hooks/use-slack-mirror-stream";
 import { getMcpIconUrls } from "@/lib/integrations/mcp";
@@ -467,6 +468,7 @@ function StandaloneChatPageClient({
       ? activeOrganization
       : orgFromList;
   const organizationId = organization?.id ?? "";
+  const { projectId: activeProjectId } = useActiveProject();
   const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
   const { data: membersData } = useQuery({
@@ -566,6 +568,7 @@ function StandaloneChatPageClient({
   const contextRef = useRef(context);
   const hasCustomizedContextRef = useRef(hasCustomizedContext);
   const organizationIdRef = useRef(organizationId);
+  const projectIdRef = useRef(activeProjectId);
   const selectedModelRef = useRef(selectedModel);
   const thinkingLevelRef = useRef(thinkingLevel);
 
@@ -575,12 +578,14 @@ function StandaloneChatPageClient({
     selectedModelRef.current = selectedModel;
     thinkingLevelRef.current = thinkingLevel;
     organizationIdRef.current = organizationId;
+    projectIdRef.current = activeProjectId;
   }, [
     context,
     hasCustomizedContext,
     selectedModel,
     thinkingLevel,
     organizationId,
+    activeProjectId,
   ]);
 
   const transport = useMemo(
@@ -590,6 +595,7 @@ function StandaloneChatPageClient({
         prepareSendMessagesRequest: ({ id, messages }) => ({
           body: {
             chatId: id,
+            projectId: projectIdRef.current ?? undefined,
             messages: getSendableMessages(messages),
             context: hasCustomizedContextRef.current
               ? contextRef.current

@@ -89,6 +89,9 @@ export const chatSessions = pgTable(
     contentId: text("content_id").references(() => posts.id, {
       onDelete: "cascade",
     }),
+    projectId: text("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
     title: text("title").notNull(),
     messages: jsonb("messages")
       .notNull()
@@ -108,6 +111,10 @@ export const chatSessions = pgTable(
     index("chatSessions_organizationId_deletedAt_idx").on(
       table.organizationId,
       table.deletedAt
+    ),
+    index("chatSessions_org_project_idx").on(
+      table.organizationId,
+      table.projectId
     ),
     index("chatSessions_org_content_deleted_updated_idx").on(
       table.organizationId,
@@ -1852,6 +1859,9 @@ export const postCollections = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
     source: postCollectionSourceEnum("source").notNull(),
     sourceId: text("source_id"),
     name: text("name").notNull(),
@@ -1880,6 +1890,10 @@ export const postCollections = pgTable(
       table.organizationId,
       table.source,
       table.sourceId
+    ),
+    index("post_collections_org_project_idx").on(
+      table.organizationId,
+      table.projectId
     ),
     uniqueIndex("post_collections_chat_source_uidx")
       .on(table.organizationId, table.source, table.sourceId)

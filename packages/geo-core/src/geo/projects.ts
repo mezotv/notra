@@ -166,6 +166,9 @@ export const updateGeoProject = Effect.fn("geo.projectUpdate")(function* (
  *   child rows go with the project in the same statement. `agent_feedback`
  *   declares `ON DELETE SET NULL`, so feedback survives unattached — that is
  *   deliberate, feedback is org-owned evidence, not project data.
+ * - `post_collections` and `chat_sessions` declare `project_id ... ON DELETE
+ *   SET NULL`: Studio content and chats survive and become organization-wide,
+ *   which makes them visible from every remaining project.
  * - `brand_settings` is NOT deleted: `projects.brand_settings_id` points *at*
  *   it, several projects can share one identity, and it is reachable from the
  *   organization independently of any project.

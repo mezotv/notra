@@ -38,6 +38,7 @@ import {
   stampUserMessageAuthors,
 } from "@notra/ai/utils/chat";
 import { routeUsageProperties } from "@notra/ai/utils/route-usage";
+import { isProjectInOrganization } from "@notra/db/utils/projects";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { InvalidToolInputError, NoSuchToolError, type UIMessage } from "ai";
 import { nanoid } from "nanoid";
@@ -101,6 +102,7 @@ export const POST = withEvlog(async function POST(
       auth.context.user.id
     );
     const chatId = parseResult.data.chatId ?? generateChatId();
+    let projectId: string | null = parseResult.data.projectId ?? null;
 
     const trackBlocked = (code: string) => {
       trackServerEvent({
@@ -124,6 +126,18 @@ export const POST = withEvlog(async function POST(
           { status: 409 }
         );
       }
+      // The project is only stored when the chat row is first created, so
+      // existing chats skip the validation lookup.
+      if (existingSession) {
+        projectId = null;
+      }
+    }
+
+    if (
+      projectId &&
+      !(await isProjectInOrganization(organizationId, projectId))
+    ) {
+      return NextResponse.json({ error: "Project not found" }, { status: 400 });
     }
 
     const rateLimited = await enforceChatGenerationRatelimit(
@@ -220,7 +234,14 @@ export const POST = withEvlog(async function POST(
     cleanupStreamId = latestMessage.id;
 
     const [historySaved] = await Promise.all([
-      replaceChatHistory(organizationId, chatId, messages),
+      replaceChatHistory(
+        organizationId,
+        chatId,
+        messages,
+        undefined,
+        undefined,
+        projectId
+      ),
       clearLastResponseStopped(organizationId, chatId),
     ]);
 

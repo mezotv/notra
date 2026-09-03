@@ -1,3 +1,4 @@
+import { getChatProjectId } from "@notra/ai/chat/history";
 import { maybeGenerateCollectionTitle } from "@notra/ai/jobs/collection-title";
 import type {
   CreatePostRecordParams,
@@ -120,12 +121,16 @@ export async function ensureChatPostCollection(
 ): Promise<string> {
   const now = new Date();
   const contentTypesJson = JSON.stringify([params.contentType]);
+  const projectId = params.chatId
+    ? await getChatProjectId(params.organizationId, params.chatId)
+    : null;
 
   const [collection] = await db
     .insert(postCollections)
     .values({
       id: generatePostId(),
       organizationId: params.organizationId,
+      projectId,
       source: "chat",
       sourceId: params.chatId ?? null,
       name: buildPostCollectionName([params.contentType], now),
