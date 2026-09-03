@@ -894,6 +894,7 @@ export const loadGeoPromptHistory = Effect.fn("geo.promptHistory")(function* (
       position: row.position,
       sentiment: row.sentiment,
       competitors: row.competitors,
+      answer: row.answer,
       excerpt: row.excerpt,
       searchQueries: row.grounding.queries,
       sources: geoAnswerSourcesFor(row.grounding, row.sources),

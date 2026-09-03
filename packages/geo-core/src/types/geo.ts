@@ -293,6 +293,7 @@ export interface GeoPromptHistoryCheck {
   position: number | null;
   sentiment: string | null;
   competitors: string[];
+  answer: string;
   excerpt: string;
   searchQueries: string[];
   sources: GeoAnswerSource[];
@@ -1502,6 +1503,15 @@ export interface GeoChangesSummary {
   positionDropped: number;
   citationsAdded: number;
   citationsRemoved: number;
+}
+
+export type GeoChangesSummaryGroupKey = "mentions" | "position" | "citations";
+
+export interface GeoChangesSummaryGroup {
+  key: GeoChangesSummaryGroupKey;
+  label: string;
+  up: keyof GeoChangesSummary;
+  down: keyof GeoChangesSummary;
 }
 
 export interface GeoChangeScan {
