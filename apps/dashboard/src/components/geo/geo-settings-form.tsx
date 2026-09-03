@@ -20,7 +20,10 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 
 import { GeoEnginePicker } from "@/components/geo/geo-engine-picker";
 import { GeoLanguagePicker } from "@/components/geo/geo-language-picker";
-import { GeoScanSchedule } from "@/components/geo/geo-scan-schedule";
+import {
+  GeoScanFrequencySelect,
+  GeoScanSchedule,
+} from "@/components/geo/geo-scan-schedule";
 import { GeoTagList } from "@/components/geo/geo-tag-list";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
@@ -237,18 +240,6 @@ export function GeoSettingsForm({
           />
         </SettingsSection>
         <SettingsSection
-          description="When enabled models are checked automatically. Manual scans always work."
-          title="Scan schedule"
-        >
-          <GeoScanSchedule
-            enabled={enabled}
-            id={id}
-            intervalHours={scanIntervalHours}
-            onEnabledChange={setEnabled}
-            onIntervalChange={setScanIntervalHours}
-          />
-        </SettingsSection>
-        <SettingsSection
           description="Languages your prompts are scanned in. English is on by default."
           title="Languages"
         >
@@ -259,7 +250,14 @@ export function GeoSettingsForm({
           />
         </SettingsSection>
         <SettingsSection
-          description="Each enabled provider runs on every prompt."
+          action={
+            <GeoScanFrequencySelect
+              id={id}
+              intervalHours={scanIntervalHours}
+              onIntervalChange={setScanIntervalHours}
+            />
+          }
+          description="Each enabled provider runs on every prompt, on the frequency you set here."
           title="Models"
         >
           <GeoEnginePicker
@@ -272,6 +270,14 @@ export function GeoSettingsForm({
             onEnforceZdrChange={setEnforceZdr}
             onNonZdrApprovedChange={setNonZdrApproved}
             planLoading={planLoading}
+            scheduleRow={
+              <GeoScanSchedule
+                enabled={enabled}
+                id={id}
+                intervalHours={scanIntervalHours}
+                onEnabledChange={setEnabled}
+              />
+            }
             selected={engines}
           />
         </SettingsSection>
@@ -297,27 +303,32 @@ function SettingsSection({
   title,
   description,
   meta,
+  action,
   children,
 }: {
   title: string;
   description: ReactNode;
   meta?: string;
+  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section className="min-w-0 space-y-4">
-      <div className="space-y-1">
-        <h2 className="flex items-center gap-2 text-sm font-medium">
-          {title}
-          {meta ? (
-            <span className="text-muted-foreground font-normal tabular-nums">
-              {meta}
-            </span>
-          ) : null}
-        </h2>
-        <p className="text-muted-foreground text-sm text-pretty">
-          {description}
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1">
+          <h2 className="flex items-center gap-2 text-sm font-medium">
+            {title}
+            {meta ? (
+              <span className="text-muted-foreground font-normal tabular-nums">
+                {meta}
+              </span>
+            ) : null}
+          </h2>
+          <p className="text-muted-foreground text-sm text-pretty">
+            {description}
+          </p>
+        </div>
+        {action}
       </div>
       {children}
     </section>

@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GEO_EMPTY_PROMPT_RESULTS,
   GEO_EMPTY_TIMESERIES,
+  GEO_ENGINE_PERFORMANCE_HINT,
   GEO_FAMILY_STAT_TREND_HINT,
   GEO_SPARKLINE_MIN_POINTS,
 } from "@notra/geo-core/constants/geo";
@@ -184,7 +185,6 @@ export function EngineRateTable({
 
   const emptyReadout = isScanning ? "scanning now" : "no scans yet";
   const readout = families.length > 0 ? undefined : emptyReadout;
-  const engineCount = families.length;
 
   return (
     <InstrumentSection
@@ -207,11 +207,8 @@ export function EngineRateTable({
         ) : undefined
       }
       className="h-full"
-      eyebrow={
-        engineCount > 0
-          ? `Engines (${engineCount.toLocaleString()})`
-          : "Mention rate by engine"
-      }
+      eyebrow="Engines"
+      hint={GEO_ENGINE_PERFORMANCE_HINT}
       readout={readout}
     >
       {families.length === 0 ? (

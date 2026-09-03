@@ -45,8 +45,8 @@ export function ShareOfVoiceCard({
     <InstrumentSection
       bodyClassName="flex min-h-0 flex-1 flex-col"
       className="h-full"
-      description={GEO_SHARE_OF_VOICE_TRACKING_HINT}
       eyebrow="Share of voice"
+      hint={GEO_SHARE_OF_VOICE_TRACKING_HINT}
     >
       <ShareOfVoiceTable
         aliases={aliases}

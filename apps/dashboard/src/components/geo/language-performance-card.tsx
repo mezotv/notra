@@ -3,6 +3,7 @@
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  GEO_LANGUAGE_PERFORMANCE_HINT,
   GEO_MAX_LANGUAGES,
   GEO_SPARKLINE_MIN_POINTS,
   GEO_VISIBILITY_TABLE_ROWS,
@@ -261,6 +262,7 @@ export function LanguagePerformanceCard({
         bodyClassName="flex min-h-0 flex-1 flex-col"
         className="h-full"
         eyebrow="Performance by language"
+        hint={GEO_LANGUAGE_PERFORMANCE_HINT}
       >
         <Table
           className="rounded-2xl"

@@ -6,17 +6,74 @@ import {
 } from "@notra/geo-core/constants/geo";
 import { geoScanIntervalNoun } from "@notra/geo-core/utils/geo-scan";
 import { Label } from "@notra/ui/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@notra/ui/components/ui/select";
 import { Switch } from "@notra/ui/components/ui/switch";
 
-import { cn } from "@/lib/utils";
-import type { GeoScanScheduleProps } from "@/types/geo";
+import type {
+  GeoScanFrequencySelectProps,
+  GeoScanScheduleProps,
+} from "@/types/geo";
+
+function intervalShortLabel(hours: number): string {
+  return (
+    GEO_SCAN_INTERVAL_OPTIONS.find((option) => option.value === hours)?.short ??
+    geoScanIntervalNoun(hours)
+  );
+}
+
+export function GeoScanFrequencySelect({
+  id,
+  intervalHours,
+  onIntervalChange,
+  disabled = false,
+}: GeoScanFrequencySelectProps) {
+  const triggerId = `${id}-frequency`;
+
+  return (
+    <div className="flex shrink-0 items-center gap-2">
+      <Label className="text-muted-foreground font-normal" htmlFor={triggerId}>
+        Set frequency
+      </Label>
+      <Select
+        disabled={disabled}
+        onValueChange={(value: string | null) => {
+          if (value !== null) {
+            onIntervalChange(Number(value));
+          }
+        }}
+        value={String(intervalHours)}
+      >
+        <SelectTrigger aria-label="Scan frequency" id={triggerId} size="sm">
+          <SelectValue>
+            {(value: string) => intervalShortLabel(Number(value))}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent align="end">
+          {GEO_SCAN_INTERVAL_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={String(option.value)}>
+              {option.short}
+              {option.value === GEO_SCAN_DEFAULT_INTERVAL_HOURS ? (
+                <span className="text-muted-foreground text-xs">default</span>
+              ) : null}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
 
 export function GeoScanSchedule({
   id,
   enabled,
   onEnabledChange,
   intervalHours,
-  onIntervalChange,
 }: GeoScanScheduleProps) {
   const summary = enabled ? (
     <>
@@ -31,70 +88,16 @@ export function GeoScanSchedule({
   );
 
   return (
-    <div className="ring-foreground/10 divide-y rounded-lg ring-1">
-      <div className="flex items-center justify-between gap-3 px-3 py-2.5">
-        <div className="space-y-0.5">
-          <Label htmlFor={`${id}-enabled`}>Automatic scans</Label>
-          <p className="text-muted-foreground text-xs">{summary}</p>
-        </div>
-        <Switch
-          checked={enabled}
-          id={`${id}-enabled`}
-          onCheckedChange={onEnabledChange}
-        />
+    <div className="flex items-center justify-between gap-3 px-3 py-2.5">
+      <div className="space-y-0.5">
+        <Label htmlFor={`${id}-enabled`}>Automatic scans</Label>
+        <p className="text-muted-foreground text-xs">{summary}</p>
       </div>
-      <div
-        className={cn(
-          "space-y-2 px-3 py-2.5 transition-opacity",
-          !enabled && "opacity-50"
-        )}
-      >
-        <fieldset className="space-y-2" disabled={!enabled}>
-          <legend className="space-y-0.5">
-            <span className="text-sm font-medium">Frequency</span>
-            <p className="text-muted-foreground text-xs">
-              How often every enabled model is checked.
-            </p>
-          </legend>
-          <div className="flex flex-wrap gap-1.5">
-            {GEO_SCAN_INTERVAL_OPTIONS.map((option) => {
-              const selected = option.value === intervalHours;
-              const isDefault =
-                option.value === GEO_SCAN_DEFAULT_INTERVAL_HOURS;
-              return (
-                <button
-                  aria-pressed={selected}
-                  className={cn(
-                    "inline-flex h-8 items-center gap-1 rounded-md px-3 text-sm font-medium ring-1 transition-colors",
-                    selected
-                      ? "bg-primary text-primary-foreground ring-primary"
-                      : "bg-background text-muted-foreground ring-foreground/10 hover:text-foreground",
-                    "disabled:cursor-not-allowed"
-                  )}
-                  key={option.value}
-                  onClick={() => onIntervalChange(option.value)}
-                  title={option.label}
-                  type="button"
-                >
-                  {option.short}
-                  {isDefault ? (
-                    <span
-                      className={cn(
-                        "text-xs",
-                        selected
-                          ? "text-primary-foreground/70"
-                          : "text-muted-foreground/70"
-                      )}
-                    >
-                      default
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
-      </div>
+      <Switch
+        checked={enabled}
+        id={`${id}-enabled`}
+        onCheckedChange={onEnabledChange}
+      />
     </div>
   );
 }

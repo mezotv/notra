@@ -57,7 +57,7 @@ export function ShareOfVoiceBrandTag({
   own,
   onTrack,
 }: ShareOfVoiceBrandTagProps) {
-  if (own || row.brand === CHART_OTHER_SLICE_LABEL) {
+  if (own || row.brand === CHART_OTHER_SLICE_LABEL || row.tracked) {
     return null;
   }
 
