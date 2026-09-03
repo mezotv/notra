@@ -7,6 +7,8 @@ import {
   Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS } from "@notra/ai/constants/schedule-interval";
+import { toUtcDateString } from "@notra/ai/utils/schedule-interval";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -84,6 +86,7 @@ import {
 
 import { ScheduleDayPicker } from "./schedule-day-picker";
 import { ScheduleFrequencyTabs } from "./schedule-frequency-tabs";
+import { ScheduleIntervalPicker } from "./schedule-interval-picker";
 import { ScheduleSummaryCard } from "./schedule-summary-card";
 
 export function CreateScheduleDialog({
@@ -193,14 +196,18 @@ export function CreateScheduleDialog({
 
   const outputType = useStore(form.store, (s) => s.values.outputType);
   const schedule = useStore(form.store, (s) => s.values.schedule);
-  const { frequency, hour, minute, dayOfWeek, dayOfMonth } = schedule;
+  const { frequency, hour, minute, dayOfWeek, dayOfMonth, intervalDays } =
+    schedule;
   const repositoryCount = useStore(
     form.store,
     (s) => s.values.repositoryIds.length
   );
 
   useEffect(() => {
-    const newAutoName = buildAutoScheduleName(frequency, outputType);
+    const newAutoName = buildAutoScheduleName(
+      { frequency, intervalDays },
+      outputType
+    );
     const currentName = form.state.values.name;
     if (
       currentName === previousAutoNameRef.current ||
@@ -209,7 +216,7 @@ export function CreateScheduleDialog({
       form.setFieldValue("name", newAutoName);
     }
     previousAutoNameRef.current = newAutoName;
-  }, [outputType, frequency, form]);
+  }, [outputType, frequency, intervalDays, form]);
 
   const { data: integrationsResponse, isLoading: isLoadingRepos } = useQuery(
     dashboardOrpc.integrations.list.queryOptions({
@@ -271,16 +278,24 @@ export function CreateScheduleDialog({
       const prev = form.state.values.schedule;
       let dayOfWeek: number | undefined;
       let dayOfMonth: number | undefined;
+      let intervalDays: number | undefined;
+      let anchorDate: string | undefined;
       if (next === "weekly") {
         dayOfWeek = prev.dayOfWeek ?? 1;
       } else if (next === "monthly") {
         dayOfMonth = prev.dayOfMonth ?? 1;
+      } else if (next === "custom") {
+        intervalDays =
+          prev.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS;
+        anchorDate = prev.anchorDate ?? toUtcDateString(new Date());
       }
       form.setFieldValue("schedule", {
         ...prev,
         frequency: next,
         dayOfWeek,
         dayOfMonth,
+        intervalDays,
+        anchorDate,
       });
     },
     [form]
@@ -335,29 +350,6 @@ export function CreateScheduleDialog({
               <div className="space-y-8 p-6">
                 <section className="space-y-3">
                   <div className="space-y-1">
-                    <h3 className="text-base font-semibold">Content format</h3>
-                    <p className="text-muted-foreground text-sm">
-                      What should we generate?
-                    </p>
-                  </div>
-                  <form.Field name="outputType">
-                    {(field) => (
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {FORMAT_ORDER.map((type) => (
-                          <FormatCard
-                            format={type}
-                            key={type}
-                            onToggle={() => field.handleChange(type)}
-                            selected={field.state.value === type}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </form.Field>
-                </section>
-
-                <section className="space-y-3">
-                  <div className="space-y-1">
                     <h3 className="flex items-center gap-1 text-base font-semibold">
                       Name
                       <span aria-hidden="true" className="text-destructive">
@@ -377,11 +369,34 @@ export function CreateScheduleDialog({
                           field.handleChange(event.target.value);
                         }}
                         placeholder={buildAutoScheduleName(
-                          frequency,
+                          { frequency, intervalDays },
                           outputType
                         )}
                         value={field.state.value}
                       />
+                    )}
+                  </form.Field>
+                </section>
+
+                <section className="space-y-3">
+                  <div className="space-y-1">
+                    <h3 className="text-base font-semibold">Content format</h3>
+                    <p className="text-muted-foreground text-sm">
+                      What should we generate?
+                    </p>
+                  </div>
+                  <form.Field name="outputType">
+                    {(field) => (
+                      <div className="grid gap-3 md:grid-cols-2">
+                        {FORMAT_ORDER.map((type) => (
+                          <FormatCard
+                            format={type}
+                            key={type}
+                            onToggle={() => field.handleChange(type)}
+                            selected={field.state.value === type}
+                          />
+                        ))}
+                      </div>
                     )}
                   </form.Field>
                 </section>
@@ -408,6 +423,14 @@ export function CreateScheduleDialog({
                       form.setFieldValue("schedule.dayOfWeek", day)
                     }
                   />
+                  {frequency === "custom" && (
+                    <ScheduleIntervalPicker
+                      intervalDays={intervalDays}
+                      onIntervalDaysChange={(days) =>
+                        form.setFieldValue("schedule.intervalDays", days)
+                      }
+                    />
+                  )}
                   <div className="space-y-2">
                     <Label
                       className="text-muted-foreground text-xs"

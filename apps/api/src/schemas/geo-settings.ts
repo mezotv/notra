@@ -8,6 +8,8 @@ import {
   GEO_MAX_LANGUAGES,
   GEO_MAX_PROMPTS,
   GEO_SCAN_INTERVAL_HOURS,
+  GEO_SCAN_MAX_INTERVAL_HOURS,
+  GEO_SCAN_MIN_INTERVAL_HOURS,
   GEO_SHORT_FIELD_MAX_LENGTH,
 } from "@notra/geo-core/constants/geo";
 
@@ -90,10 +92,10 @@ export const patchSettingsRequestSchema = z
     scanIntervalHours: z
       .number()
       .int()
-      .refine(
-        (value) => GEO_SCAN_INTERVAL_HOURS.some((hours) => hours === value),
-        { message: "Unsupported scan interval" }
-      )
-      .openapi({ description: GEO_SCAN_INTERVAL_HOURS.join(", ") }),
+      .min(GEO_SCAN_MIN_INTERVAL_HOURS)
+      .max(GEO_SCAN_MAX_INTERVAL_HOURS)
+      .openapi({
+        description: `Hours between automatic scans, ${GEO_SCAN_MIN_INTERVAL_HOURS}-${GEO_SCAN_MAX_INTERVAL_HOURS}. Presets: ${GEO_SCAN_INTERVAL_HOURS.join(", ")}.`,
+      }),
   })
   .openapi("PatchGeoSettingsRequest");

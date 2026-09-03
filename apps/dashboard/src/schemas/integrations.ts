@@ -1,4 +1,9 @@
 import "zod/compile";
+import {
+  CUSTOM_SCHEDULE_MAX_INTERVAL_DAYS,
+  CUSTOM_SCHEDULE_MIN_INTERVAL_DAYS,
+  SCHEDULE_ANCHOR_DATE_PATTERN,
+} from "@notra/ai/constants/schedule-interval";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 
@@ -254,8 +259,23 @@ export type ConfigureOutputBody = z.infer<typeof configureOutputBodySchema>;
 export const WEBHOOK_EVENT_TYPES = ["release", "push"] as const;
 export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
 
-export const CRON_FREQUENCIES = ["daily", "weekly", "monthly"] as const;
+export const CRON_FREQUENCIES = [
+  "daily",
+  "weekly",
+  "monthly",
+  "custom",
+] as const;
 export type CronFrequency = (typeof CRON_FREQUENCIES)[number];
+
+export const cronIntervalDaysSchema = z
+  .number()
+  .int()
+  .min(CUSTOM_SCHEDULE_MIN_INTERVAL_DAYS)
+  .max(CUSTOM_SCHEDULE_MAX_INTERVAL_DAYS);
+
+export const cronAnchorDateSchema = z
+  .string()
+  .regex(SCHEDULE_ANCHOR_DATE_PATTERN, "Expected YYYY-MM-DD");
 
 export const LOOKBACK_WINDOWS = [
   "current_day",
@@ -285,6 +305,8 @@ export const triggerSourceConfigSchema = z.object({
       minute: z.number().min(0).max(59),
       dayOfWeek: z.number().min(0).max(6).optional(),
       dayOfMonth: z.number().min(1).max(31).optional(),
+      intervalDays: cronIntervalDaysSchema.optional(),
+      anchorDate: cronAnchorDateSchema.optional(),
     })
     .optional(),
 });
@@ -347,6 +369,8 @@ export const configureScheduleBodySchema = configureTriggerBodySchema.extend({
       minute: z.number().min(0).max(59),
       dayOfWeek: z.number().min(0).max(6).optional(),
       dayOfMonth: z.number().min(1).max(31).optional(),
+      intervalDays: cronIntervalDaysSchema.optional(),
+      anchorDate: cronAnchorDateSchema.optional(),
     }),
   }),
   outputType: z.enum(SUPPORTED_AUTOMATION_OUTPUT_TYPES),

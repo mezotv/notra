@@ -6,6 +6,7 @@ import {
   GEO_PROMPT_HISTORY_ANSWER_LABELS,
   GEO_PROMPT_HISTORY_CHANGE_LABELS,
   GEO_PROMPT_HISTORY_COLUMN_LABELS,
+  GEO_PROMPT_HISTORY_EMPTY_COMPETITORS,
   GEO_PROMPT_HISTORY_EMPTY_POSITION,
   GEO_PROMPT_HISTORY_PREVIEW_ROWS,
   GEO_PROMPT_HISTORY_SKELETON_ROWS,
@@ -52,6 +53,7 @@ const CELL_CLASS = "py-3 align-top";
 const SCAN_COLUMN_CLASS = "w-36";
 const OUTCOME_COLUMN_CLASS = "w-36";
 const POSITION_COLUMN_CLASS = "w-20";
+const CHANGES_COLUMN_CLASS = "w-48";
 const ACTION_COLUMN_CLASS = "w-10 pr-2 pl-0";
 
 function positionLabel(position: number | null): string {
@@ -103,13 +105,7 @@ function BrandToken({
   );
 }
 
-function ChangeWords({
-  change,
-  competitors,
-}: {
-  change: PromptHistoryChange;
-  competitors: readonly GeoCompetitor[] | undefined;
-}) {
+function ChangeWords({ change }: { change: PromptHistoryChange }) {
   switch (change.kind) {
     case "gained":
       return (
@@ -140,15 +136,6 @@ function ChangeWords({
           <PositionChip position={change.to} />
         </>
       );
-    case "competitor":
-      return (
-        <>
-          {change.competitors.map((name) => (
-            <BrandToken competitors={competitors} key={name} name={name} />
-          ))}
-          <span>{GEO_PROMPT_HISTORY_CHANGE_LABELS.newlyRecommended}</span>
-        </>
-      );
     default:
       return (
         <span className="text-muted-foreground/70">
@@ -158,13 +145,7 @@ function ChangeWords({
   }
 }
 
-function ChangesCell({
-  entry,
-  competitors,
-}: {
-  entry: PromptHistoryEntry;
-  competitors: readonly GeoCompetitor[] | undefined;
-}) {
+function ChangesCell({ entry }: { entry: PromptHistoryEntry }) {
   return (
     <ul className="flex flex-col gap-1">
       {entry.changes.map((change) => (
@@ -174,8 +155,33 @@ function ChangesCell({
         >
           <span className="sr-only">{promptHistoryChangeLabel(change)}</span>
           <span aria-hidden="true" className="contents">
-            <ChangeWords change={change} competitors={competitors} />
+            <ChangeWords change={change} />
           </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+function NewCompetitorsCell({
+  names,
+  competitors,
+}: {
+  names: readonly string[];
+  competitors: readonly GeoCompetitor[] | undefined;
+}) {
+  if (names.length === 0) {
+    return (
+      <span className="text-muted-foreground/60 inline-flex h-5 items-center">
+        {GEO_PROMPT_HISTORY_EMPTY_COMPETITORS}
+      </span>
+    );
+  }
+  return (
+    <ul className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-sm leading-5">
+      {names.map((name) => (
+        <li className="contents" key={name}>
+          <BrandToken competitors={competitors} name={name} />
         </li>
       ))}
     </ul>
@@ -232,8 +238,16 @@ function HistoryRow({
           {positionLabel(check.position)}
         </span>
       </TableCell>
+      <TableCell
+        className={cn(CELL_CLASS, CHANGES_COLUMN_CLASS, "whitespace-normal")}
+      >
+        <ChangesCell entry={entry} />
+      </TableCell>
       <TableCell className={cn(CELL_CLASS, "whitespace-normal")}>
-        <ChangesCell competitors={competitors} entry={entry} />
+        <NewCompetitorsCell
+          competitors={competitors}
+          names={entry.newCompetitors}
+        />
       </TableCell>
       {selectable ? (
         <TableCell className={cn(CELL_CLASS, ACTION_COLUMN_CLASS)}>
@@ -272,7 +286,10 @@ function SkeletonRow({ selectable }: { selectable: boolean }) {
         <Skeleton className="h-4 w-8" />
       </TableCell>
       <TableCell className={CELL_CLASS}>
-        <Skeleton className="h-4 w-48" />
+        <Skeleton className="h-4 w-32" />
+      </TableCell>
+      <TableCell className={CELL_CLASS}>
+        <Skeleton className="h-4 w-40" />
       </TableCell>
       {selectable ? (
         <TableCell className={cn(CELL_CLASS, ACTION_COLUMN_CLASS)} />
@@ -334,7 +351,12 @@ export function PromptReceiptHistory({
               <TableHead className={POSITION_COLUMN_CLASS}>
                 {GEO_PROMPT_HISTORY_COLUMN_LABELS.position}
               </TableHead>
-              <TableHead>{GEO_PROMPT_HISTORY_COLUMN_LABELS.changes}</TableHead>
+              <TableHead className={CHANGES_COLUMN_CLASS}>
+                {GEO_PROMPT_HISTORY_COLUMN_LABELS.changes}
+              </TableHead>
+              <TableHead>
+                {GEO_PROMPT_HISTORY_COLUMN_LABELS.newCompetitors}
+              </TableHead>
               {selectable ? (
                 <TableHead className={ACTION_COLUMN_CLASS}>
                   <span className="sr-only">

@@ -164,7 +164,14 @@ export function GeoEnginePicker({
   const id = useId();
   const reduceMotion = useReducedMotion();
   const { activeOrganization } = useOrganizationsContext();
-  const { attach, data: customer, refetch } = useCustomer();
+  const isDev = process.env.NODE_ENV === "development";
+  const {
+    attach,
+    data: customer,
+    refetch,
+  } = useCustomer({
+    queryOptions: { enabled: !isDev },
+  });
   const [addonLoading, setAddonLoading] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
   const checkoutReturnHandled = useRef(false);

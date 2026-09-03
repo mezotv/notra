@@ -1,7 +1,12 @@
+import { CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS } from "@notra/ai/constants/schedule-interval";
+
 import { FORMAT_CARD_META } from "@/constants/content-formats";
 import { DEFAULT_SCHEDULE, FREQUENCY_LABELS } from "@/constants/schedule";
-import type { CronFrequency, ScheduleOutputType } from "@/schemas/integrations";
-import type { ScheduleFormValues } from "@/types/automation/schedule";
+import type { ScheduleOutputType } from "@/schemas/integrations";
+import type {
+  ScheduleCron,
+  ScheduleFormValues,
+} from "@/types/automation/schedule";
 import type { Trigger } from "@/types/triggers/triggers";
 
 const TIME_PATTERN = /^(\d{1,2}):(\d{2})$/;
@@ -70,9 +75,13 @@ export function getDefaultScheduleValues(
 }
 
 export function buildAutoScheduleName(
-  frequency: CronFrequency,
+  schedule: Pick<ScheduleCron, "frequency" | "intervalDays">,
   outputType: ScheduleOutputType
 ): string {
   const typeLabel = FORMAT_CARD_META[outputType].label.toLowerCase();
-  return `${FREQUENCY_LABELS[frequency]} ${typeLabel}`;
+  if (schedule.frequency === "custom") {
+    const days = schedule.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS;
+    return `Every ${days} days ${typeLabel}`;
+  }
+  return `${FREQUENCY_LABELS[schedule.frequency]} ${typeLabel}`;
 }

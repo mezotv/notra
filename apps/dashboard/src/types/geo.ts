@@ -1004,26 +1004,27 @@ export type PromptHistoryChangeKind =
   | "gained"
   | "lost"
   | "position"
-  | "competitor"
   | "none"
   | "first";
 
 /**
- * One sentence in the scan-history "What changed" cell. Structured so the
- * renderer can highlight positions and brands inline; use
- * `promptHistoryChangeText` for the plain-text form.
+ * One sentence in the scan-history "What changed" cell, describing how the
+ * brand's own outcome moved since the previous scan. Structured so the
+ * renderer can highlight positions inline; use `promptHistoryChangeText` for
+ * the plain-text form.
  */
 export type PromptHistoryChange =
   | { kind: "gained"; position: number | null }
   | { kind: "lost" }
   | { kind: "position"; from: number | null; to: number | null }
-  | { kind: "competitor"; competitors: string[] }
   | { kind: "none" }
   | { kind: "first" };
 
 export interface PromptHistoryEntry {
   check: GeoPromptHistoryCheck;
   changes: PromptHistoryChange[];
+  /** Brands recommended in this scan that the previous scan did not name. */
+  newCompetitors: string[];
 }
 
 export interface PromptReceiptViewSwitchProps {

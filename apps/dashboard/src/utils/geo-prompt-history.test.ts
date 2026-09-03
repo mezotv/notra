@@ -40,10 +40,8 @@ describe("promptHistoryChanges", () => {
         competitors: ["HubSpot", "Pipedrive", "Jira"],
       }),
     ]);
-    expect(latest?.changes).toEqual([
-      { kind: "gained", position: 1 },
-      { kind: "competitor", competitors: ["Pipedrive", "Jira"] },
-    ]);
+    expect(latest?.changes).toEqual([{ kind: "gained", position: 1 }]);
+    expect(latest?.newCompetitors).toEqual(["Pipedrive", "Jira"]);
   });
 
   test("describes a position move and a lost mention", () => {
@@ -80,7 +78,9 @@ describe("promptHistoryChanges", () => {
       }),
     ]);
     expect(entries[0]?.changes).toEqual([{ kind: "none" }]);
+    expect(entries[0]?.newCompetitors).toEqual([]);
     expect(entries[1]?.changes).toEqual([{ kind: "first" }]);
+    expect(entries[1]?.newCompetitors).toEqual([]);
   });
 });
 
@@ -99,15 +99,23 @@ describe("formatPromptHistoryNames", () => {
 describe("promptHistoryChangeText", () => {
   test("joins changes into one readable line", () => {
     expect(
-      promptHistoryChangeText([
-        { kind: "gained", position: 1 },
-        { kind: "competitor", competitors: ["Pipedrive", "Jira"] },
-      ])
+      promptHistoryChangeText({
+        changes: [{ kind: "gained", position: 1 }],
+        newCompetitors: ["Pipedrive", "Jira"],
+      })
     ).toBe("Now mentioned at #1. Pipedrive and Jira newly recommended.");
     expect(
-      promptHistoryChangeText([{ kind: "position", from: 2, to: null }])
+      promptHistoryChangeText({
+        changes: [{ kind: "position", from: 2, to: null }],
+        newCompetitors: [],
+      })
     ).toBe("Moved #2 → Not ranked.");
-    expect(promptHistoryChangeText([{ kind: "none" }])).toBe("No change");
+    expect(
+      promptHistoryChangeText({
+        changes: [{ kind: "none" }],
+        newCompetitors: [],
+      })
+    ).toBe("No change");
   });
 });
 

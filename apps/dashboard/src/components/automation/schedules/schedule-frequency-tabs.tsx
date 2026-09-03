@@ -10,7 +10,7 @@ export function ScheduleFrequencyTabs({
   onChange,
 }: ScheduleFrequencyTabsProps) {
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {FREQUENCY_OPTIONS.map((option) => {
         const isActive = option.value === value;
         return (

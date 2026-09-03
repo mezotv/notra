@@ -1,12 +1,17 @@
 import "zod/compile";
 import { z } from "@hono/zod-openapi";
+import {
+  CUSTOM_SCHEDULE_MAX_INTERVAL_DAYS,
+  CUSTOM_SCHEDULE_MIN_INTERVAL_DAYS,
+  SCHEDULE_ANCHOR_DATE_PATTERN,
+} from "@notra/ai/constants/schedule-interval";
 import { SUPPORTED_CONTENT_GENERATION_TYPES } from "@notra/content-generation/schemas";
 import { lookbackWindowEnum } from "@notra/db/schema";
 
 import { splitCommaSeparatedValues } from "../utils/query-params";
 import { resourceIdSchema } from "./ids";
 
-const CRON_FREQUENCIES = ["daily", "weekly", "monthly"] as const;
+const CRON_FREQUENCIES = ["daily", "weekly", "monthly", "custom"] as const;
 const MAX_SCHEDULE_NAME_LENGTH = 120;
 
 export const scheduleParamsSchema = z.object({
@@ -56,8 +61,35 @@ const cronConfigSchema = z
         "Day of the month for monthly schedules (1-31). Required when frequency is monthly.",
       example: 1,
     }),
+    intervalDays: z
+      .number()
+      .int()
+      .min(CUSTOM_SCHEDULE_MIN_INTERVAL_DAYS)
+      .max(CUSTOM_SCHEDULE_MAX_INTERVAL_DAYS)
+      .optional()
+      .openapi({
+        description: `Run every N days (${CUSTOM_SCHEDULE_MIN_INTERVAL_DAYS}-${CUSTOM_SCHEDULE_MAX_INTERVAL_DAYS}). Required when frequency is custom.`,
+        example: 3,
+      }),
+    anchorDate: z
+      .string()
+      .regex(SCHEDULE_ANCHOR_DATE_PATTERN, "Expected YYYY-MM-DD")
+      .optional()
+      .openapi({
+        description:
+          "UTC calendar date (YYYY-MM-DD) a custom interval counts from. Defaults to today.",
+        example: "2026-09-03",
+      }),
   })
   .superRefine((value, ctx) => {
+    if (value.frequency === "custom" && value.intervalDays === undefined) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["intervalDays"],
+        message: "intervalDays is required for custom schedules",
+      });
+    }
+
     if (value.frequency === "weekly" && value.dayOfWeek === undefined) {
       ctx.addIssue({
         code: "custom",

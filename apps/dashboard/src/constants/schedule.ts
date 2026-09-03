@@ -11,6 +11,7 @@ export const FREQUENCY_LABELS: Record<CronFrequency, string> = {
   daily: "Daily",
   weekly: "Weekly",
   monthly: "Monthly",
+  custom: "Custom",
 };
 
 export const FREQUENCY_OPTIONS: Array<{

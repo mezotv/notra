@@ -13,6 +13,7 @@ import {
   PlayIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS } from "@notra/ai/constants/schedule-interval";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -89,6 +90,9 @@ function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
   }
   if (cron.frequency === "monthly") {
     return `Monthly - Day ${cron.dayOfMonth ?? 1} @ ${time}`;
+  }
+  if (cron.frequency === "custom") {
+    return `Every ${cron.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS} days @ ${time}`;
   }
   return `Daily @ ${time}`;
 }

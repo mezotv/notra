@@ -379,11 +379,13 @@ export const GEO_PROMPT_HISTORY_LIMIT = 120;
 export const GEO_PROMPT_HISTORY_SKELETON_ROWS = 4;
 export const GEO_PROMPT_HISTORY_PREVIEW_ROWS = 8;
 export const GEO_PROMPT_HISTORY_EMPTY_POSITION = "\u2013";
+export const GEO_PROMPT_HISTORY_EMPTY_COMPETITORS = "\u2013";
 export const GEO_PROMPT_HISTORY_COLUMN_LABELS = {
   date: "Scan",
   outcome: "Outcome",
   position: "Position",
   changes: "What changed",
+  newCompetitors: "Newly recommended",
 } as const;
 export const GEO_PROMPT_HISTORY_SHOW_ALL_LABEL = "Show all";
 export const GEO_PROMPT_HISTORY_SHOW_LESS_LABEL = "Show latest";
@@ -453,6 +455,14 @@ export const GEO_SCAN_INTERVAL_OPTIONS = [
 export const GEO_SCAN_INTERVAL_HOURS = GEO_SCAN_INTERVAL_OPTIONS.map(
   (option) => option.value
 );
+export const GEO_SCAN_HOURS_PER_DAY = 24;
+export const GEO_SCAN_MIN_INTERVAL_DAYS = 1;
+export const GEO_SCAN_MAX_INTERVAL_DAYS = 90;
+export const GEO_SCAN_MIN_INTERVAL_HOURS =
+  GEO_SCAN_MIN_INTERVAL_DAYS * GEO_SCAN_HOURS_PER_DAY;
+export const GEO_SCAN_MAX_INTERVAL_HOURS =
+  GEO_SCAN_MAX_INTERVAL_DAYS * GEO_SCAN_HOURS_PER_DAY;
+export const GEO_SCAN_CUSTOM_INTERVAL_VALUE = "custom";
 export const GEO_SCAN_INTERVAL_LABEL_PREFIX = /^Every\s+/;
 export const GEO_SCAN_INTERVAL_FALLBACK_NOUN = "scan interval";
 export const GEO_SCAN_NO_RESULTS_RETRY_DELAY = "5m";

@@ -55,15 +55,18 @@ function changesBetween(
       to: current.position,
     });
   }
-  const known = new Set(previous.competitors);
-  const added = current.competitors.filter((name) => !known.has(name));
-  if (added.length > 0) {
-    changes.push({ kind: "competitor", competitors: added });
-  }
   if (changes.length === 0) {
     changes.push({ kind: "none" });
   }
   return changes;
+}
+
+function newCompetitorsBetween(
+  current: GeoPromptHistoryCheck,
+  previous: GeoPromptHistoryCheck
+): string[] {
+  const known = new Set(previous.competitors);
+  return current.competitors.filter((name) => !known.has(name));
 }
 
 export function promptHistoryChanges(
@@ -77,6 +80,7 @@ export function promptHistoryChanges(
     return {
       check,
       changes: previous ? changesBetween(check, previous) : [{ kind: "first" }],
+      newCompetitors: previous ? newCompetitorsBetween(check, previous) : [],
     };
   });
 }
@@ -93,8 +97,6 @@ export function promptHistoryChangeLabel(change: PromptHistoryChange): string {
       return GEO_PROMPT_HISTORY_CHANGE_LABELS.lostMention;
     case "position":
       return `${GEO_PROMPT_HISTORY_CHANGE_LABELS.moved} ${positionLabel(change.from)} → ${positionLabel(change.to)}`;
-    case "competitor":
-      return `${formatPromptHistoryNames(change.competitors)} ${GEO_PROMPT_HISTORY_CHANGE_LABELS.newlyRecommended}`;
     case "none":
       return GEO_PROMPT_HISTORY_CHANGE_LABELS.noChange;
     case "first":
@@ -112,11 +114,19 @@ function changeSentence(change: PromptHistoryChange): string {
   return `${label}${SENTENCE_END}`;
 }
 
-/** Plain-text form of a history row's changes, for tooltips and receipts. */
+function newCompetitorsSentence(names: readonly string[]): string {
+  return `${formatPromptHistoryNames(names)} ${GEO_PROMPT_HISTORY_CHANGE_LABELS.newlyRecommended}${SENTENCE_END}`;
+}
+
+/** Plain-text form of a history row, for tooltips and receipts. */
 export function promptHistoryChangeText(
-  changes: readonly PromptHistoryChange[]
+  entry: Pick<PromptHistoryEntry, "changes" | "newCompetitors">
 ): string {
-  return changes.map(changeSentence).join(" ");
+  const sentences = entry.changes.map(changeSentence);
+  if (entry.newCompetitors.length > 0) {
+    sentences.push(newCompetitorsSentence(entry.newCompetitors));
+  }
+  return sentences.join(" ");
 }
 
 /** Shapes a history check like a prompt result so the answer thread can render it. */
