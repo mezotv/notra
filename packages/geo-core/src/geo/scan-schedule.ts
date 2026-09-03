@@ -1,7 +1,7 @@
 import { deleteStaleGeoOpenCodeBoxes } from "@notra/ai/utils/geo-opencode-box";
 import { db } from "@notra/db/drizzle";
 import { geoSettings } from "@notra/db/schema";
-import { and, eq, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, lte, or } from "drizzle-orm";
 import { Effect } from "effect";
 
 import { GEO_SCAN_DUE_LIMIT_PER_SWEEP } from "../constants/geo";
@@ -79,7 +79,10 @@ export const runGeoScanCronSweep = Effect.fn("geo.runScanCronSweep")(
           eq(geoSettings.enabled, true),
           or(isNull(geoSettings.nextScanAt), lte(geoSettings.nextScanAt, now))
         ),
-        orderBy: [sql`${geoSettings.nextScanAt} asc nulls first`],
+        orderBy: [
+          desc(isNull(geoSettings.nextScanAt)),
+          asc(geoSettings.nextScanAt),
+        ],
         limit: GEO_SCAN_DUE_LIMIT_PER_SWEEP,
       })
     );
