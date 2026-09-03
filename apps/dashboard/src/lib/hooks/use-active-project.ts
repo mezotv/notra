@@ -1,7 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
-
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { useGeoProjects } from "@/lib/hooks/use-geo";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
@@ -22,26 +20,24 @@ export function useActiveProject(): ActiveProjectState {
   const { data, isError } = useGeoProjects(organizationId);
   const projects = data?.projects;
 
-  return useMemo<ActiveProjectState>(() => {
-    if (!organizationId) {
-      return { projectId: null, isResolved: false };
-    }
-    if (isError) {
-      return { projectId: null, isResolved: true };
-    }
-    if (!projects) {
-      return { projectId: null, isResolved: false };
-    }
+  if (!organizationId) {
+    return { projectId: null, isResolved: false };
+  }
+  if (isError) {
+    return { projectId: null, isResolved: true };
+  }
+  if (!projects) {
+    return { projectId: null, isResolved: false };
+  }
 
-    const fromParam = projects.find((project) => project.id === projectParam);
-    if (fromParam) {
-      return { projectId: fromParam.id, isResolved: true };
-    }
+  const fromParam = projects.find((project) => project.id === projectParam);
+  if (fromParam) {
+    return { projectId: fromParam.id, isResolved: true };
+  }
 
-    const lastVisitedProjectId = getLastVisitedProjectFromClient(slug);
-    const restored =
-      projects.find((project) => project.id === lastVisitedProjectId) ??
-      projects.at(0);
-    return { projectId: restored?.id ?? null, isResolved: true };
-  }, [organizationId, isError, projects, projectParam, slug]);
+  const lastVisitedProjectId = getLastVisitedProjectFromClient(slug);
+  const restored =
+    projects.find((project) => project.id === lastVisitedProjectId) ??
+    projects.at(0);
+  return { projectId: restored?.id ?? null, isResolved: true };
 }
