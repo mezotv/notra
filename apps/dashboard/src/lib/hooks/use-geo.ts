@@ -182,10 +182,12 @@ export function useGeoSettings(organizationId: string) {
       input: { organizationId, projectId },
     }),
     enabled: !!organizationId,
-    refetchInterval: (current) =>
-      current.state.data?.settings?.isScanning
+    refetchInterval: (current) => {
+      const settings = current.state.data?.settings;
+      return settings === null || settings?.isScanning
         ? GEO_SCAN_POLL_INTERVAL_MS
-        : false,
+        : false;
+    },
     meta: { errorMessage: "Failed to load AI visibility settings" },
   });
 

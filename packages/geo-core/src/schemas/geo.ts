@@ -219,6 +219,12 @@ export const geoProjectCreateInputSchema = object({
   brandSettingsId: string().min(1),
 });
 
+export const geoProjectSetupWorkflowPayloadSchema = object({
+  organizationId: string().min(1),
+  projectId: string().min(1),
+  brandSettingsId: string().min(1),
+});
+
 export const geoTimeseriesInputSchema = geoOrganizationInputSchema.extend({
   ...geoWindowFields,
 });

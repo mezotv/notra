@@ -53,6 +53,17 @@ export interface GeoProjectCreateInput {
   brandSettingsId: string;
 }
 
+export interface GeoProjectSetupPayload {
+  organizationId: string;
+  projectId: string;
+  brandSettingsId: string;
+}
+
+export type GeoProjectSetupResult =
+  | { status: "completed" }
+  | { status: "failed" }
+  | { status: "invalid_payload" };
+
 export interface GeoProjectContextValue {
   projectId: string | undefined;
 }
@@ -72,6 +83,10 @@ export interface GeoProjectCreateDialogProps {
   onOpenChange: (open: boolean) => void;
   organizationId: string;
   onCreated: (projectId: string) => void;
+}
+
+export interface GeoProjectSetupGateProps {
+  children: ReactNode;
 }
 
 export interface GeoProjectLogoProps {

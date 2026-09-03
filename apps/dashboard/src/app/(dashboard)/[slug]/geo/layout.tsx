@@ -2,6 +2,7 @@ import { Suspense } from "react";
 
 import { GeoCatalogWarmer } from "@/components/geo/geo-catalog-warmer";
 import { GeoUpgradeGate } from "@/components/geo/geo-upgrade-gate";
+import { GeoProjectSetupGate } from "@/components/geo/project-setup-gate";
 import { GeoProjectQueryProvider } from "@/components/providers/geo-project-provider";
 import type { GeoLayoutProps } from "@/types/geo";
 
@@ -17,7 +18,7 @@ export default async function GeoLayout({
       <Suspense fallback={children}>
         <GeoProjectQueryProvider>
           <GeoUpgradeGate slug={slug}>
-            {children}
+            <GeoProjectSetupGate>{children}</GeoProjectSetupGate>
             {modal}
           </GeoUpgradeGate>
         </GeoProjectQueryProvider>

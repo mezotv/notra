@@ -6,6 +6,7 @@ import type { OnboardingAgentWorkflowPayload } from "@notra/ai/types/onboarding-
 import { contentGenerationWorkflowPayloadSchema } from "@notra/content-generation/schemas";
 import { agentReadinessWorkflowPayloadSchema } from "@notra/geo-core/schemas/agent-readiness";
 import {
+  geoProjectSetupWorkflowPayloadSchema,
   geoScanWorkflowPayloadSchema,
   geoWriterWorkflowPayloadSchema,
 } from "@notra/geo-core/schemas/geo";
@@ -36,6 +37,7 @@ import {
 } from "@/schemas/workflows/iris";
 import { onboardingAgentWorkflowPayloadSchema } from "@/schemas/workflows/onboarding-agent-payload";
 import type { BrandAnalysisPayload } from "@/types/brand-analysis";
+import type { GeoProjectSetupPayload } from "@/types/geo";
 import { agentReadinessWorkflow } from "@/workflows/agent-readiness";
 import {
   brandAnalysisPayloadSchema,
@@ -44,6 +46,7 @@ import {
 import { brandGuidelinesWorkflow } from "@/workflows/brand-guidelines";
 import { standaloneChatWorkflow } from "@/workflows/chat";
 import { eventContentWorkflow } from "@/workflows/event-content";
+import { geoProjectSetupWorkflow } from "@/workflows/geo-project-setup";
 import { geoScanWorkflow } from "@/workflows/geo-scan";
 import { geoWriterWorkflow } from "@/workflows/geo-writer";
 import { gscSyncWorkflow } from "@/workflows/gsc-sync";
@@ -218,6 +221,20 @@ export async function startGeoScanRun(payload: {
     organizationId: parsed.organizationId,
     projectId: parsed.projectId,
     properties: { scan_id: parsed.scanId },
+  });
+  return { runId: run.runId };
+}
+
+export async function startGeoProjectSetupRun(
+  payload: GeoProjectSetupPayload
+): Promise<{ runId: string }> {
+  const parsed = geoProjectSetupWorkflowPayloadSchema.parse(payload);
+  const run = await start(geoProjectSetupWorkflow, [parsed]);
+  trackWorkflowStarted({
+    workflow: WORKFLOW_ANALYTICS_NAMES.GEO_PROJECT_SETUP,
+    runId: run.runId,
+    organizationId: parsed.organizationId,
+    projectId: parsed.projectId,
   });
   return { runId: run.runId };
 }

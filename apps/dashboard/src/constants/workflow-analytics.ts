@@ -9,6 +9,7 @@ export const WORKFLOW_ANALYTICS_NAMES = {
   SCHEDULE_CONTENT: "schedule-content",
   EVENT_CONTENT: "event-content",
   SOCIAL_ANALYTICS_SYNC: "social-analytics-sync",
+  GEO_PROJECT_SETUP: "geo-project-setup",
   GEO_SCAN: "geo-scan",
   GEO_WRITER: "geo-writer",
   AGENT_READINESS: "agent-readiness",

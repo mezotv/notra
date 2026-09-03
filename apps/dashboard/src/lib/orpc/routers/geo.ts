@@ -32,7 +32,6 @@ import {
   startAgentReadinessScan,
 } from "@notra/geo-core/geo/agent-readiness";
 import {
-  createGeoProjectFromWebsite,
   discoverGeoWebsite,
   generateGeoFromWebsite,
 } from "@notra/geo-core/geo/discover";
@@ -78,6 +77,7 @@ import {
   upsertGeoSettings,
 } from "@notra/geo-core/geo/programs";
 import {
+  createGeoProject,
   listGeoProjects,
   requireBrandIdentity,
   requireGeoProject,
@@ -182,6 +182,7 @@ import { authorizedProcedure } from "@/lib/orpc/base";
 import { runOrpcEffect } from "@/lib/orpc/effect";
 import { badRequest, notFound } from "@/lib/orpc/utils/errors";
 import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
+import { startGeoProjectSetupRun } from "@/lib/workflows/start";
 import { geoScanStartInputSchema } from "@/schemas/geo-analytics";
 import type { GeoHandlerTracker } from "@/types/analytics/geo-events";
 import type { AuthenticatedUser } from "@/types/auth/organization";
@@ -861,20 +862,17 @@ export const geoRouter = {
     .handler(
       geoHandler(
         (input) =>
-          requireBrandIdentity(
+          createGeoProject(
             input.organizationId,
+            input.name,
             input.brandSettingsId
-          ).pipe(
-            Effect.flatMap((identity) =>
-              createGeoProjectFromWebsite(
-                input.organizationId,
-                input.name,
-                input.brandSettingsId,
-                identity.websiteUrl
-              )
-            )
           ),
         async ({ context, input, output }) => {
+          await startGeoProjectSetupRun({
+            organizationId: input.organizationId,
+            projectId: output.id,
+            brandSettingsId: output.brandSettingsId,
+          });
           const projectCount = await countGeoProjects(
             input.organizationId
           ).catch(() => null);
