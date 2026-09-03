@@ -4,6 +4,7 @@ import type {
   AiTrafficResponse,
   GeoChangeEvent,
   GeoChangesSummary,
+  GeoChangesSummaryGroup,
   GeoChatSkin,
   GeoCompetitor,
   GeoCompetitorPromptSummary,
@@ -445,7 +446,13 @@ export interface GeoScanScheduleProps {
   enabled: boolean;
   onEnabledChange: (enabled: boolean) => void;
   intervalHours: number;
+}
+
+export interface GeoScanFrequencySelectProps {
+  id: string;
+  intervalHours: number;
   onIntervalChange: (hours: number) => void;
+  disabled?: boolean;
 }
 
 export interface AiTrafficCardProps {
@@ -805,6 +812,8 @@ export interface GeoEnginePickerProps {
   planLoading?: boolean;
   disabled?: boolean;
   labeled?: boolean;
+  /** Rendered as the first row of the options group under the model list. */
+  scheduleRow?: ReactNode;
 }
 
 export type GeoFlagState = "enabled" | "disabled" | "unavailable";
@@ -995,12 +1004,22 @@ export type PromptHistoryChangeKind =
   | "gained"
   | "lost"
   | "position"
-  | "competitor";
+  | "competitor"
+  | "none"
+  | "first";
 
-export interface PromptHistoryChange {
-  kind: PromptHistoryChangeKind;
-  label: string;
-}
+/**
+ * One sentence in the scan-history "What changed" cell. Structured so the
+ * renderer can highlight positions and brands inline; use
+ * `promptHistoryChangeText` for the plain-text form.
+ */
+export type PromptHistoryChange =
+  | { kind: "gained"; position: number | null }
+  | { kind: "lost" }
+  | { kind: "position"; from: number | null; to: number | null }
+  | { kind: "competitor"; competitors: string[] }
+  | { kind: "none" }
+  | { kind: "first" };
 
 export interface PromptHistoryEntry {
   check: GeoPromptHistoryCheck;
@@ -1017,17 +1036,19 @@ export interface PromptReceiptAnalysisProps {
   result: GeoPromptResult;
   history: GeoPromptHistoryCheck[];
   isHistoryLoading: boolean;
+  /** Tracked competitors, used to resolve brand logos by domain. */
+  competitors?: readonly GeoCompetitor[];
+  /** Opens the answer captured by one scan from the history. */
+  onSelectCheck?: (check: GeoPromptHistoryCheck) => void;
 }
 
 export interface PromptReceiptHistoryProps {
   entries: PromptHistoryEntry[];
   isLoading: boolean;
-}
-
-export interface PromptReceiptTextInput {
-  prompt: string;
-  result: GeoPromptResult;
-  latest: GeoPromptHistoryCheck | null;
+  /** Tracked competitors, used to resolve brand logos by domain. */
+  competitors?: readonly GeoCompetitor[];
+  /** Opens the answer captured by one scan. Rows become clickable when set. */
+  onSelect?: (check: GeoPromptHistoryCheck) => void;
 }
 
 export interface GeoAnswerActionsProps {
@@ -1219,19 +1240,38 @@ export interface WhatChangedCardProps {
   organizationId: string;
   organizationSlug: string;
   promptResults?: readonly GeoPromptResult[];
+  competitors?: readonly GeoCompetitor[];
   isScanning?: boolean;
 }
 
-export interface GeoChangeRowProps {
-  event: GeoChangeEvent;
-  onOpen: (event: GeoChangeEvent) => void;
+export interface GeoChangeSummaryStatProps {
+  direction: "up" | "down";
+  label: string;
+  hint: string;
+  value: number;
 }
 
-export interface GeoChangeSummaryChipProps {
-  label: string;
-  value: number;
+export interface GeoChangeSummaryGroupProps {
+  group: GeoChangesSummaryGroup;
+  summary: GeoChangesSummary;
 }
 
 export interface GeoChangesSummaryRowProps {
   summary: GeoChangesSummary;
+}
+
+export interface GeoChangeDetail {
+  title: string;
+  engine: string;
+  before: string;
+  after: string;
+  note: string | null;
+}
+
+export interface GeoChangeCellProps {
+  event: GeoChangeEvent;
+}
+
+export interface GeoChangeCompetitorsCellProps extends GeoChangeCellProps {
+  competitors: readonly GeoCompetitor[];
 }

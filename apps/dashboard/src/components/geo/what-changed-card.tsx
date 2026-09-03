@@ -1,157 +1,336 @@
 "use client";
 
+import {
+  ArrowDown01Icon,
+  ArrowRight01Icon,
+  ArrowUp01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GEO_CHANGE_KIND_LABELS,
+  GEO_CHANGE_KIND_ORDER,
+  GEO_CHANGES_COLUMN_LABELS,
+  GEO_CHANGES_EMPTY_DETAIL,
   GEO_CHANGES_EMPTY_NEEDS_SCANS,
   GEO_CHANGES_EMPTY_NO_CHANGES,
+  GEO_CHANGES_ITEM_LABEL,
   GEO_CHANGES_LABEL,
-  GEO_CHANGES_SHOW_LESS,
-  GEO_CHANGES_VISIBLE,
+  GEO_CHANGES_PAGE_KEY,
+  GEO_CHANGES_SKELETON_ROWS,
+  GEO_CHANGES_SUMMARY_GROUPS,
+  GEO_CHANGES_SUMMARY_HINTS,
+  GEO_CHANGES_SUMMARY_LABELS,
+  GEO_EMPTY_COMPETITORS,
   GEO_EMPTY_PROMPT_RESULTS,
+  GEO_GAPS_COMPETITOR_DETAIL,
 } from "@notra/geo-core/constants/geo";
-import type { GeoChangeEvent } from "@notra/geo-core/types/geo";
+import { findCompetitor } from "@notra/geo-core/geo/domain";
+import type { GeoChangeEvent, GeoCompetitor } from "@notra/geo-core/types/geo";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
-import { Badge } from "@notra/ui/components/ui/badge";
-import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useMemo, useState } from "react";
 
+import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
+import { LogoStack } from "@/components/geo/logo-stack";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
+import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
+import { Table, type TableColumn } from "@/components/motion/table";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
+import { TablePagination } from "@/components/table-pagination";
 import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import {
   GEO_CHANGE_ICON_SIZE,
   GEO_CHANGE_KIND_ICONS,
   GEO_CHANGE_KIND_TONE_CLASSES,
 } from "@/constants/geo-change-icons";
+import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { useGeoChanges } from "@/lib/hooks/use-geo";
+import { useTablePagination } from "@/lib/hooks/use-table-pagination";
 import { cn } from "@/lib/utils";
 import type {
-  GeoChangeRowProps,
-  GeoChangeSummaryChipProps,
+  GeoChangeCellProps,
+  GeoChangeCompetitorsCellProps,
+  GeoChangeSummaryGroupProps,
+  GeoChangeSummaryStatProps,
   GeoChangesSummaryRowProps,
   WhatChangedCardProps,
 } from "@/types/geo";
 import {
-  describeGeoChange,
-  geoChangesShowAllLabel,
+  describeGeoChangeDetail,
+  geoChangeEngineLabel,
+  geoChangePositionSortValue,
   geoChangesSubline,
-  geoChangesSummaryChips,
 } from "@/utils/geo-changes";
 import { withGeoProject } from "@/utils/geo-paths";
 import { promptTableRowForId } from "@/utils/geo-prompts";
+import { paginatedTableHeightFor } from "@/utils/table";
 
-const TOGGLE_CLASS =
-  "text-muted-foreground hover:text-foreground w-full py-2 text-center text-xs underline-offset-4 hover:underline";
+const STAT_ICON_SIZE = 10;
+const STAT_ICON_STROKE = 2.5;
+const POSITION_ARROW_SIZE = 12;
 
-function SummaryChip({ label, value }: GeoChangeSummaryChipProps) {
+const STAT_TONE_CLASS = {
+  up: "bg-geo-up/10 text-geo-up",
+  down: "bg-geo-down/10 text-geo-down",
+} as const;
+
+const STAT_ICON = {
+  up: ArrowUp01Icon,
+  down: ArrowDown01Icon,
+} as const;
+
+const CHANGES_DEFAULT_SORT = { key: "change", direction: "asc" } as const;
+
+function SummaryStat({
+  direction,
+  label,
+  hint,
+  value,
+}: GeoChangeSummaryStatProps) {
+  const isZero = value === 0;
   return (
-    <Badge
-      className={cn(
-        "rounded-sm text-[0.6875rem] whitespace-nowrap tabular-nums",
-        value === 0 && "text-muted-foreground"
-      )}
-      variant="outline"
-    >
-      {label} {value.toLocaleString()}
-    </Badge>
+    <Tooltip>
+      <TooltipTrigger
+        render={
+          <span
+            className={cn(
+              "inline-flex cursor-default items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[0.6875rem] leading-none font-medium tabular-nums",
+              isZero
+                ? "bg-muted text-muted-foreground"
+                : STAT_TONE_CLASS[direction]
+            )}
+          />
+        }
+      >
+        <HugeiconsIcon
+          aria-hidden="true"
+          icon={STAT_ICON[direction]}
+          size={STAT_ICON_SIZE}
+          strokeWidth={STAT_ICON_STROKE}
+        />
+        <span className="sr-only">{label} </span>
+        {value.toLocaleString()}
+      </TooltipTrigger>
+      <TooltipContent className="max-w-56 text-pretty">
+        <span className="font-medium">{label}</span>
+        <span className="text-muted-foreground block">{hint}</span>
+      </TooltipContent>
+    </Tooltip>
   );
 }
 
-function SummaryRow({ summary }: GeoChangesSummaryRowProps) {
+function SummaryGroup({ group, summary }: GeoChangeSummaryGroupProps) {
   return (
-    <div className="flex flex-wrap items-center gap-1.5">
-      {geoChangesSummaryChips(summary).map((chip) => (
-        <SummaryChip key={chip.key} label={chip.label} value={chip.value} />
+    <div className="flex items-center gap-1.5">
+      <span className="text-muted-foreground mr-0.5 text-xs">
+        {group.label}
+      </span>
+      <SummaryStat
+        direction="up"
+        hint={GEO_CHANGES_SUMMARY_HINTS[group.up]}
+        label={GEO_CHANGES_SUMMARY_LABELS[group.up]}
+        value={summary[group.up]}
+      />
+      <SummaryStat
+        direction="down"
+        hint={GEO_CHANGES_SUMMARY_HINTS[group.down]}
+        label={GEO_CHANGES_SUMMARY_LABELS[group.down]}
+        value={summary[group.down]}
+      />
+    </div>
+  );
+}
+
+function SummaryToolbar({ summary }: GeoChangesSummaryRowProps) {
+  return (
+    <div className="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2">
+      {GEO_CHANGES_SUMMARY_GROUPS.map((group, index) => (
+        <div className="flex items-center gap-4" key={group.key}>
+          {index > 0 ? (
+            <span aria-hidden="true" className="bg-border h-3 w-px" />
+          ) : null}
+          <SummaryGroup group={group} summary={summary} />
+        </div>
       ))}
     </div>
   );
 }
 
-function ChangeRow({ event, onOpen }: GeoChangeRowProps) {
-  const sentence = describeGeoChange(event);
+function ChangeCell({ event }: GeoChangeCellProps) {
   return (
-    <button
-      aria-label={`${GEO_CHANGE_KIND_LABELS[event.kind]}: ${event.prompt}`}
-      className="hover:bg-muted/50 flex w-full items-center gap-3 border-b px-3 py-2.5 text-left transition-colors last:border-b-0"
-      onClick={() => onOpen(event)}
-      type="button"
-    >
+    <span className="flex min-w-0 items-center gap-2">
       <span
         className={cn(
           "flex size-4 shrink-0 items-center justify-center",
           GEO_CHANGE_KIND_TONE_CLASSES[event.kind]
         )}
-        title={GEO_CHANGE_KIND_LABELS[event.kind]}
       >
         <HugeiconsIcon
           icon={GEO_CHANGE_KIND_ICONS[event.kind]}
           size={GEO_CHANGE_ICON_SIZE}
         />
       </span>
-      <span className="flex size-4 shrink-0 items-center justify-center">
-        <EngineIcon engine={event.engine} />
+      <span className="truncate font-medium">
+        {GEO_CHANGE_KIND_LABELS[event.kind]}
       </span>
-      <TruncateWithTooltip className="min-w-0 flex-1 text-sm">
-        {event.prompt}
-      </TruncateWithTooltip>
-      <TruncateWithTooltip className="text-muted-foreground hidden min-w-0 flex-1 text-xs sm:block">
-        {sentence}
-      </TruncateWithTooltip>
-    </button>
+    </span>
   );
 }
 
-function ChangesSkeleton() {
-  const id = useId();
+function EngineCell({ event }: GeoChangeCellProps) {
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-wrap gap-1.5">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <Skeleton className="h-5 w-20" key={`${id}-chip-${index}`} />
-        ))}
-      </div>
-      <div className="rounded-2xl border">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            className="flex h-11 items-center gap-3 border-b px-3 last:border-b-0"
-            key={`${id}-row-${index}`}
-          >
-            <Skeleton className="size-4 rounded-full" />
-            <Skeleton className="size-4 rounded-full" />
-            <Skeleton className="h-4 w-2/5" />
-            <Skeleton className="h-3 w-1/4" />
-          </div>
-        ))}
-      </div>
-    </div>
+    <span className="flex min-w-0 items-center gap-2">
+      <span className="flex size-4 shrink-0 items-center justify-center">
+        <EngineIcon engine={event.engine} />
+      </span>
+      <span className="truncate">{geoChangeEngineLabel(event.engine)}</span>
+    </span>
   );
+}
+
+function PositionCell({ event }: GeoChangeCellProps) {
+  const detail = describeGeoChangeDetail(event);
+  return (
+    <span className="flex items-center gap-1.5 whitespace-nowrap tabular-nums">
+      <span className="text-muted-foreground">{detail.before}</span>
+      <HugeiconsIcon
+        aria-hidden="true"
+        className="text-muted-foreground/60 shrink-0"
+        icon={ArrowRight01Icon}
+        size={POSITION_ARROW_SIZE}
+      />
+      <span>{detail.after}</span>
+    </span>
+  );
+}
+
+function CompetitorLogosCell({
+  event,
+  competitors,
+}: GeoChangeCompetitorsCellProps) {
+  const items = event.competitors.map((name) => {
+    const competitor = findCompetitor(competitors, name);
+    return {
+      key: name,
+      label: name,
+      detail: competitor
+        ? GEO_GAPS_COMPETITOR_DETAIL.tracked
+        : GEO_GAPS_COMPETITOR_DETAIL.discovered,
+      renderIcon: (className: string) => (
+        <CompetitorLogo
+          className={className}
+          domain={competitor?.domain ?? null}
+          name={name}
+        />
+      ),
+    };
+  });
+  return <LogoStack items={items} />;
+}
+
+function DetailCell({ event, competitors }: GeoChangeCompetitorsCellProps) {
+  if (event.competitors.length > 0) {
+    return <CompetitorLogosCell competitors={competitors} event={event} />;
+  }
+  const detail = describeGeoChangeDetail(event);
+  if (!detail.note) {
+    return (
+      <span className="text-muted-foreground text-xs">
+        {GEO_CHANGES_EMPTY_DETAIL}
+      </span>
+    );
+  }
+  return (
+    <TruncateWithTooltip className="text-muted-foreground text-xs">
+      {detail.note}
+    </TruncateWithTooltip>
+  );
+}
+
+function changeColumnsFor(
+  competitors: readonly GeoCompetitor[]
+): TableColumn<GeoChangeEvent>[] {
+  return [
+    {
+      key: "change",
+      header: GEO_CHANGES_COLUMN_LABELS.change,
+      width: "14rem",
+      sortable: true,
+      cell: (row) => <ChangeCell event={row} />,
+      sortValue: (row) => GEO_CHANGE_KIND_ORDER[row.kind],
+    },
+    {
+      key: "engine",
+      header: GEO_CHANGES_COLUMN_LABELS.engine,
+      width: "8.5rem",
+      sortable: true,
+      cell: (row) => <EngineCell event={row} />,
+      sortValue: (row) => geoChangeEngineLabel(row.engine),
+    },
+    {
+      key: "prompt",
+      header: GEO_CHANGES_COLUMN_LABELS.prompt,
+      width: "1.4fr",
+      sortable: true,
+      cell: (row) => (
+        <TruncateWithTooltip className="text-sm">
+          {row.prompt}
+        </TruncateWithTooltip>
+      ),
+    },
+    {
+      key: "position",
+      header: GEO_CHANGES_COLUMN_LABELS.position,
+      width: "12rem",
+      sortable: true,
+      cell: (row) => <PositionCell event={row} />,
+      sortValue: geoChangePositionSortValue,
+    },
+    {
+      key: "detail",
+      header: GEO_CHANGES_COLUMN_LABELS.detail,
+      width: "1fr",
+      cell: (row) => <DetailCell competitors={competitors} event={row} />,
+    },
+  ];
+}
+
+function changeRowId(event: GeoChangeEvent): string {
+  return `${event.kind}-${event.promptId}-${event.engine}`;
 }
 
 export function WhatChangedCard({
   organizationId,
   organizationSlug,
   promptResults = GEO_EMPTY_PROMPT_RESULTS,
+  competitors = GEO_EMPTY_COMPETITORS,
   isScanning = false,
 }: WhatChangedCardProps) {
   const { projectId } = useGeoProjectScope();
   const router = useRouter();
   const { data, isPending } = useGeoChanges(organizationId);
-  const [expanded, setExpanded] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
   const detailRow = detailId
     ? promptTableRowForId(detailId, promptResults)
     : null;
 
-  const events = data?.events ?? [];
-  const visible = expanded ? events : events.slice(0, GEO_CHANGES_VISIBLE);
-  const hasOverflow = events.length > GEO_CHANGES_VISIBLE;
+  const events = useMemo(() => data?.events ?? [], [data]);
+  const columns = useMemo(() => changeColumnsFor(competitors), [competitors]);
+  const pagination = useTablePagination({
+    key: GEO_CHANGES_PAGE_KEY,
+    totalItems: events.length,
+    isReady: !isPending,
+  });
 
   function openEvent(event: GeoChangeEvent) {
     if (promptTableRowForId(event.promptId, promptResults)) {
@@ -166,7 +345,7 @@ export function WhatChangedCard({
     );
   }
 
-  let body = <ChangesSkeleton />;
+  let body = <GeoTableSkeleton rows={GEO_CHANGES_SKELETON_ROWS} />;
   if (!isPending && data) {
     if (!data.previousScan) {
       body = (
@@ -194,29 +373,27 @@ export function WhatChangedCard({
       );
     } else {
       body = (
-        <div className="flex flex-col gap-3">
-          <SummaryRow summary={data.summary} />
-          <div className="rounded-2xl border">
-            {visible.map((event) => (
-              <ChangeRow
-                event={event}
-                key={`${event.kind}-${event.promptId}-${event.engine}`}
-                onOpen={openEvent}
-              />
-            ))}
-            {hasOverflow ? (
-              <button
-                className={cn(TOGGLE_CLASS, "border-t")}
-                onClick={() => setExpanded((value) => !value)}
-                type="button"
-              >
-                {expanded
-                  ? GEO_CHANGES_SHOW_LESS
-                  : geoChangesShowAllLabel(events.length)}
-              </button>
-            ) : null}
-          </div>
-        </div>
+        <Table
+          className="rounded-2xl"
+          columns={columns}
+          data={events}
+          defaultSort={CHANGES_DEFAULT_SORT}
+          footer={
+            <TablePagination
+              {...pagination}
+              itemLabel={GEO_CHANGES_ITEM_LABEL}
+            />
+          }
+          getRowId={changeRowId}
+          height={paginatedTableHeightFor(pagination.pageRowCount)}
+          onRowClick={openEvent}
+          onSortChange={() => pagination.setPage(1)}
+          page={pagination.page}
+          pageSize={pagination.pageSize}
+          resizable
+          rowHeight={TABLE_ROW_HEIGHT}
+          toolbar={<SummaryToolbar summary={data.summary} />}
+        />
       );
     }
   }

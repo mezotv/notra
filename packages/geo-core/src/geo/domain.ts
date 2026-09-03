@@ -23,7 +23,7 @@ export function competitorKey(name: string): string {
 }
 
 export function findCompetitor(
-  competitors: GeoCompetitor[] | undefined,
+  competitors: readonly GeoCompetitor[] | undefined,
   name: string
 ): GeoCompetitor | null {
   if (!competitors) {
@@ -37,7 +37,7 @@ export function findCompetitor(
 }
 
 export function findCompetitorDomain(
-  competitors: GeoCompetitor[] | undefined,
+  competitors: readonly GeoCompetitor[] | undefined,
   name: string
 ): string | null {
   return findCompetitor(competitors, name)?.domain ?? null;

@@ -1,23 +1,15 @@
 import {
   GEO_PROMPT_HISTORY_CHANGE_LABELS,
+  GEO_PROMPT_HISTORY_LIST_LOCALE,
   GEO_PROMPT_RECEIPT_LABELS,
-  GEO_PROMPT_SCAN_ID_DISPLAY_LENGTH,
   GEO_SENTIMENT_LABELS,
 } from "@notra/geo-core/constants/geo";
 import type {
-  GeoAnswerSource,
   GeoPromptHistoryCheck,
+  GeoPromptResult,
 } from "@notra/geo-core/types/geo";
-import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 
-import type {
-  PromptHistoryChange,
-  PromptHistoryEntry,
-  PromptReceiptTextInput,
-} from "@/types/geo";
-import { formatEngineFamily } from "@/utils/geo-charts";
-
-const DEFAULT_LANGUAGE = "English";
+import type { PromptHistoryChange, PromptHistoryEntry } from "@/types/geo";
 
 export function promptHistoryForEngine(
   checks: readonly GeoPromptHistoryCheck[],
@@ -34,21 +26,24 @@ function positionLabel(position: number | null): string {
     : `#${position}`;
 }
 
+const nameListFormatter = new Intl.ListFormat(GEO_PROMPT_HISTORY_LIST_LOCALE, {
+  style: "long",
+  type: "conjunction",
+});
+
+export function formatPromptHistoryNames(names: readonly string[]): string {
+  return nameListFormatter.format(names);
+}
+
 function changesBetween(
   current: GeoPromptHistoryCheck,
   previous: GeoPromptHistoryCheck
 ): PromptHistoryChange[] {
   const changes: PromptHistoryChange[] = [];
   if (current.mentioned && !previous.mentioned) {
-    changes.push({
-      kind: "gained",
-      label: GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMention,
-    });
+    changes.push({ kind: "gained", position: current.position });
   } else if (!current.mentioned && previous.mentioned) {
-    changes.push({
-      kind: "lost",
-      label: GEO_PROMPT_HISTORY_CHANGE_LABELS.lostMention,
-    });
+    changes.push({ kind: "lost" });
   } else if (
     current.mentioned &&
     previous.mentioned &&
@@ -56,16 +51,17 @@ function changesBetween(
   ) {
     changes.push({
       kind: "position",
-      label: `${GEO_PROMPT_RECEIPT_LABELS.position} ${positionLabel(previous.position)} → ${positionLabel(current.position)}`,
+      from: previous.position,
+      to: current.position,
     });
   }
   const known = new Set(previous.competitors);
   const added = current.competitors.filter((name) => !known.has(name));
   if (added.length > 0) {
-    changes.push({
-      kind: "competitor",
-      label: `${GEO_PROMPT_HISTORY_CHANGE_LABELS.newCompetitor}: ${added.join(", ")}`,
-    });
+    changes.push({ kind: "competitor", competitors: added });
+  }
+  if (changes.length === 0) {
+    changes.push({ kind: "none" });
   }
   return changes;
 }
@@ -80,20 +76,69 @@ export function promptHistoryChanges(
     const previous = ordered[index + 1];
     return {
       check,
-      changes: previous ? changesBetween(check, previous) : [],
+      changes: previous ? changesBetween(check, previous) : [{ kind: "first" }],
     };
   });
 }
 
-export function truncateScanId(scanId: string): string {
-  return scanId.slice(0, GEO_PROMPT_SCAN_ID_DISPLAY_LENGTH);
+const SENTENCE_END = ".";
+
+export function promptHistoryChangeLabel(change: PromptHistoryChange): string {
+  switch (change.kind) {
+    case "gained":
+      return change.position === null
+        ? GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMention
+        : `${GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMention} ${GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMentionAt} ${positionLabel(change.position)}`;
+    case "lost":
+      return GEO_PROMPT_HISTORY_CHANGE_LABELS.lostMention;
+    case "position":
+      return `${GEO_PROMPT_HISTORY_CHANGE_LABELS.moved} ${positionLabel(change.from)} → ${positionLabel(change.to)}`;
+    case "competitor":
+      return `${formatPromptHistoryNames(change.competitors)} ${GEO_PROMPT_HISTORY_CHANGE_LABELS.newlyRecommended}`;
+    case "none":
+      return GEO_PROMPT_HISTORY_CHANGE_LABELS.noChange;
+    case "first":
+      return GEO_PROMPT_HISTORY_CHANGE_LABELS.firstScan;
+    default:
+      return "";
+  }
 }
 
-export function promptCheckLanguage(
-  check: GeoPromptHistoryCheck | null
+function changeSentence(change: PromptHistoryChange): string {
+  const label = promptHistoryChangeLabel(change);
+  if (change.kind === "first" || change.kind === "none") {
+    return label;
+  }
+  return `${label}${SENTENCE_END}`;
+}
+
+/** Plain-text form of a history row's changes, for tooltips and receipts. */
+export function promptHistoryChangeText(
+  changes: readonly PromptHistoryChange[]
 ): string {
-  const language = check?.language.trim() ?? "";
-  return language.length > 0 ? language : DEFAULT_LANGUAGE;
+  return changes.map(changeSentence).join(" ");
+}
+
+/** Shapes a history check like a prompt result so the answer thread can render it. */
+export function promptResultFromHistoryCheck(
+  check: GeoPromptHistoryCheck,
+  promptId: string,
+  prompt: string
+): GeoPromptResult {
+  return {
+    promptId,
+    engine: check.engine,
+    prompt,
+    answer: check.answer,
+    mentioned: check.mentioned,
+    position: check.position,
+    sentiment: check.sentiment,
+    competitors: check.competitors,
+    excerpt: check.excerpt,
+    searchQueries: check.searchQueries,
+    sources: check.sources,
+    lastCheckedAt: check.capturedAt,
+  };
 }
 
 export function promptSentimentLabel(sentiment: string | null): string {
@@ -111,46 +156,4 @@ export function promptOutcomeLabel(mentioned: boolean): string {
 
 export function promptPositionLabel(position: number | null): string {
   return positionLabel(position);
-}
-
-function receiptSourceLine(source: GeoAnswerSource): string {
-  return `- ${source.title} (${source.domain}) ${source.url}`;
-}
-
-export function buildPromptReceiptText({
-  prompt,
-  result,
-  latest,
-}: PromptReceiptTextInput): string {
-  const competitors =
-    result.competitors.length > 0
-      ? result.competitors.join(", ")
-      : GEO_PROMPT_RECEIPT_LABELS.noCompetitors;
-  const searches =
-    result.searchQueries.length > 0
-      ? result.searchQueries.map((query) => `- ${query}`).join("\n")
-      : GEO_PROMPT_RECEIPT_LABELS.noSearches;
-  const sources =
-    result.sources.length > 0
-      ? result.sources.map(receiptSourceLine).join("\n")
-      : GEO_PROMPT_RECEIPT_LABELS.noSources;
-  const lines = [
-    `Prompt: ${prompt}`,
-    `Engine: ${formatEngineFamily(result.engine)}`,
-    `${GEO_PROMPT_RECEIPT_LABELS.captured}: ${formatAiTrafficTimestamp(result.lastCheckedAt)}`,
-    `${GEO_PROMPT_RECEIPT_LABELS.language}: ${promptCheckLanguage(latest)}`,
-    `Outcome: ${promptOutcomeLabel(result.mentioned)}`,
-    `${GEO_PROMPT_RECEIPT_LABELS.position}: ${positionLabel(result.position)}`,
-    `${GEO_PROMPT_RECEIPT_LABELS.sentiment}: ${promptSentimentLabel(result.sentiment)}`,
-    `${GEO_PROMPT_RECEIPT_LABELS.competitors}: ${competitors}`,
-    "",
-    `${GEO_PROMPT_RECEIPT_LABELS.searches}:`,
-    searches,
-    "",
-    `${GEO_PROMPT_RECEIPT_LABELS.sources}:`,
-    sources,
-    "",
-    `${GEO_PROMPT_RECEIPT_LABELS.scanId}: ${latest?.scanId ?? ""}`.trimEnd(),
-  ];
-  return lines.join("\n");
 }

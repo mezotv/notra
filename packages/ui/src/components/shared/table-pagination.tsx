@@ -63,6 +63,7 @@ export function TablePagination({
                   setPage(page - 1);
                 }}
                 size="xs"
+                text=""
               />
             </PaginationItem>
             {getPageNumbers(page, pageCount).map((pageNumber, index, pages) =>
@@ -97,6 +98,7 @@ export function TablePagination({
                   setPage(page + 1);
                 }}
                 size="xs"
+                text=""
               />
             </PaginationItem>
           </PaginationContent>

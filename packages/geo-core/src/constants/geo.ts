@@ -3,7 +3,9 @@ import type {
   EngineIconKey,
   GeoChangeKind,
   GeoChangesSummary,
+  GeoChangesSummaryGroup,
   GeoChatSkin,
+  GeoCompetitor,
   GeoCompetitorKind,
   GeoCompetitorShareTimeseriesPoint,
   GeoGroundedEngine,
@@ -375,14 +377,21 @@ export const GEO_MAX_SEQUENCES = 10;
 export const GEO_COMPETITOR_SHARE_LIMIT = 50;
 export const GEO_PROMPT_HISTORY_LIMIT = 120;
 export const GEO_PROMPT_HISTORY_SKELETON_ROWS = 4;
-export const GEO_PROMPT_SCAN_ID_DISPLAY_LENGTH = 8;
+export const GEO_PROMPT_HISTORY_PREVIEW_ROWS = 8;
+export const GEO_PROMPT_HISTORY_EMPTY_POSITION = "\u2013";
+export const GEO_PROMPT_HISTORY_COLUMN_LABELS = {
+  date: "Scan",
+  outcome: "Outcome",
+  position: "Position",
+  changes: "What changed",
+} as const;
+export const GEO_PROMPT_HISTORY_SHOW_ALL_LABEL = "Show all";
+export const GEO_PROMPT_HISTORY_SHOW_LESS_LABEL = "Show latest";
 export const GEO_PROMPT_RECEIPT_VIEW_LABELS = {
   analysis: "Analysis",
   raw: "Raw answer",
 } as const;
 export const GEO_PROMPT_RECEIPT_VIEW_GROUP_LABEL = "Receipt view";
-export const GEO_PROMPT_RECEIPT_COPY_LABEL = "Copy receipt";
-export const GEO_PROMPT_RECEIPT_COPIED_MESSAGE = "Receipt copied";
 export const GEO_PROMPT_ANSWER_COPY_LABEL = "Copy answer";
 export const GEO_PROMPT_ANSWER_COPIED_MESSAGE = "Answer copied";
 export const GEO_PROMPT_RECEIPT_LABELS = {
@@ -401,16 +410,22 @@ export const GEO_PROMPT_RECEIPT_LABELS = {
   history: "Scan history",
   singleScan: "Only one scan so far",
   noHistory: "No scans recorded yet",
-  scanId: "Scan",
-  language: "Language",
-  captured: "Captured",
   openSources: "Open sources",
 } as const;
 export const GEO_PROMPT_HISTORY_CHANGE_LABELS = {
-  gainedMention: "Gained mention",
-  lostMention: "Lost mention",
-  newCompetitor: "New competitor",
+  gainedMention: "Now mentioned",
+  gainedMentionAt: "at",
+  lostMention: "No longer mentioned",
+  moved: "Moved",
+  newlyRecommended: "newly recommended",
+  noChange: "No change",
   firstScan: "First scan",
+} as const;
+export const GEO_PROMPT_HISTORY_LIST_LOCALE = "en";
+export const GEO_PROMPT_HISTORY_ANSWER_LABELS = {
+  viewAnswer: "View answer",
+  scanFrom: "Scan from",
+  backToLatest: "Back to latest scan",
 } as const;
 export const GEO_SHARE_OF_VOICE_TOP_BRANDS = 5;
 export const GEO_SHARE_OF_VOICE_PAGE_TOP_BRANDS = 8;
@@ -976,6 +991,10 @@ export const GEO_BRAND_DISCOVERED_LABEL = "Discovered";
 export const GEO_BRAND_TRACK_ACTION = "Track";
 export const GEO_SHARE_OF_VOICE_TRACKING_HINT =
   "Discovered brands come from scan answers. Tracked brands are called out in scans and available in the writer.";
+export const GEO_LANGUAGE_PERFORMANCE_HINT =
+  "The same prompts run in each tracked language. Add a language to track your mention rate there.";
+export const GEO_ENGINE_PERFORMANCE_HINT =
+  "How often each engine mentioned your brand in this range. Manage engines in GEO settings.";
 export const GEO_PROMPT_AUTO_MANAGED_LABEL = "Managed automatically";
 export const GEO_PROMPT_AUTO_MANAGED_HINT =
   "Generated from your site. Pause it to skip it in scans; it cannot be removed.";
@@ -1039,6 +1058,7 @@ export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
 export const GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES: readonly GeoCompetitorShareTimeseriesPoint[] =
   [];
 export const GEO_EMPTY_PROMPT_RESULTS: readonly GeoPromptResult[] = [];
+export const GEO_EMPTY_COMPETITORS: readonly GeoCompetitor[] = [];
 export const GEO_EMPTY_TRAFFIC_RESPONSE: AiTrafficResponse = {
   configured: false,
   totals: { crawler: 0, cited: 0, aiReferral: 0, conversions: null },
@@ -1109,7 +1129,6 @@ export const GEO_UPGRADE_TOOLTIP = "Upgrade your plan to unlock GEO";
 export const GEO_LOCKED_TITLE = "GEO is locked on your current plan";
 
 export const GEO_CHANGES_LIMIT = 40;
-export const GEO_CHANGES_VISIBLE = 8;
 export const GEO_CHANGES_LABEL = "What changed";
 export const GEO_CHANGES_SUBLINE_PREFIX = "Latest scan vs previous scan";
 export const GEO_CHANGES_SCANNING_SUBLINE = "Scan in progress";
@@ -1117,8 +1136,24 @@ export const GEO_CHANGES_EMPTY_NEEDS_SCANS =
   "Run two scans to see what changed";
 export const GEO_CHANGES_EMPTY_NO_CHANGES =
   "No changes between the last two scans";
-export const GEO_CHANGES_SHOW_ALL_PREFIX = "Show all";
-export const GEO_CHANGES_SHOW_LESS = "Show less";
+export const GEO_CHANGES_ITEM_LABEL = "changes";
+export const GEO_CHANGES_PAGE_KEY = "changes";
+export const GEO_CHANGES_SKELETON_ROWS = 5;
+export const GEO_CHANGES_COLUMN_LABELS = {
+  change: "Change",
+  engine: "Engine",
+  prompt: "Prompt",
+  position: "Position",
+  detail: "Recommended instead",
+} as const;
+export const GEO_CHANGES_STATE_NEW = "New";
+export const GEO_CHANGES_STATE_NOT_MENTIONED = "Not mentioned";
+export const GEO_CHANGES_STATE_MENTIONED = "Mentioned";
+export const GEO_CHANGES_POSITION_PREFIX = "#";
+export const GEO_CHANGES_EMPTY_DETAIL = "-";
+export const GEO_CHANGES_COMPETITORS_PREFIX = "Now recommended";
+export const GEO_CHANGES_CITATIONS_ADDED_PREFIX = "New citations";
+export const GEO_CHANGES_CITATIONS_REMOVED_PREFIX = "Citations dropped";
 
 export const GEO_CHANGE_KIND_LABELS: Record<GeoChangeKind, string> = {
   gained_mention: "Gained mention",
@@ -1153,6 +1188,34 @@ export const GEO_CHANGES_SUMMARY_LABELS: Record<
   citationsAdded: "Citations added",
   citationsRemoved: "Citations removed",
 };
+
+export const GEO_CHANGES_SUMMARY_HINTS: Record<
+  keyof GeoChangesSummary,
+  string
+> = {
+  gained: "Prompts where an engine started mentioning your brand",
+  lost: "Prompts where an engine stopped mentioning your brand",
+  positionImproved: "Prompts where your brand moved up in the answer",
+  positionDropped: "Prompts where your brand moved down in the answer",
+  citationsAdded: "Prompts where an engine started citing your pages",
+  citationsRemoved: "Prompts where an engine stopped citing your pages",
+};
+
+export const GEO_CHANGES_SUMMARY_GROUPS: readonly GeoChangesSummaryGroup[] = [
+  { key: "mentions", label: "Mentions", up: "gained", down: "lost" },
+  {
+    key: "position",
+    label: "Position",
+    up: "positionImproved",
+    down: "positionDropped",
+  },
+  {
+    key: "citations",
+    label: "Citations",
+    up: "citationsAdded",
+    down: "citationsRemoved",
+  },
+];
 
 export const GEO_EMPTY_CHANGES_SUMMARY: GeoChangesSummary = {
   gained: 0,

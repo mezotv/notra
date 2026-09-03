@@ -152,6 +152,7 @@ export function GeoTabs({
           </InstrumentGrid>
           <TabSection active={revealActive} order={2}>
             <WhatChangedCard
+              competitors={competitors}
               isScanning={isScanning}
               organizationId={organizationId}
               organizationSlug={organizationSlug}

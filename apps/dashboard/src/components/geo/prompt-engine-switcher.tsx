@@ -3,7 +3,7 @@
 import {
   ArrowLeft01Icon,
   ArrowRight01Icon,
-  Search01Icon,
+  GlobalIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { GEO_SEARCH_LABEL } from "@notra/geo-core/constants/geo";
@@ -47,7 +47,7 @@ export function PromptEngineSwitcher({
   const activeIndex = engines.indexOf(active.engine);
 
   return (
-    <div className="flex items-start gap-3">
+    <div className="flex min-w-0 flex-1 items-start gap-3">
       <LayoutGroup id={layoutId}>
         <div
           aria-label="Engines"
@@ -101,7 +101,7 @@ export function PromptEngineSwitcher({
                           <HugeiconsIcon
                             aria-hidden="true"
                             className="size-3 shrink-0"
-                            icon={Search01Icon}
+                            icon={GlobalIcon}
                             strokeWidth={2}
                           />
                         </TooltipTrigger>
