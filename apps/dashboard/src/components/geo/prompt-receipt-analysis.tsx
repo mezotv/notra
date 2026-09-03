@@ -7,6 +7,7 @@ import type {
   GeoCompetitor,
   GeoPromptResult,
 } from "@notra/geo-core/types/geo";
+import { LogoStack } from "@notra/ui/components/geo/logo-stack";
 import {
   Table,
   TableBody,
@@ -18,7 +19,6 @@ import {
 import type { ReactNode } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
-import { LogoStack } from "@/components/geo/logo-stack";
 import { PromptReceiptHistory } from "@/components/geo/prompt-receipt-history";
 import { cn } from "@/lib/utils";
 import type { PromptReceiptAnalysisProps } from "@/types/geo";

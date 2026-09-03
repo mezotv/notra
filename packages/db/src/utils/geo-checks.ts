@@ -310,7 +310,6 @@ export async function queryGeoCheckPromptResults(
       latestPromptResults.promptId,
       latestPromptResults.engine
     );
-    );
   const rows =
     limit === undefined ? await orderedQuery : await orderedQuery.limit(limit);
 
@@ -322,6 +321,7 @@ export async function queryGeoCheckPromptResults(
     mentioned: row.mentioned,
     position: row.position,
     sentiment: row.sentiment,
+    competitors: row.competitors,
     excerpt: row.excerpt,
     grounding: parseGeoCheckGrounding(row.grounding),
     sources: row.sources,
@@ -777,7 +777,7 @@ export async function queryGeoScanComparison(input: {
         inArray(geoMentionChecks.scanId, [currentScan.id, previousScan.id]),
         eq(geoMentionChecks.turn, 0),
         isNull(geoMentionChecks.sequenceId),
-        inArray(geoMentionChecks.language, [...ENGLISH_LANGUAGES])
+        inArray(geoMentionChecks.language, [...GEO_CHECK_ENGLISH_LANGUAGES])
       )
     );
 

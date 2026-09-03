@@ -298,7 +298,9 @@ function SearchWriteCell({
         action={briefAction}
         onOpenPost={onOpenPost}
         onWrite={() => onWrite()}
+        opportunityBucket={null}
         postId={row.brief?.postId}
+        sourceKind="search_console"
       />
     );
   }

@@ -137,6 +137,11 @@ export function promptResultFromHistoryCheck(
     excerpt: check.excerpt,
     searchQueries: check.searchQueries,
     sources: check.sources,
+    finishReason: null,
+    promptTokens: null,
+    outputTokens: null,
+    reasoningTokens: null,
+    truncated: null,
     lastCheckedAt: check.capturedAt,
   };
 }

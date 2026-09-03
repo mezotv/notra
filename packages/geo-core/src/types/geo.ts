@@ -562,7 +562,6 @@ export interface GeoScanProgramOptions {
   projectIds?: readonly string[];
   promptIds?: readonly string[];
 }
-}
 
 export interface GeoProjectScanOutcome {
   checks: number;

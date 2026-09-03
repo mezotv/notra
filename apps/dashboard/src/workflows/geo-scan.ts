@@ -183,6 +183,7 @@ export async function geoScanWorkflow(
       );
       return { scanProjectId, outcome };
     })
+  );
   for (const { scanProjectId, outcome } of outcomes) {
     if (!outcome) {
       continue;

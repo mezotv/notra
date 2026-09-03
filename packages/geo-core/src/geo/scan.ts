@@ -1683,7 +1683,6 @@ const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
       GEO_OPENCODE_ENGINE_ID,
       false
     );
-    );
     let conversationPromise: ReturnType<
       typeof askGeoOpenCodeConversation
     > | null = null;

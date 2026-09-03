@@ -17,6 +17,7 @@ import type {
   GeoPromptHistoryCheck,
 } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
+import { TablePagination } from "@notra/ui/components/shared/table-pagination";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import {
   Table,
@@ -30,7 +31,6 @@ import { useEffect, useState } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { PromptOutcomeIcon } from "@/components/geo/prompt-outcome-icon";
-import { TablePagination } from "@/components/table-pagination";
 import { cn } from "@/lib/utils";
 import type {
   PromptHistoryChange,

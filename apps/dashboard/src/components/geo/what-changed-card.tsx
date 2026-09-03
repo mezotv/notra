@@ -27,6 +27,9 @@ import {
 import { findCompetitor } from "@notra/geo-core/geo/domain";
 import type { GeoChangeEvent, GeoCompetitor } from "@notra/geo-core/types/geo";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import { LogoStack } from "@notra/ui/components/geo/logo-stack";
+import { TablePagination } from "@notra/ui/components/shared/table-pagination";
+import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import {
   Tooltip,
   TooltipContent,
@@ -37,7 +40,6 @@ import { useMemo, useState } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { LogoStack } from "@/components/geo/logo-stack";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
 import {
@@ -46,8 +48,6 @@ import {
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
-import { TablePagination } from "@/components/table-pagination";
-import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import {
   GEO_CHANGE_ICON_SIZE,
   GEO_CHANGE_KIND_ICONS,
