@@ -1,11 +1,11 @@
 "use client";
 
+import { LogoStack } from "@notra/ui/components/geo/logo-stack";
+import { TablePagination } from "@notra/ui/components/shared/table-pagination";
 import { Badge } from "@notra/ui/components/ui/badge";
 
-import { LogoStack } from "@/components/geo/logo-stack";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { TablePagination } from "@/components/table-pagination";
 import {
   COLLECTION_TABLE_ROW_HEIGHT,
   COLLECTION_TYPE_STACK_LIMIT,
