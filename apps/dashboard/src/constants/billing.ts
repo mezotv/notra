@@ -22,8 +22,7 @@ export const LEGACY_PLAN_TIERS: Record<string, string> = {
 
 export const PLAN_TIER_DESCRIPTIONS: Record<string, string> = {
   [PLANS.STARTER]: "For founders tracking their first prompts.",
-  [PLANS.GROWTH]:
-    "For teams tracking prompts across engines and languages.",
+  [PLANS.GROWTH]: "For teams tracking prompts across engines and languages.",
   [PLANS.SCALE]: "For agencies and teams running several brands.",
 };
 
