@@ -31,7 +31,6 @@ import { createPortal } from "react-dom";
 import tunnel from "tunnel-rat";
 
 import { Card } from "@notra/ui/components/ui/card";
-import { ScrollArea, ScrollBar } from "@notra/ui/components/ui/scroll-area";
 import { cn } from "@notra/ui/lib/utils";
 
 const t = tunnel();
@@ -114,7 +113,7 @@ export const KanbanCard = <T extends KanbanItemProps = KanbanItemProps>({
 
   const style = {
     transition,
-    transform: CSS.Transform.toString(transform),
+    transform: CSS.Translate.toString(transform),
   };
 
   return (
@@ -171,7 +170,7 @@ export const KanbanCards = <T extends KanbanItemProps = KanbanItemProps>({
   const items = filteredData.map((item) => item.id);
 
   return (
-    <ScrollArea className="overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col">
       <SortableContext items={items}>
         <div
           className={cn("flex flex-grow flex-col gap-2 p-2", className)}
@@ -180,8 +179,7 @@ export const KanbanCards = <T extends KanbanItemProps = KanbanItemProps>({
           {filteredData.map(children)}
         </div>
       </SortableContext>
-      <ScrollBar orientation="vertical" />
-    </ScrollArea>
+    </div>
   );
 };
 

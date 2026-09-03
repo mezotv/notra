@@ -218,17 +218,20 @@ export function ShelfKanban({
       >
         {(column) => (
           <KanbanBoard
-            className="bg-background border-border min-h-[32rem] divide-y-0 rounded-2xl shadow-none"
+            className="bg-muted border-border min-h-[32rem] divide-y-0 rounded-2xl shadow-none"
             id={column.id}
             key={column.id}
           >
-            <KanbanHeader className="bg-muted text-muted-foreground border-border flex h-10 items-center justify-between rounded-t-2xl border-b px-3 text-xs font-medium">
+            <KanbanHeader className="text-muted-foreground flex h-9 items-center justify-between px-2 text-xs font-medium">
               <span>{column.name}</span>
               <span className="text-muted-foreground font-normal tabular-nums">
                 {counts.get(column.id) ?? 0}
               </span>
             </KanbanHeader>
-            <KanbanCards<GeoShelfKanbanItem> id={column.id}>
+            <KanbanCards<GeoShelfKanbanItem>
+              className="bg-background border-border min-h-full rounded-t-xl border-t p-2"
+              id={column.id}
+            >
               {(item) => (
                 <KanbanCard<GeoShelfKanbanItem>
                   className="bg-card border-border rounded-xl border shadow-none"
