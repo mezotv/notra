@@ -20,7 +20,6 @@ import type { ReactNode } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { PromptReceiptHistory } from "@/components/geo/prompt-receipt-history";
-import { cn } from "@/lib/utils";
 import type { PromptReceiptAnalysisProps } from "@/types/geo";
 import {
   promptHistoryChanges,
