@@ -34,7 +34,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
@@ -241,13 +241,19 @@ export function PromptsTable({
   );
   const [detail, setDetail] = useState<GeoPromptTableRow | null>(null);
 
-  const filters: GeoPromptTableFilters = { q: search, intent, tag, source };
-  const tagsInUse = collectPromptTags(prompts);
+  const filters = useMemo<GeoPromptTableFilters>(
+    () => ({ q: search, intent, tag, source }),
+    [search, intent, tag, source]
+  );
+  const tagsInUse = useMemo(() => collectPromptTags(prompts), [prompts]);
   const activeTagFilterMissing =
     tag !== GEO_PROMPT_FILTER_ALL && !tagsInUse.includes(tag);
   const tagOptions = activeTagFilterMissing ? [tag, ...tagsInUse] : tagsInUse;
 
-  const rows = buildPromptTableRows(prompts, results, filters);
+  const rows = useMemo(
+    () => buildPromptTableRows(prompts, results, filters),
+    [prompts, results, filters]
+  );
 
   const selectedIdSet = new Set(selectedIds);
   const selectedRows = rows.filter((row) => selectedIdSet.has(row.id));
