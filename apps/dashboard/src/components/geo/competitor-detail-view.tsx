@@ -11,7 +11,6 @@ import {
   COMPETITORS_TABLE_ROW_HEIGHT,
   GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS,
   GEO_COMPETITOR_DETAIL_MIN_POINTS,
-  GEO_COMPETITOR_DETAIL_SERIES_KEY,
 } from "@notra/geo-core/constants/geo";
 import type { GeoCompetitorPromptRow } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
@@ -22,26 +21,23 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
-import { EChartsBarChart } from "@/components/evilcharts/charts/echarts-bar-chart";
 import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { CHART_PRIMARY_COLOR } from "@/constants/charts";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoCompetitorDetail, useGeoCompetitors } from "@/lib/hooks/use-geo";
 import { cn } from "@/lib/utils";
-import type { ChartConfig } from "@/types/charts";
 import type {
   CompetitorDetailViewProps,
   GeoCompetitorDetailPoint,
   GeoCompetitorMentionStats,
 } from "@/types/geo";
-import { seriesColors } from "@/utils/chart-colors";
 import { formatEngineFamily } from "@/utils/geo-charts";
 import {
   buildGeoCompetitorPoints,
@@ -50,12 +46,22 @@ import {
 } from "@/utils/geo-competitor";
 import { tableHeightFor } from "@/utils/table";
 
-const CHART_CONFIG: ChartConfig = {
-  [GEO_COMPETITOR_DETAIL_SERIES_KEY]: {
-    label: "Mentions",
-    colors: seriesColors(CHART_PRIMARY_COLOR),
-  },
-};
+const CompetitorMentionsChartContent = dynamic(
+  () =>
+    import("@/components/geo/competitor-mentions-chart").then(
+      (module) => module.CompetitorMentionsChart
+    ),
+  {
+    loading: () => (
+      <div aria-label="Loading competitor mentions chart" role="status">
+        <Skeleton
+          aria-hidden
+          className={cn("w-full", GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS)}
+        />
+      </div>
+    ),
+  }
+);
 
 function CompetitorMentionsChart({
   competitor,
@@ -78,23 +84,11 @@ function CompetitorMentionsChart({
 
   if (points.length >= GEO_COMPETITOR_DETAIL_MIN_POINTS) {
     return (
-      <EChartsBarChart
-        animation={false}
-        className={cn("w-full", GEO_COMPETITOR_DETAIL_CHART_HEIGHT_CLASS)}
-        config={CHART_CONFIG}
-        data={points}
-        key={competitor}
-        xDataKey="day"
-      >
-        <EChartsBarChart.Grid />
-        <EChartsBarChart.XAxis dataKey="day" />
-        <EChartsBarChart.YAxis />
-        <EChartsBarChart.Bar
-          bufferBar={incompleteTail}
-          dataKey={GEO_COMPETITOR_DETAIL_SERIES_KEY}
-        />
-        <EChartsBarChart.Tooltip />
-      </EChartsBarChart>
+      <CompetitorMentionsChartContent
+        competitor={competitor}
+        incompleteTail={incompleteTail}
+        points={points}
+      />
     );
   }
 

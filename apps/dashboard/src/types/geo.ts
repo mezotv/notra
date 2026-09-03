@@ -803,6 +803,12 @@ export interface GeoCompetitorDetailPoint {
   [key: string]: string | number;
 }
 
+export interface CompetitorMentionsChartProps {
+  competitor: string;
+  incompleteTail: boolean;
+  points: GeoCompetitorDetailPoint[];
+}
+
 export interface GeoCompetitorMentionStats {
   latest: number;
   latestDay: string;

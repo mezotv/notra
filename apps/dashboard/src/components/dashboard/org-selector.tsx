@@ -38,7 +38,6 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { useQueryClient } from "@tanstack/react-query";
 import { useCustomer } from "autumn-js/react";
 import { useTheme } from "next-themes";
 import dynamic from "next/dynamic";
@@ -49,13 +48,12 @@ import { toast } from "sonner";
 import { CreditBalanceMenuItem } from "@/components/billing/credit-balance-button";
 import { CreditTopupModal } from "@/components/billing/credit-topup-modal";
 import { useFeedback } from "@/components/dashboard/feedback-context";
+import { useOrganizationSwitch } from "@/components/providers/organization-switch-provider";
 import { trackEvent } from "@/lib/analytics/posthog-client";
-import { authClient } from "@/lib/auth/client";
 import { cn, errorMessageOr } from "@/lib/utils";
 import type { OrganizationOptionsListProps } from "@/types/dashboard";
 import { planDisplayName } from "@/utils/billing-plans";
 import { setLastVisitedOrganization } from "@/utils/cookies";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 import {
   type Organization,
@@ -148,6 +146,7 @@ function OrgSelectorTrigger({
     <DropdownMenuTrigger
       render={
         <SidebarMenuButton
+          aria-busy={isSwitching}
           className="data-popup-open:bg-sidebar-accent/90 data-popup-open:text-sidebar-accent-foreground data-popup-open:ring-sidebar-border/70 min-w-0 cursor-pointer data-popup-open:ring-1"
           disabled={isSwitching}
           size="lg"
@@ -269,10 +268,14 @@ function OrganizationOptionsList({
 export function OrgSelector() {
   const router = useRouter();
   const pathname = usePathname();
-  const queryClient = useQueryClient();
   const { isMobile, state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const dropdownSide = isMobile ? "bottom" : isCollapsed ? "right" : "top";
+  let dropdownSide: "bottom" | "right" | "top" = "top";
+  if (isMobile) {
+    dropdownSide = "bottom";
+  } else if (isCollapsed) {
+    dropdownSide = "right";
+  }
   const { setTheme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
@@ -286,6 +289,13 @@ export function OrgSelector() {
   }
   const { activeOrganization, organizations, isLoading } =
     useOrganizationsContext();
+  const {
+    activateOrganization,
+    getOrganizationSwitchTargetSlug,
+    isOrganizationSwitching,
+    isOrganizationSwitchUiBlocked,
+    isOrganizationSwitchCurrent,
+  } = useOrganizationSwitch();
   const { data: customer } = useCustomer({
     expand: ["subscriptions.plan"],
   });
@@ -293,10 +303,9 @@ export function OrgSelector() {
   useHotkey("D", toggleTheme);
 
   const [isPending, startTransition] = useTransition();
-  const [isSwitching, setIsSwitching] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isTopupModalOpen, setIsTopupModalOpen] = useState(false);
-  const isNavigating = isSwitching || isPending;
+  const isNavigating = isOrganizationSwitchUiBlocked || isPending;
 
   const activeSubscription = customer?.subscriptions.find(
     (subscription) => !subscription.addOn && subscription.status === "active"
@@ -310,7 +319,11 @@ export function OrgSelector() {
     : null;
 
   async function switchOrganization(org: Organization) {
-    if (org.slug === activeOrganization?.slug) {
+    if (
+      (isOrganizationSwitchUiBlocked &&
+        getOrganizationSwitchTargetSlug() === org.slug) ||
+      (org.slug === activeOrganization?.slug && !isOrganizationSwitching)
+    ) {
       return;
     }
 
@@ -326,48 +339,34 @@ export function OrgSelector() {
     }
 
     router.prefetch(targetPath);
-    setIsSwitching(true);
-
-    try {
-      const { error } = await authClient.organization.setActive({
-        organizationId: org.id,
-      });
-
-      if (error) {
-        const message = errorMessageOr(
-          error.message,
-          "Failed to switch organization"
-        );
-        toast.error(message);
-        setIsSwitching(false);
-        return;
-      }
-
-      await setLastVisitedOrganization(org.slug);
-      trackEvent(POSTHOG_EVENTS.ORG_SWITCHED, {
-        from_organization_id: activeOrganization?.id ?? null,
-        to_organization_id: org.id,
-        organization_count: organizations.length,
-      });
-      queryClient.invalidateQueries({ refetchType: "none" });
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.AUTH.activeOrganization,
-        }),
-        queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.AUTH.session,
-        }),
-      ]);
-
-      setIsSwitching(false);
-      startTransition(() => {
-        router.replace(targetPath);
-      });
-    } catch (error) {
-      toast.error("Failed to switch organization");
-      console.error(error);
-      setIsSwitching(false);
+    const activation = await activateOrganization(org.slug, org.id);
+    if (activation.status === "stale") {
+      return;
     }
+    if (activation.status !== "activated") {
+      toast.error(
+        errorMessageOr(
+          activation.message,
+          activation.status === "confirmation-failed"
+            ? "Organization changed, but refreshing its data failed"
+            : "Failed to switch organization"
+        )
+      );
+      return;
+    }
+    if (!isOrganizationSwitchCurrent(activation.switchId)) {
+      return;
+    }
+
+    setLastVisitedOrganization(org.slug).catch(() => undefined);
+    trackEvent(POSTHOG_EVENTS.ORG_SWITCHED, {
+      from_organization_id: activeOrganization?.id ?? null,
+      to_organization_id: org.id,
+      organization_count: organizations.length,
+    });
+    startTransition(() => {
+      router.replace(targetPath);
+    });
   }
 
   function handleCreateOrganization() {
@@ -397,6 +396,9 @@ export function OrgSelector() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
+        <span aria-live="polite" className="sr-only" role="status">
+          {isOrganizationSwitching ? "Switching organization" : ""}
+        </span>
         <DropdownMenu>
           {shouldShowTrigger ? (
             <OrgSelectorTrigger

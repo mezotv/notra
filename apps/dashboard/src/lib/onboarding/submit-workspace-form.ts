@@ -62,6 +62,7 @@ export async function submitWorkspaceForm({
     }
   } else {
     const { data, error } = await authClient.organization.create({
+      keepCurrentActiveOrganization: true,
       name: parsed.data.name,
       slug: parsed.data.slug,
       logo: generateOrganizationAvatar(parsed.data.slug),

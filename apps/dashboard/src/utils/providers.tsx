@@ -17,6 +17,7 @@ import { Suspense } from "react";
 import { toast } from "sonner";
 
 import { AutumnOrgProvider } from "@/components/providers/autumn-org-provider";
+import { OrganizationSwitchProvider } from "@/components/providers/organization-switch-provider";
 import { PostHogIdentity } from "@/components/providers/posthog-identity";
 import { POSTHOG_PROJECT_TOKEN } from "@/constants/posthog";
 import { useMcpConnectionToast } from "@/lib/hooks/use-mcp-connection-toast";
@@ -115,18 +116,20 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <TooltipProvider delay={500}>
             <AutumnOrgProvider>
               <NuqsAdapter>
-                <RealtimeProvider
-                  api={{ url: "/api/realtime", withCredentials: true }}
-                  maxReconnectAttempts={5}
-                >
-                  {children}
-                </RealtimeProvider>
-                {POSTHOG_PROJECT_TOKEN ? (
-                  <Suspense fallback={null}>
-                    <PostHogIdentity />
-                  </Suspense>
-                ) : null}
-                <DatabuddyAnalytics />
+                <OrganizationSwitchProvider>
+                  <RealtimeProvider
+                    api={{ url: "/api/realtime", withCredentials: true }}
+                    maxReconnectAttempts={5}
+                  >
+                    {children}
+                  </RealtimeProvider>
+                  {POSTHOG_PROJECT_TOKEN ? (
+                    <Suspense fallback={null}>
+                      <PostHogIdentity />
+                    </Suspense>
+                  ) : null}
+                  <DatabuddyAnalytics />
+                </OrganizationSwitchProvider>
               </NuqsAdapter>
               <Toaster position="top-center" />
             </AutumnOrgProvider>

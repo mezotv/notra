@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import { resetPostHogIdentity } from "@/lib/analytics/posthog-client";
 import { isNextRedirectError } from "@/lib/auth/redirect-error";
 import {
   deleteUserAction,
@@ -33,7 +34,7 @@ async function fetchSession(): Promise<ClientSessionData | null> {
   const response = await fetch("/api/session", { cache: "no-store" });
 
   if (!response.ok) {
-    return null;
+    throw new Error(`Failed to load session (${response.status})`);
   }
 
   return response.json();
@@ -88,6 +89,7 @@ async function signOut(options?: SignOutOptions) {
       throw error;
     }
   }
+  resetPostHogIdentity();
   options?.fetchOptions?.onSuccess?.();
 }
 

@@ -41,7 +41,10 @@ import {
   billingInterval,
   planSelectedProperties,
 } from "@/lib/analytics/billing-events";
-import { trackEvent } from "@/lib/analytics/posthog-client";
+import {
+  trackEvent,
+  trackEventBeforeNavigation,
+} from "@/lib/analytics/posthog-client";
 import { attachPlanWithAddons } from "@/lib/billing/attach-plan";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import type { BillingPlanGroup, PlanCardButton } from "@/types/billing/plan";
@@ -157,6 +160,11 @@ function BillingPageContent() {
       });
 
       if (result.paymentUrl) {
+        await trackEventBeforeNavigation(POSTHOG_EVENTS.CHECKOUT_REDIRECTED, {
+          plan_id: planId,
+          surface: PLAN_SURFACES.BILLING_PAGE,
+          zdr: includeZdr,
+        });
         window.location.assign(result.paymentUrl);
       } else {
         await refetch();

@@ -1,5 +1,14 @@
 import type { IconSvgElement } from "@hugeicons/react";
 
+import type { CommandPaletteOpenSource } from "@/types/analytics/studio-events";
+
+export interface CommandPaletteContextValue {
+  hasOpened: boolean;
+  open: boolean;
+  openSource: CommandPaletteOpenSource | null;
+  setOpen: (open: boolean, source?: CommandPaletteOpenSource) => void;
+}
+
 export type CommandSection =
   | "Navigation"
   | "GEO"

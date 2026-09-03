@@ -9,6 +9,8 @@ import {
   PermissionOption,
   PermissionRow,
 } from "@notra/ui/components/ui/permission-selector";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -19,7 +21,6 @@ import { JourneyPathsCard } from "@/components/geo/journey-paths-card";
 import { JourneysCard } from "@/components/geo/journeys-card";
 import { LanguagePerformanceCard } from "@/components/geo/language-performance-card";
 import { MentionRateCard } from "@/components/geo/mention-rate-card";
-import { MentionTrendCard } from "@/components/geo/mention-trend-card";
 import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
@@ -33,6 +34,20 @@ import { toGeoTab } from "@/utils/geo-tabs";
 
 const TAB_LINK_CLASS =
   "text-muted-foreground text-xs capitalize underline-offset-4 hover:text-foreground hover:underline";
+
+const MentionTrendCard = dynamic(
+  () =>
+    import("@/components/geo/mention-trend-card").then(
+      (module) => module.MentionTrendCard
+    ),
+  {
+    loading: () => (
+      <div aria-label="Loading mention trend chart" role="status">
+        <Skeleton aria-hidden className="min-h-64 w-full rounded-2xl" />
+      </div>
+    ),
+  }
+);
 
 function TriggerCount({ count }: { count: number }) {
   if (count <= 0) {

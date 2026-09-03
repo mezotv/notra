@@ -6,6 +6,7 @@ import {
   LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
   LAST_VISITED_PROJECT_COOKIE,
   LAST_VISITED_PROJECT_COOKIE_MAX_AGE,
+  LAST_VISITED_PROJECT_COOKIE_MAX_ORGANIZATIONS,
   SIDEBAR_MODE_COOKIE,
   SIDEBAR_MODE_COOKIE_MAX_AGE,
 } from "@/constants/cookies";
@@ -14,26 +15,56 @@ import { isSidebarMode } from "@/utils/nav";
 
 type CookieJar = RequestCookies | ReadonlyRequestCookies;
 
-function parseLastVisitedProject(
-  value: string | undefined,
-  organizationSlug: string
-): string | undefined {
+function parseLastVisitedProjects(value: string | undefined) {
   if (!value) {
-    return;
-  }
-
-  const [storedSlug, projectId, extra] = value.split(":");
-  if (!(storedSlug && projectId) || extra !== undefined) {
-    return;
+    return new Map<string, string>();
   }
 
   try {
-    return decodeURIComponent(storedSlug) === organizationSlug
-      ? decodeURIComponent(projectId)
-      : undefined;
+    const parsed: unknown = JSON.parse(decodeURIComponent(value));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return new Map<string, string>();
+    }
+    return new Map(
+      Object.entries(parsed).filter(
+        (entry): entry is [string, string] => typeof entry[1] === "string"
+      )
+    );
   } catch {
-    return;
+    const [storedSlug, projectId, extra] = value.split(":");
+    if (!(storedSlug && projectId) || extra !== undefined) {
+      return new Map<string, string>();
+    }
+    try {
+      return new Map([
+        [decodeURIComponent(storedSlug), decodeURIComponent(projectId)],
+      ]);
+    } catch {
+      return new Map<string, string>();
+    }
   }
+}
+
+export function parseLastVisitedProject(
+  value: string | undefined,
+  organizationSlug: string
+): string | undefined {
+  return parseLastVisitedProjects(value).get(organizationSlug);
+}
+
+export function updateLastVisitedProjects(
+  value: string | undefined,
+  organizationSlug: string,
+  projectId: string
+): string {
+  const projects = parseLastVisitedProjects(value);
+  projects.delete(organizationSlug);
+  projects.set(organizationSlug, projectId);
+
+  const recentProjects = [...projects.entries()].slice(
+    -LAST_VISITED_PROJECT_COOKIE_MAX_ORGANIZATIONS
+  );
+  return encodeURIComponent(JSON.stringify(Object.fromEntries(recentProjects)));
 }
 
 function readClientCookie(name: string): string | undefined {
@@ -107,7 +138,11 @@ export const setLastVisitedProject = async (
 ): Promise<void> => {
   await setClientCookie(
     LAST_VISITED_PROJECT_COOKIE,
-    `${encodeURIComponent(organizationSlug)}:${encodeURIComponent(projectId)}`,
+    updateLastVisitedProjects(
+      readClientCookie(LAST_VISITED_PROJECT_COOKIE),
+      organizationSlug,
+      projectId
+    ),
     maxAge
   );
 };

@@ -7,6 +7,7 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { Button } from "@/components/button";
@@ -70,6 +71,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 }
 
 function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
+  const pathname = usePathname();
   const { projectId } = useGeoProjectScope();
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
@@ -93,7 +95,10 @@ function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
   const [importOpen, setImportOpen] = useState(false);
 
   useHotkey("C", () => setManagerOpen(true), {
-    enabled: !managerOpen && !importOpen,
+    enabled:
+      pathname === `/${organizationSlug}/geo/competitors` &&
+      !managerOpen &&
+      !importOpen,
   });
 
   if (isPending) {

@@ -19,7 +19,10 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
-import { trackEvent } from "@/lib/analytics/posthog-client";
+import {
+  trackEvent,
+  trackEventBeforeNavigation,
+} from "@/lib/analytics/posthog-client";
 
 function formatDollars(cents: number) {
   return new Intl.NumberFormat("en-US", {
@@ -98,7 +101,7 @@ export function CreditTopupContent({ onSuccess }: CreditTopupContentProps) {
       });
 
       if (result.paymentUrl) {
-        trackEvent(POSTHOG_EVENTS.CHECKOUT_REDIRECTED, {
+        await trackEventBeforeNavigation(POSTHOG_EVENTS.CHECKOUT_REDIRECTED, {
           plan_id: ADDONS.AI_CREDITS_TOPUP,
           amount_dollars: amountDollars,
           is_preset: isPreset,

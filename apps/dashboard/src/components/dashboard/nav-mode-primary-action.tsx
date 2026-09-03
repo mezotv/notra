@@ -4,12 +4,17 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { GEO_WRITER_NAV_LINK } from "@notra/geo-core/constants/geo";
 import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { cn } from "@notra/ui/lib/utils";
-import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useState } from "react";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/button";
 import {
+  LazyCreateContentDialog,
+  preloadCreateContentDialog,
+} from "@/components/content/lazy-create-content-dialog";
+import {
+  CREATE_CONTENT_HOTKEY_EXCLUDED_PATHS,
   NAV_PRIMARY_ACTIONS,
   SIDEBAR_MODE_ENTER_CLASS,
   SIDEBAR_MODE_EXIT_LEFT_CLASS,
@@ -21,14 +26,6 @@ import { useHasGeoFeature } from "@/lib/hooks/use-plan";
 import type { NavModePrimaryActionProps } from "@/types/components/nav";
 import { geoNavHref } from "@/utils/geo-paths";
 
-const CreateContentDialog = dynamic(
-  () =>
-    import("@/components/content/create-content-dialog").then(
-      (mod) => mod.CreateContentDialog
-    ),
-  { ssr: false }
-);
-
 const ACTION_CLASS = `col-start-1 row-start-1 w-full cursor-pointer group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:px-0 ${SIDEBAR_MODE_FADE_CLASS}`;
 
 export function NavModePrimaryAction({
@@ -38,8 +35,8 @@ export function NavModePrimaryAction({
   projectId,
 }: NavModePrimaryActionProps) {
   const { isLocked: geoLocked } = useHasGeoFeature();
+  const pathname = usePathname();
   const [createOpen, setCreateOpen] = useState(false);
-  const [createMounted, setCreateMounted] = useState(false);
   const showWrite = !geoLocked;
   const geoActive = mode === "geo";
   const studioActive = mode === "studio";
@@ -47,8 +44,11 @@ export function NavModePrimaryAction({
   const writeAction = NAV_PRIMARY_ACTIONS.geo;
   const createAction = NAV_PRIMARY_ACTIONS.studio;
 
+  useEffect(() => {
+    setCreateOpen(false);
+  }, [organizationId, pathname]);
+
   function openCreate() {
-    setCreateMounted(true);
     setCreateOpen(true);
   }
 
@@ -100,6 +100,8 @@ export function NavModePrimaryAction({
                 )}
                 inert={studioActive ? undefined : true}
                 onClick={openCreate}
+                onFocus={preloadCreateContentDialog}
+                onMouseEnter={preloadCreateContentDialog}
                 size="sm"
                 tabIndex={studioActive ? undefined : -1}
                 title={createAction.label}
@@ -113,15 +115,18 @@ export function NavModePrimaryAction({
           </SidebarGroup>
         </div>
       </div>
-      {createMounted && (
-        <CreateContentDialog
-          entry="nav_primary"
-          hideTrigger
-          onOpenChange={setCreateOpen}
-          open={createOpen}
-          organizationId={organizationId}
-        />
-      )}
+      <LazyCreateContentDialog
+        enableHotkey={
+          !CREATE_CONTENT_HOTKEY_EXCLUDED_PATHS.some(
+            (path) => pathname === `/${slug}${path}`
+          )
+        }
+        entry="nav_primary"
+        hideTrigger
+        onOpenChange={setCreateOpen}
+        open={createOpen}
+        organizationId={organizationId}
+      />
     </>
   );
 }

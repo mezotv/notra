@@ -28,6 +28,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useRef } from "react";
 
 import { useCommandPalette } from "@/components/command-palette/command-palette-context";
+import { preloadCommandPalette } from "@/components/command-palette/lazy-command-palette";
 import { BrandTopbarIdentitySelector } from "@/components/dashboard/brand-topbar-identity-selector";
 import { ChatTopbarTitle } from "@/components/dashboard/chat-topbar-title";
 import { ContentTopbarTitle } from "@/components/dashboard/content-topbar-title";
@@ -329,6 +330,8 @@ export function SiteHeader() {
           aria-label="Search"
           className="bg-background/60 text-muted-foreground hover:bg-muted/60 @container/search hidden h-8 w-48 cursor-pointer items-center justify-center gap-2 rounded-lg border px-2 text-sm transition-colors md:flex lg:w-64 xl:w-80 @[8rem]/search:justify-start @[8rem]/search:px-3"
           onClick={() => setCommandPaletteOpen(true)}
+          onFocus={preloadCommandPalette}
+          onMouseEnter={preloadCommandPalette}
           type="button"
         >
           <HugeiconsIcon className="shrink-0" icon={SearchIcon} size={16} />

@@ -17,10 +17,10 @@ import { Input } from "@notra/ui/components/ui/input";
 import { useMemo, useState } from "react";
 
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
-import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
+import { LazyEngineFamilySheet } from "@/components/geo/lazy-engine-family-sheet";
 import {
   InstrumentEmpty,
   InstrumentSection,
@@ -248,18 +248,20 @@ export function EngineRateTable({
           />
         </div>
       )}
-      <EngineFamilySheet
-        family={selected}
-        onOpenChange={(open) => {
-          if (!open) {
-            setSelected(null);
-          }
-        }}
-        open={selected !== null}
-        organizationSlug={organizationSlug}
-        promptResults={promptResults}
-        timeseriesPoints={timeseriesPoints}
-      />
+      {selected ? (
+        <LazyEngineFamilySheet
+          family={selected}
+          onOpenChange={(open) => {
+            if (!open) {
+              setSelected(null);
+            }
+          }}
+          open
+          organizationSlug={organizationSlug}
+          promptResults={promptResults}
+          timeseriesPoints={timeseriesPoints}
+        />
+      ) : null}
     </InstrumentSection>
   );
 }

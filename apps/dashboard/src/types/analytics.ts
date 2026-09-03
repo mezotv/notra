@@ -397,6 +397,10 @@ export interface AccountEngagementPoint {
   [key: string]: string | number;
 }
 
+export interface AccountEngagementChartProps {
+  points: AccountEngagementPoint[];
+}
+
 export interface AccountIdentity {
   provider: string;
   providerAccountId: string;

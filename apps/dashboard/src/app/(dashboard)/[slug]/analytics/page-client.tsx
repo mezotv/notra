@@ -1,12 +1,11 @@
 "use client";
 
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useReducedMotion } from "motion/react";
+import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
 
-import { AccountSeriesChartCard } from "@/components/analytics/account-series-chart-card";
 import { useAnalyticsAccounts } from "@/components/analytics/analytics-context";
-import { FollowersCard } from "@/components/analytics/followers-card";
-import { ImpressionsShareCard } from "@/components/analytics/impressions-share-card";
 import { PostingPerformanceCard } from "@/components/analytics/posting-performance-card";
 import { AnalyticsRangePicker } from "@/components/analytics/range-picker";
 import { TopPostsCard } from "@/components/analytics/top-posts-card";
@@ -28,6 +27,34 @@ import {
 } from "@/utils/analytics-charts";
 
 const REVEAL_DELAY = 120;
+
+const analyticsChartLoading = () => (
+  <div aria-label="Loading analytics chart" role="status">
+    <Skeleton aria-hidden className="min-h-64 w-full rounded-2xl" />
+  </div>
+);
+
+const AccountSeriesChartCard = dynamic(
+  () =>
+    import("@/components/analytics/account-series-chart-card").then(
+      (module) => module.AccountSeriesChartCard
+    ),
+  { loading: analyticsChartLoading }
+);
+const FollowersCard = dynamic(
+  () =>
+    import("@/components/analytics/followers-card").then(
+      (module) => module.FollowersCard
+    ),
+  { loading: analyticsChartLoading }
+);
+const ImpressionsShareCard = dynamic(
+  () =>
+    import("@/components/analytics/impressions-share-card").then(
+      (module) => module.ImpressionsShareCard
+    ),
+  { loading: analyticsChartLoading }
+);
 
 export default function PageClient() {
   const {

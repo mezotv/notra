@@ -26,7 +26,10 @@ import {
   billingInterval,
   planSelectedProperties,
 } from "@/lib/analytics/billing-events";
-import { trackEvent } from "@/lib/analytics/posthog-client";
+import {
+  trackEvent,
+  trackEventBeforeNavigation,
+} from "@/lib/analytics/posthog-client";
 import { attachPlanWithAddons } from "@/lib/billing/attach-plan";
 import type { BillingPlanGroup } from "@/types/billing/plan";
 import type { GeoUpgradeDialogProps } from "@/types/components/geo";
@@ -102,6 +105,11 @@ export function GeoUpgradeDialog({
         successUrl: `${window.location.origin}/${slug}/geo`,
       });
       if (result.paymentUrl) {
+        await trackEventBeforeNavigation(POSTHOG_EVENTS.CHECKOUT_REDIRECTED, {
+          plan_id: planId,
+          surface: PLAN_SURFACES.GEO_PAYWALL,
+          zdr: includeZdr,
+        });
         window.location.assign(result.paymentUrl);
         return;
       }

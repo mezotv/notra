@@ -38,6 +38,8 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+.hoplite/
+artifacts/
 
 # Symlinked skill directories (source is in .agents/skills/)
 .claude/skills/

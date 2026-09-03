@@ -15,10 +15,11 @@ import {
   sparklineTrend,
   trafficSparklineDays,
 } from "@notra/geo-core/utils/ai-traffic";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
+import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
-import { TrafficHero } from "@/components/geo/traffic-hero";
 import { TrafficMarkdownCell } from "@/components/geo/traffic-markdown-cell";
 import { TrafficPurposeCell } from "@/components/geo/traffic-purpose-cell";
 import { TrafficSourceGroupCell } from "@/components/geo/traffic-source-group-cell";
@@ -34,6 +35,20 @@ import {
   groupTrafficSources,
   trafficGroupKey,
 } from "@/utils/ai-traffic-groups";
+
+const TrafficHero = dynamic(
+  () =>
+    import("@/components/geo/traffic-hero").then(
+      (module) => module.TrafficHero
+    ),
+  {
+    loading: () => (
+      <div aria-label="Loading AI traffic chart" role="status">
+        <Skeleton aria-hidden className="h-96 w-full rounded-2xl" />
+      </div>
+    ),
+  }
+);
 
 export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
   const { sources, totals, points } = traffic ?? GEO_EMPTY_TRAFFIC_RESPONSE;

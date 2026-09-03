@@ -29,6 +29,7 @@ import { useEffect, useState } from "react";
 import { GeoProjectCreateDialog } from "@/components/geo/project-create-dialog";
 import { ProjectLogo } from "@/components/geo/project-logo";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useOrganizationSwitch } from "@/components/providers/organization-switch-provider";
 import {
   GEO_SETTINGS_NAV_LINK,
   NAV_NEW_PROJECT_LABEL,
@@ -54,12 +55,21 @@ const GEO_SETTINGS_ITEM = resolveNavItems([GEO_SETTINGS_NAV_LINK]).at(0);
 export function SidebarProjectSwitcher() {
   const router = useRouter();
   const { activeOrganization } = useOrganizationsContext();
+  const {
+    isOrganizationSwitching,
+    isOrganizationSwitchUiBlocked,
+    organizationSwitchId,
+    organizationSwitchPhase,
+    organizationSwitchTargetSlug,
+    finishOrganizationSwitch,
+    unblockOrganizationSwitch,
+  } = useOrganizationSwitch();
   const organizationId = activeOrganization?.id ?? "";
   const slug = activeOrganization?.slug ?? "";
   const [projectParam, setProjectParam] = useGeoProjectQueryState();
   const [createOpen, setCreateOpen] = useState(false);
 
-  const { data, isPending } = useGeoProjects(organizationId);
+  const { data, isError, isPending } = useGeoProjects(organizationId);
   const { data: brandData } = useBrandSettings(organizationId);
   const loadedProjects = data?.projects;
   const projects = loadedProjects ?? [];
@@ -71,7 +81,38 @@ export function SidebarProjectSwitcher() {
     null;
 
   useEffect(() => {
-    if (loadedProjects === undefined || !slug) {
+    const isRestoringSwitchedOrganization =
+      isOrganizationSwitching &&
+      organizationSwitchPhase === "restoring-project" &&
+      organizationSwitchTargetSlug === slug;
+    if (
+      (isOrganizationSwitching && !isRestoringSwitchedOrganization) ||
+      !slug
+    ) {
+      return;
+    }
+
+    if (isRestoringSwitchedOrganization && isError) {
+      if (organizationSwitchId === null) {
+        return;
+      }
+      if (projectParam === null) {
+        finishOrganizationSwitch(organizationSwitchId, "project-load-error");
+        return;
+      }
+      void setProjectParam(null).then(
+        () =>
+          finishOrganizationSwitch(organizationSwitchId, "project-load-error"),
+        () =>
+          unblockOrganizationSwitch(
+            organizationSwitchId,
+            "project-url-update-failed"
+          )
+      );
+      return;
+    }
+
+    if (loadedProjects === undefined) {
       return;
     }
 
@@ -82,6 +123,9 @@ export function SidebarProjectSwitcher() {
       setLastVisitedProject(slug, selectedProject.id).catch(() => {
         // The current URL remains the source of truth if cookies fail.
       });
+      if (isRestoringSwitchedOrganization && organizationSwitchId !== null) {
+        finishOrganizationSwitch(organizationSwitchId, "project-ready");
+      }
       return;
     }
 
@@ -91,11 +135,42 @@ export function SidebarProjectSwitcher() {
       loadedProjects.at(0) ??
       null;
     const restoredProjectId = restoredProject?.id ?? null;
+    const restorationOutcome = restoredProject
+      ? "project-ready"
+      : "no-projects";
 
     if (projectParam !== restoredProjectId) {
-      setProjectParam(restoredProjectId);
+      const restoration = setProjectParam(restoredProjectId);
+      if (isRestoringSwitchedOrganization && organizationSwitchId !== null) {
+        void restoration.then(
+          () =>
+            finishOrganizationSwitch(organizationSwitchId, restorationOutcome),
+          () =>
+            unblockOrganizationSwitch(
+              organizationSwitchId,
+              "project-url-update-failed"
+            )
+        );
+      }
+      return;
     }
-  }, [loadedProjects, projectParam, setProjectParam, slug]);
+
+    if (isRestoringSwitchedOrganization && organizationSwitchId !== null) {
+      finishOrganizationSwitch(organizationSwitchId, restorationOutcome);
+    }
+  }, [
+    finishOrganizationSwitch,
+    isOrganizationSwitching,
+    isError,
+    loadedProjects,
+    organizationSwitchId,
+    organizationSwitchPhase,
+    organizationSwitchTargetSlug,
+    projectParam,
+    setProjectParam,
+    slug,
+    unblockOrganizationSwitch,
+  ]);
 
   const projectDomain = (brandSettingsId: string) =>
     getWebsiteDomain(
@@ -132,6 +207,7 @@ export function SidebarProjectSwitcher() {
               render={
                 <SidebarMenuButton
                   className="cursor-pointer"
+                  disabled={isOrganizationSwitchUiBlocked}
                   size="lg"
                   tooltip={activeProject.name}
                 >
@@ -168,6 +244,7 @@ export function SidebarProjectSwitcher() {
                 {projects.map((project) => (
                   <DropdownMenuItem
                     className="cursor-pointer gap-2 pr-8"
+                    disabled={isOrganizationSwitchUiBlocked}
                     key={project.id}
                     onClick={() => {
                       if (project.id !== activeProject.id) {
@@ -198,6 +275,7 @@ export function SidebarProjectSwitcher() {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="cursor-pointer gap-2"
+                disabled={isOrganizationSwitchUiBlocked}
                 onClick={() => setCreateOpen(true)}
               >
                 <HugeiconsIcon icon={PlusSignIcon} />
@@ -205,6 +283,7 @@ export function SidebarProjectSwitcher() {
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer gap-2"
+                disabled={isOrganizationSwitchUiBlocked}
                 onClick={() => router.push(settingsHref)}
               >
                 <HugeiconsIcon

@@ -1,10 +1,17 @@
-import posthog from "posthog-js";
+import type { RouterTransitionType } from "next";
 
-import { POSTHOG_CONFIG, POSTHOG_PROJECT_TOKEN } from "@/constants/posthog";
+import {
+  initializePostHogWhenIdle,
+  notePostHogNavigation,
+  observePostHogHistory,
+} from "@/lib/analytics/posthog-client";
 
-if (POSTHOG_PROJECT_TOKEN && typeof window !== "undefined") {
-  posthog.init(POSTHOG_PROJECT_TOKEN, {
-    ...POSTHOG_CONFIG,
-    tracing_headers: [window.location.hostname],
-  });
+observePostHogHistory();
+initializePostHogWhenIdle();
+
+export function onRouterTransitionStart(
+  url: string,
+  navigationType: RouterTransitionType
+): void {
+  notePostHogNavigation(url, navigationType);
 }

@@ -3,10 +3,22 @@ import type {
   OnDemandContentType,
 } from "@/schemas/content";
 import type { LookbackWindow } from "@/schemas/integrations";
+import type { ContentCreateEntry } from "@/types/analytics/studio-events";
 import type {
   PreviewResponse,
   RepositoryPreview,
 } from "@/types/content/preview";
+
+export interface CreateContentDialogProps {
+  enableHotkey?: boolean;
+  entry: ContentCreateEntry;
+  hideTrigger?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  open?: boolean;
+  organizationId: string;
+}
+
+export type LazyCreateContentDialogProps = CreateContentDialogProps;
 
 export type WizardStep = "formats" | "activity" | "identities";
 

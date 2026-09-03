@@ -14,22 +14,20 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import dynamic from "next/dynamic";
 import { useMemo } from "react";
 
-import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   ACCOUNT_DETAIL_MIN_POINTS,
   ACCOUNT_DETAIL_POSTS_LIMIT,
-  ACCOUNT_DETAIL_SERIES_KEY,
   ACCOUNT_DETAIL_WINDOW,
   ACCOUNT_POSTS_PAGE_TABLE_HEIGHT,
   ACCOUNT_POSTS_TABLE_HEIGHT,
   ANALYTICS_TIMESERIES_DAYS,
 } from "@/constants/analytics";
-import { CHART_PRIMARY_COLOR } from "@/constants/charts";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import {
   useEngagementTimeseries,
@@ -39,7 +37,6 @@ import {
 } from "@/lib/hooks/use-social-analytics";
 import { cn } from "@/lib/utils";
 import type { AccountDetailViewProps, TopPostItem } from "@/types/analytics";
-import type { ChartConfig } from "@/types/charts";
 import {
   buildAccountEngagementPoints,
   buildAccountIdentity,
@@ -52,15 +49,21 @@ import {
   leaderboardDetailMetrics,
   previewPostContent,
 } from "@/utils/analytics-charts";
-import { seriesColors } from "@/utils/chart-colors";
 import { isSquareTwitterAvatar } from "@/utils/twitter";
 
-const CHART_CONFIG: ChartConfig = {
-  [ACCOUNT_DETAIL_SERIES_KEY]: {
-    label: "Engagement",
-    colors: seriesColors(CHART_PRIMARY_COLOR),
-  },
-};
+const AccountEngagementChart = dynamic(
+  () =>
+    import("@/components/analytics/account-engagement-chart").then(
+      (module) => module.AccountEngagementChart
+    ),
+  {
+    loading: () => (
+      <div aria-label="Loading engagement chart" role="status">
+        <Skeleton aria-hidden className="h-52 w-full" />
+      </div>
+    ),
+  }
+);
 
 export function AccountDetailView({
   organizationSlug,
@@ -271,23 +274,7 @@ export function AccountDetailView({
         <h2 className="text-base font-semibold">Engagement over time</h2>
         {isEngagementLoading && <Skeleton className="h-52 w-full" />}
         {!isEngagementLoading && points.length >= ACCOUNT_DETAIL_MIN_POINTS && (
-          <EChartsAreaChart
-            className="h-52 w-full"
-            config={CHART_CONFIG}
-            curveType="monotone"
-            data={points}
-            enableHoverHighlight
-            xDataKey="day"
-          >
-            <EChartsAreaChart.Grid />
-            <EChartsAreaChart.XAxis dataKey="day" />
-            <EChartsAreaChart.YAxis />
-            <EChartsAreaChart.Area
-              dataKey={ACCOUNT_DETAIL_SERIES_KEY}
-              variant="gradient"
-            />
-            <EChartsAreaChart.Tooltip crosshair />
-          </EChartsAreaChart>
+          <AccountEngagementChart points={points} />
         )}
         {!isEngagementLoading && points.length < ACCOUNT_DETAIL_MIN_POINTS && (
           <p className="text-muted-foreground text-sm">

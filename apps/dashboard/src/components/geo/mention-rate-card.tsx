@@ -37,9 +37,9 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
-import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
+import { LazyEngineFamilySheet } from "@/components/geo/lazy-engine-family-sheet";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { TrafficBreakdownCard } from "@/components/geo/traffic-breakdown-card";
 import {
@@ -379,18 +379,20 @@ export function MentionRateCard({
             </div>
           </div>
         )}
-        <EngineFamilySheet
-          family={selected}
-          onOpenChange={(open) => {
-            if (!open) {
-              setSelected(null);
-            }
-          }}
-          open={selected !== null}
-          organizationSlug={organizationSlug}
-          promptResults={promptResults}
-          timeseriesPoints={timeseriesPoints}
-        />
+        {selected ? (
+          <LazyEngineFamilySheet
+            family={selected}
+            onOpenChange={(open) => {
+              if (!open) {
+                setSelected(null);
+              }
+            }}
+            open
+            organizationSlug={organizationSlug}
+            promptResults={promptResults}
+            timeseriesPoints={timeseriesPoints}
+          />
+        ) : null}
       </InstrumentModule>
     </div>
   );

@@ -9,6 +9,12 @@ import {
 export const POSTHOG_PROJECT_TOKEN =
   process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN;
 
+export const POSTHOG_IDLE_TIMEOUT_MS = 2000;
+export const POSTHOG_INITIALIZATION_TIMEOUT_MS = 10_000;
+export const POSTHOG_MAX_PENDING_OPERATIONS = 100;
+export const POSTHOG_NAVIGATION_WAIT_MS = 1000;
+export const POSTHOG_RETRY_DELAYS_MS = [1000, 5000, 30_000] as const;
+
 export const POSTHOG_INGEST_PATH = "/ingest";
 
 export const POSTHOG_UPSTREAM_HOST =
@@ -22,7 +28,7 @@ export const POSTHOG_CONFIG = {
   capture_dead_clicks: true,
   capture_exceptions: true,
   capture_pageleave: true,
-  capture_pageview: "history_change",
+  capture_pageview: false,
   defaults: "2026-05-30",
   disable_capture_url_hashes: true,
   disable_session_recording: false,

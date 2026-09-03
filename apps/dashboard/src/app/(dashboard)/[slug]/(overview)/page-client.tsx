@@ -156,6 +156,7 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
               </p>
             </div>
             <LazyCreateContentDialog
+              enableHotkey={false}
               entry="home"
               organizationId={organizationId}
             />

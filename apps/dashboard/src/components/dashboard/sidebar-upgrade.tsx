@@ -11,7 +11,10 @@ import { Button } from "@/components/button";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { PAYWALL_KINDS, PLAN_SURFACES } from "@/constants/analytics-events";
 import { billingInterval } from "@/lib/analytics/billing-events";
-import { trackEvent } from "@/lib/analytics/posthog-client";
+import {
+  trackEvent,
+  trackEventBeforeNavigation,
+} from "@/lib/analytics/posthog-client";
 import { toAnalyticsRoute } from "@/lib/analytics/route";
 import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
 import { groupBillingPlans, nextPlanGroup } from "@/utils/billing-plans";
@@ -112,7 +115,7 @@ export function SidebarUpgrade() {
         successUrl,
       });
       if (result.paymentUrl) {
-        trackEvent(POSTHOG_EVENTS.CHECKOUT_REDIRECTED, {
+        await trackEventBeforeNavigation(POSTHOG_EVENTS.CHECKOUT_REDIRECTED, {
           plan_id: targetPlan.id,
           zdr: false,
         });

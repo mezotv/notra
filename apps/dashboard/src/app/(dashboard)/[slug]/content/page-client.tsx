@@ -7,7 +7,10 @@ import { useMemo, useState } from "react";
 
 import { CollectionsTable } from "@/components/content/collections-table";
 import { CreateContentButton } from "@/components/content/create-content-button";
-import { CreateContentDialog } from "@/components/content/create-content-dialog";
+import {
+  LazyCreateContentDialog,
+  preloadCreateContentDialog,
+} from "@/components/content/lazy-create-content-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
@@ -80,6 +83,8 @@ export default function PageClient({
           <CreateContentButton
             disabled={!organizationId}
             onClick={() => setCreateOpen(true)}
+            onFocus={preloadCreateContentDialog}
+            onMouseEnter={preloadCreateContentDialog}
           />
         </header>
 
@@ -91,6 +96,8 @@ export default function PageClient({
               <CreateContentButton
                 disabled={!organizationId}
                 onClick={() => setCreateOpen(true)}
+                onFocus={preloadCreateContentDialog}
+                onMouseEnter={preloadCreateContentDialog}
               />
             }
             description="Generate your first piece of content to get started."
@@ -115,7 +122,8 @@ export default function PageClient({
           />
         ) : null}
       </div>
-      <CreateContentDialog
+      <LazyCreateContentDialog
+        enableHotkey={false}
         entry="content_list"
         hideTrigger
         onOpenChange={setCreateOpen}

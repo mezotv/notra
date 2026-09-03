@@ -36,3 +36,19 @@ export interface SetPersonPropertiesInput {
   set?: PostHogProperties;
   setOnce?: PostHogProperties;
 }
+
+export type PostHogStateOperationKey = "groups" | "identity";
+
+export type PostHogClient = (typeof import("posthog-js"))["default"];
+
+export type PostHogClientOperation = (posthog: PostHogClient) => void;
+
+export interface PendingPostHogOperation {
+  operation: PostHogClientOperation;
+  stateOperations: Map<PostHogStateOperationKey, PostHogClientOperation>;
+}
+
+export interface PendingPostHogNavigation {
+  navigationType: "popstate" | "pushState" | "replaceState";
+  url: string;
+}

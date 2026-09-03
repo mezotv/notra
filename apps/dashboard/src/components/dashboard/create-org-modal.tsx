@@ -17,6 +17,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
+import { useOrganizationSwitch } from "@/components/providers/organization-switch-provider";
 import { authClient } from "@/lib/auth/client";
 import { errorMessageOr, generateOrganizationAvatar } from "@/lib/utils";
 import { createOrganizationSchema, slugSchema } from "@/schemas/organization";
@@ -35,6 +36,7 @@ interface CreateOrgModalProps {
 export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { activateOrganization } = useOrganizationSwitch();
   const [isCreating, setIsCreating] = useState(false);
 
   const form = useForm({
@@ -48,6 +50,7 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
 
       try {
         const { data, error } = await authClient.organization.create({
+          keepCurrentActiveOrganization: true,
           name: value.name,
           slug: value.slug,
           logo: generateOrganizationAvatar(value.slug),
@@ -67,18 +70,18 @@ export function CreateOrgModal({ open, onOpenChange }: CreateOrgModalProps) {
           return;
         }
 
-        await authClient.organization.setActive({
-          organizationId: data.id,
-        });
+        const activation = await activateOrganization(data.slug, data.id);
+        if (activation.status !== "activated") {
+          setIsCreating(false);
+          toast.error(activation.message ?? "Failed to activate organization");
+          return;
+        }
 
         await setLastVisitedOrganization(data.slug);
 
         await Promise.allSettled([
           queryClient.invalidateQueries({
             queryKey: QUERY_KEYS.AUTH.organizations,
-          }),
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.AUTH.activeOrganization,
           }),
           queryClient.invalidateQueries({
             queryKey: ["owned-organizations"],

@@ -37,7 +37,6 @@ import {
   useSyncExternalStore,
   useTransition,
 } from "react";
-import { useHotkeys } from "react-hotkeys-hook";
 
 import { useFeedback } from "@/components/dashboard/feedback-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -144,7 +143,7 @@ function BrailleSpinner({ className }: { className?: string }) {
 }
 
 export function CommandPalette() {
-  const { open, setOpen } = useCommandPalette();
+  const { open, openSource, setOpen } = useCommandPalette();
   const { activeOrganization } = useOrganizationsContext();
   const { hasAiCredits } = useHasAiCreditsFeature();
   const router = useRouter();
@@ -163,22 +162,24 @@ export function CommandPalette() {
   const [, startNavigation] = useTransition();
   const { openFeedback: triggerFeedback } = useFeedback();
   const abortRef = useRef<AbortController | null>(null);
-  const openSourceRef = useRef<CommandPaletteOpenSource | null>(null);
   const wasOpenRef = useRef(false);
   const lastTrackedSearchRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (open && !wasOpenRef.current) {
       trackEvent(POSTHOG_EVENTS.COMMAND_PALETTE_OPENED, {
-        source: openSourceRef.current ?? "button",
+        source: openSource ?? "button",
       });
     }
     if (!open) {
-      openSourceRef.current = null;
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setQuery("");
+      setAiState({ status: "idle" });
       lastTrackedSearchRef.current = null;
     }
     wasOpenRef.current = open;
-  }, [open]);
+  }, [open, openSource]);
 
   const slug = activeOrganization?.slug ?? "";
   const organizationId = activeOrganization?.id ?? "";
@@ -362,25 +363,6 @@ export function CommandPalette() {
       setAiState({ status: "idle" });
     }
   };
-
-  useHotkeys(
-    "mod+k",
-    (event) => {
-      if (
-        !open &&
-        typeof document !== "undefined" &&
-        document.querySelector('[role="dialog"][data-state="open"]')
-      ) {
-        return;
-      }
-      event.preventDefault();
-      if (!open) {
-        openSourceRef.current = "hotkey";
-      }
-      handleOpenChange(!open);
-    },
-    { enableOnFormTags: true, enableOnContentEditable: true }
-  );
 
   useEffect(() => {
     return () => {

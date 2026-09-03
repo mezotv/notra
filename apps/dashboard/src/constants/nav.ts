@@ -63,6 +63,20 @@ export const GEO_TRAFFIC_NAV_LINK = "/geo/traffic";
 export const GEO_COMPETITORS_NAV_LINK = "/geo/competitors";
 export const GEO_SETTINGS_NAV_LINK = "/geo/settings";
 
+export const CREATE_CONTENT_HOTKEY_EXCLUDED_PATHS = [
+  API_KEYS_NAV_LINK,
+  BRAND_IDENTITY_NAV_LINK,
+  EVENTS_NAV_LINK,
+  GEO_COMPETITORS_NAV_LINK,
+  SCHEDULES_NAV_LINK,
+  SKILLS_NAV_LINK,
+  "/integrations/github",
+  "/integrations/granola",
+  "/integrations/linear",
+  "/integrations/mcp",
+  "/integrations/slack",
+] as const;
+
 export const SIDEBAR_DEFAULT_MODE: SidebarMode = "geo";
 export const SIDEBAR_DEFAULT_WIDTH = 256;
 export const SIDEBAR_MIN_WIDTH = 240;

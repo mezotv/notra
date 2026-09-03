@@ -45,6 +45,7 @@ import {
 } from "@/schemas/content/create-content-form";
 import type { ContentCreateEntry } from "@/types/analytics/studio-events";
 import type {
+  CreateContentDialogProps,
   IntegrationOption,
   StepProgressProps,
   WizardStep,
@@ -56,14 +57,6 @@ import {
   releaseSelectionFromKey,
   releaseSelectionToKey,
 } from "@/utils/content-preview";
-
-interface CreateContentDialogProps {
-  entry: ContentCreateEntry;
-  hideTrigger?: boolean;
-  onOpenChange?: (open: boolean) => void;
-  open?: boolean;
-  organizationId: string;
-}
 
 const STEP_ORDER: WizardStep[] = ["formats", "activity", "identities"];
 
@@ -90,6 +83,7 @@ function getDefaultContentFormValues(): CreateContentFormValues {
 }
 
 export function CreateContentDialog({
+  enableHotkey = true,
   entry,
   hideTrigger = false,
   onOpenChange,
@@ -111,6 +105,7 @@ export function CreateContentDialog({
   );
   const hotkeyEntryRef = useRef<ContentCreateEntry | null>(null);
   const trackedOpenRef = useRef(false);
+  const wasDialogOpenRef = useRef(open);
 
   useHotkey(
     "C",
@@ -120,7 +115,7 @@ export function CreateContentDialog({
         setDialogOpen(true);
       }
     },
-    { enabled: !open }
+    { enabled: enableHotkey && !open }
   );
 
   useEffect(() => {
@@ -387,6 +382,39 @@ export function CreateContentDialog({
     );
   }, [previewParamsKey, previewFailures]);
 
+  const resetWizard = useCallback(() => {
+    setStep("formats");
+    form.reset();
+    setSelectedCommitKeys(new Set());
+    setSelectedPrKeys(new Set());
+    setSelectedReleaseKeys(new Set());
+    setSelectedLinearKeys(new Set());
+    setSearchQuery("");
+    setAttemptedAdvance(false);
+    lastInitializedParamsRef.current = "";
+    selectionsTouchedRef.current = false;
+    integrationsInitializedRef.current = false;
+  }, [form]);
+
+  useEffect(() => {
+    const wasOpen = wasDialogOpenRef.current;
+    wasDialogOpenRef.current = open;
+    if (!(wasOpen && !open)) {
+      return;
+    }
+
+    const preserveState = openingAddRepoFlowRef.current || addRepoMode !== null;
+    openingAddRepoFlowRef.current = false;
+    if (preserveState) {
+      return;
+    }
+
+    setAddRepoOpen(false);
+    setAddRepoMode(null);
+    setWaitingForWebhookSetup(false);
+    resetWizard();
+  }, [addRepoMode, open, resetWizard]);
+
   const mutation = useMutation<
     { succeeded: number; total: number },
     Error,
@@ -486,20 +514,6 @@ export function CreateContentDialog({
     },
   });
 
-  const resetWizard = useCallback(() => {
-    setStep("formats");
-    form.reset();
-    setSelectedCommitKeys(new Set());
-    setSelectedPrKeys(new Set());
-    setSelectedReleaseKeys(new Set());
-    setSelectedLinearKeys(new Set());
-    setSearchQuery("");
-    setAttemptedAdvance(false);
-    lastInitializedParamsRef.current = "";
-    selectionsTouchedRef.current = false;
-    integrationsInitializedRef.current = false;
-  }, [form]);
-
   useEffect(() => {
     if (
       integrationsInitializedRef.current ||
@@ -518,20 +532,8 @@ export function CreateContentDialog({
   const handleOpenChange = useCallback(
     (next: boolean) => {
       setDialogOpen(next);
-      if (!next) {
-        const preserveState =
-          openingAddRepoFlowRef.current || addRepoMode !== null;
-        openingAddRepoFlowRef.current = false;
-        if (preserveState) {
-          return;
-        }
-        setAddRepoOpen(false);
-        setAddRepoMode(null);
-        setWaitingForWebhookSetup(false);
-        resetWizard();
-      }
     },
-    [addRepoMode, resetWizard, setDialogOpen]
+    [setDialogOpen]
   );
 
   const toggleFormat = useCallback(

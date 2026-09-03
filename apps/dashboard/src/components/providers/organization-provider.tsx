@@ -1,7 +1,7 @@
 "use client";
 
 import { useQueries, useQueryClient } from "@tanstack/react-query";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   type ReactNode,
@@ -13,8 +13,14 @@ import {
   useState,
 } from "react";
 
+import { useOrganizationSwitch } from "@/components/providers/organization-switch-provider";
 import { authClient } from "@/lib/auth/client";
 import { setLastVisitedOrganization } from "@/utils/cookies";
+import { serializeOrganizationMutation } from "@/utils/organization-mutation";
+import {
+  getOrganizationSlugFromPathname,
+  maskOrganizationPathname,
+} from "@/utils/organization-pathname";
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 export type Organization = NonNullable<
@@ -50,9 +56,17 @@ export function OrganizationsProvider({
 }) {
   const queryClient = useQueryClient();
   const pathname = usePathname();
+  const router = useRouter();
+  const {
+    activateOrganization,
+    cancelOrganizationSwitch,
+    getOrganizationSwitchTargetSlug,
+    isOrganizationSwitching,
+    markOrganizationPathSettled,
+    organizationSwitchId,
+  } = useOrganizationSwitch();
   const hasAutoSelectedRef = useRef(false);
   const lastSyncedSlugRef = useRef<string | null>(null);
-  const syncInProgressRef = useRef(false);
   const [optimisticActiveOrg, setOptimisticActiveOrg] =
     useState<Organization | null>(null);
 
@@ -74,6 +88,9 @@ export function OrganizationsProvider({
         queryKey: QUERY_KEYS.AUTH.activeOrganization,
         queryFn: async () => {
           const result = await authClient.organization.getFullOrganization();
+          if (result.error) {
+            throw new Error(result.error.message);
+          }
           return result.data ?? null;
         },
         staleTime: 5 * 60 * 1000,
@@ -85,16 +102,10 @@ export function OrganizationsProvider({
   const organizations =
     organizationsData ?? FALLBACK_ORGANIZATIONS_CONTEXT.organizations;
   const isLoading = isLoadingOrgs || isLoadingActive;
-  const slugFromPath = useMemo(() => {
-    const segments = pathname.split("/").filter(Boolean);
-    if (segments.length === 0) {
-      return null;
-    }
-    if (segments[0] === "account") {
-      return null;
-    }
-    return segments[0] ?? null;
-  }, [pathname]);
+  const slugFromPath = useMemo(
+    () => getOrganizationSlugFromPathname(pathname),
+    [pathname]
+  );
   const organizationFromPath = useMemo(
     () =>
       slugFromPath
@@ -154,13 +165,19 @@ export function OrganizationsProvider({
     }
     if (!slugFromPath) {
       lastSyncedSlugRef.current = null;
+      if (organizationSwitchId !== null) {
+        cancelOrganizationSwitch(organizationSwitchId);
+      }
+      markOrganizationPathSettled(null, null);
       return;
     }
-    if (activeOrganization?.slug === slugFromPath) {
+    const switchTargetSlug = getOrganizationSwitchTargetSlug();
+    if (isOrganizationSwitching && switchTargetSlug === slugFromPath) {
+      return;
+    }
+    if (!isOrganizationSwitching && activeOrganization?.slug === slugFromPath) {
       lastSyncedSlugRef.current = slugFromPath;
-      return;
-    }
-    if (syncInProgressRef.current) {
+      markOrganizationPathSettled(slugFromPath, activeOrganization.id);
       return;
     }
 
@@ -172,39 +189,44 @@ export function OrganizationsProvider({
     }
 
     lastSyncedSlugRef.current = slugFromPath;
-    syncInProgressRef.current = true;
     setOptimisticActiveOrg(organizationFromPath);
-    authClient.organization
-      .setActive({ organizationId: organizationFromPath.id })
+    activateOrganization(organizationFromPath.slug, organizationFromPath.id)
       .then((result) => {
-        if (result.error) {
-          console.error("Failed to sync organization:", result.error);
+        if (
+          result.status === "failed" ||
+          result.status === "confirmation-failed"
+        ) {
+          console.error("Failed to sync organization:", result.message);
           setOptimisticActiveOrg(null);
-          lastSyncedSlugRef.current = null;
-        } else {
-          queryClient.invalidateQueries({ refetchType: "none" });
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.AUTH.activeOrganization,
-          });
-          queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.AUTH.session,
-          });
+          lastSyncedSlugRef.current = organizationFromPath.slug;
+          if (result.status === "failed" && activeOrganization?.slug) {
+            const fallbackPath = maskOrganizationPathname(
+              pathname,
+              activeOrganization.slug
+            );
+            router.replace(`${fallbackPath}${window.location.search}`);
+          }
         }
       })
       .catch((error) => {
         console.error("Error syncing organization:", error);
         setOptimisticActiveOrg(null);
-        lastSyncedSlugRef.current = null;
-      })
-      .finally(() => {
-        syncInProgressRef.current = false;
+        lastSyncedSlugRef.current = organizationFromPath.slug;
       });
   }, [
+    activeOrganization?.id,
     activeOrganization?.slug,
+    activateOrganization,
+    cancelOrganizationSwitch,
+    getOrganizationSwitchTargetSlug,
+    isOrganizationSwitching,
     isLoadingActive,
     isLoadingOrgs,
     organizationFromPath,
-    queryClient,
+    markOrganizationPathSettled,
+    organizationSwitchId,
+    pathname,
+    router,
     slugFromPath,
   ]);
 
@@ -222,8 +244,9 @@ export function OrganizationsProvider({
       if (firstOrg) {
         hasAutoSelectedRef.current = true;
         setOptimisticActiveOrg(firstOrg);
-        authClient.organization
-          .setActive({ organizationId: firstOrg.id })
+        serializeOrganizationMutation(() =>
+          authClient.organization.setActive({ organizationId: firstOrg.id })
+        )
           .then((result) => {
             if (result.error) {
               console.error(
@@ -258,6 +281,7 @@ export function OrganizationsProvider({
     organizationsData,
     activeOrganization,
     queryClient,
+    router,
     slugFromPath,
   ]);
 

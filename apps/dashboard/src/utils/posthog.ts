@@ -1,14 +1,51 @@
+import type { RouterTransitionType } from "next";
 import type { CapturedNetworkRequest, CaptureResult } from "posthog-js";
+
+import type { PendingPostHogNavigation } from "@/types/analytics/posthog";
+import { maskOrganizationPathname } from "@/utils/organization-pathname";
 
 import {
   POSTHOG_DEFAULT_UI_HOST,
   POSTHOG_EU_UI_HOST,
+  POSTHOG_EXCEPTION_TIMESTAMP_PROPERTY,
   POSTHOG_MASKED_ORGANIZATION_SEGMENT,
   POSTHOG_URL_PROPERTY_PATTERN,
-} from "@/constants/posthog-redaction";
-import { maskOrganizationPathname } from "@/utils/organization-pathname";
+} from "../constants/posthog-redaction";
 
 const ABSOLUTE_URL_PATTERN = /^[a-z][a-z\d+.-]*:\/\//i;
+
+export function normalizePostHogPageViewUrl(
+  url: string,
+  baseUrl: string
+): string {
+  const normalizedUrl = new URL(url, baseUrl);
+  normalizedUrl.hash = "";
+  return normalizedUrl.href;
+}
+
+export function shouldIgnorePostHogNavigation(
+  url: string,
+  currentUrl: string,
+  navigationType: RouterTransitionType
+): boolean {
+  return (
+    navigationType !== "traverse" &&
+    normalizePostHogPageViewUrl(url, currentUrl) ===
+      normalizePostHogPageViewUrl(currentUrl, currentUrl)
+  );
+}
+
+export function resolvePostHogNavigationType(
+  navigationType: RouterTransitionType
+): PendingPostHogNavigation["navigationType"] {
+  if (navigationType === "push") {
+    return "pushState";
+  }
+  if (navigationType === "replace") {
+    return "replaceState";
+  }
+  return "popstate";
+}
 
 export function stripUrlQueryAndHash(url: string): string {
   const queryIndex = url.indexOf("?");
@@ -90,12 +127,30 @@ export function redactPostHogEvent(
     return null;
   }
 
+  const properties = redactUrlProperties(event.properties);
+  const exceptionTimestamp =
+    event.event === "$exception"
+      ? properties?.[POSTHOG_EXCEPTION_TIMESTAMP_PROPERTY]
+      : undefined;
+  let timestamp = event.timestamp;
+
+  if (properties && exceptionTimestamp !== undefined) {
+    delete properties[POSTHOG_EXCEPTION_TIMESTAMP_PROPERTY];
+    if (typeof exceptionTimestamp === "string") {
+      const occurredAt = new Date(exceptionTimestamp);
+      if (!Number.isNaN(occurredAt.valueOf())) {
+        timestamp = occurredAt;
+      }
+    }
+  }
+
   return {
     ...event,
-    properties: redactUrlProperties(event.properties),
+    properties,
     $set: event.$set ? redactUrlProperties(event.$set) : undefined,
     $set_once: event.$set_once
       ? redactUrlProperties(event.$set_once)
       : undefined,
+    timestamp,
   };
 }

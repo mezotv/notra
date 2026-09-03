@@ -21,6 +21,7 @@ import {
   type Organization,
   useOrganizationsContext,
 } from "@/components/providers/organization-provider";
+import { useOrganizationSwitch } from "@/components/providers/organization-switch-provider";
 import { OrganizationMembershipActionDialog } from "@/components/settings/organization-membership-action-dialog";
 import { authClient } from "@/lib/auth/client";
 import {
@@ -38,6 +39,11 @@ export function OrganizationsSection() {
   const queryClient = useQueryClient();
   const { organizations, activeOrganization, isLoading } =
     useOrganizationsContext();
+  const {
+    activateOrganization,
+    isOrganizationSwitchCurrent,
+    isOrganizationSwitching,
+  } = useOrganizationSwitch();
 
   const [isSwitching, setIsSwitching] = useState<string | null>(null);
   const [isProcessingOrgAction, setIsProcessingOrgAction] = useState<
@@ -61,21 +67,26 @@ export function OrganizationsSection() {
   );
 
   async function switchOrganization(org: Organization) {
-    if (org.slug === activeOrganization?.slug) {
+    if (org.slug === activeOrganization?.slug && !isOrganizationSwitching) {
       return;
     }
 
     setIsSwitching(org.id);
 
     try {
-      const { error } = await authClient.organization.setActive({
-        organizationId: org.id,
-      });
-
-      if (error) {
+      const activation = await activateOrganization(org.slug, org.id);
+      if (activation.status === "stale") {
+        setIsSwitching(null);
+        return;
+      }
+      if (activation.status !== "activated") {
         toast.error(
-          errorMessageOr(error.message, "Failed to switch organization")
+          errorMessageOr(activation.message, "Failed to switch organization")
         );
+        setIsSwitching(null);
+        return;
+      }
+      if (!isOrganizationSwitchCurrent(activation.switchId)) {
         setIsSwitching(null);
         return;
       }
@@ -131,13 +142,16 @@ export function OrganizationsSection() {
       if (activeOrganizationId === org.id) {
         const firstOrg = freshOrgs[0];
         if (firstOrg) {
-          await authClient.organization.setActive({
-            organizationId: firstOrg.id,
-          });
+          const activation = await activateOrganization(
+            firstOrg.slug,
+            firstOrg.id
+          );
+          if (activation.status !== "activated") {
+            throw new Error(
+              activation.message ?? "Failed to switch organization"
+            );
+          }
           await setLastVisitedOrganization(firstOrg.slug);
-          await queryClient.invalidateQueries({
-            queryKey: QUERY_KEYS.AUTH.activeOrganization,
-          });
           router.push(`/${firstOrg.slug}/settings/account`);
         }
       }

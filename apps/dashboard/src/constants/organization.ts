@@ -22,3 +22,5 @@ export const RESERVED_ORGANIZATION_SLUGS = [
   "privacy",
   "contact",
 ] as const;
+
+export const ORGANIZATION_SWITCH_RECOVERY_TIMEOUT_MS = 10_000;

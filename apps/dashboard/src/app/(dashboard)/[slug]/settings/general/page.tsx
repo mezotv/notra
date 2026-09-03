@@ -31,6 +31,7 @@ import { Button } from "@/components/button";
 import { XVerificationBadge } from "@/components/icons/x-verification-badge";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useOrganizationSwitch } from "@/components/providers/organization-switch-provider";
 import { DevSampleDataCard } from "@/components/settings/dev-sample-data-card";
 import { OrganizationMembershipActionDialog } from "@/components/settings/organization-membership-action-dialog";
 import { trackEvent } from "@/lib/analytics/posthog-client";
@@ -64,6 +65,7 @@ function GeneralSettingsPageContent({ params }: GeneralSettingsPageProps) {
   const queryClient = useQueryClient();
   const { getOrganization, activeOrganization, organizations } =
     useOrganizationsContext();
+  const { activateOrganization } = useOrganizationSwitch();
   const organization =
     activeOrganization?.slug === slug
       ? activeOrganization
@@ -140,13 +142,11 @@ function GeneralSettingsPageContent({ params }: GeneralSettingsPageProps) {
         return;
       }
 
-      await authClient.organization.setActive({
-        organizationId: firstOrg.id,
-      });
+      const activation = await activateOrganization(firstOrg.slug, firstOrg.id);
+      if (activation.status !== "activated") {
+        throw new Error(activation.message ?? "Failed to switch organization");
+      }
       await setLastVisitedOrganization(firstOrg.slug);
-      await queryClient.invalidateQueries({
-        queryKey: QUERY_KEYS.AUTH.activeOrganization,
-      });
 
       toast.success(successMessage);
       router.push(`/${firstOrg.slug}/settings/account`);
