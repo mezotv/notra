@@ -751,196 +751,178 @@ export function GeoGapsTable({
     [query, searchGaps]
   );
 
-  const promptColumns = useMemo<TableColumn<GeoPromptGapRow>[]>(
-    () => [
-      {
-        key: "prompt",
-        header: "Prompt",
-        width: "1fr",
-        cell: (row) => {
-          const headline = row.brief?.workingTitle ?? row.title;
-          return (
-            <ContentCell
-              lift={gapLift(row)}
-              subtitle={headline ? row.prompt : null}
-              title={headline ?? row.prompt}
-            />
-          );
-        },
-        sortValue: (row) => row.brief?.workingTitle ?? row.title ?? row.prompt,
-        sortable: true,
-      },
-      {
-        key: "opportunity",
-        header: "Opportunity",
-        width: "8.5rem",
-        cell: (row) => (
-          <OpportunityCell maxOpportunity={maxOpportunity} row={row} />
-        ),
-        sortValue: (row) => row.opportunity,
-        sortable: true,
-      },
-      {
-        key: "engines",
-        header: "Visible on",
-        width: "11rem",
-        cell: (row) => (
-          <VisibleOnCell
-            mentionedEngines={row.mentionedEngines}
-            missingEngines={row.engines}
+  const promptColumns: TableColumn<GeoPromptGapRow>[] = [
+    {
+      key: "prompt",
+      header: "Prompt",
+      width: "1fr",
+      cell: (row) => {
+        const headline = row.brief?.workingTitle ?? row.title;
+        return (
+          <ContentCell
+            lift={gapLift(row)}
+            subtitle={headline ? row.prompt : null}
+            title={headline ?? row.prompt}
           />
-        ),
-        sortValue: (row) =>
-          gapMissingEngineFamilies(row.mentionedEngines).length,
-        sortable: true,
+        );
       },
-      {
-        key: "competitors",
-        header: "Brands mentioned instead",
-        width: "11rem",
-        cell: (row) => (
-          <BrandMentionsCell
-            competitors={competitors}
-            discovered={row.discoveredCompetitors}
-            tracked={row.competitors}
-          />
-        ),
-        sortValue: (row) =>
-          row.competitors.length + row.discoveredCompetitors.length,
-        sortable: true,
-      },
-      {
-        key: "write",
-        header: "",
-        align: "right",
-        width: "10.5rem",
-        minWidth: "10.5rem",
-        cell: (row) => (
-          <WriteCell
-            action={gapWriteAction(row.brief)}
-            onOpenPost={onOpenPost}
-            onRescan={
-              gapCanRescan(row.brief) ? () => onRescanPrompt(row) : undefined
-            }
-            onWrite={() => onWritePrompt(row)}
-            opportunityBucket={gapMeterLevel(
-              maxOpportunity <= 0 ? 0 : row.opportunity / maxOpportunity
-            )}
-            postId={row.brief?.postId}
-            rescanDisabled={isScanning}
-            sourceKind="prompt"
-          />
-        ),
-      },
-    ],
-    [
-      competitors,
-      isScanning,
-      maxOpportunity,
-      onOpenPost,
-      onRescanPrompt,
-      onWritePrompt,
-    ]
-  );
+      sortValue: (row) => row.brief?.workingTitle ?? row.title ?? row.prompt,
+      sortable: true,
+    },
+    {
+      key: "opportunity",
+      header: "Opportunity",
+      width: "8.5rem",
+      cell: (row) => (
+        <OpportunityCell maxOpportunity={maxOpportunity} row={row} />
+      ),
+      sortValue: (row) => row.opportunity,
+      sortable: true,
+    },
+    {
+      key: "engines",
+      header: "Visible on",
+      width: "11rem",
+      cell: (row) => (
+        <VisibleOnCell
+          mentionedEngines={row.mentionedEngines}
+          missingEngines={row.engines}
+        />
+      ),
+      sortValue: (row) => gapMissingEngineFamilies(row.mentionedEngines).length,
+      sortable: true,
+    },
+    {
+      key: "competitors",
+      header: "Brands mentioned instead",
+      width: "11rem",
+      cell: (row) => (
+        <BrandMentionsCell
+          competitors={competitors}
+          discovered={row.discoveredCompetitors}
+          tracked={row.competitors}
+        />
+      ),
+      sortValue: (row) =>
+        row.competitors.length + row.discoveredCompetitors.length,
+      sortable: true,
+    },
+    {
+      key: "write",
+      header: "",
+      align: "right",
+      width: "10.5rem",
+      minWidth: "10.5rem",
+      cell: (row) => (
+        <WriteCell
+          action={gapWriteAction(row.brief)}
+          onOpenPost={onOpenPost}
+          onRescan={
+            gapCanRescan(row.brief) ? () => onRescanPrompt(row) : undefined
+          }
+          onWrite={() => onWritePrompt(row)}
+          opportunityBucket={gapMeterLevel(
+            maxOpportunity <= 0 ? 0 : row.opportunity / maxOpportunity
+          )}
+          postId={row.brief?.postId}
+          rescanDisabled={isScanning}
+          sourceKind="prompt"
+        />
+      ),
+    },
+  ];
 
-  const searchColumns = useMemo<TableColumn<GeoSearchGapRow>[]>(
-    () => [
-      {
-        key: "question",
-        header: "Source question",
-        width: "1fr",
-        cell: (row) => (
-          <QueriesCell prompt={row.prompt} queries={row.queries} />
-        ),
-        sortValue: (row) => row.prompt,
-        sortable: true,
+  const searchColumns: TableColumn<GeoSearchGapRow>[] = [
+    {
+      key: "question",
+      header: "Source question",
+      width: "1fr",
+      cell: (row) => <QueriesCell prompt={row.prompt} queries={row.queries} />,
+      sortValue: (row) => row.prompt,
+      sortable: true,
+    },
+    {
+      key: "title",
+      header: "Suggested asset",
+      width: "1fr",
+      cell: (row) => {
+        const headline = row.brief?.workingTitle ?? row.title;
+        return headline ? (
+          <ContentCell subtitle={null} title={headline} />
+        ) : (
+          <span className="text-muted-foreground text-xs">
+            Title is drafted when you write
+          </span>
+        );
       },
-      {
-        key: "title",
-        header: "Suggested asset",
-        width: "1fr",
-        cell: (row) => {
-          const headline = row.brief?.workingTitle ?? row.title;
-          return headline ? (
-            <ContentCell subtitle={null} title={headline} />
-          ) : (
-            <span className="text-muted-foreground text-xs">
-              Title is drafted when you write
-            </span>
-          );
-        },
-        sortValue: (row) => row.brief?.workingTitle ?? row.title ?? "",
-        sortable: true,
-      },
-      {
-        key: "impressions",
-        header: "Impressions",
-        width: "7rem",
-        cell: (row) => (
-          <NumberCell
-            emptyLabel={GEO_GAPS_EMPTY_CELL.impressions}
-            value={row.impressions}
-          />
-        ),
-        sortValue: (row) => row.impressions ?? -1,
-        sortable: true,
-      },
-      {
-        key: "clicks",
-        header: "Clicks",
-        width: "5.5rem",
-        cell: (row) => (
-          <NumberCell
-            emptyLabel={GEO_GAPS_EMPTY_CELL.impressions}
-            value={row.clicks}
-          />
-        ),
-        sortValue: (row) => row.clicks ?? -1,
-        sortable: true,
-      },
-      {
-        key: "position",
-        header: "Position",
-        width: "6rem",
-        cell: (row) => (
-          <NumberCell
-            emptyLabel={GEO_GAPS_EMPTY_CELL.impressions}
-            format={(value) => `#${value.toFixed(1)}`}
-            value={row.position}
-          />
-        ),
-        sortValue: (row) => row.position ?? Number.MAX_SAFE_INTEGER,
-        sortable: true,
-      },
-      {
-        key: "recommendation",
-        header: "Recommendation",
-        width: "9rem",
-        cell: (row) => (
-          <RecommendationCell recommendation={row.recommendation} />
-        ),
-        sortValue: (row) => searchGapActionOrder(row.recommendation.action),
-        sortable: true,
-      },
-      {
-        key: "write",
-        header: "",
-        align: "right",
-        width: "10.5rem",
-        minWidth: "10.5rem",
-        cell: (row) => (
-          <SearchWriteCell
-            isDismissing={dismissingSearchId === row.id}
-            onDismiss={() => onDismissSearch(row)}
-            onOpenPost={onOpenPost}
-            onWrite={(existingPageUrl) => onWriteSearch(row, existingPageUrl)}
-            row={row}
-          />
-        ),
-      },
-    ],
-    [dismissingSearchId, onDismissSearch, onOpenPost, onWriteSearch]
-  );
+      sortValue: (row) => row.brief?.workingTitle ?? row.title ?? "",
+      sortable: true,
+    },
+    {
+      key: "impressions",
+      header: "Impressions",
+      width: "7rem",
+      cell: (row) => (
+        <NumberCell
+          emptyLabel={GEO_GAPS_EMPTY_CELL.impressions}
+          value={row.impressions}
+        />
+      ),
+      sortValue: (row) => row.impressions ?? -1,
+      sortable: true,
+    },
+    {
+      key: "clicks",
+      header: "Clicks",
+      width: "5.5rem",
+      cell: (row) => (
+        <NumberCell
+          emptyLabel={GEO_GAPS_EMPTY_CELL.impressions}
+          value={row.clicks}
+        />
+      ),
+      sortValue: (row) => row.clicks ?? -1,
+      sortable: true,
+    },
+    {
+      key: "position",
+      header: "Position",
+      width: "6rem",
+      cell: (row) => (
+        <NumberCell
+          emptyLabel={GEO_GAPS_EMPTY_CELL.impressions}
+          format={(value) => `#${value.toFixed(1)}`}
+          value={row.position}
+        />
+      ),
+      sortValue: (row) => row.position ?? Number.MAX_SAFE_INTEGER,
+      sortable: true,
+    },
+    {
+      key: "recommendation",
+      header: "Recommendation",
+      width: "9rem",
+      cell: (row) => <RecommendationCell recommendation={row.recommendation} />,
+      sortValue: (row) => searchGapActionOrder(row.recommendation.action),
+      sortable: true,
+    },
+    {
+      key: "write",
+      header: "",
+      align: "right",
+      width: "10.5rem",
+      minWidth: "10.5rem",
+      cell: (row) => (
+        <SearchWriteCell
+          isDismissing={dismissingSearchId === row.id}
+          onDismiss={() => onDismissSearch(row)}
+          onOpenPost={onOpenPost}
+          onWrite={(existingPageUrl) => onWriteSearch(row, existingPageUrl)}
+          row={row}
+        />
+      ),
+    },
+  ];
 
   const sourceRows = tab === "prompt" ? promptGaps : searchGaps;
   const rows = tab === "prompt" ? filteredPromptGaps : filteredSearchGaps;

@@ -26,7 +26,8 @@ function PromptTagsForm({
 }: PromptTagsFormProps) {
   const inputId = useId();
   const [tags, setTags] = useState<string[]>(initialTags);
-  const available = suggestions.filter((tag) => !tags.includes(tag));
+  const selectedTags = new Set(tags);
+  const available = suggestions.filter((tag) => !selectedTags.has(tag));
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();

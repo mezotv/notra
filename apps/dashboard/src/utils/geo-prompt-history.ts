@@ -72,7 +72,7 @@ function newCompetitorsBetween(
 export function promptHistoryChanges(
   checks: readonly GeoPromptHistoryCheck[]
 ): PromptHistoryEntry[] {
-  const ordered = [...checks].sort((left, right) =>
+  const ordered = checks.toSorted((left, right) =>
     right.capturedAt.localeCompare(left.capturedAt)
   );
   return ordered.map((check, index) => {

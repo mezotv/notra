@@ -38,11 +38,11 @@ import {
 export function AiTrafficCard({ traffic, settingsHref }: AiTrafficCardProps) {
   const { sources, totals, points, previousConversions } =
     traffic ?? GEO_EMPTY_TRAFFIC_RESPONSE;
-  const previousTotals = useMemo(
-    () => toGeoTrafficPreviousTotals(sources, previousConversions),
-    [sources, previousConversions]
+  const previousTotals = toGeoTrafficPreviousTotals(
+    sources,
+    previousConversions
   );
-  const trendRows = useMemo(() => buildTrafficTrendRows(points), [points]);
+  const trendRows = buildTrafficTrendRows(points);
   const groups = groupTrafficSources(sources);
   const crawlerGroups = groups.filter(
     (group) => group.visitorType === "crawler"

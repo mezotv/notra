@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { GEO_PROMPT_SAVED_VIEWS_MAX } from "@/constants/geo-prompts";
@@ -28,25 +28,19 @@ export function useGeoSavedViews(
     getGeoPromptViewsServerSnapshot
   );
 
-  const saveView = useCallback(
-    (name: string, query: GeoPromptTableFilters) => {
-      const current = readGeoPromptViews(key);
-      const next = [...current, { id: crypto.randomUUID(), name, query }];
-      writeGeoPromptViews(key, next.slice(-GEO_PROMPT_SAVED_VIEWS_MAX));
-    },
-    [key]
-  );
+  const saveView = (name: string, query: GeoPromptTableFilters) => {
+    const current = readGeoPromptViews(key);
+    const next = [...current, { id: crypto.randomUUID(), name, query }];
+    writeGeoPromptViews(key, next.slice(-GEO_PROMPT_SAVED_VIEWS_MAX));
+  };
 
-  const removeView = useCallback(
-    (viewId: string) => {
-      const current = readGeoPromptViews(key);
-      writeGeoPromptViews(
-        key,
-        current.filter((view) => view.id !== viewId)
-      );
-    },
-    [key]
-  );
+  const removeView = (viewId: string) => {
+    const current = readGeoPromptViews(key);
+    writeGeoPromptViews(
+      key,
+      current.filter((view) => view.id !== viewId)
+    );
+  };
 
   return { views, saveView, removeView };
 }

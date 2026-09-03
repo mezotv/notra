@@ -246,6 +246,7 @@ export function PromptReceiptAnalysis({
             competitors={competitors}
             entries={entries}
             isLoading={isHistoryLoading}
+            key={entries[0]?.check.id ?? "empty"}
             onSelect={onSelectCheck}
           />
         </ReceiptSection>

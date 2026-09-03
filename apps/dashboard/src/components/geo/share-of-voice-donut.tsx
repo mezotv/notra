@@ -9,7 +9,7 @@ import type {
   ShareOfVoiceRow,
 } from "@notra/geo-core/types/geo";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
-import { type CSSProperties, type ReactNode, useMemo, useState } from "react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 
 import { ChartColorScope } from "@/components/charts/chart-color-scope";
 import { EChartsPieChart } from "@/components/evilcharts/charts/echarts-pie-chart";
@@ -190,6 +190,53 @@ function ShareOfVoiceOtherLegend({
   );
 }
 
+function buildShareOfVoiceDonutModel({
+  points,
+  limit,
+  competitors,
+  companyName,
+  aliases,
+}: Pick<
+  ShareOfVoiceDonutProps,
+  "points" | "limit" | "competitors" | "companyName" | "aliases"
+>) {
+  const ownBrand = { companyName, aliases };
+  const breakdown = buildShareOfVoiceBreakdown(points, {
+    limit,
+    competitors,
+    companyName,
+    aliases,
+  });
+  const rows = toShareOfVoiceDonutSlices(breakdown.rows);
+  const sliceConfig: ChartConfig = {};
+  for (const row of rows) {
+    sliceConfig[row.slice] = {
+      label: row.brand,
+      colors: seriesColors(
+        shareOfVoiceSliceColor(
+          row.brand,
+          shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
+          competitors,
+          ownBrand
+        )
+      ),
+    };
+  }
+  const top = rows.find((row) => row.brand !== CHART_OTHER_SLICE_LABEL);
+  const otherRow = rows.find((row) => row.brand === CHART_OTHER_SLICE_LABEL);
+  const mentions = rows.reduce((sum, row) => sum + row.mentions, 0);
+  return {
+    slices: rows,
+    others: breakdown.others,
+    other: otherRow,
+    config: sliceConfig,
+    caption: top
+      ? `${top.brand} · ${formatMentionRate(top.share)} of mentions`
+      : null,
+    totalMentions: mentions,
+  };
+}
+
 export function ShareOfVoiceDonut({
   points,
   competitors,
@@ -205,45 +252,13 @@ export function ShareOfVoiceDonut({
   const [trackBrand, setTrackBrand] = useState<string | null>(null);
   const onTrack = organizationId ? setTrackBrand : undefined;
   const { slices, others, other, config, caption, totalMentions } =
-    useMemo(() => {
-      const ownBrand = { companyName, aliases };
-      const breakdown = buildShareOfVoiceBreakdown(points, {
-        limit,
-        competitors,
-        companyName,
-        aliases,
-      });
-      const rows = toShareOfVoiceDonutSlices(breakdown.rows);
-      const sliceConfig: ChartConfig = {};
-      for (const row of rows) {
-        sliceConfig[row.slice] = {
-          label: row.brand,
-          colors: seriesColors(
-            shareOfVoiceSliceColor(
-              row.brand,
-              shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
-              competitors,
-              ownBrand
-            )
-          ),
-        };
-      }
-      const top = rows.find((row) => row.brand !== CHART_OTHER_SLICE_LABEL);
-      const otherRow = rows.find(
-        (row) => row.brand === CHART_OTHER_SLICE_LABEL
-      );
-      const mentions = rows.reduce((sum, row) => sum + row.mentions, 0);
-      return {
-        slices: rows,
-        others: breakdown.others,
-        other: otherRow,
-        config: sliceConfig,
-        caption: top
-          ? `${top.brand} · ${formatMentionRate(top.share)} of mentions`
-          : null,
-        totalMentions: mentions,
-      };
-    }, [aliases, companyName, competitors, limit, points]);
+    buildShareOfVoiceDonutModel({
+      points,
+      limit,
+      competitors,
+      companyName,
+      aliases,
+    });
 
   if (slices.length === 0) {
     return (

@@ -34,7 +34,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
@@ -241,27 +241,18 @@ export function PromptsTable({
   );
   const [detail, setDetail] = useState<GeoPromptTableRow | null>(null);
 
-  const filters = useMemo<GeoPromptTableFilters>(
-    () => ({ q: search, intent, tag, source }),
-    [search, intent, tag, source]
-  );
-  const tagsInUse = useMemo(() => collectPromptTags(prompts), [prompts]);
+  const filters: GeoPromptTableFilters = { q: search, intent, tag, source };
+  const tagsInUse = collectPromptTags(prompts);
   const activeTagFilterMissing =
     tag !== GEO_PROMPT_FILTER_ALL && !tagsInUse.includes(tag);
   const tagOptions = activeTagFilterMissing ? [tag, ...tagsInUse] : tagsInUse;
 
-  const rows = useMemo(
-    () => buildPromptTableRows(prompts, results, filters),
-    [prompts, results, filters]
-  );
+  const rows = buildPromptTableRows(prompts, results, filters);
 
-  const selectedRows = useMemo(() => {
-    const selectedIdSet = new Set(selectedIds);
-    return rows.filter((row) => selectedIdSet.has(row.id));
-  }, [rows, selectedIds]);
-  const selectedCustomRows = useMemo(
-    () => selectedRows.filter((row) => row.source === "custom"),
-    [selectedRows]
+  const selectedIdSet = new Set(selectedIds);
+  const selectedRows = rows.filter((row) => selectedIdSet.has(row.id));
+  const selectedCustomRows = selectedRows.filter(
+    (row) => row.source === "custom"
   );
 
   const requestDelete = useCallback((targets: GeoPromptTableRow[]) => {
@@ -304,108 +295,105 @@ export function PromptsTable({
     }
   };
 
-  const columns = useMemo<TableColumn<GeoPromptTableRow>[]>(
-    () => [
-      {
-        key: "prompt",
-        header: (
-          <span className="inline-flex items-center gap-1.5">
-            Prompt
-            <span className="text-muted-foreground font-normal tabular-nums">
-              ({rows.length})
-            </span>
+  const columns: TableColumn<GeoPromptTableRow>[] = [
+    {
+      key: "prompt",
+      header: (
+        <span className="inline-flex items-center gap-1.5">
+          Prompt
+          <span className="text-muted-foreground font-normal tabular-nums">
+            ({rows.length})
+          </span>
+        </span>
+      ),
+      sortable: true,
+      width: "1fr",
+      minWidth: "10rem",
+      cell: (row) => (
+        <TruncateWithTooltip className="font-medium">
+          {row.prompt}
+        </TruncateWithTooltip>
+      ),
+    },
+    {
+      key: "intent",
+      header: GEO_PROMPT_TAGS_COPY.intentColumn,
+      width: "7.5rem",
+      sortable: true,
+      cell: (row) => (
+        <Badge className="font-normal" variant="outline">
+          {GEO_PROMPT_INTENT_LABELS[row.intent]}
+        </Badge>
+      ),
+      sortValue: (row) => GEO_PROMPT_INTENT_LABELS[row.intent],
+    },
+    {
+      key: "tags",
+      header: GEO_PROMPT_TAGS_COPY.column,
+      width: "12rem",
+      minWidth: "8rem",
+      sortable: true,
+      cell: (row) => <PromptTagChips tags={row.tags} />,
+      sortValue: (row) => row.tags.join(" "),
+    },
+    {
+      key: "presence",
+      header: "Presence",
+      width: "8.5rem",
+      sortable: true,
+      cell: (row) =>
+        row.presence ? (
+          <PresenceBadge status={row.presence} />
+        ) : (
+          <span className="text-muted-foreground">-</span>
+        ),
+      sortValue: (row) => promptPresenceSortValue(row.presence),
+    },
+    {
+      key: "engines",
+      header: "Engines",
+      width: "7rem",
+      sortable: true,
+      cell: (row) =>
+        row.total === 0 ? (
+          <span className="text-muted-foreground">-</span>
+        ) : (
+          <span className="text-muted-foreground tabular-nums">
+            {row.mentioned}/{row.total}
           </span>
         ),
-        sortable: true,
-        width: "1fr",
-        minWidth: "10rem",
-        cell: (row) => (
-          <TruncateWithTooltip className="font-medium">
-            {row.prompt}
-          </TruncateWithTooltip>
+      sortValue: (row) => (row.total === 0 ? -1 : row.mentioned / row.total),
+    },
+    {
+      key: "bestPosition",
+      header: "Best",
+      width: "5.5rem",
+      sortable: true,
+      cell: (row) =>
+        row.bestPosition === null ? (
+          <span className="text-muted-foreground">-</span>
+        ) : (
+          <span className="tabular-nums">#{row.bestPosition}</span>
         ),
-      },
-      {
-        key: "intent",
-        header: GEO_PROMPT_TAGS_COPY.intentColumn,
-        width: "7.5rem",
-        sortable: true,
-        cell: (row) => (
-          <Badge className="font-normal" variant="outline">
-            {GEO_PROMPT_INTENT_LABELS[row.intent]}
-          </Badge>
-        ),
-        sortValue: (row) => GEO_PROMPT_INTENT_LABELS[row.intent],
-      },
-      {
-        key: "tags",
-        header: GEO_PROMPT_TAGS_COPY.column,
-        width: "12rem",
-        minWidth: "8rem",
-        sortable: true,
-        cell: (row) => <PromptTagChips tags={row.tags} />,
-        sortValue: (row) => row.tags.join(" "),
-      },
-      {
-        key: "presence",
-        header: "Presence",
-        width: "8.5rem",
-        sortable: true,
-        cell: (row) =>
-          row.presence ? (
-            <PresenceBadge status={row.presence} />
-          ) : (
-            <span className="text-muted-foreground">-</span>
-          ),
-        sortValue: (row) => promptPresenceSortValue(row.presence),
-      },
-      {
-        key: "engines",
-        header: "Engines",
-        width: "7rem",
-        sortable: true,
-        cell: (row) =>
-          row.total === 0 ? (
-            <span className="text-muted-foreground">-</span>
-          ) : (
-            <span className="text-muted-foreground tabular-nums">
-              {row.mentioned}/{row.total}
-            </span>
-          ),
-        sortValue: (row) => (row.total === 0 ? -1 : row.mentioned / row.total),
-      },
-      {
-        key: "bestPosition",
-        header: "Best",
-        width: "5.5rem",
-        sortable: true,
-        cell: (row) =>
-          row.bestPosition === null ? (
-            <span className="text-muted-foreground">-</span>
-          ) : (
-            <span className="tabular-nums">#{row.bestPosition}</span>
-          ),
-        sortValue: (row) => row.bestPosition ?? Number.MAX_SAFE_INTEGER,
-      },
-      {
-        key: "actions",
-        header: "",
-        width: PROMPT_ACTIONS_WIDTH,
-        minWidth: PROMPT_ACTIONS_WIDTH,
-        align: "right",
-        cell: (row) => (
-          <PromptRowActions
-            isPending={pendingPromptIds.has(row.id)}
-            onDelete={() => requestDelete([row])}
-            onEditTags={() => setTagsTarget({ mode: "edit", rows: [row] })}
-            onToggle={(enabled) => togglePrompt(row.id, enabled)}
-            row={row}
-          />
-        ),
-      },
-    ],
-    [pendingPromptIds, requestDelete, rows.length, togglePrompt]
-  );
+      sortValue: (row) => row.bestPosition ?? Number.MAX_SAFE_INTEGER,
+    },
+    {
+      key: "actions",
+      header: "",
+      width: PROMPT_ACTIONS_WIDTH,
+      minWidth: PROMPT_ACTIONS_WIDTH,
+      align: "right",
+      cell: (row) => (
+        <PromptRowActions
+          isPending={pendingPromptIds.has(row.id)}
+          onDelete={() => requestDelete([row])}
+          onEditTags={() => setTagsTarget({ mode: "edit", rows: [row] })}
+          onToggle={(enabled) => togglePrompt(row.id, enabled)}
+          row={row}
+        />
+      ),
+    },
+  ];
 
   const tagsDialogTarget = tagsTarget?.rows[0] ?? null;
   const tagsDialogIsEdit = tagsTarget?.mode === "edit";

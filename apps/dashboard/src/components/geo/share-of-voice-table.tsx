@@ -50,16 +50,12 @@ export function ShareOfVoiceTable({
   organizationId,
 }: ShareOfVoiceTableProps) {
   const [trackBrand, setTrackBrand] = useState<string | null>(null);
-  const rows = useMemo(
-    () =>
-      buildShareOfVoiceRows(points, {
-        limit,
-        competitors,
-        companyName,
-        aliases,
-      }),
-    [points, limit, competitors, companyName, aliases]
-  );
+  const rows = buildShareOfVoiceRows(points, {
+    limit,
+    competitors,
+    companyName,
+    aliases,
+  });
   const mentionSparklines = useMemo(
     () => buildShareOfVoiceMentionSparklines(timeseries, rows, competitors),
     [competitors, rows, timeseries]
@@ -70,120 +66,108 @@ export function ShareOfVoiceTable({
   );
   const maxShare = rows.reduce((max, row) => Math.max(max, row.share), 0);
 
-  const columns = useMemo<TableColumn<ShareOfVoiceRow>[]>(
-    () => [
-      {
-        key: "brand",
-        header: "Brand",
-        width: "1fr",
-        sortable: true,
-        cell: (row) => (
-          <span className="flex min-w-0 items-center gap-2 text-sm">
-            {row.brand !== CHART_OTHER_SLICE_LABEL && (
-              <CompetitorLogo
-                className="size-4 shrink-0"
-                domain={findCompetitorDomain(competitors, row.brand)}
-                name={row.brand}
-              />
-            )}
-            <span className="truncate">{row.brand}</span>
-            <ShareOfVoiceBrandTag
-              onTrack={organizationId ? setTrackBrand : undefined}
-              own={isOwnBrandName(row.brand, companyName, aliases)}
-              row={row}
+  const columns: TableColumn<ShareOfVoiceRow>[] = [
+    {
+      key: "brand",
+      header: "Brand",
+      width: "1fr",
+      sortable: true,
+      cell: (row) => (
+        <span className="flex min-w-0 items-center gap-2 text-sm">
+          {row.brand !== CHART_OTHER_SLICE_LABEL && (
+            <CompetitorLogo
+              className="size-4 shrink-0"
+              domain={findCompetitorDomain(competitors, row.brand)}
+              name={row.brand}
+            />
+          )}
+          <span className="truncate">{row.brand}</span>
+          <ShareOfVoiceBrandTag
+            onTrack={organizationId ? setTrackBrand : undefined}
+            own={isOwnBrandName(row.brand, companyName, aliases)}
+            row={row}
+          />
+        </span>
+      ),
+    },
+    {
+      key: "share",
+      header: "Share",
+      width: "1.3fr",
+      sortable: true,
+      sortValue: (row) => row.share,
+      cell: (row) => {
+        const own = isOwnBrandName(row.brand, companyName, aliases);
+        const color = shareOfVoiceSliceColor(
+          row.brand,
+          shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
+          competitors,
+          ownBrand
+        );
+        return (
+          <span className="flex items-center gap-2">
+            <GeoBar
+              className="h-2 max-w-40"
+              fillClassName={own ? geoModeFillClass("web") : undefined}
+              fillColor={own ? undefined : color.light}
+              max={maxShare}
+              value={row.share}
+            />
+            <span className="shrink-0 text-xs tabular-nums">
+              {formatMentionRate(row.share)}
+            </span>
+          </span>
+        );
+      },
+    },
+    {
+      key: "mentions",
+      header: "Mentions",
+      width: "10.5rem",
+      sortable: true,
+      cell: (row) => {
+        const series = mentionSparklines.get(row.brand) ?? [];
+
+        return (
+          <span className="flex items-center gap-2">
+            <span className="w-12 shrink-0 text-right text-sm tabular-nums">
+              {row.mentions.toLocaleString()}
+            </span>
+            <GeoStatDelta
+              delta={mentionCountDelta(series)}
+              hint={GEO_FAMILY_STAT_TREND_HINT}
+              label={`${row.brand} mentions`}
             />
           </span>
-        ),
+        );
       },
-      {
-        key: "share",
-        header: "Share",
-        width: "1.3fr",
-        sortable: true,
-        sortValue: (row) => row.share,
-        cell: (row) => {
-          const own = isOwnBrandName(row.brand, companyName, aliases);
-          const color = shareOfVoiceSliceColor(
-            row.brand,
-            shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
-            competitors,
-            ownBrand
-          );
-          return (
-            <span className="flex items-center gap-2">
-              <GeoBar
-                className="h-2 max-w-40"
-                fillClassName={own ? geoModeFillClass("web") : undefined}
-                fillColor={own ? undefined : color.light}
-                max={maxShare}
-                value={row.share}
-              />
-              <span className="shrink-0 text-xs tabular-nums">
-                {formatMentionRate(row.share)}
-              </span>
-            </span>
-          );
-        },
+    },
+    {
+      key: "trend",
+      header: "Trend",
+      width: "5.5rem",
+      cell: (row) => {
+        if (row.trend.length < GEO_SPARKLINE_MIN_POINTS) {
+          return <span className="text-muted-foreground text-xs">-</span>;
+        }
+        const own = isOwnBrandName(row.brand, companyName, aliases);
+        const color = shareOfVoiceSliceColor(
+          row.brand,
+          shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
+          competitors,
+          ownBrand
+        );
+        return (
+          <GeoRateSparkline
+            className={own ? "text-primary" : undefined}
+            color={own ? undefined : color.light}
+            label={`${row.brand} share of voice trend`}
+            points={row.trend}
+          />
+        );
       },
-      {
-        key: "mentions",
-        header: "Mentions",
-        width: "10.5rem",
-        sortable: true,
-        cell: (row) => {
-          const series = mentionSparklines.get(row.brand) ?? [];
-
-          return (
-            <span className="flex items-center gap-2">
-              <span className="w-12 shrink-0 text-right text-sm tabular-nums">
-                {row.mentions.toLocaleString()}
-              </span>
-              <GeoStatDelta
-                delta={mentionCountDelta(series)}
-                hint={GEO_FAMILY_STAT_TREND_HINT}
-                label={`${row.brand} mentions`}
-              />
-            </span>
-          );
-        },
-      },
-      {
-        key: "trend",
-        header: "Trend",
-        width: "5.5rem",
-        cell: (row) => {
-          if (row.trend.length < GEO_SPARKLINE_MIN_POINTS) {
-            return <span className="text-muted-foreground text-xs">-</span>;
-          }
-          const own = isOwnBrandName(row.brand, companyName, aliases);
-          const color = shareOfVoiceSliceColor(
-            row.brand,
-            shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
-            competitors,
-            ownBrand
-          );
-          return (
-            <GeoRateSparkline
-              className={own ? "text-primary" : undefined}
-              color={own ? undefined : color.light}
-              label={`${row.brand} share of voice trend`}
-              points={row.trend}
-            />
-          );
-        },
-      },
-    ],
-    [
-      aliases,
-      companyName,
-      competitors,
-      maxShare,
-      mentionSparklines,
-      organizationId,
-      ownBrand,
-      rows,
-    ]
-  );
+    },
+  ];
 
   if (rows.length === 0) {
     return (

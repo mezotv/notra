@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@notra/ui/components/ui/table";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { PromptOutcomeIcon } from "@/components/geo/prompt-outcome-icon";
@@ -306,22 +306,12 @@ export function PromptReceiptHistory({
   competitors,
   onSelect,
 }: PromptReceiptHistoryProps) {
-  const [page, setPage] = useState(1);
+  const [requestedPage, setPage] = useState(1);
   const selectable = Boolean(onSelect);
 
   const totalItems = entries.length;
   const pageCount = Math.max(1, Math.ceil(totalItems / HISTORY_PAGE_SIZE));
-  const firstEntryId = entries[0]?.check.id;
-
-  useEffect(() => {
-    if (page > pageCount) {
-      setPage(pageCount);
-    }
-  }, [page, pageCount]);
-
-  useEffect(() => {
-    setPage(1);
-  }, [firstEntryId]);
+  const page = Math.min(requestedPage, pageCount);
 
   if (!isLoading && entries.length === 0) {
     return (

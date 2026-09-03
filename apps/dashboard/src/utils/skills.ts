@@ -63,7 +63,7 @@ export function sortSkills<T extends SkillListItem>(
   sort: SkillSortState
 ): T[] {
   const sign = sort.direction === "asc" ? 1 : -1;
-  return [...skills].sort((a, b) => {
+  return skills.toSorted((a, b) => {
     const primary = compareBy(sort.key, a, b) * sign;
     return primary === 0 ? a.name.localeCompare(b.name) : primary;
   });

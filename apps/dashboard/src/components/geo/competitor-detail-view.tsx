@@ -271,85 +271,79 @@ export function CompetitorDetailView({
     [points, showLoading]
   );
   const incompleteTail = competitorChartHasIncompleteTail(points);
-  const prompts = useMemo(() => data?.prompts ?? [], [data]);
-  const promptSummary = useMemo<GeoCompetitorPromptSummary | null>(
-    () =>
-      showLoading || prompts.length === 0
-        ? null
-        : competitorPromptSummary(prompts),
-    [prompts, showLoading]
-  );
+  const prompts = data?.prompts ?? [];
+  const promptSummary: GeoCompetitorPromptSummary | null =
+    showLoading || prompts.length === 0
+      ? null
+      : competitorPromptSummary(prompts);
 
-  const columns = useMemo<TableColumn<GeoCompetitorPromptRow>[]>(
-    () => [
-      {
-        key: "prompt",
-        header: (
-          <span className="inline-flex items-center gap-1.5">
-            Prompt
-            <span className="text-muted-foreground font-normal tabular-nums">
-              ({prompts.length.toLocaleString()})
-            </span>
+  const columns: TableColumn<GeoCompetitorPromptRow>[] = [
+    {
+      key: "prompt",
+      header: (
+        <span className="inline-flex items-center gap-1.5">
+          Prompt
+          <span className="text-muted-foreground font-normal tabular-nums">
+            ({prompts.length.toLocaleString()})
           </span>
-        ),
-        sortable: true,
-        width: "1fr",
-        cell: (row) => (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="block w-full min-w-0 truncate">
-                  {row.prompt}
-                </span>
-              }
-            />
-            <TooltipContent className="max-w-sm">{row.prompt}</TooltipContent>
-          </Tooltip>
-        ),
+        </span>
+      ),
+      sortable: true,
+      width: "1fr",
+      cell: (row) => (
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <span className="block w-full min-w-0 truncate">
+                {row.prompt}
+              </span>
+            }
+          />
+          <TooltipContent className="max-w-sm">{row.prompt}</TooltipContent>
+        </Tooltip>
+      ),
+    },
+    {
+      key: "engine",
+      header: "Engine",
+      width: "8.5rem",
+      sortable: true,
+      cell: (row) => (
+        <span className="inline-flex min-w-0 items-center gap-2">
+          <EngineIcon className="size-4 shrink-0" engine={row.engine} />
+          <span className="truncate">{formatEngineFamily(row.engine)}</span>
+        </span>
+      ),
+    },
+    {
+      key: "position",
+      header: "Position",
+      width: "8rem",
+      sortable: true,
+      cell: (row) => (
+        <span className="tabular-nums">
+          {row.mentioned ? (row.position ?? "Mentioned") : "Absent"}
+        </span>
+      ),
+      sortValue: (row) => {
+        if (!row.mentioned) {
+          return Number.MAX_SAFE_INTEGER;
+        }
+        return row.position ?? Number.MAX_SAFE_INTEGER - 1;
       },
-      {
-        key: "engine",
-        header: "Engine",
-        width: "8.5rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="inline-flex min-w-0 items-center gap-2">
-            <EngineIcon className="size-4 shrink-0" engine={row.engine} />
-            <span className="truncate">{formatEngineFamily(row.engine)}</span>
-          </span>
-        ),
-      },
-      {
-        key: "position",
-        header: "Position",
-        width: "8rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="tabular-nums">
-            {row.mentioned ? (row.position ?? "Mentioned") : "Absent"}
-          </span>
-        ),
-        sortValue: (row) => {
-          if (!row.mentioned) {
-            return Number.MAX_SAFE_INTEGER;
-          }
-          return row.position ?? Number.MAX_SAFE_INTEGER - 1;
-        },
-      },
-      {
-        key: "capturedAt",
-        header: "Last seen",
-        width: "9.375rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-muted-foreground text-xs tabular-nums">
-            {formatAiTrafficTimestamp(row.capturedAt)}
-          </span>
-        ),
-      },
-    ],
-    [prompts.length]
-  );
+    },
+    {
+      key: "capturedAt",
+      header: "Last seen",
+      width: "9.375rem",
+      sortable: true,
+      cell: (row) => (
+        <span className="text-muted-foreground text-xs tabular-nums">
+          {formatAiTrafficTimestamp(row.capturedAt)}
+        </span>
+      ),
+    },
+  ];
 
   const tableHeight =
     variant === "page"

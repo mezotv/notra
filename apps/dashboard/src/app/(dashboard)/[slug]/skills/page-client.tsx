@@ -28,7 +28,7 @@ import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
@@ -162,10 +162,7 @@ export default function PageClient({ slug }: PageClientProps) {
   };
 
   const isLoadingSkills = !!organizationId && isPending;
-  const visibleSkills = useMemo(
-    () => sortSkills(filterSkills(skills, search), sort),
-    [skills, search, sort]
-  );
+  const visibleSkills = sortSkills(filterSkills(skills, search), sort);
   const searchActive = search.trim().length > 0;
 
   return (

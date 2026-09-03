@@ -36,7 +36,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -324,8 +324,8 @@ export function WhatChangedCard({
     ? promptTableRowForId(detailId, promptResults)
     : null;
 
-  const events = useMemo(() => data?.events ?? [], [data]);
-  const columns = useMemo(() => changeColumnsFor(competitors), [competitors]);
+  const events = data?.events ?? [];
+  const columns = changeColumnsFor(competitors);
   const pagination = useTablePagination({
     key: GEO_CHANGES_PAGE_KEY,
     totalItems: events.length,

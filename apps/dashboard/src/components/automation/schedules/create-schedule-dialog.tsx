@@ -273,33 +273,29 @@ export function CreateScheduleDialog({
     };
   }, [integrationsResponse]);
 
-  const handleFrequencyChange = useCallback(
-    (next: ScheduleCron["frequency"]) => {
-      const prev = form.state.values.schedule;
-      let dayOfWeek: number | undefined;
-      let dayOfMonth: number | undefined;
-      let intervalDays: number | undefined;
-      let anchorDate: string | undefined;
-      if (next === "weekly") {
-        dayOfWeek = prev.dayOfWeek ?? 1;
-      } else if (next === "monthly") {
-        dayOfMonth = prev.dayOfMonth ?? 1;
-      } else if (next === "custom") {
-        intervalDays =
-          prev.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS;
-        anchorDate = prev.anchorDate ?? toUtcDateString(new Date());
-      }
-      form.setFieldValue("schedule", {
-        ...prev,
-        frequency: next,
-        dayOfWeek,
-        dayOfMonth,
-        intervalDays,
-        anchorDate,
-      });
-    },
-    [form]
-  );
+  const handleFrequencyChange = (next: ScheduleCron["frequency"]) => {
+    const prev = form.state.values.schedule;
+    let dayOfWeek: number | undefined;
+    let dayOfMonth: number | undefined;
+    let intervalDays: number | undefined;
+    let anchorDate: string | undefined;
+    if (next === "weekly") {
+      dayOfWeek = prev.dayOfWeek ?? 1;
+    } else if (next === "monthly") {
+      dayOfMonth = prev.dayOfMonth ?? 1;
+    } else if (next === "custom") {
+      intervalDays = prev.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS;
+      anchorDate = prev.anchorDate ?? toUtcDateString(new Date());
+    }
+    form.setFieldValue("schedule", {
+      ...prev,
+      frequency: next,
+      dayOfWeek,
+      dayOfMonth,
+      intervalDays,
+      anchorDate,
+    });
+  };
 
   const formError = useStore(form.store, (state) => {
     if (state.submissionAttempts === 0) {

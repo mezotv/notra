@@ -243,14 +243,13 @@ export const geoProjectCreateInputSchema = object({
   brandSettingsId: string().min(1),
 });
 
-<<<<<<< HEAD
 export const geoProjectDeleteInputSchema = object({
   organizationId: string().min(1),
   projectId: string().min(1),
-=======
+});
+
 export const geoPromptHistoryInputSchema = geoOrganizationInputSchema.extend({
   promptId: string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH),
->>>>>>> 48fba180 (feat(geo): turn dashboard data into a decision layer)
 });
 
 export const geoPromptRescanInputSchema = geoOrganizationInputSchema.extend({
