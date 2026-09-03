@@ -24,7 +24,7 @@ export function LazyCommandPalette() {
   const [isPaletteReady, setIsPaletteReady] = useState(false);
 
   useEffect(() => {
-    if (!(hasOpened && !isPaletteReady)) {
+    if (!(hasOpened && open && !isPaletteReady)) {
       return;
     }
 
@@ -43,7 +43,7 @@ export function LazyCommandPalette() {
     return () => {
       active = false;
     };
-  }, [hasOpened, isPaletteReady]);
+  }, [hasOpened, isPaletteReady, open]);
 
   if (open && !isPaletteReady) {
     return (
