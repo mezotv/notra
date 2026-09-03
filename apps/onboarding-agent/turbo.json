@@ -1,0 +1,49 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build", "transit"],
+      "outputs": [
+        ".output/**",
+        ".vercel/output/**",
+        ".eve/compile/**",
+        ".eve/discovery/**"
+      ],
+      "env": [
+        "AI_*",
+        "APP_URL",
+        "AUTUMN_SECRET_KEY",
+        "AXIOM_*",
+        "CLOUDFLARE_*",
+        "CONTEXT_DEV_API_KEY",
+        "DASHBOARD_VERCEL_*",
+        "DATABASE_URL",
+        "EVE_ONBOARDING_AGENT_PASSWORD",
+        "FEEDBACK_INGEST_SECRET",
+        "GITHUB_APP_ID",
+        "GITHUB_APP_NAME",
+        "GITHUB_APP_PRIVATE_KEY",
+        "GITHUB_APP_SLUG",
+        "GITHUB_TOKEN",
+        "GOOGLE_SEARCH_CONSOLE_*",
+        "INTEGRATION_ENCRYPTION_KEY",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_POSTHOG_HOST",
+        "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN",
+        "OPENROUTER_API_KEY",
+        "POST_FOR_ME_*",
+        "QSTASH_TOKEN",
+        "SLACK_BOT_TOKEN",
+        "SLACK_FOUNDER_MEMBER_ID",
+        "SUPERMEMORY_API_KEY",
+        "TWITTER_BEARER_TOKEN",
+        "UPSTASH_*",
+        "VERCEL",
+        "VERCEL_ENV",
+        "VERCEL_OIDC_TOKEN",
+        "VERCEL_URL",
+        "WORKFLOW_BASE_URL"
+      ]
+    }
+  }
+}

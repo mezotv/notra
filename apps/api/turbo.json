@@ -1,0 +1,52 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "env": [
+        "AI_*",
+        "ANTHROPIC_API_KEY",
+        "APP_URL",
+        "AUTUMN_SECRET_KEY",
+        "AXIOM_*",
+        "BEACON_INGEST_SECRET",
+        "CLOUDFLARE_*",
+        "CONTEXT_DEV_API_KEY",
+        "CURSOR_API_KEY",
+        "DATABASE_URL",
+        "EVE_NOTRA_AGENT_PASSWORD",
+        "EVE_NOTRA_AGENT_URL",
+        "FEEDBACK_INGEST_SECRET",
+        "GEO_INGEST_SECRET",
+        "GITHUB_APP_ID",
+        "GITHUB_APP_NAME",
+        "GITHUB_APP_PRIVATE_KEY",
+        "GITHUB_APP_SLUG",
+        "GOOGLE_SEARCH_CONSOLE_*",
+        "INTEGRATION_ENCRYPTION_KEY",
+        "INTERNAL_WORKFLOW_SECRET",
+        "NEXT_PUBLIC_APP_URL",
+        "NEXT_PUBLIC_LOGOLINK_CLIENT_ID",
+        "NEXT_PUBLIC_POSTHOG_HOST",
+        "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN",
+        "NOTRA_API_KEY",
+        "NOTRA_GEO_TOKEN",
+        "OPENAI_API_KEY",
+        "OPENROUTER_API_KEY",
+        "PERPLEXITY_API_KEY",
+        "QSTASH_TOKEN",
+        "SLACK_BOT_TOKEN",
+        "SLACK_FOUNDER_MEMBER_ID",
+        "SUPERMEMORY_API_KEY",
+        "UNKEY_ROOT_KEY",
+        "UPSTASH_*",
+        "VERCEL",
+        "VERCEL_ENV",
+        "VERCEL_OIDC_TOKEN",
+        "VERCEL_URL",
+        "WORKFLOW_BASE_URL",
+        "WORKOS_AUTHKIT_DOMAIN",
+        "WORKOS_CLIENT_ID"
+      ]
+    }
+  }
+}
