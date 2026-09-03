@@ -79,7 +79,7 @@ function ShelfKanbanCardBody({
   return (
     <button
       className={cn(
-        "flex w-full flex-col gap-2 text-left",
+        "flex w-full cursor-[inherit] flex-col gap-2 text-left",
         pending && "opacity-60"
       )}
       onClick={onOpen}
@@ -148,6 +148,18 @@ export function ShelfKanban({
     setItems(derived);
   }
 
+  const [dragging, setDragging] = useState(false);
+
+  const startDragging = () => {
+    setDragging(true);
+    document.body.style.cursor = "grabbing";
+  };
+
+  const stopDragging = () => {
+    setDragging(false);
+    document.body.style.cursor = "";
+  };
+
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE },
@@ -159,6 +171,7 @@ export function ShelfKanban({
   );
 
   const handleDragEnd = (event: DragEndEvent) => {
+    stopDragging();
     const activeId = String(event.active.id);
     const moved = items.find((item) => item.id === activeId);
     const original = derived.find((item) => item.id === activeId);
@@ -187,13 +200,20 @@ export function ShelfKanban({
   }
 
   return (
-    <div className="overflow-x-auto pb-2">
+    <div
+      className={cn(
+        "-m-1 overflow-x-auto p-1 pb-3",
+        dragging && "cursor-grabbing **:cursor-grabbing"
+      )}
+    >
       <KanbanProvider
         className="min-w-[72rem]"
         columns={GEO_SHELF_KANBAN_COLUMNS}
         data={items}
         onDataChange={setItems}
+        onDragCancel={stopDragging}
         onDragEnd={handleDragEnd}
+        onDragStart={startDragging}
         sensors={sensors}
       >
         {(column) => (
@@ -202,7 +222,7 @@ export function ShelfKanban({
             id={column.id}
             key={column.id}
           >
-            <KanbanHeader className="bg-muted text-muted-foreground border-border flex h-10 items-center justify-between border-b px-3 text-xs font-medium">
+            <KanbanHeader className="bg-muted text-muted-foreground border-border flex h-10 items-center justify-between rounded-t-2xl border-b px-3 text-xs font-medium">
               <span>{column.name}</span>
               <span className="text-muted-foreground font-normal tabular-nums">
                 {counts.get(column.id) ?? 0}

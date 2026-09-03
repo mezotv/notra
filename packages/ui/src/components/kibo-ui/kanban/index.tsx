@@ -119,11 +119,20 @@ export const KanbanCard = <T extends KanbanItemProps = KanbanItemProps>({
 
   return (
     <>
-      <div style={style} {...listeners} {...attributes} ref={setNodeRef}>
+      <div
+        className={cn(
+          "cursor-grab touch-none select-none active:cursor-grabbing",
+          isDragging && "cursor-grabbing"
+        )}
+        style={style}
+        {...listeners}
+        {...attributes}
+        ref={setNodeRef}
+      >
         <Card
           className={cn(
-            "cursor-grab gap-4 rounded-md p-3 shadow-sm",
-            isDragging && "pointer-events-none cursor-grabbing opacity-30",
+            "cursor-[inherit] gap-4 rounded-md p-3 shadow-sm",
+            isDragging && "pointer-events-none opacity-30",
             className
           )}
         >
@@ -134,8 +143,7 @@ export const KanbanCard = <T extends KanbanItemProps = KanbanItemProps>({
         <t.In>
           <Card
             className={cn(
-              "ring-primary cursor-grab gap-4 rounded-md p-3 shadow-sm ring-2",
-              isDragging && "cursor-grabbing",
+              "ring-primary cursor-grabbing gap-4 rounded-md p-3 shadow-sm ring-2",
               className
             )}
           >
@@ -327,7 +335,7 @@ export const KanbanProvider = <
         </div>
         {typeof window !== "undefined" &&
           createPortal(
-            <DragOverlay>
+            <DragOverlay dropAnimation={null}>
               <t.Out />
             </DragOverlay>,
             document.body
