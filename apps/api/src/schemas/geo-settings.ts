@@ -7,6 +7,7 @@ import {
   GEO_MAX_ENGINES,
   GEO_MAX_LANGUAGES,
   GEO_MAX_PROMPTS,
+  GEO_SCAN_HOURS_PER_DAY,
   GEO_SCAN_INTERVAL_HOURS,
   GEO_SCAN_MAX_INTERVAL_HOURS,
   GEO_SCAN_MIN_INTERVAL_HOURS,
@@ -94,8 +95,11 @@ export const patchSettingsRequestSchema = z
       .int()
       .min(GEO_SCAN_MIN_INTERVAL_HOURS)
       .max(GEO_SCAN_MAX_INTERVAL_HOURS)
+      .multipleOf(GEO_SCAN_HOURS_PER_DAY, {
+        message: `scanIntervalHours must be a whole number of days (multiple of ${GEO_SCAN_HOURS_PER_DAY})`,
+      })
       .openapi({
-        description: `Hours between automatic scans, ${GEO_SCAN_MIN_INTERVAL_HOURS}-${GEO_SCAN_MAX_INTERVAL_HOURS}. Presets: ${GEO_SCAN_INTERVAL_HOURS.join(", ")}.`,
+        description: `Hours between automatic scans, ${GEO_SCAN_MIN_INTERVAL_HOURS}-${GEO_SCAN_MAX_INTERVAL_HOURS}, in whole days (multiple of ${GEO_SCAN_HOURS_PER_DAY}). Presets: ${GEO_SCAN_INTERVAL_HOURS.join(", ")}.`,
       }),
   })
   .openapi("PatchGeoSettingsRequest");

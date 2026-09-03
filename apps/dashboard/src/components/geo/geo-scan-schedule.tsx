@@ -42,9 +42,10 @@ function intervalShortLabel(value: string, intervalHours: number): string {
 }
 
 function parseIntervalDays(raw: string): number | null {
-  const days = Number.parseInt(raw, 10);
+  const days = Number(raw);
   if (
-    Number.isNaN(days) ||
+    raw.trim() === "" ||
+    !Number.isInteger(days) ||
     days < GEO_SCAN_MIN_INTERVAL_DAYS ||
     days > GEO_SCAN_MAX_INTERVAL_DAYS
   ) {

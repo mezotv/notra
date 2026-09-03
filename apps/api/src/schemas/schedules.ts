@@ -5,6 +5,7 @@ import {
   CUSTOM_SCHEDULE_MIN_INTERVAL_DAYS,
   SCHEDULE_ANCHOR_DATE_PATTERN,
 } from "@notra/ai/constants/schedule-interval";
+import { parseUtcDate } from "@notra/ai/utils/schedule-interval";
 import { SUPPORTED_CONTENT_GENERATION_TYPES } from "@notra/content-generation/schemas";
 import { lookbackWindowEnum } from "@notra/db/schema";
 
@@ -74,6 +75,9 @@ const cronConfigSchema = z
     anchorDate: z
       .string()
       .regex(SCHEDULE_ANCHOR_DATE_PATTERN, "Expected YYYY-MM-DD")
+      .refine((value) => parseUtcDate(value) !== null, {
+        message: "Expected a valid UTC calendar date",
+      })
       .optional()
       .openapi({
         description:

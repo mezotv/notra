@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 
 import { createRoute } from "@hono/zod-openapi";
-import { CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS } from "@notra/ai/constants/schedule-interval";
 import { toUtcDateString } from "@notra/ai/utils/schedule-interval";
 import type { createDb } from "@notra/db/drizzle";
 import {
@@ -78,8 +77,7 @@ function normalizeCronConfig(
   if (config.frequency === "custom") {
     return {
       ...base,
-      intervalDays:
-        config.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS,
+      intervalDays: config.intervalDays,
       anchorDate: config.anchorDate ?? toUtcDateString(new Date()),
     };
   }
