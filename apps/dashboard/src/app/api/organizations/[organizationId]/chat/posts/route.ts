@@ -75,6 +75,7 @@ export async function POST(
           isNotNull(postCollections.sourceId)
         ),
         set: {
+          projectId,
           contentTypes: sql`CASE
             WHEN ${postCollections.contentTypes} @> ${contentTypesJson}::jsonb
               THEN ${postCollections.contentTypes}

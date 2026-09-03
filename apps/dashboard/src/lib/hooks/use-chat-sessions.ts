@@ -55,7 +55,7 @@ export function useChatSessionMutations() {
   const queryClient = useQueryClient();
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
-  const { projectId } = useActiveProject();
+  const { projectId, isResolved } = useActiveProject();
   const queryKey = chatSessionsQueryKey(organizationId, projectId);
   const renameInFlightRef = useRef<Set<string>>(new Set());
 
@@ -74,7 +74,11 @@ export function useChatSessionMutations() {
     chatId: string,
     nextTitle: string
   ): Promise<boolean> {
-    if (!organizationId || renameInFlightRef.current.has(chatId)) {
+    if (
+      !organizationId ||
+      !isResolved ||
+      renameInFlightRef.current.has(chatId)
+    ) {
       return false;
     }
 
@@ -113,7 +117,7 @@ export function useChatSessionMutations() {
   }
 
   async function togglePinned(session: ChatSessionSummary): Promise<boolean> {
-    if (!organizationId) {
+    if (!organizationId || !isResolved) {
       return false;
     }
 
@@ -157,7 +161,7 @@ export function useChatSessionMutations() {
   }
 
   async function deleteChat(chatId: string): Promise<boolean> {
-    if (!organizationId) {
+    if (!organizationId || !isResolved) {
       return false;
     }
 

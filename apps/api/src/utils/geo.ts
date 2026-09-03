@@ -1,11 +1,10 @@
 import type { createDb } from "@notra/db/drizzle";
-import { projects } from "@notra/db/schema";
+import { isProjectInOrganization } from "@notra/db/utils/projects";
 import { loadGeoModelCatalog } from "@notra/geo-core/geo/model-catalog";
 import {
   isSupportedGeoLanguage,
   SUPPORTED_GEO_LANGUAGES,
 } from "@notra/geo-core/utils/geo-language-rows";
-import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
 import type { Context } from "hono";
 
@@ -101,12 +100,5 @@ export async function projectBelongsToOrganization(
   organizationId: string,
   projectId: string
 ): Promise<boolean> {
-  const row = await db.query.projects.findFirst({
-    columns: { id: true },
-    where: and(
-      eq(projects.id, projectId),
-      eq(projects.organizationId, organizationId)
-    ),
-  });
-  return row !== undefined;
+  return isProjectInOrganization(organizationId, projectId, db);
 }

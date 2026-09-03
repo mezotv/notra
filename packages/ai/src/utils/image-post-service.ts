@@ -278,6 +278,7 @@ export async function saveGeneratedImagePost(params: {
         isNotNull(postCollections.sourceId)
       ),
       set: {
+        projectId,
         contentTypes: sql`CASE
           WHEN ${postCollections.contentTypes} @> ${contentTypesJson}::jsonb
             THEN ${postCollections.contentTypes}

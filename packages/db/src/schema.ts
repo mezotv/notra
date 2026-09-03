@@ -113,8 +113,8 @@ export const chatSessions = pgTable(
       table.deletedAt
     ),
     index("chatSessions_org_project_idx").on(
-      table.organizationId,
-      table.projectId
+      table.projectId,
+      table.organizationId
     ),
     index("chatSessions_org_content_deleted_updated_idx").on(
       table.organizationId,
@@ -1892,8 +1892,8 @@ export const postCollections = pgTable(
       table.sourceId
     ),
     index("post_collections_org_project_idx").on(
-      table.organizationId,
-      table.projectId
+      table.projectId,
+      table.organizationId
     ),
     uniqueIndex("post_collections_chat_source_uidx")
       .on(table.organizationId, table.source, table.sourceId)

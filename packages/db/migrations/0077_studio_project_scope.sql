@@ -2,8 +2,8 @@ ALTER TABLE "chat_sessions" ADD COLUMN "project_id" text;--> statement-breakpoin
 ALTER TABLE "post_collections" ADD COLUMN "project_id" text;--> statement-breakpoint
 ALTER TABLE "chat_sessions" ADD CONSTRAINT "chat_sessions_project_id_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "post_collections" ADD CONSTRAINT "post_collections_project_id_projects_id_fk" FOREIGN KEY ("project_id") REFERENCES "public"."projects"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "chatSessions_org_project_idx" ON "chat_sessions" USING btree ("organization_id","project_id");--> statement-breakpoint
-CREATE INDEX "post_collections_org_project_idx" ON "post_collections" USING btree ("organization_id","project_id");--> statement-breakpoint
+CREATE INDEX "chatSessions_org_project_idx" ON "chat_sessions" USING btree ("project_id","organization_id");--> statement-breakpoint
+CREATE INDEX "post_collections_org_project_idx" ON "post_collections" USING btree ("project_id","organization_id");--> statement-breakpoint
 UPDATE "post_collections" AS pc
 SET "project_id" = p."id"
 FROM "projects" AS p

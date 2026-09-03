@@ -152,6 +152,7 @@ export async function ensureChatPostCollection(
         isNotNull(postCollections.sourceId)
       ),
       set: {
+        projectId,
         contentTypes: sql`CASE
           WHEN ${postCollections.contentTypes} @> ${contentTypesJson}::jsonb
             THEN ${postCollections.contentTypes}

@@ -17,13 +17,10 @@ export function useActiveProject(): ActiveProjectState {
   const organizationId = activeOrganization?.id ?? "";
   const slug = activeOrganization?.slug ?? "";
   const [projectParam] = useGeoProjectQueryState();
-  const { data, isError } = useGeoProjects(organizationId);
+  const { data } = useGeoProjects(organizationId);
   const projects = data?.projects;
 
   if (!organizationId) {
-    return { projectId: null, isResolved: false };
-  }
-  if (isError) {
     return { projectId: null, isResolved: false };
   }
   if (!projects) {

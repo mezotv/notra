@@ -44,7 +44,17 @@ const queryClient = new QueryClient({
     onError: (_error, query) => {
       const message = query.meta?.errorMessage;
       if (typeof message === "string") {
-        toast.error(message);
+        toast.error(message, {
+          action:
+            query.meta?.showRetryAction === true
+              ? {
+                  label: "Retry",
+                  onClick: () => {
+                    query.fetch().catch(() => undefined);
+                  },
+                }
+              : undefined,
+        });
       }
     },
   }),

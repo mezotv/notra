@@ -3883,13 +3883,13 @@
           "name": "chatSessions_org_project_idx",
           "columns": [
             {
-              "expression": "organization_id",
+              "expression": "project_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             },
             {
-              "expression": "project_id",
+              "expression": "organization_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -9046,13 +9046,13 @@
           "name": "post_collections_org_project_idx",
           "columns": [
             {
-              "expression": "organization_id",
+              "expression": "project_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
             },
             {
-              "expression": "project_id",
+              "expression": "organization_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

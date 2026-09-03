@@ -1,8 +1,10 @@
 import { and, eq, isNull, or, type SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
 
-import { db } from "../drizzle";
+import { db, type createDb } from "../drizzle";
 import { projects } from "../schema";
+
+type ProjectDatabase = Pick<ReturnType<typeof createDb>, "query">;
 
 /**
  * Restricts a query to one project. Rows without a project (created by
@@ -21,9 +23,10 @@ export function projectScopeFilter(
 
 export async function isProjectInOrganization(
   organizationId: string,
-  projectId: string
+  projectId: string,
+  database: ProjectDatabase = db
 ): Promise<boolean> {
-  const row = await db.query.projects.findFirst({
+  const row = await database.query.projects.findFirst({
     columns: { id: true },
     where: and(
       eq(projects.id, projectId),

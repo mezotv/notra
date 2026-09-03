@@ -770,7 +770,10 @@ export function useGeoProjects(organizationId: string) {
       input: { organizationId },
     }),
     enabled: !!organizationId,
-    meta: { errorMessage: "Failed to load projects" },
+    meta: {
+      errorMessage: "Failed to load projects",
+      showRetryAction: true,
+    },
   });
 }
 
