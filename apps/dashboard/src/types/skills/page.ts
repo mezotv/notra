@@ -1,4 +1,4 @@
-import type { SKILL_EDITOR_VIEWS } from "@/constants/skills";
+import type { SKILL_EDITOR_VIEWS, SKILL_SORT_KEYS } from "@/constants/skills";
 
 export interface SkillDetailPageClientProps {
   slug: string;
@@ -6,6 +6,31 @@ export interface SkillDetailPageClientProps {
 }
 
 export type SkillEditorView = (typeof SKILL_EDITOR_VIEWS)[number];
+
+export interface SkillListItem {
+  id: string;
+  name: string;
+  description: string;
+  isSystem: boolean;
+  updatedAt: string | Date;
+}
+
+export type SkillSortKey = (typeof SKILL_SORT_KEYS)[number];
+
+export type SkillSortDirection = "asc" | "desc";
+
+export interface SkillSortState {
+  key: SkillSortKey;
+  direction: SkillSortDirection;
+}
+
+export interface SkillsTableProps {
+  slug: string;
+  skills: SkillListItem[];
+  sort: SkillSortState;
+  onSortChange: (sort: SkillSortState) => void;
+  searchActive: boolean;
+}
 
 export interface SkillDetailHeaderProps {
   slug: string;
