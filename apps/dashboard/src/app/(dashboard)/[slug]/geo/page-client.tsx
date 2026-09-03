@@ -13,10 +13,7 @@ import { Button } from "@/components/button";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { GeoSetupEmpty } from "@/components/geo/geo-setup-empty";
 import { PageContainer } from "@/components/layout/container";
-import {
-  GeoProjectProvider,
-  useGeoProjectScope,
-} from "@/components/providers/geo-project-provider";
+import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
@@ -35,7 +32,6 @@ import {
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
-import { geoNavHref } from "@/utils/geo-paths";
 
 import { GeoTabs } from "./components/geo-tabs";
 import { GeoPageSkeleton } from "./skeleton";
@@ -60,7 +56,6 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       ? activeOrganization
       : orgFromList;
   const organizationId = organization?.id ?? "";
-  const { projectId } = useGeoProjectScope();
   const geoRange = useGeoRange();
 
   const { data: settingsData, isPending: isSettingsPending } =
@@ -141,14 +136,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
     return (
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full px-4 lg:px-6">
-          <GeoSetupEmpty
-            page="overview"
-            settingsHref={geoNavHref(
-              organizationSlug,
-              "/geo/settings",
-              projectId
-            )}
-          />
+          <GeoSetupEmpty organizationId={organizationId} page="overview" />
         </div>
       </PageContainer>
     );

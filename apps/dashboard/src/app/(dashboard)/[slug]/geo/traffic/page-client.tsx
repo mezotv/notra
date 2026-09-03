@@ -4,23 +4,19 @@ import { GEO_TRAFFIC_REVEAL_MS } from "@notra/geo-core/constants/geo";
 import { isTrafficPagePending } from "@notra/geo-core/utils/ai-traffic";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { useReducedMotion } from "motion/react";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { AiTrafficCard } from "@/components/geo/ai-traffic-card";
 import { AiTrafficLogCard } from "@/components/geo/ai-traffic-log-card";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
+import { GeoSetupButton } from "@/components/geo/geo-setup-button";
 import { TrafficEmpty } from "@/components/geo/traffic-empty";
 import { TrafficPagesCard } from "@/components/geo/traffic-pages-card";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { PageContainer } from "@/components/layout/container";
-import {
-  GeoProjectProvider,
-  useGeoProjectScope,
-} from "@/components/providers/geo-project-provider";
+import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
@@ -36,7 +32,6 @@ import {
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps } from "@/types/geo";
-import { withGeoProject } from "@/utils/geo-paths";
 
 import { GeoTrafficSkeleton } from "./skeleton";
 
@@ -51,7 +46,6 @@ export default function PageClient({ organizationSlug }: GeoPageClientProps) {
 }
 
 function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
-  const { projectId } = useGeoProjectScope();
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
   const organization =
@@ -132,18 +126,7 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
             </p>
           </header>
           <EmptyState
-            action={
-              <Button
-                nativeButton={false}
-                render={
-                  <Link
-                    href={withGeoProject(`/${organizationSlug}/geo`, projectId)}
-                  />
-                }
-              >
-                Set up GEO tracking
-              </Button>
-            }
+            action={<GeoSetupButton organizationId={organizationId} />}
             description="Set up GEO tracking first, then watch AI crawlers and referrals as they arrive."
             preview={
               <EmptyStateTablePreview

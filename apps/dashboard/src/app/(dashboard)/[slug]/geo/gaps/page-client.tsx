@@ -69,7 +69,7 @@ function GeoGapsPageContent({ organizationSlug }: GeoGapsPageContentProps) {
     return (
       <GeoWriterNeedsSetup
         description="Questions engines answer without mentioning you"
-        organizationSlug={organizationSlug}
+        organizationId={organizationId}
         title="Content Gaps"
       />
     );

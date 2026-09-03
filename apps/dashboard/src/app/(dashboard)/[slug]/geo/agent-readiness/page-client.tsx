@@ -8,21 +8,17 @@ import {
 } from "@notra/geo-core/constants/agent-readiness";
 import { getAgentReadinessScanErrorMessage } from "@notra/geo-core/utils/agent-readiness";
 import { stripWebsiteProtocol } from "@notra/geo-core/utils/geo-website";
-import Link from "next/link";
 import { useState } from "react";
 
-import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateReadinessPreview } from "@/components/empty-state-preview";
 import { AgentReadinessChecklist } from "@/components/geo/agent-readiness/readiness-checklist";
 import { AgentReadinessScanDialog } from "@/components/geo/agent-readiness/readiness-scan-dialog";
 import { AgentReadinessScanningNotice } from "@/components/geo/agent-readiness/readiness-scanning-notice";
 import { AgentReadinessScoreCard } from "@/components/geo/agent-readiness/readiness-score-card";
+import { GeoSetupButton } from "@/components/geo/geo-setup-button";
 import { PageContainer } from "@/components/layout/container";
-import {
-  GeoProjectProvider,
-  useGeoProjectScope,
-} from "@/components/providers/geo-project-provider";
+import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   useAgentReadiness,
@@ -32,7 +28,6 @@ import {
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import type { AgentReadinessBodyProps } from "@/types/agent-readiness";
 import type { GeoPageClientProps } from "@/types/geo";
-import { withGeoProject } from "@/utils/geo-paths";
 
 import { AgentReadinessSkeleton } from "./skeleton";
 
@@ -118,7 +113,6 @@ function ReadinessBody({
 }
 
 function AgentReadinessPageContent({ organizationSlug }: GeoPageClientProps) {
-  const { projectId } = useGeoProjectScope();
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
   const organization =
@@ -146,18 +140,7 @@ function AgentReadinessPageContent({ organizationSlug }: GeoPageClientProps) {
             </p>
           </header>
           <EmptyState
-            action={
-              <Button
-                nativeButton={false}
-                render={
-                  <Link
-                    href={withGeoProject(`/${organizationSlug}/geo`, projectId)}
-                  />
-                }
-              >
-                Set up GEO tracking
-              </Button>
-            }
+            action={<GeoSetupButton organizationId={organizationId} />}
             description="The scan uses the website from your GEO project. Set up GEO tracking first."
             preview={<EmptyStateReadinessPreview />}
             title="Set up GEO tracking"

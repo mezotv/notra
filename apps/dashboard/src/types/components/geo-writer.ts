@@ -17,7 +17,7 @@ export interface BriefHistoryProps {
 }
 
 export interface GeoWriterNeedsSetupProps {
-  organizationSlug: string;
+  organizationId: string;
   title: string;
   description: string;
 }

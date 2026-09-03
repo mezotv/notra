@@ -1,21 +1,15 @@
 "use client";
 
-import Link from "next/link";
-
-import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
+import { GeoSetupButton } from "@/components/geo/geo-setup-button";
 import { PageContainer } from "@/components/layout/container";
-import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import type { GeoWriterNeedsSetupProps } from "@/types/components/geo-writer";
-import { withGeoProject } from "@/utils/geo-paths";
 
 export function GeoWriterNeedsSetup({
-  organizationSlug,
+  organizationId,
   title,
   description,
 }: GeoWriterNeedsSetupProps) {
-  const { projectId } = useGeoProjectScope();
-
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
       <div className="w-full space-y-6 px-4 lg:px-6">
@@ -24,18 +18,7 @@ export function GeoWriterNeedsSetup({
           <p className="text-muted-foreground">{description}</p>
         </header>
         <EmptyState
-          action={
-            <Button
-              nativeButton={false}
-              render={
-                <Link
-                  href={withGeoProject(`/${organizationSlug}/geo`, projectId)}
-                />
-              }
-            >
-              Set up GEO tracking
-            </Button>
-          }
+          action={<GeoSetupButton organizationId={organizationId} />}
           description="The writer uses your tracked prompts, competitors, and sitemap. Set up GEO tracking first."
           title="Set up GEO tracking"
         />

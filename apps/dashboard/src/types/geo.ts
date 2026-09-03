@@ -41,8 +41,9 @@ import type {
   ShareOfVoiceRow,
 } from "@notra/geo-core/types/geo";
 import type { GeoRequestPayload } from "@usenotra/geo";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
+import type { Button } from "@/components/button";
 import type { TableColumn } from "@/components/motion/table";
 import type { GeoPromptDetailSurface } from "@/types/analytics/geo-events";
 import type { ChartConfig, ChartSeriesColors } from "@/types/charts";
@@ -354,8 +355,15 @@ export interface TrafficEmptyProps {
 }
 
 export interface GeoSetupEmptyProps {
-  settingsHref: string;
+  organizationId: string;
   page?: string;
+}
+
+export interface GeoSetupButtonProps {
+  organizationId: string;
+  children?: ReactNode;
+  className?: string;
+  size?: ComponentProps<typeof Button>["size"];
 }
 
 export interface GeoScanScheduleProps {
