@@ -1,5 +1,6 @@
 import { onError } from "@orpc/server";
 import { RPCHandler } from "@orpc/server/fetch";
+import { BatchHandlerPlugin } from "@orpc/server/plugins";
 
 import { trackServerException } from "@/lib/analytics/posthog-server";
 import { createORPCContext } from "@/lib/orpc/context";
@@ -21,6 +22,7 @@ const handler = new RPCHandler(dashboardRouter, {
       }
     }),
   ],
+  plugins: [new BatchHandlerPlugin()],
 });
 
 async function handle(request: Request) {
