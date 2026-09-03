@@ -53,6 +53,16 @@ export const GITHUB_API_VERSION_HEADERS = {
   "X-GitHub-Api-Version": "2022-11-28",
 } as const;
 
+export const GITHUB_CREATE_COMMIT_ON_BRANCH_MUTATION = `
+  mutation CreateCommitOnBranch($input: CreateCommitOnBranchInput!) {
+    createCommitOnBranch(input: $input) {
+      commit {
+        oid
+      }
+    }
+  }
+`;
+
 export const GITHUB_PATH_INVALID_CHARACTERS_REGEX = /[?#]/;
 export const GITHUB_INSTALLATION_ID_REGEX = /^\d+$/;
 

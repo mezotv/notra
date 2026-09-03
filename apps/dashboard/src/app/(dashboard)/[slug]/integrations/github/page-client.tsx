@@ -66,7 +66,7 @@ function getConnectedRepositories(integrations: GitHubIntegration[]) {
       continue;
     }
     for (const repository of integration.repositories) {
-      if (repository.enabled) {
+      if (repository.enabled && repository.defaultBranch) {
         repositories.set(repository.id, repository);
       }
     }

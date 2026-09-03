@@ -142,6 +142,7 @@ export interface GitHubDirectoryPickerProps {
 
 export interface GitHubDirectoryNodeProps {
   depth: number;
+  excludedPath?: string;
   name: string;
   open: boolean;
   organizationId: string;
@@ -165,7 +166,8 @@ export interface FindExistingGitHubPullRequestParams {
   repo: string;
 }
 
-export interface GetExistingGitHubFileShaParams {
+export interface ValidateExistingGitHubBranchParams {
+  baseSha: string;
   branchName: string;
   octokit: GitHubClient;
   owner: string;
@@ -173,7 +175,16 @@ export interface GetExistingGitHubFileShaParams {
   repo: string;
 }
 
+export type GitHubPullRequestOperation = "created" | "updated";
+
+export interface GitHubCreateCommitOnBranchResult {
+  createCommitOnBranch: {
+    commit: { oid: string };
+  } | null;
+}
+
 export interface PublishContentDraftPullRequestParams {
+  contentId: string;
   contentType: GitHubPublishContentType;
   owner: string;
   repo: string;

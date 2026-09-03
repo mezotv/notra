@@ -37,6 +37,7 @@ import type {
 
 function DirectoryNode({
   depth,
+  excludedPath,
   name,
   open,
   organizationId,
@@ -52,10 +53,12 @@ function DirectoryNode({
     })
   );
   const radioId = useId();
-  let directoryContent: ReactNode = directoriesQuery.data?.directories.map(
-    (directory) => (
+  let directoryContent: ReactNode = directoriesQuery.data?.directories
+    .filter((directory) => directory.path !== excludedPath)
+    .map((directory) => (
       <DirectoryNode
         depth={depth + 1}
+        excludedPath={excludedPath}
         key={directory.path}
         name={directory.name}
         open={open}
@@ -63,8 +66,7 @@ function DirectoryNode({
         path={directory.path}
         repositoryId={repositoryId}
       />
-    )
-  );
+    ));
 
   if (directoriesQuery.isLoading) {
     directoryContent = (
@@ -145,10 +147,12 @@ export function GitHubDirectoryPicker({
       staleTime: 5 * 60 * 1000,
     })
   );
-  let rootDirectoryContent: ReactNode =
-    rootDirectoriesQuery.data?.directories.map((rootDirectory) => (
+  let rootDirectoryContent: ReactNode = rootDirectoriesQuery.data?.directories
+    .filter((rootDirectory) => rootDirectory.path !== directory)
+    .map((rootDirectory) => (
       <DirectoryNode
         depth={0}
+        excludedPath={directory}
         key={rootDirectory.path}
         name={rootDirectory.name}
         open={open}
@@ -177,6 +181,9 @@ export function GitHubDirectoryPicker({
   }
 
   const handleOpenChange = (nextOpen: boolean) => {
+    if (isSaving) {
+      return;
+    }
     setOpen(nextOpen);
     if (nextOpen) {
       setSelectedDirectory(directory);
@@ -247,6 +254,18 @@ export function GitHubDirectoryPicker({
             />
             <span>{repositoryName} (root)</span>
           </label>
+
+          {directory ? (
+            <DirectoryNode
+              depth={0}
+              excludedPath={directory}
+              name={`${directory} (current folder)`}
+              open={open}
+              organizationId={organizationId}
+              path={directory}
+              repositoryId={repositoryId}
+            />
+          ) : null}
 
           {rootDirectoryContent}
         </RadioGroup>

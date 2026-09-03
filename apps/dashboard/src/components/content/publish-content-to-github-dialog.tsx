@@ -69,23 +69,29 @@ export function PublishContentToGitHubDialog({
     })
   );
 
-  const repositories =
+  const connectedRepositories =
     integrationsQuery.data?.integrations.flatMap((integration) =>
       integration.type === "github" &&
       integration.enabled &&
       integration.repositories.length > 0
-        ? integration.repositories.filter((repository) => {
-            const output = repository.outputs?.find(
-              (candidate) => candidate.outputType === contentType
-            );
-            return (
-              repository.enabled &&
-              (output?.enabled ??
-                DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED[contentType])
-            );
-          })
+        ? integration.repositories.filter((repository) => repository.enabled)
         : []
     ) ?? [];
+  const outputEnabledRepositories = connectedRepositories.filter(
+    (repository) => {
+      const output = repository.outputs?.find(
+        (candidate) => candidate.outputType === contentType
+      );
+      return (
+        output?.enabled ?? DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED[contentType]
+      );
+    }
+  );
+  const repositories = outputEnabledRepositories.filter(
+    (repository) => repository.defaultBranch
+  );
+  const integrationsLoadFailed =
+    integrationsQuery.isError && !integrationsQuery.data;
   const selectedRepository = repositories.find(
     (repository) => repository.id === repositoryId
   );
@@ -104,8 +110,12 @@ export function PublishContentToGitHubDialog({
         repositoryId: targetRepositoryId,
       });
     },
-    onSuccess: () => {
-      toast.success("Draft pull request created");
+    onSuccess: (result) => {
+      toast.success(
+        result.operation === "created"
+          ? "Draft pull request created"
+          : "Pull request updated"
+      );
     },
     onError: (error) => {
       const recovery = getGitHubPublishRecovery(error);
@@ -126,6 +136,7 @@ export function PublishContentToGitHubDialog({
     },
   });
   const pullRequest = publishMutation.data;
+  const pullRequestWasCreated = pullRequest?.operation === "created";
   const publishRecovery = getGitHubPublishRecovery(publishMutation.error);
   const recoveryCopy = publishRecovery
     ? GITHUB_RECOVERY_COPY[publishRecovery.code]
@@ -138,6 +149,16 @@ export function PublishContentToGitHubDialog({
   const showPermissionsRecovery =
     publishRecovery?.code === "github_app_permissions_required" &&
     Boolean(publishRecovery.permissionsUrl);
+  let dialogTitle = "Create a draft pull request";
+  let dialogDescription = `Notra creates a branch, adds the ${contentLabel} as Markdown, and opens a draft pull request against the repository's default branch.`;
+  if (pullRequest) {
+    dialogTitle = pullRequestWasCreated
+      ? "Draft pull request created"
+      : "Pull request updated";
+    dialogDescription = pullRequestWasCreated
+      ? `Notra added the ${contentLabel} and opened a draft pull request.`
+      : `Notra updated the ${contentLabel} in the existing pull request.`;
+  }
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!publishMutation.isPending) {
@@ -164,13 +185,9 @@ export function PublishContentToGitHubDialog({
       <ResponsiveDialogContent className="sm:max-w-[600px]">
         <form onSubmit={handleSubmit}>
           <ResponsiveDialogHeader>
-            <ResponsiveDialogTitle>
-              Create a draft pull request
-            </ResponsiveDialogTitle>
+            <ResponsiveDialogTitle>{dialogTitle}</ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
-              Notra creates a branch, adds the {contentLabel} as Markdown, and
-              opens a draft pull request against the repository&apos;s default
-              branch.
+              {dialogDescription}
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
 
@@ -188,12 +205,12 @@ export function PublishContentToGitHubDialog({
                     {selectedRepository
                       ? `${selectedRepository.owner}/${selectedRepository.repo}`
                       : "Repository"}
-                    #{pullRequest.pullRequestNumber} · Opened by Notra Bot ·
-                    Draft
+                    #{pullRequest.pullRequestNumber} ·{" "}
+                    {pullRequestWasCreated ? "Created as draft" : "Updated"}
                   </p>
                 </div>
                 <a
-                  aria-label={`Open draft pull request #${pullRequest.pullRequestNumber} on GitHub`}
+                  aria-label={`Open pull request #${pullRequest.pullRequestNumber} on GitHub`}
                   className="flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   href={pullRequest.pullRequestUrl}
                   rel="noopener noreferrer"
@@ -208,9 +225,10 @@ export function PublishContentToGitHubDialog({
                   className="size-4 shrink-0"
                   icon={GitCommitIcon}
                 />
-                <span className="shrink-0">1 commit</span>
-                <span aria-hidden="true">·</span>
-                <span className="truncate">Added {pullRequest.path}</span>
+                <span className="truncate">
+                  {pullRequestWasCreated ? "Added" : "Updated"}{" "}
+                  {pullRequest.path}
+                </span>
                 <span aria-hidden="true">·</span>
                 <span className="max-w-32 truncate font-mono">
                   {pullRequest.branchName}
@@ -224,7 +242,11 @@ export function PublishContentToGitHubDialog({
                   Repository
                 </FieldLabel>
                 <Select
-                  disabled={publishMutation.isPending}
+                  disabled={
+                    publishMutation.isPending ||
+                    integrationsLoadFailed ||
+                    repositories.length === 0
+                  }
                   onValueChange={(value) => setRepositoryId(value ?? "")}
                   value={repositoryId}
                 >
@@ -254,16 +276,59 @@ export function PublishContentToGitHubDialog({
                     ))}
                   </SelectContent>
                 </Select>
-                {!integrationsQuery.isLoading && repositories.length === 0 ? (
+                {integrationsLoadFailed ? (
+                  <div
+                    className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 p-3"
+                    role="alert"
+                  >
+                    <p className="text-destructive text-sm">
+                      Unable to load GitHub repositories.
+                    </p>
+                    <Button
+                      onClick={() => integrationsQuery.refetch()}
+                      size="sm"
+                      type="button"
+                      variant="outline"
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : null}
+                {!integrationsQuery.isLoading &&
+                !integrationsLoadFailed &&
+                connectedRepositories.length === 0 ? (
                   <FieldDescription>
-                    No GitHub repositories available. Open the{" "}
+                    No enabled GitHub repositories are connected. Open the{" "}
                     <Link
                       className="underline underline-offset-4"
                       href={`/${organizationSlug}/integrations/github`}
                     >
                       GitHub integration
                     </Link>{" "}
-                    to connect one.
+                    to connect or enable one.
+                  </FieldDescription>
+                ) : null}
+                {!integrationsQuery.isLoading &&
+                connectedRepositories.length > 0 &&
+                outputEnabledRepositories.length === 0 ? (
+                  <FieldDescription>
+                    {contentLabel === "blog post" ? "Blog post" : "Changelog"}{" "}
+                    publishing is off. Open the{" "}
+                    <Link
+                      className="underline underline-offset-4"
+                      href={`/${organizationSlug}/integrations/github`}
+                    >
+                      GitHub integration
+                    </Link>{" "}
+                    to enable it.
+                  </FieldDescription>
+                ) : null}
+                {!integrationsQuery.isLoading &&
+                outputEnabledRepositories.length > 0 &&
+                repositories.length === 0 ? (
+                  <FieldDescription>
+                    These repositories need a default branch before they can
+                    publish to GitHub.
                   </FieldDescription>
                 ) : null}
               </Field>
@@ -329,7 +394,7 @@ export function PublishContentToGitHubDialog({
                     rel="noopener noreferrer"
                     target="_blank"
                   >
-                    Open draft PR
+                    Open pull request
                     <HugeiconsIcon
                       className="size-4"
                       icon={ArrowUpRight01Icon}

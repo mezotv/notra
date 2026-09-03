@@ -62,10 +62,9 @@ function GitHubContentPublishingSettings({
       staleTime: 0,
     })
   );
-  const directory = directoryQuery.isSuccess
-    ? (directoryQuery.data.directory ??
-      DEFAULT_GITHUB_CONTENT_DIRECTORIES[contentType])
-    : DEFAULT_GITHUB_CONTENT_DIRECTORIES[contentType];
+  const directory =
+    directoryQuery.data?.directory ??
+    DEFAULT_GITHUB_CONTENT_DIRECTORIES[contentType];
   const directoryMutation = useMutation({
     mutationFn: ({
       nextDirectory,
@@ -160,7 +159,7 @@ function GitHubContentPublishingSettings({
       </CardHeader>
       <CardContent className="space-y-5">
         <RadioGroup
-          aria-label="Repository"
+          aria-label={`${contentLabel} repository`}
           className="flex max-w-full grid-cols-none gap-1 overflow-x-auto rounded-lg bg-muted p-[3px]"
           onValueChange={(value) => {
             if (typeof value === "string") {
