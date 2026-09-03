@@ -97,7 +97,8 @@ export function CreateContentDialog({
   organizationId,
 }: CreateContentDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
-  const { projectId: activeProjectId } = useActiveProject();
+  const { projectId: activeProjectId, isResolved: isProjectResolved } =
+    useActiveProject();
   const open = controlledOpen ?? uncontrolledOpen;
   const setDialogOpen = useCallback(
     (nextOpen: boolean) => {
@@ -114,7 +115,7 @@ export function CreateContentDialog({
   useHotkey(
     "C",
     () => {
-      if (organizationId) {
+      if (organizationId && isProjectResolved) {
         hotkeyEntryRef.current = "hotkey";
         setDialogOpen(true);
       }
@@ -396,6 +397,9 @@ export function CreateContentDialog({
     }
   >({
     mutationFn: async ({ formats, voiceIds, selectedItems }) => {
+      if (!isProjectResolved) {
+        throw new Error("Project is still loading");
+      }
       const hasLinear = selectedLinearIds.length > 0;
       const calls = formats.flatMap((format) =>
         voiceIds.map((voiceId) => ({ format, voiceId }))
@@ -902,7 +906,11 @@ export function CreateContentDialog({
       <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
         {!hideTrigger && (
           <ResponsiveDialogTrigger
-            render={<CreateContentButton disabled={!organizationId} />}
+            render={
+              <CreateContentButton
+                disabled={!organizationId || !isProjectResolved}
+              />
+            }
           />
         )}
         <ResponsiveDialogContent className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
@@ -1046,7 +1054,7 @@ export function CreateContentDialog({
                 </div>
                 {step === "identities" ? (
                   <Button
-                    disabled={mutation.isPending}
+                    disabled={mutation.isPending || !isProjectResolved}
                     onClick={handleCreate}
                     type="button"
                   >

@@ -452,6 +452,16 @@ function UserImageGrid({ children }: UserImageGridProps) {
   );
 }
 
+function ProjectScopeLoadingInput() {
+  return (
+    <div
+      aria-label="Loading project"
+      className="bg-muted/50 h-24 animate-pulse rounded-xl"
+      role="status"
+    />
+  );
+}
+
 function StandaloneChatPageClient({
   organizationSlug,
   chatId: initialChatId,
@@ -468,7 +478,8 @@ function StandaloneChatPageClient({
       ? activeOrganization
       : orgFromList;
   const organizationId = organization?.id ?? "";
-  const { projectId: activeProjectId } = useActiveProject();
+  const { projectId: activeProjectId, isResolved: isProjectResolved } =
+    useActiveProject();
   const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
   const { data: membersData } = useQuery({
@@ -568,7 +579,6 @@ function StandaloneChatPageClient({
   const contextRef = useRef(context);
   const hasCustomizedContextRef = useRef(hasCustomizedContext);
   const organizationIdRef = useRef(organizationId);
-  const projectIdRef = useRef(activeProjectId);
   const selectedModelRef = useRef(selectedModel);
   const thinkingLevelRef = useRef(thinkingLevel);
 
@@ -578,14 +588,12 @@ function StandaloneChatPageClient({
     selectedModelRef.current = selectedModel;
     thinkingLevelRef.current = thinkingLevel;
     organizationIdRef.current = organizationId;
-    projectIdRef.current = activeProjectId;
   }, [
     context,
     hasCustomizedContext,
     selectedModel,
     thinkingLevel,
     organizationId,
-    activeProjectId,
   ]);
 
   const transport = useMemo(
@@ -595,7 +603,7 @@ function StandaloneChatPageClient({
         prepareSendMessagesRequest: ({ id, messages }) => ({
           body: {
             chatId: id,
-            projectId: projectIdRef.current ?? undefined,
+            projectId: activeProjectId ?? undefined,
             messages: getSendableMessages(messages),
             context: hasCustomizedContextRef.current
               ? contextRef.current
@@ -655,7 +663,7 @@ function StandaloneChatPageClient({
           );
         },
       }),
-    [organizationId]
+    [activeProjectId, organizationId]
   );
 
   const [wasStoppedByUser, setWasStoppedByUser] = useState(false);
@@ -1116,6 +1124,7 @@ function StandaloneChatPageClient({
   const isLoading = status === "streaming" || status === "submitted";
   const isPendingAutoSubmit =
     !initialChatId && Boolean(initialQuery?.trim()) && messages.length === 0;
+  const isProjectScopePending = !initialChatId && !isProjectResolved;
   const hasMessages = messages.length > 0;
 
   const [isFirstMessageTransition, setIsFirstMessageTransition] =
@@ -1422,7 +1431,7 @@ function StandaloneChatPageClient({
 
   const dispatchMessage = useCallback(
     async (text: string, attachments: ChatAttachment[] = []) => {
-      if (isSlackMirrored) {
+      if (isSlackMirrored || isProjectScopePending) {
         return;
       }
 
@@ -1502,6 +1511,7 @@ function StandaloneChatPageClient({
       addToolApprovalResponse,
       authorMetadata,
       initialChatId,
+      isProjectScopePending,
       isSlackMirrored,
       organizationId,
       organizationSlug,
@@ -1562,7 +1572,7 @@ function StandaloneChatPageClient({
     if (autoSubmittedQueryRef.current === trimmedInitialQuery) {
       return;
     }
-    if (!organizationId) {
+    if (!organizationId || !isProjectResolved) {
       return;
     }
     if (messagesRef.current.length > 0) {
@@ -1620,6 +1630,7 @@ function StandaloneChatPageClient({
   }, [
     initialChatId,
     initialQuery,
+    isProjectResolved,
     organizationId,
     setInitialQuery,
     setMessages,
@@ -2310,32 +2321,36 @@ function StandaloneChatPageClient({
             </h1>
           </div>
           <div className="w-full min-w-0">
-            <ChatInputAdvanced
-              context={context}
-              draftStorageKey={draftStorageKey}
-              error={chatError}
-              initialValue={initialQuery ?? undefined}
-              isLoading={isLoading}
-              isStopping={isStopping}
-              model={selectedModel}
-              onAddContext={handleAddContext}
-              onClearError={handleClearError}
-              onEmptyChange={setIsInputEmpty}
-              onModelChange={handleModelChange}
-              onRemoveContext={handleRemoveContext}
-              onSend={handleSend}
-              onStop={handleStop}
-              onThinkingLevelChange={handleThinkingLevelChange}
-              onUpdateQueued={handleUpdateQueued}
-              organizationId={organizationId}
-              organizationSlug={organizationSlug}
-              queuedMessages={queuedMessages}
-              ref={chatInputRef}
-              thinkingLevel={thinkingLevel}
-            />
+            {isProjectScopePending ? (
+              <ProjectScopeLoadingInput />
+            ) : (
+              <ChatInputAdvanced
+                context={context}
+                draftStorageKey={draftStorageKey}
+                error={chatError}
+                initialValue={initialQuery ?? undefined}
+                isLoading={isLoading}
+                isStopping={isStopping}
+                model={selectedModel}
+                onAddContext={handleAddContext}
+                onClearError={handleClearError}
+                onEmptyChange={setIsInputEmpty}
+                onModelChange={handleModelChange}
+                onRemoveContext={handleRemoveContext}
+                onSend={handleSend}
+                onStop={handleStop}
+                onThinkingLevelChange={handleThinkingLevelChange}
+                onUpdateQueued={handleUpdateQueued}
+                organizationId={organizationId}
+                organizationSlug={organizationSlug}
+                queuedMessages={queuedMessages}
+                ref={chatInputRef}
+                thinkingLevel={thinkingLevel}
+              />
+            )}
           </div>
           <ChatSuggestions
-            disabled={isLoading}
+            disabled={isLoading || isProjectScopePending}
             hidden={!isInputEmpty}
             onSelect={handleSuggestionSelect}
           />
@@ -2616,29 +2631,33 @@ function StandaloneChatPageClient({
                   />
                 </div>
               )}
-              <ChatInputAdvanced
-                connectedTop={queuedMessages.length > 0}
-                context={context}
-                draftStorageKey={draftStorageKey}
-                error={null}
-                initialValue={initialQuery ?? undefined}
-                isLoading={isLoading}
-                isStopping={isStopping}
-                model={selectedModel}
-                onAddContext={handleAddContext}
-                onClearError={handleClearError}
-                onModelChange={handleModelChange}
-                onRemoveContext={handleRemoveContext}
-                onSend={handleSend}
-                onStop={handleStop}
-                onThinkingLevelChange={handleThinkingLevelChange}
-                onUpdateQueued={handleUpdateQueued}
-                organizationId={organizationId}
-                organizationSlug={organizationSlug}
-                queuedMessages={queuedMessages}
-                ref={chatInputRef}
-                thinkingLevel={thinkingLevel}
-              />
+              {isProjectScopePending ? (
+                <ProjectScopeLoadingInput />
+              ) : (
+                <ChatInputAdvanced
+                  connectedTop={queuedMessages.length > 0}
+                  context={context}
+                  draftStorageKey={draftStorageKey}
+                  error={null}
+                  initialValue={initialQuery ?? undefined}
+                  isLoading={isLoading}
+                  isStopping={isStopping}
+                  model={selectedModel}
+                  onAddContext={handleAddContext}
+                  onClearError={handleClearError}
+                  onModelChange={handleModelChange}
+                  onRemoveContext={handleRemoveContext}
+                  onSend={handleSend}
+                  onStop={handleStop}
+                  onThinkingLevelChange={handleThinkingLevelChange}
+                  onUpdateQueued={handleUpdateQueued}
+                  organizationId={organizationId}
+                  organizationSlug={organizationSlug}
+                  queuedMessages={queuedMessages}
+                  ref={chatInputRef}
+                  thinkingLevel={thinkingLevel}
+                />
+              )}
             </div>
           </div>
         </div>

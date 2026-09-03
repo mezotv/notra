@@ -183,7 +183,8 @@ export function CommandPalette() {
   const slug = activeOrganization?.slug ?? "";
   const organizationId = activeOrganization?.id ?? "";
   const [projectParam] = useGeoProjectQueryState();
-  const { projectId: activeProjectId } = useActiveProject();
+  const { projectId: activeProjectId, isResolved: isProjectResolved } =
+    useActiveProject();
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
   useEffect(() => {
@@ -208,13 +209,13 @@ export function CommandPalette() {
         query: debouncedQuery,
       },
     }),
-    enabled: searchEnabled,
+    enabled: searchEnabled && isProjectResolved,
     staleTime: 15_000,
   });
 
   const entityHits: EntityHit[] = (() => {
     const data = searchResults.data;
-    if (!(data && slug)) {
+    if (!(data && slug && isProjectResolved)) {
       return [];
     }
     const hits: EntityHit[] = [];

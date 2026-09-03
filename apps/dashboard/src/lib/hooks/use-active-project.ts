@@ -24,7 +24,7 @@ export function useActiveProject(): ActiveProjectState {
     return { projectId: null, isResolved: false };
   }
   if (isError) {
-    return { projectId: null, isResolved: true };
+    return { projectId: null, isResolved: false };
   }
   if (!projects) {
     return { projectId: null, isResolved: false };
