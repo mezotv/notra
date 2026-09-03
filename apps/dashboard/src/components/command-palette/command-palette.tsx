@@ -49,6 +49,10 @@ import { dashboardOrpc } from "@/lib/orpc/query";
 import type { CommandPaletteOpenSource } from "@/types/analytics/studio-events";
 import type {
   AiResult,
+  CommandPaletteAiState,
+  CommandPaletteDialogProps,
+  CommandPaletteLoadingProps,
+  CommandPaletteResultsProps,
   CommandSection,
   EntityHit,
 } from "@/types/components/command-palette";
@@ -153,12 +157,9 @@ export function CommandPalette() {
     readIsApplePlatform,
     getServerIsApplePlatform
   );
-  const [aiState, setAiState] = useState<
-    | { status: "idle" }
-    | { status: "loading" }
-    | { status: "navigating"; label: string }
-    | { status: "error" }
-  >({ status: "idle" });
+  const [aiState, setAiState] = useState<CommandPaletteAiState>({
+    status: "idle",
+  });
   const [, startNavigation] = useTransition();
   const { openFeedback: triggerFeedback } = useFeedback();
   const abortRef = useRef<AbortController | null>(null);
@@ -170,13 +171,6 @@ export function CommandPalette() {
       trackEvent(POSTHOG_EVENTS.COMMAND_PALETTE_OPENED, {
         source: openSource ?? "button",
       });
-    }
-    if (!open) {
-      abortRef.current?.abort();
-      abortRef.current = null;
-      setQuery("");
-      setAiState({ status: "idle" });
-      lastTrackedSearchRef.current = null;
     }
     wasOpenRef.current = open;
   }, [open, openSource]);
@@ -356,10 +350,13 @@ export function CommandPalette() {
 
   const handleOpenChange = (next: boolean) => {
     setOpen(next);
-    if (!next) {
+  };
+
+  const handleQueryChange = (value: string) => {
+    setQuery(value);
+    if (aiState.status !== "idle") {
       abortRef.current?.abort();
       abortRef.current = null;
-      setQuery("");
       setAiState({ status: "idle" });
     }
   };
@@ -476,11 +473,50 @@ export function CommandPalette() {
   const hasQuery = trimmedQuery.length > 0;
   const isLoading =
     aiState.status === "loading" || aiState.status === "navigating";
-  const isNavigatingAi = aiState.status === "navigating";
   const aiModifierLabel = isApplePlatform ? "⌘" : "Ctrl";
 
   return (
-    <Dialog onOpenChange={handleOpenChange} open={open}>
+    <CommandPaletteDialog
+      aiModifierLabel={aiModifierLabel}
+      aiState={aiState}
+      entityHitsBySection={entityHitsBySection}
+      hasAiCredits={hasAiCredits}
+      hasQuery={hasQuery}
+      isLoading={isLoading}
+      navigate={navigate}
+      onOpenChange={handleOpenChange}
+      onQueryChange={handleQueryChange}
+      open={open}
+      openChatWithQuery={openChatWithQuery}
+      openFeedback={openFeedback}
+      query={query}
+      runAiSearch={runAiSearch}
+      slug={slug}
+      trimmedQuery={trimmedQuery}
+    />
+  );
+}
+
+function CommandPaletteDialog({
+  aiModifierLabel,
+  aiState,
+  entityHitsBySection,
+  hasAiCredits,
+  hasQuery,
+  isLoading,
+  navigate,
+  onOpenChange,
+  onQueryChange,
+  open,
+  openChatWithQuery,
+  openFeedback,
+  query,
+  runAiSearch,
+  slug,
+  trimmedQuery,
+}: CommandPaletteDialogProps) {
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
         className="border-border/60 top-[18%] w-[calc(100%-2rem)] max-w-[45rem]! translate-y-0 gap-0 overflow-hidden rounded-xl! border p-0! shadow-2xl sm:max-w-[45rem]!"
         showCloseButton={false}
@@ -517,14 +553,7 @@ export function CommandPalette() {
                 "placeholder:text-muted-foreground/70",
                 isLoading && "text-muted-foreground"
               )}
-              onValueChange={(value) => {
-                setQuery(value);
-                if (aiState.status !== "idle") {
-                  abortRef.current?.abort();
-                  abortRef.current = null;
-                  setAiState({ status: "idle" });
-                }
-              }}
+              onValueChange={onQueryChange}
               placeholder="Search pages, actions, or ask AI…"
               value={query}
             />
@@ -537,275 +566,21 @@ export function CommandPalette() {
             ) : null}
           </div>
 
-          <div className="overflow-hidden">
-            {isLoading ? (
-              <div className="flex h-[14rem] flex-col items-center justify-center px-6 text-center">
-                <div className="text-foreground grid grid-cols-[1.125rem_auto_1.125rem] items-center gap-2 text-sm">
-                  <BrailleSpinner className="text-[18px] leading-none" />
-                  <Shimmer as="span" className="font-medium">
-                    {isNavigatingAi
-                      ? `${(aiState as { status: "navigating"; label: string }).label}…`
-                      : "Thinking…"}
-                  </Shimmer>
-                  <span aria-hidden="true" />
-                </div>
-                <p className="text-muted-foreground mt-3 max-w-xs text-xs">
-                  {isNavigatingAi
-                    ? "Hang tight, almost there."
-                    : `Figuring out where to take you for “${trimmedQuery}”.`}
-                </p>
-              </div>
-            ) : null}
-            <CommandPrimitive.List
-              className={cn(
-                "max-h-[24rem] scroll-py-2 overflow-y-auto overscroll-contain p-1.5",
-                isLoading && "hidden"
-              )}
-            >
-              <CommandPrimitive.Empty className="px-3 py-10">
-                <div className="mx-auto flex max-w-sm flex-col items-center gap-4 text-center">
-                  <div className="border-border bg-muted/40 flex size-10 items-center justify-center rounded-full border border-dashed">
-                    <HugeiconsIcon
-                      className="text-muted-foreground size-4"
-                      icon={SparklesIcon}
-                      strokeWidth={2}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-foreground text-sm font-medium">
-                      No matches for &ldquo;{trimmedQuery}&rdquo;
-                    </p>
-                    <p className="text-muted-foreground text-xs">
-                      Let AI navigate for you or open a chat with your question.
-                    </p>
-                  </div>
-                  <div className="flex w-full flex-col gap-1.5">
-                    <button
-                      className="group border-border/80 bg-background hover:border-border hover:bg-muted/60 duration-fast flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all disabled:opacity-60"
-                      disabled={isLoading}
-                      onClick={runAiSearch}
-                      type="button"
-                    >
-                      <HugeiconsIcon
-                        className={cn(
-                          "text-muted-foreground group-hover:text-foreground size-4 transition-colors",
-                          isLoading && "animate-spin motion-reduce:animate-none"
-                        )}
-                        icon={isLoading ? Loading03Icon : SparklesIcon}
-                        strokeWidth={2}
-                      />
-                      <span className="flex-1 font-medium">
-                        {isLoading ? "Thinking…" : "Navigate with AI"}
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <Kbd>{aiModifierLabel}</Kbd>
-                        <Kbd>↵</Kbd>
-                      </div>
-                    </button>
-                    <button
-                      className="group border-border/80 bg-background hover:border-border hover:bg-muted/60 duration-fast flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all"
-                      onClick={() => openChatWithQuery(trimmedQuery)}
-                      type="button"
-                    >
-                      <HugeiconsIcon
-                        className="text-muted-foreground group-hover:text-foreground size-4 transition-colors"
-                        icon={Message01Icon}
-                        strokeWidth={2}
-                      />
-                      <span className="flex-1 font-medium">Ask AI chat</span>
-                      <HugeiconsIcon
-                        className="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5"
-                        icon={ArrowRight01Icon}
-                        strokeWidth={2}
-                      />
-                    </button>
-                  </div>
-                  {aiState.status === "error" ? (
-                    <p className="text-destructive text-xs">
-                      AI search failed. Try the chat fallback.
-                    </p>
-                  ) : null}
-                </div>
-              </CommandPrimitive.Empty>
-
-              {COMMAND_SECTIONS.map((section) => {
-                const items = GROUPED_ROUTES[section].filter((route) =>
-                  isCommandRouteAvailable(route, hasAiCredits)
-                );
-                if (items.length === 0) {
-                  return null;
-                }
-                return (
-                  <CommandPrimitive.Group
-                    className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
-                    heading={section}
-                    key={section}
-                  >
-                    {items.map((item) => (
-                      <CommandPrimitive.Item
-                        className={cn(
-                          "group/item relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none",
-                          "data-[selected=true]:bg-muted data-[selected=true]:text-foreground",
-                          "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50"
-                        )}
-                        key={item.id}
-                        keywords={item.keywords}
-                        onSelect={() => {
-                          trackEvent(
-                            POSTHOG_EVENTS.COMMAND_PALETTE_RESULT_SELECTED,
-                            { kind: "route", id: item.id }
-                          );
-                          navigate(item.path(slug));
-                        }}
-                        value={item.label}
-                      >
-                        <HugeiconsIcon
-                          className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
-                          icon={item.icon}
-                          strokeWidth={2}
-                        />
-                        <span className="flex-1 truncate">{item.label}</span>
-                        <HugeiconsIcon
-                          className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
-                          icon={ArrowRight01Icon}
-                          strokeWidth={2}
-                        />
-                      </CommandPrimitive.Item>
-                    ))}
-                  </CommandPrimitive.Group>
-                );
-              })}
-
-              {ENTITY_SECTION_ORDER.map((section) => {
-                const items = entityHitsBySection[section];
-                if (!items || items.length === 0) {
-                  return null;
-                }
-                return (
-                  <CommandPrimitive.Group
-                    className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
-                    heading={section}
-                    key={section}
-                  >
-                    {items.map((hit) => (
-                      <CommandPrimitive.Item
-                        className={cn(
-                          "group/item relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none",
-                          "data-[selected=true]:bg-muted data-[selected=true]:text-foreground"
-                        )}
-                        key={hit.key}
-                        keywords={hit.keywords}
-                        onSelect={() => {
-                          trackEvent(
-                            POSTHOG_EVENTS.COMMAND_PALETTE_RESULT_SELECTED,
-                            {
-                              kind: "entity",
-                              entity_type: hit.key.split(":")[0] ?? null,
-                            }
-                          );
-                          navigate(hit.path);
-                        }}
-                        value={`${hit.key}__${hit.label}`}
-                      >
-                        <HugeiconsIcon
-                          className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
-                          icon={hit.icon}
-                          strokeWidth={2}
-                        />
-                        <span className="flex-1 truncate">{hit.label}</span>
-                        {hit.sublabel ? (
-                          <span className="text-muted-foreground max-w-[40%] truncate text-[11px]">
-                            {hit.sublabel}
-                          </span>
-                        ) : null}
-                        <HugeiconsIcon
-                          className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
-                          icon={ArrowRight01Icon}
-                          strokeWidth={2}
-                        />
-                      </CommandPrimitive.Item>
-                    ))}
-                  </CommandPrimitive.Group>
-                );
-              })}
-
-              <CommandPrimitive.Group
-                className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
-                heading="Actions"
-              >
-                <CommandPrimitive.Item
-                  className="group/item data-[selected=true]:bg-muted data-[selected=true]:text-foreground relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none"
-                  keywords={["feedback", "bug", "report", "idea", "feature"]}
-                  onSelect={openFeedback}
-                  value="__action_feedback"
-                >
-                  <HugeiconsIcon
-                    className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
-                    icon={Message01Icon}
-                    strokeWidth={2}
-                  />
-                  <span className="flex-1 truncate">Send feedback</span>
-                  <HugeiconsIcon
-                    className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
-                    icon={ArrowRight01Icon}
-                    strokeWidth={2}
-                  />
-                </CommandPrimitive.Item>
-              </CommandPrimitive.Group>
-
-              {hasQuery ? (
-                <CommandPrimitive.Group
-                  className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
-                  heading="AI"
-                >
-                  <CommandPrimitive.Item
-                    className="group/item data-[selected=true]:bg-muted data-[selected=true]:text-foreground relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none"
-                    keywords={["ai", "ask", "natural language"]}
-                    onSelect={runAiSearch}
-                    value={`__ai_navigate_${query}`}
-                  >
-                    <HugeiconsIcon
-                      className={cn(
-                        "text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors",
-                        isLoading && "animate-spin motion-reduce:animate-none"
-                      )}
-                      icon={isLoading ? Loading03Icon : SparklesIcon}
-                      strokeWidth={2}
-                    />
-                    <span className="flex-1 truncate">
-                      {isLoading
-                        ? "Thinking…"
-                        : `Navigate with AI: "${trimmedQuery}"`}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Kbd>{aiModifierLabel}</Kbd>
-                      <Kbd>↵</Kbd>
-                    </div>
-                  </CommandPrimitive.Item>
-                  <CommandPrimitive.Item
-                    className="group/item data-[selected=true]:bg-muted data-[selected=true]:text-foreground relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none"
-                    keywords={["chat", "conversation", "message"]}
-                    onSelect={() => openChatWithQuery(trimmedQuery)}
-                    value={`__ai_chat_${query}`}
-                  >
-                    <HugeiconsIcon
-                      className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
-                      icon={Message01Icon}
-                      strokeWidth={2}
-                    />
-                    <span className="flex-1 truncate">
-                      Ask AI chat about this
-                    </span>
-                    <HugeiconsIcon
-                      className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
-                      icon={ArrowRight01Icon}
-                      strokeWidth={2}
-                    />
-                  </CommandPrimitive.Item>
-                </CommandPrimitive.Group>
-              ) : null}
-            </CommandPrimitive.List>
-          </div>
+          <CommandPaletteResults
+            aiModifierLabel={aiModifierLabel}
+            aiState={aiState}
+            entityHitsBySection={entityHitsBySection}
+            hasAiCredits={hasAiCredits}
+            hasQuery={hasQuery}
+            isLoading={isLoading}
+            navigate={navigate}
+            openChatWithQuery={openChatWithQuery}
+            openFeedback={openFeedback}
+            query={query}
+            runAiSearch={runAiSearch}
+            slug={slug}
+            trimmedQuery={trimmedQuery}
+          />
 
           <div className="border-border/60 bg-muted/30 text-muted-foreground flex h-9 shrink-0 items-center justify-between gap-3 border-t px-3 text-[11px]">
             <div className="flex items-center gap-3">
@@ -839,5 +614,293 @@ export function CommandPalette() {
         </CommandPrimitive>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function CommandPaletteResults({
+  aiModifierLabel,
+  aiState,
+  entityHitsBySection,
+  hasAiCredits,
+  hasQuery,
+  isLoading,
+  navigate,
+  openChatWithQuery,
+  openFeedback,
+  query,
+  runAiSearch,
+  slug,
+  trimmedQuery,
+}: CommandPaletteResultsProps) {
+  return (
+    <div className="overflow-hidden">
+      {isLoading ? (
+        <CommandPaletteLoading aiState={aiState} query={trimmedQuery} />
+      ) : null}
+      <CommandPrimitive.List
+        className={cn(
+          "max-h-[24rem] scroll-py-2 overflow-y-auto overscroll-contain p-1.5",
+          isLoading && "hidden"
+        )}
+      >
+        <CommandPrimitive.Empty className="px-3 py-10">
+          <div className="mx-auto flex max-w-sm flex-col items-center gap-4 text-center">
+            <div className="border-border bg-muted/40 flex size-10 items-center justify-center rounded-full border border-dashed">
+              <HugeiconsIcon
+                className="text-muted-foreground size-4"
+                icon={SparklesIcon}
+                strokeWidth={2}
+              />
+            </div>
+            <div className="space-y-1">
+              <p className="text-foreground text-sm font-medium">
+                No matches for &ldquo;{trimmedQuery}&rdquo;
+              </p>
+              <p className="text-muted-foreground text-xs">
+                Let AI navigate for you or open a chat with your question.
+              </p>
+            </div>
+            <div className="flex w-full flex-col gap-1.5">
+              <button
+                className="group border-border/80 bg-background hover:border-border hover:bg-muted/60 duration-fast flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all disabled:opacity-60"
+                disabled={isLoading}
+                onClick={runAiSearch}
+                type="button"
+              >
+                <HugeiconsIcon
+                  className={cn(
+                    "text-muted-foreground group-hover:text-foreground size-4 transition-colors",
+                    isLoading && "animate-spin motion-reduce:animate-none"
+                  )}
+                  icon={isLoading ? Loading03Icon : SparklesIcon}
+                  strokeWidth={2}
+                />
+                <span className="flex-1 font-medium">
+                  {isLoading ? "Thinking…" : "Navigate with AI"}
+                </span>
+                <div className="flex items-center gap-1">
+                  <Kbd>{aiModifierLabel}</Kbd>
+                  <Kbd>↵</Kbd>
+                </div>
+              </button>
+              <button
+                className="group border-border/80 bg-background hover:border-border hover:bg-muted/60 duration-fast flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all"
+                onClick={() => openChatWithQuery(trimmedQuery)}
+                type="button"
+              >
+                <HugeiconsIcon
+                  className="text-muted-foreground group-hover:text-foreground size-4 transition-colors"
+                  icon={Message01Icon}
+                  strokeWidth={2}
+                />
+                <span className="flex-1 font-medium">Ask AI chat</span>
+                <HugeiconsIcon
+                  className="text-muted-foreground size-4 transition-transform group-hover:translate-x-0.5"
+                  icon={ArrowRight01Icon}
+                  strokeWidth={2}
+                />
+              </button>
+            </div>
+            {aiState.status === "error" ? (
+              <p className="text-destructive text-xs">
+                AI search failed. Try the chat fallback.
+              </p>
+            ) : null}
+          </div>
+        </CommandPrimitive.Empty>
+
+        {COMMAND_SECTIONS.map((section) => {
+          const items = GROUPED_ROUTES[section].filter((route) =>
+            isCommandRouteAvailable(route, hasAiCredits)
+          );
+          if (items.length === 0) {
+            return null;
+          }
+          return (
+            <CommandPrimitive.Group
+              className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
+              heading={section}
+              key={section}
+            >
+              {items.map((item) => (
+                <CommandPrimitive.Item
+                  className={cn(
+                    "group/item relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none",
+                    "data-[selected=true]:bg-muted data-[selected=true]:text-foreground",
+                    "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-50"
+                  )}
+                  key={item.id}
+                  keywords={item.keywords}
+                  onSelect={() => {
+                    trackEvent(POSTHOG_EVENTS.COMMAND_PALETTE_RESULT_SELECTED, {
+                      kind: "route",
+                      id: item.id,
+                    });
+                    navigate(item.path(slug));
+                  }}
+                  value={item.label}
+                >
+                  <HugeiconsIcon
+                    className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
+                    icon={item.icon}
+                    strokeWidth={2}
+                  />
+                  <span className="flex-1 truncate">{item.label}</span>
+                  <HugeiconsIcon
+                    className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
+                    icon={ArrowRight01Icon}
+                    strokeWidth={2}
+                  />
+                </CommandPrimitive.Item>
+              ))}
+            </CommandPrimitive.Group>
+          );
+        })}
+
+        {ENTITY_SECTION_ORDER.map((section) => {
+          const items = entityHitsBySection[section];
+          if (!items || items.length === 0) {
+            return null;
+          }
+          return (
+            <CommandPrimitive.Group
+              className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
+              heading={section}
+              key={section}
+            >
+              {items.map((hit) => (
+                <CommandPrimitive.Item
+                  className={cn(
+                    "group/item relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none",
+                    "data-[selected=true]:bg-muted data-[selected=true]:text-foreground"
+                  )}
+                  key={hit.key}
+                  keywords={hit.keywords}
+                  onSelect={() => {
+                    trackEvent(POSTHOG_EVENTS.COMMAND_PALETTE_RESULT_SELECTED, {
+                      kind: "entity",
+                      entity_type: hit.key.split(":")[0] ?? null,
+                    });
+                    navigate(hit.path);
+                  }}
+                  value={`${hit.key}__${hit.label}`}
+                >
+                  <HugeiconsIcon
+                    className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
+                    icon={hit.icon}
+                    strokeWidth={2}
+                  />
+                  <span className="flex-1 truncate">{hit.label}</span>
+                  {hit.sublabel ? (
+                    <span className="text-muted-foreground max-w-[40%] truncate text-[11px]">
+                      {hit.sublabel}
+                    </span>
+                  ) : null}
+                  <HugeiconsIcon
+                    className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
+                    icon={ArrowRight01Icon}
+                    strokeWidth={2}
+                  />
+                </CommandPrimitive.Item>
+              ))}
+            </CommandPrimitive.Group>
+          );
+        })}
+
+        <CommandPrimitive.Group
+          className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
+          heading="Actions"
+        >
+          <CommandPrimitive.Item
+            className="group/item data-[selected=true]:bg-muted data-[selected=true]:text-foreground relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none"
+            keywords={["feedback", "bug", "report", "idea", "feature"]}
+            onSelect={openFeedback}
+            value="__action_feedback"
+          >
+            <HugeiconsIcon
+              className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
+              icon={Message01Icon}
+              strokeWidth={2}
+            />
+            <span className="flex-1 truncate">Send feedback</span>
+            <HugeiconsIcon
+              className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
+              icon={ArrowRight01Icon}
+              strokeWidth={2}
+            />
+          </CommandPrimitive.Item>
+        </CommandPrimitive.Group>
+
+        {hasQuery ? (
+          <CommandPrimitive.Group
+            className="text-foreground [&_[cmdk-group-heading]]:text-muted-foreground px-1 pb-1 [&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:pt-2 [&_[cmdk-group-heading]]:pb-1 [&_[cmdk-group-heading]]:text-[10.5px] [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:tracking-wider [&_[cmdk-group-heading]]:uppercase"
+            heading="AI"
+          >
+            <CommandPrimitive.Item
+              className="group/item data-[selected=true]:bg-muted data-[selected=true]:text-foreground relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none"
+              keywords={["ai", "ask", "natural language"]}
+              onSelect={runAiSearch}
+              value={`__ai_navigate_${query}`}
+            >
+              <HugeiconsIcon
+                className={cn(
+                  "text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors",
+                  isLoading && "animate-spin motion-reduce:animate-none"
+                )}
+                icon={isLoading ? Loading03Icon : SparklesIcon}
+                strokeWidth={2}
+              />
+              <span className="flex-1 truncate">
+                {isLoading
+                  ? "Thinking…"
+                  : `Navigate with AI: "${trimmedQuery}"`}
+              </span>
+              <div className="flex items-center gap-1">
+                <Kbd>{aiModifierLabel}</Kbd>
+                <Kbd>↵</Kbd>
+              </div>
+            </CommandPrimitive.Item>
+            <CommandPrimitive.Item
+              className="group/item data-[selected=true]:bg-muted data-[selected=true]:text-foreground relative flex cursor-pointer items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] transition-colors outline-none select-none"
+              keywords={["chat", "conversation", "message"]}
+              onSelect={() => openChatWithQuery(trimmedQuery)}
+              value={`__ai_chat_${query}`}
+            >
+              <HugeiconsIcon
+                className="text-muted-foreground group-data-[selected=true]/item:text-foreground size-4 shrink-0 transition-colors"
+                icon={Message01Icon}
+                strokeWidth={2}
+              />
+              <span className="flex-1 truncate">Ask AI chat about this</span>
+              <HugeiconsIcon
+                className="text-muted-foreground size-3 opacity-0 transition-opacity group-data-[selected=true]/item:opacity-60"
+                icon={ArrowRight01Icon}
+                strokeWidth={2}
+              />
+            </CommandPrimitive.Item>
+          </CommandPrimitive.Group>
+        ) : null}
+      </CommandPrimitive.List>
+    </div>
+  );
+}
+
+function CommandPaletteLoading({ aiState, query }: CommandPaletteLoadingProps) {
+  const isNavigating = aiState.status === "navigating";
+  return (
+    <div className="flex h-[14rem] flex-col items-center justify-center px-6 text-center">
+      <div className="text-foreground grid grid-cols-[1.125rem_auto_1.125rem] items-center gap-2 text-sm">
+        <BrailleSpinner className="text-[18px] leading-none" />
+        <Shimmer as="span" className="font-medium">
+          {isNavigating ? `${aiState.label}…` : "Thinking…"}
+        </Shimmer>
+        <span aria-hidden="true" />
+      </div>
+      <p className="text-muted-foreground mt-3 max-w-xs text-xs">
+        {isNavigating
+          ? "Hang tight, almost there."
+          : `Figuring out where to take you for “${query}”.`}
+      </p>
+    </div>
   );
 }

@@ -417,6 +417,29 @@ export interface LeaderboardDetailMetric {
   value: string;
 }
 
+export interface AccountIdentityHeaderProps {
+  handle: string;
+  identity: AccountIdentity | null;
+}
+
+export interface AccountMetricsProps {
+  isLoading: boolean;
+  metrics: LeaderboardDetailMetric[];
+}
+
+export interface AccountEngagementSectionProps {
+  isLoading: boolean;
+  points: AccountEngagementPoint[];
+  username: string;
+}
+
+export interface AccountPostsTableProps {
+  isLoading: boolean;
+  posts: TopPostItem[];
+  username: string;
+  variant: NonNullable<AccountDetailViewProps["variant"]>;
+}
+
 export interface TrackAccountPreviewResponse {
   account: ResolvedTwitterAccount | null;
 }

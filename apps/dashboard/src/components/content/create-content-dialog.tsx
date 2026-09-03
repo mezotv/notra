@@ -45,7 +45,13 @@ import {
 } from "@/schemas/content/create-content-form";
 import type { ContentCreateEntry } from "@/types/analytics/studio-events";
 import type {
+  ActivityStepProps,
+  BrandIdentitiesStepProps,
+  CreateContentFooterProps,
+  CreateContentIntegrationDialogsProps,
   CreateContentDialogProps,
+  CreateContentStepProps,
+  FormatsStepProps,
   IntegrationOption,
   StepProgressProps,
   WizardStep,
@@ -105,7 +111,6 @@ export function CreateContentDialog({
   );
   const hotkeyEntryRef = useRef<ContentCreateEntry | null>(null);
   const trackedOpenRef = useRef(false);
-  const wasDialogOpenRef = useRef(open);
 
   useHotkey(
     "C",
@@ -318,7 +323,7 @@ export function CreateContentDialog({
     [previewResponse]
   );
 
-  const previewFailures = previewResponse?.failures ?? [];
+  const previewFailures = previewResponse?.failures;
 
   useEffect(() => {
     if (
@@ -366,7 +371,7 @@ export function CreateContentDialog({
   }, [previewData, previewParamsKey, previewResponse?.linearIntegrations]);
 
   useEffect(() => {
-    if (!previewFailures.length) {
+    if (!previewFailures?.length) {
       return;
     }
     const warningKey = `${previewParamsKey}:${previewFailures
@@ -396,24 +401,24 @@ export function CreateContentDialog({
     integrationsInitializedRef.current = false;
   }, [form]);
 
-  useEffect(() => {
-    const wasOpen = wasDialogOpenRef.current;
-    wasDialogOpenRef.current = open;
-    if (!(wasOpen && !open)) {
-      return;
-    }
-
-    const preserveState = openingAddRepoFlowRef.current || addRepoMode !== null;
-    openingAddRepoFlowRef.current = false;
-    if (preserveState) {
-      return;
-    }
-
-    setAddRepoOpen(false);
-    setAddRepoMode(null);
-    setWaitingForWebhookSetup(false);
-    resetWizard();
-  }, [addRepoMode, open, resetWizard]);
+  const handleOpenChange = useCallback(
+    (next: boolean) => {
+      setDialogOpen(next);
+      if (!next) {
+        const preserveState =
+          openingAddRepoFlowRef.current || addRepoMode !== null;
+        openingAddRepoFlowRef.current = false;
+        if (preserveState) {
+          return;
+        }
+        setAddRepoOpen(false);
+        setAddRepoMode(null);
+        setWaitingForWebhookSetup(false);
+        resetWizard();
+      }
+    },
+    [addRepoMode, resetWizard, setDialogOpen]
+  );
 
   const mutation = useMutation<
     { succeeded: number; total: number },
@@ -488,7 +493,7 @@ export function CreateContentDialog({
       return { succeeded, total: results.length };
     },
     onSuccess: ({ succeeded, total }) => {
-      setDialogOpen(false);
+      handleOpenChange(false);
       if (succeeded === total) {
         toast.success(
           succeeded === 1
@@ -528,13 +533,6 @@ export function CreateContentDialog({
       integrationOptions.map((opt) => opt.value)
     );
   }, [integrationOptions, selectedRepoIds.length, form]);
-
-  const handleOpenChange = useCallback(
-    (next: boolean) => {
-      setDialogOpen(next);
-    },
-    [setDialogOpen]
-  );
 
   const toggleFormat = useCallback(
     (format: OnDemandContentType) => {
@@ -804,8 +802,8 @@ export function CreateContentDialog({
     setAddRepoMode(githubIntegrationId ? "repository" : "integration");
     setWaitingForWebhookSetup(false);
     setAddRepoOpen(true);
-    setDialogOpen(false);
-  }, [githubIntegrationId, setDialogOpen]);
+    handleOpenChange(false);
+  }, [githubIntegrationId, handleOpenChange]);
 
   const handleAddRepoOpenChange = useCallback(
     (isOpen: boolean) => {
@@ -903,6 +901,92 @@ export function CreateContentDialog({
     selectedBrandVoiceIds.length,
   ]);
 
+  const formatsStepProps: FormatsStepProps = {
+    dataPoints,
+    lookbackWindow,
+    onDataPointChange: handleDataPointChange,
+    onLookbackChange: handleLookbackChange,
+    onToggle: toggleFormat,
+    selected: selectedFormats,
+    timezone,
+  };
+  const activityStepProps: ActivityStepProps = {
+    dataPoints,
+    integrationOptions,
+    isLoadingIntegrations: isLoadingRepos,
+    isLoadingPreview,
+    isPreviewError,
+    onConnect: handleOpenAddRepositoryFlow,
+    onRetryPreview: handleRetryPreview,
+    onSearchQueryChange: setSearchQuery,
+    onToggleAllIntegrations: toggleAllRepoIds,
+    onToggleCommit: (key) => {
+      selectionsTouchedRef.current = true;
+      setSelectedCommitKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        return next;
+      });
+    },
+    onToggleIntegration: toggleRepoId,
+    onToggleLinear: (key) => {
+      selectionsTouchedRef.current = true;
+      setSelectedLinearKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        return next;
+      });
+    },
+    onTogglePr: (key) => {
+      selectionsTouchedRef.current = true;
+      setSelectedPrKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        return next;
+      });
+    },
+    onToggleRelease: (key) => {
+      selectionsTouchedRef.current = true;
+      setSelectedReleaseKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          next.delete(key);
+        } else {
+          next.add(key);
+        }
+        return next;
+      });
+    },
+    organizationId,
+    preview: previewResponse,
+    repositories: previewData,
+    searchQuery,
+    selectedCommitKeys,
+    selectedIntegrationIds: selectedRepoIds,
+    selectedLinearKeys,
+    selectedPrKeys,
+    selectedReleaseKeys,
+  };
+  const identitiesStepProps: BrandIdentitiesStepProps = {
+    isLoading: isLoadingVoices,
+    onToggle: toggleVoiceId,
+    organizationId,
+    selected: selectedBrandVoiceIds,
+    voices: brandVoices,
+  };
+
   return (
     <>
       <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
@@ -926,193 +1010,154 @@ export function CreateContentDialog({
           </ResponsiveDialogHeader>
 
           <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-            <div className="min-h-0 flex-1 overflow-y-auto p-6">
-              {step === "formats" && (
-                <StepFormats
-                  dataPoints={dataPoints}
-                  lookbackWindow={lookbackWindow}
-                  onDataPointChange={handleDataPointChange}
-                  onLookbackChange={handleLookbackChange}
-                  onToggle={toggleFormat}
-                  selected={selectedFormats}
-                  timezone={timezone}
-                />
-              )}
-              {step === "activity" && (
-                <StepActivity
-                  dataPoints={dataPoints}
-                  integrationOptions={integrationOptions}
-                  isLoadingIntegrations={isLoadingRepos}
-                  isLoadingPreview={isLoadingPreview}
-                  isPreviewError={isPreviewError}
-                  onConnect={handleOpenAddRepositoryFlow}
-                  onRetryPreview={handleRetryPreview}
-                  onSearchQueryChange={setSearchQuery}
-                  onToggleAllIntegrations={toggleAllRepoIds}
-                  onToggleCommit={(key) => {
-                    selectionsTouchedRef.current = true;
-                    setSelectedCommitKeys((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(key)) {
-                        next.delete(key);
-                      } else {
-                        next.add(key);
-                      }
-                      return next;
-                    });
-                  }}
-                  onToggleIntegration={toggleRepoId}
-                  onToggleLinear={(key) => {
-                    selectionsTouchedRef.current = true;
-                    setSelectedLinearKeys((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(key)) {
-                        next.delete(key);
-                      } else {
-                        next.add(key);
-                      }
-                      return next;
-                    });
-                  }}
-                  onTogglePr={(key) => {
-                    selectionsTouchedRef.current = true;
-                    setSelectedPrKeys((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(key)) {
-                        next.delete(key);
-                      } else {
-                        next.add(key);
-                      }
-                      return next;
-                    });
-                  }}
-                  onToggleRelease={(key) => {
-                    selectionsTouchedRef.current = true;
-                    setSelectedReleaseKeys((prev) => {
-                      const next = new Set(prev);
-                      if (next.has(key)) {
-                        next.delete(key);
-                      } else {
-                        next.add(key);
-                      }
-                      return next;
-                    });
-                  }}
-                  organizationId={organizationId}
-                  preview={previewResponse}
-                  repositories={previewData}
-                  searchQuery={searchQuery}
-                  selectedCommitKeys={selectedCommitKeys}
-                  selectedIntegrationIds={selectedRepoIds}
-                  selectedLinearKeys={selectedLinearKeys}
-                  selectedPrKeys={selectedPrKeys}
-                  selectedReleaseKeys={selectedReleaseKeys}
-                />
-              )}
-              {step === "identities" && (
-                <StepBrandIdentities
-                  isLoading={isLoadingVoices}
-                  onToggle={toggleVoiceId}
-                  organizationId={organizationId}
-                  selected={selectedBrandVoiceIds}
-                  voices={brandVoices}
-                />
-              )}
-            </div>
+            <CreateContentStep
+              activity={activityStepProps}
+              formats={formatsStepProps}
+              identities={identitiesStepProps}
+              step={step}
+            />
 
-            <div className="bg-muted/30 shrink-0 border-t px-4 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  {step !== "formats" && (
-                    <Button
-                      disabled={mutation.isPending}
-                      onClick={goBack}
-                      type="button"
-                      variant="outline"
-                    >
-                      <HugeiconsIcon
-                        className="size-3.5"
-                        icon={ArrowLeft01Icon}
-                      />
-                      Back
-                    </Button>
-                  )}
-                  <span
-                    className={cn(
-                      "flex items-center gap-1.5 text-xs",
-                      footerLeft.tone === "warning"
-                        ? "text-destructive font-medium"
-                        : "text-muted-foreground"
-                    )}
-                  >
-                    {footerLeft.tone === "warning" && (
-                      <HugeiconsIcon
-                        className="size-3.5"
-                        icon={AlertCircleIcon}
-                      />
-                    )}
-                    {footerLeft.text}
-                  </span>
-                </div>
-                {step === "identities" ? (
-                  <Button
-                    disabled={mutation.isPending || !isProjectResolved}
-                    onClick={handleCreate}
-                    type="button"
-                  >
-                    {mutation.isPending ? (
-                      <>
-                        <HugeiconsIcon
-                          className="size-4 animate-spin"
-                          icon={Loading03Icon}
-                        />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        {identityButtonLabel}
-                        <HugeiconsIcon
-                          className="size-3.5"
-                          icon={ArrowRight01Icon}
-                        />
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button
-                    disabled={mutation.isPending}
-                    onClick={goNext}
-                    type="button"
-                  >
-                    Continue
-                    <HugeiconsIcon
-                      className="size-3.5"
-                      icon={ArrowRight01Icon}
-                    />
-                  </Button>
-                )}
-              </div>
-            </div>
+            <CreateContentFooter
+              identityButtonLabel={identityButtonLabel}
+              isPending={mutation.isPending}
+              isProjectResolved={isProjectResolved}
+              message={footerLeft}
+              onBack={goBack}
+              onCreate={handleCreate}
+              onNext={goNext}
+              step={step}
+            />
           </div>
         </ResponsiveDialogContent>
       </ResponsiveDialog>
-      {addRepoMode === "repository" && githubIntegrationId && (
+      <CreateContentIntegrationDialogs
+        githubIntegrationId={githubIntegrationId}
+        mode={addRepoMode}
+        onFlowComplete={handleIntegrationFlowComplete}
+        onOpenChange={handleAddRepoOpenChange}
+        onSuccess={handleIntegrationSuccess}
+        open={addRepoOpen}
+        organizationId={organizationId}
+      />
+    </>
+  );
+}
+
+function CreateContentStep({
+  activity,
+  formats,
+  identities,
+  step,
+}: CreateContentStepProps) {
+  let content = <StepBrandIdentities {...identities} />;
+  if (step === "formats") {
+    content = <StepFormats {...formats} />;
+  } else if (step === "activity") {
+    content = <StepActivity {...activity} />;
+  }
+
+  return <div className="min-h-0 flex-1 overflow-y-auto p-6">{content}</div>;
+}
+
+function CreateContentFooter({
+  identityButtonLabel,
+  isPending,
+  isProjectResolved,
+  message,
+  onBack,
+  onCreate,
+  onNext,
+  step,
+}: CreateContentFooterProps) {
+  return (
+    <div className="bg-muted/30 shrink-0 border-t px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          {step !== "formats" ? (
+            <Button
+              disabled={isPending}
+              onClick={onBack}
+              type="button"
+              variant="outline"
+            >
+              <HugeiconsIcon className="size-3.5" icon={ArrowLeft01Icon} />
+              Back
+            </Button>
+          ) : null}
+          <span
+            className={cn(
+              "flex items-center gap-1.5 text-xs",
+              message.tone === "warning"
+                ? "text-destructive"
+                : "text-muted-foreground"
+            )}
+          >
+            {message.tone === "warning" ? (
+              <HugeiconsIcon className="size-3.5" icon={AlertCircleIcon} />
+            ) : null}
+            {message.text}
+          </span>
+        </div>
+        {step === "identities" ? (
+          <Button
+            disabled={isPending || !isProjectResolved}
+            onClick={onCreate}
+            type="button"
+          >
+            {isPending ? (
+              <>
+                <HugeiconsIcon
+                  className="size-4 animate-spin"
+                  icon={Loading03Icon}
+                />
+                Generating...
+              </>
+            ) : (
+              <>
+                {identityButtonLabel}
+                <HugeiconsIcon className="size-3.5" icon={ArrowRight01Icon} />
+              </>
+            )}
+          </Button>
+        ) : (
+          <Button disabled={isPending} onClick={onNext} type="button">
+            Continue
+            <HugeiconsIcon className="size-3.5" icon={ArrowRight01Icon} />
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CreateContentIntegrationDialogs({
+  githubIntegrationId,
+  mode,
+  onFlowComplete,
+  onOpenChange,
+  onSuccess,
+  open,
+  organizationId,
+}: CreateContentIntegrationDialogsProps) {
+  return (
+    <>
+      {mode === "repository" && githubIntegrationId ? (
         <AddRepositoryDialog
           integrationId={githubIntegrationId}
-          onOpenChange={handleAddRepoOpenChange}
-          open={addRepoOpen}
+          onOpenChange={onOpenChange}
+          open={open}
           organizationId={organizationId}
         />
-      )}
-      {addRepoMode === "integration" && (
+      ) : null}
+      {mode === "integration" ? (
         <AddIntegrationDialog
-          onFlowComplete={handleIntegrationFlowComplete}
-          onOpenChange={handleAddRepoOpenChange}
-          onSuccess={handleIntegrationSuccess}
-          open={addRepoOpen}
+          onFlowComplete={onFlowComplete}
+          onOpenChange={onOpenChange}
+          onSuccess={onSuccess}
+          open={open}
           organizationId={organizationId}
         />
-      )}
+      ) : null}
     </>
   );
 }

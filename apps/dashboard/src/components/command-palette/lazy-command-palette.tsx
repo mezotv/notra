@@ -12,20 +12,12 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 
 import { useCommandPalette } from "@/components/command-palette/command-palette-context";
-
-const loadCommandPalette = () =>
-  import("@/components/command-palette/command-palette").then(
-    (module) => module.CommandPalette
-  );
+import { loadCommandPalette } from "@/components/command-palette/command-palette-loader";
 
 const CommandPalette = dynamic(loadCommandPalette, {
   loading: () => null,
   ssr: false,
 });
-
-export function preloadCommandPalette(): void {
-  void loadCommandPalette().catch(() => undefined);
-}
 
 export function LazyCommandPalette() {
   const { hasOpened, open, setOpen } = useCommandPalette();
@@ -37,13 +29,17 @@ export function LazyCommandPalette() {
     }
 
     let active = true;
-    void loadCommandPalette()
-      .then(() => {
+    async function prepareCommandPalette() {
+      try {
+        await loadCommandPalette();
         if (active) {
           setIsPaletteReady(true);
         }
-      })
-      .catch(() => undefined);
+      } catch {
+        // Keep the loading state so a future open can retry.
+      }
+    }
+    void prepareCommandPalette();
     return () => {
       active = false;
     };
@@ -66,5 +62,7 @@ export function LazyCommandPalette() {
     );
   }
 
-  return hasOpened && isPaletteReady ? <CommandPalette /> : null;
+  return hasOpened && isPaletteReady ? (
+    <CommandPalette key={open ? "open" : "closed"} />
+  ) : null;
 }

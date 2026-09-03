@@ -138,13 +138,16 @@ function GeneralSettingsPageContent({ params }: GeneralSettingsPageProps) {
       const firstOrg = freshOrgs[0];
       if (!firstOrg) {
         toast.error("You must keep at least one organization");
-        setIsRemovingOrganization(false);
         return;
       }
 
       const activation = await activateOrganization(firstOrg.slug, firstOrg.id);
       if (activation.status !== "activated") {
-        throw new Error(activation.message ?? "Failed to switch organization");
+        toast.error("Failed to update organization membership");
+        console.error(
+          new Error(activation.message ?? "Failed to switch organization")
+        );
+        return;
       }
       await setLastVisitedOrganization(firstOrg.slug);
 
@@ -153,8 +156,9 @@ function GeneralSettingsPageContent({ params }: GeneralSettingsPageProps) {
     } catch (error) {
       toast.error("Failed to update organization membership");
       console.error(error);
+    } finally {
+      setIsRemovingOrganization(false);
     }
-    setIsRemovingOrganization(false);
   }
 
   if (!organization) {

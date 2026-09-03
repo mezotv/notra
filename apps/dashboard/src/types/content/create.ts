@@ -89,6 +89,37 @@ export interface StepProgressProps {
   onStepSelect: (index: number) => void;
 }
 
+export interface CreateContentStepProps {
+  activity: ActivityStepProps;
+  formats: FormatsStepProps;
+  identities: BrandIdentitiesStepProps;
+  step: WizardStep;
+}
+
+export interface CreateContentFooterProps {
+  identityButtonLabel: string;
+  isPending: boolean;
+  isProjectResolved: boolean;
+  message: {
+    text: string;
+    tone: "warning" | "muted";
+  };
+  onBack: () => void;
+  onCreate: () => void;
+  onNext: () => void;
+  step: WizardStep;
+}
+
+export interface CreateContentIntegrationDialogsProps {
+  githubIntegrationId?: string;
+  mode: "integration" | "repository" | null;
+  onFlowComplete: () => void;
+  onOpenChange: (open: boolean) => void;
+  onSuccess: () => void;
+  open: boolean;
+  organizationId: string;
+}
+
 export interface SelectionState {
   commits: Set<string>;
   prs: Set<string>;

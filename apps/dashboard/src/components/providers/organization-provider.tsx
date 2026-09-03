@@ -204,6 +204,7 @@ export function OrganizationsProvider({
               pathname,
               activeOrganization.slug
             );
+            // react-doctor-disable-next-line nextjs-no-client-side-redirect -- async failure recovery after URL-to-session sync
             router.replace(`${fallbackPath}${window.location.search}`);
           }
         }

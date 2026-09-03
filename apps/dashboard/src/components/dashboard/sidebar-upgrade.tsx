@@ -17,7 +17,38 @@ import {
 } from "@/lib/analytics/posthog-client";
 import { toAnalyticsRoute } from "@/lib/analytics/route";
 import { useOnboardingStatus } from "@/lib/hooks/use-onboarding";
+import type { SidebarUpgradeCardProps } from "@/types/components/sidebar-upgrade";
 import { groupBillingPlans, nextPlanGroup } from "@/utils/billing-plans";
+import { getSidebarUpgradeCopy } from "@/utils/sidebar-upgrade";
+
+function SidebarUpgradeCard({
+  buttonLabel,
+  description,
+  heading,
+  loading,
+  onUpgrade,
+}: SidebarUpgradeCardProps) {
+  return (
+    <SidebarGroup className="px-3 pb-2 group-data-[collapsible=icon]:hidden">
+      <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl ring-1">
+        <div className="bg-muted/50 border-b px-3 py-3">
+          <p className="text-sm font-semibold">{heading}</p>
+        </div>
+        <div className="space-y-3 p-3">
+          <p className="text-muted-foreground text-xs">{description}</p>
+          <Button
+            className="w-full"
+            disabled={loading}
+            onClick={onUpgrade}
+            size="sm"
+          >
+            {buttonLabel}
+          </Button>
+        </div>
+      </div>
+    </SidebarGroup>
+  );
+}
 
 export function SidebarUpgrade() {
   const { activeOrganization } = useOrganizationsContext();
@@ -52,23 +83,12 @@ export function SidebarUpgrade() {
     !!targetPlan?.freeTrial &&
     !!targetPlan.customerEligibility?.trialAvailable;
 
-  let buttonLabel = hasNoPlan
-    ? "Get started"
-    : `Upgrade to ${targetGroup?.name}`;
-  if (showTrial) {
-    buttonLabel = "Start free trial";
-  }
-  if (loading) {
-    buttonLabel = "Loading...";
-  }
-
-  const heading = hasNoPlan ? "Get Started" : `Upgrade to ${targetGroup?.name}`;
-  let description = "Get more AI answers, projects, and higher usage limits.";
-  if (hasNoPlan) {
-    description = showTrial
-      ? "Start your free trial and unlock AI-powered workflows."
-      : "Pick a plan to unlock AI-powered workflows.";
-  }
+  const { buttonLabel, description, heading } = getSidebarUpgradeCopy({
+    hasNoPlan,
+    loading,
+    showTrial,
+    targetGroupName: targetGroup?.name,
+  });
 
   const isVisible =
     process.env.NEXT_PUBLIC_SHOW_UPGRADE_BUTTON === "true" &&
@@ -140,23 +160,12 @@ export function SidebarUpgrade() {
   }
 
   return (
-    <SidebarGroup className="px-3 pb-2 group-data-[collapsible=icon]:hidden">
-      <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl ring-1">
-        <div className="bg-muted/50 border-b px-3 py-3">
-          <p className="text-sm font-semibold">{heading}</p>
-        </div>
-        <div className="space-y-3 p-3">
-          <p className="text-muted-foreground text-xs">{description}</p>
-          <Button
-            className="w-full"
-            disabled={loading}
-            onClick={handleUpgrade}
-            size="sm"
-          >
-            {buttonLabel}
-          </Button>
-        </div>
-      </div>
-    </SidebarGroup>
+    <SidebarUpgradeCard
+      buttonLabel={buttonLabel}
+      description={description}
+      heading={heading}
+      loading={loading}
+      onUpgrade={handleUpgrade}
+    />
   );
 }

@@ -36,7 +36,14 @@ import {
   useTopPosts,
 } from "@/lib/hooks/use-social-analytics";
 import { cn } from "@/lib/utils";
-import type { AccountDetailViewProps, TopPostItem } from "@/types/analytics";
+import type {
+  AccountDetailViewProps,
+  AccountEngagementSectionProps,
+  AccountIdentityHeaderProps,
+  AccountMetricsProps,
+  AccountPostsTableProps,
+  TopPostItem,
+} from "@/types/analytics";
 import {
   buildAccountEngagementPoints,
   buildAccountIdentity,
@@ -64,6 +71,230 @@ const AccountEngagementChart = dynamic(
     ),
   }
 );
+
+const ACCOUNT_POST_COLUMNS: TableColumn<TopPostItem>[] = [
+  {
+    key: "content",
+    header: "Post",
+    width: "2.6fr",
+    cell: (row) => (
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span className="block w-full min-w-0 truncate text-sm leading-snug">
+              {previewPostContent(row.content)}
+            </span>
+          }
+        />
+        <TooltipContent className="max-w-sm">{row.content}</TooltipContent>
+      </Tooltip>
+    ),
+  },
+  {
+    key: "postedAt",
+    header: "Posted",
+    width: "7.5rem",
+    sortable: true,
+    cell: (row) => (
+      <span className="text-muted-foreground font-mono text-[0.6875rem] whitespace-nowrap tabular-nums">
+        {formatDayLabel(row.postedAt.slice(0, 10))}
+      </span>
+    ),
+  },
+  {
+    key: "likes",
+    header: "Likes",
+    width: "5.625rem",
+    align: "right",
+    sortable: true,
+    cell: (row) => (
+      <span className="font-mono text-sm tabular-nums">
+        {formatMetric(row.likes)}
+      </span>
+    ),
+    sortValue: (row) => row.likes ?? 0,
+  },
+  {
+    key: "replies",
+    header: "Replies",
+    width: "5.625rem",
+    align: "right",
+    sortable: true,
+    cell: (row) => (
+      <span className="font-mono text-sm tabular-nums">
+        {formatMetric(row.replies)}
+      </span>
+    ),
+    sortValue: (row) => row.replies ?? 0,
+  },
+  {
+    key: "impressions",
+    header: "Impressions",
+    width: "6.875rem",
+    align: "right",
+    sortable: true,
+    cell: (row) => (
+      <span className="text-muted-foreground font-mono text-sm tabular-nums">
+        {row.impressions === null ? "-" : formatMetric(row.impressions)}
+      </span>
+    ),
+    sortValue: (row) => row.impressions ?? 0,
+  },
+  {
+    key: "engagement",
+    header: "Engagement",
+    width: "7.5rem",
+    align: "right",
+    sortable: true,
+    cell: (row) => (
+      <span className="font-mono text-sm tabular-nums">
+        {formatMetric(row.engagement)}
+      </span>
+    ),
+  },
+];
+
+function AccountIdentityHeader({
+  handle,
+  identity,
+}: AccountIdentityHeaderProps) {
+  const displayName = identity?.displayName ?? identity?.username ?? handle;
+  const username = identity?.username ?? handle;
+  const providerIcon =
+    identity?.provider === "linkedin" ? Linkedin02Icon : NewTwitterIcon;
+
+  return (
+    <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <Avatar
+          className={cn(
+            "size-10 shrink-0",
+            isSquareTwitterAvatar(identity?.verifiedType ?? null) &&
+              "rounded-md"
+          )}
+        >
+          {identity?.profileImageUrl && (
+            <AvatarImage
+              alt={displayName}
+              className={cn(
+                isSquareTwitterAvatar(identity.verifiedType) && "rounded-md"
+              )}
+              src={identity.profileImageUrl}
+            />
+          )}
+          <AvatarFallback className="text-xs">
+            {username.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 leading-tight">
+          <p className="flex min-w-0 items-center gap-1.5 text-lg font-semibold">
+            <span className="truncate">{displayName}</span>
+            <XVerificationBadge
+              className="size-4 shrink-0"
+              verified={identity?.verified ?? false}
+              verifiedType={identity?.verifiedType ?? null}
+            />
+          </p>
+          <span className="text-muted-foreground flex items-center gap-1.5 font-mono text-xs">
+            <HugeiconsIcon icon={providerIcon} size={12} />
+            <span className="truncate">@{username}</span>
+          </span>
+        </div>
+      </div>
+      <div className="text-right leading-tight">
+        <p className="text-lg font-semibold tabular-nums">
+          {formatMetric(identity?.followersCount ?? null)}
+        </p>
+        <p className="text-muted-foreground text-xs">Followers</p>
+      </div>
+    </div>
+  );
+}
+
+function AccountMetrics({ isLoading, metrics }: AccountMetricsProps) {
+  if (isLoading) {
+    return <Skeleton className="h-14 w-full rounded-2xl" />;
+  }
+  if (metrics.length === 0) {
+    return null;
+  }
+  return (
+    <dl className="bg-border grid grid-cols-4 gap-px overflow-hidden rounded-2xl sm:grid-cols-8">
+      {metrics.map((metric) => (
+        <div className="bg-muted/40 px-2 py-1.5" key={metric.label}>
+          <dt className="text-muted-foreground text-xs capitalize">
+            {metric.label}
+          </dt>
+          <dd className="font-mono text-sm tabular-nums">{metric.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function AccountEngagementSection({
+  isLoading,
+  points,
+  username,
+}: AccountEngagementSectionProps) {
+  let content = (
+    <p className="text-muted-foreground text-sm">
+      Not enough activity in the last {ANALYTICS_TIMESERIES_DAYS} days to chart
+      @{username}
+    </p>
+  );
+  if (isLoading) {
+    content = <Skeleton className="h-52 w-full" />;
+  } else if (points.length >= ACCOUNT_DETAIL_MIN_POINTS) {
+    content = <AccountEngagementChart points={points} />;
+  }
+
+  return (
+    <div className="space-y-2">
+      <h2 className="text-base font-semibold">Engagement over time</h2>
+      {content}
+    </div>
+  );
+}
+
+function AccountPostsTable({
+  isLoading,
+  posts,
+  username,
+  variant,
+}: AccountPostsTableProps) {
+  return (
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <h2 className="text-base font-semibold">Recent posts</h2>
+        <span className="text-muted-foreground text-xs tabular-nums">
+          {posts.length.toLocaleString()} posts
+        </span>
+      </div>
+      <Table
+        className="rounded-2xl"
+        columns={ACCOUNT_POST_COLUMNS}
+        data={posts}
+        defaultSort={{ key: "postedAt", direction: "desc" }}
+        emptyState={`No tracked posts for @${username} yet`}
+        getRowId={(row) => `${row.provider}:${row.platformPostId}`}
+        height={
+          variant === "page"
+            ? ACCOUNT_POSTS_PAGE_TABLE_HEIGHT
+            : ACCOUNT_POSTS_TABLE_HEIGHT
+        }
+        loading={isLoading}
+        onRowClick={(row) => {
+          if (row.url) {
+            window.open(row.url, "_blank", "noopener,noreferrer");
+          }
+        }}
+        resizable
+        rowHeight={TABLE_ROW_HEIGHT}
+      />
+    </div>
+  );
+}
 
 export function AccountDetailView({
   organizationSlug,
@@ -119,200 +350,23 @@ export function AccountDetailView({
     [account]
   );
 
-  const columns = useMemo<TableColumn<TopPostItem>[]>(
-    () => [
-      {
-        key: "content",
-        header: "Post",
-        width: "2.6fr",
-        cell: (row) => (
-          <Tooltip>
-            <TooltipTrigger
-              render={
-                <span className="block w-full min-w-0 truncate text-sm leading-snug">
-                  {previewPostContent(row.content)}
-                </span>
-              }
-            />
-            <TooltipContent className="max-w-sm">{row.content}</TooltipContent>
-          </Tooltip>
-        ),
-      },
-      {
-        key: "postedAt",
-        header: "Posted",
-        width: "7.5rem",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-muted-foreground font-mono text-[0.6875rem] whitespace-nowrap tabular-nums">
-            {formatDayLabel(row.postedAt.slice(0, 10))}
-          </span>
-        ),
-      },
-      {
-        key: "likes",
-        header: "Likes",
-        width: "5.625rem",
-        align: "right",
-        sortable: true,
-        cell: (row) => (
-          <span className="font-mono text-sm tabular-nums">
-            {formatMetric(row.likes)}
-          </span>
-        ),
-        sortValue: (row) => row.likes ?? 0,
-      },
-      {
-        key: "replies",
-        header: "Replies",
-        width: "5.625rem",
-        align: "right",
-        sortable: true,
-        cell: (row) => (
-          <span className="font-mono text-sm tabular-nums">
-            {formatMetric(row.replies)}
-          </span>
-        ),
-        sortValue: (row) => row.replies ?? 0,
-      },
-      {
-        key: "impressions",
-        header: "Impressions",
-        width: "6.875rem",
-        align: "right",
-        sortable: true,
-        cell: (row) => (
-          <span className="text-muted-foreground font-mono text-sm tabular-nums">
-            {row.impressions === null ? "-" : formatMetric(row.impressions)}
-          </span>
-        ),
-        sortValue: (row) => row.impressions ?? 0,
-      },
-      {
-        key: "engagement",
-        header: "Engagement",
-        width: "7.5rem",
-        align: "right",
-        sortable: true,
-        cell: (row) => (
-          <span className="font-mono text-sm tabular-nums">
-            {formatMetric(row.engagement)}
-          </span>
-        ),
-      },
-    ],
-    []
-  );
-
-  const displayName = identity?.displayName ?? identity?.username ?? handle;
   const username = identity?.username ?? handle;
-  const providerIcon =
-    identity?.provider === "linkedin" ? Linkedin02Icon : NewTwitterIcon;
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Avatar
-            className={cn(
-              "size-10 shrink-0",
-              isSquareTwitterAvatar(identity?.verifiedType ?? null) &&
-                "rounded-md"
-            )}
-          >
-            {identity?.profileImageUrl && (
-              <AvatarImage
-                alt={displayName}
-                className={cn(
-                  isSquareTwitterAvatar(identity.verifiedType) && "rounded-md"
-                )}
-                src={identity.profileImageUrl}
-              />
-            )}
-            <AvatarFallback className="text-xs">
-              {username.slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 leading-tight">
-            <p className="flex min-w-0 items-center gap-1.5 text-lg font-semibold">
-              <span className="truncate">{displayName}</span>
-              <XVerificationBadge
-                className="size-4 shrink-0"
-                verified={identity?.verified ?? false}
-                verifiedType={identity?.verifiedType ?? null}
-              />
-            </p>
-            <span className="text-muted-foreground flex items-center gap-1.5 font-mono text-xs">
-              <HugeiconsIcon icon={providerIcon} size={12} />
-              <span className="truncate">@{username}</span>
-            </span>
-          </div>
-        </div>
-        <div className="text-right leading-tight">
-          <p className="text-lg font-semibold tabular-nums">
-            {formatMetric(identity?.followersCount ?? null)}
-          </p>
-          <p className="text-muted-foreground text-xs">Followers</p>
-        </div>
-      </div>
-
-      {isOverviewLoading && <Skeleton className="h-14 w-full rounded-2xl" />}
-      {!isOverviewLoading && metrics.length > 0 && (
-        <dl className="bg-border grid grid-cols-4 gap-px overflow-hidden rounded-2xl sm:grid-cols-8">
-          {metrics.map((metric) => (
-            <div className="bg-muted/40 px-2 py-1.5" key={metric.label}>
-              <dt className="text-muted-foreground text-xs capitalize">
-                {metric.label}
-              </dt>
-              <dd className="font-mono text-sm tabular-nums">{metric.value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-
-      <div className="space-y-2">
-        <h2 className="text-base font-semibold">Engagement over time</h2>
-        {isEngagementLoading && <Skeleton className="h-52 w-full" />}
-        {!isEngagementLoading && points.length >= ACCOUNT_DETAIL_MIN_POINTS && (
-          <AccountEngagementChart points={points} />
-        )}
-        {!isEngagementLoading && points.length < ACCOUNT_DETAIL_MIN_POINTS && (
-          <p className="text-muted-foreground text-sm">
-            Not enough activity in the last {ANALYTICS_TIMESERIES_DAYS} days to
-            chart @{username}
-          </p>
-        )}
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-baseline justify-between gap-3">
-          <h2 className="text-base font-semibold">Recent posts</h2>
-          <span className="text-muted-foreground text-xs tabular-nums">
-            {posts.length.toLocaleString()} posts
-          </span>
-        </div>
-        <Table
-          className="rounded-2xl"
-          columns={columns}
-          data={posts}
-          defaultSort={{ key: "postedAt", direction: "desc" }}
-          emptyState={`No tracked posts for @${username} yet`}
-          getRowId={(row) => `${row.provider}:${row.platformPostId}`}
-          height={
-            variant === "page"
-              ? ACCOUNT_POSTS_PAGE_TABLE_HEIGHT
-              : ACCOUNT_POSTS_TABLE_HEIGHT
-          }
-          loading={isPostsLoading}
-          onRowClick={(row) => {
-            if (row.url) {
-              window.open(row.url, "_blank", "noopener,noreferrer");
-            }
-          }}
-          resizable
-          rowHeight={TABLE_ROW_HEIGHT}
-        />
-      </div>
+      <AccountIdentityHeader handle={handle} identity={identity} />
+      <AccountMetrics isLoading={isOverviewLoading} metrics={metrics} />
+      <AccountEngagementSection
+        isLoading={isEngagementLoading}
+        points={points}
+        username={username}
+      />
+      <AccountPostsTable
+        isLoading={isPostsLoading}
+        posts={posts}
+        username={username}
+        variant={variant}
+      />
     </div>
   );
 }

@@ -147,9 +147,11 @@ export function OrganizationsSection() {
             firstOrg.id
           );
           if (activation.status !== "activated") {
-            throw new Error(
-              activation.message ?? "Failed to switch organization"
+            toast.error("Failed to update organization membership");
+            console.error(
+              new Error(activation.message ?? "Failed to switch organization")
             );
+            return;
           }
           await setLastVisitedOrganization(firstOrg.slug);
           router.push(`/${firstOrg.slug}/settings/account`);
@@ -158,8 +160,9 @@ export function OrganizationsSection() {
     } catch (error) {
       toast.error("Failed to update organization membership");
       console.error(error);
+    } finally {
+      setIsProcessingOrgAction(null);
     }
-    setIsProcessingOrgAction(null);
   }
 
   if (isLoading) {

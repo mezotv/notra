@@ -7,10 +7,8 @@ import { useMemo, useState } from "react";
 
 import { CollectionsTable } from "@/components/content/collections-table";
 import { CreateContentButton } from "@/components/content/create-content-button";
-import {
-  LazyCreateContentDialog,
-  preloadCreateContentDialog,
-} from "@/components/content/lazy-create-content-dialog";
+import { preloadCreateContentDialog } from "@/components/content/create-content-dialog-loader";
+import { LazyCreateContentDialog } from "@/components/content/lazy-create-content-dialog";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";

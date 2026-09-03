@@ -6,13 +6,11 @@ import { SidebarGroup } from "@notra/ui/components/ui/sidebar";
 import { cn } from "@notra/ui/lib/utils";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/button";
-import {
-  LazyCreateContentDialog,
-  preloadCreateContentDialog,
-} from "@/components/content/lazy-create-content-dialog";
+import { preloadCreateContentDialog } from "@/components/content/create-content-dialog-loader";
+import { LazyCreateContentDialog } from "@/components/content/lazy-create-content-dialog";
 import {
   CREATE_CONTENT_HOTKEY_EXCLUDED_PATHS,
   NAV_PRIMARY_ACTIONS,
@@ -23,19 +21,33 @@ import {
   SIDEBAR_MODE_SLOT_CLASS,
 } from "@/constants/nav";
 import { useHasGeoFeature } from "@/lib/hooks/use-plan";
-import type { NavModePrimaryActionProps } from "@/types/components/nav";
+import type {
+  NavModePrimaryActionContentProps,
+  NavModePrimaryActionProps,
+} from "@/types/components/nav";
 import { geoNavHref } from "@/utils/geo-paths";
 
 const ACTION_CLASS = `col-start-1 row-start-1 w-full cursor-pointer group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:px-0 ${SIDEBAR_MODE_FADE_CLASS}`;
 
-export function NavModePrimaryAction({
+export function NavModePrimaryAction({ ...props }: NavModePrimaryActionProps) {
+  const pathname = usePathname();
+  return (
+    <NavModePrimaryActionContent
+      key={`${props.organizationId}:${pathname}`}
+      pathname={pathname}
+      {...props}
+    />
+  );
+}
+
+function NavModePrimaryActionContent({
   mode,
   slug,
   organizationId,
   projectId,
-}: NavModePrimaryActionProps) {
+  pathname,
+}: NavModePrimaryActionContentProps) {
   const { isLocked: geoLocked } = useHasGeoFeature();
-  const pathname = usePathname();
   const [createOpen, setCreateOpen] = useState(false);
   const showWrite = !geoLocked;
   const geoActive = mode === "geo";
@@ -43,10 +55,6 @@ export function NavModePrimaryAction({
   const showSlot = studioActive || showWrite;
   const writeAction = NAV_PRIMARY_ACTIONS.geo;
   const createAction = NAV_PRIMARY_ACTIONS.studio;
-
-  useEffect(() => {
-    setCreateOpen(false);
-  }, [organizationId, pathname]);
 
   function openCreate() {
     setCreateOpen(true);

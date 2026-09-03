@@ -34,13 +34,17 @@ export function LazyEngineFamilySheet(props: EngineFamilySheetProps) {
     }
 
     let active = true;
-    void loadEngineFamilySheet()
-      .then(() => {
+    async function prepareSheet() {
+      try {
+        await loadEngineFamilySheet();
         if (active) {
           setIsSheetReady(true);
         }
-      })
-      .catch(() => undefined);
+      } catch {
+        return;
+      }
+    }
+    void prepareSheet();
     return () => {
       active = false;
     };

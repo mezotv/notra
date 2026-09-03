@@ -13,21 +13,17 @@ import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
 
 import { CreateContentButton } from "@/components/content/create-content-button";
+import {
+  loadCreateContentDialog,
+  preloadCreateContentDialog,
+} from "@/components/content/create-content-dialog-loader";
+import type { ContentCreateEntry } from "@/types/analytics/studio-events";
 import type { LazyCreateContentDialogProps } from "@/types/content/create";
-
-const loadCreateContentDialog = () =>
-  import("@/components/content/create-content-dialog").then(
-    (mod) => mod.CreateContentDialog
-  );
 
 const CreateContentDialog = dynamic(loadCreateContentDialog, {
   loading: () => null,
   ssr: false,
 });
-
-export function preloadCreateContentDialog(): void {
-  void loadCreateContentDialog().catch(() => undefined);
-}
 
 function CreateContentDialogLoading({
   onOpenChange,
@@ -59,12 +55,17 @@ export function LazyCreateContentDialog({
   open: controlledOpen,
 }: LazyCreateContentDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
-  const [hasOpened, setHasOpened] = useState(false);
   const [isDialogReady, setIsDialogReady] = useState(false);
-  const [openEntry, setOpenEntry] = useState(entry);
+  const [entryOverride, setEntryOverride] = useState<ContentCreateEntry | null>(
+    null
+  );
   const open = controlledOpen ?? uncontrolledOpen;
+  const openEntry = entryOverride ?? entry;
   const setOpen = useCallback(
     (nextOpen: boolean) => {
+      if (!nextOpen) {
+        setEntryOverride(null);
+      }
       if (controlledOpen === undefined) {
         setUncontrolledOpen(nextOpen);
       }
@@ -74,30 +75,26 @@ export function LazyCreateContentDialog({
   );
 
   useEffect(() => {
-    if (open) {
-      setHasOpened(true);
-      return;
-    }
-    setOpenEntry(entry);
-  }, [entry, open]);
-
-  useEffect(() => {
-    if (!(hasOpened && !isDialogReady)) {
+    if (!(open && !isDialogReady)) {
       return;
     }
 
     let active = true;
-    void loadCreateContentDialog()
-      .then(() => {
+    async function prepareCreateContentDialog() {
+      try {
+        await loadCreateContentDialog();
         if (active) {
           setIsDialogReady(true);
         }
-      })
-      .catch(() => undefined);
+      } catch {
+        // Keep the loading state so a future open can retry.
+      }
+    }
+    void prepareCreateContentDialog();
     return () => {
       active = false;
     };
-  }, [hasOpened, isDialogReady]);
+  }, [isDialogReady, open]);
 
   useHotkey(
     "C",
@@ -106,7 +103,7 @@ export function LazyCreateContentDialog({
         organizationId &&
         !document.querySelector('[role="dialog"][data-open]')
       ) {
-        setOpenEntry("hotkey");
+        setEntryOverride("hotkey");
         setOpen(true);
       }
     },
@@ -119,7 +116,7 @@ export function LazyCreateContentDialog({
         <CreateContentButton
           disabled={!organizationId}
           onClick={() => {
-            setOpenEntry(entry);
+            setEntryOverride(null);
             setOpen(true);
           }}
           onFocus={preloadCreateContentDialog}
@@ -129,7 +126,7 @@ export function LazyCreateContentDialog({
       {open && !isDialogReady ? (
         <CreateContentDialogLoading onOpenChange={setOpen} />
       ) : null}
-      {hasOpened && isDialogReady ? (
+      {isDialogReady ? (
         <CreateContentDialog
           enableHotkey={false}
           entry={openEntry}

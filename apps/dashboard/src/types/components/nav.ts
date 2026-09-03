@@ -68,6 +68,46 @@ export interface NavModePrimaryActionProps {
   projectId?: string;
 }
 
+export interface NavModePrimaryActionContentProps extends NavModePrimaryActionProps {
+  pathname: string;
+}
+
+export interface HeaderBreadcrumbsProps {
+  pathname: string;
+}
+
+export interface BrandIdentityHeaderBreadcrumbsProps {
+  id: string;
+  slug: string | undefined;
+}
+
+export interface GenericHeaderBreadcrumbsProps {
+  breadcrumbSegments: string[];
+  id: string;
+  isChatDetail: boolean;
+  isCollectionDetail: boolean;
+  isContentDetail: boolean;
+  isNonOrgPath: boolean;
+  segments: string[];
+  slug: string | undefined;
+}
+
+export interface GeoHeaderBreadcrumbsProps {
+  breadcrumbSegments: string[];
+  id: string;
+  segments: string[];
+  slug: string | undefined;
+}
+
+export interface HeaderSearchProps {
+  onOpen: () => void;
+}
+
+export interface HeaderActionsProps {
+  feedbackOpen: boolean;
+  setFeedbackOpen: (open: boolean) => void;
+}
+
 export interface NavRecentContentProps {
   slug: string;
   organizationId: string;

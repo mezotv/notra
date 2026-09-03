@@ -1,6 +1,5 @@
 "use client";
 
-import { useQueryClient } from "@tanstack/react-query";
 import {
   createContext,
   useCallback,
@@ -12,23 +11,18 @@ import {
 } from "react";
 
 import { ORGANIZATION_SWITCH_RECOVERY_TIMEOUT_MS } from "@/constants/organization";
-import { authClient } from "@/lib/auth/client";
-import type { ClientSessionData } from "@/types/auth/session";
+import { useActivateOrganization } from "@/lib/hooks/use-activate-organization";
 import type {
-  OrganizationActivationResult,
   OrganizationSwitchOutcome,
   OrganizationSwitchContextValue,
   OrganizationSwitchProviderProps,
   OrganizationSwitchState,
 } from "@/types/dashboard";
-import type { FullOrganization } from "@/types/organizations/actions";
-import { serializeOrganizationMutation } from "@/utils/organization-mutation";
 import { getOrganizationSlugFromPathname } from "@/utils/organization-pathname";
 import {
   markOrganizationSwitchStateActivated,
   unblockOrganizationSwitchState,
 } from "@/utils/organization-switch-state";
-import { QUERY_KEYS } from "@/utils/query-keys";
 
 const OrganizationSwitchContext =
   createContext<OrganizationSwitchContextValue | null>(null);
@@ -63,7 +57,6 @@ const FALLBACK_ORGANIZATION_SWITCH_CONTEXT: OrganizationSwitchContextValue = {
 export function OrganizationSwitchProvider({
   children,
 }: OrganizationSwitchProviderProps) {
-  const queryClient = useQueryClient();
   const nextSwitchIdRef = useRef(0);
   const activeSwitchIdRef = useRef<number | null>(null);
   const activeSwitchStateRef = useRef<OrganizationSwitchState | null>(null);
@@ -205,126 +198,13 @@ export function OrganizationSwitchProvider({
     },
     []
   );
-
-  const activateOrganization = useCallback(
-    async (
-      targetSlug: string,
-      targetOrganizationId: string
-    ): Promise<OrganizationActivationResult> => {
-      const switchId = startOrganizationSwitch(
-        targetSlug,
-        targetOrganizationId
-      );
-
-      let result: Awaited<ReturnType<typeof authClient.organization.setActive>>;
-      try {
-        const queuedResult = await serializeOrganizationMutation(() => {
-          if (!isOrganizationSwitchCurrent(switchId)) {
-            return Promise.resolve(null);
-          }
-          return authClient.organization.setActive({
-            organizationId: targetOrganizationId,
-          });
-        });
-        if (!queuedResult) {
-          return { message: null, status: "stale", switchId };
-        }
-        result = queuedResult;
-      } catch (error) {
-        if (!isOrganizationSwitchCurrent(switchId)) {
-          return { message: null, status: "stale", switchId };
-        }
-        cancelOrganizationSwitch(switchId);
-        return {
-          message:
-            error instanceof Error
-              ? error.message
-              : "Failed to switch organization",
-          status: "failed",
-          switchId,
-        };
-      }
-
-      if (!isOrganizationSwitchCurrent(switchId)) {
-        void queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.AUTH.activeOrganization,
-        });
-        void queryClient.invalidateQueries({
-          queryKey: QUERY_KEYS.AUTH.session,
-        });
-        return { message: null, status: "stale", switchId };
-      }
-
-      if (result.error) {
-        cancelOrganizationSwitch(switchId);
-        return {
-          message: result.error.message,
-          status: "failed",
-          switchId,
-        };
-      }
-
-      void queryClient.invalidateQueries({ refetchType: "none" });
-      try {
-        await Promise.all([
-          queryClient.refetchQueries(
-            {
-              queryKey: QUERY_KEYS.AUTH.activeOrganization,
-              type: "active",
-            },
-            { throwOnError: true }
-          ),
-          queryClient.refetchQueries(
-            { queryKey: QUERY_KEYS.AUTH.session, type: "active" },
-            { throwOnError: true }
-          ),
-        ]);
-
-        const confirmedOrganization =
-          queryClient.getQueryData<FullOrganization | null>(
-            QUERY_KEYS.AUTH.activeOrganization
-          );
-        const confirmedSession =
-          queryClient.getQueryData<ClientSessionData | null>(
-            QUERY_KEYS.AUTH.session
-          );
-        if (
-          confirmedOrganization?.id !== targetOrganizationId ||
-          confirmedSession?.session.activeOrganizationId !==
-            targetOrganizationId
-        ) {
-          throw new Error("The active organization could not be confirmed");
-        }
-      } catch (error) {
-        if (!isOrganizationSwitchCurrent(switchId)) {
-          return { message: null, status: "stale", switchId };
-        }
-        unblockOrganizationSwitch(switchId, "activation-confirmation-failed");
-        return {
-          message:
-            error instanceof Error
-              ? error.message
-              : "Failed to refresh organization data",
-          status: "confirmation-failed",
-          switchId,
-        };
-      }
-
-      if (!isOrganizationSwitchCurrent(switchId)) {
-        return { message: null, status: "stale", switchId };
-      }
-      markOrganizationSwitchActivated(switchId);
-      return { message: null, status: "activated", switchId };
-    },
-    [
-      cancelOrganizationSwitch,
-      isOrganizationSwitchCurrent,
-      markOrganizationSwitchActivated,
-      queryClient,
-      startOrganizationSwitch,
-      unblockOrganizationSwitch,
-    ]
-  );
+  const activateOrganization = useActivateOrganization({
+    cancelOrganizationSwitch,
+    isOrganizationSwitchCurrent,
+    markOrganizationSwitchActivated,
+    startOrganizationSwitch,
+    unblockOrganizationSwitch,
+  });
 
   useEffect(() => {
     const switchId = switchState?.id;
