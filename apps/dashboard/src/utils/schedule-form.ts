@@ -52,6 +52,7 @@ export function getDefaultScheduleValues(
     return {
       name: editTrigger.name ?? "",
       outputType: supportedType,
+      instructions: editTrigger.outputConfig?.instructions ?? "",
       schedule: editTrigger.sourceConfig.cron ?? DEFAULT_SCHEDULE,
       repositoryIds: editTrigger.targets.repositoryIds,
       lookbackWindow: editTrigger.lookbackWindow ?? "last_7_days",
@@ -66,6 +67,7 @@ export function getDefaultScheduleValues(
   return {
     name: "",
     outputType: "changelog",
+    instructions: "",
     schedule: DEFAULT_SCHEDULE,
     repositoryIds: [],
     lookbackWindow: "last_7_days",

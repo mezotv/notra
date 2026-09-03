@@ -7,6 +7,7 @@ import {
   cronAnchorDateSchema,
   cronIntervalDaysSchema,
   LOOKBACK_WINDOWS,
+  MAX_SCHEDULE_INSTRUCTIONS_LENGTH,
   MAX_SCHEDULE_NAME_LENGTH,
   SUPPORTED_AUTOMATION_OUTPUT_TYPES,
 } from "@/schemas/integrations";
@@ -35,6 +36,13 @@ export const scheduleFormSchema = z.object({
     .min(1, "Give this schedule a name")
     .max(MAX_SCHEDULE_NAME_LENGTH),
   outputType: z.enum(SUPPORTED_AUTOMATION_OUTPUT_TYPES),
+  instructions: z
+    .string()
+    .trim()
+    .max(
+      MAX_SCHEDULE_INSTRUCTIONS_LENGTH,
+      `Keep instructions under ${MAX_SCHEDULE_INSTRUCTIONS_LENGTH} characters`
+    ),
   schedule: scheduleCronSchema,
   repositoryIds: z
     .array(z.string())

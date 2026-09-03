@@ -34,14 +34,18 @@ export function hashTrigger({
   targets,
   outputType,
   lookbackWindow,
+  instructions,
 }: TriggerHashInput) {
   const normalized = normalizeTriggerConfig({ sourceConfig, targets });
+  const trimmedInstructions = instructions?.trim();
   const payload = JSON.stringify({
     sourceType,
     sourceConfig: normalized.sourceConfig,
     targets: normalized.targets,
     outputType,
     lookbackWindow,
+    // Omitted when empty so hashes of existing triggers stay unchanged.
+    ...(trimmedInstructions ? { instructions: trimmedInstructions } : {}),
   });
 
   return crypto.createHash("sha256").update(payload).digest("hex");

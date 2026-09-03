@@ -315,10 +315,18 @@ export const triggerTargetsSchema = z.object({
   repositoryIds: z.array(z.string()).min(1),
 });
 
+export const MAX_SCHEDULE_INSTRUCTIONS_LENGTH = 2000;
+
 export const triggerOutputConfigSchema = z
   .object({
     publishDestination: z.enum(["webflow", "framer", "custom"]).optional(),
     brandVoiceId: z.string().optional(),
+    instructions: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MAX_SCHEDULE_INSTRUCTIONS_LENGTH)
+      .optional(),
   })
   .optional();
 

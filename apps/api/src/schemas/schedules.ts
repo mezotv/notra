@@ -14,6 +14,7 @@ import { resourceIdSchema } from "./ids";
 
 const CRON_FREQUENCIES = ["daily", "weekly", "monthly", "custom"] as const;
 const MAX_SCHEDULE_NAME_LENGTH = 120;
+const MAX_SCHEDULE_INSTRUCTIONS_LENGTH = 2000;
 
 export const scheduleParamsSchema = z.object({
   scheduleId: resourceIdSchema("scheduleId").openapi({
@@ -139,6 +140,18 @@ export const scheduleOutputConfigSchema = z
         "Brand identity ID to write in. Defaults to the organization's default brand identity.",
       example: "51c2f3aa-efdd-4e28-8e69-23fa2dfd3561",
     }),
+    instructions: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MAX_SCHEDULE_INSTRUCTIONS_LENGTH)
+      .optional()
+      .openapi({
+        description:
+          "Free-text brief for this schedule, passed to the writer on every run on top of the brand's custom instructions. Use it to steer the angle of the content, for example tutorial-style blog posts.",
+        example:
+          "Write a tutorial-style post that walks through one feature shipped in this window, with code samples.",
+      }),
   })
   .optional();
 

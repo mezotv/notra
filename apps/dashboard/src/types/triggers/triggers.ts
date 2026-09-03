@@ -31,6 +31,7 @@ export interface TriggerSourceConfig {
 export interface TriggerOutputConfig {
   publishDestination?: "webflow" | "framer" | "custom";
   brandVoiceId?: string;
+  instructions?: string;
 }
 
 export interface Trigger {

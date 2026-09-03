@@ -41,6 +41,7 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Switch } from "@notra/ui/components/ui/switch";
+import { Textarea } from "@notra/ui/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -68,6 +69,7 @@ import {
 import {
   LOOKBACK_WINDOWS,
   type LookbackWindow,
+  MAX_SCHEDULE_INSTRUCTIONS_LENGTH,
   MAX_SCHEDULE_NAME_LENGTH,
 } from "@/schemas/integrations";
 import type {
@@ -123,6 +125,7 @@ export function CreateScheduleDialog({
           (id) => !id.startsWith("linear:")
         );
 
+        const instructions = value.instructions.trim();
         const schedulePayload = {
           organizationId,
           name: value.name.trim(),
@@ -132,6 +135,7 @@ export function CreateScheduleDialog({
           outputType: value.outputType,
           outputConfig: {
             ...(value.brandVoiceId ? { brandVoiceId: value.brandVoiceId } : {}),
+            ...(instructions ? { instructions } : {}),
           },
           enabled: isEditMode ? editTrigger.enabled : true,
           autoPublish: supportsAutoPublish(value.outputType)
@@ -392,6 +396,48 @@ export function CreateScheduleDialog({
                             selected={field.state.value === type}
                           />
                         ))}
+                      </div>
+                    )}
+                  </form.Field>
+                </section>
+
+                <section className="space-y-3">
+                  <div className="space-y-1">
+                    <h3 className="flex items-center gap-2 text-base font-semibold">
+                      Instructions
+                      <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-[11px] font-medium">
+                        Optional
+                      </span>
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      Tell us what this schedule should write about. Brand voice
+                      still applies.
+                    </p>
+                  </div>
+                  <form.Field name="instructions">
+                    {(field) => (
+                      <div className="space-y-2">
+                        <Textarea
+                          aria-label="Instructions"
+                          className="min-h-24"
+                          id={field.name}
+                          maxLength={MAX_SCHEDULE_INSTRUCTIONS_LENGTH}
+                          onBlur={field.handleBlur}
+                          onChange={(event) => {
+                            field.handleChange(event.target.value);
+                          }}
+                          placeholder="e.g. Write a tutorial-style post that walks through one feature shipped in this window, with code samples."
+                          value={field.state.value}
+                        />
+                        <div className="text-muted-foreground flex items-center justify-between text-xs">
+                          <span>
+                            Passed to the writer as extra guidance on every run.
+                          </span>
+                          <span className="tabular-nums">
+                            {field.state.value.length} /{" "}
+                            {MAX_SCHEDULE_INSTRUCTIONS_LENGTH}
+                          </span>
+                        </div>
                       </div>
                     )}
                   </form.Field>
