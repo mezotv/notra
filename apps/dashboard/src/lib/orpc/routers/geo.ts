@@ -176,12 +176,35 @@ import {
   assertActiveSubscription,
   assertGeoEntitlement,
 } from "@/lib/billing/subscription";
+import {
+  assertGeoShelfOpportunityMembers,
+  findCurrentGeoShelfMemberId,
+  listGeoShelfMembers,
+} from "@/lib/geo-shelf/members";
+import { previewGeoShelfUrl } from "@/lib/geo-shelf/preview";
+import {
+  createGeoShelfSource,
+  hasGeoShelfScanData,
+  listGeoShelfSources,
+  loadGeoShelfContext,
+  updateGeoShelfSource,
+} from "@/lib/geo-shelf/service";
 import { geoCoreDashboardLayer } from "@/lib/geo/configure";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { runOrpcEffect } from "@/lib/orpc/effect";
 import { badRequest, notFound } from "@/lib/orpc/utils/errors";
 import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
 import { geoScanStartInputSchema } from "@/schemas/geo-analytics";
+import {
+  geoShelfCreateInputSchema,
+  geoShelfListInputSchema,
+  geoShelfListResponseSchema,
+  geoShelfMembersResponseSchema,
+  geoShelfMutationResponseSchema,
+  geoShelfPreviewInputSchema,
+  geoShelfPreviewResponseSchema,
+  geoShelfUpdateInputSchema,
+} from "@/schemas/geo-shelf";
 import type { GeoHandlerTracker } from "@/types/analytics/geo-events";
 import type { AuthenticatedUser } from "@/types/auth/organization";
 import type {
@@ -395,7 +418,108 @@ async function acceptSuggestionInTx(
     .where(eq(geoPromptSuggestions.id, suggestion.id));
   return toTrackedPrompt(promptRow);
 }
+async function loadGeoShelfSeed(
+  context: GeoHandlerOptions<unknown>["context"],
+  input: { organizationId: string; projectId?: string }
+) {
+  await assertGeoAccess({
+    headers: context.headers,
+    organizationId: input.organizationId,
+    user: context.user,
+  });
+  const [shelfContext, members] = await Promise.all([
+    runOrpcEffect(
+      loadGeoShelfContext(input).pipe(Effect.provide(geoCoreDashboardLayer)),
+      toGeoOrpcError
+    ),
+    listGeoShelfMembers(input.organizationId),
+  ]);
+  return { ...shelfContext, members };
+}
+
 export const geoRouter = {
+  shelfList: authorizedProcedure
+    .input(geoShelfListInputSchema)
+    .handler(async ({ context, input }) => {
+      const seed = await loadGeoShelfSeed(context, input);
+      if (!seed.settings) {
+        return geoShelfListResponseSchema.parse({
+          sources: [],
+          hasScanData: false,
+          ownBrandName: "",
+        });
+      }
+      const sources = listGeoShelfSources({ ...seed, settings: seed.settings });
+      return geoShelfListResponseSchema.parse({
+        sources,
+        hasScanData: hasGeoShelfScanData(sources),
+        ownBrandName: seed.settings.companyName,
+      });
+    }),
+  shelfMembers: authorizedProcedure
+    .input(geoShelfListInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertGeoAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+      const members = await listGeoShelfMembers(input.organizationId);
+      return geoShelfMembersResponseSchema.parse({
+        members,
+        currentMemberId: context.user
+          ? findCurrentGeoShelfMemberId(members, context.user.id)
+          : null,
+      });
+    }),
+  shelfCreate: authorizedProcedure
+    .input(geoShelfCreateInputSchema)
+    .handler(async ({ context, input }) => {
+      const seed = await loadGeoShelfSeed(context, input);
+      if (!seed.settings) {
+        throw badRequest("Configure your brand tracking settings first");
+      }
+      assertGeoShelfOpportunityMembers(seed.members, input.opportunity);
+      const source = createGeoShelfSource(
+        { ...seed, settings: seed.settings },
+        input,
+        context.user.id
+      );
+      return geoShelfMutationResponseSchema.parse({ source });
+    }),
+  shelfUpdate: authorizedProcedure
+    .input(geoShelfUpdateInputSchema)
+    .handler(async ({ context, input }) => {
+      const seed = await loadGeoShelfSeed(context, input);
+      if (!seed.settings) {
+        throw badRequest("Configure your brand tracking settings first");
+      }
+      assertGeoShelfOpportunityMembers(seed.members, input.opportunity);
+      const source = updateGeoShelfSource(
+        { ...seed, settings: seed.settings },
+        input,
+        context.user.id
+      );
+      if (!source) {
+        throw notFound("Shelf not found");
+      }
+      return geoShelfMutationResponseSchema.parse({ source });
+    }),
+  shelfPreview: authorizedProcedure
+    .input(geoShelfPreviewInputSchema)
+    .handler(async ({ context, input }) => {
+      await assertGeoAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+      const rate = await ratelimit.geoShelfPreview.limit(input.organizationId);
+      if (!rate.success) {
+        throw badRequest("Too many page lookups. Please wait a minute.");
+      }
+      const preview = await previewGeoShelfUrl(input.url);
+      return geoShelfPreviewResponseSchema.parse(preview);
+    }),
   modelCatalog: authorizedProcedure
     .input(geoModelCatalogInputSchema)
     .handler(({ input }) =>

@@ -142,6 +142,12 @@ export const ratelimit = {
     prefix: "ratelimit:geo-brand-search",
     limiter: Ratelimit.slidingWindow(60, "1m"),
   }),
+  geoShelfPreview: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:geo-shelf-preview",
+    limiter: Ratelimit.slidingWindow(30, "1m"),
+  }),
   gscSync: new Ratelimit({
     redis,
     analytics: true,

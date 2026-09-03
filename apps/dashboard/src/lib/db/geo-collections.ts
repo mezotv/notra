@@ -11,6 +11,7 @@ import { toast } from "sonner";
 
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { GeoCollectionSpec } from "@/types/geo-db";
+import type { GeoShelfSource } from "@/types/geo-shelf";
 
 function scopeKey(scope: GeoScopeInput): string {
   return `${scope.organizationId}:${scope.projectId ?? "all"}`;
@@ -208,3 +209,58 @@ export const geoSequencesCollection =
         queryKey: dashboardOrpc.geo.sequencesList.queryKey({ input: scope }),
       }),
   });
+
+function toShelfPlacementWrites(source: GeoShelfSource) {
+  return source.placements.map((placement) => ({
+    competitorId: placement.competitorId,
+    status: placement.status,
+  }));
+}
+
+function toShelfOpportunityWrite(source: GeoShelfSource) {
+  const opportunity = source.opportunity;
+  if (!opportunity) {
+    return null;
+  }
+  return {
+    status: opportunity.status,
+    priority: opportunity.priority,
+    assigneeMemberId: opportunity.assigneeMemberId,
+    pocMemberId: opportunity.pocMemberId,
+    notes: opportunity.notes,
+    dueAt: opportunity.dueAt,
+  };
+}
+
+export const geoShelfCollection = createCollectionFactory<GeoShelfSource>({
+  name: "shelf",
+  errorMessage: "Failed to load shelf space",
+  fetch: async (scope) => {
+    const response = await dashboardOrpc.geo.shelfList.call(scope);
+    return response.sources;
+  },
+  getKey: (item) => item.id,
+  insert: (scope, item) =>
+    dashboardOrpc.geo.shelfCreate.call({
+      ...scope,
+      id: item.id,
+      url: item.url,
+      title: item.title,
+      kind: item.kind,
+      placements: toShelfPlacementWrites(item),
+      opportunity: toShelfOpportunityWrite(item),
+    }),
+  update: (scope, key, modified) =>
+    dashboardOrpc.geo.shelfUpdate.call({
+      ...scope,
+      sourceId: key,
+      title: modified.title,
+      kind: modified.kind,
+      placements: toShelfPlacementWrites(modified),
+      opportunity: toShelfOpportunityWrite(modified),
+    }),
+  invalidateLegacy: (queryClient, scope) =>
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.geo.shelfList.queryKey({ input: scope }),
+    }),
+});

@@ -11,6 +11,7 @@ import {
   CreditCardIcon,
   Home01Icon,
   Key01Icon,
+  Layers01Icon,
   MagicWand01Icon,
   Message01Icon,
   NoteIcon,
@@ -60,6 +61,7 @@ export const API_KEYS_NAV_LINK = "/api-keys";
 export const GEO_OVERVIEW_NAV_LINK = "/geo";
 export const GEO_TRAFFIC_NAV_LINK = "/geo/traffic";
 export const GEO_COMPETITORS_NAV_LINK = "/geo/competitors";
+export const GEO_SHELF_SPACE_NAV_LINK = "/geo/shelf-space";
 export const GEO_SETTINGS_NAV_LINK = "/geo/settings";
 
 export const SIDEBAR_DEFAULT_MODE: SidebarMode = "geo";
@@ -126,6 +128,7 @@ export const NAV_MAIN_ITEMS: NavMainItem[] = [
   { link: GEO_TRAFFIC_NAV_LINK, icon: Activity01Icon, label: "Traffic" },
   { link: GEO_PROMPTS_NAV_LINK, icon: AiChat01Icon, label: "Prompts" },
   { link: GEO_GAPS_NAV_LINK, icon: SearchList01Icon, label: "Content Gaps" },
+  { link: GEO_SHELF_SPACE_NAV_LINK, icon: Layers01Icon, label: "Shelf Space" },
   {
     link: GEO_AGENT_READINESS_NAV_LINK,
     icon: Robot01Icon,
@@ -152,6 +155,7 @@ export const NAV_GEO_VISIBILITY_LINKS: readonly string[] = [
 
 export const NAV_GEO_IMPROVE_LINKS: readonly string[] = [
   GEO_GAPS_NAV_LINK,
+  GEO_SHELF_SPACE_NAV_LINK,
   GEO_AGENT_READINESS_NAV_LINK,
   GEO_WRITER_NAV_LINK,
   CONTENT_NAV_LINK,
