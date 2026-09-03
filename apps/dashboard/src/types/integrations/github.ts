@@ -2,6 +2,7 @@ import type { createOctokit } from "@notra/ai/utils/octokit";
 import type { redis } from "@notra/ai/utils/redis";
 import { Data } from "effect";
 import type React from "react";
+
 import type { GitHubRepository } from "../integrations";
 
 export type GitHubClient = ReturnType<typeof createOctokit>;
@@ -111,8 +112,7 @@ export interface GitHubPublishingSettingsProps {
   repositories: GitHubRepository[];
 }
 
-export interface GitHubContentPublishingSettingsProps
-  extends GitHubPublishingSettingsProps {
+export interface GitHubContentPublishingSettingsProps extends GitHubPublishingSettingsProps {
   contentLabel: string;
   contentType: GitHubPublishContentType;
   pluralLabel: string;
@@ -214,8 +214,7 @@ export interface GitHubPublishOutputTarget {
   repositoryId: string;
 }
 
-export interface RecordGitHubPublishFailureParams
-  extends GitHubPublishOutputTarget {
+export interface RecordGitHubPublishFailureParams extends GitHubPublishOutputTarget {
   organizationId: string;
 }
 

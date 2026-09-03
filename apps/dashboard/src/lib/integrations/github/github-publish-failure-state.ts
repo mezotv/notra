@@ -2,6 +2,7 @@ import { redis } from "@notra/ai/utils/redis";
 import { db } from "@notra/db/drizzle";
 import { repositoryOutputs } from "@notra/db/schema";
 import { and, eq } from "drizzle-orm";
+
 import {
   AUTOMATED_WORKFLOW_FAILURE_PAUSE_THRESHOLD,
   AUTOMATED_WORKFLOW_FAILURE_STATE_TTL_SECONDS,
@@ -11,7 +12,7 @@ import type {
   GitHubPublishFailureDependencies,
   GitHubPublishOutputTarget,
   RecordGitHubPublishFailureParams,
-} from "@/types/integrations/github";
+} from "../../../types/integrations/github";
 
 const INCREMENT_WITH_TTL_SCRIPT = `local count = redis.call("INCR", KEYS[1])
 redis.call("EXPIRE", KEYS[1], ARGV[1])

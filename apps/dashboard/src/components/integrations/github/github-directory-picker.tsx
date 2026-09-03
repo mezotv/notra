@@ -28,6 +28,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useId, useState } from "react";
+
 import { Button } from "@/components/button";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
@@ -71,7 +72,7 @@ function DirectoryNode({
   if (directoriesQuery.isLoading) {
     directoryContent = (
       <output
-        className="flex h-10 items-center gap-2 text-muted-foreground text-sm"
+        className="text-muted-foreground flex h-10 items-center gap-2 text-sm"
         style={{ paddingInlineStart: `${(depth + 1) * 16 + 44}px` }}
       >
         <HugeiconsIcon className="size-4 animate-spin" icon={Loading03Icon} />
@@ -81,7 +82,7 @@ function DirectoryNode({
   } else if (directoriesQuery.isError) {
     directoryContent = (
       <p
-        className="py-2 text-destructive text-sm"
+        className="text-destructive py-2 text-sm"
         role="alert"
         style={{ paddingInlineStart: `${(depth + 1) * 16 + 44}px` }}
       >
@@ -93,12 +94,12 @@ function DirectoryNode({
   return (
     <Collapsible onOpenChange={setExpanded} open={expanded}>
       <div
-        className="flex min-h-10 items-center gap-1 rounded-lg pe-2 hover:bg-muted/60"
+        className="hover:bg-muted/60 flex min-h-10 items-center gap-1 rounded-lg pe-2"
         style={{ paddingInlineStart: `${depth * 16 + 4}px` }}
       >
         <CollapsibleTrigger
           aria-label={expanded ? `Collapse ${name}` : `Expand ${name}`}
-          className="flex size-9 shrink-0 items-center justify-center rounded-md text-muted-foreground outline-none hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring"
+          className="text-muted-foreground hover:text-foreground focus-visible:ring-ring flex size-9 shrink-0 items-center justify-center rounded-md outline-none focus-visible:ring-1"
         >
           <HugeiconsIcon
             className={cn(
@@ -114,7 +115,7 @@ function DirectoryNode({
         >
           <RadioGroupItem id={radioId} value={path} />
           <HugeiconsIcon
-            className="size-4 shrink-0 text-muted-foreground"
+            className="text-muted-foreground size-4 shrink-0"
             icon={Folder01Icon}
           />
           <span className="truncate">{name}</span>
@@ -164,7 +165,7 @@ export function GitHubDirectoryPicker({
 
   if (rootDirectoriesQuery.isLoading) {
     rootDirectoryContent = (
-      <output className="flex h-20 items-center justify-center gap-2 text-muted-foreground text-sm">
+      <output className="text-muted-foreground flex h-20 items-center justify-center gap-2 text-sm">
         <HugeiconsIcon className="size-4 animate-spin" icon={Loading03Icon} />
         Loading folders…
       </output>
@@ -172,7 +173,7 @@ export function GitHubDirectoryPicker({
   } else if (rootDirectoriesQuery.isError) {
     rootDirectoryContent = (
       <p
-        className="px-3 py-6 text-center text-destructive text-sm"
+        className="text-destructive px-3 py-6 text-center text-sm"
         role="alert"
       >
         Unable to load repository folders.
@@ -215,12 +216,12 @@ export function GitHubDirectoryPicker({
       >
         <span className="flex min-w-0 items-center gap-2">
           <HugeiconsIcon
-            className="size-4 shrink-0 text-muted-foreground"
+            className="text-muted-foreground size-4 shrink-0"
             icon={Folder01Icon}
           />
           <span className="truncate">{directory || "Repository root"}</span>
         </span>
-        <span className="shrink-0 text-muted-foreground text-xs">Browse</span>
+        <span className="text-muted-foreground shrink-0 text-xs">Browse</span>
       </ResponsiveDialogTrigger>
 
       <ResponsiveDialogContent className="sm:max-w-[600px]">
@@ -244,12 +245,12 @@ export function GitHubDirectoryPicker({
           value={selectedDirectory}
         >
           <label
-            className="flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm hover:bg-muted/60"
+            className="hover:bg-muted/60 flex min-h-10 cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm"
             htmlFor={rootRadioId}
           >
             <RadioGroupItem id={rootRadioId} value="" />
             <HugeiconsIcon
-              className="size-4 shrink-0 text-muted-foreground"
+              className="text-muted-foreground size-4 shrink-0"
               icon={Folder01Icon}
             />
             <span>{repositoryName} (root)</span>

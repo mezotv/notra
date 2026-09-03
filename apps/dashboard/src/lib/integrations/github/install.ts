@@ -12,7 +12,7 @@ import {
   GitHubAccountConnectionIncompleteError,
   GitHubInstallStartError,
   type StartGitHubInstallResult,
-} from "@/types/integrations/github";
+} from "../../../types/integrations/github";
 
 function authorizeGitHub(callbackURL: string) {
   return Effect.tryPromise({

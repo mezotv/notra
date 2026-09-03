@@ -39,6 +39,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import {
   DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED,
@@ -192,16 +193,16 @@ export function PublishContentToGitHubDialog({
           </ResponsiveDialogHeader>
 
           {pullRequest ? (
-            <div className="my-4 overflow-hidden rounded-lg border bg-muted/20">
+            <div className="bg-muted/20 my-4 overflow-hidden rounded-lg border">
               <div className="flex items-start gap-3 p-3">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#f6f3f1] p-1 ring-1 ring-foreground/10">
+                <div className="ring-foreground/10 flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#f6f3f1] p-1 ring-1">
                   <Notra className="size-full" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">
+                  <p className="truncate text-sm font-medium">
                     docs: add {title}
                   </p>
-                  <p className="mt-1 truncate text-muted-foreground text-xs">
+                  <p className="text-muted-foreground mt-1 truncate text-xs">
                     {selectedRepository
                       ? `${selectedRepository.owner}/${selectedRepository.repo}`
                       : "Repository"}
@@ -211,7 +212,7 @@ export function PublishContentToGitHubDialog({
                 </div>
                 <a
                   aria-label={`Open pull request #${pullRequest.pullRequestNumber} on GitHub`}
-                  className="flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring flex size-9 shrink-0 items-center justify-center rounded-lg transition-colors focus-visible:ring-2 focus-visible:outline-none"
                   href={pullRequest.pullRequestUrl}
                   rel="noopener noreferrer"
                   target="_blank"
@@ -220,7 +221,7 @@ export function PublishContentToGitHubDialog({
                 </a>
               </div>
 
-              <div className="flex min-w-0 items-center gap-2 border-t px-3 py-2.5 text-muted-foreground text-xs">
+              <div className="text-muted-foreground flex min-w-0 items-center gap-2 border-t px-3 py-2.5 text-xs">
                 <HugeiconsIcon
                   className="size-4 shrink-0"
                   icon={GitCommitIcon}
@@ -278,7 +279,7 @@ export function PublishContentToGitHubDialog({
                 </Select>
                 {integrationsLoadFailed ? (
                   <div
-                    className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 p-3"
+                    className="border-destructive/30 flex items-center justify-between gap-3 rounded-lg border p-3"
                     role="alert"
                   >
                     <p className="text-destructive text-sm">

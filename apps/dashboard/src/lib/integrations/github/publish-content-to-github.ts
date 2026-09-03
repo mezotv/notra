@@ -19,7 +19,7 @@ import type {
   PublishContentDraftPullRequestParams,
   ResolveGitHubContentPathParams,
   ValidateExistingGitHubBranchParams,
-} from "@/types/integrations/github";
+} from "../../../types/integrations/github";
 
 export class GitHubContentTargetExistsError extends Error {}
 

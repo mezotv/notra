@@ -17,6 +17,7 @@ import { Switch } from "@notra/ui/components/ui/switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useId, useState } from "react";
 import { toast } from "sonner";
+
 import { Button } from "@/components/button";
 import {
   DEFAULT_GITHUB_CONTENT_DIRECTORIES,
@@ -29,6 +30,7 @@ import type {
   GitHubOutputMutationVariables,
   GitHubPublishingSettingsProps,
 } from "@/types/integrations/github";
+
 import { GitHubDirectoryPicker } from "./github-directory-picker";
 
 function GitHubContentPublishingSettings({
@@ -160,7 +162,7 @@ function GitHubContentPublishingSettings({
       <CardContent className="space-y-5">
         <RadioGroup
           aria-label={`${contentLabel} repository`}
-          className="flex max-w-full grid-cols-none gap-1 overflow-x-auto rounded-lg bg-muted p-[3px]"
+          className="bg-muted flex max-w-full grid-cols-none gap-1 overflow-x-auto rounded-lg p-[3px]"
           onValueChange={(value) => {
             if (typeof value === "string") {
               setSelectedRepositoryId(value);
@@ -172,7 +174,7 @@ function GitHubContentPublishingSettings({
             const radioId = `${folderTriggerId}-${repository.id}`;
             return (
               <label
-                className="flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-transparent px-2 font-medium text-foreground/60 text-sm transition-colors hover:text-foreground has-data-checked:bg-background has-data-checked:text-foreground has-data-checked:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
+                className="text-foreground/60 hover:text-foreground has-data-checked:bg-background has-data-checked:text-foreground has-[:focus-visible]:ring-ring flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-transparent px-2 text-sm font-medium transition-colors has-data-checked:shadow-sm has-[:focus-visible]:ring-2"
                 htmlFor={radioId}
                 key={repository.id}
               >
@@ -190,7 +192,7 @@ function GitHubContentPublishingSettings({
 
         <div className="flex max-w-xl items-center justify-between gap-4 rounded-lg border px-3 py-2.5">
           <div className="space-y-0.5">
-            <p className="font-medium text-sm">Publish {pluralLabel}</p>
+            <p className="text-sm font-medium">Publish {pluralLabel}</p>
             <p className="text-muted-foreground text-xs">
               {publishingEnabled
                 ? `Create draft pull requests from ${pluralLabel}.`
@@ -216,7 +218,7 @@ function GitHubContentPublishingSettings({
           </FieldLabel>
           {directoryQuery.isError && !directoryQuery.data ? (
             <div
-              className="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-destructive/30 px-3"
+              className="border-destructive/30 flex min-h-10 items-center justify-between gap-3 rounded-lg border px-3"
               role="alert"
             >
               <p className="text-destructive text-sm">
