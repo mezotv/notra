@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 import { localStorageKeys } from "@/constants/storage";
 import type {
@@ -60,8 +60,8 @@ function persistMode(mode: SidebarMode): void {
   notifyModeChange();
 }
 
-function clearPendingMode(): void {
-  if (pendingMode === null) {
+function clearPendingMode(expected: PendingSidebarMode): void {
+  if (pendingMode !== expected) {
     return;
   }
   pendingMode = null;
@@ -104,12 +104,24 @@ export function useSidebarMode(
   const mode =
     pending !== null && pending.route === route ? pending.mode : routeMode;
 
+  // Read the store again during unmount instead of closing over `pending`: a pick
+  // can be followed by navigation before React commits the snapshot update.
+  useEffect(
+    () => () => {
+      const pendingAtUnmount = readPendingMode();
+      if (pendingAtUnmount !== null) {
+        clearPendingMode(pendingAtUnmount);
+      }
+    },
+    []
+  );
+
   // Drop a pick once the route has moved past it, so returning to where it was
-  // made does not resurrect it. The route check above keeps it off-screen while
-  // this effect clears the shared pending state.
+  // made does not resurrect it. Comparing by identity prevents this effect from
+  // clearing a newer pick made before it runs.
   useEffect(() => {
     if (pending !== null && pending.route !== route) {
-      clearPendingMode();
+      clearPendingMode(pending);
     }
   }, [pending, route]);
 
@@ -124,12 +136,9 @@ export function useSidebarMode(
     }
   }, [mode, route, storedMode]);
 
-  const setMode = useCallback(
-    (next: SidebarMode) => {
-      pickSidebarMode(next, route);
-    },
-    [route]
-  );
+  const setMode = (next: SidebarMode) => {
+    pickSidebarMode(next, route);
+  };
 
   return { mode, setMode, pendingMode: mode === routeMode ? null : mode };
 }
