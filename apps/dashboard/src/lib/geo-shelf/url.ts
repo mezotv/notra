@@ -37,8 +37,8 @@ function isBlockedHostname(hostname: string): boolean {
   if (GEO_SHELF_BLOCKED_HOSTNAMES.includes(hostname)) {
     return true;
   }
-  return GEO_SHELF_BLOCKED_HOSTNAME_SUFFIXES.some((suffix) =>
-    hostname.endsWith(suffix)
+  return GEO_SHELF_BLOCKED_HOSTNAME_SUFFIXES.some(
+    (suffix) => hostname === suffix.slice(1) || hostname.endsWith(suffix)
   );
 }
 
@@ -72,6 +72,9 @@ function parseShelfUrl(raw: string): URL | null {
     return null;
   }
   if (!ALLOWED_PROTOCOLS.includes(url.protocol)) {
+    return null;
+  }
+  if (url.username.length > 0 || url.password.length > 0) {
     return null;
   }
   if (!isAllowedShelfHostname(url.hostname)) {

@@ -80,6 +80,7 @@ import {
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
+import { isUniqueConstraintError } from "@/lib/db/errors";
 import { toMcpIntegrationAuthKind } from "@/lib/integrations/auth-kind";
 import {
   clearCachedSlackChannels,
@@ -142,16 +143,6 @@ async function assertMcpConnectionRateLimit(organizationId: string) {
       "Too many connection attempts. Wait a minute and try again."
     );
   }
-}
-
-function isUniqueConstraintError(error: unknown): boolean {
-  if (typeof error !== "object" || error === null) {
-    return false;
-  }
-  if ("code" in error && error.code === "23505") {
-    return true;
-  }
-  return "cause" in error && isUniqueConstraintError(error.cause);
 }
 
 function serializeRepositoryOutput(output: {

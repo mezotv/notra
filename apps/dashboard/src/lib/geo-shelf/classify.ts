@@ -3,7 +3,11 @@ import {
   GEO_SHELF_KIND_BY_DOMAIN,
 } from "@/constants/geo-shelf";
 import { isAllowedShelfUrl, shelfDomainFromUrl } from "@/lib/geo-shelf/url";
-import type { GeoShelfOwnership, GeoShelfSourceKind } from "@/types/geo-shelf";
+
+import type {
+  GeoShelfOwnership,
+  GeoShelfSourceKind,
+} from "../../types/geo-shelf";
 
 function hostnameFromDomain(value: string | null | undefined): string | null {
   if (!value) {

@@ -33,7 +33,11 @@ import {
   GEO_SHELF_PREVIEW_UNAVAILABLE_MESSAGE,
   GEO_SHELF_SOURCE_KIND_LABELS,
   GEO_SHELF_SOURCE_KINDS,
+  GEO_SHELF_TITLE_MAX_LENGTH,
+  GEO_SHELF_TITLE_TOO_LONG_MESSAGE,
   GEO_SHELF_URL_INVALID_MESSAGE,
+  GEO_SHELF_URL_MAX_LENGTH,
+  GEO_SHELF_URL_TOO_LONG_MESSAGE,
 } from "@/constants/geo-shelf";
 import { canonicalizeShelfUrl, isAllowedShelfUrl } from "@/lib/geo-shelf/url";
 import { useGeoShelfPreview } from "@/lib/hooks/use-geo-shelf";
@@ -62,6 +66,9 @@ function validateShelfUrl(
   if (trimmed.length === 0) {
     return undefined;
   }
+  if (value.length > GEO_SHELF_URL_MAX_LENGTH) {
+    return GEO_SHELF_URL_TOO_LONG_MESSAGE;
+  }
   if (!isAllowedShelfUrl(trimmed)) {
     return GEO_SHELF_URL_INVALID_MESSAGE;
   }
@@ -70,6 +77,12 @@ function validateShelfUrl(
     (existing) => canonicalizeShelfUrlSafe(existing) === canonical
   );
   return isDuplicate ? GEO_SHELF_DUPLICATE_URL_MESSAGE : undefined;
+}
+
+function validateShelfTitle(value: string): string | undefined {
+  return value.length > GEO_SHELF_TITLE_MAX_LENGTH
+    ? GEO_SHELF_TITLE_TOO_LONG_MESSAGE
+    : undefined;
 }
 
 /**
@@ -109,6 +122,7 @@ export function ShelfAddDialog({
 }: GeoShelfAddDialogProps) {
   const id = useId();
   const previewTitleRef = useRef<string | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
   const form = useForm({
     defaultValues: {
       url: "",
@@ -127,10 +141,15 @@ export function ShelfAddDialog({
     } as GeoShelfNewSourceDraft,
     onSubmit: ({ value }) => {
       const typedTitle = value.title.trim();
+      const submittedUrl = value.url.trim();
+      const matchingPreviewTitle =
+        isAllowedShelfUrl(submittedUrl) &&
+        previewUrlRef.current === canonicalizeShelfUrl(submittedUrl)
+          ? (previewTitleRef.current ?? "")
+          : "";
       onSubmit({
         ...value,
-        title:
-          typedTitle.length > 0 ? typedTitle : (previewTitleRef.current ?? ""),
+        title: typedTitle.length > 0 ? typedTitle : matchingPreviewTitle,
       });
       form.reset();
       onOpenChange(false);
@@ -150,8 +169,11 @@ export function ShelfAddDialog({
   const preview = useGeoShelfPreview(organizationId, previewUrl);
   const previewTitle = preview.data?.title ?? null;
   useEffect(() => {
-    previewTitleRef.current = previewTitle;
-  }, [previewTitle]);
+    if (previewTitle !== null && previewUrl !== null) {
+      previewTitleRef.current = previewTitle;
+      previewUrlRef.current = canonicalizeShelfUrl(previewUrl);
+    }
+  }, [previewTitle, previewUrl]);
   const isPreviewLoading = previewUrl !== null && preview.isFetching;
   const showPreviewTitle =
     titleValue.trim().length === 0 && previewTitle !== null;
@@ -205,16 +227,26 @@ export function ShelfAddDialog({
                 <div className="space-y-1.5">
                   <Label htmlFor={`${id}-url`}>Page URL</Label>
                   <Input
+                    aria-describedby={
+                      field.state.meta.errors.length > 0
+                        ? `${id}-url-error`
+                        : undefined
+                    }
+                    aria-invalid={field.state.meta.errors.length > 0}
                     autoFocus
                     id={`${id}-url`}
                     inputMode="url"
+                    maxLength={GEO_SHELF_URL_MAX_LENGTH}
                     onBlur={field.handleBlur}
                     onChange={(event) => field.handleChange(event.target.value)}
                     placeholder="https://www.g2.com/categories/..."
                     value={field.state.value}
                   />
                   {field.state.meta.errors.length > 0 ? (
-                    <p className="text-destructive text-xs">
+                    <p
+                      className="text-destructive text-xs"
+                      id={`${id}-url-error`}
+                    >
                       {String(field.state.meta.errors[0])}
                     </p>
                   ) : null}
@@ -249,7 +281,10 @@ export function ShelfAddDialog({
             </form.Field>
           </div>
 
-          <form.Field name="title">
+          <form.Field
+            name="title"
+            validators={{ onChange: ({ value }) => validateShelfTitle(value) }}
+          >
             {(field) => (
               <div className="space-y-1.5">
                 <span className="flex items-center justify-between gap-2">
@@ -279,7 +314,14 @@ export function ShelfAddDialog({
                   ) : null}
                 </span>
                 <Input
+                  aria-describedby={
+                    field.state.meta.errors.length > 0
+                      ? `${id}-title-error`
+                      : undefined
+                  }
+                  aria-invalid={field.state.meta.errors.length > 0}
                   id={`${id}-title`}
+                  maxLength={GEO_SHELF_TITLE_MAX_LENGTH}
                   onBlur={field.handleBlur}
                   onChange={(event) => field.handleChange(event.target.value)}
                   placeholder={
@@ -288,6 +330,14 @@ export function ShelfAddDialog({
                   }
                   value={showPreviewTitle ? previewTitle : field.state.value}
                 />
+                {field.state.meta.errors.length > 0 ? (
+                  <p
+                    className="text-destructive text-xs"
+                    id={`${id}-title-error`}
+                  >
+                    {String(field.state.meta.errors[0])}
+                  </p>
+                ) : null}
                 {showPreviewTitle ? (
                   <p className="text-muted-foreground text-xs">
                     From the page's title tag. Type to override.
@@ -309,19 +359,23 @@ export function ShelfAddDialog({
             <div className="grid gap-2 sm:grid-cols-2">
               <form.Field name="ownPresent">
                 {(field) => (
-                  <label className="hover:bg-muted/40 flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2">
+                  <div className="hover:bg-muted/40 flex items-center gap-2.5 rounded-lg border px-3 py-2">
                     <Checkbox
                       aria-label={`${ownBrandName || "You"} is on this page`}
                       checked={field.state.value}
+                      id={`${id}-own-present`}
                       onCheckedChange={(checked) => field.handleChange(checked)}
                     />
-                    <span className="truncate text-sm font-medium">
+                    <label
+                      className="min-w-0 flex-1 cursor-pointer truncate text-sm font-medium"
+                      htmlFor={`${id}-own-present`}
+                    >
                       {ownBrandName || "You"}
                       <span className="text-muted-foreground ml-1 font-normal">
                         (You)
                       </span>
-                    </span>
-                  </label>
+                    </label>
+                  </div>
                 )}
               </form.Field>
               <form.Field name="presentCompetitorIds">
@@ -329,14 +383,16 @@ export function ShelfAddDialog({
                   <>
                     {competitors.map((competitor) => {
                       const checked = field.state.value.includes(competitor.id);
+                      const checkboxId = `${id}-competitor-${competitor.id}`;
                       return (
-                        <label
-                          className="hover:bg-muted/40 flex cursor-pointer items-center gap-2.5 rounded-lg border px-3 py-2"
+                        <div
+                          className="hover:bg-muted/40 flex items-center gap-2.5 rounded-lg border px-3 py-2"
                           key={competitor.id}
                         >
                           <Checkbox
                             aria-label={`${competitor.name} is on this page`}
                             checked={checked}
+                            id={checkboxId}
                             onCheckedChange={(next) =>
                               field.handleChange(
                                 next
@@ -347,15 +403,20 @@ export function ShelfAddDialog({
                               )
                             }
                           />
-                          <CompetitorLogo
-                            className="size-5 shrink-0 rounded-md"
-                            domain={competitor.domain}
-                            name={competitor.name}
-                          />
-                          <span className="truncate text-sm font-medium">
-                            {competitor.name}
-                          </span>
-                        </label>
+                          <label
+                            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5"
+                            htmlFor={checkboxId}
+                          >
+                            <CompetitorLogo
+                              className="size-5 shrink-0 rounded-md"
+                              domain={competitor.domain}
+                              name={competitor.name}
+                            />
+                            <span className="truncate text-sm font-medium">
+                              {competitor.name}
+                            </span>
+                          </label>
+                        </div>
                       );
                     })}
                   </>

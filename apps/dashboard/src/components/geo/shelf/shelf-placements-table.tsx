@@ -40,8 +40,8 @@ export function ShelfPlacementsTable({
   ];
 
   return (
-    <div className="overflow-hidden rounded-xl border">
-      <table className="w-full text-sm">
+    <div className="overflow-x-auto rounded-xl border">
+      <table className="w-full min-w-[40rem] text-sm">
         <thead className="bg-muted/40 text-muted-foreground text-xs">
           <tr>
             <th className="px-3 py-2 text-left font-medium">Brand</th>

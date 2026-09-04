@@ -3,8 +3,10 @@
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { ButtonGroup } from "@notra/ui/components/ui/button-group";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
+import { Columns3Icon, Table2Icon } from "lucide-react";
 import Link from "next/link";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
 import { useEffect, useRef, useState } from "react";
@@ -13,6 +15,7 @@ import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { ShelfAddDialog } from "@/components/geo/shelf/shelf-add-dialog";
+import { ShelfBoard } from "@/components/geo/shelf/shelf-board";
 import { ShelfDetailDialog } from "@/components/geo/shelf/shelf-detail-dialog";
 import { ShelfTable } from "@/components/geo/shelf/shelf-table";
 import { ShelfToolbar } from "@/components/geo/shelf/shelf-toolbar";
@@ -31,6 +34,7 @@ import {
   GEO_SHELF_ADD_LABEL,
   GEO_SHELF_SHELF_FILTERS,
   GEO_SHELF_TICKET_FILTERS,
+  GEO_SHELF_VIEWS,
 } from "@/constants/geo-shelf";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoSettings } from "@/lib/hooks/use-geo";
@@ -99,6 +103,12 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
       .withDefault("any")
       .withOptions({ clearOnDefault: true })
   );
+  const [view, setView] = useQueryState(
+    "view",
+    parseAsStringLiteral(GEO_SHELF_VIEWS)
+      .withDefault("table")
+      .withOptions({ clearOnDefault: true })
+  );
   const [addOpen, setAddOpen] = useState(false);
   const [selected, setSelected] = useState<GeoShelfSelection | null>(null);
 
@@ -118,12 +128,12 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
     }
     viewedRef.current = true;
     trackEvent(POSTHOG_EVENTS.GEO_SHELF_VIEWED, {
-      view: "table",
+      view,
       has_settings: hasSettings,
       shelf_count: shelfCount,
       is_sample_data: isSampleData,
     });
-  }, [isSettingsPending, hasSettings, shelfCount, isSampleData]);
+  }, [isSettingsPending, hasSettings, shelfCount, isSampleData, view]);
 
   if (isSettingsPending) {
     return <GeoShelfSkeleton />;
@@ -183,16 +193,27 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
     rows.find((row) => row.id === selected?.id) ??
     rows.find((row) => row.url === selected?.url) ??
     null;
-  const shelfContent = (
-    <ShelfTable
-      hasScanData={shelf.sources.some((source) => source.origin === "scan")}
-      onAddShelf={() => setAddOpen(true)}
-      onRowClick={(row) => setSelected({ id: row.id, url: row.url })}
-      pendingSourceIds={shelf.pendingSourceIds}
-      rows={filteredRows}
-      totalCount={rows.length}
-    />
-  );
+  const openRow = (row: (typeof rows)[number]) =>
+    setSelected({ id: row.id, url: row.url });
+  const shelfContent =
+    view === "board" && rows.length > 0 ? (
+      <ShelfBoard
+        currentMemberId={currentMemberId}
+        onRowClick={openRow}
+        onUpdateOpportunity={shelf.updateOpportunity}
+        pendingSourceIds={shelf.pendingSourceIds}
+        rows={filteredRows}
+      />
+    ) : (
+      <ShelfTable
+        hasScanData={shelf.sources.some((source) => source.origin === "scan")}
+        onAddShelf={() => setAddOpen(true)}
+        onRowClick={openRow}
+        pendingSourceIds={shelf.pendingSourceIds}
+        rows={filteredRows}
+        totalCount={rows.length}
+      />
+    );
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -213,12 +234,34 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
 
         <div className="space-y-3">
           {rows.length > 0 ? (
-            <ShelfToolbar
-              filters={filters}
-              onSearchChange={setSearch}
-              onShelfFilterChange={setShelfFilter}
-              onTicketFilterChange={setTicketFilter}
-            />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <ShelfToolbar
+                filters={filters}
+                onSearchChange={setSearch}
+                onShelfFilterChange={setShelfFilter}
+                onTicketFilterChange={setTicketFilter}
+              />
+              <ButtonGroup aria-label="Shelf view">
+                <Button
+                  aria-label="Table view"
+                  aria-pressed={view === "table"}
+                  onClick={() => setView("table")}
+                  size="icon"
+                  variant={view === "table" ? "secondary" : "outline"}
+                >
+                  <Table2Icon />
+                </Button>
+                <Button
+                  aria-label="Board view"
+                  aria-pressed={view === "board"}
+                  onClick={() => setView("board")}
+                  size="icon"
+                  variant={view === "board" ? "secondary" : "outline"}
+                >
+                  <Columns3Icon />
+                </Button>
+              </ButtonGroup>
+            </div>
           ) : null}
           {shelfContent}
         </div>

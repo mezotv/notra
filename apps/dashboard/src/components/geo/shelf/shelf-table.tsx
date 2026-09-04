@@ -141,14 +141,18 @@ function TicketCell({ row }: { row: GeoShelfRow }) {
       <HoverCardTrigger
         delay={GEO_SHELF_HOVER_DELAY_MS}
         render={
-          <span aria-label={`Assigned to ${name}`} className="inline-flex" />
+          <button
+            aria-label={`Assigned to ${name}, show details`}
+            className="focus-visible:ring-ring/50 inline-flex cursor-default rounded-sm outline-hidden focus-visible:ring-[3px]"
+            type="button"
+          />
         }
       >
         {badge}
       </HoverCardTrigger>
       <ShelfTicketAssigneeCard
-        assignedAt={row.opportunity.createdAt}
         member={row.assignee}
+        ticketCreatedAt={row.opportunity.createdAt}
         status={row.opportunity.status}
       />
     </HoverCard>

@@ -4,7 +4,11 @@ import { sql } from "drizzle-orm";
 
 import { GEO_SHELF_CITATION_WINDOW_DAYS } from "@/constants/geo-shelf";
 import { foldShelfCitationRows } from "@/lib/geo-shelf/citations";
-import type { GeoShelfCitedPage, GeoShelfStoreKey } from "@/types/geo-shelf";
+
+import type {
+  GeoShelfCitedPage,
+  GeoShelfStoreKey,
+} from "../../types/geo-shelf";
 
 interface CitedSourceSqlRow {
   url: string | null;
@@ -13,6 +17,8 @@ interface CitedSourceSqlRow {
   total_count: number | string | null;
   prompt_ids: string[] | null;
   engines: string[] | null;
+  check_ids: string[] | null;
+  window_check_ids: string[] | null;
   first_cited_at: Date | string | null;
   last_cited_at: Date | string | null;
 }
@@ -87,6 +93,8 @@ export async function queryCitedShelfPages(
       count(*)::int as total_count,
       array_agg(distinct prompt_id) as prompt_ids,
       array_agg(distinct engine) as engines,
+      array_agg(distinct check_id) as check_ids,
+      array_agg(distinct check_id) filter (where captured_at >= ${windowFrom}) as window_check_ids,
       min(captured_at) as first_cited_at,
       max(captured_at) as last_cited_at
     from unique_check_urls
@@ -105,6 +113,8 @@ export async function queryCitedShelfPages(
         totalCount: toCount(row.total_count),
         promptIds: toStringList(row.prompt_ids),
         engines: toStringList(row.engines),
+        checkIds: toStringList(row.check_ids),
+        windowCheckIds: toStringList(row.window_check_ids),
         firstCitedAt: row.first_cited_at,
         lastCitedAt: row.last_cited_at,
       },

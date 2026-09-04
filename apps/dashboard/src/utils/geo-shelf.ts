@@ -7,17 +7,19 @@ import {
   isAllowedShelfUrl,
   shelfDomainFromUrl,
 } from "@/lib/geo-shelf/url";
+
 import type {
   GeoShelfFilterState,
   GeoShelfMember,
   GeoShelfNewSourceDraft,
   GeoShelfOpportunity,
+  GeoShelfOpportunityPatch,
   GeoShelfOpportunityWrite,
   GeoShelfPlacement,
   GeoShelfPlacementWrite,
   GeoShelfRow,
   GeoShelfSource,
-} from "@/types/geo-shelf";
+} from "../types/geo-shelf";
 
 export function isOpenShelfStatus(
   status: GeoShelfOpportunity["status"] | null | undefined
@@ -127,6 +129,9 @@ function matchesSearch(row: GeoShelfRow, search: string): boolean {
     row.title ?? "",
     row.domain,
     row.url,
+    ...(row.ownPlacement?.status === "present"
+      ? [row.ownPlacement.brandName]
+      : []),
     ...row.presentCompetitors.map((placement) => placement.brandName),
     row.assignee?.name ?? "",
     row.opportunity?.notes ?? "",
@@ -253,13 +258,22 @@ function isSameOpportunityWrite(
 export function changedShelfOpportunityWrite(
   modified: GeoShelfSource,
   original: GeoShelfSource
-): GeoShelfOpportunityWrite | null | undefined {
+): GeoShelfOpportunityPatch | null | undefined {
   const next = toShelfOpportunityWrite(modified);
   const previous = toShelfOpportunityWrite(original);
   if (isSameOpportunityWrite(next, previous)) {
     return undefined;
   }
-  return next;
+  if (next === null || previous === null) {
+    return next;
+  }
+  const changes: GeoShelfOpportunityPatch = {};
+  for (const key of Object.keys(next) as (keyof GeoShelfOpportunityWrite)[]) {
+    if (next[key] !== previous[key]) {
+      Object.assign(changes, { [key]: next[key] });
+    }
+  }
+  return changes;
 }
 
 /** Canonicalize like the server so the optimistic row matches the created one. */

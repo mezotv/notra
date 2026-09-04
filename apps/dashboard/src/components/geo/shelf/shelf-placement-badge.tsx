@@ -31,10 +31,13 @@ export function ShelfPlacementBadge({
   className,
 }: GeoShelfPlacementBadgeProps) {
   const resolved = status ?? "unknown";
-  const title =
+  let title =
     evidence === "manual"
       ? "Marked by a teammate"
       : "Verified by fetching the page";
+  if (resolved === "unknown") {
+    title = "Not checked yet";
+  }
   return (
     <Badge
       className={cn(
@@ -42,7 +45,7 @@ export function ShelfPlacementBadge({
         PLACEMENT_CLASSES[resolved],
         className
       )}
-      title={status ? title : "Not checked yet"}
+      title={title}
       variant="outline"
     >
       <HugeiconsIcon

@@ -22,6 +22,7 @@ export function ShelfMemberSelect({
   placeholder = "Unassigned",
   allowSameAsAssignee = false,
   disabled = false,
+  id,
   ariaLabel,
 }: GeoShelfMemberSelectProps) {
   const emptyValue = allowSameAsAssignee
@@ -44,7 +45,7 @@ export function ShelfMemberSelect({
       }}
       value={value ?? emptyValue}
     >
-      <SelectTrigger aria-label={ariaLabel} className="w-full">
+      <SelectTrigger aria-label={ariaLabel} className="w-full" id={id}>
         <SelectValue>
           <ShelfMemberAvatar fallbackLabel={emptyLabel} member={selected} />
         </SelectValue>

@@ -4,6 +4,7 @@ import type { z } from "zod";
 import type {
   GEO_SHELF_SHELF_FILTERS,
   GEO_SHELF_TICKET_FILTERS,
+  GEO_SHELF_VIEWS,
 } from "@/constants/geo-shelf";
 import type {
   geoShelfCitationSummarySchema,
@@ -56,6 +57,8 @@ export interface GeoShelfCitationRawRow {
   totalCount: number;
   promptIds: string[];
   engines: string[];
+  checkIds: string[];
+  windowCheckIds: string[];
   firstCitedAt: Date | string;
   lastCitedAt: Date | string;
 }
@@ -71,6 +74,7 @@ export type GeoShelfOpportunity = z.infer<typeof geoShelfOpportunitySchema>;
 export type GeoShelfOpportunityWrite = z.infer<
   typeof geoShelfOpportunityWriteSchema
 >;
+export type GeoShelfOpportunityPatch = Partial<GeoShelfOpportunityWrite>;
 export type GeoShelfSource = z.infer<typeof geoShelfSourceSchema>;
 export type GeoShelfListResponse = z.infer<typeof geoShelfListResponseSchema>;
 export type GeoShelfMembersResponse = z.infer<
@@ -85,6 +89,8 @@ export type GeoShelfPreview = z.infer<typeof geoShelfPreviewResponseSchema>;
 
 export type GeoShelfShelfFilter = (typeof GEO_SHELF_SHELF_FILTERS)[number];
 export type GeoShelfTicketFilter = (typeof GEO_SHELF_TICKET_FILTERS)[number];
+export type GeoShelfView = (typeof GEO_SHELF_VIEWS)[number];
+export type GeoShelfBoardColumnId = GeoShelfOpportunityStatus | "untracked";
 
 export interface GeoShelfStoreKey {
   organizationId: string;
@@ -185,6 +191,21 @@ export interface GeoShelfTableProps {
   onAddShelf: () => void;
 }
 
+export interface GeoShelfBoardItem {
+  id: string;
+  name: string;
+  column: GeoShelfBoardColumnId;
+  source: GeoShelfRow;
+}
+
+export interface GeoShelfBoardProps {
+  rows: GeoShelfRow[];
+  currentMemberId: string | null;
+  pendingSourceIds: ReadonlySet<string>;
+  onRowClick: (row: GeoShelfRow) => void;
+  onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
+}
+
 export interface GeoShelfPlacementBadgeProps {
   status: GeoShelfPlacementStatus | null;
   evidence?: GeoShelfPlacement["evidence"];
@@ -198,7 +219,7 @@ export interface GeoShelfTicketBadgeProps {
 
 export interface GeoShelfTicketAssigneeCardProps {
   member: GeoShelfMember;
-  assignedAt: string;
+  ticketCreatedAt: string;
   status: GeoShelfOpportunityStatus;
 }
 
@@ -217,6 +238,7 @@ export interface GeoShelfMemberSelectProps {
   placeholder?: string;
   allowSameAsAssignee?: boolean;
   disabled?: boolean;
+  id?: string;
   ariaLabel: string;
 }
 

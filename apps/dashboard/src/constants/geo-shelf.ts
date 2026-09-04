@@ -57,6 +57,8 @@ export const GEO_SHELF_TICKET_FILTERS = [
   "closed",
 ] as const;
 
+export const GEO_SHELF_VIEWS = ["table", "board"] as const;
+
 export const GEO_SHELF_SOURCE_KIND_LABELS: Record<
   (typeof GEO_SHELF_SOURCE_KINDS)[number],
   string
@@ -98,6 +100,14 @@ export const GEO_SHELF_OPPORTUNITY_STATUS_LABELS: Record<
   lost: "Lost",
   dismissed: "Dismissed",
 };
+
+export const GEO_SHELF_BOARD_COLUMNS = [
+  { id: "untracked", name: "No ticket" },
+  ...GEO_SHELF_OPPORTUNITY_STATUSES.map((status) => ({
+    id: status,
+    name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS[status],
+  })),
+];
 
 export const GEO_SHELF_PRIORITY_LABELS: Record<
   (typeof GEO_SHELF_PRIORITIES)[number],
@@ -258,6 +268,53 @@ export const GEO_SHELF_BLOCKED_HOSTNAME_SUFFIXES: readonly string[] = [
 export const GEO_SHELF_MIN_HOSTNAME_LABELS = 2;
 export const GEO_SHELF_MIN_HOSTNAME_TLD_LENGTH = 2;
 
+/** Non-public IPv4 space from the IANA special-purpose registries. */
+export const GEO_SHELF_BLOCKED_IPV4_SUBNETS: readonly (readonly [
+  string,
+  number,
+])[] = [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.0.2.0", 24],
+  ["192.31.196.0", 24],
+  ["192.52.193.0", 24],
+  ["192.88.99.0", 24],
+  ["192.168.0.0", 16],
+  ["192.175.48.0", 24],
+  ["198.18.0.0", 15],
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 4],
+  ["240.0.0.0", 4],
+];
+
+/** Non-public IPv6 space from the IANA special-purpose registries. */
+export const GEO_SHELF_BLOCKED_IPV6_SUBNETS: readonly (readonly [
+  string,
+  number,
+])[] = [
+  ["::", 128],
+  ["::1", 128],
+  ["::ffff:0:0", 96],
+  ["64:ff9b::", 96],
+  ["64:ff9b:1::", 48],
+  ["100::", 64],
+  ["2001::", 23],
+  ["2001:db8::", 32],
+  ["2002::", 16],
+  ["3fff::", 20],
+  ["5f00::", 16],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["fec0::", 10],
+  ["ff00::", 8],
+];
+
 export const GEO_SHELF_TRACKING_PARAMS: readonly string[] = [
   "ref",
   "ref_src",
@@ -270,6 +327,8 @@ export const GEO_SHELF_TRACKING_PARAM_PREFIXES: readonly string[] = ["utm_"];
 
 export const GEO_SHELF_URL_INVALID_MESSAGE =
   "Enter a public http or https page URL";
+export const GEO_SHELF_URL_TOO_LONG_MESSAGE = `Page URL must be ${GEO_SHELF_URL_MAX_LENGTH.toLocaleString()} characters or fewer`;
+export const GEO_SHELF_TITLE_TOO_LONG_MESSAGE = `Title must be ${GEO_SHELF_TITLE_MAX_LENGTH} characters or fewer`;
 export const GEO_SHELF_DUPLICATE_URL_MESSAGE =
   "This page is already on your shelf";
 export const GEO_SHELF_PREVIEW_RATE_LIMIT_MESSAGE =

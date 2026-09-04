@@ -4,12 +4,13 @@ import { desc, eq } from "drizzle-orm";
 
 import { retryTransientDbError } from "@/lib/db/retry";
 import { badRequest } from "@/lib/orpc/utils/errors";
+
 import type {
   GeoShelfMember,
   GeoShelfOpportunity,
-  GeoShelfOpportunityWrite,
+  GeoShelfOpportunityPatch,
   GeoShelfSource,
-} from "@/types/geo-shelf";
+} from "../../types/geo-shelf";
 
 export async function listGeoShelfMembers(
   organizationId: string
@@ -52,13 +53,15 @@ export function findCurrentGeoShelfMemberId(
 
 /** True when the payload names anyone, i.e. when member ids have to be resolved. */
 export function referencesGeoShelfMembers(
-  opportunity: GeoShelfOpportunityWrite | null | undefined
+  opportunity: GeoShelfOpportunityPatch | null | undefined
 ): boolean {
   if (!opportunity) {
     return false;
   }
   return (
-    opportunity.assigneeMemberId !== null || opportunity.pocMemberId !== null
+    (opportunity.assigneeMemberId !== undefined &&
+      opportunity.assigneeMemberId !== null) ||
+    (opportunity.pocMemberId !== undefined && opportunity.pocMemberId !== null)
   );
 }
 
@@ -68,7 +71,7 @@ export function referencesGeoShelfMembers(
  */
 export function assertGeoShelfOpportunityMembers(
   shelfMembers: GeoShelfMember[],
-  opportunity: GeoShelfOpportunityWrite | null | undefined,
+  opportunity: GeoShelfOpportunityPatch | null | undefined,
   existing: GeoShelfOpportunity | null
 ): void {
   if (!opportunity) {
@@ -83,7 +86,7 @@ export function assertGeoShelfOpportunityMembers(
     { next: opportunity.pocMemberId, previous: existing?.pocMemberId },
   ];
   for (const { next, previous } of changed) {
-    if (next === null || next === previous) {
+    if (next === undefined || next === null || next === previous) {
       continue;
     }
     if (!memberIds.has(next)) {

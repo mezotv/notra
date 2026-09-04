@@ -33,6 +33,8 @@ import {
 import { canonicalizeShelfUrl, shelfDomainFromUrl } from "@/lib/geo-shelf/url";
 import { conflict } from "@/lib/orpc/utils/errors";
 import { geoShelfSourceSchema } from "@/schemas/geo-shelf";
+import { getWebsiteDomain } from "@/utils/brand";
+
 import type {
   GeoShelfCitedPage,
   GeoShelfCreateInput,
@@ -46,8 +48,7 @@ import type {
   GeoShelfStoreSeed,
   GeoShelfUpdateInput,
   GeoShelfUpdateResult,
-} from "@/types/geo-shelf";
-import { getWebsiteDomain } from "@/utils/brand";
+} from "../../types/geo-shelf";
 
 interface GeoShelfBrand {
   competitorId: string | null;
@@ -96,14 +97,17 @@ function seedFixture(seed: GeoShelfStoreSeed) {
     if (!GEO_SAMPLE_DATA_ENABLED) {
       return [];
     }
-    return buildGeoShelfFixture({
-      ownBrandName: seed.settings.companyName,
-      ownDomain: seed.ownDomain,
-      competitors: seed.competitors,
-      engines: seed.settings.engines,
-      members: seed.members,
-      now: new Date(),
-    });
+    return buildGeoShelfFixture(
+      {
+        ownBrandName: seed.settings.companyName,
+        ownDomain: seed.ownDomain,
+        competitors: seed.competitors,
+        engines: seed.settings.engines,
+        members: seed.members,
+        now: new Date(),
+      },
+      storeKey(seed)
+    );
   };
 }
 
@@ -129,7 +133,7 @@ function buildScanShelfSource(
     fetchStatus: "pending",
     lastFetchedAt: null,
     citations: page.citations,
-    placements: buildPlacements(seed, [], nowIso),
+    placements: buildPlacements(seed, [], nowIso, "fetch"),
     opportunity: null,
     createdByUserId: null,
     createdAt: firstCitedAt,
@@ -209,11 +213,15 @@ export async function listGeoShelfSources(
   const key = storeKey(seed);
   const persisted = await listPersistedGeoShelfSources(key);
   const sources = await syncCitedShelfSources(seed, persisted);
-  if (sources.length > 0) {
+  const fixtures = seedFixture(seed)();
+  if (fixtures.length === 0) {
     return { sources, isSampleData: false };
   }
-  const seeded = seedFixture(seed)();
-  return { sources: seeded, isSampleData: seeded.length > 0 };
+  const sourceByUrl = new Map(fixtures.map((source) => [source.url, source]));
+  for (const source of sources) {
+    sourceByUrl.set(source.url, source);
+  }
+  return { sources: [...sourceByUrl.values()], isSampleData: true };
 }
 
 function isClosedStatus(status: GeoShelfOpportunityWrite["status"]): boolean {
@@ -272,7 +280,8 @@ function toPlacement(
   brand: GeoShelfBrand,
   status: GeoShelfPlacement["status"],
   nowIso: string,
-  previous: GeoShelfPlacement | undefined
+  previous: GeoShelfPlacement | undefined,
+  evidence: GeoShelfPlacement["evidence"]
 ): GeoShelfPlacement {
   const isPresent = status === "present";
   return {
@@ -282,7 +291,7 @@ function toPlacement(
     status,
     position: isPresent ? (previous?.position ?? null) : null,
     hasLink: isPresent ? (previous?.hasLink ?? false) : false,
-    evidence: "manual",
+    evidence,
     excerpt: previous?.excerpt ?? null,
     checkedAt: nowIso,
   };
@@ -291,7 +300,8 @@ function toPlacement(
 function buildPlacements(
   seed: GeoShelfStoreSeed,
   writes: GeoShelfPlacementWrite[],
-  nowIso: string
+  nowIso: string,
+  evidence: GeoShelfPlacement["evidence"] = "manual"
 ): GeoShelfPlacement[] {
   const statusByBrand = new Map(
     writes.map((write) => [placementKey(write.competitorId), write.status])
@@ -301,7 +311,8 @@ function buildPlacements(
       brand,
       statusByBrand.get(placementKey(brand.competitorId)) ?? "unknown",
       nowIso,
-      undefined
+      undefined,
+      evidence
     )
   );
 }
@@ -343,7 +354,13 @@ function mergePlacements(
     if (!brand) {
       continue;
     }
-    const placement = toPlacement(brand, write.status, nowIso, previous);
+    const placement = toPlacement(
+      brand,
+      write.status,
+      nowIso,
+      previous,
+      "manual"
+    );
     changed = true;
     if (index < 0) {
       next.push(placement);
@@ -413,8 +430,17 @@ export async function updateGeoShelfSource(
     if (input.opportunity === null) {
       return null;
     }
+    const write = {
+      status: current?.status ?? "open",
+      priority: current?.priority ?? null,
+      assigneeMemberId: current?.assigneeMemberId ?? null,
+      pocMemberId: current?.pocMemberId ?? null,
+      notes: current?.notes ?? null,
+      dueAt: current?.dueAt ?? null,
+      ...input.opportunity,
+    } satisfies GeoShelfOpportunityWrite;
     assertGeoShelfOpportunityMembers(seed.members, input.opportunity, current);
-    return buildOpportunity(input.opportunity, userId, nowIso, current);
+    return buildOpportunity(write, userId, nowIso, current);
   };
   let assigneeChanged = false;
   let placementsChanged = false;

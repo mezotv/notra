@@ -1,14 +1,15 @@
 import { db } from "@notra/db/drizzle";
 import { geoShelfSources } from "@notra/db/schema";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 
 import { GEO_SHELF_CITATION_INSERT_CHUNK } from "@/constants/geo-shelf";
 import { geoShelfSourceSchema } from "@/schemas/geo-shelf";
+
 import type {
   GeoShelfCitationSummary,
   GeoShelfSource,
   GeoShelfStoreKey,
-} from "@/types/geo-shelf";
+} from "../../types/geo-shelf";
 
 type GeoShelfSourceRow = typeof geoShelfSources.$inferSelect;
 
@@ -109,23 +110,34 @@ export async function insertGeoShelfSources(
   if (sources.length === 0) {
     return [];
   }
-  const inserted: GeoShelfSource[] = [];
+  const persisted: GeoShelfSource[] = [];
   for (
     let index = 0;
     index < sources.length;
     index += GEO_SHELF_CITATION_INSERT_CHUNK
   ) {
     const chunk = sources.slice(index, index + GEO_SHELF_CITATION_INSERT_CHUNK);
-    const rows = await db
+    await db
       .insert(geoShelfSources)
       .values(chunk.map((source) => toRow(source, key)))
       .onConflictDoNothing({
         target: [geoShelfSources.projectId, geoShelfSources.url],
-      })
-      .returning();
-    inserted.push(...rows.map(toSource));
+      });
+    const rows = await db
+      .select()
+      .from(geoShelfSources)
+      .where(
+        and(
+          scopeWhere(key),
+          inArray(
+            geoShelfSources.url,
+            chunk.map((source) => source.url)
+          )
+        )
+      );
+    persisted.push(...rows.map(toSource));
   }
-  return inserted;
+  return persisted;
 }
 
 export async function updateGeoShelfCitations(
@@ -143,7 +155,10 @@ export async function updateGeoShelfCitations(
     for (const update of updates) {
       await tx
         .update(geoShelfSources)
-        .set({ citations: update.citations, title: update.title })
+        .set({
+          citations: update.citations,
+          title: sql`coalesce(${geoShelfSources.title}, ${update.title})`,
+        })
         .where(and(scopeWhere(key), eq(geoShelfSources.id, update.id)));
     }
   });

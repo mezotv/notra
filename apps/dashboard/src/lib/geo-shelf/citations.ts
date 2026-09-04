@@ -6,11 +6,12 @@ import {
   shelfDomainFromUrl,
   tryCanonicalizeShelfUrl,
 } from "@/lib/geo-shelf/url";
+
 import type {
   GeoShelfCitationRawRow,
   GeoShelfCitationSummary,
   GeoShelfCitedPage,
-} from "@/types/geo-shelf";
+} from "../../types/geo-shelf";
 
 function toIso(value: Date | string): string {
   if (value instanceof Date) {
@@ -69,13 +70,16 @@ export function citationsEqual(
  * Collapse raw mention-check URL groups onto canonical shelf URLs so
  * `www` / `old.reddit.com` / tracking-param variants count as one page.
  */
+type FoldedCitationPage = GeoShelfCitedPage & {
+  promptIds: Set<string>;
+  checkIds: Set<string>;
+  windowCheckIds: Set<string>;
+};
+
 export function foldShelfCitationRows(
   rows: readonly GeoShelfCitationRawRow[]
 ): GeoShelfCitedPage[] {
-  const byUrl = new Map<
-    string,
-    GeoShelfCitedPage & { promptIds: Set<string> }
-  >();
+  const byUrl = new Map<string, FoldedCitationPage>();
 
   for (const row of rows) {
     const url = tryCanonicalizeShelfUrl(row.url);
@@ -100,11 +104,19 @@ export function foldShelfCitationRows(
           lastCitedAt,
         },
         promptIds: new Set(row.promptIds),
+        checkIds: new Set(row.checkIds),
+        windowCheckIds: new Set(row.windowCheckIds),
       });
       continue;
     }
-    existing.citations.windowCount += row.windowCount;
-    existing.citations.totalCount += row.totalCount;
+    for (const checkId of row.checkIds) {
+      existing.checkIds.add(checkId);
+    }
+    existing.citations.totalCount = existing.checkIds.size;
+    for (const checkId of row.windowCheckIds) {
+      existing.windowCheckIds.add(checkId);
+    }
+    existing.citations.windowCount = existing.windowCheckIds.size;
     existing.citations.engines = uniqueSorted([
       ...existing.citations.engines,
       ...row.engines,
@@ -123,6 +135,9 @@ export function foldShelfCitationRows(
         existing.citations.lastCitedAt ?? lastCitedAt,
         lastCitedAt
       );
+      if (!existing.title && title) {
+        existing.title = title;
+      }
     }
     for (const promptId of row.promptIds) {
       existing.promptIds.add(promptId);
@@ -130,7 +145,12 @@ export function foldShelfCitationRows(
   }
 
   return [...byUrl.values()].map((page) => {
-    const { promptIds, ...cited } = page;
+    const {
+      promptIds,
+      checkIds: _checkIds,
+      windowCheckIds: _windowCheckIds,
+      ...cited
+    } = page;
     cited.citations.promptCount = promptIds.size;
     cited.citations.engines = uniqueSorted(cited.citations.engines);
     return cited;

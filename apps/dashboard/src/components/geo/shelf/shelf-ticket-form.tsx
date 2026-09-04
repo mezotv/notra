@@ -127,6 +127,7 @@ export function ShelfTicketForm({
         <ShelfMemberSelect
           ariaLabel="Assignee"
           disabled={disabled}
+          id={`${id}-assignee`}
           members={members}
           onChange={(memberId) => onChange({ assigneeMemberId: memberId })}
           value={assigneeMemberId}
@@ -138,6 +139,7 @@ export function ShelfTicketForm({
           allowSameAsAssignee
           ariaLabel="Point of contact"
           disabled={disabled}
+          id={`${id}-poc`}
           members={members}
           onChange={(memberId) => onChange({ pocMemberId: memberId })}
           value={pocMemberId}
@@ -169,16 +171,24 @@ export function ShelfTicketForm({
           <PopoverContent align="start" className="w-auto overflow-hidden p-0">
             <Calendar
               defaultMonth={dueAt ? new Date(dueAt) : undefined}
+              disabled={disabled ? () => true : undefined}
               mode="single"
-              onSelect={(date) =>
-                onChange({ dueAt: date ? shelfDueDateToIso(date) : null })
-              }
+              onSelect={(date) => {
+                if (!disabled) {
+                  onChange({ dueAt: date ? shelfDueDateToIso(date) : null });
+                }
+              }}
               selected={dueAt ? new Date(dueAt) : undefined}
             />
             {dueAt ? (
               <div className="flex justify-end border-t p-2">
                 <Button
-                  onClick={() => onChange({ dueAt: null })}
+                  disabled={disabled}
+                  onClick={() => {
+                    if (!disabled) {
+                      onChange({ dueAt: null });
+                    }
+                  }}
                   size="sm"
                   variant="ghost"
                 >

@@ -40,6 +40,7 @@ import {
   startBrandGuidelineGeneration,
 } from "@/lib/brand-guidelines";
 import { countBrandVoices } from "@/lib/brand-voice-count";
+import { isUniqueConstraintError } from "@/lib/db/errors";
 import { baseProcedure } from "@/lib/orpc/base";
 import {
   startBrandAnalysisRun,
@@ -194,15 +195,6 @@ function normalizeBrandVoiceWebsiteUrl(rawUrl: string) {
   }
 
   return new URL(parseResult.data).href;
-}
-
-function isUniqueConstraintError(error: unknown) {
-  return (
-    typeof error === "object" &&
-    error !== null &&
-    "code" in error &&
-    error.code === "23505"
-  );
 }
 
 function serializeBrandVoice(voice: {

@@ -15,7 +15,7 @@ import { shelfMemberInitial } from "@/utils/geo-shelf";
 
 export function ShelfTicketAssigneeCard({
   member,
-  assignedAt,
+  ticketCreatedAt,
   status,
 }: GeoShelfTicketAssigneeCardProps) {
   const name = member.name || member.email;
@@ -37,7 +37,7 @@ export function ShelfTicketAssigneeCard({
       title={name}
     >
       <p className="text-muted-foreground px-3 py-1.5 text-xs text-pretty">
-        Assigned {formatRelative(assignedAt)}
+        Ticket opened {formatRelative(ticketCreatedAt)}
       </p>
     </TrafficBreakdownCard>
   );

@@ -145,7 +145,7 @@ export const geoShelfUpdateInputSchema = geoOrganizationInputSchema.extend({
     .optional(),
   kind: geoShelfSourceKindSchema.optional(),
   placements: z.array(geoShelfPlacementWriteSchema).optional(),
-  opportunity: geoShelfOpportunityWriteSchema.nullable().optional(),
+  opportunity: geoShelfOpportunityWriteSchema.partial().nullable().optional(),
 });
 
 export const geoShelfMutationResponseSchema = z.object({

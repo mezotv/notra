@@ -1,4 +1,5 @@
 import { canonicalizeShelfUrl, shelfDomainFromUrl } from "@/lib/geo-shelf/url";
+
 import type {
   GeoShelfFixtureContext,
   GeoShelfOpportunity,
@@ -8,7 +9,8 @@ import type {
   GeoShelfPriority,
   GeoShelfSource,
   GeoShelfSourceKind,
-} from "@/types/geo-shelf";
+  GeoShelfStoreKey,
+} from "../../types/geo-shelf";
 
 const HOUR_MS = 3_600_000;
 const DAY_MS = 86_400_000;
@@ -361,7 +363,8 @@ function buildPlacements(
 
 function buildOpportunity(
   template: FixtureTemplate,
-  ctx: GeoShelfFixtureContext
+  ctx: GeoShelfFixtureContext,
+  scopeId: string
 ): GeoShelfOpportunity | null {
   const ticket = template.ticket;
   if (!ticket) {
@@ -376,7 +379,7 @@ function buildOpportunity(
     ticket.status === "lost" ||
     ticket.status === "dismissed";
   return {
-    id: `shelf-opp-${template.slug}`,
+    id: `shelf-opp-${scopeId}-${template.slug}`,
     status: ticket.status,
     priority: ticket.priority,
     assigneeMemberId: assignee?.id ?? null,
@@ -394,13 +397,15 @@ function buildOpportunity(
 }
 
 export function buildGeoShelfFixture(
-  ctx: GeoShelfFixtureContext
+  ctx: GeoShelfFixtureContext,
+  scope: GeoShelfStoreKey
 ): GeoShelfSource[] {
+  const scopeId = `${scope.organizationId}-${scope.projectId}`;
   return TEMPLATES.map((template) => {
     const engines = ctx.engines.slice(0, template.engineCount);
     const createdAt = isoAgo(ctx.now, template.createdDaysAgo * DAY_MS);
     return {
-      id: `shelf-src-${template.slug}`,
+      id: `shelf-src-${scopeId}-${template.slug}`,
       url: canonicalizeShelfUrl(template.url),
       domain: shelfDomainFromUrl(template.url),
       title: template.title(ctx),
@@ -425,7 +430,7 @@ export function buildGeoShelfFixture(
             : isoAgo(ctx.now, template.lastCitedHoursAgo * HOUR_MS),
       },
       placements: buildPlacements(template, ctx),
-      opportunity: buildOpportunity(template, ctx),
+      opportunity: buildOpportunity(template, ctx, scopeId),
       createdByUserId:
         template.origin === "manual" ? (ctx.members[0]?.userId ?? null) : null,
       createdAt,
