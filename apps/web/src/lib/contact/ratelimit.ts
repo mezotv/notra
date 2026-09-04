@@ -90,6 +90,17 @@ function getEmailRateLimitKey(email: string): string {
   return createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
 }
 
+function getMoreBindingRateLimit(
+  current: RateLimitResult,
+  candidate: RateLimitResult
+): RateLimitResult {
+  if (candidate.remaining !== current.remaining) {
+    return candidate.remaining < current.remaining ? candidate : current;
+  }
+
+  return candidate.reset > current.reset ? candidate : current;
+}
+
 export function getContactRateLimitHeaders(
   result: RateLimitResult,
   includeRetryAfter = false
@@ -172,10 +183,15 @@ export const enforceContactMessageRateLimit = Effect.fn(
 )(function* (request: NextRequest, email: string) {
   const ipKey = getIpRateLimitKey(request);
   const hourlyResult = yield* enforceLimit("ipHourly", ipKey);
+  const dailyResult = yield* enforceLimit("ipDaily", ipKey);
+  const emailResult = yield* enforceLimit(
+    "emailDaily",
+    getEmailRateLimitKey(email)
+  );
+  const globalResult = yield* enforceLimit("globalHourly", "global");
 
-  yield* enforceLimit("ipDaily", ipKey);
-  yield* enforceLimit("emailDaily", getEmailRateLimitKey(email));
-  yield* enforceLimit("globalHourly", "global");
-
-  return hourlyResult;
+  return [dailyResult, emailResult, globalResult].reduce(
+    getMoreBindingRateLimit,
+    hourlyResult
+  );
 });
