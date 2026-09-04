@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { localStorageKeys } from "@/constants/storage";
 import type {
@@ -87,13 +87,10 @@ export function useSidebarMode(
     }
   }, [mode, route, storedMode]);
 
-  const setMode = useCallback(
-    (next: SidebarMode) => {
-      setPending({ mode: next, route });
-      persistMode(next);
-    },
-    [route]
-  );
+  const setMode = (next: SidebarMode) => {
+    setPending({ mode: next, route });
+    persistMode(next);
+  };
 
   return { mode, setMode, pendingMode: mode === routeMode ? null : mode };
 }
