@@ -72,3 +72,14 @@ export function trafficPageSourcesLabel(group: GeoTrafficPageGroup): string {
   const count = group.sources.length;
   return `${count} ${count === 1 ? "source" : "sources"}`;
 }
+
+export function filterTrafficPageGroups(
+  groups: readonly GeoTrafficPageGroup[],
+  query: string
+): GeoTrafficPageGroup[] {
+  const needle = query.trim().toLowerCase();
+  if (needle.length === 0) {
+    return [...groups];
+  }
+  return groups.filter((group) => group.path.toLowerCase().includes(needle));
+}

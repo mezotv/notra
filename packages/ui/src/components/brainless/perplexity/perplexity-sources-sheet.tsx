@@ -65,7 +65,7 @@ export function PerplexitySourcesSheet({
     <Sheet>
       <SheetTrigger
         className={cn(
-          "ms-1.5 flex h-8 cursor-pointer items-center gap-2 rounded-full px-1.5 text-[13px] leading-none text-[#8d8d8d] outline-none transition-[color,background-color,transform] duration-150 hover:bg-[#f3f3f3] hover:text-[#5c5c5c] focus-visible:ring-2 focus-visible:ring-black/15 active:scale-[0.96] dark:text-[#a3a3a3] dark:hover:bg-white/10 dark:hover:text-foreground dark:focus-visible:ring-white/20",
+          "ms-1.5 flex h-8 cursor-pointer items-center gap-2 rounded-full px-1.5 text-[13px] leading-none text-[#8d8d8d] outline-none transition-[color,background-color,transform] duration-fast hover:bg-[#f3f3f3] hover:text-[#5c5c5c] focus-visible:ring-2 focus-visible:ring-black/15 active:scale-[0.96] dark:text-[#a3a3a3] dark:hover:bg-white/10 dark:hover:text-foreground dark:focus-visible:ring-white/20",
           className
         )}
         render={<button type="button" />}

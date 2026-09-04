@@ -134,7 +134,7 @@ export function DashboardShell({
       {bannerAvailable || dismissing ? (
         <div
           className={cn(
-            "w-full shrink-0 overflow-hidden transition-[max-height,opacity] duration-200 ease-out motion-reduce:transition-none",
+            "duration-normal w-full shrink-0 overflow-hidden transition-[max-height,opacity] ease-out motion-reduce:transition-none",
             visible ? "opacity-100" : "opacity-0"
           )}
           onTransitionEnd={(event) => {
@@ -196,7 +196,7 @@ export function DashboardShell({
             <div
               aria-hidden
               className={cn(
-                "from-background pointer-events-none absolute -inset-x-px top-px z-10 h-12 rounded-t-[calc(1rem-1px)] bg-linear-to-b from-20% to-transparent transition-opacity duration-200 ease-out motion-reduce:transition-none",
+                "from-background duration-normal pointer-events-none absolute -inset-x-px top-px z-10 h-12 rounded-t-[calc(1rem-1px)] bg-linear-to-b from-20% to-transparent transition-opacity ease-out motion-reduce:transition-none",
                 mainScrolled ? "opacity-100" : "opacity-0"
               )}
             />

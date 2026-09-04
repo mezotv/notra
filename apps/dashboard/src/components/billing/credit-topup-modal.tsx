@@ -51,10 +51,7 @@ export function CreditTopupModal({
             />
           </div>
           <div className="flex flex-col items-center gap-4 py-6 text-center">
-            <HugeiconsIcon
-              className="size-12 text-emerald-500"
-              icon={Tick02Icon}
-            />
+            <HugeiconsIcon className="text-success size-12" icon={Tick02Icon} />
             <div className="space-y-1">
               <h2 className="text-xl font-bold">Credits Added!</h2>
               <p className="text-muted-foreground text-sm">

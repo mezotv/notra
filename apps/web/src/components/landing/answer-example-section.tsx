@@ -3,6 +3,8 @@
 import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import { GeoPromptAnswerThread } from "@notra/ui/components/geo/geo-prompt-answer-thread";
 import { PromptEngineSwitcher } from "@notra/ui/components/geo/prompt-engine-switcher";
+import { PromptOutcomeIcon } from "@notra/ui/components/geo/prompt-outcome-icon";
+import { Badge } from "@notra/ui/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -18,15 +20,20 @@ import {
   ANSWER_EXAMPLE_DEFAULT_ENGINE,
   ANSWER_EXAMPLE_FACTS,
   ANSWER_EXAMPLE_HEADING,
+  ANSWER_EXAMPLE_OUTCOME_LABELS,
+  ANSWER_EXAMPLE_POSITION_CLASS,
+  ANSWER_EXAMPLE_POSITION_NONE,
   ANSWER_EXAMPLE_PROMPT,
   ANSWER_EXAMPLE_RESULT_HEADERS,
   ANSWER_EXAMPLE_RESULTS,
   ANSWER_EXAMPLE_RESULTS_TITLE,
+  ANSWER_EXAMPLE_SENTIMENT_CLASS,
   ANSWER_EXAMPLE_SENTIMENT_LABELS,
   ANSWER_EXAMPLE_SUBCOPY,
   ANSWER_EXAMPLE_TIMESTAMP,
 } from "@/constants/landing/answer-example";
 import { GEO_ENGINE_NAMES } from "@/constants/landing/geo-engines";
+import { answerPositionTone } from "@/utils/answer-example";
 
 const HEADER_CLASS = "text-muted-foreground text-xs";
 
@@ -71,20 +78,42 @@ function ResultsTable() {
               </TableCell>
               <TableCell className="py-3">
                 <span
-                  className={cn(
-                    "inline-flex size-2.5 rounded-full",
-                    row.mentioned ? "bg-geo-up" : "bg-muted-foreground/30"
-                  )}
-                />
+                  aria-label={
+                    row.mentioned
+                      ? ANSWER_EXAMPLE_OUTCOME_LABELS.mentioned
+                      : ANSWER_EXAMPLE_OUTCOME_LABELS.notMentioned
+                  }
+                  className="inline-flex items-center"
+                  role="img"
+                >
+                  <PromptOutcomeIcon mentioned={row.mentioned} />
+                </span>
               </TableCell>
-              <TableCell className="py-3 text-sm tabular-nums">
+              <TableCell className="py-3">
                 {row.position === null ? (
-                  <span className="text-muted-foreground">None</span>
+                  <span className="text-muted-foreground text-sm">
+                    {ANSWER_EXAMPLE_POSITION_NONE}
+                  </span>
                 ) : (
-                  <span className="font-medium">#{row.position}</span>
+                  <Badge
+                    className={cn(
+                      "rounded-sm tabular-nums",
+                      ANSWER_EXAMPLE_POSITION_CLASS[
+                        answerPositionTone(row.position)
+                      ]
+                    )}
+                    variant="outline"
+                  >
+                    #{row.position}
+                  </Badge>
                 )}
               </TableCell>
-              <TableCell className="text-muted-foreground py-3 text-sm">
+              <TableCell
+                className={cn(
+                  "py-3 text-sm",
+                  ANSWER_EXAMPLE_SENTIMENT_CLASS[row.sentiment]
+                )}
+              >
                 {ANSWER_EXAMPLE_SENTIMENT_LABELS[row.sentiment]}
               </TableCell>
             </TableRow>

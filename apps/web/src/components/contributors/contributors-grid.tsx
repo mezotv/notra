@@ -34,7 +34,7 @@ export function ContributorsGrid({
           >
             <Image
               alt={`Avatar of ${contributor.login}`}
-              className="ring-border size-12 rounded-full ring-1 transition-transform duration-200 group-hover:scale-110"
+              className="ring-border duration-normal size-12 rounded-full ring-1 transition-transform group-hover:scale-110"
               height={96}
               src={contributor.avatar_url}
               width={96}

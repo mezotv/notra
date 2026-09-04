@@ -1,5 +1,13 @@
+import {
+  GEO_PLANNER_MAX_EVIDENCE_ENGINES,
+  GEO_PLANNER_MAX_EVIDENCE_EXCERPT_CHARS,
+  GEO_PLANNER_MAX_EVIDENCE_SOURCES,
+} from "@notra/ai/constants/geo-writer";
 import { prohibitedLanguage } from "@notra/ai/prompts/_shared/index";
-import type { GeoPlannerPromptInput } from "@notra/ai/types/geo-writer";
+import type {
+  GeoPlannerEvidence,
+  GeoPlannerPromptInput,
+} from "@notra/ai/types/geo-writer";
 import dedent from "dedent";
 
 const MAX_PLANNER_TOPIC_CHARS = 8000;
@@ -33,6 +41,8 @@ export function buildGeoPlannerSystem(): string {
     - Choose internal links ONLY from the provided sitemap pages. Copy each URL exactly as listed. If no sitemap pages are provided, return an empty internalLinks array. Never invent paths, subdomains, or query strings.
     - The acceptance checklist mirrors the GEO writing rules below, adapted to this article.
     - Never invent competitor facts, statistics, or sources. If the topic text provides facts, use them.
+    - When <target-evidence> is present, treat it as the ground truth about how assistants answer the target prompt today. Fill recommendedAngle (why this article will earn the mention), competitorsToCounter (each brand named in the evidence plus the claim that earned it the mention), sourcesToReference (only domains listed in the evidence), and missingCoverage (facts or topics the winning answers included that the brand must now cover). Make section claims answer those gaps directly. Leave these fields empty only when no evidence is provided.
+    - When <existing-page> is present, the brief must refresh and expand that page instead of proposing a new one. Keep its slug intent, list the sections and claims that page is missing, and never plan a competing page on the same topic.
 
     GEO writing rules the article must follow:
     ${GEO_WRITING_RULES}
@@ -50,6 +60,83 @@ function formatList(items: string[], empty: string): string {
     return empty;
   }
   return items.map((item) => `- ${item}`).join("\n");
+}
+
+function formatEvidence(
+  evidence: GeoPlannerEvidence | null | undefined
+): string {
+  if (!evidence || evidence.engines.length === 0) {
+    return "";
+  }
+  const engines = evidence.engines
+    .slice(0, GEO_PLANNER_MAX_EVIDENCE_ENGINES)
+    .map((engine) => {
+      const outcome = engine.mentioned
+        ? `brand mentioned${engine.position ? ` at position ${engine.position}` : ""}${engine.sentiment ? `, sentiment ${engine.sentiment}` : ""}`
+        : "brand NOT mentioned";
+      const competitors =
+        engine.competitors.length > 0
+          ? `recommended instead: ${engine.competitors.join(", ")}`
+          : "no other brands named";
+      const queries =
+        engine.queries.length > 0
+          ? `searched: ${engine.queries.join(" | ")}`
+          : "no web searches";
+      const sources =
+        engine.sourceDomains.length > 0
+          ? `cited: ${engine.sourceDomains.slice(0, GEO_PLANNER_MAX_EVIDENCE_SOURCES).join(", ")}`
+          : "no sources cited";
+      const excerpt = engine.excerpt
+        .slice(0, GEO_PLANNER_MAX_EVIDENCE_EXCERPT_CHARS)
+        .replace(/\s+/g, " ")
+        .trim();
+      return dedent`
+        - ${engine.engine}: ${outcome}; ${competitors}; ${queries}; ${sources}
+          Answer excerpt: "${excerpt || "(none stored)"}"
+      `;
+    })
+    .join("\n");
+  const competitorMentions = formatList(
+    evidence.competitorMentions.map(
+      (item) =>
+        `${item.name} (named by ${item.engines} of ${evidence.totalEngines} engines)`
+    ),
+    "(no competitors named)"
+  );
+  const citedDomains = formatList(
+    evidence.citedDomains.map(
+      (item) => `${item.domain} (cited by ${item.engines} engines)`
+    ),
+    "(no sources cited)"
+  );
+  return dedent`
+    <target-evidence>
+    Prompt: "${evidence.prompt}"
+    Baseline: brand mentioned by ${evidence.mentionedEngines} of ${evidence.totalEngines} engines in the latest scan.
+
+    Latest answer per engine:
+    ${engines}
+
+    Brands recommended instead:
+    ${competitorMentions}
+
+    Domains assistants cited:
+    ${citedDomains}
+    </target-evidence>
+  `;
+}
+
+function formatExistingPage(url: string | null | undefined): string {
+  const trimmed = url?.trim();
+  if (!trimmed) {
+    return "";
+  }
+  return dedent`
+    <existing-page>
+    URL: ${trimmed}
+    This page already ranks for the target queries. Plan the article as a refresh and expansion of this exact URL: keep its slug intent, keep what already works, and list the sections, claims, and FAQ answers that must be added. Do not plan a new competing page.
+    </existing-page>
+  `;
 }
 
 export function buildGeoPlannerPrompt(input: GeoPlannerPromptInput): string {
@@ -85,6 +172,9 @@ export function buildGeoPlannerPrompt(input: GeoPlannerPromptInput): string {
     "(no sitemap pages available; return an empty internalLinks array and do not invent URLs)"
   );
 
+  const evidence = formatEvidence(input.evidence);
+  const existingPage = formatExistingPage(input.existingPageUrl);
+
   return dedent`
     <brand>
     Name: ${input.brand.companyName}${aliases}
@@ -105,6 +195,10 @@ export function buildGeoPlannerPrompt(input: GeoPlannerPromptInput): string {
     <sitemap-pages>
     ${sitemapPages}
     </sitemap-pages>
+
+    ${evidence}
+
+    ${existingPage}
 
     <topic>
     ${topic}

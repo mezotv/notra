@@ -47,7 +47,12 @@ interface GeoScanProjectOutcome {
 async function runGeoScanProjectRun(
   organizationId: string,
   projectId: string,
-  options: { claimedAt?: string; scanId?: string; retried: boolean }
+  options: {
+    claimedAt?: string;
+    scanId?: string;
+    retried: boolean;
+    promptIds?: string[];
+  }
 ): Promise<GeoScanProjectOutcome | null> {
   const planResult = await prepareGeoScanProjectStep(
     organizationId,
@@ -149,7 +154,8 @@ export async function geoScanWorkflow(
     console.error("[GEO] Invalid payload:", flattenError(parseResult.error));
     return { status: "invalid_payload" };
   }
-  const { organizationId, projectId, claimedAt, scanId } = parseResult.data;
+  const { organizationId, projectId, claimedAt, scanId, promptIds } =
+    parseResult.data;
 
   const projectIds = await listGeoScanProjectsStep(organizationId, {
     projectId,
@@ -172,6 +178,7 @@ export async function geoScanWorkflow(
           claimedAt: claimed ? claimedAt : undefined,
           scanId: claimed ? scanId : undefined,
           retried: false,
+          promptIds,
         }
       );
       return { scanProjectId, outcome };
@@ -202,7 +209,10 @@ export async function geoScanWorkflow(
 
   const retryOutcomes = await Promise.all(
     retryProjectIds.map((retryProjectId) =>
-      runGeoScanProjectRun(organizationId, retryProjectId, { retried: true })
+      runGeoScanProjectRun(organizationId, retryProjectId, {
+        retried: true,
+        promptIds,
+      })
     )
   );
   for (const outcome of retryOutcomes) {

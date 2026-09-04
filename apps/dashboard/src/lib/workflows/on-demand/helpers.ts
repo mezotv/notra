@@ -235,7 +235,7 @@ export function buildDataPointRestrictionInstructions(dataPoints: {
     );
   }
 
-  const instructions: string[] = [...restrictions];
+  const crossSourceInstructions: string[] = [];
 
   if (
     dataPoints.includeLinearData &&
@@ -243,18 +243,22 @@ export function buildDataPointRestrictionInstructions(dataPoints: {
       dataPoints.includeCommits ||
       dataPoints.includeReleases)
   ) {
-    instructions.push(
+    crossSourceInstructions.push(
       "- DEDUPLICATION: GitHub and Linear data may describe the same work items. When a GitHub PR and a Linear issue reference the same change, consolidate into a single entry. Do not list the same change twice."
     );
   }
 
-  if (instructions.length === 0) {
+  if (restrictions.length === 0 && crossSourceInstructions.length === 0) {
     return null;
   }
 
-  return instructions.length === restrictions.length
-    ? `Strict data-point restrictions:\n${restrictions.join("\n")}`
-    : restrictions.length > 0
-      ? `Strict data-point restrictions:\n${restrictions.join("\n")}\n\nCross-source instructions:\n${instructions.filter((i) => !restrictions.includes(i)).join("\n")}`
-      : `Cross-source instructions:\n${instructions.filter((i) => !restrictions.includes(i)).join("\n")}`;
+  if (crossSourceInstructions.length === 0) {
+    return `Strict data-point restrictions:\n${restrictions.join("\n")}`;
+  }
+
+  if (restrictions.length > 0) {
+    return `Strict data-point restrictions:\n${restrictions.join("\n")}\n\nCross-source instructions:\n${crossSourceInstructions.join("\n")}`;
+  }
+
+  return `Cross-source instructions:\n${crossSourceInstructions.join("\n")}`;
 }

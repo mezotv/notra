@@ -165,7 +165,7 @@ export function DeleteAccountDialog({
           <div className="space-y-4 py-2">
             {orgsWithOtherMembers.length > 0 && (
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-amber-600 dark:text-amber-500">
+                <div className="text-warning flex items-center gap-2">
                   <HugeiconsIcon icon={Alert01Icon} size={18} />
                   <p className="text-sm font-medium">
                     You own organizations with other members:

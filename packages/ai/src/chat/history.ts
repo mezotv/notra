@@ -1,5 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { chatSessions } from "@notra/db/schema";
+import { projectScopeFilter } from "@notra/db/utils/projects";
 import { generateText, type UIMessage } from "ai";
 import { and, eq, isNull, sql } from "drizzle-orm";
 
@@ -139,7 +140,8 @@ async function upsertChatSession(
   mode: "append" | "replace",
   externalChannelId?: ExternalChannelId | null,
   expectedLastMessageId?: string,
-  contentId?: string
+  contentId?: string,
+  projectId?: string | null
 ) {
   if (mode === "append") {
     const insertedOrUpdated = await db
@@ -148,6 +150,7 @@ async function upsertChatSession(
         id: chatId,
         organizationId,
         contentId,
+        projectId: projectId ?? null,
         title: normalizeChatTitle(getChatTitle(messages) ?? "New chat"),
         messages: sql`${JSON.stringify(messages)}::jsonb`,
         externalChannelSource: externalChannelId?.source ?? null,
@@ -237,6 +240,7 @@ async function upsertChatSession(
       id: chatId,
       organizationId,
       contentId,
+      projectId: projectId ?? null,
       title,
       messages: messages as unknown as Record<string, unknown>,
       externalChannelSource: externalChannelId?.source ?? null,
@@ -365,7 +369,8 @@ export async function replaceChatHistory(
   chatId: string,
   messages: UIMessage[],
   externalChannelId?: ExternalChannelId | null,
-  expectedLastMessageId?: string
+  expectedLastMessageId?: string,
+  projectId?: string | null
 ): Promise<boolean> {
   return upsertChatSession(
     organizationId,
@@ -373,7 +378,9 @@ export async function replaceChatHistory(
     messages,
     "replace",
     externalChannelId,
-    expectedLastMessageId
+    expectedLastMessageId,
+    undefined,
+    projectId
   );
 }
 
@@ -455,6 +462,7 @@ export async function createChatSession(
     id?: string;
     title?: string;
     externalChannelId?: ExternalChannelId | null;
+    projectId?: string | null;
   }
 ): Promise<ChatSessionSummary> {
   const id = options?.id ?? generateChatId();
@@ -465,6 +473,7 @@ export async function createChatSession(
     .values({
       id,
       organizationId,
+      projectId: options?.projectId ?? null,
       title,
       messages: [] as unknown as Record<string, unknown>,
       externalChannelSource: options?.externalChannelId?.source ?? null,
@@ -477,6 +486,29 @@ export async function createChatSession(
   }
 
   return toSessionSummary(row);
+}
+
+/**
+ * The project a chat belongs to, used to file content the chat creates under
+ * the same project. Null when the chat is unknown or organization-wide.
+ */
+export async function getChatProjectId(
+  organizationId: string,
+  chatId: string
+): Promise<string | null> {
+  const row = await db
+    .select({ projectId: chatSessions.projectId })
+    .from(chatSessions)
+    .where(
+      and(
+        eq(chatSessions.id, chatId),
+        eq(chatSessions.organizationId, organizationId)
+      )
+    )
+    .limit(1)
+    .then((rows) => rows[0]);
+
+  return row?.projectId ?? null;
 }
 
 export async function getChatSession(
@@ -570,16 +602,18 @@ export async function getChatSessionByExternalChannel(
 }
 
 export async function listChatSessions(
-  organizationId: string
+  organizationId: string,
+  projectId?: string | null
 ): Promise<ChatSessionSummary[]> {
   const rows = await db
-    .select()
+    .select(chatSessionSummaryColumns)
     .from(chatSessions)
     .where(
       and(
         eq(chatSessions.organizationId, organizationId),
         isNull(chatSessions.contentId),
-        isNull(chatSessions.deletedAt)
+        isNull(chatSessions.deletedAt),
+        projectScopeFilter(chatSessions.projectId, projectId)
       )
     );
 

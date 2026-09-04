@@ -9,6 +9,8 @@ import {
   GEO_PURPOSE_COLUMN_WIDTH,
 } from "@notra/geo-core/constants/geo";
 import type { GeoTrafficLogEntry } from "@notra/geo-core/types/geo";
+import { TablePagination } from "@notra/ui/components/shared/table-pagination";
+import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   HoverCard,
@@ -20,8 +22,6 @@ import { PurposeBadge } from "@/components/geo/purpose-badge";
 import { TrafficBreakdownCard } from "@/components/geo/traffic-breakdown-card";
 import { CountryFlag } from "@/components/geo/twemoji";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { TablePagination } from "@/components/table-pagination";
-import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { AI_TRAFFIC_PURPOSE_ICONS } from "@/constants/geo-purpose-icons";
 import { GEO_TRAFFIC_HOVER_DELAY_MS } from "@/constants/geo-traffic-hover";
 import type { CitationsTableProps } from "@/types/geo";

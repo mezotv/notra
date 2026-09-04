@@ -41,21 +41,17 @@ export function SitemapStats({ sitemap }: SitemapStatsProps) {
           </p>
           <div className="bg-muted flex h-2 w-full overflow-hidden rounded-full">
             <div
-              className="h-full bg-emerald-500"
+              className="bg-success h-full"
               style={{ width: `${successPercent}%` }}
             />
             <div
-              className="h-full bg-red-500"
+              className="bg-destructive h-full"
               style={{ width: `${failedPercent}%` }}
             />
           </div>
           <div className="flex items-center gap-4 text-xs">
-            <span className="text-emerald-600 dark:text-emerald-400">
-              Successful: {indexedPages}
-            </span>
-            <span className="text-red-600 dark:text-red-400">
-              Failed: {failedPages}
-            </span>
+            <span className="text-success">Successful: {indexedPages}</span>
+            <span className="text-destructive">Failed: {failedPages}</span>
           </div>
         </CardContent>
       </Card>

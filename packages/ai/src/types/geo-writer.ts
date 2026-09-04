@@ -8,12 +8,16 @@ import type {
 import type { AgentTokenUsage } from "@notra/ai/types/agents";
 import type { TccMetadata } from "@notra/ai/types/tcc";
 import type { PostSourceMetadata } from "@notra/db/schema";
+import type { GeoContentBriefBaselineJson } from "@notra/db/types/geo-writer";
 import type { z } from "zod";
 
 export type GeoContentSubtype = z.infer<typeof geoContentSubtypeSchema>;
 export type GeoBriefSection = z.infer<typeof geoBriefSectionSchema>;
 export type GeoBriefInternalLink = z.infer<typeof geoBriefInternalLinkSchema>;
 export type GeoContentBrief = z.infer<typeof geoContentBriefSchema>;
+export interface GeoWriterBrief extends GeoContentBrief {
+  baseline?: GeoContentBriefBaselineJson | null;
+}
 
 export interface GeoPlannerBrand {
   companyName: string;
@@ -38,6 +42,26 @@ export interface GeoPlannerSitemapPage {
   title?: string | null;
 }
 
+export interface GeoPlannerEvidenceEngine {
+  engine: string;
+  mentioned: boolean;
+  position: number | null;
+  sentiment: string | null;
+  competitors: string[];
+  excerpt: string;
+  queries: string[];
+  sourceDomains: string[];
+}
+
+export interface GeoPlannerEvidence {
+  prompt: string;
+  mentionedEngines: number;
+  totalEngines: number;
+  engines: GeoPlannerEvidenceEngine[];
+  competitorMentions: Array<{ name: string; engines: number }>;
+  citedDomains: Array<{ domain: string; engines: number }>;
+}
+
 export interface GeoPlannerPromptInput {
   topic: string;
   brand: GeoPlannerBrand;
@@ -45,6 +69,8 @@ export interface GeoPlannerPromptInput {
   gapPrompts: GeoPlannerGapPrompt[];
   sitemapPages: GeoPlannerSitemapPage[];
   contentSubtype?: GeoContentSubtype;
+  evidence?: GeoPlannerEvidence | null;
+  existingPageUrl?: string | null;
 }
 
 export interface GenerateGeoContentBriefOptions {
@@ -59,7 +85,7 @@ export interface GenerateGeoContentBriefResult {
 }
 
 export interface GeoWriterPromptInput {
-  brief: GeoContentBrief;
+  brief: GeoWriterBrief;
   brandName: string;
   topic: string;
   today: string;
@@ -72,7 +98,7 @@ export interface RunGeoWriterOptions {
   projectId: string;
   brandSettingsId: string;
   collectionId: string;
-  brief: GeoContentBrief;
+  brief: GeoWriterBrief;
   topic: string;
   brandName: string;
   language?: string | null;

@@ -37,7 +37,7 @@ function SidebarBackButton({ onBack }: { onBack: () => void }) {
     <div className="bg-sidebar sticky top-0 z-10 p-2">
       <SidebarMenu>
         <SidebarMenuButton
-          className="hover:bg-sidebar-accent cursor-pointer transition-colors duration-200 [&>*]:group-data-[collapsible=icon]:-translate-x-px"
+          className="hover:bg-sidebar-accent duration-normal cursor-pointer transition-colors [&>*]:group-data-[collapsible=icon]:-translate-x-px"
           onClick={onBack}
           tooltip="Back"
         >
@@ -113,18 +113,16 @@ export function DashboardSidebar({
       <SidebarContent>
         <SidebarSwap
           activeId={panelId}
-          className="flex min-h-0 flex-1 flex-col overflow-x-clip"
+          className="overflow-x-clip"
           items={[
             {
               id: "main",
               side: "left",
-              className: "flex-1",
               children: <NavMain />,
             },
             {
               id: "chat",
               side: "right",
-              className: "flex-1",
               children: (
                 <>
                   <SidebarBackButton onBack={handleBack} />
@@ -135,7 +133,6 @@ export function DashboardSidebar({
             {
               id: "settings",
               side: "right",
-              className: "flex-1",
               children: (
                 <>
                   <SidebarBackButton onBack={handleBack} />
@@ -146,7 +143,6 @@ export function DashboardSidebar({
             {
               id: "brand",
               side: "right",
-              className: "flex-1",
               children: (
                 <>
                   <SidebarBackButton onBack={handleBack} />

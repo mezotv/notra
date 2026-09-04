@@ -105,8 +105,8 @@ export const ConversationScrollButton = ({
     <Button
       className={cn(
         "absolute bottom-4 left-1/2 z-10 -translate-x-1/2 rounded-full shadow-sm",
-        "transition-opacity duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
-        "data-[active=false]:pointer-events-none data-[active=false]:opacity-0 data-[active=false]:duration-300 data-[active=false]:ease-[cubic-bezier(0.7,0,0.84,0)]",
+        "transition-opacity duration-normal ease-emphasized motion-reduce:transition-none",
+        "data-[active=false]:pointer-events-none data-[active=false]:opacity-0 data-[active=false]:duration-slow data-[active=false]:ease-emphasized-in",
         "data-[active=true]:opacity-100",
         className
       )}

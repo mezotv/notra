@@ -1,0 +1,174 @@
+import {
+  GEO_PROMPT_HISTORY_CHANGE_LABELS,
+  GEO_PROMPT_HISTORY_LIST_LOCALE,
+  GEO_PROMPT_RECEIPT_LABELS,
+  GEO_SENTIMENT_LABELS,
+} from "@notra/geo-core/constants/geo";
+import type {
+  GeoPromptHistoryCheck,
+  GeoPromptResult,
+} from "@notra/geo-core/types/geo";
+
+import type { PromptHistoryChange, PromptHistoryEntry } from "@/types/geo";
+
+export function promptHistoryForEngine(
+  checks: readonly GeoPromptHistoryCheck[],
+  engine: string
+): GeoPromptHistoryCheck[] {
+  return checks
+    .filter((check) => check.engine === engine)
+    .sort((left, right) => right.capturedAt.localeCompare(left.capturedAt));
+}
+
+function positionLabel(position: number | null): string {
+  return position === null
+    ? GEO_PROMPT_RECEIPT_LABELS.notRanked
+    : `#${position}`;
+}
+
+const nameListFormatter = new Intl.ListFormat(GEO_PROMPT_HISTORY_LIST_LOCALE, {
+  style: "long",
+  type: "conjunction",
+});
+
+export function formatPromptHistoryNames(names: readonly string[]): string {
+  return nameListFormatter.format(names);
+}
+
+function changesBetween(
+  current: GeoPromptHistoryCheck,
+  previous: GeoPromptHistoryCheck
+): PromptHistoryChange[] {
+  const changes: PromptHistoryChange[] = [];
+  if (current.mentioned && !previous.mentioned) {
+    changes.push({ kind: "gained", position: current.position });
+  } else if (!current.mentioned && previous.mentioned) {
+    changes.push({ kind: "lost" });
+  } else if (
+    current.mentioned &&
+    previous.mentioned &&
+    current.position !== previous.position
+  ) {
+    changes.push({
+      kind: "position",
+      from: previous.position,
+      to: current.position,
+    });
+  }
+  if (changes.length === 0) {
+    changes.push({ kind: "none" });
+  }
+  return changes;
+}
+
+function newCompetitorsBetween(
+  current: GeoPromptHistoryCheck,
+  previous: GeoPromptHistoryCheck
+): string[] {
+  const known = new Set(previous.competitors);
+  return current.competitors.filter((name) => !known.has(name));
+}
+
+export function promptHistoryChanges(
+  checks: readonly GeoPromptHistoryCheck[]
+): PromptHistoryEntry[] {
+  const ordered = checks.toSorted((left, right) =>
+    right.capturedAt.localeCompare(left.capturedAt)
+  );
+  return ordered.map((check, index) => {
+    const previous = ordered[index + 1];
+    return {
+      check,
+      changes: previous ? changesBetween(check, previous) : [{ kind: "first" }],
+      newCompetitors: previous ? newCompetitorsBetween(check, previous) : [],
+    };
+  });
+}
+
+const SENTENCE_END = ".";
+
+export function promptHistoryChangeLabel(change: PromptHistoryChange): string {
+  switch (change.kind) {
+    case "gained":
+      return change.position === null
+        ? GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMention
+        : `${GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMention} ${GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMentionAt} ${positionLabel(change.position)}`;
+    case "lost":
+      return GEO_PROMPT_HISTORY_CHANGE_LABELS.lostMention;
+    case "position":
+      return `${GEO_PROMPT_HISTORY_CHANGE_LABELS.moved} ${positionLabel(change.from)} → ${positionLabel(change.to)}`;
+    case "none":
+      return GEO_PROMPT_HISTORY_CHANGE_LABELS.noChange;
+    case "first":
+      return GEO_PROMPT_HISTORY_CHANGE_LABELS.firstScan;
+    default:
+      return "";
+  }
+}
+
+function changeSentence(change: PromptHistoryChange): string {
+  const label = promptHistoryChangeLabel(change);
+  if (change.kind === "first" || change.kind === "none") {
+    return label;
+  }
+  return `${label}${SENTENCE_END}`;
+}
+
+function newCompetitorsSentence(names: readonly string[]): string {
+  return `${formatPromptHistoryNames(names)} ${GEO_PROMPT_HISTORY_CHANGE_LABELS.newlyRecommended}${SENTENCE_END}`;
+}
+
+/** Plain-text form of a history row, for tooltips and receipts. */
+export function promptHistoryChangeText(
+  entry: Pick<PromptHistoryEntry, "changes" | "newCompetitors">
+): string {
+  const sentences = entry.changes.map(changeSentence);
+  if (entry.newCompetitors.length > 0) {
+    sentences.push(newCompetitorsSentence(entry.newCompetitors));
+  }
+  return sentences.join(" ");
+}
+
+/** Shapes a history check like a prompt result so the answer thread can render it. */
+export function promptResultFromHistoryCheck(
+  check: GeoPromptHistoryCheck,
+  promptId: string,
+  prompt: string
+): GeoPromptResult {
+  return {
+    promptId,
+    engine: check.engine,
+    prompt,
+    answer: check.answer,
+    mentioned: check.mentioned,
+    position: check.position,
+    sentiment: check.sentiment,
+    competitors: check.competitors,
+    excerpt: check.excerpt,
+    searchQueries: check.searchQueries,
+    sources: check.sources,
+    finishReason: null,
+    promptTokens: null,
+    outputTokens: null,
+    reasoningTokens: null,
+    truncated: null,
+    lastCheckedAt: check.capturedAt,
+  };
+}
+
+export function promptSentimentLabel(sentiment: string | null): string {
+  if (!sentiment) {
+    return GEO_PROMPT_RECEIPT_LABELS.noSentiment;
+  }
+  return GEO_SENTIMENT_LABELS[sentiment] ?? sentiment;
+}
+
+export function promptOutcomeLabel(mentioned: boolean): string {
+  return mentioned
+    ? GEO_PROMPT_RECEIPT_LABELS.mentioned
+    : GEO_PROMPT_RECEIPT_LABELS.notMentioned;
+}
+
+export function promptPositionLabel(position: number | null): string {
+  return positionLabel(position);
+}

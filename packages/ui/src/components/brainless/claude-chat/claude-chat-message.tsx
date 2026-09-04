@@ -4,7 +4,7 @@ import { cn } from "@notra/ui/lib/utils";
 export type ClaudeChatMessageRole = "user" | "assistant";
 
 const actionsRevealClassName =
-  "opacity-0 transition-opacity duration-150 [@media(hover:hover)]:group-hover/claude-msg:opacity-100 group-focus-within/claude-msg:opacity-100 [@media(hover:none)]:opacity-100";
+  "opacity-0 transition-opacity duration-fast [@media(hover:hover)]:group-hover/claude-msg:opacity-100 group-focus-within/claude-msg:opacity-100 [@media(hover:none)]:opacity-100";
 
 export function ClaudeChatMessage({
   from,

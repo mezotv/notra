@@ -3,7 +3,7 @@
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Suspense, use, useMemo } from "react";
+import { Suspense, use } from "react";
 import { toast } from "sonner";
 
 import { PageContainer } from "@/components/layout/container";
@@ -60,14 +60,12 @@ function NotificationsSettingsPageContent({ params }: PageProps) {
   const currentMember = members.find((m) => m.userId === session?.user?.id);
   const isOwner = currentMember?.role === "owner";
 
-  const ownerEmails = useMemo(
-    () =>
-      members
-        .filter((m) => m.role === "owner")
-        .map((m) => m.user?.email)
-        .filter((email): email is string => Boolean(email)),
-    [members]
-  );
+  const ownerEmails: string[] = [];
+  for (const member of members) {
+    if (member.role === "owner" && member.user?.email) {
+      ownerEmails.push(member.user.email);
+    }
+  }
 
   const { data: settings, isPending: isLoadingSettings } = useQuery({
     ...dashboardOrpc.notifications.get.queryOptions({

@@ -140,16 +140,20 @@ export function WebhookSetupDialog({
 
   const githubWebhooksUrl = `https://github.com/${owner}/${repo}/settings/hooks/new`;
 
-  const triggerElement =
-    trigger !== undefined && isValidElement(trigger) ? (
+  let triggerElement = null;
+  if (trigger !== undefined && isValidElement(trigger)) {
+    triggerElement = (
       <ResponsiveDialogTrigger render={trigger as React.ReactElement} />
-    ) : trigger === undefined ? null : (
+    );
+  } else if (trigger !== undefined) {
+    triggerElement = (
       <ResponsiveDialogTrigger>
         <Button size="sm" variant="outline">
           Setup Webhook
         </Button>
       </ResponsiveDialogTrigger>
     );
+  }
 
   return (
     <ResponsiveDialog onOpenChange={setOpen} open={open}>
@@ -185,7 +189,8 @@ export function WebhookSetupDialog({
                 <Skeleton className="h-9 w-full" />
               </div>
             </div>
-          ) : webhookConfig ? (
+          ) : null}
+          {!(loadingConfig || isPending) && webhookConfig ? (
             <>
               <fieldset className="space-y-1.5">
                 <p className="text-sm font-medium">Payload URL</p>
@@ -222,7 +227,8 @@ export function WebhookSetupDialog({
                 </div>
               </fieldset>
             </>
-          ) : (
+          ) : null}
+          {!(loadingConfig || isPending) && !webhookConfig ? (
             <div className="space-y-4">
               <div className="border-destructive/50 bg-destructive/10 rounded-md border p-4 text-center">
                 <p className="text-destructive text-sm font-medium">
@@ -244,7 +250,7 @@ export function WebhookSetupDialog({
                 Retry
               </Button>
             </div>
-          )}
+          ) : null}
         </div>
 
         <ResponsiveDialogFooter className="gap-2">

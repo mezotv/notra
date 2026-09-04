@@ -156,7 +156,7 @@ function CharacterCounter({ count, limit }: { count: number; limit: number }) {
         <span
           className={cn(
             "text-xs tabular-nums",
-            isOver ? "text-destructive font-medium" : "text-amber-500"
+            isOver ? "text-destructive font-medium" : "text-warning"
           )}
         >
           {remaining}
@@ -180,7 +180,7 @@ function CharacterCounter({ count, limit }: { count: number; limit: number }) {
         <circle
           className={cn(
             isOver && "stroke-destructive",
-            isWarning && "stroke-amber-500",
+            isWarning && "stroke-warning",
             !(isOver || isWarning) && "stroke-primary"
           )}
           cx={TWEET_COUNTER_RING_SIZE / 2}

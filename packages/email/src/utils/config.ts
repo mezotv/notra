@@ -26,11 +26,11 @@ export const EMAIL_CONFIG = {
   },
 
   /**
-   * Get logo URL with fallback (uses site URL)
+   * Get the email-safe PNG icon URL (uses site URL)
    */
   getLogoUrl(): string {
     const siteUrl = this.getSiteUrl();
-    return `${siteUrl}/icon1.png`;
+    return `${siteUrl}/web-app-manifest-192x192.png`;
   },
 
   /**

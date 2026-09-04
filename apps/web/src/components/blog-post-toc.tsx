@@ -194,7 +194,7 @@ export function BlogPostToc({ toc }: BlogPostTocProps) {
             </svg>
             <svg
               aria-hidden="true"
-              className="text-foreground pointer-events-none absolute top-0 left-0 transition-[clip-path] duration-300 ease-out"
+              className="text-foreground duration-slow pointer-events-none absolute top-0 left-0 transition-[clip-path] ease-out"
               height={containerHeight}
               preserveAspectRatio="none"
               style={{ clipPath }}

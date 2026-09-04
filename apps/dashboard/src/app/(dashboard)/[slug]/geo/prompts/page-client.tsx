@@ -4,7 +4,6 @@ import { PlusSignIcon, Upload01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/button";
@@ -13,6 +12,7 @@ import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { ConversationsCard } from "@/components/geo/conversations-card";
 import { PromptsCsvImportDialog } from "@/components/geo/geo-csv-import-dialog";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
+import { GeoSetupButton } from "@/components/geo/geo-setup-button";
 import { PromptAddDialog } from "@/components/geo/prompt-add-dialog";
 import { PromptSuggestions } from "@/components/geo/prompt-suggestions";
 import { PromptsTable } from "@/components/geo/prompts-table";
@@ -90,18 +90,7 @@ function GeoPromptsPageContent({ organizationSlug }: PageClientProps) {
             </p>
           </header>
           <EmptyState
-            action={
-              <Button
-                nativeButton={false}
-                render={
-                  <Link
-                    href={withGeoProject(`/${organizationSlug}/geo`, projectId)}
-                  />
-                }
-              >
-                Set up GEO tracking
-              </Button>
-            }
+            action={<GeoSetupButton organizationId={organizationId} />}
             description="Set up GEO tracking first, then manage the prompts scanned across AI engines."
             preview={
               <EmptyStateTablePreview

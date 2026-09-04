@@ -26,6 +26,7 @@ import {
   TableHeader,
   TableRow,
 } from "@notra/ui/components/ui/table";
+import { getPageNumbers } from "@notra/ui/lib/get-page-numbers";
 import { parseAsInteger, useQueryState } from "nuqs";
 import { useState } from "react";
 
@@ -45,7 +46,6 @@ import type {
   SitemapPageCategory,
   SitemapPagesTableProps,
 } from "@/types/hooks/brand-sitemaps";
-import { getPageNumbers } from "@/utils/content-preview";
 
 import {
   PAGE_FILTER_TABS,

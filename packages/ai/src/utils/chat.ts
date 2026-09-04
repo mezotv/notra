@@ -102,16 +102,25 @@ export function formatChatIdFallback(chatId: string) {
   return `${chatId.slice(0, 6)}…${chatId.slice(-3)}`;
 }
 
-export function chatSessionsQueryKey(organizationId: string | undefined) {
-  return ["chat-sessions", organizationId] as const;
+export function chatSessionsQueryKey(
+  organizationId: string | undefined,
+  projectId?: string | null
+) {
+  return ["chat-sessions", organizationId, projectId ?? null] as const;
 }
 
 export function chatSessionPath(organizationId: string, chatId: string) {
   return `/api/organizations/${organizationId}/chat/${chatId}`;
 }
 
-export function chatSessionsPath(organizationId: string) {
-  return `/api/organizations/${organizationId}/chat/sessions`;
+export function chatSessionsPath(
+  organizationId: string,
+  projectId?: string | null
+) {
+  const base = `/api/organizations/${organizationId}/chat/sessions`;
+  return projectId
+    ? `${base}?projectId=${encodeURIComponent(projectId)}`
+    : base;
 }
 
 export function contentChatSessionsQueryKey(

@@ -2,7 +2,7 @@
 
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import Counter from "@notra/ui/components/Counter";
+import Counter from "@notra/ui/components/shared/counter";
 import { Label } from "@notra/ui/components/ui/label";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
@@ -117,7 +117,7 @@ export function PlanCard({
               key={`${listId}-${feature.text}`}
             >
               <HugeiconsIcon
-                className="mt-0.5 size-4 shrink-0 text-emerald-500"
+                className="text-success mt-0.5 size-4 shrink-0"
                 icon={CheckmarkCircle02Icon}
               />
               <div>

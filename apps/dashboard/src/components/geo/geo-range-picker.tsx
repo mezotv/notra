@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@notra/ui/components/ui/popover";
+import { TRANSITION } from "@notra/ui/lib/motion";
 import { LazyMotion, m, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import type { DateRange } from "react-day-picker";
@@ -76,11 +77,7 @@ export function GeoRangePicker({ control }: GeoRangePickerProps) {
             }
             className="overflow-hidden"
             initial={false}
-            transition={
-              reduceMotion
-                ? { duration: 0 }
-                : { duration: 0.3, ease: "easeInOut" }
-            }
+            transition={reduceMotion ? { duration: 0 } : TRANSITION.resize}
           >
             <div className="flex w-max" ref={contentRef}>
               <div className="border-border flex min-w-44 flex-col gap-1 border-r p-2">

@@ -8,16 +8,23 @@ import type {
 } from "@/schemas/content";
 
 import { dashboardOrpc } from "../orpc/query";
+import { useActiveProject } from "./use-active-project";
 
 const DEFAULT_PAGE_SIZE = 20;
 const GENERATING_POLL_INTERVAL = 4000;
 
 export function useCollections(organizationId: string, page: number) {
+  const { projectId, isResolved } = useActiveProject();
   return useQuery<PostCollectionListResponse>({
     ...dashboardOrpc.content.collections.list.queryOptions({
-      input: { organizationId, page, pageSize: DEFAULT_PAGE_SIZE },
+      input: {
+        organizationId,
+        projectId: projectId ?? undefined,
+        page,
+        pageSize: DEFAULT_PAGE_SIZE,
+      },
     }),
-    enabled: !!organizationId,
+    enabled: !!organizationId && isResolved,
     refetchInterval: (query) =>
       query.state.data?.collections.some(
         (collection) => collection.isGenerating

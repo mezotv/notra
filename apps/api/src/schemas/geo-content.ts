@@ -5,7 +5,10 @@ import {
   GEO_CONTENT_BRIEF_STATUSES,
   GEO_WRITER_SOURCE_KINDS,
 } from "@notra/db/constants/geo-writer";
-import { GEO_MAX_COMPETITORS } from "@notra/geo-core/constants/geo";
+import {
+  GEO_EXISTING_PAGE_URL_MAX_LENGTH,
+  GEO_MAX_COMPETITORS,
+} from "@notra/geo-core/constants/geo";
 
 import { organizationResponseSchema } from "./content";
 import { projectParamsSchema } from "./geo-params";
@@ -15,11 +18,19 @@ const GEO_BRIEF_TOPIC_MIN_LENGTH = 3;
 const GEO_BRIEF_TOPIC_MAX_LENGTH = 200;
 const GEO_BRIEF_MAX_BRAND_VOICES = 8;
 
+const gapBriefBaselineSchema = z.object({
+  mentionedEngines: z.number(),
+  totalEngines: z.number(),
+});
+
 const gapBriefRefSchema = z.object({
   briefId: z.string(),
   status: z.enum(GEO_CONTENT_BRIEF_STATUSES),
   postId: z.string().nullable(),
   workingTitle: z.string().nullable(),
+  publishedAt: z.string().nullable(),
+  baseline: gapBriefBaselineSchema.nullable(),
+  rescanned: z.boolean(),
 });
 
 const promptGapSchema = z.object({
@@ -27,11 +38,31 @@ const promptGapSchema = z.object({
   prompt: z.string(),
   title: z.string().nullable(),
   engines: z.array(z.string()),
+  mentionedEngines: z.array(z.string()),
   competitors: z.array(z.string()),
+  discoveredCompetitors: z.array(z.string()),
   ownMentionRate: z.number(),
   engineCoverage: z.number(),
   opportunity: z.number(),
+  won: z.boolean(),
   brief: gapBriefRefSchema.nullable(),
+});
+
+const searchGapTargetSchema = z.object({
+  kind: z.enum(["page", "post"]),
+  id: z.string(),
+  url: z.string().nullable(),
+  title: z.string(),
+  score: z.number(),
+});
+
+const searchGapRecommendationSchema = z.object({
+  action: z.enum(["create", "update", "merge", "ignore"]).openapi({
+    description:
+      "What to do with this query cluster: create a new page, update the strongest existing page, merge overlapping pages, or ignore thin demand.",
+  }),
+  reason: z.string(),
+  targets: z.array(searchGapTargetSchema),
 });
 
 const searchGapSchema = z.object({
@@ -39,7 +70,18 @@ const searchGapSchema = z.object({
   prompt: z.string(),
   title: z.string().nullable(),
   impressions: z.number().nullable(),
+  clicks: z.number().nullable(),
+  position: z.number().nullable(),
+  queries: z.array(
+    z.object({
+      query: z.string(),
+      clicks: z.number(),
+      impressions: z.number(),
+      position: z.number(),
+    })
+  ),
   brief: gapBriefRefSchema.nullable(),
+  recommendation: searchGapRecommendationSchema,
 });
 
 export const contentGapsResponseSchema = z
@@ -83,6 +125,32 @@ const briefDocumentSchema = z
     questionsToAnswer: z.array(z.string()),
     internalLinks: z.array(briefInternalLinkSchema),
     acceptanceChecklist: z.array(z.string()),
+    recommendedAngle: z.string().optional(),
+    competitorsToCounter: z.array(z.string()).optional(),
+    sourcesToReference: z.array(z.string()).optional(),
+    missingCoverage: z.array(z.string()).optional(),
+    baseline: z
+      .object({
+        sourcePromptId: z.string(),
+        mentionedEngines: z.number(),
+        totalEngines: z.number(),
+        engines: z.array(
+          z.object({
+            engine: z.string(),
+            mentioned: z.boolean(),
+            position: z.number().nullable(),
+          })
+        ),
+        competitorMentions: z.array(
+          z.object({ name: z.string(), engines: z.number() })
+        ),
+        citedDomains: z.array(
+          z.object({ domain: z.string(), engines: z.number() })
+        ),
+        capturedAt: z.string().nullable(),
+      })
+      .nullable()
+      .optional(),
   })
   .openapi("GeoContentBriefDocument");
 
@@ -162,6 +230,14 @@ export const planBriefRequestSchema = z
       description:
         "Gap, prompt or search-console suggestion id. An open brief for the same source is reused instead of planning a new one.",
     }),
+    existingPageUrl: z
+      .url()
+      .max(GEO_EXISTING_PAGE_URL_MAX_LENGTH)
+      .optional()
+      .openapi({
+        description:
+          "Existing page the article should refresh instead of creating a competing page.",
+      }),
   })
   .openapi("PlanGeoContentBriefRequest");
 

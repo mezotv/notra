@@ -54,22 +54,22 @@ const getStatusBadge = (status: ToolUIPart["state"]) => {
       <HugeiconsIcon className="size-4 animate-pulse" icon={Clock01Icon} />
     ),
     "approval-requested": (
-      <HugeiconsIcon className="size-4 text-yellow-600" icon={Clock01Icon} />
+      <HugeiconsIcon className="size-4 text-warning" icon={Clock01Icon} />
     ),
     "approval-responded": (
       <HugeiconsIcon
-        className="size-4 text-blue-600"
+        className="size-4 text-info"
         icon={CheckmarkCircle01Icon}
       />
     ),
     "output-available": (
       <HugeiconsIcon
-        className="size-4 text-green-600"
+        className="size-4 text-success"
         icon={CheckmarkCircle01Icon}
       />
     ),
     "output-error": (
-      <HugeiconsIcon className="size-4 text-red-600" icon={CancelCircleIcon} />
+      <HugeiconsIcon className="size-4 text-destructive" icon={CancelCircleIcon} />
     ),
     "output-denied": (
       <HugeiconsIcon

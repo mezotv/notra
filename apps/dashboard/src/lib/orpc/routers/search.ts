@@ -7,9 +7,10 @@ import {
   linearIntegrations,
   posts,
 } from "@notra/db/schema";
-import { and, desc, eq, ilike, or } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or } from "drizzle-orm";
 
 import { assertOrganizationAccess } from "@/lib/auth/organization";
+import { projectScopedCollectionIds } from "@/lib/content/project-scope";
 import { baseProcedure } from "@/lib/orpc/base";
 import { globalSearchInputSchema } from "@/schemas/search";
 
@@ -30,6 +31,13 @@ export const searchRouter = {
 
       const pattern = toLikePattern(input.query);
       const orgFilter = eq(posts.organizationId, input.organizationId);
+      const projectCollectionIds = projectScopedCollectionIds(
+        input.organizationId,
+        input.projectId
+      );
+      const postFilter = projectCollectionIds
+        ? and(orgFilter, inArray(posts.collectionId, projectCollectionIds))
+        : orgFilter;
 
       const [
         postRows,
@@ -50,7 +58,7 @@ export const searchRouter = {
           .from(posts)
           .where(
             and(
-              orgFilter,
+              postFilter,
               or(ilike(posts.title, pattern), ilike(posts.slug, pattern))
             )
           )

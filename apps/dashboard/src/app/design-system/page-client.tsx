@@ -1,5 +1,6 @@
 "use client";
 
+import { BrailleLoader } from "@notra/ui/components/shared/braille-loader";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -223,7 +224,6 @@ import { DesignSystemCodexCatalog } from "@/app/design-system/codex/page-client"
 import { DesignSystemGeminiCatalog } from "@/app/design-system/gemini/page-client";
 import { DesignSystemOpencodeCatalog } from "@/app/design-system/opencode/page-client";
 import { DesignSystemPerplexityCatalog } from "@/app/design-system/perplexity/page-client";
-import { BrailleLoader } from "@/components/braille-loader";
 import { Button, buttonVariants } from "@/components/button";
 import ChatInput from "@/components/chat-input";
 import { DesignSystemFrame } from "@/components/design-system/design-system-frame";
@@ -231,6 +231,7 @@ import { DesignSystemSectionHeader } from "@/components/design-system/design-sys
 import { GeoRangePickerDemo } from "@/components/design-system/geo-range-picker-demo";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LinkedInPost } from "@/components/linkedin-post";
+import { cn } from "@/lib/utils";
 
 import { DesignSystemWriteDialogDemo } from "./write-dialog-demo";
 
@@ -262,6 +263,20 @@ const colorGroups = [
       { name: "border", label: "Border" },
       { name: "input", label: "Input" },
       { name: "ring", label: "Ring" },
+    ],
+  },
+  {
+    title: "Status",
+    tokens: [
+      { name: "success", label: "Success" },
+      { name: "warning", label: "Warning" },
+      { name: "info", label: "Info" },
+      { name: "destructive", label: "Destructive" },
+      { name: "geo-up", label: "GEO Up (= success)" },
+      { name: "geo-mid", label: "GEO Mid (= warning)" },
+      { name: "geo-down", label: "GEO Down" },
+      { name: "geo-search", label: "GEO Search" },
+      { name: "geo-memory", label: "GEO Memory" },
     ],
   },
   {
@@ -352,6 +367,88 @@ function ColorSwatch({ name, label }: { name: string; label: string }) {
   );
 }
 
+/*
+ * Tailwind must see these class strings literally, so each row spells out its
+ * own utilities rather than interpolating the token name.
+ */
+const MOTION_DURATIONS = [
+  {
+    token: "duration-instant",
+    meta: "100ms · popover layer",
+    className: "duration-instant ease-out",
+  },
+  {
+    token: "duration-fast",
+    meta: "150ms · control feedback",
+    className: "duration-fast ease-out",
+  },
+  {
+    token: "duration-normal",
+    meta: "200ms · state change in place",
+    className: "duration-normal ease-out",
+  },
+  {
+    token: "duration-slow",
+    meta: "300ms · layout movement",
+    className: "duration-slow ease-out",
+  },
+  {
+    token: "duration-slower",
+    meta: "500ms · deliberate reveal",
+    className: "duration-slower ease-out",
+  },
+] as const;
+
+const MOTION_EASINGS = [
+  {
+    token: "ease-out",
+    meta: "default for small interactions",
+    className: "duration-slower ease-out",
+  },
+  {
+    token: "ease-emphasized",
+    meta: "entrances and layout moves",
+    className: "duration-slower ease-emphasized",
+  },
+  {
+    token: "ease-emphasized-in",
+    meta: "exits",
+    className: "duration-slower ease-emphasized-in",
+  },
+  {
+    token: "ease-emphasized-in-out",
+    meta: "symmetric morphs",
+    className: "duration-slower ease-emphasized-in-out",
+  },
+] as const;
+
+function MotionSample({
+  token,
+  meta,
+  className,
+}: {
+  token: string;
+  meta: string;
+  className: string;
+}) {
+  return (
+    <div className="group/motion hover:bg-muted/40 rounded-lg px-2 py-1.5">
+      <div className="flex items-baseline justify-between gap-3">
+        <code className="text-xs font-medium">{token}</code>
+        <span className="text-muted-foreground text-xs">{meta}</span>
+      </div>
+      <div className="bg-muted mt-1.5 h-1.5 overflow-hidden rounded-full">
+        <div
+          className={cn(
+            "bg-primary h-full w-1/5 rounded-full transition-transform group-hover/motion:translate-x-[400%]",
+            className
+          )}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function DesignSystemClientPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [alertDialogOpen, setAlertDialogOpen] = useState(false);
@@ -390,6 +487,56 @@ export default function DesignSystemClientPage() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <Separator />
+
+      <section className="scroll-mt-10 space-y-6" id="motion">
+        <DesignSystemSectionHeader
+          description="One scale for every animation. Hover a row to play it."
+          id="motion"
+          title="Motion"
+        />
+        <div className="grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Durations</CardTitle>
+              <CardDescription>
+                Tailwind <code>duration-*</code> and <code>DURATION</code> from{" "}
+                <code>@notra/ui/lib/motion</code>.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {MOTION_DURATIONS.map((entry) => (
+                <MotionSample
+                  key={entry.token}
+                  className={entry.className}
+                  meta={entry.meta}
+                  token={entry.token}
+                />
+              ))}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Easings</CardTitle>
+              <CardDescription>
+                Shown at <code>duration-slower</code> so the curve is legible.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {MOTION_EASINGS.map((entry) => (
+                <MotionSample
+                  key={entry.token}
+                  className={entry.className}
+                  meta={entry.meta}
+                  token={entry.token}
+                />
+              ))}
+            </CardContent>
+          </Card>
         </div>
       </section>
 
@@ -439,15 +586,34 @@ export default function DesignSystemClientPage() {
         <Card>
           <CardHeader>
             <CardTitle>Badges</CardTitle>
-            <CardDescription>Badge variants.</CardDescription>
+            <CardDescription>
+              Variants and sizes. Reach for the status variants instead of
+              hand-rolling emerald/amber/blue classes.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Badge>Default</Badge>
-            <Badge variant="secondary">Secondary</Badge>
-            <Badge variant="outline">Outline</Badge>
-            <Badge variant="ghost">Ghost</Badge>
-            <Badge variant="destructive">Destructive</Badge>
-            <Badge variant="link">Link</Badge>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              <Badge>Default</Badge>
+              <Badge variant="secondary">Secondary</Badge>
+              <Badge variant="outline">Outline</Badge>
+              <Badge variant="ghost">Ghost</Badge>
+              <Badge variant="link">Link</Badge>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="success">Success</Badge>
+              <Badge variant="warning">Warning</Badge>
+              <Badge variant="info">Info</Badge>
+              <Badge variant="destructive">Destructive</Badge>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge size="sm">Small</Badge>
+              <Badge size="sm" variant="success">
+                Small success
+              </Badge>
+              <Badge size="sm" variant="outline">
+                Small outline
+              </Badge>
+            </div>
           </CardContent>
         </Card>
 
@@ -807,6 +973,24 @@ export default function DesignSystemClientPage() {
                 <AlertTitle>Automation running</AlertTitle>
                 <AlertDescription>
                   The schedule will run again in 2 hours.
+                </AlertDescription>
+              </Alert>
+              <Alert variant="info">
+                <AlertTitle>Key shown once</AlertTitle>
+                <AlertDescription>
+                  Store it now — you will not be able to read it again.
+                </AlertDescription>
+              </Alert>
+              <Alert variant="success">
+                <AlertTitle>Scan complete</AlertTitle>
+                <AlertDescription>
+                  All 24 prompts were answered.
+                </AlertDescription>
+              </Alert>
+              <Alert variant="warning">
+                <AlertTitle>Approaching your limit</AlertTitle>
+                <AlertDescription>
+                  You have used 90% of this month&apos;s credits.
                 </AlertDescription>
               </Alert>
               <Alert variant="destructive">

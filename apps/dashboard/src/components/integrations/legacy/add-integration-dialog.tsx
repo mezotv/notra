@@ -462,7 +462,7 @@ export function LegacyAddIntegrationDialog({
                       {(field) => (
                         <Field>
                           {probeStatus === "not_found" ? (
-                            <p className="mb-2 text-xs text-amber-600 dark:text-amber-400">
+                            <p className="text-warning mb-2 text-xs">
                               This repository appears to be private or not
                               found. A token is required to access it.
                             </p>

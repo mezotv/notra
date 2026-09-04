@@ -9,11 +9,16 @@ import type {
   ShareOfVoiceRow,
 } from "@notra/geo-core/types/geo";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
-import { type CSSProperties, type ReactNode, useMemo, useState } from "react";
+import { type CSSProperties, type ReactNode, useState } from "react";
 
 import { ChartColorScope } from "@/components/charts/chart-color-scope";
 import { EChartsPieChart } from "@/components/evilcharts/charts/echarts-pie-chart";
+import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
+import {
+  BrandTrackingBadge,
+  TrackBrandButton,
+} from "@/components/geo/share-of-voice-brand-tag";
 import { ShareOfVoiceOtherSheet } from "@/components/geo/share-of-voice-other-sheet";
 import { InstrumentEmpty } from "@/components/instrument/instrument-module";
 import {
@@ -31,6 +36,7 @@ import {
   toShareOfVoiceDonutSlices,
 } from "@/utils/geo-charts";
 import {
+  isOwnBrandName,
   shareOfVoiceRivalIndex,
   shareOfVoiceSliceColor,
 } from "@/utils/geo-competitors";
@@ -48,12 +54,15 @@ function ShareOfVoiceLegendContent({
   competitors,
   leading,
   swatchStyle,
+  own = false,
 }: {
   row: ShareOfVoiceRow;
   competitors?: GeoCompetitor[];
   leading?: ReactNode;
   swatchStyle: CSSProperties;
+  own?: boolean;
 }) {
+  const showBadge = !own && row.brand !== CHART_OTHER_SLICE_LABEL;
   return (
     <>
       <span
@@ -73,6 +82,7 @@ function ShareOfVoiceLegendContent({
       <span className="text-muted-foreground min-w-0 flex-1 truncate">
         {row.brand}
       </span>
+      {showBadge ? <BrandTrackingBadge tracked={row.tracked} /> : null}
       <span className="shrink-0 tabular-nums">
         {formatMentionRate(row.share)}
       </span>
@@ -89,34 +99,55 @@ function ShareOfVoiceLegendRow({
   swatchStyle,
   onClick,
   onPointerEnter,
+  own,
+  onTrack,
 }: {
   row: ShareOfVoiceRow;
   competitors?: GeoCompetitor[];
   swatchStyle: CSSProperties;
   onClick?: () => void;
   onPointerEnter?: () => void;
+  own: boolean;
+  onTrack?: (brand: string) => void;
 }) {
   const content = (
     <ShareOfVoiceLegendContent
       competitors={competitors}
+      own={own}
       row={row}
       swatchStyle={swatchStyle}
     />
   );
+  const trackAction =
+    !own && !row.tracked && onTrack ? (
+      <TrackBrandButton brand={row.brand} onTrack={onTrack} />
+    ) : null;
 
   if (!onClick) {
-    return <div className={LEGEND_ROW_CLASS}>{content}</div>;
+    return (
+      <div className="flex items-center gap-1">
+        <div className={cn(LEGEND_ROW_CLASS, "min-w-0 flex-1")}>{content}</div>
+        {trackAction}
+      </div>
+    );
   }
 
   return (
-    <button
-      className={cn(LEGEND_ROW_CLASS, LEGEND_ROW_INTERACTIVE_CLASS)}
-      onClick={onClick}
-      onPointerEnter={onPointerEnter}
-      type="button"
-    >
-      {content}
-    </button>
+    <div className="flex items-center gap-1">
+      <button
+        className={cn(
+          LEGEND_ROW_CLASS,
+          LEGEND_ROW_INTERACTIVE_CLASS,
+          "min-w-0 flex-1"
+        )}
+        onClick={onClick}
+        onPointerEnter={onPointerEnter}
+        type="button"
+      >
+        {content}
+      </button>
+      {trackAction}
+    </div>
   );
 }
 
@@ -159,6 +190,53 @@ function ShareOfVoiceOtherLegend({
   );
 }
 
+function buildShareOfVoiceDonutModel({
+  points,
+  limit,
+  competitors,
+  companyName,
+  aliases,
+}: Pick<
+  ShareOfVoiceDonutProps,
+  "points" | "limit" | "competitors" | "companyName" | "aliases"
+>) {
+  const ownBrand = { companyName, aliases };
+  const breakdown = buildShareOfVoiceBreakdown(points, {
+    limit,
+    competitors,
+    companyName,
+    aliases,
+  });
+  const rows = toShareOfVoiceDonutSlices(breakdown.rows);
+  const sliceConfig: ChartConfig = {};
+  for (const row of rows) {
+    sliceConfig[row.slice] = {
+      label: row.brand,
+      colors: seriesColors(
+        shareOfVoiceSliceColor(
+          row.brand,
+          shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
+          competitors,
+          ownBrand
+        )
+      ),
+    };
+  }
+  const top = rows.find((row) => row.brand !== CHART_OTHER_SLICE_LABEL);
+  const otherRow = rows.find((row) => row.brand === CHART_OTHER_SLICE_LABEL);
+  const mentions = rows.reduce((sum, row) => sum + row.mentions, 0);
+  return {
+    slices: rows,
+    others: breakdown.others,
+    other: otherRow,
+    config: sliceConfig,
+    caption: top
+      ? `${top.brand} · ${formatMentionRate(top.share)} of mentions`
+      : null,
+    totalMentions: mentions,
+  };
+}
+
 export function ShareOfVoiceDonut({
   points,
   competitors,
@@ -168,46 +246,19 @@ export function ShareOfVoiceDonut({
   onSlicePointerEnter,
   companyName,
   aliases,
+  organizationId,
 }: ShareOfVoiceDonutProps) {
   const [otherOpen, setOtherOpen] = useState(false);
+  const [trackBrand, setTrackBrand] = useState<string | null>(null);
+  const onTrack = organizationId ? setTrackBrand : undefined;
   const { slices, others, other, config, caption, totalMentions } =
-    useMemo(() => {
-      const ownBrand = { companyName, aliases };
-      const breakdown = buildShareOfVoiceBreakdown(points, {
-        limit,
-        competitors,
-      });
-      const rows = toShareOfVoiceDonutSlices(breakdown.rows);
-      const sliceConfig: ChartConfig = {};
-      for (const row of rows) {
-        sliceConfig[row.slice] = {
-          label: row.brand,
-          colors: seriesColors(
-            shareOfVoiceSliceColor(
-              row.brand,
-              shareOfVoiceRivalIndex(rows, row.brand, ownBrand),
-              competitors,
-              ownBrand
-            )
-          ),
-        };
-      }
-      const top = rows.find((row) => row.brand !== CHART_OTHER_SLICE_LABEL);
-      const otherRow = rows.find(
-        (row) => row.brand === CHART_OTHER_SLICE_LABEL
-      );
-      const mentions = rows.reduce((sum, row) => sum + row.mentions, 0);
-      return {
-        slices: rows,
-        others: breakdown.others,
-        other: otherRow,
-        config: sliceConfig,
-        caption: top
-          ? `${top.brand} · ${formatMentionRate(top.share)} of mentions`
-          : null,
-        totalMentions: mentions,
-      };
-    }, [aliases, companyName, competitors, limit, points]);
+    buildShareOfVoiceDonutModel({
+      points,
+      limit,
+      competitors,
+      companyName,
+      aliases,
+    });
 
   if (slices.length === 0) {
     return (
@@ -280,6 +331,8 @@ export function ShareOfVoiceDonut({
                         onPointerEnter={
                           canOpen ? () => onSlicePointerEnter?.(row) : undefined
                         }
+                        onTrack={onTrack}
+                        own={isOwnBrandName(row.brand, companyName, aliases)}
                         row={row}
                         swatchStyle={swatchStyle}
                       />
@@ -304,9 +357,30 @@ export function ShareOfVoiceDonut({
           onBrandClick={onSliceClick}
           onBrandPointerEnter={onSlicePointerEnter}
           onOpenChange={setOtherOpen}
+          onTrackBrand={
+            onTrack
+              ? (brand) => {
+                  setOtherOpen(false);
+                  onTrack(brand);
+                }
+              : undefined
+          }
           open={otherOpen}
           other={other}
           others={others}
+        />
+      ) : null}
+      {organizationId ? (
+        <CompetitorEditDialog
+          competitor={null}
+          initialName={trackBrand ?? undefined}
+          onOpenChange={(open) => {
+            if (!open) {
+              setTrackBrand(null);
+            }
+          }}
+          open={trackBrand !== null}
+          organizationId={organizationId}
         />
       ) : null}
     </>

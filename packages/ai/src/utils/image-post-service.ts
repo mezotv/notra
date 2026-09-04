@@ -8,6 +8,7 @@ import {
   autumn,
 } from "@notra/ai/billing/autumn";
 import { FEATURES } from "@notra/ai/billing/features";
+import { getChatProjectId } from "@notra/ai/chat/history";
 import { IMAGE_GEN_MODEL_ID } from "@notra/ai/constants/repo-image";
 import { maybeGenerateCollectionTitle } from "@notra/ai/jobs/collection-title";
 import {
@@ -246,12 +247,16 @@ export async function saveGeneratedImagePost(params: {
   const collectionId = nanoid();
   const now = new Date();
   const contentTypesJson = JSON.stringify(["image"]);
+  const projectId = params.chatId
+    ? await getChatProjectId(params.organizationId, params.chatId)
+    : null;
 
   const [collection] = await db
     .insert(postCollections)
     .values({
       id: collectionId,
       organizationId: params.organizationId,
+      projectId,
       source: "chat",
       sourceId: params.chatId ?? null,
       name: buildPostCollectionName(["image"], now),
@@ -273,6 +278,7 @@ export async function saveGeneratedImagePost(params: {
         isNotNull(postCollections.sourceId)
       ),
       set: {
+        projectId,
         contentTypes: sql`CASE
           WHEN ${postCollections.contentTypes} @> ${contentTypesJson}::jsonb
             THEN ${postCollections.contentTypes}

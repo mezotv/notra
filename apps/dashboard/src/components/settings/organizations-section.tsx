@@ -213,7 +213,7 @@ export function OrganizationsSection() {
                       <p className="text-sm font-medium">{org.name}</p>
                       {isActive && (
                         <Badge
-                          className="bg-emerald-500/15 px-1.5 py-0 text-[10px] font-semibold text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400"
+                          className="bg-success/10 text-success hover:bg-success/20 px-1.5 py-0 text-[10px] font-semibold"
                           variant="secondary"
                         >
                           Active

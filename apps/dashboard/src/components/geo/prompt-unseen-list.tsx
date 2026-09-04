@@ -8,15 +8,15 @@ import {
   summarizePromptResults,
   unseenPromptSummaries,
 } from "@notra/geo-core/utils/geo-presence";
+import { LogoStack } from "@notra/ui/components/geo/logo-stack";
+import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { buttonVariants } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { LogoStack } from "@/components/geo/logo-stack";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { InstrumentSection } from "@/components/instrument/instrument-module";
-import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
 import { cn } from "@/lib/utils";
 import type { PromptUnseenListProps } from "@/types/geo";

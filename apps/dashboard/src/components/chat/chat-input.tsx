@@ -543,19 +543,22 @@ export function ChatInputAdvanced({
     [handleFilesSelected]
   );
 
+  const cleanupUnsubmittedAttachments = useCallback(() => {
+    for (const attachment of attachmentsRef.current) {
+      if (submittedKeysRef.current.has(attachment.key)) {
+        continue;
+      }
+      cleanupChatUpload(attachment.key).catch(() => undefined);
+    }
+  }, [cleanupChatUpload]);
+
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
-
-      for (const attachment of attachmentsRef.current) {
-        if (submittedKeysRef.current.has(attachment.key)) {
-          continue;
-        }
-        cleanupChatUpload(attachment.key).catch(() => undefined);
-      }
+      cleanupUnsubmittedAttachments();
     };
-  }, [cleanupChatUpload]);
+  }, [cleanupUnsubmittedAttachments]);
 
   const onEmptyChangeRef = useRef(onEmptyChange);
 
@@ -1497,7 +1500,7 @@ export function ChatInputAdvanced({
         createPortal(
           <div
             aria-hidden="true"
-            className="fade-in-0 animate-in bg-background/75 pointer-events-none fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm duration-150"
+            className="fade-in-0 animate-in bg-background/75 duration-fast pointer-events-none fixed inset-0 z-[100] flex items-center justify-center backdrop-blur-sm"
           >
             <div className="flex flex-col items-center gap-5">
               <HugeiconsIcon
@@ -1559,7 +1562,7 @@ export function ChatInputAdvanced({
                         >
                           <ChatContextOptionContent option={option} />
                           {inContext && (
-                            <span className="shrink-0 text-xs text-emerald-600 dark:text-emerald-400">
+                            <span className="text-success shrink-0 text-xs">
                               Added
                             </span>
                           )}
@@ -1703,7 +1706,7 @@ export function ChatInputAdvanced({
                 {usageLimitError ? (
                   <span className="flex min-w-0 items-center gap-1.5 text-sm">
                     <HugeiconsIcon
-                      className="size-4 shrink-0 text-amber-600 dark:text-amber-500"
+                      className="text-warning size-4 shrink-0"
                       icon={Alert02Icon}
                     />
                     <span className="truncate">{usageLimitError}</span>
@@ -2072,17 +2075,17 @@ export function ChatInputAdvanced({
                     <HugeiconsIcon className="size-4" icon={StopIcon} />
                   );
                 }
+                let sendLabel = "Send message";
+                if (isLoading && isEmpty) {
+                  sendLabel = "Stop generating";
+                } else if (canQueue) {
+                  sendLabel = "Queue message";
+                }
                 return (
                   <Composer.Send
                     busy={sendBusy}
                     disabled={submitDisabled}
-                    label={
-                      isLoading && isEmpty
-                        ? "Stop generating"
-                        : canQueue
-                          ? "Queue message"
-                          : "Send message"
-                    }
+                    label={sendLabel}
                     onClick={submitOnClick}
                     tooltip={getSubmitTooltipText({
                       canQueue,

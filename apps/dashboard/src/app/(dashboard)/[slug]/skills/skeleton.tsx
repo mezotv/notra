@@ -1,21 +1,35 @@
 "use client";
 
-import { Card } from "@notra/ui/components/ui/card";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useId } from "react";
+
+import { SKILL_TABLE_SKELETON_ROWS } from "@/constants/skills";
 
 export function SkillsPageSkeleton() {
   const id = useId();
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <Card className="gap-3 p-4" key={`${id}-card-${i}`}>
-          <Skeleton className="h-5 w-32" />
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-2/3" />
-          <Skeleton className="mt-1 h-3 w-24" />
-        </Card>
-      ))}
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-5 w-28" />
+        <Skeleton className="h-9 w-full sm:max-w-72" />
+      </div>
+      <div className="border-border/80 overflow-hidden rounded-lg border">
+        <div className="bg-muted/80 flex h-10 items-center gap-4 px-3">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-24" />
+        </div>
+        {Array.from({ length: SKILL_TABLE_SKELETON_ROWS }).map((_, i) => (
+          <div
+            className="bg-background border-border/60 flex items-center gap-4 border-t px-3 py-3.5"
+            key={`${id}-row-${i}`}
+          >
+            <Skeleton className="h-4 w-40" />
+            <Skeleton className="h-4 flex-1" />
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="h-4 w-20" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

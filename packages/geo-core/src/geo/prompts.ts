@@ -43,6 +43,18 @@ export function promptIdFromScanId(scanId: string): string {
     : scanId;
 }
 
+export function scopeGeoPrompts(
+  prompts: readonly GeoPromptDefinition[],
+  promptIds: readonly string[]
+): GeoPromptDefinition[] {
+  const scanIds = new Set<string>();
+  for (const promptId of promptIds) {
+    scanIds.add(promptId);
+    scanIds.add(customPromptScanId(promptId));
+  }
+  return prompts.filter((prompt) => scanIds.has(prompt.id));
+}
+
 /**
  * Mention checks for custom prompts are keyed by `custom-<uuid>`. Fall back to
  * the raw id so auto-generated slugs (`best-tools`) and legacy rows still match.
@@ -149,11 +161,12 @@ function deriveCategory(
   if (isAFor?.[1] && isAFor[2]) {
     const useCase = cleanPhrase(isAFor[2]);
     const typePhrase = nounPhraseFromType(isAFor[1]);
-    const preferred = GERUND_REGEX.test(useCase)
-      ? useCase
-      : AUDIENCE_LIKE_REGEX.test(useCase)
-        ? typePhrase
-        : typePhrase || useCase;
+    let preferred = typePhrase || useCase;
+    if (GERUND_REGEX.test(useCase)) {
+      preferred = useCase;
+    } else if (AUDIENCE_LIKE_REGEX.test(useCase)) {
+      preferred = typePhrase;
+    }
     const category = finalizeCategory(preferred, brandTerms);
     if (category) {
       return category;

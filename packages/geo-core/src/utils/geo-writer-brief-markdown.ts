@@ -4,6 +4,7 @@ import type {
   GeoBriefSection,
   GeoContentBrief,
   GeoContentSubtype,
+  GeoWriterBrief,
 } from "@notra/ai/types/geo-writer";
 
 const EMPTY_CLAIMS = "(no required claims)";
@@ -34,7 +35,73 @@ function unescapeMarkdownLinkUrl(url: string): string {
   return url.replaceAll(/\\([\\()])/g, "$1");
 }
 
-export function geoBriefToMarkdown(brief: GeoContentBrief): string {
+function evidenceMarkdown(brief: GeoWriterBrief): string[] {
+  const lines: string[] = [];
+  const baseline = brief.baseline;
+  if (baseline) {
+    lines.push(
+      "## Baseline",
+      "",
+      `Mentioned by ${baseline.mentionedEngines} of ${baseline.totalEngines} engines in the latest scan${baseline.capturedAt ? ` (${baseline.capturedAt.slice(0, 10)})` : ""}.`
+    );
+    if (baseline.competitorMentions.length > 0) {
+      lines.push(
+        "",
+        "Brands recommended instead:",
+        ...baseline.competitorMentions.map(
+          (item) =>
+            `- ${item.name} (${item.engines} of ${baseline.totalEngines} engines)`
+        )
+      );
+    }
+    if (baseline.citedDomains.length > 0) {
+      lines.push(
+        "",
+        "Domains assistants cited:",
+        ...baseline.citedDomains.map(
+          (item) => `- ${item.domain} (${item.engines} engines)`
+        )
+      );
+    }
+    lines.push("");
+  }
+  const hasEvidence =
+    brief.recommendedAngle ||
+    (brief.competitorsToCounter && brief.competitorsToCounter.length > 0) ||
+    (brief.missingCoverage && brief.missingCoverage.length > 0) ||
+    (brief.sourcesToReference && brief.sourcesToReference.length > 0);
+  if (!hasEvidence) {
+    return lines;
+  }
+  lines.push("## Why this article should win", "");
+  if (brief.recommendedAngle) {
+    lines.push(brief.recommendedAngle, "");
+  }
+  if (brief.competitorsToCounter && brief.competitorsToCounter.length > 0) {
+    lines.push(
+      "Competitors to counter:",
+      ...brief.competitorsToCounter.map((item) => `- ${item}`),
+      ""
+    );
+  }
+  if (brief.missingCoverage && brief.missingCoverage.length > 0) {
+    lines.push(
+      "Coverage to add:",
+      ...brief.missingCoverage.map((item) => `- ${item}`),
+      ""
+    );
+  }
+  if (brief.sourcesToReference && brief.sourcesToReference.length > 0) {
+    lines.push(
+      "Sources assistants trust for this prompt:",
+      ...brief.sourcesToReference.map((item) => `- ${item}`),
+      ""
+    );
+  }
+  return lines;
+}
+
+export function geoBriefToMarkdown(brief: GeoWriterBrief): string {
   const sections = brief.sections
     .map((section) => {
       const claims =
@@ -69,6 +136,7 @@ export function geoBriefToMarkdown(brief: GeoContentBrief): string {
     `Audience: ${brief.audience}`,
     `Job to be done: ${brief.jobToBeDone}`,
     "",
+    ...evidenceMarkdown(brief),
     sections,
     "",
     "## FAQ",

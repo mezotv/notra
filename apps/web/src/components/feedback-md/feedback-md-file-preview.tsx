@@ -49,7 +49,7 @@ export function FeedbackMdFilePreview({
         {lines.map((line, index) => (
           <span
             className={cn(
-              "block scroll-mt-40 transition-opacity duration-300",
+              "duration-slow block scroll-mt-40 transition-opacity",
               LINE_CLASSNAME[line.kind],
               activeHeading !== null &&
                 line.section !== null &&

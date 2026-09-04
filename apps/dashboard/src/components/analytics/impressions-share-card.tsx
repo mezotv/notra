@@ -65,7 +65,7 @@ export function ImpressionsShareCard({
           ? `${top.account} · ${Math.round((top.impressions / shareTotal) * PERCENT)}% of impressions`
           : null,
     };
-  }, [data?.entries]);
+  }, [colorForKey, data?.entries]);
 
   return (
     <InstrumentModule eyebrow="Impressions share" variant="panel">

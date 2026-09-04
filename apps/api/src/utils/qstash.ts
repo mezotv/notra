@@ -16,7 +16,7 @@ function getScheduleDestinationUrl(env: QstashEnv) {
 }
 
 export function buildCronExpression(config: {
-  frequency: "daily" | "weekly" | "monthly";
+  frequency: "daily" | "weekly" | "monthly" | "custom";
   hour: number;
   minute: number;
   dayOfWeek?: number;
@@ -30,6 +30,7 @@ export function buildCronExpression(config: {
     return `${config.minute} ${config.hour} ${config.dayOfMonth ?? 1} * *`;
   }
 
+  // "custom" (every N days) fires daily and is gated by the schedule workflow.
   return `${config.minute} ${config.hour} * * *`;
 }
 

@@ -1,5 +1,3 @@
-import type { GeoGapsMeterTone } from "@notra/ui/types/geo";
-
 export const GEO_SEARCH_LABEL = "Search";
 
 export const GEO_PRESENCE_LABELS: Record<string, string> = {
@@ -25,13 +23,6 @@ export const AI_TRAFFIC_PURPOSE_DESCRIPTIONS: Record<string, string> = {
 export const GEO_GAPS_LOGO_STACK_LIMIT = 4;
 
 export const GEO_GAPS_METER_STEPS = 5;
-
-export const GEO_GAPS_METER_TONE_CLASS: Record<GeoGapsMeterTone, string> = {
-  empty: "bg-muted",
-  low: "bg-geo-down",
-  mid: "bg-geo-mid",
-  high: "bg-geo-up",
-};
 
 export const MODELS_DEV_LOGO_BASE = "https://models.dev/logos";
 

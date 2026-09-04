@@ -174,7 +174,7 @@ export function GeoUpgradeDialog({
               <TabsTrigger value="monthly">Monthly</TabsTrigger>
               <TabsTrigger className="flex items-center gap-1.5" value="yearly">
                 Yearly
-                <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-600">
+                <span className="bg-success/10 text-success rounded-full px-1.5 py-0.5 text-[10px] font-medium">
                   Save 20%
                 </span>
               </TabsTrigger>

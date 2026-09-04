@@ -14,7 +14,7 @@ import { GEMINI_DEFAULT_MODEL } from "../../../constants/gemini-models";
 import type { GeminiModelId } from "../../../types/gemini";
 
 const ACTION_EASE =
-  "ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-opacity motion-reduce:transform-none";
+  "ease-emphasized motion-reduce:transition-opacity motion-reduce:transform-none";
 
 function ActionGlyph({
   show,
@@ -27,7 +27,7 @@ function ActionGlyph({
     <span
       aria-hidden={!show}
       className={cn(
-        "absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-200",
+        "absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-normal",
         ACTION_EASE,
         show
           ? "scale-100 opacity-100"
@@ -55,7 +55,7 @@ function ComposerSubmit({
     <button
       aria-label={label}
       className={cn(
-        "relative flex size-9 shrink-0 items-center justify-center rounded-full transition-[background-color,color] duration-200",
+        "relative flex size-9 shrink-0 items-center justify-center rounded-full transition-[background-color,color] duration-normal",
         ACTION_EASE,
         busy
           ? "bg-[#e8eaed] text-[#1f1f1f] hover:bg-[#dadce0] dark:bg-white/12 dark:text-foreground dark:hover:bg-white/16"

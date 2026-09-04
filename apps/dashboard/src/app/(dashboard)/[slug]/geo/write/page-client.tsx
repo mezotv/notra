@@ -80,7 +80,7 @@ function GeoWriterPageContent({ organizationSlug }: GeoWriterPageContentProps) {
     return (
       <GeoWriterNeedsSetup
         description="Plan a custom article from a prompt, type, brand, and competitors"
-        organizationSlug={organizationSlug}
+        organizationId={organizationId}
         title="Write"
       />
     );

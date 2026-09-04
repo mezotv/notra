@@ -86,7 +86,7 @@ function BillingSuccessPageContent() {
       </div>
 
       <div className="flex max-w-md flex-col items-center text-center">
-        <HugeiconsIcon className="size-12 text-emerald-500" icon={Tick02Icon} />
+        <HugeiconsIcon className="text-success size-12" icon={Tick02Icon} />
 
         <h1 className="text-foreground mt-6 text-4xl font-bold tracking-tight">
           Payment Successful!

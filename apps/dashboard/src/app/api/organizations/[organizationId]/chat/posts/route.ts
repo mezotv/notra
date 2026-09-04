@@ -1,3 +1,4 @@
+import { getChatProjectId } from "@notra/ai/chat/history";
 import { maybeGenerateCollectionTitle } from "@notra/ai/jobs/collection-title";
 import { supportsPostSlug } from "@notra/ai/schemas/post";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
@@ -45,12 +46,14 @@ export async function POST(
   const collectionId = nanoid();
   const now = new Date();
   const contentTypesJson = JSON.stringify([contentType]);
+  const projectId = await getChatProjectId(organizationId, chatId);
   const result = await db.transaction(async (tx) => {
     const [collection] = await tx
       .insert(postCollections)
       .values({
         id: collectionId,
         organizationId,
+        projectId,
         source: "chat",
         sourceId: chatId,
         name: buildPostCollectionName([contentType], now),
@@ -72,6 +75,7 @@ export async function POST(
           isNotNull(postCollections.sourceId)
         ),
         set: {
+          projectId,
           contentTypes: sql`CASE
             WHEN ${postCollections.contentTypes} @> ${contentTypesJson}::jsonb
               THEN ${postCollections.contentTypes}

@@ -2,6 +2,7 @@
 
 import { Tick01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Badge } from "@notra/ui/components/ui/badge";
 import { cn } from "@notra/ui/lib/utils";
 
 import type { WriteOptionCardProps } from "@/types/components/geo-writer";
@@ -30,6 +31,7 @@ export function WriteOptionCard({
   selected,
   onToggle,
   compact = false,
+  badge = null,
 }: WriteOptionCardProps) {
   const shellClassName = cn(
     "group bg-card relative flex cursor-pointer rounded-lg border text-left transition-colors",
@@ -48,7 +50,14 @@ export function WriteOptionCard({
       >
         {icon}
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm leading-tight font-medium">{label}</p>
+          <p className="flex items-center gap-1.5 truncate text-sm leading-tight font-medium">
+            <span className="truncate">{label}</span>
+            {badge ? (
+              <Badge className="shrink-0 font-normal" variant="secondary">
+                {badge}
+              </Badge>
+            ) : null}
+          </p>
           {description ? (
             <p className="text-muted-foreground truncate text-xs">
               {description}
@@ -72,7 +81,14 @@ export function WriteOptionCard({
         <SelectionBox selected={selected} />
       </div>
       <div className="min-w-0 space-y-1">
-        <p className="truncate text-sm font-medium">{label}</p>
+        <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+          <span className="truncate">{label}</span>
+          {badge ? (
+            <Badge className="shrink-0 font-normal" variant="secondary">
+              {badge}
+            </Badge>
+          ) : null}
+        </p>
         {description ? (
           <p className="text-muted-foreground truncate text-xs leading-relaxed">
             {description}

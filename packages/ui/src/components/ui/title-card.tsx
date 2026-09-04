@@ -47,7 +47,7 @@ function TitleCard({
       {accentColor && (
         <div
           className={cn(
-            "pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-200",
+            "pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-normal",
             !disabled && "group-hover:opacity-100"
           )}
           style={gradientStyle}

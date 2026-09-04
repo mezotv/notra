@@ -89,6 +89,9 @@ export const chatSessions = pgTable(
     contentId: text("content_id").references(() => posts.id, {
       onDelete: "cascade",
     }),
+    projectId: text("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
     title: text("title").notNull(),
     messages: jsonb("messages")
       .notNull()
@@ -108,6 +111,10 @@ export const chatSessions = pgTable(
     index("chatSessions_organizationId_deletedAt_idx").on(
       table.organizationId,
       table.deletedAt
+    ),
+    index("chatSessions_org_project_idx").on(
+      table.projectId,
+      table.organizationId
     ),
     index("chatSessions_org_content_deleted_updated_idx").on(
       table.organizationId,
@@ -1410,6 +1417,10 @@ export const geoSettings = pgTable(
       .array()
       .notNull()
       .default(sql`ARRAY[]::text[]`),
+    conversionPaths: text("conversion_paths")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     languages: text("languages").array(),
     // null = track the default engine set; otherwise a subset of GEO_ENGINES.
     engines: text("engines").array(),
@@ -1417,6 +1428,10 @@ export const geoSettings = pgTable(
     enforceZdr: boolean("enforce_zdr").notNull().default(true),
     // Engines without a ZDR host the user explicitly approved anyway.
     nonZdrApprovedEngines: text("non_zdr_approved_engines")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    pausedAutoPromptIds: text("paused_auto_prompt_ids")
       .array()
       .notNull()
       .default(sql`ARRAY[]::text[]`),
@@ -1449,6 +1464,10 @@ export const geoPrompts = pgTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     prompt: text("prompt").notNull(),
     title: text("title"),
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     enabled: boolean("enabled").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -1851,6 +1870,9 @@ export const geoContentBriefs = pgTable(
     approvedAt: timestamp("approved_at"),
     startedAt: timestamp("started_at"),
     completedAt: timestamp("completed_at"),
+    publishedAt: timestamp("published_at"),
+    rescanScanId: text("rescan_scan_id"),
+    rescanRequestedAt: timestamp("rescan_requested_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -1909,6 +1931,9 @@ export const postCollections = pgTable(
     organizationId: text("organization_id")
       .notNull()
       .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id").references(() => projects.id, {
+      onDelete: "set null",
+    }),
     source: postCollectionSourceEnum("source").notNull(),
     sourceId: text("source_id"),
     name: text("name").notNull(),
@@ -1937,6 +1962,10 @@ export const postCollections = pgTable(
       table.organizationId,
       table.source,
       table.sourceId
+    ),
+    index("post_collections_org_project_idx").on(
+      table.projectId,
+      table.organizationId
     ),
     uniqueIndex("post_collections_chat_source_uidx")
       .on(table.organizationId, table.source, table.sourceId)
@@ -2506,6 +2535,14 @@ export interface PostSourceMetadata {
   sourcePostId?: string | null;
   briefId?: string;
   projectId?: string;
+  geoSourceKind?: string;
+  geoSourceId?: string | null;
+  geoBaseline?: {
+    sourcePromptId: string;
+    mentionedEngines: number;
+    totalEngines: number;
+    capturedAt: string | null;
+  } | null;
   sandbox?: {
     boxId?: string;
     snapshotId?: string;

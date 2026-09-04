@@ -71,14 +71,7 @@ function ResultBadge({ result }: AgentReadinessResultBadgeProps) {
     return <Badge variant="destructive">Failed</Badge>;
   }
 
-  return (
-    <Badge
-      className="border-amber-500/40 text-amber-700 dark:text-amber-400"
-      variant="outline"
-    >
-      Partial
-    </Badge>
-  );
+  return <Badge variant="warning">Partial</Badge>;
 }
 
 function formatIssueIndex(index: number): string {
@@ -253,7 +246,7 @@ export function AgentReadinessChecklist({
             count={groups.shouldDo.length}
             hint={AGENT_READINESS_SHOULD_DO_HINT}
             icon={Alert02Icon}
-            iconClassName="text-amber-600 dark:text-amber-400"
+            iconClassName="text-warning"
             label={AGENT_READINESS_SHOULD_DO_LABEL}
           />
           <div>

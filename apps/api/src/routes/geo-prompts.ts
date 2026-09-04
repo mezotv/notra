@@ -5,7 +5,7 @@ import {
   deleteGeoPrompt,
   importGeoPrompts,
   listGeoPrompts,
-  toggleGeoPrompt,
+  updateGeoPrompt,
 } from "@notra/geo-core/geo/programs";
 import type { GeoPromptImportRow } from "@notra/geo-core/types/geo-import";
 
@@ -79,7 +79,9 @@ const patchPromptRoute = createRoute({
   path: "/projects/{projectId}/geo/prompts/{promptId}",
   tags: [GEO_TAG],
   operationId: "updateGeoPrompt",
-  summary: "Enable or disable a tracked GEO prompt",
+  summary: "Update a tracked GEO prompt",
+  description:
+    "Enable or disable a custom prompt, or replace its tags. Only custom prompts can be updated.",
   request: {
     params: promptParamsSchema,
     body: {
@@ -164,10 +166,15 @@ geoPromptsRoutes.openapi(listPromptsRoute, async (c) => {
 geoPromptsRoutes.openapi(createPromptRoute, async (c) => {
   const base = c.get("geo");
   const { projectId } = c.req.valid("param");
-  const { prompt } = c.req.valid("json");
+  const { prompt, tags } = c.req.valid("json");
   const outcome = await runGeoEffect(
     "promptsCreate",
-    createGeoPrompt({ organizationId: base.organizationId, projectId }, prompt)
+    createGeoPrompt(
+      { organizationId: base.organizationId, projectId },
+      prompt,
+      undefined,
+      tags ?? []
+    )
   );
   if (!outcome.ok) {
     return geoErrorResponse(c, outcome.failure);
@@ -182,14 +189,14 @@ geoPromptsRoutes.openapi(createPromptRoute, async (c) => {
 geoPromptsRoutes.openapi(patchPromptRoute, async (c) => {
   const base = c.get("geo");
   const { projectId, promptId } = c.req.valid("param");
-  const { enabled } = c.req.valid("json");
+  const { enabled, tags } = c.req.valid("json");
 
   const outcome = await runGeoEffect(
-    "promptsToggle",
-    toggleGeoPrompt(
+    "promptsUpdate",
+    updateGeoPrompt(
       { organizationId: base.organizationId, projectId },
       promptId,
-      enabled
+      { enabled, tags }
     )
   );
   if (!outcome.ok) {

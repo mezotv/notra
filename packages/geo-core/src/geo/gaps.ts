@@ -1,35 +1,51 @@
 import type { GeoPlannerGapPrompt } from "@notra/ai/types/geo-writer";
 import { db } from "@notra/db/drizzle";
 import {
+  brandSitemapPages,
+  brandSitemaps,
   geoCompetitors,
   geoContentBriefs,
   geoMentionChecks,
   geoPromptSuggestions,
   geoPrompts,
   geoSettings,
+  posts,
 } from "@notra/db/schema";
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 import { and, asc, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
 import {
+  GEO_COLLISION_POST_CONTENT_TYPE,
+  GEO_COLLISION_POST_LIMIT,
+  GEO_COLLISION_SITEMAP_PAGE_LIMIT,
   GEO_GAPS_MAX_CHECKS,
   GEO_GAPS_SEARCH_LIMIT,
   GEO_WRITER_GAP_LOOKBACK_DAYS,
   GEO_WRITER_PLANNER_GAP_LIMIT,
 } from "../constants/geo";
 import type {
+  GeoContentCollisionCandidate,
   GeoContentGapsResponse,
   GeoGapBriefRef,
   GeoPromptGapRow,
   GeoScopeInput,
+  GeoSearchGapRecommendation,
   GeoSearchGapRow,
+  GeoSuggestionKeyword,
 } from "../types/geo";
 import { competitorCanonicalMap } from "../utils/geo-competitor-names";
 import {
+  recommendSearchGapAction,
+  scoreContentCollisions,
+} from "../utils/geo-content-collision";
+import {
   gapOpportunityScore,
   isMissingMajority,
+  searchGapClicks,
   searchGapImpressions,
+  searchGapPosition,
+  toGapBriefBaseline,
 } from "../utils/geo-gaps";
 import { competitorKey } from "./domain";
 import { geoDb } from "./effect";
@@ -50,6 +66,9 @@ interface GapBriefRow {
   sourceKind: string;
   sourceId: string | null;
   workingTitle: string;
+  baseline: unknown;
+  publishedAt: Date | null;
+  rescanScanId: string | null;
 }
 
 interface PromptGapAgg {
@@ -57,6 +76,7 @@ interface PromptGapAgg {
   total: number;
   mentioned: number;
   missing: string[];
+  mentionedEngines: string[];
   competitors: string[];
 }
 
@@ -69,11 +89,43 @@ function toBriefRef(row: GapBriefRow | undefined): GeoGapBriefRef | null {
     status: row.status,
     postId: row.postId,
     workingTitle: row.workingTitle,
+    publishedAt: row.publishedAt?.toISOString() ?? null,
+    baseline: toGapBriefBaseline(row.baseline),
+    rescanned: row.rescanScanId !== null,
   };
 }
 
 function sourceKey(kind: string, sourceId: string): string {
   return `${kind}:${sourceId}`;
+}
+
+function splitGapCompetitors(
+  names: readonly string[],
+  trackedAliases: Map<string, string>
+): { tracked: string[]; discovered: string[] } {
+  const tracked: string[] = [];
+  const discovered: string[] = [];
+  const seenTracked = new Set<string>();
+  const seenDiscovered = new Set<string>();
+  for (const name of names) {
+    const key = competitorKey(name);
+    if (key.length === 0) {
+      continue;
+    }
+    const canonical = trackedAliases.get(key);
+    if (canonical) {
+      if (!seenTracked.has(canonical)) {
+        seenTracked.add(canonical);
+        tracked.push(canonical);
+      }
+      continue;
+    }
+    if (!seenDiscovered.has(key)) {
+      seenDiscovered.add(key);
+      discovered.push(name.trim());
+    }
+  }
+  return { tracked, discovered };
 }
 
 function lookbackSince(): Date {
@@ -144,11 +196,13 @@ function aggregateMentionChecks(
       total: 0,
       mentioned: 0,
       missing: [] as string[],
+      mentionedEngines: [] as string[],
       competitors: [] as string[],
     };
     entry.total += 1;
     if (check.mentioned) {
       entry.mentioned += 1;
+      entry.mentionedEngines.push(check.engine);
     } else {
       entry.missing.push(check.engine);
       entry.competitors.push(...check.competitors);
@@ -194,6 +248,30 @@ function forEachMissingMajorityGap(
   }
 }
 
+function forEachWonGapWithBrief(
+  prompts: Array<{ id: string; prompt: string; title: string | null }>,
+  byPrompt: Map<string, PromptGapAgg>,
+  hasBrief: (id: string) => boolean,
+  onGap: (
+    id: string,
+    prompt: string,
+    title: string | null,
+    entry: PromptGapAgg
+  ) => void
+) {
+  for (const prompt of prompts) {
+    const entry = findPromptMentionEntry(byPrompt, prompt.id);
+    if (
+      !entry ||
+      isMissingMajority(entry.missing.length, entry.total) ||
+      !hasBrief(prompt.id)
+    ) {
+      continue;
+    }
+    onGap(prompt.id, prompt.prompt, prompt.title, entry);
+  }
+}
+
 export const loadPlannerGapPrompts = Effect.fn("geo.plannerGaps")(function* (
   projectId: string
 ) {
@@ -209,76 +287,190 @@ export const loadPlannerGapPrompts = Effect.fn("geo.plannerGaps")(function* (
   return { gaps };
 });
 
+const loadCollisionCandidates = Effect.fn("geo.gaps.collisionCandidates")(
+  function* (scope: { organizationId: string; brandSettingsId: string }) {
+    const [latestSitemap, postRows] = yield* Effect.all([
+      geoDb("latest sitemap lookup failed", () =>
+        db
+          .select({ id: brandSitemaps.id })
+          .from(brandSitemaps)
+          .where(
+            and(
+              eq(brandSitemaps.brandSettingsId, scope.brandSettingsId),
+              eq(brandSitemaps.status, "ready")
+            )
+          )
+          .orderBy(desc(brandSitemaps.updatedAt))
+          .limit(1)
+      ),
+      geoDb("posts lookup failed", () =>
+        db
+          .select({
+            id: posts.id,
+            title: posts.title,
+            slug: posts.slug,
+            htmlUrl: posts.htmlUrl,
+          })
+          .from(posts)
+          .where(
+            and(
+              eq(posts.organizationId, scope.organizationId),
+              eq(posts.contentType, GEO_COLLISION_POST_CONTENT_TYPE)
+            )
+          )
+          .orderBy(desc(posts.updatedAt))
+          .limit(GEO_COLLISION_POST_LIMIT)
+      ),
+    ]);
+    const sitemapId = latestSitemap[0]?.id;
+    const pageRows = sitemapId
+      ? yield* geoDb("sitemap pages lookup failed", () =>
+          db
+            .select({
+              id: brandSitemapPages.id,
+              url: brandSitemapPages.url,
+              title: brandSitemapPages.title,
+            })
+            .from(brandSitemapPages)
+            .where(
+              and(
+                eq(brandSitemapPages.sitemapId, sitemapId),
+                eq(brandSitemapPages.category, "crawled")
+              )
+            )
+            .orderBy(desc(brandSitemapPages.wordCount))
+            .limit(GEO_COLLISION_SITEMAP_PAGE_LIMIT)
+        )
+      : [];
+    const candidates: GeoContentCollisionCandidate[] = [];
+    for (const page of pageRows) {
+      candidates.push({
+        kind: "page",
+        id: page.id,
+        url: page.url,
+        title: page.title,
+        slug: null,
+      });
+    }
+    for (const post of postRows) {
+      candidates.push({
+        kind: "post",
+        id: post.id,
+        url: post.htmlUrl,
+        title: post.title,
+        slug: post.slug,
+      });
+    }
+    return candidates;
+  }
+);
+
+function searchGapRecommendation(
+  suggestion: {
+    prompt: string;
+    title: string | null;
+    sourceKeywords: GeoSuggestionKeyword[] | null;
+  },
+  candidates: readonly GeoContentCollisionCandidate[]
+): GeoSearchGapRecommendation {
+  const keywords = [...(suggestion.sourceKeywords ?? [])].sort(
+    (left, right) => right.impressions - left.impressions
+  );
+  const matches = scoreContentCollisions(
+    {
+      prompt: suggestion.prompt,
+      title: suggestion.title,
+      queries: keywords.map((keyword) => keyword.query),
+    },
+    candidates
+  );
+  return recommendSearchGapAction({
+    matches,
+    impressions: searchGapImpressions(suggestion.sourceKeywords),
+    clicks: searchGapClicks(suggestion.sourceKeywords),
+  });
+}
+
 export const loadGeoContentGaps = Effect.fn("geo.gaps")(function* (
   input: GeoScopeInput
 ) {
   const scope = yield* requireGeoProject(input);
   const projectId = scope.projectId;
 
-  const [mentionInputs, pending, briefs, competitorRows, settingsRow] =
-    yield* Effect.all([
-      loadMentionGapInputs(projectId),
-      geoDb("prompt suggestions lookup failed", () =>
-        db
-          .select({
-            id: geoPromptSuggestions.id,
-            prompt: geoPromptSuggestions.prompt,
-            title: geoPromptSuggestions.title,
-            sourceKeywords: geoPromptSuggestions.sourceKeywords,
-          })
-          .from(geoPromptSuggestions)
-          .where(
-            and(
-              eq(geoPromptSuggestions.organizationId, scope.organizationId),
-              eq(geoPromptSuggestions.status, "pending")
-            )
-          )
-          .orderBy(desc(geoPromptSuggestions.createdAt))
-          .limit(GEO_GAPS_SEARCH_LIMIT)
-      ),
-      geoDb("briefs lookup failed", () =>
-        db
-          .selectDistinctOn(
-            [geoContentBriefs.sourceKind, geoContentBriefs.sourceId],
-            {
-              id: geoContentBriefs.id,
-              status: geoContentBriefs.status,
-              postId: geoContentBriefs.postId,
-              sourceKind: geoContentBriefs.sourceKind,
-              sourceId: geoContentBriefs.sourceId,
-              workingTitle: sql<string>`${geoContentBriefs.brief}->>'workingTitle'`,
-            }
-          )
-          .from(geoContentBriefs)
-          .where(
-            and(
-              eq(geoContentBriefs.projectId, projectId),
-              inArray(geoContentBriefs.sourceKind, ["gap", "search_console"]),
-              isNotNull(geoContentBriefs.sourceId)
-            )
-          )
-          .orderBy(
-            geoContentBriefs.sourceKind,
-            geoContentBriefs.sourceId,
-            desc(geoContentBriefs.updatedAt)
-          )
-      ),
-      geoDb("competitors lookup failed", () =>
-        db
-          .select({
-            name: geoCompetitors.name,
-            synonyms: geoCompetitors.synonyms,
-          })
-          .from(geoCompetitors)
-          .where(eq(geoCompetitors.projectId, projectId))
-      ),
-      geoDb("settings competitors lookup failed", () =>
-        db.query.geoSettings.findFirst({
-          columns: { competitors: true },
-          where: eq(geoSettings.projectId, projectId),
+  const [
+    mentionInputs,
+    pending,
+    briefs,
+    competitorRows,
+    settingsRow,
+    collisionCandidates,
+  ] = yield* Effect.all([
+    loadMentionGapInputs(projectId),
+    geoDb("prompt suggestions lookup failed", () =>
+      db
+        .select({
+          id: geoPromptSuggestions.id,
+          prompt: geoPromptSuggestions.prompt,
+          title: geoPromptSuggestions.title,
+          sourceKeywords: geoPromptSuggestions.sourceKeywords,
         })
-      ),
-    ]);
+        .from(geoPromptSuggestions)
+        .where(
+          and(
+            eq(geoPromptSuggestions.organizationId, scope.organizationId),
+            eq(geoPromptSuggestions.status, "pending")
+          )
+        )
+        .orderBy(desc(geoPromptSuggestions.createdAt))
+        .limit(GEO_GAPS_SEARCH_LIMIT)
+    ),
+    geoDb("briefs lookup failed", () =>
+      db
+        .selectDistinctOn(
+          [geoContentBriefs.sourceKind, geoContentBriefs.sourceId],
+          {
+            id: geoContentBriefs.id,
+            status: geoContentBriefs.status,
+            postId: geoContentBriefs.postId,
+            sourceKind: geoContentBriefs.sourceKind,
+            sourceId: geoContentBriefs.sourceId,
+            workingTitle: sql<string>`${geoContentBriefs.brief}->>'workingTitle'`,
+            baseline: sql<unknown>`${geoContentBriefs.brief}->'baseline'`,
+            publishedAt: geoContentBriefs.publishedAt,
+            rescanScanId: geoContentBriefs.rescanScanId,
+          }
+        )
+        .from(geoContentBriefs)
+        .where(
+          and(
+            eq(geoContentBriefs.projectId, projectId),
+            inArray(geoContentBriefs.sourceKind, ["gap", "search_console"]),
+            isNotNull(geoContentBriefs.sourceId)
+          )
+        )
+        .orderBy(
+          geoContentBriefs.sourceKind,
+          geoContentBriefs.sourceId,
+          desc(geoContentBriefs.updatedAt)
+        )
+    ),
+    geoDb("competitors lookup failed", () =>
+      db
+        .select({
+          name: geoCompetitors.name,
+          synonyms: geoCompetitors.synonyms,
+        })
+        .from(geoCompetitors)
+        .where(eq(geoCompetitors.projectId, projectId))
+    ),
+    geoDb("settings competitors lookup failed", () =>
+      db.query.geoSettings.findFirst({
+        columns: { competitors: true },
+        where: eq(geoSettings.projectId, projectId),
+      })
+    ),
+    loadCollisionCandidates(scope),
+  ]);
   const [checks, prompts] = mentionInputs;
 
   const trackedAliases = competitorCanonicalMap([
@@ -300,32 +492,53 @@ export const loadGeoContentGaps = Effect.fn("geo.gaps")(function* (
   const byPrompt = aggregateMentionChecks(checks);
   const promptGaps: GeoPromptGapRow[] = [];
 
-  forEachMissingMajorityGap(prompts, byPrompt, (id, prompt, title, entry) => {
-    const competitorNames = [
-      ...new Set(
-        entry.competitors.flatMap((name) => {
-          const canonical = trackedAliases.get(competitorKey(name));
-          return canonical ? [canonical] : [];
-        })
-      ),
-    ];
+  const pushPromptGap = (
+    id: string,
+    prompt: string,
+    title: string | null,
+    entry: PromptGapAgg,
+    won: boolean
+  ) => {
+    const { tracked, discovered } = splitGapCompetitors(
+      entry.competitors,
+      trackedAliases
+    );
     const ownMentionRate = entry.mentioned / entry.total;
     promptGaps.push({
       id,
       prompt,
       title,
       engines: entry.missing,
-      competitors: competitorNames,
+      mentionedEngines: entry.mentionedEngines,
+      competitors: tracked,
+      discoveredCompetitors: discovered,
       ownMentionRate,
       engineCoverage: entry.total,
-      opportunity: gapOpportunityScore(
-        ownMentionRate,
-        competitorNames.length,
-        entry.total
-      ),
+      opportunity: won
+        ? 0
+        : gapOpportunityScore({
+            ownMentionRate,
+            competitorCount: tracked.length + discovered.length,
+            engineCoverage: entry.total,
+          }),
+      won,
       brief: toBriefRef(briefBySource.get(sourceKey("gap", id))),
     });
+  };
+  forEachMissingMajorityGap(prompts, byPrompt, (id, prompt, title, entry) => {
+    pushPromptGap(id, prompt, title, entry, false);
   });
+  forEachWonGapWithBrief(
+    prompts,
+    byPrompt,
+    (id) => {
+      const brief = briefBySource.get(sourceKey("gap", id));
+      return brief ? toGapBriefBaseline(brief.baseline) !== null : false;
+    },
+    (id, prompt, title, entry) => {
+      pushPromptGap(id, prompt, title, entry, true);
+    }
+  );
   promptGaps.sort((a, b) => b.opportunity - a.opportunity);
 
   const searchGaps: GeoSearchGapRow[] = pending.map((suggestion) => ({
@@ -333,9 +546,13 @@ export const loadGeoContentGaps = Effect.fn("geo.gaps")(function* (
     prompt: suggestion.prompt,
     title: suggestion.title,
     impressions: searchGapImpressions(suggestion.sourceKeywords),
+    clicks: searchGapClicks(suggestion.sourceKeywords),
+    position: searchGapPosition(suggestion.sourceKeywords),
+    queries: suggestion.sourceKeywords ?? [],
     brief: toBriefRef(
       briefBySource.get(sourceKey("search_console", suggestion.id))
     ),
+    recommendation: searchGapRecommendation(suggestion, collisionCandidates),
   }));
 
   const response: GeoContentGapsResponse = {

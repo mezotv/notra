@@ -20,9 +20,7 @@ export function IrisReadinessList({ items }: IrisReadinessListProps) {
           <HugeiconsIcon
             className={cn(
               "size-4 shrink-0",
-              item.ready
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-amber-600 dark:text-amber-500"
+              item.ready ? "text-success" : "text-warning"
             )}
             icon={item.ready ? CheckmarkCircle02Icon : Alert02Icon}
           />

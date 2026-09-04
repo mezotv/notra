@@ -13,6 +13,8 @@ import {
   GEO_MENTION_SUMMARY_VISIBLE,
   GEO_MENTION_UNTRACKED_HINT,
   GEO_MENTIONS_LABEL,
+  GEO_PROVIDER_COLUMN_LABEL,
+  GEO_PROVIDER_MENTIONS_COLUMN_LABEL,
 } from "@notra/geo-core/constants/geo";
 import type { GeoEngineFamily } from "@notra/geo-core/types/geo";
 import {
@@ -27,13 +29,18 @@ import {
   HoverCardTrigger,
 } from "@notra/ui/components/ui/hover-card";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import {
   AnimatePresence,
   domAnimation,
   LazyMotion,
   m,
   useReducedMotion,
 } from "motion/react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
@@ -235,19 +242,16 @@ export function MentionRateCard({
   promptResults = GEO_EMPTY_PROMPT_RESULTS,
   isScanning = false,
   organizationSlug,
+  competitors,
 }: MentionRateCardProps) {
   const organizationId = settings?.organizationId ?? "";
   const { data: catalog } = useGeoModelCatalog(organizationId);
   const addEngine = useGeoSettingsEngineAdd(organizationId);
-  const ranked = useMemo(
-    () =>
-      buildMentionProviderRows(engines, {
-        trackedEngines,
-        timeseriesPoints,
-      }),
-    [engines, trackedEngines, timeseriesPoints]
-  );
-  const trackableEngines = useMemo(() => {
+  const ranked = buildMentionProviderRows(engines, {
+    trackedEngines,
+    timeseriesPoints,
+  });
+  const trackableEngines = (() => {
     const result = new Map<string, string>();
     if (!catalog || !settings || settings.engines.length >= GEO_MAX_ENGINES) {
       return result;
@@ -283,7 +287,7 @@ export function MentionRateCard({
       }
     }
     return result;
-  }, [catalog, ranked, settings]);
+  })();
   const pendingFamily =
     addEngine.isPending && addEngine.variables
       ? engineFamilyOf(addEngine.variables)
@@ -348,8 +352,8 @@ export function MentionRateCard({
 
             <div className="flex flex-1 flex-col gap-1">
               <div className="flex items-center justify-between gap-3 text-sm font-medium">
-                <span>Provider</span>
-                <span>Mentions</span>
+                <span>{GEO_PROVIDER_COLUMN_LABEL}</span>
+                <span>{GEO_PROVIDER_MENTIONS_COLUMN_LABEL}</span>
               </div>
               <div className="relative flex-1">
                 <div
@@ -380,6 +384,9 @@ export function MentionRateCard({
           </div>
         )}
         <EngineFamilySheet
+          aliases={settings?.aliases}
+          companyName={settings?.companyName}
+          competitors={competitors}
           family={selected}
           onOpenChange={(open) => {
             if (!open) {

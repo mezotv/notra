@@ -272,10 +272,7 @@ export default function CreditsPageClient() {
           />
         </div>
         <div className="flex max-w-md flex-col items-center gap-4 text-center">
-          <HugeiconsIcon
-            className="size-12 text-emerald-500"
-            icon={Tick02Icon}
-          />
+          <HugeiconsIcon className="text-success size-12" icon={Tick02Icon} />
           <div className="space-y-1">
             <h2 className="text-2xl font-bold">Credits Added!</h2>
             <p className="text-muted-foreground">
@@ -359,9 +356,9 @@ export default function CreditsPageClient() {
                 <div className="bg-muted mt-3 h-2 w-full overflow-hidden rounded-full">
                   <div
                     className={cn(
-                      "h-full rounded-full transition-all duration-500",
+                      "duration-slower h-full rounded-full transition-all",
                       usagePercent > 90
-                        ? "bg-red-500"
+                        ? "bg-destructive"
                         : usageBarColor(usagePercent)
                     )}
                     style={{ width: `${usagePercent}%` }}

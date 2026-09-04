@@ -1,12 +1,19 @@
 "use client";
 
-import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
+import {
+  AnimatePresence,
+  domMax,
+  LazyMotion,
+  m,
+  useReducedMotion,
+} from "motion/react";
 import { type ReactNode, useId, useState } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { SPRING } from "@notra/ui/lib/motion";
 import { cn } from "@notra/ui/lib/utils";
 
 interface ExpandableTabsItem {
@@ -25,8 +32,6 @@ interface ExpandableTabsProps {
   className?: string;
 }
 
-const SPRING = { type: "spring", bounce: 0.2, duration: 0.45 } as const;
-
 interface ExpandableTabProps {
   item: ExpandableTabsItem;
   isActive: boolean;
@@ -40,8 +45,10 @@ function ExpandableTab({
   layoutId,
   onSelect,
 }: ExpandableTabProps) {
+  const reduceMotion = useReducedMotion();
+  const transition = reduceMotion ? { duration: 0 } : SPRING.indicator;
   const tabClassName =
-    "relative flex shrink-0 cursor-pointer items-center rounded-xl p-2 outline-none transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring";
+    "relative flex shrink-0 cursor-pointer items-center rounded-xl p-2 outline-none transition-colors duration-normal ease-out focus-visible:ring-2 focus-visible:ring-ring";
 
   const content = (
     <>
@@ -49,7 +56,7 @@ function ExpandableTab({
         <m.span
           className="absolute inset-0 rounded-xl bg-background shadow-sm ring-1 ring-border"
           layoutId={layoutId}
-          transition={SPRING}
+          transition={transition}
         />
       )}
       <span className="relative z-10 flex items-center">
@@ -61,7 +68,7 @@ function ExpandableTab({
               className="overflow-hidden whitespace-nowrap font-medium text-foreground text-sm"
               exit={{ width: 0, opacity: 0 }}
               initial={{ width: 0, opacity: 0 }}
-              transition={SPRING}
+              transition={transition}
             >
               <span className="block pr-1 pl-2">{item.label}</span>
             </m.span>

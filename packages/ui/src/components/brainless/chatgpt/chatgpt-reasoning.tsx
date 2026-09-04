@@ -10,7 +10,7 @@ import {
 import { cn } from "@notra/ui/lib/utils";
 
 const TRACE_ENTER =
-  "animate-in fade-in slide-in-from-top-2 fill-mode-both duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:animate-none motion-reduce:opacity-100 motion-reduce:translate-y-0";
+  "animate-in fade-in slide-in-from-top-2 fill-mode-both duration-normal ease-emphasized motion-reduce:animate-none motion-reduce:opacity-100 motion-reduce:translate-y-0";
 
 export function ChatgptReasoning({
   seconds,
@@ -59,7 +59,7 @@ export function ChatgptReasoning({
         <span>{label}</span>
         <svg
           aria-hidden
-          className="size-4 shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
+          className="size-4 shrink-0 transition-transform duration-normal ease-emphasized motion-reduce:transition-none"
           fill="none"
           viewBox="0 0 16 16"
         >
@@ -72,7 +72,7 @@ export function ChatgptReasoning({
           />
         </svg>
       </CollapsibleTrigger>
-      <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden outline-none transition-[height,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] data-[ending-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:h-0 data-[starting-style]:opacity-0 motion-reduce:transition-opacity motion-reduce:duration-150">
+      <CollapsibleContent className="h-(--collapsible-panel-height) overflow-hidden outline-none transition-[height,opacity] duration-normal ease-emphasized data-[ending-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:h-0 data-[starting-style]:opacity-0 motion-reduce:transition-opacity">
         <div className="mt-2 flex flex-col items-start gap-2.5 font-normal">
           {children ? <div className={TRACE_ENTER}>{children}</div> : null}
           {search ? (

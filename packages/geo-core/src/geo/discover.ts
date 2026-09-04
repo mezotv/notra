@@ -1,7 +1,7 @@
 import { gateway } from "@notra/ai/gateway";
 import { scrapeWebsiteForBrandAnalysis } from "@notra/ai/utils/context-dev";
 import { db } from "@notra/db/drizzle";
-import { geoSettings } from "@notra/db/schema";
+import { geoSettings, projects } from "@notra/db/schema";
 import { generateText, Output } from "ai";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
@@ -25,6 +25,7 @@ import {
   GEO_TRACKED_PROMPT_VOICE,
 } from "../constants/geo";
 import { geoWebsiteDiscoverySchema } from "../schemas/geo";
+import type { DbTransaction } from "../types/db";
 import type {
   GeoCompetitorSeed,
   GeoDiscoverWebsiteResult,
@@ -37,7 +38,11 @@ import { readGeoCache, writeGeoCache } from "./cache";
 import { competitorKey, normalizeCompetitorDomain } from "./domain";
 import { geoSkip } from "./effect";
 import { GeoDiscoveryError } from "./errors";
-import { insertGeoPrompts, reconcileGeoCompetitors } from "./programs";
+import { toGeoProject } from "./mappers";
+import {
+  insertPromptsInTransaction,
+  reconcileCompetitorsInTransaction,
+} from "./programs";
 import { ensureGeoProject } from "./projects";
 import { startClaimedGeoScanRun } from "./scan-handoff";
 import { claimGeoScanRun } from "./scan-status";
@@ -115,6 +120,46 @@ function buildCompetitorSeeds(
   }));
 }
 
+const prepareGeoWebsiteGeneration = Effect.fn(
+  "geo.generateFromWebsite.prepare"
+)(function* (
+  discovery: GeoWebsiteDiscovery,
+  existingCompanyName?: string,
+  existingAliases: string[] = []
+) {
+  const aliases = unionValues(
+    existingAliases,
+    discovery.aliases,
+    GEO_DISCOVERY_ALIAS_LIMIT
+  );
+  const companyName = existingCompanyName ?? discovery.companyName;
+  const brandTerms = buildBrandTerms({ companyName, aliases });
+  const entries: GeoPromptInsert[] = [];
+
+  for (const entry of discovery.prompts) {
+    const prompt = entry.prompt.trim();
+    const title = entry.title.trim().slice(0, GEO_GAP_TITLE_MAX_LENGTH);
+    if (
+      prompt.length < MIN_PROMPT_LENGTH ||
+      prompt.length > MAX_PROMPT_LENGTH ||
+      promptMentionsBrand(prompt, brandTerms)
+    ) {
+      continue;
+    }
+    entries.push({ prompt, title: title.length > 0 ? title : null });
+  }
+
+  if (entries.length === 0) {
+    return yield* Effect.fail(
+      new GeoDiscoveryError({
+        message: "Website analysis did not produce any usable prompts",
+      })
+    );
+  }
+
+  return { aliases, companyName, entries };
+});
+
 const scrapeWebsite = Effect.fn("geo.discover.scrape")(function* (url: string) {
   const result = yield* Effect.tryPromise({
     try: () => scrapeWebsiteForBrandAnalysis(url),
@@ -177,6 +222,116 @@ export const discoverGeoWebsite = Effect.fn("geo.discoverWebsite")(function* (
   return result;
 });
 
+const persistGeoWebsiteGeneration = Effect.fn(
+  "geo.generateFromWebsite.persist"
+)(function* (
+  tx: DbTransaction,
+  organizationId: string,
+  projectId: string,
+  companyName: string,
+  aliases: string[],
+  entries: readonly GeoPromptInsert[],
+  discoveredCompetitors: readonly GeoCompetitorSeed[]
+) {
+  yield* Effect.tryPromise({
+    try: () =>
+      tx
+        .insert(geoSettings)
+        .values({
+          id: crypto.randomUUID(),
+          organizationId,
+          projectId,
+          companyName,
+          aliases,
+          competitors: [],
+          enabled: true,
+        })
+        .onConflictDoUpdate({
+          target: geoSettings.projectId,
+          set: { companyName, aliases },
+        }),
+    catch: (cause) =>
+      new GeoDiscoveryError({
+        message: "Failed to save GEO settings",
+        cause,
+      }),
+  });
+
+  const competitorOutcome = yield* reconcileCompetitorsInTransaction(
+    tx,
+    organizationId,
+    projectId,
+    (current) =>
+      buildCompetitorSeeds(
+        unionValues(
+          current.map((competitor) => competitor.name),
+          discoveredCompetitors.map((entry) => entry.name),
+          GEO_DISCOVERY_COMPETITOR_LIMIT
+        ),
+        discoveredCompetitors
+      ),
+    GEO_DISCOVERY_COMPETITOR_LIMIT
+  );
+  if (competitorOutcome.status === "limit") {
+    return yield* Effect.fail(
+      new GeoDiscoveryError({
+        message: "Website analysis produced too many competitors",
+      })
+    );
+  }
+
+  const inserted = yield* insertPromptsInTransaction(
+    tx,
+    organizationId,
+    projectId,
+    entries
+  );
+
+  const summary: GeoGenerateFromWebsiteResult = {
+    companyName,
+    aliases,
+    competitors: competitorOutcome.competitors.map(
+      (competitor) => competitor.name
+    ),
+    promptsAdded: inserted.length,
+  };
+  return summary;
+});
+
+const startGeoScanAfterWebsiteGeneration = Effect.fn(
+  "geo.generateFromWebsite.startScan"
+)(function* (organizationId: string, projectId: string, scanEnabled: boolean) {
+  if (!scanEnabled) {
+    return;
+  }
+
+  // Take the same atomic claim every other trigger takes, rather than
+  // stamping a start blindly. The stamp is what the dashboard reads as
+  // "Scanning…", and writing it without owning the slot both lied about a
+  // scan that a concurrent trigger is already running and overwrote the
+  // token that run needs to release it. Losing the claim means a scan is
+  // already in flight for this project — its results are what onboarding
+  // is waiting for anyway, so start nothing.
+  const claim = yield* claimGeoScanRun(projectId).pipe(
+    geoSkip("scan claim failed")
+  );
+  if (claim) {
+    yield* startClaimedGeoScanRun(
+      organizationId,
+      projectId,
+      claim.claimedAt
+    ).pipe(
+      Effect.catch((error) => {
+        console.error(
+          "[GEO] Failed to start scan after website generate:",
+          error
+        );
+        return Effect.void;
+      })
+    );
+  }
+});
+
 export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
   function* (scopeInput: GeoScopeInput, url: string) {
     const organizationId = scopeInput.organizationId;
@@ -223,117 +378,96 @@ export const generateGeoFromWebsite = Effect.fn("geo.generateFromWebsite")(
         }),
     });
 
-    const aliases = unionValues(
-      existing?.aliases ?? [],
-      discovery.aliases,
-      GEO_DISCOVERY_ALIAS_LIMIT
-    );
-    const companyName = existing?.companyName ?? discovery.companyName;
+    const { aliases, companyName, entries } =
+      yield* prepareGeoWebsiteGeneration(
+        discovery,
+        existing?.companyName,
+        existing?.aliases
+      );
 
-    yield* Effect.tryPromise({
+    const summary = yield* Effect.tryPromise({
       try: () =>
-        db
-          .insert(geoSettings)
-          .values({
-            id: crypto.randomUUID(),
-            organizationId,
-            projectId,
-            companyName,
-            aliases,
-            competitors: [],
-            enabled: true,
-          })
-          .onConflictDoUpdate({
-            target: geoSettings.projectId,
-            set: { companyName, aliases },
-          }),
+        db.transaction((tx) =>
+          Effect.runPromise(
+            persistGeoWebsiteGeneration(
+              tx,
+              organizationId,
+              projectId,
+              companyName,
+              aliases,
+              entries,
+              discovery.competitors
+            )
+          )
+        ),
       catch: (cause) =>
         new GeoDiscoveryError({
-          message: "Failed to save GEO settings",
+          message: "Failed to save GEO tracking",
           cause,
         }),
     });
 
-    const competitorRows = yield* reconcileGeoCompetitors(
-      { organizationId, projectId },
-      (current) =>
-        buildCompetitorSeeds(
-          unionValues(
-            current.map((competitor) => competitor.name),
-            discovery.competitors.map((entry) => entry.name),
-            GEO_DISCOVERY_COMPETITOR_LIMIT
-          ),
-          discovery.competitors
-        )
-    );
-    const competitors = competitorRows.map((competitor) => competitor.name);
-
-    const brandTerms = buildBrandTerms({ companyName, aliases });
-    const entries: GeoPromptInsert[] = [];
-    for (const entry of discovery.prompts) {
-      const trimmed = entry.prompt.trim();
-      const title = entry.title.trim().slice(0, GEO_GAP_TITLE_MAX_LENGTH);
-      if (
-        trimmed.length < MIN_PROMPT_LENGTH ||
-        trimmed.length > MAX_PROMPT_LENGTH ||
-        promptMentionsBrand(trimmed, brandTerms)
-      ) {
-        continue;
-      }
-      entries.push({ prompt: trimmed, title: title.length > 0 ? title : null });
-    }
-
-    const inserted = yield* insertGeoPrompts(
-      { organizationId, projectId },
-      entries
-    ).pipe(
-      Effect.mapError(
-        (cause) =>
-          new GeoDiscoveryError({
-            message: "Failed to save GEO prompts",
-            cause,
-          })
-      )
-    );
-
-    const summary: GeoGenerateFromWebsiteResult = {
-      companyName,
-      aliases,
-      competitors,
-      promptsAdded: inserted.length,
-    };
-
     // Newly created settings default to enabled; an existing disabled row is
     // left alone so we never stamp a scan start that the scan will skip.
-    const scanEnabled = existing?.enabled ?? true;
-    if (scanEnabled) {
-      // Take the same atomic claim every other trigger takes, rather than
-      // stamping a start blindly. The stamp is what the dashboard reads as
-      // "Scanning…", and writing it without owning the slot both lied about a
-      // scan that a concurrent trigger is already running and overwrote the
-      // token that run needs to release it. Losing the claim means a scan is
-      // already in flight for this project — its results are what onboarding
-      // is waiting for anyway, so start nothing.
-      const claim = yield* claimGeoScanRun(projectId).pipe(
-        geoSkip("scan claim failed")
-      );
-      if (claim) {
-        yield* startClaimedGeoScanRun(
-          organizationId,
-          projectId,
-          claim.claimedAt
-        ).pipe(
-          Effect.catch((error) => {
-            console.error(
-              "[GEO] Failed to start scan after website generate:",
-              error
-            );
-            return Effect.void;
-          })
-        );
-      }
-    }
+    yield* startGeoScanAfterWebsiteGeneration(
+      organizationId,
+      projectId,
+      existing?.enabled ?? true
+    );
 
     return summary;
   }
 );
+
+export const createGeoProjectFromWebsite = Effect.fn(
+  "geo.projectCreateFromWebsite"
+)(function* (
+  organizationId: string,
+  name: string,
+  brandSettingsId: string,
+  url: string
+) {
+  const { discovery } = yield* discoverGeoWebsite(organizationId, url);
+  const { aliases, companyName, entries } =
+    yield* prepareGeoWebsiteGeneration(discovery);
+
+  const project = yield* Effect.tryPromise({
+    try: () =>
+      db.transaction(async (tx) => {
+        const rows = await tx
+          .insert(projects)
+          .values({
+            id: crypto.randomUUID(),
+            organizationId,
+            name: name.trim(),
+            brandSettingsId,
+          })
+          .returning();
+        const row = rows.at(0);
+        if (!row) {
+          throw new Error("Project insert returned no row");
+        }
+
+        await Effect.runPromise(
+          persistGeoWebsiteGeneration(
+            tx,
+            organizationId,
+            row.id,
+            companyName,
+            aliases,
+            entries,
+            discovery.competitors
+          )
+        );
+        return toGeoProject(row);
+      }),
+    catch: (cause) =>
+      new GeoDiscoveryError({
+        message: "Failed to create and configure the project",
+        cause,
+      }),
+  });
+
+  yield* startGeoScanAfterWebsiteGeneration(organizationId, project.id, true);
+  return project;
+});

@@ -16,11 +16,13 @@ import { useRef } from "react";
 import { toast } from "sonner";
 
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { useActiveProject } from "@/lib/hooks/use-active-project";
 
 export function useChatSessions() {
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
-  const queryKey = chatSessionsQueryKey(organizationId);
+  const { projectId, isResolved } = useActiveProject();
+  const queryKey = chatSessionsQueryKey(organizationId, projectId);
 
   const query = useQuery({
     queryKey,
@@ -28,7 +30,7 @@ export function useChatSessions() {
       if (!organizationId) {
         return [];
       }
-      const response = await fetch(chatSessionsPath(organizationId));
+      const response = await fetch(chatSessionsPath(organizationId, projectId));
       if (!response.ok) {
         return [];
       }
@@ -37,7 +39,7 @@ export function useChatSessions() {
       );
       return parsed.success ? (parsed.data.sessions ?? []) : [];
     },
-    enabled: Boolean(organizationId),
+    enabled: Boolean(organizationId) && isResolved,
     staleTime: 1000 * 60,
   });
 
@@ -53,7 +55,8 @@ export function useChatSessionMutations() {
   const queryClient = useQueryClient();
   const { activeOrganization } = useOrganizationsContext();
   const organizationId = activeOrganization?.id;
-  const queryKey = chatSessionsQueryKey(organizationId);
+  const { projectId, isResolved } = useActiveProject();
+  const queryKey = chatSessionsQueryKey(organizationId, projectId);
   const renameInFlightRef = useRef<Set<string>>(new Set());
 
   function replaceSessionInCache(
@@ -71,7 +74,11 @@ export function useChatSessionMutations() {
     chatId: string,
     nextTitle: string
   ): Promise<boolean> {
-    if (!organizationId || renameInFlightRef.current.has(chatId)) {
+    if (
+      !organizationId ||
+      !isResolved ||
+      renameInFlightRef.current.has(chatId)
+    ) {
       return false;
     }
 
@@ -110,7 +117,7 @@ export function useChatSessionMutations() {
   }
 
   async function togglePinned(session: ChatSessionSummary): Promise<boolean> {
-    if (!organizationId) {
+    if (!organizationId || !isResolved) {
       return false;
     }
 
@@ -154,7 +161,7 @@ export function useChatSessionMutations() {
   }
 
   async function deleteChat(chatId: string): Promise<boolean> {
-    if (!organizationId) {
+    if (!organizationId || !isResolved) {
       return false;
     }
 

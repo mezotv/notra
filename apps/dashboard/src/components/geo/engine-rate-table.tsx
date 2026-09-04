@@ -5,6 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GEO_EMPTY_PROMPT_RESULTS,
   GEO_EMPTY_TIMESERIES,
+  GEO_ENGINE_PERFORMANCE_HINT,
   GEO_FAMILY_STAT_TREND_HINT,
   GEO_SPARKLINE_MIN_POINTS,
 } from "@notra/geo-core/constants/geo";
@@ -12,13 +13,13 @@ import type { GeoEngineFamily } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
 import { Input } from "@notra/ui/components/ui/input";
 import { useMemo, useState } from "react";
 
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { EngineFamilySheet } from "@/components/geo/engine-family-sheet";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoBar } from "@/components/geo/geo-bar";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
 import {
@@ -74,6 +75,9 @@ export function EngineRateTable({
   promptResults = GEO_EMPTY_PROMPT_RESULTS,
   isScanning = false,
   organizationSlug,
+  companyName,
+  aliases,
+  competitors,
 }: EngineRateTableProps) {
   const families = useMemo(() => groupEngineFamilies(engines), [engines]);
   const [selected, setSelected] = useState<GeoEngineFamily | null>(null);
@@ -184,7 +188,6 @@ export function EngineRateTable({
 
   const emptyReadout = isScanning ? "scanning now" : "no scans yet";
   const readout = families.length > 0 ? undefined : emptyReadout;
-  const engineCount = families.length;
 
   return (
     <InstrumentSection
@@ -207,11 +210,8 @@ export function EngineRateTable({
         ) : undefined
       }
       className="h-full"
-      eyebrow={
-        engineCount > 0
-          ? `Engines (${engineCount.toLocaleString()})`
-          : "Mention rate by engine"
-      }
+      eyebrow="Engines"
+      hint={GEO_ENGINE_PERFORMANCE_HINT}
       readout={readout}
     >
       {families.length === 0 ? (
@@ -249,6 +249,9 @@ export function EngineRateTable({
         </div>
       )}
       <EngineFamilySheet
+        aliases={aliases}
+        companyName={companyName}
+        competitors={competitors}
         family={selected}
         onOpenChange={(open) => {
           if (!open) {

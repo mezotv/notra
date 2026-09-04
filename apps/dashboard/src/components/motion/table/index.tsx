@@ -394,27 +394,27 @@ export function Table<T>({
         >
           {columnGroup}
           <tbody>
-            {pagedRows.length === 0 ? (
-              loading ? (
-                <SkeletonRows
-                  columns={orderedColumns}
-                  count={Math.max(1, Math.ceil(height / rowHeight))}
-                  rowHeight={rowHeight}
-                  selectable={selectable}
-                />
-              ) : (
-                <tr>
-                  <td className="p-0" colSpan={leadColumns + 1}>
-                    <div
-                      className="text-muted-foreground flex items-center justify-center px-6 text-center"
-                      style={{ height: bodyHeight }}
-                    >
-                      {emptyState}
-                    </div>
-                  </td>
-                </tr>
-              )
-            ) : (
+            {pagedRows.length === 0 && loading ? (
+              <SkeletonRows
+                columns={orderedColumns}
+                count={Math.max(1, Math.ceil(height / rowHeight))}
+                rowHeight={rowHeight}
+                selectable={selectable}
+              />
+            ) : null}
+            {pagedRows.length === 0 && !loading ? (
+              <tr>
+                <td className="p-0" colSpan={leadColumns + 1}>
+                  <div
+                    className="text-muted-foreground flex items-center justify-center px-6 text-center"
+                    style={{ height: bodyHeight }}
+                  >
+                    {emptyState}
+                  </div>
+                </td>
+              </tr>
+            ) : null}
+            {pagedRows.length > 0 ? (
               <>
                 {scrolls && paddingTop > 0 ? (
                   <tr aria-hidden style={{ height: paddingTop }}>
@@ -460,7 +460,7 @@ export function Table<T>({
                   />
                 ) : null}
               </>
-            )}
+            ) : null}
           </tbody>
         </table>
       </div>

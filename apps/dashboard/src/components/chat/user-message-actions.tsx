@@ -23,6 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { TRANSITION } from "@notra/ui/lib/motion";
 import { cn } from "@notra/ui/lib/utils";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -80,7 +81,7 @@ export function UserMessageActions({
   return (
     <div
       className={cn(
-        "text-muted-foreground mt-0.5 ml-auto flex items-center gap-1 transition-[opacity,height,margin,padding] duration-200 ease-out",
+        "text-muted-foreground duration-normal mt-0.5 ml-auto flex items-center gap-1 transition-[opacity,height,margin,padding] ease-out",
         isEditing
           ? "pointer-events-none mt-0 h-0 overflow-hidden opacity-0"
           : "opacity-0 group-hover:opacity-100 focus-within:opacity-100 data-[force-visible=true]:opacity-100",
@@ -193,7 +194,7 @@ export function UserMessageActions({
                 aria-label="Copy message"
                 className={cn(
                   "size-5",
-                  copied && "text-emerald-500 hover:text-emerald-500"
+                  copied && "text-success hover:text-success"
                 )}
                 onClick={handleCopy}
                 size="icon-sm"
@@ -217,15 +218,8 @@ export function UserMessageActions({
 const USER_MESSAGE_BUBBLE_CLASS =
   "ml-auto flex min-w-0 flex-col gap-2 overflow-hidden rounded-lg bg-secondary px-4 py-3 text-foreground text-sm";
 
-const USER_MESSAGE_EDIT_TRANSITION = {
-  duration: 0.22,
-  ease: [0.22, 1, 0.36, 1] as const,
-};
-
-const USER_MESSAGE_FADE_TRANSITION = {
-  duration: 0.14,
-  ease: [0.22, 1, 0.36, 1] as const,
-};
+const USER_MESSAGE_EDIT_TRANSITION = TRANSITION.enter;
+const USER_MESSAGE_FADE_TRANSITION = TRANSITION.fade;
 
 function UserMessageEditor({
   initialText,

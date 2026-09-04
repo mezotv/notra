@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { Input } from "@notra/ui/components/ui/input";
+import { TRANSITION } from "@notra/ui/lib/motion";
 import { AnimatePresence, motion } from "motion/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -143,7 +144,7 @@ export function ChatTopbarTitle({ chatId }: ChatTopbarTitleProps) {
               exit={{ opacity: 0, filter: "blur(4px)", scale: 0.98 }}
               initial={{ opacity: 0, filter: "blur(4px)", scale: 0.98 }}
               key="editing"
-              transition={{ duration: 0.18, ease: "easeOut" }}
+              transition={TRANSITION.fade}
             >
               <Input
                 className="h-7 w-56"
@@ -173,7 +174,7 @@ export function ChatTopbarTitle({ chatId }: ChatTopbarTitleProps) {
               exit={{ opacity: 0, filter: "blur(4px)", scale: 0.98 }}
               initial={{ opacity: 0, filter: "blur(4px)", scale: 0.98 }}
               key="display"
-              transition={{ duration: 0.18, ease: "easeOut" }}
+              transition={TRANSITION.fade}
             >
               <DropdownMenu onOpenChange={setIsMenuOpen} open={isMenuOpen}>
                 <DropdownMenuTrigger
@@ -206,7 +207,7 @@ export function ChatTopbarTitle({ chatId }: ChatTopbarTitleProps) {
                   </span>
                   <HugeiconsIcon
                     className={cn(
-                      "text-muted-foreground size-3.5 shrink-0 transition-transform duration-200",
+                      "text-muted-foreground duration-normal size-3.5 shrink-0 transition-transform",
                       isMenuOpen && "rotate-180"
                     )}
                     icon={ArrowDown01Icon}

@@ -1,3 +1,9 @@
+import { CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS } from "@notra/ai/constants/schedule-interval";
+import {
+  nextCustomIntervalRun,
+  toUtcDateString,
+} from "@notra/ai/utils/schedule-interval";
+
 import { DAY_NAMES_LONG } from "@/constants/schedule";
 import type { ScheduleCron } from "@/types/automation/schedule";
 import { padTimeUnit } from "@/utils/schedule-form";
@@ -18,6 +24,10 @@ export function formatScheduleSummary(value: ScheduleCron): string {
     const day = value.dayOfMonth ?? 1;
     return `Monthly on day ${day} at ${time}`;
   }
+  if (value.frequency === "custom") {
+    const days = value.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS;
+    return `Every ${days} days at ${time}`;
+  }
   return `Every day at ${time}`;
 }
 
@@ -34,6 +44,19 @@ export function computeNextRun(
       next.setUTCDate(next.getUTCDate() + 1);
     }
     return next;
+  }
+
+  if (value.frequency === "custom") {
+    return nextCustomIntervalRun(
+      {
+        hour: value.hour,
+        minute: value.minute,
+        intervalDays:
+          value.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS,
+        anchorDate: value.anchorDate ?? toUtcDateString(now),
+      },
+      now
+    );
   }
 
   if (value.frequency === "weekly") {

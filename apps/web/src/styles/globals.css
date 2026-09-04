@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "@c15t/nextjs/styles.css";
 @import "../../../../packages/ui/src/styles/cta-button.css";
+@import "../../../../packages/ui/src/styles/motion.css";
+@import "../../../../packages/ui/src/styles/status.css";
 
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 @source "../../../../node_modules/streamdown/dist/*.js";
@@ -421,43 +423,8 @@
   animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none !important;
-  }
-}
-
-:root {
-  --geo-search: var(--primary);
-  --geo-memory: oklch(0.606 0.099 206.2);
-  --geo-up: oklch(0.55 0.109 155);
-  --geo-down: oklch(0.59 0.192 27);
-  --geo-mid: oklch(0.57 0.113 55);
-}
-
-.dark {
-  --geo-search: oklch(0.68 0.134 292.717);
-  --geo-memory: oklch(0.68 0.111 206.2);
-  --geo-up: oklch(0.7 0.125 155);
-  --geo-down: oklch(0.7 0.138 27);
-  --geo-mid: oklch(0.7 0.125 55);
-}
-
-@theme inline {
-  --color-geo-search: var(--geo-search);
-  --color-geo-memory: var(--geo-memory);
-  --color-geo-up: var(--geo-up);
-  --color-geo-down: var(--geo-down);
-  --color-geo-mid: var(--geo-mid);
-}
+/*
+ * The reduced-motion baseline lives in @notra/ui/motion.css and the status /
+ * GEO colour tokens live in @notra/ui/status.css — both imported at the top of
+ * this file.
+ */

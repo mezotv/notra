@@ -29,6 +29,7 @@ import {
   ResponsiveDialogDescription,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { Badge } from "@notra/ui/components/ui/badge";
 import { Label } from "@notra/ui/components/ui/label";
 import {
   Select,
@@ -54,8 +55,11 @@ import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { GEO_WRITE_DIALOG_ENTRIES } from "@/constants/geo-analytics";
 import {
+  GEO_WRITE_ACTION_HELP,
   GEO_WRITE_CONTENT_SUBTYPES,
   GEO_WRITE_DIALOG_SECTIONS,
+  GEO_WRITE_EDIT_NOTE,
+  GEO_WRITE_RECOMMENDED_BADGE,
 } from "@/constants/geo-writer";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
@@ -67,15 +71,20 @@ import type {
   WriteDialogSectionId,
   WriteDialogSourceKind,
 } from "@/types/components/geo-writer";
+import { existingPageLabel } from "@/utils/geo-gaps";
 import { withGeoProject } from "@/utils/geo-paths";
 import { geoContentPath } from "@/utils/geo-write-entry";
+import {
+  recommendedContentSubtype,
+  writerBaselineLabel,
+  writerCompetitorDetail,
+} from "@/utils/geo-writer";
 
 import { WriteBrandOption } from "./write-brand-option";
 import { WriteOptionCard } from "./write-option-card";
 import { WriteSectionSidebar } from "./write-section-sidebar";
 import { WriteSitemapSection } from "./write-sitemap-section";
 
-const DEFAULT_CONTENT_SUBTYPE: GeoContentSubtype = "guide";
 const MANUAL_PROMPT_VALUE = "manual";
 
 export function WriteDialog({
@@ -161,8 +170,16 @@ function WriteDialogForm({
   }, [open]);
   const [topic, setTopic] = useState(initial?.topic ?? "");
   const [contentSubtype, setContentSubtype] = useState<GeoContentSubtype>(
-    initial?.contentSubtype ?? DEFAULT_CONTENT_SUBTYPE
+    initial?.contentSubtype ??
+      recommendedContentSubtype(initial?.topic ?? "").id
   );
+  const recommendation = recommendedContentSubtype(topic);
+  const baselineLabel = writerBaselineLabel(initial?.baseline);
+  const existingPageUrl = initial?.existingPageUrl;
+  const promptBadgeLabel = existingPageUrl
+    ? `Updating ${existingPageLabel(existingPageUrl)}`
+    : baselineLabel;
+  const mentionedCompetitors = initial?.mentionedCompetitors ?? [];
   const [brandVoiceId, setBrandVoiceId] = useState<string | null>(
     initial?.brandVoiceId ?? null
   );
@@ -298,6 +315,7 @@ function WriteDialogForm({
       sitemapId: effectiveSitemapId ?? undefined,
       sourceKind,
       sourceId,
+      existingPageUrl,
     });
     onOpenChange(false);
     if (result.postId) {
@@ -424,11 +442,18 @@ function WriteDialogForm({
                 className="scroll-mt-2 space-y-4 px-6 py-6"
                 data-section="prompt"
               >
-                {renderSectionHeader(
-                  "prompt",
-                  "Pick a tracked prompt or write your own. The article answers this question.",
-                  `${fieldId}-topic`
-                )}
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  {renderSectionHeader(
+                    "prompt",
+                    "Pick a tracked prompt or write your own. The article answers this question.",
+                    `${fieldId}-topic`
+                  )}
+                  {promptBadgeLabel ? (
+                    <Badge className="shrink-0 font-normal" variant="outline">
+                      {promptBadgeLabel}
+                    </Badge>
+                  ) : null}
+                </div>
                 {prompts.length > 0 ? (
                   <Select
                     onValueChange={(value) => {
@@ -477,7 +502,7 @@ function WriteDialogForm({
                   maxLength={GEO_WRITER_TOPIC_MAX_LENGTH}
                   onChange={(event) => {
                     setTopic(event.target.value);
-                    if (sourceKind === "prompt") {
+                    if (sourceKind === "prompt" || sourceKind === "gap") {
                       setSourceKind("manual");
                       setSourceId(undefined);
                     }
@@ -485,19 +510,27 @@ function WriteDialogForm({
                   placeholder="e.g. Which tools are best for sharing music demos?"
                   value={topic}
                 />
+                {sourceId &&
+                (sourceKind === "prompt" || sourceKind === "gap") ? (
+                  <p className="text-muted-foreground text-xs">
+                    {GEO_WRITE_EDIT_NOTE}
+                  </p>
+                ) : null}
               </section>
 
               <section
                 className="scroll-mt-2 space-y-4 px-6 py-6"
                 data-section="type"
               >
-                {renderSectionHeader(
-                  "type",
-                  "Choose what kind of blog post to write."
-                )}
+                {renderSectionHeader("type", recommendation.reason)}
                 <div className="grid gap-3 sm:grid-cols-2">
                   {GEO_WRITE_CONTENT_SUBTYPES.map((option) => (
                     <WriteOptionCard
+                      badge={
+                        option.id === recommendation.id
+                          ? GEO_WRITE_RECOMMENDED_BADGE
+                          : null
+                      }
                       description={option.description}
                       icon={
                         <HugeiconsIcon
@@ -618,7 +651,10 @@ function WriteDialogForm({
                       return (
                         <WriteOptionCard
                           compact
-                          description={competitor.domain}
+                          description={writerCompetitorDetail(
+                            competitor,
+                            mentionedCompetitors
+                          )}
                           icon={
                             <CompetitorLogo
                               className="size-5"
@@ -650,9 +686,12 @@ function WriteDialogForm({
             <div
               className={cn(
                 GEO_WRITE_PANEL_FOOTER_ROW_CLASS,
-                "justify-end gap-3 px-4"
+                "justify-between gap-3 px-4"
               )}
             >
+              <p className="text-muted-foreground hidden min-w-0 truncate text-xs sm:block">
+                {GEO_WRITE_ACTION_HELP.plan} {GEO_WRITE_ACTION_HELP.write}
+              </p>
               <div className="flex shrink-0 gap-2">
                 <Button
                   disabled={!canSubmit}

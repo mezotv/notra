@@ -115,7 +115,11 @@ import { extractGrounding } from "./grounding";
 import { toGeoSettings } from "./mappers";
 import { loadGeoModelCatalog } from "./model-catalog";
 import { requireGeoProject } from "./projects";
-import { buildGeoPrompts, customPromptScanId } from "./prompts";
+import {
+  buildGeoPrompts,
+  customPromptScanId,
+  scopeGeoPrompts,
+} from "./prompts";
 import {
   claimGeoScanRun,
   createGeoScanRow,
@@ -753,7 +757,7 @@ export const prepareGeoScanProject = Effect.fn("geo.prepareScanProject")(
   function* (
     organizationId: string,
     projectId: string,
-    options: { claimedAt?: Date; scanId?: string } = {}
+    options: { claimedAt?: Date; scanId?: string; promptIds?: string[] } = {}
   ) {
     const billing = yield* GeoContentBillingService;
     const settingsRow = yield* Effect.tryPromise({
@@ -898,7 +902,8 @@ export const prepareGeoScanProject = Effect.fn("geo.prepareScanProject")(
       scanId,
       runId,
       gate,
-      claimedAt
+      claimedAt,
+      options.promptIds
     ).pipe(
       Effect.tapError(() =>
         releaseBilling.pipe(
@@ -922,7 +927,8 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
     scanId: string,
     runId: string,
     gate: GeoScanProjectContext["gate"],
-    claimedAt: Date
+    claimedAt: Date,
+    promptIds?: readonly string[]
   ) {
     const organizationId = settingsRow.organizationId;
     const catalog = yield* loadGeoModelCatalog(organizationId);
@@ -955,6 +961,7 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
         new GeoScanError({ message: "Failed to load GEO prompts", cause }),
     });
 
+    const pausedAutoPromptIds = new Set(settings.pausedAutoPromptIds);
     const autoPrompts = buildGeoPrompts(
       settings,
       brand
@@ -963,15 +970,31 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
             audience: brand.audience,
           }
         : null
-    ).slice(0, GEO_MAX_PROMPTS);
+    )
+      .filter((prompt) => !pausedAutoPromptIds.has(prompt.id))
+      .slice(0, GEO_MAX_PROMPTS);
 
-    const prompts: GeoPromptDefinition[] = [
+    const allPrompts: GeoPromptDefinition[] = [
       ...autoPrompts,
       ...customRows.map((row) => ({
         id: customPromptScanId(row.id),
         text: row.prompt,
       })),
     ];
+    const prompts = promptIds
+      ? scopeGeoPrompts(allPrompts, promptIds)
+      : allPrompts;
+    if (promptIds && prompts.length === 0) {
+      yield* geoLogWarn({
+        event: "geo.scan.skipped",
+        reason: "scoped_prompts_missing",
+        organizationId,
+        projectId: settingsRow.projectId,
+        scanId,
+        runId,
+        promptIds: [...promptIds],
+      });
+    }
 
     const zdrPolicy = yield* resolveScanZdrPolicy(organizationId, settings, {
       projectId: settingsRow.projectId,

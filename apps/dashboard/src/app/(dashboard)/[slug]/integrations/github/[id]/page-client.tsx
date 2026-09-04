@@ -8,6 +8,7 @@ import {
   Tick02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS } from "@notra/ai/constants/schedule-interval";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
@@ -285,6 +286,9 @@ function formatFrequency(cron?: Trigger["sourceConfig"]["cron"]) {
   }
   if (cron.frequency === "monthly") {
     return `Monthly - Day ${cron.dayOfMonth ?? 1} @ ${time}`;
+  }
+  if (cron.frequency === "custom") {
+    return `Every ${cron.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS} days @ ${time}`;
   }
   return `Daily @ ${time}`;
 }

@@ -86,7 +86,7 @@ export function FeedbackMdAnatomy() {
           return (
             <li
               className={cn(
-                "border-l-2 pl-4 transition-colors duration-300",
+                "duration-slow border-l-2 pl-4 transition-colors",
                 active
                   ? "border-[#8B5CF6] dark:border-[#C8B2EE]"
                   : "border-[#1E1E1E1F] dark:border-white/10"
@@ -101,7 +101,7 @@ export function FeedbackMdAnatomy() {
                 <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <span
                     className={cn(
-                      "font-mono text-[0.8125rem] font-medium transition-colors duration-300",
+                      "duration-slow font-mono text-[0.8125rem] font-medium transition-colors",
                       active
                         ? "text-[#1E1E1E] dark:text-white"
                         : "text-[#1E1E1E99] dark:text-white/50"
@@ -115,7 +115,7 @@ export function FeedbackMdAnatomy() {
                 </span>
                 <span
                   className={cn(
-                    "font-sans text-[0.8125rem] leading-[1.5] transition-colors duration-300",
+                    "duration-slow font-sans text-[0.8125rem] leading-[1.5] transition-colors",
                     active
                       ? "text-[#1E1E1EA6] dark:text-white/60"
                       : "text-[#1E1E1E66] dark:text-white/35"

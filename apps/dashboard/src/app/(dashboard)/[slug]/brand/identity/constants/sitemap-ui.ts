@@ -8,9 +8,9 @@ export const SITEMAP_STATUS_META: Record<
   { label: string; dotClassName: string }
 > = {
   queued: { label: "Queued", dotClassName: "bg-muted-foreground" },
-  crawling: { label: "Crawling", dotClassName: "bg-blue-500" },
-  ready: { label: "Ready", dotClassName: "bg-emerald-500" },
-  failed: { label: "Failed", dotClassName: "bg-red-500" },
+  crawling: { label: "Crawling", dotClassName: "bg-info" },
+  ready: { label: "Ready", dotClassName: "bg-success" },
+  failed: { label: "Failed", dotClassName: "bg-destructive" },
 };
 
 export const PAGE_FILTER_TABS: {

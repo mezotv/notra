@@ -14,6 +14,7 @@ import { PerplexityActions } from "@notra/ui/components/brainless/perplexity/per
 import { PerplexityComposer } from "@notra/ui/components/brainless/perplexity/perplexity-composer";
 import { PerplexityMessage } from "@notra/ui/components/brainless/perplexity/perplexity-message";
 import { PerplexitySearch } from "@notra/ui/components/brainless/perplexity/perplexity-search";
+import { geoAnswerEmptyClassName, geoAnswerMarkdownFontClass } from "@notra/ui/lib/geo-answer-font";
 import {
   chatgptModelForEngine,
   claudeModelForEngine,
@@ -48,26 +49,10 @@ function emptyAnswerCopy(mentioned: boolean): string {
     : "This engine did not mention you.";
 }
 
-function emptyAnswerClassName(skin: GeoChatSkin): string {
-  if (skin === "perplexity") {
-    return "font-serif text-[17.5px] leading-[1.75]";
-  }
-  if (skin === "claude") {
-    return "font-sans text-[15px] leading-6";
-  }
-  return "text-[15px] leading-7";
-}
-
 function AnswerMarkdown({ text, skin }: { text: string; skin: GeoChatSkin }) {
   return (
     <MessageResponse
-      className={cn(
-        ANSWER_MARKDOWN_CLASS,
-        skin === "claude" &&
-          "[&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif",
-        skin === "perplexity" &&
-          "font-serif [&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif"
-      )}
+      className={cn(ANSWER_MARKDOWN_CLASS, geoAnswerMarkdownFontClass(skin))}
     >
       {text}
     </MessageResponse>
@@ -88,7 +73,7 @@ function AssistantBody({
   }
 
   return (
-    <p className={cn("text-muted-foreground", emptyAnswerClassName(skin))}>
+    <p className={cn("text-muted-foreground", geoAnswerEmptyClassName(skin))}>
       {emptyAnswerCopy(mentioned)}
     </p>
   );

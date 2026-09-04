@@ -9,10 +9,19 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@notra/ui/components/ui/pagination";
+import { getPageNumbers } from "@notra/ui/lib/get-page-numbers";
+import { cn } from "@notra/ui/lib/utils";
 
-import { cn } from "@/lib/utils";
-import type { TablePaginationProps } from "@/types/table";
-import { getPageNumbers } from "@/utils/content-preview";
+interface TablePaginationProps {
+  page: number;
+  pageCount: number;
+  pageSize: number;
+  totalItems: number;
+  pageRowCount: number;
+  setPage: (page: number) => void;
+  itemLabel?: string;
+  className?: string;
+}
 
 export function TablePagination({
   page,
@@ -54,6 +63,7 @@ export function TablePagination({
                   setPage(page - 1);
                 }}
                 size="xs"
+                text=""
               />
             </PaginationItem>
             {getPageNumbers(page, pageCount).map((pageNumber, index, pages) =>
@@ -88,6 +98,7 @@ export function TablePagination({
                   setPage(page + 1);
                 }}
                 size="xs"
+                text=""
               />
             </PaginationItem>
           </PaginationContent>

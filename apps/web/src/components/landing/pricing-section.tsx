@@ -3,6 +3,7 @@
 import { ArrowRight02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CtaButton } from "@notra/ui/components/shared/cta-button";
+import { SPRING } from "@notra/ui/lib/motion";
 import { cn } from "@notra/ui/lib/utils";
 import {
   AnimatePresence,
@@ -67,13 +68,11 @@ function PricingBillingToggle({
                     "0 0.0625rem 0.125rem #28282814, 0 0 0 0.0625rem #1E1E1E40",
                 }}
                 transition={
-                  shouldReduceMotion
-                    ? { duration: 0 }
-                    : { type: "spring", stiffness: 500, damping: 40 }
+                  shouldReduceMotion ? { duration: 0 } : SPRING.snappy
                 }
               />
             ) : null}
-            <span className="relative z-10 transition-colors duration-200">
+            <span className="duration-normal relative z-10 transition-colors">
               {option.label}
             </span>
           </button>

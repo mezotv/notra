@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import { createRoute } from "@hono/zod-openapi";
+import { toUtcDateString } from "@notra/ai/utils/schedule-interval";
 import type { createDb } from "@notra/db/drizzle";
 import {
   contentTriggerLookbackWindows,
@@ -70,6 +71,14 @@ function normalizeCronConfig(
     return {
       ...base,
       dayOfMonth: config.dayOfMonth ?? 1,
+    };
+  }
+
+  if (config.frequency === "custom") {
+    return {
+      ...base,
+      intervalDays: config.intervalDays,
+      anchorDate: config.anchorDate ?? toUtcDateString(new Date()),
     };
   }
 

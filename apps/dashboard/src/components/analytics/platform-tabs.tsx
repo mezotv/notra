@@ -5,16 +5,15 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { SPRING } from "@notra/ui/lib/motion";
 import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
 import { useId } from "react";
 
 import { cn } from "@/lib/utils";
 import type { PlatformTabItem, PlatformTabsProps } from "@/types/analytics";
 
-const SPRING = { type: "spring", bounce: 0.28, duration: 0.42 } as const;
-
 const TAB_CLASS =
-  "relative flex shrink-0 cursor-pointer items-center rounded-xl px-2.5 py-1.5 outline-none transition-colors duration-200 ease-out focus-visible:ring-2 focus-visible:ring-ring";
+  "relative flex shrink-0 cursor-pointer items-center rounded-xl px-2.5 py-1.5 outline-none transition-colors duration-normal ease-out focus-visible:ring-2 focus-visible:ring-ring";
 
 const LABEL_CLASS = "whitespace-nowrap font-medium text-foreground text-sm";
 
@@ -38,13 +37,13 @@ function PlatformTab({
         <m.span
           className="bg-background ring-border absolute inset-0 rounded-xl shadow-sm ring-1"
           layoutId={layoutId}
-          transition={SPRING}
+          transition={SPRING.indicator}
         />
       )}
       <span className="relative z-10 flex items-center gap-1.5">
         {item.icon}
         {alwaysVisible ? (
-          <m.span className={LABEL_CLASS} layout transition={SPRING}>
+          <m.span className={LABEL_CLASS} layout transition={SPRING.indicator}>
             {text}
           </m.span>
         ) : (
@@ -55,7 +54,7 @@ function PlatformTab({
                 className={cn("overflow-hidden", LABEL_CLASS)}
                 exit={{ width: 0, opacity: 0 }}
                 initial={{ width: 0, opacity: 0 }}
-                transition={SPRING}
+                transition={SPRING.indicator}
               >
                 <span className="block">{item.label}</span>
               </m.span>
@@ -72,7 +71,7 @@ function PlatformTab({
       className={TAB_CLASS}
       layout
       onClick={() => onSelect(item.value)}
-      transition={SPRING}
+      transition={SPRING.indicator}
       type="button"
     >
       {inner}

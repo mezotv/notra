@@ -101,7 +101,7 @@ export function PermissionRow({
     <div
       aria-label={ariaLabel}
       className={cn(
-        "flex shrink-0 items-center gap-0.5 rounded-lg border bg-muted/40 p-0.5",
+        "flex shrink-0 items-center gap-0.5 overflow-hidden rounded-lg border bg-muted/40 p-0.5",
         layout === "compact" && className
       )}
       onKeyDown={handlePermissionRowKeyDown}

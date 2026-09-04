@@ -121,7 +121,7 @@ export function NavUser() {
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span
                   className={cn(
-                    "text-foreground truncate font-medium transition-[filter] duration-200",
+                    "text-foreground duration-normal truncate font-medium transition-[filter]",
                     hidePersonalData && "hover:blur-0 blur-[5px] select-none"
                   )}
                 >
@@ -129,7 +129,7 @@ export function NavUser() {
                 </span>
                 <span
                   className={cn(
-                    "text-muted-foreground truncate text-xs transition-[filter] duration-200",
+                    "text-muted-foreground duration-normal truncate text-xs transition-[filter]",
                     hidePersonalData && "hover:blur-0 blur-[5px] select-none"
                   )}
                 >

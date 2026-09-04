@@ -42,7 +42,7 @@ export const requireBrandIdentity = Effect.fn("geo.requireBrandIdentity")(
   function* (organizationId: string, brandSettingsId: string) {
     const identity = yield* geoDb("brand identity lookup failed", () =>
       db.query.brandSettings.findFirst({
-        columns: { id: true },
+        columns: { id: true, websiteUrl: true },
         where: and(
           eq(brandSettings.id, brandSettingsId),
           eq(brandSettings.organizationId, organizationId)
@@ -56,7 +56,7 @@ export const requireBrandIdentity = Effect.fn("geo.requireBrandIdentity")(
       );
     }
 
-    return identity.id;
+    return identity;
   }
 );
 
@@ -100,7 +100,7 @@ export const createGeoProject = Effect.fn("geo.projectCreate")(function* (
   brandSettingsId?: string
 ) {
   const linkedBrandSettingsId = brandSettingsId
-    ? yield* requireBrandIdentity(organizationId, brandSettingsId)
+    ? (yield* requireBrandIdentity(organizationId, brandSettingsId)).id
     : yield* resolveDefaultBrandIdentity(organizationId);
 
   const rows = yield* geoDb("project create failed", () =>
@@ -129,7 +129,7 @@ export const updateGeoProject = Effect.fn("geo.projectUpdate")(function* (
   update: GeoProjectUpdateInput
 ) {
   const linkedBrandSettingsId = update.brandSettingsId
-    ? yield* requireBrandIdentity(organizationId, update.brandSettingsId)
+    ? (yield* requireBrandIdentity(organizationId, update.brandSettingsId)).id
     : undefined;
 
   const rows = yield* geoDb("project update failed", () =>
@@ -166,6 +166,9 @@ export const updateGeoProject = Effect.fn("geo.projectUpdate")(function* (
  *   child rows go with the project in the same statement. `agent_feedback`
  *   declares `ON DELETE SET NULL`, so feedback survives unattached — that is
  *   deliberate, feedback is org-owned evidence, not project data.
+ * - `post_collections` and `chat_sessions` declare `project_id ... ON DELETE
+ *   SET NULL`: Studio content and chats survive and become organization-wide,
+ *   which makes them visible from every remaining project.
  * - `brand_settings` is NOT deleted: `projects.brand_settings_id` points *at*
  *   it, several projects can share one identity, and it is reachable from the
  *   organization independently of any project.

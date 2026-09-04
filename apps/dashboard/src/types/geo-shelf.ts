@@ -191,7 +191,7 @@ export interface GeoShelfTableProps {
   onAddShelf: () => void;
 }
 
-export interface GeoShelfBoardItem {
+export interface GeoShelfBoardItem extends Record<string, unknown> {
   id: string;
   name: string;
   column: GeoShelfBoardColumnId;

@@ -17,8 +17,15 @@ export interface SectionTickItem {
   id: string;
   href: string;
   label: string;
-  number: string;
   level?: SectionTickLevel;
+}
+
+/**
+ * The tick number is the item's position in the list, so it is derived from the
+ * index rather than stored on every item.
+ */
+function tickNumber(index: number) {
+  return String(index + 1).padStart(2, "0");
 }
 
 const TICK_ROW_PX = 8;
@@ -159,9 +166,10 @@ export function SectionTicks({
             ref={markerRef}
           />
           <ol className="flex flex-col items-start">
-            {items.map((item) => {
+            {items.map((item, index) => {
               const isActive = item.id === activeId;
               const isGroup = item.level === "group";
+              const number = tickNumber(index);
 
               return (
                 <li className="pointer-events-auto" key={item.id}>
@@ -170,7 +178,7 @@ export function SectionTicks({
                       render={
                         <Link
                           aria-current={isActive ? "location" : undefined}
-                          aria-label={`${item.number} ${item.label}`}
+                          aria-label={`${number} ${item.label}`}
                           className="relative flex h-2 w-8 items-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
                           href={item.href}
                           onClick={(event) => scrollToHash(event, item.href)}
@@ -189,7 +197,7 @@ export function SectionTicks({
                     <TooltipContent side="right" sideOffset={12}>
                       <span className="flex items-baseline gap-2">
                         <span className="text-muted-foreground tabular-nums">
-                          {item.number}
+                          {number}
                         </span>
                         <span>{item.label}</span>
                       </span>

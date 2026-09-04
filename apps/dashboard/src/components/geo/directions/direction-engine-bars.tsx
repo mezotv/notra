@@ -1,9 +1,9 @@
 "use client";
 
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
 import { useMemo } from "react";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoBar } from "@/components/geo/geo-bar";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { GEO_DIRECTIONS_ENGINES } from "@/constants/geo-directions";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";

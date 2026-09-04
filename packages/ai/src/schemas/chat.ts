@@ -92,6 +92,7 @@ export const uiMessageSchema = z.object({
 
 export const standaloneChatRequestSchema = z.object({
   chatId: chatIdSchema.optional(),
+  projectId: z.string().min(1).optional(),
   messages: z.array(uiMessageSchema).min(1).max(UI_MESSAGES_MAX),
   context: z.array(standaloneChatContextSchema).optional(),
   model: chatModelSchema.optional(),

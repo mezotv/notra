@@ -4,7 +4,7 @@ import { cn } from "@notra/ui/lib/utils";
 export type GeminiMessageRole = "user" | "assistant";
 
 const actionsRevealClassName =
-  "opacity-0 transition-opacity duration-150 [@media(hover:hover)]:group-hover/gemini-msg:opacity-100 group-focus-within/gemini-msg:opacity-100 [@media(hover:none)]:opacity-100";
+  "opacity-0 transition-opacity duration-fast [@media(hover:hover)]:group-hover/gemini-msg:opacity-100 group-focus-within/gemini-msg:opacity-100 [@media(hover:none)]:opacity-100";
 
 export function GeminiMessage({
   from,

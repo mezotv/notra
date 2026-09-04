@@ -1,15 +1,14 @@
 "use client";
 
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
-import Link from "next/link";
 import { useEffect, useRef } from "react";
 
-import { Button } from "@/components/button";
 import { EmptyStateAnalyticsPreview } from "@/components/empty-state-preview";
+import { GeoSetupButton } from "@/components/geo/geo-setup-button";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import type { GeoSetupEmptyProps } from "@/types/geo";
 
-export function GeoSetupEmpty({ settingsHref, page }: GeoSetupEmptyProps) {
+export function GeoSetupEmpty({ organizationId, page }: GeoSetupEmptyProps) {
   const viewedRef = useRef(false);
 
   useEffect(() => {
@@ -38,14 +37,13 @@ export function GeoSetupEmpty({ settingsHref, page }: GeoSetupEmptyProps) {
           Add your brand name and the engines to track, then run a scan to see
           how AI answers talk about you.
         </p>
-        <Button
+        <GeoSetupButton
           className="mt-6"
-          nativeButton={false}
-          render={<Link href={settingsHref} />}
+          organizationId={organizationId}
           size="sm"
         >
           Set up tracking
-        </Button>
+        </GeoSetupButton>
       </div>
     </div>
   );

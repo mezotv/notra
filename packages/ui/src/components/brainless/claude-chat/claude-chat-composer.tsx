@@ -37,7 +37,7 @@ function WaveformGlyph({ className }: { className?: string }) {
 }
 
 const ACTION_EASE =
-  "ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-opacity motion-reduce:transform-none";
+  "ease-emphasized motion-reduce:transition-opacity motion-reduce:transform-none";
 
 function ToolbarButton({
   label,
@@ -56,7 +56,7 @@ function ToolbarButton({
     <button
       aria-label={label}
       className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-full text-[#1f1e1b] transition-colors duration-150 hover:bg-[#eceae4] dark:text-foreground dark:hover:bg-white/10",
+        "flex size-8 shrink-0 items-center justify-center rounded-full text-[#1f1e1b] transition-colors duration-fast hover:bg-[#eceae4] dark:text-foreground dark:hover:bg-white/10",
         className
       )}
       onClick={onClick}
@@ -78,7 +78,7 @@ function ActionGlyph({
     <span
       aria-hidden={!show}
       className={cn(
-        "absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-200",
+        "absolute inset-0 flex items-center justify-center transition-[opacity,transform] duration-normal",
         ACTION_EASE,
         show
           ? "scale-100 opacity-100"
@@ -106,7 +106,7 @@ function ComposerSubmit({
     <button
       aria-label={label}
       className={cn(
-        "relative flex size-8 shrink-0 items-center justify-center rounded-full transition-[background-color,color] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
+        "relative flex size-8 shrink-0 items-center justify-center rounded-full transition-[background-color,color] duration-normal ease-emphasized motion-reduce:transition-none",
         filled
           ? "bg-[#1f1e1b] text-white hover:bg-black dark:bg-white dark:text-[#1f1e1b] dark:hover:bg-white/90"
           : "text-[#1f1e1b] hover:bg-[#eceae4] dark:text-foreground dark:hover:bg-white/10"

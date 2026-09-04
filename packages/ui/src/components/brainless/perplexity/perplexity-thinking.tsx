@@ -16,7 +16,7 @@ export function PerplexityThinking({
     <div
       aria-live="polite"
       className={cn(
-        "animate-in fade-in font-sans text-[14px] leading-5 text-[#5c5c5c] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:animate-none dark:text-[#b3b3b3]",
+        "animate-in fade-in font-sans text-[14px] leading-5 text-[#5c5c5c] duration-normal ease-emphasized motion-reduce:animate-none dark:text-[#b3b3b3]",
         className
       )}
     >

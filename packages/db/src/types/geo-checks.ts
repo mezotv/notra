@@ -76,6 +76,7 @@ export interface GeoCheckPromptResultRow {
   mentioned: boolean;
   position: number | null;
   sentiment: string | null;
+  competitors: string[];
   excerpt: string;
   grounding: GeoCheckGrounding;
   sources: GeoCheckSourceItem[];
@@ -85,6 +86,27 @@ export interface GeoCheckPromptResultRow {
   reasoningTokens: number | null;
   truncated: boolean | null;
   lastCheckedAt: Date;
+}
+
+export interface GeoCheckPromptHistoryQuery {
+  promptIds: string[];
+  limit: number;
+}
+
+export interface GeoCheckPromptHistoryRow {
+  id: string;
+  scanId: string;
+  engine: string;
+  mentioned: boolean;
+  position: number | null;
+  sentiment: string | null;
+  competitors: string[];
+  answer: string;
+  excerpt: string;
+  grounding: GeoCheckGrounding;
+  sources: GeoCheckSourceItem[];
+  language: string;
+  capturedAt: Date;
 }
 
 export interface GeoCheckCompetitorShareRow {
@@ -163,4 +185,29 @@ export interface GeoCheckSequenceResultRow {
   reasoningTokens: number | null;
   truncated: boolean | null;
   lastCheckedAt: Date;
+}
+
+export interface GeoCheckScanRow {
+  id: string;
+  startedAt: Date;
+  finishedAt: Date | null;
+}
+
+export interface GeoCheckScanComparisonRow {
+  scanId: string;
+  engine: string;
+  promptId: string;
+  prompt: string;
+  mentioned: boolean;
+  position: number | null;
+  competitors: string[];
+  grounding: GeoCheckGrounding;
+  capturedAt: Date;
+}
+
+export interface GeoCheckScanComparison {
+  previousScan: GeoCheckScanRow | null;
+  currentScan: GeoCheckScanRow | null;
+  previous: GeoCheckScanComparisonRow[];
+  current: GeoCheckScanComparisonRow[];
 }

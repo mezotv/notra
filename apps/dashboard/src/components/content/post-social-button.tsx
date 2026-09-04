@@ -252,7 +252,7 @@ export function PostSocialButton({
           )}
         </div>
         {!published && charLimit !== null && isOverCharLimit && (
-          <p className="text-sm text-amber-600 dark:text-amber-500">
+          <p className="text-warning text-sm">
             This post is {overCharCount.toLocaleString()}{" "}
             {overCharCount === 1 ? "character" : "characters"} over the{" "}
             {charLimit.toLocaleString()} character limit for @

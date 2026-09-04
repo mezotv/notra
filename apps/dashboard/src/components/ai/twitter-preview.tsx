@@ -8,6 +8,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CHAT_PREVIEW_SAVE_TIMEOUT_MS } from "@notra/ai/constants/chat";
+import { BrailleLoader } from "@notra/ui/components/shared/braille-loader";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
   Collapsible,
@@ -24,7 +25,6 @@ import { Loader2Icon } from "lucide-react";
 import { useEffect, useReducer } from "react";
 import { toast } from "sonner";
 
-import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
 import { PostSocialButton } from "@/components/content/post-social-button";
 import { TwitterPost } from "@/components/twitter-post";

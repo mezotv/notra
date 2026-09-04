@@ -115,7 +115,7 @@ function CommandTab({ item, isActive, invertIcon, onSelect }: CommandTabProps) {
     <button
       aria-pressed={isActive}
       className={cn(
-        "relative z-10 flex shrink-0 cursor-pointer items-center gap-2 rounded-[calc(var(--radius-xl)-6px)] px-3 py-1.5 font-medium text-sm outline-none transition-colors duration-300 ease-out focus-visible:ring-2 focus-visible:ring-ring",
+        "relative z-10 flex shrink-0 cursor-pointer items-center gap-2 rounded-[calc(var(--radius-xl)-6px)] px-3 py-1.5 font-medium text-sm outline-none transition-colors duration-slow ease-out focus-visible:ring-2 focus-visible:ring-ring",
         isActive
           ? "text-primary-foreground dark:text-white"
           : "text-muted-foreground hover:text-foreground"
@@ -346,7 +346,7 @@ function ScrollbarThumb({
       aria-valuemin={0}
       aria-valuenow={valueNow}
       className={cn(
-        "absolute bottom-0 flex h-2.5 cursor-grab touch-none items-end transition-opacity duration-300",
+        "absolute bottom-0 flex h-2.5 cursor-grab touch-none items-end transition-opacity duration-slow",
         "focus-visible:opacity-100 focus-visible:outline-none group-hover:opacity-100",
         dragging && "cursor-grabbing",
         visible ? "opacity-100" : "opacity-0"
@@ -535,7 +535,7 @@ export function CommandTabs({
           {pill && (
             <span
               aria-hidden="true"
-              className="pointer-events-none absolute inset-y-1.5 left-0 rounded-[calc(var(--radius-xl)-6px)] bg-primary shadow-sm transition-transform duration-300 ease-out"
+              className="pointer-events-none absolute inset-y-1.5 left-0 rounded-[calc(var(--radius-xl)-6px)] bg-primary shadow-sm transition-transform duration-slow ease-out"
               style={{
                 transform: `translateX(${pill.left}px)`,
                 width: pill.width,

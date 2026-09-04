@@ -7,7 +7,7 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useEffect, useRef, useState } from "react";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@notra/ui/lib/utils";
 
 interface TruncateWithTooltipProps {
   children: string;

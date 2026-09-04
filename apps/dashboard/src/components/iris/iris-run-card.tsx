@@ -37,7 +37,7 @@ function taskIcon(status: IrisRunTaskView["status"]) {
 
 function taskIconClass(status: IrisRunTaskView["status"]) {
   if (status === "completed") {
-    return "text-emerald-600 dark:text-emerald-400";
+    return "text-success";
   }
   if (status === "failed" || status === "canceled") {
     return "text-destructive";
@@ -47,7 +47,7 @@ function taskIconClass(status: IrisRunTaskView["status"]) {
 
 function noticeClass(tone: "info" | "warning" | "danger") {
   if (tone === "warning") {
-    return "border-amber-500/30 bg-amber-500/5";
+    return "border-warning/30 bg-warning/5";
   }
   if (tone === "danger") {
     return "border-destructive/30 bg-destructive/5";

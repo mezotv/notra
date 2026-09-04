@@ -12,7 +12,7 @@ import {
 
 import { GEO_CHECK_ENGLISH_LANGUAGES } from "../constants/geo-checks";
 import { db } from "../drizzle";
-import { geoMentionChecks } from "../schema";
+import { geoMentionChecks, geoScans } from "../schema";
 import type {
   GeoCheckCompetitorPromptRow,
   GeoCheckCompetitorShareRow,
@@ -23,7 +23,11 @@ import type {
   GeoCheckLanguageShareRow,
   GeoCheckLanguageShareTrendRow,
   GeoCheckOverviewRow,
+  GeoCheckPromptHistoryQuery,
+  GeoCheckPromptHistoryRow,
   GeoCheckPromptResultRow,
+  GeoCheckScanComparison,
+  GeoCheckScanComparisonRow,
   GeoCheckScope,
   GeoCheckSequenceResultRow,
   GeoCheckTimeseriesRow,
@@ -274,6 +278,7 @@ export async function queryGeoCheckPromptResults(
       mentioned: geoMentionChecks.mentioned,
       position: geoMentionChecks.position,
       sentiment: geoMentionChecks.sentiment,
+      competitors: geoMentionChecks.competitors,
       excerpt: geoMentionChecks.excerpt,
       grounding: geoMentionChecks.grounding,
       sources: geoMentionChecks.sources,
@@ -316,6 +321,7 @@ export async function queryGeoCheckPromptResults(
     mentioned: row.mentioned,
     position: row.position,
     sentiment: row.sentiment,
+    competitors: row.competitors,
     excerpt: row.excerpt,
     grounding: parseGeoCheckGrounding(row.grounding),
     sources: row.sources,
@@ -325,6 +331,61 @@ export async function queryGeoCheckPromptResults(
     reasoningTokens: row.reasoningTokens,
     truncated: row.finishReason === null ? null : row.finishReason === "length",
     lastCheckedAt: row.lastCheckedAt,
+  }));
+}
+
+export async function queryGeoCheckPromptHistory(
+  scope: GeoCheckScope,
+  query: GeoCheckPromptHistoryQuery
+): Promise<GeoCheckPromptHistoryRow[]> {
+  if (query.promptIds.length === 0) {
+    return [];
+  }
+
+  const rows = await db
+    .select({
+      id: geoMentionChecks.id,
+      scanId: geoMentionChecks.scanId,
+      engine: geoMentionChecks.engine,
+      mentioned: geoMentionChecks.mentioned,
+      position: geoMentionChecks.position,
+      sentiment: geoMentionChecks.sentiment,
+      competitors: geoMentionChecks.competitors,
+      answer: geoMentionChecks.answer,
+      excerpt: geoMentionChecks.excerpt,
+      grounding: geoMentionChecks.grounding,
+      sources: geoMentionChecks.sources,
+      language: geoMentionChecks.language,
+      capturedAt: geoMentionChecks.capturedAt,
+    })
+    .from(geoMentionChecks)
+    .where(
+      and(
+        mentionFilters(scope, undefined, {
+          sequences: "single",
+          englishOnly: true,
+        }),
+        inArray(geoMentionChecks.promptId, query.promptIds),
+        eq(geoMentionChecks.turn, 0)
+      )
+    )
+    .orderBy(desc(geoMentionChecks.capturedAt))
+    .limit(query.limit);
+
+  return rows.map((row) => ({
+    id: row.id,
+    scanId: row.scanId,
+    engine: row.engine,
+    mentioned: row.mentioned,
+    position: row.position,
+    sentiment: row.sentiment,
+    competitors: row.competitors,
+    answer: row.answer,
+    excerpt: row.excerpt,
+    grounding: parseGeoCheckGrounding(row.grounding),
+    sources: row.sources,
+    language: row.language,
+    capturedAt: row.capturedAt,
   }));
 }
 
@@ -668,4 +729,78 @@ export async function queryGeoCheckSequenceResults(
       },
     ];
   });
+}
+
+const SCAN_COMPARISON_SCAN_COUNT = 2;
+
+export async function queryGeoScanComparison(input: {
+  projectId: string;
+}): Promise<GeoCheckScanComparison> {
+  const scans = await db
+    .select({
+      id: geoScans.id,
+      startedAt: geoScans.startedAt,
+      finishedAt: geoScans.finishedAt,
+    })
+    .from(geoScans)
+    .where(
+      and(
+        eq(geoScans.projectId, input.projectId),
+        eq(geoScans.status, "completed")
+      )
+    )
+    .orderBy(desc(geoScans.startedAt))
+    .limit(SCAN_COMPARISON_SCAN_COUNT);
+
+  const currentScan = scans[0] ?? null;
+  const previousScan = scans[1] ?? null;
+  if (!currentScan || !previousScan) {
+    return { previousScan: null, currentScan, previous: [], current: [] };
+  }
+
+  const rows = await db
+    .select({
+      scanId: geoMentionChecks.scanId,
+      engine: geoMentionChecks.engine,
+      promptId: geoMentionChecks.promptId,
+      prompt: geoMentionChecks.prompt,
+      mentioned: geoMentionChecks.mentioned,
+      position: geoMentionChecks.position,
+      competitors: geoMentionChecks.competitors,
+      grounding: geoMentionChecks.grounding,
+      capturedAt: geoMentionChecks.capturedAt,
+    })
+    .from(geoMentionChecks)
+    .where(
+      and(
+        eq(geoMentionChecks.projectId, input.projectId),
+        inArray(geoMentionChecks.scanId, [currentScan.id, previousScan.id]),
+        eq(geoMentionChecks.turn, 0),
+        isNull(geoMentionChecks.sequenceId),
+        inArray(geoMentionChecks.language, [...GEO_CHECK_ENGLISH_LANGUAGES])
+      )
+    );
+
+  const previous: GeoCheckScanComparisonRow[] = [];
+  const current: GeoCheckScanComparisonRow[] = [];
+  for (const row of rows) {
+    const mapped: GeoCheckScanComparisonRow = {
+      scanId: row.scanId,
+      engine: row.engine,
+      promptId: row.promptId,
+      prompt: row.prompt,
+      mentioned: row.mentioned,
+      position: row.position,
+      competitors: row.competitors,
+      grounding: parseGeoCheckGrounding(row.grounding),
+      capturedAt: row.capturedAt,
+    };
+    if (row.scanId === currentScan.id) {
+      current.push(mapped);
+    } else {
+      previous.push(mapped);
+    }
+  }
+
+  return { previousScan, currentScan, previous, current };
 }

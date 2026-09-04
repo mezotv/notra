@@ -32,6 +32,7 @@ import { AddRepositoryDialog } from "@/components/integrations/add-repository-di
 import { LegacyAddIntegrationDialog as AddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
 import { DEFAULT_DATA_POINTS } from "@/constants/content-preview";
 import { trackEvent } from "@/lib/analytics/posthog-client";
+import { useActiveProject } from "@/lib/hooks/use-active-project";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type {
   ContentDataPointSettings,
@@ -96,6 +97,8 @@ export function CreateContentDialog({
   organizationId,
 }: CreateContentDialogProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const { projectId: activeProjectId, isResolved: isProjectResolved } =
+    useActiveProject();
   const open = controlledOpen ?? uncontrolledOpen;
   const setDialogOpen = useCallback(
     (nextOpen: boolean) => {
@@ -112,7 +115,7 @@ export function CreateContentDialog({
   useHotkey(
     "C",
     () => {
-      if (organizationId) {
+      if (organizationId && isProjectResolved) {
         hotkeyEntryRef.current = "hotkey";
         setDialogOpen(true);
       }
@@ -320,7 +323,7 @@ export function CreateContentDialog({
     [previewResponse]
   );
 
-  const previewFailures = previewResponse?.failures ?? [];
+  const previewFailures = previewResponse?.failures;
 
   useEffect(() => {
     if (
@@ -368,7 +371,7 @@ export function CreateContentDialog({
   }, [previewData, previewParamsKey, previewResponse?.linearIntegrations]);
 
   useEffect(() => {
-    if (!previewFailures.length) {
+    if (!previewFailures?.length) {
       return;
     }
     const warningKey = `${previewParamsKey}:${previewFailures
@@ -382,7 +385,7 @@ export function CreateContentDialog({
     toast.warning(
       `${previewFailures.length} repository preview ${previewFailures.length === 1 ? "issue was" : "issues were"} detected.`
     );
-  }, [previewParamsKey, previewFailures]);
+  }, [previewFailures, previewParamsKey]);
 
   const mutation = useMutation<
     { succeeded: number; total: number },
@@ -394,6 +397,9 @@ export function CreateContentDialog({
     }
   >({
     mutationFn: async ({ formats, voiceIds, selectedItems }) => {
+      if (!isProjectResolved) {
+        throw new Error("Project is still loading");
+      }
       const hasLinear = selectedLinearIds.length > 0;
       const calls = formats.flatMap((format) =>
         voiceIds.map((voiceId) => ({ format, voiceId }))
@@ -405,6 +411,7 @@ export function CreateContentDialog({
       const { collectionId } =
         await dashboardOrpc.content.createCollection.call({
           organizationId,
+          projectId: activeProjectId ?? undefined,
           contentTypes: formats,
           expectedPostCount: calls.length,
         });
@@ -899,7 +906,11 @@ export function CreateContentDialog({
       <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
         {!hideTrigger && (
           <ResponsiveDialogTrigger
-            render={<CreateContentButton disabled={!organizationId} />}
+            render={
+              <CreateContentButton
+                disabled={!organizationId || !isProjectResolved}
+              />
+            }
           />
         )}
         <ResponsiveDialogContent className="flex h-[85vh] max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-4xl">
@@ -1043,7 +1054,7 @@ export function CreateContentDialog({
                 </div>
                 {step === "identities" ? (
                   <Button
-                    disabled={mutation.isPending}
+                    disabled={mutation.isPending || !isProjectResolved}
                     onClick={handleCreate}
                     type="button"
                   >

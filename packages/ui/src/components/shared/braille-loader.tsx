@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@notra/ui/lib/utils";
 
 const BRAILLE_CHARS = ["⠠", "⠝", "⠕", "⠞", "⠗", "⠁"];
 

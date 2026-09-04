@@ -36,7 +36,7 @@ function TableBody({ className, ...props }: React.ComponentProps<"tbody">) {
   return (
     <tbody
       className={cn(
-        "bg-transparent [&>tr>td]:bg-background [&>tr>td]:transition-colors [&>tr:hover>td]:bg-muted/50 [&_tr:first-child>td]:shadow-[inset_0_1px_0_var(--border)] [&_tr:first-child>td:first-child]:rounded-tl-lg [&_tr:first-child>td:last-child]:rounded-tr-lg [&_tr:last-child]:border-0",
+        "bg-transparent [&>tr>td]:bg-background [&>tr>td]:transition-colors [&>tr:hover>td]:bg-muted/50 [&_tr:first-child>td]:shadow-[inset_0_1px_0_var(--border)] [&_tr:last-child]:border-0",
         className
       )}
       data-slot="table-body"

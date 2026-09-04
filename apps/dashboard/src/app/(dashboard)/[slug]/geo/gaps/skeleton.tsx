@@ -1,5 +1,6 @@
 "use client";
 
+import { GEO_GAPS_LOADING_STATUS } from "@notra/geo-core/constants/geo";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 
 import { GeoTableSkeleton } from "@/components/geo/skeleton-parts";
@@ -21,6 +22,9 @@ export function GeoGapsSkeleton({ embedded = false }: { embedded?: boolean }) {
         </div>
       </div>
       <GeoTableSkeleton rows={GAP_ROW_COUNT} />
+      <p aria-live="polite" className="text-muted-foreground text-xs">
+        {GEO_GAPS_LOADING_STATUS}
+      </p>
     </div>
   );
 

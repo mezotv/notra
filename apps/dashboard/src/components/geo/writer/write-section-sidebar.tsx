@@ -21,7 +21,7 @@ export function WriteSectionSidebar({
       aria-hidden={collapsed}
       aria-label="Write sections"
       className={cn(
-        "hidden shrink-0 flex-col overflow-hidden transition-[width,margin-right,opacity] duration-300 ease-out will-change-[width] motion-reduce:transition-none md:flex",
+        "duration-slow hidden shrink-0 flex-col overflow-hidden transition-[width,margin-right,opacity] ease-out will-change-[width] motion-reduce:transition-none md:flex",
         collapsed ? "-mr-3 w-0 opacity-0" : "mr-0 opacity-100"
       )}
       style={{ width: collapsed ? undefined : GEO_WRITE_SIDEBAR_WIDTH }}

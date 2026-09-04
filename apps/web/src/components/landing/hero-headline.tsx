@@ -85,7 +85,7 @@ export function HeroHeadline({ word }: HeroHeadlineProps) {
           className={cn(
             "relative inline-flex h-[1em] items-center overflow-hidden rounded-[0.24em] align-middle",
             "bg-white text-[#1E1E1E] shadow-[0_0.05em_0.22em_rgba(0,0,0,0.1),0_0_0_0.0625rem_rgba(0,0,0,0.04)] dark:bg-white/[0.08] dark:text-white dark:shadow-[0_0_0_0.0625rem_rgba(255,255,255,0.12)]",
-            "transition-[width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+            "duration-slower ease-emphasized transition-[width] motion-reduce:transition-none"
           )}
           style={width ? { width: `${width}px` } : undefined}
         >
@@ -107,7 +107,7 @@ export function HeroHeadline({ word }: HeroHeadlineProps) {
             </span>
           ))}
           <span
-            className="absolute inset-0 transition-[font-size] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+            className="duration-slower ease-emphasized absolute inset-0 transition-[font-size] motion-reduce:transition-none"
             style={{ fontSize: `${wordSizeEm(word)}em` }}
           >
             <LazyMotion features={domAnimation}>

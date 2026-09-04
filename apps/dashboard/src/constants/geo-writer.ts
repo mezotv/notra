@@ -65,3 +65,38 @@ export const GEO_WRITE_DIALOG_SECTIONS = [
     icon: UserMultiple02Icon,
   },
 ];
+
+export const GEO_WRITE_ACTION_HELP = {
+  plan: "Plan creates a brief you review before anything is drafted.",
+  write: "Write plans and drafts the article in one step.",
+} as const;
+
+export const GEO_WRITE_EDIT_NOTE =
+  "Editing the text creates a custom variant that is no longer linked to the tracked prompt.";
+
+export const GEO_WRITE_RECOMMENDED_BADGE = "Recommended";
+
+export const GEO_WRITE_COMPETITOR_DETAIL = {
+  mentioned: "Recommended instead of you",
+  tracked: "Tracked",
+} as const;
+
+export const GEO_WRITE_FORMAT_RULES = [
+  {
+    id: "comparison" as const,
+    pattern:
+      /\b(vs\.?|versus|compare|comparison|difference between|better than|alternatives?)\b/i,
+    reason:
+      "The prompt compares options, so a comparison page matches its intent.",
+  },
+  {
+    id: "listicle" as const,
+    pattern:
+      /\b(best|top \d*|list of|tools?|platforms?|software|apps?|options|examples|companies|providers|vendors)\b/i,
+    reason:
+      "The prompt asks for options, so a scannable list is what assistants quote.",
+  },
+] as const;
+
+export const GEO_WRITE_FORMAT_DEFAULT_REASON =
+  "The prompt asks a direct question, so a guide that answers it first fits best.";

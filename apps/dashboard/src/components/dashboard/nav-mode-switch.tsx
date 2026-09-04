@@ -54,8 +54,9 @@ export function NavModeSwitch({
             return (
               <Link
                 aria-current={isActive ? "page" : undefined}
+                title={`${option.label} · ${option.description}`}
                 className={cn(
-                  "relative z-10 flex h-7 items-center justify-center gap-1.5 rounded-md text-xs transition-colors duration-150",
+                  "duration-fast relative z-10 flex h-7 items-center justify-center gap-1.5 rounded-md text-xs transition-colors",
                   isActive
                     ? "text-foreground font-medium"
                     : "text-muted-foreground hover:text-foreground"
@@ -95,7 +96,7 @@ export function NavModeSwitch({
                   <SidebarLabel>{option.label}</SidebarLabel>
                 </Link>
               }
-              tooltip={`${option.label} mode`}
+              tooltip={`${option.label} · ${option.description}`}
             />
           </SidebarMenuItem>
         ))}

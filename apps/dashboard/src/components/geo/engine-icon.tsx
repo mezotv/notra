@@ -7,6 +7,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import type { EngineIconKey } from "@notra/geo-core/types/geo";
 import { resolveEngineIconKey } from "@notra/geo-core/utils/geo-engine-icon";
+import { ModelProviderLogo } from "@notra/ui/components/geo/model-provider-logo";
 import { Amazon } from "@notra/ui/components/ui/svgs/amazon";
 import { Apple } from "@notra/ui/components/ui/svgs/apple";
 import { AppleDark } from "@notra/ui/components/ui/svgs/appleDark";
@@ -55,7 +56,6 @@ import { YouCom } from "@notra/ui/components/ui/svgs/youCom";
 import { Zai } from "@notra/ui/components/ui/svgs/zai";
 import type { ComponentType, SVGProps } from "react";
 
-import { ModelProviderLogo } from "@/components/geo/model-provider-logo";
 import { cn } from "@/lib/utils";
 import type { EngineIconProps } from "@/types/geo";
 import { splitModelId } from "@/utils/geo-model-display";

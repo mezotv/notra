@@ -102,6 +102,8 @@ export function JourneyDetailDialog({
     Math.max(journey.pages, 1),
     JOURNEY_EVENT_SKELETON_ROW_KEYS.length
   );
+  const displayedPaths =
+    eventPaths.length > 0 ? eventPaths : journey.samplePaths;
 
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
@@ -160,17 +162,13 @@ export function JourneyDetailDialog({
                 )
               )}
             </div>
-          ) : eventPaths.length > 0 ? (
+          ) : null}
+          {!isLoading ? (
             <JourneyPathTrail
               limit={GEO_JOURNEY_TRAIL_DETAIL_LIMIT}
-              paths={eventPaths}
+              paths={displayedPaths}
             />
-          ) : (
-            <JourneyPathTrail
-              limit={GEO_JOURNEY_TRAIL_DETAIL_LIMIT}
-              paths={journey.samplePaths}
-            />
-          )}
+          ) : null}
           <div aria-busy={isLoading} className="max-h-96 overflow-auto">
             <Table>
               <TableHeader>

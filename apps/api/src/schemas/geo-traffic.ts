@@ -112,7 +112,16 @@ export const trafficOverviewResponseSchema = z
     configured: trafficConfiguredField,
     totals: z.object({
       crawler: z.number().int(),
+      cited: z.number().int(),
       aiReferral: z.number().int(),
+      conversions: z.number().int().nullable().openapi({
+        description:
+          "AI referral visits that reached a configured conversion path. Null when no conversion paths are set.",
+      }),
+    }),
+    previousConversions: z.number().int().nullable().openapi({
+      description:
+        "Conversions in the previous window of the same length. Null when no conversion paths are set or no comparison data exists.",
     }),
     sources: z.array(trafficSourceSchema),
     points: z.array(trafficPointSchema),

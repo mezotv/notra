@@ -3,6 +3,8 @@
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
+import { LogoStack } from "@notra/ui/components/geo/logo-stack";
+import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import {
   HoverCard,
   HoverCardTrigger,
@@ -14,12 +16,10 @@ import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { LogoStack } from "@/components/geo/logo-stack";
 import { ShelfPlacementBadge } from "@/components/geo/shelf/shelf-placement-badge";
 import { ShelfTicketAssigneeCard } from "@/components/geo/shelf/shelf-ticket-assignee-card";
 import { ShelfTicketBadge } from "@/components/geo/shelf/shelf-ticket-badge";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,

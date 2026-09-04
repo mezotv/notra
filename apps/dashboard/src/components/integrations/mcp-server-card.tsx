@@ -117,7 +117,7 @@ export function McpServerCard({
         footer={
           needsReauthorization ? (
             <>
-              <p className="text-sm text-amber-700 dark:text-amber-300">
+              <p className="text-warning text-sm">
                 Access expired. Reauthorize to keep tools working.
               </p>
               <Button

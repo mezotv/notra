@@ -68,13 +68,14 @@ export async function appendWebhookLog(input: WebhookLogInput) {
   );
   const allKey = getAllLogKey(input.organizationId);
 
-  await redis.lpush(key, log);
-  await redis.ltrim(key, 0, LOG_LIMIT - 1);
-  await redis.expire(key, ttlSeconds);
-
-  await redis.lpush(allKey, log);
-  await redis.ltrim(allKey, 0, LOG_LIMIT - 1);
-  await redis.expire(allKey, ttlSeconds);
+  const pipeline = redis.pipeline();
+  pipeline.lpush(key, log);
+  pipeline.ltrim(key, 0, LOG_LIMIT - 1);
+  pipeline.expire(key, ttlSeconds);
+  pipeline.lpush(allKey, log);
+  pipeline.ltrim(allKey, 0, LOG_LIMIT - 1);
+  pipeline.expire(allKey, ttlSeconds);
+  await pipeline.exec();
 
   return log;
 }

@@ -2,18 +2,21 @@
 
 import {
   GEO_SPARKLINE_MIN_POINTS,
+  GEO_TRAFFIC_CONVERSIONS_NOT_CONFIGURED_LABEL,
+  GEO_TRAFFIC_CONVERSIONS_SETUP_LABEL,
+  GEO_TRAFFIC_FUNNEL_STAGES,
+  GEO_TRAFFIC_STAT_TREND_HINT,
   GEO_TRAFFIC_TREND_CRAWLER_KEY,
   GEO_TRAFFIC_TREND_CRAWLER_LABEL,
   GEO_TRAFFIC_TREND_REFERRAL_KEY,
   GEO_TRAFFIC_TREND_REFERRAL_LABEL,
-  GEO_TRAFFIC_TREND_TOTAL_KEY,
-  GEO_TRAFFIC_TREND_TOTAL_LABEL,
 } from "@notra/geo-core/constants/geo";
 import {
   trafficSparklineDays,
   trafficVisitDelta,
 } from "@notra/geo-core/utils/ai-traffic";
 import { todayIsoDate } from "@notra/geo-core/utils/day-label";
+import Link from "next/link";
 import { useState } from "react";
 
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
@@ -22,7 +25,11 @@ import { TrafficProviderLegend } from "@/components/geo/traffic-provider-legend"
 import { CHART_PRIMARY_COLOR, CHART_SECONDARY_COLOR } from "@/constants/charts";
 import { cn } from "@/lib/utils";
 import type { ChartConfig, TooltipRowGroup } from "@/types/charts";
-import type { TrafficHeroProps, TrafficTrendMetric } from "@/types/geo";
+import type {
+  TrafficHeroMetricProps,
+  TrafficHeroProps,
+  TrafficTrendMetric,
+} from "@/types/geo";
 import {
   buildTrafficTrendProviders,
   buildTrafficTrendRowsForProviders,
@@ -40,8 +47,53 @@ const HERO_CHART_OPTIONS = {
 
 const TRAFFIC_TREND_STROKE_WIDTH = 1.5;
 
-function metricDelta(current: number, previous: number | null): number | null {
-  return previous === null ? null : trafficVisitDelta(current, previous);
+const HERO_METRIC_CELL_CLASS =
+  "border-border border-b px-5 py-4 last:border-b-0 sm:odd:border-r sm:nth-[n+3]:border-b-0 lg:border-r lg:border-b-0 lg:last:border-r-0";
+
+function metricDelta(
+  current: number | null,
+  previous: number | null
+): number | null {
+  if (current === null || previous === null) {
+    return null;
+  }
+  return trafficVisitDelta(current, previous);
+}
+
+function TrafficHeroMetric({ metric, settingsHref }: TrafficHeroMetricProps) {
+  return (
+    <div className={HERO_METRIC_CELL_CLASS}>
+      <p className="text-muted-foreground text-xs">{metric.label}</p>
+      <p className="text-muted-foreground/70 text-[0.6875rem] leading-snug">
+        {metric.description}
+      </p>
+      {metric.value === null ? (
+        <div className="mt-2 flex flex-col gap-1">
+          <span className="text-muted-foreground text-lg leading-none font-medium">
+            {GEO_TRAFFIC_CONVERSIONS_NOT_CONFIGURED_LABEL}
+          </span>
+          <Link
+            className="text-primary text-xs underline-offset-4 hover:underline"
+            href={settingsHref}
+          >
+            {GEO_TRAFFIC_CONVERSIONS_SETUP_LABEL}
+          </Link>
+        </div>
+      ) : (
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className="text-3xl leading-none font-semibold tracking-tight tabular-nums">
+            {metric.value.toLocaleString()}
+          </span>
+          <GeoStatDelta
+            className="mb-0.5"
+            delta={metric.delta}
+            hint={GEO_TRAFFIC_STAT_TREND_HINT}
+            label={metric.label}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function TrafficHero({
@@ -50,6 +102,7 @@ export function TrafficHero({
   rows,
   groups,
   points,
+  settingsHref,
 }: TrafficHeroProps) {
   const [hiddenKeys, setHiddenKeys] = useState<ReadonlySet<string>>(
     () => new Set()
@@ -57,32 +110,19 @@ export function TrafficHero({
   const markIncompleteTail = rows.at(-1)?.rawDay === todayIsoDate();
   const showTrend = rows.length >= GEO_SPARKLINE_MIN_POINTS;
   const days = trafficSparklineDays(points);
-  const totalVisits = totals.crawler + totals.aiReferral;
-  const previousTotalVisits =
-    previousTotals === null
-      ? null
-      : previousTotals.crawler + previousTotals.aiReferral;
 
-  const metrics: TrafficTrendMetric[] = [
-    {
-      key: GEO_TRAFFIC_TREND_CRAWLER_KEY,
-      label: GEO_TRAFFIC_TREND_CRAWLER_LABEL,
-      value: totals.crawler,
-      delta: metricDelta(totals.crawler, previousTotals?.crawler ?? null),
-    },
-    {
-      key: "ai_referral",
-      label: GEO_TRAFFIC_TREND_REFERRAL_LABEL,
-      value: totals.aiReferral,
-      delta: metricDelta(totals.aiReferral, previousTotals?.aiReferral ?? null),
-    },
-    {
-      key: GEO_TRAFFIC_TREND_TOTAL_KEY,
-      label: GEO_TRAFFIC_TREND_TOTAL_LABEL,
-      value: totalVisits,
-      delta: metricDelta(totalVisits, previousTotalVisits),
-    },
-  ];
+  const metrics: TrafficTrendMetric[] = GEO_TRAFFIC_FUNNEL_STAGES.map(
+    (stage) => ({
+      key: stage.key,
+      label: stage.label,
+      description: stage.description,
+      value: totals[stage.key],
+      delta: metricDelta(
+        totals[stage.key],
+        previousTotals === null ? null : previousTotals[stage.key]
+      ),
+    })
+  );
 
   const providers = buildTrafficTrendProviders(
     groups.flatMap((group) => group.members)
@@ -143,27 +183,18 @@ export function TrafficHero({
     <div>
       <div
         className={cn(
-          "divide-border grid grid-cols-1 divide-y sm:grid-cols-3 sm:divide-x sm:divide-y-0",
+          "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
           showTrend
             ? "border-border bg-muted rounded-t-2xl border border-b-0 pb-5"
             : "border-border bg-card overflow-hidden rounded-2xl border"
         )}
       >
         {metrics.map((metric) => (
-          <div className="px-5 py-4" key={metric.key}>
-            <p className="text-muted-foreground text-xs">{metric.label}</p>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-3xl leading-none font-semibold tracking-tight tabular-nums">
-                {metric.value.toLocaleString()}
-              </span>
-              <GeoStatDelta
-                className="mb-0.5"
-                delta={metric.delta}
-                hint="vs. previous period"
-                label={metric.label}
-              />
-            </div>
-          </div>
+          <TrafficHeroMetric
+            key={metric.key}
+            metric={metric}
+            settingsHref={settingsHref}
+          />
         ))}
       </div>
       {showTrend ? (

@@ -32,6 +32,7 @@ import {
   startAgentReadinessScan,
 } from "@notra/geo-core/geo/agent-readiness";
 import {
+  createGeoProjectFromWebsite,
   discoverGeoWebsite,
   generateGeoFromWebsite,
 } from "@notra/geo-core/geo/discover";
@@ -59,26 +60,32 @@ import {
   importGeoPrompts,
   listGeoPrompts,
   loadAiTraffic,
+  loadGeoChanges,
   loadGeoCompetitorDetail,
   loadGeoCompetitorShare,
   loadGeoCompetitors,
   loadGeoJourneyDetail,
   loadGeoLanguageShare,
   loadGeoOverview,
+  loadGeoPromptHistory,
   loadGeoPromptResults,
   loadGeoSettings,
   loadGeoTimeseries,
   loadGeoTrafficJourneys,
   loadGeoTrafficLog,
   loadGeoTrafficPages,
+  startGeoPromptRescan,
   startGeoScan,
+  toggleGeoAutoPrompt,
   toggleGeoPrompt,
+  updateGeoPrompt,
   upsertGeoCompetitor,
   upsertGeoSettings,
 } from "@notra/geo-core/geo/programs";
 import {
-  createGeoProject,
+  deleteGeoProject,
   listGeoProjects,
+  requireBrandIdentity,
   requireGeoProject,
 } from "@notra/geo-core/geo/projects";
 import { promptKey } from "@notra/geo-core/geo/prompt-key";
@@ -118,10 +125,15 @@ import {
   geoOnboardingBrandInputSchema,
   geoOrganizationInputSchema,
   geoProjectCreateInputSchema,
+  geoProjectDeleteInputSchema,
   geoPromptCreateInputSchema,
+  geoPromptHistoryInputSchema,
+  geoPromptRescanInputSchema,
   geoPromptsImportInputSchema,
   geoPromptDeleteInputSchema,
   geoPromptToggleInputSchema,
+  geoPromptUpdateInputSchema,
+  geoAutoPromptToggleInputSchema,
   geoSequenceCreateInputSchema,
   geoSequenceDeleteInputSchema,
   geoSequenceResultsInputSchema,
@@ -670,6 +682,12 @@ export const geoRouter = {
     .handler(
       geoHandler((input) => loadGeoPromptResults(input, geoWindow(input)))
     ),
+  changes: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(geoHandler((input) => loadGeoChanges(input))),
+  promptHistory: authorizedProcedure
+    .input(geoPromptHistoryInputSchema)
+    .handler(geoHandler((input) => loadGeoPromptHistory(input))),
   competitorShare: authorizedProcedure
     .input(geoCompetitorShareInputSchema)
     .handler(
@@ -898,7 +916,8 @@ export const geoRouter = {
     .handler(geoHandler((input) => listGeoPrompts(input))),
   promptsCreate: authorizedProcedure.input(geoPromptCreateInputSchema).handler(
     geoHandler(
-      (input) => createGeoPrompt(input, input.prompt, input.id),
+      (input) =>
+        createGeoPrompt(input, input.prompt, input.id, input.tags ?? []),
       ({ context, input, output }) => {
         trackGeoRouterEvent({
           context,
@@ -942,6 +961,21 @@ export const geoRouter = {
       }
     )
   ),
+  promptsUpdate: authorizedProcedure.input(geoPromptUpdateInputSchema).handler(
+    geoHandler((input) =>
+      updateGeoPrompt(input, input.promptId, {
+        enabled: input.enabled,
+        tags: input.tags,
+      })
+    )
+  ),
+  promptsToggleAuto: authorizedProcedure
+    .input(geoAutoPromptToggleInputSchema)
+    .handler(
+      geoHandler((input) =>
+        toggleGeoAutoPrompt(input, input.promptId, input.enabled)
+      )
+    ),
   promptsToggle: authorizedProcedure.input(geoPromptToggleInputSchema).handler(
     geoHandler(
       (input) => toggleGeoPrompt(input, input.promptId, input.enabled),
@@ -1076,10 +1110,18 @@ export const geoRouter = {
     .handler(
       geoHandler(
         (input) =>
-          createGeoProject(
+          requireBrandIdentity(
             input.organizationId,
-            input.name,
             input.brandSettingsId
+          ).pipe(
+            Effect.flatMap((identity) =>
+              createGeoProjectFromWebsite(
+                input.organizationId,
+                input.name,
+                input.brandSettingsId,
+                identity.websiteUrl
+              )
+            )
           ),
         async ({ context, input, output }) => {
           const projectCount = await countGeoProjects(
@@ -1104,6 +1146,13 @@ export const geoRouter = {
             properties: { is_sample: false, project_count: projectCount },
           });
         }
+      )
+    ),
+  projectsDelete: authorizedProcedure
+    .input(geoProjectDeleteInputSchema)
+    .handler(
+      geoHandler((input) =>
+        deleteGeoProject(input.organizationId, input.projectId)
       )
     ),
   generateFromWebsite: authorizedProcedure
@@ -1184,6 +1233,9 @@ export const geoRouter = {
       }
     )
   ),
+  rescanPrompt: authorizedProcedure
+    .input(geoPromptRescanInputSchema)
+    .handler(geoHandler((input) => startGeoPromptRescan(input))),
   writerGaps: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(geoHandler((input) => loadGeoContentGaps(input))),

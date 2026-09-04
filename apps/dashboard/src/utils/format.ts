@@ -31,7 +31,7 @@ export function formatArticleDate(date: Date): string {
 }
 
 export function usageBarColor(percent: number): string {
-  return percent > 70 ? "bg-amber-500" : "bg-emerald-500";
+  return percent > 70 ? "bg-warning" : "bg-success";
 }
 
 export function isCreditRange<T extends string>(

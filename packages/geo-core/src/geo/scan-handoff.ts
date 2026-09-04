@@ -43,7 +43,12 @@ import {
  *   rule it out, which is exactly why the ambiguous case must not release.
  */
 export const startClaimedGeoScanRun = Effect.fn("geo.startClaimedScanRun")(
-  function* (organizationId: string, projectId: string, claimedAt: Date) {
+  function* (
+    organizationId: string,
+    projectId: string,
+    claimedAt: Date,
+    promptIds?: readonly string[]
+  ) {
     const workflows = yield* GeoWorkflowService;
     const scanId = yield* createGeoScanRow({ organizationId, projectId }).pipe(
       Effect.tapError(() =>
@@ -59,6 +64,7 @@ export const startClaimedGeoScanRun = Effect.fn("geo.startClaimedScanRun")(
         projectId,
         claimedAt: claimedAt.toISOString(),
         scanId,
+        ...(promptIds ? { promptIds: [...promptIds] } : {}),
       })
       .pipe(
         Effect.mapError((cause) => new GeoScanStartError({ cause })),

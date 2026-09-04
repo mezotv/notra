@@ -3,6 +3,7 @@
 import { Linkedin02Icon, NewTwitterIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { formatDayLabel } from "@notra/geo-core/utils/day-label";
+import { DelayedTooltip } from "@notra/ui/components/shared/delayed-tooltip";
 import {
   Avatar,
   AvatarFallback,
@@ -14,7 +15,6 @@ import {
 } from "@notra/ui/components/ui/tooltip";
 import { useMemo } from "react";
 
-import { DelayedTooltip } from "@/components/delayed-tooltip";
 import {
   InstrumentEmpty,
   InstrumentModule,

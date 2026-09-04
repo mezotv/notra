@@ -1,5 +1,6 @@
 "use client";
 
+import { SPRING } from "@notra/ui/lib/motion";
 import type { Transition } from "motion/react";
 import { motion, useReducedMotion } from "motion/react";
 
@@ -20,8 +21,7 @@ import type { InstrumentRevealProps } from "@/types/instrument";
 const REVEAL = {
   offsetY: 6, // px each module rises while powering on
   stagger: 0.045, // seconds between neighboring modules
-  spring: { type: "spring", stiffness: 380, damping: 34 },
-} satisfies { offsetY: number; stagger: number; spring: Transition };
+} satisfies { offsetY: number; stagger: number };
 
 const INSTANT: Transition = { duration: 0 };
 
@@ -34,7 +34,7 @@ export function InstrumentReveal({
   const reduceMotion = useReducedMotion();
   const transition: Transition = reduceMotion
     ? INSTANT
-    : { ...REVEAL.spring, delay: order * REVEAL.stagger };
+    : { ...SPRING.snappy, delay: order * REVEAL.stagger };
 
   return (
     <motion.div

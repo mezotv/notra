@@ -16,7 +16,7 @@ export function PullRequestList({ prs }: { prs: GitHubPR[] }) {
     <div className="space-y-3">
       {prs.map((pr) => (
         <div
-          className="border-border/60 bg-card hover:border-border rounded-lg border p-4 transition-all duration-200 hover:shadow-sm"
+          className="border-border/60 bg-card hover:border-border duration-normal rounded-lg border p-4 transition-all hover:shadow-sm"
           key={pr.id}
         >
           <div className="flex items-start gap-3">
@@ -32,8 +32,8 @@ export function PullRequestList({ prs }: { prs: GitHubPR[] }) {
                 <span
                   className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
                     pr.draft
-                      ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-950 dark:text-yellow-300"
-                      : "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300"
+                      ? "bg-warning/10 text-warning"
+                      : "bg-success/10 text-success"
                   }`}
                 >
                   {pr.draft ? "Draft" : "Ready"}

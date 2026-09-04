@@ -8,13 +8,13 @@ import {
   formatGeoJourneySpan,
   formatGeoSource,
 } from "@notra/geo-core/utils/ai-traffic";
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
 
 import { ChartSparkline } from "@/components/charts/chart-sparkline";
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { DirectionDonut } from "@/components/geo/directions/direction-donut";
 import { DirectionPagesTable } from "@/components/geo/directions/direction-pages-table";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoBar } from "@/components/geo/geo-bar";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_PRIMARY_COLOR } from "@/constants/charts";
 import {

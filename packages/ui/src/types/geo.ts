@@ -13,6 +13,11 @@ export interface PurposeBadgeProps {
   category: string;
 }
 
+export interface PromptOutcomeIconProps {
+  mentioned: boolean;
+  className?: string;
+}
+
 export interface GeoBarProps {
   value: number;
   max?: number;
@@ -127,6 +132,7 @@ export interface LogoStackItem {
 export interface LogoStackProps {
   items: LogoStackItem[];
   limit?: number;
+  emptyLabel?: string;
 }
 
 export interface StatTile {

@@ -224,6 +224,7 @@ geoVisibilityRoutes.openapi(promptResultsRoute, async (c) => {
     mentioned: result.mentioned,
     position: result.position,
     sentiment: result.sentiment,
+    competitors: result.competitors,
     excerpt: result.excerpt,
     searchQueries: result.searchQueries,
     sources: result.sources,

@@ -44,10 +44,10 @@ function toPromptAddMode(value: string): PromptAddMode {
 }
 
 const MODE_COPY_CLASS =
-  "col-start-1 row-start-1 transition-opacity duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:duration-150";
+  "col-start-1 row-start-1 transition-opacity duration-normal ease-emphasized";
 
 const MODE_PANEL_CLASS =
-  "col-start-1 row-start-1 w-full transition-[opacity,translate] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] data-[starting-style]:translate-y-1.5 data-[ending-style]:-translate-y-1.5 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 data-[hidden]:pointer-events-none data-[hidden]:invisible motion-reduce:translate-none motion-reduce:duration-150 [&[hidden]]:!block";
+  "col-start-1 row-start-1 w-full transition-[opacity,translate] duration-normal ease-emphasized data-[starting-style]:translate-y-1.5 data-[ending-style]:-translate-y-1.5 data-[starting-style]:opacity-0 data-[ending-style]:opacity-0 data-[hidden]:pointer-events-none data-[hidden]:invisible motion-reduce:translate-none [&[hidden]]:!block";
 
 export function PromptAddDialog({
   open,

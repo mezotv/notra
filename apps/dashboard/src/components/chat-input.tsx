@@ -298,6 +298,12 @@ const ChatInput = ({
     sendTooltip =
       "Enter to queue this message. It will send once the AI finishes.";
   }
+  let sendLabel = "Send message";
+  if (showStop) {
+    sendLabel = "Stop generating";
+  } else if (canQueue) {
+    sendLabel = "Queue message";
+  }
 
   return (
     <Composer.Frame
@@ -343,7 +349,7 @@ const ChatInput = ({
             {usageLimitError ? (
               <span className="flex min-w-0 items-center gap-1.5 text-sm">
                 <HugeiconsIcon
-                  className="size-4 shrink-0 text-amber-600 dark:text-amber-500"
+                  className="text-warning size-4 shrink-0"
                   icon={Alert02Icon}
                 />
                 <span className="truncate">{usageLimitError}</span>
@@ -483,13 +489,7 @@ const ChatInput = ({
         />
         <Composer.Send
           disabled={isInputLocked || (!showStop && isEmpty)}
-          label={
-            showStop
-              ? "Stop generating"
-              : canQueue
-                ? "Queue message"
-                : "Send message"
-          }
+          label={sendLabel}
           onClick={showStop ? onStop : handleSend}
           tooltip={sendTooltip}
         >

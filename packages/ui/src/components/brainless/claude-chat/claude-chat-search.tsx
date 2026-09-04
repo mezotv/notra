@@ -39,11 +39,11 @@ export interface ClaudeChatSearchStep {
 
 const EMPTY_STEPS: readonly ClaudeChatSearchStep[] = [];
 const ENTER_CLASS =
-  "translate-y-0 opacity-100 transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] starting:translate-y-1.5 starting:opacity-0 motion-reduce:transition-none motion-reduce:starting:translate-y-0 motion-reduce:starting:opacity-100";
+  "translate-y-0 opacity-100 transition-[opacity,transform] duration-normal ease-emphasized starting:translate-y-1.5 starting:opacity-0 motion-reduce:transition-none motion-reduce:starting:translate-y-0 motion-reduce:starting:opacity-100";
 const FADE_IN_CLASS =
-  "animate-in fade-in slide-in-from-top-2 fill-mode-both duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:animate-none motion-reduce:opacity-100 motion-reduce:translate-y-0";
+  "animate-in fade-in slide-in-from-top-2 fill-mode-both duration-normal ease-emphasized motion-reduce:animate-none motion-reduce:opacity-100 motion-reduce:translate-y-0";
 const FADE_IN_SOFT_CLASS =
-  "animate-in fade-in fill-mode-both duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:animate-none motion-reduce:opacity-100";
+  "animate-in fade-in fill-mode-both duration-normal ease-emphasized motion-reduce:animate-none motion-reduce:opacity-100";
 
 function faviconSrc(domain: string) {
   return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
@@ -230,7 +230,7 @@ export function ClaudeChatSearch({
           <span className="relative flex h-5 w-4 items-center justify-center">
             <span
               className={cn(
-                "flex size-3.5 items-center justify-center transition-opacity duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none",
+                "flex size-3.5 items-center justify-center transition-opacity duration-normal ease-emphasized motion-reduce:transition-none",
                 finished && "opacity-0"
               )}
             >

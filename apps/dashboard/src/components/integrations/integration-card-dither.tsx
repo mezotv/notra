@@ -67,7 +67,7 @@ export function IntegrationCardDither({
   return (
     <div
       className={cn(
-        "h-full w-full opacity-0 transition-opacity duration-300",
+        "duration-slow h-full w-full opacity-0 transition-opacity",
         active && "opacity-100"
       )}
     >

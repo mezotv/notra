@@ -4,15 +4,14 @@ import { GEO_TRAFFIC_REVEAL_MS } from "@notra/geo-core/constants/geo";
 import { isTrafficPagePending } from "@notra/geo-core/utils/ai-traffic";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
 import { useReducedMotion } from "motion/react";
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { AiTrafficCard } from "@/components/geo/ai-traffic-card";
 import { AiTrafficLogCard } from "@/components/geo/ai-traffic-log-card";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
+import { GeoSetupButton } from "@/components/geo/geo-setup-button";
 import { TrafficEmpty } from "@/components/geo/traffic-empty";
 import { TrafficPagesCard } from "@/components/geo/traffic-pages-card";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
@@ -132,18 +131,7 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
             </p>
           </header>
           <EmptyState
-            action={
-              <Button
-                nativeButton={false}
-                render={
-                  <Link
-                    href={withGeoProject(`/${organizationSlug}/geo`, projectId)}
-                  />
-                }
-              >
-                Set up GEO tracking
-              </Button>
-            }
+            action={<GeoSetupButton organizationId={organizationId} />}
             description="Set up GEO tracking first, then watch AI crawlers and referrals as they arrive."
             preview={
               <EmptyStateTablePreview
@@ -189,7 +177,13 @@ function TrafficPageContent({ organizationSlug }: GeoPageClientProps) {
         {header}
         <div className="flex flex-col gap-6">
           <InstrumentReveal active={revealActive} order={0}>
-            <AiTrafficCard traffic={traffic} />
+            <AiTrafficCard
+              settingsHref={withGeoProject(
+                `/${organizationSlug}/geo/settings`,
+                projectId
+              )}
+              traffic={traffic}
+            />
           </InstrumentReveal>
           <InstrumentReveal active={revealActive} order={1}>
             <TrafficPagesCard

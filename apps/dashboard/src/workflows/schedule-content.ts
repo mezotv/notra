@@ -1,4 +1,5 @@
 import { getContentBillingLimitLabel } from "@notra/ai/billing/content-billing";
+import { isCustomIntervalDue } from "@notra/ai/utils/schedule-interval";
 import { sleep } from "workflow";
 import { flattenError } from "zod";
 
@@ -13,6 +14,7 @@ import { scheduleWorkflowPayloadSchema } from "@/schemas/workflows";
 import type { WorkflowContentBillingGate } from "@/types/workflows/content-generation-steps";
 import type { ScheduleContentWorkflowResult } from "@/types/workflows/schedule-generation";
 import { resolveContentLimitPauseReason } from "@/utils/content-billing";
+import { parseCustomIntervalCron } from "@/utils/schedule-interval";
 
 import {
   appendAutomationLog,
@@ -85,6 +87,14 @@ export async function scheduleContentWorkflow(payload: {
   if (!trigger.enabled) {
     console.log(`[Schedule] Trigger ${triggerId} is disabled, canceling`);
     return { status: "trigger_disabled" };
+  }
+  // "Every N days" schedules fire daily from QStash; only interval days run.
+  const customInterval = parseCustomIntervalCron(trigger.sourceConfig);
+  if (!manual && customInterval && !isCustomIntervalDue(customInterval)) {
+    console.log(
+      `[Schedule] Trigger ${triggerId} is not due today (every ${customInterval.intervalDays} days), skipping`
+    );
+    return { status: "not_due" };
   }
   const automationName = trigger.name.trim() || trigger.outputType;
 

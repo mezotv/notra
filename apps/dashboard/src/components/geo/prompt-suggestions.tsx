@@ -2,13 +2,13 @@
 
 import { Cancel01Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import { useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { SearchConsoleToolbar } from "@/components/geo/search-console-card";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import {
   useGeoSuggestionAccept,

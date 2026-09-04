@@ -43,6 +43,7 @@ import { useFeedback } from "@/components/dashboard/feedback-context";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { COMMAND_PALETTE_AI_ERROR_ACTION } from "@/constants/studio-analytics";
 import { trackEvent } from "@/lib/analytics/posthog-client";
+import { useActiveProject } from "@/lib/hooks/use-active-project";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
 import { dashboardOrpc } from "@/lib/orpc/query";
@@ -182,6 +183,8 @@ export function CommandPalette() {
   const slug = activeOrganization?.slug ?? "";
   const organizationId = activeOrganization?.id ?? "";
   const [projectParam] = useGeoProjectQueryState();
+  const { projectId: activeProjectId, isResolved: isProjectResolved } =
+    useActiveProject();
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
   useEffect(() => {
@@ -200,15 +203,19 @@ export function CommandPalette() {
 
   const searchResults = useQuery({
     ...dashboardOrpc.search.global.queryOptions({
-      input: { organizationId, query: debouncedQuery },
+      input: {
+        organizationId,
+        projectId: activeProjectId ?? undefined,
+        query: debouncedQuery,
+      },
     }),
-    enabled: searchEnabled,
+    enabled: searchEnabled && isProjectResolved,
     staleTime: 15_000,
   });
 
   const entityHits: EntityHit[] = (() => {
     const data = searchResults.data;
-    if (!(data && slug)) {
+    if (!(data && slug && isProjectResolved)) {
       return [];
     }
     const hits: EntityHit[] = [];
@@ -536,7 +543,7 @@ export function CommandPalette() {
                   setAiState({ status: "idle" });
                 }
               }}
-              placeholder="Search pages, actions, or ask AI…"
+              placeholder="Search pages, settings, actions, or ask AI…"
               value={query}
             />
             {hasQuery ? (
@@ -592,7 +599,7 @@ export function CommandPalette() {
                   </div>
                   <div className="flex w-full flex-col gap-1.5">
                     <button
-                      className="group border-border/80 bg-background hover:border-border hover:bg-muted/60 flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-150 disabled:opacity-60"
+                      className="group border-border/80 bg-background hover:border-border hover:bg-muted/60 duration-fast flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all disabled:opacity-60"
                       disabled={isLoading}
                       onClick={runAiSearch}
                       type="button"
@@ -614,7 +621,7 @@ export function CommandPalette() {
                       </div>
                     </button>
                     <button
-                      className="group border-border/80 bg-background hover:border-border hover:bg-muted/60 flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all duration-150"
+                      className="group border-border/80 bg-background hover:border-border hover:bg-muted/60 duration-fast flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm transition-all"
                       onClick={() => openChatWithQuery(trimmedQuery)}
                       type="button"
                     >

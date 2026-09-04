@@ -5,12 +5,15 @@
   "exports": {
     "./globals.css": "./src/styles/globals.css",
     "./cta-button.css": "./src/styles/cta-button.css",
+    "./motion.css": "./src/styles/motion.css",
+    "./status.css": "./src/styles/status.css",
     "./text-shimmer.css": "./src/styles/text-shimmer.css",
     "./postcss.config": "./postcss.config.mjs",
     "./lib/*": "./src/lib/*.ts",
     "./constants/*": "./src/constants/*.ts",
     "./types/*": "./src/types/*.ts",
     "./components/*": "./src/components/*.tsx",
+    "./components/geo/*": "./src/components/geo/*.tsx",
     "./components/shared/*": "./src/components/shared/*.tsx",
     "./components/kibo-ui/*": "./src/components/kibo-ui/*/index.tsx",
     "./hooks/*": "./src/hooks/*.ts",
@@ -20,7 +23,7 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@base-ui/react": "^1.1.0",
+    "@base-ui/react": "^1.8.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -47,7 +50,6 @@
     "nanoid": "^5.1.6",
     "next": "^16.3.0",
     "next-themes": "^0.4.6",
-    "radix-ui": "^1.6.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-dropzone": "^15.0.0",
