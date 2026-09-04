@@ -124,7 +124,7 @@ export function GeoScanFrequencySelect({
           <span className="text-muted-foreground text-sm">every</span>
           <Input
             aria-invalid={daysInvalid || undefined}
-            className="h-8 w-16"
+            className="h-8 w-16 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
             disabled={disabled}
             id={daysId}
             inputMode="numeric"
