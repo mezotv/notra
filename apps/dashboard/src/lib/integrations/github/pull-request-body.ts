@@ -29,7 +29,8 @@ function trimTrailingSlash(url: string) {
 export function resolveNotraBaseUrl(
   env: NodeJS.ProcessEnv = process.env
 ): string | null {
-  const raw = env.APP_URL ?? env.NEXT_PUBLIC_SITE_URL ?? "";
+  const raw =
+    env.APP_URL ?? env.NEXT_PUBLIC_SITE_URL ?? env.NEXT_PUBLIC_APP_URL ?? "";
   const trimmed = trimTrailingSlash(raw.trim());
   return trimmed.length > 0 ? trimmed : null;
 }

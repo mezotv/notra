@@ -22,6 +22,13 @@ describe("resolveNotraBaseUrl", () => {
     );
   });
 
+  test("falls back to NEXT_PUBLIC_APP_URL", () => {
+    assert.equal(
+      resolveNotraBaseUrl({ NEXT_PUBLIC_APP_URL: "https://app.usenotra.com/" }),
+      "https://app.usenotra.com"
+    );
+  });
+
   test("returns null when nothing is configured", () => {
     assert.equal(resolveNotraBaseUrl({}), null);
     assert.equal(resolveNotraBaseUrl({ APP_URL: "  " }), null);
