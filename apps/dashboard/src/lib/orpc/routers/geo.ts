@@ -479,7 +479,7 @@ export const geoRouter = {
           isSampleData: false,
         });
       }
-      const { sources, isSampleData } = listGeoShelfSources({
+      const { sources, isSampleData } = await listGeoShelfSources({
         ...seed,
         settings: seed.settings,
       });
@@ -520,7 +520,7 @@ export const geoRouter = {
       if (!seed.settings) {
         throw badRequest("Configure your brand tracking settings first");
       }
-      const source = createGeoShelfSource(
+      const source = await createGeoShelfSource(
         { ...seed, settings: seed.settings },
         input,
         context.user.id
@@ -554,7 +554,7 @@ export const geoRouter = {
       if (!seed.settings) {
         throw badRequest("Configure your brand tracking settings first");
       }
-      const result = updateGeoShelfSource(
+      const result = await updateGeoShelfSource(
         { ...seed, settings: seed.settings },
         input,
         context.user.id

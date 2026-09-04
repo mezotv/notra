@@ -1526,6 +1526,63 @@ export const geoCompetitors = pgTable(
   ]
 );
 
+export const geoShelfSources = pgTable(
+  "geo_shelf_sources",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    domain: text("domain").notNull(),
+    title: text("title"),
+    kind: text("kind", {
+      enum: [
+        "listicle",
+        "review_site",
+        "community",
+        "news",
+        "docs",
+        "video",
+        "other",
+      ],
+    }).notNull(),
+    ownership: text("ownership", {
+      enum: ["third_party", "own", "competitor"],
+    }).notNull(),
+    origin: text("origin", { enum: ["scan", "manual"] }).notNull(),
+    fetchStatus: text("fetch_status", {
+      enum: ["pending", "ok", "blocked", "failed"],
+    }).notNull(),
+    lastFetchedAt: timestamp("last_fetched_at"),
+    citations: jsonb("citations").notNull(),
+    placements: jsonb("placements").notNull(),
+    opportunity: jsonb("opportunity"),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoShelfSources_organizationId_idx").on(table.organizationId),
+    index("geoShelfSources_projectId_updatedAt_idx").on(
+      table.projectId,
+      table.updatedAt
+    ),
+    uniqueIndex("geoShelfSources_projectId_url_uidx").on(
+      table.projectId,
+      table.url
+    ),
+  ]
+);
+
 export const geoScans = pgTable(
   "geo_scans",
   {
@@ -2528,6 +2585,7 @@ export const organizationsRelations = relations(
     googleSearchConsoleIntegration: one(googleSearchConsoleIntegrations),
     geoPromptSequences: many(geoPromptSequences),
     geoCompetitors: many(geoCompetitors),
+    geoShelfSources: many(geoShelfSources),
     geoScans: many(geoScans),
     geoMentionChecks: many(geoMentionChecks),
     connectedSocialAccounts: many(connectedSocialAccounts),
@@ -2920,6 +2978,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   geoPrompts: many(geoPrompts),
   geoPromptSequences: many(geoPromptSequences),
   geoCompetitors: many(geoCompetitors),
+  geoShelfSources: many(geoShelfSources),
   geoScans: many(geoScans),
   geoMentionChecks: many(geoMentionChecks),
   agentFeedback: many(agentFeedback),
@@ -2981,6 +3040,24 @@ export const geoCompetitorsRelations = relations(geoCompetitors, ({ one }) => ({
     references: [projects.id],
   }),
 }));
+
+export const geoShelfSourcesRelations = relations(
+  geoShelfSources,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoShelfSources.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [geoShelfSources.projectId],
+      references: [projects.id],
+    }),
+    createdBy: one(users, {
+      fields: [geoShelfSources.createdByUserId],
+      references: [users.id],
+    }),
+  })
+);
 
 export const geoScansRelations = relations(geoScans, ({ one, many }) => ({
   organization: one(organizations, {

@@ -13,12 +13,12 @@ import {
   GEO_SHELF_DUPLICATE_URL_MESSAGE,
   GEO_SHELF_OPEN_STATUSES,
 } from "@/constants/geo-shelf";
+import { isUniqueConstraintError } from "@/lib/db/errors";
 import { buildGeoShelfFixture } from "@/lib/geo-shelf/fixtures";
 import { assertGeoShelfOpportunityMembers } from "@/lib/geo-shelf/members";
 import {
   findGeoShelfSourceByUrl,
   insertGeoShelfSource,
-  isGeoShelfStoreSampleSeeded,
   patchGeoShelfSource,
   readGeoShelfStore,
 } from "@/lib/geo-shelf/store";
@@ -98,12 +98,10 @@ function seedFixture(seed: GeoShelfStoreSeed) {
   };
 }
 
-export function listGeoShelfSources(
+export async function listGeoShelfSources(
   seed: GeoShelfStoreSeed
-): GeoShelfSourceList {
-  const key = storeKey(seed);
-  const sources = readGeoShelfStore(key, seedFixture(seed));
-  return { sources, isSampleData: isGeoShelfStoreSampleSeeded(key) };
+): Promise<GeoShelfSourceList> {
+  return await readGeoShelfStore(storeKey(seed), seedFixture(seed));
 }
 
 function isClosedStatus(status: GeoShelfOpportunityWrite["status"]): boolean {
@@ -244,17 +242,17 @@ function mergePlacements(
   return changed ? next : existing;
 }
 
-export function createGeoShelfSource(
+export async function createGeoShelfSource(
   seed: GeoShelfStoreSeed,
   input: GeoShelfCreateInput,
   userId: string
-): GeoShelfSource {
+): Promise<GeoShelfSource> {
   assertGeoShelfOpportunityMembers(seed.members, input.opportunity, null);
   const nowIso = new Date().toISOString();
   const url = canonicalizeShelfUrl(input.url);
   const key = storeKey(seed);
   const seedSources = seedFixture(seed);
-  if (findGeoShelfSourceByUrl(key, seedSources, url)) {
+  if (await findGeoShelfSourceByUrl(key, seedSources, url)) {
     throw conflict(GEO_SHELF_DUPLICATE_URL_MESSAGE);
   }
   // Validate before touching the store: a rejected record must not end up in
@@ -285,14 +283,21 @@ export function createGeoShelfSource(
     createdAt: nowIso,
     updatedAt: nowIso,
   } satisfies GeoShelfSource);
-  return insertGeoShelfSource(key, seedSources, source);
+  try {
+    return await insertGeoShelfSource(key, source);
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      throw conflict(GEO_SHELF_DUPLICATE_URL_MESSAGE);
+    }
+    throw error;
+  }
 }
 
-export function updateGeoShelfSource(
+export async function updateGeoShelfSource(
   seed: GeoShelfStoreSeed,
   input: GeoShelfUpdateInput,
   userId: string
-): GeoShelfUpdateResult | null {
+): Promise<GeoShelfUpdateResult | null> {
   const nowIso = new Date().toISOString();
   const resolveOpportunity = (
     current: GeoShelfOpportunity | null
@@ -308,7 +313,7 @@ export function updateGeoShelfSource(
   };
   let assigneeChanged = false;
   let placementsChanged = false;
-  const source = patchGeoShelfSource(
+  const source = await patchGeoShelfSource(
     storeKey(seed),
     seedFixture(seed),
     input.sourceId,
