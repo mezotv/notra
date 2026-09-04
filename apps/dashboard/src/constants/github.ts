@@ -55,6 +55,11 @@ export const GITHUB_API_VERSION_HEADERS = {
 
 export const GITHUB_CONTENT_PATH_MAX_LENGTH = 1024;
 
+export const GITHUB_PULL_REQUEST_BODY_SECTION_START =
+  "<!-- notra:content:start -->";
+export const GITHUB_PULL_REQUEST_BODY_SECTION_END =
+  "<!-- notra:content:end -->";
+
 export const GITHUB_CREATE_COMMIT_ON_BRANCH_MUTATION = `
   mutation CreateCommitOnBranch($input: CreateCommitOnBranchInput!) {
     createCommitOnBranch(input: $input) {

@@ -1,3 +1,8 @@
+import {
+  GITHUB_PULL_REQUEST_BODY_SECTION_END,
+  GITHUB_PULL_REQUEST_BODY_SECTION_START,
+} from "@/constants/github";
+
 import type {
   GitHubPublishContentType,
   OpenInNotraBadgeUrls,
@@ -63,7 +68,7 @@ function renderOpenInNotraButton(
   ].join("");
 }
 
-export function buildContentPullRequestBody({
+function buildManagedContent({
   contentType,
   contentUrl,
   badgeUrls,
@@ -80,4 +85,52 @@ export function buildContentPullRequestBody({
     : `[Open in Notra](${contentUrl})`;
 
   return `${summary}\n\n${button}`;
+}
+
+export function buildContentPullRequestBody(
+  params: BuildContentPullRequestBodyParams
+) {
+  const managedContent = buildManagedContent(params);
+  return [
+    GITHUB_PULL_REQUEST_BODY_SECTION_START,
+    managedContent,
+    GITHUB_PULL_REQUEST_BODY_SECTION_END,
+  ].join("\n");
+}
+
+export function mergeContentPullRequestBody(
+  currentBody: string | null | undefined,
+  params: BuildContentPullRequestBodyParams
+) {
+  const existingBody = currentBody ?? "";
+  const managedBody = buildContentPullRequestBody(params);
+  const sectionStart = existingBody.indexOf(
+    GITHUB_PULL_REQUEST_BODY_SECTION_START
+  );
+  const sectionEnd = existingBody.indexOf(
+    GITHUB_PULL_REQUEST_BODY_SECTION_END,
+    sectionStart + GITHUB_PULL_REQUEST_BODY_SECTION_START.length
+  );
+
+  if (sectionStart >= 0 && sectionEnd >= sectionStart) {
+    return `${existingBody.slice(0, sectionStart)}${managedBody}${existingBody.slice(
+      sectionEnd + GITHUB_PULL_REQUEST_BODY_SECTION_END.length
+    )}`;
+  }
+
+  const legacyManagedContent = buildManagedContent(params);
+  const label = params.contentType === "changelog" ? "changelog" : "blog post";
+  const legacySummary = `Draft ${label} generated and published with Notra.`;
+  if (
+    existingBody.trim() === legacyManagedContent ||
+    existingBody.trim() === legacySummary
+  ) {
+    return managedBody;
+  }
+
+  if (!existingBody.trim()) {
+    return managedBody;
+  }
+
+  return `${existingBody.trimEnd()}\n\n${managedBody}`;
 }

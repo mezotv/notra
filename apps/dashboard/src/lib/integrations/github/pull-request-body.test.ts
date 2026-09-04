@@ -4,6 +4,7 @@ import { describe, test } from "node:test";
 import {
   buildContentPullRequestBody,
   buildOpenInNotraBadgeUrls,
+  mergeContentPullRequestBody,
   resolveNotraBaseUrl,
 } from "./pull-request-body";
 
@@ -48,7 +49,11 @@ describe("buildContentPullRequestBody", () => {
   test("falls back to the plain summary without a content URL", () => {
     assert.equal(
       buildContentPullRequestBody({ contentType: "changelog" }),
-      "Draft changelog generated and published with Notra."
+      [
+        "<!-- notra:content:start -->",
+        "Draft changelog generated and published with Notra.",
+        "<!-- notra:content:end -->",
+      ].join("\n")
     );
   });
 
@@ -62,6 +67,7 @@ describe("buildContentPullRequestBody", () => {
     assert.equal(
       body,
       [
+        "<!-- notra:content:start -->",
         "Draft blog post generated and published with Notra.",
         "",
         '<a href="https://app.usenotra.com/acme/content/post_123"><picture>' +
@@ -69,6 +75,7 @@ describe("buildContentPullRequestBody", () => {
           '<source media="(prefers-color-scheme: light)" srcset="https://app.usenotra.com/badges/open-in-notra-light.svg">' +
           '<img src="https://app.usenotra.com/badges/open-in-notra-light.svg" alt="Open in Notra" height="44">' +
           "</picture></a>",
+        "<!-- notra:content:end -->",
       ].join("\n")
     );
   });
@@ -81,7 +88,77 @@ describe("buildContentPullRequestBody", () => {
 
     assert.match(
       body,
-      /\[Open in Notra\]\(https:\/\/app\.usenotra\.com\/acme\/content\/post_123\)$/
+      /\[Open in Notra\]\(https:\/\/app\.usenotra\.com\/acme\/content\/post_123\)\n<!-- notra:content:end -->$/
+    );
+  });
+});
+
+describe("mergeContentPullRequestBody", () => {
+  test("preserves maintainer-authored content when adding the managed section", () => {
+    const currentBody = "## Review notes\n\nPlease keep this context.";
+    const body = mergeContentPullRequestBody(currentBody, {
+      contentType: "changelog",
+      contentUrl: "https://app.usenotra.com/acme/content/changelog_123",
+    });
+
+    assert.equal(
+      body,
+      [
+        currentBody,
+        "",
+        "<!-- notra:content:start -->",
+        "Draft changelog generated and published with Notra.",
+        "",
+        "[Open in Notra](https://app.usenotra.com/acme/content/changelog_123)",
+        "<!-- notra:content:end -->",
+      ].join("\n")
+    );
+  });
+
+  test("replaces only the existing managed section", () => {
+    const body = mergeContentPullRequestBody(
+      [
+        "Maintainer introduction.",
+        "",
+        "<!-- notra:content:start -->",
+        "Old Notra content.",
+        "<!-- notra:content:end -->",
+        "",
+        "Maintainer footer.",
+      ].join("\n"),
+      {
+        contentType: "blog_post",
+        contentUrl: "https://app.usenotra.com/acme/content/post_456",
+      }
+    );
+
+    assert.equal(
+      body,
+      [
+        "Maintainer introduction.",
+        "",
+        "<!-- notra:content:start -->",
+        "Draft blog post generated and published with Notra.",
+        "",
+        "[Open in Notra](https://app.usenotra.com/acme/content/post_456)",
+        "<!-- notra:content:end -->",
+        "",
+        "Maintainer footer.",
+      ].join("\n")
+    );
+  });
+
+  test("migrates the legacy generated summary without duplicating it", () => {
+    assert.equal(
+      mergeContentPullRequestBody(
+        "Draft changelog generated and published with Notra.",
+        { contentType: "changelog" }
+      ),
+      [
+        "<!-- notra:content:start -->",
+        "Draft changelog generated and published with Notra.",
+        "<!-- notra:content:end -->",
+      ].join("\n")
     );
   });
 });

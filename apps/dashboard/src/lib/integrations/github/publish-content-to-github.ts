@@ -21,7 +21,10 @@ import type {
   ResolveGitHubContentPathParams,
   ValidateExistingGitHubBranchParams,
 } from "../../../types/integrations/github";
-import { buildContentPullRequestBody } from "./pull-request-body";
+import {
+  buildContentPullRequestBody,
+  mergeContentPullRequestBody,
+} from "./pull-request-body";
 
 export class GitHubContentTargetExistsError extends Error {}
 
@@ -252,7 +255,7 @@ async function ensurePullRequestBody(params: {
   publishParams: PublishContentDraftPullRequestParams;
   repo: string;
 }) {
-  const body = buildContentPullRequestBody({
+  const body = mergeContentPullRequestBody(params.currentBody, {
     badgeUrls: params.publishParams.badgeUrls,
     contentType: params.publishParams.contentType,
     contentUrl: params.publishParams.contentUrl,
@@ -742,6 +745,14 @@ export async function publishContentDraftPullRequest(
           octokit,
           owner: params.owner,
           path: params.path,
+          repo: params.repo,
+        });
+        await ensurePullRequestBody({
+          currentBody: pullRequestAfterCommit.body,
+          octokit,
+          owner: params.owner,
+          pullRequestNumber: existingPullRequest.number,
+          publishParams: params,
           repo: params.repo,
         });
         return toPullRequestResult(
