@@ -152,6 +152,8 @@ export function ShelfAddDialog({
         title: typedTitle.length > 0 ? typedTitle : matchingPreviewTitle,
       });
       form.reset();
+      previewTitleRef.current = null;
+      previewUrlRef.current = null;
       onOpenChange(false);
     },
   });
@@ -169,7 +171,7 @@ export function ShelfAddDialog({
   const preview = useGeoShelfPreview(organizationId, previewUrl);
   const previewTitle = preview.data?.title ?? null;
   useEffect(() => {
-    if (previewTitle !== null && previewUrl !== null) {
+    if (previewUrl !== null) {
       previewTitleRef.current = previewTitle;
       previewUrlRef.current = canonicalizeShelfUrl(previewUrl);
     }
@@ -184,6 +186,8 @@ export function ShelfAddDialog({
 
   const closeDialog = () => {
     form.reset();
+    previewTitleRef.current = null;
+    previewUrlRef.current = null;
     onOpenChange(false);
   };
 

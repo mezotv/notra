@@ -301,7 +301,6 @@ export const GEO_SHELF_BLOCKED_IPV6_SUBNETS: readonly (readonly [
   ["::", 128],
   ["::1", 128],
   ["::ffff:0:0", 96],
-  ["64:ff9b::", 96],
   ["64:ff9b:1::", 48],
   ["100::", 64],
   ["2001::", 23],

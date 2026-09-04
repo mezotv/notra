@@ -24,6 +24,8 @@ const BLOCKED_IPV4_ADDRESSES = new BlockList();
 const BLOCKED_IPV6_ADDRESSES = new BlockList();
 for (const [network, prefix] of GEO_SHELF_BLOCKED_IPV4_SUBNETS) {
   BLOCKED_IPV4_ADDRESSES.addSubnet(network, prefix, "ipv4");
+  // The RFC 6052 well-known NAT64 prefix embeds IPv4 in its final 32 bits.
+  BLOCKED_IPV6_ADDRESSES.addSubnet(`64:ff9b::${network}`, 96 + prefix, "ipv6");
 }
 for (const [network, prefix] of GEO_SHELF_BLOCKED_IPV6_SUBNETS) {
   BLOCKED_IPV6_ADDRESSES.addSubnet(network, prefix, "ipv6");

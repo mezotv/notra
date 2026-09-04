@@ -59,10 +59,7 @@ export function ShelfToolbar({
         }
         value={filters.shelf}
       >
-        <SelectTrigger
-          aria-label="Filter shelves by citation state"
-          className="min-w-0 flex-1 sm:w-44 sm:flex-none"
-        >
+        <SelectTrigger className="min-w-0 flex-1 sm:w-44 sm:flex-none">
           <SelectValue>
             {GEO_SHELF_SHELF_FILTER_OPTIONS.find(
               (option) => option.value === filters.shelf
@@ -92,10 +89,7 @@ export function ShelfToolbar({
         }
         value={filters.ticket}
       >
-        <SelectTrigger
-          aria-label="Filter shelves by ticket state"
-          className="min-w-0 flex-1 sm:w-44 sm:flex-none"
-        >
+        <SelectTrigger className="min-w-0 flex-1 sm:w-44 sm:flex-none">
           <SelectValue>
             {GEO_SHELF_TICKET_FILTER_OPTIONS.find(
               (option) => option.value === filters.ticket

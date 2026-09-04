@@ -36,6 +36,7 @@ import {
   GEO_SHELF_TICKET_FILTERS,
   GEO_SHELF_VIEWS,
 } from "@/constants/geo-shelf";
+import { localStorageKeys } from "@/constants/storage";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoSettings } from "@/lib/hooks/use-geo";
 import { useGeoActiveProject } from "@/lib/hooks/use-geo-active-project";
@@ -46,6 +47,7 @@ import type { GeoPageClientProps } from "@/types/geo";
 import type {
   GeoShelfPageContentProps,
   GeoShelfSelection,
+  GeoShelfView,
 } from "@/types/geo-shelf";
 import { withGeoProject } from "@/utils/geo-paths";
 import {
@@ -103,14 +105,34 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
       .withDefault("any")
       .withOptions({ clearOnDefault: true })
   );
-  const [view, setView] = useQueryState(
-    "view",
-    parseAsStringLiteral(GEO_SHELF_VIEWS)
-      .withDefault("table")
-      .withOptions({ clearOnDefault: true })
-  );
+  const [view, setView] = useState<GeoShelfView>("table");
   const [addOpen, setAddOpen] = useState(false);
   const [selected, setSelected] = useState<GeoShelfSelection | null>(null);
+
+  useEffect(() => {
+    try {
+      const storedView = window.localStorage.getItem(
+        localStorageKeys.geoShelfView
+      );
+      const validView = GEO_SHELF_VIEWS.find(
+        (candidate) => candidate === storedView
+      );
+      if (validView) {
+        setView(validView);
+      }
+    } catch {
+      // Storage can be unavailable in restricted browser contexts.
+    }
+  }, []);
+
+  const selectView = (nextView: GeoShelfView) => {
+    setView(nextView);
+    try {
+      window.localStorage.setItem(localStorageKeys.geoShelfView, nextView);
+    } catch {
+      // Keep the in-memory selection when persistence is unavailable.
+    }
+  };
 
   useHotkey(GEO_SHELF_ADD_HOTKEY, () => setAddOpen(true), {
     enabled: !addOpen && selected === null,
@@ -245,7 +267,7 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
                 <Button
                   aria-label="Table view"
                   aria-pressed={view === "table"}
-                  onClick={() => setView("table")}
+                  onClick={() => selectView("table")}
                   size="icon"
                   variant={view === "table" ? "secondary" : "outline"}
                 >
@@ -254,7 +276,7 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
                 <Button
                   aria-label="Board view"
                   aria-pressed={view === "board"}
-                  onClick={() => setView("board")}
+                  onClick={() => selectView("board")}
                   size="icon"
                   variant={view === "board" ? "secondary" : "outline"}
                 >
