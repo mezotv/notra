@@ -25,6 +25,7 @@ import type {
   GeoCheckOverviewRow,
   GeoCheckPromptResultRow,
   GeoCheckScope,
+  GeoCheckPersonaResultRow,
   GeoCheckSequenceResultRow,
   GeoCheckTimeseriesRow,
   GeoCheckWindow,
@@ -112,6 +113,7 @@ function mentionOptionFilters(options?: GeoCheckFilterOptions): SQL[] {
   const parts: SQL[] = [];
   if (options?.sequences === "single") {
     parts.push(isNull(geoMentionChecks.sequenceId));
+    parts.push(isNull(geoMentionChecks.personaId));
   }
   if (options?.englishOnly) {
     parts.push(
@@ -150,6 +152,7 @@ export async function insertGeoMentionChecks(
       engine: row.engine,
       promptId: row.promptId,
       sequenceId: row.sequenceId ?? null,
+      personaId: row.personaId ?? null,
       turn: row.turn ?? 0,
       prompt: row.prompt,
       answer: row.answer,
@@ -648,6 +651,82 @@ export async function queryGeoCheckSequenceResults(
     return [
       {
         sequenceId: row.sequenceId,
+        turn: row.turn,
+        engine: row.engine,
+        prompt: row.prompt,
+        answer: row.answer,
+        mentioned: row.mentioned,
+        position: row.position,
+        sentiment: row.sentiment,
+        excerpt: row.excerpt,
+        sources: row.sources,
+        grounding: parseGeoCheckGrounding(row.grounding),
+        finishReason: row.finishReason,
+        promptTokens: row.promptTokens,
+        outputTokens: row.outputTokens,
+        reasoningTokens: row.reasoningTokens,
+        truncated:
+          row.finishReason === null ? null : row.finishReason === "length",
+        lastCheckedAt: row.lastCheckedAt,
+      },
+    ];
+  });
+}
+
+export async function queryGeoCheckPersonaResults(
+  scope: GeoCheckScope,
+  personaId: string | undefined
+): Promise<GeoCheckPersonaResultRow[]> {
+  const filters = [
+    scopeWhere(scope),
+    sql`${geoMentionChecks.personaId} is not null`,
+  ];
+  if (personaId) {
+    filters.push(eq(geoMentionChecks.personaId, personaId));
+  }
+
+  const rows = await db
+    .selectDistinctOn(
+      [
+        geoMentionChecks.personaId,
+        geoMentionChecks.turn,
+        geoMentionChecks.engine,
+      ],
+      {
+        personaId: geoMentionChecks.personaId,
+        turn: geoMentionChecks.turn,
+        engine: geoMentionChecks.engine,
+        prompt: geoMentionChecks.prompt,
+        answer: geoMentionChecks.answer,
+        mentioned: geoMentionChecks.mentioned,
+        position: geoMentionChecks.position,
+        sentiment: geoMentionChecks.sentiment,
+        excerpt: geoMentionChecks.excerpt,
+        sources: geoMentionChecks.sources,
+        grounding: geoMentionChecks.grounding,
+        finishReason: geoMentionChecks.finishReason,
+        promptTokens: geoMentionChecks.promptTokens,
+        outputTokens: geoMentionChecks.outputTokens,
+        reasoningTokens: geoMentionChecks.reasoningTokens,
+        lastCheckedAt: geoMentionChecks.capturedAt,
+      }
+    )
+    .from(geoMentionChecks)
+    .where(and(...filters))
+    .orderBy(
+      geoMentionChecks.personaId,
+      geoMentionChecks.turn,
+      geoMentionChecks.engine,
+      desc(geoMentionChecks.capturedAt)
+    );
+
+  return rows.flatMap((row) => {
+    if (!row.personaId) {
+      return [];
+    }
+    return [
+      {
+        personaId: row.personaId,
         turn: row.turn,
         engine: row.engine,
         prompt: row.prompt,

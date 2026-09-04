@@ -102,3 +102,9 @@ export function resolveGroundedEngines(): GeoGroundedEngine[] {
 
   return available.filter((engine) => !superseded.has(engine.provider));
 }
+
+export function resolveGroundedEngineByKey(
+  key: string
+): GeoGroundedEngine | null {
+  return resolveGroundedEngines().find((engine) => engine.key === key) ?? null;
+}
