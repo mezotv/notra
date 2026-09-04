@@ -4,7 +4,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Link,
   Preview,
   Section,
@@ -14,6 +13,7 @@ import {
 
 import { EmailButton } from "../components/button";
 import { EmailFooter } from "../components/footer";
+import { EmailLogo } from "../components/logo";
 import type {
   WorkflowPausedEmailProps,
   WorkflowPausedReason,
@@ -39,8 +39,6 @@ export const WorkflowPausedEmail = ({
   reason = "workflow_errors",
   settingsLink = `${EMAIL_CONFIG.getAppUrl()}/${organizationSlug}/automation/schedules`,
 }: WorkflowPausedEmailProps) => {
-  const logoUrl = EMAIL_CONFIG.getLogoUrl();
-
   return (
     <Html>
       <Head />
@@ -48,15 +46,7 @@ export const WorkflowPausedEmail = ({
       <Tailwind>
         <Body className="mx-auto my-auto bg-white px-2 font-sans">
           <Container className="mx-auto my-[40px] max-w-[465px] rounded p-[20px]">
-            <Section className="mt-[32px]">
-              <Img
-                alt="Notra Logo"
-                className="mx-auto"
-                height="40"
-                src={logoUrl}
-                width="40"
-              />
-            </Section>
+            <EmailLogo />
 
             <Heading className="my-6 text-center text-2xl font-medium text-black">
               Workflow paused

@@ -4,7 +4,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Link,
   Preview,
   Section,
@@ -13,8 +12,8 @@ import {
 } from "react-email";
 
 import { EmailFooter } from "../components/footer";
+import { EmailLogo } from "../components/logo";
 import type { OssApplicationEmailProps } from "../types/oss-application";
-import { EMAIL_CONFIG } from "../utils/config";
 
 export const OssApplicationEmail = ({
   name = "Linus Torvalds",
@@ -24,8 +23,6 @@ export const OssApplicationEmail = ({
   description = "A free and open source operating system kernel used by everything from phones to supercomputers.",
   assetNeeds = "We need help turning releases into clear changelogs, launch posts, and social updates so new contributors can understand what's shipping.",
 }: OssApplicationEmailProps) => {
-  const logoUrl = EMAIL_CONFIG.getLogoUrl();
-
   return (
     <Html>
       <Head />
@@ -35,15 +32,7 @@ export const OssApplicationEmail = ({
       <Tailwind>
         <Body className="mx-auto my-auto bg-white px-2 font-sans">
           <Container className="mx-auto my-[40px] max-w-[520px] rounded p-[20px]">
-            <Section className="mt-[32px]">
-              <Img
-                alt="Notra Logo"
-                className="mx-auto"
-                height="40"
-                src={logoUrl}
-                width="40"
-              />
-            </Section>
+            <EmailLogo />
 
             <Heading className="my-6 text-center text-2xl font-medium text-black">
               New OSS program application

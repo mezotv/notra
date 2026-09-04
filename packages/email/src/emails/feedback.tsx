@@ -4,7 +4,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Preview,
   Section,
   Tailwind,
@@ -12,8 +11,8 @@ import {
 } from "react-email";
 
 import { EmailFooter } from "../components/footer";
+import { EmailLogo } from "../components/logo";
 import type { FeedbackEmailProps } from "../types/feedback";
-import { EMAIL_CONFIG } from "../utils/config";
 import { FEEDBACK_SENTIMENT_META } from "../utils/feedback";
 
 export const FeedbackEmail = ({
@@ -26,7 +25,6 @@ export const FeedbackEmail = ({
   pageUrl,
   userAgent,
 }: FeedbackEmailProps) => {
-  const logoUrl = EMAIL_CONFIG.getLogoUrl();
   const sentimentMeta = sentiment ? FEEDBACK_SENTIMENT_META[sentiment] : null;
 
   return (
@@ -39,15 +37,7 @@ export const FeedbackEmail = ({
       <Tailwind>
         <Body className="mx-auto my-auto bg-white px-2 font-sans">
           <Container className="mx-auto my-[40px] max-w-[520px] rounded p-[20px]">
-            <Section className="mt-[32px]">
-              <Img
-                alt="Notra Logo"
-                className="mx-auto"
-                height="40"
-                src={logoUrl}
-                width="40"
-              />
-            </Section>
+            <EmailLogo />
 
             <Heading className="my-6 text-center text-2xl font-medium text-black">
               {sentimentMeta ? `${sentimentMeta.emoji} ` : ""}New feedback
