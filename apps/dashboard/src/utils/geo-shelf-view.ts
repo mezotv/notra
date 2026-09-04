@@ -1,5 +1,6 @@
 import { GEO_SHELF_VIEWS } from "@/constants/geo-shelf";
 import { localStorageKeys } from "@/constants/storage";
+
 import type { GeoShelfView } from "../types/geo-shelf";
 
 const listeners = new Set<() => void>();
