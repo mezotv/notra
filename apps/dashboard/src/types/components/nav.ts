@@ -80,11 +80,11 @@ export interface NavUtilityProps {
 
 /**
  * A mode the user picked that the route has not caught up with yet. Scoped to
- * the section it was picked from so it stops applying once the route moves on.
+ * the route it was picked from so it stops applying once navigation moves on.
  */
 export interface PendingSidebarMode {
   mode: SidebarMode;
-  section: string | undefined;
+  route: string | undefined;
 }
 
 export interface UseSidebarModeResult {

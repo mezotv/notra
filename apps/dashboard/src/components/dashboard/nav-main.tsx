@@ -17,8 +17,8 @@ export function NavMain() {
   const { activeOrganization } = useOrganizationsContext();
   const pathname = usePathname();
   const [projectParam] = useGeoProjectQueryState();
-  const section = pathname.split("/").filter(Boolean)[1];
-  const { mode, setMode, pendingMode } = useSidebarMode(section);
+  const route = pathname.split("/").filter(Boolean).slice(1).join("/");
+  const { mode, setMode, pendingMode } = useSidebarMode(route || undefined);
 
   if (!activeOrganization?.slug) {
     return null;

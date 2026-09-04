@@ -7,7 +7,7 @@ import {
   GEO_ROUTE_SECTIONS,
   NAV_GEO_IMPROVE_LINKS,
   NAV_MAIN_ITEMS,
-  SHARED_ROUTE_SECTIONS,
+  SHARED_ROUTE_PREFIXES,
   SIDEBAR_DEFAULT_MODE,
   STUDIO_ROUTE_SECTIONS,
 } from "@/constants/nav";
@@ -29,20 +29,25 @@ export function isSidebarMode(value: unknown): value is SidebarMode {
 }
 
 export function resolveSidebarMode(
-  section: string | undefined,
+  route: string | undefined,
   storedMode: SidebarMode | null
 ): SidebarMode {
   // Org root is both Studio home and the dashboard entry URL. Keep a stored
   // GEO pick so opening `/{slug}` can restore that mode instead of writing
   // studio over it.
-  if (section === undefined) {
+  if (route === undefined) {
     return storedMode ?? "studio";
   }
   // Shared destinations keep the current mode. Without a stored choice, match
   // the org root's visible Studio default instead of switching on navigation.
-  if (SHARED_ROUTE_SECTIONS.has(section)) {
+  if (
+    SHARED_ROUTE_PREFIXES.some(
+      (prefix) => route === prefix || route.startsWith(`${prefix}/`)
+    )
+  ) {
     return storedMode ?? "studio";
   }
+  const section = route.split("/", 1)[0] ?? route;
   if (GEO_ROUTE_SECTIONS.has(section)) {
     return "geo";
   }

@@ -95,7 +95,10 @@ export const GEO_ROUTE_SECTIONS: ReadonlySet<string> = new Set([
   "feedback",
 ]);
 
-export const SHARED_ROUTE_SECTIONS: ReadonlySet<string> = new Set(["content"]);
+export const SHARED_ROUTE_PREFIXES: readonly string[] = [
+  "content",
+  "automation/schedules",
+];
 
 export const STUDIO_ROUTE_SECTIONS: ReadonlySet<string> = new Set([
   "chat",

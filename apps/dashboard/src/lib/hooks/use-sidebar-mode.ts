@@ -49,50 +49,50 @@ function persistMode(mode: SidebarMode): void {
 }
 
 export function useSidebarMode(
-  section: string | undefined
+  route: string | undefined
 ): UseSidebarModeResult {
   const storedMode = useSyncExternalStore(
     subscribe,
     readStoredMode,
     getServerSnapshot
   );
-  const routeMode = resolveSidebarMode(section, storedMode);
+  const routeMode = resolveSidebarMode(route, storedMode);
 
-  // Picking a mode navigates, so `section` — which outranks the stored mode —
+  // Picking a mode navigates, so `route` — which outranks the stored mode —
   // only catches up once the new route commits. Deriving the mode from the route
   // alone leaves the switch frozen for the whole navigation and then snaps
   // everything at once. The pending pick wins until the route agrees with it.
   const [pending, setPending] = useState<PendingSidebarMode | null>(null);
-  const [lastSection, setLastSection] = useState(section);
+  const [lastRoute, setLastRoute] = useState(route);
 
-  // Drop a pick the route has moved past, so returning to the section it was
+  // Drop a pick the route has moved past, so returning to where it was
   // made in does not resurrect it. Done during render rather than in an effect
   // so the stale pick never reaches the screen.
-  if (lastSection !== section) {
-    setLastSection(section);
+  if (lastRoute !== route) {
+    setLastRoute(route);
     setPending(null);
   }
 
   const mode =
-    pending !== null && pending.section === section ? pending.mode : routeMode;
+    pending !== null && pending.route === route ? pending.mode : routeMode;
 
   useEffect(() => {
     // The org root is an entry URL, not a mode signal. Persisting studio
     // here would erase a GEO pick before the restore can send you back.
-    if (section === undefined) {
+    if (route === undefined) {
       return;
     }
     if (storedMode !== mode) {
       persistMode(mode);
     }
-  }, [mode, section, storedMode]);
+  }, [mode, route, storedMode]);
 
   const setMode = useCallback(
     (next: SidebarMode) => {
-      setPending({ mode: next, section });
+      setPending({ mode: next, route });
       persistMode(next);
     },
-    [section]
+    [route]
   );
 
   return { mode, setMode, pendingMode: mode === routeMode ? null : mode };
