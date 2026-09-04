@@ -1,0 +1,278 @@
+---
+title: "TypeScript Types"
+description: "TypeScript type definitions and Zod schemas for Notra API post responses and errors."
+authors:
+  - name: Dominik
+    handle: dominik
+
+docolin:
+  schema_version: 1
+  kind: tools/notra/api/types
+  type: reference
+  applies_to:
+    - notra-api
+    - typescript
+  language: en
+  difficulty: beginner
+  time_estimate: 6m
+  status: stable
+  aliases:
+    - TypeScript types
+    - type definitions
+    - Zod schemas
+    - API types
+  prev: ./pagination.mdx
+  next: ./agent-feedback.mdx
+---
+
+## Using the SDK
+
+If you're using the `@usenotra/sdk` package, types are already included. Import them directly:
+
+```typescript
+import type {
+  GetPostPost,
+  ListPostsPost,
+  Pagination,
+} from "@usenotra/sdk/models/operations";
+```
+
+<Callout type="tip">
+  The SDK ships with full type definitions, so there is no need to maintain your own. The types below are only needed if you're calling the API with raw `fetch`.
+</Callout>
+
+For any endpoint, including the GEO group that the SDK does not cover yet, the [OpenAPI document](https://api.usenotra.com/openapi.json) is the source of truth. Tools such as `openapi-typescript` can turn it into a complete set of types.
+
+---
+
+## Using `fetch`
+
+If you call the post endpoints directly with `fetch`, these types match the current responses:
+
+```typescript
+// Multiple posts
+const listResponse = await fetch("https://api.usenotra.com/v1/posts", {
+  headers: { Authorization: `Bearer ${process.env.NOTRA_API_KEY}` },
+});
+const listData: NotraPostListResponse = await listResponse.json();
+
+// Single post
+const postResponse = await fetch(
+  "https://api.usenotra.com/v1/posts/YOUR_POST_ID",
+  {
+    headers: { Authorization: `Bearer ${process.env.NOTRA_API_KEY}` },
+  }
+);
+const postData: NotraPostResponse = await postResponse.json();
+
+// Updated post
+const updateResponse = await fetch(
+  "https://api.usenotra.com/v1/posts/YOUR_POST_ID",
+  {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${process.env.NOTRA_API_KEY}`,
+    },
+    body: JSON.stringify({
+      title: "Ship notes for week 11",
+      markdown: "# Ship notes\n\nWe shipped a faster editor.",
+      status: "published",
+    }),
+  }
+);
+const updateData: NotraPostUpdateResponse = await updateResponse.json();
+```
+
+### Type Definitions
+
+Copy these types into your project:
+
+```typescript
+export type Organization = {
+  id: string;
+  slug: string;
+  name: string;
+  logo: string | null;
+};
+
+export type PostContentType =
+  | "changelog"
+  | "linkedin_post"
+  | "twitter_post"
+  | "blog_post"
+  | "investor_update"
+  | "image";
+
+export type PostStatus = "draft" | "published";
+
+export type Post = {
+  id: string;
+  title: string;
+  slug: string | null;
+  /** Rendered HTML for text posts. For image posts, the public URL of the rendered image. */
+  content: string;
+  /** Public URL of the generated HTML artifact for image posts. Null for text posts. */
+  htmlUrl: string | null;
+  /** Markdown source for text posts. Null for image posts. */
+  markdown: string | null;
+  /** Legacy inline HTML for older image posts. Null otherwise. */
+  rawHtml: string | null;
+  recommendations: string | null;
+  contentType: PostContentType;
+  sourceMetadata: unknown;
+  status: PostStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type Pagination = {
+  limit: number;
+  currentPage: number;
+  nextPage: number | null;
+  previousPage: number | null;
+  totalPages: number;
+  totalItems: number;
+};
+
+export type NotraPostListResponse = {
+  organization: Organization;
+  posts: Post[];
+  pagination: Pagination;
+};
+
+export type NotraPostResponse = {
+  organization: Organization;
+  post: Post | null;
+};
+
+export type NotraPostUpdateRequest = {
+  title?: string;
+  slug?: string | null;
+  markdown?: string;
+  status?: PostStatus;
+};
+
+export type NotraPostUpdateResponse = {
+  organization: Organization;
+  post: Post;
+};
+
+export type NotraErrorResponse = {
+  error: string;
+  /** Present on authentication and authorization failures. */
+  code?: string;
+  /** Present on authentication and authorization failures. */
+  recovery?: string;
+};
+
+export type NotraRateLimitErrorResponse = {
+  error: string;
+  limit: number;
+  remaining: number;
+  /** Unix timestamp in milliseconds when the window resets. */
+  reset: number;
+};
+```
+
+<Callout type="tip">
+  Copy these type definitions into a `types/notra.ts` file in your project.
+</Callout>
+
+### Zod Schemas
+
+For runtime validation, you can use these Zod schemas. The request limits mirror the API: titles up to 120 characters, slugs up to 160 characters of lowercase letters, numbers and hyphens, markdown up to 100,000 characters, and at least one field per update.
+
+```typescript
+import * as z from "zod";
+
+export const OrganizationSchema = z.object({
+  id: z.string(),
+  slug: z.string(),
+  name: z.string(),
+  logo: z.string().nullable(),
+});
+
+export const PostContentTypeSchema = z.enum([
+  "changelog",
+  "linkedin_post",
+  "twitter_post",
+  "blog_post",
+  "investor_update",
+  "image",
+]);
+
+export const PostStatusSchema = z.enum(["draft", "published"]);
+
+export const PostSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  slug: z.string().nullable(),
+  content: z.string(),
+  htmlUrl: z.string().nullable(),
+  markdown: z.string().nullable(),
+  rawHtml: z.string().nullable(),
+  recommendations: z.string().nullable(),
+  contentType: PostContentTypeSchema,
+  sourceMetadata: z.unknown().nullable(),
+  status: PostStatusSchema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const PaginationSchema = z.object({
+  limit: z.number().int().min(1),
+  currentPage: z.number().int().min(1),
+  nextPage: z.number().int().min(1).nullable(),
+  previousPage: z.number().int().min(1).nullable(),
+  totalPages: z.number().int().min(1),
+  totalItems: z.number().int().min(0),
+});
+
+export const PostListResponseSchema = z.object({
+  organization: OrganizationSchema,
+  posts: z.array(PostSchema),
+  pagination: PaginationSchema,
+});
+
+export const PostResponseSchema = z.object({
+  organization: OrganizationSchema,
+  post: PostSchema.nullable(),
+});
+
+const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+export const PostUpdateRequestSchema = z
+  .object({
+    title: z.string().trim().min(1).max(120).optional(),
+    slug: z.string().trim().min(1).max(160).regex(SLUG_REGEX).nullable().optional(),
+    markdown: z.string().min(1).max(100_000).optional(),
+    status: PostStatusSchema.optional(),
+  })
+  .refine(
+    (data) =>
+      data.title !== undefined ||
+      data.slug !== undefined ||
+      data.markdown !== undefined ||
+      data.status !== undefined,
+    { message: "At least one field must be provided" }
+  );
+
+export const PostUpdateResponseSchema = z.object({
+  organization: OrganizationSchema,
+  post: PostSchema,
+});
+
+export const ErrorResponseSchema = z.object({
+  error: z.string(),
+  code: z.string().optional(),
+  recovery: z.string().optional(),
+});
+
+export const RateLimitErrorResponseSchema = z.object({
+  error: z.string(),
+  limit: z.number().int().min(1),
+  remaining: z.number().int().min(0),
+  reset: z.number().int(),
+});
+```

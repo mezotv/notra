@@ -23,11 +23,6 @@ dist
 .turbo
 **/.turbo
 
-# Test & coverage
-coverage
-**/*.test.ts
-**/*.spec.ts
-
 # Misc dev tooling
 .vscode
 .idea

@@ -1,0 +1,223 @@
+---
+title: "Caching"
+description: "Cache paginated Notra post data safely in your application, including cache key design and invalidation patterns."
+authors:
+  - name: Dominik
+    handle: dominik
+
+docolin:
+  schema_version: 1
+  kind: tools/notra/api/caching
+  type: how-to
+  applies_to:
+    - notra-api
+    - typescript
+    - react
+    - nextjs
+  language: en
+  difficulty: intermediate
+  time_estimate: 10m
+  status: stable
+  aliases:
+    - API caching
+    - cache invalidation
+    - cache key design
+    - TanStack Query
+  prev: ./rust-sdk.mdx
+  next: ./common-tasks.mdx
+---
+
+The Notra API does not do HTTP caching for you. Every response is sent with `Cache-Control: private, no-store`, and there are no `ETag` or `Last-Modified` headers, so conditional requests (`If-None-Match`) are not supported. Caching happens in your application, and this page describes how to do it safely for post data.
+
+When caching post data, include every query input that changes the result set in the cache key. For `GET /v1/posts` that means:
+
+- `page`
+- `limit`
+- `sort`
+- `status`
+- `contentType`
+- `brandIdentityId`
+
+`status`, `contentType` and `brandIdentityId` are comma-separated lists in a single query parameter, for example `status=draft,published`. Repeating the parameter is not supported.
+
+## Cache key design
+
+Treat each unique list query as its own cache entry.
+
+```typescript
+type ListPostsParams = {
+  page?: number;
+  limit?: number;
+  sort?: "asc" | "desc";
+  status?: Array<"draft" | "published">;
+  contentType?: Array<
+    | "changelog"
+    | "linkedin_post"
+    | "twitter_post"
+    | "blog_post"
+    | "investor_update"
+    | "image"
+  >;
+  brandIdentityId?: string[];
+};
+
+function createPostsCacheKey(params: ListPostsParams) {
+  return [
+    "notra",
+    "posts",
+    params.page ?? 1,
+    params.limit ?? 10,
+    params.sort ?? "desc",
+    [...(params.status ?? ["published"])].sort().join(","),
+    [...(params.contentType ?? [])].sort().join(","),
+    [...(params.brandIdentityId ?? [])].sort().join(","),
+  ] as const;
+}
+```
+
+Sorting array filters before building the key avoids duplicate cache entries for equivalent queries.
+
+<Callout type="note">
+  When `status` is omitted the API returns only `published` posts. Pass `status=draft,published` explicitly if you want both. The key above defaults an omitted `status` to `published`, so both spellings of the same query share one cache entry.
+</Callout>
+
+## Recommended strategy
+
+Use separate caches for:
+
+- post lists, keyed by pagination and filters
+- individual posts, keyed by `postId`
+
+This keeps list pages independent while still letting you refresh a single post after `PATCH /v1/posts/{postId}`.
+
+```typescript
+const listKey = createPostsCacheKey({
+  page: 2,
+  limit: 20,
+  sort: "desc",
+  status: ["published"],
+  contentType: ["blog_post"],
+});
+
+const postKey = ["notra", "post", "post_abc"] as const;
+```
+
+## Invalidation rules
+
+Invalidate caches whenever the underlying list order or membership can change.
+
+### After a post update
+
+After `PATCH /v1/posts/{postId}` succeeds:
+
+- invalidate the individual post cache for that `postId`
+- invalidate all cached post lists, because title, slug, status and updated content can affect what users should see
+
+### After a new generated post becomes available
+
+When a generation job (`GET /v1/posts/generate/{jobId}`) reports `status: "completed"` and a `postId`:
+
+- invalidate all cached post lists
+- optionally prefetch page 1 again if your UI shows newest posts first with `sort=desc`
+
+### After a delete
+
+After `DELETE /v1/posts/{postId}`:
+
+- remove the individual post cache
+- invalidate all cached post lists so `totalItems` and page boundaries stay correct
+
+## Example with TanStack Query
+
+```typescript
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+function buildPostsSearch(params: ListPostsParams) {
+  const search = new URLSearchParams({
+    page: String(params.page ?? 1),
+    limit: String(params.limit ?? 10),
+    sort: params.sort ?? "desc",
+  });
+
+  if (params.status?.length) search.set("status", params.status.join(","));
+  if (params.contentType?.length) {
+    search.set("contentType", params.contentType.join(","));
+  }
+  if (params.brandIdentityId?.length) {
+    search.set("brandIdentityId", params.brandIdentityId.join(","));
+  }
+
+  return search;
+}
+
+function usePosts(params: ListPostsParams) {
+  return useQuery({
+    queryKey: createPostsCacheKey(params),
+    queryFn: async () => {
+      const response = await fetch(
+        `https://api.usenotra.com/v1/posts?${buildPostsSearch(params)}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.NOTRA_API_KEY}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch posts");
+      return response.json();
+    },
+  });
+}
+
+type UpdatePostInput = {
+  postId: string;
+  updates: {
+    title?: string;
+    slug?: string | null;
+    markdown?: string;
+    status?: "draft" | "published";
+  };
+};
+
+function useUpdatePost() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ postId, updates }: UpdatePostInput) => {
+      const response = await fetch(`https://api.usenotra.com/v1/posts/${postId}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.NOTRA_API_KEY}`,
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) throw new Error("Failed to update post");
+      return response.json();
+    },
+    onSuccess: (_data, { postId }) => {
+      queryClient.invalidateQueries({ queryKey: ["notra", "posts"] });
+      queryClient.invalidateQueries({ queryKey: ["notra", "post", postId] });
+    },
+  });
+}
+```
+
+<Callout type="warning">
+  The examples read `NOTRA_API_KEY` for brevity. In a browser app, proxy these calls through your own backend so the key never ships to the client.
+</Callout>
+
+## React and Next.js notes
+
+If you use React Server Components or Next.js, React's `cache()` function can help dedupe repeated reads during a single render on the server.
+
+Use it for read paths, but do not rely on it alone for mutation invalidation. Pair it with route-level revalidation, cache tags, or your client cache invalidation strategy after updates, deletes, or completed generation jobs.
+
+## Practical defaults
+
+- Use a short TTL for list caches if content changes frequently. Nothing in the response tells you it is stale.
+- Use explicit invalidation after `update`, `delete`, and successful generation completion.
+- Prefer `sort=desc` plus page-1 refetch if your UI is a newest-first feed.
+- Cache individual posts separately from paginated lists.
+- Apply the same pattern to `GET /v1/feedback` and `GET /v1/projects/{projectId}/geo/scans`, which paginate the same way. See [Pagination](/api/pagination).

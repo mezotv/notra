@@ -1,0 +1,36 @@
+.doc-image-light,
+.doc-image-dark {
+  width: 100%;
+  height: auto;
+}
+
+.doc-screenshot {
+  border: 1px solid var(--blume-border);
+  border-radius: 0.75rem;
+}
+
+.doc-image-dark,
+[data-theme="dark"] .doc-image-light {
+  display: none;
+}
+
+.doc-image-light,
+[data-theme="dark"] .doc-image-dark {
+  display: block;
+}
+
+.docs-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 80rem;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  font-size: 0.875rem;
+}
+
+.docs-footer nav {
+  display: flex;
+  gap: 1.25rem;
+}

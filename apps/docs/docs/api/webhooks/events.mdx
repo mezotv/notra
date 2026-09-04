@@ -1,0 +1,388 @@
+---
+title: "Webhook Events"
+description: "Reference for the GitHub webhook events Notra processes, how they are filtered, and what they trigger"
+authors:
+  - name: Dominik
+    handle: dominik
+
+docolin:
+  schema_version: 1
+  kind: tools/notra/api/webhooks/events
+  type: reference
+  applies_to:
+    - notra-api
+    - notra-dashboard
+    - github-account
+  language: en
+  difficulty: intermediate
+  time_estimate: 8m
+  status: stable
+  aliases:
+    - webhook events
+    - push event
+    - release event
+    - pull request event
+    - ping event
+    - event filtering
+  prev: ./overview.mdx
+---
+
+Notra only accepts four GitHub event types on its webhook endpoint: `ping`, `push`, `release`, and `pull_request`. Every other event type is acknowledged with `200` and `"ignored": true` so GitHub does not retry it, and nothing else happens.
+
+<Callout type="info">
+  These are events Notra receives from GitHub. Notra does not emit its own webhook events; see [No outbound webhooks](/api/webhooks/overview#no-outbound-webhooks) for polling and streaming alternatives.
+</Callout>
+
+## Processing order
+
+<Steps>
+  <Step title="Route check">
+    The organization, integration, and repository IDs in the payload URL must exist, belong together, and the integration must be enabled.
+  </Step>
+  <Step title="Event type">
+    `X-GitHub-Event` must be one of the four supported types, otherwise the delivery is logged and ignored.
+  </Step>
+  <Step title="Duplicate check">
+    Deliveries with an `X-GitHub-Delivery` ID seen in the last 24 hours are skipped.
+  </Step>
+  <Step title="Signature">
+    The body is verified against the repository's secret using `X-Hub-Signature-256`.
+  </Step>
+  <Step title="Filter">
+    Each event type has its own rules (below). Events that do not pass are logged as filtered and return `200`.
+  </Step>
+  <Step title="Dispatch">
+    Push and release events are saved as context for chat and matched against your event triggers. Merged pull requests are recorded as signals for Iris.
+  </Step>
+</Steps>
+
+## Push
+
+Sent when commits are pushed to the repository.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `Event` | `string` | **Required.** `push` |
+| `Processed action` | `string` | **Required.** `pushed` |
+
+### Filtering
+
+A push is processed only when both conditions hold:
+
+<Callout type="success">`ref` is the repository's default branch (`refs/heads/{default_branch}`)</Callout>
+<Callout type="success">The payload contains at least one commit</Callout>
+
+Pushes to other branches, tag pushes, and empty pushes (for example a branch deletion) are filtered.
+
+### Processed payload
+
+This is the shape Notra passes to event triggers and returns under `processed` in the webhook response.
+
+<CodeGroup>
+
+  ```json Example
+  {
+    "type": "push",
+    "action": "pushed",
+    "data": {
+      "ref": "refs/heads/main",
+      "branch": "main",
+      "commits": [
+        {
+          "id": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+          "message": "Add new feature",
+          "author": {
+            "name": "Jane Developer",
+            "email": "jane@example.com",
+            "username": "janedev"
+          },
+          "timestamp": "2026-09-01T10:30:00Z",
+          "url": "https://github.com/owner/repo/commit/7fd1a60b01f91b314f59955a4e4d4e80d8edf11d"
+        }
+      ],
+      "headCommit": {
+        "id": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+        "message": "Add new feature"
+      }
+    }
+  }
+  ```
+
+  ```typescript Type
+  interface PushEvent {
+    type: "push";
+    action: "pushed";
+    data: {
+      ref: string;
+      branch: string;
+      commits: Array<{
+        id: string;
+        message: string;
+        author: { name: string; email: string; username?: string };
+        timestamp: string;
+        url: string;
+      }>;
+      headCommit: { id: string; message: string } | null;
+    };
+  }
+  ```
+
+</CodeGroup>
+
+## Release
+
+Sent when a release changes state.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `Event` | `string` | **Required.** `release` |
+| `Processed actions` | `string` | **Required.** `published` or `prereleased` |
+
+### Filtering
+
+<Callout type="success">GitHub's `action` is `published` or `prereleased`</Callout>
+<Callout type="success">The release is not a draft</Callout>
+
+`created`, `edited`, `deleted`, `released`, and `unpublished` actions are filtered. Draft releases never pass, so publishing a draft is processed once, when GitHub sends `published`.
+
+### Processed payload
+
+<CodeGroup>
+
+  ```json Example
+  {
+    "type": "release",
+    "action": "published",
+    "data": {
+      "tagName": "v1.2.0",
+      "name": "Version 1.2.0",
+      "body": "## What's Changed\n- New feature X\n- Bug fix Y",
+      "prerelease": false,
+      "draft": false,
+      "publishedAt": "2026-09-01T14:30:00Z",
+      "url": "https://github.com/owner/repo/releases/tag/v1.2.0"
+    }
+  }
+  ```
+
+  ```typescript Type
+  interface ReleaseEvent {
+    type: "release";
+    action: "published" | "prereleased";
+    data: {
+      tagName: string;
+      name: string | null;
+      body: string | null;
+      prerelease: boolean;
+      draft: boolean;
+      publishedAt: string | null;
+      url: string;
+    };
+  }
+  ```
+
+</CodeGroup>
+
+## Pull request
+
+Sent when a pull request is opened, closed, or updated. Notra only keeps merges.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `Event` | `string` | **Required.** `pull_request` |
+| `Processed action` | `string` | **Required.** `merged` |
+
+### Filtering
+
+<Callout type="success">GitHub's `action` is `closed`</Callout>
+<Callout type="success">`pull_request.merged` is `true`</Callout>
+
+Opened, synchronized, and closed-without-merge pull requests are filtered.
+
+### Processed payload
+
+<CodeGroup>
+
+  ```json Example
+  {
+    "type": "pull_request",
+    "action": "merged",
+    "data": {
+      "number": 842,
+      "title": "Add webhook retries",
+      "body": "Adds exponential backoff to delivery.",
+      "url": "https://github.com/owner/repo/pull/842",
+      "mergedAt": "2026-09-01T09:12:00Z",
+      "mergeCommitSha": "0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d",
+      "author": "janedev",
+      "baseBranch": "main"
+    }
+  }
+  ```
+
+  ```typescript Type
+  interface PullRequestEvent {
+    type: "pull_request";
+    action: "merged";
+    data: {
+      number: number;
+      title: string;
+      body: string | null;
+      url: string;
+      mergedAt: string | null;
+      mergeCommitSha: string | null;
+      author: string | null;
+      baseBranch: string | null;
+    };
+  }
+  ```
+
+</CodeGroup>
+
+<Callout type="note">
+  Merged pull requests feed Iris signals only. They are not stored as chat context and do not fire event triggers; event triggers can only subscribe to `push` and `release`.
+</Callout>
+
+## Ping
+
+Sent by GitHub when you save the webhook or click **Redeliver** on the ping in your webhook settings.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `Event` | `string` | **Required.** `ping` |
+
+Ping deliveries are signature-checked, logged, and answered with:
+
+```json
+{
+  "message": "Pong! Webhook configured successfully",
+  "event": "ping",
+  "delivery": "12345678-1234-1234-1234-123456789abc"
+}
+```
+
+They do not trigger any workflow.
+
+## Event triggers
+
+Push and release events are matched against enabled event triggers whose targets include the repository. The trigger's `sourceConfig` decides which events fire it:
+
+<CodeGroup>
+
+  ```json Pushes and releases
+  {
+    "sourceType": "github_webhook",
+    "sourceConfig": {
+      "eventTypes": ["push", "release"],
+      "includePreReleases": true
+    }
+  }
+  ```
+
+  ```json Releases only, no pre-releases
+  {
+    "sourceType": "github_webhook",
+    "sourceConfig": {
+      "eventTypes": ["release"],
+      "includePreReleases": false
+    }
+  }
+  ```
+
+</CodeGroup>
+
+* `eventTypes` accepts `push` and `release`. Triggers created through the API must list at least one.
+* `includePreReleases` defaults to `true`. When `false`, `prereleased` events are skipped for that trigger.
+* Each matching trigger starts one generation run per delivery. The run is keyed by trigger ID and delivery ID, so a redelivered event does not start a second run.
+
+See [Event triggers](/automation/event-based) for creating and managing triggers in the dashboard.
+
+## Log entries
+
+Each delivery writes one entry to **Settings**, then **Logs**. The `integrationType` is `github`, `direction` is `incoming`, and `referenceId` is the `X-GitHub-Delivery` ID.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `title` | `string` | **Required.** What happened, for example `Processed release event`, `Filtered push event`, `Unsupported event type: issues`, `Invalid webhook signature`, or `Webhook ping received` |
+| `status` | `string` | **Required.** `success` for processed, filtered, ignored, and ping deliveries; `failed` for rejected ones |
+| `statusCode` | `number` | The HTTP status Notra returned to GitHub |
+| `errorMessage` | `string` | Set on failed entries, for example `Missing X-Hub-Signature-256 header` |
+| `payload` | `object` | For processed events: `event`, `action`, and the processed `data`. For filtered events: `event`, `action`, and `filtered: true`. For unsupported event types: `event` and `ignored: true`. |
+
+<CodeGroup>
+
+  ```json Processed
+  {
+    "id": "log_a1b2c3d4",
+    "referenceId": "12345678-1234-1234-1234-123456789abc",
+    "title": "Processed push event",
+    "integrationType": "github",
+    "direction": "incoming",
+    "status": "success",
+    "statusCode": 200,
+    "errorMessage": null,
+    "payload": {
+      "event": "push",
+      "action": "pushed",
+      "data": {
+        "ref": "refs/heads/main",
+        "branch": "main",
+        "commits": [
+          {
+            "id": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+            "message": "Add new feature",
+            "author": { "name": "Jane Developer", "email": "jane@example.com", "username": "janedev" },
+            "timestamp": "2026-09-01T10:30:00Z",
+            "url": "https://github.com/owner/repo/commit/7fd1a60b01f91b314f59955a4e4d4e80d8edf11d"
+          }
+        ],
+        "headCommit": { "id": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d", "message": "Add new feature" }
+      }
+    },
+    "createdAt": "2026-09-01T10:30:00.000Z"
+  }
+  ```
+
+  ```json Failed
+  {
+    "id": "log_x9y8z7w6",
+    "referenceId": "87654321-4321-4321-4321-cba987654321",
+    "title": "Invalid webhook signature",
+    "integrationType": "github",
+    "direction": "incoming",
+    "status": "failed",
+    "statusCode": 401,
+    "errorMessage": "Invalid webhook signature",
+    "payload": null,
+    "createdAt": "2026-09-01T10:35:00.000Z"
+  }
+  ```
+
+  ```json Filtered
+  {
+    "id": "log_m5n6o7p8",
+    "referenceId": "11112222-3333-4444-5555-666677778888",
+    "title": "Filtered push event",
+    "integrationType": "github",
+    "direction": "incoming",
+    "status": "success",
+    "statusCode": 200,
+    "errorMessage": null,
+    "payload": { "event": "push", "action": "", "filtered": true },
+    "createdAt": "2026-09-01T10:40:00.000Z"
+  }
+  ```
+
+</CodeGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Webhooks overview" icon="webhook" href="/api/webhooks/overview">
+    Payload URL, secret, security checks, and polling alternatives
+  </Card>
+
+  <Card title="Configure triggers" icon="zap" href="/automation/event-based">
+    Generate content automatically from push and release events
+  </Card>
+</CardGroup>

@@ -53,19 +53,10 @@ import {
   SITE_URL,
 } from "./utils/agent-discovery";
 import { trackApiException } from "./utils/analytics";
+import { getAllowedOrigin } from "./utils/cors";
 import { assertRequiredEnv } from "./utils/env";
 import { isPublicFeedbackIngestRequest } from "./utils/feedback";
 import { logError } from "./utils/logging";
-
-const FRAMER_PLUGIN_ID = "8d4wmwtko6960jsu3ojmalvqm";
-
-const FRAMER_PLUGIN_ORIGIN_PATTERN = new RegExp(
-  `^https://${FRAMER_PLUGIN_ID}(-[a-zA-Z0-9]+)?\\.plugins\\.framercdn\\.com$`
-);
-
-const LOCAL_DEV_ORIGIN_PATTERN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
-
-const IS_PRODUCTION = process.env.NODE_ENV === "production";
 
 const publicStatusRoute = createRoute({
   method: "get",
@@ -86,21 +77,6 @@ const publicStatusRoute = createRoute({
     },
   },
 });
-
-function getAllowedOrigin(origin: string | undefined): string | null {
-  if (!origin) {
-    return null;
-  }
-
-  const allowedPatterns = [
-    FRAMER_PLUGIN_ORIGIN_PATTERN,
-    ...(IS_PRODUCTION ? [] : [LOCAL_DEV_ORIGIN_PATTERN]),
-  ];
-
-  return allowedPatterns.some((pattern) => pattern.test(origin))
-    ? origin
-    : null;
-}
 
 assertRequiredEnv();
 
