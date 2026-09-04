@@ -90,7 +90,6 @@ export const POSTHOG_EVENTS = {
   GEO_SHELF_OPPORTUNITY_UPDATED: "geo_shelf_opportunity_updated",
   GEO_SHELF_PREVIEW_REQUESTED: "geo_shelf_preview_requested",
   GEO_SHELF_VIEWED: "geo_shelf_viewed",
-  GEO_SHELF_VIEW_CHANGED: "geo_shelf_view_changed",
   TRAFFIC_VIEWED: "traffic_viewed",
   TRAFFIC_INSTALL_SNIPPET_VIEWED: "traffic_install_snippet_viewed",
   TRAFFIC_INSTALL_SNIPPET_COPIED: "traffic_install_snippet_copied",

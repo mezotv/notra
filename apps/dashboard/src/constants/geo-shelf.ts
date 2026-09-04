@@ -177,26 +177,6 @@ export const GEO_SHELF_PREVIEW_STALE_MS = 10 * 60 * 1000;
 export const GEO_SHELF_PREVIEW_TIMEOUT_MS = 30_000;
 export const GEO_SHELF_PREVIEW_CACHE_MS = 7 * 24 * 60 * 60 * 1000;
 
-export const GEO_SHELF_VIEWS = ["table", "board"] as const;
-export const GEO_SHELF_DEFAULT_VIEW: (typeof GEO_SHELF_VIEWS)[number] = "table";
-export const GEO_SHELF_VIEW_LABELS: Record<
-  (typeof GEO_SHELF_VIEWS)[number],
-  string
-> = {
-  table: "Table",
-  board: "Board",
-};
-
-export const GEO_SHELF_KANBAN_NO_TICKET_COLUMN = "no_ticket";
-export const GEO_SHELF_KANBAN_COLUMNS: { id: string; name: string }[] = [
-  { id: GEO_SHELF_KANBAN_NO_TICKET_COLUMN, name: "No ticket" },
-  { id: "open", name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS.open },
-  { id: "in_progress", name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS.in_progress },
-  { id: "won", name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS.won },
-  { id: "lost", name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS.lost },
-  { id: "dismissed", name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS.dismissed },
-];
-
 // Shelf sources are public web pages: only http(s) URLs on a real, publicly
 // resolvable hostname are accepted.
 export const GEO_SHELF_URL_PROTOCOL_PATTERN = /^https?$/;

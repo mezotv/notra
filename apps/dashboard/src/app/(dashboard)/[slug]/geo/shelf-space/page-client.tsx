@@ -15,20 +15,13 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import Link from "next/link";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import {
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { ShelfAddDialog } from "@/components/geo/shelf/shelf-add-dialog";
 import { ShelfDetailDialog } from "@/components/geo/shelf/shelf-detail-dialog";
-import { ShelfKanban } from "@/components/geo/shelf/shelf-kanban";
 import { ShelfTable } from "@/components/geo/shelf/shelf-table";
 import { ShelfToolbar } from "@/components/geo/shelf/shelf-toolbar";
 import { PageContainer } from "@/components/layout/container";
@@ -44,7 +37,6 @@ import {
 import {
   GEO_SHELF_ADD_HOTKEY,
   GEO_SHELF_ADD_LABEL,
-  GEO_SHELF_NO_MATCHES_MESSAGE,
   GEO_SHELF_SAMPLE_DATA_DESCRIPTION,
   GEO_SHELF_SAMPLE_DATA_TITLE,
   GEO_SHELF_SHELF_FILTERS,
@@ -56,12 +48,10 @@ import { useGeoActiveProject } from "@/lib/hooks/use-geo-active-project";
 import { useGeoCompetitorsDb, useGeoShelfDb } from "@/lib/hooks/use-geo-db";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoShelfMembers } from "@/lib/hooks/use-geo-shelf";
-import { useGeoShelfView } from "@/lib/hooks/use-geo-shelf-view";
 import type { GeoPageClientProps } from "@/types/geo";
 import type {
   GeoShelfPageContentProps,
   GeoShelfSelection,
-  GeoShelfView,
 } from "@/types/geo-shelf";
 import { withGeoProject } from "@/utils/geo-paths";
 import {
@@ -121,19 +111,10 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
   );
   const [addOpen, setAddOpen] = useState(false);
   const [selected, setSelected] = useState<GeoShelfSelection | null>(null);
-  const [view, setView] = useGeoShelfView();
 
   useHotkey(GEO_SHELF_ADD_HOTKEY, () => setAddOpen(true), {
     enabled: !addOpen && selected === null,
   });
-
-  const handleViewChange = useCallback(
-    (nextView: GeoShelfView) => {
-      setView(nextView);
-      trackEvent(POSTHOG_EVENTS.GEO_SHELF_VIEW_CHANGED, { view: nextView });
-    },
-    [setView]
-  );
 
   const settings = settingsData?.settings ?? null;
   const hasSettings = settings !== null;
@@ -147,12 +128,12 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
     }
     viewedRef.current = true;
     trackEvent(POSTHOG_EVENTS.GEO_SHELF_VIEWED, {
-      view,
+      view: "table",
       has_settings: hasSettings,
       shelf_count: shelfCount,
       is_sample_data: isSampleData,
     });
-  }, [isSettingsPending, hasSettings, shelfCount, isSampleData, view]);
+  }, [isSettingsPending, hasSettings, shelfCount, isSampleData]);
 
   if (isSettingsPending) {
     return <GeoShelfSkeleton />;
@@ -212,36 +193,16 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
     rows.find((row) => row.id === selected?.id) ??
     rows.find((row) => row.url === selected?.url) ??
     null;
-  const showBoard = view === "board" && rows.length > 0;
-  let shelfContent: ReactNode;
-  if (!showBoard) {
-    shelfContent = (
-      <ShelfTable
-        hasScanData={shelf.sources.some((source) => source.origin === "scan")}
-        onAddShelf={() => setAddOpen(true)}
-        onRowClick={(row) => setSelected({ id: row.id, url: row.url })}
-        pendingSourceIds={shelf.pendingSourceIds}
-        rows={filteredRows}
-        totalCount={rows.length}
-      />
-    );
-  } else if (filteredRows.length === 0) {
-    shelfContent = (
-      <p className="text-muted-foreground flex min-h-40 items-center justify-center rounded-2xl border border-dashed px-6 py-12 text-sm">
-        {GEO_SHELF_NO_MATCHES_MESSAGE}
-      </p>
-    );
-  } else {
-    shelfContent = (
-      <ShelfKanban
-        currentMemberId={currentMemberId}
-        onOpenRow={(row) => setSelected({ id: row.id, url: row.url })}
-        onUpdateOpportunity={shelf.updateOpportunity}
-        pendingSourceIds={shelf.pendingSourceIds}
-        rows={filteredRows}
-      />
-    );
-  }
+  const shelfContent = (
+    <ShelfTable
+      hasScanData={shelf.sources.some((source) => source.origin === "scan")}
+      onAddShelf={() => setAddOpen(true)}
+      onRowClick={(row) => setSelected({ id: row.id, url: row.url })}
+      pendingSourceIds={shelf.pendingSourceIds}
+      rows={filteredRows}
+      totalCount={rows.length}
+    />
+  );
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -279,8 +240,6 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
               onSearchChange={setSearch}
               onShelfFilterChange={setShelfFilter}
               onTicketFilterChange={setTicketFilter}
-              onViewChange={handleViewChange}
-              view={view}
             />
           ) : null}
           {shelfContent}

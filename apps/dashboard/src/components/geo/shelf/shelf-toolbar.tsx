@@ -11,7 +11,6 @@ import {
   SelectValue,
 } from "@notra/ui/components/ui/select";
 
-import { ShelfViewToggle } from "@/components/geo/shelf/shelf-view-toggle";
 import {
   GEO_SHELF_SHELF_FILTER_OPTIONS,
   GEO_SHELF_SHELF_FILTERS,
@@ -37,8 +36,6 @@ export function ShelfToolbar({
   onSearchChange,
   onShelfFilterChange,
   onTicketFilterChange,
-  view,
-  onViewChange,
 }: GeoShelfToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -107,9 +104,6 @@ export function ShelfToolbar({
           ))}
         </SelectContent>
       </Select>
-      <div className="ml-auto shrink-0">
-        <ShelfViewToggle onChange={onViewChange} value={view} />
-      </div>
     </div>
   );
 }

@@ -7,7 +7,6 @@ export const localStorageKeys = {
   chatDraft: (draftId: string) => `chat-draft:${draftId}`,
   imageExportTarget: "notra:image-export-target",
   contentView: "notra:content-view",
-  geoShelfView: "notra:geo-shelf-view:v1",
   sidebarMode: "notra:sidebar-mode:v1",
   sidebarOnboardingCollapsed: (organizationId?: string) =>
     organizationId

@@ -1,10 +1,6 @@
 import type { GeoCompetitor } from "@notra/geo-core/types/geo";
 
-import {
-  GEO_SHELF_KANBAN_NO_TICKET_COLUMN,
-  GEO_SHELF_OPEN_STATUSES,
-  GEO_SHELF_VIEWS,
-} from "@/constants/geo-shelf";
+import { GEO_SHELF_OPEN_STATUSES } from "@/constants/geo-shelf";
 import {
   canonicalizeShelfUrl,
   isAllowedShelfUrl,
@@ -20,7 +16,6 @@ import type {
   GeoShelfPlacementWrite,
   GeoShelfRow,
   GeoShelfSource,
-  GeoShelfView,
 } from "@/types/geo-shelf";
 
 export function isOpenShelfStatus(
@@ -372,12 +367,4 @@ export function shelfDueDateToIso(date: Date): string {
     Date.UTC(date.getFullYear(), date.getMonth(), date.getDate(), 12)
   );
   return noon.toISOString();
-}
-
-export function shelfKanbanColumnFor(row: GeoShelfRow): string {
-  return row.opportunity?.status ?? GEO_SHELF_KANBAN_NO_TICKET_COLUMN;
-}
-
-export function isShelfView(value: string | null): value is GeoShelfView {
-  return GEO_SHELF_VIEWS.some((view) => view === value);
 }
