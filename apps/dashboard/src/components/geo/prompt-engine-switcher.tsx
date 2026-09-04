@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ArrowDown01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
   GlobalIcon,
@@ -8,16 +9,16 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { GEO_SEARCH_LABEL } from "@notra/geo-core/constants/geo";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@notra/ui/components/ui/tooltip";
-import { LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { useId } from "react";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@notra/ui/components/ui/dropdown-menu";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { cn } from "@/lib/utils";
 import type { PromptEngineSwitcherProps } from "@/types/geo";
 import {
   engineAnswerMode,
@@ -27,11 +28,26 @@ import {
 } from "@/utils/geo-charts";
 import { adjacentPromptEngine } from "@/utils/geo-prompt-engines";
 
-const PILL_TRANSITION = { type: "spring", bounce: 0, duration: 0.3 } as const;
+const COUNTER_TRANSITION = {
+  type: "spring",
+  bounce: 0,
+  duration: 0.25,
+} as const;
 const INSTANT = { duration: 0 } as const;
 
 function engineLabel(engine: string, answerMode: string | null): string {
   return answerMode ? formatEngineFamily(engine) : formatEngineWithMode(engine);
+}
+
+function SearchModeIcon() {
+  return (
+    <HugeiconsIcon
+      aria-label={GEO_SEARCH_LABEL}
+      className="text-muted-foreground size-3 shrink-0"
+      icon={GlobalIcon}
+      strokeWidth={2}
+    />
+  );
 }
 
 export function PromptEngineSwitcher({
@@ -41,82 +57,83 @@ export function PromptEngineSwitcher({
 }: PromptEngineSwitcherProps) {
   const engines = results.map((result) => result.engine);
   const answerMode = sharedEngineAnswerMode(engines);
-  const layoutId = useId();
-  const reduceMotion = useReducedMotion();
-  const pillTransition = reduceMotion ? INSTANT : PILL_TRANSITION;
   const activeIndex = engines.indexOf(active.engine);
+  const reduceMotion = useReducedMotion();
+  const counterTransition = reduceMotion ? INSTANT : COUNTER_TRANSITION;
+  const showsSearchIcon = (engine: string) =>
+    answerMode === null && engineAnswerMode(engine) !== null;
 
   return (
-    <div className="flex min-w-0 flex-1 items-start gap-3">
-      <LayoutGroup id={layoutId}>
-        <div
-          aria-label="Engines"
-          className="flex min-w-0 flex-1 flex-wrap items-center gap-1 p-0.5"
-          role="tablist"
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              aria-label={`Engine: ${engineLabel(active.engine, answerMode)}`}
+              className="max-w-full min-w-0"
+              size="sm"
+              variant="outline"
+            />
+          }
         >
-          {results.map((result, index) => {
-            const selected = result.engine === active.engine;
-            const label = engineLabel(result.engine, answerMode);
-            const family = formatEngineFamily(result.engine);
-            const showSearchIcon =
-              answerMode === null && engineAnswerMode(result.engine) !== null;
-            return (
-              <button
-                aria-label={label}
-                aria-selected={selected}
-                className={cn(
-                  "relative inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-sm",
-                  "duration-fast transition-[color,transform] ease-out",
-                  "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
-                  "active:scale-[0.96]",
-                  selected
-                    ? "text-foreground font-medium"
-                    : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                )}
+          <EngineIcon className="size-3.5 shrink-0" engine={active.engine} />
+          <span className="truncate">
+            {engineLabel(active.engine, answerMode)}
+          </span>
+          {showsSearchIcon(active.engine) ? <SearchModeIcon /> : null}
+          {results.length > 1 ? (
+            <span className="text-muted-foreground/70 inline-flex items-center text-xs tabular-nums">
+              <AnimatePresence initial={false} mode="popLayout">
+                <motion.span
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  initial={{ opacity: 0, y: 4 }}
+                  key={activeIndex}
+                  transition={counterTransition}
+                >
+                  {activeIndex + 1}
+                </motion.span>
+              </AnimatePresence>
+              <span className="mx-0.5 opacity-60">/</span>
+              <span>{results.length}</span>
+            </span>
+          ) : null}
+          <HugeiconsIcon
+            aria-hidden="true"
+            className="text-muted-foreground size-3.5 shrink-0"
+            icon={ArrowDown01Icon}
+            strokeWidth={2}
+          />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent
+          align="start"
+          className="max-h-[min(60vh,24rem)] w-64 overflow-y-auto"
+        >
+          <DropdownMenuRadioGroup
+            onValueChange={(next) => {
+              const nextIndex = engines.indexOf(next);
+              onChange(next, nextIndex >= activeIndex ? 1 : -1);
+            }}
+            value={active.engine}
+          >
+            {results.map((result) => (
+              <DropdownMenuRadioItem
+                closeOnClick
                 key={result.engine}
-                onClick={() =>
-                  onChange(result.engine, index >= activeIndex ? 1 : -1)
-                }
-                role="tab"
-                type="button"
+                value={result.engine}
               >
-                {selected ? (
-                  <motion.span
-                    className="bg-muted absolute inset-0 rounded-full"
-                    layoutId="geo-engine-pill"
-                    transition={pillTransition}
-                  />
-                ) : null}
-                <span className="relative z-10 inline-flex items-center gap-1.5">
-                  <EngineIcon className="size-3.5" engine={result.engine} />
-                  <span className="inline-flex items-center gap-1">
-                    <span>{family}</span>
-                    {showSearchIcon ? (
-                      <Tooltip>
-                        <TooltipTrigger
-                          render={
-                            <span className="inline-flex shrink-0 cursor-default" />
-                          }
-                        >
-                          <HugeiconsIcon
-                            aria-hidden="true"
-                            className="size-3 shrink-0"
-                            icon={GlobalIcon}
-                            strokeWidth={2}
-                          />
-                        </TooltipTrigger>
-                        <TooltipContent>{GEO_SEARCH_LABEL}</TooltipContent>
-                      </Tooltip>
-                    ) : null}
-                  </span>
+                <EngineIcon className="size-3.5" engine={result.engine} />
+                <span className="truncate">
+                  {engineLabel(result.engine, answerMode)}
                 </span>
-              </button>
-            );
-          })}
-        </div>
-      </LayoutGroup>
+                {showsSearchIcon(result.engine) ? <SearchModeIcon /> : null}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
       {results.length > 1 ? (
-        <div className="flex shrink-0 items-center gap-0.5 pt-0.5">
+        <div className="flex shrink-0 items-center gap-0.5">
           <Button
             aria-label="Previous engine"
             onClick={() =>
