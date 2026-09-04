@@ -1,16 +1,8 @@
 "use client";
 
-import {
-  InformationCircleIcon,
-  PlusSignIcon,
-} from "@hugeicons/core-free-icons";
+import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@notra/ui/components/ui/alert";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import Link from "next/link";
@@ -37,8 +29,6 @@ import {
 import {
   GEO_SHELF_ADD_HOTKEY,
   GEO_SHELF_ADD_LABEL,
-  GEO_SHELF_SAMPLE_DATA_DESCRIPTION,
-  GEO_SHELF_SAMPLE_DATA_TITLE,
   GEO_SHELF_SHELF_FILTERS,
   GEO_SHELF_TICKET_FILTERS,
 } from "@/constants/geo-shelf";
@@ -222,18 +212,6 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
         </header>
 
         <div className="space-y-3">
-          {isSampleData ? (
-            <Alert className="border-amber-500/30 bg-amber-500/5">
-              <HugeiconsIcon
-                className="text-amber-600 dark:text-amber-400"
-                icon={InformationCircleIcon}
-              />
-              <AlertTitle>{GEO_SHELF_SAMPLE_DATA_TITLE}</AlertTitle>
-              <AlertDescription>
-                {GEO_SHELF_SAMPLE_DATA_DESCRIPTION}
-              </AlertDescription>
-            </Alert>
-          ) : null}
           {rows.length > 0 ? (
             <ShelfToolbar
               filters={filters}

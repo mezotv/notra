@@ -3,7 +3,10 @@
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
-import { Badge } from "@notra/ui/components/ui/badge";
+import {
+  HoverCard,
+  HoverCardTrigger,
+} from "@notra/ui/components/ui/hover-card";
 import { useIsMobile } from "@notra/ui/hooks/use-mobile";
 
 import { Button } from "@/components/button";
@@ -12,10 +15,11 @@ import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { LogoStack } from "@/components/geo/logo-stack";
-import { ShelfMemberAvatar } from "@/components/geo/shelf/shelf-member-avatar";
 import { ShelfPlacementBadge } from "@/components/geo/shelf/shelf-placement-badge";
+import { ShelfTicketAssigneeCard } from "@/components/geo/shelf/shelf-ticket-assignee-card";
 import { ShelfTicketBadge } from "@/components/geo/shelf/shelf-ticket-badge";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
   EMPTY_STATE_TABLE_ROWS,
@@ -27,19 +31,27 @@ import {
   GEO_SHELF_EMPTY_TITLE,
   GEO_SHELF_EMPTY_UNSCANNED_DESCRIPTION,
   GEO_SHELF_ENGINE_STACK_LIMIT,
+  GEO_SHELF_HOVER_DELAY_MS,
   GEO_SHELF_NO_MATCHES_MESSAGE,
   GEO_SHELF_SOURCE_KIND_LABELS,
+  GEO_SHELF_TABLE_COLUMN,
   GEO_SHELF_TABLE_HEIGHT,
   GEO_SHELF_TABLE_ROW_HEIGHT,
 } from "@/constants/geo-shelf";
 import { cn } from "@/lib/utils";
 import type { GeoShelfRow, GeoShelfTableProps } from "@/types/geo-shelf";
-import { formatRelative } from "@/utils/format-relative";
 
-/** Dropped below `md`: the page, ticket and presence columns carry the story. */
-const MOBILE_HIDDEN_COLUMN_KEYS: readonly string[] = ["engines", "competitors"];
+/** Below `md` the page, citations and presence columns carry the story. */
+const MOBILE_HIDDEN_COLUMN_KEYS: readonly string[] = ["competitors"];
+
+function pageSubtitle(row: GeoShelfRow): string {
+  const kind = GEO_SHELF_SOURCE_KIND_LABELS[row.kind];
+  const base = `${kind} · ${row.domain}`;
+  return row.origin === "manual" ? `${base} · added manually` : base;
+}
 
 function PageCell({ row }: { row: GeoShelfRow }) {
+  const title = row.title ?? row.url;
   return (
     <span className="flex min-w-0 items-center gap-2.5">
       <CompetitorLogo
@@ -47,35 +59,37 @@ function PageCell({ row }: { row: GeoShelfRow }) {
         domain={row.domain}
         name={row.domain}
       />
-      <span className="flex min-w-0 flex-col">
-        <span className="truncate font-medium" title={row.title ?? row.url}>
-          {row.title ?? row.url}
-        </span>
-        <span className="text-muted-foreground truncate text-xs">
-          {row.domain}
-          {row.origin === "manual" ? " · added manually" : ""}
-        </span>
+      <span className="flex min-w-0 flex-1 flex-col overflow-hidden">
+        <TruncateWithTooltip className="font-medium">
+          {title}
+        </TruncateWithTooltip>
+        <TruncateWithTooltip className="text-muted-foreground text-xs">
+          {pageSubtitle(row)}
+        </TruncateWithTooltip>
       </span>
     </span>
   );
 }
 
-function EnginesCell({ row }: { row: GeoShelfRow }) {
-  if (row.citations.engines.length === 0) {
-    return <span className="text-muted-foreground">-</span>;
-  }
+function CitationsCell({ row }: { row: GeoShelfRow }) {
+  const count = row.citations.windowCount;
   return (
-    <LogoStack
-      items={row.citations.engines.map((engine) => ({
-        key: engine,
-        label: engineFamilyLabel(engine),
-        detail: engine,
-        renderIcon: (className) => (
-          <EngineIcon className={className} engine={engine} />
-        ),
-      }))}
-      limit={GEO_SHELF_ENGINE_STACK_LIMIT}
-    />
+    <span className="flex min-w-0 items-center gap-2">
+      <span className="tabular-nums">{count > 0 ? count : "-"}</span>
+      {row.citations.engines.length > 0 ? (
+        <LogoStack
+          items={row.citations.engines.map((engine) => ({
+            key: engine,
+            label: engineFamilyLabel(engine),
+            detail: engine,
+            renderIcon: (className) => (
+              <EngineIcon className={className} engine={engine} />
+            ),
+          }))}
+          limit={GEO_SHELF_ENGINE_STACK_LIMIT}
+        />
+      ) : null}
+    </span>
   );
 }
 
@@ -115,15 +129,29 @@ function TicketCell({ row }: { row: GeoShelfRow }) {
   if (!row.opportunity) {
     return <span className="text-muted-foreground text-xs">No ticket</span>;
   }
+  const badge = (
+    <ShelfTicketBadge className="shrink-0" status={row.opportunity.status} />
+  );
+  if (!row.assignee) {
+    return badge;
+  }
+  const name = row.assignee.name || row.assignee.email;
   return (
-    <span className="flex min-w-0 items-center gap-2">
-      <ShelfTicketBadge status={row.opportunity.status} />
-      <ShelfMemberAvatar
-        className="min-w-0"
-        fallbackLabel="Unassigned"
+    <HoverCard>
+      <HoverCardTrigger
+        delay={GEO_SHELF_HOVER_DELAY_MS}
+        render={
+          <span aria-label={`Assigned to ${name}`} className="inline-flex" />
+        }
+      >
+        {badge}
+      </HoverCardTrigger>
+      <ShelfTicketAssigneeCard
+        assignedAt={row.opportunity.createdAt}
         member={row.assignee}
+        status={row.opportunity.status}
       />
-    </span>
+    </HoverCard>
   );
 }
 
@@ -148,45 +176,23 @@ export function ShelfTable({
         </span>
       ),
       sortable: true,
-      width: "2fr",
+      width: GEO_SHELF_TABLE_COLUMN.title.width,
+      minWidth: GEO_SHELF_TABLE_COLUMN.title.minWidth,
       cell: (row) => <PageCell row={row} />,
       sortValue: (row) => row.title ?? row.url,
     },
     {
-      key: "kind",
-      header: "Kind",
-      width: "7rem",
-      sortable: true,
-      cell: (row) => (
-        <Badge variant="secondary">
-          {GEO_SHELF_SOURCE_KIND_LABELS[row.kind]}
-        </Badge>
-      ),
-    },
-    {
       key: "citations",
-      header: "Cited 30d",
-      width: "6.5rem",
-      align: "right",
+      header: "Cited",
+      width: GEO_SHELF_TABLE_COLUMN.citations.width,
       sortable: true,
-      cell: (row) => (
-        <span className="tabular-nums">
-          {row.citations.windowCount > 0 ? row.citations.windowCount : "-"}
-        </span>
-      ),
+      cell: (row) => <CitationsCell row={row} />,
       sortValue: (row) => row.citations.windowCount,
-    },
-    {
-      key: "engines",
-      header: "Engines",
-      width: "7rem",
-      cell: (row) => <EnginesCell row={row} />,
-      sortValue: (row) => row.citations.engines.length,
     },
     {
       key: "own",
       header: "You",
-      width: "7.5rem",
+      width: GEO_SHELF_TABLE_COLUMN.own.width,
       sortable: true,
       cell: (row) => (
         <ShelfPlacementBadge
@@ -198,30 +204,18 @@ export function ShelfTable({
     },
     {
       key: "competitors",
-      header: "Competitors on it",
-      width: "9rem",
+      header: "Competitors",
+      width: GEO_SHELF_TABLE_COLUMN.competitors.width,
       cell: (row) => <CompetitorsCell row={row} />,
       sortValue: (row) => row.presentCompetitors.length,
     },
     {
       key: "ticket",
       header: "Ticket",
-      width: "1.4fr",
+      width: GEO_SHELF_TABLE_COLUMN.ticket.width,
       sortable: true,
       cell: (row) => <TicketCell row={row} />,
       sortValue: (row) => row.opportunity?.status ?? "zz",
-    },
-    {
-      key: "updatedAt",
-      header: "Updated",
-      width: "6.5rem",
-      sortable: true,
-      cell: (row) => (
-        <span className="text-muted-foreground text-xs">
-          {formatRelative(row.updatedAt)}
-        </span>
-      ),
-      sortValue: (row) => row.updatedAt,
     },
   ];
 

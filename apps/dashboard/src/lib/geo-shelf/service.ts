@@ -14,18 +14,27 @@ import {
   GEO_SHELF_OPEN_STATUSES,
 } from "@/constants/geo-shelf";
 import { isUniqueConstraintError } from "@/lib/db/errors";
+import { queryCitedShelfPages } from "@/lib/geo-shelf/citation-query";
+import { citationsEqual, emptyShelfCitations } from "@/lib/geo-shelf/citations";
+import {
+  shelfKindFromDomain,
+  shelfOwnershipFromDomain,
+} from "@/lib/geo-shelf/classify";
 import { buildGeoShelfFixture } from "@/lib/geo-shelf/fixtures";
 import { assertGeoShelfOpportunityMembers } from "@/lib/geo-shelf/members";
 import {
   findGeoShelfSourceByUrl,
   insertGeoShelfSource,
+  insertGeoShelfSources,
+  listPersistedGeoShelfSources,
   patchGeoShelfSource,
-  readGeoShelfStore,
+  updateGeoShelfCitations,
 } from "@/lib/geo-shelf/store";
 import { canonicalizeShelfUrl, shelfDomainFromUrl } from "@/lib/geo-shelf/url";
 import { conflict } from "@/lib/orpc/utils/errors";
 import { geoShelfSourceSchema } from "@/schemas/geo-shelf";
 import type {
+  GeoShelfCitedPage,
   GeoShelfCreateInput,
   GeoShelfOpportunity,
   GeoShelfOpportunityWrite,
@@ -98,10 +107,113 @@ function seedFixture(seed: GeoShelfStoreSeed) {
   };
 }
 
+function buildScanShelfSource(
+  seed: GeoShelfStoreSeed,
+  page: GeoShelfCitedPage,
+  nowIso: string
+): GeoShelfSource {
+  const firstCitedAt = page.citations.firstCitedAt ?? nowIso;
+  const lastCitedAt = page.citations.lastCitedAt ?? nowIso;
+  return geoShelfSourceSchema.parse({
+    id: crypto.randomUUID(),
+    url: page.url,
+    domain: page.domain,
+    title: page.title,
+    kind: shelfKindFromDomain(page.domain),
+    ownership: shelfOwnershipFromDomain(
+      page.domain,
+      seed.ownDomain,
+      seed.competitors.map((competitor) => competitor.domain)
+    ),
+    origin: "scan",
+    fetchStatus: "pending",
+    lastFetchedAt: null,
+    citations: page.citations,
+    placements: buildPlacements(seed, [], nowIso),
+    opportunity: null,
+    createdByUserId: null,
+    createdAt: firstCitedAt,
+    updatedAt: lastCitedAt,
+  } satisfies GeoShelfSource);
+}
+
+/**
+ * Shelf space is cited scan pages plus anything added by hand. Historical
+ * mention-checks are folded in on read so Reddit (and other cited hosts)
+ * show up without waiting for the next scan.
+ */
+async function syncCitedShelfSources(
+  seed: GeoShelfStoreSeed,
+  persisted: GeoShelfSource[]
+): Promise<GeoShelfSource[]> {
+  const cited = await queryCitedShelfPages(storeKey(seed));
+  if (cited.length === 0) {
+    return persisted;
+  }
+
+  const nowIso = new Date().toISOString();
+  const remaining = new Map(persisted.map((source) => [source.url, source]));
+  const next: GeoShelfSource[] = [];
+  const toInsert: GeoShelfSource[] = [];
+  const citationUpdates: {
+    id: string;
+    citations: GeoShelfCitedPage["citations"];
+    title: string | null;
+  }[] = [];
+
+  for (const page of cited) {
+    const existing = remaining.get(page.url);
+    if (!existing) {
+      const source = buildScanShelfSource(seed, page, nowIso);
+      toInsert.push(source);
+      next.push(source);
+      continue;
+    }
+    remaining.delete(page.url);
+    const title = existing.title ?? page.title;
+    const citationsChanged = !citationsEqual(
+      existing.citations,
+      page.citations
+    );
+    const titleChanged = title !== existing.title;
+    if (citationsChanged || titleChanged) {
+      citationUpdates.push({
+        id: existing.id,
+        citations: page.citations,
+        title,
+      });
+    }
+    next.push(
+      citationsChanged || titleChanged
+        ? { ...existing, title, citations: page.citations }
+        : existing
+    );
+  }
+  next.push(...remaining.values());
+
+  const [inserted] = await Promise.all([
+    insertGeoShelfSources(storeKey(seed), toInsert),
+    updateGeoShelfCitations(storeKey(seed), citationUpdates),
+  ]);
+  if (inserted.length === 0) {
+    return next;
+  }
+
+  const insertedByUrl = new Map(inserted.map((source) => [source.url, source]));
+  return next.map((source) => insertedByUrl.get(source.url) ?? source);
+}
+
 export async function listGeoShelfSources(
   seed: GeoShelfStoreSeed
 ): Promise<GeoShelfSourceList> {
-  return await readGeoShelfStore(storeKey(seed), seedFixture(seed));
+  const key = storeKey(seed);
+  const persisted = await listPersistedGeoShelfSources(key);
+  const sources = await syncCitedShelfSources(seed, persisted);
+  if (sources.length > 0) {
+    return { sources, isSampleData: false };
+  }
+  const seeded = seedFixture(seed)();
+  return { sources: seeded, isSampleData: seeded.length > 0 };
 }
 
 function isClosedStatus(status: GeoShelfOpportunityWrite["status"]): boolean {
@@ -267,14 +379,7 @@ export async function createGeoShelfSource(
     origin: "manual",
     fetchStatus: "pending",
     lastFetchedAt: null,
-    citations: {
-      windowCount: 0,
-      totalCount: 0,
-      promptCount: 0,
-      engines: [],
-      firstCitedAt: null,
-      lastCitedAt: null,
-    },
+    citations: emptyShelfCitations(),
     placements: buildPlacements(seed, input.placements, nowIso),
     opportunity: input.opportunity
       ? buildOpportunity(input.opportunity, userId, nowIso, null)

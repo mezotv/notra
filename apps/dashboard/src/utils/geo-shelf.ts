@@ -1,6 +1,7 @@
 import type { GeoCompetitor } from "@notra/geo-core/types/geo";
 
 import { GEO_SHELF_OPEN_STATUSES } from "@/constants/geo-shelf";
+import { emptyShelfCitations } from "@/lib/geo-shelf/citations";
 import {
   canonicalizeShelfUrl,
   isAllowedShelfUrl,
@@ -320,14 +321,7 @@ export function buildOptimisticShelfSource(
     origin: "manual",
     fetchStatus: "pending",
     lastFetchedAt: null,
-    citations: {
-      windowCount: 0,
-      totalCount: 0,
-      promptCount: 0,
-      engines: [],
-      firstCitedAt: null,
-      lastCitedAt: null,
-    },
+    citations: emptyShelfCitations(),
     placements,
     opportunity: mergeShelfOpportunity(null, draft.opportunity, nowIso),
     createdByUserId: context.createdByUserId,

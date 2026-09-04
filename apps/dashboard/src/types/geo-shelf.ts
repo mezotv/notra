@@ -47,6 +47,26 @@ export type GeoShelfPlacementWrite = z.infer<
 export type GeoShelfCitationSummary = z.infer<
   typeof geoShelfCitationSummarySchema
 >;
+
+/** One raw URL group from mention-check sources, before canonical merge. */
+export interface GeoShelfCitationRawRow {
+  url: string;
+  title: string | null;
+  windowCount: number;
+  totalCount: number;
+  promptIds: string[];
+  engines: string[];
+  firstCitedAt: Date | string;
+  lastCitedAt: Date | string;
+}
+
+export interface GeoShelfCitedPage {
+  url: string;
+  domain: string;
+  title: string | null;
+  citations: GeoShelfCitationSummary;
+}
+
 export type GeoShelfOpportunity = z.infer<typeof geoShelfOpportunitySchema>;
 export type GeoShelfOpportunityWrite = z.infer<
   typeof geoShelfOpportunityWriteSchema
@@ -176,10 +196,18 @@ export interface GeoShelfTicketBadgeProps {
   className?: string;
 }
 
+export interface GeoShelfTicketAssigneeCardProps {
+  member: GeoShelfMember;
+  assignedAt: string;
+  status: GeoShelfOpportunityStatus;
+}
+
 export interface GeoShelfMemberAvatarProps {
   member: GeoShelfMember | null;
   className?: string;
   fallbackLabel?: string;
+  /** Hide the name — table cells only have room for the mark. */
+  showLabel?: boolean;
 }
 
 export interface GeoShelfMemberSelectProps {

@@ -1,6 +1,7 @@
 import {
   GEO_SHELF_BLOCKED_HOSTNAME_SUFFIXES,
   GEO_SHELF_BLOCKED_HOSTNAMES,
+  GEO_SHELF_HOSTNAME_ALIASES,
   GEO_SHELF_MIN_HOSTNAME_LABELS,
   GEO_SHELF_MIN_HOSTNAME_TLD_LENGTH,
   GEO_SHELF_TRACKING_PARAM_PREFIXES,
@@ -25,10 +26,11 @@ function isTrackingParam(name: string): boolean {
 }
 
 function normalizeHostname(hostname: string): string {
-  return hostname
+  const normalized = hostname
     .toLowerCase()
     .replace(TRAILING_DOT, "")
     .replace(LEADING_WWW, "");
+  return GEO_SHELF_HOSTNAME_ALIASES[normalized] ?? normalized;
 }
 
 function isBlockedHostname(hostname: string): boolean {
@@ -80,6 +82,13 @@ function parseShelfUrl(raw: string): URL | null {
 
 export function isAllowedShelfUrl(raw: string): boolean {
   return parseShelfUrl(raw) !== null;
+}
+
+export function tryCanonicalizeShelfUrl(raw: string): string | null {
+  if (!isAllowedShelfUrl(raw)) {
+    return null;
+  }
+  return canonicalizeShelfUrl(raw);
 }
 
 /**

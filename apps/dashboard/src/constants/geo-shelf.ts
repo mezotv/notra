@@ -162,12 +162,66 @@ export const GEO_SHELF_OPEN_STATUSES: readonly (typeof GEO_SHELF_OPPORTUNITY_STA
 
 export const GEO_SHELF_TABLE_ROW_HEIGHT = 56;
 export const GEO_SHELF_TABLE_HEIGHT = 560;
+/** `title` flexes; other columns size to their header/content so the row fits. */
+export const GEO_SHELF_TABLE_COLUMN = {
+  title: { width: "1fr", minWidth: "10rem" },
+  citations: { width: "8rem" },
+  own: { width: "7.5rem" },
+  competitors: { width: "7.5rem" },
+  ticket: { width: "7rem" },
+} as const;
+export const GEO_SHELF_HOVER_DELAY_MS = 150;
 export const GEO_SHELF_ENGINE_STACK_LIMIT = 3;
 export const GEO_SHELF_COMPETITOR_STACK_LIMIT = 4;
 export const GEO_SHELF_NOTES_MAX_LENGTH = 2000;
 export const GEO_SHELF_TITLE_MAX_LENGTH = 200;
 export const GEO_SHELF_URL_MAX_LENGTH = 2048;
 export const GEO_SHELF_CITATION_WINDOW_DAYS = 30;
+export const GEO_SHELF_CITATION_INSERT_CHUNK = 100;
+export const GEO_SHELF_EMPTY_CITATIONS = {
+  windowCount: 0,
+  totalCount: 0,
+  promptCount: 0,
+  engines: [] as string[],
+  firstCitedAt: null,
+  lastCitedAt: null,
+};
+
+/** Hosts that should collapse onto one canonical shelf domain. */
+export const GEO_SHELF_HOSTNAME_ALIASES: Record<string, string> = {
+  "old.reddit.com": "reddit.com",
+  "new.reddit.com": "reddit.com",
+  "m.reddit.com": "reddit.com",
+  "np.reddit.com": "reddit.com",
+  "amp.reddit.com": "reddit.com",
+  "i.reddit.com": "reddit.com",
+};
+
+export const GEO_SHELF_KIND_BY_DOMAIN: Record<
+  string,
+  (typeof GEO_SHELF_SOURCE_KINDS)[number]
+> = {
+  "reddit.com": "community",
+  "news.ycombinator.com": "community",
+  "quora.com": "community",
+  "stackoverflow.com": "community",
+  "stackexchange.com": "community",
+  "producthunt.com": "community",
+  "indiehackers.com": "community",
+  "youtube.com": "video",
+  "youtu.be": "video",
+  "vimeo.com": "video",
+  "g2.com": "review_site",
+  "capterra.com": "review_site",
+  "trustradius.com": "review_site",
+  "gartner.com": "review_site",
+  "trustpilot.com": "review_site",
+  "techcrunch.com": "news",
+  "theverge.com": "news",
+  "wired.com": "news",
+};
+
+export const GEO_SHELF_DOCS_HOSTNAME_PREFIX = "docs.";
 export const GEO_SHELF_ADD_HOTKEY = "A";
 export const GEO_SHELF_POC_SAME_AS_ASSIGNEE = "__assignee__";
 export const GEO_SHELF_UNASSIGNED = "__unassigned__";
@@ -231,9 +285,6 @@ export const GEO_SHELF_EMPTY_SCANNED_DESCRIPTION =
   "No third-party page has been cited for your prompts yet. Add a page you want to be listed on, or wait for the next scan.";
 export const GEO_SHELF_EMPTY_UNSCANNED_DESCRIPTION =
   "Shelves appear once a scan cites third-party pages for your prompts. You can also add a page you want to be listed on.";
-export const GEO_SHELF_SAMPLE_DATA_TITLE = "You're looking at sample data";
-export const GEO_SHELF_SAMPLE_DATA_DESCRIPTION =
-  "These shelves are seeded from this project's competitors and team so you can try the flow. Edits are kept in memory and reset when the server restarts.";
 
 export const GEO_SHELF_PREVIEW_OUTCOMES = {
   RATE_LIMITED: "rate_limited",

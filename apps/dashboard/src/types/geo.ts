@@ -622,6 +622,7 @@ export interface TrafficBreakdownCardProps {
   icon: ReactNode;
   title: string;
   aside?: ReactNode;
+  align?: "start" | "center" | "end";
   children: ReactNode;
 }
 

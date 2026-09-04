@@ -2,10 +2,11 @@ import { db } from "@notra/db/drizzle";
 import { geoShelfSources } from "@notra/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 
+import { GEO_SHELF_CITATION_INSERT_CHUNK } from "@/constants/geo-shelf";
 import { geoShelfSourceSchema } from "@/schemas/geo-shelf";
 import type {
+  GeoShelfCitationSummary,
   GeoShelfSource,
-  GeoShelfSourceList,
   GeoShelfStoreKey,
 } from "@/types/geo-shelf";
 
@@ -60,20 +61,15 @@ function scopeWhere(key: GeoShelfStoreKey) {
   );
 }
 
-export async function readGeoShelfStore(
-  key: GeoShelfStoreKey,
-  seed: () => GeoShelfSource[]
-): Promise<GeoShelfSourceList> {
+export async function listPersistedGeoShelfSources(
+  key: GeoShelfStoreKey
+): Promise<GeoShelfSource[]> {
   const rows = await db
     .select()
     .from(geoShelfSources)
     .where(scopeWhere(key))
     .orderBy(desc(geoShelfSources.updatedAt));
-  if (rows.length > 0) {
-    return { sources: rows.map(toSource), isSampleData: false };
-  }
-  const sources = seed();
-  return { sources, isSampleData: sources.length > 0 };
+  return rows.map(toSource);
 }
 
 export async function findGeoShelfSourceByUrl(
@@ -104,6 +100,53 @@ export async function insertGeoShelfSource(
     throw new Error("Failed to persist GEO shelf source");
   }
   return toSource(inserted);
+}
+
+export async function insertGeoShelfSources(
+  key: GeoShelfStoreKey,
+  sources: GeoShelfSource[]
+): Promise<GeoShelfSource[]> {
+  if (sources.length === 0) {
+    return [];
+  }
+  const inserted: GeoShelfSource[] = [];
+  for (
+    let index = 0;
+    index < sources.length;
+    index += GEO_SHELF_CITATION_INSERT_CHUNK
+  ) {
+    const chunk = sources.slice(index, index + GEO_SHELF_CITATION_INSERT_CHUNK);
+    const rows = await db
+      .insert(geoShelfSources)
+      .values(chunk.map((source) => toRow(source, key)))
+      .onConflictDoNothing({
+        target: [geoShelfSources.projectId, geoShelfSources.url],
+      })
+      .returning();
+    inserted.push(...rows.map(toSource));
+  }
+  return inserted;
+}
+
+export async function updateGeoShelfCitations(
+  key: GeoShelfStoreKey,
+  updates: {
+    id: string;
+    citations: GeoShelfCitationSummary;
+    title: string | null;
+  }[]
+): Promise<void> {
+  if (updates.length === 0) {
+    return;
+  }
+  await db.transaction(async (tx) => {
+    for (const update of updates) {
+      await tx
+        .update(geoShelfSources)
+        .set({ citations: update.citations, title: update.title })
+        .where(and(scopeWhere(key), eq(geoShelfSources.id, update.id)));
+    }
+  });
 }
 
 export async function patchGeoShelfSource(
