@@ -43,9 +43,7 @@ function toRow(source: GeoShelfSource, key: GeoShelfStoreKey) {
     ownership: source.ownership,
     origin: source.origin,
     fetchStatus: source.fetchStatus,
-    lastFetchedAt: source.lastFetchedAt
-      ? new Date(source.lastFetchedAt)
-      : null,
+    lastFetchedAt: source.lastFetchedAt ? new Date(source.lastFetchedAt) : null,
     citations: source.citations,
     placements: source.placements,
     opportunity: source.opportunity,
