@@ -14,7 +14,13 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+  AnimatePresence,
+  domAnimation,
+  LazyMotion,
+  m,
+  useReducedMotion,
+} from "motion/react";
 
 import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -63,27 +69,29 @@ export function PromptEngineSwitcher({
     answerMode === null && engineAnswerMode(engine) !== null;
 
   return (
-    <div className="flex min-w-0 flex-1 items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={
-            <Button
-              aria-label={`Engine: ${engineLabel(active.engine, answerMode)}`}
-              className="max-w-full min-w-0"
-              size="sm"
-              variant="outline"
-            />
-          }
-        >
-          <EngineIcon className="size-3.5 shrink-0" engine={active.engine} />
-          <span className="truncate">
-            {engineLabel(active.engine, answerMode)}
-          </span>
-          {showsSearchIcon(active.engine) ? <SearchModeIcon /> : null}
-          {results.length > 1 ? (
-            <span className="text-muted-foreground/70 inline-flex items-center text-xs tabular-nums">
+    <LazyMotion features={domAnimation}>
+      <div className="flex min-w-0 flex-1 items-center gap-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={
+              <Button
+                aria-label={`Engine: ${engineLabel(active.engine, answerMode)}`}
+                className="max-w-full min-w-0"
+                size="sm"
+                variant="outline"
+              />
+            }
+          >
+            <EngineIcon className="size-3.5 shrink-0" engine={active.engine} />
+            <span className="truncate">
+              {engineLabel(active.engine, answerMode)}
+            </span>
+            {showsSearchIcon(active.engine) ? <SearchModeIcon /> : null}
+            <span
+              className={`text-muted-foreground/70 items-center text-xs tabular-nums ${results.length > 1 ? "inline-flex" : "hidden"}`}
+            >
               <AnimatePresence initial={false} mode="popLayout">
-                <motion.span
+                <m.span
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
                   initial={{ opacity: 0, y: 4 }}
@@ -91,72 +99,72 @@ export function PromptEngineSwitcher({
                   transition={counterTransition}
                 >
                   {activeIndex + 1}
-                </motion.span>
+                </m.span>
               </AnimatePresence>
               <span className="mx-0.5 opacity-60">/</span>
               <span>{results.length}</span>
             </span>
-          ) : null}
-          <HugeiconsIcon
-            aria-hidden="true"
-            className="text-muted-foreground size-3.5 shrink-0"
-            icon={ArrowDown01Icon}
-            strokeWidth={2}
-          />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          align="start"
-          className="max-h-[min(60vh,24rem)] w-64 overflow-y-auto"
-        >
-          <DropdownMenuRadioGroup
-            onValueChange={(next) => {
-              const nextIndex = engines.indexOf(next);
-              onChange(next, nextIndex >= activeIndex ? 1 : -1);
-            }}
-            value={active.engine}
+            <HugeiconsIcon
+              aria-hidden="true"
+              className="text-muted-foreground size-3.5 shrink-0"
+              icon={ArrowDown01Icon}
+              strokeWidth={2}
+            />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="start"
+            className="max-h-[min(60vh,24rem)] w-64 overflow-y-auto"
           >
-            {results.map((result) => (
-              <DropdownMenuRadioItem
-                closeOnClick
-                key={result.engine}
-                value={result.engine}
-              >
-                <EngineIcon className="size-3.5" engine={result.engine} />
-                <span className="truncate">
-                  {engineLabel(result.engine, answerMode)}
-                </span>
-                {showsSearchIcon(result.engine) ? <SearchModeIcon /> : null}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      {results.length > 1 ? (
-        <div className="flex shrink-0 items-center gap-0.5">
-          <Button
-            aria-label="Previous engine"
-            onClick={() =>
-              onChange(adjacentPromptEngine(engines, active.engine, -1), -1)
-            }
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
-          </Button>
-          <Button
-            aria-label="Next engine"
-            onClick={() =>
-              onChange(adjacentPromptEngine(engines, active.engine, 1), 1)
-            }
-            size="icon-sm"
-            type="button"
-            variant="ghost"
-          >
-            <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
-          </Button>
-        </div>
-      ) : null}
-    </div>
+            <DropdownMenuRadioGroup
+              onValueChange={(next) => {
+                const nextIndex = engines.indexOf(next);
+                onChange(next, nextIndex >= activeIndex ? 1 : -1);
+              }}
+              value={active.engine}
+            >
+              {results.map((result) => (
+                <DropdownMenuRadioItem
+                  closeOnClick
+                  key={result.engine}
+                  value={result.engine}
+                >
+                  <EngineIcon className="size-3.5" engine={result.engine} />
+                  <span className="truncate">
+                    {engineLabel(result.engine, answerMode)}
+                  </span>
+                  {showsSearchIcon(result.engine) ? <SearchModeIcon /> : null}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {results.length > 1 ? (
+          <div className="flex shrink-0 items-center gap-0.5">
+            <Button
+              aria-label="Previous engine"
+              onClick={() =>
+                onChange(adjacentPromptEngine(engines, active.engine, -1), -1)
+              }
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
+            </Button>
+            <Button
+              aria-label="Next engine"
+              onClick={() =>
+                onChange(adjacentPromptEngine(engines, active.engine, 1), 1)
+              }
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+            >
+              <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </LazyMotion>
   );
 }
