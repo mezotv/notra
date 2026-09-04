@@ -1,8 +1,8 @@
 "use client";
 
 import Color from "color";
+import { Slider } from "@base-ui/react/slider";
 import { PipetteIcon } from "lucide-react";
-import { Slider } from "radix-ui";
 import {
   type ComponentProps,
   createContext,
@@ -301,7 +301,10 @@ export const ColorPickerSelection = memo(
 
 ColorPickerSelection.displayName = "ColorPickerSelection";
 
-export type ColorPickerHueProps = ComponentProps<typeof Slider.Root>;
+export type ColorPickerHueProps = Omit<
+  Slider.Root.Props<number>,
+  "max" | "onValueChange" | "step" | "value"
+>;
 
 export const ColorPickerHue = ({
   className,
@@ -313,20 +316,28 @@ export const ColorPickerHue = ({
     <Slider.Root
       className={cn("relative flex h-4 w-full touch-none", className)}
       max={360}
-      onValueChange={([nextHue]) => setHue(nextHue ?? 0)}
+      onValueChange={setHue}
       step={1}
-      value={[hue]}
+      value={hue}
       {...props}
     >
-      <Slider.Track className="relative my-0.5 h-3 w-full grow rounded-full bg-[linear-gradient(90deg,#FF0000,#FFFF00,#00FF00,#00FFFF,#0000FF,#FF00FF,#FF0000)]">
-        <Slider.Range className="absolute h-full" />
-      </Slider.Track>
-      <Slider.Thumb className="block h-4 w-4 rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50" />
+      <Slider.Control className="relative flex h-full w-full touch-none items-center">
+        <Slider.Track className="relative my-0.5 h-3 w-full grow rounded-full bg-[linear-gradient(90deg,#FF0000,#FFFF00,#00FF00,#00FFFF,#0000FF,#FF00FF,#FF0000)]">
+          <Slider.Indicator className="absolute h-full" />
+          <Slider.Thumb
+            aria-label="Hue"
+            className="block h-4 w-4 rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-disabled:pointer-events-none data-disabled:opacity-50"
+          />
+        </Slider.Track>
+      </Slider.Control>
     </Slider.Root>
   );
 };
 
-export type ColorPickerAlphaProps = ComponentProps<typeof Slider.Root>;
+export type ColorPickerAlphaProps = Omit<
+  Slider.Root.Props<number>,
+  "max" | "onValueChange" | "step" | "value"
+>;
 
 export const ColorPickerAlpha = ({
   className,
@@ -338,21 +349,26 @@ export const ColorPickerAlpha = ({
     <Slider.Root
       className={cn("relative flex h-4 w-full touch-none", className)}
       max={100}
-      onValueChange={([nextAlpha]) => setAlpha(nextAlpha ?? 100)}
+      onValueChange={setAlpha}
       step={1}
-      value={[alpha]}
+      value={alpha}
       {...props}
     >
-      <Slider.Track className="relative my-0.5 h-3 w-full grow rounded-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==')] bg-center bg-repeat-x dark:bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAALklEQVR4nGP8+vWrCAMewM3N/QafPBM+SWLAqAGDwQBGQgoIpZOB98KoAVQwAADxzQcSVIRCfQAAAABJRU5ErkJggg==')]">
-        <div
-          className="absolute inset-0 rounded-full"
-          style={{
-            background: `linear-gradient(90deg, transparent, hsl(${hue}, ${saturation}%, ${lightness}%))`,
-          }}
-        />
-        <Slider.Range className="absolute h-full rounded-full bg-transparent" />
-      </Slider.Track>
-      <Slider.Thumb className="block h-4 w-4 rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50" />
+      <Slider.Control className="relative flex h-full w-full touch-none items-center">
+        <Slider.Track className="relative my-0.5 h-3 w-full grow rounded-full bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAMUlEQVQ4T2NkYGAQYcAP3uCTZhw1gGGYhAGBZIA/nYDCgBDAm9BGDWAAJyRCgLaBCAAgXwixzAS0pgAAAABJRU5ErkJggg==')] bg-center bg-repeat-x dark:bg-[url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAALklEQVR4nGP8+vWrCAMewM3N/QafPBM+SWLAqAGDwQBGQgoIpZOB98KoAVQwAADxzQcSVIRCfQAAAABJRU5ErkJggg==')]">
+          <div
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: `linear-gradient(90deg, transparent, hsl(${hue}, ${saturation}%, ${lightness}%))`,
+            }}
+          />
+          <Slider.Indicator className="absolute h-full rounded-full bg-transparent" />
+          <Slider.Thumb
+            aria-label="Opacity"
+            className="block h-4 w-4 rounded-full border border-primary/50 bg-background shadow transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring data-disabled:pointer-events-none data-disabled:opacity-50"
+          />
+        </Slider.Track>
+      </Slider.Control>
     </Slider.Root>
   );
 };
