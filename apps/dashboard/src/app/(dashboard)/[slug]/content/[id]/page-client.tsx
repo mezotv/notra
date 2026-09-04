@@ -1413,13 +1413,31 @@ export default function PageClient({
     <>
       <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
-          <Link
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex w-fit items-center gap-1.5 rounded-sm text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
-            href={backHref}
-          >
-            <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
-            {backLabel}
-          </Link>
+          <div className="flex items-center justify-between gap-4">
+            <Link
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex w-fit items-center gap-1.5 rounded-sm text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              href={backHref}
+            >
+              <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
+              {backLabel}
+            </Link>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    className="hidden lg:inline-flex"
+                    onClick={() => setIsActivityPanelOpen((open) => !open)}
+                    size="icon-sm"
+                    variant={isActivityPanelOpen ? "secondary" : "outline"}
+                  />
+                }
+              >
+                <span className="sr-only">Toggle Content Agent</span>
+                <HugeiconsIcon className="size-4" icon={SidebarRight01Icon} />
+              </TooltipTrigger>
+              <TooltipContent>Content Agent</TooltipContent>
+            </Tooltip>
+          </div>
           <WriterExecute.Root
             briefId={geoWriterDraft?.briefId ?? null}
             hasUnsavedChanges={
@@ -1607,25 +1625,6 @@ export default function PageClient({
                       title={title}
                     />
                   )}
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <Button
-                        className="hidden lg:inline-flex"
-                        onClick={() => setIsActivityPanelOpen((open) => !open)}
-                        size="icon-sm"
-                        variant={isActivityPanelOpen ? "secondary" : "outline"}
-                      />
-                    }
-                  >
-                    <span className="sr-only">Toggle Content Agent</span>
-                    <HugeiconsIcon
-                      className="size-4"
-                      icon={SidebarRight01Icon}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent>Content Agent</TooltipContent>
-                </Tooltip>
                 {isGeoWriterPlanMode ? <WriterExecute.Button /> : null}
                 {content.contentType !== "image" && !isGeoWriterPlanMode ? (
                   <Button
