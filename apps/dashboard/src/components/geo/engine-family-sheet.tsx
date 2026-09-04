@@ -194,6 +194,21 @@ function FamilyStats({
   );
 }
 
+function FamilySheetDescription({ family }: { family: GeoEngineFamily }) {
+  const lastChecked = engineFamilyLastCheckedAt(family);
+  let description =
+    family.variants.length > 1
+      ? "How each model mentions you"
+      : "How this engine mentions you";
+  if (lastChecked) {
+    description = `Last checked ${formatAiTrafficTimestamp(lastChecked)}`;
+  }
+
+  return (
+    <SheetDescription className="tabular-nums">{description}</SheetDescription>
+  );
+}
+
 function ModeTab({
   mode,
   totals,
@@ -516,14 +531,6 @@ function EngineFamilySheetSession({
   const organizationId = organization?.id ?? "";
   const canWrite = Boolean(organizationSlug) && Boolean(organizationId);
   const name = engineFamilyLabel(family.family);
-  const showVariantHeadings = family.variants.length > 1;
-  const lastChecked = engineFamilyLastCheckedAt(family);
-  let description = showVariantHeadings
-    ? "How each model mentions you"
-    : "How this engine mentions you";
-  if (lastChecked) {
-    description = `Last checked ${formatAiTrafficTimestamp(lastChecked)}`;
-  }
   const selectedRow = selectedPromptId
     ? promptTableRowForId(selectedPromptId, promptResults)
     : null;
@@ -570,9 +577,7 @@ function EngineFamilySheetSession({
               <EngineIcon className="size-5" engine={family.family} />
               {name}
             </SheetTitle>
-            <SheetDescription className="tabular-nums">
-              {description}
-            </SheetDescription>
+            <FamilySheetDescription family={family} />
           </SheetHeader>
           <div className="min-h-0 flex-1 space-y-6 overflow-y-auto p-5">
             <FamilyStats family={family} points={timeseriesPoints} />
