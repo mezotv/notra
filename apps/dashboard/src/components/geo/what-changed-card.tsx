@@ -380,9 +380,12 @@ export function WhatChangedCard({
   const { projectId } = useGeoProjectScope();
   const router = useRouter();
   const { data, isPending } = useGeoChanges(organizationId);
-  const [detailId, setDetailId] = useState<string | null>(null);
-  const detailRow = detailId
-    ? promptTableRowForId(detailId, promptResults)
+  const [detail, setDetail] = useState<{
+    promptId: string;
+    engine: string;
+  } | null>(null);
+  const detailRow = detail
+    ? promptTableRowForId(detail.promptId, promptResults)
     : null;
 
   const events = data?.events ?? [];
@@ -395,7 +398,7 @@ export function WhatChangedCard({
 
   function openEvent(event: GeoChangeEvent) {
     if (promptTableRowForId(event.promptId, promptResults)) {
-      setDetailId(event.promptId);
+      setDetail({ promptId: event.promptId, engine: event.engine });
       return;
     }
     router.push(
@@ -471,10 +474,11 @@ export function WhatChangedCard({
         {body}
       </InstrumentSection>
       <PromptDetailDialog
+        initialEngine={detail?.engine}
         isScanning={isScanning}
         onOpenChange={(open) => {
           if (!open) {
-            setDetailId(null);
+            setDetail(null);
           }
         }}
         open={detailRow !== null}

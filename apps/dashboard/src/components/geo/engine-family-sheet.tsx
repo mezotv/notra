@@ -24,7 +24,10 @@ import type {
 } from "@notra/geo-core/types/geo";
 import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { todayIsoDate } from "@notra/geo-core/utils/day-label";
-import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
+import {
+  engineFamilyLabel,
+  engineFamilyOf,
+} from "@notra/geo-core/utils/geo-engine-family";
 import { GeoBar } from "@notra/ui/components/geo/geo-bar";
 import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import {
@@ -525,6 +528,10 @@ function EngineFamilySheetSession({
   const selectedRow = selectedPromptId
     ? promptTableRowForId(selectedPromptId, promptResults)
     : null;
+  const selectedEngine =
+    selectedRow?.results.find(
+      (result) => engineFamilyOf(result.engine) === family.family
+    )?.engine ?? null;
   const promptHits = engineFamilyPromptHits(family.family, promptResults);
   const brandScope: EngineFamilyBrandScope = {
     companyName,
@@ -594,6 +601,7 @@ function EngineFamilySheetSession({
             setSelectedPromptId(null);
           }
         }}
+        initialEngine={selectedEngine}
         open={selectedRow !== null}
         organizationId={organizationId || undefined}
         row={selectedRow}

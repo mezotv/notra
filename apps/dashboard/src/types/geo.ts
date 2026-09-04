@@ -1013,12 +1013,15 @@ export interface PromptDetailDialogProps {
   isScanning?: boolean;
   surface?: GeoPromptDetailSurface;
   organizationId?: string;
+  /** Engine to show first; falls back to the first result when absent. */
+  initialEngine?: string | null;
 }
 
 export interface PromptAnswerPageProps {
   row: GeoPromptTableRow;
   organizationId: string;
   isScanning?: boolean;
+  initialEngine?: string | null;
   surface?: GeoPromptDetailSurface;
 }
 

@@ -7,7 +7,6 @@ import {
   GlobalIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { GEO_SEARCH_LABEL } from "@notra/geo-core/constants/geo";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,7 +41,7 @@ function engineLabel(engine: string, answerMode: string | null): string {
 function SearchModeIcon() {
   return (
     <HugeiconsIcon
-      aria-label={GEO_SEARCH_LABEL}
+      aria-hidden="true"
       className="text-muted-foreground size-3 shrink-0"
       icon={GlobalIcon}
       strokeWidth={2}

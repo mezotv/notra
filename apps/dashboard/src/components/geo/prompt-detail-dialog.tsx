@@ -102,10 +102,16 @@ function PromptAnswerPage({
   organizationId,
   isScanning = false,
   surface,
+  initialEngine,
 }: PromptAnswerPageProps) {
   const results = row.results;
   const engines = results.map((result) => result.engine);
-  const [engine, setEngine] = useState(engines[0] ?? "");
+  const [engine, setEngine] = useState(
+    () =>
+      engines.find((candidate) => candidate === initialEngine) ??
+      engines[0] ??
+      ""
+  );
   const [view, setView] = useState<GeoPromptReceiptView>("analysis");
   const [selectedCheck, setSelectedCheck] =
     useState<GeoPromptHistoryCheck | null>(null);
@@ -289,6 +295,7 @@ export function PromptDetailDialog({
   isScanning = false,
   surface,
   organizationId,
+  initialEngine,
 }: PromptDetailDialogProps) {
   const { activeOrganization } = useOrganizationsContext();
   const resolvedOrganizationId = organizationId ?? activeOrganization?.id ?? "";
@@ -299,6 +306,7 @@ export function PromptDetailDialog({
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
       <PromptAnswerPage
+        initialEngine={initialEngine}
         isScanning={isScanning}
         key={row.id}
         organizationId={resolvedOrganizationId}
