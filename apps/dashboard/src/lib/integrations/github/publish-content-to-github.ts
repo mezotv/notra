@@ -239,6 +239,43 @@ async function getPullRequestAfterCommit(params: {
   return data;
 }
 
+/**
+ * Older pull requests were created before the "Open in Notra" button existed.
+ * When republishing to an open pull request, refresh its body so it picks up
+ * the button. Failures are non-fatal: the content commit already landed.
+ */
+async function ensurePullRequestBody(params: {
+  currentBody: string | null | undefined;
+  octokit: GitHubClient;
+  owner: string;
+  pullRequestNumber: number;
+  publishParams: PublishContentDraftPullRequestParams;
+  repo: string;
+}) {
+  const body = buildContentPullRequestBody({
+    badgeUrls: params.publishParams.badgeUrls,
+    contentType: params.publishParams.contentType,
+    contentUrl: params.publishParams.contentUrl,
+  });
+  if ((params.currentBody ?? "") === body) {
+    return;
+  }
+  try {
+    await params.octokit.request(
+      "PATCH /repos/{owner}/{repo}/pulls/{pull_number}",
+      {
+        owner: params.owner,
+        repo: params.repo,
+        pull_number: params.pullRequestNumber,
+        body,
+        headers: GITHUB_API_VERSION_HEADERS,
+      }
+    );
+  } catch {
+    // Best effort only; the content update itself already succeeded.
+  }
+}
+
 async function isContentOnDefaultBranch(
   octokit: GitHubClient,
   params: PublishContentDraftPullRequestParams
@@ -609,6 +646,14 @@ export async function publishContentDraftPullRequest(
         octokit,
         owner: params.owner,
         path: params.path,
+        repo: params.repo,
+      });
+      await ensurePullRequestBody({
+        currentBody: pullRequestAfterCommit.body,
+        octokit,
+        owner: params.owner,
+        pullRequestNumber: existingPullRequest.number,
+        publishParams: params,
         repo: params.repo,
       });
       return toPullRequestResult(
