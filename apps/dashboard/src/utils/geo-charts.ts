@@ -543,12 +543,18 @@ export function buildEngineFamilyModeTrendRows(
   points: readonly GeoTimeseriesPoint[],
   family: string
 ): EngineFamilyModeTrendRow[] {
+  const all = mentionRateSparkline(points, { family, mode: "all" });
   const search = mentionRateSparkline(points, { family, mode: "search" });
   const memory = mentionRateSparkline(points, { family, mode: "memory" });
+  const allByDay = new Map(all.map((point) => [point.day, point.value]));
   const searchByDay = new Map(search.map((point) => [point.day, point.value]));
   const memoryByDay = new Map(memory.map((point) => [point.day, point.value]));
   const knownDays = [
-    ...new Set([...searchByDay.keys(), ...memoryByDay.keys()]),
+    ...new Set([
+      ...allByDay.keys(),
+      ...searchByDay.keys(),
+      ...memoryByDay.keys(),
+    ]),
   ].sort();
   const firstDay = knownDays.at(0);
   const lastDay = knownDays.at(-1);
@@ -558,6 +564,7 @@ export function buildEngineFamilyModeTrendRows(
   return days.map((day) => ({
     day: formatDayLabel(day),
     rawDay: day,
+    all: allByDay.get(day) ?? null,
     search: searchByDay.get(day) ?? null,
     memory: memoryByDay.get(day) ?? null,
   }));

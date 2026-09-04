@@ -229,6 +229,7 @@ export interface GeoSparklinePoint {
 export interface EngineFamilyModeTrendRow {
   day: string;
   rawDay: string;
+  all: number | null;
   search: number | null;
   memory: number | null;
   [key: string]: string | number | null;

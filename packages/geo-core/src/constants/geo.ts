@@ -1053,6 +1053,12 @@ export const GEO_FAMILY_IMPROVE_SPLIT = 0.25;
 /** Overall rate high enough that remaining misses are the whole job. */
 export const GEO_FAMILY_IMPROVE_STRONG_RATE = 0.7;
 export const GEO_FAMILY_IMPROVE_CTA_GAPS = "Close these gaps";
+export const GEO_FAMILY_ALL_MODES_LABEL = "All";
+export const GEO_FAMILY_BRANDS_LABEL = "Brand ranking";
+export const GEO_FAMILY_BRANDS_HINT =
+  "How often each brand shows up in this engine's answers to your prompts";
+export const GEO_FAMILY_BRANDS_LIMIT = 6;
+export const GEO_FAMILY_OWN_BRAND_FALLBACK = "You";
 export const GEO_SPARKLINE_MIN_POINTS = 2;
 export const GEO_SPARKLINE_FLAT_THRESHOLD = 0.05;
 export const GEO_SPARKLINE_TREND_CLASS: Record<"up" | "down" | "flat", string> =

@@ -75,6 +75,9 @@ export function EngineRateTable({
   promptResults = GEO_EMPTY_PROMPT_RESULTS,
   isScanning = false,
   organizationSlug,
+  companyName,
+  aliases,
+  competitors,
 }: EngineRateTableProps) {
   const families = useMemo(() => groupEngineFamilies(engines), [engines]);
   const [selected, setSelected] = useState<GeoEngineFamily | null>(null);
@@ -246,6 +249,9 @@ export function EngineRateTable({
         </div>
       )}
       <EngineFamilySheet
+        aliases={aliases}
+        companyName={companyName}
+        competitors={competitors}
         family={selected}
         onOpenChange={(open) => {
           if (!open) {

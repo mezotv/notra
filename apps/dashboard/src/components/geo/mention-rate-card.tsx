@@ -387,6 +387,8 @@ export function MentionRateCard({
           </div>
         )}
         <EngineFamilySheet
+          aliases={settings?.aliases}
+          companyName={settings?.companyName}
           family={selected}
           onOpenChange={(open) => {
             if (!open) {

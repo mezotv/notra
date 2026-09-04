@@ -1,4 +1,8 @@
-import { OWN_BRAND_ROW_ID } from "@notra/geo-core/constants/geo";
+import {
+  GEO_FAMILY_BRANDS_LIMIT,
+  GEO_FAMILY_OWN_BRAND_FALLBACK,
+  OWN_BRAND_ROW_ID,
+} from "@notra/geo-core/constants/geo";
 import { competitorKey } from "@notra/geo-core/geo/domain";
 import type {
   GeoCompetitor,
@@ -8,10 +12,12 @@ import type {
   GeoCompetitorSharePoint,
   GeoCompetitorShareTimeseriesPoint,
   GeoCompetitorTypeFilter,
+  GeoPromptResult,
   GeoSparklinePoint,
   ShareOfVoiceRow,
 } from "@notra/geo-core/types/geo";
 import { competitorCanonicalMap } from "@notra/geo-core/utils/geo-competitor-names";
+import { engineFamilyOf } from "@notra/geo-core/utils/geo-engine-family";
 import { sumGeoSparklinePoints } from "@notra/geo-core/utils/geo-sparkline";
 
 import {
@@ -21,6 +27,7 @@ import {
   RIVAL_SWATCHES,
 } from "@/constants/charts";
 import type { ChartColorPair } from "@/types/charts";
+import type { EngineFamilyBrandRow, EngineFamilyBrandScope } from "@/types/geo";
 import type { GeoCompetitorRowEntry } from "@/types/geo-competitors";
 
 import { bestFuzzyScore, fuzzyMatches } from "./fuzzy";
@@ -121,6 +128,94 @@ export function competitorPromptSummary(
     }
   }
   return { mentioned, total: rows.length, bestPosition, engines: engines.size };
+}
+
+/**
+ * Ranks every brand an engine family named across its latest prompt answers.
+ * Share is "answers naming the brand / answers scanned", so the own brand and
+ * rivals sit on the same scale. The own brand always stays in the list.
+ */
+export function engineFamilyBrandRows(
+  family: string,
+  results: readonly GeoPromptResult[],
+  scope: EngineFamilyBrandScope = {},
+  limit = GEO_FAMILY_BRANDS_LIMIT
+): EngineFamilyBrandRow[] {
+  const scoped = results.filter(
+    (result) => engineFamilyOf(result.engine) === family
+  );
+  if (scoped.length === 0) {
+    return [];
+  }
+
+  const canonical = competitorCanonicalMap(scope.competitors ?? []);
+  const rivals = new Map<string, { name: string; mentions: number }>();
+  let ownMentions = 0;
+  for (const result of scoped) {
+    if (result.mentioned) {
+      ownMentions += 1;
+    }
+    const seen = new Set<string>();
+    for (const name of result.competitors) {
+      const rawKey = competitorKey(name);
+      if (rawKey.length === 0) {
+        continue;
+      }
+      if (isOwnBrandName(name, scope.companyName, scope.aliases)) {
+        continue;
+      }
+      const label = canonical.get(rawKey) ?? name;
+      const key = competitorKey(label);
+      if (seen.has(key)) {
+        continue;
+      }
+      seen.add(key);
+      const entry = rivals.get(key) ?? { name: label, mentions: 0 };
+      entry.mentions += 1;
+      rivals.set(key, entry);
+    }
+  }
+
+  const toRow = (
+    key: string,
+    name: string,
+    mentions: number,
+    own: boolean
+  ): EngineFamilyBrandRow => ({
+    key,
+    name,
+    mentions,
+    share: mentions / scoped.length,
+    own,
+  });
+  const ownRow = toRow(
+    OWN_BRAND_ROW_ID,
+    scope.companyName?.trim() || GEO_FAMILY_OWN_BRAND_FALLBACK,
+    ownMentions,
+    true
+  );
+  const rows = [
+    ownRow,
+    ...[...rivals.entries()].map(([key, entry]) =>
+      toRow(key, entry.name, entry.mentions, false)
+    ),
+  ].sort((left, right) => {
+    if (left.mentions !== right.mentions) {
+      return right.mentions - left.mentions;
+    }
+    if (left.own !== right.own) {
+      return left.own ? -1 : 1;
+    }
+    return left.name.localeCompare(right.name);
+  });
+  if (rows.length <= limit) {
+    return rows;
+  }
+  const top = rows.slice(0, limit);
+  if (top.some((row) => row.own)) {
+    return top;
+  }
+  return [...rows.slice(0, limit - 1), ownRow];
 }
 
 export function shareOfVoiceRivalIndex(

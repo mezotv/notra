@@ -576,12 +576,26 @@ export interface PromptSentimentLabelProps {
   sentiment: string | null;
 }
 
-export interface EngineRateTableProps {
+export interface EngineFamilyBrandScope {
+  companyName?: string | null;
+  aliases?: readonly string[];
+  competitors?: readonly GeoCompetitor[];
+}
+
+export interface EngineRateTableProps extends EngineFamilyBrandScope {
   engines: GeoOverviewEngine[];
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
   promptResults?: readonly GeoPromptResult[];
   isScanning?: boolean;
   organizationSlug?: string;
+}
+
+export interface EngineFamilyBrandRow {
+  key: string;
+  name: string;
+  mentions: number;
+  share: number;
+  own: boolean;
 }
 
 export interface EngineFamilyPromptHit {
@@ -608,7 +622,7 @@ export interface FamilyImproveCardProps {
   gapsHref?: string;
 }
 
-export interface EngineFamilySheetProps {
+export interface EngineFamilySheetProps extends EngineFamilyBrandScope {
   family: GeoEngineFamily | null;
   timeseriesPoints?: readonly GeoTimeseriesPoint[];
   promptResults?: readonly GeoPromptResult[];
