@@ -42,7 +42,7 @@ export function ShelfToolbar({
 }: GeoShelfToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <div className="relative min-w-0 flex-1 sm:max-w-72">
+      <div className="relative min-w-0 flex-1 basis-full sm:max-w-72 sm:basis-auto">
         <HugeiconsIcon
           className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2"
           icon={SearchIcon}
@@ -62,7 +62,7 @@ export function ShelfToolbar({
         }
         value={filters.shelf}
       >
-        <SelectTrigger className="w-44">
+        <SelectTrigger className="min-w-0 flex-1 sm:w-44 sm:flex-none">
           <SelectValue>
             {GEO_SHELF_SHELF_FILTER_OPTIONS.find(
               (option) => option.value === filters.shelf
@@ -92,7 +92,7 @@ export function ShelfToolbar({
         }
         value={filters.ticket}
       >
-        <SelectTrigger className="w-44">
+        <SelectTrigger className="min-w-0 flex-1 sm:w-44 sm:flex-none">
           <SelectValue>
             {GEO_SHELF_TICKET_FILTER_OPTIONS.find(
               (option) => option.value === filters.ticket
@@ -107,7 +107,7 @@ export function ShelfToolbar({
           ))}
         </SelectContent>
       </Select>
-      <div className="ml-auto">
+      <div className="ml-auto shrink-0">
         <ShelfViewToggle onChange={onViewChange} value={view} />
       </div>
     </div>

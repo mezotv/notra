@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 
 import { GEO_SHELF_DEFAULT_VIEW } from "@/constants/geo-shelf";
 import { localStorageKeys } from "@/constants/storage";
@@ -22,6 +22,15 @@ function getServerSnapshot(): GeoShelfView {
   return GEO_SHELF_DEFAULT_VIEW;
 }
 
+function setStoredView(next: GeoShelfView): void {
+  try {
+    window.localStorage.setItem(localStorageKeys.geoShelfView, next);
+  } catch {
+    return;
+  }
+  window.dispatchEvent(new Event(SHELF_VIEW_EVENT));
+}
+
 function subscribe(onChange: () => void): () => void {
   window.addEventListener("storage", onChange);
   window.addEventListener(SHELF_VIEW_EVENT, onChange);
@@ -41,14 +50,5 @@ export function useGeoShelfView(): [
     getServerSnapshot
   );
 
-  const setView = useCallback((next: GeoShelfView) => {
-    try {
-      window.localStorage.setItem(localStorageKeys.geoShelfView, next);
-    } catch {
-      return;
-    }
-    window.dispatchEvent(new Event(SHELF_VIEW_EVENT));
-  }, []);
-
-  return [view, setView];
+  return [view, setStoredView];
 }

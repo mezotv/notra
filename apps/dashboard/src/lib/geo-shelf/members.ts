@@ -6,7 +6,9 @@ import { retryTransientDbError } from "@/lib/db/retry";
 import { badRequest } from "@/lib/orpc/utils/errors";
 import type {
   GeoShelfMember,
+  GeoShelfOpportunity,
   GeoShelfOpportunityWrite,
+  GeoShelfSource,
 } from "@/types/geo-shelf";
 
 export async function listGeoShelfMembers(
@@ -48,18 +50,96 @@ export function findCurrentGeoShelfMemberId(
   return shelfMembers.find((member) => member.userId === userId)?.id ?? null;
 }
 
+/** True when the payload names anyone, i.e. when member ids have to be resolved. */
+export function referencesGeoShelfMembers(
+  opportunity: GeoShelfOpportunityWrite | null | undefined
+): boolean {
+  if (!opportunity) {
+    return false;
+  }
+  return (
+    opportunity.assigneeMemberId !== null || opportunity.pocMemberId !== null
+  );
+}
+
+/**
+ * Only ids that are actually being set to a new value are validated, so a
+ * ticket whose assignee already left the organization stays editable.
+ */
 export function assertGeoShelfOpportunityMembers(
   shelfMembers: GeoShelfMember[],
-  opportunity: GeoShelfOpportunityWrite | null | undefined
+  opportunity: GeoShelfOpportunityWrite | null | undefined,
+  existing: GeoShelfOpportunity | null
 ): void {
   if (!opportunity) {
     return;
   }
   const memberIds = new Set(shelfMembers.map((member) => member.id));
-  const referenced = [opportunity.assigneeMemberId, opportunity.pocMemberId];
-  for (const memberId of referenced) {
-    if (memberId && !memberIds.has(memberId)) {
+  const changed = [
+    {
+      next: opportunity.assigneeMemberId,
+      previous: existing?.assigneeMemberId,
+    },
+    { next: opportunity.pocMemberId, previous: existing?.pocMemberId },
+  ];
+  for (const { next, previous } of changed) {
+    if (next === null || next === previous) {
+      continue;
+    }
+    if (!memberIds.has(next)) {
       throw badRequest("That person is not a member of this organization");
     }
   }
+}
+
+export function collectGeoShelfMemberIds(
+  sources: GeoShelfSource[]
+): Set<string> {
+  const ids = new Set<string>();
+  for (const source of sources) {
+    const opportunity = source.opportunity;
+    if (!opportunity) {
+      continue;
+    }
+    if (opportunity.assigneeMemberId) {
+      ids.add(opportunity.assigneeMemberId);
+    }
+    if (opportunity.pocMemberId) {
+      ids.add(opportunity.pocMemberId);
+    }
+  }
+  return ids;
+}
+
+/** Members can leave the organization: drop their ids from what we hand out. */
+export function sanitizeGeoShelfSourceMembers(
+  sources: GeoShelfSource[],
+  shelfMembers: GeoShelfMember[]
+): GeoShelfSource[] {
+  const memberIds = new Set(shelfMembers.map((member) => member.id));
+  return sources.map((source) => {
+    const opportunity = source.opportunity;
+    if (!opportunity) {
+      return source;
+    }
+    const assigneeMemberId =
+      opportunity.assigneeMemberId &&
+      memberIds.has(opportunity.assigneeMemberId)
+        ? opportunity.assigneeMemberId
+        : null;
+    const pocMemberId =
+      opportunity.pocMemberId && memberIds.has(opportunity.pocMemberId)
+        ? opportunity.pocMemberId
+        : null;
+    if (
+      assigneeMemberId === opportunity.assigneeMemberId &&
+      pocMemberId === opportunity.pocMemberId
+    ) {
+      return source;
+    }
+    return {
+      ...source,
+      opportunity: { ...opportunity, assigneeMemberId, pocMemberId },
+    };
+  });
 }

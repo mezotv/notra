@@ -1,3 +1,4 @@
+import { canonicalizeShelfUrl, shelfDomainFromUrl } from "@/lib/geo-shelf/url";
 import type {
   GeoShelfFixtureContext,
   GeoShelfOpportunity,
@@ -400,8 +401,8 @@ export function buildGeoShelfFixture(
     const createdAt = isoAgo(ctx.now, template.createdDaysAgo * DAY_MS);
     return {
       id: `shelf-src-${template.slug}`,
-      url: template.url,
-      domain: new URL(template.url).hostname.replace(/^www\./, ""),
+      url: canonicalizeShelfUrl(template.url),
+      domain: shelfDomainFromUrl(template.url),
       title: template.title(ctx),
       kind: template.kind,
       ownership: template.ownership,

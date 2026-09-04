@@ -1,5 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { brandSettings, projects } from "@notra/db/schema";
+import { GEO_SAMPLE_DATA_ENABLED } from "@notra/geo-core/constants/geo";
 import {
   loadGeoCompetitors,
   loadGeoSettings,
@@ -8,14 +9,22 @@ import type { GeoScopeInput } from "@notra/geo-core/types/geo";
 import { eq } from "drizzle-orm";
 import { Effect } from "effect";
 
-import { GEO_SHELF_OPEN_STATUSES } from "@/constants/geo-shelf";
-import { buildGeoShelfFixture } from "@/lib/geo-shelf/fixtures";
 import {
+  GEO_SHELF_DUPLICATE_URL_MESSAGE,
+  GEO_SHELF_OPEN_STATUSES,
+} from "@/constants/geo-shelf";
+import { buildGeoShelfFixture } from "@/lib/geo-shelf/fixtures";
+import { assertGeoShelfOpportunityMembers } from "@/lib/geo-shelf/members";
+import {
+  findGeoShelfSourceByUrl,
   insertGeoShelfSource,
+  isGeoShelfStoreSampleSeeded,
   patchGeoShelfSource,
   readGeoShelfStore,
 } from "@/lib/geo-shelf/store";
 import { canonicalizeShelfUrl, shelfDomainFromUrl } from "@/lib/geo-shelf/url";
+import { conflict } from "@/lib/orpc/utils/errors";
+import { geoShelfSourceSchema } from "@/schemas/geo-shelf";
 import type {
   GeoShelfCreateInput,
   GeoShelfOpportunity,
@@ -23,10 +32,19 @@ import type {
   GeoShelfPlacement,
   GeoShelfPlacementWrite,
   GeoShelfSource,
+  GeoShelfSourceList,
+  GeoShelfStoreKey,
   GeoShelfStoreSeed,
   GeoShelfUpdateInput,
+  GeoShelfUpdateResult,
 } from "@/types/geo-shelf";
 import { getWebsiteDomain } from "@/utils/brand";
+
+interface GeoShelfBrand {
+  competitorId: string | null;
+  name: string;
+  domain: string | null;
+}
 
 async function findProjectDomain(projectId: string): Promise<string | null> {
   const [row] = await db
@@ -56,16 +74,20 @@ export const loadGeoShelfContext = Effect.fn("geo.shelf.context")(function* (
   };
 });
 
-function storeKey(seed: GeoShelfStoreSeed) {
+function storeKey(seed: GeoShelfStoreSeed): GeoShelfStoreKey {
   return {
     organizationId: seed.settings.organizationId,
     projectId: seed.settings.projectId,
   };
 }
 
+/** Fixture rows are demo content: never seed them outside sample data mode. */
 function seedFixture(seed: GeoShelfStoreSeed) {
-  return () =>
-    buildGeoShelfFixture({
+  return () => {
+    if (!GEO_SAMPLE_DATA_ENABLED) {
+      return [];
+    }
+    return buildGeoShelfFixture({
       ownBrandName: seed.settings.companyName,
       ownDomain: seed.ownDomain,
       competitors: seed.competitors,
@@ -73,14 +95,24 @@ function seedFixture(seed: GeoShelfStoreSeed) {
       members: seed.members,
       now: new Date(),
     });
+  };
 }
 
-export function listGeoShelfSources(seed: GeoShelfStoreSeed): GeoShelfSource[] {
-  return readGeoShelfStore(storeKey(seed), seedFixture(seed));
+export function listGeoShelfSources(
+  seed: GeoShelfStoreSeed
+): GeoShelfSourceList {
+  const key = storeKey(seed);
+  const sources = readGeoShelfStore(key, seedFixture(seed));
+  return { sources, isSampleData: isGeoShelfStoreSampleSeeded(key) };
 }
 
 function isClosedStatus(status: GeoShelfOpportunityWrite["status"]): boolean {
   return !GEO_SHELF_OPEN_STATUSES.includes(status);
+}
+
+function normalizeTitle(title: string | null | undefined): string | null {
+  const trimmed = title?.trim() ?? "";
+  return trimmed.length > 0 ? trimmed : null;
 }
 
 function buildOpportunity(
@@ -92,9 +124,14 @@ function buildOpportunity(
   const resolvedAt = isClosedStatus(write.status)
     ? (existing?.resolvedAt ?? nowIso)
     : null;
+  // The point of contact defaults to the assignee, so storing the same person
+  // twice would only create a second id to keep in sync.
+  const pocMemberId =
+    write.pocMemberId === write.assigneeMemberId ? null : write.pocMemberId;
   return {
     id: existing?.id ?? crypto.randomUUID(),
     ...write,
+    pocMemberId,
     createdByUserId: existing?.createdByUserId ?? userId,
     resolvedAt,
     createdAt: existing?.createdAt ?? nowIso,
@@ -102,23 +139,8 @@ function buildOpportunity(
   };
 }
 
-function buildPlacements(
-  seed: GeoShelfStoreSeed,
-  writes: GeoShelfPlacementWrite[],
-  nowIso: string,
-  existing: GeoShelfPlacement[] = []
-): GeoShelfPlacement[] {
-  const writeByBrand = new Map(
-    writes.map((write) => [write.competitorId ?? "", write.status])
-  );
-  const existingByBrand = new Map(
-    existing.map((placement) => [placement.competitorId ?? "", placement])
-  );
-  const brands: {
-    competitorId: string | null;
-    name: string;
-    domain: string | null;
-  }[] = [
+function shelfBrands(seed: GeoShelfStoreSeed): GeoShelfBrand[] {
+  return [
     {
       competitorId: null,
       name: seed.settings.companyName,
@@ -130,27 +152,96 @@ function buildPlacements(
       domain: competitor.domain,
     })),
   ];
+}
 
-  return brands.map((brand) => {
-    const key = brand.competitorId ?? "";
-    const previous = existingByBrand.get(key);
-    const written = writeByBrand.get(key);
-    if (written === undefined && previous) {
-      return previous;
+function placementKey(competitorId: string | null): string {
+  return competitorId ?? "";
+}
+
+function toPlacement(
+  brand: GeoShelfBrand,
+  status: GeoShelfPlacement["status"],
+  nowIso: string,
+  previous: GeoShelfPlacement | undefined
+): GeoShelfPlacement {
+  const isPresent = status === "present";
+  return {
+    competitorId: brand.competitorId,
+    brandName: brand.name,
+    brandDomain: brand.domain,
+    status,
+    position: isPresent ? (previous?.position ?? null) : null,
+    hasLink: isPresent ? (previous?.hasLink ?? false) : false,
+    evidence: "manual",
+    excerpt: previous?.excerpt ?? null,
+    checkedAt: nowIso,
+  };
+}
+
+function buildPlacements(
+  seed: GeoShelfStoreSeed,
+  writes: GeoShelfPlacementWrite[],
+  nowIso: string
+): GeoShelfPlacement[] {
+  const statusByBrand = new Map(
+    writes.map((write) => [placementKey(write.competitorId), write.status])
+  );
+  return shelfBrands(seed).map((brand) =>
+    toPlacement(
+      brand,
+      statusByBrand.get(placementKey(brand.competitorId)) ?? "unknown",
+      nowIso,
+      undefined
+    )
+  );
+}
+
+/**
+ * Only the brands named in `writes` whose status really changed are rewritten.
+ * Everything else keeps its fetch evidence, position and check timestamp.
+ */
+function mergePlacements(
+  seed: GeoShelfStoreSeed,
+  existing: GeoShelfPlacement[],
+  writes: GeoShelfPlacementWrite[],
+  nowIso: string
+): GeoShelfPlacement[] {
+  if (writes.length === 0) {
+    return existing;
+  }
+  const brandByKey = new Map(
+    shelfBrands(seed).map((brand) => [placementKey(brand.competitorId), brand])
+  );
+  const next = [...existing];
+  let changed = false;
+  for (const write of writes) {
+    const key = placementKey(write.competitorId);
+    const index = next.findIndex(
+      (placement) => placementKey(placement.competitorId) === key
+    );
+    const previous = next[index];
+    if (previous?.status === write.status) {
+      continue;
     }
-    const status = written ?? "unknown";
-    return {
-      competitorId: brand.competitorId,
-      brandName: brand.name,
-      brandDomain: brand.domain,
-      status,
-      position: status === "present" ? (previous?.position ?? null) : null,
-      hasLink: status === "present" ? (previous?.hasLink ?? false) : false,
-      evidence: "manual",
-      excerpt: previous?.excerpt ?? null,
-      checkedAt: nowIso,
-    };
-  });
+    const brand =
+      brandByKey.get(key) ??
+      (previous && {
+        competitorId: previous.competitorId,
+        name: previous.brandName,
+        domain: previous.brandDomain,
+      });
+    if (!brand) {
+      continue;
+    }
+    const placement = toPlacement(brand, write.status, nowIso, previous);
+    changed = true;
+    if (index < 0) {
+      next.push(placement);
+      continue;
+    }
+    next[index] = placement;
+  }
+  return changed ? next : existing;
 }
 
 export function createGeoShelfSource(
@@ -158,13 +249,21 @@ export function createGeoShelfSource(
   input: GeoShelfCreateInput,
   userId: string
 ): GeoShelfSource {
+  assertGeoShelfOpportunityMembers(seed.members, input.opportunity, null);
   const nowIso = new Date().toISOString();
   const url = canonicalizeShelfUrl(input.url);
-  const source: GeoShelfSource = {
-    id: input.id ?? crypto.randomUUID(),
+  const key = storeKey(seed);
+  const seedSources = seedFixture(seed);
+  if (findGeoShelfSourceByUrl(key, seedSources, url)) {
+    throw conflict(GEO_SHELF_DUPLICATE_URL_MESSAGE);
+  }
+  // Validate before touching the store: a rejected record must not end up in
+  // the shelf list of the organization.
+  const source = geoShelfSourceSchema.parse({
+    id: crypto.randomUUID(),
     url,
     domain: shelfDomainFromUrl(url),
-    title: input.title,
+    title: normalizeTitle(input.title),
     kind: input.kind,
     ownership: "third_party",
     origin: "manual",
@@ -185,15 +284,15 @@ export function createGeoShelfSource(
     createdByUserId: userId,
     createdAt: nowIso,
     updatedAt: nowIso,
-  };
-  return insertGeoShelfSource(storeKey(seed), seedFixture(seed), source);
+  } satisfies GeoShelfSource);
+  return insertGeoShelfSource(key, seedSources, source);
 }
 
 export function updateGeoShelfSource(
   seed: GeoShelfStoreSeed,
   input: GeoShelfUpdateInput,
   userId: string
-): GeoShelfSource | null {
+): GeoShelfUpdateResult | null {
   const nowIso = new Date().toISOString();
   const resolveOpportunity = (
     current: GeoShelfOpportunity | null
@@ -204,23 +303,41 @@ export function updateGeoShelfSource(
     if (input.opportunity === null) {
       return null;
     }
+    assertGeoShelfOpportunityMembers(seed.members, input.opportunity, current);
     return buildOpportunity(input.opportunity, userId, nowIso, current);
   };
-  return patchGeoShelfSource(
+  let assigneeChanged = false;
+  let placementsChanged = false;
+  const source = patchGeoShelfSource(
     storeKey(seed),
     seedFixture(seed),
     input.sourceId,
-    (current) => ({
-      ...current,
-      title: input.title === undefined ? current.title : input.title,
-      kind: input.kind ?? current.kind,
-      placements: input.placements
-        ? buildPlacements(seed, input.placements, nowIso, current.placements)
-        : current.placements,
-      opportunity: resolveOpportunity(current.opportunity),
-      updatedAt: nowIso,
-    })
+    (current) => {
+      const opportunity = resolveOpportunity(current.opportunity);
+      const placements = input.placements
+        ? mergePlacements(seed, current.placements, input.placements, nowIso)
+        : current.placements;
+      assigneeChanged =
+        (opportunity?.assigneeMemberId ?? null) !==
+        (current.opportunity?.assigneeMemberId ?? null);
+      placementsChanged = placements !== current.placements;
+      return geoShelfSourceSchema.parse({
+        ...current,
+        title:
+          input.title === undefined
+            ? current.title
+            : normalizeTitle(input.title),
+        kind: input.kind ?? current.kind,
+        placements,
+        opportunity,
+        updatedAt: nowIso,
+      } satisfies GeoShelfSource);
+    }
   );
+  if (!source) {
+    return null;
+  }
+  return { source, assigneeChanged, placementsChanged };
 }
 
 export function hasGeoShelfScanData(sources: GeoShelfSource[]): boolean {

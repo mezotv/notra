@@ -168,7 +168,7 @@ export const GEO_SHELF_NOTES_MAX_LENGTH = 2000;
 export const GEO_SHELF_TITLE_MAX_LENGTH = 200;
 export const GEO_SHELF_URL_MAX_LENGTH = 2048;
 export const GEO_SHELF_CITATION_WINDOW_DAYS = 30;
-export const GEO_SHELF_ADD_HOTKEY = "S";
+export const GEO_SHELF_ADD_HOTKEY = "A";
 export const GEO_SHELF_POC_SAME_AS_ASSIGNEE = "__assignee__";
 export const GEO_SHELF_UNASSIGNED = "__unassigned__";
 export const GEO_SHELF_NO_PRIORITY = "__none__";
@@ -196,3 +196,67 @@ export const GEO_SHELF_KANBAN_COLUMNS: { id: string; name: string }[] = [
   { id: "lost", name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS.lost },
   { id: "dismissed", name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS.dismissed },
 ];
+
+// Shelf sources are public web pages: only http(s) URLs on a real, publicly
+// resolvable hostname are accepted.
+export const GEO_SHELF_URL_PROTOCOL_PATTERN = /^https?$/;
+export const GEO_SHELF_BLOCKED_HOSTNAMES: readonly string[] = [
+  "localhost",
+  "localhost.localdomain",
+  "broadcasthost",
+  "metadata.google.internal",
+];
+export const GEO_SHELF_BLOCKED_HOSTNAME_SUFFIXES: readonly string[] = [
+  ".local",
+  ".localhost",
+  ".localdomain",
+  ".internal",
+  ".intranet",
+  ".lan",
+  ".home",
+  ".home.arpa",
+  ".corp",
+  ".test",
+  ".example",
+  ".invalid",
+  ".onion",
+];
+export const GEO_SHELF_MIN_HOSTNAME_LABELS = 2;
+export const GEO_SHELF_MIN_HOSTNAME_TLD_LENGTH = 2;
+
+export const GEO_SHELF_TRACKING_PARAMS: readonly string[] = [
+  "ref",
+  "ref_src",
+  "fbclid",
+  "gclid",
+  "mc_cid",
+  "mc_eid",
+];
+export const GEO_SHELF_TRACKING_PARAM_PREFIXES: readonly string[] = ["utm_"];
+
+export const GEO_SHELF_URL_INVALID_MESSAGE =
+  "Enter a public http or https page URL";
+export const GEO_SHELF_DUPLICATE_URL_MESSAGE =
+  "This page is already on your shelf";
+export const GEO_SHELF_PREVIEW_RATE_LIMIT_MESSAGE =
+  "Too many page lookups. Please wait a minute.";
+export const GEO_SHELF_PREVIEW_RATE_LIMIT_SCOPE = "shelf-preview";
+export const GEO_SHELF_PREVIEW_UNAVAILABLE_MESSAGE =
+  "Couldn't read the page title, you can type it";
+
+export const GEO_SHELF_ADD_LABEL = "Add shelf";
+export const GEO_SHELF_NO_MATCHES_MESSAGE = "No shelves match these filters";
+export const GEO_SHELF_EMPTY_TITLE = "No shelf space tracked yet";
+export const GEO_SHELF_EMPTY_SCANNED_DESCRIPTION =
+  "No third-party page has been cited for your prompts yet. Add a page you want to be listed on, or wait for the next scan.";
+export const GEO_SHELF_EMPTY_UNSCANNED_DESCRIPTION =
+  "Shelves appear once a scan cites third-party pages for your prompts. You can also add a page you want to be listed on.";
+export const GEO_SHELF_SAMPLE_DATA_TITLE = "You're looking at sample data";
+export const GEO_SHELF_SAMPLE_DATA_DESCRIPTION =
+  "These shelves are seeded from this project's competitors and team so you can try the flow. Edits are kept in memory and reset when the server restarts.";
+
+export const GEO_SHELF_PREVIEW_OUTCOMES = {
+  RATE_LIMITED: "rate_limited",
+  FETCHED: "fetched",
+  UNAVAILABLE: "unavailable",
+} as const;

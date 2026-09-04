@@ -13,8 +13,20 @@ import {
   GEO_SHELF_PRIORITIES,
   GEO_SHELF_SOURCE_KINDS,
   GEO_SHELF_TITLE_MAX_LENGTH,
+  GEO_SHELF_URL_INVALID_MESSAGE,
   GEO_SHELF_URL_MAX_LENGTH,
+  GEO_SHELF_URL_PROTOCOL_PATTERN,
 } from "@/constants/geo-shelf";
+import { isAllowedShelfUrl } from "@/lib/geo-shelf/url";
+
+export const geoShelfUrlSchema = z
+  .url({
+    protocol: GEO_SHELF_URL_PROTOCOL_PATTERN,
+    hostname: z.regexes.domain,
+    error: GEO_SHELF_URL_INVALID_MESSAGE,
+  })
+  .max(GEO_SHELF_URL_MAX_LENGTH)
+  .refine(isAllowedShelfUrl, { error: GEO_SHELF_URL_INVALID_MESSAGE });
 
 export const geoShelfSourceKindSchema = z.enum(GEO_SHELF_SOURCE_KINDS);
 export const geoShelfOwnershipSchema = z.enum(GEO_SHELF_OWNERSHIPS);
@@ -100,6 +112,7 @@ export const geoShelfListResponseSchema = z.object({
   sources: z.array(geoShelfSourceSchema),
   hasScanData: z.boolean(),
   ownBrandName: z.string(),
+  isSampleData: z.boolean(),
 });
 
 export const geoShelfMembersResponseSchema = z.object({
@@ -115,8 +128,7 @@ export const geoShelfPlacementWriteSchema = z.object({
 });
 
 export const geoShelfCreateInputSchema = geoOrganizationInputSchema.extend({
-  id: z.string().min(1).optional(),
-  url: z.url().max(GEO_SHELF_URL_MAX_LENGTH),
+  url: geoShelfUrlSchema,
   title: z.string().trim().max(GEO_SHELF_TITLE_MAX_LENGTH).nullable(),
   kind: geoShelfSourceKindSchema,
   placements: z.array(geoShelfPlacementWriteSchema),
@@ -141,7 +153,7 @@ export const geoShelfMutationResponseSchema = z.object({
 });
 
 export const geoShelfPreviewInputSchema = geoOrganizationInputSchema.extend({
-  url: z.url().max(GEO_SHELF_URL_MAX_LENGTH),
+  url: geoShelfUrlSchema,
 });
 
 export const geoShelfPreviewResponseSchema = z.object({

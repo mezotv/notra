@@ -4,6 +4,7 @@ import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
 import { Badge } from "@notra/ui/components/ui/badge";
+import { useIsMobile } from "@notra/ui/hooks/use-mobile";
 
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -20,8 +21,13 @@ import {
   EMPTY_STATE_TABLE_ROWS,
 } from "@/constants/empty-state";
 import {
+  GEO_SHELF_ADD_LABEL,
   GEO_SHELF_COMPETITOR_STACK_LIMIT,
+  GEO_SHELF_EMPTY_SCANNED_DESCRIPTION,
+  GEO_SHELF_EMPTY_TITLE,
+  GEO_SHELF_EMPTY_UNSCANNED_DESCRIPTION,
   GEO_SHELF_ENGINE_STACK_LIMIT,
+  GEO_SHELF_NO_MATCHES_MESSAGE,
   GEO_SHELF_SOURCE_KIND_LABELS,
   GEO_SHELF_TABLE_HEIGHT,
   GEO_SHELF_TABLE_ROW_HEIGHT,
@@ -29,6 +35,9 @@ import {
 import { cn } from "@/lib/utils";
 import type { GeoShelfRow, GeoShelfTableProps } from "@/types/geo-shelf";
 import { formatRelative } from "@/utils/format-relative";
+
+/** Dropped below `md`: the page, ticket and presence columns carry the story. */
+const MOBILE_HIDDEN_COLUMN_KEYS: readonly string[] = ["engines", "competitors"];
 
 function PageCell({ row }: { row: GeoShelfRow }) {
   return (
@@ -126,6 +135,7 @@ export function ShelfTable({
   hasScanData,
   onAddShelf,
 }: GeoShelfTableProps) {
+  const isMobile = useIsMobile();
   const columns: TableColumn<GeoShelfRow>[] = [
     {
       key: "title",
@@ -221,13 +231,13 @@ export function ShelfTable({
         action={
           <Button className="gap-1.5" onClick={onAddShelf}>
             <HugeiconsIcon className="size-4" icon={PlusSignIcon} />
-            Add a shelf
+            {GEO_SHELF_ADD_LABEL}
           </Button>
         }
         description={
           hasScanData
-            ? "No cited pages yet. Add the pages you want to be on, or wait for the next scan."
-            : "Run a scan to see which pages AI engines cite for your prompts, or add a page you want to be listed on."
+            ? GEO_SHELF_EMPTY_SCANNED_DESCRIPTION
+            : GEO_SHELF_EMPTY_UNSCANNED_DESCRIPTION
         }
         preview={
           <EmptyStateTablePreview
@@ -235,18 +245,24 @@ export function ShelfTable({
             rows={EMPTY_STATE_TABLE_ROWS}
           />
         }
-        title="No shelf space tracked yet"
+        title={GEO_SHELF_EMPTY_TITLE}
       />
     );
   }
 
+  const visibleColumns = isMobile
+    ? columns.filter(
+        (column) => !MOBILE_HIDDEN_COLUMN_KEYS.includes(column.key)
+      )
+    : columns;
+
   return (
     <Table
       className="rounded-2xl"
-      columns={columns}
+      columns={visibleColumns}
       data={rows}
       defaultSort={{ key: "citations", direction: "desc" }}
-      emptyState="No shelves match these filters"
+      emptyState={GEO_SHELF_NO_MATCHES_MESSAGE}
       getRowId={(row) => row.id}
       height={GEO_SHELF_TABLE_HEIGHT}
       isRowPinned={(row) => pendingSourceIds.has(row.id)}

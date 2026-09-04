@@ -135,8 +135,20 @@ export interface GeoShelfNewSourceDraft {
   opportunity: GeoShelfOpportunityWrite;
 }
 
+export interface GeoShelfUpdateResult {
+  source: GeoShelfSource;
+  assigneeChanged: boolean;
+  placementsChanged: boolean;
+}
+
+export interface GeoShelfSourceList {
+  sources: GeoShelfSource[];
+  isSampleData: boolean;
+}
+
 export interface GeoShelfDbApi {
   sources: GeoShelfSource[];
+  isSampleData: boolean;
   pendingSourceIds: ReadonlySet<string>;
   addSource: (source: GeoShelfSource) => void;
   updateOpportunity: (
@@ -152,6 +164,12 @@ export interface GeoShelfDbApi {
 
 export interface GeoShelfPageContentProps {
   organizationSlug: string;
+}
+
+/** Row selection keeps the URL so the detail dialog survives an id swap. */
+export interface GeoShelfSelection {
+  id: string;
+  url: string;
 }
 
 export interface GeoShelfToolbarProps {
@@ -227,6 +245,8 @@ export interface GeoShelfAddDialogProps {
   members: GeoShelfMember[];
   currentMemberId: string | null;
   ownBrandName: string;
+  /** Canonical URLs already on the shelf, used to reject duplicates inline. */
+  existingUrls: string[];
   onSubmit: (draft: GeoShelfNewSourceDraft) => void;
 }
 

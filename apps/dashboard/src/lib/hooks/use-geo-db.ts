@@ -18,6 +18,8 @@ import {
   geoPromptsCollection,
   geoSequencesCollection,
   geoShelfCollection,
+  getGeoShelfSampleData,
+  subscribeToGeoShelfSampleData,
 } from "@/lib/db/geo-collections";
 import {
   clearRowPending,
@@ -233,6 +235,14 @@ export function useGeoShelfDb(organizationId: string): GeoShelfDbApi {
     query: (q) => q.from({ shelf: definition }),
   });
 
+  const readSampleData = () =>
+    getGeoShelfSampleData({ organizationId, projectId });
+  const isSampleData = useSyncExternalStore(
+    subscribeToGeoShelfSampleData,
+    readSampleData,
+    readSampleData
+  );
+
   const sources: GeoShelfSource[] = data ?? [];
 
   const addSource = (source: GeoShelfSource) => {
@@ -286,6 +296,7 @@ export function useGeoShelfDb(organizationId: string): GeoShelfDbApi {
 
   return {
     sources,
+    isSampleData,
     pendingSourceIds: pendingIds,
     addSource,
     updateOpportunity,

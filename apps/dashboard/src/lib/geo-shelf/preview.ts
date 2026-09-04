@@ -5,7 +5,11 @@ import {
   GEO_SHELF_PREVIEW_TIMEOUT_MS,
   GEO_SHELF_TITLE_MAX_LENGTH,
 } from "@/constants/geo-shelf";
-import { canonicalizeShelfUrl, shelfDomainFromUrl } from "@/lib/geo-shelf/url";
+import {
+  canonicalizeShelfUrl,
+  shelfDomainFromUrl,
+  shelfFetchUrl,
+} from "@/lib/geo-shelf/url";
 import type { GeoShelfPreview } from "@/types/geo-shelf";
 
 const WHITESPACE_RUN = /\s+/g;
@@ -53,7 +57,9 @@ export async function previewGeoShelfUrl(
 
   try {
     const page = await fetchWebpage({
-      url: rawUrl.trim(),
+      // Hash and tracking params stripped so variants share a cache entry, but
+      // the host is kept as typed because not every site serves the apex domain.
+      url: shelfFetchUrl(rawUrl),
       includeImages: false,
       includeLinks: false,
       onlyMainContent: true,

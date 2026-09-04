@@ -1,6 +1,7 @@
 import type { GeoShelfSource, GeoShelfStoreKey } from "@/types/geo-shelf";
 
 const stores = new Map<string, GeoShelfSource[]>();
+const sampleSeededStores = new Set<string>();
 
 function storeId(key: GeoShelfStoreKey): string {
   return `${key.organizationId}:${key.projectId}`;
@@ -17,7 +18,24 @@ export function readGeoShelfStore(
   }
   const seeded = seed();
   stores.set(id, seeded);
+  if (seeded.length > 0) {
+    sampleSeededStores.add(id);
+  }
   return seeded;
+}
+
+/** True when the bucket was populated from the local fixture instead of real data. */
+export function isGeoShelfStoreSampleSeeded(key: GeoShelfStoreKey): boolean {
+  return sampleSeededStores.has(storeId(key));
+}
+
+export function findGeoShelfSourceByUrl(
+  key: GeoShelfStoreKey,
+  seed: () => GeoShelfSource[],
+  url: string
+): GeoShelfSource | null {
+  const sources = readGeoShelfStore(key, seed);
+  return sources.find((candidate) => candidate.url === url) ?? null;
 }
 
 export function insertGeoShelfSource(
@@ -26,13 +44,6 @@ export function insertGeoShelfSource(
   source: GeoShelfSource
 ): GeoShelfSource {
   const sources = readGeoShelfStore(key, seed);
-  const existingIndex = sources.findIndex(
-    (candidate) => candidate.id === source.id || candidate.url === source.url
-  );
-  if (existingIndex >= 0) {
-    sources[existingIndex] = source;
-    return source;
-  }
   sources.unshift(source);
   return source;
 }

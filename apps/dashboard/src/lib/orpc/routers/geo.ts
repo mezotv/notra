@@ -165,6 +165,12 @@ import {
   GEO_SEQUENCE_RUN_OUTCOMES,
 } from "@/constants/geo-analytics";
 import {
+  GEO_SHELF_PREVIEW_CACHE_MS,
+  GEO_SHELF_PREVIEW_OUTCOMES,
+  GEO_SHELF_PREVIEW_RATE_LIMIT_MESSAGE,
+  GEO_SHELF_PREVIEW_RATE_LIMIT_SCOPE,
+} from "@/constants/geo-shelf";
+import {
   countGeoProjects,
   loadGeoScanStartSnapshot,
   summarizeSuggestionKeywords,
@@ -177,9 +183,11 @@ import {
   assertGeoEntitlement,
 } from "@/lib/billing/subscription";
 import {
-  assertGeoShelfOpportunityMembers,
+  collectGeoShelfMemberIds,
   findCurrentGeoShelfMemberId,
   listGeoShelfMembers,
+  referencesGeoShelfMembers,
+  sanitizeGeoShelfSourceMembers,
 } from "@/lib/geo-shelf/members";
 import { previewGeoShelfUrl } from "@/lib/geo-shelf/preview";
 import {
@@ -192,7 +200,7 @@ import {
 import { geoCoreDashboardLayer } from "@/lib/geo/configure";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { runOrpcEffect } from "@/lib/orpc/effect";
-import { badRequest, notFound } from "@/lib/orpc/utils/errors";
+import { badRequest, notFound, tooManyRequests } from "@/lib/orpc/utils/errors";
 import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
 import { geoScanStartInputSchema } from "@/schemas/geo-analytics";
 import {
@@ -215,6 +223,7 @@ import type {
   GeoPromptSuggestionsResponse,
 } from "@/types/geo";
 import type { GeoDashboardRuntime } from "@/types/geo-runtime";
+import type { GeoShelfMember, GeoShelfSource } from "@/types/geo-shelf";
 import { ratelimit } from "@/utils/ratelimit";
 
 interface GeoHandlerOptions<TInput> {
@@ -420,7 +429,8 @@ async function acceptSuggestionInTx(
 }
 async function loadGeoShelfSeed(
   context: GeoHandlerOptions<unknown>["context"],
-  input: { organizationId: string; projectId?: string }
+  input: { organizationId: string; projectId?: string },
+  options: { withMembers: boolean }
 ) {
   await assertGeoAccess({
     headers: context.headers,
@@ -432,28 +442,57 @@ async function loadGeoShelfSeed(
       loadGeoShelfContext(input).pipe(Effect.provide(geoCoreDashboardLayer)),
       toGeoOrpcError
     ),
-    listGeoShelfMembers(input.organizationId),
+    options.withMembers
+      ? listGeoShelfMembers(input.organizationId)
+      : Promise.resolve<GeoShelfMember[]>([]),
   ]);
   return { ...shelfContext, members };
+}
+
+/** Members are only needed to strip ids of people who left the organization. */
+async function resolveGeoShelfReadMembers(
+  organizationId: string,
+  loadedMembers: GeoShelfMember[],
+  sources: GeoShelfSource[]
+): Promise<GeoShelfMember[]> {
+  if (loadedMembers.length > 0) {
+    return loadedMembers;
+  }
+  if (collectGeoShelfMemberIds(sources).size === 0) {
+    return [];
+  }
+  return await listGeoShelfMembers(organizationId);
 }
 
 export const geoRouter = {
   shelfList: authorizedProcedure
     .input(geoShelfListInputSchema)
     .handler(async ({ context, input }) => {
-      const seed = await loadGeoShelfSeed(context, input);
+      const seed = await loadGeoShelfSeed(context, input, {
+        withMembers: GEO_SAMPLE_DATA_ENABLED,
+      });
       if (!seed.settings) {
         return geoShelfListResponseSchema.parse({
           sources: [],
           hasScanData: false,
           ownBrandName: "",
+          isSampleData: false,
         });
       }
-      const sources = listGeoShelfSources({ ...seed, settings: seed.settings });
+      const { sources, isSampleData } = listGeoShelfSources({
+        ...seed,
+        settings: seed.settings,
+      });
+      const shelfMembers = await resolveGeoShelfReadMembers(
+        input.organizationId,
+        seed.members,
+        sources
+      );
       return geoShelfListResponseSchema.parse({
-        sources,
+        sources: sanitizeGeoShelfSourceMembers(sources, shelfMembers),
         hasScanData: hasGeoShelfScanData(sources),
         ownBrandName: seed.settings.companyName,
+        isSampleData,
       });
     }),
   shelfMembers: authorizedProcedure
@@ -467,43 +506,77 @@ export const geoRouter = {
       const members = await listGeoShelfMembers(input.organizationId);
       return geoShelfMembersResponseSchema.parse({
         members,
-        currentMemberId: context.user
-          ? findCurrentGeoShelfMemberId(members, context.user.id)
-          : null,
+        currentMemberId: findCurrentGeoShelfMemberId(members, context.user.id),
       });
     }),
   shelfCreate: authorizedProcedure
     .input(geoShelfCreateInputSchema)
     .handler(async ({ context, input }) => {
-      const seed = await loadGeoShelfSeed(context, input);
+      const seed = await loadGeoShelfSeed(context, input, {
+        withMembers:
+          GEO_SAMPLE_DATA_ENABLED ||
+          referencesGeoShelfMembers(input.opportunity),
+      });
       if (!seed.settings) {
         throw badRequest("Configure your brand tracking settings first");
       }
-      assertGeoShelfOpportunityMembers(seed.members, input.opportunity);
       const source = createGeoShelfSource(
         { ...seed, settings: seed.settings },
         input,
         context.user.id
       );
+      trackGeoRouterEvent({
+        context,
+        input,
+        event: POSTHOG_EVENTS.GEO_SHELF_SOURCE_CREATED,
+        projectId: seed.settings.projectId,
+        properties: {
+          kind: source.kind,
+          domain: source.domain,
+          has_ticket: source.opportunity !== null,
+          ticket_status: source.opportunity?.status ?? null,
+          priority: source.opportunity?.priority ?? null,
+          present_brand_count: source.placements.filter(
+            (placement) => placement.status === "present"
+          ).length,
+        },
+      });
       return geoShelfMutationResponseSchema.parse({ source });
     }),
   shelfUpdate: authorizedProcedure
     .input(geoShelfUpdateInputSchema)
     .handler(async ({ context, input }) => {
-      const seed = await loadGeoShelfSeed(context, input);
+      const seed = await loadGeoShelfSeed(context, input, {
+        withMembers:
+          GEO_SAMPLE_DATA_ENABLED ||
+          referencesGeoShelfMembers(input.opportunity),
+      });
       if (!seed.settings) {
         throw badRequest("Configure your brand tracking settings first");
       }
-      assertGeoShelfOpportunityMembers(seed.members, input.opportunity);
-      const source = updateGeoShelfSource(
+      const result = updateGeoShelfSource(
         { ...seed, settings: seed.settings },
         input,
         context.user.id
       );
-      if (!source) {
+      if (!result) {
         throw notFound("Shelf not found");
       }
-      return geoShelfMutationResponseSchema.parse({ source });
+      if (input.opportunity !== undefined) {
+        trackGeoRouterEvent({
+          context,
+          input,
+          event: POSTHOG_EVENTS.GEO_SHELF_OPPORTUNITY_UPDATED,
+          projectId: seed.settings.projectId,
+          properties: {
+            status: result.source.opportunity?.status ?? null,
+            priority: result.source.opportunity?.priority ?? null,
+            assignee_changed: result.assigneeChanged,
+            placements_changed: result.placementsChanged,
+          },
+        });
+      }
+      return geoShelfMutationResponseSchema.parse({ source: result.source });
     }),
   shelfPreview: authorizedProcedure
     .input(geoShelfPreviewInputSchema)
@@ -513,11 +586,30 @@ export const geoRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
-      const rate = await ratelimit.geoShelfPreview.limit(input.organizationId);
+      const rate = await ratelimit.geoShelfPreview.limit(
+        `${input.organizationId}:${GEO_SHELF_PREVIEW_RATE_LIMIT_SCOPE}`
+      );
       if (!rate.success) {
-        throw badRequest("Too many page lookups. Please wait a minute.");
+        trackGeoRouterEvent({
+          context,
+          input,
+          event: POSTHOG_EVENTS.GEO_SHELF_PREVIEW_REQUESTED,
+          properties: { outcome: GEO_SHELF_PREVIEW_OUTCOMES.RATE_LIMITED },
+        });
+        throw tooManyRequests(GEO_SHELF_PREVIEW_RATE_LIMIT_MESSAGE);
       }
       const preview = await previewGeoShelfUrl(input.url);
+      trackGeoRouterEvent({
+        context,
+        input,
+        event: POSTHOG_EVENTS.GEO_SHELF_PREVIEW_REQUESTED,
+        properties: {
+          outcome: preview.available
+            ? GEO_SHELF_PREVIEW_OUTCOMES.FETCHED
+            : GEO_SHELF_PREVIEW_OUTCOMES.UNAVAILABLE,
+          cache_max_age_ms: GEO_SHELF_PREVIEW_CACHE_MS,
+        },
+      });
       return geoShelfPreviewResponseSchema.parse(preview);
     }),
   modelCatalog: authorizedProcedure

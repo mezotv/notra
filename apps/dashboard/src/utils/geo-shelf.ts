@@ -5,6 +5,11 @@ import {
   GEO_SHELF_OPEN_STATUSES,
   GEO_SHELF_VIEWS,
 } from "@/constants/geo-shelf";
+import {
+  canonicalizeShelfUrl,
+  isAllowedShelfUrl,
+  shelfDomainFromUrl,
+} from "@/lib/geo-shelf/url";
 import type {
   GeoShelfFilterState,
   GeoShelfMember,
@@ -12,6 +17,7 @@ import type {
   GeoShelfOpportunity,
   GeoShelfOpportunityWrite,
   GeoShelfPlacement,
+  GeoShelfPlacementWrite,
   GeoShelfRow,
   GeoShelfSource,
   GeoShelfView,
@@ -177,6 +183,101 @@ export function mergeShelfOpportunity(
   return next;
 }
 
+export function toShelfPlacementWrites(
+  source: GeoShelfSource
+): GeoShelfPlacementWrite[] {
+  return source.placements.map((placement) => ({
+    competitorId: placement.competitorId,
+    status: placement.status,
+  }));
+}
+
+/**
+ * Placements carry fetch evidence the client cannot reproduce, so only the
+ * entries whose status actually changed are sent back to the server.
+ */
+export function changedShelfPlacementWrites(
+  modified: GeoShelfSource,
+  original: GeoShelfSource
+): GeoShelfPlacementWrite[] | undefined {
+  const previousStatusById = new Map(
+    original.placements.map((placement) => [
+      placement.competitorId,
+      placement.status,
+    ])
+  );
+  const changed = modified.placements.flatMap<GeoShelfPlacementWrite>(
+    (placement) => {
+      if (previousStatusById.get(placement.competitorId) === placement.status) {
+        return [];
+      }
+      return [
+        { competitorId: placement.competitorId, status: placement.status },
+      ];
+    }
+  );
+  return changed.length > 0 ? changed : undefined;
+}
+
+export function toShelfOpportunityWrite(
+  source: GeoShelfSource
+): GeoShelfOpportunityWrite | null {
+  const opportunity = source.opportunity;
+  if (!opportunity) {
+    return null;
+  }
+  return {
+    status: opportunity.status,
+    priority: opportunity.priority,
+    assigneeMemberId: opportunity.assigneeMemberId,
+    pocMemberId: opportunity.pocMemberId,
+    notes: opportunity.notes,
+    dueAt: opportunity.dueAt,
+  };
+}
+
+function isSameOpportunityWrite(
+  next: GeoShelfOpportunityWrite | null,
+  previous: GeoShelfOpportunityWrite | null
+): boolean {
+  if (next === null || previous === null) {
+    return next === previous;
+  }
+  return (
+    next.status === previous.status &&
+    next.priority === previous.priority &&
+    next.assigneeMemberId === previous.assigneeMemberId &&
+    next.pocMemberId === previous.pocMemberId &&
+    next.notes === previous.notes &&
+    next.dueAt === previous.dueAt
+  );
+}
+
+/** `undefined` means "leave the stored ticket alone". */
+export function changedShelfOpportunityWrite(
+  modified: GeoShelfSource,
+  original: GeoShelfSource
+): GeoShelfOpportunityWrite | null | undefined {
+  const next = toShelfOpportunityWrite(modified);
+  const previous = toShelfOpportunityWrite(original);
+  if (isSameOpportunityWrite(next, previous)) {
+    return undefined;
+  }
+  return next;
+}
+
+/** Canonicalize like the server so the optimistic row matches the created one. */
+function optimisticShelfUrl(raw: string): { url: string; domain: string } {
+  if (isAllowedShelfUrl(raw)) {
+    const url = canonicalizeShelfUrl(raw);
+    return { url, domain: shelfDomainFromUrl(url) };
+  }
+  // The server rejects this URL as well: keep the raw value so the failed
+  // insert rolls back with an error toast instead of throwing on submit.
+  const trimmed = raw.trim();
+  return { url: trimmed, domain: trimmed };
+}
+
 export function buildOptimisticShelfSource(
   draft: GeoShelfNewSourceDraft,
   context: {
@@ -187,7 +288,7 @@ export function buildOptimisticShelfSource(
   }
 ): GeoShelfSource {
   const nowIso = new Date().toISOString();
-  const url = new URL(draft.url.trim());
+  const { url, domain } = optimisticShelfUrl(draft.url);
   const presentIds = new Set(draft.presentCompetitorIds);
   const placements: GeoShelfPlacement[] = [
     {
@@ -216,8 +317,8 @@ export function buildOptimisticShelfSource(
   const title = draft.title.trim();
   return {
     id: crypto.randomUUID(),
-    url: url.toString(),
-    domain: url.hostname.toLowerCase().replace(/^www\./, ""),
+    url,
+    domain,
     title: title.length > 0 ? title : null,
     kind: draft.kind,
     ownership: "third_party",
@@ -244,22 +345,26 @@ export function shelfMemberInitial(member: GeoShelfMember): string {
   return (member.name || member.email).charAt(0).toUpperCase();
 }
 
+const shelfDateFormatter = new Intl.DateTimeFormat("en", {
+  month: "short",
+  day: "numeric",
+});
+
+const shelfDueDateFormatter = new Intl.DateTimeFormat("en", {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+
 export function formatShelfDate(iso: string | null): string {
   if (!iso) {
     return "-";
   }
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-  }).format(new Date(iso));
+  return shelfDateFormatter.format(new Date(iso));
 }
 
 export function formatShelfDueDate(iso: string): string {
-  return new Intl.DateTimeFormat("en", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  }).format(new Date(iso));
+  return shelfDueDateFormatter.format(new Date(iso));
 }
 
 export function shelfDueDateToIso(date: Date): string {

@@ -20,17 +20,22 @@ import {
 import { useForm, useStore } from "@tanstack/react-form";
 import { useDebouncedValue } from "@tanstack/react-pacer";
 import { Loader2Icon } from "lucide-react";
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 
 import { Button } from "@/components/button";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { ShelfTicketForm } from "@/components/geo/shelf/shelf-ticket-form";
 import { Checkbox } from "@/components/motion/checkbox";
 import {
+  GEO_SHELF_DUPLICATE_URL_MESSAGE,
   GEO_SHELF_PREVIEW_DEBOUNCE_MS,
+  GEO_SHELF_PREVIEW_RATE_LIMIT_MESSAGE,
+  GEO_SHELF_PREVIEW_UNAVAILABLE_MESSAGE,
   GEO_SHELF_SOURCE_KIND_LABELS,
   GEO_SHELF_SOURCE_KINDS,
+  GEO_SHELF_URL_INVALID_MESSAGE,
 } from "@/constants/geo-shelf";
+import { canonicalizeShelfUrl, isAllowedShelfUrl } from "@/lib/geo-shelf/url";
 import { useGeoShelfPreview } from "@/lib/hooks/use-geo-shelf";
 import type {
   GeoShelfAddDialogProps,
@@ -38,25 +43,44 @@ import type {
   GeoShelfOpportunity,
   GeoShelfSourceKind,
 } from "@/types/geo-shelf";
+import { toErrorMessage } from "@/utils/error-message";
 
 function toKind(value: string): GeoShelfSourceKind {
   return GEO_SHELF_SOURCE_KINDS.find((kind) => kind === value) ?? "other";
 }
 
-function isValidUrl(value: string): boolean {
-  try {
-    const url = new URL(value.trim());
-    return url.protocol === "https:" || url.protocol === "http:";
-  } catch {
-    return false;
-  }
+/** Stored rows may predate canonicalization, so compare both sides canonical. */
+function canonicalizeShelfUrlSafe(raw: string): string {
+  return isAllowedShelfUrl(raw) ? canonicalizeShelfUrl(raw) : raw;
 }
 
-function validateShelfUrl(value: string): string | undefined {
-  if (value.trim().length === 0 || isValidUrl(value)) {
+function validateShelfUrl(
+  value: string,
+  existingUrls: readonly string[]
+): string | undefined {
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
     return undefined;
   }
-  return "Enter a full URL starting with https://";
+  if (!isAllowedShelfUrl(trimmed)) {
+    return GEO_SHELF_URL_INVALID_MESSAGE;
+  }
+  const canonical = canonicalizeShelfUrl(trimmed);
+  const isDuplicate = existingUrls.some(
+    (existing) => canonicalizeShelfUrlSafe(existing) === canonical
+  );
+  return isDuplicate ? GEO_SHELF_DUPLICATE_URL_MESSAGE : undefined;
+}
+
+/**
+ * The preview is a nice-to-have: surface the rate limit verbatim, and keep every
+ * other failure as a hint that the title can be typed by hand.
+ */
+function previewErrorHint(error: unknown): string {
+  const message = toErrorMessage(error, GEO_SHELF_PREVIEW_UNAVAILABLE_MESSAGE);
+  return message === GEO_SHELF_PREVIEW_RATE_LIMIT_MESSAGE
+    ? message
+    : GEO_SHELF_PREVIEW_UNAVAILABLE_MESSAGE;
 }
 
 function toPreviewOpportunity(
@@ -80,6 +104,7 @@ export function ShelfAddDialog({
   members,
   currentMemberId,
   ownBrandName,
+  existingUrls,
   onSubmit,
 }: GeoShelfAddDialogProps) {
   const id = useId();
@@ -117,22 +142,37 @@ export function ShelfAddDialog({
   const [debouncedUrl] = useDebouncedValue(urlValue, {
     wait: GEO_SHELF_PREVIEW_DEBOUNCE_MS,
   });
+  const debouncedUrlError = validateShelfUrl(debouncedUrl, existingUrls);
   const previewUrl =
-    open && isValidUrl(debouncedUrl) ? debouncedUrl.trim() : null;
+    open && debouncedUrl.trim().length > 0 && debouncedUrlError === undefined
+      ? debouncedUrl.trim()
+      : null;
   const preview = useGeoShelfPreview(organizationId, previewUrl);
   const previewTitle = preview.data?.title ?? null;
-  previewTitleRef.current = previewTitle;
+  useEffect(() => {
+    previewTitleRef.current = previewTitle;
+  }, [previewTitle]);
   const isPreviewLoading = previewUrl !== null && preview.isFetching;
   const showPreviewTitle =
     titleValue.trim().length === 0 && previewTitle !== null;
+  const previewError =
+    previewUrl !== null && preview.isError
+      ? previewErrorHint(preview.error)
+      : null;
+
+  const closeDialog = () => {
+    form.reset();
+    onOpenChange(false);
+  };
 
   return (
     <ResponsiveDialog
       onOpenChange={(next) => {
-        if (!next) {
-          form.reset();
+        if (next) {
+          onOpenChange(true);
+          return;
         }
-        onOpenChange(next);
+        closeDialog();
       }}
       open={open}
     >
@@ -158,7 +198,7 @@ export function ShelfAddDialog({
             <form.Field
               name="url"
               validators={{
-                onChange: ({ value }) => validateShelfUrl(value),
+                onChange: ({ value }) => validateShelfUrl(value, existingUrls),
               }}
             >
               {(field) => (
@@ -253,6 +293,11 @@ export function ShelfAddDialog({
                     From the page's title tag. Type to override.
                   </p>
                 ) : null}
+                {previewError ? (
+                  <p className="text-muted-foreground text-xs">
+                    {previewError}
+                  </p>
+                ) : null}
               </div>
             )}
           </form.Field>
@@ -343,11 +388,7 @@ export function ShelfAddDialog({
           </div>
 
           <ResponsiveDialogFooter className="gap-2 sm:justify-end">
-            <Button
-              onClick={() => onOpenChange(false)}
-              type="button"
-              variant="outline"
-            >
+            <Button onClick={closeDialog} type="button" variant="outline">
               Cancel
             </Button>
             <form.Subscribe
@@ -355,7 +396,7 @@ export function ShelfAddDialog({
             >
               {([url, canSubmit]) => (
                 <Button
-                  disabled={!(canSubmit && isValidUrl(url))}
+                  disabled={!(canSubmit && isAllowedShelfUrl(url))}
                   type="submit"
                 >
                   Add shelf
