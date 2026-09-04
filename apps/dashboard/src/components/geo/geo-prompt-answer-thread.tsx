@@ -4,6 +4,11 @@ import { GEO_CHAT_SKIN_SURFACE } from "@notra/geo-core/constants/geo";
 import type { GeoChatSkin, GeoPromptResult } from "@notra/geo-core/types/geo";
 import { perplexitySourcesFromExcerpt } from "@notra/geo-core/utils/geo-perplexity-sources";
 import { MessageResponse } from "@notra/ui/components/ai-elements/message";
+import {
+  geoAnswerEmptyClassName,
+  geoAnswerMarkdownFontClass,
+  geoAnswerThinkingClassName,
+} from "@notra/ui/lib/geo-answer-font";
 import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
 import { useReducedMotion } from "motion/react";
 import { type ReactNode, useMemo } from "react";
@@ -48,16 +53,6 @@ function threadSources(
   return perplexitySourcesFromExcerpt(answer);
 }
 
-function emptyAnswerClassName(skin: GeoChatSkin): string {
-  if (skin === "perplexity") {
-    return "font-serif text-[17.5px] leading-[1.75]";
-  }
-  if (skin === "claude") {
-    return "font-sans text-[15px] leading-6";
-  }
-  return "text-[15px] leading-7";
-}
-
 export function AnswerMarkdown({
   text,
   skin,
@@ -69,13 +64,7 @@ export function AnswerMarkdown({
 }) {
   return (
     <MessageResponse
-      className={cn(
-        ANSWER_MARKDOWN_CLASS,
-        skin === "claude" &&
-          "[&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif",
-        skin === "perplexity" &&
-          "font-serif [&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif"
-      )}
+      className={cn(ANSWER_MARKDOWN_CLASS, geoAnswerMarkdownFontClass(skin))}
       mode={mode}
     >
       {text}
@@ -99,7 +88,7 @@ function AssistantBody({
   }
 
   return (
-    <p className={cn("text-muted-foreground", emptyAnswerClassName(skin))}>
+    <p className={cn("text-muted-foreground", geoAnswerEmptyClassName(skin))}>
       {emptyAnswerCopy(mentioned)}
     </p>
   );
@@ -165,9 +154,7 @@ function ThreadMessages({
             <p
               className={cn(
                 "text-muted-foreground animate-pulse",
-                skin === "perplexity"
-                  ? "font-serif text-[17.5px]"
-                  : "text-[15px]"
+                geoAnswerThinkingClassName(skin)
               )}
             >
               Thinking…

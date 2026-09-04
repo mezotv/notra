@@ -87,10 +87,14 @@ export interface GapRow {
   missing: EngineId[];
 }
 
+export type AnswerSentiment = "positive" | "neutral" | "negative";
+
+export type AnswerPositionTone = "top" | "mid" | "low";
+
 export interface AnswerEngineResult {
   id: EngineId;
   mentioned: boolean;
   position: number | null;
-  sentiment: "positive" | "neutral" | "negative";
+  sentiment: AnswerSentiment;
   excerpt: string;
 }

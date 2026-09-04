@@ -13,6 +13,7 @@
     "./constants/*": "./src/constants/*.ts",
     "./types/*": "./src/types/*.ts",
     "./components/*": "./src/components/*.tsx",
+    "./components/geo/*": "./src/components/geo/*.tsx",
     "./components/shared/*": "./src/components/shared/*.tsx",
     "./components/kibo-ui/*": "./src/components/kibo-ui/*/index.tsx",
     "./hooks/*": "./src/hooks/*.ts",

@@ -1,4 +1,9 @@
-import type { AnswerEngineResult, EngineId } from "@/types/landing/geo";
+import type {
+  AnswerEngineResult,
+  AnswerPositionTone,
+  AnswerSentiment,
+  EngineId,
+} from "@/types/landing/geo";
 
 export const ANSWER_EXAMPLE_HEADING = "See exactly what the engine said.";
 
@@ -76,6 +81,30 @@ export const ANSWER_EXAMPLE_SENTIMENT_LABELS = {
   neutral: "Neutral",
   negative: "Negative",
 } as const;
+
+export const ANSWER_EXAMPLE_SENTIMENT_CLASS: Record<AnswerSentiment, string> = {
+  positive: "text-geo-up",
+  neutral: "text-muted-foreground",
+  negative: "text-geo-down",
+};
+
+export const ANSWER_EXAMPLE_OUTCOME_LABELS = {
+  mentioned: "Mentioned",
+  notMentioned: "Not mentioned",
+} as const;
+
+export const ANSWER_EXAMPLE_POSITION_NONE = "None";
+
+/** Same bands as the dashboard directions table: 1–2 top, 3–4 mid. */
+export const ANSWER_EXAMPLE_POSITION_TOP = 2;
+export const ANSWER_EXAMPLE_POSITION_MID = 4;
+
+export const ANSWER_EXAMPLE_POSITION_CLASS: Record<AnswerPositionTone, string> =
+  {
+    top: "border-geo-up/40 bg-geo-up/10 text-geo-up",
+    mid: "border-geo-mid/40 bg-geo-mid/10 text-geo-mid",
+    low: "border-border bg-muted text-muted-foreground",
+  };
 
 export const ANSWER_EXAMPLE_FACTS = [
   {

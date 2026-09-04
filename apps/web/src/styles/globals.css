@@ -140,6 +140,17 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-geo-search: var(--geo-search);
+  --color-geo-memory: var(--geo-memory);
+  --color-geo-up: var(--geo-up);
+  --color-geo-mid: var(--geo-mid);
+  --color-geo-down: var(--geo-down);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);

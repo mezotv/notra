@@ -13,6 +13,11 @@ export interface PurposeBadgeProps {
   category: string;
 }
 
+export interface PromptOutcomeIconProps {
+  mentioned: boolean;
+  className?: string;
+}
+
 export interface GeoBarProps {
   value: number;
   max?: number;
