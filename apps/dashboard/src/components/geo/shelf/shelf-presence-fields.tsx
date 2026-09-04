@@ -13,6 +13,8 @@ export function ShelfPresenceFields({
   onOwnPresentChange,
   onPresentCompetitorIdsChange,
 }: GeoShelfPresenceFieldsProps) {
+  const presentCompetitorIdSet = new Set(presentCompetitorIds);
+
   return (
     <fieldset className="space-y-2">
       <legend className="text-sm font-medium">Who is already on it</legend>
@@ -35,7 +37,7 @@ export function ShelfPresenceFields({
           </label>
         </div>
         {competitors.map((competitor) => {
-          const checked = presentCompetitorIds.includes(competitor.id);
+          const checked = presentCompetitorIdSet.has(competitor.id);
           const checkboxId = `${id}-competitor-${competitor.id}`;
           return (
             <div
