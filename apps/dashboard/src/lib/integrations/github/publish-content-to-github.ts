@@ -21,6 +21,7 @@ import type {
   ResolveGitHubContentPathParams,
   ValidateExistingGitHubBranchParams,
 } from "../../../types/integrations/github";
+import { buildContentPullRequestBody } from "./pull-request-body";
 
 export class GitHubContentTargetExistsError extends Error {}
 
@@ -637,7 +638,11 @@ export async function publishContentDraftPullRequest(
         base: params.defaultBranch,
         head: branchName,
         title: `docs: add ${params.title}`,
-        body: `Draft ${params.contentType === "changelog" ? "changelog" : "blog post"} generated and published with Notra.`,
+        body: buildContentPullRequestBody({
+          badgeUrls: params.badgeUrls,
+          contentType: params.contentType,
+          contentUrl: params.contentUrl,
+        }),
         draft: true,
         headers: GITHUB_API_VERSION_HEADERS,
       }

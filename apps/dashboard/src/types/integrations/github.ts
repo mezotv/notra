@@ -183,6 +183,11 @@ export interface GitHubCreateCommitOnBranchResult {
   } | null;
 }
 
+export interface OpenInNotraBadgeUrls {
+  dark: string;
+  light: string;
+}
+
 export interface PublishContentDraftPullRequestParams {
   contentId: string;
   contentType: GitHubPublishContentType;
@@ -192,6 +197,10 @@ export interface PublishContentDraftPullRequestParams {
   path: string;
   title: string;
   markdown: string;
+  /** Deep link to the content in the Notra dashboard, rendered as an "Open in Notra" button. */
+  contentUrl?: string;
+  /** Absolute URLs of the "Open in Notra" badge images per color scheme. */
+  badgeUrls?: OpenInNotraBadgeUrls;
 }
 
 export interface GitHubPullRequestSummary {
