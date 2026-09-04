@@ -6,6 +6,7 @@ import { Effect } from "effect";
 import { cookies } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
 import { connection } from "next/server";
+import { cache } from "react";
 
 import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { isUserBanned } from "@/lib/auth/banned";
@@ -104,37 +105,39 @@ const buildAuthSession = Effect.fn("auth.session.build")(function* (
   return session;
 });
 
-export async function getAuthSession(): Promise<AuthSessionData | null> {
-  await connection();
+export const getAuthSession = cache(
+  async (): Promise<AuthSessionData | null> => {
+    await connection();
 
-  let authResult: Awaited<ReturnType<typeof withAuth>>;
+    let authResult: Awaited<ReturnType<typeof withAuth>>;
 
-  try {
-    authResult = await withAuth();
-  } catch (error) {
-    unstable_rethrow(error);
-    console.error("Error reading AuthKit session", error);
-    return null;
-  }
+    try {
+      authResult = await withAuth();
+    } catch (error) {
+      unstable_rethrow(error);
+      console.error("Error reading AuthKit session", error);
+      return null;
+    }
 
-  if (!authResult.user) {
-    return null;
-  }
+    if (!authResult.user) {
+      return null;
+    }
 
-  return await Effect.runPromise(
-    buildAuthSession(
-      authResult.user,
-      authResult.impersonator?.email ?? null
-    ).pipe(
-      Effect.catch((error) =>
-        Effect.logWarning("Failed to build auth session").pipe(
-          Effect.annotateLogs({
-            workosUserId: authResult.user?.id,
-            error: error.message,
-          }),
-          Effect.as(null)
+    return await Effect.runPromise(
+      buildAuthSession(
+        authResult.user,
+        authResult.impersonator?.email ?? null
+      ).pipe(
+        Effect.catch((error) =>
+          Effect.logWarning("Failed to build auth session").pipe(
+            Effect.annotateLogs({
+              workosUserId: authResult.user?.id,
+              error: error.message,
+            }),
+            Effect.as(null)
+          )
         )
       )
-    )
-  );
-}
+    );
+  }
+);
