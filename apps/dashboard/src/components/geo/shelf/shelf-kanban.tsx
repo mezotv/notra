@@ -1,22 +1,15 @@
 "use client";
 
 import {
-  KeyboardSensor,
-  MouseSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  type DragEndEvent,
   KanbanBoard,
   KanbanCard,
   KanbanCards,
+  type KanbanDragEndEvent,
   KanbanHeader,
   KanbanProvider,
 } from "@notra/ui/components/kibo-ui/kanban";
 import { Badge } from "@notra/ui/components/ui/badge";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { ShelfMemberAvatar } from "@/components/geo/shelf/shelf-member-avatar";
@@ -36,7 +29,11 @@ import type {
 } from "@/types/geo-shelf";
 import { formatShelfDate, shelfKanbanColumnFor } from "@/utils/geo-shelf";
 
-const DRAG_ACTIVATION_DISTANCE = 6;
+/**
+ * A card can be dragged out of "No ticket" (that creates a ticket), but never
+ * into it: there is no mutation that removes a ticket from a source.
+ */
+const DROP_DISABLED_COLUMN_IDS = [GEO_SHELF_KANBAN_NO_TICKET_COLUMN];
 
 function toItems(rows: GeoShelfRow[]): GeoShelfKanbanItem[] {
   return rows.map((row) => ({
@@ -70,20 +67,16 @@ function cardMeta(row: GeoShelfRow): string {
 function ShelfKanbanCardBody({
   row,
   pending,
-  onOpen,
 }: {
   row: GeoShelfRow;
   pending: boolean;
-  onOpen: () => void;
 }) {
   return (
-    <button
+    <span
       className={cn(
-        "flex w-full cursor-[inherit] flex-col gap-2 text-left",
+        "flex w-full flex-col gap-2 text-left",
         pending && "opacity-60"
       )}
-      onClick={onOpen}
-      type="button"
     >
       <span className="flex min-w-0 items-start gap-2">
         <CompetitorLogo
@@ -127,7 +120,7 @@ function ShelfKanbanCardBody({
           {cardMeta(row)}
         </span>
       </span>
-    </button>
+    </span>
   );
 }
 
@@ -138,17 +131,19 @@ export function ShelfKanban({
   onOpenRow,
   onUpdateOpportunity,
 }: GeoShelfKanbanProps) {
-  const derived = toItems(rows);
-  const derivedSignature = itemsSignature(derived);
+  const derived = useMemo(() => toItems(rows), [rows]);
+  const derivedSignature = useMemo(() => itemsSignature(derived), [derived]);
+
   const [items, setItems] = useState(derived);
   const [seenSignature, setSeenSignature] = useState(derivedSignature);
+  const [dragging, setDragging] = useState(false);
 
-  if (seenSignature !== derivedSignature) {
+  // A live row update mid-drag must not yank the board out from under the
+  // pointer, so the sync is deferred until the drag settles.
+  if (!dragging && seenSignature !== derivedSignature) {
     setSeenSignature(derivedSignature);
     setItems(derived);
   }
-
-  const [dragging, setDragging] = useState(false);
 
   const startDragging = () => {
     setDragging(true);
@@ -160,44 +155,35 @@ export function ShelfKanban({
     document.body.style.cursor = "";
   };
 
-  const sensors = useSensors(
-    useSensor(MouseSensor, {
-      activationConstraint: { distance: DRAG_ACTIVATION_DISTANCE },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 150, tolerance: 8 },
-    }),
-    useSensor(KeyboardSensor)
-  );
-
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = (event: KanbanDragEndEvent) => {
     stopDragging();
-    const activeId = String(event.active.id);
-    const moved = items.find((item) => item.id === activeId);
-    const original = derived.find((item) => item.id === activeId);
-    if (!(moved && original) || moved.column === original.column) {
+    const { targetColumnId } = event;
+    if (!targetColumnId) {
       return;
     }
-    if (moved.column === GEO_SHELF_KANBAN_NO_TICKET_COLUMN) {
-      setItems(derived);
+    const sourceId = String(event.active.id);
+    const original = derived.find((item) => item.id === sourceId);
+    if (!original || original.column === targetColumnId) {
       return;
     }
-    const status = toStatus(moved.column);
+    const status = toStatus(targetColumnId);
     if (!status) {
-      setItems(derived);
       return;
     }
     const hadTicket = original.row.opportunity !== null;
-    onUpdateOpportunity(activeId, {
+    onUpdateOpportunity(sourceId, {
       status,
       ...(hadTicket ? {} : { assigneeMemberId: currentMemberId }),
     });
   };
 
-  const counts = new Map<string, number>();
-  for (const item of items) {
-    counts.set(item.column, (counts.get(item.column) ?? 0) + 1);
-  }
+  const counts = useMemo(() => {
+    const byColumn = new Map<string, number>();
+    for (const item of items) {
+      byColumn.set(item.column, (byColumn.get(item.column) ?? 0) + 1);
+    }
+    return byColumn;
+  }, [items]);
 
   return (
     <div
@@ -210,11 +196,11 @@ export function ShelfKanban({
         className="min-w-[72rem]"
         columns={GEO_SHELF_KANBAN_COLUMNS}
         data={items}
+        dropDisabledColumnIds={DROP_DISABLED_COLUMN_IDS}
         onDataChange={setItems}
         onDragCancel={stopDragging}
         onDragEnd={handleDragEnd}
         onDragStart={startDragging}
-        sensors={sensors}
       >
         {(column) => (
           <KanbanBoard
@@ -236,13 +222,14 @@ export function ShelfKanban({
                 <KanbanCard<GeoShelfKanbanItem>
                   className="bg-card border-border rounded-xl border shadow-none"
                   column={item.column}
+                  disabled={pendingSourceIds.has(item.id)}
                   id={item.id}
                   key={item.id}
                   name={item.name}
+                  onActivate={() => onOpenRow(item.row)}
                   row={item.row}
                 >
                   <ShelfKanbanCardBody
-                    onOpen={() => onOpenRow(item.row)}
                     pending={pendingSourceIds.has(item.id)}
                     row={item.row}
                   />
