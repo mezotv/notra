@@ -74,7 +74,7 @@ export function PerplexityModelSelector({
   const [open, setOpen] = useState(false);
 
   return (
-    <DropdownMenu onOpenChange={setOpen} open={open}>
+    <DropdownMenu modal={false} onOpenChange={setOpen} open={open}>
       <DropdownMenuTrigger
         render={
           <button

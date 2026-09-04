@@ -67,3 +67,5 @@ apps/onboarding-agent/logs
 .workflow-data
 .env.staging
 .env*
+!.env.example
+!**/.env.example

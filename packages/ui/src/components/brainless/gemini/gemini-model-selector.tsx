@@ -78,7 +78,7 @@ export function GeminiModelSelector({
   const thinkingModels = getGeminiModelsByGroup("thinking");
 
   return (
-    <DropdownMenu onOpenChange={setOpen} open={open}>
+    <DropdownMenu modal={false} onOpenChange={setOpen} open={open}>
       <DropdownMenuTrigger
         render={
           <button

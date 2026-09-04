@@ -9,16 +9,20 @@ import {
   AUTH_SIGNIN_URL,
 } from "@/constants/auth";
 import { NAVBAR_HOTKEY_SIGNUP_SOURCE } from "@/constants/navbar";
+import type { DashboardSessionState } from "@/lib/auth/use-dashboard-session";
 import { startSignup } from "@/utils/signup";
 
-export function useNavbarAuthHotkeys(isAuthenticated: boolean): void {
+export function useNavbarAuthHotkeys({
+  isAuthenticated,
+  isResolved,
+}: DashboardSessionState): void {
   useHotkey(
     AUTH_SIGNIN_HOTKEY,
     (event) => {
       event.preventDefault();
       window.location.assign(AUTH_SIGNIN_URL);
     },
-    { enabled: !isAuthenticated }
+    { enabled: isResolved && !isAuthenticated }
   );
 
   useHotkey(
@@ -31,6 +35,6 @@ export function useNavbarAuthHotkeys(isAuthenticated: boolean): void {
       }
       startSignup(NAVBAR_HOTKEY_SIGNUP_SOURCE);
     },
-    { conflictBehavior: "replace" }
+    { enabled: isResolved, conflictBehavior: "replace" }
   );
 }

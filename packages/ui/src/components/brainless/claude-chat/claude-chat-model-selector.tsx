@@ -55,7 +55,7 @@ export function ClaudeChatModelSelector({
   const others = getOtherClaudeChatModels(model);
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger
         closeDelay={200}
         delay={75}

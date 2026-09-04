@@ -49,6 +49,7 @@ import type {
   NavbarAuthActionsProps,
   NavbarKbdProps,
   NavbarProps,
+  NavbarVariant,
 } from "@/types/navbar";
 import { copySvgAsset } from "@/utils/copy-svg-asset";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
@@ -237,12 +238,68 @@ function MegaPanel({
   );
 }
 
+function getSlideDirection(
+  groups: MarketingNavGroup[],
+  activeGroup: string | null,
+  previousGroup: string | null
+) {
+  if (!(activeGroup && previousGroup) || activeGroup === previousGroup) {
+    return 0;
+  }
+
+  const currentIndex = groups.findIndex((group) => group.label === activeGroup);
+  const previousIndex = groups.findIndex(
+    (group) => group.label === previousGroup
+  );
+
+  if (currentIndex === -1 || previousIndex === -1) {
+    return 0;
+  }
+
+  return currentIndex > previousIndex ? 1 : -1;
+}
+
+function getNavbarPresentation(
+  variant: NavbarVariant,
+  scrolled: boolean,
+  reduceMotion: boolean
+) {
+  const isLanding = variant === "landing";
+  const tracksScroll = variant === "island" || isLanding;
+  const chrome = variant === "pinned" || (tracksScroll && scrolled);
+  const isLandingTop = isLanding && !chrome;
+  let positionClass = "w-full sticky top-4";
+
+  if (isLanding) {
+    positionClass = "fixed inset-x-4 sm:inset-x-6";
+  } else if (variant === "static") {
+    positionClass = "w-full";
+  }
+
+  return {
+    chrome,
+    contentTransition: reduceMotion ? { duration: 0 } : SWAP_TRANSITION,
+    enterExitTransition: reduceMotion ? { duration: 0 } : ENTER_EXIT_TRANSITION,
+    innerPaddingClass: isLandingTop
+      ? "px-7 sm:px-5 lg:px-6 min-[87rem]:px-0"
+      : "px-4 sm:px-6",
+    isLandingTop,
+    morphTransition: reduceMotion ? { duration: 0 } : MORPH_TRANSITION,
+    positionClass,
+    rowHeightClass: isLandingTop ? "h-11 lg:h-[2.4375rem]" : "h-16",
+    shellAnimate: isLanding
+      ? {
+          maxWidth: chrome ? "64rem" : "80.9375rem",
+          top: chrome ? "1rem" : "2.5rem",
+        }
+      : { maxWidth: chrome ? "64rem" : "80rem" },
+    shellTransition: reduceMotion ? { duration: 0 } : SHELL_TRANSITION,
+  };
+}
+
 export function Navbar({ variant }: NavbarProps = {}) {
   const pathname = usePathname();
   const resolvedVariant = variant ?? getNavbarVariantForPath(pathname);
-  const isLanding = resolvedVariant === "landing";
-  const tracksScroll = resolvedVariant === "island" || isLanding;
-  const isStatic = resolvedVariant === "static";
 
   const [isOpen, setIsOpen] = useState(false);
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
@@ -262,8 +319,8 @@ export function Navbar({ variant }: NavbarProps = {}) {
     []
   );
 
-  const isAuthenticated = useDashboardSession();
-  useNavbarAuthHotkeys(isAuthenticated);
+  const { isAuthenticated, isResolved } = useDashboardSession();
+  useNavbarAuthHotkeys({ isAuthenticated, isResolved });
   const reduceMotion = useReducedMotion();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
@@ -368,43 +425,26 @@ export function Navbar({ variant }: NavbarProps = {}) {
     : null;
   const activeSize = activeGroup ? panelSizes.get(activeGroup) : undefined;
 
-  let slideDirection = 0;
-  const previousActive = previousGroupRef.current;
-  if (activeGroup && previousActive && activeGroup !== previousActive) {
-    const currentIndex = groups.findIndex((g) => g.label === activeGroup);
-    const previousIndex = groups.findIndex((g) => g.label === previousActive);
-    if (currentIndex !== -1 && previousIndex !== -1) {
-      slideDirection = currentIndex > previousIndex ? 1 : -1;
-    }
-  }
-
+  const slideDirection = getSlideDirection(
+    groups,
+    activeGroup,
+    previousGroupRef.current
+  );
   const direction = reduceMotion ? 0 : slideDirection;
-  const morphTransition = reduceMotion ? { duration: 0 } : MORPH_TRANSITION;
-  const enterExitTransition = reduceMotion
-    ? { duration: 0 }
-    : ENTER_EXIT_TRANSITION;
-  const contentTransition = reduceMotion ? { duration: 0 } : SWAP_TRANSITION;
-  const shellTransition = reduceMotion ? { duration: 0 } : SHELL_TRANSITION;
-  const chrome = resolvedVariant === "pinned" || (tracksScroll && scrolled);
-  const isLandingTop = isLanding && !chrome;
+  const {
+    chrome,
+    contentTransition,
+    enterExitTransition,
+    innerPaddingClass,
+    isLandingTop,
+    morphTransition,
+    positionClass,
+    rowHeightClass,
+    shellAnimate,
+    shellTransition,
+  } = getNavbarPresentation(resolvedVariant, scrolled, reduceMotion ?? false);
   const mutedNavClass =
     "text-[#1E1E1EA6] hover:text-[#1E1E1E] dark:text-neutral-400 dark:hover:text-white";
-  let positionClass = "w-full sticky top-4";
-  if (isLanding) {
-    positionClass = "fixed inset-x-4 sm:inset-x-6";
-  } else if (isStatic) {
-    positionClass = "w-full";
-  }
-  const shellAnimate = isLanding
-    ? {
-        maxWidth: chrome ? "64rem" : "80.9375rem",
-        top: chrome ? "1rem" : "2.5rem",
-      }
-    : { maxWidth: chrome ? "64rem" : "80rem" };
-  const rowHeightClass = isLandingTop ? "h-11 lg:h-[2.4375rem]" : "h-16";
-  const innerPaddingClass = isLandingTop
-    ? "px-7 sm:px-5 lg:px-6 min-[87rem]:px-0"
-    : "px-4 sm:px-6";
 
   return (
     <LazyMotion features={domAnimation} strict>
@@ -668,7 +708,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
 }
 
 function MobileNav({ onNavigate }: { onNavigate: () => void }) {
-  const isAuthenticated = useDashboardSession();
+  const { isAuthenticated } = useDashboardSession();
 
   return (
     <div className="flex flex-col gap-3">

@@ -84,6 +84,7 @@ function ResultsTable() {
                       : ANSWER_EXAMPLE_OUTCOME_LABELS.notMentioned
                   }
                   className="inline-flex items-center"
+                  role="img"
                 >
                   <PromptOutcomeIcon mentioned={row.mentioned} />
                 </span>
