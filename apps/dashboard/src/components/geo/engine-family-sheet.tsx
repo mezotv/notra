@@ -35,7 +35,7 @@ import {
   SheetTitle,
 } from "@notra/ui/components/ui/sheet";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@/components/button";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
@@ -241,23 +241,17 @@ function FamilyTrend({
   const allTotals = engineFamilyTotals(family);
   const splitModes = searchTotals !== null && memoryTotals !== null;
   const [mode, setMode] = useState<GeoSparklineMode>("all");
-  const rows = useMemo(
-    () => buildEngineFamilyModeTrendRows(points, family.family),
-    [family.family, points]
-  );
+  const rows = buildEngineFamilyModeTrendRows(points, family.family);
   const activeMode: GeoSparklineMode = splitModes ? mode : "all";
-  const config = useMemo<ChartConfig>(
-    () => ({
-      [activeMode]: {
-        label: `${GEO_MENTION_RATE_LABEL} · ${MODE_LABEL[activeMode]}`,
-        colors: modeSeriesColors(activeMode),
-      },
-    }),
-    [activeMode]
-  );
+  const config: ChartConfig = {
+    [activeMode]: {
+      label: `${GEO_MENTION_RATE_LABEL} · ${MODE_LABEL[activeMode]}`,
+      colors: modeSeriesColors(activeMode),
+    },
+  };
   const showTrend = rows.length >= GEO_SPARKLINE_MIN_POINTS;
   const markIncompleteTail = rows.at(-1)?.rawDay === todayIsoDate();
-  const rowKeys = useMemo(() => [activeMode], [activeMode]);
+  const rowKeys = [activeMode];
 
   if (!showTrend) {
     return null;
@@ -426,65 +420,62 @@ function PromptHits({
   onOpen: (promptId: string) => void;
   onWrite?: (hit: EngineFamilyPromptHit) => void;
 }) {
-  const columns = useMemo<TableColumn<EngineFamilyPromptHit>[]>(() => {
-    const next: TableColumn<EngineFamilyPromptHit>[] = [
-      {
-        key: "prompt",
-        header:
-          hits.length > 0
-            ? `Prompts (${hits.length.toLocaleString()})`
-            : "Prompts",
-        width: "1fr",
-        minWidth: "12rem",
-        sortable: true,
-        cell: (row) => (
-          <TruncateWithTooltip className="text-sm">
-            {row.prompt}
-          </TruncateWithTooltip>
-        ),
-        sortValue: (row) => row.prompt,
-      },
-      {
-        key: "result",
-        header: "Result",
-        width: "7rem",
-        sortable: true,
-        cell: (row) => (
-          <span
-            className={cn(
-              "flex items-center gap-1.5 text-sm tabular-nums",
-              !row.mentioned && "text-muted-foreground"
-            )}
+  const columns: TableColumn<EngineFamilyPromptHit>[] = [
+    {
+      key: "prompt",
+      header:
+        hits.length > 0
+          ? `Prompts (${hits.length.toLocaleString()})`
+          : "Prompts",
+      width: "1fr",
+      minWidth: "12rem",
+      sortable: true,
+      cell: (row) => (
+        <TruncateWithTooltip className="text-sm">
+          {row.prompt}
+        </TruncateWithTooltip>
+      ),
+      sortValue: (row) => row.prompt,
+    },
+    {
+      key: "result",
+      header: "Result",
+      width: "7rem",
+      sortable: true,
+      cell: (row) => (
+        <span
+          className={cn(
+            "flex items-center gap-1.5 text-sm tabular-nums",
+            !row.mentioned && "text-muted-foreground"
+          )}
+        >
+          <PromptOutcomeIcon mentioned={row.mentioned} />
+          {promptResultLabel(row)}
+        </span>
+      ),
+      sortValue: (row) =>
+        row.mentioned ? (row.position ?? 0) : Number.MAX_SAFE_INTEGER,
+    },
+  ];
+  if (onWrite) {
+    columns.push({
+      key: "write",
+      header: "",
+      width: "5.5rem",
+      align: "right",
+      cell: (row) =>
+        row.mentioned ? null : (
+          <Button
+            className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+            onClick={() => onWrite(row)}
+            size="sm"
+            variant="ghost"
           >
-            <PromptOutcomeIcon mentioned={row.mentioned} />
-            {promptResultLabel(row)}
-          </span>
+            Write
+          </Button>
         ),
-        sortValue: (row) =>
-          row.mentioned ? (row.position ?? 0) : Number.MAX_SAFE_INTEGER,
-      },
-    ];
-    if (onWrite) {
-      next.push({
-        key: "write",
-        header: "",
-        width: "5.5rem",
-        align: "right",
-        cell: (row) =>
-          row.mentioned ? null : (
-            <Button
-              className="opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-              onClick={() => onWrite(row)}
-              size="sm"
-              variant="ghost"
-            >
-              Write
-            </Button>
-          ),
-      });
-    }
-    return next;
-  }, [hits.length, onWrite]);
+    });
+  }
 
   if (hits.length === 0) {
     return null;
@@ -534,17 +525,16 @@ function EngineFamilySheetSession({
   const selectedRow = selectedPromptId
     ? promptTableRowForId(selectedPromptId, promptResults)
     : null;
-  const promptHits = useMemo(
-    () => engineFamilyPromptHits(family.family, promptResults),
-    [family.family, promptResults]
-  );
-  const brandScope = useMemo<EngineFamilyBrandScope>(
-    () => ({ companyName, aliases, competitors }),
-    [aliases, companyName, competitors]
-  );
-  const brandRows = useMemo(
-    () => engineFamilyBrandRows(family.family, promptResults, brandScope),
-    [brandScope, family.family, promptResults]
+  const promptHits = engineFamilyPromptHits(family.family, promptResults);
+  const brandScope: EngineFamilyBrandScope = {
+    companyName,
+    aliases,
+    competitors,
+  };
+  const brandRows = engineFamilyBrandRows(
+    family.family,
+    promptResults,
+    brandScope
   );
   const missedCount = promptHits.filter((hit) => !hit.mentioned).length;
   const improveInsight = familyImproveInsight({
