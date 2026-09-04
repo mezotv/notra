@@ -29,7 +29,10 @@ export async function POST(request: NextRequest) {
 
   return Effect.runPromise(
     Effect.gen(function* () {
-      const rateLimit = yield* enforceContactMessageRateLimit(request);
+      const rateLimit = yield* enforceContactMessageRateLimit(
+        request,
+        parsed.data.email
+      );
       yield* sendContactMessageEmail(parsed.data);
 
       return NextResponse.json(
