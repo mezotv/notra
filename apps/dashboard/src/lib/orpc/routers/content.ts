@@ -40,6 +40,7 @@ import {
 import {
   DEFAULT_GITHUB_CONTENT_DIRECTORIES,
   DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED,
+  GITHUB_CONTENT_PATH_MAX_LENGTH,
   GITHUB_INSTALLATION_ID_REGEX,
 } from "@/constants/github";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
@@ -892,6 +893,18 @@ export const contentRouter = {
       const directory = outputConfig.success
         ? outputConfig.data.directory
         : DEFAULT_GITHUB_CONTENT_DIRECTORIES[input.contentType];
+      const path = resolveGitHubContentPath({
+        contentId: input.contentId,
+        customPath: input.path,
+        directory,
+        slug: post.slug,
+        title: post.title,
+      });
+      if (path.length > GITHUB_CONTENT_PATH_MAX_LENGTH) {
+        throw badRequest(
+          "The configured directory and content slug exceed GitHub's file path limit"
+        );
+      }
 
       try {
         const result = await publishContentDraftPullRequest(
@@ -902,13 +915,7 @@ export const contentRouter = {
             owner: integration.owner,
             repo: integration.repo,
             defaultBranch: integration.defaultBranch,
-            path: resolveGitHubContentPath({
-              contentId: input.contentId,
-              customPath: input.path,
-              directory,
-              slug: post.slug,
-              title: post.title,
-            }),
+            path,
             title: post.title,
             markdown: post.markdown,
           }

@@ -1596,16 +1596,17 @@ export default function PageClient({
               </div>
               <div className="ml-auto flex shrink-0 items-center gap-2">
                 {(content.contentType === "changelog" ||
-                  content.contentType === "blog_post") && (
-                  <PublishContentToGitHubDialog
-                    contentId={contentId}
-                    contentType={content.contentType}
-                    onSave={handleSave}
-                    organizationId={organizationId}
-                    organizationSlug={organizationSlug}
-                    title={title}
-                  />
-                )}
+                  content.contentType === "blog_post") &&
+                  currentMarkdown.trim() !== "" && (
+                    <PublishContentToGitHubDialog
+                      contentId={contentId}
+                      contentType={content.contentType}
+                      onSave={handleSave}
+                      organizationId={organizationId}
+                      organizationSlug={organizationSlug}
+                      title={title}
+                    />
+                  )}
                 <Tooltip>
                   <TooltipTrigger
                     render={

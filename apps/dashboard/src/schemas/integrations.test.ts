@@ -55,7 +55,7 @@ describe("repositoryContentDirectoryInputSchema", () => {
     );
     assert.equal(
       repositoryContentDirectoryInputSchema.safeParse({
-        contentType: "unsupported",
+        contentType: "twitter_post",
       }).success,
       false
     );

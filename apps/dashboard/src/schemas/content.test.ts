@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
-import { publishContentToGitHubSchema } from "./content";
+import { publishContentToGitHubSchema, updateContentSchema } from "./content";
 
 const repositoryId = "123456";
 
@@ -59,4 +59,12 @@ describe("publishContentToGitHubSchema", () => {
       assert.equal(result.success, false);
     });
   }
+});
+
+describe("updateContentSchema", () => {
+  test("allows Markdown to be cleared", () => {
+    const result = updateContentSchema.parse({ markdown: "" });
+
+    assert.equal(result.markdown, "");
+  });
 });

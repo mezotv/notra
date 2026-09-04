@@ -88,6 +88,7 @@ import { assertOrganizationAccess } from "@/lib/auth/organization";
 import { assertActiveSubscription } from "@/lib/billing/subscription";
 import { toMcpIntegrationAuthKind } from "@/lib/integrations/auth-kind";
 import { clearGitHubPublishFailures } from "@/lib/integrations/github/github-publish-failure-state";
+import { hasGitHubStatus } from "@/lib/integrations/github/publish-content-to-github";
 import {
   clearCachedSlackChannels,
   getCachedSlackChannels,
@@ -866,12 +867,32 @@ export const integrationsRouter = {
           if (!(repository.enabled && repository.integration.enabled)) {
             throw forbidden("This GitHub repository is disabled");
           }
-          const token = await getTokenForIntegrationId(input.repositoryId, {
-            organizationId: input.organizationId,
-          });
+          let token: string | null;
+          try {
+            token = await getTokenForIntegrationId(input.repositoryId, {
+              organizationId: input.organizationId,
+            });
+          } catch (error) {
+            if (
+              hasGitHubStatus(error, 401) ||
+              hasGitHubStatus(error, 404) ||
+              (error instanceof Error &&
+                error.message === "GitHub App installation not found")
+            ) {
+              throw forbidden(
+                "GitHub authentication failed. Reconnect GitHub and try again."
+              );
+            }
+            throw internalServerError(
+              "Failed to authenticate with GitHub",
+              error
+            );
+          }
 
           if (!token) {
-            throw forbidden("GitHub repository access is not configured");
+            throw forbidden(
+              "GitHub authentication failed. Reconnect GitHub and try again."
+            );
           }
 
           try {
