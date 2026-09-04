@@ -118,12 +118,43 @@ export function mergeContentPullRequestBody(
     )}`;
   }
 
-  const legacyManagedContent = buildManagedContent(params);
+  const legacyManagedContents = [buildManagedContent(params)];
+  if (params.contentUrl && params.badgeUrls) {
+    legacyManagedContents.push(
+      buildManagedContent({ ...params, badgeUrls: undefined })
+    );
+  }
+
   const label = params.contentType === "changelog" ? "changelog" : "blog post";
   const legacySummary = `Draft ${label} generated and published with Notra.`;
+
+  for (const legacyManagedContent of legacyManagedContents) {
+    if (legacyManagedContent === legacySummary) {
+      continue;
+    }
+
+    const legacySectionStart = existingBody.indexOf(legacyManagedContent);
+    if (legacySectionStart < 0) {
+      continue;
+    }
+
+    const legacySectionEnd = legacySectionStart + legacyManagedContent.length;
+    const startsAtParagraphBoundary =
+      legacySectionStart === 0 || existingBody[legacySectionStart - 1] === "\n";
+    const endsAtParagraphBoundary =
+      legacySectionEnd === existingBody.length ||
+      existingBody[legacySectionEnd] === "\n";
+
+    if (startsAtParagraphBoundary && endsAtParagraphBoundary) {
+      return `${existingBody.slice(0, legacySectionStart)}${managedBody}${existingBody.slice(
+        legacySectionEnd
+      )}`;
+    }
+  }
+
   if (
-    existingBody.trim() === legacyManagedContent ||
-    existingBody.trim() === legacySummary
+    existingBody.trim() === legacySummary ||
+    legacyManagedContents.includes(existingBody.trim())
   ) {
     return managedBody;
   }
