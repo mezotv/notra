@@ -302,14 +302,26 @@ export function Navbar({ variant }: NavbarProps = {}) {
   const resolvedVariant = variant ?? getNavbarVariantForPath(pathname);
 
   const [isOpen, setIsOpen] = useState(false);
-  const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  const [{ active: activeGroup, previous: previousGroup }, setNavGroup] =
+    useState<{ active: string | null; previous: string | null }>({
+      active: null,
+      previous: null,
+    });
   const [panelSizes, setPanelSizes] = useState<Map<string, PanelSize>>(
     new Map()
   );
   const triggerRefs = useRef(new Map<string, HTMLButtonElement>());
   const measureRefs = useRef(new Map<string, HTMLDivElement>());
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const previousGroupRef = useRef<string | null>(null);
+
+  const setActiveGroup = useCallback((next: string | null) => {
+    setNavGroup((current) => {
+      if (current.active === next) {
+        return current;
+      }
+      return { active: next, previous: current.active };
+    });
+  }, []);
 
   const groups = useMemo<MarketingNavGroup[]>(
     () =>
@@ -355,17 +367,17 @@ export function Navbar({ variant }: NavbarProps = {}) {
     closeTimerRef.current = setTimeout(() => {
       setActiveGroup(null);
     }, HOVER_CLOSE_DELAY);
-  }, [cancelClose]);
+  }, [cancelClose, setActiveGroup]);
 
   const openGroup = useCallback(
     (label: string) => {
       cancelClose();
       setActiveGroup(label);
     },
-    [cancelClose]
+    [cancelClose, setActiveGroup]
   );
 
-  const closePanel = useCallback(() => setActiveGroup(null), []);
+  const closePanel = useCallback(() => setActiveGroup(null), [setActiveGroup]);
 
   useEffect(() => {
     if (isOpen) {
@@ -395,7 +407,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
     }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, []);
+  }, [setActiveGroup]);
 
   useEffect(() => {
     const nodes = measureRefs.current;
@@ -416,20 +428,12 @@ export function Navbar({ variant }: NavbarProps = {}) {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    previousGroupRef.current = activeGroup;
-  }, [activeGroup]);
-
   const activeGroupData = activeGroup
     ? groups.find((group) => group.label === activeGroup)
     : null;
   const activeSize = activeGroup ? panelSizes.get(activeGroup) : undefined;
 
-  const slideDirection = getSlideDirection(
-    groups,
-    activeGroup,
-    previousGroupRef.current
-  );
+  const slideDirection = getSlideDirection(groups, activeGroup, previousGroup);
   const direction = reduceMotion ? 0 : slideDirection;
   const {
     chrome,

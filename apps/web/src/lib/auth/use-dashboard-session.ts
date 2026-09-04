@@ -38,6 +38,10 @@ export function useDashboardSession(): DashboardSessionState {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
         }
+        setState({
+          isAuthenticated: false,
+          isResolved: true,
+        });
       });
 
     return () => controller.abort();
