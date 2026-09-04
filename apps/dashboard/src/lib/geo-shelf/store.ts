@@ -117,6 +117,7 @@ export async function insertGeoShelfSources(
     index += GEO_SHELF_CITATION_INSERT_CHUNK
   ) {
     const chunk = sources.slice(index, index + GEO_SHELF_CITATION_INSERT_CHUNK);
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- sequential chunks bound database concurrency
     await db
       .insert(geoShelfSources)
       .values(chunk.map((source) => toRow(source, key)))
@@ -153,6 +154,7 @@ export async function updateGeoShelfCitations(
   }
   await db.transaction(async (tx) => {
     for (const update of updates) {
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop -- one transaction connection executes queries serially
       await tx
         .update(geoShelfSources)
         .set({

@@ -19,13 +19,12 @@ import {
 } from "@notra/ui/components/ui/select";
 import { useForm, useStore } from "@tanstack/react-form";
 import { useDebouncedValue } from "@tanstack/react-pacer";
-import { Loader2Icon } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 
 import { Button } from "@/components/button";
-import { CompetitorLogo } from "@/components/geo/competitor-logo";
+import { ShelfPresenceFields } from "@/components/geo/shelf/shelf-presence-fields";
 import { ShelfTicketForm } from "@/components/geo/shelf/shelf-ticket-form";
-import { Checkbox } from "@/components/motion/checkbox";
+import { ShelfTitleField } from "@/components/geo/shelf/shelf-title-field";
 import {
   GEO_SHELF_DUPLICATE_URL_MESSAGE,
   GEO_SHELF_PREVIEW_DEBOUNCE_MS,
@@ -290,150 +289,39 @@ export function ShelfAddDialog({
             validators={{ onChange: ({ value }) => validateShelfTitle(value) }}
           >
             {(field) => (
-              <div className="space-y-1.5">
-                <span className="flex items-center justify-between gap-2">
-                  <Label htmlFor={`${id}-title`}>
-                    Title{" "}
-                    <span className="text-muted-foreground font-normal">
-                      (optional)
-                    </span>
-                  </Label>
-                  {isPreviewLoading ? (
-                    <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-                      <Loader2Icon className="size-3 animate-spin" />
-                      Reading page title
-                    </span>
-                  ) : null}
-                  {!isPreviewLoading &&
-                  previewTitle !== null &&
-                  !showPreviewTitle &&
-                  field.state.value.trim() !== previewTitle ? (
-                    <button
-                      className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
-                      onClick={() => field.handleChange(previewTitle)}
-                      type="button"
-                    >
-                      Use page title
-                    </button>
-                  ) : null}
-                </span>
-                <Input
-                  aria-describedby={
-                    field.state.meta.errors.length > 0
-                      ? `${id}-title-error`
-                      : undefined
-                  }
-                  aria-invalid={field.state.meta.errors.length > 0}
-                  id={`${id}-title`}
-                  maxLength={GEO_SHELF_TITLE_MAX_LENGTH}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  placeholder={
-                    previewTitle ??
-                    "We'll read it from the page if you leave this empty"
-                  }
-                  value={showPreviewTitle ? previewTitle : field.state.value}
-                />
-                {field.state.meta.errors.length > 0 ? (
-                  <p
-                    className="text-destructive text-xs"
-                    id={`${id}-title-error`}
-                  >
-                    {String(field.state.meta.errors[0])}
-                  </p>
-                ) : null}
-                {showPreviewTitle ? (
-                  <p className="text-muted-foreground text-xs">
-                    From the page's title tag. Type to override.
-                  </p>
-                ) : null}
-                {previewError ? (
-                  <p className="text-muted-foreground text-xs">
-                    {previewError}
-                  </p>
-                ) : null}
-              </div>
+              <ShelfTitleField
+                errors={field.state.meta.errors}
+                id={`${id}-title`}
+                isPreviewLoading={isPreviewLoading}
+                onBlur={field.handleBlur}
+                onChange={field.handleChange}
+                previewError={previewError}
+                previewTitle={previewTitle}
+                showPreviewTitle={showPreviewTitle}
+                value={field.state.value}
+              />
             )}
           </form.Field>
 
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium">
-              Who is already on it
-            </legend>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <form.Field name="ownPresent">
-                {(field) => (
-                  <div className="hover:bg-muted/40 flex items-center gap-2.5 rounded-lg border px-3 py-2">
-                    <Checkbox
-                      aria-label={`${ownBrandName || "You"} is on this page`}
-                      checked={field.state.value}
-                      id={`${id}-own-present`}
-                      onCheckedChange={(checked) => field.handleChange(checked)}
-                    />
-                    <label
-                      className="min-w-0 flex-1 cursor-pointer truncate text-sm font-medium"
-                      htmlFor={`${id}-own-present`}
-                    >
-                      {ownBrandName || "You"}
-                      <span className="text-muted-foreground ml-1 font-normal">
-                        (You)
-                      </span>
-                    </label>
-                  </div>
-                )}
-              </form.Field>
+          <form.Field name="ownPresent">
+            {(ownPresentField) => (
               <form.Field name="presentCompetitorIds">
-                {(field) => (
-                  <>
-                    {competitors.map((competitor) => {
-                      const checked = field.state.value.includes(competitor.id);
-                      const checkboxId = `${id}-competitor-${competitor.id}`;
-                      return (
-                        <div
-                          className="hover:bg-muted/40 flex items-center gap-2.5 rounded-lg border px-3 py-2"
-                          key={competitor.id}
-                        >
-                          <Checkbox
-                            aria-label={`${competitor.name} is on this page`}
-                            checked={checked}
-                            id={checkboxId}
-                            onCheckedChange={(next) =>
-                              field.handleChange(
-                                next
-                                  ? [...field.state.value, competitor.id]
-                                  : field.state.value.filter(
-                                      (value) => value !== competitor.id
-                                    )
-                              )
-                            }
-                          />
-                          <label
-                            className="flex min-w-0 flex-1 cursor-pointer items-center gap-2.5"
-                            htmlFor={checkboxId}
-                          >
-                            <CompetitorLogo
-                              className="size-5 shrink-0 rounded-md"
-                              domain={competitor.domain}
-                              name={competitor.name}
-                            />
-                            <span className="truncate text-sm font-medium">
-                              {competitor.name}
-                            </span>
-                          </label>
-                        </div>
-                      );
-                    })}
-                  </>
+                {(competitorIdsField) => (
+                  <ShelfPresenceFields
+                    competitors={competitors}
+                    id={id}
+                    onOwnPresentChange={ownPresentField.handleChange}
+                    onPresentCompetitorIdsChange={
+                      competitorIdsField.handleChange
+                    }
+                    ownBrandName={ownBrandName}
+                    ownPresent={ownPresentField.state.value}
+                    presentCompetitorIds={competitorIdsField.state.value}
+                  />
                 )}
               </form.Field>
-            </div>
-            {competitors.length === 0 ? (
-              <p className="text-muted-foreground text-xs">
-                Add competitors in GEO settings to track who else is on this
-                page.
-              </p>
-            ) : null}
-          </fieldset>
+            )}
+          </form.Field>
 
           <div className="space-y-2">
             <p className="text-sm font-medium">Ticket</p>

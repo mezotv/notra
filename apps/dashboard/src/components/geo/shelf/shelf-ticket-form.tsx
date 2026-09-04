@@ -1,13 +1,6 @@
 "use client";
 
-import { Calendar03Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import { Label } from "@notra/ui/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@notra/ui/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -18,8 +11,7 @@ import {
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useId } from "react";
 
-import { Button } from "@/components/button";
-import { Calendar } from "@/components/calendar";
+import { ShelfDueDateField } from "@/components/geo/shelf/shelf-due-date-field";
 import { ShelfMemberSelect } from "@/components/geo/shelf/shelf-member-select";
 import { ShelfTicketBadge } from "@/components/geo/shelf/shelf-ticket-badge";
 import {
@@ -34,7 +26,6 @@ import type {
   GeoShelfPriority,
   GeoShelfTicketFormProps,
 } from "@/types/geo-shelf";
-import { formatShelfDueDate, shelfDueDateToIso } from "@/utils/geo-shelf";
 
 function toStatus(value: string): GeoShelfOpportunityStatus {
   return (
@@ -145,60 +136,12 @@ export function ShelfTicketForm({
           value={pocMemberId}
         />
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={`${id}-due`}>Due</Label>
-        <Popover>
-          <PopoverTrigger
-            render={
-              <Button
-                className="w-full justify-start gap-2 font-normal"
-                disabled={disabled}
-                id={`${id}-due`}
-                variant="outline"
-              />
-            }
-          >
-            <HugeiconsIcon
-              className="text-muted-foreground size-4"
-              icon={Calendar03Icon}
-            />
-            {dueAt ? (
-              formatShelfDueDate(dueAt)
-            ) : (
-              <span className="text-muted-foreground">Pick a date</span>
-            )}
-          </PopoverTrigger>
-          <PopoverContent align="start" className="w-auto overflow-hidden p-0">
-            <Calendar
-              defaultMonth={dueAt ? new Date(dueAt) : undefined}
-              disabled={disabled ? () => true : undefined}
-              mode="single"
-              onSelect={(date) => {
-                if (!disabled) {
-                  onChange({ dueAt: date ? shelfDueDateToIso(date) : null });
-                }
-              }}
-              selected={dueAt ? new Date(dueAt) : undefined}
-            />
-            {dueAt ? (
-              <div className="flex justify-end border-t p-2">
-                <Button
-                  disabled={disabled}
-                  onClick={() => {
-                    if (!disabled) {
-                      onChange({ dueAt: null });
-                    }
-                  }}
-                  size="sm"
-                  variant="ghost"
-                >
-                  Clear due date
-                </Button>
-              </div>
-            ) : null}
-          </PopoverContent>
-        </Popover>
-      </div>
+      <ShelfDueDateField
+        disabled={disabled}
+        dueAt={dueAt}
+        id={`${id}-due`}
+        onChange={(nextDueAt) => onChange({ dueAt: nextDueAt })}
+      />
       <div className="space-y-1.5 sm:col-span-2">
         <Label htmlFor={`${id}-notes`}>Notes</Label>
         <Textarea

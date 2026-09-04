@@ -3,22 +3,19 @@
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
-import { ButtonGroup } from "@notra/ui/components/ui/button-group";
 import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
-import { Columns3Icon, Table2Icon } from "lucide-react";
 import Link from "next/link";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { ShelfAddDialog } from "@/components/geo/shelf/shelf-add-dialog";
-import { ShelfBoard } from "@/components/geo/shelf/shelf-board";
 import { ShelfDetailDialog } from "@/components/geo/shelf/shelf-detail-dialog";
-import { ShelfTable } from "@/components/geo/shelf/shelf-table";
-import { ShelfToolbar } from "@/components/geo/shelf/shelf-toolbar";
+import { ShelfPageControls } from "@/components/geo/shelf/shelf-page-controls";
+import { ShelfView } from "@/components/geo/shelf/shelf-view";
 import { PageContainer } from "@/components/layout/container";
 import {
   GeoProjectProvider,
@@ -34,9 +31,7 @@ import {
   GEO_SHELF_ADD_LABEL,
   GEO_SHELF_SHELF_FILTERS,
   GEO_SHELF_TICKET_FILTERS,
-  GEO_SHELF_VIEWS,
 } from "@/constants/geo-shelf";
-import { localStorageKeys } from "@/constants/storage";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoSettings } from "@/lib/hooks/use-geo";
 import { useGeoActiveProject } from "@/lib/hooks/use-geo-active-project";
@@ -55,12 +50,20 @@ import {
   filterShelfRows,
   toShelfRows,
 } from "@/utils/geo-shelf";
+import {
+  getGeoShelfView,
+  getServerGeoShelfView,
+  subscribeGeoShelfView,
+} from "@/utils/geo-shelf-view";
 
 import { GeoShelfSkeleton } from "./skeleton";
 
 const PAGE_TITLE = "Shelf Space";
 const PAGE_DESCRIPTION =
   "Third-party pages AI engines cite for your prompts, and whether you're on them";
+const emptySubscribe = () => () => undefined;
+const getClientSnapshot = () => true;
+const getServerSnapshot = () => false;
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
   const [projectParam] = useGeoProjectQueryState();
@@ -105,34 +108,18 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
       .withDefault("any")
       .withOptions({ clearOnDefault: true })
   );
-  const [view, setView] = useState<GeoShelfView>("table");
+  const view = useSyncExternalStore(
+    subscribeGeoShelfView,
+    getGeoShelfView,
+    getServerGeoShelfView
+  );
+  const isViewHydrated = useSyncExternalStore(
+    emptySubscribe,
+    getClientSnapshot,
+    getServerSnapshot
+  );
   const [addOpen, setAddOpen] = useState(false);
   const [selected, setSelected] = useState<GeoShelfSelection | null>(null);
-
-  useEffect(() => {
-    try {
-      const storedView = window.localStorage.getItem(
-        localStorageKeys.geoShelfView
-      );
-      const validView = GEO_SHELF_VIEWS.find(
-        (candidate) => candidate === storedView
-      );
-      if (validView) {
-        setView(validView);
-      }
-    } catch {
-      // Storage can be unavailable in restricted browser contexts.
-    }
-  }, []);
-
-  const selectView = (nextView: GeoShelfView) => {
-    setView(nextView);
-    try {
-      window.localStorage.setItem(localStorageKeys.geoShelfView, nextView);
-    } catch {
-      // Keep the in-memory selection when persistence is unavailable.
-    }
-  };
 
   useHotkey(GEO_SHELF_ADD_HOTKEY, () => setAddOpen(true), {
     enabled: !addOpen && selected === null,
@@ -145,7 +132,7 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
   const viewedRef = useRef(false);
 
   useEffect(() => {
-    if (viewedRef.current || isSettingsPending) {
+    if (viewedRef.current || isSettingsPending || !isViewHydrated) {
       return;
     }
     viewedRef.current = true;
@@ -155,9 +142,16 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
       shelf_count: shelfCount,
       is_sample_data: isSampleData,
     });
-  }, [isSettingsPending, hasSettings, shelfCount, isSampleData, view]);
+  }, [
+    isSettingsPending,
+    isViewHydrated,
+    hasSettings,
+    shelfCount,
+    isSampleData,
+    view,
+  ]);
 
-  if (isSettingsPending) {
+  if (isSettingsPending || !isViewHydrated) {
     return <GeoShelfSkeleton />;
   }
 
@@ -217,25 +211,6 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
     null;
   const openRow = (row: (typeof rows)[number]) =>
     setSelected({ id: row.id, url: row.url });
-  const shelfContent =
-    view === "board" && rows.length > 0 ? (
-      <ShelfBoard
-        currentMemberId={currentMemberId}
-        onRowClick={openRow}
-        onUpdateOpportunity={shelf.updateOpportunity}
-        pendingSourceIds={shelf.pendingSourceIds}
-        rows={filteredRows}
-      />
-    ) : (
-      <ShelfTable
-        hasScanData={shelf.sources.some((source) => source.origin === "scan")}
-        onAddShelf={() => setAddOpen(true)}
-        onRowClick={openRow}
-        pendingSourceIds={shelf.pendingSourceIds}
-        rows={filteredRows}
-        totalCount={rows.length}
-      />
-    );
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -255,37 +230,27 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
         </header>
 
         <div className="space-y-3">
-          {rows.length > 0 ? (
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <ShelfToolbar
-                filters={filters}
-                onSearchChange={setSearch}
-                onShelfFilterChange={setShelfFilter}
-                onTicketFilterChange={setTicketFilter}
-              />
-              <ButtonGroup aria-label="Shelf view">
-                <Button
-                  aria-label="Table view"
-                  aria-pressed={view === "table"}
-                  onClick={() => selectView("table")}
-                  size="icon"
-                  variant={view === "table" ? "secondary" : "outline"}
-                >
-                  <Table2Icon />
-                </Button>
-                <Button
-                  aria-label="Board view"
-                  aria-pressed={view === "board"}
-                  onClick={() => selectView("board")}
-                  size="icon"
-                  variant={view === "board" ? "secondary" : "outline"}
-                >
-                  <Columns3Icon />
-                </Button>
-              </ButtonGroup>
-            </div>
-          ) : null}
-          {shelfContent}
+          <ShelfPageControls
+            filters={filters}
+            hasRows={rows.length > 0}
+            onSearchChange={setSearch}
+            onShelfFilterChange={setShelfFilter}
+            onTicketFilterChange={setTicketFilter}
+            view={view}
+          />
+          <ShelfView
+            currentMemberId={currentMemberId}
+            hasScanData={shelf.sources.some(
+              (source) => source.origin === "scan"
+            )}
+            onAddShelf={() => setAddOpen(true)}
+            onRowClick={openRow}
+            onUpdateOpportunity={shelf.updateOpportunity}
+            pendingSourceIds={shelf.pendingSourceIds}
+            rows={filteredRows}
+            totalCount={rows.length}
+            view={view}
+          />
         </div>
       </div>
 

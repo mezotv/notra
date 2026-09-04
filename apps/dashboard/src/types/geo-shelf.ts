@@ -182,6 +182,11 @@ export interface GeoShelfToolbarProps {
   onTicketFilterChange: (value: GeoShelfTicketFilter) => void;
 }
 
+export interface GeoShelfPageControlsProps extends GeoShelfToolbarProps {
+  hasRows: boolean;
+  view: GeoShelfView;
+}
+
 export interface GeoShelfTableProps {
   rows: GeoShelfRow[];
   totalCount: number;
@@ -202,6 +207,18 @@ export interface GeoShelfBoardProps {
   rows: GeoShelfRow[];
   currentMemberId: string | null;
   pendingSourceIds: ReadonlySet<string>;
+  onRowClick: (row: GeoShelfRow) => void;
+  onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
+}
+
+export interface GeoShelfViewProps {
+  view: GeoShelfView;
+  rows: GeoShelfRow[];
+  totalCount: number;
+  currentMemberId: string | null;
+  pendingSourceIds: ReadonlySet<string>;
+  hasScanData: boolean;
+  onAddShelf: () => void;
   onRowClick: (row: GeoShelfRow) => void;
   onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
 }
@@ -260,6 +277,35 @@ export interface GeoShelfTicketFormProps {
   currentMemberId: string | null;
   onChange: (changes: Partial<GeoShelfOpportunityWrite>) => void;
   disabled: boolean;
+}
+
+export interface GeoShelfDueDateFieldProps {
+  id: string;
+  dueAt: string | null;
+  disabled: boolean;
+  onChange: (dueAt: string | null) => void;
+}
+
+export interface GeoShelfPresenceFieldsProps {
+  id: string;
+  ownBrandName: string;
+  competitors: GeoCompetitor[];
+  ownPresent: boolean;
+  presentCompetitorIds: string[];
+  onOwnPresentChange: (checked: boolean) => void;
+  onPresentCompetitorIdsChange: (competitorIds: string[]) => void;
+}
+
+export interface GeoShelfTitleFieldProps {
+  id: string;
+  value: string;
+  errors: readonly unknown[];
+  previewTitle: string | null;
+  previewError: string | null;
+  isPreviewLoading: boolean;
+  showPreviewTitle: boolean;
+  onBlur: () => void;
+  onChange: (value: string) => void;
 }
 
 export interface GeoShelfAddDialogProps {

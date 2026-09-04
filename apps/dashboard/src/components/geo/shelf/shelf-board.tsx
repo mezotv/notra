@@ -8,7 +8,7 @@ import {
   KanbanProvider,
   type KanbanDragEndEvent,
 } from "@notra/ui/components/kibo-ui/kanban";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { ShelfPlacementBadge } from "@/components/geo/shelf/shelf-placement-badge";
 import { ShelfTicketBadge } from "@/components/geo/shelf/shelf-ticket-badge";
@@ -28,29 +28,14 @@ export function ShelfBoard({
   onRowClick,
   onUpdateOpportunity,
 }: GeoShelfBoardProps) {
-  const [items, setItems] = useState<GeoShelfBoardItem[]>(() =>
-    rows.map((source) => ({
-      id: source.id,
-      name: source.title ?? source.domain,
-      column: source.opportunity?.status ?? "untracked",
-      source,
-    }))
-  );
-  const [isDragging, setIsDragging] = useState(false);
-
-  useEffect(() => {
-    if (isDragging) {
-      return;
-    }
-    setItems(
-      rows.map((source) => ({
-        id: source.id,
-        name: source.title ?? source.domain,
-        column: source.opportunity?.status ?? "untracked",
-        source,
-      }))
-    );
-  }, [isDragging, rows]);
+  const rowItems: GeoShelfBoardItem[] = rows.map((source) => ({
+    id: source.id,
+    name: source.title ?? source.domain,
+    column: source.opportunity?.status ?? "untracked",
+    source,
+  }));
+  const [dragItems, setDragItems] = useState<GeoShelfBoardItem[] | null>(null);
+  const items = dragItems ?? rowItems;
 
   if (rows.length === 0) {
     return (
@@ -61,7 +46,7 @@ export function ShelfBoard({
   }
 
   const handleDragEnd = (event: KanbanDragEndEvent) => {
-    setIsDragging(false);
+    setDragItems(null);
     const target = event.targetColumnId as GeoShelfBoardColumnId | null;
     if (!target || target === "untracked") {
       return;
@@ -85,10 +70,10 @@ export function ShelfBoard({
         columns={BOARD_COLUMNS}
         data={items}
         dropDisabledColumnIds={["untracked"]}
-        onDataChange={setItems}
-        onDragCancel={() => setIsDragging(false)}
+        onDataChange={setDragItems}
+        onDragCancel={() => setDragItems(null)}
         onDragEnd={handleDragEnd}
-        onDragStart={() => setIsDragging(true)}
+        onDragStart={() => setDragItems(rowItems)}
       >
         {(column) => {
           const count = items.filter(

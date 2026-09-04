@@ -257,6 +257,7 @@ export const KanbanCard = <T extends KanbanItemProps = KanbanItemProps>({
 
   return (
     <>
+      {/* react-doctor-disable-next-line react-doctor/no-static-element-interactions -- dnd-kit attributes provide button semantics */}
       <div
         className={cn(
           // `touch-manipulation` rather than `touch-none`: the touch sensor
