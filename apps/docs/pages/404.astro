@@ -1,0 +1,43 @@
+---
+import PageLayout from "blume/components/layout/PageLayout.astro";
+import data from "blume:data";
+
+export const prerender = true;
+---
+
+<PageLayout
+  site={{ title: data.config.title, description: data.config.description }}
+  logo={data.config.logo}
+  favicon={data.config.favicon}
+  appleIcon={data.config.appleIcon}
+  banner={data.config.banner}
+  analytics={data.config.analytics}
+  navigation={data.navigation}
+  page={{
+    title: "This page is on a content pipeline of its own",
+    route: "/404",
+  }}
+  themeMode={data.config.theme.mode}
+  fontCssVars={data.fontCssVars}
+  searchEnabled={data.config.search.enabled}
+  ui={data.ui}
+  noindex={true}
+>
+  <div
+    class="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center gap-4 px-6 py-24 text-center"
+  >
+    <p class="font-bold text-6xl text-muted-foreground">404</p>
+    <h1 class="font-semibold text-2xl text-foreground">
+      This page is on a content pipeline of its own
+    </h1>
+    <p class="text-muted-foreground">
+      Looks like this page hasn't shipped yet. Try the <a
+        class="text-accent underline underline-offset-4"
+        href="/quickstart">quickstart</a
+      > or head back to the <a
+        class="text-accent underline underline-offset-4"
+        href="/overview">overview</a
+      >.
+    </p>
+  </div>
+</PageLayout>

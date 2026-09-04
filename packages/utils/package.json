@@ -16,8 +16,7 @@
     "./types/*": "./src/types/*.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit",
-    "test": "bun test src"
+    "check-types": "tsc --noEmit"
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",

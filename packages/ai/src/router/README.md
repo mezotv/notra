@@ -100,6 +100,3 @@ Anthropic thinking / OpenAI reasoning settings are mapped to
 imports; everything is injected through `createModelRouter(config)`. The
 Notra-specific glue (fixed policy, Autumn plan lookup, evlog logger, singleton)
 lives in `packages/ai/src/constants/router.ts` and `packages/ai/src/gateway.ts`.
-
-Live smoke test: `bun packages/ai/evals/router/live-check.ts` (uses the keys
-from `.env`, fake plan resolver).

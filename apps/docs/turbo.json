@@ -1,0 +1,13 @@
+{
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "outputs": ["dist/**", ".vercel/output/**"]
+    },
+    "validate": {},
+    "preview": {
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

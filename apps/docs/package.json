@@ -1,12 +1,30 @@
 {
   "name": "docs",
+  "private": true,
   "type": "module",
   "scripts": {
-    "dev": "mint dev --port 3005 --no-open",
-    "open": "mint dev --port 3005",
-    "openapi:check": "mint openapi-check https://api.usenotra.com/openapi.json"
+    "build": "blume build --strict",
+    "check-types": "blume check --strict",
+    "dev": "blume dev --port 3005",
+    "open": "blume dev --port 3005 --open",
+    "preview": "blume build --adapter node --strict && blume preview --port 3005",
+    "validate": "blume validate --strict",
+    "openapi:check": "blume validate --strict",
+    "openapi:sync": "bun run scripts/sync-openapi.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.29.0",
+    "@orama/orama": "3.1.18",
+    "@oslojs/encoding": "1.1.0",
+    "ai": "7.0.42",
+    "html-escaper": "3.0.3",
+    "sharp": "0.35.3",
+    "ufo": "1.6.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "mint": "4.2.676"
+    "@types/bun": "^1.3.13",
+    "astro": "^7.1.0",
+    "blume": "1.5.3"
   }
 }

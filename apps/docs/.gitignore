@@ -1,0 +1,6 @@
+.blume/
+.blume-verify/
+dist/
+node_modules/
+*.tsbuildinfo
+.vercel/

@@ -22,7 +22,7 @@ Notra is a Bun + Turborepo monorepo.
 |- apps/
 |  |- api/         # Hono API (Cloudflare Worker)
 |  |- dashboard/   # Main Notra product app (Next.js)
-|  |- docs/        # Product docs (Mintlify)
+|  |- docs/        # Product docs (Blume)
 |  |- web/         # Public marketing site (Next.js)
 |- packages/
 |  |- db/                  # Shared Drizzle schema and DB helpers

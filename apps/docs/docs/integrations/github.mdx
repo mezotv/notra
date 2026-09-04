@@ -1,0 +1,162 @@
+---
+title: "GitHub Integration"
+description: "Install the Notra GitHub App, pick repositories, and generate content from commits, merged pull requests, and releases"
+authors:
+  - name: Dominik
+    handle: dominik
+
+docolin:
+  schema_version: 1
+  kind: tools/notra/integrations/github
+  type: how-to
+  applies_to:
+    - notra
+    - github-account
+  language: en
+  difficulty: beginner
+  time_estimate: 10m
+  status: stable
+  aliases:
+    - GitHub integration
+    - GitHub App
+    - connect repository
+    - GitHub webhook setup
+    - personal access token
+  prev: ./overview.mdx
+  next: ./linear.mdx
+---
+
+The GitHub integration reads activity from your repositories so Notra can generate changelogs, blog posts, and social posts. Since August 2026 the primary way to connect is the **Notra GitHub App**. The older personal access token flow still works and is labelled **Legacy** in the dashboard.
+
+## What Notra accesses
+
+The GitHub App asks for:
+
+* Read access to repository metadata, branches, and releases
+* Webhook events for the repositories you choose
+* Access only to the repositories you grant during installation
+
+From that access Notra reads commits on the branch you track, merged pull requests, and published releases.
+
+<Callout type="warning">
+  Notra never writes to your repositories. It does not open issues or pull requests, push commits, or change settings.
+</Callout>
+
+## Install the GitHub App
+
+<Steps>
+  <Step title="Open the GitHub page">
+    In the dashboard sidebar, click **Integrations**, then the **GitHub** card. Click **Connect GitHub** (or press `C`).
+  </Step>
+
+  <Step title="Install on GitHub">
+    The dialog explains the permissions above. Click **Install on GitHub**. You are sent to GitHub to choose a personal account or organization and to select **All repositories** or specific repositories. You can change this selection later from GitHub.
+
+    <Callout type="note">
+      If your Notra login is not yet linked to a GitHub account, Notra first sends you through GitHub sign-in, then continues to the App installation. You must be an admin of the GitHub account that owns the installation.
+    </Callout>
+  </Step>
+
+  <Step title="Pick repositories in Notra">
+    Back in Notra, the **Select repositories** dialog opens automatically. It lists the repositories the installation can see, grouped by GitHub account. Tick the ones Notra should track and click save. Each selected repository becomes its own integration with changelog, blog post, and X post outputs enabled by default.
+  </Step>
+
+  <Step title="Add more accounts or repositories">
+    Connected accounts appear as cards on the GitHub page. Use **Add repositories** on the page header or on an account card to change the selection, or start another installation to add a second GitHub account or organization.
+  </Step>
+</Steps>
+
+## Set up a webhook (optional)
+
+Webhooks let event triggers react to activity in real time. Notra generates a secret per repository, but you register the webhook on GitHub yourself:
+
+1. Open the repository's page in Notra (click it from the GitHub page). The **Webhook** section shows the **Payload URL** and a **Secret**. Click the copy buttons.
+2. Open **Settings**, then **Webhooks**, in the repository on GitHub and click **Add webhook**.
+3. Paste the Payload URL, set **Content type** to `application/json`, and paste the secret.
+4. Choose **Let me select individual events** and tick **Pushes**, **Releases**, and **Pull requests**.
+5. Save. GitHub sends a `ping` event, which Notra answers with `Pong! Webhook configured successfully`.
+
+The Payload URL has the form `https://app.usenotra.com/api/webhooks/github/{organizationId}/{integrationId}/{repositoryId}`. Notra verifies every delivery with the `X-Hub-Signature-256` header. You can regenerate the secret from the same section; update GitHub afterwards.
+
+<Callout type="note">
+  Without a webhook you can still generate content manually or on a schedule. Webhooks are only needed for [event-based automation](/automation/event-based).
+</Callout>
+
+### Webhook events Notra processes
+
+| GitHub event   | What Notra does                                                                  |
+| -------------- | -------------------------------------------------------------------------------- |
+| `push`         | Records commits pushed to the repository's default branch on GitHub. Pushes to other branches are ignored. |
+| `release`      | Records published releases and their notes.                                      |
+| `pull_request` | Records pull requests when they are **closed and merged**. Other actions are ignored. |
+| anything else  | Logged as ignored and answered with `200`.                                       |
+
+Every delivery is written to the organization's webhook log (**Settings**, then **Logs**). See [Webhooks Overview](/api/webhooks/overview) for response shapes.
+
+## Legacy: personal access token
+
+If you cannot install the GitHub App, click **Use the legacy flow** at the bottom of the GitHub page.
+
+1. Enter the repository as `https://github.com/owner/repo`, `git@github.com:owner/repo.git`, or `owner/repo`. Notra detects the default branch; you can change it.
+2. Public repositories work without a token. For private repositories, expand **Personal Access Token** and paste a classic token with the `repo` scope, or a fine-grained token with read access to the repository. Accepted prefixes are `ghp_`, `github_pat_`, `gho_`, `ghu_`, `ghs_`, and `ghr_`.
+3. Save. Notra opens the **Setup Webhook** dialog with the Payload URL and secret described above.
+
+Legacy integrations are listed under **Personal access token (Legacy)** on the GitHub page. You can update the token from the legacy integration's card if it expires.
+
+The same flow is available from the API with `POST /v1/integrations/github`, which accepts `owner`, `repo`, an optional `branch`, and an optional `token`. The GitHub App flow is dashboard-only.
+
+## Managing a repository
+
+Open a repository from the GitHub page to:
+
+* **Edit**: change the display name, owner, repository, or default branch, and enable or disable the integration. A disabled integration generates no outputs and rejects webhook deliveries with `403`.
+* **Schedules** and **Events**: see and create the [schedules](/automation/scheduled) and [event triggers](/automation/event-based) that use this repository.
+* **Webhook**: copy the Payload URL, reveal or regenerate the secret, and jump to GitHub's webhook settings.
+
+To remove a GitHub account, click **Disconnect** on its card. This disables the installation and every repository that belongs to it in Notra. Uninstall the app from GitHub as well to revoke access there.
+
+<Callout type="warning">
+  Removing a repository or disconnecting an account stops every schedule and event trigger attached to those repositories.
+</Callout>
+
+## Troubleshooting
+
+| Message in Notra                                                            | What it means                                                                       |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| The GitHub installation was cancelled.                                      | You left the GitHub install screen. Start again from **Connect GitHub**.            |
+| The GitHub installation link expired.                                       | Install links are valid for 30 minutes. Start again.                                |
+| You need to be an admin of the GitHub account that owns this installation.  | Ask an owner of the GitHub organization to run the installation, or make you admin. |
+| GitHub needs to be reconnected to authorize organization access.            | Notra re-runs GitHub sign-in to read organization membership, then finishes the install. |
+| Too many GitHub connection attempts.                                        | Wait a moment and try again.                                                        |
+
+**Webhook not firing**: check **Recent Deliveries** on the GitHub webhook. A `401` means the secret does not match; copy it again from Notra. A `403` means the integration is disabled in Notra. A `404` means the repository was removed from Notra.
+
+**No content generated**: confirm there was activity on the tracked branch in the lookback window, and that the schedule or trigger includes this repository.
+
+## Best practices
+
+<Steps>
+  <Step title="Use descriptive PR titles">
+    Notra reads pull request titles and descriptions. "Add dark mode to the dashboard" produces better content than "fix stuff".
+  </Step>
+
+  <Step title="Write release notes">
+    Release bodies are used as source material for changelogs and announcements.
+  </Step>
+
+  <Step title="Ship from the default branch">
+    Webhook pushes are only recorded on the repository's default branch on GitHub. The branch you set in Notra controls which branch activity is read from when content is generated.
+  </Step>
+</Steps>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Set up automation" icon="wand-sparkles" href="/automation/overview">
+    Schedules and event triggers for GitHub activity
+  </Card>
+
+  <Card title="Webhooks overview" icon="webhook" href="/api/webhooks/overview">
+    Request verification, responses, and logs
+  </Card>
+</CardGroup>

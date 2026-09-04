@@ -1,0 +1,254 @@
+---
+title: "Content Pipeline"
+description: "Explore the Studio pipeline that turns engineering and product activity into publish-ready drafts, and how GEO Write feeds the same pipeline from content gaps."
+authors:
+  - name: Dominik
+    handle: dominik
+
+docolin:
+  schema_version: 1
+  kind: tools/notra/concepts/content-pipeline
+  type: explanation
+  applies_to:
+    - notra
+  language: en
+  difficulty: intermediate
+  time_estimate: 12m
+  status: stable
+  aliases:
+    - content pipeline
+    - five-step pipeline
+    - ingest analyze generate
+    - GEO Write pipeline
+  prev: ./how-it-works.mdx
+  next: ./brand-voice.mdx
+---
+
+The content pipeline is the Studio side of Notra: it converts activity from your connected tools into changelogs, blog posts, social posts and images. GEO Write reuses the last stages of the same pipeline to turn a content gap into an article. Understanding the stages helps you configure runs and troubleshoot when a draft does not match expectations.
+
+## The Five-Step Pipeline
+
+Every generated post flows through these stages:
+
+### 1. Ingest Activity
+
+A run starts with a source and a window.
+
+**Where activity comes from:**
+
+* **GitHub**: pull requests, commits and releases from repositories granted to the Notra GitHub App
+* **Linear**: issues and updates from connected workspaces
+* **Granola**: meeting notes, transcripts and AI summaries
+
+**What starts a run:**
+
+* The **Create Content** wizard, where you pick formats, a timeframe, and the pull requests, commits, releases or issues to include
+* A **schedule** with a lookback window of Current day, Yesterday, Last 7 days, Last 14 days or Last 30 days
+* A **GitHub webhook event**: a published release (pre-releases optional) or a push
+* **Iris**, which watches merged pull requests, pushes and releases and plans its own runs
+
+<Callout type="info">
+  Notra only reads repositories, workspaces and channels you have explicitly connected. Each run lists its source targets, and the agent can only query those.
+</Callout>
+
+### 2. Analyze Context
+
+The generation agent gathers what it needs with a small set of tools and decides what is worth telling your audience.
+
+**GitHub tools available to the agent:**
+
+* `getCommitsByTimeframe`: commit history for a repository over the exact lookback range, with pagination
+* `getPullRequests`: PR titles, descriptions, authors and merge status
+* `getReleaseByTag`: release notes, tag and assets
+
+**Skill tools:**
+
+* `listAvailableSkills` and `getSkillByName`: load writing skills from the Skills page, including the built-in human-writer skill that polishes the final text
+
+For a 7-day changelog the agent typically calls `getCommitsByTimeframe` for every source repository, then `getPullRequests` for the PRs those commits reference, and builds a candidate list from the result.
+
+**Filtering:**
+
+<Steps>
+  <Step title="Audience relevance">
+    Every candidate is checked against the audience in your brand identity. Internal-only work is dropped: small refactors, formatting and lint changes, dependency churn, test-only updates and routine infra chores.
+  </Step>
+
+  <Step title="Meaningful fixes stay">
+    Bug fixes stay when they clearly improve user experience, reliability, security, performance, compatibility or developer workflows.
+  </Step>
+
+  <Step title="Category priority">
+    When a change fits several categories, it is filed under the first match in this order: Security, Bug Fixes, Features and Enhancements, Performance Improvements, Infrastructure, Internal Changes, Testing, Documentation.
+  </Step>
+
+  <Step title="Skip when empty">
+    If every candidate is filtered out, the agent calls the skip tool and no post is created. Filler is never published.
+  </Step>
+</Steps>
+
+<Callout type="tip">
+  The audience field steers this stage. A developer-oriented audience ("developers", "engineers", "technical teams") gets verified PR links on every referenced change; any other audience gets none.
+</Callout>
+
+### 3. Generate Drafts
+
+With context in hand, the agent writes the draft for each requested format.
+
+**Formats:**
+
+* **Changelog entry**: release notes with a summary, Highlights and categorized More Updates
+* **Blog post**: long-form announcements and stories
+* **LinkedIn post**: a professional update
+* **Tweet**: a short post for X
+* **Image**: a generated visual to accompany a post
+
+**Changelog structure:**
+
+```markdown
+# [Title]
+
+[Summary paragraph, 120-180 words]
+
+## Highlights
+
+### [Feature name]
+[Why it matters]
+
+## More Updates
+
+### Security
+- **[Change title]** [#131](https://github.com/org/repo/pull/131) - Description (Author: [@lee](https://github.com/lee/))
+
+### Bug Fixes
+- **[Change title]** [#140](https://github.com/org/repo/pull/140) - Description (Author: [@sam](https://github.com/sam/))
+```
+
+Highlights holds up to five changes with clear user, customer, reliability, security or performance impact. Every change that passed filtering appears exactly once, either in Highlights or in More Updates. Author attribution is kept for both developer and non-developer audiences; PR links only for developers.
+
+<Callout type="note">
+  Each format has its own prompt template per tone, so the same activity produces a different changelog, blog post and tweet rather than one text reformatted three times.
+</Callout>
+
+### 4. Apply Brand Voice
+
+The selected brand identity is injected into every generation prompt.
+
+**What brand voice controls:**
+
+* **Company name and description**: who is publishing and what you build
+* **Tone profile**: Conversational, Professional, Casual or Formal, plus custom tone notes
+* **Language**: the language the final text is written in
+* **Audience**: who you are writing for, which also drives PR links and detail level
+* **Custom instructions**: rules like "avoid jargon" or "always mention pricing"
+
+**How it reaches the model:**
+
+```xml
+<company>Acme Corp - Building developer tools for modern web apps</company>
+<target-audience>Software developers and engineering teams</target-audience>
+<language>English</language>
+<custom-instructions>
+- Keep technical accuracy while being approachable
+- Emphasize security and performance improvements
+</custom-instructions>
+```
+
+The company block is the publishing identity. Source repositories are treated as evidence only, so content about an upstream or open source repository is still written as your contribution, not as ownership of the whole project.
+
+**Tone profile impact:**
+
+| Profile            | Style                                 | Example                                                            |
+| ------------------ | ------------------------------------- | ------------------------------------------------------------------ |
+| **Conversational** | Warm, authentic, founder-to-community | "We've shipped some great improvements this week..."               |
+| **Professional**   | Clear, confident, corporate           | "This release includes several significant enhancements..."        |
+| **Casual**         | Friendly, relaxed, informal           | "Hey folks! Check out what we built this week"                     |
+| **Formal**         | Precise, traditional, structured      | "The engineering team has completed the following deliverables..." |
+
+<Callout type="info">
+  Brand identity changes apply to future runs. Existing drafts are not modified.
+</Callout>
+
+### 5. Publish-Ready Output
+
+The final stage stores the draft and hands it to you.
+
+**What happens at this stage:**
+
+* The post is saved as a **Draft** with its format, source targets and window
+* It appears in **Content**, grouped with the other outputs of the same run into a collection
+* Schedules and triggers with **auto-publish** enabled mark it Published immediately instead
+
+**In the editor:**
+
+* Edit the text directly, or use the chat panel to rewrite sections
+* Switch between Draft and Published
+* Post tweets and LinkedIn posts to connected X and LinkedIn accounts
+* Send published content to Framer if the integration is connected
+
+<Callout type="tip">
+  Leave auto-publish off until you have reviewed a few runs. Draft is the default for every path into the pipeline.
+</Callout>
+
+## GEO Write
+
+Write is the GEO entry point into the same pipeline. Instead of activity, it starts from a target: a prompt where competitors are mentioned and you are not, a comparison against specific competitors, or a custom topic.
+
+<Steps>
+  <Step title="Plan a brief">
+    The planner produces a brief with a working title, the search intent behind the prompt, the audience, the job to be done, section headings, internal links from your sitemap, and an acceptance checklist.
+  </Step>
+
+  <Step title="Approve">
+    The brief sits in **Draft** until you approve it. Edit it first if the angle is off.
+  </Step>
+
+  <Step title="Write">
+    The brief moves to **Queued**, then **Writing**. The writer uses your brand identity, the same skills as Studio, and the brief as its outline.
+  </Step>
+
+  <Step title="Done">
+    The finished article opens in **Content** as a regular draft. Publish it, then watch the prompt on the next scan.
+  </Step>
+</Steps>
+
+## Pipeline Configuration
+
+**Create Content wizard:**
+
+* Formats to generate
+* Timeframe and which data points to include (Pull Requests, Commits, Releases, Linear issues)
+* Brand identity
+
+**Schedules:**
+
+* Frequency: daily, weekly (day of week) or monthly (day of month), with hour and minute in UTC
+* Repositories, output type, brand identity
+* Lookback window and auto-publish
+
+**Event-based triggers:**
+
+* Source: GitHub webhook
+* Event types: release, push; include pre-releases or not
+* Repositories, output type, brand identity, auto-publish
+
+## Error Handling
+
+**GitHub API rate limits:**
+
+* Rate limit errors are detected and surfaced with a clear message instead of a half-written post
+
+**Nothing worth publishing:**
+
+* The agent calls the skip tool and the run ends without a post. This is expected for quiet weeks or maintenance-only windows.
+
+**Missing data:**
+
+* The agent omits details it cannot verify rather than guessing. No made-up PR numbers or commit details.
+
+## Monitoring Pipeline Health
+
+* **Content** shows every collection and the run that produced it
+* **Schedules** and **Events** show whether each workflow is enabled and when it last ran
+* **Settings > Logs** lists workflow activity for the workspace
+* GitHub webhook deliveries can be inspected in your repository settings on GitHub
