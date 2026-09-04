@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { cn } from "@notra/ui/lib/utils";
-import { useState } from "react";
 import {
   CHATGPT_EFFORTS,
   CHATGPT_MODELS,
@@ -43,12 +42,11 @@ export function ChatgptModelSelector({
   onEffortChange?: (effort: ChatgptEffortId) => void;
   className?: string;
 }) {
-  const [open, setOpen] = useState(false);
   const selectedModel = getChatgptModel(model);
   const selectedEffort = getChatgptEffort(effort);
 
   return (
-    <DropdownMenu onOpenChange={setOpen} open={open}>
+    <DropdownMenu>
       <DropdownMenuTrigger
         closeDelay={200}
         delay={75}
@@ -57,8 +55,7 @@ export function ChatgptModelSelector({
           <button
             aria-label={`Model ${selectedModel.label}, effort ${selectedEffort.label}`}
             className={cn(
-              "flex h-8 shrink-0 items-center gap-1 rounded-full bg-transparent px-2.5 text-[13px] leading-none text-foreground outline-none transition-[background-color,transform] duration-fast hover:bg-muted focus-visible:ring-2 focus-visible:ring-blue-600/35 active:scale-[0.96]",
-              open && "bg-muted",
+              "group/chatgpt-model flex h-8 shrink-0 items-center gap-1 rounded-full bg-transparent px-2.5 text-[13px] leading-none text-foreground outline-none transition-[background-color,transform] duration-fast hover:bg-muted focus-visible:ring-2 focus-visible:ring-blue-600/35 active:scale-[0.96] data-popup-open:bg-muted",
               className
             )}
             type="button"
@@ -67,10 +64,7 @@ export function ChatgptModelSelector({
       >
         <span>{selectedEffort.label}</span>
         <HugeiconsIcon
-          className={cn(
-            "text-muted-foreground transition-transform duration-fast",
-            open && "rotate-180"
-          )}
+          className="text-muted-foreground transition-transform duration-fast group-data-popup-open/chatgpt-model:rotate-180"
           icon={ArrowDown01Icon}
           size={12}
           strokeWidth={2}
@@ -92,7 +86,7 @@ export function ChatgptModelSelector({
           <DropdownMenuSubContent
             className={MENU_SURFACE}
             side="right"
-            sideOffset={6}
+            sideOffset={0}
           >
             <DropdownMenuRadioGroup
               onValueChange={(value) => {
@@ -125,7 +119,7 @@ export function ChatgptModelSelector({
           <DropdownMenuSubContent
             className={MENU_SURFACE}
             side="right"
-            sideOffset={6}
+            sideOffset={0}
           >
             <DropdownMenuRadioGroup
               onValueChange={(value) => {
