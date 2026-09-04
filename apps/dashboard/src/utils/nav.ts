@@ -57,6 +57,11 @@ export function resolveSidebarMode(
   return storedMode ?? SIDEBAR_DEFAULT_MODE;
 }
 
+/** Route after the org slug (`/{slug}/geo/prompts` → "geo/prompts"), or undefined on the org root. */
+export function sidebarRouteFromPathname(pathname: string): string | undefined {
+  return pathname.split("/").filter(Boolean).slice(1).join("/") || undefined;
+}
+
 export function isOrgRootPath(pathname: string, slug: string): boolean {
   return pathname === `/${slug}` || pathname === `/${slug}/`;
 }

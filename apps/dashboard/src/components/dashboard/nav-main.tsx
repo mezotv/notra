@@ -6,6 +6,7 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { SIDEBAR_MODE_HOME_LINKS } from "@/constants/nav";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useSidebarMode } from "@/lib/hooks/use-sidebar-mode";
+import { sidebarRouteFromPathname } from "@/utils/nav";
 
 import { NavGeo } from "./nav-geo";
 import { NavModePrimaryAction } from "./nav-mode-primary-action";
@@ -17,8 +18,8 @@ export function NavMain() {
   const { activeOrganization } = useOrganizationsContext();
   const pathname = usePathname();
   const [projectParam] = useGeoProjectQueryState();
-  const route = pathname.split("/").filter(Boolean).slice(1).join("/");
-  const { mode, setMode, pendingMode } = useSidebarMode(route || undefined);
+  const route = sidebarRouteFromPathname(pathname);
+  const { mode, setMode, pendingMode } = useSidebarMode(route);
 
   if (!activeOrganization?.slug) {
     return null;

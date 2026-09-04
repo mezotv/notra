@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 
 import { localStorageKeys } from "@/constants/storage";
 import type {
@@ -13,6 +13,10 @@ import { isSidebarMode, resolveSidebarMode } from "@/utils/nav";
 
 const SIDEBAR_MODE_EVENT = "notra:sidebar-mode-change";
 
+// Module-level so a pick made outside the sidebar (e.g. dismissing the GEO
+// paywall) reaches the nav's mode resolution before the route changes.
+let pendingMode: PendingSidebarMode | null = null;
+
 function readStoredMode(): SidebarMode | null {
   try {
     const value = window.localStorage.getItem(localStorageKeys.sidebarMode);
@@ -22,7 +26,11 @@ function readStoredMode(): SidebarMode | null {
   }
 }
 
-function getServerSnapshot(): SidebarMode | null {
+function readPendingMode(): PendingSidebarMode | null {
+  return pendingMode;
+}
+
+function getServerSnapshot(): null {
   return null;
 }
 
@@ -35,6 +43,10 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
+function notifyModeChange(): void {
+  window.dispatchEvent(new Event(SIDEBAR_MODE_EVENT));
+}
+
 function persistMode(mode: SidebarMode): void {
   try {
     window.localStorage.setItem(localStorageKeys.sidebarMode, mode);
@@ -45,7 +57,29 @@ function persistMode(mode: SidebarMode): void {
   setSidebarModeCookie(mode).catch(() => {
     // Cookie write is best-effort, same as localStorage.
   });
-  window.dispatchEvent(new Event(SIDEBAR_MODE_EVENT));
+  notifyModeChange();
+}
+
+function clearPendingMode(): void {
+  if (pendingMode === null) {
+    return;
+  }
+  pendingMode = null;
+  notifyModeChange();
+}
+
+/**
+ * Pick a sidebar mode from the route it is picked in. Persists the mode
+ * synchronously so a navigation issued right after already carries the updated
+ * cookie, and keeps the pick pinned until the route changes so the route-derived
+ * mode cannot write the old mode back in between.
+ */
+export function pickSidebarMode(
+  mode: SidebarMode,
+  route: string | undefined
+): void {
+  pendingMode = { mode, route };
+  persistMode(mode);
 }
 
 export function useSidebarMode(
@@ -56,25 +90,28 @@ export function useSidebarMode(
     readStoredMode,
     getServerSnapshot
   );
+  const pending = useSyncExternalStore(
+    subscribe,
+    readPendingMode,
+    getServerSnapshot
+  );
   const routeMode = resolveSidebarMode(route, storedMode);
 
   // Picking a mode navigates, so `route` — which outranks the stored mode —
   // only catches up once the new route commits. Deriving the mode from the route
   // alone leaves the switch frozen for the whole navigation and then snaps
   // everything at once. The pending pick wins until the route agrees with it.
-  const [pending, setPending] = useState<PendingSidebarMode | null>(null);
-  const [lastRoute, setLastRoute] = useState(route);
-
-  // Drop a pick the route has moved past, so returning to where it was
-  // made in does not resurrect it. Done during render rather than in an effect
-  // so the stale pick never reaches the screen.
-  if (lastRoute !== route) {
-    setLastRoute(route);
-    setPending(null);
-  }
-
   const mode =
     pending !== null && pending.route === route ? pending.mode : routeMode;
+
+  // Drop a pick once the route has moved past it, so returning to where it was
+  // made does not resurrect it. The route check above keeps it off-screen while
+  // this effect clears the shared pending state.
+  useEffect(() => {
+    if (pending !== null && pending.route !== route) {
+      clearPendingMode();
+    }
+  }, [pending, route]);
 
   useEffect(() => {
     // The org root is an entry URL, not a mode signal. Persisting studio
@@ -87,10 +124,12 @@ export function useSidebarMode(
     }
   }, [mode, route, storedMode]);
 
-  const setMode = (next: SidebarMode) => {
-    setPending({ mode: next, route });
-    persistMode(next);
-  };
+  const setMode = useCallback(
+    (next: SidebarMode) => {
+      pickSidebarMode(next, route);
+    },
+    [route]
+  );
 
   return { mode, setMode, pendingMode: mode === routeMode ? null : mode };
 }
