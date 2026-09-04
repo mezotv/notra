@@ -130,6 +130,7 @@ export function GeoTabs({
               order={0}
             >
               <MentionRateCard
+                competitors={competitors}
                 engines={engines}
                 isScanning={isScanning}
                 organizationSlug={organizationSlug}

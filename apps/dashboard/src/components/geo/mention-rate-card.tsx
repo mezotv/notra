@@ -40,7 +40,7 @@ import {
   m,
   useReducedMotion,
 } from "motion/react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
@@ -242,19 +242,16 @@ export function MentionRateCard({
   promptResults = GEO_EMPTY_PROMPT_RESULTS,
   isScanning = false,
   organizationSlug,
+  competitors,
 }: MentionRateCardProps) {
   const organizationId = settings?.organizationId ?? "";
   const { data: catalog } = useGeoModelCatalog(organizationId);
   const addEngine = useGeoSettingsEngineAdd(organizationId);
-  const ranked = useMemo(
-    () =>
-      buildMentionProviderRows(engines, {
-        trackedEngines,
-        timeseriesPoints,
-      }),
-    [engines, trackedEngines, timeseriesPoints]
-  );
-  const trackableEngines = useMemo(() => {
+  const ranked = buildMentionProviderRows(engines, {
+    trackedEngines,
+    timeseriesPoints,
+  });
+  const trackableEngines = (() => {
     const result = new Map<string, string>();
     if (!catalog || !settings || settings.engines.length >= GEO_MAX_ENGINES) {
       return result;
@@ -290,7 +287,7 @@ export function MentionRateCard({
       }
     }
     return result;
-  }, [catalog, ranked, settings]);
+  })();
   const pendingFamily =
     addEngine.isPending && addEngine.variables
       ? engineFamilyOf(addEngine.variables)
@@ -389,6 +386,7 @@ export function MentionRateCard({
         <EngineFamilySheet
           aliases={settings?.aliases}
           companyName={settings?.companyName}
+          competitors={competitors}
           family={selected}
           onOpenChange={(open) => {
             if (!open) {

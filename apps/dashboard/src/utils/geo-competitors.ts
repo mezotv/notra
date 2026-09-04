@@ -131,9 +131,10 @@ export function competitorPromptSummary(
 }
 
 /**
- * Ranks every brand an engine family named across its latest prompt answers.
- * Share is "answers naming the brand / answers scanned", so the own brand and
- * rivals sit on the same scale. The own brand always stays in the list.
+ * Ranks every brand an engine family named across its latest prompts.
+ * Share is "prompts naming the brand / prompts scanned", aggregating model and
+ * mode variants so the ranking matches the prompt rows shown in the sheet.
+ * The own brand always stays in the list.
  */
 export function engineFamilyBrandRows(
   family: string,
@@ -149,13 +150,14 @@ export function engineFamilyBrandRows(
   }
 
   const canonical = competitorCanonicalMap(scope.competitors ?? []);
-  const rivals = new Map<string, { name: string; mentions: number }>();
-  let ownMentions = 0;
+  const promptIds = new Set<string>();
+  const ownMentionedPrompts = new Set<string>();
+  const rivals = new Map<string, { name: string; promptIds: Set<string> }>();
   for (const result of scoped) {
+    promptIds.add(result.promptId);
     if (result.mentioned) {
-      ownMentions += 1;
+      ownMentionedPrompts.add(result.promptId);
     }
-    const seen = new Set<string>();
     for (const name of result.competitors) {
       const rawKey = competitorKey(name);
       if (rawKey.length === 0) {
@@ -166,12 +168,8 @@ export function engineFamilyBrandRows(
       }
       const label = canonical.get(rawKey) ?? name;
       const key = competitorKey(label);
-      if (seen.has(key)) {
-        continue;
-      }
-      seen.add(key);
-      const entry = rivals.get(key) ?? { name: label, mentions: 0 };
-      entry.mentions += 1;
+      const entry = rivals.get(key) ?? { name: label, promptIds: new Set() };
+      entry.promptIds.add(result.promptId);
       rivals.set(key, entry);
     }
   }
@@ -185,19 +183,19 @@ export function engineFamilyBrandRows(
     key,
     name,
     mentions,
-    share: mentions / scoped.length,
+    share: mentions / promptIds.size,
     own,
   });
   const ownRow = toRow(
     OWN_BRAND_ROW_ID,
     scope.companyName?.trim() || GEO_FAMILY_OWN_BRAND_FALLBACK,
-    ownMentions,
+    ownMentionedPrompts.size,
     true
   );
   const rows = [
     ownRow,
     ...[...rivals.entries()].map(([key, entry]) =>
-      toRow(key, entry.name, entry.mentions, false)
+      toRow(key, entry.name, entry.promptIds.size, false)
     ),
   ].sort((left, right) => {
     if (left.mentions !== right.mentions) {

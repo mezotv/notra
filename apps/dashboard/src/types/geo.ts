@@ -542,7 +542,7 @@ export interface MentionMoreModelsHintProps {
   onClick: () => void;
 }
 
-export interface MentionRateCardProps {
+export interface MentionRateCardProps extends EngineFamilyBrandScope {
   engines: GeoOverviewEngine[];
   settings?: GeoSettings;
   trackedEngines?: readonly string[];
