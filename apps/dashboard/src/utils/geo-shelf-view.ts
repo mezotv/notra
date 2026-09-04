@@ -5,13 +5,26 @@ import type { GeoShelfView } from "../types/geo-shelf";
 
 const listeners = new Set<() => void>();
 let fallbackView: GeoShelfView = "table";
+let unpersistedView: GeoShelfView | null = null;
 
 export function subscribeGeoShelfView(listener: () => void): () => void {
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === localStorageKeys.geoShelfView) {
+      listener();
+    }
+  };
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  window.addEventListener("storage", handleStorage);
+  return () => {
+    listeners.delete(listener);
+    window.removeEventListener("storage", handleStorage);
+  };
 }
 
 export function getGeoShelfView(): GeoShelfView {
+  if (unpersistedView !== null) {
+    return unpersistedView;
+  }
   try {
     const storedView = window.localStorage.getItem(
       localStorageKeys.geoShelfView
@@ -33,8 +46,9 @@ export function setGeoShelfView(view: GeoShelfView): void {
   fallbackView = view;
   try {
     window.localStorage.setItem(localStorageKeys.geoShelfView, view);
+    unpersistedView = null;
   } catch {
-    // The in-memory fallback still keeps the current page responsive.
+    unpersistedView = view;
   }
   for (const listener of listeners) {
     listener();
