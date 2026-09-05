@@ -1,7 +1,7 @@
 import type { GeoAnswerSource } from "../types/geo";
 import { getReferenceDomain } from "./reference-display";
 
-const CITED_SOURCE_MARKDOWN_AFFIX_PATTERN = /\)?\*+$/u;
+const CITED_SOURCE_MARKDOWN_AFFIX_PATTERN = /\)\*+$/u;
 
 export interface GeoStoredAnswerSource {
   url: string;
@@ -25,15 +25,16 @@ export function geoAnswerSourcesFor(
     domain: string | null
   ): void => {
     const href = citedSourceUrl(url);
-    const sourceDomain = domain ?? getReferenceDomain(href);
-    if (!sourceDomain || seen.has(href)) {
+    if (seen.has(href)) {
       return;
     }
+    const resolvedDomain =
+      domain && domain.length > 0 ? domain : getReferenceDomain(href);
     seen.add(href);
     sources.push({
-      title: title?.trim() || sourceDomain,
+      title: title?.trim() || resolvedDomain || href,
       url: href,
-      domain: sourceDomain,
+      domain: resolvedDomain ?? "",
     });
   };
 

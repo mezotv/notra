@@ -214,7 +214,9 @@ function OpencodeAnswerThread({
       <OpencodeMessage from="user">{prompt}</OpencodeMessage>
       <OpencodeMessage
         search={
-          sources.length > 0 ? <OpencodeSources sources={sources} /> : undefined
+          sources.length > 0 ? (
+            <OpencodeSources queries={[prompt]} sources={sources} />
+          ) : undefined
         }
         from="assistant"
       >

@@ -5,7 +5,6 @@ import { GEO_PRESENCE_LABELS } from "@notra/ui/constants/geo";
 import type { GeoPresenceStatus, PresenceBadgeProps } from "@notra/ui/types/geo";
 
 const PRESENCE_TITLES: Partial<Record<GeoPresenceStatus, string>> = {
-  "training-data": "Named in the model, not only in live search",
   "retrieval-only": "Mentioned in Search only: found live, not in the model",
   invisible: "No engine mentions you on this prompt yet",
 };

@@ -16,7 +16,7 @@ import type {
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 
-const MARKDOWN_URL_AFFIX_PATTERN = /\)?\*+$/u;
+const MARKDOWN_URL_AFFIX_PATTERN = /\)\*+$/u;
 const EMPTY_QUERIES: readonly string[] = [];
 
 const ENTER_CLASS =
@@ -57,7 +57,7 @@ function SourceRow({
   style?: CSSProperties;
 }) {
   const href = sourceHref(source.url);
-  const urlLabel = source.url ? citedSourceUrl(source.url) : source.domain;
+  const urlLabel = source.url ? citedSourceUrl(source.url) : source.title;
   const row = (
     <>
       <span

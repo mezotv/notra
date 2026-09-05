@@ -32,4 +32,21 @@ describe("extractHttpUrls", () => {
       })
     ).toEqual(["https://www.copy.ai/"]);
   });
+
+  test("keeps a trailing asterisk that is part of the URL", () => {
+    expect(extractHttpUrls("https://example.com/search?q=*")).toEqual([
+      "https://example.com/search?q=*",
+    ]);
+  });
+
+  test("preserves first-seen URL order when markdown citations follow a bare URL", () => {
+    const later = Array.from(
+      { length: 20 },
+      (_, index) => `**[source ${index}](https://later.example/${index})**`
+    ).join(" ");
+
+    expect(extractHttpUrls(`https://first.example/ ${later}`)[0]).toBe(
+      "https://first.example/"
+    );
+  });
 });
