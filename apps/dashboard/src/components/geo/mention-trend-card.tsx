@@ -81,8 +81,18 @@ export function MentionTrendCard({
     () => buildMentionTrendRows(points),
     [points]
   );
-  const series = useMemo(() => mentionTrendSeries(engines), [engines]);
-  const allKeys = useMemo(() => series.map((entry) => entry.key), [series]);
+  const series = useMemo(
+    () =>
+      mentionTrendSeries(engines).filter((entry) =>
+        rows.some((row) => {
+          const value = row[entry.key];
+          return typeof value === "number" && value > 0;
+        })
+      ),
+    [engines, rows]
+  );
+  const allKeys = useMemo(() => engines.map(chartKey), [engines]);
+  const visibleKeys = useMemo(() => series.map((entry) => entry.key), [series]);
   const chartRows = useMemo(() => {
     const observedRows = rows.map((row) =>
       allKeys.some((key) => typeof row[key] === "number")
@@ -115,7 +125,7 @@ export function MentionTrendCard({
       trendConfig[entry.key] = {
         label: entry.label,
         colors: accountSeriesColors(index),
-        indicatorHtml: engineIconHtml(entry.engine),
+        indicatorHtml: engineIconHtml(entry.engine, false),
       };
     }
     return trendConfig;
@@ -210,7 +220,7 @@ export function MentionTrendCard({
             layout="activity"
             position="fixed"
             roundness="xl"
-            rowKeys={allKeys}
+            rowKeys={visibleKeys}
             valueFormatter={formatChartInteger}
           />
         </EChartsAreaChart>

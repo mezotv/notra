@@ -8,8 +8,8 @@ import type {
   GeoCompetitor,
   GeoCompetitorKind,
   GeoCompetitorShareTimeseriesPoint,
-  GeoGroundedEngine,
   GeoGroundedProvider,
+  GeoGroundedProviderConfig,
   GeoIngestFramework,
   GeoIngestPackageManager,
   GeoJourneyPathKind,
@@ -269,56 +269,38 @@ const hasEnv = (name: string): boolean => {
   return typeof value === "string" && value.length > 0;
 };
 
-export const GEO_GROUNDED_ENGINES: readonly GeoGroundedEngine[] = [
+export const GEO_GROUNDED_PROVIDERS: readonly GeoGroundedProviderConfig[] = [
   {
-    key: "openai/gpt-5.4-grounded",
-    label: "ChatGPT",
-    model: "openai/gpt-5.4",
     provider: "gateway-openai",
     zdr: "some",
     envVar: null,
     isAvailable: () => true,
   },
   {
-    key: "anthropic/claude-sonnet-4.6-grounded",
-    label: "Claude Sonnet",
-    model: "anthropic/claude-sonnet-4.6",
     provider: "gateway-anthropic",
     zdr: "all",
     envVar: null,
     isAvailable: () => true,
   },
   {
-    key: "google/gemini-3-flash-grounded",
-    label: "Gemini",
-    model: "google/gemini-3-flash",
     provider: "gateway-google",
     zdr: "some",
     envVar: null,
     isAvailable: () => true,
   },
   {
-    key: "openai-direct-grounded",
-    label: "ChatGPT",
-    model: "gpt-5.4",
     provider: "direct-openai",
     zdr: "none",
     envVar: GEO_OPENAI_API_KEY_ENV,
     isAvailable: () => hasEnv(GEO_OPENAI_API_KEY_ENV),
   },
   {
-    key: "anthropic-direct-grounded",
-    label: "Claude Sonnet",
-    model: "claude-sonnet-4-6",
     provider: "direct-anthropic",
     zdr: "none",
     envVar: GEO_ANTHROPIC_API_KEY_ENV,
     isAvailable: () => hasEnv(GEO_ANTHROPIC_API_KEY_ENV),
   },
   {
-    key: "perplexity-sonar",
-    label: "Perplexity",
-    model: "sonar",
     provider: "direct-perplexity",
     zdr: "none",
     envVar: GEO_PERPLEXITY_API_KEY_ENV,
@@ -334,9 +316,21 @@ export const GEO_DIRECT_GROUNDED_PROVIDERS: ReadonlySet<GeoGroundedProvider> =
     "direct-perplexity",
   ]);
 
-const groundedEngineLabels = Object.fromEntries(
-  GEO_GROUNDED_ENGINES.map((engine) => [engine.key, engine.label])
-);
+// Decode historical records and queued tasks only; never used to select models.
+export const GEO_LEGACY_GROUNDED_MODELS: Readonly<Record<string, string>> = {
+  "openai-direct-grounded": "openai/gpt-5.4",
+  "anthropic-direct-grounded": "anthropic/claude-sonnet-4.6",
+  "perplexity-sonar": "perplexity/sonar",
+};
+
+const groundedEngineLabels: Record<string, string> = {
+  "openai/gpt-5.4-grounded": "GPT-5.4",
+  "anthropic/claude-sonnet-4.6-grounded": "Claude Sonnet 4.6",
+  "google/gemini-3-flash-grounded": "Gemini 3 Flash",
+  "openai-direct-grounded": "GPT-5.4",
+  "anthropic-direct-grounded": "Claude Sonnet 4.6",
+  "perplexity-sonar": "Sonar",
+};
 
 const catalogEngineLabels = Object.fromEntries(
   GEO_MODEL_CATALOG_SEED.map((entry) => [entry.id, entry.label])

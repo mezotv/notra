@@ -7,7 +7,6 @@ import { requireApiKey } from "@notra/utils/require-api-key";
 
 import {
   GEO_ANTHROPIC_API_KEY_ENV,
-  GEO_GROUNDED_ENGINES,
   GEO_GROUNDED_MAX_SEARCHES,
   GEO_OPENAI_API_KEY_ENV,
   GEO_PERPLEXITY_API_KEY_ENV,
@@ -78,27 +77,4 @@ export function buildGroundedInvocation(
       return { model: provider(engine.model), tools: {} };
     }
   }
-}
-
-const SUPERSEDED_BY_DIRECT: Partial<
-  Record<GeoGroundedEngine["provider"], GeoGroundedEngine["provider"]>
-> = {
-  "direct-openai": "gateway-openai",
-  "direct-anthropic": "gateway-anthropic",
-};
-
-export function resolveGroundedEngines(): GeoGroundedEngine[] {
-  const available = GEO_GROUNDED_ENGINES.filter((engine) =>
-    engine.isAvailable()
-  );
-
-  const superseded = new Set<GeoGroundedEngine["provider"]>();
-  for (const engine of available) {
-    const replaced = SUPERSEDED_BY_DIRECT[engine.provider];
-    if (replaced) {
-      superseded.add(replaced);
-    }
-  }
-
-  return available.filter((engine) => !superseded.has(engine.provider));
 }

@@ -85,6 +85,10 @@ import {
   resolveGeoZdrMode,
 } from "../utils/geo-engines";
 import {
+  resolveGroundedEngineByKey,
+  resolveGroundedEngines,
+} from "../utils/geo-grounded-engines";
+import {
   describeGeoError,
   flushGeoLogEffect,
   geoLogError,
@@ -98,7 +102,7 @@ import {
 } from "../utils/geo-scan";
 import { askCursorEngine } from "./cursor";
 import { geoSkip } from "./effect";
-import { buildGroundedInvocation, resolveGroundedEngines } from "./engines";
+import { buildGroundedInvocation } from "./engines";
 import {
   GeoEmptyAnswerError,
   GeoJudgeError,
@@ -685,10 +689,6 @@ function parseGeoClaimToken(
   });
 }
 
-function resolveGroundedEngineByKey(key: string): GeoGroundedEngine | null {
-  return resolveGroundedEngines().find((engine) => engine.key === key) ?? null;
-}
-
 /**
  * Loads the settings rows a scan run covers and returns the enabled project
  * ids in creation order. Also releases the phantom "scanning" stamp of rows
@@ -1041,7 +1041,7 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
 
     const groundedEngines: { grounded: GeoGroundedEngine; zdr: GeoZdrMode }[] =
       [];
-    for (const grounded of resolveGroundedEngines()) {
+    for (const grounded of resolveGroundedEngines(settings.engines, catalog)) {
       const zdr = resolveGeoGroundedZdrMode(catalog, grounded, zdrPolicy);
       if (zdr === null) {
         yield* geoLogWarn({
@@ -1909,7 +1909,7 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
 
   const groundedEngines: { grounded: GeoGroundedEngine; zdr: GeoZdrMode }[] =
     [];
-  for (const grounded of resolveGroundedEngines()) {
+  for (const grounded of resolveGroundedEngines(settings.engines, catalog)) {
     const zdr = resolveGeoGroundedZdrMode(catalog, grounded, zdrPolicy);
     if (zdr === null) {
       yield* geoLogWarn({
