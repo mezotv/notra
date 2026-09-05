@@ -44,8 +44,8 @@ export const OPENROUTER_MODEL_ALIASES: Readonly<Record<string, string>> = {
   "zai/glm-4.7-flash": "z-ai/glm-4.7-flash",
 };
 
-// No verified equivalent in OpenRouter's catalog. Keep these on Vercel;
-// mapping to a different version or reasoning mode changes the GEO check.
+const RETIRED_MODELS = ["mistral/magistral-medium"];
+
 export const OPENROUTER_UNSUPPORTED_MODELS: ReadonlySet<string> = new Set([
   "moonshotai/kimi-k2.7-code-highspeed",
   "zai/glm-5.3-promo-50",
@@ -58,16 +58,12 @@ export const OPENROUTER_UNSUPPORTED_MODELS: ReadonlySet<string> = new Set([
   "deepseek/deepseek-v3.1",
   "mistral/mistral-medium",
   "mistral/mistral-small",
-  "mistral/magistral-medium",
+  ...RETIRED_MODELS,
 ]);
 
-/**
- * Models Vercel does not serve, including retired IDs. The router skips
- * them instead of discovering the 404 during a scan.
- */
-export const VERCEL_UNSUPPORTED_MODELS: ReadonlySet<string> = new Set([
-  "mistral/magistral-medium",
-]);
+export const VERCEL_UNSUPPORTED_MODELS: ReadonlySet<string> = new Set(
+  RETIRED_MODELS
+);
 
 export const VERCEL_OPTIONS_KEY = "gateway";
 export const OPENROUTER_OPTIONS_KEY = "openrouter";

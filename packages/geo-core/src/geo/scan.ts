@@ -509,7 +509,6 @@ const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
         maxOutputTokens: GEO_JUDGE_MAX_TOKENS,
         abortSignal: signal,
       });
-      // The SDK output getter can throw even after generateText resolves.
       return result.output;
     },
     catch: (cause) =>
@@ -1274,8 +1273,6 @@ export const runGeoScanTaskBatch = Effect.fn("geo.runScanTaskBatch")(function* (
     (task) => {
       const fields = checkFailureFields(checkContext, task);
       return runGeoCheck(checkContext, task).pipe(
-        // Retry only this check, before any rows are persisted. Non-timeout
-        // errors still follow the existing drop/failure handling below.
         Effect.tapError((error) =>
           (error._tag === "GeoScanError" || error._tag === "GeoJudgeError") &&
           error.timedOut === true

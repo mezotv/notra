@@ -45,11 +45,8 @@ export const GEO_CURSOR_API_KEY_ENV = "CURSOR_API_KEY";
 export const GEO_CURSOR_ENGINE_ID = "cursor/composer-2.5";
 export const GEO_CURSOR_MODEL_ID = "composer-2.5";
 export const GEO_OPENCODE_ENGINE_ID = "opencode/gpt-5.6-sol-medium";
-/** Maximum wall-clock time for a single judge or translation call. */
 export const GEO_PROVIDER_TIMEOUT_MS = 120_000;
-/** Slow answer models get three minutes before a check may be retried. */
 export const GEO_ANSWER_TIMEOUT_MS = 180_000;
-/** Cursor answers use the same deadline as gateway answers. */
 export const GEO_CURSOR_TIMEOUT_MS = GEO_ANSWER_TIMEOUT_MS;
 /** Databuddy flag that exposes the Cursor engine to an organization. */
 export const GEO_CURSOR_FLAG_KEY = "geo-cursor";
@@ -469,7 +466,6 @@ export const GEO_SCAN_INTERVAL_LABEL_PREFIX = /^Every\s+/;
 export const GEO_SCAN_INTERVAL_FALLBACK_NOUN = "scan interval";
 export const GEO_SCAN_NO_RESULTS_RETRY_DELAY = "5m";
 export const GEO_SCAN_STALE_MS = 2 * 60 * 60 * 1000;
-/** One concurrent wave per workflow step, including individual timeout retries. */
 export const GEO_SCAN_TASK_BATCH_SIZE = GEO_SCAN_CONCURRENCY;
 export const GEO_SCAN_CLAIM_RENEW_AFTER_MS = 30 * 60 * 1000;
 export const GEO_SCAN_SEQUENCE_BATCH_SIZE = 3;

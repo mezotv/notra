@@ -497,7 +497,8 @@ function collectConfig(children: ReactNode): CollectedConfig {
         confine: props.confine ?? true,
         rowKeys: props.rowKeys,
         rowGroups: props.rowGroups,
-        hideZeros: props.hideZeros ?? false,
+        hideZeros:
+          props.hideZeros ?? Boolean(props.rowKeys || props.rowGroups),
         excludeKeys: props.excludeKeys ?? [],
         emptyLabel: props.emptyLabel,
       };

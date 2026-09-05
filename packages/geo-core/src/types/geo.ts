@@ -1141,7 +1141,6 @@ export interface GeoGatewayModel {
   owned_by: string;
   type: string;
   zdr: GeoModelZdr;
-  /** Unix seconds, when the gateway publishes a release date. */
   released?: number;
   deprecated_at?: number | string | null;
   tags?: string[];
