@@ -41,7 +41,7 @@ import {
 } from "@notra/ui/components/ui/select";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { cn } from "@notra/ui/lib/utils";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, LazyMotion, m, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import {
   type ComponentProps,
@@ -91,8 +91,13 @@ import { WriteSitemapSection } from "./write-sitemap-section";
 
 const MANUAL_PROMPT_VALUE = "manual";
 const FOOTER_STATUS_TRANSITION = { duration: 0.18, ease: "easeOut" } as const;
+const loadMotionFeatures = () =>
+  import("@/lib/motion-features").then((mod) => mod.default);
 
 type WriteAction = keyof typeof GEO_WRITE_ACTION_PENDING;
+
+const sectionMeta = (id: WriteDialogSectionId) =>
+  GEO_WRITE_DIALOG_SECTIONS.find((item) => item.id === id);
 
 export function WriteDialog({
   open,
@@ -142,7 +147,6 @@ function WriteDialogForm({
     useState<WriteDialogSectionId>("prompt");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pendingAction, setPendingAction] = useState<WriteAction | null>(null);
-  const reduceMotion = useReducedMotion();
   const openedRef = useRef(false);
   const initialSourceKind = initial?.sourceKind ?? "manual";
   const hasInitialTopic = Boolean(initial?.topic);
@@ -302,6 +306,7 @@ function WriteDialogForm({
 
   const allCompetitorsSelected =
     competitors.length > 0 && competitorIds.length === competitors.length;
+  const selectedCompetitorIds = new Set(competitorIds);
 
   const canSubmit =
     topic.trim().length >= GEO_WRITER_TOPIC_MIN_LENGTH &&
@@ -316,9 +321,8 @@ function WriteDialogForm({
       return;
     }
     setPendingAction(action);
-    let result: Awaited<ReturnType<typeof planMutation.mutateAsync>>;
-    try {
-      result = await planMutation.mutateAsync({
+    const result = await planMutation
+      .mutateAsync({
         topic: trimmed,
         autoApprove: action === "write",
         contentSubtype,
@@ -328,58 +332,14 @@ function WriteDialogForm({
         sourceKind,
         sourceId,
         existingPageUrl,
-      });
-    } finally {
-      setPendingAction(null);
-    }
+      })
+      .finally(() => setPendingAction(null));
     onOpenChange(false);
     if (result.postId) {
       router.push(geoContentPath(organizationSlug, result.postId));
       return;
     }
     router.push(withGeoProject(`/${organizationSlug}/geo/gaps`, projectId));
-  };
-
-  const sectionMeta = (id: WriteDialogSectionId) =>
-    GEO_WRITE_DIALOG_SECTIONS.find((item) => item.id === id);
-
-  const renderSectionHeader = (
-    id: WriteDialogSectionId,
-    description: string,
-    htmlFor?: string
-  ) => {
-    const meta = sectionMeta(id);
-    if (!meta) {
-      return null;
-    }
-    const heading = (
-      <>
-        <HugeiconsIcon
-          className="text-muted-foreground size-4"
-          icon={meta.icon}
-          strokeWidth={1.8}
-        />
-        <span>{meta.label}</span>
-        {meta.required ? <span className="text-destructive">*</span> : null}
-      </>
-    );
-    return (
-      <div className="space-y-1">
-        {htmlFor ? (
-          <Label
-            className="flex items-center gap-2 text-base font-semibold"
-            htmlFor={htmlFor}
-          >
-            {heading}
-          </Label>
-        ) : (
-          <h3 className="flex items-center gap-2 text-base font-semibold">
-            {heading}
-          </h3>
-        )}
-        <p className="text-muted-foreground text-sm">{description}</p>
-      </div>
-    );
   };
 
   return (
@@ -458,11 +418,11 @@ function WriteDialogForm({
                 data-section="prompt"
               >
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  {renderSectionHeader(
-                    "prompt",
-                    "Pick a tracked prompt or write your own. The article answers this question.",
-                    `${fieldId}-topic`
-                  )}
+                  <WriteSectionHeader
+                    description="Pick a tracked prompt or write your own. The article answers this question."
+                    htmlFor={`${fieldId}-topic`}
+                    id="prompt"
+                  />
                   {promptBadgeLabel ? (
                     <Badge className="shrink-0 font-normal" variant="outline">
                       {promptBadgeLabel}
@@ -537,7 +497,10 @@ function WriteDialogForm({
                 className="scroll-mt-2 space-y-4 px-6 py-6"
                 data-section="type"
               >
-                {renderSectionHeader("type", recommendation.reason)}
+                <WriteSectionHeader
+                  description={recommendation.reason}
+                  id="type"
+                />
                 <div className="grid gap-3 sm:grid-cols-2">
                   {GEO_WRITE_CONTENT_SUBTYPES.map((option) => (
                     <WriteOptionCard
@@ -567,11 +530,11 @@ function WriteDialogForm({
                 className="scroll-mt-2 space-y-4 px-6 py-6"
                 data-section="brand"
               >
-                {renderSectionHeader(
-                  "brand",
-                  "The brand whose voice and facts the article uses.",
-                  voices.length > 0 ? `${fieldId}-brand` : undefined
-                )}
+                <WriteSectionHeader
+                  description="The brand whose voice and facts the article uses."
+                  htmlFor={voices.length > 0 ? `${fieldId}-brand` : undefined}
+                  id="brand"
+                />
                 {voices.length === 0 ? (
                   <p className="border-border text-muted-foreground rounded-lg border border-dashed px-3 py-2.5 text-sm">
                     No brand identities yet. The writer will use your GEO
@@ -611,10 +574,10 @@ function WriteDialogForm({
                 className="scroll-mt-2 space-y-4 px-6 py-6"
                 data-section="sitemap"
               >
-                {renderSectionHeader(
-                  "sitemap",
-                  "The writer links to real pages from the brand identity's sitemap."
-                )}
+                <WriteSectionHeader
+                  description="The writer links to real pages from the brand identity's sitemap."
+                  id="sitemap"
+                />
                 <WriteSitemapSection
                   brandIdentityHref={`/${organizationSlug}/brand/identity`}
                   brandVoiceId={brandVoiceId}
@@ -633,10 +596,10 @@ function WriteDialogForm({
                 data-section="competitors"
               >
                 <div className="flex items-start justify-between gap-3">
-                  {renderSectionHeader(
-                    "competitors",
-                    "Competitors the article can mention when it compares options."
-                  )}
+                  <WriteSectionHeader
+                    description="Competitors the article can mention when it compares options."
+                    id="competitors"
+                  />
                   {competitors.length > 0 ? (
                     <button
                       className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer text-xs transition-colors"
@@ -662,7 +625,7 @@ function WriteDialogForm({
                 ) : (
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {competitors.map((competitor) => {
-                      const selected = competitorIds.includes(competitor.id);
+                      const selected = selectedCompetitorIds.has(competitor.id);
                       return (
                         <WriteOptionCard
                           compact
@@ -697,59 +660,122 @@ function WriteDialogForm({
             </div>
           </div>
 
-          <div className={GEO_WRITE_PANEL_FOOTER_CLASS}>
-            <div
-              className={cn(
-                GEO_WRITE_PANEL_FOOTER_ROW_CLASS,
-                "justify-between gap-3 px-4"
-              )}
-            >
-              <AnimatePresence initial={false} mode="wait">
-                <motion.p
-                  animate={{ opacity: 1, y: 0 }}
-                  aria-live="polite"
-                  className={cn(
-                    "hidden min-w-0 truncate text-xs sm:block",
-                    pendingAction ? "text-foreground" : "text-muted-foreground"
-                  )}
-                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
-                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
-                  key={pendingAction ?? "help"}
-                  transition={FOOTER_STATUS_TRANSITION}
-                >
-                  {pendingAction
-                    ? GEO_WRITE_ACTION_PENDING[pendingAction].status
-                    : `${GEO_WRITE_ACTION_HELP.plan} ${GEO_WRITE_ACTION_HELP.write}`}
-                </motion.p>
-              </AnimatePresence>
-              <div className="flex shrink-0 gap-2">
-                <WriteActionButton
-                  action="plan"
-                  disabled={!canSubmit}
-                  onClick={() => {
-                    handleSubmit("plan").catch(() => undefined);
-                  }}
-                  pendingAction={pendingAction}
-                  variant="outline"
-                >
-                  Plan
-                </WriteActionButton>
-                <WriteActionButton
-                  action="write"
-                  disabled={!canSubmit}
-                  onClick={() => {
-                    handleSubmit("write").catch(() => undefined);
-                  }}
-                  pendingAction={pendingAction}
-                >
-                  Write
-                </WriteActionButton>
-              </div>
-            </div>
-          </div>
+          <WriteDialogFooter
+            canSubmit={canSubmit}
+            onSubmit={(action) => {
+              handleSubmit(action).catch(() => undefined);
+            }}
+            pendingAction={pendingAction}
+          />
         </div>
       </div>
     </ResponsiveDialogContent>
+  );
+}
+
+function WriteSectionHeader({
+  id,
+  description,
+  htmlFor,
+}: {
+  id: WriteDialogSectionId;
+  description: string;
+  htmlFor?: string;
+}) {
+  const meta = sectionMeta(id);
+  if (!meta) {
+    return null;
+  }
+  const heading = (
+    <>
+      <HugeiconsIcon
+        className="text-muted-foreground size-4"
+        icon={meta.icon}
+        strokeWidth={1.8}
+      />
+      <span>{meta.label}</span>
+      {meta.required ? <span className="text-destructive">*</span> : null}
+    </>
+  );
+  return (
+    <div className="space-y-1">
+      {htmlFor ? (
+        <Label
+          className="flex items-center gap-2 text-base font-semibold"
+          htmlFor={htmlFor}
+        >
+          {heading}
+        </Label>
+      ) : (
+        <h3 className="flex items-center gap-2 text-base font-semibold">
+          {heading}
+        </h3>
+      )}
+      <p className="text-muted-foreground text-sm">{description}</p>
+    </div>
+  );
+}
+
+function WriteDialogFooter({
+  canSubmit,
+  onSubmit,
+  pendingAction,
+}: {
+  canSubmit: boolean;
+  onSubmit: (action: WriteAction) => void;
+  pendingAction: WriteAction | null;
+}) {
+  const reduceMotion = useReducedMotion();
+  const statusText = pendingAction
+    ? GEO_WRITE_ACTION_PENDING[pendingAction].status
+    : `${GEO_WRITE_ACTION_HELP.plan} ${GEO_WRITE_ACTION_HELP.write}`;
+  return (
+    <div className={GEO_WRITE_PANEL_FOOTER_CLASS}>
+      <div
+        className={cn(
+          GEO_WRITE_PANEL_FOOTER_ROW_CLASS,
+          "justify-between gap-3 px-4"
+        )}
+      >
+        <LazyMotion features={loadMotionFeatures} strict>
+          <AnimatePresence initial={false} mode="wait">
+            <m.p
+              animate={{ opacity: 1, y: 0 }}
+              aria-live="polite"
+              className={cn(
+                "hidden min-w-0 truncate text-xs sm:block",
+                pendingAction ? "text-foreground" : "text-muted-foreground"
+              )}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
+              key={pendingAction ?? "help"}
+              transition={FOOTER_STATUS_TRANSITION}
+            >
+              {statusText}
+            </m.p>
+          </AnimatePresence>
+        </LazyMotion>
+        <div className="flex shrink-0 gap-2">
+          <WriteActionButton
+            action="plan"
+            disabled={!canSubmit}
+            onClick={() => onSubmit("plan")}
+            pendingAction={pendingAction}
+            variant="outline"
+          >
+            Plan
+          </WriteActionButton>
+          <WriteActionButton
+            action="write"
+            disabled={!canSubmit}
+            onClick={() => onSubmit("write")}
+            pendingAction={pendingAction}
+          >
+            Write
+          </WriteActionButton>
+        </div>
+      </div>
+    </div>
   );
 }
 
