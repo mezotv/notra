@@ -43,7 +43,7 @@ export function HeroSection() {
     <section className="w-full px-6 pt-6 antialiased [font-synthesis:none]">
       <div className="relative isolate overflow-clip rounded-3xl bg-[#C8B2EE40] lg:h-[59.9375rem] dark:bg-[#2a2140]">
         <div className="pointer-events-none absolute inset-0 overflow-clip rounded-3xl">
-          <HeroDither className="absolute -top-1.25 -left-10.75 h-[66.125rem] w-[calc(100%+21.5rem)] min-w-[100.8125rem] bg-[#00000000]" />
+          <HeroDither className="absolute inset-0 h-full w-full bg-[#00000000] sm:inset-auto sm:-top-1.25 sm:-left-10.75 sm:h-[66.125rem] sm:w-[calc(100%+21.5rem)] sm:min-w-[100.8125rem]" />
         </div>
 
         <div className="relative flex h-full w-full flex-col items-center">
