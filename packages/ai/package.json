@@ -36,7 +36,7 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "test": "bun test src/router"
+    "test": "bun test src && bun test tests"
   },
   "dependencies": {
     "@ai-sdk/gateway": "3.0.132",
@@ -79,6 +79,7 @@
     "@notra/typescript-config": "workspace:*",
     "@types/react": "^19.2.18",
     "@types/sanitize-html": "^2.16.0",
+    "emulate": "0.10.0",
     "typescript": "5.9.2"
   }
 }

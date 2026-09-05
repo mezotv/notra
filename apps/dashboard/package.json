@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "smoke:autonomy": "bun run scripts/autonomy-smoke.ts"
+    "smoke:autonomy": "bun run scripts/autonomy-smoke.ts",
+    "test": "bun test src && bun test tests"
   },
   "dependencies": {
     "@ai-sdk/react": "3.0.208",

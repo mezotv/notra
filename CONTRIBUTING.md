@@ -216,3 +216,52 @@ We keep both in sync so the website and markdown endpoint (`/markdown`) say the 
 Open an issue or start a discussion in the repo.
 
 Thanks for helping improve Notra.
+
+## Automated tests
+
+Run the complete suite from the repository root:
+
+```bash
+bun run test
+```
+
+This runs tests in `@notra/ai`, `@notra/geo-core`, and `dashboard`. To focus on
+one area, use `bun run test --filter=@notra/geo-core` (or `--filter=dashboard`,
+`--filter=@notra/ai`). Use `bun run test --force` to bypass Turbo's test cache.
+The **Tests** GitHub Actions job runs the suite and typechecks these packages
+on every push and pull request with a frozen lockfile. No database server, `.env`, API keys, or paid model
+calls are required by these tests.
+
+Coverage includes:
+
+- **GEO cron and scan persistence:** real Drizzle queries against an isolated
+  in-memory PGlite Postgres instance. DDL is generated from the production
+  tables, including indexes and foreign keys. Tests cover due/disabled/busy
+  projects, overlapping triggers, sweep limits, claim renewal, stale workers,
+  abandoned scans, hand-off failures, tenant ownership, and finalization.
+- **Cron HTTP contract:** authorization, missing secrets, response counters,
+  propagated failures, and registration in `vercel.json`.
+- **Scan workflow orchestration:** task/sequence batches, renewed claim tokens,
+  accumulated results, partial failures, and the single no-results retry.
+- **GitHub polling:** [Vercel Labs Emulate](https://github.com/vercel-labs/emulate)
+  starts a local stateful GitHub API. Tests use Octokit over HTTP and create
+  releases through the API. Repository discovery and credential lookup are
+  test doubles; API responses and signal conversion run for real. Drafts,
+  prereleases, lookback windows, missing repositories, and deduplication keys
+  are covered.
+- **Content schedule timing:** delayed deliveries, UTC scheduling, leap dates,
+  month boundaries, and daylight-saving transitions.
+
+Tests under `tests/` run separately from `src/` in the dashboard and AI package
+because Bun's `mock.module` replacements live for the entire test process.
+Keep infrastructure replacements at the boundary; do not mock the function
+being tested. Reset database/emulator state between scenarios and close servers
+in teardown. Import only `bun-types/test` in TypeScript configuration so Bun's
+global `fetch` extensions do not change the Node/Next application types.
+
+These are not deployed end-to-end tests. PGlite serializes database requests,
+so overlapping-call tests do not reproduce separate Postgres connections.
+Workflow orchestration tests replace steps and `sleep`; they do not verify
+Vercel's durable runtime, restart recovery, or actual cron delivery. Live model
+answers, billing providers, and the committed database migration chain are also
+outside this suite.

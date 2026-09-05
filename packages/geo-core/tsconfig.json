@@ -4,8 +4,9 @@
     "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "Bundler",
-    "strictNullChecks": true
+    "strictNullChecks": true,
+    "types": ["node", "bun-types/test"]
   },
-  "include": ["src"],
+  "include": ["src", "tests"],
   "exclude": ["node_modules"]
 }
