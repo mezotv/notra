@@ -108,20 +108,26 @@ function CompetitorsCell({ row }: { row: GeoShelfRow }) {
     ).length;
     const isUnchecked = unknownCount > 0;
     const label = isUnchecked ? GEO_SHELF_PLACEMENT_LABELS.unknown : "None";
+    const description = isUnchecked
+      ? GEO_SHELF_COMPETITORS_UNCHECKED_HINT
+      : GEO_SHELF_COMPETITORS_NONE_HINT;
     return (
       <Tooltip>
         <TooltipTrigger
+          aria-label={`${label}. ${description}`}
+          nativeButton={false}
           render={
-            <span className="text-muted-foreground inline-flex cursor-help text-xs" />
+            <span
+              className="text-muted-foreground inline-flex cursor-help rounded-sm text-xs focus-visible:outline-2 focus-visible:outline-offset-2"
+              tabIndex={0}
+            />
           }
         >
           {label}
         </TooltipTrigger>
         <TooltipContent className="max-w-xs text-pretty">
           <span className="block font-medium">{label}</span>
-          {isUnchecked
-            ? GEO_SHELF_COMPETITORS_UNCHECKED_HINT
-            : GEO_SHELF_COMPETITORS_NONE_HINT}
+          {description}
         </TooltipContent>
       </Tooltip>
     );

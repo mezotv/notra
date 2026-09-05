@@ -45,6 +45,19 @@ function evidenceHint(
     : "Verified by fetching the page";
 }
 
+function placementHintText(
+  label: string,
+  status: keyof typeof GEO_SHELF_PLACEMENT_HINTS,
+  sourceHint: string | null
+): string {
+  return [label, GEO_SHELF_PLACEMENT_HINTS[status], sourceHint]
+    .filter((part): part is string => Boolean(part))
+    .join(". ");
+}
+
+const HINT_TRIGGER_CLASS =
+  "inline-flex max-w-full cursor-help rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2";
+
 export function ShelfPlacementBadge({
   status,
   evidence,
@@ -64,6 +77,7 @@ export function ShelfPlacementBadge({
       variant="outline"
     >
       <HugeiconsIcon
+        aria-hidden="true"
         className="size-3 shrink-0"
         icon={PLACEMENT_ICONS[resolved]}
         strokeWidth={2}
@@ -79,7 +93,9 @@ export function ShelfPlacementBadge({
   return (
     <Tooltip>
       <TooltipTrigger
-        render={<span className="inline-flex max-w-full cursor-help" />}
+        aria-label={placementHintText(label, resolved, sourceHint)}
+        nativeButton={false}
+        render={<span className={HINT_TRIGGER_CLASS} tabIndex={0} />}
       >
         {badge}
       </TooltipTrigger>
