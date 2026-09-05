@@ -41,13 +41,11 @@ import { type FormEvent, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
-import {
-  DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED,
-  GITHUB_RECOVERY_COPY,
-} from "@/constants/github";
+import { GITHUB_RECOVERY_COPY } from "@/constants/github";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import type { PublishContentToGitHubDialogProps } from "@/types/content/detail";
 import { getGitHubPublishRecovery } from "@/utils/github-publish-recovery";
+import { isGitHubContentPublishingEnabled } from "@/utils/github-publish-repositories";
 
 export function PublishContentToGitHubDialog({
   contentId,
@@ -78,24 +76,17 @@ export function PublishContentToGitHubDialog({
         ? integration.repositories.filter((repository) => repository.enabled)
         : []
     ) ?? [];
-  const outputEnabledRepositories = connectedRepositories.filter(
-    (repository) => {
-      const output = repository.outputs?.find(
-        (candidate) => candidate.outputType === contentType
-      );
-      return (
-        output?.enabled ?? DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED[contentType]
-      );
-    }
-  );
-  const repositories = outputEnabledRepositories.filter(
+  const repositories = connectedRepositories.filter(
     (repository) => repository.defaultBranch
   );
   const integrationsLoadFailed =
     integrationsQuery.isError && !integrationsQuery.data;
-  const selectedRepository = repositories.find(
-    (repository) => repository.id === repositoryId
-  );
+  const selectedRepository =
+    repositories.find((repository) => repository.id === repositoryId) ??
+    repositories[0];
+  const selectedPublishingEnabled = selectedRepository
+    ? isGitHubContentPublishingEnabled(selectedRepository, contentType)
+    : false;
 
   const publishMutation = useMutation({
     mutationFn: async (targetRepositoryId: string) => {
@@ -112,6 +103,11 @@ export function PublishContentToGitHubDialog({
       });
     },
     onSuccess: (result) => {
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.integrations.list.queryKey({
+          input: { organizationId },
+        }),
+      });
       toast.success(
         result.operation === "created"
           ? "Draft pull request created"
@@ -249,9 +245,12 @@ export function PublishContentToGitHubDialog({
                     repositories.length === 0
                   }
                   onValueChange={(value) => setRepositoryId(value ?? "")}
-                  value={repositoryId}
+                  value={selectedRepository?.id ?? ""}
                 >
-                  <SelectTrigger id="github-publish-repository">
+                  <SelectTrigger
+                    className="w-full"
+                    id="github-publish-repository"
+                  >
                     <SelectValue
                       placeholder={
                         integrationsQuery.isLoading
@@ -260,12 +259,14 @@ export function PublishContentToGitHubDialog({
                       }
                     >
                       {(value) => {
-                        const repository = repositories.find(
-                          (candidate) => candidate.id === value
-                        );
-                        return repository
-                          ? `${repository.owner}/${repository.repo}`
-                          : "Select a repository";
+                        const repository =
+                          repositories.find(
+                            (candidate) => candidate.id === value
+                          ) ?? selectedRepository;
+                        if (!repository) {
+                          return "Select a repository";
+                        }
+                        return `${repository.owner}/${repository.repo}`;
                       }}
                     </SelectValue>
                   </SelectTrigger>
@@ -310,22 +311,16 @@ export function PublishContentToGitHubDialog({
                   </FieldDescription>
                 ) : null}
                 {!integrationsQuery.isLoading &&
-                connectedRepositories.length > 0 &&
-                outputEnabledRepositories.length === 0 ? (
+                selectedRepository &&
+                !selectedPublishingEnabled ? (
                   <FieldDescription>
                     {contentLabel === "blog post" ? "Blog post" : "Changelog"}{" "}
-                    publishing is off. Open the{" "}
-                    <Link
-                      className="underline underline-offset-4"
-                      href={`/${organizationSlug}/integrations/github`}
-                    >
-                      GitHub integration
-                    </Link>{" "}
-                    to enable it.
+                    publishing is off for this repository. Creating a draft PR
+                    will turn it on.
                   </FieldDescription>
                 ) : null}
                 {!integrationsQuery.isLoading &&
-                outputEnabledRepositories.length > 0 &&
+                connectedRepositories.length > 0 &&
                 repositories.length === 0 ? (
                   <FieldDescription>
                     These repositories need a default branch before they can

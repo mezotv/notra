@@ -41,7 +41,6 @@ import {
 } from "@/constants/content-preview";
 import {
   DEFAULT_GITHUB_CONTENT_DIRECTORIES,
-  DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED,
   GITHUB_CONTENT_PATH_MAX_LENGTH,
   GITHUB_INSTALLATION_ID_REGEX,
 } from "@/constants/github";
@@ -847,12 +846,6 @@ export const contentRouter = {
           }
         : null;
       if (!contentOutput) {
-        if (!DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED[input.contentType]) {
-          throw forbidden("GitHub content publishing is paused", {
-            code: "github_content_publishing_paused",
-          });
-        }
-
         await db
           .insert(repositoryOutputs)
           .values({
@@ -881,8 +874,15 @@ export const contentRouter = {
         throw internalServerError("Failed to configure GitHub publishing");
       }
       if (!contentOutput.enabled) {
-        throw forbidden("GitHub content publishing is paused", {
-          code: "github_content_publishing_paused",
+        await db
+          .update(repositoryOutputs)
+          .set({ enabled: true })
+          .where(eq(repositoryOutputs.id, contentOutput.id));
+        contentOutput = { ...contentOutput, enabled: true };
+        await clearGitHubPublishFailures({
+          organizationId: input.organizationId,
+          outputType: input.contentType,
+          repositoryId: integration.id,
         });
       }
       const outputConfig = repositoryContentDirectoryConfigSchema.safeParse(

@@ -140,9 +140,17 @@ export interface GitHubDirectoryPickerProps {
   triggerId?: string;
 }
 
+export interface GitHubDirectoryChoiceProps {
+  depth: number;
+  helper?: string;
+  name: string;
+  path: string;
+}
+
 export interface GitHubDirectoryNodeProps {
   depth: number;
   excludedPath?: string;
+  missing?: boolean;
   name: string;
   open: boolean;
   organizationId: string;
