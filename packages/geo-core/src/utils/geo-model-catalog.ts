@@ -48,7 +48,10 @@ function toCatalogEntry(
   };
 }
 
-function toDayString(seconds: number): string {
+function toDayString(seconds: number | undefined): string {
+  if (seconds === undefined) {
+    return "";
+  }
   return new Date(seconds * MS_PER_SECOND).toISOString().slice(0, DAY_LENGTH);
 }
 
@@ -86,7 +89,7 @@ export function buildGeoModelCatalogFromFeed(
       .filter(
         (model) => model.owned_by === provider.id && isEligibleFeedModel(model)
       )
-      .sort((left, right) => right.released - left.released)
+      .sort((left, right) => (right.released ?? 0) - (left.released ?? 0))
       .map((model) => toCatalogEntry(model, provider.id));
     const newest = entries.slice(0, GEO_MODELS_PER_PROVIDER);
     const olderDefaults = entries

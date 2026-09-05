@@ -663,6 +663,11 @@ export interface GeoGroundedEngine {
   isAvailable: () => boolean;
 }
 
+export type GeoGroundedProviderConfig = Pick<
+  GeoGroundedEngine,
+  "provider" | "zdr" | "envVar" | "isAvailable"
+>;
+
 export interface GeoGroundedInvocation {
   model: LanguageModel;
   tools: ToolSet;
@@ -1141,8 +1146,7 @@ export interface GeoGatewayModel {
   owned_by: string;
   type: string;
   zdr: GeoModelZdr;
-  /** Unix seconds. */
-  released: number;
+  released?: number;
   deprecated_at?: number | string | null;
   tags?: string[];
 }

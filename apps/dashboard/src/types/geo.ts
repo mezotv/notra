@@ -869,18 +869,11 @@ export interface ShareOfVoiceTableProps {
   onRowPointerEnter?: (row: ShareOfVoiceRow) => void;
   companyName?: string | null;
   aliases?: readonly string[];
-  organizationId?: string;
 }
 
 export interface BrandTrackingBadgeProps {
   tracked: boolean;
   className?: string;
-}
-
-export interface ShareOfVoiceBrandTagProps {
-  row: ShareOfVoiceRow;
-  own: boolean;
-  onTrack?: (brand: string) => void;
 }
 
 export interface TrackBrandButtonProps {

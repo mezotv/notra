@@ -21,11 +21,6 @@ const PROJECT_TOKEN_ENV = "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN";
 let client: PostHog | null | undefined;
 let warnedMissingToken = false;
 
-function readProjectToken(): string | null {
-  const token = process.env[PROJECT_TOKEN_ENV]?.trim();
-  return token ? token : null;
-}
-
 function readHost(): string {
   const host = process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim();
   if (!host || host.startsWith("/")) {
@@ -49,7 +44,7 @@ export function getPostHogServer(): PostHog | null {
     return client;
   }
 
-  const token = readProjectToken();
+  const token = process.env[PROJECT_TOKEN_ENV]?.trim();
   if (!token) {
     warnMissingToken();
     client = null;

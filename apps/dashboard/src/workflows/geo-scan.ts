@@ -184,6 +184,9 @@ export async function geoScanWorkflow(
       return { scanProjectId, outcome };
     })
   );
+  if (outcomes.every(({ outcome }) => outcome === null)) {
+    return { status: "skipped" };
+  }
   for (const { scanProjectId, outcome } of outcomes) {
     if (!outcome) {
       continue;

@@ -7,7 +7,6 @@
     "build": "next build",
     "start": "next start",
     "check-types": "tsc --noEmit",
-    "test": "bun test",
     "knip": "knip",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

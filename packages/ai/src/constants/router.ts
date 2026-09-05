@@ -22,17 +22,48 @@ export const VERCEL_NAMESPACE_PREFIX = "vercel/";
 
 export const OPENROUTER_MODEL_ALIASES: Readonly<Record<string, string>> = {
   "google/gemini-3-flash": "google/gemini-3-flash-preview",
+  "meta/llama-4-maverick": "meta-llama/llama-4-maverick",
+  "meta/llama-4-scout": "meta-llama/llama-4-scout",
+  "meta/llama-3.3-70b": "meta-llama/llama-3.3-70b-instruct",
+  "meta/llama-3.1-70b": "meta-llama/llama-3.1-70b-instruct",
+  "meta/llama-3.1-8b": "meta-llama/llama-3.1-8b-instruct",
+  "mistral/mistral-medium-3.5": "mistralai/mistral-medium-3-5",
+  "mistral/mistral-large-3": "mistralai/mistral-large-2512",
+  "spacexai/grok-4.6": "x-ai/grok-4.6",
+  "spacexai/grok-4.5": "x-ai/grok-4.5",
+  "spacexai/grok-build-0.1": "x-ai/grok-build-0.1",
+  "spacexai/grok-4.3": "x-ai/grok-4.3",
+  "spacexai/grok-4.20-multi-agent": "x-ai/grok-4.20-multi-agent",
+  "zai/glm-5.3-flash": "z-ai/glm-5.3-flash",
+  "zai/glm-5.3": "z-ai/glm-5.3",
+  "zai/glm-5.2": "z-ai/glm-5.2",
+  "zai/glm-5.1": "z-ai/glm-5.1",
+  "zai/glm-5v-turbo": "z-ai/glm-5v-turbo",
+  "zai/glm-5-turbo": "z-ai/glm-5-turbo",
+  "zai/glm-5": "z-ai/glm-5",
+  "zai/glm-4.7-flash": "z-ai/glm-4.7-flash",
 };
 
-export const OPENROUTER_UNSUPPORTED_MODELS: ReadonlySet<string> =
-  new Set<string>();
+const RETIRED_MODELS = ["mistral/magistral-medium"];
 
-/**
- * Models that only exist on OpenRouter (stealth/preview models, community
- * hosts). The router skips Vercel for them instead of discovering the 404
- * at call time. Keep in sync with catalog entries that pin `openrouter`.
- */
-export const VERCEL_UNSUPPORTED_MODELS: ReadonlySet<string> = new Set<string>();
+export const OPENROUTER_UNSUPPORTED_MODELS: ReadonlySet<string> = new Set([
+  "moonshotai/kimi-k2.7-code-highspeed",
+  "zai/glm-5.3-promo-50",
+  "zai/glm-4.7-flashx",
+  "spacexai/grok-4.20-non-reasoning",
+  "spacexai/grok-4.20-reasoning",
+  "spacexai/grok-4.1-fast-non-reasoning",
+  "spacexai/grok-4.1-fast-reasoning",
+  "deepseek/deepseek-v3.2-thinking",
+  "deepseek/deepseek-v3.1",
+  "mistral/mistral-medium",
+  "mistral/mistral-small",
+  ...RETIRED_MODELS,
+]);
+
+export const VERCEL_UNSUPPORTED_MODELS: ReadonlySet<string> = new Set(
+  RETIRED_MODELS
+);
 
 export const VERCEL_OPTIONS_KEY = "gateway";
 export const OPENROUTER_OPTIONS_KEY = "openrouter";

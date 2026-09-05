@@ -8,8 +8,8 @@ import type {
   GeoCompetitor,
   GeoCompetitorKind,
   GeoCompetitorShareTimeseriesPoint,
-  GeoGroundedEngine,
   GeoGroundedProvider,
+  GeoGroundedProviderConfig,
   GeoIngestFramework,
   GeoIngestPackageManager,
   GeoJourneyPathKind,
@@ -45,10 +45,9 @@ export const GEO_CURSOR_API_KEY_ENV = "CURSOR_API_KEY";
 export const GEO_CURSOR_ENGINE_ID = "cursor/composer-2.5";
 export const GEO_CURSOR_MODEL_ID = "composer-2.5";
 export const GEO_OPENCODE_ENGINE_ID = "opencode/gpt-5.6-sol-medium";
-/** Maximum wall-clock time for a single answer, judge, or translation call. */
-export const GEO_PROVIDER_TIMEOUT_MS = 90_000;
-/** Local Cursor runs took ~8s in testing; cold starts can be slower. */
-export const GEO_CURSOR_TIMEOUT_MS = 90_000;
+export const GEO_PROVIDER_TIMEOUT_MS = 120_000;
+export const GEO_ANSWER_TIMEOUT_MS = 180_000;
+export const GEO_CURSOR_TIMEOUT_MS = GEO_ANSWER_TIMEOUT_MS;
 /** Databuddy flag that exposes the Cursor engine to an organization. */
 export const GEO_CURSOR_FLAG_KEY = "geo-cursor";
 /** Databuddy flag that exposes the OpenCode engine to an organization. */
@@ -270,56 +269,38 @@ const hasEnv = (name: string): boolean => {
   return typeof value === "string" && value.length > 0;
 };
 
-export const GEO_GROUNDED_ENGINES: readonly GeoGroundedEngine[] = [
+export const GEO_GROUNDED_PROVIDERS: readonly GeoGroundedProviderConfig[] = [
   {
-    key: "openai/gpt-5.4-grounded",
-    label: "ChatGPT",
-    model: "openai/gpt-5.4",
     provider: "gateway-openai",
     zdr: "some",
     envVar: null,
     isAvailable: () => true,
   },
   {
-    key: "anthropic/claude-sonnet-4.6-grounded",
-    label: "Claude Sonnet",
-    model: "anthropic/claude-sonnet-4.6",
     provider: "gateway-anthropic",
     zdr: "all",
     envVar: null,
     isAvailable: () => true,
   },
   {
-    key: "google/gemini-3-flash-grounded",
-    label: "Gemini",
-    model: "google/gemini-3-flash",
     provider: "gateway-google",
     zdr: "some",
     envVar: null,
     isAvailable: () => true,
   },
   {
-    key: "openai-direct-grounded",
-    label: "ChatGPT",
-    model: "gpt-5.4",
     provider: "direct-openai",
     zdr: "none",
     envVar: GEO_OPENAI_API_KEY_ENV,
     isAvailable: () => hasEnv(GEO_OPENAI_API_KEY_ENV),
   },
   {
-    key: "anthropic-direct-grounded",
-    label: "Claude Sonnet",
-    model: "claude-sonnet-4-6",
     provider: "direct-anthropic",
     zdr: "none",
     envVar: GEO_ANTHROPIC_API_KEY_ENV,
     isAvailable: () => hasEnv(GEO_ANTHROPIC_API_KEY_ENV),
   },
   {
-    key: "perplexity-sonar",
-    label: "Perplexity",
-    model: "sonar",
     provider: "direct-perplexity",
     zdr: "none",
     envVar: GEO_PERPLEXITY_API_KEY_ENV,
@@ -335,9 +316,21 @@ export const GEO_DIRECT_GROUNDED_PROVIDERS: ReadonlySet<GeoGroundedProvider> =
     "direct-perplexity",
   ]);
 
-const groundedEngineLabels = Object.fromEntries(
-  GEO_GROUNDED_ENGINES.map((engine) => [engine.key, engine.label])
-);
+// Decode historical records and queued tasks only; never used to select models.
+export const GEO_LEGACY_GROUNDED_MODELS: Readonly<Record<string, string>> = {
+  "openai-direct-grounded": "openai/gpt-5.4",
+  "anthropic-direct-grounded": "anthropic/claude-sonnet-4.6",
+  "perplexity-sonar": "perplexity/sonar",
+};
+
+const groundedEngineLabels: Record<string, string> = {
+  "openai/gpt-5.4-grounded": "GPT-5.4",
+  "anthropic/claude-sonnet-4.6-grounded": "Claude Sonnet 4.6",
+  "google/gemini-3-flash-grounded": "Gemini 3 Flash",
+  "openai-direct-grounded": "GPT-5.4",
+  "anthropic-direct-grounded": "Claude Sonnet 4.6",
+  "perplexity-sonar": "Sonar",
+};
 
 const catalogEngineLabels = Object.fromEntries(
   GEO_MODEL_CATALOG_SEED.map((entry) => [entry.id, entry.label])
@@ -467,7 +460,7 @@ export const GEO_SCAN_INTERVAL_LABEL_PREFIX = /^Every\s+/;
 export const GEO_SCAN_INTERVAL_FALLBACK_NOUN = "scan interval";
 export const GEO_SCAN_NO_RESULTS_RETRY_DELAY = "5m";
 export const GEO_SCAN_STALE_MS = 2 * 60 * 60 * 1000;
-export const GEO_SCAN_TASK_BATCH_SIZE = 8;
+export const GEO_SCAN_TASK_BATCH_SIZE = GEO_SCAN_CONCURRENCY;
 export const GEO_SCAN_CLAIM_RENEW_AFTER_MS = 30 * 60 * 1000;
 export const GEO_SCAN_SEQUENCE_BATCH_SIZE = 3;
 export const GEO_SEQUENCE_PAIR_TIMEOUT_MS = 7 * 60 * 1000;
@@ -537,7 +530,6 @@ export const GEO_DISCOVERY_MIN_COMPETITORS = 5;
 export const GEO_DISCOVERY_MAX_COMPETITORS = 10;
 export const GEO_DISCOVERY_MIN_PROMPTS = 10;
 export const GEO_DISCOVERY_MAX_PROMPTS = 14;
-export const GEO_DISCOVERY_MAX_BRANDED_PROMPTS = 3;
 export const GEO_DISCOVERY_ALIAS_LIMIT = 8;
 export const GEO_DISCOVERY_COMPETITOR_LIMIT = 12;
 export const GEO_DISCOVERY_CACHE_PREFIX = "geo:discovery:v1";
@@ -981,12 +973,12 @@ export const GEO_PROMPT_NO_MENTION = "No engine named you";
 
 export const GEO_MENTION_TREND_BACKFILL_DAYS = 6;
 export const GEO_MENTION_TREND_TOTAL_KEY = "total";
-export const GEO_MENTION_TREND_TOTAL_LABEL = "All providers";
+export const GEO_MENTION_TREND_TOTAL_LABEL = "All Models";
 export const GEO_DEFAULT_RANGE: GeoRangePreset = "30d";
 export const GEO_MENTION_TREND_LINE_KEY = "trend";
 export const GEO_MENTION_TREND_LINE_LABEL = "Trend";
 export const GEO_MENTION_TREND_AGENT_ICON_LIMIT = 4;
-export const GEO_MENTION_TREND_ALL_PROVIDERS_LABEL = "All providers";
+export const GEO_MENTION_TREND_ALL_PROVIDERS_LABEL = "All Models";
 export const GEO_MENTION_ACTIVITY_LABEL = "Mention activity";
 export const GEO_MENTION_SUMMARY_VISIBLE = 5;
 export const GEO_MENTION_ROW_HEIGHT_REM = 2.75;

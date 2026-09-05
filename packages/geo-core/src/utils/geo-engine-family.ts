@@ -1,10 +1,17 @@
-import { GEO_BRAND_LABELS, GEO_ENGINE_LABELS } from "../constants/geo";
+import {
+  GEO_BRAND_LABELS,
+  GEO_ENGINE_LABELS,
+  GEO_LEGACY_GROUNDED_MODELS,
+} from "../constants/geo";
 import { resolveEngineIconKey } from "./geo-engine-icon";
 
 export const GROUNDED_SUFFIX_PATTERN = /(-direct)?-grounded$/;
 
 export function engineModelOf(engine: string): string {
-  return engine.replace(GROUNDED_SUFFIX_PATTERN, "");
+  return (
+    GEO_LEGACY_GROUNDED_MODELS[engine] ??
+    engine.replace(GROUNDED_SUFFIX_PATTERN, "")
+  );
 }
 
 export function engineFamilyOf(engine: string): string {

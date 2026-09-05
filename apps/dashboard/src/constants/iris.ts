@@ -56,7 +56,6 @@ export const IRIS_SIGNAL_KIND_PULL_REQUEST_MERGED =
 export const IRIS_ACTIVE_POLL_INTERVAL_MS = 10_000;
 export const IRIS_IDLE_POLL_INTERVAL_MS = 60_000;
 export const IRIS_SIGNALS_PREVIEW_LIMIT = 12;
-export const IRIS_ARTIFACT_EXCERPT_LIMIT = 180;
 
 export const IRIS_CAPABILITY_LABELS: Record<string, string> = {
   "source.github.read": "Repository read",

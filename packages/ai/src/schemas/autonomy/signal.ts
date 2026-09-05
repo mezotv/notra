@@ -1,8 +1,6 @@
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 
-export const SIGNAL_KIND_MAX_LENGTH = 120;
-
 export const signalSourceSchema = z.enum([
   "github",
   "linear",
@@ -18,7 +16,7 @@ export const signalEnvelopeSchema = z.object({
   organizationId: z.string().min(1),
   source: signalSourceSchema,
   sourceEventId: z.string().min(1).nullable(),
-  kind: z.string().min(1).max(SIGNAL_KIND_MAX_LENGTH),
+  kind: z.string().min(1).max(120),
   occurredAt: z.iso.datetime(),
   dedupeHash: z.string().min(1),
   payload: z.record(z.string(), z.unknown()),

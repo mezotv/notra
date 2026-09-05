@@ -8,11 +8,9 @@ import {
 import { Badge } from "@notra/ui/components/ui/badge";
 
 import { Button } from "@/components/button";
-import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
 import { cn } from "@/lib/utils";
 import type {
   BrandTrackingBadgeProps,
-  ShareOfVoiceBrandTagProps,
   TrackBrandButtonProps,
 } from "@/types/geo";
 
@@ -49,24 +47,5 @@ export function TrackBrandButton({
     >
       {GEO_BRAND_TRACK_ACTION}
     </Button>
-  );
-}
-
-export function ShareOfVoiceBrandTag({
-  row,
-  own,
-  onTrack,
-}: ShareOfVoiceBrandTagProps) {
-  if (own || row.brand === CHART_OTHER_SLICE_LABEL || row.tracked) {
-    return null;
-  }
-
-  return (
-    <span className="flex shrink-0 items-center gap-1">
-      <BrandTrackingBadge tracked={row.tracked} />
-      {!row.tracked && onTrack ? (
-        <TrackBrandButton brand={row.brand} onTrack={onTrack} />
-      ) : null}
-    </span>
   );
 }

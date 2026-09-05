@@ -1,10 +1,6 @@
 import "zod/compile";
 import { z } from "@hono/zod-openapi";
 
-import {
-  GEO_SCANS_DEFAULT_LIMIT,
-  GEO_SCANS_MAX_LIMIT,
-} from "../constants/geo-schemas";
 import { organizationResponseSchema } from "./content";
 
 const scanSchema = z
@@ -23,8 +19,8 @@ export const listScansQuerySchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(GEO_SCANS_MAX_LIMIT)
-    .default(GEO_SCANS_DEFAULT_LIMIT)
+    .max(100)
+    .default(20)
     .openapi({ param: { name: "limit", in: "query" } }),
   page: z.coerce
     .number()

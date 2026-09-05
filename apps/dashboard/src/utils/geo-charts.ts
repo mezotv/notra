@@ -54,6 +54,7 @@ import {
   isTrackedShareOfVoiceBrand,
   mergeCompetitorSharePoints,
 } from "./geo-competitors";
+import { formatModelLabel } from "./geo-model-display";
 
 const GPT_PREFIX_PATTERN = /^gpt-/i;
 const MINI_SUFFIX_PATTERN = /-mini$/i;
@@ -413,7 +414,7 @@ export function formatEngineFamily(engine: string): string {
     GEO_ENGINE_LABELS[model] ??
     GEO_ENGINE_LABELS[engine] ??
     GEO_ENGINE_LABELS[`${model}-grounded`] ??
-    engineFamilyLabel(engineFamilyOf(engine))
+    formatModelLabel(model)
   );
 }
 

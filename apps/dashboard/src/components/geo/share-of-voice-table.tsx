@@ -9,14 +9,12 @@ import { findCompetitorDomain } from "@notra/geo-core/geo/domain";
 import type { ShareOfVoiceRow } from "@notra/geo-core/types/geo";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { GeoBar } from "@notra/ui/components/geo/geo-bar";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
-import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
-import { ShareOfVoiceBrandTag } from "@/components/geo/share-of-voice-brand-tag";
 import { InstrumentEmpty } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_OTHER_SLICE_LABEL } from "@/constants/charts";
@@ -47,9 +45,7 @@ export function ShareOfVoiceTable({
   onRowPointerEnter,
   companyName,
   aliases,
-  organizationId,
 }: ShareOfVoiceTableProps) {
-  const [trackBrand, setTrackBrand] = useState<string | null>(null);
   const rows = buildShareOfVoiceRows(points, {
     limit,
     competitors,
@@ -82,11 +78,6 @@ export function ShareOfVoiceTable({
             />
           )}
           <span className="truncate">{row.brand}</span>
-          <ShareOfVoiceBrandTag
-            onTrack={organizationId ? setTrackBrand : undefined}
-            own={isOwnBrandName(row.brand, companyName, aliases)}
-            row={row}
-          />
         </span>
       ),
     },
@@ -192,34 +183,19 @@ export function ShareOfVoiceTable({
   }
 
   return (
-    <>
-      <Table
-        className="rounded-2xl"
-        columns={columns}
-        data={rows}
-        defaultSort={{ key: "share", direction: "desc" }}
-        emptyState="No competitor data yet"
-        getRowId={(row) => row.brand}
-        height={GEO_VISIBILITY_TABLE_HEIGHT}
-        minHeight={GEO_VISIBILITY_TABLE_HEIGHT}
-        onRowClick={onRowClick}
-        onRowPointerEnter={onRowPointerEnter}
-        resizable
-        rowHeight={TABLE_ROW_HEIGHT}
-      />
-      {organizationId ? (
-        <CompetitorEditDialog
-          competitor={null}
-          initialName={trackBrand ?? undefined}
-          onOpenChange={(open) => {
-            if (!open) {
-              setTrackBrand(null);
-            }
-          }}
-          open={trackBrand !== null}
-          organizationId={organizationId}
-        />
-      ) : null}
-    </>
+    <Table
+      className="rounded-2xl"
+      columns={columns}
+      data={rows}
+      defaultSort={{ key: "share", direction: "desc" }}
+      emptyState="No competitor data yet"
+      getRowId={(row) => row.brand}
+      height={GEO_VISIBILITY_TABLE_HEIGHT}
+      minHeight={GEO_VISIBILITY_TABLE_HEIGHT}
+      onRowClick={onRowClick}
+      onRowPointerEnter={onRowPointerEnter}
+      resizable
+      rowHeight={TABLE_ROW_HEIGHT}
+    />
   );
 }

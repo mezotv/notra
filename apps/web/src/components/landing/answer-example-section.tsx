@@ -1,8 +1,4 @@
-"use client";
-
 import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
-import { GeoPromptAnswerThread } from "@notra/ui/components/geo/geo-prompt-answer-thread";
-import { PromptEngineSwitcher } from "@notra/ui/components/geo/prompt-engine-switcher";
 import { PromptOutcomeIcon } from "@notra/ui/components/geo/prompt-outcome-icon";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
@@ -14,10 +10,9 @@ import {
   TableRow,
 } from "@notra/ui/components/ui/table";
 import { cn } from "@notra/ui/lib/utils";
-import { useState } from "react";
 
+import { DeferredAnswerDemo } from "@/components/landing/deferred-answer-demo";
 import {
-  ANSWER_EXAMPLE_DEFAULT_ENGINE,
   ANSWER_EXAMPLE_FACTS,
   ANSWER_EXAMPLE_HEADING,
   ANSWER_EXAMPLE_OUTCOME_LABELS,
@@ -30,19 +25,11 @@ import {
   ANSWER_EXAMPLE_SENTIMENT_CLASS,
   ANSWER_EXAMPLE_SENTIMENT_LABELS,
   ANSWER_EXAMPLE_SUBCOPY,
-  ANSWER_EXAMPLE_TIMESTAMP,
 } from "@/constants/landing/answer-example";
 import { GEO_ENGINE_NAMES } from "@/constants/landing/geo-engines";
 import { answerPositionTone } from "@/utils/answer-example";
 
 const HEADER_CLASS = "text-muted-foreground text-xs";
-
-const SWITCHER_ITEMS = ANSWER_EXAMPLE_RESULTS.map((result) => ({
-  engine: result.id,
-  family: GEO_ENGINE_NAMES[result.id],
-  label: GEO_ENGINE_NAMES[result.id],
-  showSearchIcon: false,
-}));
 
 function ResultsTable() {
   return (
@@ -125,11 +112,6 @@ function ResultsTable() {
 }
 
 export function AnswerExampleSection() {
-  const [engine, setEngine] = useState<string>(ANSWER_EXAMPLE_DEFAULT_ENGINE);
-  const active =
-    ANSWER_EXAMPLE_RESULTS.find((result) => result.id === engine) ??
-    ANSWER_EXAMPLE_RESULTS[0];
-
   return (
     <section className="mx-auto flex w-full max-w-360 flex-col items-center px-6 pt-24 antialiased [font-synthesis:none] sm:px-12 lg:px-20 lg:pt-40">
       <div className="flex w-full flex-col items-center gap-12 lg:gap-16">
@@ -142,30 +124,14 @@ export function AnswerExampleSection() {
           </p>
         </header>
         <div className="grid w-full grid-cols-1 items-start gap-8 lg:grid-cols-[1.25fr_1fr]">
-          <div className="border-border bg-background flex h-[40rem] flex-col overflow-hidden rounded-2xl border shadow-[0_0.125rem_1.4375rem_#0000001A,0_0.0625rem_0.125rem_#0000000A] dark:shadow-none">
-            <div className="border-border flex shrink-0 flex-col gap-3 border-b px-6 pt-5 pb-3">
-              <p className="text-xl leading-snug font-semibold text-balance">
-                {ANSWER_EXAMPLE_PROMPT}
+          <DeferredAnswerDemo>
+            <div className="border-border bg-background h-[40rem] overflow-hidden rounded-2xl border px-6 py-5">
+              <p className="text-xl font-semibold">{ANSWER_EXAMPLE_PROMPT}</p>
+              <p className="text-muted-foreground mt-8">
+                {ANSWER_EXAMPLE_RESULTS[0]?.excerpt.split("\n\n")[0]}
               </p>
-              <PromptEngineSwitcher
-                active={engine}
-                items={SWITCHER_ITEMS}
-                onChange={setEngine}
-              />
             </div>
-            {active ? (
-              <GeoPromptAnswerThread
-                key={active.id}
-                prompt={ANSWER_EXAMPLE_PROMPT}
-                result={{
-                  engine: active.id,
-                  excerpt: active.excerpt,
-                  mentioned: active.mentioned,
-                }}
-                timestamp={ANSWER_EXAMPLE_TIMESTAMP}
-              />
-            ) : null}
-          </div>
+          </DeferredAnswerDemo>
           <div className="flex flex-col gap-8">
             <ResultsTable />
             <ul className="flex flex-col gap-5">

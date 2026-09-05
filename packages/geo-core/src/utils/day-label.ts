@@ -1,6 +1,7 @@
 const dayLabelFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
+  timeZone: "UTC",
 });
 
 export function todayIsoDate(): string {

@@ -28,6 +28,7 @@ import {
 
 export function createFakeAdapter(options: FakeAdapterOptions): FakeAdapter {
   const calls: RecordedRouterCall[] = [];
+  const createdModels: string[] = [];
   const buildProviderOptions =
     options.id === "vercel"
       ? buildVercelProviderOptions
@@ -45,70 +46,79 @@ export function createFakeAdapter(options: FakeAdapterOptions): FakeAdapter {
           },
         };
 
-  const createModel = (modelId: string): LanguageModelV3 => ({
-    specificationVersion: "v3",
-    provider: `fake-${options.id}`,
-    modelId,
-    supportedUrls: {},
-    doGenerate(callOptions): Promise<LanguageModelV3GenerateResult> {
-      const call = { gateway: options.id, modelId, options: callOptions };
-      calls.push(call);
-      options.onCall?.(call);
-      return Promise.resolve({
-        content: [{ type: "text", text: `${options.id}:${modelId}` }],
-        finishReason: { unified: "stop", raw: "stop" },
-        usage: {
-          inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
-          outputTokens: { total: 1, text: 1, reasoning: 0 },
-        },
-        warnings: [],
-        providerMetadata: providerMetadata(),
-      });
-    },
-    doStream(callOptions): Promise<LanguageModelV3StreamResult> {
-      const call = { gateway: options.id, modelId, options: callOptions };
-      calls.push(call);
-      options.onCall?.(call);
-      const parts: LanguageModelV3StreamPart[] = [
-        { type: "stream-start", warnings: [] },
-        {
-          type: "text-start",
-          id: "t",
-          ...(options.id === "vercel"
-            ? { providerMetadata: providerMetadata() }
-            : {}),
-        },
-        { type: "text-delta", id: "t", delta: `${options.id}:${modelId}` },
-        { type: "text-end", id: "t" },
-        {
-          type: "finish",
+  const createModel = (modelId: string): LanguageModelV3 => {
+    createdModels.push(modelId);
+    return {
+      specificationVersion: "v3",
+      provider: `fake-${options.id}`,
+      modelId,
+      supportedUrls: {},
+      doGenerate(callOptions): Promise<LanguageModelV3GenerateResult> {
+        const call = { gateway: options.id, modelId, options: callOptions };
+        calls.push(call);
+        options.onCall?.(call);
+        return Promise.resolve({
+          content: [{ type: "text", text: `${options.id}:${modelId}` }],
           finishReason: { unified: "stop", raw: "stop" },
           usage: {
             inputTokens: { total: 1, noCache: 1, cacheRead: 0, cacheWrite: 0 },
             outputTokens: { total: 1, text: 1, reasoning: 0 },
           },
-          ...(options.id === "openrouter"
-            ? { providerMetadata: providerMetadata() }
-            : {}),
-        },
-      ];
-      return Promise.resolve({
-        stream: new ReadableStream<LanguageModelV3StreamPart>({
-          start(controller) {
-            for (const part of parts) {
-              controller.enqueue(part);
-            }
-            controller.close();
+          warnings: [],
+          providerMetadata: providerMetadata(),
+        });
+      },
+      doStream(callOptions): Promise<LanguageModelV3StreamResult> {
+        const call = { gateway: options.id, modelId, options: callOptions };
+        calls.push(call);
+        options.onCall?.(call);
+        const parts: LanguageModelV3StreamPart[] = [
+          { type: "stream-start", warnings: [] },
+          {
+            type: "text-start",
+            id: "t",
+            ...(options.id === "vercel"
+              ? { providerMetadata: providerMetadata() }
+              : {}),
           },
-        }),
-      });
-    },
-  });
+          { type: "text-delta", id: "t", delta: `${options.id}:${modelId}` },
+          { type: "text-end", id: "t" },
+          {
+            type: "finish",
+            finishReason: { unified: "stop", raw: "stop" },
+            usage: {
+              inputTokens: {
+                total: 1,
+                noCache: 1,
+                cacheRead: 0,
+                cacheWrite: 0,
+              },
+              outputTokens: { total: 1, text: 1, reasoning: 0 },
+            },
+            ...(options.id === "openrouter"
+              ? { providerMetadata: providerMetadata() }
+              : {}),
+          },
+        ];
+        return Promise.resolve({
+          stream: new ReadableStream<LanguageModelV3StreamPart>({
+            start(controller) {
+              for (const part of parts) {
+                controller.enqueue(part);
+              }
+              controller.close();
+            },
+          }),
+        });
+      },
+    };
+  };
 
   const adapter: FakeAdapter = {
     id: options.id,
     enforcesZdr: options.enforcesZdr ?? true,
     calls,
+    createdModels,
     balanceCalls: 0,
     supportsModel: options.supportedModels ?? (() => true),
     mapModelId: (modelId) => modelId,
@@ -117,7 +127,9 @@ export function createFakeAdapter(options: FakeAdapterOptions): FakeAdapter {
     checkHealth: () => Promise.resolve({ ok: true }),
     getBalance() {
       adapter.balanceCalls += 1;
-      return Promise.resolve({ balance: options.balance ?? 100 });
+      return Promise.resolve({
+        balance: options.balance ?? 100,
+      });
     },
     extractRouteMetadata(metadata) {
       const block = metadata?.[metadataKey] as

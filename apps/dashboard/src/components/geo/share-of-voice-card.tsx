@@ -55,7 +55,6 @@ export function ShareOfVoiceCard({
         isScanning={isScanning}
         onRowClick={organizationSlug ? openRow : undefined}
         onRowPointerEnter={organizationSlug ? prefetchRow : undefined}
-        organizationId={organizationId}
         points={points}
         timeseries={timeseries}
       />
