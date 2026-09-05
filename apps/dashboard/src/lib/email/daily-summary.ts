@@ -178,9 +178,13 @@ async function sendDailySummaryForOrganization({
     ),
   ]);
 
-  const ownerEmails = ownerMemberships
-    .map((membership) => membership.users.email)
-    .filter(Boolean);
+  const ownerEmails: string[] = [];
+  for (const membership of ownerMemberships) {
+    const email = membership.users.email;
+    if (email) {
+      ownerEmails.push(email);
+    }
+  }
 
   if (!(org && ownerEmails.length > 0)) {
     return "quiet";
@@ -260,6 +264,7 @@ async function sendDailySummaryForOrganization({
 
   let sent = 0;
   let failed = false;
+  // Send sequentially so recipient retries do not create concurrent Resend bursts.
   for (const recipientEmail of ownerEmails) {
     const result = await sendDailySummaryEmail(resend, {
       recipientEmail,
