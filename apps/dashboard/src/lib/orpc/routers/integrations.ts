@@ -920,22 +920,16 @@ export const integrationsRouter = {
                     : []
                 )
                 .sort((left, right) => left.name.localeCompare(right.name)),
+              exists: true,
             };
           } catch (error) {
-            if (
-              typeof error === "object" &&
-              error !== null &&
-              "status" in error &&
-              error.status === 404
-            ) {
-              throw notFound("Directory not found");
+            if (hasGitHubStatus(error, 404)) {
+              if (!input.directory) {
+                throw notFound("Repository contents not found");
+              }
+              return { directories: [], exists: false };
             }
-            if (
-              typeof error === "object" &&
-              error !== null &&
-              "status" in error &&
-              (error.status === 401 || error.status === 403)
-            ) {
+            if (hasGitHubStatus(error, 401) || hasGitHubStatus(error, 403)) {
               throw forbidden("GitHub denied access to this repository");
             }
             throw error;

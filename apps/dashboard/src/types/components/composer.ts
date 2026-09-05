@@ -22,6 +22,8 @@ export interface ComposerChipProps {
   editLabel?: string;
   onClick?: () => void;
   pending?: boolean;
+  className?: string;
+  labelClassName?: string;
 }
 
 export interface ComposerToolbarProps {

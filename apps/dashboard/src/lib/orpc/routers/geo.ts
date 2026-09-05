@@ -1,4 +1,6 @@
 import {
+  beginGscIntegrationDisconnect,
+  claimOrConfirmGscSchedule,
   deleteGscIntegration,
   GscApiError,
   GscReauthRequiredError,
@@ -6,12 +8,17 @@ import {
   getGscOAuthCredentials,
   listGscSites,
   revokeGscToken,
-  updateGscIntegration,
 } from "@notra/ai/integrations/google-search-console";
 import {
   createQstashRouteSchedule,
   deleteQstashSchedule,
 } from "@notra/ai/qstash/triggers";
+import type { GscIntegrationRow } from "@notra/ai/types/google-search-console";
+import {
+  GscIntegrationLockBusyError,
+  GscIntegrationLockLostError,
+  withGscIntegrationLock,
+} from "@notra/ai/utils/gsc-integration-lock";
 import { db } from "@notra/db/drizzle";
 import {
   geoAgentReadinessReports,
@@ -94,7 +101,10 @@ import {
   seedGeoSampleData,
 } from "@notra/geo-core/geo/sample-data";
 import { runGeoSequenceNow } from "@notra/geo-core/geo/scan";
-import { syncGscSuggestions } from "@notra/geo-core/geo/search-console";
+import {
+  selectGscSiteAndSyncSuggestions,
+  syncGscSuggestions,
+} from "@notra/geo-core/geo/search-console";
 import {
   createGeoSequence,
   deleteGeoSequence,
@@ -163,10 +173,12 @@ import type {
 } from "@notra/geo-core/types/geo";
 import type {
   GeoSearchConsoleStatus,
+  GscKeywordsResponse,
   GscSitesResponse,
   GscSyncResult,
 } from "@notra/geo-core/types/google-search-console";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { QstashError } from "@upstash/qstash";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
@@ -212,7 +224,12 @@ import {
 import { geoCoreDashboardLayer } from "@/lib/geo/configure";
 import { authorizedProcedure } from "@/lib/orpc/base";
 import { runOrpcEffect } from "@/lib/orpc/effect";
-import { badRequest, notFound, tooManyRequests } from "@/lib/orpc/utils/errors";
+import {
+  badRequest,
+  notFound,
+  serviceUnavailable,
+  tooManyRequests,
+} from "@/lib/orpc/utils/errors";
 import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
 import { geoScanStartInputSchema } from "@/schemas/geo-analytics";
 import {
@@ -354,25 +371,205 @@ async function runGscSyncOrBadRequest(
   }
 }
 
-async function ensureGscSchedule(
+async function withGscIntegrationLockOrServiceUnavailable<T>(
   organizationId: string,
-  existingScheduleId: string | null
-): Promise<string | null> {
-  if (existingScheduleId) {
-    return existingScheduleId;
-  }
+  operation: (
+    signal: AbortSignal,
+    assertOwned: () => Promise<void>
+  ) => Promise<T>
+): Promise<T> {
   try {
-    // Deterministic id: a retry (or a row that never recorded the id) reuses the
-    // same schedule instead of leaving an orphan firing every week.
-    return await createQstashRouteSchedule({
-      path: GSC_SYNC_WORKFLOW_PATH,
-      cron: GSC_SYNC_CRON,
-      body: { organizationId },
-      scheduleId: `${GSC_SCHEDULE_ID_PREFIX}${organizationId}`,
-    });
+    return await withGscIntegrationLock(organizationId, operation);
   } catch (error) {
-    console.error("[GSC] Failed to create weekly sync schedule:", error);
-    return null;
+    if (
+      error instanceof GscIntegrationLockBusyError ||
+      error instanceof GscIntegrationLockLostError
+    ) {
+      throw serviceUnavailable(
+        "Google Search Console is temporarily busy. Please try again."
+      );
+    }
+    throw error;
+  }
+}
+
+function assertGscDisconnectNotInProgress(
+  integration: GscIntegrationRow
+): void {
+  if (integration.disconnectingAt) {
+    throw serviceUnavailable(
+      "Google Search Console is being disconnected. Please try again."
+    );
+  }
+}
+
+function getGscScheduleId(integrationId: string): string {
+  return `${GSC_SCHEDULE_ID_PREFIX}${integrationId}`;
+}
+
+async function removeStaleGscScheduleAfterLeaseLoss(
+  integration: GscIntegrationRow,
+  scheduleId: string
+) {
+  try {
+    const currentIntegration = await getGscIntegration(
+      integration.organizationId
+    );
+    if (
+      currentIntegration?.id === integration.id &&
+      !currentIntegration.disconnectingAt
+    ) {
+      return;
+    }
+    await removeGscSchedule(scheduleId);
+  } catch (error) {
+    console.error(
+      "[GSC] Failed to clean up stale weekly sync schedule:",
+      error
+    );
+  }
+}
+
+async function ensureGscSchedule(
+  integration: GscIntegrationRow
+): Promise<string | null> {
+  return await withGscIntegrationLockOrServiceUnavailable(
+    integration.organizationId,
+    async (signal, assertLockOwned) => {
+      const currentIntegration = await getGscIntegration(
+        integration.organizationId
+      );
+      if (
+        !currentIntegration ||
+        currentIntegration.id !== integration.id ||
+        currentIntegration.disconnectingAt
+      ) {
+        return null;
+      }
+      if (currentIntegration.qstashScheduleId) {
+        return currentIntegration.qstashScheduleId;
+      }
+
+      const scheduleId = getGscScheduleId(currentIntegration.id);
+      const legacyScheduleId = `${GSC_SCHEDULE_ID_PREFIX}${currentIntegration.organizationId}`;
+      try {
+        // Older releases used an organization-scoped custom ID. Remove an
+        // unrecorded legacy schedule before creating this generation's ID so
+        // an interrupted migration cannot leave two weekly jobs running.
+        await assertLockOwned();
+        await deleteGscScheduleIfPresent(legacyScheduleId);
+        await assertLockOwned();
+      } catch (error) {
+        signal.throwIfAborted();
+        console.error(
+          "[GSC] Failed to reconcile legacy weekly sync schedule:",
+          error
+        );
+        return null;
+      }
+
+      let creationError: unknown = null;
+      try {
+        // The QStash SDK does not accept an AbortSignal. The lock waits for
+        // this request to settle and compensates below if its lease was lost.
+        // Scoping the id to this integration keeps that cleanup generation-safe.
+        await assertLockOwned();
+        await createQstashRouteSchedule({
+          path: GSC_SYNC_WORKFLOW_PATH,
+          cron: GSC_SYNC_CRON,
+          body: { organizationId: currentIntegration.organizationId },
+          scheduleId,
+        });
+      } catch (error) {
+        creationError = error;
+      }
+
+      try {
+        await assertLockOwned();
+      } catch (error) {
+        await removeStaleGscScheduleAfterLeaseLoss(
+          currentIntegration,
+          scheduleId
+        );
+        throw error;
+      }
+      if (creationError) {
+        console.error(
+          "[GSC] Failed to create weekly sync schedule:",
+          creationError
+        );
+        return null;
+      }
+
+      let claimed: GscIntegrationRow | null = null;
+      try {
+        claimed = await claimOrConfirmGscSchedule(
+          currentIntegration,
+          scheduleId,
+          signal,
+          assertLockOwned
+        );
+      } catch (error) {
+        signal.throwIfAborted();
+        console.error(
+          "[GSC] Failed to record weekly sync schedule; retrying:",
+          error
+        );
+        try {
+          // The first write may have committed before surfacing an error. This
+          // idempotent retry confirms that exact id without relying on stale fields.
+          claimed = await claimOrConfirmGscSchedule(
+            currentIntegration,
+            scheduleId,
+            signal,
+            assertLockOwned
+          );
+        } catch (retryError) {
+          signal.throwIfAborted();
+          console.error(
+            "[GSC] Failed to record weekly sync schedule:",
+            retryError
+          );
+        }
+      }
+      signal.throwIfAborted();
+
+      if (claimed) {
+        return scheduleId;
+      }
+
+      try {
+        const refreshedIntegration = await getGscIntegration(
+          currentIntegration.organizationId
+        );
+        await assertLockOwned();
+        if (refreshedIntegration?.qstashScheduleId === scheduleId) {
+          return scheduleId;
+        }
+        // Reconnect, disconnect, and schedule creation all take the same lock,
+        // so no newer integration can claim this candidate before it is removed.
+        await removeGscSchedule(scheduleId);
+        signal.throwIfAborted();
+        return refreshedIntegration?.qstashScheduleId ?? null;
+      } catch (error) {
+        signal.throwIfAborted();
+        // The deterministic id remains recoverable: the next ensure attempt
+        // overwrites the same QStash schedule instead of creating a duplicate.
+        console.error("[GSC] Failed to reconcile weekly sync schedule:", error);
+        return null;
+      }
+    }
+  );
+}
+
+async function deleteGscScheduleIfPresent(scheduleId: string) {
+  try {
+    await deleteQstashSchedule(scheduleId);
+  } catch (error) {
+    if (error instanceof QstashError && error.status === 404) {
+      return;
+    }
+    throw error;
   }
 }
 
@@ -381,10 +578,24 @@ async function removeGscSchedule(scheduleId: string | null) {
     return;
   }
   try {
-    await deleteQstashSchedule(scheduleId);
+    await deleteGscScheduleIfPresent(scheduleId);
   } catch (error) {
     console.error("[GSC] Failed to delete QStash schedule:", error);
   }
+}
+
+function getGscScheduleIdsForDisconnect(
+  integration: GscIntegrationRow
+): string[] {
+  return [
+    ...new Set(
+      [
+        integration.qstashScheduleId,
+        getGscScheduleId(integration.id),
+        `${GSC_SCHEDULE_ID_PREFIX}${integration.organizationId}`,
+      ].filter((scheduleId): scheduleId is string => scheduleId !== null)
+    ),
+  ];
 }
 
 async function requireDefaultProjectId(
@@ -1384,7 +1595,11 @@ export const geoRouter = {
       let sites: GeoSearchConsoleStatus["sites"] = [];
       let lastError = integration.lastError;
       let refreshed = integration;
-      if (!integration.siteUrl && integration.status === "active") {
+      if (
+        !integration.disconnectingAt &&
+        !integration.siteUrl &&
+        integration.status === "active"
+      ) {
         try {
           sites = await listGscSites(integration);
         } catch (error) {
@@ -1412,6 +1627,25 @@ export const geoRouter = {
         sites,
       };
     }),
+  searchConsoleKeywords: authorizedProcedure
+    .input(geoOrganizationInputSchema)
+    .handler(async ({ context, input }): Promise<GscKeywordsResponse> => {
+      await assertGeoAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+
+      const integration = await getGscIntegration(input.organizationId);
+      // A disconnect in flight may still fail its revocation; do not keep
+      // highlighting keywords from an integration that is on its way out.
+      return {
+        keywords:
+          integration && !integration.disconnectingAt
+            ? integration.topQueries
+            : [],
+      };
+    }),
   searchConsoleSites: authorizedProcedure
     .input(geoOrganizationInputSchema)
     .handler(async ({ context, input }): Promise<GscSitesResponse> => {
@@ -1425,6 +1659,7 @@ export const geoRouter = {
       if (!integration) {
         throw notFound("Google Search Console is not connected");
       }
+      assertGscDisconnectNotInProgress(integration);
 
       try {
         return { sites: await listGscSites(integration) };
@@ -1448,6 +1683,7 @@ export const geoRouter = {
       if (!integration) {
         throw notFound("Google Search Console is not connected");
       }
+      assertGscDisconnectNotInProgress(integration);
 
       let sites: Awaited<ReturnType<typeof listGscSites>>;
       try {
@@ -1464,60 +1700,54 @@ export const geoRouter = {
         );
       }
 
-      const scheduleId = await ensureGscSchedule(
-        input.organizationId,
-        integration.qstashScheduleId
-      );
-
-      const updated = await updateGscIntegration(input.organizationId, {
-        siteUrl: input.siteUrl,
-        qstashScheduleId: scheduleId,
-        lastError: null,
-      });
-      if (!updated) {
-        // The row vanished mid-flight; do not leave the schedule behind.
-        await removeGscSchedule(scheduleId);
-        throw notFound("Google Search Console is not connected");
-      }
-
+      let synced: GscSyncResult;
       try {
-        const synced = await runGscSyncOrBadRequest(input.organizationId);
-        trackGeoRouterEvent({
-          context,
-          input,
-          event: POSTHOG_EVENTS.GSC_SITE_SELECTED,
-          properties: {
-            sync_status: synced.status,
-            keywords: synced.keywords ?? 0,
-            suggestions_created: synced.suggestionsAdded ?? 0,
-            weekly_sync_scheduled: scheduleId !== null,
-          },
-        });
-        return synced;
+        synced = await selectGscSiteAndSyncSuggestions(
+          integration,
+          input.siteUrl
+        );
       } catch (error) {
         console.error(
           "[GSC] Initial sync failed after selecting property:",
           error
         );
+        throw badRequest(
+          toGscErrorMessage(error, "Failed to sync Search Console keywords")
+        );
+      }
+      if (synced.status !== "completed") {
+        throw badRequest(
+          "Search Console changed before the property could be connected"
+        );
+      }
+
+      const selectedIntegration = await getGscIntegration(input.organizationId);
+      let scheduleId = selectedIntegration?.qstashScheduleId ?? null;
+      if (selectedIntegration?.siteUrl === input.siteUrl) {
         try {
-          // Keep authentication changes made while refreshing the token, but
-          // restore the selection state this request replaced.
-          await updateGscIntegration(input.organizationId, {
-            siteUrl: integration.siteUrl,
-            qstashScheduleId: integration.qstashScheduleId,
-            lastError: integration.lastError,
-          });
-        } catch (rollbackError) {
+          scheduleId = await ensureGscSchedule(selectedIntegration);
+        } catch (error) {
+          // The property and its first sync are already committed. Scheduling
+          // remains best-effort and is backfilled by the next manual sync.
           console.error(
-            "[GSC] Failed to restore integration after initial sync:",
-            rollbackError
+            "[GSC] Failed to schedule weekly sync after selecting property:",
+            error
           );
         }
-        if (scheduleId && scheduleId !== integration.qstashScheduleId) {
-          await removeGscSchedule(scheduleId);
-        }
-        throw error;
       }
+
+      trackGeoRouterEvent({
+        context,
+        input,
+        event: POSTHOG_EVENTS.GSC_SITE_SELECTED,
+        properties: {
+          sync_status: synced.status,
+          keywords: synced.keywords ?? 0,
+          suggestions_created: synced.suggestionsAdded ?? 0,
+          weekly_sync_scheduled: scheduleId !== null,
+        },
+      });
+      return synced;
     }),
   searchConsoleSync: authorizedProcedure
     .input(geoOrganizationInputSchema)
@@ -1545,21 +1775,14 @@ export const geoRouter = {
       if (!integration) {
         throw notFound("Google Search Console is not connected");
       }
+      assertGscDisconnectNotInProgress(integration);
       if (!integration.siteUrl) {
         throw badRequest("Select a Search Console property first");
       }
 
       if (!integration.qstashScheduleId) {
         // Backfill the weekly schedule if it could not be created earlier.
-        const scheduleId = await ensureGscSchedule(input.organizationId, null);
-        if (scheduleId) {
-          const updated = await updateGscIntegration(input.organizationId, {
-            qstashScheduleId: scheduleId,
-          });
-          if (!updated) {
-            await removeGscSchedule(scheduleId);
-          }
-        }
+        await ensureGscSchedule(integration);
       }
 
       return await runGscSyncOrBadRequest(input.organizationId);
@@ -1573,14 +1796,64 @@ export const geoRouter = {
         user: context.user,
       });
 
-      const integration = await deleteGscIntegration(input.organizationId);
+      const integration = await withGscIntegrationLockOrServiceUnavailable(
+        input.organizationId,
+        async (signal, assertLockOwned) => {
+          signal.throwIfAborted();
+          const disconnecting = await beginGscIntegrationDisconnect(
+            input.organizationId,
+            signal,
+            assertLockOwned
+          );
+          if (!disconnecting) {
+            return null;
+          }
+
+          // Keep the durable row until Google confirms the grant is revoked.
+          // This request is bounded independently and must finish even if the
+          // Redis lease is lost, so a retry still has the exact token to revoke.
+          await assertLockOwned();
+          if (!(await revokeGscToken(disconnecting))) {
+            throw serviceUnavailable(
+              "Google Search Console could not be disconnected. Please try again."
+            );
+          }
+          signal.throwIfAborted();
+
+          const scheduleIds = getGscScheduleIdsForDisconnect(disconnecting);
+          try {
+            await Promise.all(scheduleIds.map(deleteGscScheduleIfPresent));
+          } catch (error) {
+            console.error(
+              "[GSC] Failed to remove schedules on disconnect:",
+              error
+            );
+            throw serviceUnavailable(
+              "Google Search Console could not be disconnected. Please try again."
+            );
+          }
+          signal.throwIfAborted();
+
+          const deleted = await deleteGscIntegration(
+            disconnecting,
+            signal,
+            assertLockOwned
+          );
+          if (!deleted) {
+            throw serviceUnavailable(
+              "Google Search Console changed during disconnect. Please try again."
+            );
+          }
+
+          // Catch a schedule create that settled between the first cleanup and
+          // the conditional row deletion. These ids are generation-specific.
+          await Promise.all(scheduleIds.map(removeGscSchedule));
+          return deleted;
+        }
+      );
       if (!integration) {
         return { disconnected: false };
       }
-      await Promise.all([
-        removeGscSchedule(integration.qstashScheduleId),
-        revokeGscToken(integration),
-      ]);
       trackGeoRouterEvent({
         context,
         input,

@@ -7,6 +7,9 @@ export const GEO_BRIEF_MAX_TITLE_LENGTH = 120;
 export const GEO_BRIEF_MIN_SECTIONS = 3;
 export const GEO_BRIEF_MAX_SECTIONS = 8;
 export const GEO_BRIEF_MAX_CLAIMS = 5;
+/** Targets the planner aims for; the MAX_* values above are hard ceilings. */
+export const GEO_BRIEF_TARGET_MAX_SECTIONS = 6;
+export const GEO_BRIEF_TARGET_MAX_CLAIMS = 3;
 export const GEO_BRIEF_MAX_QUESTIONS = 8;
 export const GEO_BRIEF_MAX_LINKS = 6;
 export const GEO_BRIEF_MAX_CHECKLIST = 8;

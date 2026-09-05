@@ -47,7 +47,6 @@ import {
 } from "@notra/ui/components/ui/sidebar";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -62,6 +61,7 @@ import { cn } from "@/lib/utils";
 import { getChatHistoryGroups } from "@/utils/chat-history-groups";
 
 import { SidebarLabel } from "./sidebar-label";
+import { SidebarNavLink } from "./sidebar-nav-link";
 
 export function ChatHistoryNav() {
   const { activeOrganization } = useOrganizationsContext();
@@ -254,7 +254,7 @@ export function ChatHistoryNav() {
                             />
                           </div>
                         ) : (
-                          <Link
+                          <SidebarNavLink
                             href={`/${slug}/chat/${session.chatId}`}
                             onFocus={() => prefetchChatHistory(session.chatId)}
                             onMouseEnter={() =>
@@ -263,7 +263,7 @@ export function ChatHistoryNav() {
                             replace={isOnChatRoute}
                           >
                             <span className="truncate">{session.title}</span>
-                          </Link>
+                          </SidebarNavLink>
                         )
                       }
                       tooltip={session.title}
@@ -356,14 +356,13 @@ export function ChatHistoryNav() {
               <SidebarMenuButton
                 className="cursor-pointer"
                 render={
-                  <Link
+                  <SidebarNavLink
                     href={`/${slug}/chat`}
-                    prefetch={true}
                     replace={isOnChatRoute}
                   >
                     <HugeiconsIcon icon={Add01Icon} />
                     <SidebarLabel>New chat</SidebarLabel>
-                  </Link>
+                  </SidebarNavLink>
                 }
                 tooltip="New chat"
               />

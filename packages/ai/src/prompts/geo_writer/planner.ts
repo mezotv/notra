@@ -1,4 +1,13 @@
 import {
+  GEO_BRIEF_MAX_CHECKLIST,
+  GEO_BRIEF_MAX_CLAIMS,
+  GEO_BRIEF_MAX_EVIDENCE_ITEMS,
+  GEO_BRIEF_MAX_LINKS,
+  GEO_BRIEF_MAX_QUESTIONS,
+  GEO_BRIEF_MAX_SECTIONS,
+  GEO_BRIEF_MIN_SECTIONS,
+  GEO_BRIEF_TARGET_MAX_CLAIMS,
+  GEO_BRIEF_TARGET_MAX_SECTIONS,
   GEO_PLANNER_MAX_EVIDENCE_ENGINES,
   GEO_PLANNER_MAX_EVIDENCE_EXCERPT_CHARS,
   GEO_PLANNER_MAX_EVIDENCE_SOURCES,
@@ -36,7 +45,7 @@ export function buildGeoPlannerSystem(): string {
     How to build the brief:
     - Pick ONE target prompt: the exact question a buyer would type into an AI assistant. Prefer a provided content gap prompt when the topic matches one.
     - Every article is a blog post. Choose the subtype that fits the intent: guide, comparison, listicle, how-to, faq, or alternatives. If the user already chose one, keep it.
-    - Write 3 to 6 sections. Each section gets a heading, a one-sentence goal, and 1 to 3 concrete, checkable claims the writer must support.
+    - Aim for ${GEO_BRIEF_MIN_SECTIONS} to ${GEO_BRIEF_TARGET_MAX_SECTIONS} sections. Each section gets a heading, a one-sentence goal, and 1 to ${GEO_BRIEF_TARGET_MAX_CLAIMS} concrete, checkable claims the writer must support. More is allowed only up to the hard limits below.
     - List the questions the FAQ must answer directly.
     - Choose internal links ONLY from the provided sitemap pages. Copy each URL exactly as listed. If no sitemap pages are provided, return an empty internalLinks array. Never invent paths, subdomains, or query strings.
     - The acceptance checklist mirrors the GEO writing rules below, adapted to this article.
@@ -48,6 +57,12 @@ export function buildGeoPlannerSystem(): string {
     ${GEO_WRITING_RULES}
 
     ${prohibitedLanguage}
+
+    Hard limits (ceilings, not targets; the brief is rejected when any is exceeded):
+    - Never fewer than ${GEO_BRIEF_MIN_SECTIONS} or more than ${GEO_BRIEF_MAX_SECTIONS} sections, never more than ${GEO_BRIEF_MAX_CLAIMS} claims per section.
+    - At most ${GEO_BRIEF_MAX_QUESTIONS} FAQ questions, ${GEO_BRIEF_MAX_LINKS} internal links, and ${GEO_BRIEF_MAX_CHECKLIST} checklist items.
+    - At most ${GEO_BRIEF_MAX_EVIDENCE_ITEMS} items each in competitorsToCounter, sourcesToReference, and missingCoverage.
+    - Keep every string to one or two short sentences. The whole brief must stay compact.
 
     Output rules:
     - Never use em dashes or en dashes anywhere. Use commas, periods, or parentheses.
@@ -221,7 +236,7 @@ export function buildGeoPlannerRepairPrompt(input: {
   previousOutput?: string;
 }): string {
   return dedent`
-    Your previous brief did not match the required structure. Fix these problems and return the complete brief again:
+    Your previous brief was not accepted. Fix these problems and return the complete brief again, within the hard limits:
     ${input.errors.map((error) => `- ${error}`).join("\n")}
     ${
       input.previousOutput

@@ -1,9 +1,15 @@
 import {
   exchangeGscAuthorizationCode,
   fetchGscAccountEmail,
+  GscDisconnectInProgressError,
+  getGscIntegration,
   getGscOAuthCredentials,
   upsertGscIntegration,
 } from "@notra/ai/integrations/google-search-console";
+import {
+  GscIntegrationLockLostError,
+  withGscIntegrationLock,
+} from "@notra/ai/utils/gsc-integration-lock";
 import { redis } from "@notra/ai/utils/redis";
 import {
   GSC_OAUTH_CALLBACK_PATH,
@@ -136,17 +142,72 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    let tokens: Awaited<ReturnType<typeof exchangeGscAuthorizationCode>>;
-    try {
-      tokens = await exchangeGscAuthorizationCode({
-        code,
-        redirectUri: getGscRedirectUri(baseUrl),
-      });
-    } catch (exchangeError) {
-      console.error(
-        "Google Search Console token exchange failed:",
-        exchangeError
-      );
+    // Set once the integration row is committed. A lease lost after that
+    // point only affects best-effort cleanup, not the stored connection.
+    let connectionCommitted = false;
+    const connect = withGscIntegrationLock(
+      oauthState.organizationId,
+      async (signal, assertLockOwned) => {
+        const currentIntegration = await getGscIntegration(
+          oauthState.organizationId
+        );
+        if (currentIntegration?.disconnectingAt) {
+          throw new GscDisconnectInProgressError();
+        }
+
+        let tokens: Awaited<ReturnType<typeof exchangeGscAuthorizationCode>>;
+        try {
+          tokens = await exchangeGscAuthorizationCode({
+            code,
+            redirectUri: getGscRedirectUri(baseUrl),
+            signal,
+          });
+        } catch (exchangeError) {
+          signal.throwIfAborted();
+          console.error(
+            "Google Search Console token exchange failed:",
+            exchangeError
+          );
+          return "token_exchange_failed" as const;
+        }
+
+        if (!tokens.refreshToken) {
+          return "missing_refresh_token" as const;
+        }
+
+        const googleAccountEmail = await fetchGscAccountEmail(
+          tokens.accessToken,
+          signal
+        );
+
+        await upsertGscIntegration(
+          {
+            organizationId: oauthState.organizationId,
+            userId: oauthState.userId,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            expiresAt: tokens.expiresAt,
+            googleAccountEmail,
+          },
+          signal,
+          assertLockOwned
+        );
+        connectionCommitted = true;
+        return "connected" as const;
+      }
+    );
+    const connectResult = await connect.catch((error: unknown) => {
+      if (error instanceof GscIntegrationLockLostError && connectionCommitted) {
+        console.error(
+          "[GSC] Integration lock lost after the connection was saved:",
+          error
+        );
+        return "connected" as const;
+      }
+      throw error;
+    });
+
+    if (connectResult === "token_exchange_failed") {
       await restoreOAuthState();
       return NextResponse.redirect(
         buildCallbackUrl(baseUrl, callbackPath, {
@@ -155,7 +216,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (!tokens.refreshToken) {
+    if (connectResult === "missing_refresh_token") {
       return NextResponse.redirect(
         buildCallbackUrl(baseUrl, callbackPath, {
           error: "gsc_missing_refresh_token",
@@ -163,23 +224,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const googleAccountEmail = await fetchGscAccountEmail(tokens.accessToken);
-
-    await upsertGscIntegration({
-      organizationId: oauthState.organizationId,
-      userId: oauthState.userId,
-      accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
-      expiresAt: tokens.expiresAt,
-      googleAccountEmail,
-    });
-
     return NextResponse.redirect(
       buildCallbackUrl(baseUrl, callbackPath, { gscConnected: "true" })
     );
   } catch (error) {
-    console.error("Error in Google Search Console OAuth callback:", error);
     await restoreOAuthState?.();
+    if (error instanceof GscDisconnectInProgressError) {
+      return NextResponse.redirect(
+        buildCallbackUrl(baseUrl, callbackPath, {
+          error: "gsc_disconnect_in_progress",
+        })
+      );
+    }
+    console.error("Error in Google Search Console OAuth callback:", error);
     return NextResponse.redirect(
       buildCallbackUrl(baseUrl, callbackPath, { error: "gsc_auth_failed" })
     );

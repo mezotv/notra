@@ -52,7 +52,12 @@ import type {
   ShareOfVoiceRow,
 } from "@notra/geo-core/types/geo";
 import type { GeoRequestPayload } from "@usenotra/geo";
-import type { ComponentProps, ReactNode } from "react";
+import type {
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  PointerEventHandler,
+  ReactNode,
+} from "react";
 
 import type { Button } from "@/components/button";
 import type { TableColumn } from "@/components/motion/table";
@@ -113,6 +118,37 @@ export interface GeoLayoutProps {
 
 export interface GeoPageContentProps {
   organizationSlug: string;
+}
+
+export interface GeoOverviewPageEmpty {
+  status: "empty";
+  organizationId: string;
+}
+
+export interface GeoOverviewPageReady {
+  status: "ready";
+  organizationId: string;
+  organizationSlug: string;
+  companyName: string;
+  geoRange: GeoRangeControl;
+  isScanning: boolean;
+  revealActive: boolean;
+  tabs: GeoTabsProps;
+  scanPreflight: ScanPreflightDialogProps;
+  onRunScan: () => void;
+}
+
+export type GeoOverviewPageModel =
+  | { status: "loading" }
+  | GeoOverviewPageEmpty
+  | GeoOverviewPageReady;
+
+export interface GeoOverviewLoadedProps {
+  page: GeoOverviewPageReady;
+}
+
+export interface GeoScanSpinnerProps {
+  visible: boolean;
 }
 
 export interface GeoStatDeltaProps {
@@ -743,6 +779,8 @@ export interface TrafficBreakdownCardProps {
   aside?: ReactNode;
   align?: "start" | "center" | "end";
   children: ReactNode;
+  onPointerEnter?: PointerEventHandler<HTMLDivElement>;
+  onPointerLeave?: PointerEventHandler<HTMLDivElement>;
 }
 
 export interface TrafficSourceGroupIconProps {
@@ -983,6 +1021,19 @@ export interface PromptAddDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   organizationId: string;
+}
+
+export interface PromptKeywordSegment {
+  text: string;
+  keyword: GeoSuggestionKeyword | null;
+}
+
+export interface PromptKeywordTextareaProps extends Omit<
+  ComponentPropsWithoutRef<"textarea">,
+  "value"
+> {
+  keywords: GeoSuggestionKeyword[];
+  value: string;
 }
 
 export interface GeoRemoveDialogNouns {

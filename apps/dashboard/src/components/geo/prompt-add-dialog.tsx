@@ -29,12 +29,12 @@ import {
   TabsList,
   TabsTrigger,
 } from "@notra/ui/components/ui/tabs";
-import { Textarea } from "@notra/ui/components/ui/textarea";
 import { type FormEvent, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
+import { PromptKeywordTextarea } from "@/components/geo/prompt-keyword-textarea";
 import { StatusSpinner } from "@/components/geo/status-spinner";
-import { useGeoGenerateFromWebsite } from "@/lib/hooks/use-geo";
+import { useGeoGenerateFromWebsite, useGscKeywords } from "@/lib/hooks/use-geo";
 import { useGeoPromptsDb } from "@/lib/hooks/use-geo-db";
 import { cn } from "@/lib/utils";
 import type { PromptAddDialogProps, PromptAddMode } from "@/types/geo";
@@ -66,6 +66,8 @@ export function PromptAddDialog({
   const [url, setUrl] = useState("");
   const { addPrompt } = useGeoPromptsDb(organizationId);
   const generate = useGeoGenerateFromWebsite(organizationId);
+  const { data: searchConsoleData } = useGscKeywords(organizationId, open);
+  const searchConsoleKeywords = searchConsoleData?.keywords ?? [];
 
   const trimmed = draft.trim();
   const remainingToMin = GEO_PROMPT_MIN_LENGTH - trimmed.length;
@@ -180,10 +182,11 @@ export function PromptAddDialog({
               >
                 <div className="space-y-2">
                   <Label htmlFor={promptId}>Question</Label>
-                  <Textarea
+                  <PromptKeywordTextarea
                     aria-describedby={promptHintId}
                     autoFocus
                     id={promptId}
+                    keywords={searchConsoleKeywords}
                     maxLength={GEO_PROMPT_MAX_LENGTH}
                     onChange={(event) => setDraft(event.target.value)}
                     onKeyDown={(event) => {
@@ -200,14 +203,21 @@ export function PromptAddDialog({
                     rows={4}
                     value={draft}
                   />
-                  <p
-                    className="text-muted-foreground text-xs tabular-nums"
+                  <div
+                    className="text-muted-foreground flex items-center justify-between gap-3 text-xs"
                     id={promptHintId}
                   >
-                    {remainingToMin > 0 && trimmed.length > 0
-                      ? `${remainingToMin} more characters`
-                      : `${trimmed.length}/${GEO_PROMPT_MAX_LENGTH}`}
-                  </p>
+                    {searchConsoleKeywords.length > 0 ? (
+                      <span>
+                        Top Search Console queries highlight as you type.
+                      </span>
+                    ) : null}
+                    <span className="ml-auto tabular-nums">
+                      {remainingToMin > 0 && trimmed.length > 0
+                        ? `${remainingToMin} more characters`
+                        : `${trimmed.length}/${GEO_PROMPT_MAX_LENGTH}`}
+                    </span>
+                  </div>
                 </div>
               </TabsContent>
               <TabsContent

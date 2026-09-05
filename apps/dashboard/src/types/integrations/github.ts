@@ -140,14 +140,68 @@ export interface GitHubDirectoryPickerProps {
   triggerId?: string;
 }
 
+export interface GitHubDirectoryChoiceProps {
+  depth: number;
+  helper?: string;
+  name: string;
+  path: string;
+}
+
+export interface GitHubDirectoryEntry {
+  name: string;
+  path: string;
+}
+
 export interface GitHubDirectoryNodeProps {
   depth: number;
   excludedPath?: string;
+  missing?: boolean;
   name: string;
   open: boolean;
   organizationId: string;
   path: string;
   repositoryId: string;
+}
+
+export interface GitHubDirectoryNodesProps {
+  depth: number;
+  directories: GitHubDirectoryEntry[];
+  excludedPath?: string;
+  open: boolean;
+  organizationId: string;
+  repositoryId: string;
+}
+
+export interface GitHubDirectoryExtraChoicesProps {
+  customDirectories: string[];
+  directory: string;
+  rootDirectories: GitHubDirectoryEntry[];
+}
+
+export interface GitHubDirectoryRootContentProps {
+  directory: string;
+  isError: boolean;
+  isLoading: boolean;
+  open: boolean;
+  organizationId: string;
+  repositoryId: string;
+  rootDirectories: GitHubDirectoryEntry[];
+}
+
+export interface GitHubDirectoryNewFolderFieldProps {
+  error: string | null;
+  inputId: string;
+  name: string;
+  onNameChange: (value: string) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  selectedDirectory: string;
+}
+
+export interface GitHubDirectoryNodeStatusProps {
+  depth: number;
+  exists: boolean | undefined;
+  isError: boolean;
+  isLoading: boolean;
 }
 
 export interface ResolveGitHubContentPathParams {
@@ -176,6 +230,14 @@ export interface ValidateExistingGitHubBranchParams {
 }
 
 export type GitHubPullRequestOperation = "created" | "updated";
+
+export interface GitHubPublishPullRequestResult {
+  branchName: string;
+  operation: GitHubPullRequestOperation;
+  path: string;
+  pullRequestNumber: number;
+  pullRequestUrl: string;
+}
 
 export interface GitHubCreateCommitOnBranchResult {
   createCommitOnBranch: {

@@ -47,6 +47,7 @@ import type {
 } from "@notra/geo-core/types/geo-import";
 import type {
   GeoSearchConsoleStatus,
+  GscKeywordsResponse,
   GscSelectSiteInput,
   GscSitesResponse,
   GscSyncResult,
@@ -303,14 +304,15 @@ export function useGeoTimeseries(
 
 export function useGeoPromptResults(
   organizationId: string,
-  range?: GeoRangeQuery
+  range?: GeoRangeQuery,
+  enabled = true
 ) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoPromptResultsResponse>({
     ...dashboardOrpc.geo.promptResults.queryOptions({
       input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
-    enabled: !!organizationId,
+    enabled: enabled && !!organizationId,
     placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load prompt results" },
   });
@@ -753,14 +755,15 @@ export function useGeoTrafficPages(
 
 export function useGeoTrafficJourneys(
   organizationId: string,
-  range?: GeoRangeQuery
+  range?: GeoRangeQuery,
+  enabled = true
 ) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrafficJourneysResponse>({
     ...dashboardOrpc.geo.trafficJourneys.queryOptions({
       input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
-    enabled: !!organizationId,
+    enabled: enabled && !!organizationId,
     placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load AI journeys" },
   });
@@ -938,6 +941,16 @@ export function useGscStatus(organizationId: string) {
   });
 }
 
+export function useGscKeywords(organizationId: string, enabled = true) {
+  return useQuery<GscKeywordsResponse>({
+    ...dashboardOrpc.geo.searchConsoleKeywords.queryOptions({
+      input: { organizationId },
+    }),
+    enabled: !!organizationId && enabled,
+    meta: { errorMessage: "Failed to load Search Console keywords" },
+  });
+}
+
 export function useGscSites(organizationId: string, enabled: boolean) {
   return useQuery<GscSitesResponse>({
     ...dashboardOrpc.geo.searchConsoleSites.queryOptions({
@@ -959,6 +972,11 @@ function useInvalidateGscQueries(organizationId: string) {
       }),
       queryClient.invalidateQueries({
         queryKey: dashboardOrpc.geo.suggestionsList.queryKey({
+          input: { organizationId },
+        }),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: dashboardOrpc.geo.searchConsoleKeywords.queryKey({
           input: { organizationId },
         }),
       }),

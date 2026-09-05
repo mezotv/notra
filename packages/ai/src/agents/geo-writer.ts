@@ -54,6 +54,7 @@ import { db } from "@notra/db/drizzle";
 import { posts } from "@notra/db/schema";
 import {
   generateText,
+  type FinishReason,
   type LanguageModelUsage,
   NoObjectGeneratedError,
   Output,
@@ -115,6 +116,34 @@ interface PlannerFailure {
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : "Unknown error";
+}
+
+/**
+ * `result.output` throws when the model did not finish with `stop`, so an
+ * unfinished response has to be described before the output is read. A
+ * `length` finish means the brief hit the token budget; the truncated JSON is
+ * handed back to the model so the repair attempt can shorten it.
+ */
+function describeUnfinishedPlan(
+  finishReason: FinishReason,
+  text: string,
+  usage: LanguageModelUsage
+): PlannerFailure {
+  const previousOutput = text.trim() || undefined;
+  if (finishReason === "length") {
+    return {
+      errors: [
+        `The brief was cut off before it was complete (finish reason: length, ${usage.outputTokens ?? "unknown"} output tokens, limit ${GEO_WRITER_PLANNER_MAX_TOKENS}). Keep every field short and stay within the item limits.`,
+      ],
+      previousOutput,
+    };
+  }
+  return {
+    errors: [
+      `The planner stopped before returning a brief (finish reason: ${finishReason}).`,
+    ],
+    previousOutput,
+  };
 }
 
 function describePlannerFailure(error: unknown): PlannerFailure {
@@ -191,6 +220,19 @@ export async function generateGeoContentBrief(
         }),
       });
       usage = mergeTokenUsage(usage, toTokenUsage(result.usage));
+      if (result.finishReason !== "stop") {
+        const failure = describeUnfinishedPlan(
+          result.finishReason,
+          result.text,
+          result.usage
+        );
+        lastError = failure.errors.join("; ");
+        prompt = `${basePrompt}\n\n${buildGeoPlannerRepairPrompt({
+          errors: failure.errors,
+          previousOutput: failure.previousOutput,
+        })}`;
+        continue;
+      }
       const parsed = geoContentBriefSchema.safeParse(result.output);
       if (parsed.success) {
         return { brief: stripDashes(parsed.data), usage };

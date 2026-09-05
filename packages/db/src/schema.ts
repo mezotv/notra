@@ -34,6 +34,7 @@ import type {
 import type { GeoCheckGrounding } from "./types/geo-checks";
 import type { GeoProspectReportJson } from "./types/geo-prospect-report";
 import type { GeoContentBriefJson } from "./types/geo-writer";
+import type { GoogleSearchConsoleQuery } from "./types/google-search-console";
 
 export const lookbackWindowEnum = pgEnum("lookback_window", [
   "current_day",
@@ -1766,8 +1767,13 @@ export const googleSearchConsoleIntegrations = pgTable(
       .notNull()
       .default("active"),
     qstashScheduleId: text("qstash_schedule_id"),
+    disconnectingAt: timestamp("disconnecting_at"),
     lastSyncedAt: timestamp("last_synced_at"),
     lastError: text("last_error"),
+    topQueries: jsonb("top_queries")
+      .$type<GoogleSearchConsoleQuery[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

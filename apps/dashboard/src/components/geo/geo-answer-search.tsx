@@ -3,8 +3,10 @@
 import type { GeoChatSkin } from "@notra/geo-core/types/geo";
 import { getReferenceDomain } from "@notra/geo-core/utils/reference-display";
 import { ClaudeChatSources } from "@notra/ui/components/brainless/claude-chat/claude-chat-sources";
+import { OpencodeSources } from "@notra/ui/components/brainless/opencode/opencode-sources";
 import { PerplexitySearch } from "@notra/ui/components/brainless/perplexity/perplexity-search";
 import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
+import { useReducedMotion } from "motion/react";
 
 import { getSafeReferenceSourceUrl } from "@/utils/reference-source-url";
 
@@ -191,11 +193,15 @@ export function GeoAnswerSearch({
   skin,
   sources,
   queries = EMPTY_QUERIES,
+  sequential = false,
 }: {
   skin: GeoChatSkin;
   sources: readonly PerplexitySearchSource[];
   queries?: readonly string[];
+  sequential?: boolean;
 }) {
+  const reducedMotion = Boolean(useReducedMotion());
+
   if (skin === "perplexity") {
     return (
       <PerplexitySearch
@@ -212,6 +218,17 @@ export function GeoAnswerSearch({
 
   if (skin === "gemini") {
     return <GeminiCitedSearch queries={queries} sources={sources} />;
+  }
+
+  if (skin === "opencode") {
+    return (
+      <OpencodeSources
+        queries={queries}
+        reducedMotion={reducedMotion}
+        sequential={sequential}
+        sources={sources}
+      />
+    );
   }
 
   return <ChatgptCitedSearch queries={queries} sources={sources} />;

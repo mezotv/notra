@@ -33,6 +33,8 @@ export interface OpencodeLogoProps {
 
 export interface OpencodeMessageProps {
   from?: "user" | "assistant";
+  search?: React.ReactNode;
+  actions?: React.ReactNode;
   className?: string;
   children: React.ReactNode;
 }
@@ -52,5 +54,19 @@ export interface OpencodeSidebarProps {
   servers?: OpencodeMcpServer[];
   cwd?: string;
   version?: string;
+  className?: string;
+}
+
+export interface OpencodeSource {
+  title: string;
+  domain: string;
+  url?: string;
+}
+
+export interface OpencodeSourcesProps {
+  sources: readonly OpencodeSource[];
+  queries?: readonly string[];
+  sequential?: boolean;
+  reducedMotion?: boolean;
   className?: string;
 }

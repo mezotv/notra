@@ -9,7 +9,6 @@ import {
   SidebarMenuItem,
 } from "@notra/ui/components/ui/sidebar";
 import { cn } from "@notra/ui/lib/utils";
-import Link from "next/link";
 
 import {
   SIDEBAR_MODE_HOME_LINKS,
@@ -21,6 +20,7 @@ import type { NavModeSwitchProps, SidebarMode } from "@/types/components/nav";
 import { geoNavHref } from "@/utils/geo-paths";
 
 import { SidebarLabel } from "./sidebar-label";
+import { SidebarNavLink } from "./sidebar-nav-link";
 
 export function NavModeSwitch({
   mode,
@@ -52,7 +52,7 @@ export function NavModeSwitch({
           {SIDEBAR_MODES.map((option) => {
             const isActive = option.id === mode;
             return (
-              <Link
+              <SidebarNavLink
                 aria-current={isActive ? "page" : undefined}
                 title={`${option.label} · ${option.description}`}
                 className={cn(
@@ -68,11 +68,10 @@ export function NavModeSwitch({
                 )}
                 key={option.id}
                 onClick={() => handleModeSelect(option.id)}
-                prefetch={option.id === "geo"}
               >
                 <HugeiconsIcon className="size-3.5" icon={option.icon} />
                 {option.label}
-              </Link>
+              </SidebarNavLink>
             );
           })}
         </div>
@@ -83,18 +82,17 @@ export function NavModeSwitch({
             <SidebarMenuButton
               isActive={option.id === mode}
               render={
-                <Link
+                <SidebarNavLink
                   href={geoNavHref(
                     slug,
                     SIDEBAR_MODE_HOME_LINKS[option.id],
                     projectId
                   )}
                   onClick={() => handleModeSelect(option.id)}
-                  prefetch={option.id === "geo"}
                 >
                   <HugeiconsIcon icon={option.icon} />
                   <SidebarLabel>{option.label}</SidebarLabel>
-                </Link>
+                </SidebarNavLink>
               }
               tooltip={`${option.label} · ${option.description}`}
             />

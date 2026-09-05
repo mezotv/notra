@@ -1,0 +1,2 @@
+ALTER TABLE "google_search_console_integrations" ADD COLUMN "disconnecting_at" timestamp;--> statement-breakpoint
+ALTER TABLE "google_search_console_integrations" ADD COLUMN "top_queries" jsonb DEFAULT '[]'::jsonb NOT NULL;

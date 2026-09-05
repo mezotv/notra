@@ -9,7 +9,6 @@ import {
   SidebarMenuSkeleton,
 } from "@notra/ui/components/ui/sidebar";
 import { cn } from "@notra/ui/lib/utils";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
@@ -25,16 +24,18 @@ import { usePosts } from "@/lib/hooks/use-posts";
 import type { NavRecentContentProps } from "@/types/components/nav";
 
 import { SidebarLabel } from "./sidebar-label";
+import { SidebarNavLink } from "./sidebar-nav-link";
 
 export function NavRecentContent({
   slug,
   organizationId,
+  enabled = true,
 }: NavRecentContentProps) {
   const pathname = usePathname();
-  const { data, isPending } = usePosts(organizationId, 1);
+  const { data, isPending } = usePosts(organizationId, 1, enabled);
   const posts = (data?.posts ?? []).slice(0, NAV_RECENT_LIMIT);
 
-  if (!isPending && posts.length === 0) {
+  if (!enabled || (!isPending && posts.length === 0)) {
     return null;
   }
 
@@ -57,7 +58,7 @@ export function NavRecentContent({
                   <SidebarMenuButton
                     isActive={pathname === href}
                     render={
-                      <Link href={href}>
+                      <SidebarNavLink href={href}>
                         <span
                           aria-hidden="true"
                           className={cn(
@@ -71,7 +72,7 @@ export function NavRecentContent({
                         <span className="text-muted-foreground ml-auto shrink-0 text-[0.625rem]">
                           {POST_STATUS_LABELS[post.status]}
                         </span>
-                      </Link>
+                      </SidebarNavLink>
                     }
                     size="sm"
                   />

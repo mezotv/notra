@@ -11,6 +11,7 @@ import type {
   GeoSequencesResponse,
   GeoSequenceUpdateInput,
 } from "../types/geo";
+import { geoAnswerSourcesFor } from "../utils/geo-answer-sources";
 import { geoDb } from "./effect";
 import {
   GeoSequenceCreateFailedError,
@@ -146,14 +147,7 @@ export const loadGeoSequenceResults = Effect.fn("geo.sequenceResults")(
         sentiment: row.sentiment,
         excerpt: row.excerpt,
         searchQueries: row.grounding.queries,
-        sources:
-          row.grounding.sources.length > 0
-            ? row.grounding.sources
-            : row.sources.map((source) => ({
-                title: source.title ?? source.url,
-                url: source.url,
-                domain: "",
-              })),
+        sources: geoAnswerSourcesFor(row.grounding, row.sources),
         finishReason: row.finishReason,
         promptTokens: row.promptTokens,
         outputTokens: row.outputTokens,

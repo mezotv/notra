@@ -958,6 +958,7 @@ export const AI_TRAFFIC_CONFIDENCE_LABELS: Record<string, string> = {
 };
 
 export const GEO_PRESENCE_LABELS: Record<string, string> = {
+  "training-data": "In model",
   "retrieval-only": `${GEO_SEARCH_LABEL} only`,
   invisible: "Invisible",
 };
@@ -1110,6 +1111,7 @@ export const GEO_CHAT_SKIN_SURFACE: Record<GeoChatSkin, string> = {
   chatgpt: "bg-background",
   gemini: "bg-white dark:bg-[#1f1f1f]",
   perplexity: "bg-white dark:bg-[#111]",
+  opencode: "bg-[#fdfdfd]",
 };
 
 export const GEO_TAB_BREADCRUMB_LABELS: Record<string, string> = {

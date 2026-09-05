@@ -7,6 +7,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  GEO_PRESENCE_LABELS,
   GEO_PROMPT_AUTO_MANAGED_HINT,
   GEO_PROMPT_AUTO_MANAGED_LABEL,
   GEO_PROMPT_INTENT_LABELS,
@@ -14,9 +15,9 @@ import {
   PROMPTS_TABLE_HEIGHT,
   PROMPTS_TABLE_ROW_HEIGHT,
 } from "@notra/geo-core/constants/geo";
+import type { GeoPresenceStatus } from "@notra/geo-core/types/geo";
 import { collectPromptTags } from "@notra/geo-core/utils/geo-prompt-tags";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
-import { PresenceBadge } from "@notra/ui/components/geo/presence-badge";
 import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
@@ -75,6 +76,26 @@ import {
 
 const PROMPT_NOUNS = { singular: "prompt", plural: "prompts" } as const;
 const PROMPT_ACTIONS_WIDTH = "13rem";
+const PRESENCE_TITLES: Record<GeoPresenceStatus, string> = {
+  "training-data": "Named in the model, not only in live search",
+  "retrieval-only": "Mentioned in Search only: found live, not in the model",
+  invisible: "No engine mentions you on this prompt yet",
+};
+
+function PromptPresenceCell({ status }: { status: GeoPresenceStatus | null }) {
+  if (!status) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+  const label = GEO_PRESENCE_LABELS[status];
+  if (!label) {
+    return <span className="text-muted-foreground">-</span>;
+  }
+  return (
+    <span className="text-muted-foreground" title={PRESENCE_TITLES[status]}>
+      {label}
+    </span>
+  );
+}
 
 function PromptTagChips({ tags }: PromptTagChipsProps) {
   if (tags.length === 0) {
@@ -325,19 +346,20 @@ export function PromptsTable({
       key: "intent",
       header: GEO_PROMPT_TAGS_COPY.intentColumn,
       width: "7.5rem",
+      minWidth: "7.5rem",
       sortable: true,
       cell: (row) => (
-        <Badge className="font-normal" variant="outline">
+        <span className="text-muted-foreground">
           {GEO_PROMPT_INTENT_LABELS[row.intent]}
-        </Badge>
+        </span>
       ),
       sortValue: (row) => GEO_PROMPT_INTENT_LABELS[row.intent],
     },
     {
       key: "tags",
       header: GEO_PROMPT_TAGS_COPY.column,
-      width: "12rem",
-      minWidth: "8rem",
+      width: "8rem",
+      minWidth: "7rem",
       sortable: true,
       cell: (row) => <PromptTagChips tags={row.tags} />,
       sortValue: (row) => row.tags.join(" "),
@@ -345,20 +367,17 @@ export function PromptsTable({
     {
       key: "presence",
       header: "Presence",
-      width: "8.5rem",
+      width: "7.5rem",
+      minWidth: "7.5rem",
       sortable: true,
-      cell: (row) =>
-        row.presence ? (
-          <PresenceBadge status={row.presence} />
-        ) : (
-          <span className="text-muted-foreground">-</span>
-        ),
+      cell: (row) => <PromptPresenceCell status={row.presence} />,
       sortValue: (row) => promptPresenceSortValue(row.presence),
     },
     {
       key: "engines",
       header: "Engines",
-      width: "7rem",
+      width: "5.5rem",
+      minWidth: "5.5rem",
       sortable: true,
       cell: (row) =>
         row.total === 0 ? (
@@ -373,7 +392,8 @@ export function PromptsTable({
     {
       key: "bestPosition",
       header: "Best",
-      width: "5.5rem",
+      width: "4.5rem",
+      minWidth: "4.5rem",
       sortable: true,
       cell: (row) =>
         row.bestPosition === null ? (

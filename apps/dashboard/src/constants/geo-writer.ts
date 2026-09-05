@@ -71,6 +71,18 @@ export const GEO_WRITE_ACTION_HELP = {
   write: "Write plans and drafts the article in one step.",
 } as const;
 
+export const GEO_WRITE_ACTION_PENDING = {
+  plan: {
+    label: "Planning…",
+    status: "Planning the brief. You review it before anything is drafted.",
+  },
+  write: {
+    label: "Writing…",
+    status:
+      "Planning the brief, then drafting the article. This takes about a minute.",
+  },
+} as const;
+
 export const GEO_WRITE_EDIT_NOTE =
   "Editing the text creates a custom variant that is no longer linked to the tracked prompt.";
 

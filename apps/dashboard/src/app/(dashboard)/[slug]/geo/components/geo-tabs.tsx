@@ -202,11 +202,7 @@ export function GeoTabs({
           <TabSection active={revealActive} order={0}>
             <GeoPromptsPanel
               action={
-                <Link
-                  className={TAB_LINK_CLASS}
-                  href={promptsHref}
-                  prefetch={true}
-                >
+                <Link className={TAB_LINK_CLASS} href={promptsHref}>
                   All prompts
                 </Link>
               }

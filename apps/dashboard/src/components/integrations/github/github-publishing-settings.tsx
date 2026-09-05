@@ -9,9 +9,12 @@ import {
 } from "@notra/ui/components/ui/card";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@notra/ui/components/ui/radio-group";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@notra/ui/components/ui/select";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Switch } from "@notra/ui/components/ui/switch";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -41,8 +44,11 @@ function GitHubContentPublishingSettings({
   repositories,
 }: GitHubContentPublishingSettingsProps) {
   const queryClient = useQueryClient();
+  const repositorySelectId = useId();
   const folderTriggerId = useId();
-  const [selectedRepositoryId, setSelectedRepositoryId] = useState("");
+  const [selectedRepositoryId, setSelectedRepositoryId] = useState(
+    repositories[0]?.id ?? ""
+  );
   const selectedRepository =
     repositories.find((repository) => repository.id === selectedRepositoryId) ??
     repositories[0];
@@ -61,7 +67,7 @@ function GitHubContentPublishingSettings({
         contentType,
       },
       enabled: Boolean(organizationId && repositoryId),
-      staleTime: 0,
+      staleTime: 5 * 60 * 1000,
     })
   );
   const directory =
@@ -160,35 +166,45 @@ function GitHubContentPublishingSettings({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
-        <RadioGroup
-          aria-label={`${contentLabel} repository`}
-          className="bg-muted flex max-w-full grid-cols-none gap-1 overflow-x-auto rounded-lg p-[3px]"
-          onValueChange={(value) => {
-            if (typeof value === "string") {
-              setSelectedRepositoryId(value);
-            }
-          }}
-          value={selectedRepository.id}
-        >
-          {repositories.map((repository) => {
-            const radioId = `${folderTriggerId}-${repository.id}`;
-            return (
-              <label
-                className="text-foreground/60 hover:text-foreground has-data-checked:bg-background has-data-checked:text-foreground has-[:focus-visible]:ring-ring flex h-7 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border border-transparent px-2 text-sm font-medium transition-colors has-data-checked:shadow-sm has-[:focus-visible]:ring-2"
-                htmlFor={radioId}
-                key={repository.id}
-              >
-                <RadioGroupItem
-                  className="sr-only"
-                  id={radioId}
-                  value={repository.id}
-                />
-                <Github className="size-3.5" />
-                {repository.owner}/{repository.repo}
-              </label>
-            );
-          })}
-        </RadioGroup>
+        <Field className="max-w-xl">
+          <FieldLabel htmlFor={repositorySelectId}>Repository</FieldLabel>
+          <Select
+            onValueChange={(value) => {
+              if (typeof value === "string") {
+                setSelectedRepositoryId(value);
+              }
+            }}
+            value={selectedRepository.id}
+          >
+            <SelectTrigger className="w-full" id={repositorySelectId}>
+              <SelectValue placeholder="Select a repository">
+                {(value) => {
+                  const repository = repositories.find(
+                    (candidate) => candidate.id === value
+                  );
+                  return repository ? (
+                    <span className="flex min-w-0 items-center gap-2">
+                      <Github className="size-3.5" />
+                      <span className="truncate">
+                        {repository.owner}/{repository.repo}
+                      </span>
+                    </span>
+                  ) : (
+                    "Select a repository"
+                  );
+                }}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent align="start" alignItemWithTrigger={false}>
+              {repositories.map((repository) => (
+                <SelectItem key={repository.id} value={repository.id}>
+                  <Github className="size-3.5" />
+                  {repository.owner}/{repository.repo}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
 
         <div className="flex max-w-xl items-center justify-between gap-4 rounded-lg border px-3 py-2.5">
           <div className="space-y-0.5">
@@ -239,6 +255,7 @@ function GitHubContentPublishingSettings({
               directory={directory}
               disabled={directoryQuery.isLoading}
               isSaving={directoryMutation.isPending}
+              key={selectedRepository.id}
               onSave={async (nextDirectory) => {
                 await directoryMutation.mutateAsync({
                   nextDirectory,
