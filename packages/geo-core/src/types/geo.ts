@@ -1081,7 +1081,12 @@ export type EngineIconKey =
   | "agent"
   | "cli";
 
-export type GeoChatSkin = "claude" | "chatgpt" | "gemini" | "perplexity";
+export type GeoChatSkin =
+  | "claude"
+  | "chatgpt"
+  | "gemini"
+  | "perplexity"
+  | "opencode";
 
 export interface EngineIconRule {
   key: EngineIconKey;

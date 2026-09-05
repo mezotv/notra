@@ -36,7 +36,7 @@
   },
   "scripts": {
     "check-types": "tsc --noEmit",
-    "test": "bun test src/router"
+    "test": "bun test src/router src/utils/geo-opencode-sources.test.ts"
   },
   "dependencies": {
     "@ai-sdk/gateway": "3.0.132",

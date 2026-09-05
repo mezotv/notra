@@ -13,7 +13,8 @@
     "./csv/*": "./src/csv/*.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "bun test tests"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "3.0.84",

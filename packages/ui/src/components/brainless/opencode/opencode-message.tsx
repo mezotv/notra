@@ -4,6 +4,8 @@ import { cn } from "@notra/ui/lib/utils";
 
 export function OpencodeMessage({
   from = "assistant",
+  search,
+  actions,
   className,
   children,
 }: OpencodeMessageProps) {
@@ -26,11 +28,15 @@ export function OpencodeMessage({
   }
 
   return (
-    <div
-      className={cn("font-mono text-[13px] leading-[1.65]", className)}
-      style={{ color: OPENCODE_COLORS.foreground }}
-    >
-      {children}
+    <div className={cn("flex w-full flex-col items-start gap-3", className)}>
+      {search}
+      <div
+        className="max-w-full font-mono text-[13px] leading-[1.65]"
+        style={{ color: OPENCODE_COLORS.foreground }}
+      >
+        {children}
+      </div>
+      {actions}
     </div>
   );
 }

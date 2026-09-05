@@ -134,6 +134,8 @@ function ThreadMessages({
   const answerDone = progress === null;
   const showThinking = stage === "thinking";
   const showAnswer = answerDone || stage === "typing";
+  const showSearch =
+    Boolean(search) && (showAnswer || (skin === "opencode" && showThinking));
   const answerText = stage === "typing" ? (progress?.typed ?? "") : answer;
 
   return (
@@ -147,7 +149,7 @@ function ThreadMessages({
             answerDone ? assistantActions(answerText, sources) : undefined
           }
           from="assistant"
-          search={showAnswer ? search : undefined}
+          search={showSearch ? search : undefined}
           skin={skin}
         >
           {showThinking ? (
@@ -188,6 +190,7 @@ export function GeoPromptAnswerThread({
   const search = hasRecordedSearch ? (
     <GeoAnswerSearch
       queries={result.searchQueries}
+      sequential={progress !== null}
       skin={skin}
       sources={sources}
     />

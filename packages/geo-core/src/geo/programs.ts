@@ -849,14 +849,7 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
       competitors: row.competitors,
       excerpt: row.excerpt,
       searchQueries: row.grounding.queries,
-      sources:
-        row.grounding.sources.length > 0
-          ? row.grounding.sources
-          : row.sources.map((source) => ({
-              title: source.title ?? source.url,
-              url: source.url,
-              domain: "",
-            })),
+      sources: geoAnswerSourcesFor(row.grounding, row.sources),
       finishReason: row.finishReason,
       promptTokens: row.promptTokens,
       outputTokens: row.outputTokens,

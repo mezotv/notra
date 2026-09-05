@@ -1,6 +1,7 @@
 export const GEO_SEARCH_LABEL = "Search";
 
 export const GEO_PRESENCE_LABELS: Record<string, string> = {
+  "training-data": "In model",
   "retrieval-only": `${GEO_SEARCH_LABEL} only`,
   invisible: "Invisible",
 };

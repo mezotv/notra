@@ -1,6 +1,7 @@
 import type { GeoCheckSource } from "@notra/db/types/geo-checks";
 
 import type { GeoCompetitorSeed } from "../types/geo";
+import { GEO_OPENCODE_ENGINE_ID } from "./geo";
 
 export const GEO_SAMPLE_DAYS = 30;
 export const GEO_SAMPLE_PROJECT_NAME = "Notra demo";
@@ -17,6 +18,7 @@ export const GEO_SAMPLE_ENGINES: readonly {
   { engine: "anthropic/claude-sonnet-4.6", mentionRate: 0.48 },
   { engine: "google/gemini-3-flash-grounded", mentionRate: 0.41 },
   { engine: "google/gemini-3-flash", mentionRate: 0.35 },
+  { engine: GEO_OPENCODE_ENGINE_ID, mentionRate: 0.64 },
 ];
 
 export const GEO_SAMPLE_GROUNDED_ENGINES: readonly string[] = [
@@ -28,6 +30,7 @@ export const GEO_SAMPLE_GROUNDED_ENGINES: readonly string[] = [
 export const GEO_SAMPLE_SEARCH_ENGINES: readonly string[] = [
   ...GEO_SAMPLE_GROUNDED_ENGINES,
   "perplexity-sonar",
+  GEO_OPENCODE_ENGINE_ID,
 ];
 
 export const GEO_SAMPLE_SEARCH_QUERY_SUFFIXES: readonly string[] = [
@@ -41,6 +44,44 @@ export const GEO_SAMPLE_SEARCH_QUERY_MIN = 2;
 export const GEO_SAMPLE_SEARCH_QUERY_MAX = 3;
 export const GEO_SAMPLE_SOURCE_MIN = 2;
 export const GEO_SAMPLE_SOURCE_MAX = 4;
+
+export const GEO_SAMPLE_OPENCODE_SOURCES: readonly GeoCheckSource[] = [
+  {
+    title: "ChatGPT",
+    url: "https://chatgpt.com/",
+    domain: "chatgpt.com",
+  },
+  {
+    title: "Claude",
+    url: "https://claude.ai/",
+    domain: "claude.ai",
+  },
+  {
+    title: "Jasper",
+    url: "https://www.jasper.ai/",
+    domain: "jasper.ai",
+  },
+  {
+    title: "Canva",
+    url: "https://www.canva.com/",
+    domain: "canva.com",
+  },
+  {
+    title: "Adobe",
+    url: "https://www.adobe.com/",
+    domain: "adobe.com",
+  },
+  {
+    title: "Descript",
+    url: "https://www.descript.com/",
+    domain: "descript.com",
+  },
+  {
+    title: "Gemini",
+    url: "https://support.google.com/",
+    domain: "support.google.com",
+  },
+];
 
 export const GEO_SAMPLE_SOURCES: readonly GeoCheckSource[] = [
   {
