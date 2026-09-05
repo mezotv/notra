@@ -15,6 +15,13 @@ import { dashboardOrpc } from "@/lib/orpc/query";
 import type { GeoPersonaUpdateInput } from "@/types/geo-personas";
 import { toErrorMessage } from "@/utils/error-message";
 
+export function geoPersonaUpdateMutationKey(
+  organizationId: string,
+  projectId: string | undefined
+) {
+  return ["geo", "personaUpdate", organizationId, projectId ?? null] as const;
+}
+
 function invalidatePersonaList(
   queryClient: QueryClient,
   organizationId: string,
@@ -58,6 +65,7 @@ export function useGeoPersonaUpdate(organizationId: string) {
   const { projectId } = useGeoProjectScope();
   const queryClient = useQueryClient();
   return useMutation<GeoPersona, Error, GeoPersonaUpdateInput>({
+    mutationKey: geoPersonaUpdateMutationKey(organizationId, projectId),
     mutationFn: (variables) =>
       dashboardOrpc.geo.personaUpdate.call({
         organizationId,

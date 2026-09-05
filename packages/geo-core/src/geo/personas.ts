@@ -54,6 +54,7 @@ import {
   GeoPersonaNotFoundError,
   GeoWriterCreditsExhaustedError,
 } from "./errors";
+import { lockGeoProject } from "./lock";
 import { toGeoPersona } from "./mappers";
 import { geoCheckScope, requireGeoProject, resolveGeoScope } from "./projects";
 import { startClaimedGeoScanRun } from "./scan-handoff";
@@ -275,18 +276,17 @@ const generatePersonaSet = Effect.fn("geo.personas.generate")(function* (
   return { generation, usage };
 });
 
+/**
+ * Swaps the project's persona set inside one transaction. The project lock
+ * serializes concurrent generations so the second one replaces the first
+ * instead of leaving two sets behind; the delete therefore has to happen
+ * inside the locked transaction rather than from a snapshot taken before it.
+ */
 const replacePersonas = Effect.fn("geo.personas.replace")(function* (
   organizationId: string,
   projectId: string,
   generation: GeoPersonaGeneration
 ) {
-  const existing = yield* geoDb("personas lookup failed", () =>
-    db
-      .select({ id: geoPersonas.id })
-      .from(geoPersonas)
-      .where(eq(geoPersonas.projectId, projectId))
-  );
-
   const now = new Date();
   const personaRows: (typeof geoPersonas.$inferInsert)[] = [];
   const memoryRows: (typeof geoPersonaMemories.$inferInsert)[] = [];
@@ -324,18 +324,16 @@ const replacePersonas = Effect.fn("geo.personas.replace")(function* (
     }
   }
 
-  yield* geoDb("personas replace failed", () =>
+  const removed = yield* geoDb("personas replace failed", () =>
     db.transaction(async (tx) => {
-      if (existing.length > 0) {
-        await tx.delete(geoPersonas).where(
-          inArray(
-            geoPersonas.id,
-            existing.map((row) => row.id)
-          )
-        );
-      }
+      await Effect.runPromise(lockGeoProject(tx, projectId));
+      const deleted = await tx
+        .delete(geoPersonas)
+        .where(eq(geoPersonas.projectId, projectId))
+        .returning({ id: geoPersonas.id });
       await tx.insert(geoPersonas).values(personaRows);
       await tx.insert(geoPersonaMemories).values(memoryRows);
+      return deleted;
     })
   );
 
@@ -343,7 +341,7 @@ const replacePersonas = Effect.fn("geo.personas.replace")(function* (
   // Postgres and the persona agent falls back to keyword search.
   yield* Effect.tryPromise({
     try: async () => {
-      await Promise.all(existing.map((row) => deletePersonaMemories(row.id)));
+      await Promise.all(removed.map((row) => deletePersonaMemories(row.id)));
       const records: PersonaMemoryRecord[] = memoryRows.map((row) => ({
         id: row.id ?? "",
         personaId: row.personaId,
@@ -361,8 +359,6 @@ const replacePersonas = Effect.fn("geo.personas.replace")(function* (
       })
     )
   );
-
-  return yield* loadPersonaRows(projectId);
 });
 
 /**
@@ -433,13 +429,17 @@ export const generateGeoPersonas = Effect.fn("geo.personasGenerate")(function* (
     context
   ).pipe(Effect.tapError(() => settle("release")));
 
-  const personas = yield* replacePersonas(
+  yield* replacePersonas(
     scope.organizationId,
     scope.projectId,
     generated.generation
   ).pipe(Effect.tapError(() => settle("release")));
 
+  // The set is committed at this point, so the credits are spent no matter
+  // what happens while building the response below.
   yield* settle("confirm", generated.usage);
+
+  const personas = yield* loadPersonaRows(scope.projectId);
 
   // Personas only produce results inside a scan, so a fresh set kicks one off
   // right away when the project scans at all. Losing the claim means a scan is

@@ -165,6 +165,13 @@ export async function searchPersonaMemories(
   query: string,
   limit: number
 ): Promise<PersonaMemoryHit[]> {
-  const hits = await searchPersonaMemoriesVector(personaId, query, limit);
+  let hits: PersonaMemoryHit[] | null = null;
+  try {
+    hits = await searchPersonaMemoriesVector(personaId, query, limit);
+  } catch (error) {
+    // A vector outage must not break the persona turn; the memories are in
+    // Postgres anyway, so keyword ranking keeps the conversation going.
+    console.error("[GEO] persona vector search failed:", error);
+  }
   return hits ?? searchPersonaMemoriesKeyword(memories, query, limit);
 }

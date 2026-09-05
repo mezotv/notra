@@ -18,7 +18,7 @@ import { Badge } from "@notra/ui/components/ui/badge";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@notra/ui/components/ui/tabs";
 import { useReducedMotion } from "motion/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { ConversationReplayThread } from "@/components/geo/conversation-replay-thread";
@@ -27,6 +27,7 @@ import { PromptEngineSwitcher } from "@/components/geo/prompt-engine-switcher";
 import {
   GEO_PERSONA_CONVERSATION_EMPTY_DESCRIPTION,
   GEO_PERSONA_CONVERSATION_EMPTY_TITLE,
+  GEO_PERSONA_CONVERSATION_PAUSED_DESCRIPTION,
   GEO_PERSONA_DIALOG_VIEWS,
   GEO_PERSONA_PROFILE_SECTIONS,
 } from "@/constants/geo-personas";
@@ -171,9 +172,11 @@ function PersonaProfile({ persona }: PersonaProfileProps) {
 }
 
 function ConversationEmpty({
+  enabled,
   isScanning,
   onRunScan,
 }: {
+  enabled: boolean;
   isScanning: boolean;
   onRunScan: () => void;
 }) {
@@ -187,17 +190,21 @@ function ConversationEmpty({
           {GEO_PERSONA_CONVERSATION_EMPTY_TITLE}
         </p>
         <p className="text-muted-foreground text-sm text-pretty">
-          {GEO_PERSONA_CONVERSATION_EMPTY_DESCRIPTION}
+          {enabled
+            ? GEO_PERSONA_CONVERSATION_EMPTY_DESCRIPTION
+            : GEO_PERSONA_CONVERSATION_PAUSED_DESCRIPTION}
         </p>
       </div>
-      <Button disabled={isScanning} onClick={onRunScan} size="sm">
-        <HugeiconsIcon
-          className={isScanning ? "animate-spin" : undefined}
-          icon={isScanning ? Loading03Icon : PlayIcon}
-          size={14}
-        />
-        {isScanning ? "Scanning…" : "Run scan"}
-      </Button>
+      {enabled ? (
+        <Button disabled={isScanning} onClick={onRunScan} size="sm">
+          <HugeiconsIcon
+            className={isScanning ? "animate-spin" : undefined}
+            icon={isScanning ? Loading03Icon : PlayIcon}
+            size={14}
+          />
+          {isScanning ? "Scanning…" : "Run scan"}
+        </Button>
+      ) : null}
     </div>
   );
 }
@@ -208,12 +215,23 @@ export function PersonaDetailDialog({
   organizationId,
   persona,
 }: PersonaDetailDialogProps) {
-  const { data, isLoading } = useGeoPersonaResults(
+  const { data, isLoading, refetch } = useGeoPersonaResults(
     organizationId,
     open ? persona?.id : undefined
   );
   const startScan = useGeoStartScan(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
+  const wasScanning = useRef(isScanning);
+
+  // A scan started from this dialog writes the conversation in the
+  // background; pull it in once the scan ends instead of making the user
+  // close and reopen the dialog.
+  useEffect(() => {
+    if (wasScanning.current && !isScanning && open) {
+      void refetch();
+    }
+    wasScanning.current = isScanning;
+  }, [isScanning, open, refetch]);
   const [view, setView] = useState<PersonaDialogView>(DEFAULT_VIEW);
   const [engine, setEngine] = useState<string | null>(null);
   const [playToken, setPlayToken] = useState(1);
@@ -336,6 +354,7 @@ export function PersonaDetailDialog({
               )}
               {!(isLoading || active) && (
                 <ConversationEmpty
+                  enabled={persona.enabled}
                   isScanning={isScanning}
                   onRunScan={() => startScan.mutate("personas_empty")}
                 />

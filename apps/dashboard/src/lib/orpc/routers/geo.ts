@@ -1334,15 +1334,15 @@ export const geoRouter = {
   personasGenerate: authorizedProcedure
     .input(geoPersonasGenerateInputSchema)
     .handler(async ({ context, input }) => {
-      const [, , rate] = await Promise.all([
-        assertGeoAccess({
-          headers: context.headers,
-          organizationId: input.organizationId,
-          user: context.user,
-        }),
-        assertActiveSubscription(input.organizationId),
-        ratelimit.geoPersonasGenerate.limit(input.organizationId),
-      ]);
+      await assertGeoAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+      await assertActiveSubscription(input.organizationId);
+      const rate = await ratelimit.geoPersonasGenerate.limit(
+        input.organizationId
+      );
       if (!rate.success) {
         throw badRequest(
           "Too many persona generations. Please wait a few minutes."
@@ -1398,15 +1398,13 @@ export const geoRouter = {
   personaRun: authorizedProcedure
     .input(geoPersonaRunInputSchema)
     .handler(async ({ context, input }) => {
-      const [, , rate] = await Promise.all([
-        assertGeoAccess({
-          headers: context.headers,
-          organizationId: input.organizationId,
-          user: context.user,
-        }),
-        assertActiveSubscription(input.organizationId),
-        ratelimit.geoPersonaRun.limit(input.organizationId),
-      ]);
+      await assertGeoAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+        user: context.user,
+      });
+      await assertActiveSubscription(input.organizationId);
+      const rate = await ratelimit.geoPersonaRun.limit(input.organizationId);
       trackGeoRouterEvent({
         context,
         input,

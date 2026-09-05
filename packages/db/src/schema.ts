@@ -2694,6 +2694,8 @@ export const organizationsRelations = relations(
     geoShelfSources: many(geoShelfSources),
     geoScans: many(geoScans),
     geoMentionChecks: many(geoMentionChecks),
+    geoPersonas: many(geoPersonas),
+    geoPersonaMemories: many(geoPersonaMemories),
     connectedSocialAccounts: many(connectedSocialAccounts),
     postCollections: many(postCollections),
     posts: many(posts),
@@ -3087,6 +3089,8 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   geoShelfSources: many(geoShelfSources),
   geoScans: many(geoScans),
   geoMentionChecks: many(geoMentionChecks),
+  geoPersonas: many(geoPersonas),
+  geoPersonaMemories: many(geoPersonaMemories),
   agentFeedback: many(agentFeedback),
 }));
 
@@ -3191,6 +3195,41 @@ export const geoMentionChecksRelations = relations(
     scan: one(geoScans, {
       fields: [geoMentionChecks.scanId],
       references: [geoScans.id],
+    }),
+    persona: one(geoPersonas, {
+      fields: [geoMentionChecks.personaId],
+      references: [geoPersonas.id],
+    }),
+  })
+);
+
+export const geoPersonasRelations = relations(geoPersonas, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [geoPersonas.organizationId],
+    references: [organizations.id],
+  }),
+  project: one(projects, {
+    fields: [geoPersonas.projectId],
+    references: [projects.id],
+  }),
+  memories: many(geoPersonaMemories),
+  mentionChecks: many(geoMentionChecks),
+}));
+
+export const geoPersonaMemoriesRelations = relations(
+  geoPersonaMemories,
+  ({ one }) => ({
+    persona: one(geoPersonas, {
+      fields: [geoPersonaMemories.personaId],
+      references: [geoPersonas.id],
+    }),
+    organization: one(organizations, {
+      fields: [geoPersonaMemories.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [geoPersonaMemories.projectId],
+      references: [projects.id],
     }),
   })
 );

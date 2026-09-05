@@ -11,6 +11,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { useMutationState } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { Button } from "@/components/button";
@@ -18,6 +19,7 @@ import { GeoRemoveDialog } from "@/components/geo/geo-remove-dialog";
 import { PersonaAvatar } from "@/components/geo/persona-avatar";
 import { PersonaDetailDialog } from "@/components/geo/persona-detail-dialog";
 import { Table, type TableColumn } from "@/components/motion/table";
+import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import {
   GEO_PERSONAS_ACTIONS_COLUMN_WIDTH,
   GEO_PERSONAS_MEMORIES_COLUMN_WIDTH,
@@ -26,9 +28,11 @@ import {
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
+  geoPersonaUpdateMutationKey,
   useGeoPersonaDelete,
   useGeoPersonaUpdate,
 } from "@/lib/hooks/use-geo-personas";
+import type { GeoPersonaUpdateInput } from "@/types/geo-personas";
 import type {
   PersonaRowActionsProps,
   PersonasTableProps,
@@ -95,14 +99,23 @@ export function PersonasTable({
   organizationId,
   personas,
 }: PersonasTableProps) {
+  const { projectId } = useGeoProjectScope();
   const updatePersona = useGeoPersonaUpdate(organizationId);
   const deletePersona = useGeoPersonaDelete(organizationId);
   const [viewing, setViewing] = useState<GeoPersona | null>(null);
   const [removing, setRemoving] = useState<GeoPersona | null>(null);
 
-  const pendingPersonaId = updatePersona.isPending
-    ? updatePersona.variables?.personaId
-    : null;
+  // Every in-flight toggle, not just the latest: a row must stay locked until
+  // its own request settles, or a second toggle could flip it back.
+  const pendingPersonaIds = useMutationState({
+    filters: {
+      mutationKey: geoPersonaUpdateMutationKey(organizationId, projectId),
+      status: "pending",
+    },
+    select: (mutation) =>
+      (mutation.state.variables as GeoPersonaUpdateInput | undefined)
+        ?.personaId ?? null,
+  });
   const deletingPersonaId = deletePersona.isPending
     ? deletePersona.variables
     : null;
@@ -171,7 +184,7 @@ export function PersonasTable({
         cell: (row) => (
           <PersonaRowActions
             isPending={
-              pendingPersonaId === row.id || deletingPersonaId === row.id
+              pendingPersonaIds.includes(row.id) || deletingPersonaId === row.id
             }
             onDelete={() => setRemoving(row)}
             onToggle={(enabled) =>
@@ -182,7 +195,7 @@ export function PersonasTable({
         ),
       },
     ],
-    [deletingPersonaId, pendingPersonaId, personas.length, updatePersona]
+    [deletingPersonaId, pendingPersonaIds, personas.length, updatePersona]
   );
 
   return (

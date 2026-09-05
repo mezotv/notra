@@ -255,14 +255,17 @@ function GeoPersonasPageContent({ organizationSlug }: GeoPageClientProps) {
   const isLoadingPersonas = isPersonasPending && !hasPersonas;
   const showEmptyState = !(isLoadingPersonas || hasPersonas);
   // The empty state already carries the primary call to action, so the header
-  // only offers one once there is a set to replace.
-  const headerAction = showEmptyState ? null : (
-    <GeneratePersonasButton
-      hasPersonas={hasPersonas}
-      onClick={onGenerateClick}
-      progress={progress}
-    />
-  );
+  // only offers one once there is a set to replace. While the list is still
+  // loading we do not know whether a set exists, so the button waits too:
+  // otherwise it could replace personas without the confirmation dialog.
+  const headerAction =
+    showEmptyState || isLoadingPersonas ? null : (
+      <GeneratePersonasButton
+        hasPersonas={hasPersonas}
+        onClick={onGenerateClick}
+        progress={progress}
+      />
+    );
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
