@@ -45,10 +45,12 @@ export const GEO_CURSOR_API_KEY_ENV = "CURSOR_API_KEY";
 export const GEO_CURSOR_ENGINE_ID = "cursor/composer-2.5";
 export const GEO_CURSOR_MODEL_ID = "composer-2.5";
 export const GEO_OPENCODE_ENGINE_ID = "opencode/gpt-5.6-sol-medium";
-/** Maximum wall-clock time for a single answer, judge, or translation call. */
-export const GEO_PROVIDER_TIMEOUT_MS = 90_000;
-/** Local Cursor runs took ~8s in testing; cold starts can be slower. */
-export const GEO_CURSOR_TIMEOUT_MS = 90_000;
+/** Maximum wall-clock time for a single judge or translation call. */
+export const GEO_PROVIDER_TIMEOUT_MS = 120_000;
+/** Slow answer models get three minutes before a check may be retried. */
+export const GEO_ANSWER_TIMEOUT_MS = 180_000;
+/** Cursor answers use the same deadline as gateway answers. */
+export const GEO_CURSOR_TIMEOUT_MS = GEO_ANSWER_TIMEOUT_MS;
 /** Databuddy flag that exposes the Cursor engine to an organization. */
 export const GEO_CURSOR_FLAG_KEY = "geo-cursor";
 /** Databuddy flag that exposes the OpenCode engine to an organization. */
@@ -467,7 +469,8 @@ export const GEO_SCAN_INTERVAL_LABEL_PREFIX = /^Every\s+/;
 export const GEO_SCAN_INTERVAL_FALLBACK_NOUN = "scan interval";
 export const GEO_SCAN_NO_RESULTS_RETRY_DELAY = "5m";
 export const GEO_SCAN_STALE_MS = 2 * 60 * 60 * 1000;
-export const GEO_SCAN_TASK_BATCH_SIZE = 8;
+/** One concurrent wave per workflow step, including individual timeout retries. */
+export const GEO_SCAN_TASK_BATCH_SIZE = GEO_SCAN_CONCURRENCY;
 export const GEO_SCAN_CLAIM_RENEW_AFTER_MS = 30 * 60 * 1000;
 export const GEO_SCAN_SEQUENCE_BATCH_SIZE = 3;
 export const GEO_SEQUENCE_PAIR_TIMEOUT_MS = 7 * 60 * 1000;
@@ -981,12 +984,12 @@ export const GEO_PROMPT_NO_MENTION = "No engine named you";
 
 export const GEO_MENTION_TREND_BACKFILL_DAYS = 6;
 export const GEO_MENTION_TREND_TOTAL_KEY = "total";
-export const GEO_MENTION_TREND_TOTAL_LABEL = "All providers";
+export const GEO_MENTION_TREND_TOTAL_LABEL = "All Models";
 export const GEO_DEFAULT_RANGE: GeoRangePreset = "30d";
 export const GEO_MENTION_TREND_LINE_KEY = "trend";
 export const GEO_MENTION_TREND_LINE_LABEL = "Trend";
 export const GEO_MENTION_TREND_AGENT_ICON_LIMIT = 4;
-export const GEO_MENTION_TREND_ALL_PROVIDERS_LABEL = "All providers";
+export const GEO_MENTION_TREND_ALL_PROVIDERS_LABEL = "All Models";
 export const GEO_MENTION_ACTIVITY_LABEL = "Mention activity";
 export const GEO_MENTION_SUMMARY_VISIBLE = 5;
 export const GEO_MENTION_ROW_HEIGHT_REM = 2.75;

@@ -186,7 +186,8 @@ export function tooltipItemsFromRow(
   keys: readonly string[],
   config: ChartConfig,
   valueFormatter?: TooltipValueFormatter,
-  seriesSlots?: ResolvedColors["series"]
+  seriesSlots?: ResolvedColors["series"],
+  hideZeros = true
 ): TooltipBodyItem[] {
   if (!row) {
     return [];
@@ -194,7 +195,11 @@ export function tooltipItemsFromRow(
   const items: TooltipBodyItem[] = [];
   for (const key of keys) {
     const raw = row[key];
-    if (typeof raw !== "number" || raw <= 0) {
+    if (
+      typeof raw !== "number" ||
+      !Number.isFinite(raw) ||
+      (hideZeros && raw <= 0)
+    ) {
       continue;
     }
     const item = config[key];

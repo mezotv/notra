@@ -4,6 +4,7 @@ import { Data } from "effect";
 
 export class GeoScanError extends Data.TaggedError("GeoScanError")<{
   readonly message: string;
+  readonly timedOut?: boolean;
   readonly cause?: unknown;
 }> {}
 
@@ -27,6 +28,7 @@ export class GeoEmptyAnswerError extends Data.TaggedError(
 
 export class GeoJudgeError extends Data.TaggedError("GeoJudgeError")<{
   readonly message: string;
+  readonly timedOut?: boolean;
   readonly cause: unknown;
 }> {}
 

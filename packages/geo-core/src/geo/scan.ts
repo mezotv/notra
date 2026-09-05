@@ -28,6 +28,7 @@ import { Effect } from "effect";
 import {
   GEO_ANSWER_MAX_TOKENS,
   GEO_ANSWER_SYSTEM_PROMPT,
+  GEO_ANSWER_TIMEOUT_MS,
   GEO_CURSOR_TIMEOUT_MS,
   GEO_DIRECT_GROUNDED_PROVIDERS,
   GEO_EXCERPT_MAX_LENGTH,
@@ -61,7 +62,6 @@ import type {
   GeoEngineAnswer,
   GeoGroundedAnswer,
   GeoGroundedEngine,
-  GeoJudgeResult,
   GeoModelGateway,
   GeoPromptDefinition,
   GeoScanBatchOutcome,
@@ -282,11 +282,12 @@ const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
       }),
   }).pipe(
     Effect.timeoutOrElse({
-      duration: GEO_PROVIDER_TIMEOUT_MS,
+      duration: GEO_ANSWER_TIMEOUT_MS,
       orElse: () =>
         Effect.fail(
           new GeoScanError({
-            message: `Engine ${engine} timed out after ${GEO_PROVIDER_TIMEOUT_MS}ms`,
+            message: `Engine ${engine} timed out after ${GEO_ANSWER_TIMEOUT_MS}ms`,
+            timedOut: true,
           })
         ),
     })
@@ -306,7 +307,7 @@ const askOpenCodeEngineEffect = Effect.fn("geo.askOpenCodeEngine")(function* (
   engine: string,
   promptText: string
 ) {
-  const deadlineAtMs = Date.now() + GEO_PROVIDER_TIMEOUT_MS;
+  const deadlineAtMs = Date.now() + GEO_ANSWER_TIMEOUT_MS;
   let openCodePromise: ReturnType<typeof askGeoOpenCode> | null = null;
   const result = yield* Effect.tryPromise({
     try: (signal) => {
@@ -339,7 +340,8 @@ const askOpenCodeEngineEffect = Effect.fn("geo.askOpenCodeEngine")(function* (
       orElse: () =>
         Effect.fail(
           new GeoScanError({
-            message: `Engine ${engine} timed out after ${GEO_PROVIDER_TIMEOUT_MS}ms`,
+            message: `Engine ${engine} timed out after ${GEO_ANSWER_TIMEOUT_MS}ms`,
+            timedOut: true,
           })
         ),
     })
@@ -378,6 +380,7 @@ const askCursorEngineEffect = Effect.fn("geo.askCursorEngine")(function* (
         Effect.fail(
           new GeoScanError({
             message: `Engine ${engine} timed out after ${GEO_CURSOR_TIMEOUT_MS}ms`,
+            timedOut: true,
           })
         ),
     })
@@ -459,11 +462,12 @@ const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
         }),
     }).pipe(
       Effect.timeoutOrElse({
-        duration: GEO_PROVIDER_TIMEOUT_MS,
+        duration: GEO_ANSWER_TIMEOUT_MS,
         orElse: () =>
           Effect.fail(
             new GeoScanError({
-              message: `Grounded engine ${engine.key} timed out after ${GEO_PROVIDER_TIMEOUT_MS}ms`,
+              message: `Grounded engine ${engine.key} timed out after ${GEO_ANSWER_TIMEOUT_MS}ms`,
+              timedOut: true,
             })
           ),
       })
@@ -492,9 +496,9 @@ const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
   promptText: string,
   answer: string
 ) {
-  const result = yield* Effect.tryPromise({
-    try: (signal) =>
-      generateText({
+  const judged = yield* Effect.tryPromise({
+    try: async (signal) => {
+      const result = await generateText({
         model: gateway(GEO_JUDGE_MODEL, {
           organizationId: context.organizationId,
         }),
@@ -504,7 +508,10 @@ const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
           "You analyze AI assistant answers for brand mentions. Respond only with the requested structured data.",
         maxOutputTokens: GEO_JUDGE_MAX_TOKENS,
         abortSignal: signal,
-      }),
+      });
+      // The SDK output getter can throw even after generateText resolves.
+      return result.output;
+    },
     catch: (cause) =>
       new GeoJudgeError({ message: "Judge model failed", cause }),
   }).pipe(
@@ -514,12 +521,12 @@ const judgeAnswer = Effect.fn("geo.judgeAnswer")(function* (
         Effect.fail(
           new GeoJudgeError({
             message: `Judge model timed out after ${GEO_PROVIDER_TIMEOUT_MS}ms`,
+            timedOut: true,
             cause: new Error("Judge model request timed out"),
           })
         ),
     })
   );
-  const judged: GeoJudgeResult = result.output;
   return judged;
 });
 
@@ -528,9 +535,9 @@ const translatePrompts = Effect.fn("geo.translatePrompts")(function* (
   language: string,
   prompts: GeoPromptDefinition[]
 ) {
-  const result = yield* Effect.tryPromise({
-    try: (signal) =>
-      generateText({
+  const translations = yield* Effect.tryPromise({
+    try: async (signal) => {
+      const result = await generateText({
         model: gateway(GEO_JUDGE_MODEL, {
           organizationId,
         }),
@@ -540,7 +547,9 @@ const translatePrompts = Effect.fn("geo.translatePrompts")(function* (
           "You translate user prompts faithfully, preserving intent and named entities. Respond only with the requested structured data.",
         maxOutputTokens: GEO_TRANSLATION_MAX_TOKENS,
         abortSignal: signal,
-      }),
+      });
+      return result.output.translations;
+    },
     catch: (cause) =>
       new GeoTranslationError({
         message: `Translation to ${language} failed`,
@@ -559,7 +568,6 @@ const translatePrompts = Effect.fn("geo.translatePrompts")(function* (
         ),
     })
   );
-  const translations = result.output.translations;
   if (translations.length !== prompts.length) {
     return yield* Effect.fail(
       new GeoTranslationError({
@@ -1266,6 +1274,24 @@ export const runGeoScanTaskBatch = Effect.fn("geo.runScanTaskBatch")(function* (
     (task) => {
       const fields = checkFailureFields(checkContext, task);
       return runGeoCheck(checkContext, task).pipe(
+        // Retry only this check, before any rows are persisted. Non-timeout
+        // errors still follow the existing drop/failure handling below.
+        Effect.tapError((error) =>
+          (error._tag === "GeoScanError" || error._tag === "GeoJudgeError") &&
+          error.timedOut === true
+            ? geoLogWarn({
+                ...fields,
+                event: "geo.check.timeout",
+                detail: error.message,
+              })
+            : Effect.void
+        ),
+        Effect.retry({
+          times: 1,
+          while: (error) =>
+            (error._tag === "GeoScanError" || error._tag === "GeoJudgeError") &&
+            error.timedOut === true,
+        }),
         Effect.catchTag("GeoEmptyAnswerError", (error) =>
           Effect.sync(() => droppedCheckOutcome(fields, error))
         ),

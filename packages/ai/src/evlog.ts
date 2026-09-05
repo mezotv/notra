@@ -63,9 +63,20 @@ export const { register, onRequestError } = createInstrumentation(config);
 export const geoLogDrainEnabled = geoDrain !== undefined;
 
 export const geoLog: GeoLogger = {
-  info: (event: GeoLogEvent) => log.info(event),
-  warn: (event: GeoLogEvent) => log.warn(event),
-  error: (event: GeoLogEvent) => log.error(event),
+  // Workflow steps can load a separate bundle from Next instrumentation.
+  // Initialize this instance before logging so its drain is actually attached.
+  info: (event: GeoLogEvent) => {
+    register();
+    log.info(event);
+  },
+  warn: (event: GeoLogEvent) => {
+    register();
+    log.warn(event);
+  },
+  error: (event: GeoLogEvent) => {
+    register();
+    log.error(event);
+  },
 };
 
 export async function flushGeoLog(): Promise<void> {
