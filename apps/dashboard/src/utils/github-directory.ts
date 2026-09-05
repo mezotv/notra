@@ -1,6 +1,10 @@
+export function normalizeGitHubDirectorySegment(segment: string): string {
+  return segment.trim().replace(/^\/+|\/+$/g, "");
+}
+
 export function joinGitHubDirectory(parent: string, segment: string): string {
-  const normalizedParent = parent.replace(/^\/+|\/+$/g, "");
-  const normalizedSegment = segment.trim().replace(/^\/+|\/+$/g, "");
+  const normalizedParent = normalizeGitHubDirectorySegment(parent);
+  const normalizedSegment = normalizeGitHubDirectorySegment(segment);
 
   if (!normalizedSegment) {
     return normalizedParent;

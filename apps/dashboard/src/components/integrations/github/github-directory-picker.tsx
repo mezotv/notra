@@ -45,7 +45,10 @@ import type {
   GitHubDirectoryNodeProps,
   GitHubDirectoryPickerProps,
 } from "@/types/integrations/github";
-import { joinGitHubDirectory } from "@/utils/github-directory";
+import {
+  joinGitHubDirectory,
+  normalizeGitHubDirectorySegment,
+} from "@/utils/github-directory";
 
 function DirectoryChoice({
   depth,
@@ -283,7 +286,13 @@ export function GitHubDirectoryPicker({
 
   const handleCreateFolder = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const nextDirectory = joinGitHubDirectory(selectedDirectory, newFolderName);
+    const folderName = normalizeGitHubDirectorySegment(newFolderName);
+    if (!folderName) {
+      setNewFolderError("Enter a folder name");
+      return;
+    }
+
+    const nextDirectory = joinGitHubDirectory(selectedDirectory, folderName);
     const parsed = repositoryContentDirectorySchema.safeParse(nextDirectory);
     if (!parsed.success) {
       setNewFolderError(
@@ -407,7 +416,7 @@ export function GitHubDirectoryPicker({
               />
               <Button
                 className="shrink-0"
-                disabled={!newFolderName.trim()}
+                disabled={!normalizeGitHubDirectorySegment(newFolderName)}
                 size="sm"
                 type="submit"
                 variant="outline"

@@ -88,6 +88,14 @@ export function PublishContentToGitHubDialog({
     ? isGitHubContentPublishingEnabled(selectedRepository, contentType)
     : false;
 
+  const invalidateIntegrations = () => {
+    queryClient.invalidateQueries({
+      queryKey: dashboardOrpc.integrations.list.queryKey({
+        input: { organizationId },
+      }),
+    });
+  };
+
   const publishMutation = useMutation({
     mutationFn: async (targetRepositoryId: string) => {
       const saved = await onSave();
@@ -103,11 +111,7 @@ export function PublishContentToGitHubDialog({
       });
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.integrations.list.queryKey({
-          input: { organizationId },
-        }),
-      });
+      invalidateIntegrations();
       toast.success(
         result.operation === "created"
           ? "Draft pull request created"
@@ -115,18 +119,9 @@ export function PublishContentToGitHubDialog({
       );
     },
     onError: (error) => {
+      invalidateIntegrations();
       const recovery = getGitHubPublishRecovery(error);
       if (recovery) {
-        if (
-          recovery.code === "github_content_publishing_paused" ||
-          recovery.publishingPaused
-        ) {
-          queryClient.invalidateQueries({
-            queryKey: dashboardOrpc.integrations.list.queryKey({
-              input: { organizationId },
-            }),
-          });
-        }
         return;
       }
       toast.error(error.message || "Failed to create draft pull request");
@@ -315,8 +310,14 @@ export function PublishContentToGitHubDialog({
                 !selectedPublishingEnabled ? (
                   <FieldDescription>
                     {contentLabel === "blog post" ? "Blog post" : "Changelog"}{" "}
-                    publishing is off for this repository. Creating a draft PR
-                    will turn it on.
+                    publishing is off for this repository. Open the{" "}
+                    <Link
+                      className="underline underline-offset-4"
+                      href={`/${organizationSlug}/integrations/github`}
+                    >
+                      GitHub integration
+                    </Link>{" "}
+                    to enable it.
                   </FieldDescription>
                 ) : null}
                 {!integrationsQuery.isLoading &&
@@ -401,7 +402,11 @@ export function PublishContentToGitHubDialog({
             ) : null}
             {publishRecovery || pullRequest ? null : (
               <Button
-                disabled={publishMutation.isPending || !selectedRepository}
+                disabled={
+                  publishMutation.isPending ||
+                  !selectedRepository ||
+                  !selectedPublishingEnabled
+                }
                 type="submit"
               >
                 {publishMutation.isPending

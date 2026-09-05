@@ -924,6 +924,9 @@ export const integrationsRouter = {
             };
           } catch (error) {
             if (hasGitHubStatus(error, 404)) {
+              if (!input.directory) {
+                throw notFound("Repository contents not found");
+              }
               return { directories: [], exists: false };
             }
             if (hasGitHubStatus(error, 401) || hasGitHubStatus(error, 403)) {
