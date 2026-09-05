@@ -85,16 +85,24 @@ function splitHeadlineNumber(
     };
   }
 
-  const percent = headline.match(/\d+%/);
-  if (!percent || percent.index === undefined) {
-    return null;
+  // Scan once: an unanchored digit regex retries long runs without a trailing %.
+  let start = 0;
+  for (let index = 0; index < headline.length; index += 1) {
+    const character = headline.charAt(index);
+    if (character >= "0" && character <= "9") {
+      continue;
+    }
+    if (character === "%" && start < index) {
+      return {
+        before: headline.slice(0, start),
+        number: headline.slice(start, index + 1),
+        after: headline.slice(index + 1),
+      };
+    }
+    start = index + 1;
   }
 
-  return {
-    before: headline.slice(0, percent.index),
-    number: percent[0],
-    after: headline.slice(percent.index + percent[0].length),
-  };
+  return null;
 }
 
 function splitToken(headline: string, token: string) {
