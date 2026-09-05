@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 3001",
-    "build": "next build",
+    "dev": "bun run styles:generate && next dev --port 3001",
+    "build": "bun run styles:generate && next build",
+    "styles:generate": "bun scripts/generate-ui-sources.mjs",
     "start": "next start",
     "knip": "knip",
     "remotion:studio": "remotion studio src/remotion/index.ts",
