@@ -1,8 +1,11 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": ["scripts/*.ts"],
+  "paths": {
+    "@/*": ["./src/*"]
+  },
   "ignore": ["src/**/*.test.ts"],
-  "ignoreUnresolved": ["@/constants/storage", "@/types/skills/page"],
+  "ignoreUnresolved": ["@/types/skills/page"],
   "ignoreIssues": {
     "src/app/(dashboard)/**/constants/**/*.ts": ["exports"],
     "src/components/**/*.tsx": ["types"],
