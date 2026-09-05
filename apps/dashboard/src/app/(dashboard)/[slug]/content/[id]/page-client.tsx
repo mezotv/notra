@@ -64,7 +64,7 @@ import remend from "remend";
 import { toast } from "sonner";
 
 import ChatInput from "@/components/chat-input";
-import { ChatQueue, type QueuedMessage } from "@/components/chat/chat-queue";
+import type { QueuedMessage } from "@/components/chat/chat-queue";
 import { getContentTypeLabel } from "@/components/content/content-card";
 import { ContentChatActivityPanel } from "@/components/content/content-chat-activity-panel";
 import { ContentPlanView } from "@/components/content/content-plan-view";
@@ -1162,13 +1162,7 @@ export default function PageClient({
 
   const renderChatComposer = () => (
     <>
-      <ChatQueue
-        messages={queuedMessages}
-        onEdit={handleEditQueued}
-        onRemove={handleRemoveQueued}
-      />
       <ChatInput
-        connectedTop={queuedMessages.length > 0}
         context={context}
         disabled={isChatDisabled}
         error={chatError}
@@ -1176,7 +1170,9 @@ export default function PageClient({
         onAddContext={handleAddContext}
         onClearError={() => setChatError(null)}
         onClearSelection={clearSelection}
+        onEditQueued={handleEditQueued}
         onRemoveContext={handleRemoveContext}
+        onRemoveQueued={handleRemoveQueued}
         onSend={handleAiEdit}
         onStop={handleStop}
         onValueChange={setChatInputValue}
@@ -1187,6 +1183,7 @@ export default function PageClient({
             ? CONTENT_PLAN_CHAT_PLACEHOLDER
             : undefined
         }
+        queuedMessages={queuedMessages}
         selection={selection}
         value={chatInputValue}
       />

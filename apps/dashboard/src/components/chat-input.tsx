@@ -79,6 +79,9 @@ const ChatInput = ({
   onClearError,
   connectedTop = false,
   placeholder,
+  queuedMessages = [],
+  onEditQueued,
+  onRemoveQueued,
 }: ChatInputProps) => {
   const contextPickerId = useId();
   const [isFocused, setIsFocused] = useState(false);
@@ -288,7 +291,9 @@ const ChatInput = ({
   if (isInputLocked) {
     contextPickerDisabledReason = "Context is unavailable right now.";
   }
-  const hasContextChips = context.length > 0 || Boolean(selection);
+  const hasQueuedChips = queuedMessages.length > 0;
+  const hasContextChips =
+    context.length > 0 || Boolean(selection) || hasQueuedChips;
   const showComposerNudge =
     hasContextChips || shouldShowLowCredits || Boolean(usageLimitError);
   let sendTooltip = "Enter to send. Shift+Enter for a new line.";
@@ -333,6 +338,24 @@ const ChatInput = ({
           >
             {hasContextChips ? (
               <>
+                {queuedMessages.map((message) => (
+                  <Composer.Chip
+                    className="hover:border-border hover:bg-background w-full border-solid border-transparent bg-transparent transition-colors"
+                    editLabel="Edit queued message"
+                    key={message.id}
+                    label={message.text}
+                    labelClassName="min-w-0 flex-1 max-w-none"
+                    onEdit={
+                      onEditQueued ? () => onEditQueued(message) : undefined
+                    }
+                    onRemove={
+                      onRemoveQueued
+                        ? () => onRemoveQueued(message.id)
+                        : undefined
+                    }
+                    removeLabel="Remove from queue"
+                  />
+                ))}
                 <ChatInputContextRow
                   context={context}
                   onClearSelection={onClearSelection}
