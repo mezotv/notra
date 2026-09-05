@@ -99,11 +99,15 @@ function ReplayTurn({
   const sources = replaySources(turn);
   const hasRecordedSearch =
     turn.searchQueries.length > 0 || turn.sources.length > 0;
-  const hasSearchChrome = skin === "perplexity" || hasRecordedSearch;
+  const hasSearchChrome =
+    skin === "perplexity" || skin === "opencode" || hasRecordedSearch;
   const showSearch =
     hasSearchChrome && (showAnswer || (skin === "opencode" && showThinking));
   let searchQueries: readonly string[] = turn.searchQueries;
-  if (searchQueries.length === 0 && skin === "perplexity") {
+  if (
+    searchQueries.length === 0 &&
+    (skin === "perplexity" || skin === "opencode")
+  ) {
     searchQueries = [turn.prompt];
   }
 

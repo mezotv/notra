@@ -167,11 +167,11 @@ export function OpencodeSources({
 
   return (
     <div className={cn("flex w-full flex-col gap-2 font-mono", className)}>
-      {visibleQueries.map((query, index) => (
+      {visibleQueries.map((query) => (
         <OpencodeActivity
           className={shouldSequence ? ENTER_CLASS : undefined}
           detail={`query=${query}`}
-          key={`${index}-${query}`}
+          key={query}
           kind="tool"
           label="websearch"
         />
