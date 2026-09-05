@@ -37,10 +37,11 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 
 ### Shared UI styles
 
-`bun run dev` and `bun run build` generate `src/styles/ui-sources.css` from the
+`bun run dev` generates `src/styles/ui-sources.css` from the
 marketing app's shared UI imports, including transitive imports and lazy-loaded
 components. This keeps dashboard-only utilities out of the marketing stylesheet.
 After adding a shared UI import while the dev server is running, run
 `bun run styles:generate` (or restart the dev server). Commit the generated CSS
-with the import change. `bun scripts/generate-ui-sources.mjs --check` verifies
-that the source list is current.
+with the import change. `bun run styles:check` verifies that the source list is
+current. `bun run build` runs this check before Next.js and fails if the committed
+source list is stale, rather than silently regenerating it.
