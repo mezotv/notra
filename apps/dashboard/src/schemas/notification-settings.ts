@@ -18,3 +18,8 @@ export type UpdateNotificationSettings = z.infer<
 
 export const updateNotificationSettingsInputSchema =
   organizationIdInputSchema.extend(updateNotificationSettingsSchema.shape);
+
+export const onboardingNotificationPrefsSchema = z.object({
+  dailySummary: z.boolean(),
+  marketingEmails: z.boolean(),
+});

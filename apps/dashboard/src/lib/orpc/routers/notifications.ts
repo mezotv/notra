@@ -34,7 +34,7 @@ export const notificationsRouter = {
           scheduledContentFailed: false,
           scheduledContentSkipped: false,
           marketingEmails: true,
-          dailySummary: false,
+          dailySummary: true,
         },
       };
     }),
@@ -87,7 +87,7 @@ export const notificationsRouter = {
           scheduledContentFailed: input.scheduledContentFailed ?? false,
           scheduledContentSkipped: input.scheduledContentSkipped ?? false,
           marketingEmails: input.marketingEmails ?? true,
-          dailySummary: input.dailySummary ?? false,
+          dailySummary: input.dailySummary ?? true,
         })
         .onConflictDoUpdate({
           set: updates,

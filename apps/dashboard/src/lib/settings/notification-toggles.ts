@@ -43,7 +43,7 @@ export const NOTIFICATION_TOGGLE_GROUPS: NotificationToggleGroup[] = [
         label: "Daily recap",
         description:
           "Get one email each morning with yesterday's mention rate and what changed. Quiet days are skipped.",
-        defaultValue: false,
+        defaultValue: true,
         icon: News01Icon,
       },
     ],

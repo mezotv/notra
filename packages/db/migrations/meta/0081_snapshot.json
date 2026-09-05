@@ -8977,7 +8977,7 @@
           "type": "boolean",
           "primaryKey": false,
           "notNull": true,
-          "default": false
+          "default": true
         },
         "created_at": {
           "name": "created_at",
