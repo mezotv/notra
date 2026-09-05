@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/geo-scan",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/daily-summary",
+      "schedule": "0 8 * * *"
     }
   ]
 }

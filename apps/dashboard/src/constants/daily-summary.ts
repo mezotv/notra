@@ -1,0 +1,2 @@
+export const DAILY_SUMMARY_MAX_ITEMS = 6;
+export const DAILY_SUMMARY_PROMPT_MAX_LENGTH = 80;

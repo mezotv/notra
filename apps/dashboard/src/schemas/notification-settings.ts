@@ -9,6 +9,7 @@ export const updateNotificationSettingsSchema = z.object({
   scheduledContentFailed: z.boolean().optional(),
   scheduledContentSkipped: z.boolean().optional(),
   marketingEmails: z.boolean().optional(),
+  dailySummary: z.boolean().optional(),
 });
 
 export type UpdateNotificationSettings = z.infer<

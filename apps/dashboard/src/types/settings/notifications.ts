@@ -5,6 +5,7 @@ export interface NotificationSettings {
   scheduledContentFailed: boolean;
   scheduledContentSkipped: boolean;
   marketingEmails: boolean;
+  dailySummary: boolean;
 }
 
 export type NotificationToggleKey = keyof NotificationSettings;

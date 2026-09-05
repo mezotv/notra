@@ -34,6 +34,7 @@ export const notificationsRouter = {
           scheduledContentFailed: false,
           scheduledContentSkipped: false,
           marketingEmails: true,
+          dailySummary: false,
         },
       };
     }),
@@ -73,6 +74,10 @@ export const notificationsRouter = {
         updates.marketingEmails = input.marketingEmails;
       }
 
+      if (input.dailySummary !== undefined) {
+        updates.dailySummary = input.dailySummary;
+      }
+
       const [updated] = await db
         .insert(organizationNotificationSettings)
         .values({
@@ -82,6 +87,7 @@ export const notificationsRouter = {
           scheduledContentFailed: input.scheduledContentFailed ?? false,
           scheduledContentSkipped: input.scheduledContentSkipped ?? false,
           marketingEmails: input.marketingEmails ?? true,
+          dailySummary: input.dailySummary ?? false,
         })
         .onConflictDoUpdate({
           set: updates,
