@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@notra/ui/components/ui/select";
 import { Textarea } from "@notra/ui/components/ui/textarea";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { ShelfDueDateField } from "@/components/geo/shelf/shelf-due-date-field";
 import { ShelfMemberSelect } from "@/components/geo/shelf/shelf-member-select";
@@ -42,6 +42,19 @@ function toNotesWrite(value: string): string | null {
   return value.length > 0 ? value : null;
 }
 
+function persistNotesIfChanged(
+  value: string,
+  savedNotesRef: { current: string | null },
+  onChangeRef: { current: GeoShelfTicketFormProps["onChange"] }
+) {
+  const next = toNotesWrite(value);
+  if (next === savedNotesRef.current) {
+    return;
+  }
+  savedNotesRef.current = next;
+  onChangeRef.current({ notes: next });
+}
+
 export function ShelfTicketForm({
   opportunity,
   members,
@@ -60,41 +73,49 @@ export function ShelfTicketForm({
   const draftNotesRef = useRef(draftNotes);
   const savedNotesRef = useRef(savedNotes);
   const onChangeRef = useRef(onChange);
-  const dirtyRef = useRef(false);
-
-  draftNotesRef.current = draftNotes;
-  savedNotesRef.current = savedNotes;
-  onChangeRef.current = onChange;
-
-  const flushNotes = useCallback(() => {
-    if (!dirtyRef.current) {
-      return;
-    }
-    const next = toNotesWrite(draftNotesRef.current);
-    dirtyRef.current = false;
-    if (next !== savedNotesRef.current) {
-      onChangeRef.current({ notes: next });
-    }
-  }, []);
+  const timeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (!dirtyRef.current) {
-      setDraftNotes(savedNotes ?? "");
-    }
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    savedNotesRef.current = savedNotes;
   }, [savedNotes]);
 
-  useEffect(() => {
-    if (!dirtyRef.current) {
-      return;
-    }
-    const timeoutId = window.setTimeout(
-      flushNotes,
-      GEO_SHELF_NOTES_SAVE_DEBOUNCE_MS
-    );
-    return () => window.clearTimeout(timeoutId);
-  }, [draftNotes, flushNotes]);
+  useEffect(
+    () => () => {
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current);
+      }
+      persistNotesIfChanged(
+        draftNotesRef.current,
+        savedNotesRef,
+        onChangeRef
+      );
+    },
+    []
+  );
 
-  useEffect(() => () => flushNotes(), [flushNotes]);
+  const flushNotes = () => {
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    persistNotesIfChanged(draftNotesRef.current, savedNotesRef, onChangeRef);
+  };
+
+  const handleNotesChange = (value: string) => {
+    draftNotesRef.current = value;
+    setDraftNotes(value);
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = window.setTimeout(() => {
+      timeoutRef.current = null;
+      persistNotesIfChanged(value, savedNotesRef, onChangeRef);
+    }, GEO_SHELF_NOTES_SAVE_DEBOUNCE_MS);
+  };
 
   return (
     <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
@@ -193,8 +214,7 @@ export function ShelfTicketForm({
           maxLength={GEO_SHELF_NOTES_MAX_LENGTH}
           onBlur={flushNotes}
           onChange={(event) => {
-            dirtyRef.current = true;
-            setDraftNotes(event.target.value);
+            handleNotesChange(event.target.value);
           }}
           placeholder="Who you contacted, what they said, what happens next"
           rows={3}

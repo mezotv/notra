@@ -15,7 +15,7 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { memo, useMemo, useRef, useState } from "react";
+import { memo, useRef, useState } from "react";
 
 import { ShelfMemberAvatar } from "@/components/geo/shelf/shelf-member-avatar";
 import { ShelfPlacementBadge } from "@/components/geo/shelf/shelf-placement-badge";
@@ -153,6 +153,7 @@ const ShelfBoardColumn = memo(function ShelfBoardColumn({
   pendingSourceIds: ReadonlySet<string>;
   onRowClick: (row: GeoShelfRow) => void;
 }) {
+  "use no memo";
   const scrollRef = useRef<HTMLDivElement>(null);
   const dropDisabled = columnId === UNTRACKED_COLUMN;
   const { isOver, setNodeRef } = useDroppable({
@@ -238,11 +239,8 @@ export function ShelfBoard({
   onRowClick,
   onUpdateOpportunity,
 }: GeoShelfBoardProps) {
-  const grouped = useMemo(() => groupRowsByBoardColumn(rows), [rows]);
-  const rowById = useMemo(
-    () => new Map(rows.map((row) => [row.id, row])),
-    [rows]
-  );
+  const grouped = groupRowsByBoardColumn(rows);
+  const rowById = new Map(rows.map((row) => [row.id, row]));
   const [activeId, setActiveId] = useState<string | null>(null);
   const sensors = useSensors(
     useSensor(MouseSensor, BOARD_SENSORS.mouse),
