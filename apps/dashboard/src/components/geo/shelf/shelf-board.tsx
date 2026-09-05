@@ -112,7 +112,7 @@ function ShelfBoardCardSkeleton() {
   );
 }
 
-const ShelfBoardCard = memo(function ShelfBoardCard({
+function ShelfBoardCard({
   row,
   disabled,
   isPlaceholder,
@@ -163,7 +163,7 @@ const ShelfBoardCard = memo(function ShelfBoardCard({
       )}
     </button>
   );
-});
+}
 
 function ShelfBoardCardBody({ row }: { row: GeoShelfRow }) {
   const title = row.title ?? row.domain;
