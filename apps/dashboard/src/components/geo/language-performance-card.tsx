@@ -3,6 +3,7 @@
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  GEO_LANGUAGE_PERFORMANCE_HINT,
   GEO_MAX_LANGUAGES,
   GEO_SPARKLINE_MIN_POINTS,
   GEO_VISIBILITY_TABLE_ROWS,
@@ -12,6 +13,7 @@ import {
   buildLanguagePerformanceRows,
   trackedGeoLanguages,
 } from "@notra/geo-core/utils/geo-language-rows";
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
 import {
   ResponsiveAlertDialog,
   ResponsiveAlertDialogAction,
@@ -31,7 +33,6 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
-import { GeoBar } from "@/components/geo/geo-bar";
 import { GeoRateSparkline } from "@/components/geo/geo-rate-sparkline";
 import { StatusSpinner } from "@/components/geo/status-spinner";
 import { Twemoji } from "@/components/geo/twemoji";
@@ -184,24 +185,29 @@ function languagePerformanceColumns({
       key: "trend",
       header: "Trend",
       width: "7.5rem",
-      cell: (row) =>
-        row.kind === "suggested" ? (
-          <LanguageAddButton
-            disabled={adding || atLimit}
-            language={row.language}
-            limitReached={atLimit}
-            onAdd={onAddLanguage}
-            pending={pendingLanguage === row.language}
-          />
-        ) : (row.trend?.length ?? 0) >= GEO_SPARKLINE_MIN_POINTS ? (
-          <GeoRateSparkline
-            className="text-geo-search"
-            label={`${row.language} mention rate trend`}
-            points={row.trend ?? []}
-          />
-        ) : (
-          <span className="text-muted-foreground text-xs">-</span>
-        ),
+      cell: (row) => {
+        if (row.kind === "suggested") {
+          return (
+            <LanguageAddButton
+              disabled={adding || atLimit}
+              language={row.language}
+              limitReached={atLimit}
+              onAdd={onAddLanguage}
+              pending={pendingLanguage === row.language}
+            />
+          );
+        }
+        if ((row.trend?.length ?? 0) >= GEO_SPARKLINE_MIN_POINTS) {
+          return (
+            <GeoRateSparkline
+              className="text-geo-search"
+              label={`${row.language} mention rate trend`}
+              points={row.trend ?? []}
+            />
+          );
+        }
+        return <span className="text-muted-foreground text-xs">-</span>;
+      },
     },
   ];
 }
@@ -256,6 +262,7 @@ export function LanguagePerformanceCard({
         bodyClassName="flex min-h-0 flex-1 flex-col"
         className="h-full"
         eyebrow="Performance by language"
+        hint={GEO_LANGUAGE_PERFORMANCE_HINT}
       >
         <Table
           className="rounded-2xl"

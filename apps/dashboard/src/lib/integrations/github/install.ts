@@ -8,11 +8,12 @@ import { trackEvent } from "@/lib/analytics/posthog-client";
 import { isNextRedirectError } from "@/lib/auth/redirect-error";
 import { startSocialSignInAction } from "@/lib/auth/social-actions";
 import { dashboardOrpc } from "@/lib/orpc/query";
+
 import {
   GitHubAccountConnectionIncompleteError,
   GitHubInstallStartError,
   type StartGitHubInstallResult,
-} from "@/types/integrations/github";
+} from "../../../types/integrations/github";
 
 function authorizeGitHub(callbackURL: string) {
   return Effect.tryPromise({

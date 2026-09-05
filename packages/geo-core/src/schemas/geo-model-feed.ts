@@ -6,7 +6,7 @@ export const geoGatewayModelSchema = object({
   owned_by: string().min(1),
   type: string(),
   zdr: enumType(["all", "some", "none"]),
-  released: number(),
+  released: number().optional(),
   deprecated_at: union([number(), string()]).nullish(),
   tags: array(string()).optional(),
 });

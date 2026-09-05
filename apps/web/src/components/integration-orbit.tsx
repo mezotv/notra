@@ -1,6 +1,6 @@
 "use client";
 
-import OrbitImages from "@notra/ui/components/OrbitImages";
+import OrbitImages from "@notra/ui/components/shared/orbit-images";
 import { Databuddy } from "@notra/ui/components/ui/svgs/databuddy";
 import { Framer } from "@notra/ui/components/ui/svgs/framer";
 import { Github } from "@notra/ui/components/ui/svgs/github";

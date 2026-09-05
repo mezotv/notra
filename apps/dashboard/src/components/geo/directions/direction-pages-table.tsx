@@ -2,10 +2,10 @@
 
 import type { GeoTrafficPage } from "@notra/geo-core/types/geo";
 import { formatGeoSource } from "@notra/geo-core/utils/ai-traffic";
+import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { GEO_DIRECTIONS_PAGES } from "@/constants/geo-directions";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
 import { cn } from "@/lib/utils";

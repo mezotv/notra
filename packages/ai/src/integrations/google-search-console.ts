@@ -1,6 +1,9 @@
 import { db } from "@notra/db/drizzle";
-import { googleSearchConsoleIntegrations } from "@notra/db/schema";
-import { eq } from "drizzle-orm";
+import {
+  geoPromptSuggestions,
+  googleSearchConsoleIntegrations,
+} from "@notra/db/schema";
+import { and, eq, isNull, or, sql } from "drizzle-orm";
 import { customAlphabet } from "nanoid";
 
 import {
@@ -12,12 +15,12 @@ import {
   GSC_OAUTH_TOKEN_URL,
   GSC_SEARCH_ANALYTICS_BASE_URL,
   GSC_SITES_URL,
+  GSC_TOKEN_REVOKE_TIMEOUT_MS,
   GSC_USERINFO_URL,
   MS_PER_DAY,
   REAUTH_ERROR_CODES,
 } from "../constants/google-search-console";
 import { decryptToken, encryptToken } from "../crypto/token-encryption";
-import { deleteQstashSchedule } from "../qstash/triggers";
 import {
   gscSearchAnalyticsResponseSchema,
   gscSitesResponseSchema,
@@ -52,6 +55,13 @@ export class GscReauthRequiredError extends Error {
   constructor(message = "Google Search Console access must be re-authorized") {
     super(message);
     this.name = "GscReauthRequiredError";
+  }
+}
+
+export class GscDisconnectInProgressError extends Error {
+  constructor() {
+    super("Google Search Console disconnect is still in progress");
+    this.name = "GscDisconnectInProgressError";
   }
 }
 
@@ -99,6 +109,7 @@ export async function exchangeGscAuthorizationCode(
       grant_type: "authorization_code",
       redirect_uri: params.redirectUri,
     }),
+    signal: params.signal,
   });
 
   const payload = await response.json();
@@ -119,11 +130,13 @@ export async function exchangeGscAuthorizationCode(
 }
 
 export async function fetchGscAccountEmail(
-  accessToken: string
+  accessToken: string,
+  signal?: AbortSignal
 ): Promise<string | null> {
   try {
     const response = await fetch(GSC_USERINFO_URL, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      signal,
     });
     if (!response.ok) {
       return null;
@@ -131,6 +144,7 @@ export async function fetchGscAccountEmail(
     const parsed = gscUserInfoSchema.safeParse(await response.json());
     return parsed.success ? (parsed.data.email ?? null) : null;
   } catch {
+    signal?.throwIfAborted();
     return null;
   }
 }
@@ -178,50 +192,42 @@ export function shouldClearGscSiteOnReconnect(
 }
 
 export async function upsertGscIntegration(
-  params: UpsertGscIntegrationParams
+  params: UpsertGscIntegrationParams,
+  signal?: AbortSignal,
+  assertLockOwned?: () => Promise<void>
 ): Promise<GscIntegrationRow> {
-  const existing = await getGscIntegration(params.organizationId);
-  const googleAccountChanged = shouldClearGscSiteOnReconnect(
-    existing,
-    params.googleAccountEmail
-  );
-
+  signal?.throwIfAborted();
   const encryptedAccessToken = encryptToken(params.accessToken);
   const encryptedRefreshToken = encryptToken(params.refreshToken);
 
-  // Tear the old account's schedule down before the upsert clears its id: if
-  // QStash deletion fails, keeping the (deterministic, per-organization) id on
-  // the row lets the next site selection reuse or replace the schedule instead
-  // of orphaning one that keeps firing.
-  let oldScheduleDeleted = true;
-  if (googleAccountChanged && existing) {
-    await revokeGscToken(existing);
-    if (existing.qstashScheduleId) {
-      try {
-        await deleteQstashSchedule(existing.qstashScheduleId);
-      } catch (error) {
-        console.error("[GSC] Failed to delete QStash schedule:", error);
-        oldScheduleDeleted = false;
-      }
+  const { integrationToRevoke, row } = await db.transaction(async (tx) => {
+    // The advisory lock also serializes first-time inserts, where there is no
+    // row for SELECT FOR UPDATE to lock yet.
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`gsc-integration:${params.organizationId}`}, 0))`
+    );
+    await assertLockOwned?.();
+    signal?.throwIfAborted();
+    const existing = await tx.query.googleSearchConsoleIntegrations.findFirst({
+      where: eq(
+        googleSearchConsoleIntegrations.organizationId,
+        params.organizationId
+      ),
+    });
+    if (existing?.disconnectingAt) {
+      throw new GscDisconnectInProgressError();
     }
-  }
+    const googleAccountChanged = shouldClearGscSiteOnReconnect(
+      existing ?? null,
+      params.googleAccountEmail
+    );
 
-  const [row] = await db
-    .insert(googleSearchConsoleIntegrations)
-    .values({
-      id: `gsc_${nanoid()}`,
-      organizationId: params.organizationId,
-      createdByUserId: params.userId,
-      googleAccountEmail: params.googleAccountEmail,
-      encryptedAccessToken,
-      encryptedRefreshToken,
-      accessTokenExpiresAt: params.expiresAt,
-      status: "active",
-      lastError: null,
-    })
-    .onConflictDoUpdate({
-      target: googleSearchConsoleIntegrations.organizationId,
-      set: {
+    signal?.throwIfAborted();
+    const [row] = await tx
+      .insert(googleSearchConsoleIntegrations)
+      .values({
+        id: `gsc_${nanoid()}`,
+        organizationId: params.organizationId,
         createdByUserId: params.userId,
         googleAccountEmail: params.googleAccountEmail,
         encryptedAccessToken,
@@ -229,20 +235,77 @@ export async function upsertGscIntegration(
         accessTokenExpiresAt: params.expiresAt,
         status: "active",
         lastError: null,
-        ...(googleAccountChanged
-          ? {
-              siteUrl: null,
-              ...(oldScheduleDeleted ? { qstashScheduleId: null } : {}),
-            }
-          : {}),
-      },
-    })
-    .returning();
+      })
+      .onConflictDoUpdate({
+        target: googleSearchConsoleIntegrations.organizationId,
+        set: {
+          createdByUserId: params.userId,
+          googleAccountEmail: params.googleAccountEmail,
+          encryptedAccessToken,
+          encryptedRefreshToken,
+          accessTokenExpiresAt: params.expiresAt,
+          status: "active",
+          lastError: null,
+          ...(googleAccountChanged
+            ? {
+                siteUrl: null,
+                topQueries: [],
+              }
+            : {}),
+        },
+      })
+      .returning();
 
-  if (!row) {
-    throw new Error("Failed to save Google Search Console integration");
+    if (!row) {
+      throw new Error("Failed to save Google Search Console integration");
+    }
+
+    if (!existing || googleAccountChanged) {
+      signal?.throwIfAborted();
+      await tx
+        .delete(geoPromptSuggestions)
+        .where(
+          and(
+            eq(geoPromptSuggestions.organizationId, params.organizationId),
+            eq(geoPromptSuggestions.status, "pending")
+          )
+        );
+    }
+
+    return {
+      row,
+      // Missing identity requires clearing cached property data, but does not
+      // prove the old grant belongs to a different Google account.
+      integrationToRevoke:
+        existing?.googleAccountEmail?.trim() &&
+        params.googleAccountEmail?.trim() &&
+        hasGscGoogleAccountChanged(
+          existing.googleAccountEmail,
+          params.googleAccountEmail
+        )
+          ? existing
+          : null,
+    };
+  });
+
+  // The OAuth callback keeps its organization lock through revocation so a
+  // later callback cannot mint or install a replacement grant in parallel.
+  // The database transaction is already committed and its connection freed,
+  // so losing the lock here must not read as a failed connection: skip the
+  // old grant's revocation instead of unwinding a saved integration.
+  if (integrationToRevoke) {
+    try {
+      await assertLockOwned?.();
+      signal?.throwIfAborted();
+    } catch (error) {
+      console.error(
+        "[GSC] Integration lock lost after saving the connection; skipping revocation of the previous grant:",
+        error
+      );
+      return row;
+    }
+    await revokeGscToken(integrationToRevoke, signal);
   }
-
   return row;
 }
 
@@ -253,31 +316,208 @@ export async function updateGscIntegration(
   const [row] = await db
     .update(googleSearchConsoleIntegrations)
     .set(updates)
-    .where(eq(googleSearchConsoleIntegrations.organizationId, organizationId))
+    .where(
+      and(
+        eq(googleSearchConsoleIntegrations.organizationId, organizationId),
+        isNull(googleSearchConsoleIntegrations.disconnectingAt)
+      )
+    )
     .returning();
   return row ?? null;
+}
+
+export async function claimOrConfirmGscSchedule(
+  integration: GscIntegrationRow,
+  scheduleId: string,
+  signal?: AbortSignal,
+  assertLockOwned?: () => Promise<void>
+): Promise<GscIntegrationRow | null> {
+  return await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`gsc-integration:${integration.organizationId}`}, 0))`
+    );
+    await assertLockOwned?.();
+    signal?.throwIfAborted();
+    const [row] = await tx
+      .update(googleSearchConsoleIntegrations)
+      .set({ qstashScheduleId: scheduleId })
+      .where(
+        and(
+          eq(googleSearchConsoleIntegrations.id, integration.id),
+          eq(
+            googleSearchConsoleIntegrations.organizationId,
+            integration.organizationId
+          ),
+          isNull(googleSearchConsoleIntegrations.disconnectingAt),
+          or(
+            eq(googleSearchConsoleIntegrations.qstashScheduleId, scheduleId),
+            and(
+              integration.googleAccountEmail === null
+                ? isNull(googleSearchConsoleIntegrations.googleAccountEmail)
+                : sql`lower(trim(${googleSearchConsoleIntegrations.googleAccountEmail})) = ${integration.googleAccountEmail.trim().toLowerCase()}`,
+              eq(googleSearchConsoleIntegrations.status, integration.status),
+              isNull(googleSearchConsoleIntegrations.qstashScheduleId),
+              integration.lastSyncedAt === null
+                ? isNull(googleSearchConsoleIntegrations.lastSyncedAt)
+                : eq(
+                    googleSearchConsoleIntegrations.lastSyncedAt,
+                    integration.lastSyncedAt
+                  ),
+              integration.siteUrl === null
+                ? isNull(googleSearchConsoleIntegrations.siteUrl)
+                : eq(
+                    googleSearchConsoleIntegrations.siteUrl,
+                    integration.siteUrl
+                  )
+            )
+          )
+        )
+      )
+      .returning();
+    return row ?? null;
+  });
+}
+
+export async function updateGscIntegrationIfUnchanged(
+  integration: GscIntegrationRow,
+  updates: GscIntegrationUpdate,
+  executor: Pick<typeof db, "update"> = db
+): Promise<GscIntegrationRow | null> {
+  const [row] = await executor
+    .update(googleSearchConsoleIntegrations)
+    .set(updates)
+    .where(
+      and(
+        eq(googleSearchConsoleIntegrations.id, integration.id),
+        eq(
+          googleSearchConsoleIntegrations.organizationId,
+          integration.organizationId
+        ),
+        eq(
+          googleSearchConsoleIntegrations.encryptedRefreshToken,
+          integration.encryptedRefreshToken
+        ),
+        eq(googleSearchConsoleIntegrations.status, integration.status),
+        integration.disconnectingAt === null
+          ? isNull(googleSearchConsoleIntegrations.disconnectingAt)
+          : eq(
+              googleSearchConsoleIntegrations.disconnectingAt,
+              integration.disconnectingAt
+            ),
+        integration.qstashScheduleId === null
+          ? isNull(googleSearchConsoleIntegrations.qstashScheduleId)
+          : eq(
+              googleSearchConsoleIntegrations.qstashScheduleId,
+              integration.qstashScheduleId
+            ),
+        integration.lastSyncedAt === null
+          ? isNull(googleSearchConsoleIntegrations.lastSyncedAt)
+          : eq(
+              googleSearchConsoleIntegrations.lastSyncedAt,
+              integration.lastSyncedAt
+            ),
+        integration.siteUrl === null
+          ? isNull(googleSearchConsoleIntegrations.siteUrl)
+          : eq(googleSearchConsoleIntegrations.siteUrl, integration.siteUrl)
+      )
+    )
+    .returning();
+  return row ?? null;
+}
+
+export async function beginGscIntegrationDisconnect(
+  organizationId: string,
+  signal?: AbortSignal,
+  assertLockOwned?: () => Promise<void>
+): Promise<GscIntegrationRow | null> {
+  return await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`gsc-integration:${organizationId}`}, 0))`
+    );
+    await assertLockOwned?.();
+    signal?.throwIfAborted();
+    const [row] = await tx
+      .update(googleSearchConsoleIntegrations)
+      .set({
+        disconnectingAt: sql`coalesce(${googleSearchConsoleIntegrations.disconnectingAt}, now())`,
+      })
+      .where(eq(googleSearchConsoleIntegrations.organizationId, organizationId))
+      .returning();
+    return row ?? null;
+  });
 }
 
 export async function deleteGscIntegration(
-  organizationId: string
+  integration: GscIntegrationRow,
+  signal?: AbortSignal,
+  assertLockOwned?: () => Promise<void>
 ): Promise<GscIntegrationRow | null> {
-  const [row] = await db
-    .delete(googleSearchConsoleIntegrations)
-    .where(eq(googleSearchConsoleIntegrations.organizationId, organizationId))
-    .returning();
-  return row ?? null;
+  const disconnectingAt = integration.disconnectingAt;
+  if (!disconnectingAt) {
+    return null;
+  }
+  return await db.transaction(async (tx) => {
+    await tx.execute(
+      sql`SELECT pg_advisory_xact_lock(hashtextextended(${`gsc-integration:${integration.organizationId}`}, 0))`
+    );
+    await assertLockOwned?.();
+    signal?.throwIfAborted();
+    const [row] = await tx
+      .delete(googleSearchConsoleIntegrations)
+      .where(
+        and(
+          eq(googleSearchConsoleIntegrations.id, integration.id),
+          eq(
+            googleSearchConsoleIntegrations.organizationId,
+            integration.organizationId
+          ),
+          eq(
+            googleSearchConsoleIntegrations.encryptedRefreshToken,
+            integration.encryptedRefreshToken
+          ),
+          eq(googleSearchConsoleIntegrations.disconnectingAt, disconnectingAt)
+        )
+      )
+      .returning();
+    if (!row) {
+      return null;
+    }
+    await tx
+      .delete(geoPromptSuggestions)
+      .where(
+        and(
+          eq(geoPromptSuggestions.organizationId, integration.organizationId),
+          eq(geoPromptSuggestions.status, "pending")
+        )
+      );
+    return row;
+  });
 }
 
-export async function revokeGscToken(integration: GscIntegrationRow) {
+export async function revokeGscToken(
+  integration: GscIntegrationRow,
+  signal?: AbortSignal
+): Promise<boolean> {
   try {
     const refreshToken = decryptToken(integration.encryptedRefreshToken);
-    await fetch(GSC_OAUTH_REVOKE_URL, {
+    const timeoutSignal = AbortSignal.timeout(GSC_TOKEN_REVOKE_TIMEOUT_MS);
+    const response = await fetch(GSC_OAUTH_REVOKE_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ token: refreshToken }),
+      signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
     });
+    if (response.ok || response.status === 400) {
+      return true;
+    }
+    console.error(
+      `[GSC] Failed to revoke Google token with status ${response.status}`
+    );
+    return false;
   } catch (error) {
+    signal?.throwIfAborted();
     console.error("[GSC] Failed to revoke Google token:", error);
+    return false;
   }
 }
 
@@ -306,7 +546,7 @@ async function refreshGscAccessToken(
   if (!(response.ok && parsed.success)) {
     const { code, description } = parseTokenError(payload);
     if (code && REAUTH_ERROR_CODES.has(code)) {
-      await updateGscIntegration(integration.organizationId, {
+      await updateGscIntegrationIfUnchanged(integration, {
         status: "reauth_required",
         lastError: description ?? code,
       });
@@ -319,15 +559,19 @@ async function refreshGscAccessToken(
   }
 
   const accessToken = parsed.data.access_token;
-  await db
-    .update(googleSearchConsoleIntegrations)
-    .set({
-      encryptedAccessToken: encryptToken(accessToken),
-      accessTokenExpiresAt: toExpiresAt(parsed.data.expires_in),
-      status: "active",
-      lastError: null,
-    })
-    .where(eq(googleSearchConsoleIntegrations.id, integration.id));
+  const updated = await updateGscIntegrationIfUnchanged(integration, {
+    encryptedAccessToken: encryptToken(accessToken),
+    accessTokenExpiresAt: toExpiresAt(parsed.data.expires_in),
+    status: "active",
+    lastError: null,
+  });
+
+  if (!updated) {
+    throw new GscApiError(
+      "Google Search Console changed while refreshing access. Please try again.",
+      409
+    );
+  }
 
   return accessToken;
 }
@@ -335,6 +579,9 @@ async function refreshGscAccessToken(
 export async function getGscAccessToken(
   integration: GscIntegrationRow
 ): Promise<string> {
+  if (integration.disconnectingAt) {
+    throw new GscDisconnectInProgressError();
+  }
   if (integration.status === "reauth_required") {
     throw new GscReauthRequiredError();
   }

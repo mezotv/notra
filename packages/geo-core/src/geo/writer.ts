@@ -5,6 +5,7 @@ import { POST_SLUG_MAX_LENGTH } from "@notra/ai/schemas/post";
 import type {
   GeoContentBrief,
   GeoPlannerSitemapPage,
+  GeoWriterBrief,
 } from "@notra/ai/types/geo-writer";
 import {
   createPostRecord,
@@ -23,6 +24,7 @@ import {
   geoSettings,
   postCollections,
 } from "@notra/db/schema";
+import type { PostSourceMetadata } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import { slugify } from "@notra/utils/slugify";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
@@ -64,6 +66,7 @@ import {
   GeoWriterPlanError,
   GeoWriterStartError,
 } from "./errors";
+import { evidenceToBaseline, loadPromptEvidence } from "./evidence";
 import { loadPlannerGapPrompts } from "./gaps";
 import { requireBrandIdentity, requireGeoProject } from "./projects";
 import { promptIdFromScanId } from "./prompts";
@@ -75,19 +78,42 @@ function toArticleSlug(title: string): string {
   return slug.slice(0, POST_SLUG_MAX_LENGTH);
 }
 
+export function briefProvenanceMetadata(input: {
+  brief: GeoWriterBrief;
+  sourceKind: string;
+  sourceId: string | null;
+}): Pick<PostSourceMetadata, "geoSourceKind" | "geoSourceId" | "geoBaseline"> {
+  const baseline = input.brief.baseline ?? null;
+  return {
+    geoSourceKind: input.sourceKind,
+    geoSourceId: input.sourceId,
+    geoBaseline: baseline
+      ? {
+          sourcePromptId: baseline.sourcePromptId,
+          mentionedEngines: baseline.mentionedEngines,
+          totalEngines: baseline.totalEngines,
+          capturedAt: baseline.capturedAt,
+        }
+      : null,
+  };
+}
+
 const createBriefDraftPost = Effect.fn("geo.writer.draftPost")(
   function* (input: {
     organizationId: string;
     projectId: string;
     briefId: string;
-    brief: GeoContentBrief;
+    brief: GeoWriterBrief;
     brandVoiceId: string;
     collectionId: string | null;
     postId: string | null;
+    sourceKind: string;
+    sourceId: string | null;
   }) {
     if (input.postId && input.collectionId) {
       return { postId: input.postId, collectionId: input.collectionId };
     }
+    const provenance = briefProvenanceMetadata(input);
 
     const brand = yield* geoDb("brand identity lookup failed", () =>
       db.query.brandSettings.findFirst({
@@ -118,6 +144,7 @@ const createBriefDraftPost = Effect.fn("geo.writer.draftPost")(
             brandVoiceName,
             briefId: input.briefId,
             projectId: input.projectId,
+            ...provenance,
           },
           expectedPostCount: 1,
           completedPostCount: 0,
@@ -146,6 +173,7 @@ const createBriefDraftPost = Effect.fn("geo.writer.draftPost")(
             brandVoiceName,
             briefId: input.briefId,
             projectId: input.projectId,
+            ...provenance,
           },
         }),
       catch: (cause) =>
@@ -510,6 +538,8 @@ const approveAndStartGeoWriterInScope = Effect.fn("geo.writer.startInScope")(
         briefId,
         brief: row.brief,
         brandVoiceId: row.brandSettingsId,
+        sourceKind: row.sourceKind,
+        sourceId: row.sourceId,
         collectionId: row.collectionId,
         postId: row.postId,
       }).pipe(
@@ -609,6 +639,8 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
           briefId: open.id,
           brief: open.brief,
           brandVoiceId: open.brandSettingsId,
+          sourceKind: open.sourceKind,
+          sourceId: open.sourceId,
           collectionId: open.collectionId,
           postId: open.postId,
         });
@@ -629,41 +661,50 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
       ? inArray(geoCompetitors.id, input.competitorIds)
       : undefined;
 
-  const [brand, settings, competitors, gapData, sitemap] = yield* Effect.all([
-    geoDb("brand identity lookup failed", () =>
-      db.query.brandSettings.findFirst({
-        columns: {
-          name: true,
-          companyName: true,
-          companyDescription: true,
-          audience: true,
-          websiteUrl: true,
-        },
-        where: eq(brandSettings.id, brandSettingsId),
-      })
-    ),
-    geoDb("settings lookup failed", () =>
-      db.query.geoSettings.findFirst({
-        columns: { companyName: true, aliases: true },
-        where: eq(geoSettings.projectId, scope.projectId),
-      })
-    ),
-    geoDb("competitors lookup failed", () =>
-      db
-        .select({ name: geoCompetitors.name, domain: geoCompetitors.domain })
-        .from(geoCompetitors)
-        .where(
-          competitorFilter
-            ? and(
-                eq(geoCompetitors.projectId, scope.projectId),
-                competitorFilter
-              )
-            : eq(geoCompetitors.projectId, scope.projectId)
-        )
-    ),
-    loadPlannerGapPrompts(scope.projectId),
-    loadSitemapPages(brandSettingsId, input.sitemapId),
-  ]);
+  const evidenceSourceId =
+    sourceId && (sourceKind === "gap" || sourceKind === "prompt")
+      ? sourceId
+      : null;
+
+  const [brand, settings, competitors, gapData, sitemap, evidence] =
+    yield* Effect.all([
+      geoDb("brand identity lookup failed", () =>
+        db.query.brandSettings.findFirst({
+          columns: {
+            name: true,
+            companyName: true,
+            companyDescription: true,
+            audience: true,
+            websiteUrl: true,
+          },
+          where: eq(brandSettings.id, brandSettingsId),
+        })
+      ),
+      geoDb("settings lookup failed", () =>
+        db.query.geoSettings.findFirst({
+          columns: { companyName: true, aliases: true },
+          where: eq(geoSettings.projectId, scope.projectId),
+        })
+      ),
+      geoDb("competitors lookup failed", () =>
+        db
+          .select({ name: geoCompetitors.name, domain: geoCompetitors.domain })
+          .from(geoCompetitors)
+          .where(
+            competitorFilter
+              ? and(
+                  eq(geoCompetitors.projectId, scope.projectId),
+                  competitorFilter
+                )
+              : eq(geoCompetitors.projectId, scope.projectId)
+          )
+      ),
+      loadPlannerGapPrompts(scope.projectId),
+      loadSitemapPages(brandSettingsId, input.sitemapId),
+      evidenceSourceId
+        ? loadPromptEvidence(scope.projectId, evidenceSourceId)
+        : Effect.succeed(null),
+    ]);
 
   const companyName =
     settings?.companyName?.trim() || brand?.companyName?.trim() || "the brand";
@@ -710,6 +751,8 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
           competitors,
           gapPrompts: gapData.gaps,
           sitemapPages: sitemap.pages,
+          evidence,
+          existingPageUrl: input.existingPageUrl ?? null,
         },
       }),
     catch: (cause) => cause,
@@ -760,9 +803,12 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
     )
   );
 
-  const brief = input.contentSubtype
-    ? { ...generated.brief, contentSubtype: input.contentSubtype }
-    : generated.brief;
+  const baseline = evidence ? evidenceToBaseline(evidence) : null;
+  const brief: GeoWriterBrief = {
+    ...generated.brief,
+    contentSubtype: input.contentSubtype ?? generated.brief.contentSubtype,
+    baseline,
+  };
 
   const briefId = crypto.randomUUID();
   const inserted = yield* geoDb("brief create failed", () =>
@@ -796,6 +842,8 @@ export const planGeoContentBrief = Effect.fn("geo.writer.plan")(function* (
     briefId,
     brief,
     brandVoiceId: brandSettingsId,
+    sourceKind,
+    sourceId: sourceId ?? null,
     collectionId: null,
     postId: null,
   });

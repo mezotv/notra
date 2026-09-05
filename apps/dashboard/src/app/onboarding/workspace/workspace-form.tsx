@@ -359,7 +359,7 @@ export function WorkspaceForm({ existingOrg }: WorkspaceFormProps) {
 
               <div
                 aria-hidden={field.state.value !== "other"}
-                className={`grid transition-[grid-template-rows,opacity] duration-200 ease-out motion-reduce:transition-none ${field.state.value === "other" ? "grid-rows-[1fr] opacity-100" : "pointer-events-none grid-rows-[0fr] opacity-0"}`}
+                className={`duration-normal grid transition-[grid-template-rows,opacity] ease-out motion-reduce:transition-none ${field.state.value === "other" ? "grid-rows-[1fr] opacity-100" : "pointer-events-none grid-rows-[0fr] opacity-0"}`}
               >
                 <div className="min-h-0 overflow-hidden">
                   <form.Field

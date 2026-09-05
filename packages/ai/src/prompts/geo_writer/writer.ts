@@ -39,6 +39,7 @@ function formatBrief(input: GeoWriterPromptInput): string {
     brief.acceptanceChecklist.length > 0
       ? brief.acceptanceChecklist.map((item) => `- ${item}`).join("\n")
       : "- (follow the GEO writing rules)";
+  const evidence = formatBriefEvidence(input);
 
   return dedent`
     Target prompt: ${brief.targetPrompt}
@@ -59,7 +60,43 @@ function formatBrief(input: GeoWriterPromptInput): string {
 
     Acceptance checklist:
     ${checklist}
+    ${evidence}
   `;
+}
+
+function formatBriefEvidence(input: GeoWriterPromptInput): string {
+  const { brief } = input;
+  const lines: string[] = [];
+  if (brief.recommendedAngle) {
+    lines.push(`Recommended angle: ${brief.recommendedAngle}`);
+  }
+  if (brief.competitorsToCounter && brief.competitorsToCounter.length > 0) {
+    lines.push(
+      "Brands assistants recommend instead (address each fairly, do not invent facts about them):",
+      ...brief.competitorsToCounter.map((item) => `- ${item}`)
+    );
+  }
+  if (brief.missingCoverage && brief.missingCoverage.length > 0) {
+    lines.push(
+      "Coverage the winning answers had that this article must include:",
+      ...brief.missingCoverage.map((item) => `- ${item}`)
+    );
+  }
+  if (brief.sourcesToReference && brief.sourcesToReference.length > 0) {
+    lines.push(
+      "Domains assistants cite for this prompt (match their depth, only reference them when the brand facts support it):",
+      ...brief.sourcesToReference.map((item) => `- ${item}`)
+    );
+  }
+  if (brief.baseline) {
+    lines.push(
+      `Baseline: the brand is mentioned by ${brief.baseline.mentionedEngines} of ${brief.baseline.totalEngines} engines today. The goal is to raise that after this article is published.`
+    );
+  }
+  if (lines.length === 0) {
+    return "";
+  }
+  return `\nEvidence from the latest scan:\n${lines.join("\n")}`;
 }
 
 export function buildGeoWriterInstructions(

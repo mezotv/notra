@@ -1,6 +1,10 @@
 "use client";
 
-import { Link04Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
+import {
+  Link04Icon,
+  PlusSignIcon,
+  Search01Icon,
+} from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ResponsiveDialog,
@@ -11,12 +15,6 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@notra/ui/components/ui/card";
 import { Field, FieldLabel } from "@notra/ui/components/ui/field";
 import { Input } from "@notra/ui/components/ui/input";
 import {
@@ -30,7 +28,6 @@ import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2Icon } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -39,10 +36,13 @@ import { EmptyState } from "@/components/empty-state";
 import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { PageContainer } from "@/components/layout/container";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
+import { SkillsTable } from "@/components/skills/skills-table";
 import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { parseSkillFrontmatter } from "@/lib/skills/parse-frontmatter";
 import { createSkillSchema } from "@/schemas/skills";
+import type { SkillSortState } from "@/types/skills/page";
+import { filterSkills, sortSkills } from "@/utils/skills";
 
 import { SkillsPageSkeleton } from "./skeleton";
 
@@ -56,6 +56,11 @@ export default function PageClient({ slug }: PageClientProps) {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [quickstartUrl, setQuickstartUrl] = useState("");
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SkillSortState>({
+    key: "name",
+    direction: "asc",
+  });
 
   useHotkey("C", () => setDialogOpen(true), { enabled: !dialogOpen });
 
@@ -157,6 +162,8 @@ export default function PageClient({ slug }: PageClientProps) {
   };
 
   const isLoadingSkills = !!organizationId && isPending;
+  const visibleSkills = sortSkills(filterSkills(skills, search), sort);
+  const searchActive = search.trim().length > 0;
 
   return (
     <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -198,33 +205,41 @@ export default function PageClient({ slug }: PageClientProps) {
           />
         )}
         {!isLoadingSkills && skills.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {skills.map((skill) => (
-              <Link
-                className="group block"
-                href={`/${slug}/skills/${skill.name}`}
-                key={skill.id}
-              >
-                <Card className="group-hover:ring-foreground/20 h-full gap-3 transition-all">
-                  <CardHeader>
-                    <CardTitle className="font-mono text-base">
-                      {skill.name}
-                    </CardTitle>
-                    <CardDescription className="line-clamp-3 text-pretty">
-                      {skill.description}
-                    </CardDescription>
-                    <p className="text-muted-foreground pt-1 text-xs">
-                      Updated{" "}
-                      {new Date(skill.updatedAt).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </CardHeader>
-                </Card>
-              </Link>
-            ))}
+          <div className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-medium">
+                Installed skills{" "}
+                <span className="text-muted-foreground tabular-nums">
+                  (
+                  {searchActive
+                    ? `${visibleSkills.length} of ${skills.length}`
+                    : skills.length}
+                  )
+                </span>
+              </p>
+              <InputGroup className="h-9 sm:max-w-72">
+                <InputGroupAddon>
+                  <HugeiconsIcon
+                    className="text-muted-foreground size-4"
+                    icon={Search01Icon}
+                  />
+                </InputGroupAddon>
+                <InputGroupInput
+                  aria-label="Search skills"
+                  autoComplete="off"
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name or description"
+                  value={search}
+                />
+              </InputGroup>
+            </div>
+            <SkillsTable
+              onSortChange={setSort}
+              searchActive={searchActive}
+              skills={visibleSkills}
+              slug={slug}
+              sort={sort}
+            />
           </div>
         )}
       </div>

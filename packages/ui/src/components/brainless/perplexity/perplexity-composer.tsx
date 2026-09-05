@@ -31,7 +31,7 @@ import type {
 } from "../../../types/perplexity";
 
 const CHIP_CLASS =
-  "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 font-sans text-[13px] leading-none outline-none transition-[background-color,color,transform] duration-150 active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-black/15";
+  "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 font-sans text-[13px] leading-none outline-none transition-[background-color,color,transform] duration-fast active:scale-[0.96] focus-visible:ring-2 focus-visible:ring-black/15";
 
 function IconButton({
   label,
@@ -46,7 +46,7 @@ function IconButton({
     <button
       aria-label={label}
       className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-full text-[#3d3d3d] outline-none transition-[background-color,transform] duration-150 hover:bg-[#f3f3f3] focus-visible:ring-2 focus-visible:ring-black/15 active:scale-[0.96] dark:text-foreground dark:hover:bg-white/10",
+        "flex size-8 shrink-0 items-center justify-center rounded-full text-[#3d3d3d] outline-none transition-[background-color,transform] duration-fast hover:bg-[#f3f3f3] focus-visible:ring-2 focus-visible:ring-black/15 active:scale-[0.96] dark:text-foreground dark:hover:bg-white/10",
         className
       )}
       type="button"
@@ -71,7 +71,7 @@ function ComposerSubmit({
     <button
       aria-label={busy ? "Stop" : "Send"}
       className={cn(
-        "flex size-8 shrink-0 items-center justify-center rounded-full outline-none transition-[background-color,color,opacity,transform] duration-150 focus-visible:ring-2 focus-visible:ring-black/15 active:scale-[0.96]",
+        "flex size-8 shrink-0 items-center justify-center rounded-full outline-none transition-[background-color,color,opacity,transform] duration-fast focus-visible:ring-2 focus-visible:ring-black/15 active:scale-[0.96]",
         enabled
           ? "bg-[#2a2a2a] text-white hover:bg-[#1a1a1a] dark:bg-white dark:text-[#1a1a1a] dark:hover:bg-white/90"
           : "bg-[#d9d9d9] text-white dark:bg-white/20 dark:text-white/70"
@@ -200,7 +200,7 @@ export function PerplexityComposer({
               <span>{selectedFocus.label}</span>
               <HugeiconsIcon
                 className={cn(
-                  "text-[#8d8d8d] transition-transform duration-150",
+                  "text-[#8d8d8d] transition-transform duration-fast",
                   focusOpen && "rotate-180"
                 )}
                 icon={ArrowDown01Icon}

@@ -8,6 +8,7 @@ export interface InstrumentGridProps {
 export interface InstrumentModuleProps {
   eyebrow: string;
   description?: ReactNode;
+  hint?: ReactNode;
   readout?: ReactNode;
   action?: ReactNode;
   children: ReactNode;

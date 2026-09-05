@@ -21,6 +21,7 @@ import { LanguagePerformanceCard } from "@/components/geo/language-performance-c
 import { MentionRateCard } from "@/components/geo/mention-rate-card";
 import { MentionTrendCard } from "@/components/geo/mention-trend-card";
 import { ShareOfVoiceCard } from "@/components/geo/share-of-voice-card";
+import { WhatChangedCard } from "@/components/geo/what-changed-card";
 import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
@@ -129,6 +130,7 @@ export function GeoTabs({
               order={0}
             >
               <MentionRateCard
+                competitors={competitors}
                 engines={engines}
                 isScanning={isScanning}
                 organizationSlug={organizationSlug}
@@ -150,7 +152,19 @@ export function GeoTabs({
             </TabSection>
           </InstrumentGrid>
           <TabSection active={revealActive} order={2}>
+            <WhatChangedCard
+              competitors={competitors}
+              isScanning={isScanning}
+              organizationId={organizationId}
+              organizationSlug={organizationSlug}
+              promptResults={promptResults}
+            />
+          </TabSection>
+          <TabSection active={revealActive} order={3}>
             <EngineRateTable
+              aliases={settings.aliases}
+              companyName={settings.companyName}
+              competitors={competitors}
               engines={engines}
               isScanning={isScanning}
               organizationSlug={organizationSlug}
@@ -159,7 +173,7 @@ export function GeoTabs({
             />
           </TabSection>
           <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-2">
-            <TabSection active={revealActive} order={3}>
+            <TabSection active={revealActive} order={4}>
               <ShareOfVoiceCard
                 aliases={settings.aliases}
                 companyName={settings.companyName}
@@ -171,7 +185,7 @@ export function GeoTabs({
                 timeseries={competitorShareTimeseries}
               />
             </TabSection>
-            <TabSection active={revealActive} order={4}>
+            <TabSection active={revealActive} order={5}>
               <LanguagePerformanceCard
                 isScanning={isScanning}
                 organizationId={organizationId}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 import type { UpdateBrandSettingsInput } from "@/schemas/brand";
 import type {
@@ -16,6 +16,12 @@ import type {
 import { QUERY_KEYS } from "@/utils/query-keys";
 
 import { dashboardOrpc } from "../orpc/query";
+
+const IDLE_PROGRESS: ProgressResponse["progress"] = {
+  status: "idle",
+  currentStep: 0,
+  totalSteps: 3,
+};
 
 export function useBrandSettings(organizationId: string) {
   return useQuery<BrandSettingsResponse>(
@@ -80,11 +86,7 @@ export function useBrandAnalysisProgress(
     },
   });
 
-  const progress = query.data?.progress ?? {
-    status: "idle" as const,
-    currentStep: 0,
-    totalSteps: 3,
-  };
+  const progress = query.data?.progress ?? IDLE_PROGRESS;
 
   const startPolling = () => {
     hasReset.current = false;
@@ -95,7 +97,7 @@ export function useBrandAnalysisProgress(
     });
   };
 
-  const onComplete = () => {
+  const onComplete = useCallback(() => {
     hasReset.current = true;
     forcePollUntilMs.current = null;
 
@@ -116,7 +118,7 @@ export function useBrandAnalysisProgress(
       }),
     });
     onAnalysisComplete?.();
-  };
+  }, [onAnalysisComplete, organizationId, queryClient]);
 
   useEffect(() => {
     if (

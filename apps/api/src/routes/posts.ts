@@ -11,6 +11,7 @@ import {
 } from "@notra/content-generation/jobs";
 import { postCollections, posts } from "@notra/db/schema";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
+import { requestGeoRescanForPost } from "@notra/geo-core/geo/rescan";
 import { and, count, eq, inArray, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 
@@ -41,6 +42,7 @@ import {
   resolveRequestedRepositoryIds,
   triggerContentGenerationWorkflow,
 } from "../utils/content-generation";
+import { runGeoEffect } from "../utils/geo-effect";
 import {
   extractTitleFromMarkdown,
   renderMarkdownToHtml,
@@ -498,6 +500,7 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
       title: true,
       slug: true,
       contentType: true,
+      status: true,
     },
   });
 
@@ -603,6 +606,16 @@ postsRoutes.openapi(patchPostRoute, async (c) => {
 
   if (!updatedPost) {
     return c.json({ error: "Post not found" }, 404);
+  }
+
+  if (
+    updatedPost.status === "published" &&
+    existingPost.status !== "published"
+  ) {
+    void runGeoEffect(
+      "rescanForPost",
+      requestGeoRescanForPost({ organizationId: orgId, postId: updatedPost.id })
+    );
   }
 
   return c.json({ post: serializePost(updatedPost), organization }, 200);

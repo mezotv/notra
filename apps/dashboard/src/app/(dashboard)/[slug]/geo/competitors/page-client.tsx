@@ -6,7 +6,6 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/button";
@@ -16,12 +15,10 @@ import { CompetitorEditDialog } from "@/components/geo/competitor-edit-dialog";
 import { CompetitorsTable } from "@/components/geo/competitors-table";
 import { CompetitorsCsvImportDialog } from "@/components/geo/geo-csv-import-dialog";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
+import { GeoSetupButton } from "@/components/geo/geo-setup-button";
 import { GeoSectionSkeleton } from "@/components/geo/skeleton-parts";
 import { PageContainer } from "@/components/layout/container";
-import {
-  GeoProjectProvider,
-  useGeoProjectScope,
-} from "@/components/providers/geo-project-provider";
+import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import {
   EMPTY_STATE_TABLE_COLUMNS,
@@ -36,7 +33,6 @@ import { useGeoActiveProject } from "@/lib/hooks/use-geo-active-project";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
-import { withGeoProject } from "@/utils/geo-paths";
 
 import { GeoPageSkeleton } from "../skeleton";
 
@@ -70,7 +66,6 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
 }
 
 function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
-  const { projectId } = useGeoProjectScope();
   const { getOrganization, activeOrganization } = useOrganizationsContext();
   const orgFromList = getOrganization(organizationSlug);
   const organization =
@@ -113,18 +108,7 @@ function GeoCompetitorsPageContent({ organizationSlug }: PageClientProps) {
             </p>
           </header>
           <EmptyState
-            action={
-              <Button
-                nativeButton={false}
-                render={
-                  <Link
-                    href={withGeoProject(`/${organizationSlug}/geo`, projectId)}
-                  />
-                }
-              >
-                Set up GEO tracking
-              </Button>
-            }
+            action={<GeoSetupButton organizationId={organizationId} />}
             description="Set up GEO tracking first, then track which competitors AI engines surface."
             preview={
               <EmptyStateTablePreview

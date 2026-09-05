@@ -323,7 +323,7 @@ export function CreateContentDialog({
     [previewResponse]
   );
 
-  const previewFailures = previewResponse?.failures ?? [];
+  const previewFailures = previewResponse?.failures;
 
   useEffect(() => {
     if (
@@ -371,7 +371,7 @@ export function CreateContentDialog({
   }, [previewData, previewParamsKey, previewResponse?.linearIntegrations]);
 
   useEffect(() => {
-    if (!previewFailures.length) {
+    if (!previewFailures?.length) {
       return;
     }
     const warningKey = `${previewParamsKey}:${previewFailures
@@ -385,7 +385,7 @@ export function CreateContentDialog({
     toast.warning(
       `${previewFailures.length} repository preview ${previewFailures.length === 1 ? "issue was" : "issues were"} detected.`
     );
-  }, [previewParamsKey, previewFailures]);
+  }, [previewFailures, previewParamsKey]);
 
   const mutation = useMutation<
     { succeeded: number; total: number },

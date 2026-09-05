@@ -1,8 +1,17 @@
 import "zod/compile";
+import {
+  CUSTOM_SCHEDULE_MAX_INTERVAL_DAYS,
+  CUSTOM_SCHEDULE_MIN_INTERVAL_DAYS,
+  SCHEDULE_ANCHOR_DATE_PATTERN,
+} from "@notra/ai/constants/schedule-interval";
 // biome-ignore lint/performance/noNamespaceImport: Zod recommended way to import
 import * as z from "zod";
 
-import { GITHUB_URL_PATTERNS } from "@/constants/github";
+import {
+  GITHUB_PATH_INVALID_CHARACTERS_REGEX,
+  GITHUB_PUBLISH_CONTENT_TYPES,
+  GITHUB_URL_PATTERNS,
+} from "@/constants/github";
 import { organizationIdInputSchema } from "@/schemas/auth/organization";
 
 export const INTEGRATION_CATEGORIES = ["input", "output"] as const;
@@ -239,6 +248,49 @@ export const updateRepositoryBodySchema = z
   );
 export type UpdateRepositoryBody = z.infer<typeof updateRepositoryBodySchema>;
 
+export const repositoryContentDirectorySchema = z
+  .string()
+  .trim()
+  .max(1024, "Directory is too long")
+  .refine(
+    (directory) => !directory.startsWith("/"),
+    "Enter a repository-relative directory"
+  )
+  .refine((directory) => !directory.endsWith("/"), "Remove the trailing slash")
+  .refine(
+    (directory) => !directory.includes("\\"),
+    "Use forward slashes in directories"
+  )
+  .refine(
+    (directory) => !GITHUB_PATH_INVALID_CHARACTERS_REGEX.test(directory),
+    "Directory contains invalid characters"
+  )
+  .refine(
+    (directory) =>
+      directory === "" ||
+      directory
+        .split("/")
+        .every((segment) => segment && segment !== "." && segment !== ".."),
+    "Directory contains an invalid segment"
+  );
+
+export const repositoryContentDirectoryConfigSchema = z.looseObject({
+  directory: repositoryContentDirectorySchema,
+});
+
+export const repositoryContentDirectoryInputSchema = z.object({
+  contentType: z.enum(GITHUB_PUBLISH_CONTENT_TYPES),
+});
+
+export const updateRepositoryContentDirectoryBodySchema =
+  repositoryContentDirectoryInputSchema.extend({
+    directory: repositoryContentDirectorySchema,
+  });
+
+export const listRepositoryDirectoriesInputSchema = z.object({
+  directory: repositoryContentDirectorySchema.default(""),
+});
+
 export const updateOutputBodySchema = z.object({
   enabled: z.boolean(),
 });
@@ -254,8 +306,23 @@ export type ConfigureOutputBody = z.infer<typeof configureOutputBodySchema>;
 export const WEBHOOK_EVENT_TYPES = ["release", "push"] as const;
 export type WebhookEventType = (typeof WEBHOOK_EVENT_TYPES)[number];
 
-export const CRON_FREQUENCIES = ["daily", "weekly", "monthly"] as const;
+export const CRON_FREQUENCIES = [
+  "daily",
+  "weekly",
+  "monthly",
+  "custom",
+] as const;
 export type CronFrequency = (typeof CRON_FREQUENCIES)[number];
+
+export const cronIntervalDaysSchema = z
+  .number()
+  .int()
+  .min(CUSTOM_SCHEDULE_MIN_INTERVAL_DAYS)
+  .max(CUSTOM_SCHEDULE_MAX_INTERVAL_DAYS);
+
+export const cronAnchorDateSchema = z
+  .string()
+  .regex(SCHEDULE_ANCHOR_DATE_PATTERN, "Expected YYYY-MM-DD");
 
 export const LOOKBACK_WINDOWS = [
   "current_day",
@@ -285,6 +352,8 @@ export const triggerSourceConfigSchema = z.object({
       minute: z.number().min(0).max(59),
       dayOfWeek: z.number().min(0).max(6).optional(),
       dayOfMonth: z.number().min(1).max(31).optional(),
+      intervalDays: cronIntervalDaysSchema.optional(),
+      anchorDate: cronAnchorDateSchema.optional(),
     })
     .optional(),
 });
@@ -293,10 +362,18 @@ export const triggerTargetsSchema = z.object({
   repositoryIds: z.array(z.string()).min(1),
 });
 
+export const MAX_SCHEDULE_INSTRUCTIONS_LENGTH = 2000;
+
 export const triggerOutputConfigSchema = z
   .object({
     publishDestination: z.enum(["webflow", "framer", "custom"]).optional(),
     brandVoiceId: z.string().optional(),
+    instructions: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MAX_SCHEDULE_INSTRUCTIONS_LENGTH)
+      .optional(),
   })
   .optional();
 
@@ -347,6 +424,8 @@ export const configureScheduleBodySchema = configureTriggerBodySchema.extend({
       minute: z.number().min(0).max(59),
       dayOfWeek: z.number().min(0).max(6).optional(),
       dayOfMonth: z.number().min(1).max(31).optional(),
+      intervalDays: cronIntervalDaysSchema.optional(),
+      anchorDate: cronAnchorDateSchema.optional(),
     }),
   }),
   outputType: z.enum(SUPPORTED_AUTOMATION_OUTPUT_TYPES),

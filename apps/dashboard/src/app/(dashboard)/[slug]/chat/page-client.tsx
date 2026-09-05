@@ -24,6 +24,7 @@ import {
   MessageContent,
   MessageResponse,
 } from "@notra/ui/components/ai-elements/message";
+import { BrailleLoader } from "@notra/ui/components/shared/braille-loader";
 import {
   MessageScroller,
   MessageScrollerButton,
@@ -63,7 +64,6 @@ import {
 import { ChatReasoningBlock } from "@/components/ai/chat-reasoning-block";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
 import { getMcpToolServerId } from "@/components/ai/chat-tool-block/mcp/utils";
-import { BrailleLoader } from "@/components/braille-loader";
 import { AssistantMetadataHover } from "@/components/chat/assistant-metadata-hover";
 import { AttachmentPreviewDialog } from "@/components/chat/attachment-preview";
 import {
@@ -349,7 +349,7 @@ function ChatImageAttachment({
       <Image
         alt={filename ?? "attachment"}
         className={cn(
-          "block h-auto max-h-72 w-auto max-w-full transition-opacity duration-300 motion-reduce:transition-none",
+          "duration-slow block h-auto max-h-72 w-auto max-w-full transition-opacity motion-reduce:transition-none",
           hasLoaded ? "opacity-100" : "opacity-0"
         )}
         height={480}
@@ -1358,7 +1358,7 @@ function StandaloneChatPageClient({
         : [];
       await resendFromUserMessage(userMessageId, newText, attachments);
     },
-    [extractUserMessageContent, resendFromUserMessage]
+    [extractUserMessageContent, resendFromUserMessage, stableChatId]
   );
 
   const handleRetryMessage = useCallback(

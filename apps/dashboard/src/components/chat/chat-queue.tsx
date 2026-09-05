@@ -1,6 +1,7 @@
 "use client";
 
 import type { ContextItem, TextSelection } from "@notra/ai/types/chat";
+import { SPRING } from "@notra/ui/lib/motion";
 import { AnimatePresence, m, useReducedMotion } from "motion/react";
 
 import { MessageAuthorAvatar } from "@/components/chat/message-author-avatar";
@@ -25,14 +26,6 @@ interface ChatQueueProps {
 }
 
 const INSTANT = { duration: 0 } as const;
-const CONTAINER_SPRING = {
-  type: "spring",
-  stiffness: 380,
-  damping: 34,
-  mass: 0.7,
-} as const;
-const ITEM_SPRING = { type: "spring", stiffness: 420, damping: 32 } as const;
-
 export function ChatQueue({
   messages,
   onEdit,
@@ -42,8 +35,8 @@ export function ChatQueue({
 }: ChatQueueProps) {
   const reduceMotion = useReducedMotion();
   const hasMessages = messages.length > 0;
-  const containerTransition = reduceMotion ? INSTANT : CONTAINER_SPRING;
-  const itemTransition = reduceMotion ? INSTANT : ITEM_SPRING;
+  const containerTransition = reduceMotion ? INSTANT : SPRING.snappy;
+  const itemTransition = reduceMotion ? INSTANT : SPRING.snappy;
 
   return (
     <AnimatePresence initial={false}>

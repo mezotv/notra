@@ -25,7 +25,7 @@ export function McpConnectionTestStatus({
       {status === "success" ? (
         <>
           <HugeiconsIcon
-            className="size-4 text-emerald-600 dark:text-emerald-400"
+            className="text-success size-4"
             icon={CheckmarkCircle02Icon}
           />
           <span>{message || "Connection successful"}</span>

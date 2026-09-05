@@ -56,7 +56,7 @@ function DeltaBadge({ series }: { series: number[] }) {
     <span
       className={cn(
         "font-mono text-[0.6875rem] tabular-nums",
-        delta > 0 ? "text-green-500" : "text-red-500"
+        delta > 0 ? "text-success" : "text-destructive"
       )}
     >
       {delta > 0 ? "▲" : "▼"} {Math.abs(delta).toLocaleString()}

@@ -3,6 +3,7 @@
 import { AiBrain01Icon, ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { MessageResponse } from "@notra/ui/components/ai-elements/message";
+import { BrailleLoader } from "@notra/ui/components/shared/braille-loader";
 import {
   Collapsible,
   CollapsibleContent,
@@ -10,7 +11,6 @@ import {
 } from "@notra/ui/components/ui/collapsible";
 import { useEffect, useRef, useState } from "react";
 
-import { BrailleLoader } from "@/components/braille-loader";
 import {
   REASONING_AUTO_CLOSE_DELAY_MS,
   REASONING_CONTENT_CLASSNAME,

@@ -30,6 +30,7 @@ import {
   PopoverTrigger,
 } from "@notra/ui/components/ui/popover";
 import { TooltipContent } from "@notra/ui/components/ui/tooltip";
+import { SPRING } from "@notra/ui/lib/motion";
 import { useForm } from "@tanstack/react-form";
 import { useDebouncedCallback } from "@tanstack/react-pacer";
 import Color from "color";
@@ -42,12 +43,6 @@ import { COMPETITOR_SWATCHES } from "@/constants/charts";
 import { useGeoCompetitorsDb } from "@/lib/hooks/use-geo-db";
 import { cn } from "@/lib/utils";
 import type { CompetitorEditFormProps } from "@/types/geo";
-
-const COMPOSER_TRANSITION = {
-  type: "spring",
-  duration: 0.3,
-  bounce: 0,
-} as const;
 
 const INSTANT_TRANSITION = { duration: 0 } as const;
 
@@ -95,7 +90,7 @@ function CompetitorKindToggle({
             aria-checked={active}
             className={cn(
               "relative isolate h-7 rounded-md px-2.5 text-sm font-medium",
-              "transition-colors duration-150 ease-out",
+              "duration-fast transition-colors ease-out",
               "focus-visible:ring-ring/50 focus-visible:ring-2 focus-visible:outline-none",
               active
                 ? "text-foreground"
@@ -112,7 +107,7 @@ function CompetitorKindToggle({
                 className="bg-background absolute inset-0 rounded-md shadow-sm"
                 layoutId={layoutId}
                 transition={
-                  reduceMotion ? INSTANT_TRANSITION : COMPOSER_TRANSITION
+                  reduceMotion ? INSTANT_TRANSITION : SPRING.indicatorFlat
                 }
               />
             ) : null}
@@ -141,7 +136,7 @@ function CompetitorSwatch({
       aria-label={label}
       aria-pressed={selected}
       className={cn(
-        "relative size-6 rounded-full outline outline-1 -outline-offset-1 outline-black/10 transition-transform duration-150 ease-out dark:outline-white/10",
+        "duration-fast relative size-6 rounded-full outline outline-1 -outline-offset-1 outline-black/10 transition-transform ease-out dark:outline-white/10",
         "focus-visible:ring-1 focus-visible:ring-white/70 focus-visible:outline-none focus-visible:ring-inset",
         "active:scale-[0.96]",
         !selected && "hover:scale-105",
@@ -183,7 +178,7 @@ function CompetitorSynonymsField({
   const reduceMotion = useReducedMotion();
   const composerTransition = reduceMotion
     ? INSTANT_TRANSITION
-    : COMPOSER_TRANSITION;
+    : SPRING.indicatorFlat;
   useEffect(() => {
     draftRef.current = draft;
   }, [draft]);
@@ -310,6 +305,7 @@ function CompetitorSynonymsField({
 export function CompetitorEditForm({
   organizationId,
   competitor,
+  initialName,
   onDone,
   onCancel,
 }: CompetitorEditFormProps) {
@@ -320,7 +316,7 @@ export function CompetitorEditForm({
 
   const form = useForm({
     defaultValues: {
-      name: competitor?.name ?? "",
+      name: competitor?.name ?? initialName ?? "",
       website: competitor?.domain ?? "",
       synonyms: competitor?.synonyms ?? [],
       kind: competitor?.kind ?? ("direct" as GeoCompetitorKind),

@@ -91,7 +91,7 @@ export function SortableThreadPost({
   if (overLimit) {
     counterColor = "text-destructive";
   } else if (nearLimit) {
-    counterColor = "text-amber-500";
+    counterColor = "text-warning";
   }
   const isSoloEmpty = postsCount === 1 && length === 0;
   const showDelete = !isSoloEmpty;

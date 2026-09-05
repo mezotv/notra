@@ -13,7 +13,7 @@ export function ChatgptThinking({
   return (
     <div
       className={cn(
-        "animate-in fade-in text-[15px] leading-7 text-muted-foreground duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:animate-none",
+        "animate-in fade-in text-[15px] leading-7 text-muted-foreground duration-normal ease-emphasized motion-reduce:animate-none",
         className
       )}
     >

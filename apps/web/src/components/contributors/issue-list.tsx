@@ -18,7 +18,7 @@ export function IssueList({ issues }: { issues: GitHubIssue[] }) {
         const issueType = getIssueTypeFromLabels(issue.labels);
         return (
           <div
-            className="border-border/60 bg-card hover:border-border rounded-lg border p-4 transition-all duration-200 hover:shadow-sm"
+            className="border-border/60 bg-card hover:border-border duration-normal rounded-lg border p-4 transition-all hover:shadow-sm"
             key={issue.id}
           >
             <div className="flex items-start gap-3">

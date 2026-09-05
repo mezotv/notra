@@ -1,6 +1,5 @@
 import type { OnboardingHeardAboutNotraSource } from "@/types/onboarding";
 
-export const ONBOARDING_IMPORT_COUNT = 10;
 export const ONBOARDING_STEP_COUNT = 4;
 export const ONBOARDING_STEP_WORKSPACE = 1;
 export const ONBOARDING_STEP_VISIBILITY = 2;

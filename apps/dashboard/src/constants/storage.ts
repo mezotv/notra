@@ -7,6 +7,7 @@ export const localStorageKeys = {
   chatDraft: (draftId: string) => `chat-draft:${draftId}`,
   imageExportTarget: "notra:image-export-target",
   contentView: "notra:content-view",
+  geoShelfView: "notra:geo-shelf-view:v1",
   sidebarMode: "notra:sidebar-mode:v1",
   sidebarOnboardingCollapsed: (organizationId?: string) =>
     organizationId
@@ -19,6 +20,8 @@ export const localStorageKeys = {
   gscCardDismissed: (organizationId: string) =>
     `notra:gsc-card-dismissed:${organizationId}`,
   chatSuggestionsDismissed: "notra:chat-suggestions-dismissed:v1",
+  geoPromptViews: (organizationId: string, projectId: string | undefined) =>
+    `notra:geo-prompt-views:v1:${organizationId}:${projectId ?? "all"}`,
 } as const;
 
 export const sessionStorageKeys = {

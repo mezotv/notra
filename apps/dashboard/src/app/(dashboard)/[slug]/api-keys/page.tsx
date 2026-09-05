@@ -481,9 +481,9 @@ function CreateApiKeyDialog({
               <ResponsiveDialogTitle>View API Key</ResponsiveDialogTitle>
             </ResponsiveDialogHeader>
             <div className="space-y-4">
-              <Alert className="border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300">
+              <Alert variant="info">
                 <HugeiconsIcon icon={InformationCircleIcon} />
-                <AlertDescription className="text-blue-700 dark:text-blue-300">
+                <AlertDescription>
                   You can only see this key once.{" "}
                   <span className="text-foreground font-medium">
                     Store it safely.

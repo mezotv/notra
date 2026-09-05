@@ -1,6 +1,10 @@
 import "zod/compile";
 import { z } from "@hono/zod-openapi";
 import {
+  GEO_PROMPT_MAX_TAGS,
+  GEO_PROMPT_TAG_MAX_LENGTH,
+} from "@notra/geo-core/constants/geo";
+import {
   GEO_CSV_IMPORT_MAX_BYTES,
   GEO_CSV_IMPORT_MAX_ROWS,
 } from "@notra/geo-core/constants/geo-import";
@@ -9,12 +13,21 @@ import { organizationResponseSchema } from "./content";
 import { geoPromptTextSchema } from "./geo-fields";
 import { geoImportIssueSchema } from "./geo-import";
 
+const promptTagsSchema = z
+  .array(z.string().trim().min(1).max(GEO_PROMPT_TAG_MAX_LENGTH))
+  .max(GEO_PROMPT_MAX_TAGS)
+  .openapi({
+    description:
+      "Free-form labels for grouping custom prompts. Lowercased and deduplicated on save.",
+  });
+
 const promptSchema = z
   .object({
     id: z.string(),
     prompt: z.string(),
     enabled: z.boolean(),
     source: z.enum(["custom", "auto"]),
+    tags: z.array(z.string()),
     createdAt: z.string().nullable(),
   })
   .openapi("GeoPrompt");
@@ -37,12 +50,17 @@ export const promptResponseSchema = z
 export const createPromptRequestSchema = z
   .object({
     prompt: geoPromptTextSchema,
+    tags: promptTagsSchema.optional(),
   })
   .openapi("CreateGeoPromptRequest");
 
 export const patchPromptRequestSchema = z
   .object({
-    enabled: z.boolean(),
+    enabled: z.boolean().optional(),
+    tags: promptTagsSchema.optional(),
+  })
+  .refine((value) => value.enabled !== undefined || value.tags !== undefined, {
+    message: "Provide enabled or tags",
   })
   .openapi("PatchGeoPromptRequest");
 

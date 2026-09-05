@@ -4,7 +4,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Preview,
   Section,
   Tailwind,
@@ -12,8 +11,8 @@ import {
 } from "react-email";
 
 import { EmailFooter } from "../components/footer";
+import { EmailLogo } from "../components/logo";
 import type { ContactMessageEmailProps } from "../types/contact";
-import { EMAIL_CONFIG } from "../utils/config";
 
 export const ContactMessageEmail = ({
   name = "Jane Doe",
@@ -21,8 +20,6 @@ export const ContactMessageEmail = ({
   company,
   message = "We're evaluating Notra for our team and would love to chat about volume pricing.",
 }: ContactMessageEmailProps) => {
-  const logoUrl = EMAIL_CONFIG.getLogoUrl();
-
   return (
     <Html>
       <Head />
@@ -33,15 +30,7 @@ export const ContactMessageEmail = ({
       <Tailwind>
         <Body className="mx-auto my-auto bg-white px-2 font-sans">
           <Container className="mx-auto my-[40px] max-w-[520px] rounded p-[20px]">
-            <Section className="mt-[32px]">
-              <Img
-                alt="Notra Logo"
-                className="mx-auto"
-                height="40"
-                src={logoUrl}
-                width="40"
-              />
-            </Section>
+            <EmailLogo />
 
             <Heading className="my-6 text-center text-2xl font-medium text-black">
               New contact message

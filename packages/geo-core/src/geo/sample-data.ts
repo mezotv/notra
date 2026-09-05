@@ -16,7 +16,10 @@ import {
   organizations,
   projects,
 } from "@notra/db/schema";
-import type { GeoCheckWrite } from "@notra/db/types/geo-checks";
+import type {
+  GeoCheckGrounding,
+  GeoCheckWrite,
+} from "@notra/db/types/geo-checks";
 import { insertGeoMentionChecks } from "@notra/db/utils/geo-checks";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { Effect } from "effect";
@@ -35,7 +38,14 @@ import {
   GEO_SAMPLE_PROJECT_NAME,
   GEO_SAMPLE_PROMPTS,
   GEO_SAMPLE_REFERRALS,
+  GEO_SAMPLE_SEARCH_ENGINES,
+  GEO_SAMPLE_SEARCH_QUERY_MAX,
+  GEO_SAMPLE_SEARCH_QUERY_MIN,
+  GEO_SAMPLE_SEARCH_QUERY_SUFFIXES,
   GEO_SAMPLE_SEQUENCES,
+  GEO_SAMPLE_SOURCE_MAX,
+  GEO_SAMPLE_SOURCE_MIN,
+  GEO_SAMPLE_SOURCES,
   GEO_SAMPLE_TRAFFIC_PATHS,
 } from "../constants/geo-sample";
 import type {
@@ -115,6 +125,61 @@ function mentionedCompetitors(seed: string, companyName: string): string[] {
   }).filter((name) => name.length > 0);
 }
 
+function rangeCount(seed: string, min: number, max: number): number {
+  return min + (hashInt(seed) % (max - min + 1));
+}
+
+function sampleSearchQueries(seed: string, prompt: string): string[] {
+  const base = prompt
+    .trim()
+    .replace(/[?.!]+$/u, "")
+    .toLowerCase();
+  const count = rangeCount(
+    `${seed}-queries`,
+    GEO_SAMPLE_SEARCH_QUERY_MIN,
+    GEO_SAMPLE_SEARCH_QUERY_MAX
+  );
+  const offset =
+    hashInt(`${seed}-suffix`) % GEO_SAMPLE_SEARCH_QUERY_SUFFIXES.length;
+  const queries = [base];
+  for (let index = 1; index < count; index++) {
+    const suffix =
+      GEO_SAMPLE_SEARCH_QUERY_SUFFIXES[
+        (offset + index) % GEO_SAMPLE_SEARCH_QUERY_SUFFIXES.length
+      ];
+    queries.push(`${base} ${suffix}`);
+  }
+  return queries;
+}
+
+function sampleSources(seed: string): GeoCheckGrounding["sources"] {
+  const count = rangeCount(
+    `${seed}-sources`,
+    GEO_SAMPLE_SOURCE_MIN,
+    GEO_SAMPLE_SOURCE_MAX
+  );
+  const offset = hashInt(`${seed}-source-offset`) % GEO_SAMPLE_SOURCES.length;
+  return Array.from({ length: count }, (_, index) => {
+    const source =
+      GEO_SAMPLE_SOURCES[(offset + index) % GEO_SAMPLE_SOURCES.length];
+    return source ? { ...source } : null;
+  }).filter((source) => source !== null);
+}
+
+function sampleGrounding(
+  seed: string,
+  engine: string,
+  prompt: string
+): GeoCheckGrounding {
+  if (!GEO_SAMPLE_SEARCH_ENGINES.includes(engine)) {
+    return EMPTY_GEO_CHECK_GROUNDING;
+  }
+  return {
+    queries: sampleSearchQueries(seed, prompt),
+    sources: sampleSources(seed),
+  };
+}
+
 function mentionRateFor(engineRate: number, dayIndex: number): number {
   const progress = GEO_SAMPLE_DAYS <= 1 ? 1 : dayIndex / (GEO_SAMPLE_DAYS - 1);
   return Math.min(0.92, engineRate + progress * TREND_GAIN);
@@ -176,7 +241,7 @@ function buildMentionRow(input: {
     sentiment,
     competitors: mentionedCompetitors(seed, input.companyName),
     excerpt,
-    grounding: EMPTY_GEO_CHECK_GROUNDING,
+    grounding: sampleGrounding(seed, input.engine, input.prompt),
     language: input.language,
     finishReason: null,
     promptTokens: null,

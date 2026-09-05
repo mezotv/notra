@@ -7,6 +7,7 @@ import {
   GEO_MENTION_TREND_AGENT_ICON_LIMIT,
   GEO_MENTION_TREND_ALL_PROVIDERS_LABEL,
 } from "@notra/geo-core/constants/geo";
+import { engineFamilyOf } from "@notra/geo-core/utils/geo-engine-family";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -26,7 +27,17 @@ export function MentionTrendAgentsPicker({
   onToggle,
   disabled = false,
 }: MentionTrendAgentsPickerProps) {
-  const preview = series.slice(0, GEO_MENTION_TREND_AGENT_ICON_LIMIT);
+  const seenProviders = new Set<string>();
+  const preview = series
+    .filter((entry) => {
+      const provider = engineFamilyOf(entry.engine);
+      if (seenProviders.has(provider)) {
+        return false;
+      }
+      seenProviders.add(provider);
+      return true;
+    })
+    .slice(0, GEO_MENTION_TREND_AGENT_ICON_LIMIT);
   const active = series.filter((entry) => activeKeys.has(entry.key));
   const accessibleLabel = `Mention activity for all providers. ${
     active.length === 0

@@ -3,6 +3,7 @@
 import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
+import { SPRING } from "@notra/ui/lib/motion";
 import { domAnimation, LazyMotion, m, useReducedMotion } from "motion/react";
 import { useMemo, useState } from "react";
 
@@ -33,12 +34,6 @@ import {
 } from "@/utils/analytics-charts";
 
 const PANEL_SLIDE = 24;
-const PANEL_TRANSITION = {
-  type: "spring",
-  stiffness: 460,
-  damping: 38,
-} as const;
-
 export function PostingPerformanceCard({
   points,
   action,
@@ -84,7 +79,7 @@ export function PostingPerformanceCard({
                 reduceMotion ? false : { x: direction * slide, opacity: 0 }
               }
               key={selectedWeekday === null ? "week" : "day"}
-              transition={PANEL_TRANSITION}
+              transition={SPRING.snappy}
             >
               {selectedWeekday === null ? (
                 <>

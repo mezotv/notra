@@ -2,6 +2,7 @@ import type {
   GscQueryRow,
   GscSite,
 } from "@notra/ai/types/google-search-console";
+import type { geoPromptSuggestions } from "@notra/db/schema";
 
 export interface GscOAuthState {
   organizationId: string;
@@ -27,6 +28,10 @@ export interface GscSitesResponse {
   sites: GscSite[];
 }
 
+export interface GscKeywordsResponse {
+  keywords: GscQueryRow[];
+}
+
 export interface GscSelectSiteInput {
   siteUrl: string;
 }
@@ -36,6 +41,11 @@ export interface GscSyncResult {
   keywords?: number;
   suggestionsAdded?: number;
   reason?: string;
+}
+
+export interface GscSuggestionSyncOutcome {
+  suggestions: (typeof geoPromptSuggestions.$inferInsert)[];
+  topQueries: GscQueryRow[];
 }
 
 export interface GscSyncPayload {

@@ -18,8 +18,6 @@ import { formatCapturedAt } from "@/lib/landing/live-traffic";
 import type { CitationRowsProps, LiveCitationRow } from "@/types/landing/geo";
 
 const HEADER_CLASS = "h-11 text-muted-foreground text-sm";
-const BODY_CLASS =
-  "[&_tr:first-child>td:first-child]:rounded-none [&_tr:first-child>td:last-child]:rounded-none";
 
 const ROW_ENTER = { opacity: 0, y: -12 } as const;
 const ROW_VISIBLE = { opacity: 1, y: 0 } as const;
@@ -96,7 +94,7 @@ export function CitationRows({
         </TableRow>
       </TableHeader>
       <LazyMotion features={domAnimation}>
-        <TableBody className={BODY_CLASS}>
+        <TableBody>
           <AnimatePresence initial={false}>
             {rows.map((row) =>
               animated ? (

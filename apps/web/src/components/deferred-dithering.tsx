@@ -2,9 +2,16 @@
 
 import { cn } from "@notra/ui/lib/utils";
 import dynamic from "next/dynamic";
+import { useSyncExternalStore } from "react";
 
+import { DITHER_MOBILE_MAX_PIXELS } from "@/constants/dithering";
 import { useDitherVisibility } from "@/lib/dithering/use-dither-visibility";
 import type { DeferredDitheringProps } from "@/types/dithering";
+import {
+  getDitherEnvironmentServerSnapshot,
+  getDitherMobileSnapshot,
+  subscribeToDitherViewport,
+} from "@/utils/dither-environment";
 
 const Dithering = dynamic(
   () =>
@@ -18,6 +25,11 @@ export function DeferredDithering({
   ...shaderProps
 }: DeferredDitheringProps) {
   const { containerRef, shouldRender, isAnimating } = useDitherVisibility();
+  const isMobile = useSyncExternalStore(
+    subscribeToDitherViewport,
+    getDitherMobileSnapshot,
+    getDitherEnvironmentServerSnapshot
+  );
 
   return (
     <div
@@ -29,6 +41,8 @@ export function DeferredDithering({
         <Dithering
           {...shaderProps}
           className="h-full w-full"
+          maxPixelCount={isMobile ? DITHER_MOBILE_MAX_PIXELS : undefined}
+          minPixelRatio={isMobile ? 1 : undefined}
           speed={isAnimating ? speed : 0}
         />
       )}

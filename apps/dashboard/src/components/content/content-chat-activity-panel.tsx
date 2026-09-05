@@ -17,6 +17,7 @@ import {
   MessageContent,
   MessageResponse,
 } from "@notra/ui/components/ai-elements/message";
+import { BrailleLoader } from "@notra/ui/components/shared/braille-loader";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   DropdownMenu,
@@ -32,7 +33,6 @@ import { Fragment, type ReactNode } from "react";
 
 import { ChatReasoningBlock } from "@/components/ai/chat-reasoning-block";
 import { ChatToolBlock } from "@/components/ai/chat-tool-block";
-import { BrailleLoader } from "@/components/braille-loader";
 import { ChatInputContextRow } from "@/components/chat/chat-input-context-row";
 import type {
   ContentChatActivityMessageProps,
@@ -45,7 +45,7 @@ import {
 import { getContentChatHistoryGroups } from "@/utils/content-chat-history";
 
 const ACTIVITY_MESSAGE_CLASSNAME =
-  "translate-y-0 opacity-100 transition-[opacity,translate] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] starting:translate-y-1 starting:opacity-0 motion-reduce:transition-none motion-reduce:starting:translate-y-0 motion-reduce:starting:opacity-100";
+  "translate-y-0 opacity-100 transition-[opacity,translate] duration-fast ease-emphasized starting:translate-y-1 starting:opacity-0 motion-reduce:transition-none motion-reduce:starting:translate-y-0 motion-reduce:starting:opacity-100";
 
 function ContentChatActivityFeed({
   children,
@@ -209,34 +209,36 @@ export function ContentChatActivityPanel({
                 <p className="text-muted-foreground px-2 py-1.5 text-center text-xs">
                   Loading chats...
                 </p>
-              ) : sessions.length === 0 ? (
+              ) : null}
+              {!isHistoryLoading && sessions.length === 0 ? (
                 <p className="text-muted-foreground px-2 py-1.5 text-center text-xs">
                   No previous chats
                 </p>
-              ) : (
-                historyGroups.map((group, groupIndex) => (
-                  <Fragment key={group.label}>
-                    {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
-                    <DropdownMenuGroup>
-                      <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
-                      {group.sessions.map((session) => (
-                        <DropdownMenuItem
-                          className="data-[active=true]:bg-accent/70"
-                          data-active={activeChatId === session.chatId}
-                          disabled={isAgentBusy}
-                          key={session.chatId}
-                          onClick={() => onSelectChat(session.chatId)}
-                          title={session.title}
-                        >
-                          <span className="min-w-0 flex-1 truncate">
-                            {session.title}
-                          </span>
-                        </DropdownMenuItem>
-                      ))}
-                    </DropdownMenuGroup>
-                  </Fragment>
-                ))
-              )}
+              ) : null}
+              {!isHistoryLoading && sessions.length > 0
+                ? historyGroups.map((group, groupIndex) => (
+                    <Fragment key={group.label}>
+                      {groupIndex > 0 ? <DropdownMenuSeparator /> : null}
+                      <DropdownMenuGroup>
+                        <DropdownMenuLabel>{group.label}</DropdownMenuLabel>
+                        {group.sessions.map((session) => (
+                          <DropdownMenuItem
+                            className="data-[active=true]:bg-accent/70"
+                            data-active={activeChatId === session.chatId}
+                            disabled={isAgentBusy}
+                            key={session.chatId}
+                            onClick={() => onSelectChat(session.chatId)}
+                            title={session.title}
+                          >
+                            <span className="min-w-0 flex-1 truncate">
+                              {session.title}
+                            </span>
+                          </DropdownMenuItem>
+                        ))}
+                      </DropdownMenuGroup>
+                    </Fragment>
+                  ))
+                : null}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="gap-2"

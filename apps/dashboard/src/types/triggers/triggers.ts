@@ -18,17 +18,20 @@ export interface TriggerSourceConfig {
   eventTypes?: WebhookEventType[];
   includePreReleases?: boolean;
   cron?: {
-    frequency: "daily" | "weekly" | "monthly";
+    frequency: "daily" | "weekly" | "monthly" | "custom";
     hour: number;
     minute: number;
     dayOfWeek?: number;
     dayOfMonth?: number;
+    intervalDays?: number;
+    anchorDate?: string;
   };
 }
 
 export interface TriggerOutputConfig {
   publishDestination?: "webflow" | "framer" | "custom";
   brandVoiceId?: string;
+  instructions?: string;
 }
 
 export interface Trigger {

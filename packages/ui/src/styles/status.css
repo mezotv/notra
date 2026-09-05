@@ -1,0 +1,62 @@
+/*
+ * Status and signal colours.
+ *
+ * Split out from globals.css because apps/web does not import globals.css yet
+ * (it still carries its own copy of the base theme) but does need these.
+ *
+ * Everything here sits on one lightness/chroma grid — light values around
+ * L 0.55, dark values around L 0.70 — so a generic "success" badge, a GEO "up"
+ * arrow and a chart series read as the same design system rather than as three
+ * unrelated greens.
+ */
+
+:root {
+  /*
+   * Generic status. Used as foreground (`text-success`) or as a tint
+   * (`bg-success/10`), mirroring how `--destructive` is already used.
+   * The `-foreground` variants are for text placed ON the solid colour.
+   */
+  --success: oklch(0.55 0.109 155);
+  --success-foreground: oklch(0.985 0 0);
+  --warning: oklch(0.57 0.113 55);
+  --warning-foreground: oklch(0.985 0 0);
+  --info: oklch(0.55 0.13 250);
+  --info-foreground: oklch(0.985 0 0);
+
+  /* GEO signals. Shared by the dashboard and the marketing site. */
+  /* Search / own brand. Light matches --primary; charts keep a hex twin. */
+  --geo-search: var(--primary);
+  /* Memory / ungrounded. Same L as Search; teal at 95% of sRGB max chroma. */
+  --geo-memory: oklch(0.606 0.099 206.2);
+  --geo-up: var(--success);
+  --geo-mid: var(--warning);
+  --geo-down: oklch(0.59 0.192 27);
+}
+
+.dark {
+  --success: oklch(0.7 0.125 155);
+  --success-foreground: oklch(0.145 0 0);
+  --warning: oklch(0.7 0.125 55);
+  --warning-foreground: oklch(0.145 0 0);
+  --info: oklch(0.7 0.12 250);
+  --info-foreground: oklch(0.145 0 0);
+
+  --geo-search: oklch(0.68 0.134 292.717);
+  --geo-memory: oklch(0.68 0.111 206.2);
+  --geo-down: oklch(0.7 0.138 27);
+}
+
+@theme inline {
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-geo-search: var(--geo-search);
+  --color-geo-memory: var(--geo-memory);
+  --color-geo-up: var(--geo-up);
+  --color-geo-down: var(--geo-down);
+  --color-geo-mid: var(--geo-mid);
+}

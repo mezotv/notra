@@ -6,6 +6,7 @@ import type {
   GeoSequenceTurnResult,
 } from "@notra/geo-core/types/geo";
 import { perplexitySourcesFromStoredOrExcerpt } from "@notra/geo-core/utils/geo-perplexity-sources";
+import { geoAnswerThinkingClassName } from "@notra/ui/lib/geo-answer-font";
 import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
 
 import { GeoAnswerSearch } from "@/components/geo/geo-answer-search";
@@ -27,7 +28,7 @@ function ThinkingIndicator({ skin }: { skin: GeoChatSkin }) {
     <p
       className={cn(
         "text-muted-foreground animate-pulse",
-        skin === "perplexity" ? "font-serif text-[17.5px]" : "text-[15px]"
+        geoAnswerThinkingClassName(skin)
       )}
     >
       Thinking…

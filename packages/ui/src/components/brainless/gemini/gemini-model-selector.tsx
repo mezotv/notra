@@ -78,13 +78,13 @@ export function GeminiModelSelector({
   const thinkingModels = getGeminiModelsByGroup("thinking");
 
   return (
-    <DropdownMenu onOpenChange={setOpen} open={open}>
+    <DropdownMenu modal={false} onOpenChange={setOpen} open={open}>
       <DropdownMenuTrigger
         render={
           <button
             aria-label={`Modell ${selected.label}`}
             className={cn(
-              "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] leading-none text-[#3c4043] outline-none transition-[background-color,transform] duration-150 hover:bg-[#f1f3f4] focus-visible:ring-2 focus-visible:ring-[#1a73e8]/30 active:scale-[0.96] dark:text-foreground dark:hover:bg-white/10",
+              "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[13px] leading-none text-[#3c4043] outline-none transition-[background-color,transform] duration-fast hover:bg-[#f1f3f4] focus-visible:ring-2 focus-visible:ring-[#1a73e8]/30 active:scale-[0.96] dark:text-foreground dark:hover:bg-white/10",
               open && "bg-[#f1f3f4] dark:bg-white/10",
               className
             )}
@@ -95,7 +95,7 @@ export function GeminiModelSelector({
         <span className="font-medium">{selected.chip}</span>
         <HugeiconsIcon
           className={cn(
-            "text-[#5f6368] transition-transform duration-150",
+            "text-[#5f6368] transition-transform duration-fast",
             open && "rotate-180"
           )}
           icon={ArrowDown01Icon}

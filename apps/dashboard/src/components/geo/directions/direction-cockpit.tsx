@@ -4,6 +4,7 @@ import {
   GEO_SEARCH_LABEL,
   GEO_WITHOUT_SEARCH_LABEL,
 } from "@notra/geo-core/constants/geo";
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Card, CardContent } from "@notra/ui/components/ui/card";
 import { useMemo } from "react";
@@ -13,7 +14,6 @@ import { EChartsLineChart } from "@/components/evilcharts/charts/echarts-line-ch
 import { DirectionDelta } from "@/components/geo/directions/direction-delta";
 import { PromptResultsTable } from "@/components/geo/directions/prompt-results-table";
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoBar } from "@/components/geo/geo-bar";
 import { InstrumentModule } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
 import { CHART_PERCENT_SCALE } from "@/constants/charts";

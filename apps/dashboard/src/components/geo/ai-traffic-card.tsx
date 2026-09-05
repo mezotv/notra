@@ -35,13 +35,14 @@ import {
   trafficGroupKey,
 } from "@/utils/ai-traffic-groups";
 
-export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
-  const { sources, totals, points } = traffic ?? GEO_EMPTY_TRAFFIC_RESPONSE;
-  const previousTotals = useMemo(
-    () => toGeoTrafficPreviousTotals(sources),
-    [sources]
+export function AiTrafficCard({ traffic, settingsHref }: AiTrafficCardProps) {
+  const { sources, totals, points, previousConversions } =
+    traffic ?? GEO_EMPTY_TRAFFIC_RESPONSE;
+  const previousTotals = toGeoTrafficPreviousTotals(
+    sources,
+    previousConversions
   );
-  const trendRows = useMemo(() => buildTrafficTrendRows(points), [points]);
+  const trendRows = buildTrafficTrendRows(points);
   const groups = groupTrafficSources(sources);
   const crawlerGroups = groups.filter(
     (group) => group.visitorType === "crawler"
@@ -113,6 +114,7 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
             {showSpark ? (
               <GeoRateSparkline
                 className={GEO_SPARKLINE_TREND_CLASS[sparklineTrend(series)]}
+                label={`${row.label} visit trend`}
                 points={series}
               />
             ) : null}
@@ -182,6 +184,7 @@ export function AiTrafficCard({ traffic }: AiTrafficCardProps) {
         points={points}
         previousTotals={previousTotals}
         rows={trendRows}
+        settingsHref={settingsHref}
         totals={totals}
       />
       <InstrumentSection eyebrow="Sources">

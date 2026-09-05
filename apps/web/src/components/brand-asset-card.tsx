@@ -23,7 +23,7 @@ export function BrandAssetCard({
       )}
     >
       {children}
-      <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-0 transition-opacity duration-150 ease-out group-focus-within:opacity-100 group-hover:opacity-100">
+      <div className="duration-fast absolute top-3 right-3 flex items-center gap-1.5 opacity-0 transition-opacity ease-out group-focus-within:opacity-100 group-hover:opacity-100">
         <Button
           aria-label={copyLabel}
           onClick={() => copySvgAsset(asset.svg, "Copied SVG to clipboard")}

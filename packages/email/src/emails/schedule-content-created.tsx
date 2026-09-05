@@ -4,7 +4,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Link,
   Preview,
   Section,
@@ -14,6 +13,7 @@ import {
 
 import { EmailButton } from "../components/button";
 import { EmailFooter } from "../components/footer";
+import { EmailLogo } from "../components/logo";
 import type { ScheduledContentCreatedEmailProps } from "../types/schedule-content-created";
 import { EMAIL_CONFIG } from "../utils/config";
 
@@ -38,7 +38,6 @@ export const ScheduledContentCreatedEmail = ({
   organizationSlug = "acme",
   contentOverviewLink = `https://app.usenotra.com/${organizationSlug}/content`,
 }: ScheduledContentCreatedEmailProps) => {
-  const logoUrl = EMAIL_CONFIG.getLogoUrl();
   const contentCount = createdContent.length;
   const primaryContent = createdContent[0];
   const contentLabel = CONTENT_TYPE_MAP[contentType] ?? "Content";
@@ -54,15 +53,7 @@ export const ScheduledContentCreatedEmail = ({
       <Tailwind>
         <Body className="mx-auto my-auto bg-white px-2 font-sans">
           <Container className="mx-auto my-[40px] max-w-[465px] rounded p-[20px]">
-            <Section className="mt-[32px]">
-              <Img
-                alt="Notra Logo"
-                className="mx-auto"
-                height="40"
-                src={logoUrl}
-                width="40"
-              />
-            </Section>
+            <EmailLogo />
 
             <Heading className="my-6 text-center text-2xl font-medium text-black">
               New scheduled content is ready

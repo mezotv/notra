@@ -12,11 +12,9 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/button";
 import { GeoRangePicker } from "@/components/geo/geo-range-picker";
 import { GeoSetupEmpty } from "@/components/geo/geo-setup-empty";
+import { ScanPreflightDialog } from "@/components/geo/scan-preflight-dialog";
 import { PageContainer } from "@/components/layout/container";
-import {
-  GeoProjectProvider,
-  useGeoProjectScope,
-} from "@/components/providers/geo-project-provider";
+import { GeoProjectProvider } from "@/components/providers/geo-project-provider";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import {
@@ -35,7 +33,6 @@ import {
 import { useGeoProjectQueryState } from "@/lib/hooks/use-geo-project-query";
 import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import type { GeoPageClientProps, GeoPageContentProps } from "@/types/geo";
-import { geoNavHref } from "@/utils/geo-paths";
 
 import { GeoTabs } from "./components/geo-tabs";
 import { GeoPageSkeleton } from "./skeleton";
@@ -60,7 +57,6 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       ? activeOrganization
       : orgFromList;
   const organizationId = organization?.id ?? "";
-  const { projectId } = useGeoProjectScope();
   const geoRange = useGeoRange();
 
   const { data: settingsData, isPending: isSettingsPending } =
@@ -87,8 +83,13 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
   );
   const startScan = useGeoStartScan(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
+  const [preflightOpen, setPreflightOpen] = useState(false);
+  const enabledPromptCount =
+    prompts?.prompts.filter((prompt) => prompt.enabled).length ?? 0;
 
-  useHotkey("R", () => startScan.mutate("hotkey"), { enabled: !isScanning });
+  useHotkey("R", () => setPreflightOpen(true), {
+    enabled: !isScanning && !preflightOpen,
+  });
 
   const [activeTab, setActiveTab] = useQueryState(
     "tab",
@@ -141,14 +142,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
     return (
       <PageContainer className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="w-full px-4 lg:px-6">
-          <GeoSetupEmpty
-            page="overview"
-            settingsHref={geoNavHref(
-              organizationSlug,
-              "/geo/settings",
-              projectId
-            )}
-          />
+          <GeoSetupEmpty organizationId={organizationId} page="overview" />
         </div>
       </PageContainer>
     );
@@ -169,7 +163,7 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
             <Button
               className="w-fit gap-2"
               disabled={isScanning}
-              onClick={() => startScan.mutate("manual")}
+              onClick={() => setPreflightOpen(true)}
               size="sm"
             >
               <span className="inline-flex items-center gap-1.5">
@@ -200,6 +194,19 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
           timeseriesPoints={timeseries?.points ?? []}
         />
       </div>
+      <ScanPreflightDialog
+        engines={settings.engines}
+        isPending={startScan.isPending}
+        languages={settings.languages}
+        lastScanAt={settings.lastScanAt}
+        onConfirm={() => {
+          startScan.mutate();
+          setPreflightOpen(false);
+        }}
+        onOpenChange={setPreflightOpen}
+        open={preflightOpen}
+        promptCount={enabledPromptCount}
+      />
     </PageContainer>
   );
 }

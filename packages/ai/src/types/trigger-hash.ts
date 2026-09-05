@@ -19,4 +19,6 @@ export interface TriggerHashInput extends TriggerConfigInput {
   sourceType: string;
   outputType: string;
   lookbackWindow?: string;
+  /** Per-schedule brief. Two otherwise identical schedules with different briefs are distinct. */
+  instructions?: string;
 }

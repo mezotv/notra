@@ -30,7 +30,7 @@ export function PerplexityMessage({
     <div className={cn("flex w-full flex-col items-start gap-2", className)}>
       {search}
       {children ? (
-        <div className="max-w-[42rem] font-serif text-[17.5px] leading-[1.75] text-[#1a1a1a] dark:text-foreground">
+        <div className="max-w-[42rem] font-sans text-[17.5px] leading-[1.75] text-[#1a1a1a] dark:text-foreground">
           {children}
         </div>
       ) : null}

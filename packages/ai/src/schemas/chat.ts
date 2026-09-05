@@ -68,25 +68,21 @@ export const chatMessageMetadataSchema = z.object({
   externalChannelId: externalChannelIdSchema.optional(),
 });
 
-export const UI_MESSAGE_ID_MAX_LENGTH = 200;
-export const UI_MESSAGE_PART_TEXT_MAX_LENGTH = 100_000;
-export const UI_MESSAGE_PART_TYPE_MAX_LENGTH = 100;
-export const UI_MESSAGE_PARTS_MAX = 50;
 export const UI_MESSAGES_MAX = 200;
 
 const uiMessagePartSchema = z
   .looseObject({
-    type: z.string().min(1).max(UI_MESSAGE_PART_TYPE_MAX_LENGTH),
-    text: z.string().max(UI_MESSAGE_PART_TEXT_MAX_LENGTH).optional(),
+    type: z.string().min(1).max(100),
+    text: z.string().max(100_000).optional(),
   })
   .refine((part) => part.type !== "text" || typeof part.text === "string", {
     message: "Text parts must include a text string",
   });
 
 export const uiMessageSchema = z.object({
-  id: z.string().min(1).max(UI_MESSAGE_ID_MAX_LENGTH),
+  id: z.string().min(1).max(200),
   role: z.enum(["user", "assistant", "system"]),
-  parts: z.array(uiMessagePartSchema).min(1).max(UI_MESSAGE_PARTS_MAX),
+  parts: z.array(uiMessagePartSchema).min(1).max(50),
   metadata: z.looseObject({}).optional(),
 }) as unknown as z.ZodType<UIMessage>;
 

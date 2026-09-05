@@ -191,7 +191,7 @@ export default function PageClient(_props: AgentFeedbackPageClientProps) {
 
             <div
               className={cn(
-                "min-h-0 flex-1 transition-opacity duration-200",
+                "duration-normal min-h-0 flex-1 transition-opacity",
                 list.isPlaceholderData && "opacity-60"
               )}
             >

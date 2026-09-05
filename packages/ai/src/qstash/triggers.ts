@@ -1,6 +1,8 @@
 import { Client as QStashClient } from "@upstash/qstash";
 
+import { CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS } from "../constants/schedule-interval";
 import type { CreateQstashRouteScheduleProps } from "../types/qstash";
+import { toUtcDateString } from "../utils/schedule-interval";
 import {
   getConfiguredAppUrl,
   getConfiguredWorkflowUrl,
@@ -14,11 +16,15 @@ export interface CreateQstashScheduleProps {
 }
 
 export interface TriggerCronConfig {
-  frequency: "daily" | "weekly" | "monthly";
+  frequency: "daily" | "weekly" | "monthly" | "custom";
   hour?: number;
   minute?: number;
   dayOfWeek?: number;
   dayOfMonth?: number;
+  /** Every N days, for `custom`. */
+  intervalDays?: number;
+  /** UTC `YYYY-MM-DD` the custom interval counts from. */
+  anchorDate?: string;
 }
 
 function getQstashToken() {
@@ -63,6 +69,8 @@ export function buildCronExpression(config?: TriggerCronConfig) {
     return `${minute} ${hour} ${dayOfMonth} * *`;
   }
 
+  // "custom" (every N days) fires daily; the schedule workflow gates the run
+  // against the interval anchor because cron cannot express it.
   return `${minute} ${hour} * * *`;
 }
 
@@ -88,6 +96,15 @@ export function normalizeCronConfig(config?: TriggerCronConfig) {
     return {
       ...base,
       dayOfMonth: config.dayOfMonth ?? 1,
+    };
+  }
+
+  if (config.frequency === "custom") {
+    return {
+      ...base,
+      intervalDays:
+        config.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS,
+      anchorDate: config.anchorDate ?? toUtcDateString(new Date()),
     };
   }
 

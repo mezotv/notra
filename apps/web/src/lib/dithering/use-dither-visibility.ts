@@ -4,6 +4,11 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import type { DitherVisibilityState } from "@/types/dithering";
 import {
+  getDitherEnvironmentServerSnapshot,
+  getPageVisibleSnapshot,
+  subscribeToPageVisibility,
+} from "@/utils/dither-environment";
+import {
   getReducedMotionServerSnapshot,
   getReducedMotionSnapshot,
   subscribeToReducedMotion,
@@ -17,6 +22,11 @@ export function useDitherVisibility(): DitherVisibilityState {
   const [isIdle, setIsIdle] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const [hasEntered, setHasEntered] = useState(false);
+  const isPageVisible = useSyncExternalStore(
+    subscribeToPageVisibility,
+    getPageVisibleSnapshot,
+    getDitherEnvironmentServerSnapshot
+  );
   const prefersReducedMotion = useSyncExternalStore(
     subscribeToReducedMotion,
     getReducedMotionSnapshot,
@@ -57,6 +67,6 @@ export function useDitherVisibility(): DitherVisibilityState {
   return {
     containerRef,
     shouldRender: isIdle && hasEntered,
-    isAnimating: isInView && !prefersReducedMotion,
+    isAnimating: isInView && isPageVisible && !prefersReducedMotion,
   };
 }

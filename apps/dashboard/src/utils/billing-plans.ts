@@ -9,6 +9,7 @@ import {
   LEGACY_PLAN_TIERS,
   PLAN_NAME_BILLING_INTERVAL_SUFFIX,
   PLAN_TIER_DESCRIPTIONS,
+  PLAN_TIER_FEATURES,
   ZDR_ADDON_BY_TIER,
   ZDR_ADDON_HINT,
   ZDR_ADDON_PREFIX,
@@ -72,6 +73,12 @@ export function getProductPrice(
 export function getProductFeatures(
   plan: BillingPlan | null | undefined
 ): ProductFeature[] {
+  const tier = planTierId(plan?.id);
+  const tierFeatures = tier ? PLAN_TIER_FEATURES[tier] : undefined;
+  if (tierFeatures) {
+    return tierFeatures;
+  }
+
   if (!plan?.items) {
     return [];
   }

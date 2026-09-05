@@ -48,7 +48,7 @@ function SuggestionCard({
 }: SuggestionCardProps) {
   return (
     <button
-      className="bg-muted/70 hover:bg-muted disabled:hover:bg-muted/70 flex h-full w-full cursor-pointer flex-col items-start gap-2 rounded-xl px-3.5 py-3 text-left transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50"
+      className="bg-muted/70 hover:bg-muted disabled:hover:bg-muted/70 duration-normal flex h-full w-full cursor-pointer flex-col items-start gap-2 rounded-xl px-3.5 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
       disabled={disabled || hidden}
       onClick={() => onSelect(suggestion.prompt)}
       tabIndex={hidden ? -1 : undefined}

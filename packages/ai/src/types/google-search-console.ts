@@ -1,4 +1,5 @@
 import type { googleSearchConsoleIntegrations } from "@notra/db/schema";
+import type { GoogleSearchConsoleQuery } from "@notra/db/types/google-search-console";
 
 export interface GscOAuthCredentials {
   clientId: string;
@@ -10,12 +11,7 @@ export interface GscSite {
   permissionLevel: string | null;
 }
 
-export interface GscQueryRow {
-  query: string;
-  clicks: number;
-  impressions: number;
-  position: number;
-}
+export type GscQueryRow = GoogleSearchConsoleQuery;
 
 export type GscIntegrationRow =
   typeof googleSearchConsoleIntegrations.$inferSelect;
@@ -23,13 +19,21 @@ export type GscIntegrationRow =
 export type GscIntegrationUpdate = Partial<
   Pick<
     typeof googleSearchConsoleIntegrations.$inferInsert,
-    "siteUrl" | "status" | "qstashScheduleId" | "lastSyncedAt" | "lastError"
+    | "siteUrl"
+    | "status"
+    | "qstashScheduleId"
+    | "lastSyncedAt"
+    | "lastError"
+    | "topQueries"
+    | "encryptedAccessToken"
+    | "accessTokenExpiresAt"
   >
 >;
 
 export interface ExchangeGscAuthorizationCodeParams {
   code: string;
   redirectUri: string;
+  signal?: AbortSignal;
 }
 
 export interface ExchangeGscAuthorizationCodeResult {

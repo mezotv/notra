@@ -2,10 +2,12 @@ import { parseClickHouseDateTime } from "@notra/analytics/utils/datetime";
 
 import {
   GEO_SOURCE_LABELS,
+  GEO_JOURNEY_BROWSE_CATEGORY,
   GEO_JOURNEY_CHIP_LENGTH,
   GEO_JOURNEY_EXPLICIT_PREFIX,
   GEO_SPARKLINE_MIN_POINTS,
   GEO_SPARKLINE_FLAT_THRESHOLD,
+  GEO_STAT_DELTA_NEW,
   GEO_TRAFFIC_TREND_CRAWLER_KEY,
   GEO_TRAFFIC_TREND_REFERRAL_KEY,
   GEO_UNTRACKED_VISITOR_TYPES,
@@ -44,12 +46,21 @@ export function formatGeoSource(source: string): string {
 }
 
 export function toGeoTrafficTotals(
-  sources: readonly GeoTrafficSource[]
+  sources: readonly GeoTrafficSource[],
+  conversions: number | null = null
 ): GeoTrafficTotals {
-  const totals: GeoTrafficTotals = { crawler: 0, aiReferral: 0 };
+  const totals: GeoTrafficTotals = {
+    crawler: 0,
+    cited: 0,
+    aiReferral: 0,
+    conversions,
+  };
   for (const source of sources) {
     if (source.visitorType === "crawler") {
       totals.crawler += source.visits;
+      if (source.category === GEO_JOURNEY_BROWSE_CATEGORY) {
+        totals.cited += source.visits;
+      }
     } else if (source.visitorType === "ai_referral") {
       totals.aiReferral += source.visits;
     }
@@ -61,7 +72,8 @@ export function toGeoTrafficTotals(
 // endpoint sent no comparison data at all, so callers can hide their deltas
 // instead of rendering an all-zero baseline as "+100%".
 export function toGeoTrafficPreviousTotals(
-  sources: readonly GeoTrafficSource[]
+  sources: readonly GeoTrafficSource[],
+  previousConversions: number | null = null
 ): GeoTrafficTotals | null {
   const withPrevious = sources.filter(
     (source) => source.previousVisits !== undefined
@@ -73,7 +85,8 @@ export function toGeoTrafficPreviousTotals(
     withPrevious.map((source) => ({
       ...source,
       visits: source.previousVisits ?? 0,
-    }))
+    })),
+    previousConversions
   );
 }
 
@@ -260,9 +273,33 @@ export function trafficVisitDelta(
     return null;
   }
   if (previous === 0) {
-    return current > 0 ? 100 : null;
+    return current > 0 ? GEO_STAT_DELTA_NEW : null;
   }
   return ((current - previous) / previous) * 100;
+}
+
+export function isGeoStatDeltaNew(delta: number): boolean {
+  return delta === GEO_STAT_DELTA_NEW;
+}
+
+export function isGeoTrafficCitationsOnly(
+  categories: GeoTrafficLogFilters["categories"]
+): boolean {
+  return (
+    categories.length === 1 && categories[0] === GEO_JOURNEY_BROWSE_CATEGORY
+  );
+}
+
+export function toggleGeoTrafficCitationsOnly(
+  categories: GeoTrafficLogFilters["categories"]
+): GeoTrafficLogFilters["categories"] {
+  return isGeoTrafficCitationsOnly(categories)
+    ? []
+    : [GEO_JOURNEY_BROWSE_CATEGORY];
+}
+
+export function formatGeoTrafficRequestCount(total: number): string {
+  return `${total.toLocaleString()} ${total === 1 ? "request" : "requests"}`;
 }
 
 function sumTrafficTrendMetric(

@@ -85,10 +85,7 @@ function CsvSummaryRow({
     <div className="flex items-center justify-between px-3 py-2">
       <span className="text-muted-foreground flex items-center gap-1.5">
         {tone === "warning" ? (
-          <HugeiconsIcon
-            className="size-3.5 text-amber-600 dark:text-amber-400"
-            icon={Alert02Icon}
-          />
+          <HugeiconsIcon className="text-warning size-3.5" icon={Alert02Icon} />
         ) : null}
         {label}
       </span>

@@ -1,6 +1,9 @@
 "use client";
 
-import { GEO_SHARE_OF_VOICE_PAGE_TOP_BRANDS } from "@notra/geo-core/constants/geo";
+import {
+  GEO_SHARE_OF_VOICE_PAGE_TOP_BRANDS,
+  GEO_SHARE_OF_VOICE_TRACKING_HINT,
+} from "@notra/geo-core/constants/geo";
 import type { ShareOfVoiceRow } from "@notra/geo-core/types/geo";
 
 import { ShareOfVoiceDonut } from "@/components/geo/share-of-voice-donut";
@@ -40,9 +43,14 @@ export function CompetitorShareCard({
   return (
     <InstrumentSection
       description={
-        companyName
-          ? `Brands AI engines bring up alongside ${companyName}`
-          : "Brands AI engines bring up"
+        <>
+          <span className="block">
+            {companyName
+              ? `Brands AI engines bring up alongside ${companyName}`
+              : "Brands AI engines bring up"}
+          </span>
+          <span className="block">{GEO_SHARE_OF_VOICE_TRACKING_HINT}</span>
+        </>
       }
       eyebrow="Share of voice"
     >
@@ -54,6 +62,7 @@ export function CompetitorShareCard({
         limit={GEO_SHARE_OF_VOICE_PAGE_TOP_BRANDS}
         onSliceClick={organizationSlug ? openRow : undefined}
         onSlicePointerEnter={organizationSlug ? prefetchRow : undefined}
+        organizationId={organizationId}
         points={points}
       />
     </InstrumentSection>

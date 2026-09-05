@@ -14,6 +14,7 @@ import type { ComposeOption, ImagePatternObject } from "echarts/core";
 import * as echarts from "echarts/core";
 import { CanvasRenderer } from "echarts/renderers";
 import { motion, useReducedMotion } from "motion/react";
+import { tween } from "@notra/ui/lib/motion";
 import {
   Children,
   type CSSProperties,
@@ -496,7 +497,8 @@ function collectConfig(children: ReactNode): CollectedConfig {
         confine: props.confine ?? true,
         rowKeys: props.rowKeys,
         rowGroups: props.rowGroups,
-        hideZeros: props.hideZeros ?? false,
+        hideZeros:
+          props.hideZeros ?? Boolean(props.rowKeys || props.rowGroups),
         excludeKeys: props.excludeKeys ?? [],
         emptyLabel: props.emptyLabel,
       };
@@ -1084,7 +1086,8 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
           [group.headingKey],
           config,
           tooltipSlot.valueFormatter,
-          resolved.series
+          resolved.series,
+          tooltipSlot.hideZeros
         );
         if (heading === undefined) {
           continue;
@@ -1096,7 +1099,8 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
             group.rowKeys,
             config,
             tooltipSlot.valueFormatter,
-            resolved.series
+            resolved.series,
+            tooltipSlot.hideZeros
           ),
         });
       }
@@ -1118,7 +1122,8 @@ function createTooltipFormatter(ctx: OptionBuildContext) {
         rowKeys,
         config,
         tooltipSlot.valueFormatter,
-        resolved.series
+        resolved.series,
+        tooltipSlot.hideZeros
       );
       return tooltipShell({
         label,
@@ -2738,7 +2743,7 @@ export function EChartsAreaChart<TData extends Record<string, unknown>>({
             animate={{ opacity: 1, scale: 1 }}
             className="flex items-center justify-center gap-2 rounded-md border bg-background px-2 py-0.5 text-primary text-sm"
             initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.92 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
+            transition={tween("slow")}
           >
             <div className="h-3 w-3 animate-spin rounded-full border border-border border-t-primary" />
             <span>Loading</span>

@@ -4,7 +4,6 @@ import {
   Head,
   Heading,
   Html,
-  Img,
   Link,
   Preview,
   Section,
@@ -14,6 +13,7 @@ import {
 
 import { EmailButton } from "../components/button";
 import { EmailFooter } from "../components/footer";
+import { EmailLogo } from "../components/logo";
 import type { AiCreditsDepletedEmailProps } from "../types/ai-credits-depleted";
 import { EMAIL_CONFIG } from "../utils/config";
 
@@ -24,7 +24,6 @@ export const AiCreditsDepletedEmail = ({
   creditsLink = `${EMAIL_CONFIG.getAppUrl()}/${organizationSlug}/settings/credits`,
   limitLabel,
 }: AiCreditsDepletedEmailProps) => {
-  const logoUrl = EMAIL_CONFIG.getLogoUrl();
   const heading = limitLabel ? "Plan limit reached" : "AI credits are depleted";
   const previewText = limitLabel
     ? "Your Notra plan limit was reached"
@@ -38,15 +37,7 @@ export const AiCreditsDepletedEmail = ({
       <Tailwind>
         <Body className="mx-auto my-auto bg-white px-2 font-sans">
           <Container className="mx-auto my-[40px] max-w-[465px] rounded p-[20px]">
-            <Section className="mt-[32px]">
-              <Img
-                alt="Notra Logo"
-                className="mx-auto"
-                height="40"
-                src={logoUrl}
-                width="40"
-              />
-            </Section>
+            <EmailLogo />
 
             <Heading className="my-6 text-center text-2xl font-medium text-black">
               {heading}

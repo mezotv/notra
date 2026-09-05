@@ -1,0 +1,80 @@
+/*
+ * Shared motion system.
+ *
+ * Every animated surface in the product should pull its timing from here so
+ * that "a button reacting to hover" and "a panel opening" each have exactly one
+ * duration and one curve across dashboard, web and docs.
+ *
+ * The JavaScript counterpart lives in `@notra/ui/lib/motion` and MUST be kept
+ * numerically in sync with this file. CSS drives Tailwind utilities
+ * (`duration-fast`, `ease-emphasized`, ...); the TS module drives `motion/react`
+ * transitions. They are two consumers of the same scale.
+ */
+
+@theme {
+  /*
+   * Durations. Picked to match what the codebase already converged on, so
+   * existing `duration-150` / `duration-200` call sites keep their exact timing
+   * when they are renamed to the semantic token.
+   *
+   * instant  popover layer appearing/disappearing (menus, tooltips, selects)
+   * fast     direct feedback on a control (hover, press, colour change)
+   * normal   an element changing state in place (expand, reveal, swap)
+   * slow     layout-level movement (sidebar, accordion, drawer)
+   * slower   a deliberate, attention-carrying reveal (hero, score, onboarding)
+   */
+  --transition-duration-instant: 100ms;
+  --transition-duration-fast: 150ms;
+  --transition-duration-normal: 200ms;
+  --transition-duration-slow: 300ms;
+  --transition-duration-slower: 500ms;
+
+  /*
+   * Easings. `ease-out` (Tailwind's own cubic-bezier(0, 0, 0.2, 1)) stays the
+   * default for small interactions.
+   *
+   * emphasized        strong deceleration for entrances and layout moves.
+   *                   Replaces the two near-identical curves that were in use:
+   *                   cubic-bezier(.23,1,.32,1) and cubic-bezier(.22,1,.36,1).
+   * emphasized-in     the mirrored acceleration, for exits.
+   * emphasized-in-out for symmetric morphs (size/position changes both ways).
+   */
+  --ease-emphasized: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-emphasized-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-emphasized-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+:root {
+  /*
+   * Kept as an alias so `ease-(--sidebar-ease)` call sites resolve to the
+   * shared curve instead of their own copy of it.
+   */
+  --sidebar-ease: var(--ease-emphasized);
+}
+
+/*
+ * Baseline reduced-motion policy for every app.
+ *
+ * This previously existed only in apps/web, which meant the dashboard animated
+ * at full strength for users who had asked the OS not to. Component-level
+ * `useReducedMotion()` handling stays useful (it can pick a different layout
+ * rather than just a faster one) — this is the floor, not a replacement.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-delay: 0ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

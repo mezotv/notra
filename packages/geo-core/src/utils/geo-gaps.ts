@@ -1,5 +1,8 @@
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
 
+import { GEO_GAPS_COMPETITOR_SIGNAL_CAP } from "../constants/geo";
+import type { GeoGapBriefBaseline, GeoGapOpportunityInput } from "../types/geo";
+
 export const REUSABLE_BRIEF_STATUSES = [
   "draft",
   "approved",
@@ -18,12 +21,44 @@ export function isMissingMajority(
   return missingCount * 2 >= total;
 }
 
-export function gapOpportunityScore(
-  ownMentionRate: number,
-  competitorCount: number,
-  engineCoverage: number
-): number {
-  return (1 - ownMentionRate) * competitorCount * engineCoverage;
+export function gapOpportunityScore(input: GeoGapOpportunityInput): number {
+  const visibilityDeficit = Math.max(0, Math.min(1, 1 - input.ownMentionRate));
+  const competitorSignal =
+    1 + Math.min(input.competitorCount, GEO_GAPS_COMPETITOR_SIGNAL_CAP);
+  return visibilityDeficit * input.engineCoverage * competitorSignal;
+}
+
+export function searchGapClicks(
+  keywords: Array<{ clicks: number }> | null | undefined
+): number | null {
+  if (!keywords || keywords.length === 0) {
+    return null;
+  }
+  return keywords.reduce((sum, keyword) => sum + keyword.clicks, 0);
+}
+
+export function searchGapPosition(
+  keywords: Array<{ position: number; impressions: number }> | null | undefined
+): number | null {
+  if (!keywords || keywords.length === 0) {
+    return null;
+  }
+  const weight = keywords.reduce(
+    (sum, keyword) => sum + keyword.impressions,
+    0
+  );
+  if (weight <= 0) {
+    const plain =
+      keywords.reduce((sum, keyword) => sum + keyword.position, 0) /
+      keywords.length;
+    return Number(plain.toFixed(1));
+  }
+  const weighted =
+    keywords.reduce(
+      (sum, keyword) => sum + keyword.position * keyword.impressions,
+      0
+    ) / weight;
+  return Number(weighted.toFixed(1));
 }
 
 export function isReusableBriefStatus(status: GeoContentBriefStatus): boolean {
@@ -37,4 +72,21 @@ export function searchGapImpressions(
     return null;
   }
   return keywords.reduce((sum, keyword) => sum + keyword.impressions, 0);
+}
+
+export function toGapBriefBaseline(value: unknown): GeoGapBriefBaseline | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+  if (!("mentionedEngines" in value && "totalEngines" in value)) {
+    return null;
+  }
+  const { mentionedEngines, totalEngines } = value;
+  if (
+    typeof mentionedEngines !== "number" ||
+    typeof totalEngines !== "number"
+  ) {
+    return null;
+  }
+  return { mentionedEngines, totalEngines };
 }

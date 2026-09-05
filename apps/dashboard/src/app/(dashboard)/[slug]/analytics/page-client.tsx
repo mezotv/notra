@@ -1,7 +1,7 @@
 "use client";
 
 import { useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { AccountSeriesChartCard } from "@/components/analytics/account-series-chart-card";
 import { useAnalyticsAccounts } from "@/components/analytics/analytics-context";
@@ -144,8 +144,10 @@ export default function PageClient() {
     [volumeTimeline, adoption]
   );
 
-  const colorForKey = (key: string) =>
-    accountColors.get(key) ?? CHART_MUTED_COLOR;
+  const colorForKey = useCallback(
+    (key: string) => accountColors.get(key) ?? CHART_MUTED_COLOR,
+    [accountColors]
+  );
 
   return (
     <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-12">

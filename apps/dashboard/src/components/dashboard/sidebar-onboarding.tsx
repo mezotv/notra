@@ -1,5 +1,6 @@
 "use client";
 
+import { BrailleLoader } from "@notra/ui/components/shared/braille-loader";
 import {
   OnboardingChecklistItem,
   OnboardingChecklistItems,
@@ -10,7 +11,6 @@ import { cn } from "@notra/ui/lib/utils";
 import { useCustomer } from "autumn-js/react";
 import { useSyncExternalStore } from "react";
 
-import { BrailleLoader } from "@/components/braille-loader";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
 import { AGENT_RUN_REFETCH_INTERVAL_MS } from "@/constants/onboarding-agent";
 import { localStorageKeys } from "@/constants/storage";
@@ -112,14 +112,14 @@ export function SidebarOnboarding() {
     <SidebarGroup className="px-3 pb-2 group-data-[collapsible=icon]:hidden">
       <div
         className={cn(
-          "overflow-hidden transition-[background-color,border-color,border-radius] duration-[250ms] ease-out",
+          "duration-slow overflow-hidden transition-[background-color,border-color,border-radius] ease-out",
           collapsed ? "bg-transparent" : "bg-sidebar-accent/40 rounded-xl"
         )}
       >
         <button
           aria-label={collapsed ? "Expand Getting Started" : "Close"}
           className={cn(
-            "flex w-full cursor-pointer items-center gap-2 text-left transition-[padding,background-color,border-color,border-radius,color] duration-[250ms] ease-out",
+            "duration-slow flex w-full cursor-pointer items-center gap-2 text-left transition-[padding,background-color,border-color,border-radius,color] ease-out",
             collapsed
               ? "text-muted-foreground hover:bg-muted rounded-md px-2 py-1.5 text-xs"
               : "bg-muted/50 text-foreground rounded-t-xl border-b px-3 py-3 text-sm"
@@ -154,7 +154,7 @@ export function SidebarOnboarding() {
         <div
           aria-hidden={collapsed}
           className={cn(
-            "grid transition-[grid-template-rows] duration-[250ms] ease-out",
+            "duration-slow grid transition-[grid-template-rows] ease-out",
             collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
           )}
           inert={collapsed}
@@ -168,7 +168,7 @@ export function SidebarOnboarding() {
 
         <div
           className={cn(
-            "transition-[margin] duration-[250ms] ease-out",
+            "duration-slow transition-[margin] ease-out",
             collapsed ? "mt-1" : "mx-3 mt-3"
           )}
         >
@@ -178,7 +178,7 @@ export function SidebarOnboarding() {
         <div
           aria-hidden={collapsed}
           className={cn(
-            "grid transition-[grid-template-rows] duration-[250ms] ease-out",
+            "duration-slow grid transition-[grid-template-rows] ease-out",
             collapsed ? "grid-rows-[0fr]" : "grid-rows-[1fr]"
           )}
           inert={collapsed}

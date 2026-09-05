@@ -10,9 +10,8 @@ import {
   m,
   useReducedMotion,
 } from "motion/react";
+import { TRANSITION } from "@notra/ui/lib/motion";
 import type { AuthFormErrorProps } from "../../../lib/auth-types";
-
-const EASE_OUT = [0.23, 1, 0.32, 1] as const;
 
 export function AuthFormError({ error, className }: AuthFormErrorProps) {
   const reduceMotion = useReducedMotion();
@@ -26,10 +25,7 @@ export function AuthFormError({ error, className }: AuthFormErrorProps) {
             exit={{ opacity: 0, y: reduceMotion ? 0 : -4 }}
             initial={{ opacity: 0, y: reduceMotion ? 0 : -4 }}
             role="alert"
-            transition={{
-              duration: reduceMotion ? 0 : 0.2,
-              ease: EASE_OUT,
-            }}
+            transition={reduceMotion ? { duration: 0 } : TRANSITION.fade}
           >
             <div
               className={cn(

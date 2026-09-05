@@ -6,6 +6,7 @@ import type {
   GeoScopeInput,
   GeoTrackedPrompt,
 } from "@notra/geo-core/types/geo";
+import { mergePromptTags } from "@notra/geo-core/utils/geo-prompt-tags";
 import type { Transaction } from "@tanstack/react-db";
 import { useDbClient, useLiveQuery } from "@tanstack/react-db";
 import { useCallback, useSyncExternalStore } from "react";
@@ -17,6 +18,9 @@ import {
   geoCompetitorsCollection,
   geoPromptsCollection,
   geoSequencesCollection,
+  geoShelfCollection,
+  getGeoShelfSampleData,
+  subscribeToGeoShelfSampleData,
 } from "@/lib/db/geo-collections";
 import {
   clearRowPending,
@@ -24,7 +28,14 @@ import {
   markRowPending,
   subscribeToPendingRows,
 } from "@/lib/db/pending-rows";
+import type {
+  GeoShelfDbApi,
+  GeoShelfOpportunityWrite,
+  GeoShelfPlacementStatus,
+  GeoShelfSource,
+} from "@/types/geo-shelf";
 import { toErrorMessage } from "@/utils/error-message";
+import { mergeShelfOpportunity } from "@/utils/geo-shelf";
 
 function usePendingRows(name: string, scope: GeoScopeInput) {
   const collectionId = geoCollectionId(name, scope);
@@ -84,6 +95,28 @@ export function useGeoPromptsDb(organizationId: string) {
     }
   };
 
+  const setPromptTags = (promptId: string, tags: string[]) => {
+    track(
+      promptId,
+      collection.update(promptId, (draft) => {
+        draft.tags = tags;
+      }),
+      "Failed to update tags"
+    );
+  };
+
+  const addTagsToPrompts = (promptIds: string[], tags: string[]) => {
+    for (const promptId of promptIds) {
+      track(
+        promptId,
+        collection.update(promptId, (draft) => {
+          draft.tags = mergePromptTags(draft.tags, tags);
+        }),
+        "Failed to update tags"
+      );
+    }
+  };
+
   const addPrompt = (prompt: string) => {
     const id = crypto.randomUUID();
     track(
@@ -93,6 +126,7 @@ export function useGeoPromptsDb(organizationId: string) {
         prompt,
         enabled: true,
         source: "custom",
+        tags: [],
         createdAt: new Date().toISOString(),
       }),
       "Failed to add prompt"
@@ -104,6 +138,8 @@ export function useGeoPromptsDb(organizationId: string) {
     pendingPromptIds: pendingIds,
     togglePrompt,
     removePrompts,
+    setPromptTags,
+    addTagsToPrompts,
     addPrompt,
   };
 }
@@ -208,5 +244,88 @@ export function useGeoSequencesDb(organizationId: string) {
     addSequence,
     updateSequence,
     removeSequence,
+  };
+}
+
+export function useGeoShelfDb(organizationId: string): GeoShelfDbApi {
+  const { projectId } = useGeoProjectScope();
+  const dbClient = useDbClient();
+  const definition = geoShelfCollection({ organizationId, projectId });
+  const collection = dbClient.collection(definition);
+  const { pendingIds, track } = usePendingRows("shelf", {
+    organizationId,
+    projectId,
+  });
+
+  const { data } = useLiveQuery({
+    query: (q) => q.from({ shelf: definition }),
+  });
+
+  const readSampleData = () =>
+    getGeoShelfSampleData({ organizationId, projectId });
+  const isSampleData = useSyncExternalStore(
+    subscribeToGeoShelfSampleData,
+    readSampleData,
+    readSampleData
+  );
+
+  const sources: GeoShelfSource[] = data ?? [];
+
+  const addSource = (source: GeoShelfSource) => {
+    track(source.id, collection.insert(source), "Failed to add shelf");
+  };
+
+  const updateOpportunity = (
+    sourceId: string,
+    changes: Partial<GeoShelfOpportunityWrite>
+  ) => {
+    const nowIso = new Date().toISOString();
+    track(
+      sourceId,
+      collection.update(sourceId, (draft) => {
+        draft.opportunity = mergeShelfOpportunity(
+          draft.opportunity,
+          changes,
+          nowIso
+        );
+        draft.updatedAt = nowIso;
+      }),
+      "Failed to update ticket"
+    );
+  };
+
+  const setPlacementStatus = (
+    sourceId: string,
+    competitorId: string | null,
+    status: GeoShelfPlacementStatus
+  ) => {
+    const nowIso = new Date().toISOString();
+    track(
+      sourceId,
+      collection.update(sourceId, (draft) => {
+        for (const placement of draft.placements) {
+          if (placement.competitorId === competitorId) {
+            placement.status = status;
+            placement.evidence = "manual";
+            placement.checkedAt = nowIso;
+            if (status !== "present") {
+              placement.position = null;
+              placement.hasLink = false;
+            }
+          }
+        }
+        draft.updatedAt = nowIso;
+      }),
+      "Failed to update placement"
+    );
+  };
+
+  return {
+    sources,
+    isSampleData,
+    pendingSourceIds: pendingIds,
+    addSource,
+    updateOpportunity,
+    setPlacementStatus,
   };
 }

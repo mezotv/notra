@@ -1,3 +1,8 @@
+import type {
+  GitHubPublishContentType,
+  GitHubPublishRecovery,
+} from "@/types/integrations/github";
+
 export const GITHUB_URL_PATTERNS = [
   /^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?$/i,
   /^git@github\.com:([^/]+)\/([^/]+?)(?:\.git)?$/i,
@@ -32,8 +37,65 @@ export const GITHUB_CALLBACK_ERROR_MESSAGES: Record<string, string> = {
     "Too many GitHub connection attempts. Please wait a moment and try again.",
 };
 
+export const GITHUB_PUBLISH_CONTENT_TYPES = ["changelog", "blog_post"] as const;
+
+export const DEFAULT_GITHUB_CONTENT_DIRECTORIES = {
+  changelog: "changelogs",
+  blog_post: "blog",
+} as const satisfies Record<GitHubPublishContentType, string>;
+
+export const DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED = {
+  changelog: true,
+  blog_post: false,
+} as const satisfies Record<GitHubPublishContentType, boolean>;
+
+export const GITHUB_API_VERSION_HEADERS = {
+  "X-GitHub-Api-Version": "2022-11-28",
+} as const;
+
+export const GITHUB_CONTENT_PATH_MAX_LENGTH = 1024;
+
+export const GITHUB_PULL_REQUEST_BODY_SECTION_START =
+  "<!-- notra:content:start -->";
+export const GITHUB_PULL_REQUEST_BODY_SECTION_END =
+  "<!-- notra:content:end -->";
+
+export const GITHUB_CREATE_COMMIT_ON_BRANCH_MUTATION = `
+  mutation CreateCommitOnBranch($input: CreateCommitOnBranchInput!) {
+    createCommitOnBranch(input: $input) {
+      commit {
+        oid
+      }
+    }
+  }
+`;
+
+export const GITHUB_PATH_INVALID_CHARACTERS_REGEX = /[?#]/;
+export const GITHUB_INSTALLATION_ID_REGEX = /^\d+$/;
+
+export const GITHUB_RECOVERY_COPY = {
+  github_app_permissions_required: {
+    description:
+      "Allow read and write access to Contents and Pull requests. An organization admin may need to approve this.",
+    title: "GitHub permissions needed",
+  },
+  github_authentication_required: {
+    description: "Reconnect the GitHub integration, then try again.",
+    title: "Reconnect GitHub",
+  },
+  github_content_publishing_paused: {
+    description:
+      "Publishing was paused after three failed attempts. Review the GitHub integration before resuming.",
+    title: "GitHub publishing paused",
+  },
+} as const satisfies Record<
+  GitHubPublishRecovery["code"],
+  { description: string; title: string }
+>;
+
 export const GITHUB_APP_PERMISSIONS = [
   "Read repository metadata, branches, and releases",
+  "Create branches, commits, and draft pull requests",
   "Receive webhook events for the repositories you choose",
   "Access only the repositories you grant during installation",
 ] as const;

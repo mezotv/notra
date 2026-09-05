@@ -214,15 +214,13 @@ export function TableHeader<T>({
             const active = sort?.key === column.key;
             const isDragging = dragKey === column.key;
             const isActive = activeColumn === column.key;
+            let ariaSort: "ascending" | "descending" | undefined;
+            if (active) {
+              ariaSort = sort?.direction === "asc" ? "ascending" : "descending";
+            }
             return (
               <th
-                aria-sort={
-                  active
-                    ? sort?.direction === "asc"
-                      ? "ascending"
-                      : "descending"
-                    : undefined
-                }
+                aria-sort={ariaSort}
                 className={cn(
                   "group bg-muted text-muted-foreground relative p-0 font-medium",
                   "data-[drop=true]:before:bg-primary data-[drop=true]:before:absolute data-[drop=true]:before:inset-y-0 data-[drop=true]:before:left-0 data-[drop=true]:before:w-0.5",
@@ -315,7 +313,8 @@ export function TableHeader<T>({
                         </span>
                       ) : null}
                     </button>
-                  ) : onColumnRename ? (
+                  ) : null}
+                  {!column.sortable && onColumnRename ? (
                     <input
                       aria-label={`Rename ${column.key} column`}
                       className={cn(
@@ -330,7 +329,8 @@ export function TableHeader<T>({
                         typeof column.header === "string" ? column.header : ""
                       }
                     />
-                  ) : (
+                  ) : null}
+                  {!column.sortable && !onColumnRename ? (
                     <span
                       className={cn(
                         "flex-1 px-4 whitespace-nowrap",
@@ -339,7 +339,7 @@ export function TableHeader<T>({
                     >
                       {column.header}
                     </span>
-                  )}
+                  ) : null}
                 </motion.div>
                 {resizable ? (
                   <button

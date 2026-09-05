@@ -31,7 +31,7 @@ function CarouselProgress({
             aria-current={isActive ? "true" : undefined}
             aria-label={label}
             className={cn(
-              "relative h-2 cursor-pointer rounded-full transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
+              "relative h-2 cursor-pointer rounded-full transition-all duration-slow focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 motion-reduce:transition-none",
               isActive ? "w-12" : "w-2",
               variant === "inverted"
                 ? isActive

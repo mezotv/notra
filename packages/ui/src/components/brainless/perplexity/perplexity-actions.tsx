@@ -38,7 +38,7 @@ function ActionButton({
         render={
           <button
             aria-label={label}
-            className="flex size-8 cursor-pointer items-center justify-center rounded-full text-[#8d8d8d] outline-none transition-[color,background-color,transform] duration-150 hover:bg-[#f3f3f3] hover:text-[#1a1a1a] focus-visible:ring-2 focus-visible:ring-black/15 active:scale-[0.96] dark:text-[#a3a3a3] dark:hover:bg-white/10 dark:hover:text-foreground dark:focus-visible:ring-white/20 [&_svg]:size-4"
+            className="flex size-8 cursor-pointer items-center justify-center rounded-full text-[#8d8d8d] outline-none transition-[color,background-color,transform] duration-fast hover:bg-[#f3f3f3] hover:text-[#1a1a1a] focus-visible:ring-2 focus-visible:ring-black/15 active:scale-[0.96] dark:text-[#a3a3a3] dark:hover:bg-white/10 dark:hover:text-foreground dark:focus-visible:ring-white/20 [&_svg]:size-4"
             onClick={onClick}
             type="button"
           />

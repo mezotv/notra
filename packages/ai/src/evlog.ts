@@ -62,6 +62,8 @@ export const { register, onRequestError } = createInstrumentation(config);
 
 export const geoLogDrainEnabled = geoDrain !== undefined;
 
+register();
+
 export const geoLog: GeoLogger = {
   info: (event: GeoLogEvent) => log.info(event),
   warn: (event: GeoLogEvent) => log.warn(event),

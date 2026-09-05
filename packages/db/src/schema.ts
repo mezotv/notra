@@ -36,6 +36,7 @@ import type { GeoCheckGrounding } from "./types/geo-checks";
 import type { GeoPersonaProfile } from "./types/geo-personas";
 import type { GeoProspectReportJson } from "./types/geo-prospect-report";
 import type { GeoContentBriefJson } from "./types/geo-writer";
+import type { GoogleSearchConsoleQuery } from "./types/google-search-console";
 
 export const lookbackWindowEnum = pgEnum("lookback_window", [
   "current_day",
@@ -1419,6 +1420,10 @@ export const geoSettings = pgTable(
       .array()
       .notNull()
       .default(sql`ARRAY[]::text[]`),
+    conversionPaths: text("conversion_paths")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     languages: text("languages").array(),
     // null = track the default engine set; otherwise a subset of GEO_ENGINES.
     engines: text("engines").array(),
@@ -1426,6 +1431,10 @@ export const geoSettings = pgTable(
     enforceZdr: boolean("enforce_zdr").notNull().default(true),
     // Engines without a ZDR host the user explicitly approved anyway.
     nonZdrApprovedEngines: text("non_zdr_approved_engines")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
+    pausedAutoPromptIds: text("paused_auto_prompt_ids")
       .array()
       .notNull()
       .default(sql`ARRAY[]::text[]`),
@@ -1458,6 +1467,10 @@ export const geoPrompts = pgTable(
       .references(() => projects.id, { onDelete: "cascade" }),
     prompt: text("prompt").notNull(),
     title: text("title"),
+    tags: text("tags")
+      .array()
+      .notNull()
+      .default(sql`ARRAY[]::text[]`),
     enabled: boolean("enabled").notNull().default(true),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
@@ -1583,6 +1596,63 @@ export const geoCompetitors = pgTable(
     uniqueIndex("geoCompetitors_projectId_name_uidx").on(
       table.projectId,
       table.name
+    ),
+  ]
+);
+
+export const geoShelfSources = pgTable(
+  "geo_shelf_sources",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organizations.id, { onDelete: "cascade" }),
+    projectId: text("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    url: text("url").notNull(),
+    domain: text("domain").notNull(),
+    title: text("title"),
+    kind: text("kind", {
+      enum: [
+        "listicle",
+        "review_site",
+        "community",
+        "news",
+        "docs",
+        "video",
+        "other",
+      ],
+    }).notNull(),
+    ownership: text("ownership", {
+      enum: ["third_party", "own", "competitor"],
+    }).notNull(),
+    origin: text("origin", { enum: ["scan", "manual"] }).notNull(),
+    fetchStatus: text("fetch_status", {
+      enum: ["pending", "ok", "blocked", "failed"],
+    }).notNull(),
+    lastFetchedAt: timestamp("last_fetched_at"),
+    citations: jsonb("citations").notNull(),
+    placements: jsonb("placements").notNull(),
+    opportunity: jsonb("opportunity"),
+    createdByUserId: text("created_by_user_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("geoShelfSources_organizationId_idx").on(table.organizationId),
+    index("geoShelfSources_projectId_updatedAt_idx").on(
+      table.projectId,
+      table.updatedAt
+    ),
+    uniqueIndex("geoShelfSources_projectId_url_uidx").on(
+      table.projectId,
+      table.url
     ),
   ]
 );
@@ -1760,8 +1830,13 @@ export const googleSearchConsoleIntegrations = pgTable(
       .notNull()
       .default("active"),
     qstashScheduleId: text("qstash_schedule_id"),
+    disconnectingAt: timestamp("disconnecting_at"),
     lastSyncedAt: timestamp("last_synced_at"),
     lastError: text("last_error"),
+    topQueries: jsonb("top_queries")
+      .$type<GoogleSearchConsoleQuery[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -1864,6 +1939,9 @@ export const geoContentBriefs = pgTable(
     approvedAt: timestamp("approved_at"),
     startedAt: timestamp("started_at"),
     completedAt: timestamp("completed_at"),
+    publishedAt: timestamp("published_at"),
+    rescanScanId: text("rescan_scan_id"),
+    rescanRequestedAt: timestamp("rescan_requested_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()
@@ -2526,6 +2604,14 @@ export interface PostSourceMetadata {
   sourcePostId?: string | null;
   briefId?: string;
   projectId?: string;
+  geoSourceKind?: string;
+  geoSourceId?: string | null;
+  geoBaseline?: {
+    sourcePromptId: string;
+    mentionedEngines: number;
+    totalEngines: number;
+    capturedAt: string | null;
+  } | null;
   sandbox?: {
     boxId?: string;
     snapshotId?: string;
@@ -2605,6 +2691,7 @@ export const organizationsRelations = relations(
     googleSearchConsoleIntegration: one(googleSearchConsoleIntegrations),
     geoPromptSequences: many(geoPromptSequences),
     geoCompetitors: many(geoCompetitors),
+    geoShelfSources: many(geoShelfSources),
     geoScans: many(geoScans),
     geoMentionChecks: many(geoMentionChecks),
     connectedSocialAccounts: many(connectedSocialAccounts),
@@ -2997,6 +3084,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
   geoPrompts: many(geoPrompts),
   geoPromptSequences: many(geoPromptSequences),
   geoCompetitors: many(geoCompetitors),
+  geoShelfSources: many(geoShelfSources),
   geoScans: many(geoScans),
   geoMentionChecks: many(geoMentionChecks),
   agentFeedback: many(agentFeedback),
@@ -3058,6 +3146,24 @@ export const geoCompetitorsRelations = relations(geoCompetitors, ({ one }) => ({
     references: [projects.id],
   }),
 }));
+
+export const geoShelfSourcesRelations = relations(
+  geoShelfSources,
+  ({ one }) => ({
+    organization: one(organizations, {
+      fields: [geoShelfSources.organizationId],
+      references: [organizations.id],
+    }),
+    project: one(projects, {
+      fields: [geoShelfSources.projectId],
+      references: [projects.id],
+    }),
+    createdBy: one(users, {
+      fields: [geoShelfSources.createdByUserId],
+      references: [users.id],
+    }),
+  })
+);
 
 export const geoScansRelations = relations(geoScans, ({ one, many }) => ({
   organization: one(organizations, {

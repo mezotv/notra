@@ -13,7 +13,14 @@ import { createLinearClient } from "@notra/ai/utils/linear";
 import { createOctokit } from "@notra/ai/utils/octokit";
 import { sanitizeMarkdownHtml } from "@notra/ai/utils/sanitize";
 import { db } from "@notra/db/drizzle";
-import { githubIntegrations, postCollections, posts } from "@notra/db/schema";
+import {
+  githubAppInstallations,
+  githubIntegrations,
+  organizations,
+  postCollections,
+  posts,
+  repositoryOutputs,
+} from "@notra/db/schema";
 import type { BlogPostSubtype } from "@notra/db/types/content";
 import { buildPostCollectionName } from "@notra/db/utils/post-collections";
 import {
@@ -25,12 +32,19 @@ import { eachDayOfInterval, endOfYear, format, startOfYear } from "date-fns";
 import { and, asc, count, desc, eq, gte, inArray, lt, lte } from "drizzle-orm";
 import { marked } from "marked";
 import { nanoid } from "nanoid";
+import { after } from "next/server";
 
 import {
   GITHUB_API_MAX_PAGES,
   GITHUB_API_MAX_RESULTS,
   GITHUB_API_PAGE_SIZE,
 } from "@/constants/content-preview";
+import {
+  DEFAULT_GITHUB_CONTENT_DIRECTORIES,
+  DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED,
+  GITHUB_CONTENT_PATH_MAX_LENGTH,
+  GITHUB_INSTALLATION_ID_REGEX,
+} from "@/constants/github";
 import { trackServerEvent } from "@/lib/analytics/posthog-server";
 import { getEnabledDataPoints } from "@/lib/analytics/studio-events";
 import { assertOrganizationAccess } from "@/lib/auth/organization";
@@ -43,6 +57,26 @@ import {
   getActiveGenerations,
   getCompletedGenerations,
 } from "@/lib/generations/tracking";
+import { requestGeoRescanForPublishedPost } from "@/lib/geo/rescan";
+import { authenticateGitHubPublish } from "@/lib/integrations/github/authenticate-github-publish";
+import {
+  clearGitHubPublishFailures,
+  recordGitHubPublishFailure,
+} from "@/lib/integrations/github/github-publish-failure-state";
+import {
+  classifyGitHubPublishFailure,
+  GitHubContentBranchConflictError,
+  GitHubContentPublishError,
+  GitHubContentTargetExistsError,
+  GitHubRepositoryEmptyError,
+  hasGitHubStatus,
+  publishContentDraftPullRequest,
+  resolveGitHubContentPath,
+} from "@/lib/integrations/github/publish-content-to-github";
+import {
+  buildOpenInNotraBadgeUrls,
+  resolveNotraBaseUrl,
+} from "@/lib/integrations/github/pull-request-body";
 import { baseProcedure } from "@/lib/orpc/base";
 import { startOnDemandRun } from "@/lib/workflows/start";
 import { contentListQuerySchema } from "@/schemas/api-params";
@@ -55,11 +89,13 @@ import {
   generateContentInputSchema,
   postCollectionInputSchema,
   postCollectionsListInputSchema,
+  publishContentToGitHubSchema,
   renamePostCollectionInputSchema,
   updateContentSchema,
   updateExpectedPostCountInputSchema,
 } from "@/schemas/content";
 import { clearCompletedGenerationSchema } from "@/schemas/generations";
+import { repositoryContentDirectoryConfigSchema } from "@/schemas/integrations";
 import type {
   CommitPreview,
   LinearIntegrationPreviewItem,
@@ -69,13 +105,17 @@ import type {
   RepositoryPreviewFailure,
 } from "@/types/content/preview";
 import { resolveLookbackRange } from "@/utils/lookback";
+import { ratelimit } from "@/utils/ratelimit";
 
 import {
   badRequest,
   conflict,
+  forbidden,
   internalServerError,
   notFound,
   paymentRequired,
+  tooManyRequests,
+  unauthorized,
 } from "../utils/errors";
 
 const TITLE_REGEX = /^#\s+(.+)$/m;
@@ -673,6 +713,18 @@ export const contentRouter = {
           });
         }
 
+        if (
+          updatedPost.status === "published" &&
+          existingPost.status !== "published"
+        ) {
+          after(() =>
+            requestGeoRescanForPublishedPost({
+              organizationId: input.organizationId,
+              postId: updatedPost.id,
+            })
+          );
+        }
+
         return {
           success: true,
           content: serializeContent(updatedPost),
@@ -687,6 +739,292 @@ export const contentRouter = {
           throw conflict("A post with this slug already exists");
         }
         throw error;
+      }
+    }),
+  publishChangelogToGitHub: baseProcedure
+    .input(contentInputSchema.and(publishContentToGitHubSchema))
+    .handler(async ({ context, input }) => {
+      const auth = await assertOrganizationAccess({
+        headers: context.headers,
+        organizationId: input.organizationId,
+      });
+      await assertActiveSubscription(input.organizationId);
+
+      if (
+        process.env.UPSTASH_REDIS_REST_URL &&
+        process.env.UPSTASH_REDIS_REST_TOKEN
+      ) {
+        const { success: withinLimit } = await ratelimit.githubPublish.limit(
+          `${auth.user.id}:${input.organizationId}`
+        );
+        if (!withinLimit) {
+          throw tooManyRequests(
+            "Too many GitHub publish requests. Please try again shortly."
+          );
+        }
+      }
+
+      const [post, integration, organization] = await Promise.all([
+        db.query.posts.findFirst({
+          where: and(
+            eq(posts.id, input.contentId),
+            eq(posts.organizationId, input.organizationId)
+          ),
+          columns: {
+            title: true,
+            slug: true,
+            markdown: true,
+            contentType: true,
+          },
+        }),
+        db
+          .select({
+            id: githubIntegrations.id,
+            owner: githubIntegrations.owner,
+            repo: githubIntegrations.repo,
+            defaultBranch: githubIntegrations.defaultBranch,
+            installationId: githubAppInstallations.installationId,
+            outputConfig: repositoryOutputs.config,
+            outputEnabled: repositoryOutputs.enabled,
+            outputId: repositoryOutputs.id,
+          })
+          .from(githubIntegrations)
+          .leftJoin(
+            githubAppInstallations,
+            and(
+              eq(
+                githubIntegrations.githubAppInstallationId,
+                githubAppInstallations.id
+              ),
+              eq(githubAppInstallations.organizationId, input.organizationId)
+            )
+          )
+          .leftJoin(
+            repositoryOutputs,
+            and(
+              eq(repositoryOutputs.repositoryId, githubIntegrations.id),
+              eq(repositoryOutputs.outputType, input.contentType)
+            )
+          )
+          .where(
+            and(
+              eq(githubIntegrations.organizationId, input.organizationId),
+              eq(githubIntegrations.id, input.repositoryId),
+              eq(githubIntegrations.enabled, true),
+              eq(githubIntegrations.repositoryEnabled, true)
+            )
+          )
+          .limit(1)
+          .then(([result]) => result),
+        db.query.organizations.findFirst({
+          columns: { slug: true },
+          where: eq(organizations.id, input.organizationId),
+        }),
+      ]);
+
+      if (!post) {
+        throw notFound("Content not found");
+      }
+      if (post.contentType !== input.contentType) {
+        throw badRequest("Content type does not match the saved post");
+      }
+      if (!post.markdown) {
+        throw badRequest("Save the content before publishing it to GitHub");
+      }
+      if (!(integration?.owner && integration.repo)) {
+        throw notFound("Selected GitHub repository not found");
+      }
+      if (!integration.defaultBranch) {
+        throw badRequest(
+          "Selected GitHub repository does not have a default branch"
+        );
+      }
+      let contentOutput = integration.outputId
+        ? {
+            id: integration.outputId,
+            config: integration.outputConfig,
+            enabled: integration.outputEnabled ?? false,
+          }
+        : null;
+      if (!contentOutput) {
+        if (!DEFAULT_GITHUB_CONTENT_OUTPUT_ENABLED[input.contentType]) {
+          throw forbidden("GitHub content publishing is paused", {
+            code: "github_content_publishing_paused",
+          });
+        }
+
+        await db
+          .insert(repositoryOutputs)
+          .values({
+            id: nanoid(),
+            repositoryId: integration.id,
+            outputType: input.contentType,
+            enabled: true,
+            config: null,
+          })
+          .onConflictDoNothing({
+            target: [
+              repositoryOutputs.repositoryId,
+              repositoryOutputs.outputType,
+            ],
+          });
+        contentOutput =
+          (await db.query.repositoryOutputs.findFirst({
+            where: and(
+              eq(repositoryOutputs.repositoryId, integration.id),
+              eq(repositoryOutputs.outputType, input.contentType)
+            ),
+            columns: { id: true, config: true, enabled: true },
+          })) ?? null;
+      }
+      if (!contentOutput) {
+        throw internalServerError("Failed to configure GitHub publishing");
+      }
+      if (!contentOutput.enabled) {
+        throw forbidden("GitHub content publishing is paused", {
+          code: "github_content_publishing_paused",
+        });
+      }
+      const outputConfig = repositoryContentDirectoryConfigSchema.safeParse(
+        contentOutput.config
+      );
+      const directory = outputConfig.success
+        ? outputConfig.data.directory
+        : DEFAULT_GITHUB_CONTENT_DIRECTORIES[input.contentType];
+      const path = resolveGitHubContentPath({
+        contentId: input.contentId,
+        customPath: input.path,
+        directory,
+        slug: post.slug,
+        title: post.title,
+      });
+      if (path.length > GITHUB_CONTENT_PATH_MAX_LENGTH) {
+        throw badRequest(
+          "The configured directory and content slug exceed GitHub's file path limit"
+        );
+      }
+
+      const notraBaseUrl = resolveNotraBaseUrl();
+
+      try {
+        const token = await authenticateGitHubPublish(() =>
+          getTokenForIntegrationId(integration.id, {
+            organizationId: input.organizationId,
+          })
+        );
+        const result = await publishContentDraftPullRequest(
+          createOctokit(token),
+          {
+            contentId: input.contentId,
+            contentType: input.contentType,
+            owner: integration.owner,
+            repo: integration.repo,
+            defaultBranch: integration.defaultBranch,
+            path,
+            title: post.title,
+            markdown: post.markdown,
+            ...(notraBaseUrl && organization
+              ? {
+                  badgeUrls: buildOpenInNotraBadgeUrls(notraBaseUrl),
+                  contentUrl: `${notraBaseUrl}/${organization.slug}/content/${input.contentId}`,
+                }
+              : {}),
+          }
+        );
+        await clearGitHubPublishFailures({
+          organizationId: input.organizationId,
+          outputType: input.contentType,
+          repositoryId: integration.id,
+        });
+        return result;
+      } catch (error) {
+        if (error instanceof GitHubContentTargetExistsError) {
+          throw conflict(error.message);
+        }
+        if (error instanceof GitHubContentBranchConflictError) {
+          throw conflict(error.message, { branchName: error.branchName });
+        }
+        if (error instanceof GitHubRepositoryEmptyError) {
+          throw badRequest(
+            "Initialize the GitHub repository with a first commit before publishing"
+          );
+        }
+        if (error instanceof GitHubContentPublishError) {
+          const failureKind = classifyGitHubPublishFailure(error.cause);
+          let publishingPaused = false;
+          if (failureKind !== "rate_limit") {
+            try {
+              const pauseResult = await recordGitHubPublishFailure({
+                organizationId: input.organizationId,
+                outputId: contentOutput.id,
+                outputType: input.contentType,
+                repositoryId: integration.id,
+              });
+              publishingPaused = pauseResult.paused;
+            } catch (trackingError) {
+              console.warn("Failed to record GitHub publish failure state", {
+                organizationId: input.organizationId,
+                repositoryId: integration.id,
+                error: trackingError,
+              });
+            }
+          }
+          if (
+            publishingPaused &&
+            failureKind !== "authentication" &&
+            failureKind !== "permissions"
+          ) {
+            throw forbidden(
+              "GitHub content publishing was paused after repeated failures",
+              { code: "github_content_publishing_paused" }
+            );
+          }
+          if (failureKind === "authentication") {
+            throw unauthorized(
+              "GitHub authentication failed. Reconnect GitHub and try again.",
+              {
+                code: "github_authentication_required",
+                ...(publishingPaused ? { publishingPaused: true } : {}),
+              }
+            );
+          }
+          if (failureKind === "rate_limit") {
+            throw tooManyRequests(
+              "GitHub's API rate limit was reached. Please try again later."
+            );
+          }
+          if (failureKind === "permissions") {
+            const installationId = integration.installationId;
+            const permissionsUrl =
+              installationId &&
+              GITHUB_INSTALLATION_ID_REGEX.test(installationId)
+                ? `https://github.com/settings/installations/${installationId}/permissions`
+                : undefined;
+            throw forbidden(
+              "The GitHub App needs read and write access to Contents and Pull requests.",
+              {
+                code: "github_app_permissions_required",
+                ...(publishingPaused ? { publishingPaused: true } : {}),
+                ...(permissionsUrl ? { permissionsUrl } : {}),
+              }
+            );
+          }
+          if (failureKind === "forbidden") {
+            throw forbidden(
+              "GitHub blocked this request. An organization owner may need to review the organization's GitHub App policy."
+            );
+          }
+          if (
+            hasGitHubStatus(error.cause, 404) ||
+            hasGitHubStatus(error.cause, 422)
+          ) {
+            throw badRequest(error.message, {
+              branchName: error.branchName,
+            });
+          }
+          throw internalServerError(error.message, error.cause);
+        }
+        throw internalServerError("Failed to publish content to GitHub", error);
       }
     }),
   delete: baseProcedure
@@ -1206,7 +1544,9 @@ export const contentRouter = {
           let token: string | null = null;
 
           try {
-            token = await getTokenForIntegrationId(repository.id);
+            token = await getTokenForIntegrationId(repository.id, {
+              organizationId: input.organizationId,
+            });
           } catch (error) {
             return {
               repository: null,

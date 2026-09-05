@@ -25,7 +25,7 @@ function FaqToggleIcon({ open }: { open: boolean }) {
       />
       <path
         className={cn(
-          "origin-center transition-transform duration-300 ease-out motion-reduce:transition-none",
+          "duration-slow origin-center transition-transform ease-out motion-reduce:transition-none",
           open ? "scale-y-0" : "scale-y-100"
         )}
         d="M11.992 4V20"
@@ -70,7 +70,7 @@ function FaqRow({
       </button>
       <div
         className={cn(
-          "grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none",
+          "duration-slow grid transition-[grid-template-rows] ease-out motion-reduce:transition-none",
           open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
         )}
         id={panelId}

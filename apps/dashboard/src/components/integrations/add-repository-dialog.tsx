@@ -155,14 +155,18 @@ export function AddRepositoryDialog({
   const setOpen = controlledOnOpenChange ?? setInternalOpen;
   const queryClient = useQueryClient();
 
-  const triggerElement =
-    trigger && isValidElement(trigger) ? (
+  let triggerElement = null;
+  if (trigger && isValidElement(trigger)) {
+    triggerElement = (
       <ResponsiveDialogTrigger render={trigger as React.ReactElement} />
-    ) : controlledOpen === undefined ? (
+    );
+  } else if (controlledOpen === undefined) {
+    triggerElement = (
       <ResponsiveDialogTrigger render={<Button size="sm" variant="outline" />}>
         Add Repository
       </ResponsiveDialogTrigger>
-    ) : null;
+    );
+  }
 
   const availableRepositoriesQuery = useQuery(
     dashboardOrpc.integrations.repositories.listAvailable.queryOptions({

@@ -5,7 +5,15 @@ import { Redis } from "@upstash/redis";
 import { Data, Effect } from "effect";
 import type { NextRequest } from "next/server";
 
-import { CONTACT_RATE_LIMIT } from "@/constants/contact";
+import { CONTACT_RATE_LIMITS } from "@/constants/contact";
+
+type LimiterKind = keyof typeof CONTACT_RATE_LIMITS;
+
+interface RateLimitResult {
+  readonly limit: number;
+  readonly remaining: number;
+  readonly reset: number;
+}
 
 class ContactMessageRateLimitExceeded extends Data.TaggedError(
   "ContactMessageRateLimitExceeded"
@@ -22,31 +30,35 @@ class ContactMessageRateLimitError extends Data.TaggedError(
   readonly cause: unknown;
 }> {}
 
-let limiter: Ratelimit | null = null;
+const limiters: Partial<Record<LimiterKind, Ratelimit | null>> = {};
 
-function getLimiter(): Ratelimit | null {
-  if (limiter) {
-    return limiter;
+function getLimiter(kind: LimiterKind): Ratelimit | null {
+  if (limiters[kind] !== undefined) {
+    return limiters[kind] ?? null;
   }
 
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!(url && token)) {
+    limiters[kind] = null;
     return null;
   }
 
-  limiter = new Ratelimit({
+  const config = CONTACT_RATE_LIMITS[kind];
+  const prefix =
+    kind === "ipHourly"
+      ? "ratelimit:web:contact-message"
+      : `ratelimit:web:contact-message-${kind}`;
+
+  limiters[kind] = new Ratelimit({
     redis: new Redis({ url, token }),
     analytics: true,
-    prefix: "ratelimit:web:contact-message",
-    limiter: Ratelimit.slidingWindow(
-      CONTACT_RATE_LIMIT.requests,
-      CONTACT_RATE_LIMIT.window
-    ),
+    prefix,
+    limiter: Ratelimit.slidingWindow(config.requests, config.window),
   });
 
-  return limiter;
+  return limiters[kind] ?? null;
 }
 
 function getClientIp(request: NextRequest): string {
@@ -70,16 +82,27 @@ function getClientIp(request: NextRequest): string {
   );
 }
 
-function getRateLimitKey(request: NextRequest): string {
+function getIpRateLimitKey(request: NextRequest): string {
   return createHash("sha256").update(getClientIp(request)).digest("hex");
 }
 
+function getEmailRateLimitKey(email: string): string {
+  return createHash("sha256").update(email.trim().toLowerCase()).digest("hex");
+}
+
+function getMoreBindingRateLimit(
+  current: RateLimitResult,
+  candidate: RateLimitResult
+): RateLimitResult {
+  if (candidate.remaining !== current.remaining) {
+    return candidate.remaining < current.remaining ? candidate : current;
+  }
+
+  return candidate.reset > current.reset ? candidate : current;
+}
+
 export function getContactRateLimitHeaders(
-  result: {
-    limit: number;
-    remaining: number;
-    reset: number;
-  },
+  result: RateLimitResult,
   includeRetryAfter = false
 ): Headers {
   const resetSeconds = Math.max(
@@ -103,10 +126,12 @@ export function getContactRateLimitHeaders(
   return headers;
 }
 
-export const enforceContactMessageRateLimit = Effect.fn(
-  "enforceContactMessageRateLimit"
-)(function* (request: NextRequest) {
-  const ratelimit = getLimiter();
+const enforceLimit = Effect.fn("enforceContactMessageLimit")(function* (
+  kind: LimiterKind,
+  key: string
+) {
+  const ratelimit = getLimiter(kind);
+  const config = CONTACT_RATE_LIMITS[kind];
 
   if (!ratelimit) {
     if (process.env.NODE_ENV === "production") {
@@ -121,17 +146,17 @@ export const enforceContactMessageRateLimit = Effect.fn(
     }
 
     return {
-      limit: CONTACT_RATE_LIMIT.requests,
-      remaining: CONTACT_RATE_LIMIT.requests,
-      reset: Date.now() + 60 * 60 * 1000,
+      limit: config.requests,
+      remaining: config.requests,
+      reset: Date.now() + config.windowMs,
     };
   }
 
   const result = yield* Effect.tryPromise({
-    try: () => ratelimit.limit(getRateLimitKey(request)),
+    try: () => ratelimit.limit(key),
     catch: (cause) =>
       new ContactMessageRateLimitError({
-        message: "Failed to enforce contact message rate limit",
+        message: `Failed to enforce ${kind} contact message rate limit`,
         cause,
       }),
   });
@@ -151,4 +176,22 @@ export const enforceContactMessageRateLimit = Effect.fn(
     remaining: result.remaining,
     reset: result.reset,
   };
+});
+
+export const enforceContactMessageRateLimit = Effect.fn(
+  "enforceContactMessageRateLimit"
+)(function* (request: NextRequest, email: string) {
+  const ipKey = getIpRateLimitKey(request);
+  const hourlyResult = yield* enforceLimit("ipHourly", ipKey);
+  const dailyResult = yield* enforceLimit("ipDaily", ipKey);
+  const emailResult = yield* enforceLimit(
+    "emailDaily",
+    getEmailRateLimitKey(email)
+  );
+  const globalResult = yield* enforceLimit("globalHourly", "global");
+
+  return [dailyResult, emailResult, globalResult].reduce(
+    getMoreBindingRateLimit,
+    hourlyResult
+  );
 });

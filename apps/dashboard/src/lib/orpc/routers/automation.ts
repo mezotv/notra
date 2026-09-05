@@ -546,6 +546,7 @@ export const automationRouter = {
           targets: normalized.targets,
           outputType: input.outputType,
           lookbackWindow: input.lookbackWindow,
+          instructions: input.outputConfig?.instructions,
         });
 
         const existing = await db.query.contentTriggers.findFirst({
@@ -693,6 +694,7 @@ export const automationRouter = {
           targets: normalized.targets,
           outputType: input.outputType,
           lookbackWindow: input.lookbackWindow,
+          instructions: input.outputConfig?.instructions,
         });
 
         const duplicate = await db.query.contentTriggers.findFirst({

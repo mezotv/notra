@@ -81,7 +81,7 @@ export function ApiKeyRevealField({
           aria-label="Copy API key"
           className={cn(
             "text-muted-foreground size-7",
-            copied && "text-emerald-600 dark:text-emerald-400"
+            copied && "text-success"
           )}
           onClick={handleCopy}
           size="icon"

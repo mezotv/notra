@@ -26,6 +26,8 @@ import type {
   CreateGitHubIntegrationParams,
   ErrorWithStatus,
   GitHubOrgMembershipCheck,
+  RepositoryOutputType,
+  SetRepositoryOutputDirectoryParams,
   ValidateRepositoryBranchExistsParams,
   WebhookConfig,
 } from "../types/integrations";
@@ -155,9 +157,17 @@ async function createGitHubAppInstallationToken(installationId: string) {
   return data.token;
 }
 
-async function createGitHubAppInstallationTokenForRecord(recordId: string) {
+async function createGitHubAppInstallationTokenForRecord(
+  recordId: string,
+  options?: { organizationId?: string }
+) {
   const installation = await db.query.githubAppInstallations.findFirst({
-    where: eq(githubAppInstallations.id, recordId),
+    where: options?.organizationId
+      ? and(
+          eq(githubAppInstallations.id, recordId),
+          eq(githubAppInstallations.organizationId, options.organizationId)
+        )
+      : eq(githubAppInstallations.id, recordId),
     columns: {
       installationId: true,
     },
@@ -1247,6 +1257,35 @@ export async function configureOutput(params: ConfigureOutputParams) {
   return output;
 }
 
+export async function setRepositoryOutputDirectory(
+  params: SetRepositoryOutputDirectoryParams
+) {
+  const directoryConfig = JSON.stringify({ directory: params.directory });
+  const mergedConfig = sql`(
+    CASE
+      WHEN jsonb_typeof(${repositoryOutputs.config}) = 'object'
+        THEN ${repositoryOutputs.config}
+      ELSE '{}'::jsonb
+    END
+  ) || ${directoryConfig}::jsonb`;
+  const [output] = await db
+    .insert(repositoryOutputs)
+    .values({
+      id: nanoid(),
+      repositoryId: params.repositoryId,
+      outputType: params.outputType,
+      enabled: params.outputType === "changelog",
+      config: { directory: params.directory },
+    })
+    .onConflictDoUpdate({
+      target: [repositoryOutputs.repositoryId, repositoryOutputs.outputType],
+      set: { config: mergedConfig },
+    })
+    .returning();
+
+  return output;
+}
+
 export async function toggleGitHubIntegration(
   integrationId: string,
   enabled: boolean
@@ -1492,14 +1531,23 @@ export async function getTokenForRepository(
   return decryptToken(integration.encryptedToken);
 }
 
-export async function getTokenForIntegrationId(integrationId: string) {
+export async function getTokenForIntegrationId(
+  integrationId: string,
+  options?: { organizationId?: string }
+) {
   const integration = await db.query.githubIntegrations.findFirst({
-    where: eq(githubIntegrations.id, integrationId),
+    where: options?.organizationId
+      ? and(
+          eq(githubIntegrations.id, integrationId),
+          eq(githubIntegrations.organizationId, options.organizationId)
+        )
+      : eq(githubIntegrations.id, integrationId),
   });
 
   if (integration?.githubAppInstallationId) {
     return createGitHubAppInstallationTokenForRecord(
-      integration.githubAppInstallationId
+      integration.githubAppInstallationId,
+      options
     );
   }
 

@@ -18,6 +18,12 @@ export const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 3600;
 export const MS_PER_DAY = 86_400_000;
 export const GSC_DATA_LAG_DAYS = 3;
 export const GSC_MAX_ROW_LIMIT = 25_000;
+export const GSC_INTEGRATION_LOCK_KEY_PREFIX = "gsc:integration-lock:";
+export const GSC_INTEGRATION_LOCK_RETRY_DELAY_MS = 100;
+export const GSC_INTEGRATION_LOCK_REDIS_TIMEOUT_MS = 5_000;
+export const GSC_INTEGRATION_LOCK_TTL_SECONDS = 30;
+export const GSC_INTEGRATION_LOCK_WAIT_MS = 20_000;
+export const GSC_TOKEN_REVOKE_TIMEOUT_MS = 10_000;
 export const REAUTH_ERROR_CODES = new Set([
   "invalid_grant",
   "invalid_client",

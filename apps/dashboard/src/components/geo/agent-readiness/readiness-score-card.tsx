@@ -41,7 +41,7 @@ function ScoreDelta({ score, previousScore }: AgentReadinessScoreDeltaProps) {
       className={cn(
         "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-medium tabular-nums",
         improved
-          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+          ? "bg-success/10 text-success"
           : "bg-destructive/10 text-destructive"
       )}
     >
@@ -87,7 +87,7 @@ function BreakdownTile({
           role="progressbar"
         >
           <div
-            className="bg-foreground/70 h-full rounded-full transition-[width] duration-500 ease-out"
+            className="bg-foreground/70 duration-slower h-full rounded-full transition-[width] ease-out"
             style={{ width: `${passingPercent(passing, total)}%` }}
           />
         </div>

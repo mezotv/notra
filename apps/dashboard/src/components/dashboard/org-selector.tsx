@@ -162,19 +162,22 @@ function OrgSelectorTrigger({
               {activeOrganization?.name.charAt(0)}
             </AvatarFallback>
           </Avatar>
-          <div className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm leading-tight transition-opacity duration-200 ease-(--sidebar-ease) group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:delay-75 group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0">
+          <div className="duration-normal flex min-w-0 flex-1 items-center gap-2 text-left text-sm leading-tight transition-opacity ease-(--sidebar-ease) group-data-[collapsible=icon]:pointer-events-none group-data-[collapsible=icon]:opacity-0 group-data-[collapsible=icon]:delay-75 group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0">
             <OverflowAwareText
               className="text-sm font-medium"
               text={activeOrganization?.name}
             />
             {planBadge ? (
-              <Badge className="shrink-0 bg-purple-500/15 px-1.5 py-0 text-[10px] font-semibold text-purple-600 uppercase hover:bg-purple-500/15 dark:text-purple-400">
+              <Badge
+                className="bg-primary/10 text-primary shrink-0 font-semibold uppercase"
+                size="sm"
+              >
                 {planBadge}
               </Badge>
             ) : null}
           </div>
           <HugeiconsIcon
-            className="ml-auto transition-opacity duration-200 ease-(--sidebar-ease) group-data-[collapsible=icon]:hidden group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0"
+            className="duration-normal ml-auto transition-opacity ease-(--sidebar-ease) group-data-[collapsible=icon]:hidden group-data-[state=expanded]:delay-150 motion-reduce:transition-none motion-reduce:delay-0"
             icon={ArrowUp01Icon}
           />
         </SidebarMenuButton>
@@ -269,7 +272,12 @@ export function OrgSelector() {
   const queryClient = useQueryClient();
   const { isMobile, state } = useSidebar();
   const isCollapsed = state === "collapsed";
-  const dropdownSide = isMobile ? "bottom" : isCollapsed ? "right" : "top";
+  let dropdownSide: "bottom" | "right" | "top" = "top";
+  if (isMobile) {
+    dropdownSide = "bottom";
+  } else if (isCollapsed) {
+    dropdownSide = "right";
+  }
   const { setTheme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");

@@ -11,6 +11,8 @@ export const GSC_ERROR_MESSAGES: Record<string, string> = {
     "Google did not grant offline access. Please try connecting again.",
   gsc_token_exchange_failed: "Google sign-in failed. Please try again.",
   gsc_auth_failed: "Failed to connect Google Search Console.",
+  gsc_disconnect_in_progress:
+    "Google Search Console is still disconnecting. Please try again shortly.",
   gsc_expired_state: "The connection request expired. Please try again.",
   gsc_session_mismatch: "Please sign in again before connecting.",
   gsc_rate_limited: "Too many connection attempts. Please wait a moment.",

@@ -2,21 +2,18 @@
 
 import { GEO_CHAT_SKIN_SURFACE } from "@notra/geo-core/constants/geo";
 import type { GeoChatSkin, GeoPromptResult } from "@notra/geo-core/types/geo";
-import { formatAiTrafficTimestamp } from "@notra/geo-core/utils/ai-traffic";
 import { perplexitySourcesFromExcerpt } from "@notra/geo-core/utils/geo-perplexity-sources";
 import { MessageResponse } from "@notra/ui/components/ai-elements/message";
-import { ChatgptActions } from "@notra/ui/components/brainless/chatgpt/chatgpt-actions";
-import { ChatgptComposer } from "@notra/ui/components/brainless/chatgpt/chatgpt-composer";
-import { ClaudeChatActions } from "@notra/ui/components/brainless/claude-chat/claude-chat-actions";
-import { ClaudeChatComposer } from "@notra/ui/components/brainless/claude-chat/claude-chat-composer";
-import { GeminiActions } from "@notra/ui/components/brainless/gemini/gemini-actions";
-import { GeminiComposer } from "@notra/ui/components/brainless/gemini/gemini-composer";
-import { PerplexityActions } from "@notra/ui/components/brainless/perplexity/perplexity-actions";
-import { PerplexityComposer } from "@notra/ui/components/brainless/perplexity/perplexity-composer";
+import {
+  geoAnswerEmptyClassName,
+  geoAnswerMarkdownFontClass,
+  geoAnswerThinkingClassName,
+} from "@notra/ui/lib/geo-answer-font";
 import type { PerplexitySearchSource } from "@notra/ui/types/perplexity";
 import { useReducedMotion } from "motion/react";
 import { type ReactNode, useMemo } from "react";
 
+import { GeoAnswerActions } from "@/components/geo/geo-answer-actions";
 import { GeoAnswerSearch } from "@/components/geo/geo-answer-search";
 import { GeoSkinMessage } from "@/components/geo/geo-skin-message";
 import { useAnswerReplay } from "@/lib/hooks/use-answer-replay";
@@ -25,20 +22,10 @@ import type {
   AnswerReplayProgress,
   GeoPromptAnswerThreadProps,
 } from "@/types/geo";
-import {
-  chatgptModelForEngine,
-  claudeModelForEngine,
-  geminiModelForEngine,
-  perplexityModelForEngine,
-} from "@/utils/geo-chat-model";
 import { geoChatSkin } from "@/utils/geo-chat-skin";
 
 const ANSWER_MARKDOWN_CLASS =
   "[&_h1]:mt-0 [&_h1]:mb-2 [&_h1]:text-[1.15em] [&_h1]:font-semibold [&_h2]:mt-3 [&_h2]:mb-1.5 [&_h2]:text-[1.05em] [&_h2]:font-semibold [&_h3]:mt-3 [&_h3]:mb-1 [&_h3]:text-[1em] [&_h3]:font-semibold [&_p]:my-2.5 [&_ul]:my-2.5 [&_ol]:my-2.5";
-
-function ignoreFollowUp(_text: string): void {
-  // The composer is visual chrome; follow-ups are not sent.
-}
 
 function emptyAnswerCopy(mentioned: boolean): string {
   return mentioned
@@ -66,16 +53,6 @@ function threadSources(
   return perplexitySourcesFromExcerpt(answer);
 }
 
-function emptyAnswerClassName(skin: GeoChatSkin): string {
-  if (skin === "perplexity") {
-    return "font-serif text-[17.5px] leading-[1.75]";
-  }
-  if (skin === "claude") {
-    return "font-sans text-[15px] leading-6";
-  }
-  return "text-[15px] leading-7";
-}
-
 export function AnswerMarkdown({
   text,
   skin,
@@ -87,13 +64,7 @@ export function AnswerMarkdown({
 }) {
   return (
     <MessageResponse
-      className={cn(
-        ANSWER_MARKDOWN_CLASS,
-        skin === "claude" &&
-          "[&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif",
-        skin === "perplexity" &&
-          "font-serif [&_h1]:font-serif [&_h2]:font-serif [&_h3]:font-serif"
-      )}
+      className={cn(ANSWER_MARKDOWN_CLASS, geoAnswerMarkdownFontClass(skin))}
       mode={mode}
     >
       {text}
@@ -117,74 +88,27 @@ function AssistantBody({
   }
 
   return (
-    <p className={cn("text-muted-foreground", emptyAnswerClassName(skin))}>
+    <p className={cn("text-muted-foreground", geoAnswerEmptyClassName(skin))}>
       {emptyAnswerCopy(mentioned)}
     </p>
   );
 }
 
-function assistantActions({
-  skin,
-  excerpt,
-  timestamp,
-  sources,
-}: {
-  skin: GeoChatSkin;
-  excerpt: string;
-  timestamp: string;
-  sources: PerplexitySearchSource[];
-}) {
-  if (excerpt.length === 0) {
+function assistantActions(
+  answer: string,
+  sources: readonly PerplexitySearchSource[]
+) {
+  if (answer.length === 0) {
     return undefined;
   }
-  if (skin === "claude") {
-    return <ClaudeChatActions text={excerpt} timestamp={timestamp} />;
-  }
-  if (skin === "gemini") {
-    return <GeminiActions text={excerpt} />;
-  }
-  if (skin === "perplexity") {
-    return <PerplexityActions sources={sources} text={excerpt} />;
-  }
-  return <ChatgptActions text={excerpt} />;
-}
-
-function SkinComposer({ engine, skin }: { engine: string; skin: GeoChatSkin }) {
-  if (skin === "claude") {
-    return (
-      <ClaudeChatComposer
-        defaultModel={claudeModelForEngine(engine)}
-        disclaimer="Claude can make mistakes. Please double-check responses."
-        onSend={ignoreFollowUp}
-        placeholder="Reply to Claude"
-      />
-    );
-  }
-  if (skin === "gemini") {
-    return (
-      <GeminiComposer
-        defaultModel={geminiModelForEngine(engine)}
-        disclaimer="Gemini can make mistakes, including about people."
-        onSend={ignoreFollowUp}
-        placeholder="Ask Gemini"
-        privacyLabel="Privacy and Gemini"
-      />
-    );
-  }
-  if (skin === "perplexity") {
-    return (
-      <PerplexityComposer
-        defaultModel={perplexityModelForEngine(engine)}
-        onSend={ignoreFollowUp}
-        placeholder="Ask a follow-up"
-      />
-    );
-  }
   return (
-    <ChatgptComposer
-      defaultModel={chatgptModelForEngine(engine)}
-      onSend={ignoreFollowUp}
-      placeholder="Ask anything"
+    <GeoAnswerActions
+      sources={sources.flatMap((source) =>
+        source.url
+          ? [{ title: source.title, url: source.url, domain: source.domain }]
+          : []
+      )}
+      text={answer}
     />
   );
 }
@@ -194,7 +118,6 @@ function ThreadMessages({
   answer,
   mentioned,
   skin,
-  timestamp,
   search,
   sources,
   progress,
@@ -203,7 +126,6 @@ function ThreadMessages({
   answer: string;
   mentioned: boolean;
   skin: GeoChatSkin;
-  timestamp: string;
   search: ReactNode;
   sources: PerplexitySearchSource[];
   progress: AnswerReplayProgress | null;
@@ -222,14 +144,7 @@ function ThreadMessages({
       {(showThinking || showAnswer) && (
         <GeoSkinMessage
           actions={
-            answerDone
-              ? assistantActions({
-                  excerpt: answer,
-                  skin,
-                  sources,
-                  timestamp,
-                })
-              : undefined
+            answerDone ? assistantActions(answerText, sources) : undefined
           }
           from="assistant"
           search={showAnswer ? search : undefined}
@@ -239,9 +154,7 @@ function ThreadMessages({
             <p
               className={cn(
                 "text-muted-foreground animate-pulse",
-                skin === "perplexity"
-                  ? "font-serif text-[17.5px]"
-                  : "text-[15px]"
+                geoAnswerThinkingClassName(skin)
               )}
             >
               Thinking…
@@ -279,7 +192,6 @@ export function GeoPromptAnswerThread({
       sources={sources}
     />
   ) : undefined;
-  const timestamp = formatAiTrafficTimestamp(result.lastCheckedAt);
 
   return (
     <div
@@ -298,12 +210,8 @@ export function GeoPromptAnswerThread({
             search={search}
             skin={skin}
             sources={sources}
-            timestamp={timestamp}
           />
         </div>
-      </div>
-      <div className="mx-auto w-full max-w-3xl shrink-0 px-6 pt-1 pb-4">
-        <SkinComposer engine={result.engine} key={result.engine} skin={skin} />
       </div>
     </div>
   );

@@ -43,6 +43,12 @@ export const ratelimit = {
     prefix: "ratelimit:github-app-callback",
     limiter: Ratelimit.slidingWindow(10, "1m"),
   }),
+  githubPublish: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:github-publish",
+    limiter: Ratelimit.slidingWindow(10, "1m"),
+  }),
   granolaConnection: new Ratelimit({
     redis,
     analytics: true,
@@ -153,6 +159,12 @@ export const ratelimit = {
     analytics: true,
     prefix: "ratelimit:geo-brand-search",
     limiter: Ratelimit.slidingWindow(60, "1m"),
+  }),
+  geoShelfPreview: new Ratelimit({
+    redis,
+    analytics: true,
+    prefix: "ratelimit:geo-shelf-preview",
+    limiter: Ratelimit.slidingWindow(30, "1m"),
   }),
   gscSync: new Ratelimit({
     redis,

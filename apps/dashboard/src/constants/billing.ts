@@ -1,5 +1,7 @@
 import { ADDONS, LEGACY_PLANS, PLANS } from "@notra/ai/billing/features";
 
+import type { ProductFeature } from "@/types/hooks/billing";
+
 export const BILLING_SECTION_VALUES = ["billing", "usage"] as const;
 
 export const BILLING_PRICE_REGEX = /^\d+([.,]\d+)?$/;
@@ -19,9 +21,42 @@ export const LEGACY_PLAN_TIERS: Record<string, string> = {
 };
 
 export const PLAN_TIER_DESCRIPTIONS: Record<string, string> = {
-  [PLANS.STARTER]: "For founders shipping their first content engine.",
-  [PLANS.GROWTH]: "For teams publishing across channels every week.",
-  [PLANS.SCALE]: "For content teams running multiple brands at volume.",
+  [PLANS.STARTER]: "For founders tracking their first prompts.",
+  [PLANS.GROWTH]: "For teams tracking prompts across engines and languages.",
+  [PLANS.SCALE]: "For agencies and teams running several brands.",
+};
+
+export const PLAN_TIER_FEATURES: Record<string, ProductFeature[]> = {
+  [PLANS.STARTER]: [
+    { text: "2,000 AI answers tracked / mo" },
+    { text: "8 image generations / mo" },
+    { text: "10 long-form posts / mo" },
+    { text: "Unlimited social posts" },
+    { text: "1 project" },
+    { text: "100 references", overageText: "then $0.05 per ref / mo" },
+    { text: "Standard support + Slack" },
+    { text: "ZDR available (+20%)" },
+  ],
+  [PLANS.GROWTH]: [
+    { text: "6,000 AI answers tracked / mo" },
+    { text: "20 image generations / mo" },
+    { text: "25 long-form posts / mo" },
+    { text: "Unlimited social posts" },
+    { text: "3 projects" },
+    { text: "500 references", overageText: "then $0.04 per ref / mo" },
+    { text: "Standard support + Slack" },
+    { text: "ZDR available (+20%)" },
+  ],
+  [PLANS.SCALE]: [
+    { text: "12,000 AI answers tracked / mo" },
+    { text: "45 image generations / mo" },
+    { text: "50 long-form posts / mo" },
+    { text: "Unlimited social posts" },
+    { text: "10 projects" },
+    { text: "1,000 references", overageText: "then $0.03 per ref / mo" },
+    { text: "Priority support" },
+    { text: "ZDR available (+20%)" },
+  ],
 };
 
 export const BILLING_SCENARIO_TEXT: Record<string, string> = {

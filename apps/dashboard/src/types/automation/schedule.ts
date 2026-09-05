@@ -28,6 +28,11 @@ export interface ScheduleDayPickerProps {
   onDayOfMonthChange: (day: number) => void;
 }
 
+export interface ScheduleIntervalPickerProps {
+  intervalDays?: number;
+  onIntervalDaysChange: (days: number | undefined) => void;
+}
+
 export interface ScheduleSummaryCardProps {
   schedule: ScheduleCron;
 }

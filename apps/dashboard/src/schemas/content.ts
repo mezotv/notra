@@ -16,6 +16,12 @@ import { BLOG_POST_SUBTYPES } from "@notra/db/constants/content";
 import * as z from "zod";
 
 import {
+  GITHUB_CONTENT_PATH_MAX_LENGTH,
+  GITHUB_PATH_INVALID_CHARACTERS_REGEX,
+  GITHUB_PUBLISH_CONTENT_TYPES,
+} from "@/constants/github";
+
+import {
   LOOKBACK_WINDOWS,
   SUPPORTED_AUTOMATION_OUTPUT_TYPES,
 } from "./integrations";
@@ -323,7 +329,7 @@ export const updateContentSchema = z
   .object({
     title: z.string().trim().min(1).max(POST_TITLE_MAX_LENGTH).optional(),
     slug: slugFieldSchema.nullable().optional(),
-    markdown: z.string().min(1).max(POST_MARKDOWN_MAX_LENGTH).optional(),
+    markdown: z.string().max(POST_MARKDOWN_MAX_LENGTH).optional(),
     status: postStatusSchema.optional(),
   })
   .refine(
@@ -338,6 +344,35 @@ export const updateContentSchema = z
   );
 
 export type UpdateContentInput = z.infer<typeof updateContentSchema>;
+
+const githubMarkdownPathSchema = z
+  .string()
+  .trim()
+  .min(1, "File path is required")
+  .max(GITHUB_CONTENT_PATH_MAX_LENGTH - ".md".length, "File path is too long")
+  .refine((path) => !path.startsWith("/"), "Enter a repository-relative path")
+  .refine((path) => !path.endsWith("/"), "File path must include a file name")
+  .refine((path) => !path.includes("\\"), "Use forward slashes in file paths")
+  .refine(
+    (path) => !GITHUB_PATH_INVALID_CHARACTERS_REGEX.test(path),
+    "File path contains invalid characters"
+  )
+  .refine(
+    (path) =>
+      path
+        .split("/")
+        .every((segment) => segment && segment !== "." && segment !== ".."),
+    "File path contains an invalid segment"
+  )
+  .transform((path) =>
+    path.toLowerCase().endsWith(".md") ? path : `${path}.md`
+  );
+
+export const publishContentToGitHubSchema = z.object({
+  contentType: z.enum(GITHUB_PUBLISH_CONTENT_TYPES).default("changelog"),
+  repositoryId: z.string().min(1, "Repository is required"),
+  path: githubMarkdownPathSchema.optional(),
+});
 
 export const onDemandContentTypeSchema = z.enum([
   ...SUPPORTED_AUTOMATION_OUTPUT_TYPES,

@@ -72,6 +72,7 @@ import type { EditorRefHandle } from "@/components/content/editor/plugins/editor
 import { ContentEditorSwitch } from "@/components/content/editors";
 import { ImageExportTargetIcon } from "@/components/content/image-export-target-icon";
 import { PostSocialButton } from "@/components/content/post-social-button";
+import { PublishContentToGitHubDialog } from "@/components/content/publish-content-to-github-dialog";
 import { RecommendationsSection } from "@/components/content/recommendations-section";
 import { RightPanelPortal } from "@/components/dashboard/right-panel-portal";
 import { WriterExecute } from "@/components/geo/writer/writer-execute";
@@ -403,7 +404,7 @@ export default function PageClient({
 
   const handleSave = useCallback(async () => {
     if (!hasChanges) {
-      return;
+      return true;
     }
 
     setIsSaving(true);
@@ -415,7 +416,7 @@ export default function PageClient({
       if (hasSlugChanges) {
         body.slug = editingSlug?.trim() || null;
       }
-      if (editedMarkdown) {
+      if (editedMarkdown !== null) {
         body.markdown = editedMarkdown;
       }
 
@@ -427,7 +428,7 @@ export default function PageClient({
         content?: { title?: string; slug?: string | null };
       };
 
-      if (editedMarkdown) {
+      if (editedMarkdown !== null) {
         setOriginalMarkdown(editedMarkdown);
         originalMarkdownRef.current = editedMarkdown;
       }
@@ -450,6 +451,8 @@ export default function PageClient({
         }),
       ]);
       toast.success("Content saved");
+      setIsSaving(false);
+      return true;
     } catch (error) {
       if (error instanceof Error && error.message.includes("already exists")) {
         toast.error("A post with this slug already exists");
@@ -458,8 +461,9 @@ export default function PageClient({
       } else {
         toast.error("Failed to save content");
       }
+      setIsSaving(false);
+      return false;
     }
-    setIsSaving(false);
   }, [
     hasChanges,
     hasTitleChanges,
@@ -1409,13 +1413,31 @@ export default function PageClient({
     <>
       <div className="flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="mx-auto w-full max-w-5xl space-y-6 px-4 lg:px-6">
-          <Link
-            className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex w-fit items-center gap-1.5 rounded-sm text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
-            href={backHref}
-          >
-            <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
-            {backLabel}
-          </Link>
+          <div className="flex items-center justify-between gap-4">
+            <Link
+              className="text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex w-fit items-center gap-1.5 rounded-sm text-sm transition-colors focus-visible:ring-2 focus-visible:outline-none"
+              href={backHref}
+            >
+              <HugeiconsIcon className="size-4" icon={ArrowLeft02Icon} />
+              {backLabel}
+            </Link>
+            <Tooltip>
+              <TooltipTrigger
+                render={
+                  <Button
+                    className="hidden lg:inline-flex"
+                    onClick={() => setIsActivityPanelOpen((open) => !open)}
+                    size="icon-sm"
+                    variant={isActivityPanelOpen ? "secondary" : "outline"}
+                  />
+                }
+              >
+                <span className="sr-only">Toggle Content Agent</span>
+                <HugeiconsIcon className="size-4" icon={SidebarRight01Icon} />
+              </TooltipTrigger>
+              <TooltipContent>Content Agent</TooltipContent>
+            </Tooltip>
+          </div>
           <WriterExecute.Root
             briefId={geoWriterDraft?.briefId ?? null}
             hasUnsavedChanges={
@@ -1591,25 +1613,18 @@ export default function PageClient({
                   })()}
               </div>
               <div className="ml-auto flex shrink-0 items-center gap-2">
-                <Tooltip>
-                  <TooltipTrigger
-                    render={
-                      <Button
-                        className="hidden lg:inline-flex"
-                        onClick={() => setIsActivityPanelOpen((open) => !open)}
-                        size="icon-sm"
-                        variant={isActivityPanelOpen ? "secondary" : "outline"}
-                      />
-                    }
-                  >
-                    <span className="sr-only">Toggle Content Agent</span>
-                    <HugeiconsIcon
-                      className="size-4"
-                      icon={SidebarRight01Icon}
+                {(content.contentType === "changelog" ||
+                  content.contentType === "blog_post") &&
+                  currentMarkdown.trim() !== "" && (
+                    <PublishContentToGitHubDialog
+                      contentId={contentId}
+                      contentType={content.contentType}
+                      onSave={handleSave}
+                      organizationId={organizationId}
+                      organizationSlug={organizationSlug}
+                      title={title}
                     />
-                  </TooltipTrigger>
-                  <TooltipContent>Content Agent</TooltipContent>
-                </Tooltip>
+                  )}
                 {isGeoWriterPlanMode ? <WriterExecute.Button /> : null}
                 {content.contentType !== "image" && !isGeoWriterPlanMode ? (
                   <Button

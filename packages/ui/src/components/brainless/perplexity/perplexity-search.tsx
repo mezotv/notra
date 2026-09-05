@@ -116,10 +116,10 @@ function ShieldMark({ className }: { className?: string }) {
 }
 
 const ENTER_CLASS =
-  "translate-y-0 opacity-100 transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] starting:translate-y-1.5 starting:opacity-0 motion-reduce:transition-none motion-reduce:starting:translate-y-0 motion-reduce:starting:opacity-100";
+  "translate-y-0 opacity-100 transition-[opacity,transform] duration-normal ease-emphasized starting:translate-y-1.5 starting:opacity-0 motion-reduce:transition-none motion-reduce:starting:translate-y-0 motion-reduce:starting:opacity-100";
 
 const PANEL_CLASS =
-  "grid overflow-hidden outline-none transition-[grid-template-rows,opacity] duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] data-closed:grid-rows-[0fr] data-open:grid-rows-[1fr] data-[ending-style]:grid-rows-[0fr] data-[ending-style]:opacity-0 data-[starting-style]:grid-rows-[0fr] data-[starting-style]:opacity-0 motion-reduce:transition-none";
+  "grid overflow-hidden outline-none transition-[grid-template-rows,opacity] duration-slow ease-emphasized data-closed:grid-rows-[0fr] data-open:grid-rows-[1fr] data-[ending-style]:grid-rows-[0fr] data-[ending-style]:opacity-0 data-[starting-style]:grid-rows-[0fr] data-[starting-style]:opacity-0 motion-reduce:transition-none";
 
 function wait(ms: number) {
   return new Promise<void>((resolve) => {
@@ -250,7 +250,7 @@ export function PerplexitySearch({
       <CollapsibleTrigger className="group/search flex w-full items-center gap-2 rounded-md py-0.5 text-left outline-none transition-colors hover:text-[#1a1a1a] focus-visible:ring-2 focus-visible:ring-black/15 dark:hover:text-foreground">
         {header}
         <HugeiconsIcon
-          className="shrink-0 text-[#8d8d8d] transition-transform duration-300 ease-[cubic-bezier(0.23,1,0.32,1)] group-data-panel-open/search:rotate-180 motion-reduce:transition-none"
+          className="shrink-0 text-[#8d8d8d] transition-transform duration-slow ease-emphasized group-data-panel-open/search:rotate-180 motion-reduce:transition-none"
           icon={ArrowDown01Icon}
           size={14}
           strokeWidth={2}

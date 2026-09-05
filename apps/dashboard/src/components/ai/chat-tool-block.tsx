@@ -49,7 +49,7 @@ import { collectToolOutputImages } from "./chat-tool-block/tool-output-images/ut
 import type { ChatToolBlockProps, ToolCopy } from "./chat-tool-block/types";
 
 const TOOL_DETAILS_PANEL_CLASSNAME =
-  "h-[var(--collapsible-panel-height)] overflow-hidden outline-none transition-[height,opacity] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none";
+  "h-[var(--collapsible-panel-height)] overflow-hidden outline-none transition-[height,opacity] duration-normal ease-emphasized data-[ending-style]:h-0 data-[starting-style]:h-0 data-[ending-style]:opacity-0 data-[starting-style]:opacity-0 motion-reduce:transition-none";
 
 function firstStringValue<T extends object>(
   values: T,

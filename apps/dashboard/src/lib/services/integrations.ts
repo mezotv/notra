@@ -35,12 +35,18 @@ const integrationFetchers: Partial<
           : ("personal-access-token" as const),
         enabled: integration.enabled,
         createdAt: integration.createdAt,
+        managedByGitHubApp: Boolean(integration.githubAppInstallationId),
         repositories: uniqueRepositories.map((repo) => ({
           id: repo.id,
           owner: repo.owner,
           repo: repo.repo,
           defaultBranch: repo.defaultBranch,
           enabled: repo.enabled,
+          outputs: repo.outputs.map((output) => ({
+            id: output.id,
+            outputType: output.outputType,
+            enabled: output.enabled,
+          })),
         })),
       };
     });

@@ -170,7 +170,7 @@ export function OrganizationDetailsCard({
       name: organization.name,
       slug: organization.slug,
     });
-  }, [form.reset, organization.name, organization.slug]);
+  }, [form, organization.name, organization.slug]);
 
   return (
     <TitleCard heading="Organization Details">

@@ -274,7 +274,7 @@ export const WebPreviewConsole = ({
         Console
         <HugeiconsIcon
           className={cn(
-            "h-4 w-4 transition-transform duration-200",
+            "h-4 w-4 transition-transform duration-normal",
             consoleOpen && "rotate-180"
           )}
           icon={ArrowDown01Icon}
@@ -295,7 +295,7 @@ export const WebPreviewConsole = ({
                 className={cn(
                   "text-xs",
                   log.level === "error" && "text-destructive",
-                  log.level === "warn" && "text-yellow-600",
+                  log.level === "warn" && "text-warning",
                   log.level === "log" && "text-foreground"
                 )}
                 key={`${log.timestamp.getTime()}-${log.level}-${log.message}`}

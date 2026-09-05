@@ -14,21 +14,21 @@ import {
   summarizePromptResults,
 } from "@notra/geo-core/utils/geo-presence";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import { GeoBar } from "@notra/ui/components/geo/geo-bar";
+import { LogoStack } from "@notra/ui/components/geo/logo-stack";
+import { PresenceBadge } from "@notra/ui/components/geo/presence-badge";
+import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import { Badge } from "@notra/ui/components/ui/badge";
 import { Input } from "@notra/ui/components/ui/input";
 import { useMemo, useState } from "react";
 
 import { EngineIcon } from "@/components/geo/engine-icon";
-import { GeoBar } from "@/components/geo/geo-bar";
-import { LogoStack } from "@/components/geo/logo-stack";
-import { PresenceBadge } from "@/components/geo/presence-badge";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import {
   InstrumentEmpty,
   InstrumentSection,
 } from "@/components/instrument/instrument-module";
 import { Table, type TableColumn } from "@/components/motion/table";
-import { TruncateWithTooltip } from "@/components/truncate-with-tooltip";
 import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
 import type {
   PromptResultsPreviewProps,
@@ -74,19 +74,13 @@ function PromptSentimentLabel({ sentiment }: PromptSentimentLabelProps) {
   if (!label) {
     return <span className="text-muted-foreground text-xs">-</span>;
   }
-  return (
-    <span
-      className={
-        sentiment === "positive"
-          ? "text-geo-up text-xs"
-          : sentiment === "negative"
-            ? "text-geo-down text-xs"
-            : "text-muted-foreground text-xs"
-      }
-    >
-      {label}
-    </span>
-  );
+  let className = "text-muted-foreground text-xs";
+  if (sentiment === "positive") {
+    className = "text-geo-up text-xs";
+  } else if (sentiment === "negative") {
+    className = "text-geo-down text-xs";
+  }
+  return <span className={className}>{label}</span>;
 }
 
 function PromptCopyCell({ row }: { row: GeoPromptSummary }) {

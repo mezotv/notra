@@ -61,12 +61,12 @@ export function IrisRunningState({
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <span className="relative flex size-2">
               {isPaused ? null : (
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/60" />
+                <span className="bg-success/60 absolute inline-flex size-full animate-ping rounded-full" />
               )}
               <span
                 className={cn(
                   "relative inline-flex size-2 rounded-full",
-                  isPaused ? "bg-muted-foreground/50" : "bg-emerald-500"
+                  isPaused ? "bg-muted-foreground/50" : "bg-success"
                 )}
               />
             </span>

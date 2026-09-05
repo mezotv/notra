@@ -46,7 +46,7 @@ export function ConsoleFormMock() {
         <div className="relative">
           <div
             aria-hidden="true"
-            className={`transition-opacity duration-300 ${closed ? "pointer-events-none opacity-0" : "opacity-100"}`}
+            className={`duration-slow transition-opacity ${closed ? "pointer-events-none opacity-0" : "opacity-100"}`}
             inert={closed}
           >
             <div className="flex flex-col gap-4 p-5">
@@ -132,7 +132,7 @@ export function ConsoleFormMock() {
             </div>
           </div>
           <div
-            className={`absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white px-6 transition-opacity duration-300 dark:bg-[#161320] ${closed ? "opacity-100" : "pointer-events-none opacity-0"}`}
+            className={`duration-slow absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white px-6 transition-opacity dark:bg-[#161320] ${closed ? "opacity-100" : "pointer-events-none opacity-0"}`}
             inert={!closed}
           >
             <span
@@ -157,7 +157,7 @@ export function ConsoleFormMock() {
 
       <div
         aria-hidden="true"
-        className={`absolute bottom-[-2rem] left-[-2.5rem] flex w-[16.875rem] flex-col overflow-clip rounded-2xl bg-white [box-shadow:#ECECEC_0_0_0_0.0625rem,#28282826_0_1rem_2rem_-0.5rem] transition-opacity duration-300 dark:bg-[#161320] dark:[box-shadow:#FFFFFF14_0_0_0_0.0625rem] ${closed ? "pointer-events-none opacity-0" : "opacity-100"}`}
+        className={`duration-slow absolute bottom-[-2rem] left-[-2.5rem] flex w-[16.875rem] flex-col overflow-clip rounded-2xl bg-white [box-shadow:#ECECEC_0_0_0_0.0625rem,#28282826_0_1rem_2rem_-0.5rem] transition-opacity dark:bg-[#161320] dark:[box-shadow:#FFFFFF14_0_0_0_0.0625rem] ${closed ? "pointer-events-none opacity-0" : "opacity-100"}`}
         inert={closed}
       >
         <div

@@ -20,7 +20,7 @@ export function ScheduleDayPicker({
   onDayOfWeekChange,
   onDayOfMonthChange,
 }: ScheduleDayPickerProps) {
-  if (frequency === "daily") {
+  if (frequency !== "weekly" && frequency !== "monthly") {
     return null;
   }
 

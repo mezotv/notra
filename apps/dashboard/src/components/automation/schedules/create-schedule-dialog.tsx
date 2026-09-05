@@ -7,6 +7,8 @@ import {
   Loading03Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS } from "@notra/ai/constants/schedule-interval";
+import { toUtcDateString } from "@notra/ai/utils/schedule-interval";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -39,6 +41,7 @@ import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { Github } from "@notra/ui/components/ui/svgs/github";
 import { Linear } from "@notra/ui/components/ui/svgs/linear";
 import { Switch } from "@notra/ui/components/ui/switch";
+import { Textarea } from "@notra/ui/components/ui/textarea";
 import {
   Tooltip,
   TooltipContent,
@@ -66,6 +69,7 @@ import {
 import {
   LOOKBACK_WINDOWS,
   type LookbackWindow,
+  MAX_SCHEDULE_INSTRUCTIONS_LENGTH,
   MAX_SCHEDULE_NAME_LENGTH,
 } from "@/schemas/integrations";
 import type {
@@ -84,6 +88,7 @@ import {
 
 import { ScheduleDayPicker } from "./schedule-day-picker";
 import { ScheduleFrequencyTabs } from "./schedule-frequency-tabs";
+import { ScheduleIntervalPicker } from "./schedule-interval-picker";
 import { ScheduleSummaryCard } from "./schedule-summary-card";
 
 export function CreateScheduleDialog({
@@ -120,6 +125,7 @@ export function CreateScheduleDialog({
           (id) => !id.startsWith("linear:")
         );
 
+        const instructions = value.instructions.trim();
         const schedulePayload = {
           organizationId,
           name: value.name.trim(),
@@ -129,6 +135,7 @@ export function CreateScheduleDialog({
           outputType: value.outputType,
           outputConfig: {
             ...(value.brandVoiceId ? { brandVoiceId: value.brandVoiceId } : {}),
+            ...(instructions ? { instructions } : {}),
           },
           enabled: isEditMode ? editTrigger.enabled : true,
           autoPublish: supportsAutoPublish(value.outputType)
@@ -193,14 +200,18 @@ export function CreateScheduleDialog({
 
   const outputType = useStore(form.store, (s) => s.values.outputType);
   const schedule = useStore(form.store, (s) => s.values.schedule);
-  const { frequency, hour, minute, dayOfWeek, dayOfMonth } = schedule;
+  const { frequency, hour, minute, dayOfWeek, dayOfMonth, intervalDays } =
+    schedule;
   const repositoryCount = useStore(
     form.store,
     (s) => s.values.repositoryIds.length
   );
 
   useEffect(() => {
-    const newAutoName = buildAutoScheduleName(frequency, outputType);
+    const newAutoName = buildAutoScheduleName(
+      { frequency, intervalDays },
+      outputType
+    );
     const currentName = form.state.values.name;
     if (
       currentName === previousAutoNameRef.current ||
@@ -209,7 +220,7 @@ export function CreateScheduleDialog({
       form.setFieldValue("name", newAutoName);
     }
     previousAutoNameRef.current = newAutoName;
-  }, [outputType, frequency, form]);
+  }, [outputType, frequency, intervalDays, form]);
 
   const { data: integrationsResponse, isLoading: isLoadingRepos } = useQuery(
     dashboardOrpc.integrations.list.queryOptions({
@@ -266,25 +277,29 @@ export function CreateScheduleDialog({
     };
   }, [integrationsResponse]);
 
-  const handleFrequencyChange = useCallback(
-    (next: ScheduleCron["frequency"]) => {
-      const prev = form.state.values.schedule;
-      let dayOfWeek: number | undefined;
-      let dayOfMonth: number | undefined;
-      if (next === "weekly") {
-        dayOfWeek = prev.dayOfWeek ?? 1;
-      } else if (next === "monthly") {
-        dayOfMonth = prev.dayOfMonth ?? 1;
-      }
-      form.setFieldValue("schedule", {
-        ...prev,
-        frequency: next,
-        dayOfWeek,
-        dayOfMonth,
-      });
-    },
-    [form]
-  );
+  const handleFrequencyChange = (next: ScheduleCron["frequency"]) => {
+    const prev = form.state.values.schedule;
+    let dayOfWeek: number | undefined;
+    let dayOfMonth: number | undefined;
+    let intervalDays: number | undefined;
+    let anchorDate: string | undefined;
+    if (next === "weekly") {
+      dayOfWeek = prev.dayOfWeek ?? 1;
+    } else if (next === "monthly") {
+      dayOfMonth = prev.dayOfMonth ?? 1;
+    } else if (next === "custom") {
+      intervalDays = prev.intervalDays ?? CUSTOM_SCHEDULE_DEFAULT_INTERVAL_DAYS;
+      anchorDate = prev.anchorDate ?? toUtcDateString(new Date());
+    }
+    form.setFieldValue("schedule", {
+      ...prev,
+      frequency: next,
+      dayOfWeek,
+      dayOfMonth,
+      intervalDays,
+      anchorDate,
+    });
+  };
 
   const formError = useStore(form.store, (state) => {
     if (state.submissionAttempts === 0) {
@@ -335,6 +350,36 @@ export function CreateScheduleDialog({
               <div className="space-y-8 p-6">
                 <section className="space-y-3">
                   <div className="space-y-1">
+                    <h3 className="flex items-center gap-1 text-base font-semibold">
+                      Name
+                      <span aria-hidden="true" className="text-destructive">
+                        *
+                      </span>
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      Just for you, won't appear in any output.
+                    </p>
+                  </div>
+                  <form.Field name="name">
+                    {(field) => (
+                      <Input
+                        id={field.name}
+                        maxLength={MAX_SCHEDULE_NAME_LENGTH}
+                        onChange={(event) => {
+                          field.handleChange(event.target.value);
+                        }}
+                        placeholder={buildAutoScheduleName(
+                          { frequency, intervalDays },
+                          outputType
+                        )}
+                        value={field.state.value}
+                      />
+                    )}
+                  </form.Field>
+                </section>
+
+                <section className="space-y-3">
+                  <div className="space-y-1">
                     <h3 className="text-base font-semibold">Content format</h3>
                     <p className="text-muted-foreground text-sm">
                       What should we generate?
@@ -358,30 +403,42 @@ export function CreateScheduleDialog({
 
                 <section className="space-y-3">
                   <div className="space-y-1">
-                    <h3 className="flex items-center gap-1 text-base font-semibold">
-                      Name
-                      <span aria-hidden="true" className="text-destructive">
-                        *
+                    <h3 className="flex items-center gap-2 text-base font-semibold">
+                      Instructions
+                      <span className="text-muted-foreground rounded-full border px-2 py-0.5 text-[11px] font-medium">
+                        Optional
                       </span>
                     </h3>
                     <p className="text-muted-foreground text-sm">
-                      Just for you, won't appear in any output.
+                      Tell us what this schedule should write about. Brand voice
+                      still applies.
                     </p>
                   </div>
-                  <form.Field name="name">
+                  <form.Field name="instructions">
                     {(field) => (
-                      <Input
-                        id={field.name}
-                        maxLength={MAX_SCHEDULE_NAME_LENGTH}
-                        onChange={(event) => {
-                          field.handleChange(event.target.value);
-                        }}
-                        placeholder={buildAutoScheduleName(
-                          frequency,
-                          outputType
-                        )}
-                        value={field.state.value}
-                      />
+                      <div className="space-y-2">
+                        <Textarea
+                          aria-label="Instructions"
+                          className="min-h-24"
+                          id={field.name}
+                          maxLength={MAX_SCHEDULE_INSTRUCTIONS_LENGTH}
+                          onBlur={field.handleBlur}
+                          onChange={(event) => {
+                            field.handleChange(event.target.value);
+                          }}
+                          placeholder="e.g. Write a tutorial-style post that walks through one feature shipped in this window, with code samples."
+                          value={field.state.value}
+                        />
+                        <div className="text-muted-foreground flex items-center justify-between text-xs">
+                          <span>
+                            Passed to the writer as extra guidance on every run.
+                          </span>
+                          <span className="tabular-nums">
+                            {field.state.value.length} /{" "}
+                            {MAX_SCHEDULE_INSTRUCTIONS_LENGTH}
+                          </span>
+                        </div>
+                      </div>
                     )}
                   </form.Field>
                 </section>
@@ -408,6 +465,14 @@ export function CreateScheduleDialog({
                       form.setFieldValue("schedule.dayOfWeek", day)
                     }
                   />
+                  {frequency === "custom" && (
+                    <ScheduleIntervalPicker
+                      intervalDays={intervalDays}
+                      onIntervalDaysChange={(days) =>
+                        form.setFieldValue("schedule.intervalDays", days)
+                      }
+                    />
+                  )}
                   <div className="space-y-2">
                     <Label
                       className="text-muted-foreground text-xs"

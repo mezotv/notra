@@ -10,16 +10,12 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
+import { TRANSITION } from "@notra/ui/lib/motion";
 import { m, useReducedMotion } from "motion/react";
 
 import { cn } from "@/lib/utils";
 import type { MessageAuthorAvatarProps } from "@/types/components/chat-page";
 import { getUserAvatarUrl } from "@/utils/avatar";
-
-const AVATAR_TRANSITION = {
-  duration: 0.22,
-  ease: [0.22, 1, 0.36, 1] as const,
-};
 
 export function MessageAuthorAvatar({
   author,
@@ -36,7 +32,7 @@ export function MessageAuthorAvatar({
         size === "sm" ? "size-4" : "mt-1.5 size-8"
       )}
       initial={reduceMotion ? false : { opacity: 0, scale: 0.8 }}
-      transition={AVATAR_TRANSITION}
+      transition={TRANSITION.enter}
     >
       <Tooltip>
         <TooltipTrigger

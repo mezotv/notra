@@ -1,5 +1,6 @@
 import { createORPCClient } from "@orpc/client";
 import { RPCLink } from "@orpc/client/fetch";
+import { BatchLinkPlugin } from "@orpc/client/plugins";
 import type { RouterClient } from "@orpc/server";
 
 import type { DashboardRouter } from "./router";
@@ -17,6 +18,17 @@ function getBaseUrl() {
 }
 
 const link = new RPCLink({
+  plugins: [
+    new BatchLinkPlugin({
+      groups: [
+        {
+          condition: ({ path }) =>
+            path[0] === "onboarding" && path[1] === "companyLogo",
+          context: {},
+        },
+      ],
+    }),
+  ],
   url: `${getBaseUrl()}/rpc`,
 });
 

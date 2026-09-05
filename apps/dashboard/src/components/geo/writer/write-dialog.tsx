@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Loading03Icon,
   SidebarLeft01Icon,
   SidebarRight01Icon,
 } from "@hugeicons/core-free-icons";
@@ -29,6 +30,7 @@ import {
   ResponsiveDialogDescription,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
+import { Badge } from "@notra/ui/components/ui/badge";
 import { Label } from "@notra/ui/components/ui/label";
 import {
   Select,
@@ -39,8 +41,10 @@ import {
 } from "@notra/ui/components/ui/select";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { cn } from "@notra/ui/lib/utils";
+import { AnimatePresence, LazyMotion, m, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import {
+  type ComponentProps,
   type ReactNode,
   useEffect,
   useId,
@@ -54,8 +58,12 @@ import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { GEO_WRITE_DIALOG_ENTRIES } from "@/constants/geo-analytics";
 import {
+  GEO_WRITE_ACTION_HELP,
+  GEO_WRITE_ACTION_PENDING,
   GEO_WRITE_CONTENT_SUBTYPES,
   GEO_WRITE_DIALOG_SECTIONS,
+  GEO_WRITE_EDIT_NOTE,
+  GEO_WRITE_RECOMMENDED_BADGE,
 } from "@/constants/geo-writer";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useBrandSettings } from "@/lib/hooks/use-brand-analysis";
@@ -67,16 +75,29 @@ import type {
   WriteDialogSectionId,
   WriteDialogSourceKind,
 } from "@/types/components/geo-writer";
+import { existingPageLabel } from "@/utils/geo-gaps";
 import { withGeoProject } from "@/utils/geo-paths";
 import { geoContentPath } from "@/utils/geo-write-entry";
+import {
+  recommendedContentSubtype,
+  writerBaselineLabel,
+  writerCompetitorDetail,
+} from "@/utils/geo-writer";
 
 import { WriteBrandOption } from "./write-brand-option";
 import { WriteOptionCard } from "./write-option-card";
 import { WriteSectionSidebar } from "./write-section-sidebar";
 import { WriteSitemapSection } from "./write-sitemap-section";
 
-const DEFAULT_CONTENT_SUBTYPE: GeoContentSubtype = "guide";
 const MANUAL_PROMPT_VALUE = "manual";
+const FOOTER_STATUS_TRANSITION = { duration: 0.18, ease: "easeOut" } as const;
+const loadMotionFeatures = () =>
+  import("@/lib/motion-features").then((mod) => mod.default);
+
+type WriteAction = keyof typeof GEO_WRITE_ACTION_PENDING;
+
+const sectionMeta = (id: WriteDialogSectionId) =>
+  GEO_WRITE_DIALOG_SECTIONS.find((item) => item.id === id);
 
 export function WriteDialog({
   open,
@@ -125,6 +146,7 @@ function WriteDialogForm({
   const [activeSection, setActiveSection] =
     useState<WriteDialogSectionId>("prompt");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [pendingAction, setPendingAction] = useState<WriteAction | null>(null);
   const openedRef = useRef(false);
   const initialSourceKind = initial?.sourceKind ?? "manual";
   const hasInitialTopic = Boolean(initial?.topic);
@@ -161,8 +183,16 @@ function WriteDialogForm({
   }, [open]);
   const [topic, setTopic] = useState(initial?.topic ?? "");
   const [contentSubtype, setContentSubtype] = useState<GeoContentSubtype>(
-    initial?.contentSubtype ?? DEFAULT_CONTENT_SUBTYPE
+    initial?.contentSubtype ??
+      recommendedContentSubtype(initial?.topic ?? "").id
   );
+  const recommendation = recommendedContentSubtype(topic);
+  const baselineLabel = writerBaselineLabel(initial?.baseline);
+  const existingPageUrl = initial?.existingPageUrl;
+  const promptBadgeLabel = existingPageUrl
+    ? `Updating ${existingPageLabel(existingPageUrl)}`
+    : baselineLabel;
+  const mentionedCompetitors = initial?.mentionedCompetitors ?? [];
   const [brandVoiceId, setBrandVoiceId] = useState<string | null>(
     initial?.brandVoiceId ?? null
   );
@@ -276,12 +306,13 @@ function WriteDialogForm({
 
   const allCompetitorsSelected =
     competitors.length > 0 && competitorIds.length === competitors.length;
+  const selectedCompetitorIds = new Set(competitorIds);
 
   const canSubmit =
     topic.trim().length >= GEO_WRITER_TOPIC_MIN_LENGTH &&
     !planMutation.isPending;
 
-  const handleSubmit = async (autoApprove: boolean) => {
+  const handleSubmit = async (action: WriteAction) => {
     const trimmed = topic.trim();
     if (
       trimmed.length < GEO_WRITER_TOPIC_MIN_LENGTH ||
@@ -289,64 +320,26 @@ function WriteDialogForm({
     ) {
       return;
     }
-    const result = await planMutation.mutateAsync({
-      topic: trimmed,
-      autoApprove,
-      contentSubtype,
-      brandVoiceIds: brandVoiceId ? [brandVoiceId] : [],
-      competitorIds,
-      sitemapId: effectiveSitemapId ?? undefined,
-      sourceKind,
-      sourceId,
-    });
+    setPendingAction(action);
+    const result = await planMutation
+      .mutateAsync({
+        topic: trimmed,
+        autoApprove: action === "write",
+        contentSubtype,
+        brandVoiceIds: brandVoiceId ? [brandVoiceId] : [],
+        competitorIds,
+        sitemapId: effectiveSitemapId ?? undefined,
+        sourceKind,
+        sourceId,
+        existingPageUrl,
+      })
+      .finally(() => setPendingAction(null));
     onOpenChange(false);
     if (result.postId) {
       router.push(geoContentPath(organizationSlug, result.postId));
       return;
     }
     router.push(withGeoProject(`/${organizationSlug}/geo/gaps`, projectId));
-  };
-
-  const sectionMeta = (id: WriteDialogSectionId) =>
-    GEO_WRITE_DIALOG_SECTIONS.find((item) => item.id === id);
-
-  const renderSectionHeader = (
-    id: WriteDialogSectionId,
-    description: string,
-    htmlFor?: string
-  ) => {
-    const meta = sectionMeta(id);
-    if (!meta) {
-      return null;
-    }
-    const heading = (
-      <>
-        <HugeiconsIcon
-          className="text-muted-foreground size-4"
-          icon={meta.icon}
-          strokeWidth={1.8}
-        />
-        <span>{meta.label}</span>
-        {meta.required ? <span className="text-destructive">*</span> : null}
-      </>
-    );
-    return (
-      <div className="space-y-1">
-        {htmlFor ? (
-          <Label
-            className="flex items-center gap-2 text-base font-semibold"
-            htmlFor={htmlFor}
-          >
-            {heading}
-          </Label>
-        ) : (
-          <h3 className="flex items-center gap-2 text-base font-semibold">
-            {heading}
-          </h3>
-        )}
-        <p className="text-muted-foreground text-sm">{description}</p>
-      </div>
-    );
   };
 
   return (
@@ -424,11 +417,18 @@ function WriteDialogForm({
                 className="scroll-mt-2 space-y-4 px-6 py-6"
                 data-section="prompt"
               >
-                {renderSectionHeader(
-                  "prompt",
-                  "Pick a tracked prompt or write your own. The article answers this question.",
-                  `${fieldId}-topic`
-                )}
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <WriteSectionHeader
+                    description="Pick a tracked prompt or write your own. The article answers this question."
+                    htmlFor={`${fieldId}-topic`}
+                    id="prompt"
+                  />
+                  {promptBadgeLabel ? (
+                    <Badge className="shrink-0 font-normal" variant="outline">
+                      {promptBadgeLabel}
+                    </Badge>
+                  ) : null}
+                </div>
                 {prompts.length > 0 ? (
                   <Select
                     onValueChange={(value) => {
@@ -477,7 +477,7 @@ function WriteDialogForm({
                   maxLength={GEO_WRITER_TOPIC_MAX_LENGTH}
                   onChange={(event) => {
                     setTopic(event.target.value);
-                    if (sourceKind === "prompt") {
+                    if (sourceKind === "prompt" || sourceKind === "gap") {
                       setSourceKind("manual");
                       setSourceId(undefined);
                     }
@@ -485,19 +485,30 @@ function WriteDialogForm({
                   placeholder="e.g. Which tools are best for sharing music demos?"
                   value={topic}
                 />
+                {sourceId &&
+                (sourceKind === "prompt" || sourceKind === "gap") ? (
+                  <p className="text-muted-foreground text-xs">
+                    {GEO_WRITE_EDIT_NOTE}
+                  </p>
+                ) : null}
               </section>
 
               <section
                 className="scroll-mt-2 space-y-4 px-6 py-6"
                 data-section="type"
               >
-                {renderSectionHeader(
-                  "type",
-                  "Choose what kind of blog post to write."
-                )}
+                <WriteSectionHeader
+                  description={recommendation.reason}
+                  id="type"
+                />
                 <div className="grid gap-3 sm:grid-cols-2">
                   {GEO_WRITE_CONTENT_SUBTYPES.map((option) => (
                     <WriteOptionCard
+                      badge={
+                        option.id === recommendation.id
+                          ? GEO_WRITE_RECOMMENDED_BADGE
+                          : null
+                      }
                       description={option.description}
                       icon={
                         <HugeiconsIcon
@@ -519,11 +530,11 @@ function WriteDialogForm({
                 className="scroll-mt-2 space-y-4 px-6 py-6"
                 data-section="brand"
               >
-                {renderSectionHeader(
-                  "brand",
-                  "The brand whose voice and facts the article uses.",
-                  voices.length > 0 ? `${fieldId}-brand` : undefined
-                )}
+                <WriteSectionHeader
+                  description="The brand whose voice and facts the article uses."
+                  htmlFor={voices.length > 0 ? `${fieldId}-brand` : undefined}
+                  id="brand"
+                />
                 {voices.length === 0 ? (
                   <p className="border-border text-muted-foreground rounded-lg border border-dashed px-3 py-2.5 text-sm">
                     No brand identities yet. The writer will use your GEO
@@ -563,10 +574,10 @@ function WriteDialogForm({
                 className="scroll-mt-2 space-y-4 px-6 py-6"
                 data-section="sitemap"
               >
-                {renderSectionHeader(
-                  "sitemap",
-                  "The writer links to real pages from the brand identity's sitemap."
-                )}
+                <WriteSectionHeader
+                  description="The writer links to real pages from the brand identity's sitemap."
+                  id="sitemap"
+                />
                 <WriteSitemapSection
                   brandIdentityHref={`/${organizationSlug}/brand/identity`}
                   brandVoiceId={brandVoiceId}
@@ -585,10 +596,10 @@ function WriteDialogForm({
                 data-section="competitors"
               >
                 <div className="flex items-start justify-between gap-3">
-                  {renderSectionHeader(
-                    "competitors",
-                    "Competitors the article can mention when it compares options."
-                  )}
+                  <WriteSectionHeader
+                    description="Competitors the article can mention when it compares options."
+                    id="competitors"
+                  />
                   {competitors.length > 0 ? (
                     <button
                       className="text-muted-foreground hover:text-foreground shrink-0 cursor-pointer text-xs transition-colors"
@@ -614,11 +625,14 @@ function WriteDialogForm({
                 ) : (
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {competitors.map((competitor) => {
-                      const selected = competitorIds.includes(competitor.id);
+                      const selected = selectedCompetitorIds.has(competitor.id);
                       return (
                         <WriteOptionCard
                           compact
-                          description={competitor.domain}
+                          description={writerCompetitorDetail(
+                            competitor,
+                            mentionedCompetitors
+                          )}
                           icon={
                             <CompetitorLogo
                               className="size-5"
@@ -646,36 +660,150 @@ function WriteDialogForm({
             </div>
           </div>
 
-          <div className={GEO_WRITE_PANEL_FOOTER_CLASS}>
-            <div
-              className={cn(
-                GEO_WRITE_PANEL_FOOTER_ROW_CLASS,
-                "justify-end gap-3 px-4"
-              )}
-            >
-              <div className="flex shrink-0 gap-2">
-                <Button
-                  disabled={!canSubmit}
-                  onClick={() => {
-                    handleSubmit(false).catch(() => undefined);
-                  }}
-                  variant="outline"
-                >
-                  {planMutation.isPending ? "Planning…" : "Plan"}
-                </Button>
-                <Button
-                  disabled={!canSubmit}
-                  onClick={() => {
-                    handleSubmit(true).catch(() => undefined);
-                  }}
-                >
-                  Write
-                </Button>
-              </div>
-            </div>
-          </div>
+          <WriteDialogFooter
+            canSubmit={canSubmit}
+            onSubmit={(action) => {
+              handleSubmit(action).catch(() => undefined);
+            }}
+            pendingAction={pendingAction}
+          />
         </div>
       </div>
     </ResponsiveDialogContent>
+  );
+}
+
+function WriteSectionHeader({
+  id,
+  description,
+  htmlFor,
+}: {
+  id: WriteDialogSectionId;
+  description: string;
+  htmlFor?: string;
+}) {
+  const meta = sectionMeta(id);
+  if (!meta) {
+    return null;
+  }
+  const heading = (
+    <>
+      <HugeiconsIcon
+        className="text-muted-foreground size-4"
+        icon={meta.icon}
+        strokeWidth={1.8}
+      />
+      <span>{meta.label}</span>
+      {meta.required ? <span className="text-destructive">*</span> : null}
+    </>
+  );
+  return (
+    <div className="space-y-1">
+      {htmlFor ? (
+        <Label
+          className="flex items-center gap-2 text-base font-semibold"
+          htmlFor={htmlFor}
+        >
+          {heading}
+        </Label>
+      ) : (
+        <h3 className="flex items-center gap-2 text-base font-semibold">
+          {heading}
+        </h3>
+      )}
+      <p className="text-muted-foreground text-sm">{description}</p>
+    </div>
+  );
+}
+
+function WriteDialogFooter({
+  canSubmit,
+  onSubmit,
+  pendingAction,
+}: {
+  canSubmit: boolean;
+  onSubmit: (action: WriteAction) => void;
+  pendingAction: WriteAction | null;
+}) {
+  const reduceMotion = useReducedMotion();
+  const statusText = pendingAction
+    ? GEO_WRITE_ACTION_PENDING[pendingAction].status
+    : `${GEO_WRITE_ACTION_HELP.plan} ${GEO_WRITE_ACTION_HELP.write}`;
+  return (
+    <div className={GEO_WRITE_PANEL_FOOTER_CLASS}>
+      <div
+        className={cn(
+          GEO_WRITE_PANEL_FOOTER_ROW_CLASS,
+          "justify-between gap-3 px-4"
+        )}
+      >
+        <LazyMotion features={loadMotionFeatures} strict>
+          <AnimatePresence initial={false} mode="wait">
+            <m.p
+              animate={{ opacity: 1, y: 0 }}
+              aria-live="polite"
+              className={cn(
+                "hidden min-w-0 truncate text-xs sm:block",
+                pendingAction ? "text-foreground" : "text-muted-foreground"
+              )}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
+              key={pendingAction ?? "help"}
+              transition={FOOTER_STATUS_TRANSITION}
+            >
+              {statusText}
+            </m.p>
+          </AnimatePresence>
+        </LazyMotion>
+        <div className="flex shrink-0 gap-2">
+          <WriteActionButton
+            action="plan"
+            disabled={!canSubmit}
+            onClick={() => onSubmit("plan")}
+            pendingAction={pendingAction}
+            variant="outline"
+          >
+            Plan
+          </WriteActionButton>
+          <WriteActionButton
+            action="write"
+            disabled={!canSubmit}
+            onClick={() => onSubmit("write")}
+            pendingAction={pendingAction}
+          >
+            Write
+          </WriteActionButton>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WriteActionButton({
+  action,
+  pendingAction,
+  children,
+  ...props
+}: Omit<ComponentProps<typeof Button>, "children"> & {
+  action: WriteAction;
+  pendingAction: WriteAction | null;
+  children: ReactNode;
+}) {
+  const isPending = pendingAction === action;
+  return (
+    <Button aria-busy={isPending} {...props}>
+      {isPending ? (
+        <>
+          <HugeiconsIcon
+            aria-hidden="true"
+            className="size-4 animate-spin"
+            icon={Loading03Icon}
+          />
+          {GEO_WRITE_ACTION_PENDING[action].label}
+        </>
+      ) : (
+        children
+      )}
+    </Button>
   );
 }

@@ -1,6 +1,8 @@
 import type { LanguageModelV3CallOptions } from "@ai-sdk/provider";
 import type {
+  DecideGatewayInput,
   GatewayAdapter,
+  GatewayDecision,
   GatewayId,
   ModelRouterConfig,
   Plan,
@@ -25,6 +27,7 @@ export interface FakeAdapterOptions {
 
 export interface FakeAdapter extends GatewayAdapter {
   calls: RecordedRouterCall[];
+  createdModels: string[];
   balanceCalls: number;
 }
 
@@ -44,4 +47,10 @@ export interface TestRouterOptions {
   now?: () => number;
   planCacheTtlMs?: number;
   creditCheckTtlMs?: number;
+}
+
+export interface PolicyTestCase {
+  name: string;
+  input: Omit<DecideGatewayInput, "policy">;
+  expected: GatewayDecision;
 }

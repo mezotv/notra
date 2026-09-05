@@ -27,9 +27,14 @@ function LogoStackItemDetail({ item }: { item: LogoStackItem }) {
 export function LogoStack({
   items,
   limit = GEO_GAPS_LOGO_STACK_LIMIT,
+  emptyLabel,
 }: LogoStackProps) {
   if (items.length === 0) {
-    return <span className="text-muted-foreground">—</span>;
+    return (
+      <span className="text-muted-foreground text-xs">
+        {emptyLabel ?? "None"}
+      </span>
+    );
   }
 
   const visible = items.slice(0, limit);

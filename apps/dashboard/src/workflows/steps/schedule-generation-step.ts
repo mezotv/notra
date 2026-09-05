@@ -7,7 +7,9 @@ import { createRequestLogger } from "evlog";
 
 import { buildDataPointRestrictionInstructions } from "@/lib/workflows/on-demand/helpers";
 import { generateScheduledContent } from "@/lib/workflows/schedule/handlers";
+import { buildScheduleInstructions } from "@/lib/workflows/schedule/instructions";
 import type { ContentGenerationResult } from "@/lib/workflows/schedule/types";
+import { parseTriggerOutputConfig } from "@/lib/workflows/shared/parsing";
 import type { ScheduleGenerationStepInput } from "@/types/workflows/schedule-generation";
 import { formatTodayContext, resolveLookbackRange } from "@/utils/lookback";
 
@@ -51,8 +53,12 @@ export async function runScheduledGeneration(
 
   const restrictionInstructions =
     buildDataPointRestrictionInstructions(dataPointSettings);
+  const scheduleInstructions = buildScheduleInstructions(
+    parseTriggerOutputConfig(trigger.outputConfig)?.instructions
+  );
   const customInstructions = [
     brand?.customInstructions?.trim() ?? "",
+    scheduleInstructions ?? "",
     restrictionInstructions ?? "",
   ]
     .filter((value) => value.length > 0)

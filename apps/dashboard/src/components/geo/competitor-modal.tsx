@@ -23,7 +23,7 @@ export function CompetitorModal({ title, children }: CompetitorSheetProps) {
       }}
       open
     >
-      <ResponsiveDialogContent className="max-h-[90svh] gap-5 overflow-y-auto p-6 transition-[filter] duration-200 data-[nested-dialog-open]:blur-xs data-[nested-dialog-open]:brightness-95 sm:max-w-3xl [&>*]:min-w-0">
+      <ResponsiveDialogContent className="duration-normal max-h-[90svh] gap-5 overflow-y-auto p-6 transition-[filter] data-[nested-dialog-open]:blur-xs data-[nested-dialog-open]:brightness-95 sm:max-w-3xl [&>*]:min-w-0">
         <ResponsiveDialogHeader className="sr-only">
           <ResponsiveDialogTitle>{title}</ResponsiveDialogTitle>
           <ResponsiveDialogDescription>

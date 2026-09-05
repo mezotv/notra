@@ -8,6 +8,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { BrailleLoader } from "@notra/ui/components/shared/braille-loader";
 import { TitleCard } from "@notra/ui/components/ui/title-card";
 import {
   TooltipContent,
@@ -18,7 +19,6 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { SuggestionDetailsSheet } from "@/components/automation/suggestion-details-sheet";
-import { BrailleLoader } from "@/components/braille-loader";
 import { Button } from "@/components/button";
 import { EVE_ACCENT_COLOR } from "@/constants/onboarding-agent";
 import { trackEvent } from "@/lib/analytics/posthog-client";
@@ -169,7 +169,7 @@ export function OnboardingSuggestions({
                     onClick={openDetails}
                     type="button"
                   />
-                  <span className="from-background via-background/90 text-foreground pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-gradient-to-t to-transparent pt-6 pb-2 text-sm font-medium opacity-0 transition-opacity duration-200 peer-hover:opacity-100 peer-focus-visible:opacity-100">
+                  <span className="from-background via-background/90 text-foreground duration-normal pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-center gap-1.5 bg-gradient-to-t to-transparent pt-6 pb-2 text-sm font-medium opacity-0 transition-opacity peer-hover:opacity-100 peer-focus-visible:opacity-100">
                     Click to expand
                     <HugeiconsIcon className="size-4" icon={ArrowRight01Icon} />
                   </span>

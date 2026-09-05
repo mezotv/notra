@@ -19,7 +19,6 @@ import {
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
 import { cn } from "@notra/ui/lib/utils";
-import { useState } from "react";
 import { CLAUDE_CHAT_EFFORTS } from "../../../constants/claude-chat-models";
 import {
   getClaudeChatEffort,
@@ -51,13 +50,12 @@ export function ClaudeChatModelSelector({
   onEffortChange?: (effort: ClaudeChatEffortId) => void;
   className?: string;
 }) {
-  const [open, setOpen] = useState(false);
   const selectedModel = getClaudeChatModel(model);
   const selectedEffort = getClaudeChatEffort(effort);
   const others = getOtherClaudeChatModels(model);
 
   return (
-    <DropdownMenu onOpenChange={setOpen} open={open}>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger
         closeDelay={200}
         delay={75}
@@ -66,8 +64,7 @@ export function ClaudeChatModelSelector({
           <button
             aria-label={`Modell ${selectedModel.label}, Aufwand ${selectedEffort.label}`}
             className={cn(
-              "flex h-8 items-center gap-1 rounded-full px-2 font-sans text-[13px] leading-none text-[#1f1e1b] outline-none transition-[background-color,transform] duration-150 hover:bg-[#eceae4] focus-visible:ring-2 focus-visible:ring-[#1f1e1b]/20 active:scale-[0.96] dark:text-foreground dark:hover:bg-white/10",
-              open && "bg-[#eceae4] dark:bg-white/10",
+              "group/claude-model flex h-8 items-center gap-1 rounded-full px-2 font-sans text-[13px] leading-none text-[#1f1e1b] outline-none transition-[background-color,transform] duration-fast hover:bg-[#eceae4] focus-visible:ring-2 focus-visible:ring-[#1f1e1b]/20 active:scale-[0.96] data-popup-open:bg-[#eceae4] dark:text-foreground dark:hover:bg-white/10 dark:data-popup-open:bg-white/10",
               className
             )}
             type="button"
@@ -77,10 +74,7 @@ export function ClaudeChatModelSelector({
         <span className="font-medium">{selectedModel.label}</span>
         <span className="text-[#8a8680]">{selectedEffort.label}</span>
         <HugeiconsIcon
-          className={cn(
-            "text-[#8a8680] transition-transform duration-150",
-            open && "rotate-180"
-          )}
+          className="text-[#8a8680] transition-transform duration-fast group-data-popup-open/claude-model:rotate-180"
           icon={ArrowDown01Icon}
           size={12}
           strokeWidth={2}
@@ -122,7 +116,7 @@ export function ClaudeChatModelSelector({
           <DropdownMenuSubContent
             className={MENU_SURFACE}
             side="right"
-            sideOffset={6}
+            sideOffset={0}
           >
             <DropdownMenuRadioGroup
               onValueChange={(value) => {
@@ -168,7 +162,7 @@ export function ClaudeChatModelSelector({
           <DropdownMenuSubContent
             className={cn("min-w-40", MENU_SURFACE)}
             side="right"
-            sideOffset={6}
+            sideOffset={0}
           >
             <ClaudeChatModelGroup
               models={others.latest}

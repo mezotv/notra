@@ -8,8 +8,6 @@ export const GITHUB_API_PAGE_SIZE = 100;
 export const GITHUB_API_MAX_PAGES = 50;
 export const GITHUB_API_MAX_RESULTS = 500;
 
-export const EVENTS_PER_PAGE = 50;
-
 export const DEFAULT_CONTENT_TYPE: OnDemandContentType = "changelog";
 
 export const DEFAULT_DATA_POINTS: ContentDataPointSettings = {

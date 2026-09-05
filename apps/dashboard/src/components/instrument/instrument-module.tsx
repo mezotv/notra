@@ -1,3 +1,7 @@
+"use client";
+
+import { InformationCircleIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Card,
   CardAction,
@@ -6,6 +10,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@notra/ui/components/ui/card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 import type {
@@ -13,9 +23,26 @@ import type {
   InstrumentModuleProps,
 } from "@/types/instrument";
 
+function EyebrowHint({ hint }: { hint: ReactNode }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger
+        aria-label="More info"
+        className="text-muted-foreground hover:text-foreground inline-flex cursor-help"
+      >
+        <HugeiconsIcon icon={InformationCircleIcon} size={14} />
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        <div className="max-w-64 text-xs">{hint}</div>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 export function InstrumentModule({
   eyebrow,
   description,
+  hint,
   readout,
   action,
   children,
@@ -51,7 +78,10 @@ export function InstrumentModule({
       >
         <CardHeader className={headerClassName}>
           <CardTitle className={tableHeader ? "text-sm capitalize" : undefined}>
-            {eyebrow}
+            <span className="inline-flex items-center gap-1.5">
+              {eyebrow}
+              {hint ? <EyebrowHint hint={hint} /> : null}
+            </span>
           </CardTitle>
           {description && <CardDescription>{description}</CardDescription>}
           {(readout || action) && (
@@ -80,7 +110,12 @@ export function InstrumentModule({
   return (
     <Card className={cn("min-w-0 flex-1", className)}>
       <CardHeader className="items-center">
-        <CardTitle className="text-sm capitalize">{eyebrow}</CardTitle>
+        <CardTitle className="text-sm capitalize">
+          <span className="inline-flex items-center gap-1.5">
+            {eyebrow}
+            {hint ? <EyebrowHint hint={hint} /> : null}
+          </span>
+        </CardTitle>
         {(readout || action) && (
           <CardAction className="flex min-w-0 items-center gap-2 self-center">
             {readout && (
@@ -102,6 +137,7 @@ export function InstrumentModule({
 export function InstrumentSection({
   eyebrow,
   description,
+  hint,
   readout,
   action,
   children,
@@ -126,11 +162,12 @@ export function InstrumentSection({
         >
           <h2
             className={cn(
-              "text-foreground text-sm font-medium capitalize",
+              "text-foreground flex items-center gap-1.5 text-sm font-medium capitalize",
               !description && (readout || action) && "leading-none"
             )}
           >
             {eyebrow}
+            {hint ? <EyebrowHint hint={hint} /> : null}
           </h2>
           {description ? (
             <p className="text-muted-foreground text-sm">{description}</p>

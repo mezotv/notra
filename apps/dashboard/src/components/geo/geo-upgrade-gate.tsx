@@ -17,7 +17,9 @@ import { PAYWALL_KINDS } from "@/constants/analytics-events";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { toAnalyticsRoute } from "@/lib/analytics/route";
 import { useHasGeoFeature } from "@/lib/hooks/use-plan";
+import { pickSidebarMode } from "@/lib/hooks/use-sidebar-mode";
 import type { GeoUpgradeGateProps } from "@/types/components/geo";
+import { sidebarRouteFromPathname } from "@/utils/nav";
 
 export function GeoUpgradeGate({ slug, children }: GeoUpgradeGateProps) {
   const router = useRouter();
@@ -43,6 +45,14 @@ export function GeoUpgradeGate({ slug, children }: GeoUpgradeGateProps) {
 
   if (!isLocked) {
     return children;
+  }
+
+  function handleDismiss(): void {
+    // The org root restores a stored "geo" mode by redirecting straight back
+    // here, which would reopen this paywall in a loop. Switch the sidebar to
+    // Studio first so the redirect lets the user land on the Studio home.
+    pickSidebarMode("studio", sidebarRouteFromPathname(pathname));
+    router.push(`/${slug}`);
   }
 
   return (
@@ -72,7 +82,7 @@ export function GeoUpgradeGate({ slug, children }: GeoUpgradeGateProps) {
       <GeoUpgradeDialog
         onOpenChange={(open) => {
           if (!open) {
-            router.push(`/${slug}`);
+            handleDismiss();
           }
         }}
         open

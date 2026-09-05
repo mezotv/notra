@@ -81,8 +81,8 @@ export function GeoProjectCreateDialog({
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle>New project</ResponsiveDialogTitle>
             <ResponsiveDialogDescription>
-              Track a separate website or brand with its own prompts,
-              competitors and visibility data.
+              We’ll analyze the brand’s website, find competitors, generate
+              prompts, and start tracking it automatically.
             </ResponsiveDialogDescription>
           </ResponsiveDialogHeader>
           <div className="space-y-4 px-4 sm:px-0">
@@ -183,7 +183,9 @@ export function GeoProjectCreateDialog({
               {createProject.isPending && (
                 <Loader2Icon className="size-4 animate-spin" />
               )}
-              Create project
+              {createProject.isPending
+                ? "Setting up project"
+                : "Create project"}
             </Button>
           </ResponsiveDialogFooter>
         </ResponsiveDialogContent>

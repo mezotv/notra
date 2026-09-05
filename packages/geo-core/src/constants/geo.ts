@@ -1,18 +1,26 @@
 import type {
   AiTrafficResponse,
   EngineIconKey,
+  GeoChangeKind,
+  GeoChangesSummary,
+  GeoChangesSummaryGroup,
   GeoChatSkin,
+  GeoCompetitor,
   GeoCompetitorKind,
   GeoCompetitorShareTimeseriesPoint,
-  GeoGroundedEngine,
   GeoGroundedProvider,
+  GeoGroundedProviderConfig,
   GeoIngestFramework,
   GeoIngestPackageManager,
   GeoJourneyPathKind,
+  GeoPromptIntent,
+  GeoPromptIntentRule,
   GeoPromptResult,
   GeoRangePreset,
+  GeoSearchGapAction,
   GeoTab,
   GeoTimeseriesPoint,
+  GeoTrafficFunnelStage,
   GeoTrafficLogPurposeOption,
   GeoTrafficLogVisitorOption,
   GeoTrafficSourceGroupDefinition,
@@ -37,10 +45,9 @@ export const GEO_CURSOR_API_KEY_ENV = "CURSOR_API_KEY";
 export const GEO_CURSOR_ENGINE_ID = "cursor/composer-2.5";
 export const GEO_CURSOR_MODEL_ID = "composer-2.5";
 export const GEO_OPENCODE_ENGINE_ID = "opencode/gpt-5.6-sol-medium";
-/** Maximum wall-clock time for a single answer, judge, or translation call. */
-export const GEO_PROVIDER_TIMEOUT_MS = 90_000;
-/** Local Cursor runs took ~8s in testing; cold starts can be slower. */
-export const GEO_CURSOR_TIMEOUT_MS = 90_000;
+export const GEO_PROVIDER_TIMEOUT_MS = 120_000;
+export const GEO_ANSWER_TIMEOUT_MS = 180_000;
+export const GEO_CURSOR_TIMEOUT_MS = GEO_ANSWER_TIMEOUT_MS;
 /** Databuddy flag that exposes the Cursor engine to an organization. */
 export const GEO_CURSOR_FLAG_KEY = "geo-cursor";
 /** Databuddy flag that exposes the OpenCode engine to an organization. */
@@ -57,6 +64,8 @@ export const GEO_WRITER_TOPIC_MIN_LENGTH = 3;
 export const GEO_WRITER_TOPIC_MAX_LENGTH = 8000;
 export const GEO_WRITER_GAP_LOOKBACK_DAYS = 30;
 export const GEO_WRITER_PLANNER_GAP_LIMIT = 20;
+export const GEO_WRITER_EVIDENCE_MAX_ENGINES = 24;
+export const GEO_WRITER_EVIDENCE_MAX_ITEMS = 8;
 export const GEO_WRITER_SITEMAP_PAGE_LIMIT = 60;
 export const GEO_WRITER_BRIEF_POLL_INTERVAL_MS = 3000;
 export const GEO_WRITER_BRIEFS_LIMIT = 20;
@@ -65,6 +74,18 @@ export const GEO_GAPS_SEARCH_LIMIT = 100;
 /** Fallback before the gaps table measures remaining viewport height. */
 export const GEO_GAPS_TABLE_HEIGHT = 420;
 export const GEO_GAPS_METER_STEPS = 5;
+export const GEO_GAPS_COMPETITOR_SIGNAL_CAP = 4;
+export const GEO_GAPS_LOADING_STATUS =
+  "Calculating gaps from the latest scan. This usually takes a few seconds.";
+export const GEO_GAPS_COMPETITOR_DETAIL = {
+  tracked: "Tracked competitor",
+  discovered: "Discovered in answers, not tracked yet",
+} as const;
+export const GEO_GAPS_EMPTY_CELL = {
+  competitors: "None mentioned",
+  visibleOn: "Not visible on any engine",
+  impressions: "No query data",
+} as const;
 export const GEO_GAPS_METER_TONE_CLASS = {
   empty: "bg-muted",
   low: "bg-geo-down",
@@ -73,11 +94,125 @@ export const GEO_GAPS_METER_TONE_CLASS = {
 } as const;
 export const GEO_GAPS_LOGO_STACK_LIMIT = 4;
 export const GEO_GAPS_WRITE_LABELS = {
-  write: "Write",
+  write: "Write from gap",
   review: "Review",
   writing: "Writing",
   open: "Open post",
 } as const;
+export const GEO_EXISTING_PAGE_URL_MAX_LENGTH = 2048;
+export const GEO_SEARCH_GAP_MIN_IMPRESSIONS = 25;
+export const GEO_COLLISION_STRONG_SCORE = 0.55;
+export const GEO_COLLISION_PARTIAL_SCORE = 0.35;
+export const GEO_COLLISION_MERGE_TARGET_LIMIT = 3;
+export const GEO_COLLISION_MIN_TOKEN_LENGTH = 3;
+export const GEO_COLLISION_ORDERED_TITLE_BONUS = 0.15;
+export const GEO_COLLISION_SITEMAP_PAGE_LIMIT = 400;
+export const GEO_COLLISION_POST_LIMIT = 300;
+export const GEO_COLLISION_POST_CONTENT_TYPE = "blog_post";
+export const GEO_COLLISION_STOPWORDS = new Set([
+  "a",
+  "about",
+  "after",
+  "all",
+  "also",
+  "an",
+  "and",
+  "any",
+  "are",
+  "as",
+  "at",
+  "be",
+  "been",
+  "best",
+  "between",
+  "but",
+  "by",
+  "can",
+  "could",
+  "do",
+  "does",
+  "for",
+  "from",
+  "get",
+  "has",
+  "have",
+  "how",
+  "if",
+  "in",
+  "into",
+  "is",
+  "it",
+  "its",
+  "make",
+  "more",
+  "most",
+  "my",
+  "need",
+  "not",
+  "of",
+  "on",
+  "one",
+  "or",
+  "our",
+  "should",
+  "so",
+  "some",
+  "than",
+  "that",
+  "the",
+  "their",
+  "them",
+  "there",
+  "these",
+  "they",
+  "this",
+  "those",
+  "to",
+  "top",
+  "use",
+  "used",
+  "using",
+  "was",
+  "we",
+  "what",
+  "when",
+  "where",
+  "which",
+  "who",
+  "why",
+  "will",
+  "with",
+  "would",
+  "you",
+  "your",
+]);
+export const GEO_SEARCH_GAP_ACTION_LABELS: Record<GeoSearchGapAction, string> =
+  {
+    create: "Create",
+    update: "Update",
+    merge: "Merge",
+    ignore: "Ignore",
+  };
+export const GEO_SEARCH_GAP_ACTION_ORDER: Record<GeoSearchGapAction, number> = {
+  create: 0,
+  update: 1,
+  merge: 2,
+  ignore: 3,
+};
+export const GEO_SEARCH_GAP_ACTION_CLASS: Record<GeoSearchGapAction, string> = {
+  create: "border-geo-up/30 bg-geo-up/10 text-geo-up",
+  update: "border-geo-mid/30 bg-geo-mid/10 text-geo-mid",
+  merge: "border-geo-mid/30 bg-geo-mid/10 text-geo-mid",
+  ignore: "border-border bg-muted/70 text-muted-foreground",
+};
+export const GEO_SEARCH_GAP_WRITE_LABELS = {
+  create: "Write from gap",
+  update: "Update page",
+  merge: "Merge into page",
+  ignore: "Write",
+  dismiss: "Dismiss",
+} as const;
+export const GEO_SEARCH_GAP_DISMISSED_TOAST = "Search gap dismissed";
 export const GEO_GAPS_EMPTY = {
   scanning: {
     title: "Scanning engines",
@@ -134,56 +269,38 @@ const hasEnv = (name: string): boolean => {
   return typeof value === "string" && value.length > 0;
 };
 
-export const GEO_GROUNDED_ENGINES: readonly GeoGroundedEngine[] = [
+export const GEO_GROUNDED_PROVIDERS: readonly GeoGroundedProviderConfig[] = [
   {
-    key: "openai/gpt-5.4-grounded",
-    label: "ChatGPT",
-    model: "openai/gpt-5.4",
     provider: "gateway-openai",
     zdr: "some",
     envVar: null,
     isAvailable: () => true,
   },
   {
-    key: "anthropic/claude-sonnet-4.6-grounded",
-    label: "Claude Sonnet",
-    model: "anthropic/claude-sonnet-4.6",
     provider: "gateway-anthropic",
     zdr: "all",
     envVar: null,
     isAvailable: () => true,
   },
   {
-    key: "google/gemini-3-flash-grounded",
-    label: "Gemini",
-    model: "google/gemini-3-flash",
     provider: "gateway-google",
     zdr: "some",
     envVar: null,
     isAvailable: () => true,
   },
   {
-    key: "openai-direct-grounded",
-    label: "ChatGPT",
-    model: "gpt-5.4",
     provider: "direct-openai",
     zdr: "none",
     envVar: GEO_OPENAI_API_KEY_ENV,
     isAvailable: () => hasEnv(GEO_OPENAI_API_KEY_ENV),
   },
   {
-    key: "anthropic-direct-grounded",
-    label: "Claude Sonnet",
-    model: "claude-sonnet-4-6",
     provider: "direct-anthropic",
     zdr: "none",
     envVar: GEO_ANTHROPIC_API_KEY_ENV,
     isAvailable: () => hasEnv(GEO_ANTHROPIC_API_KEY_ENV),
   },
   {
-    key: "perplexity-sonar",
-    label: "Perplexity",
-    model: "sonar",
     provider: "direct-perplexity",
     zdr: "none",
     envVar: GEO_PERPLEXITY_API_KEY_ENV,
@@ -199,9 +316,21 @@ export const GEO_DIRECT_GROUNDED_PROVIDERS: ReadonlySet<GeoGroundedProvider> =
     "direct-perplexity",
   ]);
 
-const groundedEngineLabels = Object.fromEntries(
-  GEO_GROUNDED_ENGINES.map((engine) => [engine.key, engine.label])
-);
+// Decode historical records and queued tasks only; never used to select models.
+export const GEO_LEGACY_GROUNDED_MODELS: Readonly<Record<string, string>> = {
+  "openai-direct-grounded": "openai/gpt-5.4",
+  "anthropic-direct-grounded": "anthropic/claude-sonnet-4.6",
+  "perplexity-sonar": "perplexity/sonar",
+};
+
+const groundedEngineLabels: Record<string, string> = {
+  "openai/gpt-5.4-grounded": "GPT-5.4",
+  "anthropic/claude-sonnet-4.6-grounded": "Claude Sonnet 4.6",
+  "google/gemini-3-flash-grounded": "Gemini 3 Flash",
+  "openai-direct-grounded": "GPT-5.4",
+  "anthropic-direct-grounded": "Claude Sonnet 4.6",
+  "perplexity-sonar": "Sonar",
+};
 
 const catalogEngineLabels = Object.fromEntries(
   GEO_MODEL_CATALOG_SEED.map((entry) => [entry.id, entry.label])
@@ -239,6 +368,60 @@ export const GEO_WITHOUT_SEARCH_LABEL = "Without search";
 export const GEO_MAX_PROMPTS = 8;
 export const GEO_MAX_SEQUENCES = 10;
 export const GEO_COMPETITOR_SHARE_LIMIT = 50;
+export const GEO_PROMPT_HISTORY_LIMIT = 120;
+export const GEO_PROMPT_HISTORY_SKELETON_ROWS = 4;
+export const GEO_PROMPT_HISTORY_PREVIEW_ROWS = 8;
+export const GEO_PROMPT_HISTORY_EMPTY_POSITION = "\u2013";
+export const GEO_PROMPT_HISTORY_EMPTY_COMPETITORS = "\u2013";
+export const GEO_PROMPT_HISTORY_COLUMN_LABELS = {
+  date: "Scan",
+  outcome: "Outcome",
+  position: "Position",
+  changes: "What changed",
+  newCompetitors: "Newly recommended",
+} as const;
+export const GEO_PROMPT_HISTORY_SHOW_ALL_LABEL = "Show all";
+export const GEO_PROMPT_HISTORY_SHOW_LESS_LABEL = "Show latest";
+export const GEO_PROMPT_RECEIPT_VIEW_LABELS = {
+  analysis: "Analysis",
+  raw: "Raw answer",
+} as const;
+export const GEO_PROMPT_RECEIPT_VIEW_GROUP_LABEL = "Receipt view";
+export const GEO_PROMPT_ANSWER_COPY_LABEL = "Copy answer";
+export const GEO_PROMPT_ANSWER_COPIED_MESSAGE = "Answer copied";
+export const GEO_PROMPT_RECEIPT_LABELS = {
+  mentioned: "Mentioned",
+  notMentioned: "Not mentioned",
+  position: "Position",
+  notRanked: "Not ranked",
+  sentiment: "Sentiment",
+  noSentiment: "No sentiment",
+  competitors: "Brands mentioned instead",
+  noCompetitors: "None",
+  searches: "Searches the engine ran",
+  noSearches: "No web searches recorded",
+  sources: "Sources cited",
+  noSources: "No sources cited",
+  history: "Scan history",
+  singleScan: "Only one scan so far",
+  noHistory: "No scans recorded yet",
+  openSources: "Open sources",
+} as const;
+export const GEO_PROMPT_HISTORY_CHANGE_LABELS = {
+  gainedMention: "Now mentioned",
+  gainedMentionAt: "at",
+  lostMention: "No longer mentioned",
+  moved: "Moved",
+  newlyRecommended: "newly recommended",
+  noChange: "No change",
+  firstScan: "First scan",
+} as const;
+export const GEO_PROMPT_HISTORY_LIST_LOCALE = "en";
+export const GEO_PROMPT_HISTORY_ANSWER_LABELS = {
+  viewAnswer: "View answer",
+  scanFrom: "Scan from",
+  backToLatest: "Back to latest scan",
+} as const;
 export const GEO_SHARE_OF_VOICE_TOP_BRANDS = 5;
 export const GEO_SHARE_OF_VOICE_PAGE_TOP_BRANDS = 8;
 export const GEO_VISIBILITY_TABLE_ROWS = GEO_SHARE_OF_VOICE_TOP_BRANDS + 1;
@@ -265,20 +448,80 @@ export const GEO_SCAN_INTERVAL_OPTIONS = [
 export const GEO_SCAN_INTERVAL_HOURS = GEO_SCAN_INTERVAL_OPTIONS.map(
   (option) => option.value
 );
+export const GEO_SCAN_HOURS_PER_DAY = 24;
+export const GEO_SCAN_MIN_INTERVAL_DAYS = 1;
+export const GEO_SCAN_MAX_INTERVAL_DAYS = 90;
+export const GEO_SCAN_MIN_INTERVAL_HOURS =
+  GEO_SCAN_MIN_INTERVAL_DAYS * GEO_SCAN_HOURS_PER_DAY;
+export const GEO_SCAN_MAX_INTERVAL_HOURS =
+  GEO_SCAN_MAX_INTERVAL_DAYS * GEO_SCAN_HOURS_PER_DAY;
+export const GEO_SCAN_CUSTOM_INTERVAL_VALUE = "custom";
 export const GEO_SCAN_INTERVAL_LABEL_PREFIX = /^Every\s+/;
 export const GEO_SCAN_INTERVAL_FALLBACK_NOUN = "scan interval";
 export const GEO_SCAN_NO_RESULTS_RETRY_DELAY = "5m";
 export const GEO_SCAN_STALE_MS = 2 * 60 * 60 * 1000;
-export const GEO_SCAN_TASK_BATCH_SIZE = 8;
+export const GEO_SCAN_TASK_BATCH_SIZE = GEO_SCAN_CONCURRENCY;
 export const GEO_SCAN_CLAIM_RENEW_AFTER_MS = 30 * 60 * 1000;
 export const GEO_SCAN_SEQUENCE_BATCH_SIZE = 3;
 export const GEO_SEQUENCE_PAIR_TIMEOUT_MS = 7 * 60 * 1000;
 export const GEO_SCAN_DUE_LIMIT_PER_SWEEP = 25;
 export const GEO_SCAN_POLL_INTERVAL_MS = 3000;
 export const GEO_START_SCAN_MUTATION_KEY = "geo-start-scan";
+export const GEO_RESCAN_LABEL = "Rescan";
+export const GEO_RESCAN_TOOLTIP =
+  "Re-run this prompt across engines to measure lift";
+export const GEO_RESCAN_SOURCE_KINDS = ["gap", "prompt"] as const;
+export const GEO_GAPS_WON_LABEL = "Won";
+export const GEO_GAPS_WON_DETAIL =
+  "Engines now mention you on most answers. Kept here so you can see the lift from the published article.";
+export const GEO_GAPS_LIFT_BASELINE_LABEL = "Baseline";
+export const GEO_GAPS_LIFT_NOW_LABEL = "now";
+export const GEO_GAPS_LIFT_TONE_CLASS = {
+  up: "text-geo-up",
+  down: "text-geo-down",
+  flat: "text-muted-foreground",
+} as const;
 export const GEO_EXCERPT_MAX_LENGTH = 300;
 export const GEO_PROMPT_MIN_LENGTH = 8;
 export const GEO_PROMPT_MAX_LENGTH = 300;
+export const GEO_PROMPT_MAX_TAGS = 20;
+export const GEO_PROMPT_TAG_MAX_LENGTH = 40;
+export const GEO_PROMPT_TAG_SEPARATOR_REGEX = /[\s,]+/;
+export const GEO_PROMPT_INTENTS = [
+  "comparison",
+  "list",
+  "how_to",
+  "question",
+  "other",
+] as const satisfies readonly GeoPromptIntent[];
+export const GEO_PROMPT_INTENT_RULES: readonly GeoPromptIntentRule[] = [
+  {
+    intent: "comparison",
+    pattern:
+      /\b(vs\.?|versus|compare|comparison|compared|alternatives?|instead of|better than)\b/i,
+  },
+  {
+    intent: "how_to",
+    pattern:
+      /\b(how (?:do|can|to|should)|steps?|guide|tutorial|set ?up|get started|implement|configure|install)\b/i,
+  },
+  {
+    intent: "list",
+    pattern:
+      /\b(best|top|list|options|tools|examples|recommend(?:ed|ations?)?|which|what (?:tools?|platforms?|software|services?|apps?|products?|companies))\b/i,
+  },
+  {
+    intent: "question",
+    pattern: /^(what|why|when|where|who|is|are|does|do|can|should|will)\b|\?/i,
+  },
+];
+export const GEO_PROMPT_INTENT_LABELS: Record<GeoPromptIntent, string> = {
+  comparison: "Comparison",
+  list: "List",
+  how_to: "How to",
+  question: "Question",
+  other: "Other",
+};
 export const GEO_GAP_TITLE_MAX_LENGTH = 160;
 export const GEO_DISCOVERY_MODEL = "anthropic/claude-sonnet-4.6";
 export const GEO_DISCOVERY_MAX_TOKENS = 4000;
@@ -287,7 +530,6 @@ export const GEO_DISCOVERY_MIN_COMPETITORS = 5;
 export const GEO_DISCOVERY_MAX_COMPETITORS = 10;
 export const GEO_DISCOVERY_MIN_PROMPTS = 10;
 export const GEO_DISCOVERY_MAX_PROMPTS = 14;
-export const GEO_DISCOVERY_MAX_BRANDED_PROMPTS = 3;
 export const GEO_DISCOVERY_ALIAS_LIMIT = 8;
 export const GEO_DISCOVERY_COMPETITOR_LIMIT = 12;
 export const GEO_DISCOVERY_CACHE_PREFIX = "geo:discovery:v1";
@@ -320,6 +562,7 @@ export const AI_TRAFFIC_LOG_FETCH_LIMIT = 200;
 export const GEO_TRAFFIC_SOURCES_PAGE_PARAM = "sourcesPage";
 export const GEO_TRAFFIC_MARKDOWN_COLUMN_KEY = "markdownVisits";
 export const GEO_TRAFFIC_PAGES_PAGE_PARAM = "topPagesPage";
+export const GEO_TRAFFIC_PAGES_PATH_PARAM = "pagePath";
 export const GEO_TRAFFIC_LOG_PAGE_PARAM = "logPage";
 export const GEO_CITATIONS_ROW_HEIGHT = 40;
 export const GEO_PURPOSE_COLUMN_WIDTH = "12.5rem";
@@ -587,12 +830,40 @@ export const GEO_TRAFFIC_TREND_CRAWLER_KEY = "crawler";
 export const GEO_TRAFFIC_TREND_REFERRAL_KEY = "aiReferral";
 export const GEO_TRAFFIC_TREND_CRAWLER_LABEL = "Crawlers";
 export const GEO_TRAFFIC_TREND_REFERRAL_LABEL = "Referrals";
-export const GEO_TRAFFIC_TREND_TOTAL_KEY = "total";
-export const GEO_TRAFFIC_TREND_TOTAL_LABEL = "Total";
 export const GEO_TRAFFIC_CRAWLER_HINT =
   "Bots fetching your pages to train models or build a search index";
 export const GEO_TRAFFIC_REFERRAL_HINT =
   "People who clicked through to your site from an AI answer";
+export const GEO_STAT_DELTA_NEW = Number.POSITIVE_INFINITY;
+export const GEO_STAT_DELTA_NEW_LABEL = "New";
+export const GEO_TRAFFIC_STAT_TREND_HINT =
+  "vs previous period of the same length";
+export const GEO_TRAFFIC_FUNNEL_STAGES: readonly GeoTrafficFunnelStage[] = [
+  {
+    key: "crawler",
+    label: "Crawler requests",
+    description: "Bots reading your pages",
+  },
+  {
+    key: "cited",
+    label: "Cited in answer",
+    description:
+      "Fetched while answering a question; a fetch is not proof of a citation",
+  },
+  {
+    key: "aiReferral",
+    label: "AI referrals",
+    description: "People arriving from AI products",
+  },
+  {
+    key: "conversions",
+    label: "Conversions",
+    description: "AI referrals that reached a conversion path",
+  },
+];
+export const GEO_TRAFFIC_CONVERSIONS_NOT_CONFIGURED_LABEL = "Not configured";
+export const GEO_TRAFFIC_CONVERSIONS_SETUP_LABEL = "Set conversion paths";
+export const GEO_TRAFFIC_CITATIONS_ONLY_LABEL = "Citations only";
 
 export const GEO_TRAFFIC_LOG_VISITOR_OPTIONS: readonly GeoTrafficLogVisitorOption[] =
   [
@@ -702,19 +973,46 @@ export const GEO_PROMPT_NO_MENTION = "No engine named you";
 
 export const GEO_MENTION_TREND_BACKFILL_DAYS = 6;
 export const GEO_MENTION_TREND_TOTAL_KEY = "total";
-export const GEO_MENTION_TREND_TOTAL_LABEL = "All providers";
+export const GEO_MENTION_TREND_TOTAL_LABEL = "All Models";
 export const GEO_DEFAULT_RANGE: GeoRangePreset = "30d";
 export const GEO_MENTION_TREND_LINE_KEY = "trend";
 export const GEO_MENTION_TREND_LINE_LABEL = "Trend";
 export const GEO_MENTION_TREND_AGENT_ICON_LIMIT = 4;
-export const GEO_MENTION_TREND_ALL_PROVIDERS_LABEL = "All providers";
+export const GEO_MENTION_TREND_ALL_PROVIDERS_LABEL = "All Models";
 export const GEO_MENTION_ACTIVITY_LABEL = "Mention activity";
 export const GEO_MENTION_SUMMARY_VISIBLE = 5;
 export const GEO_MENTION_ROW_HEIGHT_REM = 2.75;
 export const GEO_MENTION_HINT_HEIGHT_REM = 2;
 export const GEO_MENTION_HINT_BLEED_REM = 1;
 export const GEO_MENTION_UNTRACKED_HINT =
-  "This model is not tracked. These mentions come from earlier scans.";
+  "These mentions come from earlier scans. Add the model back in GEO settings to keep tracking it.";
+export const GEO_PROVIDER_COLUMN_LABEL = "Provider";
+export const GEO_PROVIDER_MENTIONS_COLUMN_LABEL = "Mentions · change";
+export const GEO_BRAND_TRACKED_LABEL = "Tracked";
+export const GEO_BRAND_DISCOVERED_LABEL = "Discovered";
+export const GEO_BRAND_TRACK_ACTION = "Track";
+export const GEO_SHARE_OF_VOICE_TRACKING_HINT =
+  "Discovered brands come from scan answers. Tracked brands are called out in scans and available in the writer.";
+export const GEO_LANGUAGE_PERFORMANCE_HINT =
+  "The same prompts run in each tracked language. Add a language to track your mention rate there.";
+export const GEO_ENGINE_PERFORMANCE_HINT =
+  "How often each engine mentioned your brand in this range. Manage engines in GEO settings.";
+export const GEO_PROMPT_AUTO_MANAGED_LABEL = "Managed automatically";
+export const GEO_PROMPT_AUTO_MANAGED_HINT =
+  "Generated from your site. Pause it to skip it in scans; it cannot be removed.";
+export const GEO_PROMPT_TAGS_CUSTOM_ONLY_TOAST =
+  "Tags apply to custom prompts. Auto-generated prompts were skipped.";
+export const GEO_SCAN_PREFLIGHT_TITLE = "Run a scan now?";
+export const GEO_SCAN_PREFLIGHT_BODY =
+  "Every enabled prompt is asked on each engine and language below.";
+export const GEO_SCAN_PREFLIGHT_CONFIRM = "Run scan";
+export const GEO_SCAN_PREFLIGHT_CANCEL = "Cancel";
+export const GEO_SCAN_PREFLIGHT_PENDING = "Starting…";
+export const GEO_SCAN_PREFLIGHT_PROMPTS_LABEL = "Prompts";
+export const GEO_SCAN_PREFLIGHT_ENGINES_LABEL = "Engines";
+export const GEO_SCAN_PREFLIGHT_LANGUAGES_LABEL = "Languages";
+export const GEO_SCAN_PREFLIGHT_LAST_SCAN_LABEL = "Last scan";
+export const GEO_SCAN_PREFLIGHT_NEVER_SCANNED = "Not yet";
 export const GEO_RANGE_PRESETS = [
   { value: "today", label: "Today" },
   { value: "yesterday", label: "Yesterday" },
@@ -747,6 +1045,12 @@ export const GEO_FAMILY_IMPROVE_SPLIT = 0.25;
 /** Overall rate high enough that remaining misses are the whole job. */
 export const GEO_FAMILY_IMPROVE_STRONG_RATE = 0.7;
 export const GEO_FAMILY_IMPROVE_CTA_GAPS = "Close these gaps";
+export const GEO_FAMILY_ALL_MODES_LABEL = "All";
+export const GEO_FAMILY_BRANDS_LABEL = "Brand ranking";
+export const GEO_FAMILY_BRANDS_HINT =
+  "How often each brand shows up in this engine's answers to your prompts";
+export const GEO_FAMILY_BRANDS_LIMIT = 6;
+export const GEO_FAMILY_OWN_BRAND_FALLBACK = "You";
 export const GEO_SPARKLINE_MIN_POINTS = 2;
 export const GEO_SPARKLINE_FLAT_THRESHOLD = 0.05;
 export const GEO_SPARKLINE_TREND_CLASS: Record<"up" | "down" | "flat", string> =
@@ -762,15 +1066,23 @@ export const GEO_EMPTY_TIMESERIES: readonly GeoTimeseriesPoint[] = [];
 export const GEO_EMPTY_COMPETITOR_SHARE_TIMESERIES: readonly GeoCompetitorShareTimeseriesPoint[] =
   [];
 export const GEO_EMPTY_PROMPT_RESULTS: readonly GeoPromptResult[] = [];
+export const GEO_EMPTY_COMPETITORS: readonly GeoCompetitor[] = [];
 export const GEO_EMPTY_TRAFFIC_RESPONSE: AiTrafficResponse = {
   configured: false,
-  totals: { crawler: 0, aiReferral: 0 },
+  totals: { crawler: 0, cited: 0, aiReferral: 0, conversions: null },
+  previousConversions: null,
   sources: [],
   points: [],
 };
 
 export const GEO_MAX_ALIASES = 10;
 export const GEO_MAX_COMPETITORS = 25;
+export const GEO_MAX_CONVERSION_PATHS = 20;
+export const GEO_CONVERSION_PATH_MAX_LENGTH = 200;
+export const GEO_CONVERSION_PATHS_LABEL = "Conversion paths";
+export const GEO_CONVERSION_PATHS_DESCRIPTION =
+  "Paths that count as a conversion when an AI referral reaches them, for example /signup or /pricing. Prefix match; /pricing also counts /pricing/teams.";
+export const GEO_CONVERSION_PATHS_PLACEHOLDER = "/signup";
 export const GEO_COMPETITOR_MAX_SYNONYMS = 8;
 export const GEO_SHORT_FIELD_MAX_LENGTH = 128;
 export const GEO_DOMAIN_REGEX = /^[a-z0-9-]+(\.[a-z0-9-]+)+$/;
@@ -823,3 +1135,101 @@ export const GEO_UPGRADE_DESCRIPTION =
   "AI visibility tracking is included in Starter, Growth, and Scale. Pick a plan to unlock GEO for this workspace.";
 export const GEO_UPGRADE_TOOLTIP = "Upgrade your plan to unlock GEO";
 export const GEO_LOCKED_TITLE = "GEO is locked on your current plan";
+
+export const GEO_CHANGES_LIMIT = 40;
+export const GEO_CHANGES_LABEL = "What changed";
+export const GEO_CHANGES_SUBLINE_PREFIX = "Latest scan vs previous scan";
+export const GEO_CHANGES_SCANNING_SUBLINE = "Scan in progress";
+export const GEO_CHANGES_EMPTY_NEEDS_SCANS =
+  "Run two scans to see what changed";
+export const GEO_CHANGES_EMPTY_NO_CHANGES =
+  "No changes between the last two scans";
+export const GEO_CHANGES_ITEM_LABEL = "changes";
+export const GEO_CHANGES_PAGE_KEY = "changes";
+export const GEO_CHANGES_SKELETON_ROWS = 5;
+export const GEO_CHANGES_COLUMN_LABELS = {
+  change: "Change",
+  engine: "Engine",
+  prompt: "Prompt",
+  position: "Position",
+  detail: "Recommended instead",
+} as const;
+export const GEO_CHANGES_STATE_NEW = "New";
+export const GEO_CHANGES_STATE_NOT_MENTIONED = "Not mentioned";
+export const GEO_CHANGES_STATE_MENTIONED = "Mentioned";
+export const GEO_CHANGES_POSITION_PREFIX = "#";
+export const GEO_CHANGES_EMPTY_DETAIL = "-";
+export const GEO_CHANGES_COMPETITORS_PREFIX = "Now recommended";
+export const GEO_CHANGES_CITATIONS_ADDED_PREFIX = "New citations";
+export const GEO_CHANGES_CITATIONS_REMOVED_PREFIX = "Citations dropped";
+
+export const GEO_CHANGE_KIND_LABELS: Record<GeoChangeKind, string> = {
+  gained_mention: "Gained mention",
+  lost_mention: "Lost mention",
+  position_improved: "Position up",
+  position_dropped: "Position down",
+  competitor_displaced: "Displaced by competitor",
+  citation_added: "Citation added",
+  citation_removed: "Citation removed",
+  new_engine: "New engine",
+};
+
+export const GEO_CHANGE_KIND_ORDER: Record<GeoChangeKind, number> = {
+  lost_mention: 0,
+  competitor_displaced: 0,
+  gained_mention: 1,
+  position_improved: 2,
+  position_dropped: 2,
+  citation_added: 3,
+  citation_removed: 3,
+  new_engine: 4,
+};
+
+export const GEO_CHANGES_SUMMARY_LABELS: Record<
+  keyof GeoChangesSummary,
+  string
+> = {
+  gained: "Gained",
+  lost: "Lost",
+  positionImproved: "Position up",
+  positionDropped: "Position down",
+  citationsAdded: "Citations added",
+  citationsRemoved: "Citations removed",
+};
+
+export const GEO_CHANGES_SUMMARY_HINTS: Record<
+  keyof GeoChangesSummary,
+  string
+> = {
+  gained: "Prompts where an engine started mentioning your brand",
+  lost: "Prompts where an engine stopped mentioning your brand",
+  positionImproved: "Prompts where your brand moved up in the answer",
+  positionDropped: "Prompts where your brand moved down in the answer",
+  citationsAdded: "Prompts where an engine started citing your pages",
+  citationsRemoved: "Prompts where an engine stopped citing your pages",
+};
+
+export const GEO_CHANGES_SUMMARY_GROUPS: readonly GeoChangesSummaryGroup[] = [
+  { key: "mentions", label: "Mentions", up: "gained", down: "lost" },
+  {
+    key: "position",
+    label: "Position",
+    up: "positionImproved",
+    down: "positionDropped",
+  },
+  {
+    key: "citations",
+    label: "Citations",
+    up: "citationsAdded",
+    down: "citationsRemoved",
+  },
+];
+
+export const GEO_EMPTY_CHANGES_SUMMARY: GeoChangesSummary = {
+  gained: 0,
+  lost: 0,
+  positionImproved: 0,
+  positionDropped: 0,
+  citationsAdded: 0,
+  citationsRemoved: 0,
+};

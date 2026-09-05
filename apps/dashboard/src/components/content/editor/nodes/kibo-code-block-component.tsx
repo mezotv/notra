@@ -233,7 +233,7 @@ export default function KiboCodeBlockComponent({
           variant="ghost"
         >
           <CopyButtonIcon
-            className={isCopied ? "text-green-500" : "text-muted-foreground"}
+            className={isCopied ? "text-success" : "text-muted-foreground"}
             size={14}
           />
         </Button>

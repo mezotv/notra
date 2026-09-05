@@ -74,13 +74,13 @@ export function PerplexityModelSelector({
   const [open, setOpen] = useState(false);
 
   return (
-    <DropdownMenu onOpenChange={setOpen} open={open}>
+    <DropdownMenu modal={false} onOpenChange={setOpen} open={open}>
       <DropdownMenuTrigger
         render={
           <button
             aria-label="Model"
             className={cn(
-              "flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#f2f2f2] px-2.5 font-sans text-[12px] leading-none text-[#3d3d3d] outline-none transition-[background-color,transform] duration-150 hover:bg-[#ebebeb] focus-visible:ring-2 focus-visible:ring-black/15 active:scale-[0.96] dark:bg-white/10 dark:text-foreground dark:hover:bg-white/15",
+              "flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#f2f2f2] px-2.5 font-sans text-[12px] leading-none text-[#3d3d3d] outline-none transition-[background-color,transform] duration-fast hover:bg-[#ebebeb] focus-visible:ring-2 focus-visible:ring-black/15 active:scale-[0.96] dark:bg-white/10 dark:text-foreground dark:hover:bg-white/15",
               open && "bg-[#ebebeb] dark:bg-white/15",
               className
             )}
@@ -91,7 +91,7 @@ export function PerplexityModelSelector({
         <span>Model</span>
         <HugeiconsIcon
           className={cn(
-            "text-[#8d8d8d] transition-transform duration-150",
+            "text-[#8d8d8d] transition-transform duration-fast",
             open && "rotate-180"
           )}
           icon={ArrowDown01Icon}

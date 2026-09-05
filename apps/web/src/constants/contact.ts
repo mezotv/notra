@@ -2,9 +2,27 @@ import type { ContactResourceLink } from "@/types/contact";
 
 export const CONTACT_RECIPIENT = "hello@usenotra.com";
 
-export const CONTACT_RATE_LIMIT = {
-  requests: 3,
-  window: "1h",
+export const CONTACT_RATE_LIMITS = {
+  ipHourly: {
+    requests: 2,
+    window: "1h",
+    windowMs: 60 * 60 * 1000,
+  },
+  ipDaily: {
+    requests: 5,
+    window: "1d",
+    windowMs: 24 * 60 * 60 * 1000,
+  },
+  emailDaily: {
+    requests: 2,
+    window: "1d",
+    windowMs: 24 * 60 * 60 * 1000,
+  },
+  globalHourly: {
+    requests: 20,
+    window: "1h",
+    windowMs: 60 * 60 * 1000,
+  },
 } as const;
 
 export const CONTACT_MESSAGE_MIN_LENGTH = 10;

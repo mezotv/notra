@@ -9,8 +9,16 @@ const SESSION_ENDPOINT =
     ? "http://localhost:3000/api/session"
     : `${APP_URL}/api/session`;
 
-export function useDashboardSession() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+export interface DashboardSessionState {
+  isAuthenticated: boolean;
+  isResolved: boolean;
+}
+
+export function useDashboardSession(): DashboardSessionState {
+  const [state, setState] = useState<DashboardSessionState>({
+    isAuthenticated: false,
+    isResolved: false,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -20,11 +28,24 @@ export function useDashboardSession() {
       signal: controller.signal,
     })
       .then((response) => (response.ok ? response.json() : null))
-      .then((data) => setIsAuthenticated(Boolean(data)))
-      .catch(() => {});
+      .then((data) => {
+        setState({
+          isAuthenticated: Boolean(data),
+          isResolved: true,
+        });
+      })
+      .catch((error: unknown) => {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
+        setState({
+          isAuthenticated: false,
+          isResolved: true,
+        });
+      });
 
     return () => controller.abort();
   }, []);
 
-  return isAuthenticated;
+  return state;
 }

@@ -23,6 +23,7 @@ export type ScheduleContentWorkflowResult =
   | { status: "invalid_payload" }
   | { status: "trigger_not_found" }
   | { status: "trigger_disabled" }
+  | { status: "not_due" }
   | { status: "credits_exhausted" }
   | { status: "no_sources" }
   | { status: "rate_limited_exhausted" }

@@ -1,3 +1,5 @@
+import type { GeoCheckSource } from "@notra/db/types/geo-checks";
+
 import type { GeoCompetitorSeed } from "../types/geo";
 
 export const GEO_SAMPLE_DAYS = 30;
@@ -21,6 +23,66 @@ export const GEO_SAMPLE_GROUNDED_ENGINES: readonly string[] = [
   "openai/gpt-5.4-grounded",
   "anthropic/claude-sonnet-4.6-grounded",
   "google/gemini-3-flash-grounded",
+];
+
+export const GEO_SAMPLE_SEARCH_ENGINES: readonly string[] = [
+  ...GEO_SAMPLE_GROUNDED_ENGINES,
+  "perplexity-sonar",
+];
+
+export const GEO_SAMPLE_SEARCH_QUERY_SUFFIXES: readonly string[] = [
+  "2026",
+  "comparison",
+  "reviews",
+  "pricing",
+  "for startups",
+];
+export const GEO_SAMPLE_SEARCH_QUERY_MIN = 2;
+export const GEO_SAMPLE_SEARCH_QUERY_MAX = 3;
+export const GEO_SAMPLE_SOURCE_MIN = 2;
+export const GEO_SAMPLE_SOURCE_MAX = 4;
+
+export const GEO_SAMPLE_SOURCES: readonly GeoCheckSource[] = [
+  {
+    title: "Best AI Content Marketing Tools in 2026",
+    url: "https://www.g2.com/categories/ai-content-creation",
+    domain: "g2.com",
+  },
+  {
+    title: "Jasper vs Copy.ai: Which AI writer wins?",
+    url: "https://zapier.com/blog/jasper-vs-copy-ai/",
+    domain: "zapier.com",
+  },
+  {
+    title: "What is Generative Engine Optimization?",
+    url: "https://www.searchenginejournal.com/generative-engine-optimization/",
+    domain: "searchenginejournal.com",
+  },
+  {
+    title: "How to track AI search visibility",
+    url: "https://www.hubspot.com/blog/ai-search-visibility",
+    domain: "hubspot.com",
+  },
+  {
+    title: "Jasper AI pricing and plans",
+    url: "https://www.jasper.ai/pricing",
+    domain: "jasper.ai",
+  },
+  {
+    title: "Top GEO tools compared",
+    url: "https://www.reddit.com/r/SEO/comments/geo-tools-compared/",
+    domain: "reddit.com",
+  },
+  {
+    title: "Writer: Enterprise generative AI platform",
+    url: "https://writer.com/product/",
+    domain: "writer.com",
+  },
+  {
+    title: "Profound: AI visibility analytics",
+    url: "https://www.tryprofound.com/",
+    domain: "tryprofound.com",
+  },
 ];
 
 export const GEO_SAMPLE_COMPETITORS: readonly GeoCompetitorSeed[] = [

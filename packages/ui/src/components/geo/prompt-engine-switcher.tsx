@@ -17,10 +17,10 @@ import { Button } from "@notra/ui/components/ui/button";
 import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import { GEO_SEARCH_LABEL } from "@notra/ui/constants/geo";
 import { adjacentPromptEngine } from "@notra/ui/lib/geo-prompt-engines";
+import { SPRING } from "@notra/ui/lib/motion";
 import { cn } from "@notra/ui/lib/utils";
 import type { PromptEngineSwitcherProps } from "@notra/ui/types/geo";
 
-const PILL_TRANSITION = { type: "spring", bounce: 0, duration: 0.3 } as const;
 const INSTANT = { duration: 0 } as const;
 
 export function PromptEngineSwitcher({
@@ -31,7 +31,7 @@ export function PromptEngineSwitcher({
   const engines = items.map((item) => item.engine);
   const layoutId = useId();
   const reduceMotion = useReducedMotion();
-  const pillTransition = reduceMotion ? INSTANT : PILL_TRANSITION;
+  const pillTransition = reduceMotion ? INSTANT : SPRING.indicatorFlat;
   const activeIndex = engines.indexOf(active);
 
   return (
@@ -50,7 +50,7 @@ export function PromptEngineSwitcher({
                 aria-selected={selected}
                 className={cn(
                   "relative inline-flex h-8 items-center gap-1.5 rounded-full px-2.5 text-sm",
-                  "transition-[color,transform] duration-150 ease-out",
+                  "transition-[color,transform] duration-fast ease-out",
                   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                   "active:scale-[0.96]",
                   selected

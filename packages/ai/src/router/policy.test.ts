@@ -1,49 +1,52 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
+import type { PolicyTestCase } from "@notra/ai/types/router-test";
+
 import { decideGateway } from "./policy";
 import { createPolicy } from "./test-helpers";
 
-const ORG = "org_123";
-
 describe("decideGateway", () => {
-  test("paid organizations use the paid gateway (vercel)", () => {
-    const decision = decideGateway({
-      policy: createPolicy(),
-      organizationId: ORG,
-      plan: "paid",
+  test("honours configured gateways and pin → organization → plan precedence", () => {
+    const policy = createPolicy({
+      paidGateway: "openrouter",
+      freeGateway: "vercel",
+      defaultGateway: "vercel",
     });
-    assert.deepEqual(decision, { gateway: "vercel", reason: "paid" });
-  });
-
-  test("free organizations use the free gateway (openrouter)", () => {
-    const decision = decideGateway({
-      policy: createPolicy(),
-      organizationId: ORG,
-      plan: "free",
-    });
-    assert.deepEqual(decision, { gateway: "openrouter", reason: "free" });
-  });
-
-  test("missing organization context uses the explicit default gateway", () => {
-    const decision = decideGateway({ policy: createPolicy() });
-    assert.deepEqual(decision, {
-      gateway: "openrouter",
-      reason: "no-org-default",
-    });
-    const vercelDefault = decideGateway({
-      policy: createPolicy({ defaultGateway: "vercel" }),
-    });
-    assert.equal(vercelDefault.gateway, "vercel");
-  });
-
-  test("a pinned gateway overrides plan routing", () => {
-    const decision = decideGateway({
-      policy: createPolicy(),
-      organizationId: ORG,
-      plan: "free",
-      pinned: "vercel",
-    });
-    assert.deepEqual(decision, { gateway: "vercel", reason: "pinned" });
+    const cases: PolicyTestCase[] = [
+      {
+        name: "custom paid gateway",
+        input: { organizationId: "org", plan: "paid" },
+        expected: { gateway: "openrouter", reason: "paid" },
+      },
+      {
+        name: "custom free gateway",
+        input: { organizationId: "org", plan: "free" },
+        expected: { gateway: "vercel", reason: "free" },
+      },
+      {
+        name: "unknown plan defaults to free",
+        input: { organizationId: "org" },
+        expected: { gateway: "vercel", reason: "free" },
+      },
+      {
+        name: "no organization uses default even with a paid plan",
+        input: { plan: "paid" },
+        expected: { gateway: "vercel", reason: "no-org-default" },
+      },
+      {
+        name: "pin overrides paid plan",
+        input: { organizationId: "org", plan: "paid", pinned: "vercel" },
+        expected: { gateway: "vercel", reason: "pinned" },
+      },
+      {
+        name: "pin overrides default without an organization",
+        input: { pinned: "openrouter" },
+        expected: { gateway: "openrouter", reason: "pinned" },
+      },
+    ];
+    for (const { name, input, expected } of cases) {
+      assert.deepEqual(decideGateway({ ...input, policy }), expected, name);
+    }
   });
 });

@@ -114,9 +114,9 @@ export const AGENT_FEEDBACK_STATUS_ICON_CLASS: Record<
   AgentFeedbackStatus,
   string
 > = {
-  new: "text-violet-500",
-  triaged: "text-amber-500",
-  resolved: "text-emerald-500",
+  new: "text-info",
+  triaged: "text-warning",
+  resolved: "text-success",
   archived: "text-muted-foreground",
 };
 
@@ -125,13 +125,10 @@ export const AGENT_FEEDBACK_LABEL_PILL_CLASS =
 
 export const AGENT_FEEDBACK_KIND_PILL_CLASS: Record<AgentFeedbackKind, string> =
   {
-    bug: "border-red-200/80 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200",
-    feature:
-      "border-sky-200/80 bg-sky-50 text-sky-800 dark:border-sky-900/50 dark:bg-sky-950/40 dark:text-sky-200",
-    praise:
-      "border-emerald-200/80 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200",
-    question:
-      "border-amber-200/80 bg-amber-50 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200",
+    bug: "border-destructive/25 bg-destructive/10 text-foreground",
+    feature: "border-info/25 bg-info/10 text-foreground",
+    praise: "border-success/25 bg-success/10 text-foreground",
+    question: "border-warning/25 bg-warning/10 text-foreground",
     other: "border-border bg-muted/50 text-muted-foreground dark:bg-muted/30",
   };
 
@@ -139,11 +136,9 @@ export const AGENT_FEEDBACK_SENTIMENT_PILL_CLASS: Record<
   AgentFeedbackSentiment,
   string
 > = {
-  negative:
-    "border-red-200/80 bg-red-50 text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200",
+  negative: "border-destructive/25 bg-destructive/10 text-destructive",
   neutral: "border-border bg-muted/50 text-muted-foreground dark:bg-muted/30",
-  positive:
-    "border-emerald-200/80 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200",
+  positive: "border-success/25 bg-success/10 text-success",
 };
 
 export const AGENT_FEEDBACK_CLIENT_BRAND_RULES: readonly AgentFeedbackClientBrandRule[] =

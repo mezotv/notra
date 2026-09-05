@@ -2,6 +2,7 @@ import type {
   IntegrationType,
   OutputContentType,
 } from "@/schemas/integrations";
+import type { RepositoryOutput } from "@/types/integrations";
 
 export type GitHubConnectionMethod = "github-app" | "personal-access-token";
 
@@ -48,12 +49,14 @@ export interface IntegrationWithRepositories {
   connectionMethod?: GitHubConnectionMethod;
   enabled: boolean;
   createdAt: Date;
+  managedByGitHubApp?: boolean;
   repositories: Array<{
     id: string;
     owner: string;
     repo: string;
     defaultBranch: string | null;
     enabled: boolean;
+    outputs?: RepositoryOutput[];
   }>;
 }
 

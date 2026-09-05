@@ -14,6 +14,7 @@ import { EmptyState } from "@/components/empty-state";
 import { EmptyStateCardsPreview } from "@/components/empty-state-preview";
 import { ConnectGitHubDialog } from "@/components/integrations/github/connect-github-dialog";
 import { GitHubAccountCard } from "@/components/integrations/github/github-account-card";
+import { GitHubPublishingSettings } from "@/components/integrations/github/github-publishing-settings";
 import { SelectRepositoriesDialog } from "@/components/integrations/github/select-repositories-dialog";
 import { IntegrationCard } from "@/components/integrations/integration-card";
 import { LegacyAddIntegrationDialog } from "@/components/integrations/legacy/add-integration-dialog";
@@ -27,7 +28,7 @@ import {
   startGitHubInstall,
 } from "@/lib/integrations/github/install";
 import { dashboardOrpc } from "@/lib/orpc/query";
-import type { GitHubIntegration } from "@/types/integrations";
+import type { GitHubIntegration, GitHubRepository } from "@/types/integrations";
 
 import {
   GitHubIntegrationSkeleton,
@@ -56,6 +57,21 @@ function useGitHubCallbackErrorToast(errorCode: string | null) {
         GITHUB_CALLBACK_ERROR_MESSAGES.github_callback_failed
     );
   }, [errorCode]);
+}
+
+function getConnectedRepositories(integrations: GitHubIntegration[]) {
+  const repositories = new Map<string, GitHubRepository>();
+  for (const integration of integrations) {
+    if (!integration.enabled) {
+      continue;
+    }
+    for (const repository of integration.repositories) {
+      if (repository.enabled && repository.defaultBranch) {
+        repositories.set(repository.id, repository);
+      }
+    }
+  }
+  return Array.from(repositories.values());
 }
 
 function useResumeGitHubInstall(params: {
@@ -223,12 +239,12 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
       enabled: !!organizationId,
     })
   );
-  const legacyIntegrations =
-    legacyQuery.data?.integrations.filter(
-      (integration) =>
-        integration.type === "github" &&
-        integration.connectionMethod === "personal-access-token"
-    ) ?? [];
+  const githubIntegrations =
+    legacyQuery.data?.integrations.filter((i) => i.type === "github") ?? [];
+  const legacyIntegrations = githubIntegrations.filter(
+    (integration) => integration.connectionMethod === "personal-access-token"
+  );
+  const connectedRepositories = getConnectedRepositories(githubIntegrations);
   const data = githubAppQuery.data;
   const accounts = data?.accounts ?? [];
   const isConnected = accounts.length > 0;
@@ -274,12 +290,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         repositoryIds,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.github.app.get.queryKey({
-          input: { organizationId },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.github.app.get.queryKey({
+            input: { organizationId },
+          }),
         }),
-      });
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.integrations.key(),
+        }),
+      ]);
       setReposOpen(false);
       toast.success("GitHub repositories saved");
     },
@@ -295,12 +316,17 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
         accountId,
       });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: dashboardOrpc.github.app.get.queryKey({
-          input: { organizationId },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.github.app.get.queryKey({
+            input: { organizationId },
+          }),
         }),
-      });
+        queryClient.invalidateQueries({
+          queryKey: dashboardOrpc.integrations.key(),
+        }),
+      ]);
       toast.success("GitHub disconnected");
     },
     onError: () => {
@@ -408,6 +434,13 @@ export default function PageClient({ organizationSlug }: PageClientProps) {
           organizationId={organizationId}
           organizationSlug={organizationSlug}
         />
+
+        {connectedRepositories.length > 0 ? (
+          <GitHubPublishingSettings
+            organizationId={organizationId}
+            repositories={connectedRepositories}
+          />
+        ) : null}
 
         <p className="text-muted-foreground text-xs">
           Still using a personal access token?{" "}

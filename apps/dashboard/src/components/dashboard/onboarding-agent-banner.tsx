@@ -109,7 +109,7 @@ export function OnboardingAgentBanner({
               <ul className="space-y-2.5">
                 {EVE_SETUP_PROS.map((item) => (
                   <li className="flex items-center gap-2.5" key={item}>
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                    <span className="bg-success/10 text-success flex size-5 shrink-0 items-center justify-center rounded-full">
                       <HugeiconsIcon
                         className="size-3"
                         icon={PlusSignIcon}
@@ -121,7 +121,7 @@ export function OnboardingAgentBanner({
                 ))}
                 {EVE_SETUP_CONS.map((item) => (
                   <li className="flex items-center gap-2.5" key={item}>
-                    <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-red-600 dark:text-red-400">
+                    <span className="bg-destructive/10 text-destructive flex size-5 shrink-0 items-center justify-center rounded-full">
                       <HugeiconsIcon
                         className="size-3"
                         icon={MinusSignIcon}

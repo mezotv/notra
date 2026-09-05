@@ -321,15 +321,6 @@ export const GEO_MODEL_CATALOG_SEED: readonly GeoModelCatalogEntry[] = [
     gateways: ["vercel"],
   },
   {
-    id: "mistral/magistral-medium",
-    provider: "mistral",
-    label: "Magistral Medium",
-    zdr: "all",
-    released: "2025-06-10",
-    default: false,
-    gateways: ["vercel"],
-  },
-  {
     id: "mistral/mistral-small",
     provider: "mistral",
     label: "Mistral Small",

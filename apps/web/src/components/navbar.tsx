@@ -15,6 +15,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@notra/ui/components/ui/dropdown-menu";
+import { Kbd } from "@notra/ui/components/ui/kbd";
+import { TRANSITION, tween } from "@notra/ui/lib/motion";
+import { cn } from "@notra/ui/lib/utils";
 import {
   AnimatePresence,
   domAnimation,
@@ -28,10 +31,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import {
+  AUTH_APP_HOTKEY,
+  AUTH_DASHBOARD_URL,
+  AUTH_SIGNIN_HOTKEY,
+  AUTH_SIGNIN_URL,
+} from "@/constants/auth";
+import {
+  NAVBAR_DESKTOP_SIGNUP_SOURCE,
+  NAVBAR_MOBILE_SIGNUP_SOURCE,
+} from "@/constants/navbar";
 import { useDashboardSession } from "@/lib/auth/use-dashboard-session";
+import { useNavbarAuthHotkeys } from "@/lib/auth/use-navbar-auth-hotkeys";
 import { BRAND_ASSETS } from "@/lib/brand/constants";
 import { getNavbarVariantForPath } from "@/lib/navigation/navbar-variant";
-import type { NavbarProps } from "@/types/navbar";
+import type {
+  NavbarAuthActionsProps,
+  NavbarKbdProps,
+  NavbarProps,
+  NavbarVariant,
+} from "@/types/navbar";
 import { copySvgAsset } from "@/utils/copy-svg-asset";
 import { copyToClipboard } from "@/utils/copy-to-clipboard";
 import {
@@ -45,12 +64,8 @@ import { NotraMark, notraMarkSvgString } from "./notra-mark";
 import { ThemeToggle } from "./theme-toggle";
 import { TrackedSignupLink } from "./tracked-signup-link";
 
-const SIGNIN_URL = "https://app.usenotra.com/login";
-const DASHBOARD_URL = "https://app.usenotra.com/callback";
 const HOVER_CLOSE_DELAY = 120;
 const CONTENT_SLIDE = 48;
-const EASE = [0.32, 0.72, 0, 1] as const;
-const SWAP_EASE = [0.25, 0.1, 0.25, 1] as const;
 const PANEL_PERSPECTIVE = 2000;
 const PANEL_SCALE_IN = {
   opacity: 0,
@@ -67,27 +82,15 @@ const PANEL_SCALE_REST = {
   rotateX: 0,
   scale: 1,
 } as const;
-const ENTER_EXIT_TRANSITION = {
-  duration: 0.2,
-  ease: SWAP_EASE,
-};
-const MORPH_TRANSITION = {
-  duration: 0.28,
-  ease: EASE,
-};
-const SHELL_TRANSITION = {
-  duration: 0.32,
-  ease: EASE,
-};
+const ENTER_EXIT_TRANSITION = TRANSITION.enter;
+const MORPH_TRANSITION = tween("slow", "emphasized");
+const SHELL_TRANSITION = tween("slow", "emphasized");
 const SCROLL_THRESHOLD = 64;
 const MOBILE_SCROLL_THRESHOLD = 16;
 const MOBILE_MEDIA_QUERY = "(max-width: 63.9375rem)";
 const ISLAND_CHROME =
   "bg-white shadow-[0_0.125rem_1.25rem_#1E1E1E14,0_0.0625rem_0.125rem_#28282814] ring-1 ring-[#1E1E1E14] dark:bg-neutral-950 dark:shadow-black/50 dark:ring-white/10";
-const SWAP_TRANSITION = {
-  duration: 0.15,
-  ease: SWAP_EASE,
-};
+const SWAP_TRANSITION = TRANSITION.fade;
 const contentVariants = {
   enter: (direction: number) => ({
     x: direction * CONTENT_SLIDE,
@@ -113,18 +116,20 @@ function MegaCard({
   onSelect: () => void;
 }) {
   const className =
-    "flex h-52.5 w-48.5 shrink-0 cursor-pointer flex-col items-start justify-between rounded-2xl border border-[#1E1E1E1A] bg-[#C8B2EE40] p-6 shadow-[0_0_0_0.0625rem_#ECECEC,0_0.0625rem_0.125rem_#28282814] transition-[background,border-color] hover:bg-[linear-gradient(180deg,#C8B2EE40_0%,#C8B2EE66_100%)] dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:hover:bg-white/10";
+    "flex h-52.5 w-52 shrink-0 cursor-pointer flex-col items-stretch justify-between rounded-2xl border border-[#1E1E1E1A] bg-[#C8B2EE40] p-6 shadow-[0_0_0_0.0625rem_#ECECEC,0_0.0625rem_0.125rem_#28282814] transition-[background,border-color] hover:bg-[linear-gradient(180deg,#C8B2EE40_0%,#C8B2EE66_100%)] dark:border-white/10 dark:bg-white/5 dark:shadow-none dark:hover:bg-white/10";
   const body = (
     <>
-      <HugeiconsIcon
-        className="size-8 text-[#1E1E1E] dark:text-white"
-        icon={card.icon}
-      />
-      <span className="flex flex-col items-start gap-0.75 self-stretch">
-        <span className="font-sans text-base leading-5 font-semibold text-[#1E1E1E] dark:text-white">
+      <span className="flex size-8 shrink-0 items-center justify-center leading-none [&_svg]:block">
+        <HugeiconsIcon
+          className="size-8 text-[#1E1E1E] dark:text-white"
+          icon={card.icon}
+        />
+      </span>
+      <span className="flex flex-col items-start gap-0.75">
+        <span className="h-5 w-full font-sans text-base leading-5 font-semibold whitespace-nowrap text-[#1E1E1E] dark:text-white">
           {card.label}
         </span>
-        <span className="self-stretch font-sans text-sm leading-[1.125rem] font-semibold text-[#1E1E1EBF] dark:text-neutral-400">
+        <span className="min-h-[3.375rem] self-stretch font-sans text-sm leading-[1.125rem] font-semibold text-[#1E1E1EBF] dark:text-neutral-400">
           {card.description}
         </span>
       </span>
@@ -215,13 +220,13 @@ function MegaPanel({
 }) {
   return (
     <div className="flex items-stretch justify-end gap-8">
-      <div className="flex items-center gap-4 py-8 pl-8">
+      <div className="flex items-stretch gap-4 py-8 pl-8">
         {group.cards.map((card) => (
           <MegaCard card={card} key={card.href} onSelect={onSelect} />
         ))}
       </div>
       {group.rail.length > 0 && (
-        <div className="flex flex-col items-start self-stretch border-l border-[#1E1E1E1A] p-8 dark:border-white/10">
+        <div className="flex flex-col items-start justify-end self-stretch border-l border-[#1E1E1E1A] p-8 dark:border-white/10">
           <div className="flex flex-col gap-3">
             {group.rail.map((item) => (
               <RailItem item={item} key={item.href} onSelect={onSelect} />
@@ -233,22 +238,90 @@ function MegaPanel({
   );
 }
 
+function getSlideDirection(
+  groups: MarketingNavGroup[],
+  activeGroup: string | null,
+  previousGroup: string | null
+) {
+  if (!(activeGroup && previousGroup) || activeGroup === previousGroup) {
+    return 0;
+  }
+
+  const currentIndex = groups.findIndex((group) => group.label === activeGroup);
+  const previousIndex = groups.findIndex(
+    (group) => group.label === previousGroup
+  );
+
+  if (currentIndex === -1 || previousIndex === -1) {
+    return 0;
+  }
+
+  return currentIndex > previousIndex ? 1 : -1;
+}
+
+function getNavbarPresentation(
+  variant: NavbarVariant,
+  scrolled: boolean,
+  reduceMotion: boolean
+) {
+  const isLanding = variant === "landing";
+  const tracksScroll = variant === "island" || isLanding;
+  const chrome = variant === "pinned" || (tracksScroll && scrolled);
+  const isLandingTop = isLanding && !chrome;
+  let positionClass = "w-full sticky top-4";
+
+  if (isLanding) {
+    positionClass = "fixed inset-x-4 sm:inset-x-6";
+  } else if (variant === "static") {
+    positionClass = "w-full";
+  }
+
+  return {
+    chrome,
+    contentTransition: reduceMotion ? { duration: 0 } : SWAP_TRANSITION,
+    enterExitTransition: reduceMotion ? { duration: 0 } : ENTER_EXIT_TRANSITION,
+    innerPaddingClass: isLandingTop
+      ? "px-7 sm:px-5 lg:px-6 min-[87rem]:px-0"
+      : "px-4 sm:px-6",
+    isLandingTop,
+    morphTransition: reduceMotion ? { duration: 0 } : MORPH_TRANSITION,
+    positionClass,
+    rowHeightClass: isLandingTop ? "h-11 lg:h-[2.4375rem]" : "h-16",
+    shellAnimate: isLanding
+      ? {
+          maxWidth: chrome ? "64rem" : "80.9375rem",
+          top: chrome ? "1rem" : "2.5rem",
+        }
+      : { maxWidth: chrome ? "64rem" : "80rem" },
+    shellTransition: reduceMotion ? { duration: 0 } : SHELL_TRANSITION,
+  };
+}
+
 export function Navbar({ variant }: NavbarProps = {}) {
   const pathname = usePathname();
   const resolvedVariant = variant ?? getNavbarVariantForPath(pathname);
-  const isLanding = resolvedVariant === "landing";
-  const tracksScroll = resolvedVariant === "island" || isLanding;
-  const isStatic = resolvedVariant === "static";
 
   const [isOpen, setIsOpen] = useState(false);
-  const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  const [{ active: activeGroup, previous: previousGroup }, setNavGroup] =
+    useState<{ active: string | null; previous: string | null }>({
+      active: null,
+      previous: null,
+    });
   const [panelSizes, setPanelSizes] = useState<Map<string, PanelSize>>(
     new Map()
   );
   const triggerRefs = useRef(new Map<string, HTMLButtonElement>());
   const measureRefs = useRef(new Map<string, HTMLDivElement>());
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const previousGroupRef = useRef<string | null>(null);
+
+  const setActiveGroup = useCallback((next: string | null) => {
+    setNavGroup((current) => {
+      if (current.active === next) {
+        return current;
+      }
+      return { active: next, previous: current.active };
+    });
+  }, []);
 
   const groups = useMemo<MarketingNavGroup[]>(
     () =>
@@ -258,7 +331,8 @@ export function Navbar({ variant }: NavbarProps = {}) {
     []
   );
 
-  const isAuthenticated = useDashboardSession();
+  const { isAuthenticated, isResolved } = useDashboardSession();
+  useNavbarAuthHotkeys({ isAuthenticated, isResolved });
   const reduceMotion = useReducedMotion();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
@@ -293,17 +367,17 @@ export function Navbar({ variant }: NavbarProps = {}) {
     closeTimerRef.current = setTimeout(() => {
       setActiveGroup(null);
     }, HOVER_CLOSE_DELAY);
-  }, [cancelClose]);
+  }, [cancelClose, setActiveGroup]);
 
   const openGroup = useCallback(
     (label: string) => {
       cancelClose();
       setActiveGroup(label);
     },
-    [cancelClose]
+    [cancelClose, setActiveGroup]
   );
 
-  const closePanel = useCallback(() => setActiveGroup(null), []);
+  const closePanel = useCallback(() => setActiveGroup(null), [setActiveGroup]);
 
   useEffect(() => {
     if (isOpen) {
@@ -333,7 +407,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
     }
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, []);
+  }, [setActiveGroup]);
 
   useEffect(() => {
     const nodes = measureRefs.current;
@@ -354,52 +428,27 @@ export function Navbar({ variant }: NavbarProps = {}) {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    previousGroupRef.current = activeGroup;
-  }, [activeGroup]);
-
   const activeGroupData = activeGroup
     ? groups.find((group) => group.label === activeGroup)
     : null;
   const activeSize = activeGroup ? panelSizes.get(activeGroup) : undefined;
 
-  let slideDirection = 0;
-  const previousActive = previousGroupRef.current;
-  if (activeGroup && previousActive && activeGroup !== previousActive) {
-    const currentIndex = groups.findIndex((g) => g.label === activeGroup);
-    const previousIndex = groups.findIndex((g) => g.label === previousActive);
-    if (currentIndex !== -1 && previousIndex !== -1) {
-      slideDirection = currentIndex > previousIndex ? 1 : -1;
-    }
-  }
-
+  const slideDirection = getSlideDirection(groups, activeGroup, previousGroup);
   const direction = reduceMotion ? 0 : slideDirection;
-  const morphTransition = reduceMotion ? { duration: 0 } : MORPH_TRANSITION;
-  const enterExitTransition = reduceMotion
-    ? { duration: 0 }
-    : ENTER_EXIT_TRANSITION;
-  const contentTransition = reduceMotion ? { duration: 0 } : SWAP_TRANSITION;
-  const shellTransition = reduceMotion ? { duration: 0 } : SHELL_TRANSITION;
-  const chrome = resolvedVariant === "pinned" || (tracksScroll && scrolled);
-  const isLandingTop = isLanding && !chrome;
+  const {
+    chrome,
+    contentTransition,
+    enterExitTransition,
+    innerPaddingClass,
+    isLandingTop,
+    morphTransition,
+    positionClass,
+    rowHeightClass,
+    shellAnimate,
+    shellTransition,
+  } = getNavbarPresentation(resolvedVariant, scrolled, reduceMotion ?? false);
   const mutedNavClass =
     "text-[#1E1E1EA6] hover:text-[#1E1E1E] dark:text-neutral-400 dark:hover:text-white";
-  let positionClass = "w-full sticky top-4";
-  if (isLanding) {
-    positionClass = "fixed inset-x-4 sm:inset-x-6";
-  } else if (isStatic) {
-    positionClass = "w-full";
-  }
-  const shellAnimate = isLanding
-    ? {
-        maxWidth: chrome ? "64rem" : "80.9375rem",
-        top: chrome ? "1rem" : "2.5rem",
-      }
-    : { maxWidth: chrome ? "64rem" : "80rem" };
-  const rowHeightClass = isLandingTop ? "h-11 lg:h-[2.4375rem]" : "h-16";
-  const innerPaddingClass = isLandingTop
-    ? "px-7 sm:px-5 lg:px-6 min-[87rem]:px-0"
-    : "px-4 sm:px-6";
 
   return (
     <LazyMotion features={domAnimation} strict>
@@ -411,19 +460,19 @@ export function Navbar({ variant }: NavbarProps = {}) {
       >
         <m.header
           animate={{ borderRadius: chrome ? "1rem" : "0rem" }}
-          className={`transition-[background-color,box-shadow] duration-300 ease-out ${
+          className={`duration-slow transition-[background-color,box-shadow] ease-out ${
             chrome ? ISLAND_CHROME : "bg-transparent"
           }`}
           initial={false}
           transition={shellTransition}
         >
           <div
-            className={`max-lg:transition-[padding] max-lg:duration-300 max-lg:ease-out ${innerPaddingClass}`}
+            className={`max-lg:duration-slow max-lg:transition-[padding] max-lg:ease-out ${innerPaddingClass}`}
           >
             {/* biome-ignore lint/a11y/noStaticElementInteractions: onMouseLeave is a pointer-only convenience to dismiss the hover menu; the menu is fully operable via click, focus, and Escape */}
             {/* biome-ignore lint/a11y/noNoninteractiveElementInteractions: see above */}
             <div
-              className={`relative flex items-center justify-between gap-4 max-lg:transition-[height] max-lg:duration-300 max-lg:ease-out ${rowHeightClass}`}
+              className={`max-lg:duration-slow relative flex items-center justify-between gap-4 max-lg:transition-[height] max-lg:ease-out ${rowHeightClass}`}
               onMouseLeave={scheduleClose}
             >
               <DropdownMenu
@@ -452,7 +501,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                     />
                   }
                 >
-                  <span className="inline-flex origin-left items-center gap-2 transition-transform duration-150 ease-out group-active:scale-95">
+                  <span className="duration-fast inline-flex origin-left items-center gap-2 transition-transform ease-out group-active:scale-95">
                     <span className="flex size-10 items-center justify-center rounded-lg dark:bg-[#F6F3F1] dark:shadow-sm dark:ring-1 dark:inset-shadow-sm dark:shadow-black/40 dark:ring-white/10 dark:inset-shadow-white/8">
                       <NotraMark className="size-7 shrink-0" />
                     </span>
@@ -506,7 +555,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                   if (entry.type === "link") {
                     return (
                       <Link
-                        className={`font-sans text-base leading-5 tracking-[-0.02em] transition-colors duration-150 ease-out ${mutedNavClass}`}
+                        className={`duration-fast font-sans text-base leading-5 tracking-[-0.02em] transition-colors ease-out ${mutedNavClass}`}
                         href={entry.href}
                         key={entry.href}
                         onFocus={() => setActiveGroup(null)}
@@ -524,7 +573,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
                     <button
                       aria-expanded={isActive}
                       aria-haspopup="menu"
-                      className={`inline-flex items-center gap-1 font-sans text-base leading-5 tracking-[-0.02em] transition-colors duration-150 ease-out aria-expanded:text-[#1E1E1E] dark:aria-expanded:text-white ${mutedNavClass}`}
+                      className={`duration-fast inline-flex items-center gap-1 font-sans text-base leading-5 tracking-[-0.02em] transition-colors ease-out aria-expanded:text-[#1E1E1E] dark:aria-expanded:text-white ${mutedNavClass}`}
                       key={entry.label}
                       onClick={() =>
                         setActiveGroup(isActive ? null : entry.label)
@@ -624,31 +673,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
 
               <div className="flex flex-1 items-center justify-end gap-2 lg:gap-3">
                 <ThemeToggle />
-                <div className="hidden items-center gap-3 lg:flex">
-                  {isAuthenticated ? (
-                    <Link
-                      className="font-display text-base leading-[1.14] font-semibold tracking-[-0.015em] text-[#1E1E1E] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
-                      href={DASHBOARD_URL}
-                    >
-                      Dashboard
-                    </Link>
-                  ) : (
-                    <>
-                      <Link
-                        className="font-display text-base leading-[1.14] tracking-[-0.015em] text-[#1E1E1E] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
-                        href={SIGNIN_URL}
-                      >
-                        Sign In
-                      </Link>
-                      <TrackedSignupLink
-                        className="font-display text-base leading-[1.14] font-semibold tracking-[-0.015em] text-[#1E1E1E] transition-opacity duration-150 ease-out hover:opacity-70 dark:text-white"
-                        source="navbar_desktop_signup"
-                      >
-                        Sign Up
-                      </TrackedSignupLink>
-                    </>
-                  )}
-                </div>
+                <DesktopAuthActions isAuthenticated={isAuthenticated} />
                 <button
                   aria-controls="mobile-navigation"
                   aria-expanded={isOpen}
@@ -687,7 +712,7 @@ export function Navbar({ variant }: NavbarProps = {}) {
 }
 
 function MobileNav({ onNavigate }: { onNavigate: () => void }) {
-  const isAuthenticated = useDashboardSession();
+  const { isAuthenticated } = useDashboardSession();
 
   return (
     <div className="flex flex-col gap-3">
@@ -741,7 +766,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
         {isAuthenticated ? (
           <Link
             className="cta-gradient-primary font-display rounded-full px-3 py-2.5 text-center text-sm font-medium tracking-[-0.015em] text-white"
-            href={DASHBOARD_URL}
+            href={AUTH_DASHBOARD_URL}
             onClick={onNavigate}
           >
             Dashboard
@@ -750,7 +775,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
           <>
             <Link
               className="font-display rounded-md px-3 py-2 text-center text-sm tracking-[-0.015em] text-[#1E1E1E] hover:bg-[#C8B2EE26] dark:text-neutral-300 dark:hover:bg-white/6"
-              href={SIGNIN_URL}
+              href={AUTH_SIGNIN_URL}
               onClick={onNavigate}
             >
               Sign In
@@ -758,7 +783,7 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
             <TrackedSignupLink
               className="cta-gradient-primary font-display rounded-full px-3 py-2.5 text-center text-sm font-medium tracking-[-0.015em] text-white"
               onClick={onNavigate}
-              source="navbar_mobile_signup"
+              source={NAVBAR_MOBILE_SIGNUP_SOURCE}
             >
               Sign Up
             </TrackedSignupLink>
@@ -769,11 +794,68 @@ function MobileNav({ onNavigate }: { onNavigate: () => void }) {
   );
 }
 
+const SIGNUP_BUTTON_CLASS =
+  "corner-squircle inline-flex h-8 items-center gap-1.5 rounded-[1rem] bg-white ps-2.5 pe-1.5 font-display text-sm leading-[1.14] font-semibold tracking-[-0.015em] text-[#1E1E1E] shadow-[0_0_0_1px_#ececec,0_1px_2px_#28282814] outline-none transition-[opacity,transform,box-shadow] duration-fast ease-out hover:opacity-90 focus-visible:ring-[3px] focus-visible:ring-ring/50 active:scale-[0.96] supports-[corner-shape:round]:rounded-[1.25rem] dark:bg-white";
+
+function DesktopAuthActions({ isAuthenticated }: NavbarAuthActionsProps) {
+  if (isAuthenticated) {
+    return (
+      <div className="hidden items-center gap-3 lg:flex">
+        <Link
+          aria-keyshortcuts={AUTH_APP_HOTKEY.toLowerCase()}
+          className={SIGNUP_BUTTON_CLASS}
+          href={AUTH_DASHBOARD_URL}
+        >
+          Dashboard
+          <NavbarKbd onLight>{AUTH_APP_HOTKEY}</NavbarKbd>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="hidden items-center gap-3 lg:flex">
+      <Link
+        aria-keyshortcuts={AUTH_SIGNIN_HOTKEY.toLowerCase()}
+        className="font-display duration-fast inline-flex items-center gap-1.5 text-base leading-[1.14] tracking-[-0.015em] text-[#1E1E1E] transition-opacity ease-out hover:opacity-70 dark:text-white"
+        href={AUTH_SIGNIN_URL}
+      >
+        Sign In
+        <NavbarKbd>{AUTH_SIGNIN_HOTKEY}</NavbarKbd>
+      </Link>
+      <TrackedSignupLink
+        aria-keyshortcuts={AUTH_APP_HOTKEY.toLowerCase()}
+        className={SIGNUP_BUTTON_CLASS}
+        source={NAVBAR_DESKTOP_SIGNUP_SOURCE}
+      >
+        Sign Up
+        <NavbarKbd onLight>{AUTH_APP_HOTKEY}</NavbarKbd>
+      </TrackedSignupLink>
+    </div>
+  );
+}
+
+function NavbarKbd({ children, onLight = false }: NavbarKbdProps) {
+  return (
+    <Kbd
+      aria-hidden="true"
+      className={cn(
+        "h-5 min-w-5 rounded-md font-sans text-[0.6875rem] font-medium",
+        onLight
+          ? "bg-[#1E1E1E0F] text-[#1E1E1E99]"
+          : "bg-[#1E1E1E0F] text-[#1E1E1E99] dark:bg-white/10 dark:text-white/50"
+      )}
+    >
+      {children}
+    </Kbd>
+  );
+}
+
 function ChevronIcon({ flipped }: { flipped: boolean }) {
   return (
     <svg
       aria-hidden="true"
-      className={`size-3.5 transition-transform duration-200 ${flipped ? "rotate-180" : ""}`}
+      className={`duration-normal size-3.5 transition-transform ${flipped ? "rotate-180" : ""}`}
       fill="none"
       stroke="currentColor"
       strokeLinecap="round"

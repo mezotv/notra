@@ -42,10 +42,13 @@ import type {
   GeoPersonaRunResponse,
 } from "../types/geo-personas";
 import { resolveGeoGroundedZdrMode } from "../utils/geo-engines";
+import {
+  resolveGroundedEngineByKey,
+  resolveGroundedEngines,
+} from "../utils/geo-grounded-engines";
 import { flushGeoLogEffect, geoLogWarn, logGeoSkip } from "../utils/geo-log";
 import { personaPromptId } from "../utils/geo-personas";
 import { geoSkip } from "./effect";
-import { resolveGroundedEngineByKey, resolveGroundedEngines } from "./engines";
 import {
   GeoPersonaEmptyError,
   GeoPersonaNotFoundError,
@@ -440,7 +443,7 @@ const runGeoPersonaNowProgram = Effect.fn("geo.runPersonaNow")(function* (
 
   const groundedEngines: { grounded: GeoGroundedEngine; zdr: GeoZdrMode }[] =
     [];
-  for (const grounded of resolveGroundedEngines()) {
+  for (const grounded of resolveGroundedEngines(settings.engines, catalog)) {
     const zdr = resolveGeoGroundedZdrMode(catalog, grounded, zdrPolicy);
     if (zdr === null) {
       yield* geoLogWarn({

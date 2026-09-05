@@ -3,7 +3,7 @@ import { cn } from "@notra/ui/lib/utils";
 import type { ChatgptMessageRole } from "@notra/ui/types/chatgpt";
 
 const actionsRevealClassName =
-  "opacity-0 transition-opacity duration-150 [@media(hover:hover)]:group-hover/chatgpt-msg:opacity-100 group-focus-within/chatgpt-msg:opacity-100 [@media(hover:none)]:opacity-100";
+  "opacity-0 transition-opacity duration-fast [@media(hover:hover)]:group-hover/chatgpt-msg:opacity-100 group-focus-within/chatgpt-msg:opacity-100 [@media(hover:none)]:opacity-100";
 
 export function ChatgptMessage({
   from,
