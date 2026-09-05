@@ -9,6 +9,11 @@ import {
   HoverCard,
   HoverCardTrigger,
 } from "@notra/ui/components/ui/hover-card";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
 import { useIsMobile } from "@notra/ui/hooks/use-mobile";
 
 import { Button } from "@/components/button";
@@ -26,6 +31,8 @@ import {
 } from "@/constants/empty-state";
 import {
   GEO_SHELF_ADD_LABEL,
+  GEO_SHELF_COMPETITORS_NONE_HINT,
+  GEO_SHELF_COMPETITORS_UNCHECKED_HINT,
   GEO_SHELF_COMPETITOR_STACK_LIMIT,
   GEO_SHELF_EMPTY_SCANNED_DESCRIPTION,
   GEO_SHELF_EMPTY_TITLE,
@@ -33,6 +40,7 @@ import {
   GEO_SHELF_ENGINE_STACK_LIMIT,
   GEO_SHELF_HOVER_DELAY_MS,
   GEO_SHELF_NO_MATCHES_MESSAGE,
+  GEO_SHELF_PLACEMENT_LABELS,
   GEO_SHELF_SOURCE_KIND_LABELS,
   GEO_SHELF_TABLE_COLUMN,
   GEO_SHELF_TABLE_HEIGHT,
@@ -98,10 +106,24 @@ function CompetitorsCell({ row }: { row: GeoShelfRow }) {
     const unknownCount = row.competitorPlacements.filter(
       (placement) => placement.status === "unknown"
     ).length;
+    const isUnchecked = unknownCount > 0;
+    const label = isUnchecked ? GEO_SHELF_PLACEMENT_LABELS.unknown : "None";
     return (
-      <span className="text-muted-foreground text-xs">
-        {unknownCount > 0 ? "Not checked" : "None"}
-      </span>
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <span className="text-muted-foreground inline-flex cursor-help text-xs" />
+          }
+        >
+          {label}
+        </TooltipTrigger>
+        <TooltipContent className="max-w-xs text-pretty">
+          <span className="block font-medium">{label}</span>
+          {isUnchecked
+            ? GEO_SHELF_COMPETITORS_UNCHECKED_HINT
+            : GEO_SHELF_COMPETITORS_NONE_HINT}
+        </TooltipContent>
+      </Tooltip>
     );
   }
   return (

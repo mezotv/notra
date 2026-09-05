@@ -4,7 +4,6 @@ import type { z } from "zod";
 import type {
   GEO_SHELF_SHELF_FILTERS,
   GEO_SHELF_TICKET_FILTERS,
-  GEO_SHELF_VIEWS,
 } from "@/constants/geo-shelf";
 import type {
   geoShelfCitationSummarySchema,
@@ -89,8 +88,6 @@ export type GeoShelfPreview = z.infer<typeof geoShelfPreviewResponseSchema>;
 
 export type GeoShelfShelfFilter = (typeof GEO_SHELF_SHELF_FILTERS)[number];
 export type GeoShelfTicketFilter = (typeof GEO_SHELF_TICKET_FILTERS)[number];
-export type GeoShelfView = (typeof GEO_SHELF_VIEWS)[number];
-export type GeoShelfBoardColumnId = GeoShelfOpportunityStatus | "untracked";
 
 export interface GeoShelfStoreKey {
   organizationId: string;
@@ -182,11 +179,6 @@ export interface GeoShelfToolbarProps {
   onTicketFilterChange: (value: GeoShelfTicketFilter) => void;
 }
 
-export interface GeoShelfPageControlsProps extends GeoShelfToolbarProps {
-  hasRows: boolean;
-  view: GeoShelfView;
-}
-
 export interface GeoShelfTableProps {
   rows: GeoShelfRow[];
   totalCount: number;
@@ -196,37 +188,12 @@ export interface GeoShelfTableProps {
   onAddShelf: () => void;
 }
 
-export interface GeoShelfBoardItem extends Record<string, unknown> {
-  id: string;
-  name: string;
-  column: GeoShelfBoardColumnId;
-  source: GeoShelfRow;
-}
-
-export interface GeoShelfBoardProps {
-  rows: GeoShelfRow[];
-  currentMemberId: string | null;
-  pendingSourceIds: ReadonlySet<string>;
-  onRowClick: (row: GeoShelfRow) => void;
-  onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
-}
-
-export interface GeoShelfViewProps {
-  view: GeoShelfView;
-  rows: GeoShelfRow[];
-  totalCount: number;
-  currentMemberId: string | null;
-  pendingSourceIds: ReadonlySet<string>;
-  hasScanData: boolean;
-  onAddShelf: () => void;
-  onRowClick: (row: GeoShelfRow) => void;
-  onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
-}
-
 export interface GeoShelfPlacementBadgeProps {
   status: GeoShelfPlacementStatus | null;
   evidence?: GeoShelfPlacement["evidence"];
   className?: string;
+  /** Table cells explain the status on hover. The detail select already is the control. */
+  tooltip?: boolean;
 }
 
 export interface GeoShelfTicketBadgeProps {

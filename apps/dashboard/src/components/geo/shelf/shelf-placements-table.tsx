@@ -95,6 +95,7 @@ export function ShelfPlacementsTable({
                         <ShelfPlacementBadge
                           evidence={placement.evidence}
                           status={placement.status}
+                          tooltip={false}
                         />
                       </SelectValue>
                     </SelectTrigger>
