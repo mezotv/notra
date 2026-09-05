@@ -93,7 +93,7 @@ function rowsForColumn(
   return rows;
 }
 
-const ShelfBoardCardSkeleton = memo(function ShelfBoardCardSkeleton() {
+function ShelfBoardCardSkeleton() {
   return (
     <div aria-hidden className="space-y-2">
       <div className="space-y-1.5">
@@ -110,7 +110,7 @@ const ShelfBoardCardSkeleton = memo(function ShelfBoardCardSkeleton() {
       </div>
     </div>
   );
-});
+}
 
 const ShelfBoardCard = memo(function ShelfBoardCard({
   row,
@@ -123,6 +123,7 @@ const ShelfBoardCard = memo(function ShelfBoardCard({
   isPlaceholder: boolean;
   onActivate: (row: GeoShelfRow) => void;
 }) {
+  "use no memo";
   const { attributes, listeners, setNodeRef } = useSortable({
     id: row.id,
     animateLayoutChanges: skipSortableLayout,
@@ -164,11 +165,7 @@ const ShelfBoardCard = memo(function ShelfBoardCard({
   );
 });
 
-const ShelfBoardCardBody = memo(function ShelfBoardCardBody({
-  row,
-}: {
-  row: GeoShelfRow;
-}) {
+function ShelfBoardCardBody({ row }: { row: GeoShelfRow }) {
   const title = row.title ?? row.domain;
   return (
     <div className="space-y-2">
@@ -200,7 +197,7 @@ const ShelfBoardCardBody = memo(function ShelfBoardCardBody({
       </div>
     </div>
   );
-});
+}
 
 const ShelfBoardColumn = memo(function ShelfBoardColumn({
   columnId,
@@ -227,6 +224,7 @@ const ShelfBoardColumn = memo(function ShelfBoardColumn({
   });
   const itemIds =
     rows.length > 0 ? rows.map((row) => row.id) : EMPTY_COLUMN_IDS;
+  // react-doctor-disable-next-line react-hooks-js/incompatible-library
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
