@@ -1,6 +1,9 @@
 import {
   POSTHOG_DEFAULT_HOST,
   POSTHOG_GROUP_TYPES,
+  POSTHOG_SERVER_FLUSH_AT,
+  POSTHOG_SERVER_FLUSH_INTERVAL_MS,
+  POSTHOG_SERVER_REQUEST_TIMEOUT_MS,
   POSTHOG_SERVICE_DISTINCT_ID_PREFIX,
 } from "@notra/posthog/constants/posthog";
 import type {
@@ -50,9 +53,9 @@ export function getPostHogServer(): PostHog | null {
 
   client = new PostHog(token, {
     host: readHost(),
-    flushAt: 1,
-    flushInterval: 0,
-    requestTimeout: 5000,
+    flushAt: POSTHOG_SERVER_FLUSH_AT,
+    flushInterval: POSTHOG_SERVER_FLUSH_INTERVAL_MS,
+    requestTimeout: POSTHOG_SERVER_REQUEST_TIMEOUT_MS,
   });
 
   return client;
