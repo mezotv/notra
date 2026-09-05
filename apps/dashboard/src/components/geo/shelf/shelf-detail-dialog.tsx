@@ -3,6 +3,7 @@
 import { ArrowUpRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { engineFamilyLabel } from "@notra/geo-core/utils/geo-engine-family";
+import { stripWebsiteProtocol } from "@notra/geo-core/utils/geo-website";
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
@@ -16,21 +17,25 @@ import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { ShelfPlacementsTable } from "@/components/geo/shelf/shelf-placements-table";
 import { ShelfTicketForm } from "@/components/geo/shelf/shelf-ticket-form";
-import {
-  GEO_SHELF_CITATION_WINDOW_DAYS,
-  GEO_SHELF_FETCH_STATUS_LABELS,
-  GEO_SHELF_OWNERSHIP_LABELS,
-  GEO_SHELF_SOURCE_KIND_LABELS,
-} from "@/constants/geo-shelf";
+import { GEO_SHELF_CITATION_WINDOW_DAYS } from "@/constants/geo-shelf";
 import type { GeoShelfDetailDialogProps } from "@/types/geo-shelf";
 import { formatRelative } from "@/utils/format-relative";
 import { formatShelfDate } from "@/utils/geo-shelf";
 
-function SectionTitle({ children }: { children: string }) {
+function SectionHeader({
+  title,
+  meta,
+}: {
+  title: string;
+  meta?: string | null;
+}) {
   return (
-    <h3 className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-      {children}
-    </h3>
+    <div className="flex items-baseline justify-between gap-3">
+      <h3 className="text-sm font-medium">{title}</h3>
+      {meta ? (
+        <p className="text-muted-foreground text-xs text-pretty">{meta}</p>
+      ) : null}
+    </div>
   );
 }
 
@@ -51,92 +56,93 @@ export function ShelfDetailDialog({
   const citations = row.citations;
   const stats = [
     {
-      label: `Cited, last ${GEO_SHELF_CITATION_WINDOW_DAYS}d`,
+      label: `Last ${GEO_SHELF_CITATION_WINDOW_DAYS}d`,
       value: citations.windowCount.toLocaleString(),
     },
-    { label: "Cited, all time", value: citations.totalCount.toLocaleString() },
+    { label: "All time", value: citations.totalCount.toLocaleString() },
     { label: "Prompts", value: citations.promptCount.toLocaleString() },
     { label: "First cited", value: formatShelfDate(citations.firstCitedAt) },
     { label: "Last cited", value: formatShelfDate(citations.lastCitedAt) },
   ];
+  const pageLabel = stripWebsiteProtocol(row.url);
+  const checkedMeta = row.lastFetchedAt
+    ? `Checked ${formatRelative(row.lastFetchedAt)}`
+    : null;
+  const ticketMeta = row.opportunity
+    ? `Opened ${formatRelative(row.opportunity.createdAt)}${
+        row.opportunity.resolvedAt
+          ? ` · closed ${formatRelative(row.opportunity.resolvedAt)}`
+          : ""
+      }`
+    : null;
 
   return (
     <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
-      <ResponsiveDialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
-        <ResponsiveDialogHeader>
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="secondary">
-              {GEO_SHELF_SOURCE_KIND_LABELS[row.kind]}
-            </Badge>
-            <Badge variant="outline">
-              {GEO_SHELF_OWNERSHIP_LABELS[row.ownership]}
-            </Badge>
-            <Badge variant="outline">
-              {GEO_SHELF_FETCH_STATUS_LABELS[row.fetchStatus]}
-            </Badge>
-          </div>
-          <ResponsiveDialogTitle className="text-xl font-semibold">
+      <ResponsiveDialogContent className="max-h-[90vh] gap-8 overflow-x-hidden overflow-y-auto p-5 [scrollbar-gutter:stable] sm:max-w-3xl sm:p-6">
+        <ResponsiveDialogHeader className="gap-2">
+          <ResponsiveDialogTitle className="text-xl font-semibold tracking-tight text-pretty">
             {row.title ?? row.domain}
           </ResponsiveDialogTitle>
-          <ResponsiveDialogDescription className="flex min-w-0 items-center gap-2">
+          <ResponsiveDialogDescription className="min-w-0">
             <a
-              className="hover:text-foreground truncate underline-offset-4 hover:underline"
+              className="text-muted-foreground hover:text-foreground inline-flex max-w-full items-center gap-1.5 text-sm underline-offset-4 hover:underline"
               href={row.url}
-              rel="noopener"
+              rel="noopener noreferrer"
               target="_blank"
+              title={row.url}
             >
-              {row.url}
+              <span className="min-w-0 truncate">{pageLabel}</span>
+              <HugeiconsIcon
+                className="size-3.5 shrink-0"
+                icon={ArrowUpRight01Icon}
+              />
             </a>
-            <HugeiconsIcon
-              className="size-3.5 shrink-0"
-              icon={ArrowUpRight01Icon}
-            />
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
 
-        <div className="space-y-6">
-          <section className="space-y-2">
-            <SectionTitle>Citations</SectionTitle>
-            <dl className="bg-card divide-border grid grid-cols-2 divide-x rounded-xl border sm:grid-cols-5">
-              {stats.map((stat) => (
-                <div
-                  className="flex min-w-0 flex-col gap-0.5 px-3 py-2"
-                  key={stat.label}
-                >
-                  <dt className="text-muted-foreground truncate text-xs">
-                    {stat.label}
-                  </dt>
-                  <dd className="m-0 text-base font-semibold tabular-nums">
-                    {stat.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-            {citations.engines.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-2">
-                {citations.engines.map((engine) => (
-                  <Badge className="gap-1.5" key={engine} variant="outline">
-                    <EngineIcon className="size-3.5" engine={engine} />
-                    {engineFamilyLabel(engine)}
-                  </Badge>
+        <div className="space-y-8">
+          <section className="space-y-3">
+            <SectionHeader title="Citations" />
+            <div className="overflow-hidden rounded-xl border">
+              <dl className="divide-border grid grid-cols-2 divide-y sm:grid-cols-5 sm:divide-x sm:divide-y-0">
+                {stats.map((stat) => (
+                  <div
+                    className="flex min-w-0 flex-col gap-1 px-4 py-3"
+                    key={stat.label}
+                  >
+                    <dt className="text-muted-foreground text-xs">
+                      {stat.label}
+                    </dt>
+                    <dd className="m-0 text-base font-semibold tabular-nums">
+                      {stat.value}
+                    </dd>
+                  </div>
                 ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-xs">
-                No engine has cited this page for your prompts yet.
-              </p>
-            )}
+              </dl>
+              {citations.engines.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-1.5 border-t px-4 py-2.5">
+                  {citations.engines.map((engine) => (
+                    <Badge
+                      className="gap-1.5"
+                      key={engine}
+                      size="sm"
+                      variant="secondary"
+                    >
+                      <EngineIcon className="size-3" engine={engine} />
+                      {engineFamilyLabel(engine)}
+                    </Badge>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-muted-foreground border-t px-4 py-2.5 text-xs">
+                  No engine has cited this page for your prompts yet.
+                </p>
+              )}
+            </div>
           </section>
 
-          <section className="space-y-2">
-            <div className="flex items-center justify-between">
-              <SectionTitle>Who is on the shelf</SectionTitle>
-              {row.lastFetchedAt ? (
-                <span className="text-muted-foreground text-xs">
-                  Page checked {formatRelative(row.lastFetchedAt)}
-                </span>
-              ) : null}
-            </div>
+          <section className="space-y-3">
+            <SectionHeader meta={checkedMeta} title="Who is on the shelf" />
             <ShelfPlacementsTable
               disabled={isPending}
               onSetPlacementStatus={onSetPlacementStatus}
@@ -145,29 +151,20 @@ export function ShelfDetailDialog({
             />
           </section>
 
-          <section className="space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <SectionTitle>Ticket</SectionTitle>
-              {row.opportunity ? (
-                <span className="text-muted-foreground text-xs">
-                  Opened {formatRelative(row.opportunity.createdAt)}
-                  {row.opportunity.resolvedAt
-                    ? `, closed ${formatRelative(row.opportunity.resolvedAt)}`
-                    : ""}
-                </span>
-              ) : null}
-            </div>
+          <section className="space-y-3">
+            <SectionHeader meta={ticketMeta} title="Ticket" />
             {row.opportunity ? (
               <ShelfTicketForm
                 currentMemberId={currentMemberId}
                 disabled={isPending}
+                key={row.id}
                 members={members}
                 onChange={(changes) => onUpdateOpportunity(row.id, changes)}
                 opportunity={row.opportunity}
               />
             ) : (
-              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed px-4 py-3">
-                <p className="text-muted-foreground text-sm">
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed px-4 py-4">
+                <p className="text-muted-foreground text-sm text-pretty">
                   {row.isOpportunity
                     ? "Competitors are listed here and you are not. Open a ticket to work on it."
                     : "No one is working on this page."}

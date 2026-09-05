@@ -57,6 +57,16 @@ export const GEO_SHELF_TICKET_FILTERS = [
   "closed",
 ] as const;
 
+export const GEO_SHELF_VIEWS = ["table", "board"] as const;
+
+export const GEO_SHELF_VIEW_LABELS: Record<
+  (typeof GEO_SHELF_VIEWS)[number],
+  string
+> = {
+  table: "Table",
+  board: "Board",
+};
+
 export const GEO_SHELF_SOURCE_KIND_LABELS: Record<
   (typeof GEO_SHELF_SOURCE_KINDS)[number],
   string
@@ -175,6 +185,22 @@ export const GEO_SHELF_TICKET_FILTER_OPTIONS: {
 export const GEO_SHELF_OPEN_STATUSES: readonly (typeof GEO_SHELF_OPPORTUNITY_STATUSES)[number][] =
   ["open", "in_progress"];
 
+export const GEO_SHELF_BOARD_COLUMNS = [
+  { id: "untracked", name: "No ticket" },
+  ...GEO_SHELF_OPPORTUNITY_STATUSES.map((status) => ({
+    id: status,
+    name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS[status],
+  })),
+];
+
+export const GEO_SHELF_BOARD_HEIGHT = 640;
+export const GEO_SHELF_BOARD_COLUMN_WIDTH = 304;
+export const GEO_SHELF_BOARD_COLUMN_HEADER_HEIGHT = 44;
+export const GEO_SHELF_BOARD_CARD_HEIGHT = 128;
+export const GEO_SHELF_BOARD_OVERSCAN = 6;
+export const GEO_SHELF_BOARD_COLUMN_SCROLL_HEIGHT =
+  GEO_SHELF_BOARD_HEIGHT - GEO_SHELF_BOARD_COLUMN_HEADER_HEIGHT;
+
 export const GEO_SHELF_TABLE_ROW_HEIGHT = 56;
 export const GEO_SHELF_TABLE_HEIGHT = 560;
 /** `title` flexes; other columns size to their header/content so the row fits. */
@@ -189,6 +215,7 @@ export const GEO_SHELF_HOVER_DELAY_MS = 150;
 export const GEO_SHELF_ENGINE_STACK_LIMIT = 3;
 export const GEO_SHELF_COMPETITOR_STACK_LIMIT = 4;
 export const GEO_SHELF_NOTES_MAX_LENGTH = 2000;
+export const GEO_SHELF_NOTES_SAVE_DEBOUNCE_MS = 300;
 export const GEO_SHELF_TITLE_MAX_LENGTH = 200;
 export const GEO_SHELF_URL_MAX_LENGTH = 2048;
 export const GEO_SHELF_CITATION_WINDOW_DAYS = 30;

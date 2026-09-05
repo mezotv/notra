@@ -9,6 +9,7 @@ import {
 } from "@/lib/geo-shelf/url";
 
 import type {
+  GeoShelfBoardColumnId,
   GeoShelfFilterState,
   GeoShelfMember,
   GeoShelfNewSourceDraft,
@@ -34,6 +35,27 @@ export function resolveShelfPoc(
     return null;
   }
   return opportunity.pocMemberId ?? opportunity.assigneeMemberId;
+}
+
+export function boardColumnForRow(row: GeoShelfRow): GeoShelfBoardColumnId {
+  return row.opportunity?.status ?? "untracked";
+}
+
+export function groupRowsByBoardColumn(
+  rows: GeoShelfRow[]
+): Record<GeoShelfBoardColumnId, GeoShelfRow[]> {
+  const grouped: Record<GeoShelfBoardColumnId, GeoShelfRow[]> = {
+    untracked: [],
+    open: [],
+    in_progress: [],
+    won: [],
+    lost: [],
+    dismissed: [],
+  };
+  for (const row of rows) {
+    grouped[boardColumnForRow(row)].push(row);
+  }
+  return grouped;
 }
 
 export function toShelfRows(

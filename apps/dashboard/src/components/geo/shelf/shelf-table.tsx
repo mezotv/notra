@@ -115,13 +115,7 @@ function CompetitorsCell({ row }: { row: GeoShelfRow }) {
       <Tooltip>
         <TooltipTrigger
           aria-label={`${label}. ${description}`}
-          nativeButton={false}
-          render={
-            <span
-              className="text-muted-foreground inline-flex cursor-help rounded-sm text-xs focus-visible:outline-2 focus-visible:outline-offset-2"
-              tabIndex={0}
-            />
-          }
+          className="text-muted-foreground inline-flex cursor-help rounded-sm border-0 bg-transparent p-0 text-xs focus-visible:outline-2 focus-visible:outline-offset-2"
         >
           {label}
         </TooltipTrigger>

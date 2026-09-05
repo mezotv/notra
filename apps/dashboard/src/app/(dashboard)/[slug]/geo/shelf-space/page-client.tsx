@@ -14,8 +14,8 @@ import { EmptyState } from "@/components/empty-state";
 import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { ShelfAddDialog } from "@/components/geo/shelf/shelf-add-dialog";
 import { ShelfDetailDialog } from "@/components/geo/shelf/shelf-detail-dialog";
-import { ShelfTable } from "@/components/geo/shelf/shelf-table";
-import { ShelfToolbar } from "@/components/geo/shelf/shelf-toolbar";
+import { ShelfPageControls } from "@/components/geo/shelf/shelf-page-controls";
+import { ShelfView } from "@/components/geo/shelf/shelf-view";
 import { PageContainer } from "@/components/layout/container";
 import {
   GeoProjectProvider,
@@ -31,6 +31,7 @@ import {
   GEO_SHELF_ADD_LABEL,
   GEO_SHELF_SHELF_FILTERS,
   GEO_SHELF_TICKET_FILTERS,
+  GEO_SHELF_VIEWS,
 } from "@/constants/geo-shelf";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoSettings } from "@/lib/hooks/use-geo";
@@ -99,6 +100,12 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
       .withDefault("any")
       .withOptions({ clearOnDefault: true })
   );
+  const [view, setView] = useQueryState(
+    "view",
+    parseAsStringLiteral(GEO_SHELF_VIEWS)
+      .withDefault("table")
+      .withOptions({ clearOnDefault: true })
+  );
   const [addOpen, setAddOpen] = useState(false);
   const [selected, setSelected] = useState<GeoShelfSelection | null>(null);
 
@@ -118,11 +125,12 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
     }
     viewedRef.current = true;
     trackEvent(POSTHOG_EVENTS.GEO_SHELF_VIEWED, {
+      view,
       has_settings: hasSettings,
       shelf_count: shelfCount,
       is_sample_data: isSampleData,
     });
-  }, [isSettingsPending, hasSettings, shelfCount, isSampleData]);
+  }, [isSettingsPending, hasSettings, shelfCount, isSampleData, view]);
 
   if (isSettingsPending) {
     return <GeoShelfSkeleton />;
@@ -204,22 +212,28 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
 
         <div className="space-y-3">
           {rows.length > 0 ? (
-            <ShelfToolbar
+            <ShelfPageControls
               filters={filters}
+              hasRows
               onSearchChange={setSearch}
               onShelfFilterChange={setShelfFilter}
               onTicketFilterChange={setTicketFilter}
+              onViewChange={setView}
+              view={view}
             />
           ) : null}
-          <ShelfTable
+          <ShelfView
+            currentMemberId={currentMemberId}
             hasScanData={shelf.sources.some(
               (source) => source.origin === "scan"
             )}
             onAddShelf={() => setAddOpen(true)}
             onRowClick={openRow}
+            onUpdateOpportunity={shelf.updateOpportunity}
             pendingSourceIds={shelf.pendingSourceIds}
             rows={filteredRows}
             totalCount={rows.length}
+            view={view}
           />
         </div>
       </div>

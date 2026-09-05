@@ -5,6 +5,7 @@ import type { GeoShelfPlacement, GeoShelfSource } from "@/types/geo-shelf";
 import {
   changedShelfOpportunityWrite,
   filterShelfRows,
+  groupRowsByBoardColumn,
   toShelfRows,
 } from "./geo-shelf";
 
@@ -90,5 +91,15 @@ describe("changedShelfOpportunityWrite", () => {
     expect(changedShelfOpportunityWrite(modified, original)).toEqual({
       status: "in_progress",
     });
+  });
+});
+
+describe("groupRowsByBoardColumn", () => {
+  test("puts rows without a ticket in untracked", () => {
+    const rows = toShelfRows([sourceWithOwnPlacement("present")], []);
+    const grouped = groupRowsByBoardColumn(rows);
+
+    expect(grouped.untracked.map((row) => row.id)).toEqual(["source-present"]);
+    expect(grouped.open).toEqual([]);
   });
 });

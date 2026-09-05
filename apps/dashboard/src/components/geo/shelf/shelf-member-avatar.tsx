@@ -13,13 +13,20 @@ import type { GeoShelfMemberAvatarProps } from "@/types/geo-shelf";
 import { getUserAvatarUrl } from "@/utils/avatar";
 import { shelfMemberInitial } from "@/utils/geo-shelf";
 
+const AVATAR_SIZE = {
+  sm: "size-4",
+  md: "size-6",
+} as const;
+
 export function ShelfMemberAvatar({
   member,
   className,
   fallbackLabel = "Unassigned",
   showLabel = true,
+  size = "md",
 }: GeoShelfMemberAvatarProps) {
   const label = member ? member.name || member.email : fallbackLabel;
+  const markClass = AVATAR_SIZE[size];
   return (
     <span
       className={cn(
@@ -31,7 +38,7 @@ export function ShelfMemberAvatar({
       title={member?.email ?? fallbackLabel}
     >
       {member ? (
-        <Avatar className="size-6 shrink-0">
+        <Avatar className={cn("shrink-0", markClass)}>
           <AvatarImage
             alt={label}
             src={getUserAvatarUrl(member.image, member.email)}
@@ -41,12 +48,22 @@ export function ShelfMemberAvatar({
           </AvatarFallback>
         </Avatar>
       ) : (
-        <span className="border-border inline-flex size-6 shrink-0 items-center justify-center rounded-full border border-dashed">
-          <HugeiconsIcon className="size-3.5" icon={UserCircleIcon} />
+        <span
+          className={cn(
+            "border-border inline-flex shrink-0 items-center justify-center rounded-full border border-dashed",
+            markClass
+          )}
+        >
+          <HugeiconsIcon
+            className={size === "sm" ? "size-2.5" : "size-3.5"}
+            icon={UserCircleIcon}
+          />
         </span>
       )}
       {showLabel ? (
-        <span className="truncate text-sm">{label}</span>
+        <span className={cn("truncate", size === "sm" ? "text-xs" : "text-sm")}>
+          {label}
+        </span>
       ) : (
         <span className="sr-only">{label}</span>
       )}
