@@ -155,6 +155,11 @@ export interface GeoEngineAnswer {
   usage?: LanguageModelUsage;
   /** Whether the call ran with ZDR enforced; null when the route did not say. */
   zdrEnforced: boolean | null;
+  /**
+   * Search engines set this when the SERP ran but produced no answer to judge
+   * (for example Google did not show an AI Overview for the query).
+   */
+  absent?: boolean;
 }
 
 export interface GeoGroundedAnswer extends GeoEngineAnswer {
@@ -1107,10 +1112,16 @@ export type GeoModelProviderId =
 export type GeoModelZdr = "all" | "some" | "none";
 
 /**
- * Where a model is served. `cursor` runs through the Cursor SDK and `box`
- * through OpenCode in Upstash Box instead of the AI router.
+ * Where a model is served. `cursor` runs through the Cursor SDK, `box`
+ * through OpenCode in Upstash Box, and `serpapi` through SerpApi's Google
+ * AI Overview endpoint — none of those go through the AI router.
  */
-export type GeoModelGateway = "vercel" | "openrouter" | "cursor" | "box";
+export type GeoModelGateway =
+  | "vercel"
+  | "openrouter"
+  | "cursor"
+  | "box"
+  | "serpapi";
 
 export interface GeoModelProvider {
   id: GeoModelProviderId;
