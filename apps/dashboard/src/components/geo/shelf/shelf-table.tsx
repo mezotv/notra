@@ -22,6 +22,7 @@ import { EmptyStateTablePreview } from "@/components/empty-state-preview";
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { EngineIcon } from "@/components/geo/engine-icon";
 import { ShelfPlacementBadge } from "@/components/geo/shelf/shelf-placement-badge";
+import { ShelfTableContextMenu } from "@/components/geo/shelf/shelf-table-context-menu";
 import { ShelfTicketAssigneeCard } from "@/components/geo/shelf/shelf-ticket-assignee-card";
 import { ShelfTicketBadge } from "@/components/geo/shelf/shelf-ticket-badge";
 import { Table, type TableColumn } from "@/components/motion/table";
@@ -184,7 +185,10 @@ function TicketCell({ row }: { row: GeoShelfRow }) {
 export function ShelfTable({
   rows,
   totalCount,
+  currentMemberId,
   onRowClick,
+  onUpdateOpportunity,
+  onSetPlacementStatus,
   pendingSourceIds,
   hasScanData,
   onAddShelf,
@@ -287,6 +291,16 @@ export function ShelfTable({
       height={GEO_SHELF_TABLE_HEIGHT}
       isRowPinned={(row) => pendingSourceIds.has(row.id)}
       onRowClick={onRowClick}
+      renderRowContextMenu={(row) => (
+        <ShelfTableContextMenu
+          currentMemberId={currentMemberId}
+          disabled={pendingSourceIds.has(row.id)}
+          onOpenDetails={onRowClick}
+          onSetPlacementStatus={onSetPlacementStatus}
+          onUpdateOpportunity={onUpdateOpportunity}
+          row={row}
+        />
+      )}
       resizable
       rowHeight={GEO_SHELF_TABLE_ROW_HEIGHT}
     />

@@ -120,7 +120,7 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
   const viewedRef = useRef(false);
 
   useEffect(() => {
-    if (viewedRef.current || isSettingsPending) {
+    if (viewedRef.current || isSettingsPending || shelf.isLoading) {
       return;
     }
     viewedRef.current = true;
@@ -130,9 +130,16 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
       shelf_count: shelfCount,
       is_sample_data: isSampleData,
     });
-  }, [isSettingsPending, hasSettings, shelfCount, isSampleData, view]);
+  }, [
+    isSettingsPending,
+    shelf.isLoading,
+    hasSettings,
+    shelfCount,
+    isSampleData,
+    view,
+  ]);
 
-  if (isSettingsPending) {
+  if (isSettingsPending || (hasSettings && shelf.isLoading)) {
     return <GeoShelfSkeleton />;
   }
 
@@ -229,9 +236,11 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
             )}
             onAddShelf={() => setAddOpen(true)}
             onRowClick={openRow}
+            onSetPlacementStatus={shelf.setPlacementStatus}
             onUpdateOpportunity={shelf.updateOpportunity}
             pendingSourceIds={shelf.pendingSourceIds}
             rows={filteredRows}
+            ticketFilter={ticketFilter}
             totalCount={rows.length}
             view={view}
           />

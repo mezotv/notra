@@ -3,9 +3,12 @@ import { describe, expect, test } from "bun:test";
 import type { GeoShelfPlacement, GeoShelfSource } from "@/types/geo-shelf";
 
 import {
+  applyShelfBoardOrder,
+  boardColumnsForTicketFilter,
   changedShelfOpportunityWrite,
   filterShelfRows,
   groupRowsByBoardColumn,
+  moveShelfBoardItem,
   toShelfRows,
 } from "./geo-shelf";
 
@@ -101,5 +104,99 @@ describe("groupRowsByBoardColumn", () => {
 
     expect(grouped.untracked.map((row) => row.id)).toEqual(["source-present"]);
     expect(grouped.open).toEqual([]);
+  });
+});
+
+describe("boardColumnsForTicketFilter", () => {
+  test("keeps every column when the ticket filter is any", () => {
+    expect(
+      boardColumnsForTicketFilter("any").map((column) => column.id)
+    ).toEqual(["untracked", "open", "in_progress", "won", "lost", "dismissed"]);
+  });
+
+  test("shows only the in-progress column for that filter", () => {
+    expect(
+      boardColumnsForTicketFilter("in_progress").map((column) => column.id)
+    ).toEqual(["in_progress"]);
+  });
+
+  test("shows closed ticket columns for the closed filter", () => {
+    expect(
+      boardColumnsForTicketFilter("closed").map((column) => column.id)
+    ).toEqual(["won", "lost", "dismissed"]);
+  });
+});
+
+describe("applyShelfBoardOrder", () => {
+  test("keeps a previous column order and appends new ids", () => {
+    const grouped = groupRowsByBoardColumn(
+      toShelfRows(
+        [
+          sourceWithOwnPlacement("present"),
+          sourceWithOwnPlacement("absent"),
+          sourceWithOwnPlacement("unknown"),
+        ],
+        []
+      )
+    );
+
+    const ordered = applyShelfBoardOrder(grouped, {
+      untracked: ["source-unknown", "source-present"],
+      open: [],
+      in_progress: [],
+      won: [],
+      lost: [],
+      dismissed: [],
+    });
+
+    expect(ordered.untracked).toEqual([
+      "source-unknown",
+      "source-present",
+      "source-absent",
+    ]);
+  });
+});
+
+describe("moveShelfBoardItem", () => {
+  const items = {
+    untracked: ["a"],
+    open: ["b", "c"],
+    in_progress: [],
+    won: [],
+    lost: ["d"],
+    dismissed: [],
+  };
+
+  test("reorders within a column", () => {
+    expect(moveShelfBoardItem(items, "b", "c", false)?.open).toEqual([
+      "c",
+      "b",
+    ]);
+  });
+
+  test("inserts above a card in another column", () => {
+    expect(moveShelfBoardItem(items, "d", "b", false)?.open).toEqual([
+      "d",
+      "b",
+      "c",
+    ]);
+    expect(moveShelfBoardItem(items, "d", "b", false)?.lost).toEqual([]);
+  });
+
+  test("inserts below a card in another column", () => {
+    expect(moveShelfBoardItem(items, "d", "b", true)?.open).toEqual([
+      "b",
+      "d",
+      "c",
+    ]);
+  });
+
+  test("appends when dropping onto an empty column", () => {
+    expect(
+      moveShelfBoardItem(items, "a", "in_progress", false)?.in_progress
+    ).toEqual(["a"]);
+    expect(
+      moveShelfBoardItem(items, "a", "in_progress", false)?.untracked
+    ).toEqual([]);
   });
 });

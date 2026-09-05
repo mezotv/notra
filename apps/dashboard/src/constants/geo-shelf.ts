@@ -193,6 +193,18 @@ export const GEO_SHELF_BOARD_COLUMNS = [
   })),
 ];
 
+export const GEO_SHELF_BOARD_COLUMN_IDS_BY_TICKET_FILTER = {
+  any: ["untracked", "open", "in_progress", "won", "lost", "dismissed"],
+  open: ["open"],
+  in_progress: ["in_progress"],
+  mine: ["open", "in_progress"],
+  unassigned: ["open", "in_progress"],
+  closed: ["won", "lost", "dismissed"],
+} as const satisfies Record<
+  (typeof GEO_SHELF_TICKET_FILTERS)[number],
+  readonly (typeof GEO_SHELF_BOARD_COLUMNS)[number]["id"][]
+>;
+
 export const GEO_SHELF_BOARD_HEIGHT = 640;
 export const GEO_SHELF_BOARD_COLUMN_WIDTH = 304;
 export const GEO_SHELF_BOARD_COLUMN_HEADER_HEIGHT = 44;

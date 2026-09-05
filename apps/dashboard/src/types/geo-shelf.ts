@@ -91,6 +91,7 @@ export type GeoShelfShelfFilter = (typeof GEO_SHELF_SHELF_FILTERS)[number];
 export type GeoShelfTicketFilter = (typeof GEO_SHELF_TICKET_FILTERS)[number];
 export type GeoShelfView = (typeof GEO_SHELF_VIEWS)[number];
 export type GeoShelfBoardColumnId = GeoShelfOpportunityStatus | "untracked";
+export type GeoShelfBoardItems = Record<GeoShelfBoardColumnId, string[]>;
 
 export interface GeoShelfStoreKey {
   organizationId: string;
@@ -151,6 +152,7 @@ export interface GeoShelfSourceList {
 
 export interface GeoShelfDbApi {
   sources: GeoShelfSource[];
+  isLoading: boolean;
   isSampleData: boolean;
   pendingSourceIds: ReadonlySet<string>;
   addSource: (source: GeoShelfSource) => void;
@@ -195,6 +197,7 @@ export interface GeoShelfPageControlsProps extends GeoShelfToolbarProps {
 
 export interface GeoShelfBoardProps {
   rows: GeoShelfRow[];
+  ticketFilter: GeoShelfTicketFilter;
   currentMemberId: string | null;
   pendingSourceIds: ReadonlySet<string>;
   onRowClick: (row: GeoShelfRow) => void;
@@ -205,21 +208,35 @@ export interface GeoShelfViewProps {
   view: GeoShelfView;
   rows: GeoShelfRow[];
   totalCount: number;
+  ticketFilter: GeoShelfTicketFilter;
   currentMemberId: string | null;
   pendingSourceIds: ReadonlySet<string>;
   hasScanData: boolean;
   onAddShelf: () => void;
   onRowClick: (row: GeoShelfRow) => void;
   onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
+  onSetPlacementStatus: GeoShelfDbApi["setPlacementStatus"];
 }
 
 export interface GeoShelfTableProps {
   rows: GeoShelfRow[];
   totalCount: number;
+  currentMemberId: string | null;
   onRowClick: (row: GeoShelfRow) => void;
+  onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
+  onSetPlacementStatus: GeoShelfDbApi["setPlacementStatus"];
   pendingSourceIds: ReadonlySet<string>;
   hasScanData: boolean;
   onAddShelf: () => void;
+}
+
+export interface GeoShelfTableContextMenuProps {
+  row: GeoShelfRow;
+  currentMemberId: string | null;
+  disabled: boolean;
+  onOpenDetails: (row: GeoShelfRow) => void;
+  onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
+  onSetPlacementStatus: GeoShelfDbApi["setPlacementStatus"];
 }
 
 export interface GeoShelfPlacementBadgeProps {

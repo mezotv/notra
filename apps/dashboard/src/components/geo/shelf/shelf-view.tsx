@@ -10,12 +10,14 @@ export function ShelfView({
   view,
   rows,
   totalCount,
+  ticketFilter,
   currentMemberId,
   pendingSourceIds,
   hasScanData,
   onAddShelf,
   onRowClick,
   onUpdateOpportunity,
+  onSetPlacementStatus,
 }: GeoShelfViewProps) {
   const showBoard = view === "board" && totalCount > 0;
   const [boardMounted, setBoardMounted] = useState(showBoard);
@@ -28,9 +30,12 @@ export function ShelfView({
     <>
       <Activity mode={showBoard ? "hidden" : "visible"}>
         <ShelfTable
+          currentMemberId={currentMemberId}
           hasScanData={hasScanData}
           onAddShelf={onAddShelf}
           onRowClick={onRowClick}
+          onSetPlacementStatus={onSetPlacementStatus}
+          onUpdateOpportunity={onUpdateOpportunity}
           pendingSourceIds={pendingSourceIds}
           rows={rows}
           totalCount={totalCount}
@@ -44,6 +49,7 @@ export function ShelfView({
             onUpdateOpportunity={onUpdateOpportunity}
             pendingSourceIds={pendingSourceIds}
             rows={rows}
+            ticketFilter={ticketFilter}
           />
         </Activity>
       ) : null}

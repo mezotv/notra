@@ -4,25 +4,35 @@ import {
   DndContext,
   DragOverlay,
   KeyboardSensor,
+  MeasuringStrategy,
   MouseSensor,
   pointerWithin,
+  rectIntersection,
   TouchSensor,
-  useDraggable,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
+  type DragOverEvent,
   type DragStartEvent,
+  type UniqueIdentifier,
 } from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { memo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { ShelfMemberAvatar } from "@/components/geo/shelf/shelf-member-avatar";
 import { ShelfPlacementBadge } from "@/components/geo/shelf/shelf-placement-badge";
 import { ShelfTicketBadge } from "@/components/geo/shelf/shelf-ticket-badge";
 import {
   GEO_SHELF_BOARD_CARD_HEIGHT,
-  GEO_SHELF_BOARD_COLUMNS,
   GEO_SHELF_BOARD_COLUMN_HEADER_HEIGHT,
   GEO_SHELF_BOARD_COLUMN_SCROLL_HEIGHT,
   GEO_SHELF_BOARD_COLUMN_WIDTH,
@@ -33,15 +43,27 @@ import {
 import { cn } from "@/lib/utils";
 import type {
   GeoShelfBoardColumnId,
+  GeoShelfBoardItems,
   GeoShelfBoardProps,
   GeoShelfRow,
 } from "@/types/geo-shelf";
-import { groupRowsByBoardColumn } from "@/utils/geo-shelf";
+import {
+  applyShelfBoardOrder,
+  boardColumnForRow,
+  boardColumnsForTicketFilter,
+  findShelfBoardContainer,
+  groupRowsByBoardColumn,
+  isShelfBoardColumnId,
+  moveShelfBoardItem,
+} from "@/utils/geo-shelf";
 
 const POINTER_ACTIVATION_DISTANCE = 8;
 const TOUCH_ACTIVATION_DELAY_MS = 150;
 const TOUCH_ACTIVATION_TOLERANCE = 8;
-const UNTRACKED_COLUMN: GeoShelfBoardColumnId = "untracked";
+const UNTRACKED_COLUMN = "untracked" as const;
+const EMPTY_COLUMN_IDS: UniqueIdentifier[] = [];
+const skipSortableLayout = () => false;
+const CARD_MIN_HEIGHT = GEO_SHELF_BOARD_CARD_HEIGHT - 8;
 
 const BOARD_SENSORS = {
   mouse: { activationConstraint: { distance: POINTER_ACTIVATION_DISTANCE } },
@@ -53,25 +75,59 @@ const BOARD_SENSORS = {
   },
 } as const;
 
-function columnFromDropId(
-  id: string | number | undefined
-): GeoShelfBoardColumnId | null {
-  const match = GEO_SHELF_BOARD_COLUMNS.find((column) => column.id === id);
-  return match ? (match.id as GeoShelfBoardColumnId) : null;
+const BOARD_MEASURING = {
+  droppable: { strategy: MeasuringStrategy.WhileDragging },
+} as const;
+
+function rowsForColumn(
+  ids: string[],
+  rowById: Map<string, GeoShelfRow>
+): GeoShelfRow[] {
+  const rows: GeoShelfRow[] = [];
+  for (const id of ids) {
+    const row = rowById.get(id);
+    if (row) {
+      rows.push(row);
+    }
+  }
+  return rows;
 }
+
+const ShelfBoardCardSkeleton = memo(function ShelfBoardCardSkeleton() {
+  return (
+    <div aria-hidden className="space-y-2">
+      <div className="space-y-1.5">
+        <div className="bg-muted h-4 w-3/4 rounded" />
+        <div className="bg-muted h-3 w-1/3 rounded" />
+      </div>
+      <div className="flex gap-1.5">
+        <div className="bg-muted h-5 w-14 rounded-full" />
+        <div className="bg-muted h-5 w-16 rounded-full" />
+      </div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="bg-muted h-4 w-20 rounded-full" />
+        <div className="bg-muted h-3 w-12 rounded" />
+      </div>
+    </div>
+  );
+});
 
 const ShelfBoardCard = memo(function ShelfBoardCard({
   row,
   disabled,
+  isPlaceholder,
   onActivate,
 }: {
   row: GeoShelfRow;
   disabled: boolean;
+  isPlaceholder: boolean;
   onActivate: (row: GeoShelfRow) => void;
 }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef } = useSortable({
     id: row.id,
-    disabled,
+    animateLayoutChanges: skipSortableLayout,
+    disabled: { draggable: disabled },
+    data: { type: "card" },
   });
   const title = row.title ?? row.domain;
 
@@ -81,23 +137,29 @@ const ShelfBoardCard = memo(function ShelfBoardCard({
       {...listeners}
       aria-label={title}
       className={cn(
-        "bg-background w-full rounded-lg border p-3 text-left shadow-sm outline-none",
+        "w-full rounded-lg border p-3 text-left outline-none",
+        isPlaceholder
+          ? "border-foreground/15 bg-muted/40 cursor-grabbing border-dashed shadow-none"
+          : "bg-background shadow-sm",
         disabled
           ? "cursor-default opacity-60"
-          : "cursor-grab active:cursor-grabbing",
-        isDragging
-          ? "opacity-30"
-          : "focus-visible:ring-ring focus-visible:ring-2"
+          : !isPlaceholder && "cursor-grab active:cursor-grabbing",
+        !isPlaceholder && "focus-visible:ring-ring focus-visible:ring-2"
       )}
       onClick={() => {
-        if (!isDragging) {
+        if (!isPlaceholder) {
           onActivate(row);
         }
       }}
       ref={setNodeRef}
+      style={{ minHeight: CARD_MIN_HEIGHT }}
       type="button"
     >
-      <ShelfBoardCardBody row={row} />
+      {isPlaceholder ? (
+        <ShelfBoardCardSkeleton />
+      ) : (
+        <ShelfBoardCardBody row={row} />
+      )}
     </button>
   );
 });
@@ -145,12 +207,14 @@ const ShelfBoardColumn = memo(function ShelfBoardColumn({
   name,
   rows,
   pendingSourceIds,
+  activeId,
   onRowClick,
 }: {
   columnId: GeoShelfBoardColumnId;
   name: string;
   rows: GeoShelfRow[];
   pendingSourceIds: ReadonlySet<string>;
+  activeId: string | null;
   onRowClick: (row: GeoShelfRow) => void;
 }) {
   "use no memo";
@@ -158,8 +222,11 @@ const ShelfBoardColumn = memo(function ShelfBoardColumn({
   const dropDisabled = columnId === UNTRACKED_COLUMN;
   const { isOver, setNodeRef } = useDroppable({
     id: columnId,
+    data: { type: "column" },
     disabled: dropDisabled,
   });
+  const itemIds =
+    rows.length > 0 ? rows.map((row) => row.id) : EMPTY_COLUMN_IDS;
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
@@ -194,46 +261,50 @@ const ShelfBoardColumn = memo(function ShelfBoardColumn({
           {rows.length}
         </span>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto p-2" ref={scrollRef}>
-        {rows.length === 0 ? (
-          <p className="text-muted-foreground px-1 py-6 text-center text-xs">
-            Empty
-          </p>
-        ) : (
-          <div
-            className="relative w-full"
-            style={{ height: virtualizer.getTotalSize() }}
-          >
-            {virtualizer.getVirtualItems().map((item) => {
-              const row = rows[item.index];
-              if (!row) {
-                return null;
-              }
-              return (
-                <div
-                  className="absolute top-0 right-0 left-0 pb-2"
-                  data-index={item.index}
-                  key={item.key}
-                  ref={virtualizer.measureElement}
-                  style={{ transform: `translateY(${item.start}px)` }}
-                >
-                  <ShelfBoardCard
-                    disabled={pendingSourceIds.has(row.id)}
-                    onActivate={onRowClick}
-                    row={row}
-                  />
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2" ref={scrollRef}>
+          {rows.length === 0 ? (
+            <p className="text-muted-foreground px-1 py-6 text-center text-xs">
+              Empty
+            </p>
+          ) : (
+            <div
+              className="relative w-full"
+              style={{ height: virtualizer.getTotalSize() }}
+            >
+              {virtualizer.getVirtualItems().map((item) => {
+                const row = rows[item.index];
+                if (!row) {
+                  return null;
+                }
+                return (
+                  <div
+                    className="absolute top-0 right-0 left-0 pb-2"
+                    data-index={item.index}
+                    key={item.key}
+                    ref={virtualizer.measureElement}
+                    style={{ transform: `translateY(${item.start}px)` }}
+                  >
+                    <ShelfBoardCard
+                      disabled={pendingSourceIds.has(row.id)}
+                      isPlaceholder={row.id === activeId}
+                      onActivate={onRowClick}
+                      row={row}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </SortableContext>
     </section>
   );
 });
 
 export function ShelfBoard({
   rows,
+  ticketFilter,
   currentMemberId,
   pendingSourceIds,
   onRowClick,
@@ -241,11 +312,23 @@ export function ShelfBoard({
 }: GeoShelfBoardProps) {
   const grouped = groupRowsByBoardColumn(rows);
   const rowById = new Map(rows.map((row) => [row.id, row]));
+  const visibleColumns = boardColumnsForTicketFilter(ticketFilter);
+  const visibleColumnIds = new Set(
+    visibleColumns.map((column) => column.id as GeoShelfBoardColumnId)
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [draftItems, setDraftItems] = useState<GeoShelfBoardItems | null>(null);
+  const [committedOrder, setCommittedOrder] =
+    useState<GeoShelfBoardItems | null>(null);
+  const lastOverId = useRef<UniqueIdentifier | null>(null);
+  const recentlyMovedToNewContainer = useRef(false);
+  const items = draftItems ?? applyShelfBoardOrder(grouped, committedOrder);
   const sensors = useSensors(
     useSensor(MouseSensor, BOARD_SENSORS.mouse),
     useSensor(TouchSensor, BOARD_SENSORS.touch),
-    useSensor(KeyboardSensor)
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
   );
   const activeRow = activeId ? (rowById.get(activeId) ?? null) : null;
 
@@ -257,18 +340,126 @@ export function ShelfBoard({
     );
   }
 
+  const collisionDetection: CollisionDetection = (args) => {
+    const pointerHits = pointerWithin(args);
+    const cardHit = pointerHits.find((collision) => {
+      const id = String(collision.id);
+      return id !== activeId && !isShelfBoardColumnId(id);
+    });
+    if (cardHit) {
+      lastOverId.current = cardHit.id;
+      return [cardHit];
+    }
+
+    if (activeId && pointerHits.some((hit) => String(hit.id) === activeId)) {
+      lastOverId.current = activeId;
+      return [{ id: activeId }];
+    }
+
+    const columnHit = pointerHits.find((collision) =>
+      isShelfBoardColumnId(String(collision.id))
+    );
+    if (columnHit) {
+      lastOverId.current = columnHit.id;
+      return [columnHit];
+    }
+
+    const intersecting = rectIntersection(args);
+    const fallback =
+      intersecting.find((collision) => {
+        const id = String(collision.id);
+        return id !== activeId && !isShelfBoardColumnId(id);
+      }) ??
+      intersecting.find((collision) =>
+        isShelfBoardColumnId(String(collision.id))
+      );
+
+    if (fallback) {
+      lastOverId.current = fallback.id;
+      return [fallback];
+    }
+
+    if (recentlyMovedToNewContainer.current) {
+      lastOverId.current = activeId;
+    }
+
+    return lastOverId.current ? [{ id: lastOverId.current }] : [];
+  };
+
   const handleDragStart = (event: DragStartEvent) => {
     setActiveId(String(event.active.id));
+    setDraftItems(items);
+  };
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const over = event.over;
+    const draggedId = String(event.active.id);
+    if (!over || String(over.id) === draggedId) {
+      return;
+    }
+
+    const activeContainer = findShelfBoardContainer(draggedId, items);
+    const overContainer = findShelfBoardContainer(String(over.id), items);
+    if (
+      !activeContainer ||
+      !overContainer ||
+      !visibleColumnIds.has(overContainer) ||
+      (overContainer === UNTRACKED_COLUMN &&
+        activeContainer !== UNTRACKED_COLUMN)
+    ) {
+      return;
+    }
+
+    const translated = event.active.rect.current.translated;
+    const pointerBelowOverItem = Boolean(
+      translated && translated.top > over.rect.top + over.rect.height
+    );
+    const next = moveShelfBoardItem(
+      items,
+      draggedId,
+      String(over.id),
+      pointerBelowOverItem
+    );
+    if (!next) {
+      return;
+    }
+    if (activeContainer !== overContainer) {
+      recentlyMovedToNewContainer.current = true;
+      requestAnimationFrame(() => {
+        recentlyMovedToNewContainer.current = false;
+      });
+    }
+    setDraftItems(next);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    const draggedId = String(event.active.id);
+    const overId = event.over?.id;
+    const row = rowById.get(draggedId);
+    const target = overId
+      ? findShelfBoardContainer(String(overId), items)
+      : null;
+    const sourceColumn = row ? boardColumnForRow(row) : null;
+    const rejected =
+      !target ||
+      !visibleColumnIds.has(target) ||
+      (target === UNTRACKED_COLUMN && sourceColumn !== UNTRACKED_COLUMN);
+
     setActiveId(null);
-    const target = columnFromDropId(event.over?.id);
-    if (!target || target === UNTRACKED_COLUMN) {
+    lastOverId.current = null;
+
+    if (rejected || !draftItems) {
+      setDraftItems(null);
       return;
     }
-    const row = rowById.get(String(event.active.id));
-    if (!row || row.opportunity?.status === target) {
+
+    setCommittedOrder(draftItems);
+    setDraftItems(null);
+
+    if (!row || target === UNTRACKED_COLUMN) {
+      return;
+    }
+    if (row.opportunity?.status === target) {
       return;
     }
     onUpdateOpportunity(row.id, {
@@ -277,11 +468,19 @@ export function ShelfBoard({
     });
   };
 
+  const handleDragCancel = () => {
+    setActiveId(null);
+    setDraftItems(null);
+    lastOverId.current = null;
+  };
+
   return (
     <DndContext
-      collisionDetection={pointerWithin}
-      onDragCancel={() => setActiveId(null)}
+      collisionDetection={collisionDetection}
+      measuring={BOARD_MEASURING}
+      onDragCancel={handleDragCancel}
       onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
       onDragStart={handleDragStart}
       sensors={sensors}
     >
@@ -289,30 +488,39 @@ export function ShelfBoard({
         className="flex gap-3 overflow-x-auto overflow-y-hidden"
         style={{ height: GEO_SHELF_BOARD_HEIGHT }}
       >
-        {GEO_SHELF_BOARD_COLUMNS.map((column) => {
+        {visibleColumns.map((column) => {
           const columnId = column.id as GeoShelfBoardColumnId;
           return (
             <ShelfBoardColumn
+              activeId={activeId}
               columnId={columnId}
               key={columnId}
               name={column.name}
               onRowClick={onRowClick}
               pendingSourceIds={pendingSourceIds}
-              rows={grouped[columnId]}
+              rows={rowsForColumn(items[columnId], rowById)}
             />
           );
         })}
       </div>
-      <DragOverlay dropAnimation={null}>
-        {activeRow ? (
-          <div
-            className="bg-background rounded-lg border p-3 shadow-md"
-            style={{ width: GEO_SHELF_BOARD_COLUMN_WIDTH - 16 }}
-          >
-            <ShelfBoardCardBody row={activeRow} />
-          </div>
-        ) : null}
-      </DragOverlay>
+      {typeof window === "undefined"
+        ? null
+        : createPortal(
+            <DragOverlay dropAnimation={null}>
+              {activeRow ? (
+                <div
+                  className="bg-background ring-foreground/10 cursor-grabbing rounded-lg border p-3 shadow-lg ring-1"
+                  style={{
+                    minHeight: CARD_MIN_HEIGHT,
+                    width: GEO_SHELF_BOARD_COLUMN_WIDTH - 16,
+                  }}
+                >
+                  <ShelfBoardCardBody row={activeRow} />
+                </div>
+              ) : null}
+            </DragOverlay>,
+            document.body
+          )}
     </DndContext>
   );
 }
