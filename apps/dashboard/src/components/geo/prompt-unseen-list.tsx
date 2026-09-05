@@ -77,7 +77,6 @@ export function PromptUnseenList({
             <Link
               className={cn(buttonVariants({ size: "sm" }))}
               href={gapsHref}
-              prefetch={true}
             >
               {GEO_FAMILY_IMPROVE_CTA_GAPS}
             </Link>

@@ -60,6 +60,8 @@ export interface NavStudioProps {
   organizationId: string;
   /** Route to resolve the active item against; may lead the real pathname. */
   pathname: string;
+  /** Skip recent-post fetching while the Studio panel is hidden. */
+  loadRecent?: boolean;
 }
 
 export interface NavModePrimaryActionProps {
@@ -72,6 +74,7 @@ export interface NavModePrimaryActionProps {
 export interface NavRecentContentProps {
   slug: string;
   organizationId: string;
+  enabled?: boolean;
 }
 
 export interface NavUtilityProps {

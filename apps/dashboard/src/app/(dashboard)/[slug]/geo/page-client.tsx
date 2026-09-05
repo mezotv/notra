@@ -58,6 +58,10 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
       : orgFromList;
   const organizationId = organization?.id ?? "";
   const geoRange = useGeoRange();
+  const [activeTab, setActiveTab] = useQueryState(
+    "tab",
+    parseAsStringLiteral(GEO_TAB_VALUES).withDefault(GEO_DEFAULT_TAB)
+  );
 
   const { data: settingsData, isPending: isSettingsPending } =
     useGeoSettings(organizationId);
@@ -66,7 +70,8 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
   const { data: prompts } = useGeoPrompts(organizationId);
   const { data: promptResults } = useGeoPromptResults(
     organizationId,
-    geoRange.query
+    geoRange.query,
+    activeTab === "prompts"
   );
   const { data: competitorShare } = useGeoCompetitorShare(
     organizationId,
@@ -79,7 +84,8 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
   );
   const { data: trafficJourneys } = useGeoTrafficJourneys(
     organizationId,
-    geoRange.query
+    geoRange.query,
+    activeTab === "journeys"
   );
   const startScan = useGeoStartScan(organizationId);
   const isScanning = useIsGeoScanning(organizationId);
@@ -90,11 +96,6 @@ function GeoPageContent({ organizationSlug }: GeoPageContentProps) {
   useHotkey("R", () => setPreflightOpen(true), {
     enabled: !isScanning && !preflightOpen,
   });
-
-  const [activeTab, setActiveTab] = useQueryState(
-    "tab",
-    parseAsStringLiteral(GEO_TAB_VALUES).withDefault(GEO_DEFAULT_TAB)
-  );
 
   const reduceMotion = useReducedMotion();
   const [modulesVisible, setModulesVisible] = useState(false);

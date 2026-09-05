@@ -304,14 +304,15 @@ export function useGeoTimeseries(
 
 export function useGeoPromptResults(
   organizationId: string,
-  range?: GeoRangeQuery
+  range?: GeoRangeQuery,
+  enabled = true
 ) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoPromptResultsResponse>({
     ...dashboardOrpc.geo.promptResults.queryOptions({
       input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
-    enabled: !!organizationId,
+    enabled: enabled && !!organizationId,
     placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load prompt results" },
   });
@@ -754,14 +755,15 @@ export function useGeoTrafficPages(
 
 export function useGeoTrafficJourneys(
   organizationId: string,
-  range?: GeoRangeQuery
+  range?: GeoRangeQuery,
+  enabled = true
 ) {
   const { projectId } = useGeoProjectScope();
   return useQuery<GeoTrafficJourneysResponse>({
     ...dashboardOrpc.geo.trafficJourneys.queryOptions({
       input: { organizationId, projectId, ...toGeoWindowInput(range) },
     }),
-    enabled: !!organizationId,
+    enabled: enabled && !!organizationId,
     placeholderData: keepPreviousData,
     meta: { errorMessage: "Failed to load AI journeys" },
   });

@@ -7,7 +7,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
 } from "@notra/ui/components/ui/sidebar";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import {
@@ -18,6 +17,7 @@ import { useHasAiCreditsFeature } from "@/lib/hooks/use-plan";
 import type { NavSettingsProps } from "@/types/components/nav";
 
 import { SidebarLabel } from "./sidebar-label";
+import { SidebarNavLink } from "./sidebar-nav-link";
 
 export function NavSettings({ slug }: NavSettingsProps) {
   const pathname = usePathname();
@@ -40,10 +40,10 @@ export function NavSettings({ slug }: NavSettingsProps) {
               isActive={isActive(item.url)}
               key={item.label}
               render={
-                <Link href={`/${slug}/${item.url}`} prefetch={true} replace>
+                <SidebarNavLink href={`/${slug}/${item.url}`} replace>
                   <HugeiconsIcon icon={item.icon} />
                   <SidebarLabel>{item.label}</SidebarLabel>
-                </Link>
+                </SidebarNavLink>
               }
               tooltip={item.label}
             />
@@ -61,10 +61,10 @@ export function NavSettings({ slug }: NavSettingsProps) {
               isActive={isActive(item.url)}
               key={item.label}
               render={
-                <Link href={`/${slug}/${item.url}`} prefetch={true} replace>
+                <SidebarNavLink href={`/${slug}/${item.url}`} replace>
                   <HugeiconsIcon icon={item.icon} />
                   <SidebarLabel>{item.label}</SidebarLabel>
-                </Link>
+                </SidebarNavLink>
               }
               tooltip={item.label}
             />

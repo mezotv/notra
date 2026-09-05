@@ -8,15 +8,14 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@notra/ui/components/ui/sidebar";
-import Link from "next/link";
 
-import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import type { NavListProps } from "@/types/components/nav";
 import { geoNavHref, isGeoDashboardPath } from "@/utils/geo-paths";
 import { resolveNavItems } from "@/utils/nav";
 
 import { NavLockHint } from "./nav-lock-hint";
 import { SidebarLabel } from "./sidebar-label";
+import { SidebarNavLink } from "./sidebar-nav-link";
 
 export function NavList({
   links,
@@ -36,17 +35,12 @@ export function NavList({
     <SidebarMenu>
       {items.map((item) => {
         const isGeoItem = isGeoDashboardPath(item.link);
-        const prefetch =
-          isGeoItem || item.link === AGENT_FEEDBACK_NAV_LINK ? true : undefined;
         return (
           <SidebarMenuItem key={item.link}>
             <SidebarMenuButton
               isActive={item.link === activeLink}
               render={
-                <Link
-                  href={geoNavHref(slug, item.link, projectId)}
-                  prefetch={prefetch}
-                >
+                <SidebarNavLink href={geoNavHref(slug, item.link, projectId)}>
                   <HugeiconsIcon icon={item.icon} />
                   <SidebarLabel>{item.label}</SidebarLabel>
                   {item.badge && (
@@ -60,7 +54,7 @@ export function NavList({
                   {geoLocked && isGeoItem && (
                     <NavLockHint message={GEO_UPGRADE_TOOLTIP} />
                   )}
-                </Link>
+                </SidebarNavLink>
               }
               tooltip={item.label}
             />

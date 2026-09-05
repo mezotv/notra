@@ -260,6 +260,7 @@ export function ChatHistoryNav() {
                             onMouseEnter={() =>
                               prefetchChatHistory(session.chatId)
                             }
+                            prefetch={false}
                             replace={isOnChatRoute}
                           >
                             <span className="truncate">{session.title}</span>
@@ -358,7 +359,7 @@ export function ChatHistoryNav() {
                 render={
                   <Link
                     href={`/${slug}/chat`}
-                    prefetch={true}
+                    prefetch={false}
                     replace={isOnChatRoute}
                   >
                     <HugeiconsIcon icon={Add01Icon} />

@@ -52,9 +52,8 @@ export function NavMain() {
       />
       {/*
         Both mode panels stay mounted so the swoosh has something to fade
-        between. Only the active one sits in flow — a stacked layout would
-        grow to whichever panel is taller, including while hidden async
-        content (recent posts, entitlements) settles.
+        between. Hidden Studio recent posts stay unfetched until that mode is
+        active so first paint does not wait on content.list.
       */}
       <SidebarSwap
         activeId={mode}
@@ -76,6 +75,7 @@ export function NavMain() {
             side: "right",
             children: (
               <NavStudio
+                loadRecent={mode === "studio"}
                 organizationId={activeOrganization.id}
                 pathname={navPathname}
                 slug={slug}

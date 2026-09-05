@@ -19,7 +19,12 @@ import { CollapsibleSidebarGroup } from "./collapsible-nav-group";
 import { NavList } from "./nav-list";
 import { NavRecentContent } from "./nav-recent-content";
 
-export function NavStudio({ slug, organizationId, pathname }: NavStudioProps) {
+export function NavStudio({
+  slug,
+  organizationId,
+  pathname,
+  loadRecent = true,
+}: NavStudioProps) {
   const visibility = useNavVisibility();
   const activeLink = resolveActiveNavLink(pathname, slug, NAV_STUDIO_ALL_LINKS);
 
@@ -35,7 +40,11 @@ export function NavStudio({ slug, organizationId, pathname }: NavStudioProps) {
           />
         </SidebarGroupContent>
       </SidebarGroup>
-      <NavRecentContent organizationId={organizationId} slug={slug} />
+      <NavRecentContent
+        enabled={loadRecent}
+        organizationId={organizationId}
+        slug={slug}
+      />
       <CollapsibleSidebarGroup label={NAV_CATEGORY_LABELS.automation}>
         <NavList
           activeLink={activeLink}
