@@ -43,6 +43,7 @@ import type {
 } from "@/types/geo-personas-ui";
 import {
   groupPersonaMemories,
+  personaProfilePoints,
   toPersonaEngineThreads,
 } from "@/utils/geo-personas";
 
@@ -114,13 +115,11 @@ function PersonaProfile({ persona }: PersonaProfileProps) {
     <div className="space-y-8 px-6 py-5">
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="space-y-6">
-          <p className="text-sm leading-relaxed text-pretty">
-            {persona.summary}
-          </p>
+          <Section title="Overview">
+            <BulletList items={personaProfilePoints(persona.summary)} />
+          </Section>
           <Section title="How they search">
-            <p className="text-muted-foreground text-sm leading-relaxed text-pretty">
-              {persona.searchStyle}
-            </p>
+            <BulletList items={personaProfilePoints(persona.searchStyle)} />
           </Section>
           {stack.length > 0 ? (
             <Section title="Current stack">

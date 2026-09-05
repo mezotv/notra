@@ -101,9 +101,9 @@ Create between ${GEO_PERSONA_MIN_COUNT} and ${GEO_PERSONA_MAX_COUNT} ideal custo
 Rules for each persona:
 - name: a realistic full name matching the likely market and language of the company.
 - role: their job title. company: the kind of company they work at, with size and industry, for example "45-person B2B SaaS startup, fintech".
-- summary: two to four sentences about their situation and why they are researching now.
-- searchStyle: how they type into AI chats, including tone, length, whether they use jargon, and which details they always include.
-- goals, painPoints, currentStack, buyingTriggers, objections: short concrete items, not generic phrases. currentStack must name real tools they plausibly use today, including at least one tracked competitor or adjacent tool where that fits.
+- summary: two to four short key points about their situation and why they are researching now. Return a single string with one point per newline, without bullet markers. Use concise phrases, not a paragraph.
+- searchStyle: short key points covering how they type into AI chats: tone, length, jargon, and details they always include. Return a single string with one point per newline, without bullet markers.
+- goals, painPoints, currentStack, buyingTriggers, objections: concise, concrete phrases, one idea per item, not full paragraphs or generic phrases. Keep profile points brief and put supporting detail in memories. currentStack must name real tools they plausibly use today, including at least one tracked competitor or adjacent tool where that fits.
 - memories: between ${GEO_PERSONA_MIN_MEMORIES} and ${GEO_PERSONA_MAX_MEMORIES} first-person facts this person would remember. Use kind "background" for career and company facts, "experience" for specific things that happened with tools or vendors, "preference" for how they like to work and buy, and "constraint" for budget, compliance, or team limits. Each memory is one or two sentences, specific enough that the person could refer back to it in a conversation.
 
 Make the personas clearly different from each other in seniority, company size, urgency, and the angle from which they enter the category. Never mention ${context.companyName} inside a persona; they have not heard of it yet.`;

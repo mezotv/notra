@@ -79,3 +79,6 @@ export const GEO_PERSONA_PROFILE_SECTIONS = [
   key: keyof GeoPersonaProfile;
   label: string;
 }[];
+export const GEO_PERSONA_SENTENCE_SEGMENTER = new Intl.Segmenter(undefined, {
+  granularity: "sentence",
+});

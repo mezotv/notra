@@ -91,6 +91,7 @@ export async function runGeoScanTaskBatchStep(
   tasks: GeoScanPlannedTask[],
   claimedAt: string
 ): Promise<GeoScanBatchOutcome> {
+  "use step";
   try {
     return await Effect.runPromise(
       runGeoScanTaskBatch(context, tasks, claimedAt).pipe(
@@ -107,6 +108,7 @@ export async function runGeoScanSequenceBatchStep(
   sequences: GeoScanPlannedSequence[],
   claimedAt: string
 ): Promise<GeoScanBatchOutcome> {
+  "use step";
   try {
     return await Effect.runPromise(
       runGeoScanSequenceBatch(context, sequences, claimedAt).pipe(
@@ -123,6 +125,7 @@ export async function runGeoScanPersonaBatchStep(
   personas: GeoScanPlannedPersona[],
   claimedAt: string
 ): Promise<GeoScanBatchOutcome> {
+  "use step";
   try {
     return await Effect.runPromise(
       runGeoScanPersonaBatch(context, personas, claimedAt).pipe(
@@ -183,6 +186,7 @@ export async function trackGeoScanRetryScheduledStep(
   checks: number,
   durationMs: number
 ): Promise<void> {
+  "use step";
   try {
     await trackGeoScanStepResult({
       organizationId,
