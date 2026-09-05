@@ -88,11 +88,7 @@ export function ShelfTicketForm({
       if (timeoutRef.current !== null) {
         window.clearTimeout(timeoutRef.current);
       }
-      persistNotesIfChanged(
-        draftNotesRef.current,
-        savedNotesRef,
-        onChangeRef
-      );
+      persistNotesIfChanged(draftNotesRef.current, savedNotesRef, onChangeRef);
     },
     []
   );
