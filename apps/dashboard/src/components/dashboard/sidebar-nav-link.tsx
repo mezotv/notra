@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import type { ComponentProps } from "react";
+import { useState } from "react";
 
 /**
  * Sidebar destinations stay in the viewport (both GEO and Studio panels stay
- * mounted for the mode swoosh). Default Next.js prefetch would compile and
- * fetch every route on first paint. Prefetch only after the user aims at a
- * link.
+ * mounted for the mode swoosh). Viewport prefetch would compile and fetch
+ * every route on first paint. Keep prefetch off until hover or focus, then
+ * restore Link's default so Next.js prefetches the App Shell and keeps the
+ * cache in sync.
  */
 export function SidebarNavLink({
   href,
@@ -16,12 +17,10 @@ export function SidebarNavLink({
   onMouseEnter,
   ...props
 }: Omit<ComponentProps<typeof Link>, "prefetch">) {
-  const router = useRouter();
+  const [prefetch, setPrefetch] = useState<false | null>(false);
 
-  function prefetchRoute() {
-    if (typeof href === "string") {
-      router.prefetch(href);
-    }
+  function enablePrefetch() {
+    setPrefetch(null);
   }
 
   return (
@@ -29,14 +28,14 @@ export function SidebarNavLink({
       {...props}
       href={href}
       onFocus={(event) => {
-        prefetchRoute();
+        enablePrefetch();
         onFocus?.(event);
       }}
       onMouseEnter={(event) => {
-        prefetchRoute();
+        enablePrefetch();
         onMouseEnter?.(event);
       }}
-      prefetch={false}
+      prefetch={prefetch}
     />
   );
 }

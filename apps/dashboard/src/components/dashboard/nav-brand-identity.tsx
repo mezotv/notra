@@ -8,7 +8,6 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@notra/ui/components/ui/sidebar";
-import Link from "next/link";
 
 import { useNavBrandIdentity } from "@/lib/hooks/use-nav-brand-identity";
 import type {
@@ -18,6 +17,7 @@ import type {
 } from "@/types/components/nav";
 
 import { SidebarLabel } from "./sidebar-label";
+import { SidebarNavLink } from "./sidebar-nav-link";
 
 export function NavBrandIdentity({ slug }: NavBrandIdentityProps) {
   const model = useNavBrandIdentity(slug);
@@ -46,11 +46,11 @@ function NavBrandIdentityLink({ item }: NavBrandIdentityLinkProps) {
       <SidebarMenuButton
         isActive={item.isActive}
         render={
-          <Link href={item.href} prefetch={false} replace>
+          <SidebarNavLink href={item.href} replace>
             <HugeiconsIcon icon={item.icon} />
             <SidebarLabel>{item.label}</SidebarLabel>
             <NavCountBadge count={item.count} />
-          </Link>
+          </SidebarNavLink>
         }
         tooltip={item.label}
       />
