@@ -1,4 +1,11 @@
 import {
+  GEO_BRIEF_MAX_CHECKLIST,
+  GEO_BRIEF_MAX_CLAIMS,
+  GEO_BRIEF_MAX_EVIDENCE_ITEMS,
+  GEO_BRIEF_MAX_LINKS,
+  GEO_BRIEF_MAX_QUESTIONS,
+  GEO_BRIEF_MAX_SECTIONS,
+  GEO_BRIEF_MIN_SECTIONS,
   GEO_PLANNER_MAX_EVIDENCE_ENGINES,
   GEO_PLANNER_MAX_EVIDENCE_EXCERPT_CHARS,
   GEO_PLANNER_MAX_EVIDENCE_SOURCES,
@@ -48,6 +55,12 @@ export function buildGeoPlannerSystem(): string {
     ${GEO_WRITING_RULES}
 
     ${prohibitedLanguage}
+
+    Hard limits (the brief is rejected when any is exceeded):
+    - ${GEO_BRIEF_MIN_SECTIONS} to ${GEO_BRIEF_MAX_SECTIONS} sections, at most ${GEO_BRIEF_MAX_CLAIMS} claims per section.
+    - At most ${GEO_BRIEF_MAX_QUESTIONS} FAQ questions, ${GEO_BRIEF_MAX_LINKS} internal links, and ${GEO_BRIEF_MAX_CHECKLIST} checklist items.
+    - At most ${GEO_BRIEF_MAX_EVIDENCE_ITEMS} items each in competitorsToCounter, sourcesToReference, and missingCoverage.
+    - Keep every string to one or two short sentences. The whole brief must stay compact.
 
     Output rules:
     - Never use em dashes or en dashes anywhere. Use commas, periods, or parentheses.
@@ -221,7 +234,7 @@ export function buildGeoPlannerRepairPrompt(input: {
   previousOutput?: string;
 }): string {
   return dedent`
-    Your previous brief did not match the required structure. Fix these problems and return the complete brief again:
+    Your previous brief was not accepted. Fix these problems and return the complete brief again, within the hard limits:
     ${input.errors.map((error) => `- ${error}`).join("\n")}
     ${
       input.previousOutput

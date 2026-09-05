@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Loading03Icon,
   SidebarLeft01Icon,
   SidebarRight01Icon,
 } from "@hugeicons/core-free-icons";
@@ -40,8 +41,10 @@ import {
 } from "@notra/ui/components/ui/select";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { cn } from "@notra/ui/lib/utils";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useRouter } from "next/navigation";
 import {
+  type ComponentProps,
   type ReactNode,
   useEffect,
   useId,
@@ -56,6 +59,7 @@ import { useGeoProjectScope } from "@/components/providers/geo-project-provider"
 import { GEO_WRITE_DIALOG_ENTRIES } from "@/constants/geo-analytics";
 import {
   GEO_WRITE_ACTION_HELP,
+  GEO_WRITE_ACTION_PENDING,
   GEO_WRITE_CONTENT_SUBTYPES,
   GEO_WRITE_DIALOG_SECTIONS,
   GEO_WRITE_EDIT_NOTE,
@@ -86,6 +90,9 @@ import { WriteSectionSidebar } from "./write-section-sidebar";
 import { WriteSitemapSection } from "./write-sitemap-section";
 
 const MANUAL_PROMPT_VALUE = "manual";
+const FOOTER_STATUS_TRANSITION = { duration: 0.18, ease: "easeOut" } as const;
+
+type WriteAction = keyof typeof GEO_WRITE_ACTION_PENDING;
 
 export function WriteDialog({
   open,
@@ -134,6 +141,8 @@ function WriteDialogForm({
   const [activeSection, setActiveSection] =
     useState<WriteDialogSectionId>("prompt");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [pendingAction, setPendingAction] = useState<WriteAction | null>(null);
+  const reduceMotion = useReducedMotion();
   const openedRef = useRef(false);
   const initialSourceKind = initial?.sourceKind ?? "manual";
   const hasInitialTopic = Boolean(initial?.topic);
@@ -298,7 +307,7 @@ function WriteDialogForm({
     topic.trim().length >= GEO_WRITER_TOPIC_MIN_LENGTH &&
     !planMutation.isPending;
 
-  const handleSubmit = async (autoApprove: boolean) => {
+  const handleSubmit = async (action: WriteAction) => {
     const trimmed = topic.trim();
     if (
       trimmed.length < GEO_WRITER_TOPIC_MIN_LENGTH ||
@@ -306,17 +315,23 @@ function WriteDialogForm({
     ) {
       return;
     }
-    const result = await planMutation.mutateAsync({
-      topic: trimmed,
-      autoApprove,
-      contentSubtype,
-      brandVoiceIds: brandVoiceId ? [brandVoiceId] : [],
-      competitorIds,
-      sitemapId: effectiveSitemapId ?? undefined,
-      sourceKind,
-      sourceId,
-      existingPageUrl,
-    });
+    setPendingAction(action);
+    let result: Awaited<ReturnType<typeof planMutation.mutateAsync>>;
+    try {
+      result = await planMutation.mutateAsync({
+        topic: trimmed,
+        autoApprove: action === "write",
+        contentSubtype,
+        brandVoiceIds: brandVoiceId ? [brandVoiceId] : [],
+        competitorIds,
+        sitemapId: effectiveSitemapId ?? undefined,
+        sourceKind,
+        sourceId,
+        existingPageUrl,
+      });
+    } finally {
+      setPendingAction(null);
+    }
     onOpenChange(false);
     if (result.postId) {
       router.push(geoContentPath(organizationSlug, result.postId));
@@ -689,32 +704,80 @@ function WriteDialogForm({
                 "justify-between gap-3 px-4"
               )}
             >
-              <p className="text-muted-foreground hidden min-w-0 truncate text-xs sm:block">
-                {GEO_WRITE_ACTION_HELP.plan} {GEO_WRITE_ACTION_HELP.write}
-              </p>
+              <AnimatePresence initial={false} mode="wait">
+                <motion.p
+                  animate={{ opacity: 1, y: 0 }}
+                  aria-live="polite"
+                  className={cn(
+                    "hidden min-w-0 truncate text-xs sm:block",
+                    pendingAction ? "text-foreground" : "text-muted-foreground"
+                  )}
+                  exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -4 }}
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
+                  key={pendingAction ?? "help"}
+                  transition={FOOTER_STATUS_TRANSITION}
+                >
+                  {pendingAction
+                    ? GEO_WRITE_ACTION_PENDING[pendingAction].status
+                    : `${GEO_WRITE_ACTION_HELP.plan} ${GEO_WRITE_ACTION_HELP.write}`}
+                </motion.p>
+              </AnimatePresence>
               <div className="flex shrink-0 gap-2">
-                <Button
+                <WriteActionButton
+                  action="plan"
                   disabled={!canSubmit}
                   onClick={() => {
-                    handleSubmit(false).catch(() => undefined);
+                    handleSubmit("plan").catch(() => undefined);
                   }}
+                  pendingAction={pendingAction}
                   variant="outline"
                 >
-                  {planMutation.isPending ? "Planning…" : "Plan"}
-                </Button>
-                <Button
+                  Plan
+                </WriteActionButton>
+                <WriteActionButton
+                  action="write"
                   disabled={!canSubmit}
                   onClick={() => {
-                    handleSubmit(true).catch(() => undefined);
+                    handleSubmit("write").catch(() => undefined);
                   }}
+                  pendingAction={pendingAction}
                 >
                   Write
-                </Button>
+                </WriteActionButton>
               </div>
             </div>
           </div>
         </div>
       </div>
     </ResponsiveDialogContent>
+  );
+}
+
+function WriteActionButton({
+  action,
+  pendingAction,
+  children,
+  ...props
+}: Omit<ComponentProps<typeof Button>, "children"> & {
+  action: WriteAction;
+  pendingAction: WriteAction | null;
+  children: ReactNode;
+}) {
+  const isPending = pendingAction === action;
+  return (
+    <Button aria-busy={isPending} {...props}>
+      {isPending ? (
+        <>
+          <HugeiconsIcon
+            aria-hidden="true"
+            className="size-4 animate-spin"
+            icon={Loading03Icon}
+          />
+          {GEO_WRITE_ACTION_PENDING[action].label}
+        </>
+      ) : (
+        children
+      )}
+    </Button>
   );
 }
