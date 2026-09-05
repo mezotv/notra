@@ -25,13 +25,14 @@ import {
   engineFamilyLabel,
   engineFamilyOf,
 } from "@notra/geo-core/utils/geo-engine-family";
-import { and, eq, gte, inArray, lt } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lt, or } from "drizzle-orm";
 
 import {
   DAILY_SUMMARY_MAX_ITEMS,
   DAILY_SUMMARY_PROMPT_MAX_LENGTH,
 } from "@/constants/daily-summary";
 import { sendDailySummaryEmail } from "@/lib/email/send";
+import type { DailySummaryOrganizationResult } from "@/types/email/daily-summary";
 import {
   aggregateMentionTotals,
   buildDailySummary,
@@ -75,11 +76,20 @@ export async function runDailySummaryCron(
     throw new Error("Resend API key not configured");
   }
 
-  const optedInSettings =
-    await db.query.organizationNotificationSettings.findMany({
-      where: eq(organizationNotificationSettings.dailySummary, true),
-      columns: { organizationId: true },
-    });
+  const optedInSettings = await db
+    .select({ organizationId: organizations.id })
+    .from(organizations)
+    .leftJoin(
+      organizationNotificationSettings,
+      eq(organizationNotificationSettings.organizationId, organizations.id)
+    )
+    .where(
+      or(
+        eq(organizationNotificationSettings.dailySummary, true),
+        isNull(organizationNotificationSettings.id)
+      )
+    )
+    .orderBy(asc(organizations.id));
 
   result.organizationsConsidered = optedInSettings.length;
 
@@ -98,7 +108,8 @@ export async function runDailySummaryCron(
       if (sent === "quiet") {
         result.skippedQuiet += 1;
       } else {
-        result.emailsSent += sent;
+        result.emailsSent += sent.emailsSent;
+        result.failed += Number(sent.failed);
       }
     } catch (error) {
       result.failed += 1;
@@ -128,7 +139,7 @@ async function sendDailySummaryForOrganization({
   previousDateKey: string;
   appUrl: string;
   resend: NonNullable<ReturnType<typeof getResend>>;
-}): Promise<number | "quiet"> {
+}): Promise<DailySummaryOrganizationResult> {
   const [
     org,
     ownerMemberships,
@@ -155,6 +166,7 @@ async function sendDailySummaryForOrganization({
         lt(geoScans.finishedAt, end)
       ),
       columns: { id: true, projectId: true },
+      orderBy: [asc(geoScans.projectId), asc(geoScans.id)],
     }),
     queryGeoCheckOverview(
       { organizationId, projectId: null },
@@ -195,7 +207,10 @@ async function sendDailySummaryForOrganization({
         }),
     Promise.all(
       projectIds.map(async (projectId) => {
-        const comparison = await queryGeoScanComparison({ projectId });
+        const comparison = await queryGeoScanComparison({
+          projectId,
+          window: { from: start, toExclusive: end },
+        });
         if (
           !comparison.currentScan ||
           !yesterdayScanIds.has(comparison.currentScan.id)
@@ -244,6 +259,7 @@ async function sendDailySummaryForOrganization({
   });
 
   let sent = 0;
+  let failed = false;
   for (const recipientEmail of ownerEmails) {
     const result = await sendDailySummaryEmail(resend, {
       recipientEmail,
@@ -268,15 +284,14 @@ async function sendDailySummaryForOrganization({
         `[DailySummary] Failed to send GEO recap to ${recipientEmail}:`,
         result.error
       );
-      throw new Error(
-        `Failed to send daily summary to ${recipientEmail}: ${result.error.message}`
-      );
+      failed = true;
+      continue;
     }
 
     sent += 1;
   }
 
-  return sent;
+  return { emailsSent: sent, failed };
 }
 
 function toSummaryChangeItem(

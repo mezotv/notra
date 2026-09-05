@@ -27,6 +27,7 @@ import type {
   GeoCheckPromptHistoryRow,
   GeoCheckPromptResultRow,
   GeoCheckScanComparison,
+  GeoCheckScanComparisonInput,
   GeoCheckScanComparisonRow,
   GeoCheckScope,
   GeoCheckSequenceResultRow,
@@ -733,27 +734,42 @@ export async function queryGeoCheckSequenceResults(
 
 const SCAN_COMPARISON_SCAN_COUNT = 2;
 
-export async function queryGeoScanComparison(input: {
-  projectId: string;
-}): Promise<GeoCheckScanComparison> {
-  const scans = await db
-    .select({
-      id: geoScans.id,
-      startedAt: geoScans.startedAt,
-      finishedAt: geoScans.finishedAt,
-    })
-    .from(geoScans)
-    .where(
-      and(
-        eq(geoScans.projectId, input.projectId),
-        eq(geoScans.status, "completed")
-      )
+export async function queryGeoScanComparison(
+  input: GeoCheckScanComparisonInput
+): Promise<GeoCheckScanComparison> {
+  // Daily recaps compare closing snapshots, not the last two intraday scans.
+  // Keep the dashboard's unbounded, start-ordered comparison unchanged.
+  const cutoffs = input.window
+    ? [input.window.toExclusive, input.window.from]
+    : [undefined];
+  const scanGroups = await Promise.all(
+    cutoffs.map((cutoff) =>
+      db
+        .select({
+          id: geoScans.id,
+          startedAt: geoScans.startedAt,
+          finishedAt: geoScans.finishedAt,
+        })
+        .from(geoScans)
+        .where(
+          and(
+            eq(geoScans.projectId, input.projectId),
+            eq(geoScans.status, "completed"),
+            cutoff ? lt(geoScans.finishedAt, cutoff) : undefined
+          )
+        )
+        .orderBy(
+          ...(cutoff
+            ? [desc(geoScans.finishedAt), desc(geoScans.id)]
+            : [desc(geoScans.startedAt)])
+        )
+        .limit(cutoff ? 1 : SCAN_COMPARISON_SCAN_COUNT)
     )
-    .orderBy(desc(geoScans.startedAt))
-    .limit(SCAN_COMPARISON_SCAN_COUNT);
+  );
 
-  const currentScan = scans[0] ?? null;
-  const previousScan = scans[1] ?? null;
+  const currentScan = scanGroups[0]?.[0] ?? null;
+  const previousScan =
+    (input.window ? scanGroups[1]?.[0] : scanGroups[0]?.[1]) ?? null;
   if (!currentScan || !previousScan) {
     return { previousScan: null, currentScan, previous: [], current: [] };
   }
@@ -797,7 +813,8 @@ export async function queryGeoScanComparison(input: {
     };
     if (row.scanId === currentScan.id) {
       current.push(mapped);
-    } else {
+    }
+    if (row.scanId === previousScan.id) {
       previous.push(mapped);
     }
   }

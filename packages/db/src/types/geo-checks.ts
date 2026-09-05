@@ -211,3 +211,8 @@ export interface GeoCheckScanComparison {
   previous: GeoCheckScanComparisonRow[];
   current: GeoCheckScanComparisonRow[];
 }
+
+export interface GeoCheckScanComparisonInput {
+  projectId: string;
+  window?: { from: Date; toExclusive: Date };
+}

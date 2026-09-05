@@ -46,12 +46,16 @@ export const notificationsRouter = {
         organizationId: input.organizationId,
         user: context.user,
       });
-      await assertActiveSubscription(input.organizationId);
 
       if (access.membership.role !== "owner") {
         throw forbidden(
           "Only the organization owner can update notification settings"
         );
+      }
+
+      // Owners must still be able to opt out after their subscription expires.
+      if (Object.values(input).some((value) => value === true)) {
+        await assertActiveSubscription(input.organizationId);
       }
 
       const updates: Record<string, boolean | Date> = {

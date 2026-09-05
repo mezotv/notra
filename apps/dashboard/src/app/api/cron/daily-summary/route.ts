@@ -16,5 +16,5 @@ export async function GET(request: Request) {
   }
 
   const result = await runDailySummaryCron();
-  return Response.json(result);
+  return Response.json(result, { status: result.failed > 0 ? 500 : 200 });
 }

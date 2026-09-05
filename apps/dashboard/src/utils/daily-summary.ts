@@ -112,8 +112,8 @@ export function buildDailySummaryHeadline({
 
   if (gained === 0 && lost === 0) {
     return mentionRateLabel === "—"
-      ? "Yesterday's scan finished. Visibility held steady."
-      : `Visibility held at ${mentionRateLabel}.`;
+      ? "Yesterday's scan finished. Your GEO recap is ready."
+      : `Yesterday's visibility: ${mentionRateLabel}.`;
   }
 
   return "Gains and losses evened out yesterday.";

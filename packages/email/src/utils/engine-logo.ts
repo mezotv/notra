@@ -1,6 +1,6 @@
-const MODELS_DEV_LOGO_BASE = "https://models.dev/logos";
+import { EMAIL_CONFIG } from "./config";
 
-/** Engine-family keys → models.dev logo slugs (same source as GEO provider logos). */
+/** PNG copies of models.dev marks: SVG images are not supported by many mail clients. */
 const ENGINE_LOGO_SLUG: Record<string, string> = {
   openai: "openai",
   chatgpt: "openai",
@@ -23,8 +23,10 @@ const ENGINE_LOGO_SLUG: Record<string, string> = {
   zai: "zai",
 };
 
-export function engineEmailLogoSrc(engineFamily: string): string {
+export function engineEmailLogoSrc(engineFamily: string): string | undefined {
   const key = engineFamily.trim().toLowerCase();
-  const slug = ENGINE_LOGO_SLUG[key] ?? key;
-  return `${MODELS_DEV_LOGO_BASE}/${encodeURIComponent(slug)}.svg`;
+  const slug = ENGINE_LOGO_SLUG[key];
+  return slug
+    ? `${EMAIL_CONFIG.getSiteUrl()}/logos/ai-engines/${slug}.png`
+    : undefined;
 }

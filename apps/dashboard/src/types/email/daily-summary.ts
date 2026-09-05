@@ -6,6 +6,10 @@ export interface DailySummaryWindow {
   end: Date;
 }
 
+export type DailySummaryOrganizationResult =
+  | "quiet"
+  | { emailsSent: number; failed: boolean };
+
 export interface DailySummaryMentionTotals {
   checks: number;
   mentions: number;
