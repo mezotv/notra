@@ -5,12 +5,7 @@ import * as z from "zod";
 
 export const PLANNER_CONTRACT_VERSION = 1;
 export const MAX_PLAN_TASKS = 25;
-export const MAX_TASK_DEPENDENCIES = 10;
 export const PLANNER_TASK_LOCAL_ID_PATTERN = /^t[0-9]{1,3}$/;
-export const PLANNER_TASK_REASON_MAX_LENGTH = 500;
-export const PLANNER_REASON_MAX_LENGTH = 1000;
-export const PLANNER_GOAL_TITLE_MAX_LENGTH = 200;
-export const PLANNER_GOAL_SUMMARY_MAX_LENGTH = 2000;
 
 export const plannerTaskLocalIdSchema = z
   .string()
@@ -22,11 +17,8 @@ export const plannerTaskSchema = z.object({
   capabilityName: capabilityNameSchema,
   capabilityVersion: z.number().int().min(1),
   params: z.record(z.string(), z.unknown()),
-  dependsOn: z
-    .array(plannerTaskLocalIdSchema)
-    .max(MAX_TASK_DEPENDENCIES)
-    .default([]),
-  reason: z.string().min(1).max(PLANNER_TASK_REASON_MAX_LENGTH),
+  dependsOn: z.array(plannerTaskLocalIdSchema).max(10).default([]),
+  reason: z.string().min(1).max(500),
 });
 export type PlannerTask = z.infer<typeof plannerTaskSchema>;
 
@@ -34,8 +26,8 @@ export const plannerDecisionSchema = z.enum(["no_op", "plan", "escalate"]);
 export type PlannerDecision = z.infer<typeof plannerDecisionSchema>;
 
 export const plannerGoalSchema = z.object({
-  title: z.string().min(1).max(PLANNER_GOAL_TITLE_MAX_LENGTH),
-  summary: z.string().max(PLANNER_GOAL_SUMMARY_MAX_LENGTH).optional(),
+  title: z.string().min(1).max(200),
+  summary: z.string().max(2000).optional(),
 });
 export type PlannerGoal = z.infer<typeof plannerGoalSchema>;
 
@@ -96,7 +88,7 @@ export const plannerOutputSchema = z
     contractVersion: z.literal(PLANNER_CONTRACT_VERSION),
     mandate: mandateRefSchema,
     decision: plannerDecisionSchema,
-    reason: z.string().min(1).max(PLANNER_REASON_MAX_LENGTH),
+    reason: z.string().min(1).max(1000),
     consumedSignalIds: z.array(z.string().min(1)).default([]),
     goal: plannerGoalSchema.optional(),
     tasks: z.array(plannerTaskSchema).max(MAX_PLAN_TASKS).default([]),

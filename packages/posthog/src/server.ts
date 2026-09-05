@@ -1,9 +1,6 @@
 import {
   POSTHOG_DEFAULT_HOST,
   POSTHOG_GROUP_TYPES,
-  POSTHOG_SERVER_FLUSH_AT,
-  POSTHOG_SERVER_FLUSH_INTERVAL_MS,
-  POSTHOG_SERVER_REQUEST_TIMEOUT_MS,
   POSTHOG_SERVICE_DISTINCT_ID_PREFIX,
 } from "@notra/posthog/constants/posthog";
 import type {
@@ -20,11 +17,6 @@ const PROJECT_TOKEN_ENV = "NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN";
 
 let client: PostHog | null | undefined;
 let warnedMissingToken = false;
-
-function readProjectToken(): string | null {
-  const token = process.env[PROJECT_TOKEN_ENV]?.trim();
-  return token ? token : null;
-}
 
 function readHost(): string {
   const host = process.env.NEXT_PUBLIC_POSTHOG_HOST?.trim();
@@ -49,7 +41,7 @@ export function getPostHogServer(): PostHog | null {
     return client;
   }
 
-  const token = readProjectToken();
+  const token = process.env[PROJECT_TOKEN_ENV]?.trim();
   if (!token) {
     warnMissingToken();
     client = null;
@@ -58,9 +50,9 @@ export function getPostHogServer(): PostHog | null {
 
   client = new PostHog(token, {
     host: readHost(),
-    flushAt: POSTHOG_SERVER_FLUSH_AT,
-    flushInterval: POSTHOG_SERVER_FLUSH_INTERVAL_MS,
-    requestTimeout: POSTHOG_SERVER_REQUEST_TIMEOUT_MS,
+    flushAt: 1,
+    flushInterval: 0,
+    requestTimeout: 5000,
   });
 
   return client;

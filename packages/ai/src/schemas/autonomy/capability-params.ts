@@ -15,13 +15,11 @@ import {
 import * as z from "zod";
 
 export const IRIS_TOPIC_MAX_LENGTH = 300;
-export const IRIS_ANGLE_MAX_LENGTH = 600;
-export const IRIS_AUDIENCE_MAX_LENGTH = 200;
 
 export const irisContentTaskParamsSchema = z.object({
   topic: z.string().min(1).max(IRIS_TOPIC_MAX_LENGTH),
-  angle: z.string().max(IRIS_ANGLE_MAX_LENGTH).optional(),
-  audience: z.string().max(IRIS_AUDIENCE_MAX_LENGTH).optional(),
+  angle: z.string().max(600).optional(),
+  audience: z.string().max(200).optional(),
 });
 export type IrisContentTaskParams = z.infer<typeof irisContentTaskParamsSchema>;
 
@@ -55,24 +53,9 @@ export type IrisSourceReadTaskParams = z.infer<
   typeof irisSourceReadTaskParamsSchema
 >;
 
-export const IRIS_ANALYTICS_MIN_DAYS = 1;
-export const IRIS_ANALYTICS_MAX_DAYS = 365;
-export const IRIS_ANALYTICS_MIN_TOP_POSTS = 1;
-export const IRIS_ANALYTICS_MAX_TOP_POSTS = 25;
-
 export const irisAnalyticsReadTaskParamsSchema = z.object({
-  days: z
-    .number()
-    .int()
-    .min(IRIS_ANALYTICS_MIN_DAYS)
-    .max(IRIS_ANALYTICS_MAX_DAYS)
-    .optional(),
-  topPostsLimit: z
-    .number()
-    .int()
-    .min(IRIS_ANALYTICS_MIN_TOP_POSTS)
-    .max(IRIS_ANALYTICS_MAX_TOP_POSTS)
-    .optional(),
+  days: z.number().int().min(1).max(365).optional(),
+  topPostsLimit: z.number().int().min(1).max(25).optional(),
 });
 export type IrisAnalyticsReadTaskParams = z.infer<
   typeof irisAnalyticsReadTaskParamsSchema
@@ -80,8 +63,6 @@ export type IrisAnalyticsReadTaskParams = z.infer<
 
 export const IRIS_EXPERIMENT_NAME_MAX_LENGTH = 120;
 export const IRIS_EXPERIMENT_HYPOTHESIS_MAX_LENGTH = 500;
-export const IRIS_EXPERIMENT_MIN_READ_LIMIT = 1;
-export const IRIS_EXPERIMENT_MAX_READ_LIMIT = 25;
 
 export const irisExperimentMetricSchema = z.enum([
   "engagement",
@@ -103,12 +84,7 @@ export type IrisExperimentCreateTaskParams = z.infer<
 >;
 
 export const irisExperimentReadTaskParamsSchema = z.object({
-  limit: z
-    .number()
-    .int()
-    .min(IRIS_EXPERIMENT_MIN_READ_LIMIT)
-    .max(IRIS_EXPERIMENT_MAX_READ_LIMIT)
-    .optional(),
+  limit: z.number().int().min(1).max(25).optional(),
 });
 export type IrisExperimentReadTaskParams = z.infer<
   typeof irisExperimentReadTaskParamsSchema

@@ -1,8 +1,6 @@
-const HEX_CHANNEL_MAX = 255;
-
 export function rgbaToHex(channels: readonly number[]): string {
   const toHex = (channel: number | undefined) =>
-    Math.round(Math.min(Math.max(channel ?? 0, 0), HEX_CHANNEL_MAX))
+    Math.round(Math.min(Math.max(channel ?? 0, 0), 255))
       .toString(16)
       .padStart(2, "0");
 

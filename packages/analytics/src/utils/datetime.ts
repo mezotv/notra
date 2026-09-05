@@ -1,7 +1,5 @@
-const PAD_LENGTH = 2;
-
 function pad(value: number): string {
-  return String(value).padStart(PAD_LENGTH, "0");
+  return String(value).padStart(2, "0");
 }
 
 export function toClickHouseDateTime(date: Date): string {

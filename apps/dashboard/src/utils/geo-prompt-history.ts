@@ -20,7 +20,7 @@ export function promptHistoryForEngine(
     .sort((left, right) => right.capturedAt.localeCompare(left.capturedAt));
 }
 
-function positionLabel(position: number | null): string {
+export function promptPositionLabel(position: number | null): string {
   return position === null
     ? GEO_PROMPT_RECEIPT_LABELS.notRanked
     : `#${position}`;
@@ -30,10 +30,6 @@ const nameListFormatter = new Intl.ListFormat(GEO_PROMPT_HISTORY_LIST_LOCALE, {
   style: "long",
   type: "conjunction",
 });
-
-export function formatPromptHistoryNames(names: readonly string[]): string {
-  return nameListFormatter.format(names);
-}
 
 function changesBetween(
   current: GeoPromptHistoryCheck,
@@ -85,18 +81,16 @@ export function promptHistoryChanges(
   });
 }
 
-const SENTENCE_END = ".";
-
 export function promptHistoryChangeLabel(change: PromptHistoryChange): string {
   switch (change.kind) {
     case "gained":
       return change.position === null
         ? GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMention
-        : `${GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMention} ${GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMentionAt} ${positionLabel(change.position)}`;
+        : `${GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMention} ${GEO_PROMPT_HISTORY_CHANGE_LABELS.gainedMentionAt} ${promptPositionLabel(change.position)}`;
     case "lost":
       return GEO_PROMPT_HISTORY_CHANGE_LABELS.lostMention;
     case "position":
-      return `${GEO_PROMPT_HISTORY_CHANGE_LABELS.moved} ${positionLabel(change.from)} → ${positionLabel(change.to)}`;
+      return `${GEO_PROMPT_HISTORY_CHANGE_LABELS.moved} ${promptPositionLabel(change.from)} → ${promptPositionLabel(change.to)}`;
     case "none":
       return GEO_PROMPT_HISTORY_CHANGE_LABELS.noChange;
     case "first":
@@ -111,11 +105,7 @@ function changeSentence(change: PromptHistoryChange): string {
   if (change.kind === "first" || change.kind === "none") {
     return label;
   }
-  return `${label}${SENTENCE_END}`;
-}
-
-function newCompetitorsSentence(names: readonly string[]): string {
-  return `${formatPromptHistoryNames(names)} ${GEO_PROMPT_HISTORY_CHANGE_LABELS.newlyRecommended}${SENTENCE_END}`;
+  return `${label}.`;
 }
 
 /** Plain-text form of a history row, for tooltips and receipts. */
@@ -124,7 +114,9 @@ export function promptHistoryChangeText(
 ): string {
   const sentences = entry.changes.map(changeSentence);
   if (entry.newCompetitors.length > 0) {
-    sentences.push(newCompetitorsSentence(entry.newCompetitors));
+    sentences.push(
+      `${nameListFormatter.format(entry.newCompetitors)} ${GEO_PROMPT_HISTORY_CHANGE_LABELS.newlyRecommended}.`
+    );
   }
   return sentences.join(" ");
 }
@@ -167,8 +159,4 @@ export function promptOutcomeLabel(mentioned: boolean): string {
   return mentioned
     ? GEO_PROMPT_RECEIPT_LABELS.mentioned
     : GEO_PROMPT_RECEIPT_LABELS.notMentioned;
-}
-
-export function promptPositionLabel(position: number | null): string {
-  return positionLabel(position);
 }

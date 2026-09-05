@@ -12,7 +12,6 @@ export const ANALYTICS_UNAVAILABLE_DESCRIPTION =
   "Analytics is not available for this workspace yet.";
 
 export const ANALYTICS_TIMESERIES_DAYS = 30;
-export const ANALYTICS_TOP_POSTS_LIMIT = 8;
 export const TOP_POST_CONTENT_PREVIEW_LENGTH = 96;
 
 export const ANALYTICS_PROVIDER_FILTER_VALUES = [

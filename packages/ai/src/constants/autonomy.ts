@@ -17,12 +17,10 @@ export const CONTROLLER_LEASE_RENEW_TTL_SECONDS = 1800;
 export const OUTBOX_DESTINATION_SLACK = "slack";
 export const MAX_OUTBOX_ATTEMPTS = 5;
 export const OUTBOX_BACKOFF_SECONDS = [30, 120, 600, 1800, 3600] as const;
-export const OUTBOX_DELIVERY_BATCH_SIZE = 20;
 
 export const ACTION_BUDGET_WINDOW_HOURS = 24;
 export const PENDING_SIGNAL_FETCH_LIMIT = 50;
 
-export const IRIS_WAKE_INTERVAL_MINUTES = 30;
 export const IRIS_WAKE_CRON = "*/30 * * * *";
 
 export const MILLISECONDS_PER_SECOND = 1000;

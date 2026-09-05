@@ -43,8 +43,6 @@ export const MAX_CHAT_FILE_SIZE = 32 * 1024 * 1024;
 export const MAX_CHAT_ATTACHMENTS = 10;
 export const MAX_SVG_CONTENT_SIZE = 2 * 1024 * 1024;
 
-export const CONTENT_LIMIT = 20;
-
 export const PASTE_TO_ATTACHMENT_THRESHOLD = 2000;
 
 export const MIME_DISPLAY_LABELS: Record<string, string> = {

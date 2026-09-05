@@ -30,7 +30,6 @@ import type {
   RepoImageSourceContext,
 } from "@notra/ai/types/repo-image";
 import { createOctokit } from "@notra/ai/utils/octokit";
-import { shortSha } from "@notra/ai/utils/repo-image";
 import { withBoxRetry } from "@notra/ai/utils/repo-image-box";
 import { renderHtmlToImages } from "@notra/ai/utils/repo-image-render";
 import { cleanupRepoImageSandbox } from "@notra/ai/utils/repo-image-sandbox-cleanup";
@@ -375,7 +374,7 @@ async function buildSourceContext(params: {
   return {
     mode,
     sha: commit.sha,
-    shortSha: shortSha(commit.sha),
+    shortSha: commit.sha.slice(0, 7),
     message: commit.commit.message,
     filesChanged: commit.files?.length ?? 0,
     topFiles: (commit.files ?? []).slice(0, 10).map((file) => file.filename),
