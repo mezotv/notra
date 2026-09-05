@@ -120,6 +120,37 @@ export interface GeoPageContentProps {
   organizationSlug: string;
 }
 
+export interface GeoOverviewPageEmpty {
+  status: "empty";
+  organizationId: string;
+}
+
+export interface GeoOverviewPageReady {
+  status: "ready";
+  organizationId: string;
+  organizationSlug: string;
+  companyName: string;
+  geoRange: GeoRangeControl;
+  isScanning: boolean;
+  revealActive: boolean;
+  tabs: GeoTabsProps;
+  scanPreflight: ScanPreflightDialogProps;
+  onRunScan: () => void;
+}
+
+export type GeoOverviewPageModel =
+  | { status: "loading" }
+  | GeoOverviewPageEmpty
+  | GeoOverviewPageReady;
+
+export interface GeoOverviewLoadedProps {
+  page: GeoOverviewPageReady;
+}
+
+export interface GeoScanSpinnerProps {
+  visible: boolean;
+}
+
 export interface GeoStatDeltaProps {
   delta: number | null;
   kind?: GeoStatDeltaKind;

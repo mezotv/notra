@@ -1,6 +1,8 @@
 import type { IconSvgElement } from "@hugeicons/react";
 import type { ReactNode } from "react";
 
+import type { BrandTab } from "@/types/brand-identity";
+
 export type SidebarMode = "geo" | "studio";
 
 export type NavGroupKey = "visibility" | "improve" | "automation" | "utility";
@@ -106,6 +108,40 @@ export interface NavSettingsItem {
 
 export interface NavSettingsProps {
   slug: string;
+}
+
+export interface NavBrandIdentityProps {
+  slug: string;
+}
+
+export type BrandIdentityNavCountKey = "references" | "sitemap";
+
+export interface NavBrandIdentityItemConfig {
+  tab: BrandTab;
+  label: string;
+  icon: IconSvgElement;
+  countKey?: BrandIdentityNavCountKey;
+}
+
+export interface NavBrandIdentityItem {
+  tab: BrandTab;
+  label: string;
+  icon: IconSvgElement;
+  href: string;
+  isActive: boolean;
+  count: number | null;
+}
+
+export interface NavBrandIdentityModel {
+  items: NavBrandIdentityItem[];
+}
+
+export interface NavBrandIdentityLinkProps {
+  item: NavBrandIdentityItem;
+}
+
+export interface NavCountBadgeProps {
+  count: number | null;
 }
 
 export interface NavLockHintProps {
