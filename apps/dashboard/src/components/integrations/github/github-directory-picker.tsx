@@ -42,10 +42,16 @@ import { dashboardOrpc } from "@/lib/orpc/query";
 import { repositoryContentDirectorySchema } from "@/schemas/integrations";
 import type {
   GitHubDirectoryChoiceProps,
+  GitHubDirectoryExtraChoicesProps,
+  GitHubDirectoryNewFolderFieldProps,
   GitHubDirectoryNodeProps,
+  GitHubDirectoryNodesProps,
+  GitHubDirectoryNodeStatusProps,
   GitHubDirectoryPickerProps,
+  GitHubDirectoryRootContentProps,
 } from "@/types/integrations/github";
 import {
+  isGitHubCurrentFolderMissing,
   joinGitHubDirectory,
   normalizeGitHubDirectorySegment,
 } from "@/utils/github-directory";
@@ -79,6 +85,206 @@ function DirectoryChoice({
   );
 }
 
+function DirectoryNodes({
+  depth,
+  directories,
+  excludedPath,
+  open,
+  organizationId,
+  repositoryId,
+}: GitHubDirectoryNodesProps) {
+  const nodes: ReactNode[] = [];
+
+  for (const directory of directories) {
+    if (directory.path === excludedPath) {
+      continue;
+    }
+
+    nodes.push(
+      <DirectoryNode
+        depth={depth}
+        excludedPath={excludedPath}
+        key={directory.path}
+        name={directory.name}
+        open={open}
+        organizationId={organizationId}
+        path={directory.path}
+        repositoryId={repositoryId}
+      />
+    );
+  }
+
+  return nodes;
+}
+
+function ExtraDirectoryChoices({
+  customDirectories,
+  directory,
+  rootDirectories,
+}: GitHubDirectoryExtraChoicesProps) {
+  const rootPaths = new Set<string>();
+  for (const rootDirectory of rootDirectories) {
+    rootPaths.add(rootDirectory.path);
+  }
+
+  const choices: ReactNode[] = [];
+  for (const path of customDirectories) {
+    if (path === "" || path === directory || rootPaths.has(path)) {
+      continue;
+    }
+
+    choices.push(
+      <DirectoryChoice
+        depth={0}
+        helper="This folder will be created when you publish."
+        key={path}
+        name={`${path} (new folder)`}
+        path={path}
+      />
+    );
+  }
+
+  return choices;
+}
+
+function DirectoryNodeStatus({
+  depth,
+  exists,
+  isError,
+  isLoading,
+}: GitHubDirectoryNodeStatusProps) {
+  const paddingInlineStart = `${(depth + 1) * 16 + 44}px`;
+
+  if (isLoading) {
+    return (
+      <output
+        className="text-muted-foreground flex h-10 items-center gap-2 text-sm"
+        style={{ paddingInlineStart }}
+      >
+        <HugeiconsIcon className="size-4 animate-spin" icon={Loading03Icon} />
+        Loading…
+      </output>
+    );
+  }
+
+  if (exists === false) {
+    return (
+      <p
+        className="text-muted-foreground py-2 text-sm"
+        style={{ paddingInlineStart }}
+      >
+        This folder is not in the repository yet. It will be created when you
+        publish.
+      </p>
+    );
+  }
+
+  if (isError) {
+    return (
+      <p
+        className="text-destructive py-2 text-sm"
+        role="alert"
+        style={{ paddingInlineStart }}
+      >
+        Unable to load this folder.
+      </p>
+    );
+  }
+
+  return null;
+}
+
+function RootDirectoryContent({
+  directory,
+  isError,
+  isLoading,
+  open,
+  organizationId,
+  repositoryId,
+  rootDirectories,
+}: GitHubDirectoryRootContentProps) {
+  if (isLoading) {
+    return (
+      <output className="text-muted-foreground flex h-20 items-center justify-center gap-2 text-sm">
+        <HugeiconsIcon className="size-4 animate-spin" icon={Loading03Icon} />
+        Loading folders…
+      </output>
+    );
+  }
+
+  if (isError) {
+    return (
+      <p
+        className="text-destructive px-3 py-6 text-center text-sm"
+        role="alert"
+      >
+        Unable to load repository folders.
+      </p>
+    );
+  }
+
+  return (
+    <DirectoryNodes
+      depth={0}
+      directories={rootDirectories}
+      excludedPath={directory}
+      open={open}
+      organizationId={organizationId}
+      repositoryId={repositoryId}
+    />
+  );
+}
+
+function GitHubDirectoryNewFolderField({
+  error,
+  inputId,
+  name,
+  onNameChange,
+  onSubmit,
+  selectedDirectory,
+}: GitHubDirectoryNewFolderFieldProps) {
+  return (
+    <form className="space-y-2" onSubmit={onSubmit}>
+      <Field data-invalid={error ? true : undefined}>
+        <FieldLabel htmlFor={inputId}>New folder</FieldLabel>
+        <div className="flex gap-2">
+          <Input
+            aria-invalid={Boolean(error)}
+            autoComplete="off"
+            className="w-auto min-w-0 flex-1"
+            id={inputId}
+            onChange={(event) => onNameChange(event.target.value)}
+            placeholder={
+              selectedDirectory
+                ? `Folder inside ${selectedDirectory}`
+                : "e.g. changelogs"
+            }
+            value={name}
+          />
+          <Button
+            className="shrink-0"
+            disabled={!normalizeGitHubDirectorySegment(name)}
+            size="sm"
+            type="submit"
+            variant="outline"
+          >
+            <HugeiconsIcon className="size-4" icon={Add01Icon} />
+            Add
+          </Button>
+        </div>
+        {error ? (
+          <FieldError>{error}</FieldError>
+        ) : (
+          <FieldDescription className="text-xs">
+            Added relative to the selected folder. It does not need to exist in
+            GitHub yet.
+          </FieldDescription>
+        )}
+      </Field>
+    </form>
+  );
+}
+
 function DirectoryNode({
   depth,
   excludedPath,
@@ -109,52 +315,27 @@ function DirectoryNode({
       />
     );
   }
-  let directoryContent: ReactNode = directoriesQuery.data?.directories
-    .filter((directory) => directory.path !== excludedPath)
-    .map((directory) => (
-      <DirectoryNode
+
+  const directoryContent =
+    directoriesQuery.isLoading ||
+    directoriesQuery.data?.exists === false ||
+    directoriesQuery.isError ? (
+      <DirectoryNodeStatus
+        depth={depth}
+        exists={directoriesQuery.data?.exists}
+        isError={directoriesQuery.isError}
+        isLoading={directoriesQuery.isLoading}
+      />
+    ) : (
+      <DirectoryNodes
         depth={depth + 1}
+        directories={directoriesQuery.data?.directories ?? []}
         excludedPath={excludedPath}
-        key={directory.path}
-        name={directory.name}
         open={open}
         organizationId={organizationId}
-        path={directory.path}
         repositoryId={repositoryId}
       />
-    ));
-
-  if (directoriesQuery.isLoading) {
-    directoryContent = (
-      <output
-        className="text-muted-foreground flex h-10 items-center gap-2 text-sm"
-        style={{ paddingInlineStart: `${(depth + 1) * 16 + 44}px` }}
-      >
-        <HugeiconsIcon className="size-4 animate-spin" icon={Loading03Icon} />
-        Loading…
-      </output>
     );
-  } else if (directoriesQuery.data?.exists === false) {
-    directoryContent = (
-      <p
-        className="text-muted-foreground py-2 text-sm"
-        style={{ paddingInlineStart: `${(depth + 1) * 16 + 44}px` }}
-      >
-        This folder is not in the repository yet. It will be created when you
-        publish.
-      </p>
-    );
-  } else if (directoriesQuery.isError) {
-    directoryContent = (
-      <p
-        className="text-destructive py-2 text-sm"
-        role="alert"
-        style={{ paddingInlineStart: `${(depth + 1) * 16 + 44}px` }}
-      >
-        Unable to load this folder.
-      </p>
-    );
-  }
 
   return (
     <Collapsible onOpenChange={setExpanded} open={expanded}>
@@ -218,49 +399,11 @@ export function GitHubDirectoryPicker({
     })
   );
   const rootDirectories = rootDirectoriesQuery.data?.directories ?? [];
-  const currentFolderMissing =
-    Boolean(directory) &&
-    !directory.includes("/") &&
-    rootDirectoriesQuery.isSuccess &&
-    !rootDirectories.some((rootDirectory) => rootDirectory.path === directory);
-  const extraDirectories = customDirectories.filter(
-    (path) =>
-      path !== "" &&
-      path !== directory &&
-      !rootDirectories.some((rootDirectory) => rootDirectory.path === path)
+  const currentFolderMissing = isGitHubCurrentFolderMissing(
+    directory,
+    rootDirectories,
+    rootDirectoriesQuery.isSuccess
   );
-  let rootDirectoryContent: ReactNode = rootDirectories
-    .filter((rootDirectory) => rootDirectory.path !== directory)
-    .map((rootDirectory) => (
-      <DirectoryNode
-        depth={0}
-        excludedPath={directory}
-        key={rootDirectory.path}
-        name={rootDirectory.name}
-        open={open}
-        organizationId={organizationId}
-        path={rootDirectory.path}
-        repositoryId={repositoryId}
-      />
-    ));
-
-  if (rootDirectoriesQuery.isLoading) {
-    rootDirectoryContent = (
-      <output className="text-muted-foreground flex h-20 items-center justify-center gap-2 text-sm">
-        <HugeiconsIcon className="size-4 animate-spin" icon={Loading03Icon} />
-        Loading folders…
-      </output>
-    );
-  } else if (rootDirectoriesQuery.isError) {
-    rootDirectoryContent = (
-      <p
-        className="text-destructive px-3 py-6 text-center text-sm"
-        role="alert"
-      >
-        Unable to load repository folders.
-      </p>
-    );
-  }
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (isSaving) {
@@ -379,62 +522,36 @@ export function GitHubDirectoryPicker({
             />
           ) : null}
 
-          {extraDirectories.map((path) => (
-            <DirectoryChoice
-              depth={0}
-              helper="This folder will be created when you publish."
-              key={path}
-              name={`${path} (new folder)`}
-              path={path}
-            />
-          ))}
+          <ExtraDirectoryChoices
+            customDirectories={customDirectories}
+            directory={directory}
+            rootDirectories={rootDirectories}
+          />
 
-          {rootDirectoryContent}
+          <RootDirectoryContent
+            directory={directory}
+            isError={rootDirectoriesQuery.isError}
+            isLoading={rootDirectoriesQuery.isLoading}
+            open={open}
+            organizationId={organizationId}
+            repositoryId={repositoryId}
+            rootDirectories={rootDirectories}
+          />
         </RadioGroup>
 
-        <form className="space-y-2" onSubmit={handleCreateFolder}>
-          <Field data-invalid={newFolderError ? true : undefined}>
-            <FieldLabel htmlFor={newFolderInputId}>New folder</FieldLabel>
-            <div className="flex gap-2">
-              <Input
-                aria-invalid={Boolean(newFolderError)}
-                autoComplete="off"
-                className="w-auto min-w-0 flex-1"
-                id={newFolderInputId}
-                onChange={(event) => {
-                  setNewFolderName(event.target.value);
-                  if (newFolderError) {
-                    setNewFolderError(null);
-                  }
-                }}
-                placeholder={
-                  selectedDirectory
-                    ? `Folder inside ${selectedDirectory}`
-                    : "e.g. changelogs"
-                }
-                value={newFolderName}
-              />
-              <Button
-                className="shrink-0"
-                disabled={!normalizeGitHubDirectorySegment(newFolderName)}
-                size="sm"
-                type="submit"
-                variant="outline"
-              >
-                <HugeiconsIcon className="size-4" icon={Add01Icon} />
-                Add
-              </Button>
-            </div>
-            {newFolderError ? (
-              <FieldError>{newFolderError}</FieldError>
-            ) : (
-              <FieldDescription className="text-xs">
-                Added relative to the selected folder. It does not need to exist
-                in GitHub yet.
-              </FieldDescription>
-            )}
-          </Field>
-        </form>
+        <GitHubDirectoryNewFolderField
+          error={newFolderError}
+          inputId={newFolderInputId}
+          name={newFolderName}
+          onNameChange={(value) => {
+            setNewFolderName(value);
+            if (newFolderError) {
+              setNewFolderError(null);
+            }
+          }}
+          onSubmit={handleCreateFolder}
+          selectedDirectory={selectedDirectory}
+        />
 
         <ResponsiveDialogFooter>
           <ResponsiveDialogClose
