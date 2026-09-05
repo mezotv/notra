@@ -117,7 +117,7 @@ export function useGeoOverviewPage(
   const { data: promptResults } = useGeoPromptResults(
     organizationId,
     geoRange.query,
-    activeTab === "prompts"
+    activeTab === "visibility" || activeTab === "prompts"
   );
   const { data: competitorShare } = useGeoCompetitorShare(
     organizationId,
