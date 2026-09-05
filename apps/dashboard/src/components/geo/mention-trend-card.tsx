@@ -10,7 +10,7 @@ import {
 import type { MentionTrendRow } from "@notra/geo-core/types/geo";
 import { todayIsoDate } from "@notra/geo-core/utils/day-label";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
-import { useCallback, useMemo, useState } from "react";
+import { useState } from "react";
 
 import { EmptyStateTrendPreview } from "@/components/empty-state-preview";
 import { EChartsAreaChart } from "@/components/evilcharts/charts/echarts-area-chart";
@@ -77,65 +77,50 @@ export function MentionTrendCard({
 }: MentionTrendCardProps) {
   const [activeKeys, setActiveKeys] = useState<Set<string>>(() => new Set());
 
-  const { rows, engines } = useMemo(
-    () => buildMentionTrendRows(points),
-    [points]
+  const { rows, engines } = buildMentionTrendRows(points);
+  const series = mentionTrendSeries(engines).filter((entry) =>
+    rows.some((row) => {
+      const value = row[entry.key];
+      return typeof value === "number" && value > 0;
+    })
   );
-  const series = useMemo(
-    () =>
-      mentionTrendSeries(engines).filter((entry) =>
-        rows.some((row) => {
-          const value = row[entry.key];
-          return typeof value === "number" && value > 0;
-        })
-      ),
-    [engines, rows]
+  const allKeys = engines.map(chartKey);
+  const visibleKeys = series.map((entry) => entry.key);
+  const observedRows = rows.map((row) =>
+    allKeys.some((key) => typeof row[key] === "number")
+      ? row
+      : { ...row, [GEO_MENTION_TREND_TOTAL_KEY]: null }
   );
-  const allKeys = useMemo(() => engines.map(chartKey), [engines]);
-  const visibleKeys = useMemo(() => series.map((entry) => entry.key), [series]);
-  const chartRows = useMemo(() => {
-    const observedRows = rows.map((row) =>
-      allKeys.some((key) => typeof row[key] === "number")
-        ? row
-        : { ...row, [GEO_MENTION_TREND_TOTAL_KEY]: null }
-    );
-    const trend = fitMentionTrendLine(
-      observedRows,
-      GEO_MENTION_TREND_TOTAL_KEY
-    );
-    return rows.map((row, index) => {
-      const trendValue = trend[index];
-      return typeof trendValue === "number"
-        ? { ...row, [GEO_MENTION_TREND_LINE_KEY]: trendValue }
-        : row;
-    });
-  }, [allKeys, rows]);
-  const config = useMemo(() => {
-    const trendConfig: ChartConfig = {
-      [GEO_MENTION_TREND_TOTAL_KEY]: {
-        label: GEO_MENTION_TREND_TOTAL_LABEL,
-        colors: seriesColors(CHART_PRIMARY_COLOR),
-      },
-      [GEO_MENTION_TREND_LINE_KEY]: {
-        label: GEO_MENTION_TREND_LINE_LABEL,
-        colors: seriesColors(CHART_MUTED_COLOR),
-      },
+  const trend = fitMentionTrendLine(observedRows, GEO_MENTION_TREND_TOTAL_KEY);
+  const chartRows = rows.map((row, index) => {
+    const trendValue = trend[index];
+    return typeof trendValue === "number"
+      ? { ...row, [GEO_MENTION_TREND_LINE_KEY]: trendValue }
+      : row;
+  });
+  const config: ChartConfig = {
+    [GEO_MENTION_TREND_TOTAL_KEY]: {
+      label: GEO_MENTION_TREND_TOTAL_LABEL,
+      colors: seriesColors(CHART_PRIMARY_COLOR),
+    },
+    [GEO_MENTION_TREND_LINE_KEY]: {
+      label: GEO_MENTION_TREND_LINE_LABEL,
+      colors: seriesColors(CHART_MUTED_COLOR),
+    },
+  };
+  for (const [index, entry] of series.entries()) {
+    config[entry.key] = {
+      label: entry.label,
+      colors: accountSeriesColors(index),
+      indicatorHtml: engineIconHtml(entry.engine, false),
     };
-    for (const [index, entry] of series.entries()) {
-      trendConfig[entry.key] = {
-        label: entry.label,
-        colors: accountSeriesColors(index),
-        indicatorHtml: engineIconHtml(entry.engine, false),
-      };
-    }
-    return trendConfig;
-  }, [series]);
+  }
   const markIncompleteTail = hasIncompleteTail(rows);
   const sampledDays = sampledDayCount(rows, engines);
 
-  const handleToggle = useCallback((key: string) => {
+  const handleToggle = (key: string) => {
     setActiveKeys((previous) => toggleActiveSeries(previous, key));
-  }, []);
+  };
 
   const emptyMessage =
     sampledDays === 0
