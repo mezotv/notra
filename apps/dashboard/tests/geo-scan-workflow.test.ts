@@ -115,6 +115,31 @@ describe("GEO scan workflow orchestration", () => {
     expect(sleep).not.toHaveBeenCalled();
   });
 
+  test("runs projects sequentially so their batch windows cannot multiply provider traffic", async () => {
+    listProjects.mockResolvedValue(["project-one", "project-two"]);
+    let releaseFirstProject: (() => void) | undefined;
+    taskBatch.mockImplementationOnce(
+      (_context, batch) =>
+        new Promise((resolve) => {
+          releaseFirstProject = () =>
+            resolve({
+              checks: batch.length,
+              mentions: 0,
+              dropped: 0,
+              usage: EMPTY_AGENT_TOKEN_USAGE,
+            });
+        })
+    );
+    const run = geoScanWorkflow({ organizationId: "org-test" });
+    await settle(() => releaseFirstProject !== undefined);
+    expect(prepare).toHaveBeenCalledTimes(1);
+    expect(prepare.mock.calls[0]?.[1]).toBe("project-one");
+    releaseFirstProject?.();
+    await settle(() => prepare.mock.calls.length === 2);
+    expect(prepare.mock.calls[1]?.[1]).toBe("project-two");
+    expect(await run).toMatchObject({ status: "completed" });
+  });
+
   test("batches tasks and sequences, keeps the plan token, and sums results and usage", async () => {
     const plan = scanPlan(
       "project-test",
@@ -289,7 +314,11 @@ describe("GEO scan workflow orchestration", () => {
       { status: "completed" }
     );
     expect(renewClaim).toHaveBeenCalledTimes(1);
-    expect(renewClaim).toHaveBeenCalledWith("project-test", claimedAt);
+    expect(renewClaim).toHaveBeenCalledWith(
+      "project-test",
+      claimedAt,
+      expect.any(String)
+    );
     expect(finalize).toHaveBeenCalledWith(
       plan.context,
       expect.anything(),

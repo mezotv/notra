@@ -60,6 +60,10 @@ function isClaimRenewalDue(claimedAt: string, now: number): boolean {
   return now - Date.parse(claimedAt) >= GEO_SCAN_CLAIM_RENEW_AFTER_MS;
 }
 
+function nextClaimRenewalToken(claimedAt: string, now: number): string {
+  return new Date(Math.max(now, Date.parse(claimedAt) + 1)).toISOString();
+}
+
 type GeoScanBatchSettlement =
   | { index: number; outcome: GeoScanBatchOutcome }
   | { index: number; error: unknown };
@@ -89,10 +93,12 @@ async function runGeoScanBatchWindow<T>(
   const hasPendingBatches = () => !failed && nextIndex < batches.length;
   while (hasPendingBatches() || inFlight.size > 0) {
     while (hasPendingBatches() && inFlight.size < GEO_SCAN_BATCH_CONCURRENCY) {
-      if (isClaimRenewalDue(state.claimedAt, Date.now())) {
+      const now = Date.now();
+      if (isClaimRenewalDue(state.claimedAt, now)) {
         state.claimedAt = await renewGeoScanClaimStep(
           context.projectId,
-          state.claimedAt
+          state.claimedAt,
+          nextClaimRenewalToken(state.claimedAt, now)
         );
       }
       const index = nextIndex;
@@ -241,34 +247,30 @@ export async function geoScanWorkflow(
   let checks = 0;
   let mentions = 0;
   const retryProjectIds: string[] = [];
-  const outcomes = await Promise.all(
-    projectIds.map(async (scanProjectId) => {
-      const claimed = scanProjectId === projectId;
-      const outcome = await runGeoScanProjectRun(
-        organizationId,
-        scanProjectId,
-        {
-          claimedAt: claimed ? claimedAt : undefined,
-          scanId: claimed ? scanId : undefined,
-          retried: false,
-          promptIds,
-        }
-      );
-      return { scanProjectId, outcome };
-    })
-  );
-  if (outcomes.every(({ outcome }) => outcome === null)) {
-    return { status: "skipped" };
-  }
-  for (const { scanProjectId, outcome } of outcomes) {
+  let ranProject = false;
+  // A project already runs several model calls per batch. Keep projects in one
+  // workflow sequential so batch concurrency is the aggregate provider bound,
+  // rather than multiplying it by every project in the organization.
+  for (const scanProjectId of projectIds) {
+    const claimed = scanProjectId === projectId;
+    const outcome = await runGeoScanProjectRun(organizationId, scanProjectId, {
+      claimedAt: claimed ? claimedAt : undefined,
+      scanId: claimed ? scanId : undefined,
+      retried: false,
+      promptIds,
+    });
     if (!outcome) {
       continue;
     }
+    ranProject = true;
     checks += outcome.totals.checks;
     mentions += outcome.totals.mentions;
     if (outcome.noSuccessfulChecks && outcome.attempted > 0) {
       retryProjectIds.push(scanProjectId);
     }
+  }
+  if (!ranProject) {
+    return { status: "skipped" };
   }
 
   if (retryProjectIds.length === 0) {
@@ -283,15 +285,11 @@ export async function geoScanWorkflow(
   );
   await sleep(GEO_SCAN_NO_RESULTS_RETRY_DELAY);
 
-  const retryOutcomes = await Promise.all(
-    retryProjectIds.map((retryProjectId) =>
-      runGeoScanProjectRun(organizationId, retryProjectId, {
-        retried: true,
-        promptIds,
-      })
-    )
-  );
-  for (const outcome of retryOutcomes) {
+  for (const retryProjectId of retryProjectIds) {
+    const outcome = await runGeoScanProjectRun(organizationId, retryProjectId, {
+      retried: true,
+      promptIds,
+    });
     if (!outcome) {
       continue;
     }

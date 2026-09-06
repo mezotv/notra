@@ -97,12 +97,13 @@ export async function prepareGeoScanProjectStep(
  */
 export async function renewGeoScanClaimStep(
   projectId: string,
-  claimedAt: string
+  claimedAt: string,
+  renewalToken: string
 ): Promise<string> {
   "use step";
   try {
     return await Effect.runPromise(
-      renewGeoScanClaimIfDue(projectId, claimedAt).pipe(
+      renewGeoScanClaimIfDue(projectId, claimedAt, renewalToken).pipe(
         Effect.provide(geoCoreDashboardLayer)
       )
     );

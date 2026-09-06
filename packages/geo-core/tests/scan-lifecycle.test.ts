@@ -270,20 +270,36 @@ describe("scan ownership and finalization", () => {
     const claim = await Effect.runPromise(claimGeoScanRun("wave"));
     assert.ok(claim);
     const young = claim.claimedAt.toISOString();
-    expect(await Effect.runPromise(renewGeoScanClaimIfDue("wave", young))).toBe(
-      young
-    );
+    expect(
+      await Effect.runPromise(
+        renewGeoScanClaimIfDue(
+          "wave",
+          young,
+          new Date(claim.claimedAt.getTime() + 1).toISOString()
+        )
+      )
+    ).toBe(young);
     const aged = new Date(Date.now() - GEO_SCAN_CLAIM_RENEW_AFTER_MS - 1_000);
+    const renewalToken = new Date().toISOString();
     await seedProject("aged", { scanStartedAt: aged });
     const rotated = await Effect.runPromise(
-      renewGeoScanClaimIfDue("aged", aged.toISOString())
+      renewGeoScanClaimIfDue("aged", aged.toISOString(), renewalToken)
     );
-    expect(Date.parse(rotated)).toBeGreaterThan(aged.getTime());
+    expect(rotated).toBe(renewalToken);
     expect((await settingsFor("aged"))?.scanStartedAt?.toISOString()).toBe(
       rotated
     );
+    expect(
+      await Effect.runPromise(
+        renewGeoScanClaimIfDue("aged", aged.toISOString(), renewalToken)
+      )
+    ).toBe(renewalToken);
     const lost = await Effect.runPromiseExit(
-      renewGeoScanClaimIfDue("aged", aged.toISOString())
+      renewGeoScanClaimIfDue(
+        "aged",
+        aged.toISOString(),
+        new Date(Date.now() + 1).toISOString()
+      )
     );
     expect(Exit.isFailure(lost)).toBe(true);
   });

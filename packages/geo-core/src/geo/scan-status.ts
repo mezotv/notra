@@ -76,9 +76,11 @@ export const claimGeoScanRun = Effect.fn("geo.claimScanRun")(function* (
  */
 export const renewGeoScanRun = Effect.fn("geo.renewScanRun")(function* (
   projectId: string,
-  claimedAt: Date
+  claimedAt: Date,
+  renewalToken?: Date
 ) {
-  const renewedAt = new Date(Math.max(Date.now(), claimedAt.getTime() + 1));
+  const renewedAt =
+    renewalToken ?? new Date(Math.max(Date.now(), claimedAt.getTime() + 1));
   const renewed = yield* geoDb("scan claim renewal failed", () =>
     db
       .update(geoSettings)
@@ -86,7 +88,12 @@ export const renewGeoScanRun = Effect.fn("geo.renewScanRun")(function* (
       .where(
         and(
           eq(geoSettings.projectId, projectId),
-          eq(geoSettings.scanStartedAt, claimedAt)
+          renewalToken
+            ? or(
+                eq(geoSettings.scanStartedAt, claimedAt),
+                eq(geoSettings.scanStartedAt, renewalToken)
+              )
+            : eq(geoSettings.scanStartedAt, claimedAt)
         )
       )
       .returning({ id: geoSettings.id })
@@ -96,16 +103,13 @@ export const renewGeoScanRun = Effect.fn("geo.renewScanRun")(function* (
 
 /**
  * Rotates the claim token only once it has aged past the renew threshold.
- * The workflow calls this between batch waves, never inside a batch: batches
- * of one wave run side by side and would race each other for the
- * compare-and-set, and a step can be retried with the token its crashed
- * predecessor already rotated away — renewing on every batch would turn each
- * such retry into a lost claim. Under the threshold the incoming token is
- * still comfortably inside `GEO_SCAN_STALE_MS`, so handing it back unchanged
- * is safe.
+ * The workflow supplies the replacement token as step input, so replaying a
+ * committed step repeats the same update. The compare-and-set accepts either
+ * the old token or that exact replacement, making the replay idempotent while
+ * still rejecting a claim acquired by another run.
  */
 export const renewGeoScanClaimIfDue = Effect.fn("geo.renewScanClaimIfDue")(
-  function* (projectId: string, claimToken: string) {
+  function* (projectId: string, claimToken: string, renewalToken: string) {
     const claimedAt = new Date(claimToken);
     if (Number.isNaN(claimedAt.getTime())) {
       return yield* Effect.fail(
@@ -115,7 +119,18 @@ export const renewGeoScanClaimIfDue = Effect.fn("geo.renewScanClaimIfDue")(
     if (Date.now() - claimedAt.getTime() < GEO_SCAN_CLAIM_RENEW_AFTER_MS) {
       return claimToken;
     }
-    const renewed = yield* renewGeoScanRun(projectId, claimedAt);
+    const renewedAt = new Date(renewalToken);
+    if (
+      Number.isNaN(renewedAt.getTime()) ||
+      renewedAt.getTime() <= claimedAt.getTime()
+    ) {
+      return yield* Effect.fail(
+        new GeoScanError({
+          message: `Invalid scan claim renewal token: ${renewalToken}`,
+        })
+      );
+    }
+    const renewed = yield* renewGeoScanRun(projectId, claimedAt, renewedAt);
     if (!renewed) {
       return yield* Effect.fail(
         new GeoScanError({
