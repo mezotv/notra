@@ -21,7 +21,7 @@ import { PresenceBadge } from "@notra/ui/components/geo/presence-badge";
 import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import { Input } from "@notra/ui/components/ui/input";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 import { buttonVariants } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -220,6 +220,24 @@ function previewColumns(): TableColumn<GeoPromptSummary>[] {
   ];
 }
 
+function visiblePromptSummaries(
+  results: PromptResultsPreviewProps["results"],
+  query: string,
+  limit: number | undefined,
+  unseen: boolean
+) {
+  const summaries = summarizePromptResults(results);
+  if (unseen) {
+    return unseenPromptSummaries(summaries);
+  }
+  const needle = query.trim();
+  const matched =
+    needle.length === 0
+      ? summaries
+      : summaries.filter((row) => fuzzyMatches([row.prompt], needle));
+  return limit ? matched.slice(0, limit) : matched;
+}
+
 export function PromptResultsPreview({
   results,
   limit,
@@ -230,23 +248,9 @@ export function PromptResultsPreview({
   const unseen = variant === "unseen";
   const [detailId, setDetailId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
-  const rows = useMemo(() => {
-    const summaries = summarizePromptResults(results);
-    if (unseen) {
-      return unseenPromptSummaries(summaries);
-    }
-    const needle = query.trim();
-    const matched =
-      needle.length === 0
-        ? summaries
-        : summaries.filter((row) => fuzzyMatches([row.prompt], needle));
-    return limit ? matched.slice(0, limit) : matched;
-  }, [results, query, limit, unseen]);
+  const rows = visiblePromptSummaries(results, query, limit, unseen);
   const detailRow = detailId ? promptTableRowForId(detailId, results) : null;
-  const columns = useMemo(
-    () => (unseen ? unseenColumns(rows.length) : previewColumns()),
-    [unseen, rows.length]
-  );
+  const columns = unseen ? unseenColumns(rows.length) : previewColumns();
   const fallbackHeight = tableHeightFor(
     unseen
       ? Math.min(rows.length, UNSEEN_MAX_VISIBLE_ROWS)
