@@ -18,28 +18,19 @@ export function Sponsors({ sponsors }: SponsorsProps) {
         </p>
       </div>
 
-      <div className="mx-auto flex w-full max-w-4xl flex-wrap items-stretch justify-center gap-4">
+      <div className="mx-auto flex w-full max-w-4xl flex-wrap items-center justify-center gap-12 sm:gap-16">
         {sponsors.map((sponsor) => (
           <Link
-            className="group flex flex-col items-center gap-4 rounded-2xl border border-[#1E1E1E14] bg-[#C8B2EE1F] px-8 py-6 transition-colors hover:bg-[#C8B2EE33] dark:border-white/10 dark:bg-white/[0.03] dark:hover:bg-white/[0.06]"
+            className="text-foreground focus-visible:ring-ring flex flex-col items-center gap-4 rounded-sm transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-offset-4 focus-visible:outline-none"
             href={sponsor.url}
             key={sponsor.name}
             rel="noopener noreferrer"
             target="_blank"
           >
-            <sponsor.logo
-              aria-label={sponsor.name}
-              className="h-10 w-auto"
-              role="img"
-            />
-            <div className="flex flex-col items-center gap-1 text-center">
-              <span className="text-foreground font-sans text-sm font-medium">
-                {sponsor.name}
-              </span>
-              <span className="text-muted-foreground max-w-[16rem] text-xs leading-5">
-                {sponsor.description}
-              </span>
-            </div>
+            <sponsor.logo aria-hidden="true" className="h-10 w-auto" />
+            <span className="font-sans text-sm font-medium">
+              {sponsor.name}
+            </span>
           </Link>
         ))}
       </div>
