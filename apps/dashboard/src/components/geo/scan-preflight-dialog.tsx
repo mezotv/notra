@@ -20,7 +20,7 @@ import {
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from "@notra/ui/components/shared/responsive-dialog";
-import { useEffect, useId, useState } from "react";
+import { useId, useState } from "react";
 
 import { Button } from "@/components/button";
 import { EngineIcon } from "@/components/geo/engine-icon";
@@ -107,25 +107,28 @@ export function ScanPreflightDialog({
   lastScanAt,
 }: ScanPreflightDialogProps) {
   const selectable = engines.length > 1;
-  const [selected, setSelected] = useState(() => new Set(engines));
-  const selectedCount = engines.filter((engine) => selected.has(engine)).length;
+  const [deselected, setDeselected] = useState<Set<string>>(() => new Set());
+  const selected = engines.filter((engine) => !deselected.has(engine));
+  const selectedCount = selected.length;
   const canRun = selectedCount > 0;
 
-  useEffect(() => {
-    if (open) {
-      setSelected(new Set(engines));
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setDeselected(new Set());
     }
-  }, [open, engines]);
+    onOpenChange(nextOpen);
+  };
 
   const runScan = () => {
     if (!canRun || isPending) {
       return;
     }
-    onConfirm(scanPreflightEnginesToSubmit(engines, selected));
+    onConfirm(scanPreflightEnginesToSubmit(engines, new Set(selected)));
+    setDeselected(new Set());
   };
 
   return (
-    <ResponsiveDialog onOpenChange={onOpenChange} open={open}>
+    <ResponsiveDialog onOpenChange={handleOpenChange} open={open}>
       <ResponsiveDialogContent className="sm:max-w-md">
         <ResponsiveDialogHeader>
           <ResponsiveDialogTitle>
@@ -174,7 +177,7 @@ export function ScanPreflightDialog({
             {selectable ? (
               <Button
                 disabled={isPending || selectedCount === engines.length}
-                onClick={() => setSelected(new Set(engines))}
+                onClick={() => setDeselected(new Set())}
                 size="xs"
                 type="button"
                 variant="ghost"
@@ -186,17 +189,17 @@ export function ScanPreflightDialog({
           <div className="bg-muted/40 max-h-64 overflow-y-auto rounded-xl p-1">
             {engines.map((engine) => (
               <ScanPreflightEngineRow
-                checked={selected.has(engine)}
+                checked={!deselected.has(engine)}
                 disabled={isPending}
                 engine={engine}
                 key={engine}
                 onCheckedChange={(checked) => {
-                  setSelected((current) => {
+                  setDeselected((current) => {
                     const next = new Set(current);
                     if (checked) {
-                      next.add(engine);
-                    } else {
                       next.delete(engine);
+                    } else {
+                      next.add(engine);
                     }
                     return next;
                   });
@@ -214,7 +217,7 @@ export function ScanPreflightDialog({
         <ResponsiveDialogFooter>
           <Button
             disabled={isPending}
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
             type="button"
             variant="outline"
           >
