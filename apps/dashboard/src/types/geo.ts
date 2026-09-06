@@ -591,20 +591,14 @@ export interface MentionRateCardProps extends EngineFamilyBrandScope {
 export interface PromptResultsPreviewProps {
   results: GeoPromptResult[];
   limit?: number;
-  action?: ReactNode;
   isScanning?: boolean;
-}
-
-export interface PromptUnseenListProps {
-  results: GeoPromptResult[];
-  isScanning?: boolean;
+  variant?: "all" | "unseen";
   gapsHref?: string;
 }
 
 export interface GeoPromptsPanelProps {
   results: GeoPromptResult[];
   isScanning?: boolean;
-  action?: ReactNode;
   gapsHref?: string;
 }
 

@@ -1,3 +1,4 @@
+import { NeutralIcon, Sad01Icon, SmileIcon } from "@hugeicons/core-free-icons";
 import {
   GEO_PROMPT_INTENT_LABELS,
   GEO_PROMPT_INTENTS,
@@ -82,4 +83,19 @@ export const GEO_PROMPT_TAGS_COPY = {
   bulkConfirm: "Add tags",
   cancel: "Cancel",
   none: "No tags",
+} as const;
+
+export const GEO_LABEL_PILL_CLASS =
+  "inline-flex h-6 items-center gap-1.5 rounded-full border px-2 text-xs font-medium";
+
+export const GEO_SENTIMENT_ICONS = {
+  positive: SmileIcon,
+  neutral: NeutralIcon,
+  negative: Sad01Icon,
+} as const;
+
+export const GEO_SENTIMENT_PILL_CLASS = {
+  positive: "border-geo-up/25 bg-geo-up/10 text-geo-up",
+  neutral: "border-border bg-muted/50 text-muted-foreground dark:bg-muted/30",
+  negative: "border-geo-down/25 bg-geo-down/10 text-geo-down",
 } as const;
