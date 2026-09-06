@@ -38,7 +38,7 @@ function TitleCard({
     <div
       aria-disabled={disabled || undefined}
       className={cn(
-        "group relative isolate flex flex-col overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80 shadow-2xs",
+        "group relative isolate flex flex-col overflow-hidden rounded-lg border border-border/80 border-b-border/40 bg-muted/80",
         disabled && "cursor-not-allowed",
         className
       )}

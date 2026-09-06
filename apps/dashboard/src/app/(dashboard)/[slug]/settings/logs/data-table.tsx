@@ -79,7 +79,7 @@ export function DataTable<TData>({
 
   return (
     <div>
-      <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
+      <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border">
         <Table aria-busy={isLoading} className="table-fixed">
           <colgroup>
             <col className="w-[40%]" />
