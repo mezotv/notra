@@ -979,7 +979,7 @@ export interface CompetitorPromptSummaryStripProps {
 export interface ScanPreflightDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: (engines?: string[]) => void;
   isPending: boolean;
   promptCount: number;
   engines: readonly string[];

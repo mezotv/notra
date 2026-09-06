@@ -1014,7 +1014,7 @@ export const GEO_PROMPT_TAGS_CUSTOM_ONLY_TOAST =
   "Tags apply to custom prompts. Auto-generated prompts were skipped.";
 export const GEO_SCAN_PREFLIGHT_TITLE = "Run a scan now?";
 export const GEO_SCAN_PREFLIGHT_BODY =
-  "Every enabled prompt is asked on each engine and language below.";
+  "This run only — tracked engines stay as they are.";
 export const GEO_SCAN_PREFLIGHT_CONFIRM = "Run scan";
 export const GEO_SCAN_PREFLIGHT_CANCEL = "Cancel";
 export const GEO_SCAN_PREFLIGHT_PENDING = "Starting…";
@@ -1023,6 +1023,8 @@ export const GEO_SCAN_PREFLIGHT_ENGINES_LABEL = "Engines";
 export const GEO_SCAN_PREFLIGHT_LANGUAGES_LABEL = "Languages";
 export const GEO_SCAN_PREFLIGHT_LAST_SCAN_LABEL = "Last scan";
 export const GEO_SCAN_PREFLIGHT_NEVER_SCANNED = "Not yet";
+export const GEO_SCAN_PREFLIGHT_SELECT_ALL = "Select all";
+export const GEO_SCAN_PREFLIGHT_NEED_ENGINE = "Pick at least one engine.";
 export const GEO_RANGE_PRESETS = [
   { value: "today", label: "Today" },
   { value: "yesterday", label: "Yesterday" },
