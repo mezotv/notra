@@ -41,7 +41,8 @@ mock.module("@notra/ai/utils/geo-opencode-box", () => ({
   deleteStaleGeoOpenCodeBoxes: cleanupBoxes,
 }));
 
-const { runGeoScanCronSweep } = await import("../src/geo/scan-schedule");
+const { nextGeoScanAtAfter, rearmedGeoScanAt, runGeoScanCronSweep } =
+  await import("../src/geo/scan-schedule");
 const { startClaimedGeoScanRun } = await import("../src/geo/scan-handoff");
 const {
   claimGeoScanRun,
@@ -118,11 +119,25 @@ describe("scheduled GEO scans", () => {
       expect(settings?.scanStartedAt?.toISOString()).toBe(payload.claimedAt);
     }
     const due = await settingsFor("due");
-    expect(due?.nextScanAt?.getTime()).toBeGreaterThanOrEqual(
-      before + 48 * 3_600_000
+    // Anchored on the previous stamp: a multiple of the interval from epoch,
+    // at least one stale window ahead, at most one interval past that.
+    assert.ok(due?.nextScanAt);
+    expect(due.nextScanAt.getTime() % (48 * 3_600_000)).toBe(0);
+    expect(due.nextScanAt.getTime()).toBeGreaterThan(
+      before + GEO_SCAN_STALE_MS
     );
-    expect(due?.nextScanAt?.getTime()).toBeLessThanOrEqual(
-      Date.now() + 48 * 3_600_000
+    expect(due.nextScanAt.getTime()).toBeLessThanOrEqual(
+      Date.now() + GEO_SCAN_STALE_MS + 48 * 3_600_000
+    );
+    // Migrated rows are armed one interval out, on a whole minute.
+    const migrated = await settingsFor("migrated");
+    assert.ok(migrated?.nextScanAt);
+    expect(migrated.nextScanAt.getTime() % 60_000).toBe(0);
+    expect(migrated.nextScanAt.getTime()).toBeGreaterThan(
+      before + 24 * 3_600_000 - 60_000
+    );
+    expect(migrated.nextScanAt.getTime()).toBeLessThanOrEqual(
+      Date.now() + 24 * 3_600_000
     );
     expect((await settingsFor("disabled"))?.scanStartedAt).toBeNull();
     expect((await settingsFor("future"))?.nextScanAt).toEqual(future);
@@ -132,6 +147,49 @@ describe("scheduled GEO scans", () => {
       skipped: 0,
       staleScansFailed: 0,
     });
+  });
+
+  test("a daily schedule keeps its time of day across late ticks", async () => {
+    const day = 24 * 3_600_000;
+    // Due 09:40 yesterday; the sweep only got to it 50 s late today (the
+    // tick that would have caught it yesterday missed by milliseconds).
+    const dueAt = new Date(Date.UTC(2026, 8, 5, 9, 40));
+    const tick = new Date(dueAt.getTime() + day + 50_000);
+    expect(nextGeoScanAtAfter(24, dueAt, tick)).toEqual(
+      new Date(dueAt.getTime() + 2 * day)
+    );
+    // Ten days of missed ticks catch up to the same 09:40 slot tomorrow.
+    const lateTick = new Date(dueAt.getTime() + 10 * day + 5 * 3_600_000);
+    expect(nextGeoScanAtAfter(24, dueAt, lateTick)).toEqual(
+      new Date(dueAt.getTime() + 11 * day)
+    );
+    // A slot inside the stale window of the catch-up scan is skipped.
+    const justBeforeSlot = new Date(dueAt.getTime() + 3 * day - 60_000);
+    expect(nextGeoScanAtAfter(24, dueAt, justBeforeSlot)).toEqual(
+      new Date(dueAt.getTime() + 4 * day)
+    );
+    // The sweep persists exactly that stamp.
+    await seedProject("cadence", { nextScanAt: new Date(0) });
+    const before = Date.now();
+    await sweep();
+    const settings = await settingsFor("cadence");
+    expect(settings?.nextScanAt).toEqual(
+      nextGeoScanAtAfter(24, new Date(0), new Date(before))
+    );
+  });
+
+  test("re-arming from settings follows the last scan instead of now", () => {
+    const now = new Date(Date.UTC(2026, 8, 6, 12, 0));
+    expect(rearmedGeoScanAt(24, null, now)).toEqual(now);
+    const recent = new Date(now.getTime() - 10 * 3_600_000);
+    expect(rearmedGeoScanAt(24, recent, now)).toEqual(
+      new Date(recent.getTime() + 24 * 3_600_000)
+    );
+    const overdue = new Date(now.getTime() - 30 * 3_600_000);
+    expect(rearmedGeoScanAt(24, overdue, now)).toEqual(now);
+    expect(rearmedGeoScanAt(48, overdue, now)).toEqual(
+      new Date(overdue.getTime() + 48 * 3_600_000)
+    );
   });
 
   test("overlapping sweeps start a project only once", async () => {
