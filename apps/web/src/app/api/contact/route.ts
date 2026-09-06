@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import {
   enforceContactMessageRateLimit,
+  enforceContactVerificationRateLimit,
   getContactRateLimitHeaders,
 } from "@/lib/contact/ratelimit";
 import { sendContactMessageEmail } from "@/lib/contact/send-message-email";
@@ -29,12 +30,17 @@ export async function POST(request: NextRequest) {
   }
 
   const token = (body as Record<string, unknown>)["cf-turnstile-response"];
-  if (!(await verifyContactTurnstile(token))) {
-    return jsonError("Verification failed. Please try again.", 403);
-  }
 
   return Effect.runPromise(
     Effect.gen(function* () {
+      yield* enforceContactVerificationRateLimit(request);
+      const verified = yield* Effect.promise(() =>
+        verifyContactTurnstile(token)
+      );
+      if (!verified) {
+        return jsonError("Verification failed. Please try again.", 403);
+      }
+
       const rateLimit = yield* enforceContactMessageRateLimit(
         request,
         parsed.data.email
