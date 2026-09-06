@@ -144,6 +144,7 @@ import {
   applyAutoPromptChange,
   buildGeoPrompts,
   customPromptScanId,
+  generatedAutoPromptIds,
   isGeoAutoPromptId,
   toAutoTrackedPrompts,
 } from "./prompts";
@@ -1506,40 +1507,117 @@ function trackedAutoPrompt(
   };
 }
 
+type AutoPromptPatchOutcome =
+  | {
+      status: "updated";
+      pausedAutoPromptIds: string[];
+      removedAutoPromptIds: string[];
+    }
+  | { status: "missing-settings" }
+  | { status: "not-found" };
+
+const patchAutoPromptInTransaction = Effect.fn("geo.promptsPatchAutoTx")(
+  function* (
+    tx: DbTransaction,
+    organizationId: string,
+    projectId: string,
+    brandSettingsId: string,
+    promptId: string,
+    change: "pause" | "resume" | "remove"
+  ) {
+    yield* lockGeoProject(tx, projectId);
+    const settingsRow = yield* geoDb("settings lookup failed", () =>
+      tx.query.geoSettings.findFirst({
+        columns: {
+          companyName: true,
+          aliases: true,
+          pausedAutoPromptIds: true,
+          removedAutoPromptIds: true,
+        },
+        where: eq(geoSettings.projectId, projectId),
+      })
+    );
+    if (!settingsRow) {
+      const outcome: AutoPromptPatchOutcome = { status: "missing-settings" };
+      return outcome;
+    }
+    if (settingsRow.removedAutoPromptIds.includes(promptId)) {
+      const outcome: AutoPromptPatchOutcome = { status: "not-found" };
+      return outcome;
+    }
+    const brand = yield* geoDb("brand lookup failed", () =>
+      tx.query.brandSettings.findFirst({
+        columns: { companyDescription: true, audience: true },
+        where: and(
+          eq(brandSettings.organizationId, organizationId),
+          eq(brandSettings.id, brandSettingsId)
+        ),
+      })
+    );
+    const generatedIds = generatedAutoPromptIds(
+      {
+        companyName: settingsRow.companyName,
+        aliases: settingsRow.aliases,
+      },
+      brand
+        ? {
+            companyDescription: brand.companyDescription,
+            audience: brand.audience,
+          }
+        : null
+    );
+    if (!generatedIds.has(promptId)) {
+      const outcome: AutoPromptPatchOutcome = { status: "not-found" };
+      return outcome;
+    }
+    const next = applyAutoPromptChange(
+      settingsRow.pausedAutoPromptIds,
+      settingsRow.removedAutoPromptIds,
+      promptId,
+      change
+    );
+    yield* geoDb("auto prompt update failed", () =>
+      tx
+        .update(geoSettings)
+        .set({
+          pausedAutoPromptIds: next.pausedAutoPromptIds,
+          removedAutoPromptIds: next.removedAutoPromptIds,
+        })
+        .where(eq(geoSettings.projectId, projectId))
+    );
+    const outcome: AutoPromptPatchOutcome = { status: "updated", ...next };
+    return outcome;
+  }
+);
+
 const patchAutoPromptSettings = Effect.fn("geo.promptsPatchAuto")(function* (
   organizationId: string,
   projectId: string,
+  brandSettingsId: string,
   promptId: string,
   change: "pause" | "resume" | "remove"
 ) {
-  const settingsRow = yield* geoDb("settings lookup failed", () =>
-    db.query.geoSettings.findFirst({
-      columns: { pausedAutoPromptIds: true, removedAutoPromptIds: true },
-      where: eq(geoSettings.projectId, projectId),
-    })
+  const outcome = yield* geoDb("auto prompt update failed", () =>
+    db.transaction((tx) =>
+      Effect.runPromise(
+        patchAutoPromptInTransaction(
+          tx,
+          organizationId,
+          projectId,
+          brandSettingsId,
+          promptId,
+          change
+        )
+      )
+    )
   );
-  if (!settingsRow) {
+  if (outcome.status === "missing-settings") {
     return yield* Effect.fail(new GeoSettingsMissingError({ organizationId }));
   }
-  if (settingsRow.removedAutoPromptIds.includes(promptId)) {
+  if (outcome.status === "not-found") {
     return yield* Effect.fail(new GeoPromptNotFoundError({ promptId }));
   }
-  const next = applyAutoPromptChange(
-    settingsRow.pausedAutoPromptIds,
-    settingsRow.removedAutoPromptIds,
-    promptId,
-    change
-  );
-  yield* geoDb("auto prompt update failed", () =>
-    db
-      .update(geoSettings)
-      .set({
-        pausedAutoPromptIds: next.pausedAutoPromptIds,
-        removedAutoPromptIds: next.removedAutoPromptIds,
-      })
-      .where(eq(geoSettings.projectId, projectId))
-  );
-  return next;
+  return outcome;
 });
 
 export const deleteGeoPrompt = Effect.fn("geo.promptsDelete")(function* (
@@ -1569,6 +1647,7 @@ export const deleteGeoPrompt = Effect.fn("geo.promptsDelete")(function* (
   yield* patchAutoPromptSettings(
     scope.organizationId,
     scope.projectId,
+    scope.brandSettingsId,
     promptId,
     "remove"
   );
@@ -1612,6 +1691,7 @@ export const updateGeoPrompt = Effect.fn("geo.promptsUpdate")(function* (
   yield* patchAutoPromptSettings(
     scope.organizationId,
     scope.projectId,
+    scope.brandSettingsId,
     promptId,
     changes.enabled ? "resume" : "pause"
   );
@@ -1627,6 +1707,7 @@ export const toggleGeoAutoPrompt = Effect.fn("geo.promptsToggleAuto")(
     const next = yield* patchAutoPromptSettings(
       scope.organizationId,
       scope.projectId,
+      scope.brandSettingsId,
       promptId,
       enabled ? "resume" : "pause"
     );
@@ -1669,6 +1750,7 @@ export const toggleGeoPrompt = Effect.fn("geo.promptsToggle")(function* (
   yield* patchAutoPromptSettings(
     scope.organizationId,
     scope.projectId,
+    scope.brandSettingsId,
     promptId,
     enabled ? "resume" : "pause"
   );

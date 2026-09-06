@@ -117,6 +117,19 @@ export function isConversationScanPromptId(promptId: string): boolean {
   return promptId.startsWith(SEQUENCE_PROMPT_SCAN_ID_PREFIX);
 }
 
+export function shouldSkipUnmatchedGapScan(
+  scanId: string,
+  matchedScanIds: ReadonlySet<string>,
+  removedAutoPromptIds: ReadonlySet<string>
+): boolean {
+  return (
+    matchedScanIds.has(scanId) ||
+    isConversationScanPromptId(scanId) ||
+    isCustomPromptScanId(scanId) ||
+    removedAutoPromptIds.has(scanId)
+  );
+}
+
 export function promptIdFromScanId(scanId: string): string {
   return scanId.startsWith(CUSTOM_PROMPT_SCAN_ID_PREFIX)
     ? scanId.slice(CUSTOM_PROMPT_SCAN_ID_PREFIX.length)
@@ -301,8 +314,15 @@ function deriveAudience(
   return condensed;
 }
 
+export function generatedAutoPromptIds(
+  settings: Pick<GeoSettings, "companyName" | "aliases">,
+  brand: GeoBrandContext | null
+): Set<string> {
+  return new Set(buildGeoPrompts(settings, brand).map((prompt) => prompt.id));
+}
+
 export function buildGeoPrompts(
-  settings: GeoSettings,
+  settings: Pick<GeoSettings, "companyName" | "aliases">,
   brand: GeoBrandContext | null
 ): GeoPromptDefinition[] {
   const brandTerms = buildBrandTerms(settings);
