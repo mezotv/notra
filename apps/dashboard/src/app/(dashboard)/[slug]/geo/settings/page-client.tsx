@@ -63,7 +63,9 @@ function SettingsPageContent({ organizationSlug }: GeoPageClientProps) {
           key={activeProjectId}
           organizationId={organizationId}
           promptCount={
-            promptsData ? countEnabledGeoPrompts(promptsData.prompts) : undefined
+            promptsData
+              ? countEnabledGeoPrompts(promptsData.prompts)
+              : undefined
           }
           settings={settingsData?.settings ?? null}
         />

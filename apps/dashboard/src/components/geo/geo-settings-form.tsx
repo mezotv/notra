@@ -17,6 +17,7 @@ import { resolveTrackedEngines } from "@notra/geo-core/utils/geo-engines";
 import { trackedGeoLanguages } from "@notra/geo-core/utils/geo-language-rows";
 import {
   calcGeoScanSize,
+  type GeoScanSizeSeverity,
   geoScanSizeSeverity,
 } from "@notra/geo-core/utils/geo-scan";
 import { Input } from "@notra/ui/components/ui/input";
@@ -35,6 +36,26 @@ import { GeoTagList } from "@/components/geo/geo-tag-list";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import type { GeoSettingsFormProps } from "@/types/geo";
+
+function scanSizeNoteClassName(severity: GeoScanSizeSeverity): string {
+  if (severity === "danger") {
+    return "text-destructive text-xs tabular-nums";
+  }
+  if (severity === "warn") {
+    return "text-xs text-amber-600 tabular-nums dark:text-amber-500";
+  }
+  return "text-muted-foreground text-xs tabular-nums";
+}
+
+function scanSizeWarningSuffix(severity: GeoScanSizeSeverity): string {
+  if (severity === "danger") {
+    return ` ${GEO_SCAN_SIZE_DANGER}`;
+  }
+  if (severity === "warn") {
+    return ` ${GEO_SCAN_SIZE_WARN}`;
+  }
+  return "";
+}
 
 export function GeoSettingsForm({
   organizationId,
@@ -183,6 +204,8 @@ export function GeoSettingsForm({
     languageCount: languages.length,
   });
   const scanSizeSeverity = geoScanSizeSeverity(scanSize);
+  const scanSizeNoteClass = scanSizeNoteClassName(scanSizeSeverity);
+  const scanSizeText = `About ${scanSize.toLocaleString()} checks per scan (${promptCount?.toLocaleString()} prompts × ${engines.length.toLocaleString()} engines × ${Math.max(1, languages.length).toLocaleString()} languages).${scanSizeWarningSuffix(scanSizeSeverity)}`;
   let saveStatus: string | null = null;
   if (nameMissing && savedAt) {
     saveStatus = "Add a company name to save";
@@ -272,17 +295,8 @@ export function GeoSettingsForm({
                   you set here.
                 </p>
                 {promptCount !== undefined ? (
-                  <p
-                    className={
-                      scanSizeSeverity === "danger"
-                        ? "text-destructive text-xs tabular-nums"
-                        : scanSizeSeverity === "warn"
-                          ? "text-amber-600 text-xs tabular-nums dark:text-amber-500"
-                          : "text-muted-foreground text-xs tabular-nums"
-                    }
-                    role="note"
-                  >
-                    {`About ${scanSize.toLocaleString()} checks per scan (${promptCount.toLocaleString()} prompts × ${engines.length.toLocaleString()} engines × ${Math.max(1, languages.length).toLocaleString()} languages).${scanSizeSeverity === "danger" ? ` ${GEO_SCAN_SIZE_DANGER}` : scanSizeSeverity === "warn" ? ` ${GEO_SCAN_SIZE_WARN}` : ""}`}
+                  <p className={scanSizeNoteClass} role="note">
+                    {scanSizeText}
                   </p>
                 ) : null}
               </div>

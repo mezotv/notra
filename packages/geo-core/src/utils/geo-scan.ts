@@ -198,7 +198,12 @@ export function summarizeGeoEngineAttempts(
 
 export type GeoScanSizeSeverity = "ok" | "warn" | "danger";
 
-/** Effective scan size: every enabled prompt runs on each engine and language. */
+/**
+ * Intentionally approximate scan size: every enabled prompt runs on each
+ * engine and language. The UI labels this "About"/"Estimated" because the
+ * scan planner can diverge: ZDR policy filtering, non-English prompt caps,
+ * grounded-engine caps and extra grounded attempts, and sequences.
+ */
 export function calcGeoScanSize(input: {
   promptCount: number;
   engineCount: number;
@@ -215,9 +220,7 @@ export function calcGeoScanSize(input: {
     return 0;
   }
   return (
-    input.promptCount *
-    input.engineCount *
-    Math.max(1, input.languageCount)
+    input.promptCount * input.engineCount * Math.max(1, input.languageCount)
   );
 }
 

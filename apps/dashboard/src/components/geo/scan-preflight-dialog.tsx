@@ -105,7 +105,7 @@ export function ScanPreflightDialog({
             className={
               scanSizeSeverity === "danger"
                 ? "text-destructive text-sm"
-                : "text-amber-600 text-sm dark:text-amber-500"
+                : "text-sm text-amber-600 dark:text-amber-500"
             }
             role="note"
           >
