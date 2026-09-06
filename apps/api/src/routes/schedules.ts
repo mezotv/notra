@@ -35,11 +35,11 @@ import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse } from "../utils/openapi-responses";
 import { getOrganizationResponse } from "../utils/organizations";
 import { buildCronExpression, createQstashSchedule } from "../utils/qstash";
-import { deleteQstashScheduleWithRetry } from "../utils/triggers";
 import {
   ORGANIZATION_SCHEDULE_PATH_REGEX,
   ORGANIZATION_SCHEDULES_PATH_REGEX,
 } from "../utils/regex";
+import { deleteQstashScheduleWithRetry } from "../utils/triggers";
 
 export const schedulesRoutes = createOpenApiApp();
 
@@ -676,18 +676,6 @@ schedulesRoutes.openapi(patchScheduleRoute, async (c) => {
     return c.json({ error: "Duplicate schedule" }, 409);
   }
 
-  const existing = await db.query.contentTriggers.findFirst({
-    where: and(
-      eq(contentTriggers.id, scheduleId),
-      eq(contentTriggers.organizationId, orgId),
-      eq(contentTriggers.sourceType, "cron")
-    ),
-  });
-
-  if (!existing) {
-    return c.json({ error: "Schedule not found" }, 404);
-  }
-
   if (input.enabled) {
     const missingTargets = await ensureScheduleTargetsExist(
       db,
@@ -701,85 +689,51 @@ schedulesRoutes.openapi(patchScheduleRoute, async (c) => {
     }
   }
 
-  const persistedName =
-    input.name.trim() || existing.name || DEFAULT_SCHEDULE_NAME;
-  const cronExpression = buildCronExpression(normalized.sourceConfig.cron);
-  const previousQstashScheduleId = existing.qstashScheduleId ?? null;
-  let qstashScheduleId: string | null = null;
-  // When a schedule already exists in QStash, reuse its ID so QStash upserts
-  // in place. This avoids the create-new + delete-old double-write that can
-  // leave duplicates (delete fails) or outages (create succeeds, DB fails).
-  const reuseQstashScheduleId =
-    input.enabled && previousQstashScheduleId !== null
-      ? previousQstashScheduleId
-      : null;
-
-  if (input.enabled) {
-    try {
-      qstashScheduleId = await createQstashSchedule(env, {
-        triggerId: scheduleId,
-        cron: cronExpression,
-        ...(reuseQstashScheduleId
-          ? { scheduleId: reuseQstashScheduleId }
-          : {}),
-      });
-    } catch (error) {
-      const mapped = mapQstashError(error);
-      if (mapped.status === 400) {
-        return c.json({ error: mapped.error }, 400);
-      }
-
-      return c.json({ error: mapped.error }, 500);
-    }
-
-    // QStash should upsert in place when a schedule ID is reused. If it
-    // minted a different ID instead, fail before the DB transaction: the
-    // previous schedule is untouched and the DB still points at it, so both
-    // schedules can never go live at once.
-    if (
-      reuseQstashScheduleId &&
-      qstashScheduleId !== reuseQstashScheduleId
-    ) {
-      try {
-        await deleteQstashScheduleWithRetry(env, qstashScheduleId);
-      } catch (cleanupError) {
-        logError(
-          `Failed to clean up unexpected QStash schedule ${qstashScheduleId} for schedule ${scheduleId}`,
-          cleanupError
-        );
-      }
-
-      logError(
-        `QStash returned unexpected schedule ID ${qstashScheduleId} for schedule ${scheduleId} (expected ${reuseQstashScheduleId})`,
-        new Error("QStash schedule ID rotation")
-      );
-      return c.json({ error: "Failed to update schedule" }, 500);
-    }
-  }
-
-  if (!input.enabled && previousQstashScheduleId) {
-    // Disable path: delete before the DB transaction so a failure stays
-    // retryable — the DB still points at the previous schedule. Delete is
-    // idempotent (404 counts as success), so if the DB transaction fails
-    // after this, retrying PATCH heals instead of orphaning.
-    try {
-      await deleteQstashScheduleWithRetry(env, previousQstashScheduleId);
-    } catch (error) {
-      logError(
-        `Failed to delete previous QStash schedule ${previousQstashScheduleId} for schedule ${scheduleId}`,
-        error
-      );
-      return c.json({ error: "Failed to update schedule" }, 500);
-    }
-  }
-
+  const affectedQstashIds = new Set<string>();
   let committed = false;
   try {
-    const schedule = await db.transaction(async (tx) => {
+    const response = await db.transaction(async (tx) => {
+      // Lock before reading or changing remote state. Concurrent PATCHes must
+      // observe the preceding request's committed configuration.
+      const [existing] = await tx
+        .select()
+        .from(contentTriggers)
+        .where(
+          and(
+            eq(contentTriggers.id, scheduleId),
+            eq(contentTriggers.organizationId, orgId),
+            eq(contentTriggers.sourceType, "cron")
+          )
+        )
+        .for("update");
+
+      if (!existing) {
+        return c.json({ error: "Schedule not found" }, 404);
+      }
+
+      let qstashScheduleId: string | null = null;
+      if (input.enabled) {
+        // Choose the ID before sending so even a lost response is recoverable.
+        qstashScheduleId = existing.qstashScheduleId ?? crypto.randomUUID();
+        affectedQstashIds.add(qstashScheduleId);
+        const returnedId = await createQstashSchedule(env, {
+          triggerId: scheduleId,
+          cron: buildCronExpression(normalized.sourceConfig.cron),
+          scheduleId: qstashScheduleId,
+        });
+        affectedQstashIds.add(returnedId);
+        if (returnedId !== qstashScheduleId) {
+          throw new Error("QStash returned an unexpected schedule ID");
+        }
+      } else if (existing.qstashScheduleId) {
+        affectedQstashIds.add(existing.qstashScheduleId);
+        await deleteQstashScheduleWithRetry(env, existing.qstashScheduleId);
+      }
+
       const [updatedTrigger] = await tx
         .update(contentTriggers)
         .set({
-          name: persistedName,
+          name: input.name.trim() || existing.name || DEFAULT_SCHEDULE_NAME,
           sourceType: "cron",
           sourceConfig: normalized.sourceConfig,
           targets: normalized.targets,
@@ -817,73 +771,69 @@ schedulesRoutes.openapi(patchScheduleRoute, async (c) => {
           },
         });
 
-      return serializeSchedule({
+      const schedule = serializeSchedule({
         ...updatedTrigger,
         lookbackWindow: input.lookbackWindow,
       });
+      return c.json({ schedule, organization }, 200);
     });
-
     committed = true;
-
-    // No post-commit deletes: enables upsert in place (previous === current,
-    // nothing to clean up) and disables delete before the transaction so a
-    // failure stays retryable. Deleting here would return success while both
-    // schedules are live, with the previous ID already lost to the DB.
-
-    return c.json({ schedule, organization }, 200);
+    return response;
   } catch (error) {
-    // Only clean up schedules created by this request. A reused (upserted)
-    // ID belongs to the previous generation — deleting it would disable a
-    // previously working schedule — so only delete when we minted a new ID.
-    const mintedNewSchedule =
-      !committed &&
-      qstashScheduleId !== null &&
-      qstashScheduleId !== previousQstashScheduleId;
-    if (mintedNewSchedule && qstashScheduleId) {
+    if (!committed && affectedQstashIds.size > 0) {
       try {
-        await deleteQstashScheduleWithRetry(env, qstashScheduleId);
-      } catch (cleanupError) {
+        await db.transaction(async (tx) => {
+          // The failed transaction released its lock. Re-read under a new lock:
+          // another request may have committed while recovery was waiting.
+          const [current] = await tx
+            .select()
+            .from(contentTriggers)
+            .where(
+              and(
+                eq(contentTriggers.id, scheduleId),
+                eq(contentTriggers.organizationId, orgId),
+                eq(contentTriggers.sourceType, "cron")
+              )
+            )
+            .for("update");
+          const currentQstashId = current?.enabled
+            ? current.qstashScheduleId
+            : null;
+
+          if (currentQstashId && current) {
+            const config = scheduleSourceConfigSchema.parse(
+              current.sourceConfig
+            );
+            const restoredId = await createQstashSchedule(env, {
+              triggerId: scheduleId,
+              cron: buildCronExpression(config.cron),
+              scheduleId: currentQstashId,
+            });
+            if (restoredId !== currentQstashId) {
+              await deleteQstashScheduleWithRetry(env, restoredId);
+              throw new Error("QStash returned an unexpected restoration ID");
+            }
+          }
+
+          for (const affectedId of affectedQstashIds) {
+            if (affectedId !== currentQstashId) {
+              await deleteQstashScheduleWithRetry(env, affectedId);
+            }
+          }
+        });
+      } catch (recoveryError) {
         logError(
-          `Failed to clean up replacement QStash schedule ${qstashScheduleId} for schedule ${scheduleId}`,
-          cleanupError
-        );
-      }
-    }
-    // If the DB transaction failed after QStash was already mutated, restore
-    // the previous remote state so the live schedule matches the committed
-    // DB config. Enable path: the reused ID now carries the rejected cron.
-    // Disable path: the previous ID was deleted before the transaction.
-    // Either way, re-creating the previous cron under the previous ID
-    // converges both systems; retrying PATCH still heals if this fails.
-    const previousScheduleToRestore =
-      reuseQstashScheduleId ??
-      (!input.enabled ? previousQstashScheduleId : null);
-    if (!committed && previousScheduleToRestore) {
-      const parsedPrevious = scheduleSourceConfigSchema.safeParse(
-        existing.sourceConfig
-      );
-      if (parsedPrevious.success) {
-        try {
-          await createQstashSchedule(env, {
-            triggerId: scheduleId,
-            cron: buildCronExpression(parsedPrevious.data.cron),
-            scheduleId: previousScheduleToRestore,
-          });
-        } catch (restoreError) {
-          logError(
-            `Failed to restore previous QStash schedule ${previousScheduleToRestore} for schedule ${scheduleId} after DB transaction failure; retry PATCH to heal`,
-            restoreError
-          );
-        }
-      } else {
-        logError(
-          `QStash schedule ${previousScheduleToRestore} for schedule ${scheduleId} was changed but the DB transaction failed and the previous config could not be parsed; retry PATCH to heal`,
-          error
+          `Failed to reconcile QStash schedules ${[...affectedQstashIds].join(", ")} for schedule ${scheduleId}; retry PATCH to heal`,
+          recoveryError
         );
       }
     }
 
     logError("Failed to update schedule", error);
+    const mapped = mapQstashError(error);
+    if (mapped.status === 400) {
+      return c.json({ error: mapped.error }, 400);
+    }
     return c.json({ error: "Failed to update schedule" }, 500);
   }
 });
@@ -909,33 +859,36 @@ schedulesRoutes.openapi(deleteScheduleRoute, async (c) => {
     QSTASH_TOKEN?: string;
     WORKFLOW_BASE_URL?: string;
   };
-  const existing = await db.query.contentTriggers.findFirst({
-    where: and(
-      eq(contentTriggers.id, scheduleId),
-      eq(contentTriggers.organizationId, orgId),
-      eq(contentTriggers.sourceType, "cron")
-    ),
-  });
-
-  if (!existing) {
-    return c.json({ error: "Schedule not found" }, 404);
-  }
-
-  if (existing.qstashScheduleId) {
-    // Fail closed: if QStash is down the DB row is kept so DELETE stays
-    // retryable. Deleting the DB first would orphan a live schedule with no
-    // record of its ID.
-    await deleteQstashScheduleWithRetry(env, existing.qstashScheduleId);
-  }
-
-  await db
-    .delete(contentTriggers)
-    .where(
-      and(
-        eq(contentTriggers.id, scheduleId),
-        eq(contentTriggers.organizationId, orgId)
+  return db.transaction(async (tx) => {
+    const [existing] = await tx
+      .select()
+      .from(contentTriggers)
+      .where(
+        and(
+          eq(contentTriggers.id, scheduleId),
+          eq(contentTriggers.organizationId, orgId),
+          eq(contentTriggers.sourceType, "cron")
+        )
       )
-    );
+      .for("update");
 
-  return c.json({ id: scheduleId, organization }, 200);
+    if (!existing) {
+      return c.json({ error: "Schedule not found" }, 404);
+    }
+
+    if (existing.qstashScheduleId) {
+      await deleteQstashScheduleWithRetry(env, existing.qstashScheduleId);
+    }
+
+    await tx
+      .delete(contentTriggers)
+      .where(
+        and(
+          eq(contentTriggers.id, scheduleId),
+          eq(contentTriggers.organizationId, orgId)
+        )
+      );
+
+    return c.json({ id: scheduleId, organization }, 200);
+  });
 });

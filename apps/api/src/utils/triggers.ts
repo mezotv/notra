@@ -120,9 +120,7 @@ function isRetryableDeleteError(error: unknown) {
     return true;
   }
   const status = Number(match[1]);
-  return (
-    status === 408 || status === 425 || status === 429 || status >= 500
-  );
+  return status === 408 || status === 425 || status === 429 || status >= 500;
 }
 
 export async function deleteQstashScheduleWithRetry(
@@ -163,10 +161,7 @@ export async function deleteQstashSchedulesForTriggers(
     }
 
     try {
-      await deleteQstashScheduleWithRetry(
-        runtimeEnv,
-        trigger.qstashScheduleId
-      );
+      await deleteQstashScheduleWithRetry(runtimeEnv, trigger.qstashScheduleId);
     } catch (error) {
       logError(
         `Failed to delete qstash schedule ${trigger.qstashScheduleId}`,
