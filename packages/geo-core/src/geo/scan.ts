@@ -89,6 +89,7 @@ import {
   resolveGeoEngineGateway,
   resolveGeoGroundedZdrMode,
   resolveGeoZdrMode,
+  scopeGeoScanEngines,
 } from "../utils/geo-engines";
 import {
   resolveGroundedEngineByKey,
@@ -853,7 +854,12 @@ export const prepareGeoScanProject = Effect.fn("geo.prepareScanProject")(
   function* (
     organizationId: string,
     projectId: string,
-    options: { claimedAt?: Date; scanId?: string; promptIds?: string[] } = {}
+    options: {
+      claimedAt?: Date;
+      scanId?: string;
+      promptIds?: string[];
+      engines?: string[];
+    } = {}
   ) {
     const billing = yield* GeoContentBillingService;
     const settingsRow = yield* Effect.tryPromise({
@@ -999,7 +1005,8 @@ export const prepareGeoScanProject = Effect.fn("geo.prepareScanProject")(
       runId,
       gate,
       claimedAt,
-      options.promptIds
+      options.promptIds,
+      options.engines
     ).pipe(
       Effect.tapError(() =>
         releaseBilling.pipe(
@@ -1024,7 +1031,8 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
     runId: string,
     gate: GeoScanProjectContext["gate"],
     claimedAt: Date,
-    promptIds?: readonly string[]
+    promptIds?: readonly string[],
+    requestedEngines?: readonly string[]
   ) {
     const organizationId = settingsRow.organizationId;
     const catalog = yield* loadGeoModelCatalog(organizationId);
@@ -1096,8 +1104,20 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
       projectId: settingsRow.projectId,
       scanId,
     });
+    const scanEngines = scopeGeoScanEngines(settings.engines, requestedEngines);
+    if (requestedEngines && scanEngines.length === 0) {
+      yield* geoLogWarn({
+        event: "geo.scan.skipped",
+        reason: "scoped_engines_missing",
+        organizationId,
+        projectId: settingsRow.projectId,
+        scanId,
+        runId,
+        engines: [...requestedEngines],
+      });
+    }
     const trackedEngines: { engine: string; zdr: GeoZdrMode }[] = [];
-    for (const engine of new Set(settings.engines)) {
+    for (const engine of new Set(scanEngines)) {
       const zdr = resolveGeoZdrMode(catalog, engine, zdrPolicy);
       if (zdr === null) {
         yield* geoLogWarn({
@@ -1130,7 +1150,7 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
 
     const groundedEngines: { grounded: GeoGroundedEngine; zdr: GeoZdrMode }[] =
       [];
-    for (const grounded of resolveGroundedEngines(settings.engines, catalog)) {
+    for (const grounded of resolveGroundedEngines(scanEngines, catalog)) {
       const zdr = resolveGeoGroundedZdrMode(catalog, grounded, zdrPolicy);
       if (zdr === null) {
         yield* geoLogWarn({

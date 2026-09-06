@@ -318,6 +318,7 @@ export interface GeoScanPayload {
    */
   scanId?: string;
   promptIds?: string[];
+  engines?: string[];
 }
 
 export interface GeoGenerateFromWebsiteInput {

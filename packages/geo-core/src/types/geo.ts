@@ -50,6 +50,11 @@ export interface GeoScopeInput {
   projectId?: string;
 }
 
+export interface GeoScanStartInput extends GeoScopeInput {
+  /** This-run subset of tracked engines. Omitted runs every tracked engine. */
+  engines?: readonly string[];
+}
+
 export interface GeoProjectUpdateInput {
   name?: string;
   brandSettingsId?: string;
@@ -190,7 +195,8 @@ export type GeoScanSkipReason =
   | "claim_lost"
   | "superseded"
   | "already_running"
-  | "scoped_prompts_missing";
+  | "scoped_prompts_missing"
+  | "scoped_engines_missing";
 
 export interface GeoErrorFields {
   errorName: string;
@@ -567,6 +573,8 @@ export interface GeoScanProgramOptions {
   /** Explicit project subset for a retry pass; overrides `projectId` scoping. */
   projectIds?: readonly string[];
   promptIds?: readonly string[];
+  /** This-run subset of tracked engines. Omitted runs every tracked engine. */
+  engines?: readonly string[];
 }
 
 export interface GeoProjectScanOutcome {

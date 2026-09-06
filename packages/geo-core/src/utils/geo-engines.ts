@@ -24,6 +24,30 @@ export function sortKnownEngines(
 }
 
 /**
+ * Intersect a this-run engine subset with the project's tracked engines.
+ * Unknown ids are dropped. `undefined` keeps the full tracked set.
+ */
+export function scopeGeoScanEngines(
+  tracked: readonly string[],
+  requested?: readonly string[]
+): string[] {
+  if (!requested) {
+    return [...tracked];
+  }
+  const allowed = new Set(tracked);
+  const scoped: string[] = [];
+  const seen = new Set<string>();
+  for (const engine of requested) {
+    if (!allowed.has(engine) || seen.has(engine)) {
+      continue;
+    }
+    seen.add(engine);
+    scoped.push(engine);
+  }
+  return scoped;
+}
+
+/**
  * Maps a project's stored engine selection onto the engines the scan should
  * run. Unknown ids (models that left the catalog) are dropped; `null` or an
  * empty selection falls back to the default set.
