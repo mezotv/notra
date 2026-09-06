@@ -460,6 +460,12 @@ export const GEO_SCAN_INTERVAL_LABEL_PREFIX = /^Every\s+/;
 export const GEO_SCAN_INTERVAL_FALLBACK_NOUN = "scan interval";
 export const GEO_SCAN_NO_RESULTS_RETRY_DELAY = "5m";
 export const GEO_SCAN_STALE_MS = 2 * 60 * 60 * 1000;
+/**
+ * How long a cron sweep owns a due schedule row before another sweep may
+ * retry it. A tick whose scan did not provably start keeps this lease instead
+ * of jumping a full interval, so a failed hand-off costs minutes, not a day.
+ */
+export const GEO_SCAN_START_LEASE_MS = 15 * 60 * 1000;
 export const GEO_SCAN_TASK_BATCH_SIZE = GEO_SCAN_CONCURRENCY;
 /**
  * Batch steps a project scan runs side by side. Projects run sequentially, so

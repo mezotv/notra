@@ -176,9 +176,15 @@ export const releaseGeoScanRun = Effect.fn("geo.releaseScanRun")(function* (
 });
 
 /**
- * Stamps a completed run: records `last_scan_at` *and* frees the slot in one
+ * Stamps a finished run: records `last_scan_at` *and* frees the slot in one
  * statement, so the row can never sit in the half-state where the scan is over
  * but `scan_started_at` still reads as owned.
+ *
+ * `last_scan_at` is the last *attempt*, not the last success — a failed run
+ * stamps it too. That is deliberate: the cron sweep treats a slot as covered
+ * once an attempt finished after it came due, which caps a schedule slot at
+ * one paid scan. A run that is worth retrying retries inside the workflow
+ * (see `GEO_SCAN_NO_RESULTS_RETRY_DELAY`), not by burning a second slot.
  *
  * With a `claimedAt` token the write is compare-and-set on it, so a straggler
  * whose claim already went stale cannot stamp over a run that started since.

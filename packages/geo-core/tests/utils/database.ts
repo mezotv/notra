@@ -1,6 +1,7 @@
 import { PGlite } from "@electric-sql/pglite";
 import {
   brandSettings,
+  geoCompetitors,
   geoScans,
   geoSettings,
   organizations,
@@ -18,11 +19,22 @@ const schema = {
   projects,
   geoSettings,
   geoScans,
+  geoCompetitors,
 };
 export const postgres = new PGlite();
 export const testDb = drizzle(postgres, { schema });
 
+// Bun shares one process across test files, so the harness is a singleton:
+// initializing twice would replay the DDL, and closing it in one file would
+// pull the database out from under the next one. The in-memory instance dies
+// with the process, so there is nothing to close.
+let initialized = false;
+
 export async function initializeDatabase() {
+  if (initialized) {
+    return;
+  }
+  initialized = true;
   const statements = await generateMigration(
     generateDrizzleJson({}),
     generateDrizzleJson(schema)
