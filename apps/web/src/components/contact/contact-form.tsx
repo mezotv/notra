@@ -7,13 +7,15 @@ import { Label } from "@notra/ui/components/ui/label";
 import { Textarea } from "@notra/ui/components/ui/textarea";
 import { useForm } from "@tanstack/react-form";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
+import { ContactTurnstile } from "@/components/contact/contact-turnstile";
 import {
   CONTACT_FORM_ASSURANCE,
   CONTACT_MESSAGE_MIN_LENGTH,
 } from "@/constants/contact";
 import { contactMessageSchema } from "@/schemas/contact";
+import type { ContactTurnstileHandle } from "@/types/turnstile";
 
 type SubmitStatus =
   | "idle"
@@ -21,6 +23,7 @@ type SubmitStatus =
   | "success"
   | "error"
   | "validation-error"
+  | "verification-error"
   | "rate-limited";
 
 const cardClass =
@@ -33,6 +36,8 @@ const inputClass =
 
 export function ContactForm() {
   const [status, setStatus] = useState<SubmitStatus>("idle");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstile = useRef<ContactTurnstileHandle>(null);
 
   const form = useForm({
     defaultValues: {
@@ -49,13 +54,23 @@ export function ContactForm() {
         return;
       }
 
+      if (!turnstileToken) {
+        setStatus("verification-error");
+        return;
+      }
+
       setStatus("submitting");
 
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed.data),
+        body: JSON.stringify({
+          ...parsed.data,
+          "cf-turnstile-response": turnstileToken,
+        }),
       }).catch(() => null);
+
+      turnstile.current?.reset();
 
       if (!response) {
         setStatus("error");
@@ -64,6 +79,11 @@ export function ContactForm() {
 
       if (response.status === 429) {
         setStatus("rate-limited");
+        return;
+      }
+
+      if (response.status === 403) {
+        setStatus("verification-error");
         return;
       }
 
@@ -266,7 +286,14 @@ export function ContactForm() {
         }}
       </form.Field>
 
+      <ContactTurnstile onToken={setTurnstileToken} ref={turnstile} />
+
       <div aria-live="assertive" role="alert">
+        {status === "verification-error" ? (
+          <p className={fieldErrorClass}>
+            Please complete the verification before sending your message.
+          </p>
+        ) : null}
         {status === "validation-error" ? (
           <p className={fieldErrorClass}>
             Please complete the required fields before sending your message.
@@ -308,7 +335,7 @@ export function ContactForm() {
           {(canSubmit) => (
             <CtaButton
               className="px-7 text-[0.9375rem]/4.75 tracking-[-0.01em]"
-              disabled={!canSubmit || isSubmitting}
+              disabled={!canSubmit || isSubmitting || !turnstileToken}
               type="submit"
               variant="primary"
             >

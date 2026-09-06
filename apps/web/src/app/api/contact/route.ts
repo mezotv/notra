@@ -7,6 +7,7 @@ import {
   getContactRateLimitHeaders,
 } from "@/lib/contact/ratelimit";
 import { sendContactMessageEmail } from "@/lib/contact/send-message-email";
+import { verifyContactTurnstile } from "@/lib/contact/verify-turnstile";
 import { contactMessageSchema } from "@/schemas/contact";
 import { jsonError } from "@/utils/revalidate-route";
 
@@ -25,6 +26,11 @@ export async function POST(request: NextRequest) {
 
   if (!parsed.success) {
     return jsonError("Invalid contact message", 400);
+  }
+
+  const token = (body as Record<string, unknown>)["cf-turnstile-response"];
+  if (!(await verifyContactTurnstile(token))) {
+    return jsonError("Verification failed. Please try again.", 403);
   }
 
   return Effect.runPromise(
