@@ -152,33 +152,43 @@ export async function hasPaidSubscriptionHistory(
   }
 }
 
-export async function assertGeoEntitlement(
+/**
+ * Whether the organization's plan includes GEO (an AI answers balance).
+ * Throws when billing is unavailable so callers never mistake an outage for
+ * a missing entitlement.
+ */
+export async function hasGeoEntitlement(
   organizationId: string
-): Promise<void> {
+): Promise<boolean> {
   if (allowUnmeteredAiInDevelopment) {
-    return;
+    return true;
   }
 
   if (!autumn) {
     if (process.env.NODE_ENV === "production") {
       throw internalServerError("Billing is not configured");
     }
-    return;
+    return true;
   }
 
-  let entitled = false;
   try {
     const data = await autumn.check({
       customerId: organizationId,
       featureId: FEATURES.AI_ANSWERS,
     });
-    entitled = data.balance != null;
+    return data.balance != null;
   } catch (error) {
     if (error instanceof ORPCError) {
       throw error;
     }
     throw internalServerError("Failed to verify plan entitlement");
   }
+}
+
+export async function assertGeoEntitlement(
+  organizationId: string
+): Promise<void> {
+  const entitled = await hasGeoEntitlement(organizationId);
 
   if (!entitled) {
     trackServerEvent({

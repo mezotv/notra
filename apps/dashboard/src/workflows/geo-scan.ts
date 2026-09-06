@@ -27,6 +27,7 @@ import {
   prepareGeoScanProjectStep,
   runGeoScanSequenceBatchStep,
   runGeoScanTaskBatchStep,
+  sendGeoScanRecapStep,
   trackGeoScanRetryScheduledStep,
 } from "./steps/geo-scan-steps";
 
@@ -199,6 +200,7 @@ export async function geoScanWorkflow(
   }
 
   if (retryProjectIds.length === 0) {
+    await sendGeoScanRecapStep(organizationId);
     return { status: "completed", checks, mentions };
   }
 
@@ -231,5 +233,6 @@ export async function geoScanWorkflow(
     console.error(`[GEO] ${message}`);
     throw new FatalError(message);
   }
+  await sendGeoScanRecapStep(organizationId);
   return { status: "completed", checks, mentions };
 }

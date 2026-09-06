@@ -8,6 +8,9 @@ export interface DailySummaryWindow {
 
 export type DailySummaryOrganizationResult =
   | "quiet"
+  | "unentitled"
+  | "already_sent"
+  | "scans_pending"
   | { emailsSent: number; failed: boolean };
 
 export interface DailySummaryMentionTotals {

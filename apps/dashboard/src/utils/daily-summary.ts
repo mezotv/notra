@@ -7,6 +7,14 @@ import type {
   DailySummaryWindow,
 } from "@/types/email/daily-summary";
 
+/** The UTC day containing `now`, ending at `now` (a partial day). */
+export function getCurrentUtcDayWindow(now: Date): DailySummaryWindow {
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())
+  );
+  return { start, end: now };
+}
+
 export function getPreviousUtcDayWindow(now: Date): DailySummaryWindow {
   const end = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())

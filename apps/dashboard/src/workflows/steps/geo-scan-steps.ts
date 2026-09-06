@@ -185,3 +185,30 @@ export async function trackGeoScanRetryScheduledStep(
     await flushObservability();
   }
 }
+
+/**
+ * Sends the organization's daily recap once its scans for the day are in.
+ * Runs after the scan is finalized so a recap failure can never fail the
+ * scan; the morning cron is the fallback for anything not sent here.
+ */
+export async function sendGeoScanRecapStep(
+  organizationId: string
+): Promise<string> {
+  "use step";
+  try {
+    const { sendDailySummaryAfterScan } =
+      await import("@/lib/email/daily-summary");
+    const outcome = await sendDailySummaryAfterScan(organizationId);
+    return typeof outcome === "string"
+      ? outcome
+      : `sent:${outcome.emailsSent}${outcome.failed ? ":partial" : ""}`;
+  } catch (error) {
+    console.error("[GEO] Daily recap after scan failed", {
+      organizationId,
+      error,
+    });
+    return "error";
+  } finally {
+    await flushObservability();
+  }
+}

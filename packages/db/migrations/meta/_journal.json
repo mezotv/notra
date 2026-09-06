@@ -575,6 +575,13 @@
       "when": 1788610000000,
       "tag": "0081_daily_summary",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "7",
+      "when": 1788690482372,
+      "tag": "0082_daily_summary_sent_for",
+      "breakpoints": true
     }
   ]
 }

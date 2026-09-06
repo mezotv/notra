@@ -1307,6 +1307,10 @@ export const organizationNotificationSettings = pgTable(
       .notNull(),
     marketingEmails: boolean("marketing_emails").default(true).notNull(),
     dailySummary: boolean("daily_summary").default(true).notNull(),
+    // UTC day start of the last GEO daily recap sent (or claimed) for this
+    // organization. Scan-triggered sends and the morning fallback cron use it
+    // as a once-per-day lock.
+    dailySummarySentFor: timestamp("daily_summary_sent_for"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

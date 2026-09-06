@@ -1,6 +1,7 @@
 import { db } from "@notra/db/drizzle";
 import {
   geoScans,
+  geoSettings,
   members,
   organizationNotificationSettings,
   organizations,
@@ -25,17 +26,33 @@ import {
   engineFamilyLabel,
   engineFamilyOf,
 } from "@notra/geo-core/utils/geo-engine-family";
-import { and, asc, eq, gte, inArray, isNull, lt, or } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  gte,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  notExists,
+  or,
+} from "drizzle-orm";
 
 import {
   DAILY_SUMMARY_MAX_ITEMS,
   DAILY_SUMMARY_PROMPT_MAX_LENGTH,
 } from "@/constants/daily-summary";
+import { hasGeoEntitlement } from "@/lib/billing/subscription";
 import { sendDailySummaryEmail } from "@/lib/email/send";
-import type { DailySummaryOrganizationResult } from "@/types/email/daily-summary";
+import type {
+  DailySummaryOrganizationResult,
+  DailySummaryWindow,
+} from "@/types/email/daily-summary";
 import {
   aggregateMentionTotals,
   buildDailySummary,
+  getCurrentUtcDayWindow,
   getPreviousUtcDayWindow,
   isQuietDailySummary,
   mergeChangesSummaries,
@@ -49,32 +66,173 @@ export interface DailySummaryCronResult {
   organizationsConsidered: number;
   emailsSent: number;
   skippedQuiet: number;
+  skippedUnentitled: number;
+  skippedAlreadySent: number;
   failed: number;
+}
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+/**
+ * Takes the once-per-day send lock for `windowStart` (a UTC day start).
+ * Organizations without a settings row are opted in by default, so the row
+ * is created on first claim with the same defaults the settings page shows.
+ * Returns the previous stamp so a failed send can hand the lock back, or
+ * `null` when the day was already claimed or the recap is switched off.
+ */
+async function claimDailySummaryDay(
+  organizationId: string,
+  windowStart: Date
+): Promise<{ previousSentFor: Date | null } | null> {
+  await db
+    .insert(organizationNotificationSettings)
+    .values({
+      id: crypto.randomUUID(),
+      organizationId,
+      scheduledContentCreation: false,
+      scheduledContentFailed: false,
+      scheduledContentSkipped: false,
+      marketingEmails: true,
+      dailySummary: true,
+    })
+    .onConflictDoNothing({
+      target: organizationNotificationSettings.organizationId,
+    });
+
+  const current = await db.query.organizationNotificationSettings.findFirst({
+    where: eq(organizationNotificationSettings.organizationId, organizationId),
+    columns: { dailySummary: true, dailySummarySentFor: true },
+  });
+  if (!current?.dailySummary) {
+    return null;
+  }
+  const previousSentFor = current.dailySummarySentFor;
+  if (previousSentFor && previousSentFor >= windowStart) {
+    return null;
+  }
+
+  // Compare-and-set on "not yet claimed for this day", so two scans finishing
+  // at the same moment cannot both send: the first update moves the stamp to
+  // `windowStart` and the second no longer matches.
+  const claimed = await db
+    .update(organizationNotificationSettings)
+    .set({ dailySummarySentFor: windowStart })
+    .where(
+      and(
+        eq(organizationNotificationSettings.organizationId, organizationId),
+        eq(organizationNotificationSettings.dailySummary, true),
+        or(
+          isNull(organizationNotificationSettings.dailySummarySentFor),
+          lt(organizationNotificationSettings.dailySummarySentFor, windowStart)
+        )
+      )
+    )
+    .returning({ id: organizationNotificationSettings.id });
+
+  return claimed.length > 0 ? { previousSentFor } : null;
+}
+
+async function releaseDailySummaryDay(
+  organizationId: string,
+  windowStart: Date,
+  previousSentFor: Date | null
+) {
+  await db
+    .update(organizationNotificationSettings)
+    .set({ dailySummarySentFor: previousSentFor })
+    .where(
+      and(
+        eq(organizationNotificationSettings.organizationId, organizationId),
+        eq(organizationNotificationSettings.dailySummarySentFor, windowStart)
+      )
+    );
+}
+
+/**
+ * Projects of the organization that are still expected to scan inside the
+ * window: scans enabled, due before the window closes, and no completed scan
+ * in the window yet. The sweep advances `next_scan_at` before a scan starts,
+ * so a project scanning right now is not counted as pending; a project that
+ * is only due tomorrow is not either.
+ */
+async function countProjectsStillDueInWindow(
+  organizationId: string,
+  window: DailySummaryWindow
+): Promise<number> {
+  const windowClose = new Date(window.start.getTime() + MS_PER_DAY);
+  const rows = await db
+    .select({ projectId: geoSettings.projectId })
+    .from(geoSettings)
+    .where(
+      and(
+        eq(geoSettings.organizationId, organizationId),
+        eq(geoSettings.enabled, true),
+        lte(geoSettings.nextScanAt, windowClose),
+        notExists(
+          db
+            .select({ id: geoScans.id })
+            .from(geoScans)
+            .where(
+              and(
+                eq(geoScans.projectId, geoSettings.projectId),
+                eq(geoScans.status, "completed"),
+                gte(geoScans.finishedAt, window.start),
+                lt(geoScans.finishedAt, window.end)
+              )
+            )
+        )
+      )
+    );
+  return rows.length;
+}
+
+/**
+ * Sends the organization's recap right after one of its scans completed,
+ * instead of waiting for the morning cron. Holds off while other projects of
+ * the organization are still due today, so the recap covers the whole day's
+ * scans; the morning cron picks up whatever never got sent.
+ */
+export async function sendDailySummaryAfterScan(
+  organizationId: string,
+  now = new Date()
+): Promise<DailySummaryOrganizationResult> {
+  const window = getCurrentUtcDayWindow(now);
+  if ((await countProjectsStillDueInWindow(organizationId, window)) > 0) {
+    return "scans_pending";
+  }
+  return sendDailySummaryForOrganization({
+    organizationId,
+    window,
+    appUrl: EMAIL_CONFIG.getAppUrl(),
+    resend: requireResend(),
+  });
+}
+
+function requireResend() {
+  const resend = getResend();
+  if (!resend) {
+    throw new Error("Resend API key not configured");
+  }
+  return resend;
 }
 
 export async function runDailySummaryCron(
   now = new Date()
 ): Promise<DailySummaryCronResult> {
-  const { start, end } = getPreviousUtcDayWindow(now);
-  const dateKey = utcDateKey(start);
-  const previousDateKey = utcDateKey(
-    new Date(start.getTime() - 24 * 60 * 60 * 1000)
-  );
+  const window = getPreviousUtcDayWindow(now);
   const appUrl = EMAIL_CONFIG.getAppUrl();
-  const resend = getResend();
+  const resend = requireResend();
 
   const result: DailySummaryCronResult = {
-    windowStart: start.toISOString(),
-    windowEnd: end.toISOString(),
+    windowStart: window.start.toISOString(),
+    windowEnd: window.end.toISOString(),
     organizationsConsidered: 0,
     emailsSent: 0,
     skippedQuiet: 0,
+    skippedUnentitled: 0,
+    skippedAlreadySent: 0,
     failed: 0,
   };
-
-  if (!resend) {
-    throw new Error("Resend API key not configured");
-  }
 
   const optedInSettings = await db
     .select({ organizationId: organizations.id })
@@ -97,16 +255,17 @@ export async function runDailySummaryCron(
     try {
       const sent = await sendDailySummaryForOrganization({
         organizationId: setting.organizationId,
-        start,
-        end,
-        dateKey,
-        previousDateKey,
+        window,
         appUrl,
         resend,
       });
 
-      if (sent === "quiet") {
+      if (sent === "quiet" || sent === "scans_pending") {
         result.skippedQuiet += 1;
+      } else if (sent === "unentitled") {
+        result.skippedUnentitled += 1;
+      } else if (sent === "already_sent") {
+        result.skippedAlreadySent += 1;
       } else {
         result.emailsSent += sent.emailsSent;
         result.failed += Number(sent.failed);
@@ -125,21 +284,58 @@ export async function runDailySummaryCron(
 
 async function sendDailySummaryForOrganization({
   organizationId,
-  start,
-  end,
-  dateKey,
-  previousDateKey,
+  window,
   appUrl,
   resend,
 }: {
   organizationId: string;
-  start: Date;
-  end: Date;
-  dateKey: string;
-  previousDateKey: string;
+  window: DailySummaryWindow;
   appUrl: string;
   resend: NonNullable<ReturnType<typeof getResend>>;
 }): Promise<DailySummaryOrganizationResult> {
+  // Recaps are only for organizations whose plan includes GEO; a scan that
+  // happens to exist from a trial or sample data must not trigger one.
+  if (!(await hasGeoEntitlement(organizationId))) {
+    return "unentitled";
+  }
+
+  const claim = await claimDailySummaryDay(organizationId, window.start);
+  if (!claim) {
+    return "already_sent";
+  }
+
+  const release = () =>
+    releaseDailySummaryDay(organizationId, window.start, claim.previousSentFor);
+  try {
+    const outcome = await buildAndSendDailySummary({
+      organizationId,
+      window,
+      appUrl,
+      resend,
+    });
+    if (outcome === "quiet" || (outcome.emailsSent === 0 && outcome.failed)) {
+      await release();
+    }
+    return outcome;
+  } catch (error) {
+    await release();
+    throw error;
+  }
+}
+
+async function buildAndSendDailySummary({
+  organizationId,
+  window: { start, end },
+  appUrl,
+  resend,
+}: {
+  organizationId: string;
+  window: DailySummaryWindow;
+  appUrl: string;
+  resend: NonNullable<ReturnType<typeof getResend>>;
+}): Promise<"quiet" | { emailsSent: number; failed: boolean }> {
+  const dateKey = utcDateKey(start);
+  const previousDateKey = utcDateKey(new Date(start.getTime() - MS_PER_DAY));
   const [
     org,
     ownerMemberships,
