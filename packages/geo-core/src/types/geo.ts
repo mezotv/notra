@@ -526,7 +526,7 @@ export interface GeoScanProjectContext {
 
 export interface GeoScanProjectPlan {
   context: GeoScanProjectContext;
-  /** ISO stamp of the claim token the batches rotate as they renew it. */
+  /** ISO stamp of the claim token the workflow renews between batch waves. */
   claimedAt: string;
   tasks: GeoScanPlannedTask[];
   sequences: GeoScanPlannedSequence[];
@@ -544,8 +544,6 @@ export interface GeoScanBatchOutcome {
   mentions: number;
   dropped: number;
   usage: AgentTokenUsage;
-  /** Renewed claim token the next batch must use. */
-  claimedAt: string;
 }
 
 export interface GeoScanProjectTotals {

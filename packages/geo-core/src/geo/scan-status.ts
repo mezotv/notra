@@ -3,10 +3,17 @@ import { geoScans, geoSettings } from "@notra/db/schema";
 import { and, eq, gte, isNull, lt, notExists, or } from "drizzle-orm";
 import { Effect, Exit } from "effect";
 
-import { GEO_SCAN_STALE_MS } from "../constants/geo";
+import {
+  GEO_SCAN_CLAIM_RENEW_AFTER_MS,
+  GEO_SCAN_STALE_MS,
+} from "../constants/geo";
 import { describeGeoCause, geoLogError } from "../utils/geo-log";
 import { geoDb, geoSkip } from "./effect";
-import { type GeoDatabaseError, GeoScanStartError } from "./errors";
+import {
+  type GeoDatabaseError,
+  GeoScanError,
+  GeoScanStartError,
+} from "./errors";
 
 /**
  * Atomically claims the project's scan slot, returning `null` when another
@@ -86,6 +93,39 @@ export const renewGeoScanRun = Effect.fn("geo.renewScanRun")(function* (
   );
   return renewed.length > 0 ? { claimedAt: renewedAt } : null;
 });
+
+/**
+ * Rotates the claim token only once it has aged past the renew threshold.
+ * The workflow calls this between batch waves, never inside a batch: batches
+ * of one wave run side by side and would race each other for the
+ * compare-and-set, and a step can be retried with the token its crashed
+ * predecessor already rotated away — renewing on every batch would turn each
+ * such retry into a lost claim. Under the threshold the incoming token is
+ * still comfortably inside `GEO_SCAN_STALE_MS`, so handing it back unchanged
+ * is safe.
+ */
+export const renewGeoScanClaimIfDue = Effect.fn("geo.renewScanClaimIfDue")(
+  function* (projectId: string, claimToken: string) {
+    const claimedAt = new Date(claimToken);
+    if (Number.isNaN(claimedAt.getTime())) {
+      return yield* Effect.fail(
+        new GeoScanError({ message: `Invalid scan claim token: ${claimToken}` })
+      );
+    }
+    if (Date.now() - claimedAt.getTime() < GEO_SCAN_CLAIM_RENEW_AFTER_MS) {
+      return claimToken;
+    }
+    const renewed = yield* renewGeoScanRun(projectId, claimedAt);
+    if (!renewed) {
+      return yield* Effect.fail(
+        new GeoScanError({
+          message: `Lost the scan claim for project ${projectId}`,
+        })
+      );
+    }
+    return renewed.claimedAt.toISOString();
+  }
+);
 
 /**
  * Hands a claim back without pretending a scan finished.
