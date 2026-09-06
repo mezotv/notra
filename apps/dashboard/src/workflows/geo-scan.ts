@@ -95,6 +95,7 @@ async function runGeoScanBatchWindow<T>(
     while (hasPendingBatches() && inFlight.size < GEO_SCAN_BATCH_CONCURRENCY) {
       const now = Date.now();
       if (isClaimRenewalDue(state.claimedAt, now)) {
+        // react-doctor-disable-next-line react-doctor/async-await-in-loop -- each renewal depends on the previous claim token
         state.claimedAt = await renewGeoScanClaimStep(
           context.projectId,
           state.claimedAt,
@@ -253,6 +254,7 @@ export async function geoScanWorkflow(
   // rather than multiplying it by every project in the organization.
   for (const scanProjectId of projectIds) {
     const claimed = scanProjectId === projectId;
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- sequential projects enforce the workflow's provider concurrency budget
     const outcome = await runGeoScanProjectRun(organizationId, scanProjectId, {
       claimedAt: claimed ? claimedAt : undefined,
       scanId: claimed ? scanId : undefined,
@@ -286,6 +288,7 @@ export async function geoScanWorkflow(
   await sleep(GEO_SCAN_NO_RESULTS_RETRY_DELAY);
 
   for (const retryProjectId of retryProjectIds) {
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop -- retries share the same provider concurrency budget
     const outcome = await runGeoScanProjectRun(organizationId, retryProjectId, {
       retried: true,
       promptIds,
