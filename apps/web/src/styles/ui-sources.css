@@ -17,6 +17,10 @@
 @source "../../../../packages/ui/src/components/brainless/gemini/gemini-composer.tsx";
 @source "../../../../packages/ui/src/components/brainless/gemini/gemini-message.tsx";
 @source "../../../../packages/ui/src/components/brainless/gemini/gemini-model-selector.tsx";
+@source "../../../../packages/ui/src/components/brainless/opencode/opencode-activity.tsx";
+@source "../../../../packages/ui/src/components/brainless/opencode/opencode-composer.tsx";
+@source "../../../../packages/ui/src/components/brainless/opencode/opencode-message.tsx";
+@source "../../../../packages/ui/src/components/brainless/opencode/opencode-sources.tsx";
 @source "../../../../packages/ui/src/components/brainless/perplexity/perplexity-actions.tsx";
 @source "../../../../packages/ui/src/components/brainless/perplexity/perplexity-composer.tsx";
 @source "../../../../packages/ui/src/components/brainless/perplexity/perplexity-favicon.tsx";
@@ -134,6 +138,7 @@
 @source "../../../../packages/ui/src/components/ui/textarea.tsx";
 @source "../../../../packages/ui/src/components/ui/title-card.tsx";
 @source "../../../../packages/ui/src/components/ui/tooltip.tsx";
+@source "../../../../packages/ui/src/constants/brainless-opencode.ts";
 @source "../../../../packages/ui/src/constants/chatgpt-models.ts";
 @source "../../../../packages/ui/src/constants/claude-chat-models.ts";
 @source "../../../../packages/ui/src/constants/command-tabs.ts";
@@ -156,6 +161,7 @@
 @source "../../../../packages/ui/src/lib/motion.ts";
 @source "../../../../packages/ui/src/lib/perplexity-model.ts";
 @source "../../../../packages/ui/src/lib/utils.ts";
+@source "../../../../packages/ui/src/types/brainless-opencode.ts";
 @source "../../../../packages/ui/src/types/chatgpt.ts";
 @source "../../../../packages/ui/src/types/claude-chat.ts";
 @source "../../../../packages/ui/src/types/gemini.ts";
