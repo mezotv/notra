@@ -616,6 +616,8 @@ export interface EngineFamilyBrandScope {
   companyName?: string | null;
   aliases?: readonly string[];
   competitors?: readonly GeoCompetitor[];
+  /** Own brand website domain, used to resolve the own-brand logo. */
+  ownDomain?: string | null;
 }
 
 export interface EngineRateTableProps extends EngineFamilyBrandScope {
