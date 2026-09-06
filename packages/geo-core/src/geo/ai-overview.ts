@@ -9,7 +9,10 @@ import {
   GEO_SERPAPI_JSON_RESTRICTOR,
   geoAiOverviewLocale,
 } from "../constants/geo-ai-overview";
-import type { GeoAiOverviewResult } from "../types/geo-ai-overview";
+import type {
+  GeoAiOverviewParse,
+  GeoAiOverviewResult,
+} from "../types/geo-ai-overview";
 import {
   parseGoogleAiOverview,
   serpApiErrorMessage,
@@ -63,6 +66,16 @@ function requirePayload(payload: unknown): void {
   }
 }
 
+function requireGoogleAiOverview(
+  payload: unknown
+): Exclude<GeoAiOverviewParse, { status: "invalid" }> {
+  const parsed = parseGoogleAiOverview(payload);
+  if (parsed.status === "invalid") {
+    throw new Error(parsed.reason);
+  }
+  return parsed;
+}
+
 /**
  * Fetch only Google's AI Overview for a GEO prompt. A missing overview is a
  * valid outcome (the query simply did not trigger one), not an engine failure.
@@ -84,8 +97,8 @@ export function fetchGoogleAiOverview(promptText: string, language: string) {
     );
     requirePayload(searchPayload);
 
-    const first = parseGoogleAiOverview(searchPayload);
-    if (first.present) {
+    const first = requireGoogleAiOverview(searchPayload);
+    if (first.status === "present") {
       const result: GeoAiOverviewResult = {
         present: true,
         text: first.text,
@@ -110,11 +123,19 @@ export function fetchGoogleAiOverview(promptText: string, language: string) {
       signal
     );
     requirePayload(overviewPayload);
-    const second = parseGoogleAiOverview(overviewPayload);
+    const second = requireGoogleAiOverview(overviewPayload);
+    if (second.status === "present") {
+      const result: GeoAiOverviewResult = {
+        present: true,
+        text: second.text,
+        sources: second.sources,
+      };
+      return result;
+    }
     const result: GeoAiOverviewResult = {
-      present: second.present,
-      text: second.text,
-      sources: second.sources,
+      present: false,
+      text: "",
+      sources: [],
     };
     return result;
   });

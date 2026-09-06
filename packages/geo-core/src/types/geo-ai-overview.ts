@@ -13,13 +13,24 @@ export interface GeoAiOverviewSource {
 /**
  * Parsed Google AI Overview only. Organic results and other SERP modules are
  * dropped on purpose — GEO tracks the overview, not the rest of the page.
+ *
+ * `absent` is reserved for a recognized successful search with no overview.
+ * Malformed envelopes must not be stored as a visibility miss.
  */
-export interface GeoAiOverviewParse {
-  present: boolean;
-  text: string;
-  sources: GeoAiOverviewSource[];
-  pageToken: string | null;
-}
+export type GeoAiOverviewParse =
+  | {
+      status: "present";
+      text: string;
+      sources: GeoAiOverviewSource[];
+    }
+  | {
+      status: "absent";
+      pageToken: string | null;
+    }
+  | {
+      status: "invalid";
+      reason: string;
+    };
 
 export interface GeoAiOverviewResult {
   present: boolean;

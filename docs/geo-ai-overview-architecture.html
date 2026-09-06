@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -26,7 +26,9 @@
         margin: 0;
         background: var(--bg);
         color: var(--ink);
-        font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
+        font-family:
+          "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman",
+          serif;
         line-height: 1.45;
       }
 
@@ -281,9 +283,9 @@
             <strong>SerpApi</strong>
             <span
               ><code>engine=google</code> with
-              <code>json_restrictor=ai_overview,error</code>. If Google returns
-              a one-minute <code>page_token</code>, follow up with
-              <code>google_ai_overview</code>. Locale follows the prompt
+              <code>json_restrictor=ai_overview,error,search_metadata</code>. If
+              Google returns a one-minute <code>page_token</code>, follow up
+              with <code>google_ai_overview</code>. Locale follows the prompt
               language (<code>hl</code>/<code>gl</code>).</span
             >
           </p>
@@ -294,8 +296,9 @@
             <strong>Judge or absent</strong>
             <span
               >Overview text is judged for brand mention, position, sentiment,
-              competitors. No overview is a stored miss — not a dropped engine
-              error. Organic results never enter the row.</span
+              competitors. A recognized missing overview is a stored miss.
+              Malformed SerpApi payloads are engine errors, not visibility
+              misses. Organic results never enter the row.</span
             >
           </p>
         </div>

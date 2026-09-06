@@ -3,8 +3,18 @@ import type { GeoAiOverviewLocale } from "../types/geo-ai-overview";
 export const GEO_SERPAPI_BASE_URL = "https://serpapi.com/search.json";
 export const GEO_SERPAPI_GOOGLE_ENGINE = "google";
 export const GEO_SERPAPI_AI_OVERVIEW_ENGINE = "google_ai_overview";
-/** Restrict the payload to the overview (and errors). Never request organic. */
-export const GEO_SERPAPI_JSON_RESTRICTOR = "ai_overview,error";
+/**
+ * Restrict the payload to the overview, errors, and enough envelope to tell a
+ * real miss from a malformed response. Never request organic results.
+ */
+export const GEO_SERPAPI_JSON_RESTRICTOR = "ai_overview,error,search_metadata";
+/** Opt-in live SerpApi checks. The unit suite stays offline without this. */
+export const GEO_SERPAPI_LIVE_ENV = "GEO_SERPAPI_LIVE";
+
+export const GEO_AI_OVERVIEW_INVALID_ENVELOPE =
+  "Unrecognized SerpApi Google response";
+export const GEO_AI_OVERVIEW_INVALID_OVERVIEW = "Malformed AI Overview payload";
+export const GEO_AI_OVERVIEW_INVALID_SHAPE = "Unrecognized AI Overview shape";
 
 export const GEO_AI_OVERVIEW_ABSENT_ANSWER =
   "No AI Overview was shown for this query.";

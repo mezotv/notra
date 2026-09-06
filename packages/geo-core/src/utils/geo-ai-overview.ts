@@ -1,3 +1,8 @@
+import {
+  GEO_AI_OVERVIEW_INVALID_ENVELOPE,
+  GEO_AI_OVERVIEW_INVALID_OVERVIEW,
+  GEO_AI_OVERVIEW_INVALID_SHAPE,
+} from "../constants/geo-ai-overview";
 import type {
   GeoAiOverviewParse,
   GeoAiOverviewSource,
@@ -83,17 +88,56 @@ function parseSources(value: unknown): GeoAiOverviewSource[] {
   return sources;
 }
 
+const SERPAPI_SUCCESS_STATUSES = new Set(["Success", "Cached"]);
+
+function isSuccessEnvelope(payload: Record<string, unknown>): boolean {
+  const metadata = payload.search_metadata;
+  if (!isRecord(metadata)) {
+    return false;
+  }
+  return SERPAPI_SUCCESS_STATUSES.has(readString(metadata.status));
+}
+
+function isRecognizedOverview(overview: Record<string, unknown>): boolean {
+  if ("page_token" in overview || "snippet" in overview) {
+    return true;
+  }
+  if ("text_blocks" in overview) {
+    return Array.isArray(overview.text_blocks);
+  }
+  if ("references" in overview) {
+    return Array.isArray(overview.references);
+  }
+  return false;
+}
+
 /**
  * Pull the AI Overview text and its citations out of a SerpApi Google payload.
  * Organic results, knowledge graph, and related searches are ignored.
+ *
+ * A missing `ai_overview` on a successful envelope is a real miss. Anything
+ * else that is not a recognized overview shape is invalid so the scan can
+ * record an engine error instead of a not-mentioned check.
  */
 export function parseGoogleAiOverview(payload: unknown): GeoAiOverviewParse {
-  if (!isRecord(payload)) {
-    return { present: false, text: "", sources: [], pageToken: null };
+  if (!isRecord(payload) || !isSuccessEnvelope(payload)) {
+    return { status: "invalid", reason: GEO_AI_OVERVIEW_INVALID_ENVELOPE };
+  }
+  if (!("ai_overview" in payload) || payload.ai_overview == null) {
+    return { status: "absent", pageToken: null };
   }
   const overview = payload.ai_overview;
   if (!isRecord(overview)) {
-    return { present: false, text: "", sources: [], pageToken: null };
+    return { status: "invalid", reason: GEO_AI_OVERVIEW_INVALID_OVERVIEW };
+  }
+  if ("text_blocks" in overview && !Array.isArray(overview.text_blocks)) {
+    return { status: "invalid", reason: GEO_AI_OVERVIEW_INVALID_OVERVIEW };
+  }
+  if ("references" in overview && !Array.isArray(overview.references)) {
+    return { status: "invalid", reason: GEO_AI_OVERVIEW_INVALID_OVERVIEW };
+  }
+  if (!isRecognizedOverview(overview)) {
+    return { status: "invalid", reason: GEO_AI_OVERVIEW_INVALID_SHAPE };
   }
 
   const pageToken = readString(overview.page_token) || null;
@@ -104,13 +148,14 @@ export function parseGoogleAiOverview(payload: unknown): GeoAiOverviewParse {
   }
 
   const text = lines.join("\n");
-  const sources = parseSources(overview.references);
-  return {
-    present: text.length > 0,
-    text,
-    sources,
-    pageToken: text.length > 0 ? null : pageToken,
-  };
+  if (text.length > 0) {
+    return {
+      status: "present",
+      text,
+      sources: parseSources(overview.references),
+    };
+  }
+  return { status: "absent", pageToken };
 }
 
 export function serpApiErrorMessage(payload: unknown): string | null {

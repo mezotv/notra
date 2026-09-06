@@ -3,6 +3,7 @@ import type {
   GeoGroundedEngine,
   GeoModelCatalog,
   GeoModelGateway,
+  GeoScanSkipReason,
   GeoZdrMode,
   GeoZdrPolicy,
 } from "../types/geo";
@@ -45,6 +46,25 @@ export function scopeGeoScanEngines(
     scoped.push(engine);
   }
   return scoped;
+}
+
+/**
+ * Empty engine scope must not become a successful zero-check scan. A requested
+ * subset that no longer intersects the project, or a set that ZDR rejects in
+ * full, is a skip — not a completed pollable run.
+ */
+export function geoScanEmptyEngineSkipReason(
+  scanEngines: readonly string[],
+  runnableEngineCount: number,
+  requestedEngines?: readonly string[]
+): GeoScanSkipReason | null {
+  if (requestedEngines !== undefined && scanEngines.length === 0) {
+    return "scoped_engines_missing";
+  }
+  if (scanEngines.length > 0 && runnableEngineCount === 0) {
+    return "zdr";
+  }
+  return null;
 }
 
 /**

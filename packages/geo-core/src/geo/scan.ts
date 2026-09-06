@@ -86,6 +86,7 @@ import type {
   GeoZdrMode,
 } from "../types/geo";
 import {
+  geoScanEmptyEngineSkipReason,
   resolveGeoEngineGateway,
   resolveGeoGroundedZdrMode,
   resolveGeoZdrMode,
@@ -999,7 +1000,7 @@ export const prepareGeoScanProject = Effect.fn("geo.prepareScanProject")(
       Effect.tapError(() => releaseBilling.pipe(Effect.andThen(releaseClaim)))
     );
 
-    const plan = yield* buildGeoScanProjectPlan(
+    const planResult = yield* buildGeoScanProjectPlan(
       settingsRow,
       scanId,
       runId,
@@ -1019,8 +1020,14 @@ export const prepareGeoScanProject = Effect.fn("geo.prepareScanProject")(
         )
       )
     );
-    const planned: GeoScanProjectPlanResult = { status: "planned", plan };
-    return planned;
+    if (planResult.status === "skipped") {
+      yield* releaseBilling;
+      yield* releaseClaim;
+      yield* failPendingGeoScanRow({ organizationId, projectId }, scanId).pipe(
+        geoSkip("scan row fail stamp failed")
+      );
+    }
+    return planResult;
   }
 );
 
@@ -1105,17 +1112,6 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
       scanId,
     });
     const scanEngines = scopeGeoScanEngines(settings.engines, requestedEngines);
-    if (requestedEngines && scanEngines.length === 0) {
-      yield* geoLogWarn({
-        event: "geo.scan.skipped",
-        reason: "scoped_engines_missing",
-        organizationId,
-        projectId: settingsRow.projectId,
-        scanId,
-        runId,
-        engines: [...requestedEngines],
-      });
-    }
     const trackedEngines: { engine: string; zdr: GeoZdrMode }[] = [];
     for (const engine of new Set(scanEngines)) {
       const zdr = resolveGeoZdrMode(catalog, engine, zdrPolicy);
@@ -1164,6 +1160,27 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
         continue;
       }
       groundedEngines.push({ grounded, zdr });
+    }
+    const skipReason = geoScanEmptyEngineSkipReason(
+      scanEngines,
+      trackedEngines.length + groundedEngines.length,
+      requestedEngines
+    );
+    if (skipReason) {
+      yield* geoLogWarn({
+        event: "geo.scan.skipped",
+        reason: skipReason,
+        organizationId,
+        projectId: settingsRow.projectId,
+        scanId,
+        runId,
+        ...(requestedEngines ? { engines: [...requestedEngines] } : {}),
+      });
+      const skipped: GeoScanProjectPlanResult = {
+        status: "skipped",
+        reason: skipReason,
+      };
+      return skipped;
     }
     const groundedPrompts = scanEnglish
       ? prompts.slice(0, GEO_GROUNDED_MAX_PROMPTS)
@@ -1314,7 +1331,8 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
       languages: settings.languages,
       engines,
     };
-    return plan;
+    const planned: GeoScanProjectPlanResult = { status: "planned", plan };
+    return planned;
   }
 );
 

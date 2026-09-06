@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 
-import { scopeGeoScanEngines } from "../src/utils/geo-engines";
+import {
+  geoScanEmptyEngineSkipReason,
+  scopeGeoScanEngines,
+} from "../src/utils/geo-engines";
 
 describe("scopeGeoScanEngines", () => {
   const tracked = [
@@ -25,5 +28,25 @@ describe("scopeGeoScanEngines", () => {
 
   test("drops a subset that matches nothing", () => {
     expect(scopeGeoScanEngines(tracked, ["google/ai-overview"])).toEqual([]);
+  });
+});
+
+describe("geoScanEmptyEngineSkipReason", () => {
+  test("skips a requested subset that no longer intersects the project", () => {
+    expect(geoScanEmptyEngineSkipReason([], 0, ["google/ai-overview"])).toBe(
+      "scoped_engines_missing"
+    );
+  });
+
+  test("skips when every selected engine is rejected by ZDR", () => {
+    expect(
+      geoScanEmptyEngineSkipReason(["google/ai-overview"], 0, [
+        "google/ai-overview",
+      ])
+    ).toBe("zdr");
+  });
+
+  test("does not skip a full-project scan that still has engines", () => {
+    expect(geoScanEmptyEngineSkipReason(["openai/gpt-5.6-sol"], 1)).toBe(null);
   });
 });
