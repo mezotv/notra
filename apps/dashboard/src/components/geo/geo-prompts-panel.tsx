@@ -9,7 +9,7 @@ export function GeoPromptsPanel({
   gapsHref,
 }: GeoPromptsPanelProps) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto">
       <PromptResultsPreview
         gapsHref={gapsHref}
         isScanning={isScanning}

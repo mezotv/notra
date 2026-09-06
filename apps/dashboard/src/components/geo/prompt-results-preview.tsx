@@ -331,7 +331,7 @@ export function PromptResultsPreview({
 
   return (
     <>
-      <div className="flex min-h-0 flex-1 flex-col gap-3">
+      <div className="flex min-h-36 min-w-0 shrink-0 grow basis-0 flex-col gap-3">
         <div className="flex justify-end">
           <div className="relative w-full min-w-0 sm:max-w-72">
             <HugeiconsIcon
