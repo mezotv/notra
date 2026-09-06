@@ -38,3 +38,17 @@ export const ONBOARDING_HEARD_ABOUT_NOTRA_OPTIONS =
     label: ONBOARDING_HEARD_ABOUT_NOTRA_LABELS[value],
     value,
   }));
+
+export const ONBOARDING_EMAIL_PREFS = [
+  {
+    key: "marketingEmails",
+    label: "Product updates",
+    description: "New features, tips, and announcements.",
+  },
+  {
+    key: "dailySummary",
+    label: "Daily GEO recap",
+    description:
+      "One morning email with yesterday's mention rate and what changed.",
+  },
+] as const;

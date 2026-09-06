@@ -10,6 +10,9 @@ import { ClaudeChatMessage } from "@notra/ui/components/brainless/claude-chat/cl
 import { GeminiActions } from "@notra/ui/components/brainless/gemini/gemini-actions";
 import { GeminiComposer } from "@notra/ui/components/brainless/gemini/gemini-composer";
 import { GeminiMessage } from "@notra/ui/components/brainless/gemini/gemini-message";
+import { OpencodeComposer } from "@notra/ui/components/brainless/opencode/opencode-composer";
+import { OpencodeMessage } from "@notra/ui/components/brainless/opencode/opencode-message";
+import { OpencodeSources } from "@notra/ui/components/brainless/opencode/opencode-sources";
 import { PerplexityActions } from "@notra/ui/components/brainless/perplexity/perplexity-actions";
 import { PerplexityComposer } from "@notra/ui/components/brainless/perplexity/perplexity-composer";
 import { PerplexityMessage } from "@notra/ui/components/brainless/perplexity/perplexity-message";
@@ -37,6 +40,7 @@ const SKIN_SURFACE: Record<GeoChatSkin, string> = {
   chatgpt: "bg-background",
   gemini: "bg-white dark:bg-[#1f1f1f]",
   perplexity: "bg-white dark:bg-[#111]",
+  opencode: "bg-[#fdfdfd]",
 };
 
 function ignoreFollowUp(_text: string): void {
@@ -194,6 +198,38 @@ function PerplexityAnswerThread({
   );
 }
 
+function OpencodeAnswerThread({
+  prompt,
+  excerpt,
+  mentioned,
+}: {
+  prompt: string;
+  excerpt: string;
+  mentioned: boolean;
+}) {
+  const sources = perplexitySourcesFromExcerpt(excerpt);
+
+  return (
+    <>
+      <OpencodeMessage from="user">{prompt}</OpencodeMessage>
+      <OpencodeMessage
+        search={
+          sources.length > 0 ? (
+            <OpencodeSources queries={[prompt]} sources={sources} />
+          ) : undefined
+        }
+        from="assistant"
+      >
+        <AssistantBody
+          excerpt={excerpt}
+          mentioned={mentioned}
+          skin="opencode"
+        />
+      </OpencodeMessage>
+    </>
+  );
+}
+
 function SkinComposer({ engine, skin }: { engine: string; skin: GeoChatSkin }) {
   if (skin === "claude") {
     return (
@@ -224,6 +260,9 @@ function SkinComposer({ engine, skin }: { engine: string; skin: GeoChatSkin }) {
         placeholder="Ask a follow-up"
       />
     );
+  }
+  if (skin === "opencode") {
+    return <OpencodeComposer placeholder='Ask anything... "Draft a launch post"' />;
   }
   return (
     <ChatgptComposer
@@ -269,6 +308,15 @@ function ThreadMessages({
   if (skin === "perplexity") {
     return (
       <PerplexityAnswerThread
+        excerpt={excerpt}
+        mentioned={mentioned}
+        prompt={prompt}
+      />
+    );
+  }
+  if (skin === "opencode") {
+    return (
+      <OpencodeAnswerThread
         excerpt={excerpt}
         mentioned={mentioned}
         prompt={prompt}

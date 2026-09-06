@@ -1306,6 +1306,7 @@ export const organizationNotificationSettings = pgTable(
       .default(false)
       .notNull(),
     marketingEmails: boolean("marketing_emails").default(true).notNull(),
+    dailySummary: boolean("daily_summary").default(true).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

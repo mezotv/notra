@@ -4,6 +4,7 @@ import type {
   TextSelection,
 } from "@notra/ai/types/chat";
 
+import type { QueuedMessage } from "@/components/chat/chat-queue";
 import type { GitHubRepository } from "@/types/integrations";
 
 export type ChatModelProvider = "anthropic" | "openai" | "auto";
@@ -35,6 +36,9 @@ export interface ChatInputProps {
   onClearError?: () => void;
   connectedTop?: boolean;
   placeholder?: string;
+  queuedMessages?: QueuedMessage[];
+  onEditQueued?: (message: QueuedMessage) => void;
+  onRemoveQueued?: (id: string) => void;
 }
 
 export type EnabledRepo = GitHubRepository & { integrationId: string };

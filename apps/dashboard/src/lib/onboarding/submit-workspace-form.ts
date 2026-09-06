@@ -1,5 +1,6 @@
 import {
   saveOnboardingAttribution,
+  saveOnboardingNotificationSettings,
   triggerOnboardingAgentSetup,
   triggerOnboardingBrandAnalysis,
 } from "@/app/onboarding/workspace/actions";
@@ -92,6 +93,16 @@ export async function submitWorkspaceForm({
         error,
       });
     }
+  }
+
+  const notificationResult = await saveOnboardingNotificationSettings({
+    organizationId,
+    dailySummary: parsed.data.dailySummary,
+    marketingEmails: parsed.data.marketingEmails,
+  });
+
+  if (!notificationResult.success) {
+    throw new Error(notificationResult.error);
   }
 
   const hasAttribution = Boolean(

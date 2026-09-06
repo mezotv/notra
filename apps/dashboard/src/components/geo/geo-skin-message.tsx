@@ -3,6 +3,7 @@
 import { ChatgptMessage } from "@notra/ui/components/brainless/chatgpt/chatgpt-message";
 import { ClaudeChatMessage } from "@notra/ui/components/brainless/claude-chat/claude-chat-message";
 import { GeminiMessage } from "@notra/ui/components/brainless/gemini/gemini-message";
+import { OpencodeMessage } from "@notra/ui/components/brainless/opencode/opencode-message";
 import { PerplexityMessage } from "@notra/ui/components/brainless/perplexity/perplexity-message";
 
 import type { GeoSkinMessageProps } from "@/types/geo";
@@ -33,6 +34,13 @@ export function GeoSkinMessage({
       <PerplexityMessage actions={actions} from={from} search={search}>
         {children}
       </PerplexityMessage>
+    );
+  }
+  if (skin === "opencode") {
+    return (
+      <OpencodeMessage actions={actions} from={from} search={search}>
+        {children}
+      </OpencodeMessage>
     );
   }
   return (

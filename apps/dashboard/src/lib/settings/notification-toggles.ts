@@ -3,6 +3,7 @@ import {
   Calendar03Icon,
   Forward02Icon,
   Megaphone01Icon,
+  News01Icon,
 } from "@hugeicons/core-free-icons";
 
 import type { NotificationToggleGroup } from "@/types/settings/notifications";
@@ -31,6 +32,19 @@ export const NOTIFICATION_TOGGLE_GROUPS: NotificationToggleGroup[] = [
         description: "Get notified when generation is skipped",
         defaultValue: false,
         icon: Forward02Icon,
+      },
+    ],
+  },
+  {
+    heading: "GEO",
+    toggles: [
+      {
+        key: "dailySummary",
+        label: "Daily recap",
+        description:
+          "Get one email each morning with yesterday's mention rate and what changed. Quiet days are skipped.",
+        defaultValue: true,
+        icon: News01Icon,
       },
     ],
   },

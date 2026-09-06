@@ -2,8 +2,13 @@ import { Hr, Link, Section, Text } from "react-email";
 
 import { EMAIL_CONFIG } from "../utils/config";
 
-export const EmailFooter = () => {
+export const EmailFooter = ({
+  showPhysicalAddress = true,
+}: {
+  showPhysicalAddress?: boolean;
+} = {}) => {
   const currentYear = new Date().getFullYear();
+  const address = EMAIL_CONFIG.physicalAddress;
 
   return (
     <Section>
@@ -11,6 +16,17 @@ export const EmailFooter = () => {
       <Text className="m-0 text-center text-xs" style={{ color: "#717175" }}>
         © {currentYear} Notra. All rights reserved.
       </Text>
+      {showPhysicalAddress ? (
+        <Text className="mt-3 text-center text-xs" style={{ color: "#717175" }}>
+          {address.name}
+          <br />
+          {address.street}
+          <br />
+          {address.locality}
+          <br />
+          {address.country}
+        </Text>
+      ) : null}
       <Text className="mt-4 text-center text-xs" style={{ color: "#717175" }}>
         <Link
           href="https://usenotra.com"

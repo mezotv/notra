@@ -2,7 +2,7 @@
 
 import { EngineIcon } from "@notra/ui/components/geo/engine-icon";
 import { cn } from "@notra/ui/lib/utils";
-import { AnimatePresence, domAnimation, LazyMotion, m } from "motion/react";
+import { AnimatePresence, domMax, LazyMotion, m } from "motion/react";
 
 import { GEO_ENGINE_NAMES } from "@/constants/landing/geo-engines";
 import {
@@ -55,33 +55,39 @@ export function HeroHeadline({ word }: HeroHeadlineProps) {
     <h1 className="font-display max-w-[20.5rem] text-center text-[clamp(1.5rem,calc(10.1vw-0.42rem),2.0625rem)] leading-[1.08] font-medium tracking-[-0.015em] text-[#1E1E1E] sm:max-w-[56.875rem] sm:text-[3.25rem] sm:font-semibold lg:text-[4.75rem] lg:leading-[1.12] dark:text-white">
       <span className="block whitespace-nowrap">{HERO_HEADLINE_LINE_ONE} </span>
       <span className="block whitespace-nowrap">
-        {HERO_HEADLINE_LINE_TWO_PREFIX}{" "}
-        <span className="sr-only">{listEngineNames()}</span>
-        <span
-          aria-hidden
-          className={cn(
-            "relative inline-grid h-[1em] items-center overflow-hidden rounded-[0.24em] align-middle",
-            "bg-white text-[#1E1E1E] shadow-[0_0.05em_0.22em_rgba(0,0,0,0.1),0_0_0_0.0625rem_rgba(0,0,0,0.04)] dark:bg-white/[0.08] dark:text-white dark:shadow-[0_0_0_0.0625rem_rgba(255,255,255,0.12)]"
-          )}
-        >
-          {HERO_HEADLINE_CYCLE.map((entry) => (
+        <LazyMotion features={domMax}>
+          <m.span
+            className="inline-block"
+            layout="position"
+            transition={WORD_TRANSITION}
+          >
+            {HERO_HEADLINE_LINE_TWO_PREFIX}
+          </m.span>{" "}
+          <span className="sr-only">{listEngineNames()}</span>
+          <m.span
+            aria-hidden
+            className={cn(
+              "relative inline-grid h-[1em] items-center overflow-hidden align-middle",
+              "bg-white text-[#1E1E1E] shadow-[0_0.05em_0.22em_rgba(0,0,0,0.1),0_0_0_0.0625rem_rgba(0,0,0,0.04)] dark:bg-white/[0.08] dark:text-white dark:shadow-[0_0_0_0.0625rem_rgba(255,255,255,0.12)]"
+            )}
+            layout
+            style={{ borderRadius: "0.24em" }}
+            transition={WORD_TRANSITION}
+          >
             <span
               aria-hidden
               className={cn(
                 WORD_CONTENT_CLASS,
                 "invisible col-start-1 row-start-1"
               )}
-              key={entry.text}
-              style={{ fontSize: `${wordSizeEm(entry)}em` }}
+              style={{ fontSize: `${wordSizeEm(word)}em` }}
             >
-              <WordContent word={entry} />
+              <WordContent word={word} />
             </span>
-          ))}
-          <span
-            className="absolute inset-0"
-            style={{ fontSize: `${wordSizeEm(word)}em` }}
-          >
-            <LazyMotion features={domAnimation}>
+            <span
+              className="absolute inset-0"
+              style={{ fontSize: `${wordSizeEm(word)}em` }}
+            >
               <AnimatePresence initial={false}>
                 <m.span
                   animate={{ opacity: 1, y: 0 }}
@@ -92,15 +98,22 @@ export function HeroHeadline({ word }: HeroHeadlineProps) {
                   exit={{ opacity: 0, y: "-0.3em" }}
                   initial={{ opacity: 0, y: "0.3em" }}
                   key={word.text}
+                  layout="position"
                   transition={WORD_TRANSITION}
                 >
                   <WordContent word={word} />
                 </m.span>
               </AnimatePresence>
-            </LazyMotion>
-          </span>
-        </span>
-        {HERO_HEADLINE_SUFFIX}
+            </span>
+          </m.span>
+          <m.span
+            className="inline-block"
+            layout="position"
+            transition={WORD_TRANSITION}
+          >
+            {HERO_HEADLINE_SUFFIX}
+          </m.span>
+        </LazyMotion>
       </span>
     </h1>
   );

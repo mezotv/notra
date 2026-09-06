@@ -11,16 +11,13 @@ import {
 } from "@notra/ui/components/ui/select";
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
-import { ShelfPlacementBadge } from "@/components/geo/shelf/shelf-placement-badge";
-import {
-  GEO_SHELF_PLACEMENT_LABELS,
-  GEO_SHELF_PLACEMENT_STATUSES,
-} from "@/constants/geo-shelf";
+import { ShelfPlacementMark } from "@/components/geo/shelf/shelf-placement-badge";
+import { GEO_SHELF_PLACEMENT_STATUSES } from "@/constants/geo-shelf";
+import { cn } from "@/lib/utils";
 import type {
   GeoShelfPlacementStatus,
   GeoShelfPlacementsTableProps,
 } from "@/types/geo-shelf";
-import { formatRelative } from "@/utils/format-relative";
 
 function toPlacementStatus(value: string): GeoShelfPlacementStatus {
   return (
@@ -41,32 +38,32 @@ export function ShelfPlacementsTable({
 
   return (
     <div className="overflow-x-auto rounded-xl border">
-      <table className="w-full min-w-[40rem] text-sm">
-        <thead className="bg-muted/40 text-muted-foreground text-xs">
-          <tr>
-            <th className="px-3 py-2 text-left font-medium">Brand</th>
-            <th className="px-3 py-2 text-left font-medium">On the page</th>
-            <th className="px-3 py-2 text-right font-medium">Position</th>
-            <th className="px-3 py-2 text-left font-medium">Link</th>
-            <th className="px-3 py-2 text-left font-medium">Checked</th>
+      <table className="w-full min-w-[32rem] text-sm">
+        <thead className="text-muted-foreground text-xs">
+          <tr className="border-b">
+            <th className="px-3.5 py-2.5 text-left font-medium">Brand</th>
+            <th className="px-3.5 py-2.5 text-left font-medium">On the page</th>
+            <th className="px-3.5 py-2.5 text-right font-medium">Position</th>
+            <th className="px-3.5 py-2.5 text-left font-medium">Link</th>
           </tr>
         </thead>
         <tbody className="divide-border divide-y">
           {placements.map((placement) => {
             const isOwn = placement.competitorId === null;
+            const brandName = isOwn
+              ? ownBrandName || placement.brandName
+              : placement.brandName;
             return (
               <tr key={placement.competitorId ?? "own"}>
-                <td className="px-3 py-2">
-                  <span className="flex min-w-0 items-center gap-2">
+                <td className="px-3.5 py-2.5">
+                  <span className="flex min-w-0 items-center gap-2.5">
                     <CompetitorLogo
-                      className="size-5 shrink-0 rounded-md"
+                      className="size-5 shrink-0 rounded-md outline outline-black/10 dark:outline-white/10"
                       domain={placement.brandDomain}
                       name={placement.brandName}
                     />
                     <span className="truncate font-medium">
-                      {isOwn
-                        ? ownBrandName || placement.brandName
-                        : placement.brandName}
+                      {brandName}
                       {isOwn ? (
                         <span className="text-muted-foreground ml-1 font-normal">
                           (You)
@@ -75,7 +72,7 @@ export function ShelfPlacementsTable({
                     </span>
                   </span>
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3.5 py-2.5">
                   <Select
                     disabled={disabled}
                     onValueChange={(value) =>
@@ -89,40 +86,39 @@ export function ShelfPlacementsTable({
                   >
                     <SelectTrigger
                       aria-label={`Presence of ${placement.brandName}`}
-                      className="h-7 w-36 border-transparent bg-transparent px-1 shadow-none"
+                      className="w-40"
+                      size="sm"
                     >
                       <SelectValue>
-                        <ShelfPlacementBadge
-                          evidence={placement.evidence}
-                          status={placement.status}
-                        />
+                        <ShelfPlacementMark status={placement.status} />
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
                       {GEO_SHELF_PLACEMENT_STATUSES.map((status) => (
                         <SelectItem key={status} value={status}>
-                          {GEO_SHELF_PLACEMENT_LABELS[status]}
+                          <ShelfPlacementMark status={status} />
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </td>
-                <td className="px-3 py-2 text-right tabular-nums">
-                  {placement.position ? `#${placement.position}` : "-"}
+                <td
+                  className={cn(
+                    "px-3.5 py-2.5 text-right tabular-nums",
+                    !placement.position && "text-muted-foreground"
+                  )}
+                >
+                  {placement.position ? `#${placement.position}` : "—"}
                 </td>
-                <td className="px-3 py-2">
+                <td className="px-3.5 py-2.5">
                   {placement.hasLink ? (
-                    <span className="inline-flex items-center gap-1 text-xs">
+                    <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
                       <HugeiconsIcon className="size-3.5" icon={Link04Icon} />
-                      Links out
+                      Outbound
                     </span>
                   ) : (
-                    <span className="text-muted-foreground text-xs">-</span>
+                    <span className="text-muted-foreground">—</span>
                   )}
-                </td>
-                <td className="text-muted-foreground px-3 py-2 text-xs">
-                  {formatRelative(placement.checkedAt)}
-                  {placement.evidence === "manual" ? " · by hand" : ""}
                 </td>
               </tr>
             );

@@ -1,6 +1,10 @@
 import type { GeoCompetitor } from "@notra/geo-core/types/geo";
 
-import { GEO_SHELF_OPEN_STATUSES } from "@/constants/geo-shelf";
+import {
+  GEO_SHELF_BOARD_COLUMN_IDS_BY_TICKET_FILTER,
+  GEO_SHELF_BOARD_COLUMNS,
+  GEO_SHELF_OPEN_STATUSES,
+} from "@/constants/geo-shelf";
 import { emptyShelfCitations } from "@/lib/geo-shelf/citations";
 import {
   canonicalizeShelfUrl,
@@ -9,6 +13,8 @@ import {
 } from "@/lib/geo-shelf/url";
 
 import type {
+  GeoShelfBoardColumnId,
+  GeoShelfBoardItems,
   GeoShelfFilterState,
   GeoShelfMember,
   GeoShelfNewSourceDraft,
@@ -34,6 +40,167 @@ export function resolveShelfPoc(
     return null;
   }
   return opportunity.pocMemberId ?? opportunity.assigneeMemberId;
+}
+
+export function boardColumnForRow(row: GeoShelfRow): GeoShelfBoardColumnId {
+  return row.opportunity?.status ?? "untracked";
+}
+
+export function groupRowsByBoardColumn(
+  rows: GeoShelfRow[]
+): Record<GeoShelfBoardColumnId, GeoShelfRow[]> {
+  const grouped: Record<GeoShelfBoardColumnId, GeoShelfRow[]> = {
+    untracked: [],
+    open: [],
+    in_progress: [],
+    won: [],
+    lost: [],
+    dismissed: [],
+  };
+  for (const row of rows) {
+    grouped[boardColumnForRow(row)].push(row);
+  }
+  return grouped;
+}
+
+const SHELF_BOARD_COLUMN_IDS: GeoShelfBoardColumnId[] = [
+  "untracked",
+  "open",
+  "in_progress",
+  "won",
+  "lost",
+  "dismissed",
+];
+
+const SHELF_BOARD_COLUMN_ID_SET = new Set<string>(SHELF_BOARD_COLUMN_IDS);
+
+export function isShelfBoardColumnId(id: string): id is GeoShelfBoardColumnId {
+  return SHELF_BOARD_COLUMN_ID_SET.has(id);
+}
+
+export function boardColumnsForTicketFilter(
+  ticket: GeoShelfFilterState["ticket"]
+): typeof GEO_SHELF_BOARD_COLUMNS {
+  const allowed = new Set<string>(
+    GEO_SHELF_BOARD_COLUMN_IDS_BY_TICKET_FILTER[ticket]
+  );
+  return GEO_SHELF_BOARD_COLUMNS.filter((column) => allowed.has(column.id));
+}
+
+function emptyShelfBoardItems(): GeoShelfBoardItems {
+  return {
+    untracked: [],
+    open: [],
+    in_progress: [],
+    won: [],
+    lost: [],
+    dismissed: [],
+  };
+}
+
+function shelfBoardItemsFromGrouped(
+  grouped: Record<GeoShelfBoardColumnId, GeoShelfRow[]>
+): GeoShelfBoardItems {
+  const items = emptyShelfBoardItems();
+  for (const columnId of SHELF_BOARD_COLUMN_IDS) {
+    items[columnId] = grouped[columnId].map((row) => row.id);
+  }
+  return items;
+}
+
+export function applyShelfBoardOrder(
+  grouped: Record<GeoShelfBoardColumnId, GeoShelfRow[]>,
+  order: GeoShelfBoardItems | null
+): GeoShelfBoardItems {
+  const incoming = shelfBoardItemsFromGrouped(grouped);
+  if (!order) {
+    return incoming;
+  }
+  const next = emptyShelfBoardItems();
+  for (const columnId of SHELF_BOARD_COLUMN_IDS) {
+    const incomingIds = new Set(incoming[columnId]);
+    const kept = order[columnId].filter((id) => incomingIds.has(id));
+    const keptIds = new Set(kept);
+    const added = incoming[columnId].filter((id) => !keptIds.has(id));
+    next[columnId] = [...kept, ...added];
+  }
+  return next;
+}
+
+export function findShelfBoardContainer(
+  id: string,
+  items: GeoShelfBoardItems
+): GeoShelfBoardColumnId | null {
+  if (isShelfBoardColumnId(id)) {
+    return id;
+  }
+  for (const columnId of SHELF_BOARD_COLUMN_IDS) {
+    if (items[columnId].includes(id)) {
+      return columnId;
+    }
+  }
+  return null;
+}
+
+function arrayMoveIds(ids: string[], from: number, to: number): string[] {
+  const next = ids.slice();
+  const [item] = next.splice(from, 1);
+  if (!item) {
+    return ids;
+  }
+  next.splice(to, 0, item);
+  return next;
+}
+
+export function moveShelfBoardItem(
+  items: GeoShelfBoardItems,
+  activeId: string,
+  overId: string,
+  pointerBelowOverItem: boolean
+): GeoShelfBoardItems | null {
+  const activeContainer = findShelfBoardContainer(activeId, items);
+  const overContainer = findShelfBoardContainer(overId, items);
+  if (!activeContainer || !overContainer) {
+    return null;
+  }
+
+  const activeItems = items[activeContainer];
+  const activeIndex = activeItems.indexOf(activeId);
+  if (activeIndex < 0) {
+    return null;
+  }
+
+  if (activeContainer === overContainer) {
+    const overIndex = isShelfBoardColumnId(overId)
+      ? activeItems.length - 1
+      : activeItems.indexOf(overId);
+    if (overIndex < 0 || activeIndex === overIndex) {
+      return null;
+    }
+    return {
+      ...items,
+      [activeContainer]: arrayMoveIds(activeItems, activeIndex, overIndex),
+    };
+  }
+
+  const overItems = items[overContainer];
+  let insertIndex = overItems.length;
+  if (!isShelfBoardColumnId(overId)) {
+    const overIndex = overItems.indexOf(overId);
+    if (overIndex >= 0) {
+      insertIndex = overIndex + (pointerBelowOverItem ? 1 : 0);
+    }
+  }
+
+  return {
+    ...items,
+    [activeContainer]: activeItems.filter((id) => id !== activeId),
+    [overContainer]: [
+      ...overItems.slice(0, insertIndex),
+      activeId,
+      ...overItems.slice(insertIndex),
+    ],
+  };
 }
 
 export function toShelfRows(

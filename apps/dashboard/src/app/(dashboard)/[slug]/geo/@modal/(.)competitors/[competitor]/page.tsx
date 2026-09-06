@@ -5,6 +5,7 @@ import { Suspense } from "react";
 
 import { CompetitorDetailView } from "@/components/geo/competitor-detail-view";
 import { CompetitorModal } from "@/components/geo/competitor-modal";
+import { StatusSpinner } from "@/components/geo/status-spinner";
 
 function PageContent() {
   const { slug, competitor } = useParams<{
@@ -22,7 +23,19 @@ function PageContent() {
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense
+      fallback={
+        <CompetitorModal title="Competitor">
+          <div
+            className="flex items-center justify-center gap-2 py-12"
+            role="status"
+          >
+            <StatusSpinner />
+            <span>Loading competitor</span>
+          </div>
+        </CompetitorModal>
+      }
+    >
       <PageContent />
     </Suspense>
   );

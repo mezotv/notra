@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 import { AiCreditsDepletedEmail } from "@notra/email/emails/ai-credits-depleted";
+import { DailySummaryEmail } from "@notra/email/emails/daily-summary";
 import { FeedbackEmail } from "@notra/email/emails/feedback";
 import { ScheduledContentCreatedEmail } from "@notra/email/emails/schedule-content-created";
 import { ScheduledContentFailedEmail } from "@notra/email/emails/schedule-content-failed";
@@ -14,6 +15,7 @@ import type { Resend } from "resend";
 import type {
   EmailResult,
   SendAiCreditsDepletedEmailProps,
+  SendDailySummaryEmailProps,
   SendFeedbackEmailProps,
   SendScheduledContentCreatedEmailProps,
   SendScheduledContentFailedEmailProps,
@@ -368,5 +370,58 @@ export async function sendScheduledContentCreatedEmail(
       tags: [{ name: "category", value: "schedule-content-created" }],
     },
     `notra:schedule-content-created:${recipientEmail}:${idempotencySuffix}`
+  );
+}
+
+export async function sendDailySummaryEmail(
+  resend: Resend,
+  {
+    recipientEmail,
+    organizationName,
+    organizationSlug,
+    dateLabel,
+    headline,
+    mentionRateLabel,
+    mentionRateDeltaLabel,
+    scansCompleted,
+    gained,
+    lost,
+    netChange,
+    items,
+    remainingCount,
+    dashboardLink,
+    dateKey,
+  }: SendDailySummaryEmailProps
+) {
+  const idempotencyKey = createHash("sha256")
+    .update(`${recipientEmail}:${organizationSlug}:${dateKey}`)
+    .digest("hex")
+    .slice(0, 32);
+
+  return sendWithRetry(
+    resend,
+    {
+      from: EMAIL_CONFIG.from,
+      replyTo: EMAIL_CONFIG.replyTo,
+      to: recipientEmail,
+      subject: headline,
+      react: DailySummaryEmail({
+        organizationName,
+        organizationSlug,
+        dateLabel,
+        headline,
+        mentionRateLabel,
+        mentionRateDeltaLabel,
+        scansCompleted,
+        gained,
+        lost,
+        netChange,
+        items,
+        remainingCount,
+        dashboardLink,
+      }),
+      tags: [{ name: "category", value: "daily-summary" }],
+    },
+    `notra:daily-summary:${idempotencyKey}`
   );
 }

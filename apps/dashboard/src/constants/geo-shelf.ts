@@ -59,6 +59,14 @@ export const GEO_SHELF_TICKET_FILTERS = [
 
 export const GEO_SHELF_VIEWS = ["table", "board"] as const;
 
+export const GEO_SHELF_VIEW_LABELS: Record<
+  (typeof GEO_SHELF_VIEWS)[number],
+  string
+> = {
+  table: "Table",
+  board: "Board",
+};
+
 export const GEO_SHELF_SOURCE_KIND_LABELS: Record<
   (typeof GEO_SHELF_SOURCE_KINDS)[number],
   string
@@ -87,8 +95,23 @@ export const GEO_SHELF_PLACEMENT_LABELS: Record<
 > = {
   present: "On shelf",
   absent: "Missing",
-  unknown: "Unknown",
+  unknown: "Not checked",
 };
+
+export const GEO_SHELF_PLACEMENT_HINTS: Record<
+  (typeof GEO_SHELF_PLACEMENT_STATUSES)[number],
+  string
+> = {
+  present: "This brand is listed on the page",
+  absent: "This brand is not listed on the page",
+  unknown:
+    "We haven't checked if this brand is listed on the page. Open the row to mark it.",
+};
+
+export const GEO_SHELF_COMPETITORS_UNCHECKED_HINT =
+  "We haven't checked if competitors are listed on this page. Open the row to mark them.";
+export const GEO_SHELF_COMPETITORS_NONE_HINT =
+  "None of your tracked competitors are marked as listed on this page.";
 
 export const GEO_SHELF_OPPORTUNITY_STATUS_LABELS: Record<
   (typeof GEO_SHELF_OPPORTUNITY_STATUSES)[number],
@@ -100,14 +123,6 @@ export const GEO_SHELF_OPPORTUNITY_STATUS_LABELS: Record<
   lost: "Lost",
   dismissed: "Dismissed",
 };
-
-export const GEO_SHELF_BOARD_COLUMNS = [
-  { id: "untracked", name: "No ticket" },
-  ...GEO_SHELF_OPPORTUNITY_STATUSES.map((status) => ({
-    id: status,
-    name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS[status],
-  })),
-];
 
 export const GEO_SHELF_PRIORITY_LABELS: Record<
   (typeof GEO_SHELF_PRIORITIES)[number],
@@ -150,8 +165,8 @@ export const GEO_SHELF_SHELF_FILTER_OPTIONS: {
   },
   {
     value: "unknown",
-    label: "Unverified",
-    description: "Presence not checked yet or the page blocked us",
+    label: "Not checked",
+    description: "We haven't checked yet if you're listed on the page",
   },
 ];
 
@@ -170,13 +185,41 @@ export const GEO_SHELF_TICKET_FILTER_OPTIONS: {
 export const GEO_SHELF_OPEN_STATUSES: readonly (typeof GEO_SHELF_OPPORTUNITY_STATUSES)[number][] =
   ["open", "in_progress"];
 
+export const GEO_SHELF_BOARD_COLUMNS = [
+  { id: "untracked", name: "No ticket" },
+  ...GEO_SHELF_OPPORTUNITY_STATUSES.map((status) => ({
+    id: status,
+    name: GEO_SHELF_OPPORTUNITY_STATUS_LABELS[status],
+  })),
+];
+
+export const GEO_SHELF_BOARD_COLUMN_IDS_BY_TICKET_FILTER = {
+  any: ["untracked", "open", "in_progress", "won", "lost", "dismissed"],
+  open: ["open"],
+  in_progress: ["in_progress"],
+  mine: ["open", "in_progress"],
+  unassigned: ["open", "in_progress"],
+  closed: ["won", "lost", "dismissed"],
+} as const satisfies Record<
+  (typeof GEO_SHELF_TICKET_FILTERS)[number],
+  readonly (typeof GEO_SHELF_BOARD_COLUMNS)[number]["id"][]
+>;
+
+export const GEO_SHELF_BOARD_HEIGHT = 640;
+export const GEO_SHELF_BOARD_COLUMN_WIDTH = 304;
+export const GEO_SHELF_BOARD_COLUMN_HEADER_HEIGHT = 44;
+export const GEO_SHELF_BOARD_CARD_HEIGHT = 128;
+export const GEO_SHELF_BOARD_OVERSCAN = 6;
+export const GEO_SHELF_BOARD_COLUMN_SCROLL_HEIGHT =
+  GEO_SHELF_BOARD_HEIGHT - GEO_SHELF_BOARD_COLUMN_HEADER_HEIGHT;
+
 export const GEO_SHELF_TABLE_ROW_HEIGHT = 56;
 export const GEO_SHELF_TABLE_HEIGHT = 560;
 /** `title` flexes; other columns size to their header/content so the row fits. */
 export const GEO_SHELF_TABLE_COLUMN = {
   title: { width: "1fr", minWidth: "10rem" },
   citations: { width: "8rem" },
-  own: { width: "7.5rem" },
+  own: { width: "9rem" },
   competitors: { width: "7.5rem" },
   ticket: { width: "7rem" },
 } as const;
@@ -184,6 +227,7 @@ export const GEO_SHELF_HOVER_DELAY_MS = 150;
 export const GEO_SHELF_ENGINE_STACK_LIMIT = 3;
 export const GEO_SHELF_COMPETITOR_STACK_LIMIT = 4;
 export const GEO_SHELF_NOTES_MAX_LENGTH = 2000;
+export const GEO_SHELF_NOTES_SAVE_DEBOUNCE_MS = 300;
 export const GEO_SHELF_TITLE_MAX_LENGTH = 200;
 export const GEO_SHELF_URL_MAX_LENGTH = 2048;
 export const GEO_SHELF_CITATION_WINDOW_DAYS = 30;

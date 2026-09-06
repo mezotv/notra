@@ -646,7 +646,6 @@ export function ChatInputAdvanced({
     remainingChatCredits > 0 &&
     remainingChatCredits <= 10;
   const isUsageBlocked =
-    process.env.NODE_ENV !== "development" &&
     checkResult?.allowed === false &&
     !chatIncludedInPlan;
   const usageLimitError =

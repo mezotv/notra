@@ -22,6 +22,8 @@ export const onboardingWorkspaceFieldsSchema = z.object({
   websiteUrl: optionalPublicWebsiteUrlSchema,
   heardAboutNotraSource: heardAboutNotraSourceSchema,
   heardAboutNotraOther: z.string().trim().max(120).nullish(),
+  dailySummary: z.boolean(),
+  marketingEmails: z.boolean(),
 });
 
 function addAttributionIssues(

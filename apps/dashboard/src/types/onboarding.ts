@@ -32,6 +32,8 @@ export interface OnboardingExistingOrg {
   logo: string | null;
   slug: string;
   name: string;
+  dailySummary: boolean;
+  marketingEmails: boolean;
 }
 
 export interface WorkspaceFormProps {
@@ -126,6 +128,8 @@ export interface OnboardingWorkspaceFormValues {
   name: string;
   slug: string;
   websiteUrl: string;
+  dailySummary: boolean;
+  marketingEmails: boolean;
 }
 
 export interface SubmitWorkspaceFormArgs {
@@ -145,3 +149,21 @@ export type SaveOnboardingAttributionInput = Pick<
 export type SaveOnboardingAttributionResult =
   | { success: true }
   | { success: false; error: string };
+
+export type SaveOnboardingNotificationSettingsInput = {
+  organizationId: string;
+  dailySummary: boolean;
+  marketingEmails: boolean;
+};
+
+export type SaveOnboardingNotificationSettingsResult =
+  | { success: true }
+  | { success: false; error: string };
+
+export interface OnboardingEmailPrefsProps {
+  dailySummary: boolean;
+  marketingEmails: boolean;
+  disabled: boolean;
+  onDailySummaryChange: (checked: boolean) => void;
+  onMarketingEmailsChange: (checked: boolean) => void;
+}

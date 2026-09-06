@@ -9,14 +9,15 @@ import {
   SelectValue,
 } from "@notra/ui/components/ui/select";
 import { Textarea } from "@notra/ui/components/ui/textarea";
-import { useId } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { ShelfDueDateField } from "@/components/geo/shelf/shelf-due-date-field";
 import { ShelfMemberSelect } from "@/components/geo/shelf/shelf-member-select";
-import { ShelfTicketBadge } from "@/components/geo/shelf/shelf-ticket-badge";
+import { ShelfTicketMark } from "@/components/geo/shelf/shelf-ticket-badge";
 import {
   GEO_SHELF_NO_PRIORITY,
   GEO_SHELF_NOTES_MAX_LENGTH,
+  GEO_SHELF_NOTES_SAVE_DEBOUNCE_MS,
   GEO_SHELF_OPPORTUNITY_STATUSES,
   GEO_SHELF_PRIORITIES,
   GEO_SHELF_PRIORITY_LABELS,
@@ -37,6 +38,23 @@ function toPriority(value: string): GeoShelfPriority | null {
   return GEO_SHELF_PRIORITIES.find((priority) => priority === value) ?? null;
 }
 
+function toNotesWrite(value: string): string | null {
+  return value.length > 0 ? value : null;
+}
+
+function persistNotesIfChanged(
+  value: string,
+  savedNotesRef: { current: string | null },
+  onChangeRef: { current: GeoShelfTicketFormProps["onChange"] }
+) {
+  const next = toNotesWrite(value);
+  if (next === savedNotesRef.current) {
+    return;
+  }
+  savedNotesRef.current = next;
+  onChangeRef.current({ notes: next });
+}
+
 export function ShelfTicketForm({
   opportunity,
   members,
@@ -49,12 +67,55 @@ export function ShelfTicketForm({
   const priority = opportunity?.priority ?? null;
   const assigneeMemberId = opportunity?.assigneeMemberId ?? null;
   const pocMemberId = opportunity?.pocMemberId ?? null;
-  const notes = opportunity?.notes ?? "";
+  const savedNotes = opportunity?.notes ?? null;
   const dueAt = opportunity?.dueAt ?? null;
+  const [draftNotes, setDraftNotes] = useState(savedNotes ?? "");
+  const draftNotesRef = useRef(draftNotes);
+  const savedNotesRef = useRef(savedNotes);
+  const onChangeRef = useRef(onChange);
+  const timeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  useEffect(() => {
+    savedNotesRef.current = savedNotes;
+  }, [savedNotes]);
+
+  useEffect(
+    () => () => {
+      if (timeoutRef.current !== null) {
+        window.clearTimeout(timeoutRef.current);
+      }
+      persistNotesIfChanged(draftNotesRef.current, savedNotesRef, onChangeRef);
+    },
+    []
+  );
+
+  const flushNotes = () => {
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    persistNotesIfChanged(draftNotesRef.current, savedNotesRef, onChangeRef);
+  };
+
+  const handleNotesChange = (value: string) => {
+    draftNotesRef.current = value;
+    setDraftNotes(value);
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = window.setTimeout(() => {
+      timeoutRef.current = null;
+      persistNotesIfChanged(value, savedNotesRef, onChangeRef);
+    }, GEO_SHELF_NOTES_SAVE_DEBOUNCE_MS);
+  };
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
-      <div className="space-y-1.5">
+    <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
+      <div className="space-y-2">
         <Label htmlFor={`${id}-status`}>Status</Label>
         <Select
           disabled={disabled}
@@ -65,19 +126,19 @@ export function ShelfTicketForm({
         >
           <SelectTrigger className="w-full" id={`${id}-status`}>
             <SelectValue>
-              <ShelfTicketBadge status={status} />
+              <ShelfTicketMark status={status} />
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {GEO_SHELF_OPPORTUNITY_STATUSES.map((option) => (
               <SelectItem key={option} value={option}>
-                <ShelfTicketBadge status={option} />
+                <ShelfTicketMark status={option} />
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label htmlFor={`${id}-priority`}>Priority</Label>
         <Select
           disabled={disabled}
@@ -101,7 +162,7 @@ export function ShelfTicketForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <span className="flex items-center justify-between">
           <Label htmlFor={`${id}-assignee`}>Assignee</Label>
           {currentMemberId && assigneeMemberId !== currentMemberId ? (
@@ -124,7 +185,7 @@ export function ShelfTicketForm({
           value={assigneeMemberId}
         />
       </div>
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         <Label htmlFor={`${id}-poc`}>Point of contact</Label>
         <ShelfMemberSelect
           allowSameAsAssignee
@@ -142,20 +203,18 @@ export function ShelfTicketForm({
         id={`${id}-due`}
         onChange={(nextDueAt) => onChange({ dueAt: nextDueAt })}
       />
-      <div className="space-y-1.5 sm:col-span-2">
+      <div className="space-y-2 sm:col-span-2">
         <Label htmlFor={`${id}-notes`}>Notes</Label>
         <Textarea
-          disabled={disabled}
           id={`${id}-notes`}
           maxLength={GEO_SHELF_NOTES_MAX_LENGTH}
-          onChange={(event) =>
-            onChange({
-              notes: event.target.value.length > 0 ? event.target.value : null,
-            })
-          }
+          onBlur={flushNotes}
+          onChange={(event) => {
+            handleNotesChange(event.target.value);
+          }}
           placeholder="Who you contacted, what they said, what happens next"
           rows={3}
-          value={notes}
+          value={draftNotes}
         />
       </div>
     </div>

@@ -18,6 +18,7 @@ import {
 } from "@notra/db/schema";
 import type {
   GeoCheckGrounding,
+  GeoCheckSource,
   GeoCheckWrite,
 } from "@notra/db/types/geo-checks";
 import { insertGeoMentionChecks } from "@notra/db/utils/geo-checks";
@@ -26,6 +27,7 @@ import { Effect } from "effect";
 
 import {
   GEO_EXCERPT_MAX_LENGTH,
+  GEO_OPENCODE_ENGINE_ID,
   GEO_SAMPLE_DATA_ENABLED,
 } from "../constants/geo";
 import {
@@ -35,6 +37,7 @@ import {
   GEO_SAMPLE_ENGINES,
   GEO_SAMPLE_GROUNDED_ENGINES,
   GEO_SAMPLE_LANGUAGES,
+  GEO_SAMPLE_OPENCODE_SOURCES,
   GEO_SAMPLE_PROJECT_NAME,
   GEO_SAMPLE_PROMPTS,
   GEO_SAMPLE_REFERRALS,
@@ -152,16 +155,18 @@ function sampleSearchQueries(seed: string, prompt: string): string[] {
   return queries;
 }
 
-function sampleSources(seed: string): GeoCheckGrounding["sources"] {
+function sampleSources(
+  seed: string,
+  pool: readonly GeoCheckSource[] = GEO_SAMPLE_SOURCES
+): GeoCheckGrounding["sources"] {
   const count = rangeCount(
     `${seed}-sources`,
     GEO_SAMPLE_SOURCE_MIN,
-    GEO_SAMPLE_SOURCE_MAX
+    Math.min(GEO_SAMPLE_SOURCE_MAX, pool.length)
   );
-  const offset = hashInt(`${seed}-source-offset`) % GEO_SAMPLE_SOURCES.length;
+  const offset = hashInt(`${seed}-source-offset`) % pool.length;
   return Array.from({ length: count }, (_, index) => {
-    const source =
-      GEO_SAMPLE_SOURCES[(offset + index) % GEO_SAMPLE_SOURCES.length];
+    const source = pool[(offset + index) % pool.length];
     return source ? { ...source } : null;
   }).filter((source) => source !== null);
 }
@@ -171,6 +176,12 @@ function sampleGrounding(
   engine: string,
   prompt: string
 ): GeoCheckGrounding {
+  if (engine === GEO_OPENCODE_ENGINE_ID) {
+    return {
+      queries: sampleSearchQueries(seed, prompt),
+      sources: [...GEO_SAMPLE_OPENCODE_SOURCES],
+    };
+  }
   if (!GEO_SAMPLE_SEARCH_ENGINES.includes(engine)) {
     return EMPTY_GEO_CHECK_GROUNDING;
   }

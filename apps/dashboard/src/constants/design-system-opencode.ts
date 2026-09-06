@@ -1,3 +1,5 @@
+import type { OpencodeSource } from "@notra/ui/types/brainless-opencode";
+
 import type {
   OpencodeStoryActivity,
   OpencodeStorySession,
@@ -52,6 +54,44 @@ export const OPENCODE_STORY_SESSION: OpencodeStorySession = {
     { name: "linear", status: "Connected" },
   ],
 };
+
+export const OPENCODE_STORY_SOURCES: OpencodeSource[] = [
+  {
+    title: "ChatGPT",
+    domain: "chatgpt.com",
+    url: "https://chatgpt.com/",
+  },
+  {
+    title: "Claude",
+    domain: "claude.ai",
+    url: "https://claude.ai/",
+  },
+  {
+    title: "Jasper",
+    domain: "jasper.ai",
+    url: "https://www.jasper.ai/",
+  },
+  {
+    title: "Canva",
+    domain: "canva.com",
+    url: "https://www.canva.com/",
+  },
+  {
+    title: "Adobe",
+    domain: "adobe.com",
+    url: "https://www.adobe.com/",
+  },
+  {
+    title: "Descript",
+    domain: "descript.com",
+    url: "https://www.descript.com/",
+  },
+  {
+    title: "Gemini",
+    domain: "support.google.com",
+    url: "https://support.google.com/",
+  },
+];
 
 export const OPENCODE_STORY_ACTIVITIES: OpencodeStoryActivity[] = [
   {

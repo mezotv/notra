@@ -29,7 +29,7 @@ import {
   queryGeoCheckTimeseries,
   toGeoCheckWindow,
 } from "@notra/db/utils/geo-checks";
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
 import {
@@ -852,14 +852,7 @@ export const loadGeoPromptResults = Effect.fn("geo.promptResults")(function* (
       competitors: row.competitors,
       excerpt: row.excerpt,
       searchQueries: row.grounding.queries,
-      sources:
-        row.grounding.sources.length > 0
-          ? row.grounding.sources
-          : row.sources.map((source) => ({
-              title: source.title ?? source.url,
-              url: source.url,
-              domain: "",
-            })),
+      sources: geoAnswerSourcesFor(row.grounding, row.sources),
       finishReason: row.finishReason,
       promptTokens: row.promptTokens,
       outputTokens: row.outputTokens,
@@ -1290,7 +1283,7 @@ export const listGeoPrompts = Effect.fn("geo.promptsList")(function* (
       geoDb("prompts lookup failed", () =>
         db.query.geoPrompts.findMany({
           where: eq(geoPrompts.projectId, projectId),
-          orderBy: [asc(geoPrompts.createdAt)],
+          orderBy: [desc(geoPrompts.createdAt)],
         })
       ),
       geoDb("settings lookup failed", () =>

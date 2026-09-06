@@ -91,6 +91,7 @@ export type GeoShelfShelfFilter = (typeof GEO_SHELF_SHELF_FILTERS)[number];
 export type GeoShelfTicketFilter = (typeof GEO_SHELF_TICKET_FILTERS)[number];
 export type GeoShelfView = (typeof GEO_SHELF_VIEWS)[number];
 export type GeoShelfBoardColumnId = GeoShelfOpportunityStatus | "untracked";
+export type GeoShelfBoardItems = Record<GeoShelfBoardColumnId, string[]>;
 
 export interface GeoShelfStoreKey {
   organizationId: string;
@@ -151,6 +152,7 @@ export interface GeoShelfSourceList {
 
 export interface GeoShelfDbApi {
   sources: GeoShelfSource[];
+  isLoading: boolean;
   isSampleData: boolean;
   pendingSourceIds: ReadonlySet<string>;
   addSource: (source: GeoShelfSource) => void;
@@ -182,29 +184,20 @@ export interface GeoShelfToolbarProps {
   onTicketFilterChange: (value: GeoShelfTicketFilter) => void;
 }
 
+export interface GeoShelfViewToggleProps {
+  view: GeoShelfView;
+  onViewChange: (view: GeoShelfView) => void;
+}
+
 export interface GeoShelfPageControlsProps extends GeoShelfToolbarProps {
   hasRows: boolean;
   view: GeoShelfView;
-}
-
-export interface GeoShelfTableProps {
-  rows: GeoShelfRow[];
-  totalCount: number;
-  onRowClick: (row: GeoShelfRow) => void;
-  pendingSourceIds: ReadonlySet<string>;
-  hasScanData: boolean;
-  onAddShelf: () => void;
-}
-
-export interface GeoShelfBoardItem extends Record<string, unknown> {
-  id: string;
-  name: string;
-  column: GeoShelfBoardColumnId;
-  source: GeoShelfRow;
+  onViewChange: (view: GeoShelfView) => void;
 }
 
 export interface GeoShelfBoardProps {
   rows: GeoShelfRow[];
+  ticketFilter: GeoShelfTicketFilter;
   currentMemberId: string | null;
   pendingSourceIds: ReadonlySet<string>;
   onRowClick: (row: GeoShelfRow) => void;
@@ -215,17 +208,47 @@ export interface GeoShelfViewProps {
   view: GeoShelfView;
   rows: GeoShelfRow[];
   totalCount: number;
+  ticketFilter: GeoShelfTicketFilter;
   currentMemberId: string | null;
   pendingSourceIds: ReadonlySet<string>;
   hasScanData: boolean;
   onAddShelf: () => void;
   onRowClick: (row: GeoShelfRow) => void;
   onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
+  onSetPlacementStatus: GeoShelfDbApi["setPlacementStatus"];
+}
+
+export interface GeoShelfTableProps {
+  rows: GeoShelfRow[];
+  totalCount: number;
+  currentMemberId: string | null;
+  onRowClick: (row: GeoShelfRow) => void;
+  onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
+  onSetPlacementStatus: GeoShelfDbApi["setPlacementStatus"];
+  pendingSourceIds: ReadonlySet<string>;
+  hasScanData: boolean;
+  onAddShelf: () => void;
+}
+
+export interface GeoShelfTableContextMenuProps {
+  row: GeoShelfRow;
+  currentMemberId: string | null;
+  disabled: boolean;
+  onOpenDetails: (row: GeoShelfRow) => void;
+  onUpdateOpportunity: GeoShelfDbApi["updateOpportunity"];
+  onSetPlacementStatus: GeoShelfDbApi["setPlacementStatus"];
 }
 
 export interface GeoShelfPlacementBadgeProps {
   status: GeoShelfPlacementStatus | null;
   evidence?: GeoShelfPlacement["evidence"];
+  className?: string;
+  /** Table cells explain the status on hover. The detail select already is the control. */
+  tooltip?: boolean;
+}
+
+export interface GeoShelfPlacementMarkProps {
+  status: GeoShelfPlacementStatus | null;
   className?: string;
 }
 
@@ -246,6 +269,7 @@ export interface GeoShelfMemberAvatarProps {
   fallbackLabel?: string;
   /** Hide the name — table cells only have room for the mark. */
   showLabel?: boolean;
+  size?: "sm" | "md";
 }
 
 export interface GeoShelfMemberSelectProps {

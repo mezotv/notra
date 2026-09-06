@@ -1,5 +1,9 @@
 import { db } from "@notra/db/drizzle";
-import { brandSettings, organizations } from "@notra/db/schema";
+import {
+  brandSettings,
+  organizationNotificationSettings,
+  organizations,
+} from "@notra/db/schema";
 import { eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 
@@ -27,20 +31,37 @@ export default async function OnboardingWorkspacePage() {
       redirect("/onboarding/pricing");
     }
 
-    const existingOrgRow = await db.query.organizations.findFirst({
-      where: eq(organizations.id, existing.id),
-      columns: {
-        heardAboutNotraOther: true,
-        heardAboutNotraSource: true,
-        id: true,
-        logo: true,
-        slug: true,
-        name: true,
-      },
-    });
+    const [existingOrgRow, notificationSettings] = await Promise.all([
+      db.query.organizations.findFirst({
+        where: eq(organizations.id, existing.id),
+        columns: {
+          heardAboutNotraOther: true,
+          heardAboutNotraSource: true,
+          id: true,
+          logo: true,
+          slug: true,
+          name: true,
+        },
+      }),
+      db.query.organizationNotificationSettings.findFirst({
+        where: eq(organizationNotificationSettings.organizationId, existing.id),
+        columns: {
+          dailySummary: true,
+          marketingEmails: true,
+        },
+      }),
+    ]);
 
     if (existingOrgRow) {
-      return <WorkspaceForm existingOrg={existingOrgRow} />;
+      return (
+        <WorkspaceForm
+          existingOrg={{
+            ...existingOrgRow,
+            dailySummary: notificationSettings?.dailySummary ?? true,
+            marketingEmails: notificationSettings?.marketingEmails ?? true,
+          }}
+        />
+      );
     }
   }
 

@@ -12,5 +12,8 @@ export function geoChatSkin(engine: string): GeoChatSkin {
   if (key === "perplexity") {
     return "perplexity";
   }
+  if (key === "opencode") {
+    return "opencode";
+  }
   return "chatgpt";
 }

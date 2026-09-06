@@ -1,16 +1,13 @@
 "use client";
 
-import { ButtonGroup } from "@notra/ui/components/ui/button-group";
-import { Columns3Icon, Table2Icon } from "lucide-react";
-
-import { Button } from "@/components/button";
 import { ShelfToolbar } from "@/components/geo/shelf/shelf-toolbar";
+import { ShelfViewToggle } from "@/components/geo/shelf/shelf-view-toggle";
 import type { GeoShelfPageControlsProps } from "@/types/geo-shelf";
-import { setGeoShelfView } from "@/utils/geo-shelf-view";
 
 export function ShelfPageControls({
   hasRows,
   view,
+  onViewChange,
   filters,
   onSearchChange,
   onShelfFilterChange,
@@ -28,26 +25,7 @@ export function ShelfPageControls({
         onShelfFilterChange={onShelfFilterChange}
         onTicketFilterChange={onTicketFilterChange}
       />
-      <ButtonGroup aria-label="Shelf view">
-        <Button
-          aria-label="Table view"
-          aria-pressed={view === "table"}
-          onClick={() => setGeoShelfView("table")}
-          size="icon"
-          variant={view === "table" ? "secondary" : "outline"}
-        >
-          <Table2Icon />
-        </Button>
-        <Button
-          aria-label="Board view"
-          aria-pressed={view === "board"}
-          onClick={() => setGeoShelfView("board")}
-          size="icon"
-          variant={view === "board" ? "secondary" : "outline"}
-        >
-          <Columns3Icon />
-        </Button>
-      </ButtonGroup>
+      <ShelfViewToggle onViewChange={onViewChange} view={view} />
     </div>
   );
 }

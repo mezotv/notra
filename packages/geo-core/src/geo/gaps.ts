@@ -12,7 +12,7 @@ import {
   posts,
 } from "@notra/db/schema";
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
-import { and, asc, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import { Effect } from "effect";
 
 import {
@@ -175,7 +175,7 @@ const loadMentionGapInputs = Effect.fn("geo.mentionGapInputs")(function* (
         .where(
           and(eq(geoPrompts.projectId, projectId), eq(geoPrompts.enabled, true))
         )
-        .orderBy(asc(geoPrompts.createdAt))
+        .orderBy(desc(geoPrompts.createdAt))
     ),
   ]);
 });

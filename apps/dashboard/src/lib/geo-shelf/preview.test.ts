@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, mock, test } from "bun:test";
+import type { LookupAddress } from "node:dns";
 
-const lookup = mock(async () => [
+const lookup = mock(async (): Promise<LookupAddress[]> => [
   { address: "93.184.216.34", family: 4 as const },
 ]);
 const fetchWebpage = mock(async ({ url }: { url: string }) => ({

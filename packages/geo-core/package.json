@@ -13,7 +13,8 @@
     "./csv/*": "./src/csv/*.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "bun test tests"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "3.0.84",
@@ -33,8 +34,10 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@notra/typescript-config": "workspace:*",
     "@types/node": "^20",
+    "drizzle-kit": "0.31.10",
     "typescript": "5.9.2"
   }
 }

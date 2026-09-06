@@ -11,13 +11,16 @@
     "./emails/schedule-content-skipped": "./src/emails/schedule-content-skipped.tsx",
     "./emails/welcome": "./src/emails/welcome.tsx",
     "./emails/workflow-paused": "./src/emails/workflow-paused.tsx",
+    "./emails/daily-summary": "./src/emails/daily-summary.tsx",
     "./types/ai-credits-depleted": "./src/types/ai-credits-depleted.ts",
+    "./types/daily-summary": "./src/types/daily-summary.ts",
     "./types/contact": "./src/types/contact.ts",
     "./types/feedback": "./src/types/feedback.ts",
     "./types/oss-application": "./src/types/oss-application.ts",
     "./types/workflow-paused": "./src/types/workflow-paused.ts",
     "./utils/config": "./src/utils/config.ts",
     "./utils/dev": "./src/utils/dev.ts",
+    "./utils/engine-logo": "./src/utils/engine-logo.ts",
     "./utils/feedback": "./src/utils/feedback.ts",
     "./utils/resend": "./src/utils/resend.ts"
   },
@@ -31,6 +34,7 @@
   },
   "devDependencies": {
     "@notra/typescript-config": "workspace:*",
+    "@react-email/ui": "6.9.3",
     "@types/node": "22.9.0",
     "@types/react": "^19.2.18",
     "typescript": "^5.6.3"

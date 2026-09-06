@@ -2,6 +2,7 @@
 
 import { Add01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -33,7 +34,7 @@ export function ReferencesList({
   dialogOpen,
   onDialogOpenChange,
 }: ReferencesListProps) {
-  const { data } = useReferences(organizationId, voiceId);
+  const { data, isPending } = useReferences(organizationId, voiceId);
   const deleteMutation = useDeleteReference(organizationId, voiceId);
   const updateMutation = useUpdateReference(organizationId, voiceId);
   const searchParams = useSearchParams();
@@ -110,7 +111,15 @@ export function ReferencesList({
 
   return (
     <div className="space-y-4">
-      {references.length === 0 ? (
+      {isPending ? (
+        <div role="status">
+          <span className="sr-only">Loading references</span>
+          <div aria-hidden="true" className="grid gap-4 sm:grid-cols-2">
+            <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="h-48 w-full rounded-xl" />
+          </div>
+        </div>
+      ) : references.length === 0 ? (
         <EmptyState
           actionIcon={<HugeiconsIcon className="size-4" icon={Add01Icon} />}
           actionLabel="Add Reference"

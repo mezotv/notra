@@ -7,7 +7,7 @@ import { Kbd } from "@notra/ui/components/ui/kbd";
 import { useHotkey } from "@tanstack/react-hotkeys";
 import Link from "next/link";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/button";
 import { EmptyState } from "@/components/empty-state";
@@ -31,6 +31,7 @@ import {
   GEO_SHELF_ADD_LABEL,
   GEO_SHELF_SHELF_FILTERS,
   GEO_SHELF_TICKET_FILTERS,
+  GEO_SHELF_VIEWS,
 } from "@/constants/geo-shelf";
 import { trackEvent } from "@/lib/analytics/posthog-client";
 import { useGeoSettings } from "@/lib/hooks/use-geo";
@@ -42,7 +43,6 @@ import type { GeoPageClientProps } from "@/types/geo";
 import type {
   GeoShelfPageContentProps,
   GeoShelfSelection,
-  GeoShelfView,
 } from "@/types/geo-shelf";
 import { withGeoProject } from "@/utils/geo-paths";
 import {
@@ -50,20 +50,12 @@ import {
   filterShelfRows,
   toShelfRows,
 } from "@/utils/geo-shelf";
-import {
-  getGeoShelfView,
-  getServerGeoShelfView,
-  subscribeGeoShelfView,
-} from "@/utils/geo-shelf-view";
 
 import { GeoShelfSkeleton } from "./skeleton";
 
 const PAGE_TITLE = "Shelf Space";
 const PAGE_DESCRIPTION =
   "Third-party pages AI engines cite for your prompts, and whether you're on them";
-const emptySubscribe = () => () => undefined;
-const getClientSnapshot = () => true;
-const getServerSnapshot = () => false;
 
 export default function PageClient({ organizationSlug }: GeoPageClientProps) {
   const [projectParam] = useGeoProjectQueryState();
@@ -108,15 +100,11 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
       .withDefault("any")
       .withOptions({ clearOnDefault: true })
   );
-  const view = useSyncExternalStore(
-    subscribeGeoShelfView,
-    getGeoShelfView,
-    getServerGeoShelfView
-  );
-  const isViewHydrated = useSyncExternalStore(
-    emptySubscribe,
-    getClientSnapshot,
-    getServerSnapshot
+  const [view, setView] = useQueryState(
+    "view",
+    parseAsStringLiteral(GEO_SHELF_VIEWS)
+      .withDefault("table")
+      .withOptions({ clearOnDefault: true })
   );
   const [addOpen, setAddOpen] = useState(false);
   const [selected, setSelected] = useState<GeoShelfSelection | null>(null);
@@ -132,7 +120,7 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
   const viewedRef = useRef(false);
 
   useEffect(() => {
-    if (viewedRef.current || isSettingsPending || !isViewHydrated) {
+    if (viewedRef.current || isSettingsPending || shelf.isLoading) {
       return;
     }
     viewedRef.current = true;
@@ -144,14 +132,14 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
     });
   }, [
     isSettingsPending,
-    isViewHydrated,
+    shelf.isLoading,
     hasSettings,
     shelfCount,
     isSampleData,
     view,
   ]);
 
-  if (isSettingsPending || !isViewHydrated) {
+  if (isSettingsPending || (hasSettings && shelf.isLoading)) {
     return <GeoShelfSkeleton />;
   }
 
@@ -230,14 +218,17 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
         </header>
 
         <div className="space-y-3">
-          <ShelfPageControls
-            filters={filters}
-            hasRows={rows.length > 0}
-            onSearchChange={setSearch}
-            onShelfFilterChange={setShelfFilter}
-            onTicketFilterChange={setTicketFilter}
-            view={view}
-          />
+          {rows.length > 0 ? (
+            <ShelfPageControls
+              filters={filters}
+              hasRows
+              onSearchChange={setSearch}
+              onShelfFilterChange={setShelfFilter}
+              onTicketFilterChange={setTicketFilter}
+              onViewChange={setView}
+              view={view}
+            />
+          ) : null}
           <ShelfView
             currentMemberId={currentMemberId}
             hasScanData={shelf.sources.some(
@@ -245,9 +236,11 @@ function GeoShelfPageContent({ organizationSlug }: GeoShelfPageContentProps) {
             )}
             onAddShelf={() => setAddOpen(true)}
             onRowClick={openRow}
+            onSetPlacementStatus={shelf.setPlacementStatus}
             onUpdateOpportunity={shelf.updateOpportunity}
             pendingSourceIds={shelf.pendingSourceIds}
             rows={filteredRows}
+            ticketFilter={ticketFilter}
             totalCount={rows.length}
             view={view}
           />

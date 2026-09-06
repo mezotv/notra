@@ -124,6 +124,7 @@ function ContextMenuSubTrigger({
   className,
   inset,
   children,
+  closeDelay = 200,
   ...props
 }: MenuPrimitive.SubmenuTrigger.Props & {
   inset?: boolean;
@@ -137,6 +138,7 @@ function ContextMenuSubTrigger({
       data-inset={inset}
       data-slot="context-menu-sub-trigger"
       {...props}
+      closeDelay={closeDelay}
     >
       {children}
       <HugeiconsIcon
@@ -145,6 +147,27 @@ function ContextMenuSubTrigger({
         strokeWidth={2}
       />
     </ContextMenuPrimitive.SubmenuTrigger>
+  );
+}
+
+function ContextMenuSubContent({
+  align = "start",
+  alignOffset = -3,
+  side = "right",
+  sideOffset = 0,
+  className,
+  ...props
+}: React.ComponentProps<typeof ContextMenuContent>) {
+  return (
+    <ContextMenuContent
+      align={align}
+      alignOffset={alignOffset}
+      className={cn("w-auto min-w-[96px]", className)}
+      data-slot="context-menu-sub-content"
+      side={side}
+      sideOffset={sideOffset}
+      {...props}
+    />
   );
 }
 
@@ -255,6 +278,7 @@ export {
   ContextMenuSeparator,
   ContextMenuShortcut,
   ContextMenuSub,
+  ContextMenuSubContent,
   ContextMenuSubTrigger,
   ContextMenuTrigger,
 };
