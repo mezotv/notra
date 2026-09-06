@@ -8,13 +8,7 @@ import { useCustomer } from "autumn-js/react";
  * while loading; check `isLoading` before treating it as a final answer.
  */
 export function useHasZdrEntitlement() {
-  const isDev = process.env.NODE_ENV === "development";
-  const { check, isLoading } = useCustomer({
-    queryOptions: { enabled: !isDev },
-  });
-  if (isDev) {
-    return { hasZdr: true, isLoading: false };
-  }
+  const { check, isLoading } = useCustomer();
   const hasZdr = check({ featureId: FEATURES.ZDR }).allowed === true;
   return { hasZdr, isLoading };
 }
