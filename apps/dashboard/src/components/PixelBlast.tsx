@@ -785,6 +785,28 @@ const PixelBlast: React.FC<PixelBlastProps> = ({
     speed,
   ]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    return () => {
+      const t = threeRef.current;
+      if (!t) {
+        return;
+      }
+      t.resizeObserver?.disconnect();
+      if (t.raf !== undefined) {
+        cancelAnimationFrame(t.raf);
+      }
+      t.quad?.geometry.dispose();
+      t.material.dispose();
+      t.composer?.dispose();
+      t.renderer.dispose();
+      if (container && t.renderer.domElement.parentElement === container) {
+        container.removeChild(t.renderer.domElement);
+      }
+      threeRef.current = null;
+    };
+  }, []);
+
   return (
     <div
       className={`relative h-full w-full overflow-hidden ${className ?? ""}`}

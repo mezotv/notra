@@ -19,7 +19,7 @@ import {
   setActiveChatStream,
 } from "@notra/ai/chat/history";
 import { getStandaloneChatIntegrations } from "@notra/ai/chat/integrations-cache";
-import { useLogger, withEvlog } from "@notra/ai/evlog";
+import { useLogger as getLogger, withEvlog } from "@notra/ai/evlog";
 import { getGitHubToolRepositoryContextByIntegrationId } from "@notra/ai/integrations/github";
 import { getGranolaToolContextByIntegrationId } from "@notra/ai/integrations/granola";
 import { getLinearToolContextByIntegrationId } from "@notra/ai/integrations/linear";
@@ -67,7 +67,7 @@ export const POST = withEvlog(async function POST(
   { params }: RouteContext<{ organizationId: string }>
 ) {
   const requestId = nanoid(10);
-  const log = useLogger();
+  const log = getLogger();
   let cleanupOrganizationId: string | null = null;
   let cleanupChatId: string | null = null;
   let cleanupStreamId: string | null = null;
@@ -384,7 +384,7 @@ async function createDirectStandaloneChatResponse({
   useMarkup: boolean;
   chargeAiCredits: boolean;
   requestId: string;
-  log: ReturnType<typeof useLogger>;
+  log: ReturnType<typeof getLogger>;
   model?: string;
   enableThinking?: boolean;
   thinkingLevel?: "off" | "low" | "medium" | "high";
@@ -436,7 +436,7 @@ async function createDirectStandaloneChatResponse({
   const responseReady = createDeferred<Response>();
   const streamDone = createDeferred<void>();
 
-  const runStream = async (streamLog: ReturnType<typeof useLogger>) => {
+  const runStream = async (streamLog: ReturnType<typeof getLogger>) => {
     const { stream, routingDecision } = await orchestrateStandaloneChat(
       {
         organizationId,
@@ -631,8 +631,7 @@ async function createDirectStandaloneChatResponse({
   if (fork) {
     fork("standalone_chat_stream", async () => {
       try {
-        // biome-ignore lint/correctness/useHookAtTopLevel: useLogger is an async-context accessor, not a React hook
-        const response = await runStream(useLogger());
+        const response = await runStream(getLogger());
         responseReady.resolve(response);
         await streamDone.promise;
       } catch (error) {
