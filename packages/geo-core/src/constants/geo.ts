@@ -958,9 +958,9 @@ export const AI_TRAFFIC_CONFIDENCE_LABELS: Record<string, string> = {
 };
 
 export const GEO_PRESENCE_LABELS: Record<string, string> = {
-  "training-data": "In model",
+  "training-data": "In knowledge",
   "retrieval-only": `${GEO_SEARCH_LABEL} only`,
-  invisible: "Invisible",
+  invisible: "Not mentioned",
 };
 
 export const GEO_SENTIMENT_LABELS: Record<string, string> = {
@@ -1000,7 +1000,7 @@ export const GEO_ENGINE_PERFORMANCE_HINT =
   "How often each engine mentioned your brand in this range. Manage engines in GEO settings.";
 export const GEO_PROMPT_AUTO_MANAGED_LABEL = "Managed automatically";
 export const GEO_PROMPT_AUTO_MANAGED_HINT =
-  "Generated from your site. Pause it to skip it in scans; it cannot be removed.";
+  "Generated from your site. Pause it to skip it in scans, or remove it if you do not want it tracked.";
 export const GEO_PROMPT_TAGS_CUSTOM_ONLY_TOAST =
   "Tags apply to custom prompts. Auto-generated prompts were skipped.";
 export const GEO_SCAN_PREFLIGHT_TITLE = "Run a scan now?";

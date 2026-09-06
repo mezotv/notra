@@ -162,6 +162,9 @@ export const geoSettingsUpsertInputSchema = geoOrganizationInputSchema.extend({
   pausedAutoPromptIds: array(string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH))
     .max(GEO_MAX_PROMPTS)
     .optional(),
+  removedAutoPromptIds: array(string().min(1).max(GEO_SHORT_FIELD_MAX_LENGTH))
+    .max(GEO_MAX_PROMPTS)
+    .optional(),
   enabled: boolean(),
   scanIntervalHours: number()
     .int()

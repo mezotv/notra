@@ -70,6 +70,7 @@ export interface GeoSettings {
   /** Models without a ZDR host the user approved to run anyway. */
   nonZdrApprovedEngines: string[];
   pausedAutoPromptIds: string[];
+  removedAutoPromptIds: string[];
   enabled: boolean;
   scanIntervalHours: number;
   scanStartedAt: string | null;
@@ -97,6 +98,7 @@ export interface GeoSettingsRow {
   enforceZdr: boolean;
   nonZdrApprovedEngines: string[];
   pausedAutoPromptIds: string[];
+  removedAutoPromptIds: string[];
   enabled: boolean;
   scanIntervalHours: number;
   nextScanAt: Date | null;
@@ -340,6 +342,7 @@ export interface GeoSettingsUpsertInput {
   enforceZdr: boolean;
   nonZdrApprovedEngines: string[];
   pausedAutoPromptIds?: string[];
+  removedAutoPromptIds?: string[];
   enabled: boolean;
   scanIntervalHours: number;
 }

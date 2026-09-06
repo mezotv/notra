@@ -14,7 +14,7 @@ import type { TableColumn, TableProps, TableRow } from "./types";
 import { alignText, readCell, TABLE_CELL_INNER_CLASS } from "./utils";
 
 const INTERACTIVE_SELECTOR =
-  'button, a, input, select, textarea, label, [role="checkbox"], [role="menuitem"], [role="button"], [contenteditable="true"]';
+  'button, a, input, select, textarea, label, [role="checkbox"], [role="switch"], [role="menuitem"], [role="button"], [contenteditable="true"]';
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
   return (

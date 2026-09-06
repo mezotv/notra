@@ -81,7 +81,7 @@ const patchPromptRoute = createRoute({
   operationId: "updateGeoPrompt",
   summary: "Update a tracked GEO prompt",
   description:
-    "Enable or disable a custom prompt, or replace its tags. Only custom prompts can be updated.",
+    "Enable or disable a tracked prompt, or replace tags on a custom prompt.",
   request: {
     params: promptParamsSchema,
     body: {

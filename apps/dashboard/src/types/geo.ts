@@ -234,6 +234,14 @@ export interface PromptTagChipsProps {
   tags: string[];
 }
 
+export interface PromptIntentBadgeProps {
+  intent: GeoPromptIntent;
+}
+
+export interface PromptPresenceBadgeProps {
+  status: GeoPresenceStatus | null;
+}
+
 export interface PromptSavedViewsMenuProps {
   views: GeoPromptSavedView[];
   filters: GeoPromptTableFilters;
