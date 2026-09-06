@@ -41,7 +41,7 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
@@ -326,13 +326,13 @@ export function PromptsTable({
   const selectedIdSet = new Set(selectedIds);
   const selectedRows = rows.filter((row) => selectedIdSet.has(row.id));
 
-  const requestDelete = useCallback((targets: GeoPromptTableRow[]) => {
+  const requestDelete = (targets: GeoPromptTableRow[]) => {
     if (targets.length === 0) {
       return;
     }
     setPendingDelete(targets);
     setDeleteOpen(true);
-  }, []);
+  };
 
   const applyView = (view: GeoPromptSavedView) => {
     setSearch(view.query.q);
