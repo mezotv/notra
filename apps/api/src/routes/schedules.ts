@@ -719,6 +719,7 @@ schedulesRoutes.openapi(patchScheduleRoute, async (c) => {
     }
   }
 
+  let committed = false;
   try {
     const schedule = await db.transaction(async (tx) => {
       const [updatedTrigger] = await tx
@@ -768,13 +769,21 @@ schedulesRoutes.openapi(patchScheduleRoute, async (c) => {
       });
     });
 
+    committed = true;
+
     if (previousQstashScheduleId) {
-      await deleteQstashSchedule(env, previousQstashScheduleId);
+      try {
+        await deleteQstashSchedule(env, previousQstashScheduleId);
+      } catch (deleteError) {
+        // DB already points at the new schedule, so don't fail the request
+        // or clean up the new schedule — log for retry/cleanup instead.
+        logError("Failed to delete previous QStash schedule", deleteError);
+      }
     }
 
     return c.json({ schedule, organization }, 200);
   } catch (error) {
-    if (qstashScheduleId) {
+    if (!committed && qstashScheduleId) {
       await deleteQstashSchedule(env, qstashScheduleId).catch(() => null);
     }
 
