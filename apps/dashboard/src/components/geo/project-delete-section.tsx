@@ -45,8 +45,10 @@ export function GeoProjectDeleteSection({
 
   return (
     <TitleCard
+      as="section"
       className="border-destructive/50 bg-destructive/5"
       heading="Delete project"
+      headingAs="h2"
     >
       <div className="space-y-4">
         <p className="text-muted-foreground text-sm text-pretty">

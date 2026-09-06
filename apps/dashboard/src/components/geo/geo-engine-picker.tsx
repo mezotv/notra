@@ -34,7 +34,14 @@ import { TRANSITION } from "@notra/ui/lib/motion";
 import { useCustomer } from "autumn-js/react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { toast } from "sonner";
 
 import { ZdrConsentDialog } from "@/components/billing/zdr-consent-dialog";
@@ -61,12 +68,12 @@ const ROW_CLASS = "flex items-center justify-between gap-3 px-3 py-2";
 
 function partiallySelectedProviders(
   catalog: GeoModelCatalog,
-  selected: readonly string[]
+  selected: ReadonlySet<string>
 ): Set<string> {
   const expanded = new Set<string>();
   for (const provider of catalog.providers) {
     const models = geoModelsForProvider(catalog, provider.id);
-    const count = models.filter((model) => selected.includes(model.id)).length;
+    const count = models.filter((model) => selected.has(model.id)).length;
     if (count > 0 && count < models.length) {
       expanded.add(provider.id);
     }
@@ -168,15 +175,20 @@ export function GeoEnginePicker({
   const [addonLoading, setAddonLoading] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
   const checkoutReturnHandled = useRef(false);
+  const selectedIds = useMemo(() => new Set(selected), [selected]);
+  const approvedNonZdrIds = useMemo(
+    () => new Set(nonZdrApproved),
+    [nonZdrApproved]
+  );
   const [expanded, setExpanded] = useState<Set<string>>(() =>
-    partiallySelectedProviders(catalog, selected)
+    partiallySelectedProviders(catalog, selectedIds)
   );
   const [showMore, setShowMore] = useState(() =>
     catalog.providers.some(
       (provider) =>
         !provider.featured &&
         geoModelsForProvider(catalog, provider.id).some((model) =>
-          selected.includes(model.id)
+          selectedIds.has(model.id)
         )
     )
   );
@@ -235,7 +247,7 @@ export function GeoEnginePicker({
     }
     const eligible = zdrActive
       ? visibleModels.filter(
-          (model) => model.zdr !== "none" || nonZdrApproved.includes(model.id)
+          (model) => model.zdr !== "none" || approvedNonZdrIds.has(model.id)
         )
       : visibleModels;
     if (eligible.length > 0) {
@@ -254,7 +266,7 @@ export function GeoEnginePicker({
       return;
     }
     const needsApproval =
-      zdrActive && model.zdr === "none" && !nonZdrApproved.includes(model.id);
+      zdrActive && model.zdr === "none" && !approvedNonZdrIds.has(model.id);
     if (needsApproval) {
       setPendingApproval(model);
       return;
@@ -377,11 +389,11 @@ export function GeoEnginePicker({
             const isExpanded = expanded.has(provider.id);
             const allModelsShown = showAllModels.has(provider.id);
             const selectedModels = models.filter((model) =>
-              selected.includes(model.id)
+              selectedIds.has(model.id)
             );
             const orderedModels = [
               ...selectedModels,
-              ...models.filter((model) => !selected.includes(model.id)),
+              ...models.filter((model) => !selectedIds.has(model.id)),
             ];
             const primaryModelCount = Math.max(
               GEO_PICKER_VISIBLE_MODELS,
@@ -393,7 +405,7 @@ export function GeoEnginePicker({
               ? orderedModels
               : primaryModels;
             const selectedVisible = visibleModels.filter((model) =>
-              selected.includes(model.id)
+              selectedIds.has(model.id)
             );
             const someOn = selectedModels.length > 0;
             const allOn =
@@ -510,11 +522,11 @@ export function GeoEnginePicker({
                       />
                       <ul>
                         {primaryModels.map((model) => {
-                          const checked = selected.includes(model.id);
+                          const checked = selectedIds.has(model.id);
                           const modelId = `${id}-${model.id}`;
                           return (
                             <GeoModelRow
-                              approved={nonZdrApproved.includes(model.id)}
+                              approved={approvedNonZdrIds.has(model.id)}
                               checked={checked}
                               disabled={disabled || (checked && lastSelected)}
                               id={modelId}
@@ -543,13 +555,11 @@ export function GeoEnginePicker({
                             >
                               <ul>
                                 {additionalModels.map((model, modelIndex) => {
-                                  const checked = selected.includes(model.id);
+                                  const checked = selectedIds.has(model.id);
                                   const modelId = `${id}-${model.id}`;
                                   return (
                                     <GeoModelRow
-                                      approved={nonZdrApproved.includes(
-                                        model.id
-                                      )}
+                                      approved={approvedNonZdrIds.has(model.id)}
                                       checked={checked}
                                       disabled={
                                         disabled || (checked && lastSelected)

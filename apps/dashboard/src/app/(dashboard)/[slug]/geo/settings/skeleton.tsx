@@ -16,7 +16,7 @@ function SettingsSectionSkeleton({
   children,
 }: GeoSettingsSkeletonSectionProps) {
   return (
-    <TitleCard heading={title}>
+    <TitleCard as="section" heading={title} headingAs="h2">
       <div className="space-y-4">
         <p className="text-muted-foreground text-sm text-pretty">
           {description}
@@ -38,7 +38,7 @@ export function GeoSettingsSkeleton() {
           </p>
         </header>
         <div className="space-y-6">
-          <TitleCard heading="Brand">
+          <TitleCard as="section" heading="Brand" headingAs="h2">
             <div className="space-y-4">
               <div className="space-y-2">
                 <Skeleton className="h-4 w-28" />

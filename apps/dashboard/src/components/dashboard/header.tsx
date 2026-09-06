@@ -262,8 +262,10 @@ export function SiteHeader() {
             geoProjectId
           );
           const label =
-            segment.charAt(0).toUpperCase() +
-            segment.slice(1).replace(/-/g, " ");
+            segment === "settings"
+              ? "GEO Settings"
+              : segment.charAt(0).toUpperCase() +
+                segment.slice(1).replace(/-/g, " ");
           return [
             <BreadcrumbSeparator key={`${id}-geo-sep-${segment}`}>
               <HugeiconsIcon icon={ArrowRight01Icon} />

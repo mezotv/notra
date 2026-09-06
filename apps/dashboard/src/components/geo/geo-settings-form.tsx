@@ -198,7 +198,7 @@ export function GeoSettingsForm({
         ) : null}
       </header>
       <div className="space-y-6">
-        <TitleCard heading="Brand">
+        <TitleCard as="section" heading="Brand" headingAs="h2">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor={`${id}-name`}>Company name</Label>
@@ -250,7 +250,7 @@ export function GeoSettingsForm({
             selected={languages}
           />
         </SettingsSection>
-        <TitleCard heading="Models">
+        <TitleCard as="section" heading="Models" headingAs="h2">
           <div className="space-y-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <p className="text-muted-foreground min-w-0 flex-1 text-sm text-pretty">
@@ -313,7 +313,7 @@ function SettingsSection({
   children: ReactNode;
 }) {
   return (
-    <TitleCard heading={title}>
+    <TitleCard as="section" heading={title} headingAs="h2">
       <div className="space-y-4">
         <p className="text-muted-foreground text-sm text-pretty">
           {description}
