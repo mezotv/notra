@@ -731,6 +731,46 @@ schedulesRoutes.openapi(patchScheduleRoute, async (c) => {
 
       return c.json({ error: mapped.error }, 500);
     }
+
+    // QStash should upsert in place when a schedule ID is reused. If it
+    // minted a different ID instead, fail before the DB transaction: the
+    // previous schedule is untouched and the DB still points at it, so both
+    // schedules can never go live at once.
+    if (
+      reuseQstashScheduleId &&
+      qstashScheduleId !== reuseQstashScheduleId
+    ) {
+      try {
+        await deleteQstashScheduleWithRetry(env, qstashScheduleId);
+      } catch (cleanupError) {
+        logError(
+          `Failed to clean up unexpected QStash schedule ${qstashScheduleId} for schedule ${scheduleId}`,
+          cleanupError
+        );
+      }
+
+      logError(
+        `QStash returned unexpected schedule ID ${qstashScheduleId} for schedule ${scheduleId} (expected ${reuseQstashScheduleId})`,
+        new Error("QStash schedule ID rotation")
+      );
+      return c.json({ error: "Failed to update schedule" }, 500);
+    }
+  }
+
+  if (!input.enabled && previousQstashScheduleId) {
+    // Disable path: delete before the DB transaction so a failure stays
+    // retryable — the DB still points at the previous schedule. Delete is
+    // idempotent (404 counts as success), so if the DB transaction fails
+    // after this, retrying PATCH heals instead of orphaning.
+    try {
+      await deleteQstashScheduleWithRetry(env, previousQstashScheduleId);
+    } catch (error) {
+      logError(
+        `Failed to delete previous QStash schedule ${previousQstashScheduleId} for schedule ${scheduleId}`,
+        error
+      );
+      return c.json({ error: "Failed to update schedule" }, 500);
+    }
   }
 
   let committed = false;
@@ -785,25 +825,10 @@ schedulesRoutes.openapi(patchScheduleRoute, async (c) => {
 
     committed = true;
 
-    // Only the disable path (or an unexpected ID rotation) leaves a previous
-    // schedule to delete: upserts reuse the previous ID, so normally
-    // previous === current and there is nothing to clean up. A failed delete
-    // here is a phantom-fire risk only — the schedule workflow no-ops when
-    // the DB trigger is disabled/missing — so log with both IDs and keep
-    // the successful response.
-    if (
-      previousQstashScheduleId &&
-      previousQstashScheduleId !== qstashScheduleId
-    ) {
-      try {
-        await deleteQstashScheduleWithRetry(env, previousQstashScheduleId);
-      } catch (deleteError) {
-        logError(
-          `Failed to delete previous QStash schedule ${previousQstashScheduleId} for schedule ${scheduleId} (replacement ${qstashScheduleId ?? "none"})`,
-          deleteError
-        );
-      }
-    }
+    // No post-commit deletes: enables upsert in place (previous === current,
+    // nothing to clean up) and disables delete before the transaction so a
+    // failure stays retryable. Deleting here would return success while both
+    // schedules are live, with the previous ID already lost to the DB.
 
     return c.json({ schedule, organization }, 200);
   } catch (error) {
@@ -826,10 +851,39 @@ schedulesRoutes.openapi(patchScheduleRoute, async (c) => {
     }
     if (!committed && reuseQstashScheduleId) {
       // Upsert succeeded but the DB transaction failed: QStash now has the
-      // new cron while the DB still has the old config. No orphan/duplicate,
-      // and retrying PATCH self-heals — log for visibility only.
+      // rejected cron while the DB still has the old config, and the
+      // schedule workflow fires at whatever cron is live. Restore the
+      // previous cron so the live schedule keeps the committed cadence;
+      // retrying PATCH still self-heals if the restore fails.
+      const parsedPrevious = scheduleSourceConfigSchema.safeParse(
+        existing.sourceConfig
+      );
+      if (parsedPrevious.success) {
+        try {
+          await createQstashSchedule(env, {
+            triggerId: scheduleId,
+            cron: buildCronExpression(parsedPrevious.data.cron),
+            scheduleId: reuseQstashScheduleId,
+          });
+        } catch (restoreError) {
+          logError(
+            `Failed to restore previous QStash schedule ${reuseQstashScheduleId} for schedule ${scheduleId} after DB transaction failure; DB config is stale until PATCH is retried`,
+            restoreError
+          );
+        }
+      } else {
+        logError(
+          `QStash schedule ${reuseQstashScheduleId} for schedule ${scheduleId} was upserted but the DB transaction failed and the previous config could not be parsed; DB config is stale until PATCH is retried`,
+          error
+        );
+      }
+    }
+    if (!committed && !input.enabled && previousQstashScheduleId) {
+      // Disable path: the previous schedule was already deleted before the
+      // transaction, so the DB still points at a deleted schedule. Delete is
+      // idempotent, so retrying PATCH heals.
       logError(
-        `QStash schedule ${reuseQstashScheduleId} for schedule ${scheduleId} was upserted but the DB transaction failed; DB config is stale until PATCH is retried`,
+        `Previous QStash schedule ${previousQstashScheduleId} for schedule ${scheduleId} was deleted but the DB transaction failed; retry PATCH to heal`,
         error
       );
     }
