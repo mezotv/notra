@@ -34,14 +34,7 @@ import { TRANSITION } from "@notra/ui/lib/motion";
 import { useCustomer } from "autumn-js/react";
 import { motion, useReducedMotion } from "motion/react";
 import Link from "next/link";
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { ZdrConsentDialog } from "@/components/billing/zdr-consent-dialog";
@@ -175,11 +168,8 @@ export function GeoEnginePicker({
   const [addonLoading, setAddonLoading] = useState(false);
   const [consentOpen, setConsentOpen] = useState(false);
   const checkoutReturnHandled = useRef(false);
-  const selectedIds = useMemo(() => new Set(selected), [selected]);
-  const approvedNonZdrIds = useMemo(
-    () => new Set(nonZdrApproved),
-    [nonZdrApproved]
-  );
+  const selectedIds = new Set(selected);
+  const approvedNonZdrIds = new Set(nonZdrApproved);
   const [expanded, setExpanded] = useState<Set<string>>(() =>
     partiallySelectedProviders(catalog, selectedIds)
   );
