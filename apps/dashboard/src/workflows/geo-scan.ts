@@ -244,6 +244,10 @@ export async function geoScanWorkflow(
   if (projectIds.length === 0) {
     return { status: "skipped" };
   }
+  const orderedProjectIds =
+    projectId && projectIds.includes(projectId)
+      ? [projectId, ...projectIds.filter((id) => id !== projectId)]
+      : projectIds;
 
   let checks = 0;
   let mentions = 0;
@@ -251,8 +255,9 @@ export async function geoScanWorkflow(
   let ranProject = false;
   // A project already runs several model calls per batch. Keep projects in one
   // workflow sequential so batch concurrency is the aggregate provider bound,
-  // rather than multiplying it by every project in the organization.
-  for (const scanProjectId of projectIds) {
+  // rather than multiplying it by every project in the organization. A claim
+  // handed to this workflow goes first so prepare can revalidate it immediately.
+  for (const scanProjectId of orderedProjectIds) {
     const claimed = scanProjectId === projectId;
     // react-doctor-disable-next-line react-doctor/async-await-in-loop -- sequential projects enforce the workflow's provider concurrency budget
     const outcome = await runGeoScanProjectRun(organizationId, scanProjectId, {

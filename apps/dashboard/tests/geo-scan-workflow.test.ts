@@ -140,6 +140,54 @@ describe("GEO scan workflow orchestration", () => {
     expect(await run).toMatchObject({ status: "completed" });
   });
 
+  test("revalidates a handed claim before scanning projects listed ahead of it", async () => {
+    listProjects.mockResolvedValue([
+      "project-earlier",
+      "project-handed",
+      "project-later",
+    ]);
+    let releaseHandedProject: (() => void) | undefined;
+    taskBatch.mockImplementationOnce(
+      (_context, batch) =>
+        new Promise((resolve) => {
+          releaseHandedProject = () =>
+            resolve({
+              checks: batch.length,
+              mentions: 0,
+              dropped: 0,
+              usage: EMPTY_AGENT_TOKEN_USAGE,
+            });
+        })
+    );
+    const run = geoScanWorkflow({
+      organizationId: "org-test",
+      projectId: "project-handed",
+      claimedAt: "2026-09-01T00:00:00.000Z",
+      scanId: "scan-handed",
+    });
+
+    await settle(() => releaseHandedProject !== undefined);
+    expect(prepare).toHaveBeenCalledTimes(1);
+    expect(prepare.mock.calls[0]).toEqual([
+      "org-test",
+      "project-handed",
+      {
+        claimedAt: "2026-09-01T00:00:00.000Z",
+        scanId: "scan-handed",
+        retried: false,
+        promptIds: undefined,
+      },
+    ]);
+
+    releaseHandedProject?.();
+    expect(await run).toMatchObject({ status: "completed" });
+    expect(prepare.mock.calls.map(([, id]) => id)).toEqual([
+      "project-handed",
+      "project-earlier",
+      "project-later",
+    ]);
+  });
+
   test("batches tasks and sequences, keeps the plan token, and sums results and usage", async () => {
     const plan = scanPlan(
       "project-test",
@@ -394,8 +442,8 @@ describe("GEO scan workflow orchestration", () => {
     expect(
       prepare.mock.calls.map(([, id, options]) => [id, options.retried])
     ).toEqual([
-      ["healthy", false],
       ["empty", false],
+      ["healthy", false],
       ["empty", true],
     ]);
     expect(prepare.mock.calls[2]?.[2]).toEqual({
