@@ -9,7 +9,6 @@ import {
   PermissionOption,
   PermissionRow,
 } from "@notra/ui/components/ui/permission-selector";
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { EngineRateTable } from "@/components/geo/engine-rate-table";
@@ -26,14 +25,10 @@ import { InstrumentGrid } from "@/components/instrument/instrument-grid";
 import { InstrumentReveal } from "@/components/instrument/instrument-reveal";
 import { useGeoProjectScope } from "@/components/providers/geo-project-provider";
 import { trackEvent } from "@/lib/analytics/posthog-client";
-import { useGeoRange } from "@/lib/hooks/use-geo-range";
 import { cn } from "@/lib/utils";
 import type { GeoTabsProps } from "@/types/geo";
-import { geoNavHref, withGeoProject } from "@/utils/geo-paths";
+import { geoNavHref } from "@/utils/geo-paths";
 import { toGeoTab } from "@/utils/geo-tabs";
-
-const TAB_LINK_CLASS =
-  "text-muted-foreground text-xs capitalize underline-offset-4 hover:text-foreground hover:underline";
 
 function TriggerCount({ count }: { count: number }) {
   if (count <= 0) {
@@ -87,14 +82,14 @@ export function GeoTabs({
   organizationId,
 }: GeoTabsProps) {
   const { projectId } = useGeoProjectScope();
-  const { param } = useGeoRange();
-  const promptsPath = param
-    ? `/${organizationSlug}/geo/prompts?range=${param}`
-    : `/${organizationSlug}/geo/prompts`;
-  const promptsHref = withGeoProject(promptsPath, projectId);
 
   return (
-    <div className="flex flex-col">
+    <div
+      className={cn(
+        "flex flex-col",
+        activeTab === "prompts" && "min-h-0 flex-1"
+      )}
+    >
       <PermissionRow
         className="w-fit shrink-0"
         label="GEO sections"
@@ -198,14 +193,13 @@ export function GeoTabs({
       ) : null}
 
       {activeTab === "prompts" ? (
-        <div className="mt-6 flex flex-col gap-6">
-          <TabSection active={revealActive} order={0}>
+        <div className="mt-6 flex min-h-0 flex-1 flex-col gap-6">
+          <TabSection
+            active={revealActive}
+            className="min-h-0 flex-1"
+            order={0}
+          >
             <GeoPromptsPanel
-              action={
-                <Link className={TAB_LINK_CLASS} href={promptsHref}>
-                  All prompts
-                </Link>
-              }
               gapsHref={geoNavHref(
                 organizationSlug,
                 GEO_GAPS_NAV_LINK,

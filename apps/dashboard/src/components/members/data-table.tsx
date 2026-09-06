@@ -38,7 +38,7 @@ export function DataTable<TData>({
 
   if (isLoading) {
     return (
-      <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
+      <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -75,7 +75,7 @@ export function DataTable<TData>({
   }
 
   return (
-    <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border shadow-2xs">
+    <div className="border-border/80 border-b-border/40 bg-muted/80 overflow-hidden rounded-lg border">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (

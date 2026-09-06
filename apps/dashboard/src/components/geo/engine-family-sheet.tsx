@@ -47,6 +47,7 @@ import { EngineIcon } from "@/components/geo/engine-icon";
 import { FamilyImproveCard } from "@/components/geo/family-improve-card";
 import { GeoModeIcon } from "@/components/geo/geo-mode-icon";
 import { GeoStatDelta } from "@/components/geo/geo-stat-delta";
+import { ProjectLogo } from "@/components/geo/project-logo";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { PromptOutcomeIcon } from "@/components/geo/prompt-outcome-icon";
 import { WriteDialog } from "@/components/geo/writer/write-dialog";
@@ -60,6 +61,7 @@ import {
   GEO_WRITE_DIALOG_ENTRIES,
 } from "@/constants/geo-analytics";
 import { TABLE_ROW_HEIGHT } from "@/constants/table";
+import { useGeoActiveProject } from "@/lib/hooks/use-geo-active-project";
 import { cn } from "@/lib/utils";
 import type { ChartConfig } from "@/types/charts";
 import type { WriteDialogInitialState } from "@/types/components/geo-writer";
@@ -86,7 +88,10 @@ import {
   formatMentionRate,
   mentionTrendEmptyLabel,
 } from "@/utils/geo-charts";
-import { engineFamilyBrandRows } from "@/utils/geo-competitors";
+import {
+  engineFamilyBrandRows,
+  findOwnBrandDomain,
+} from "@/utils/geo-competitors";
 import { familyImproveInsight } from "@/utils/geo-family-improve";
 import { geoGapsEngineHref } from "@/utils/geo-paths";
 import {
@@ -337,20 +342,24 @@ function BrandRow({
 }) {
   const muted = row.mentions === 0;
   return (
-    <li className={cn(BRAND_ROW_CLASS, muted && "text-muted-foreground")}>
+    <li className={BRAND_ROW_CLASS}>
       <span className="text-muted-foreground text-right text-xs tabular-nums">
         {rank}
       </span>
       <span className="flex min-w-0 items-center gap-2">
-        <CompetitorLogo
-          className={cn("size-4", muted && "opacity-60")}
-          domain={
-            row.own
-              ? null
-              : findCompetitorDomain(scope.competitors ?? [], row.name)
-          }
-          name={row.name}
-        />
+        {row.own ? (
+          <ProjectLogo
+            className="size-4 shrink-0 rounded-sm"
+            domain={scope.ownDomain ?? null}
+            name={row.name}
+          />
+        ) : (
+          <CompetitorLogo
+            className="size-4 shrink-0"
+            domain={findCompetitorDomain(scope.competitors ?? [], row.name)}
+            name={row.name}
+          />
+        )}
         <span className={cn("truncate", row.own && "font-medium")}>
           {row.name}
         </span>
@@ -364,7 +373,12 @@ function BrandRow({
         max={max}
         value={row.share}
       />
-      <span className="text-right text-xs tabular-nums">
+      <span
+        className={cn(
+          "text-right text-xs tabular-nums",
+          muted && "text-muted-foreground"
+        )}
+      >
         {formatMentionRate(row.share)}
       </span>
     </li>
@@ -523,6 +537,8 @@ function EngineFamilySheetSession({
     organization = getOrganization(organizationSlug);
   }
   const organizationId = organization?.id ?? "";
+  const { domain: projectDomain } = useGeoActiveProject(organizationId);
+  const ownDomain = projectDomain ?? findOwnBrandDomain(aliases ?? []);
   const canWrite = Boolean(organizationSlug) && Boolean(organizationId);
   const name = engineFamilyLabel(family.family);
   const selectedRow = selectedPromptId
@@ -537,6 +553,7 @@ function EngineFamilySheetSession({
     companyName,
     aliases,
     competitors,
+    ownDomain,
   };
   const brandRows = engineFamilyBrandRows(
     family.family,

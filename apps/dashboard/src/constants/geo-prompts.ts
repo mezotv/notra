@@ -5,7 +5,10 @@ import {
   GitCompareIcon,
   LeftToRightListNumberIcon,
   MoreHorizontalCircle01Icon,
+  NeutralIcon,
+  Sad01Icon,
   SearchIcon,
+  SmileIcon,
   ViewOffSlashIcon,
 } from "@hugeicons/core-free-icons";
 import {
@@ -144,3 +147,18 @@ export const GEO_PROMPT_PRESENCE_HINTS: Record<GeoPresenceStatus, string> = {
     "Mentioned only when the engine searches live — not from its own knowledge.",
   invisible: "No engine mentioned you on this prompt yet.",
 };
+
+export const GEO_LABEL_PILL_CLASS =
+  "inline-flex h-6 items-center gap-1.5 rounded-full border px-2 text-xs font-medium";
+
+export const GEO_SENTIMENT_ICONS = {
+  positive: SmileIcon,
+  neutral: NeutralIcon,
+  negative: Sad01Icon,
+} as const;
+
+export const GEO_SENTIMENT_PILL_CLASS = {
+  positive: "border-geo-up/25 bg-geo-up/10 text-geo-up",
+  neutral: "border-border bg-muted/50 text-muted-foreground dark:bg-muted/30",
+  negative: "border-geo-down/25 bg-geo-down/10 text-geo-down",
+} as const;

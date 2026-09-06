@@ -6,6 +6,7 @@ import {
   runGeoScanSequenceBatch,
   runGeoScanTaskBatch,
 } from "@notra/geo-core/geo/scan";
+import { renewGeoScanClaimIfDue } from "@notra/geo-core/geo/scan-status";
 import type {
   GeoScanBatchOutcome,
   GeoScanPlannedSequence,
@@ -90,15 +91,35 @@ export async function prepareGeoScanProjectStep(
   }
 }
 
+/**
+ * Rotates the scan claim once it is old enough. Runs between batch waves so
+ * the parallel batches of one wave never race each other for the token.
+ */
+export async function renewGeoScanClaimStep(
+  projectId: string,
+  claimedAt: string,
+  renewalToken: string
+): Promise<string> {
+  "use step";
+  try {
+    return await Effect.runPromise(
+      renewGeoScanClaimIfDue(projectId, claimedAt, renewalToken).pipe(
+        Effect.provide(geoCoreDashboardLayer)
+      )
+    );
+  } finally {
+    await flushObservability();
+  }
+}
+
 export async function runGeoScanTaskBatchStep(
   context: GeoScanProjectContext,
-  tasks: GeoScanPlannedTask[],
-  claimedAt: string
+  tasks: GeoScanPlannedTask[]
 ): Promise<GeoScanBatchOutcome> {
   "use step";
   try {
     return await Effect.runPromise(
-      runGeoScanTaskBatch(context, tasks, claimedAt).pipe(
+      runGeoScanTaskBatch(context, tasks).pipe(
         Effect.provide(geoCoreDashboardLayer)
       )
     );
@@ -109,13 +130,12 @@ export async function runGeoScanTaskBatchStep(
 
 export async function runGeoScanSequenceBatchStep(
   context: GeoScanProjectContext,
-  sequences: GeoScanPlannedSequence[],
-  claimedAt: string
+  sequences: GeoScanPlannedSequence[]
 ): Promise<GeoScanBatchOutcome> {
   "use step";
   try {
     return await Effect.runPromise(
-      runGeoScanSequenceBatch(context, sequences, claimedAt).pipe(
+      runGeoScanSequenceBatch(context, sequences).pipe(
         Effect.provide(geoCoreDashboardLayer)
       )
     );

@@ -461,6 +461,12 @@ export const GEO_SCAN_INTERVAL_FALLBACK_NOUN = "scan interval";
 export const GEO_SCAN_NO_RESULTS_RETRY_DELAY = "5m";
 export const GEO_SCAN_STALE_MS = 2 * 60 * 60 * 1000;
 export const GEO_SCAN_TASK_BATCH_SIZE = GEO_SCAN_CONCURRENCY;
+/**
+ * Batch steps a project scan runs side by side. Projects run sequentially, so
+ * multiplied by the batch size this also bounds one workflow's provider and
+ * judge traffic (currently eight concurrent checks).
+ */
+export const GEO_SCAN_BATCH_CONCURRENCY = 2;
 export const GEO_SCAN_CLAIM_RENEW_AFTER_MS = 30 * 60 * 1000;
 export const GEO_SCAN_SEQUENCE_BATCH_SIZE = 3;
 export const GEO_SEQUENCE_PAIR_TIMEOUT_MS = 7 * 60 * 1000;

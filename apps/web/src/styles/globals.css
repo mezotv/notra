@@ -386,6 +386,22 @@
   }
 }
 
+.landing-tables [data-slot="table"] {
+  background: var(--muted);
+}
+
+.landing-tables [data-slot="table-body"] > tr:first-child {
+  background: transparent;
+
+  > td:first-child {
+    border-top-left-radius: var(--radius-2xl);
+  }
+
+  > td:last-child {
+    border-top-right-radius: var(--radius-2xl);
+  }
+}
+
 @keyframes orbitSpin {
   from {
     transform: translate(-50%, -50%) rotate(0deg);

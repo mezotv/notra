@@ -599,20 +599,14 @@ export interface MentionRateCardProps extends EngineFamilyBrandScope {
 export interface PromptResultsPreviewProps {
   results: GeoPromptResult[];
   limit?: number;
-  action?: ReactNode;
   isScanning?: boolean;
-}
-
-export interface PromptUnseenListProps {
-  results: GeoPromptResult[];
-  isScanning?: boolean;
+  variant?: "all" | "unseen";
   gapsHref?: string;
 }
 
 export interface GeoPromptsPanelProps {
   results: GeoPromptResult[];
   isScanning?: boolean;
-  action?: ReactNode;
   gapsHref?: string;
 }
 
@@ -624,6 +618,8 @@ export interface EngineFamilyBrandScope {
   companyName?: string | null;
   aliases?: readonly string[];
   competitors?: readonly GeoCompetitor[];
+  /** Own brand website domain, used to resolve the own-brand logo. */
+  ownDomain?: string | null;
 }
 
 export interface EngineRateTableProps extends EngineFamilyBrandScope {

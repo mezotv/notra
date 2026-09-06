@@ -15,6 +15,7 @@ import { resolveTrackedEngines } from "@notra/geo-core/utils/geo-engines";
 import { trackedGeoLanguages } from "@notra/geo-core/utils/geo-language-rows";
 import { Input } from "@notra/ui/components/ui/input";
 import { Label } from "@notra/ui/components/ui/label";
+import { TitleCard } from "@notra/ui/components/ui/title-card";
 import { useAsyncDebouncer } from "@tanstack/react-pacer";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 
@@ -179,10 +180,10 @@ export function GeoSettingsForm({
   }
 
   return (
-    <div className="w-full space-y-8">
+    <div className="w-full space-y-6">
       <header className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+          <h1 className="text-3xl font-bold tracking-tight">GEO Settings</h1>
           <p className="text-muted-foreground">
             How your brand is identified and where prompts are scanned.
           </p>
@@ -196,8 +197,8 @@ export function GeoSettingsForm({
           </p>
         ) : null}
       </header>
-      <div className="space-y-10">
-        <section className="min-w-0">
+      <div className="space-y-6">
+        <TitleCard as="section" heading="Brand" headingAs="h2">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor={`${id}-name`}>Company name</Label>
@@ -222,7 +223,7 @@ export function GeoSettingsForm({
               values={aliases}
             />
           </div>
-        </section>
+        </TitleCard>
         <SettingsSection
           description={GEO_CONVERSION_PATHS_DESCRIPTION}
           title={GEO_CONVERSION_PATHS_LABEL}
@@ -249,38 +250,41 @@ export function GeoSettingsForm({
             selected={languages}
           />
         </SettingsSection>
-        <SettingsSection
-          action={
-            <GeoScanFrequencySelect
-              id={id}
-              intervalHours={scanIntervalHours}
-              onIntervalChange={setScanIntervalHours}
-            />
-          }
-          description="Each enabled provider runs on every prompt, on the frequency you set here."
-          title="Models"
-        >
-          <GeoEnginePicker
-            canEnforceZdr={canEnforceZdr}
-            catalog={catalog}
-            enforceZdr={enforceZdr}
-            labeled={false}
-            nonZdrApproved={nonZdrApproved}
-            onChange={setEngines}
-            onEnforceZdrChange={setEnforceZdr}
-            onNonZdrApprovedChange={setNonZdrApproved}
-            planLoading={planLoading}
-            scheduleRow={
-              <GeoScanSchedule
-                enabled={enabled}
+        <TitleCard as="section" heading="Models" headingAs="h2">
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <p className="text-muted-foreground min-w-0 flex-1 text-sm text-pretty">
+                Each enabled provider runs on every prompt, on the frequency you
+                set here.
+              </p>
+              <GeoScanFrequencySelect
                 id={id}
                 intervalHours={scanIntervalHours}
-                onEnabledChange={setEnabled}
+                onIntervalChange={setScanIntervalHours}
               />
-            }
-            selected={engines}
-          />
-        </SettingsSection>
+            </div>
+            <GeoEnginePicker
+              canEnforceZdr={canEnforceZdr}
+              catalog={catalog}
+              enforceZdr={enforceZdr}
+              labeled={false}
+              nonZdrApproved={nonZdrApproved}
+              onChange={setEngines}
+              onEnforceZdrChange={setEnforceZdr}
+              onNonZdrApprovedChange={setNonZdrApproved}
+              planLoading={planLoading}
+              scheduleRow={
+                <GeoScanSchedule
+                  enabled={enabled}
+                  id={id}
+                  intervalHours={scanIntervalHours}
+                  onEnabledChange={setEnabled}
+                />
+              }
+              selected={engines}
+            />
+          </div>
+        </TitleCard>
       </div>
     </div>
   );
@@ -302,35 +306,20 @@ function toGeoSettingsPayload({
 function SettingsSection({
   title,
   description,
-  meta,
-  action,
   children,
 }: {
   title: string;
   description: ReactNode;
-  meta?: string;
-  action?: ReactNode;
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <h2 className="flex items-center gap-2 text-sm font-medium">
-            {title}
-            {meta ? (
-              <span className="text-muted-foreground font-normal tabular-nums">
-                {meta}
-              </span>
-            ) : null}
-          </h2>
-          <p className="text-muted-foreground text-sm text-pretty">
-            {description}
-          </p>
-        </div>
-        {action}
+    <TitleCard as="section" heading={title} headingAs="h2">
+      <div className="space-y-4">
+        <p className="text-muted-foreground text-sm text-pretty">
+          {description}
+        </p>
+        {children}
       </div>
-      {children}
-    </section>
+    </TitleCard>
   );
 }
