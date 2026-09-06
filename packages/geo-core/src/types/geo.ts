@@ -1055,6 +1055,8 @@ export type EngineIconKey =
   | "tencent"
   | "xiaomi"
   | "cursor"
+  | "claude-code"
+  | "codex"
   | "apple"
   | "duckduckgo"
   | "cloudflare"
@@ -1086,7 +1088,9 @@ export type GeoChatSkin =
   | "chatgpt"
   | "gemini"
   | "perplexity"
-  | "opencode";
+  | "opencode"
+  | "claude-code"
+  | "codex";
 
 export interface EngineIconRule {
   key: EngineIconKey;
@@ -1106,16 +1110,25 @@ export type GeoModelProviderId =
   | "deepseek"
   | "mistral"
   | "cursor"
-  | "opencode";
+  | "opencode"
+  | "claude-code"
+  | "codex";
 
 /** Zero-data-retention coverage as reported by the Vercel AI Gateway feed. */
 export type GeoModelZdr = "all" | "some" | "none";
 
 /**
  * Where a model is served. `cursor` runs through the Cursor SDK and `box`
- * through OpenCode in Upstash Box instead of the AI router.
+ * through OpenCode in Upstash Box. `claude-code` and `codex` are coding-agent
+ * engines that call the AI gateway with web search, not the raw chat models.
  */
-export type GeoModelGateway = "vercel" | "openrouter" | "cursor" | "box";
+export type GeoModelGateway =
+  | "vercel"
+  | "openrouter"
+  | "cursor"
+  | "box"
+  | "claude-code"
+  | "codex";
 
 export interface GeoModelProvider {
   id: GeoModelProviderId;

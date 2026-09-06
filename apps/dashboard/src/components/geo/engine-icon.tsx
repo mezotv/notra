@@ -86,7 +86,7 @@ function EngineIconGraphic({
 
   const iconClass = cn("size-4 shrink-0", className);
 
-  if (key === "openai") {
+  if (key === "openai" || key === "codex") {
     if (darkSurface) {
       return <OpenaiDark className={iconClass} />;
     }
@@ -111,7 +111,7 @@ function EngineIconGraphic({
       </>
     );
   }
-  if (key === "claude") {
+  if (key === "claude" || key === "claude-code") {
     return <ClaudeAiIcon className={iconClass} />;
   }
   if (key === "gemini") {

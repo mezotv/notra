@@ -135,7 +135,12 @@ function ThreadMessages({
   const showThinking = stage === "thinking";
   const showAnswer = answerDone || stage === "typing";
   const showSearch =
-    Boolean(search) && (showAnswer || (skin === "opencode" && showThinking));
+    Boolean(search) &&
+    (showAnswer ||
+      ((skin === "opencode" ||
+        skin === "claude-code" ||
+        skin === "codex") &&
+        showThinking));
   const answerText = stage === "typing" ? (progress?.typed ?? "") : answer;
 
   return (

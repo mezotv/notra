@@ -74,6 +74,18 @@ export const GEO_MODEL_PROVIDERS: readonly GeoModelProvider[] = [
     brand: "opencode",
     featured: false,
   },
+  {
+    id: "claude-code",
+    label: "Claude Code",
+    brand: "claude-code",
+    featured: false,
+  },
+  {
+    id: "codex",
+    label: "Codex",
+    brand: "codex",
+    featured: false,
+  },
 ];
 
 export const GEO_MODEL_CATALOG_SEED: readonly GeoModelCatalogEntry[] = [
@@ -355,6 +367,42 @@ export const GEO_MODEL_CATALOG_STATIC: readonly GeoModelCatalogEntry[] = [
     released: "2026-08-21",
     default: false,
     gateways: ["box"],
+  },
+  {
+    id: "claude-code/claude-fable-5.1",
+    provider: "claude-code",
+    label: "Fable 5.1",
+    zdr: "none",
+    released: "2026-09-01",
+    default: false,
+    gateways: ["claude-code"],
+  },
+  {
+    id: "claude-code/claude-opus-5",
+    provider: "claude-code",
+    label: "Opus 5",
+    zdr: "all",
+    released: "2026-07-24",
+    default: false,
+    gateways: ["claude-code"],
+  },
+  {
+    id: "codex/gpt-6-astra",
+    provider: "codex",
+    label: "GPT-6 Astra",
+    zdr: "some",
+    released: "2026-09-04",
+    default: false,
+    gateways: ["codex"],
+  },
+  {
+    id: "codex/gpt-5.6-sol-rei",
+    provider: "codex",
+    label: "GPT-5.6 Sol Rei",
+    zdr: "some",
+    released: "2026-08-21",
+    default: false,
+    gateways: ["codex"],
   },
 ];
 

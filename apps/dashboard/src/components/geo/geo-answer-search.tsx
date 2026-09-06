@@ -220,7 +220,7 @@ export function GeoAnswerSearch({
     return <GeminiCitedSearch queries={queries} sources={sources} />;
   }
 
-  if (skin === "opencode") {
+  if (skin === "opencode" || skin === "claude-code" || skin === "codex") {
     return (
       <OpencodeSources
         queries={queries}
