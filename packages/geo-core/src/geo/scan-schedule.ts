@@ -9,7 +9,7 @@ import {
   GEO_SCAN_START_LEASE_MS,
   GEO_SCAN_STALE_MS,
 } from "../constants/geo";
-import type { GeoScanCronSweepResult } from "../types/geo";
+import type { DueGeoScanRow, GeoScanCronSweepResult } from "../types/geo";
 import { describeGeoError, geoLogInfo, geoLogWarn } from "../utils/geo-log";
 import { geoDb, geoSkip } from "./effect";
 import { startClaimedGeoScanRun } from "./scan-handoff";
@@ -47,7 +47,7 @@ export function nextGeoScanAt(scanIntervalHours: number, from = new Date()) {
 
 /**
  * The stamp that follows `dueAt` on a fixed cadence: the first
- * `dueAt + n × interval` that lies at least `GEO_SCAN_STALE_MS` past `now`.
+ * `dueAt + n × interval` past `now + leadMs` (one stale window by default).
  *
  * Anchoring on the previous stamp instead of on `now` is what keeps a daily
  * scan at the same time of day. The sweep polls every ten minutes, so `now`
@@ -62,10 +62,11 @@ export function nextGeoScanAt(scanIntervalHours: number, from = new Date()) {
 export function nextGeoScanAtAfter(
   scanIntervalHours: number,
   dueAt: Date,
-  now = new Date()
+  now = new Date(),
+  leadMs = GEO_SCAN_STALE_MS
 ) {
   const interval = geoScanIntervalMs(scanIntervalHours);
-  const earliest = now.getTime() + GEO_SCAN_STALE_MS;
+  const earliest = now.getTime() + leadMs;
   const elapsed = Math.max(0, earliest - dueAt.getTime());
   const steps = Math.floor(elapsed / interval) + 1;
   return truncateToMinute(new Date(dueAt.getTime() + steps * interval));
@@ -94,15 +95,6 @@ export function rearmedGeoScanAt(
   return next > now ? next : dueNow;
 }
 
-interface DueGeoScanRow {
-  id: string;
-  organizationId: string;
-  projectId: string;
-  scanIntervalHours: number;
-  nextScanAt: Date | null;
-  lastScanAt: Date | null;
-}
-
 /**
  * Takes a short lease on one due settings row with a compare-and-set on the
  * due condition, so overlapping cron ticks cannot both fire the same project.
@@ -118,8 +110,8 @@ interface DueGeoScanRow {
  * full day ahead *before* the hand-off, and an ambiguous hand-off (a
  * deployment cutting the request) made paying projects scan every second day.
  *
- * Returns the lease stamp it wrote, which every later write compares-and-sets
- * on, or `null` when another sweep owns the row.
+ * Returns the lease and stable slot it wrote, or `null` when another sweep
+ * owns the row or settings changed after the due lookup.
  *
  * `next_scan_at IS NULL` counts as due: rows migrated from the message-based
  * schedule (and rows enabled before this column existed) catch up on the
@@ -131,14 +123,20 @@ const leaseDueGeoScanTick = Effect.fn("geo.leaseDueScanTick")(function* (
 ) {
   const now = new Date();
   const leaseUntil = new Date(now.getTime() + GEO_SCAN_START_LEASE_MS);
+  // Persist a migrated row's first slot with its lease, so retries keep it.
+  const nextScanAt = row.nextScanAt ?? truncateToMinute(now);
   const leased = yield* geoDb("scan tick lease failed", () =>
     db
       .update(geoSettings)
-      .set({ scanLeaseUntil: leaseUntil })
+      .set({ scanLeaseUntil: leaseUntil, nextScanAt })
       .where(
         and(
           eq(geoSettings.id, row.id),
           eq(geoSettings.enabled, true),
+          eq(geoSettings.scanIntervalHours, row.scanIntervalHours),
+          row.nextScanAt
+            ? eq(geoSettings.nextScanAt, row.nextScanAt)
+            : isNull(geoSettings.nextScanAt),
           or(isNull(geoSettings.nextScanAt), lte(geoSettings.nextScanAt, now)),
           or(
             isNull(geoSettings.scanLeaseUntil),
@@ -148,7 +146,7 @@ const leaseDueGeoScanTick = Effect.fn("geo.leaseDueScanTick")(function* (
       )
       .returning({ id: geoSettings.id })
   );
-  return leased.length > 0 ? leaseUntil : null;
+  return leased.length > 0 ? { leaseUntil, nextScanAt } : null;
 });
 
 /**
@@ -162,10 +160,18 @@ const leaseDueGeoScanTick = Effect.fn("geo.leaseDueScanTick")(function* (
  */
 const advanceGeoScanSlot = Effect.fn("geo.advanceScanSlot")(function* (
   row: DueGeoScanRow,
-  leaseUntil: Date
+  leaseUntil: Date,
+  coveredAt?: Date
 ) {
+  // A historical finish only covers slots through that finish, not through
+  // this sweep. Leave later unserved slots due, even after a long outage.
   const nextScanAt = row.nextScanAt
-    ? nextGeoScanAtAfter(row.scanIntervalHours, row.nextScanAt)
+    ? nextGeoScanAtAfter(
+        row.scanIntervalHours,
+        row.nextScanAt,
+        coveredAt,
+        coveredAt ? 0 : GEO_SCAN_STALE_MS
+      )
     : nextGeoScanAt(row.scanIntervalHours);
   const advanced = yield* geoDb("scan slot advance failed", () =>
     db
@@ -278,11 +284,13 @@ export const runGeoScanCronSweep = Effect.fn("geo.runScanCronSweep")(
     // Advancing is the only write that can silently lose its row (another
     // sweep leased it after our lease expired), so every call goes through
     // this counter instead of assuming the slot moved.
-    const advance = (row: DueGeoScanRow, leaseUntil: Date) =>
+    const advance = (row: DueGeoScanRow, leaseUntil: Date, coveredAt?: Date) =>
       Effect.gen(function* () {
-        const advanced = yield* advanceGeoScanSlot(row, leaseUntil).pipe(
-          geoSkip("scan slot advance failed")
-        );
+        const advanced = yield* advanceGeoScanSlot(
+          row,
+          leaseUntil,
+          coveredAt
+        ).pipe(geoSkip("scan slot advance failed"));
         if (advanced) {
           return true;
         }
@@ -296,14 +304,16 @@ export const runGeoScanCronSweep = Effect.fn("geo.runScanCronSweep")(
         return false;
       });
 
-    for (const row of dueRows) {
-      const leaseUntil = yield* leaseDueGeoScanTick(row).pipe(
+    for (const candidate of dueRows) {
+      const lease = yield* leaseDueGeoScanTick(candidate).pipe(
         geoSkip("scan tick lease failed")
       );
-      if (!leaseUntil) {
+      if (!lease) {
         leaseLost += 1;
         continue;
       }
+      const { leaseUntil } = lease;
+      const row = { ...candidate, nextScanAt: lease.nextScanAt };
 
       // An attempt that finished after this slot became due already answers
       // for it: starting another one would bill the organization twice for the
@@ -311,7 +321,7 @@ export const runGeoScanCronSweep = Effect.fn("geo.runScanCronSweep")(
       // it too), which deliberately caps a slot at one scan. The check rides
       // inside the claim statement, because a scan finishing between a
       // separate read and the claim would free the slot and slip through.
-      const anchor = row.nextScanAt ?? now;
+      const anchor = row.nextScanAt;
       const claim = yield* claimGeoScanRun(row.projectId, {
         unlessFinishedAfter: anchor,
       }).pipe(geoSkip("scan claim failed"));
@@ -323,7 +333,7 @@ export const runGeoScanCronSweep = Effect.fn("geo.runScanCronSweep")(
           })
         ).pipe(geoSkip("scan coverage lookup failed"));
         if (current?.lastScanAt && current.lastScanAt > anchor) {
-          const advanced = yield* advance(row, leaseUntil);
+          const advanced = yield* advance(row, leaseUntil, current.lastScanAt);
           if (advanced) {
             covered += 1;
             yield* geoLogInfo({

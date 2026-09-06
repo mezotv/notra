@@ -352,6 +352,15 @@ export interface GeoSettingsLanguageAddInput extends GeoScopeInput {
   language: string;
 }
 
+export interface DueGeoScanRow {
+  id: string;
+  organizationId: string;
+  projectId: string;
+  scanIntervalHours: number;
+  nextScanAt: Date | null;
+  lastScanAt: Date | null;
+}
+
 export interface GeoScanCronSweepResult {
   due: number;
   started: number;
@@ -531,6 +540,8 @@ export interface GeoScanProjectContext {
   aliases: string[];
   gate: ContentBillingReservation;
   startedAtMs: number;
+  /** Partial prompt scans do not cover a scheduled project scan. Optional for persisted older plans. */
+  scoped?: boolean;
 }
 
 export interface GeoScanProjectPlan {
