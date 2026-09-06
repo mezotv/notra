@@ -281,6 +281,36 @@ describe("scheduled GEO scans", () => {
     expect(settings?.scanLeaseUntil).toBeNull();
   });
 
+  test("the coverage check is atomic with the claim, so a scan finishing mid-sweep cannot be doubled", async () => {
+    // The sweep read `last_scan_at` before this attempt finished; by the time
+    // it claims, the finish has freed the slot and stamped the attempt.
+    const anchor = wholeMinutesAgo(60);
+    await seedProject("race", { nextScanAt: anchor, scanStartedAt: null });
+    await Effect.runPromise(markGeoScanFinished("race"));
+
+    // A plain claim would succeed (slot is free)...
+    // ...but the sweep's claim refuses because the slot is already covered.
+    expect(
+      await Effect.runPromise(
+        claimGeoScanRun("race", { unlessFinishedAfter: anchor })
+      )
+    ).toBeNull();
+    expect((await settingsFor("race"))?.scanStartedAt).toBeNull();
+
+    // The sweep then resolves the refused claim as a covered slot, not as
+    // "already running", and advances without a second scan.
+    expect(await sweep()).toMatchObject({
+      due: 1,
+      started: 0,
+      covered: 1,
+      alreadyRunning: 0,
+    });
+    expect(startWorkflow).not.toHaveBeenCalled();
+    expect((await settingsFor("race"))?.nextScanAt).toEqual(
+      new Date(anchor.getTime() + DAY_MS)
+    );
+  });
+
   test("a failed hand-off retries within the lease window and keeps the slot's time of day", async () => {
     const anchor = wholeMinutesAgo(60);
     await seedProject("start-failure", { nextScanAt: anchor });

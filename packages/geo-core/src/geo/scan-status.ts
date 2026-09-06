@@ -1,6 +1,6 @@
 import { db } from "@notra/db/drizzle";
 import { geoScans, geoSettings } from "@notra/db/schema";
-import { and, eq, gte, isNull, lt, notExists, or } from "drizzle-orm";
+import { and, eq, gte, isNull, lt, lte, notExists, or } from "drizzle-orm";
 import { Effect, Exit } from "effect";
 
 import {
@@ -42,10 +42,22 @@ import {
  * comparison arm is no longer needed.
  */
 export const claimGeoScanRun = Effect.fn("geo.claimScanRun")(function* (
-  projectId: string
+  projectId: string,
+  options: { unlessFinishedAfter?: Date } = {}
 ) {
   const now = new Date();
   const staleBefore = new Date(now.getTime() - GEO_SCAN_STALE_MS);
+  // The scheduled sweep passes the slot it is about to serve. Folding "no
+  // attempt finished after that slot" into the same statement keeps the
+  // coverage check and the claim atomic: a scan that finishes between the
+  // sweep reading `last_scan_at` and claiming would otherwise free the slot
+  // and let a second paid scan start for the slot it just covered.
+  const notCovered = options.unlessFinishedAfter
+    ? or(
+        isNull(geoSettings.lastScanAt),
+        lte(geoSettings.lastScanAt, options.unlessFinishedAfter)
+      )
+    : undefined;
   const claimed = yield* geoDb("scan claim failed", () =>
     db
       .update(geoSettings)
@@ -56,7 +68,8 @@ export const claimGeoScanRun = Effect.fn("geo.claimScanRun")(function* (
           or(
             isNull(geoSettings.scanStartedAt),
             lt(geoSettings.scanStartedAt, staleBefore)
-          )
+          ),
+          notCovered
         )
       )
       .returning({ id: geoSettings.id })

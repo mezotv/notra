@@ -308,25 +308,32 @@ export const runGeoScanCronSweep = Effect.fn("geo.runScanCronSweep")(
       // An attempt that finished after this slot became due already answers
       // for it: starting another one would bill the organization twice for the
       // same slot. `last_scan_at` marks the last *attempt* (failed runs stamp
-      // it too), which deliberately caps a slot at one scan.
+      // it too), which deliberately caps a slot at one scan. The check rides
+      // inside the claim statement, because a scan finishing between a
+      // separate read and the claim would free the slot and slip through.
       const anchor = row.nextScanAt ?? now;
-      if (row.lastScanAt && row.lastScanAt > anchor) {
-        const advanced = yield* advance(row, leaseUntil);
-        if (advanced) {
-          covered += 1;
-          yield* geoLogInfo({
-            event: "geo.scan.slot_covered",
-            organizationId: row.organizationId,
-            projectId: row.projectId,
-          });
-        }
-        continue;
-      }
-
-      const claim = yield* claimGeoScanRun(row.projectId).pipe(
-        geoSkip("scan claim failed")
-      );
+      const claim = yield* claimGeoScanRun(row.projectId, {
+        unlessFinishedAfter: anchor,
+      }).pipe(geoSkip("scan claim failed"));
       if (!claim) {
+        const current = yield* geoDb("scan coverage lookup failed", () =>
+          db.query.geoSettings.findFirst({
+            columns: { lastScanAt: true },
+            where: eq(geoSettings.id, row.id),
+          })
+        ).pipe(geoSkip("scan coverage lookup failed"));
+        if (current?.lastScanAt && current.lastScanAt > anchor) {
+          const advanced = yield* advance(row, leaseUntil);
+          if (advanced) {
+            covered += 1;
+            yield* geoLogInfo({
+              event: "geo.scan.slot_covered",
+              organizationId: row.organizationId,
+              projectId: row.projectId,
+            });
+          }
+          continue;
+        }
         // Keep the lease: the row retries once it expires, by which time the
         // running scan has either stamped `last_scan_at` past the anchor (the
         // slot is then covered) or its ghost claim has gone stale.
