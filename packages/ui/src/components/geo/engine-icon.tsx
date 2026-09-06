@@ -40,8 +40,8 @@ import { OpencodeDark } from "@notra/ui/components/ui/svgs/opencodeDark";
 import { Perplexity } from "@notra/ui/components/ui/svgs/perplexity";
 import { Qwen } from "@notra/ui/components/ui/svgs/qwen";
 import { QwenDark } from "@notra/ui/components/ui/svgs/qwenDark";
-import { SpaceXai } from "@notra/ui/components/ui/svgs/spacexai";
-import { SpaceXaiDark } from "@notra/ui/components/ui/svgs/spacexaiDark";
+import { Grok } from "@notra/ui/components/ui/svgs/grok";
+import { GrokDark } from "@notra/ui/components/ui/svgs/grokDark";
 import { Tavily } from "@notra/ui/components/ui/svgs/tavily";
 import { Tencent } from "@notra/ui/components/ui/svgs/tencent";
 import { TikTok } from "@notra/ui/components/ui/svgs/tikTok";
@@ -88,7 +88,7 @@ function EngineIconGraphic({ engine, className }: EngineIconProps) {
     );
   }
   if (key === "grok") {
-    return themedIcon(SpaceXai, SpaceXaiDark, iconClass);
+    return themedIcon(Grok, GrokDark, iconClass);
   }
   if (key === "qwen") {
     return (
