@@ -136,9 +136,39 @@ The Overview page (`/geo`) is titled **GEO** with the subtitle "How AI engines t
 
 - **Mentions**: a per-provider mention rate card with the delta against the first half of the range.
 - **Mention activity**: the daily mention trend across all providers, with a per-provider breakdown.
+- **Brand sentiment**: positive, neutral and negative mentions, daily positive share, engine breakdowns and historical negative answers.
 - **Mention rate by engine**: a table with **Engine**, **Mentions**, **Mention rate**, **Avg position**, **Last checked**, and **Trend** columns. Rows group into provider families; a family sheet shows the Search versus Without search split.
 - **Share of voice**: your brand against tracked competitors, as a donut and a table, with the top five brands broken out and the rest grouped under Other.
 - **Performance by language**: **Language**, **Mention rate**, and **Trend** for each tracked language.
+
+#### Reading brand sentiment
+
+Brand sentiment uses saved **English, single-turn answers** for the active organization,
+project and date range. It describes the AI-assessed tone toward your brand, not the
+overall mood of an answer or customer satisfaction.
+
+The main percentage is **positive mentions / classified mentions**. Classified mentions
+have an exact positive, neutral or negative label and actually mention your brand.
+For example, 3 positive, 2 neutral and 1 negative mention produce a 50% positive share.
+Answers that do not mention the brand are counted separately and never enter this denominator.
+Missing or unexpected labels on mentions are **unknown**, not neutral. Classification
+coverage is classified mentions divided by all mentions. With no classified mentions,
+the positive share is unavailable (shown as **—**), not zero.
+
+Daily buckets use UTC. Counts are combined before calculating percentages, so engines
+with different sample sizes are weighted by their saved answers. Days without classified
+mentions remain gaps. The date picker's final day is included; internally the window ends
+at the start of the following UTC day.
+
+Each saved answer has equal weight. Repeated manual scans count again, and partial results
+from unfinished scans may appear. Use the answer count and last measurement time for context.
+Changes to the prompt mix, engine mix or judge can change the distribution without showing
+a real change in brand perception. This is not NPS, a confidence score or a causal trend.
+
+Open **Negative answers** to load historical evidence, 25 answers at a time. Each entry
+opens the exact saved answer and excerpt from that measurement, even if a later answer to
+the same prompt is positive. Existing labels are read directly; viewing this card does not
+run new AI calls or reclassify older answers.
 
 ### Prompts
 

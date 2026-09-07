@@ -11,6 +11,7 @@ import {
 } from "@notra/ui/components/ui/permission-selector";
 import type { ReactNode } from "react";
 
+import { BrandSentimentCard } from "@/components/geo/brand-sentiment-card";
 import { EngineRateTable } from "@/components/geo/engine-rate-table";
 import { GeoPromptsPanel } from "@/components/geo/geo-prompts-panel";
 import { JourneyOverviewCard } from "@/components/geo/journey-overview-card";
@@ -147,6 +148,12 @@ export function GeoTabs({
             </TabSection>
           </InstrumentGrid>
           <TabSection active={revealActive} order={2}>
+            <BrandSentimentCard
+              organizationId={organizationId}
+              isScanning={isScanning}
+            />
+          </TabSection>
+          <TabSection active={revealActive} order={3}>
             <WhatChangedCard
               competitors={competitors}
               isScanning={isScanning}
@@ -155,7 +162,7 @@ export function GeoTabs({
               promptResults={promptResults}
             />
           </TabSection>
-          <TabSection active={revealActive} order={3}>
+          <TabSection active={revealActive} order={4}>
             <EngineRateTable
               aliases={settings.aliases}
               companyName={settings.companyName}
@@ -168,7 +175,7 @@ export function GeoTabs({
             />
           </TabSection>
           <InstrumentGrid className="grid-cols-1 gap-4 lg:grid-cols-2">
-            <TabSection active={revealActive} order={4}>
+            <TabSection active={revealActive} order={5}>
               <ShareOfVoiceCard
                 aliases={settings.aliases}
                 companyName={settings.companyName}
@@ -180,7 +187,7 @@ export function GeoTabs({
                 timeseries={competitorShareTimeseries}
               />
             </TabSection>
-            <TabSection active={revealActive} order={5}>
+            <TabSection active={revealActive} order={6}>
               <LanguagePerformanceCard
                 isScanning={isScanning}
                 organizationId={organizationId}
