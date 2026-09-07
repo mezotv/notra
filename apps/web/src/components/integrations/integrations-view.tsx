@@ -68,7 +68,7 @@ export function IntegrationsView({
                 Browse all
               </a>
             </div>
-            <div className="flex w-full max-w-[45rem] items-center gap-2.5 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex w-full max-w-[45rem] [scrollbar-width:none] items-center gap-2.5 overflow-x-auto pb-1 [&::-webkit-scrollbar]:hidden">
               {categories.map((category) => {
                 const isActive = category.id === activeCategory;
                 return (
