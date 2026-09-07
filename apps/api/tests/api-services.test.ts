@@ -1,5 +1,11 @@
 import { describe, expect, test } from "bun:test";
 
+import {
+  InternalDashboardAdapterError,
+  InternalDashboardError,
+  InternalDashboardTimeoutError,
+} from "@notra/schemas/api/internal-dashboard";
+import { QstashError } from "@notra/schemas/api/qstash";
 import { Effect, Fiber, Layer } from "effect";
 import * as TestClock from "effect/testing/TestClock";
 import { z } from "zod";
@@ -14,12 +20,6 @@ import {
   deleteQstashWithRetry,
   qstashLayer,
 } from "../src/lib/qstash";
-import {
-  InternalDashboardAdapterError,
-  InternalDashboardError,
-  InternalDashboardTimeoutError,
-} from "../src/schemas/internal-dashboard";
-import { QstashError } from "../src/schemas/qstash";
 import { runServiceEffect } from "../src/utils/run-service-effect";
 
 describe("QStash adapter", () => {

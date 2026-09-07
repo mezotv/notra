@@ -1,12 +1,12 @@
-import { getVercelOidcToken } from "@vercel/oidc";
-import { Config, Context, Effect, Layer, Redacted } from "effect";
-
 import {
   InternalDashboardAdapterError,
   InternalDashboardError,
   InternalDashboardTimeoutError,
-} from "../schemas/internal-dashboard";
-import { internalWorkflowErrorResponseSchema } from "../schemas/internal-workflow";
+} from "@notra/schemas/api/internal-dashboard";
+import { internalWorkflowErrorResponseSchema } from "@notra/schemas/api/internal-workflow";
+import { getVercelOidcToken } from "@vercel/oidc";
+import { Config, Context, Effect, Layer, Redacted } from "effect";
+
 import type {
   InternalDashboardDependencies,
   InternalDashboardOperations,

@@ -20,6 +20,11 @@ import {
 import { geoPromptIntentLabel } from "@notra/geo-core/utils/geo-prompt-intent";
 import { collectPromptTags } from "@notra/geo-core/utils/geo-prompt-tags";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
+import {
+  GEO_PROMPT_FILTER_ALL,
+  GEO_PROMPT_INTENT_FILTER_VALUES,
+  GEO_PROMPT_SOURCE_FILTER_VALUES,
+} from "@notra/schemas/constants/dashboard/geo-prompts";
 import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import { Badge } from "@notra/ui/components/ui/badge";
 import {
@@ -57,12 +62,9 @@ import { Table, type TableColumn } from "@/components/motion/table";
 import { GEO_PROMPT_DETAIL_SURFACES } from "@/constants/geo-analytics";
 import {
   GEO_PROMPT_DEFAULT_FILTERS,
-  GEO_PROMPT_FILTER_ALL,
   GEO_PROMPT_FILTER_SELECT_CLASS,
   GEO_PROMPT_INTENT_FILTER_OPTIONS,
-  GEO_PROMPT_INTENT_FILTER_VALUES,
   GEO_PROMPT_SOURCE_FILTER_OPTIONS,
-  GEO_PROMPT_SOURCE_FILTER_VALUES,
   GEO_PROMPT_TAG_FILTER_ALL_LABEL,
   GEO_PROMPT_TAGS_COPY,
   GEO_PROMPT_TAGS_VISIBLE_COUNT,

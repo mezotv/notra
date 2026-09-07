@@ -3,6 +3,10 @@
 import { Upload01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  organizationNameSchema,
+  organizationSlugSchema,
+} from "@notra/schemas/dashboard/organization";
+import {
   Avatar,
   AvatarFallback,
   AvatarImage,
@@ -21,10 +25,6 @@ import { Button } from "@/components/button";
 import { authClient } from "@/lib/auth/client";
 import { uploadFile } from "@/lib/upload/client";
 import { errorMessageOr } from "@/lib/utils";
-import {
-  organizationNameSchema,
-  organizationSlugSchema,
-} from "@/schemas/organization";
 import type { OrganizationDetailsCardProps } from "@/types/settings/general";
 import { setLastVisitedOrganization } from "@/utils/cookies";
 import { QUERY_KEYS } from "@/utils/query-keys";

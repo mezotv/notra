@@ -1,11 +1,10 @@
-import type { Effect } from "effect";
-import type { ZodType } from "zod";
-
 import type {
   InternalDashboardAdapterError,
   InternalDashboardError,
   InternalDashboardTimeoutError,
-} from "../schemas/internal-dashboard";
+} from "@notra/schemas/api/internal-dashboard";
+import type { Effect } from "effect";
+import type { ZodType } from "zod";
 
 type InternalDashboardFailure =
   | InternalDashboardAdapterError

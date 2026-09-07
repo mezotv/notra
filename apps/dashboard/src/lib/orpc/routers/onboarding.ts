@@ -8,6 +8,12 @@ import {
   onboardingSuggestions,
   organizations,
 } from "@notra/db/schema";
+import { organizationIdInputSchema } from "@notra/schemas/dashboard/auth/organization";
+import {
+  dismissSuggestionInputSchema,
+  listSuggestionsInputSchema,
+} from "@notra/schemas/dashboard/onboarding-agent";
+import { companyLogoInputSchema } from "@notra/schemas/dashboard/onboarding/company-logo";
 import { ORPCError } from "@orpc/server";
 import { and, desc, eq } from "drizzle-orm";
 
@@ -22,12 +28,6 @@ import {
 } from "@/lib/onboarding-agent";
 import { pickCompanyLogoUrl } from "@/lib/onboarding/company-logo";
 import { authorizedProcedure } from "@/lib/orpc/base";
-import { organizationIdInputSchema } from "@/schemas/auth/organization";
-import {
-  dismissSuggestionInputSchema,
-  listSuggestionsInputSchema,
-} from "@/schemas/onboarding-agent";
-import { companyLogoInputSchema } from "@/schemas/onboarding/company-logo";
 import { ratelimit } from "@/utils/ratelimit";
 
 export const onboardingRouter = {

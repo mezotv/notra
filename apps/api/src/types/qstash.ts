@@ -1,6 +1,5 @@
+import type { QstashError } from "@notra/schemas/api/qstash";
 import type { Effect } from "effect";
-
-import type { QstashError } from "../schemas/qstash";
 
 export interface QstashEnv {
   QSTASH_TOKEN?: string;

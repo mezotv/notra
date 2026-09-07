@@ -145,6 +145,7 @@ async function runGeoScanProjectRun(
     scanId?: string;
     retried: boolean;
     promptIds?: string[];
+    engines?: string[];
   }
 ): Promise<GeoScanProjectOutcome | null> {
   const planResult = await prepareGeoScanProjectStep(
@@ -234,7 +235,7 @@ export async function geoScanWorkflow(
     console.error("[GEO] Invalid payload:", flattenError(parseResult.error));
     return { status: "invalid_payload" };
   }
-  const { organizationId, projectId, claimedAt, scanId, promptIds } =
+  const { organizationId, projectId, claimedAt, scanId, promptIds, engines } =
     parseResult.data;
 
   const projectIds = await listGeoScanProjectsStep(organizationId, {
@@ -265,6 +266,7 @@ export async function geoScanWorkflow(
       scanId: claimed ? scanId : undefined,
       retried: false,
       promptIds,
+      engines,
     });
     if (!outcome) {
       continue;
@@ -297,6 +299,7 @@ export async function geoScanWorkflow(
     const outcome = await runGeoScanProjectRun(organizationId, retryProjectId, {
       retried: true,
       promptIds,
+      engines,
     });
     if (!outcome) {
       continue;

@@ -1,10 +1,13 @@
+import {
+  QstashError,
+  qstashScheduleResponseSchema,
+} from "@notra/schemas/api/qstash";
 import { Context, Effect, Layer, Schedule } from "effect";
 
 import {
   QSTASH_DELETE_RETRY_DELAY_MS,
   QSTASH_REQUEST_TIMEOUT_MS,
 } from "../constants/qstash";
-import { QstashError, qstashScheduleResponseSchema } from "../schemas/qstash";
 import type { QstashEnv, QstashOperations } from "../types/qstash";
 
 export class QstashService extends Context.Service<
@@ -154,8 +157,8 @@ export const deleteQstashWithRetry = Effect.fn("Qstash.deleteWithRetry")(
       Effect.retry({
         schedule: Schedule.addDelay(
           Schedule.recurs(totalAttempts - 1),
-          (attempt) =>
-            Effect.succeed(QSTASH_DELETE_RETRY_DELAY_MS * (attempt + 1))
+          (metadata) =>
+            Effect.succeed(QSTASH_DELETE_RETRY_DELAY_MS * (metadata.output + 1))
         ),
         while: (error) =>
           error.kind === "transport" ||

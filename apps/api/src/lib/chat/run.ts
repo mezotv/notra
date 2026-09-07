@@ -18,11 +18,11 @@ import {
 import { getStandaloneChatIntegrations } from "@notra/ai/chat/integrations-cache";
 import type { useLogger } from "@notra/ai/evlog";
 import type { ChatBillingCheck } from "@notra/ai/types/billing";
+import type { sendChatMessageRequestSchema } from "@notra/schemas/api/chats";
 import type { UIMessage } from "ai";
 import type { Context } from "hono";
 import { nanoid } from "nanoid";
 
-import type { sendChatMessageRequestSchema } from "../../schemas/chats";
 import { createDirectStandaloneChatResponse } from "./direct-stream";
 import { buildApiChatTelemetryMetadata } from "./tcc";
 

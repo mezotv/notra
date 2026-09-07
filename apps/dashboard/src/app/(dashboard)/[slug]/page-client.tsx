@@ -1,6 +1,7 @@
 "use client";
 
 import type { ContentType } from "@notra/ai/schemas/content";
+import type { PostStatus } from "@notra/schemas/dashboard/content";
 import { Skeleton } from "@notra/ui/components/ui/skeleton";
 import Link from "next/link";
 import { useId } from "react";
@@ -17,7 +18,6 @@ import { useOrganizationsContext } from "@/components/providers/organization-pro
 import { EMPTY_STATE_CARD_COUNT } from "@/constants/empty-state";
 import { useActiveGenerations } from "@/lib/hooks/use-active-generations";
 import { useTodayPosts } from "@/lib/hooks/use-posts";
-import type { PostStatus } from "@/schemas/content";
 import type { DashboardHomePageClientProps } from "@/types/dashboard/home";
 import { getDashboardPostPreview } from "@/utils/content-preview";
 import { resolveImagePreviewSrc } from "@/utils/markdown-image";

@@ -1,3 +1,9 @@
+import {
+  InternalDashboardAdapterError,
+  InternalDashboardError,
+  InternalDashboardTimeoutError,
+} from "@notra/schemas/api/internal-dashboard";
+import { internalWorkflowStartResponseSchema } from "@notra/schemas/api/internal-workflow";
 import { Effect } from "effect";
 import type { ZodType } from "zod";
 
@@ -5,13 +11,8 @@ import {
   InternalDashboardService,
   internalDashboardLive,
 } from "../lib/internal-dashboard";
-import { InternalDashboardAdapterError } from "../schemas/internal-dashboard";
-import { internalWorkflowStartResponseSchema } from "../schemas/internal-workflow";
 import { runServiceEffect } from "./run-service-effect";
-export {
-  InternalDashboardError,
-  InternalDashboardTimeoutError,
-} from "../schemas/internal-dashboard";
+export { InternalDashboardError, InternalDashboardTimeoutError };
 
 interface InternalWorkflowEnv {
   WORKFLOW_BASE_URL?: string;
