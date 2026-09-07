@@ -6,6 +6,7 @@
     "build": "tsup",
     "start": "node dist/index.mjs",
     "check-types": "bunx tsc --noEmit",
+    "test": "bun test tests",
     "knip": "knip"
   },
   "dependencies": {

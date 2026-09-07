@@ -1,0 +1,27 @@
+import type { Effect } from "effect";
+import type { ZodType } from "zod";
+
+import type {
+  InternalDashboardAdapterError,
+  InternalDashboardError,
+  InternalDashboardTimeoutError,
+} from "../schemas/internal-dashboard";
+
+type InternalDashboardFailure =
+  | InternalDashboardAdapterError
+  | InternalDashboardError
+  | InternalDashboardTimeoutError;
+
+export interface InternalDashboardOperations {
+  call: <A>(
+    url: string,
+    payload: unknown,
+    schema: ZodType<A>,
+    timeoutMs?: number
+  ) => Effect.Effect<A, InternalDashboardFailure>;
+}
+
+export interface InternalDashboardDependencies {
+  request: typeof fetch;
+  credentials: Effect.Effect<string | null, InternalDashboardAdapterError>;
+}
