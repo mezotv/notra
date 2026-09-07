@@ -2,7 +2,7 @@ import { db } from "@notra/db/drizzle";
 import { chatSessions } from "@notra/db/schema";
 import { projectScopeFilter } from "@notra/db/utils/projects";
 import { generateText, type UIMessage } from "ai";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, or, sql } from "drizzle-orm";
 
 import {
   CHAT_ABORT_FLAG_TTL_SECONDS,
@@ -10,6 +10,7 @@ import {
   CHAT_LAST_STOPPED_TTL_SECONDS,
   CHAT_WORKFLOW_REQUEST_TTL_SECONDS,
 } from "../constants/chat";
+import { DASHBOARD_AGENT_CHANNEL_SOURCE } from "../constants/dashboard-agent";
 import { gateway } from "../gateway";
 import { withGatewayAutomaticCaching } from "../provider-options";
 import { uiMessageSchema } from "../schemas/chat";
@@ -66,7 +67,7 @@ function toExternalChannelId(
   if (!source) {
     return null;
   }
-  if (source === "dashboard") {
+  if (source === "dashboard" || source === "agent") {
     return { source };
   }
   if ((source === "discord" || source === "slack") && id) {
@@ -613,12 +614,34 @@ export async function listChatSessions(
         eq(chatSessions.organizationId, organizationId),
         isNull(chatSessions.contentId),
         isNull(chatSessions.deletedAt),
+        or(
+          isNull(chatSessions.externalChannelSource),
+          ne(chatSessions.externalChannelSource, DASHBOARD_AGENT_CHANNEL_SOURCE)
+        ),
         projectScopeFilter(chatSessions.projectId, projectId)
       )
     );
 
   const sessions = rows.map(toSessionSummary);
   return sortChatSessions(sessions);
+}
+
+export async function listDashboardAgentChatSessions(
+  organizationId: string
+): Promise<ChatSessionSummary[]> {
+  const rows = await db
+    .select(chatSessionSummaryColumns)
+    .from(chatSessions)
+    .where(
+      and(
+        eq(chatSessions.organizationId, organizationId),
+        eq(chatSessions.externalChannelSource, DASHBOARD_AGENT_CHANNEL_SOURCE),
+        isNull(chatSessions.contentId),
+        isNull(chatSessions.deletedAt)
+      )
+    );
+
+  return sortChatSessions(rows.map(toSessionSummary));
 }
 
 export async function listContentChatSessions(

@@ -147,6 +147,7 @@ export function ContentChatActivityPanel({
   onNewChat,
   onSelectChat,
   onClose,
+  title = "Content Agent",
 }: ContentChatActivityPanelProps) {
   const historyGroups = getContentChatHistoryGroups(sessions);
   const isAgentBusy = status === "streaming" || status === "submitted";
@@ -171,7 +172,7 @@ export function ContentChatActivityPanel({
     <div className="flex h-full min-h-0 flex-col">
       <header className="bg-muted flex h-12 shrink-0 items-center justify-between gap-2 rounded-t-[calc(0.75rem-1px)] px-4">
         <h2 className="text-foreground flex h-full min-w-0 items-center truncate text-sm leading-none">
-          Content Agent
+          {title}
         </h2>
         <div className="-mr-1.5 flex h-full items-center gap-0.5">
           <Button
@@ -260,7 +261,7 @@ export function ContentChatActivityPanel({
             size="icon-sm"
             variant="ghost"
           >
-            <span className="sr-only">Close Content Agent</span>
+            <span className="sr-only">Close {title}</span>
             <HugeiconsIcon
               className="size-4"
               icon={Cancel01Icon}

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 import { SubscriptionGate } from "@/components/billing/subscription-gate";
 import { DashboardSidebar } from "@/components/dashboard/app-sidebar";
+import { DashboardAgentHost } from "@/components/dashboard/dashboard-agent-panel";
 import { SiteHeader } from "@/components/dashboard/header";
 import { RestoreSidebarHome } from "@/components/dashboard/restore-sidebar-home";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -163,6 +164,7 @@ export function DashboardShell({
           </div>
         </SidebarInset>
         <div className="contents" id={RIGHT_PANEL_PORTAL_ID} />
+        <DashboardAgentHost />
       </SidebarProvider>
     </div>
   );

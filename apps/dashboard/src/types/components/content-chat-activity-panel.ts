@@ -3,6 +3,7 @@ import type { ChatStatus, UIMessage } from "ai";
 import type { ReactNode } from "react";
 
 export interface ContentChatActivityPanelProps {
+  title?: string;
   messages: UIMessage[];
   sessions: ChatSessionSummary[];
   activeChatId: string | null;

@@ -2,6 +2,7 @@
 
 import { CommandPalette } from "@/components/command-palette/command-palette";
 import { CommandPaletteProvider } from "@/components/command-palette/command-palette-context";
+import { DashboardAgentProvider } from "@/components/dashboard/dashboard-agent-context";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { FeedbackProvider } from "@/components/dashboard/feedback-context";
 import { DatabuddyFlagsProvider } from "@/components/providers/databuddy-flags-provider";
@@ -32,13 +33,15 @@ export function DashboardClientWrapper({
       <DatabuddyFlagsProvider>
         <FeedbackProvider>
           <CommandPaletteProvider>
-            <DashboardShell
-              initialSidebarOpen={initialSidebarOpen}
-              initialSidebarWidth={initialSidebarWidth}
-            >
-              {children}
-            </DashboardShell>
-            <CommandPalette />
+            <DashboardAgentProvider>
+              <DashboardShell
+                initialSidebarOpen={initialSidebarOpen}
+                initialSidebarWidth={initialSidebarWidth}
+              >
+                {children}
+              </DashboardShell>
+              <CommandPalette />
+            </DashboardAgentProvider>
           </CommandPaletteProvider>
         </FeedbackProvider>
       </DatabuddyFlagsProvider>

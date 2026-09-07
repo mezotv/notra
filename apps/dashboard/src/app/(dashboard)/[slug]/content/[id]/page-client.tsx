@@ -75,6 +75,7 @@ import { ImageExportTargetIcon } from "@/components/content/image-export-target-
 import { PostSocialButton } from "@/components/content/post-social-button";
 import { PublishContentToGitHubDialog } from "@/components/content/publish-content-to-github-dialog";
 import { RecommendationsSection } from "@/components/content/recommendations-section";
+import { useDashboardAgent } from "@/components/dashboard/dashboard-agent-context";
 import { RightPanelPortal } from "@/components/dashboard/right-panel-portal";
 import { WriterExecute } from "@/components/geo/writer/writer-execute";
 import { useOrganizationsContext } from "@/components/providers/organization-provider";
@@ -221,6 +222,8 @@ export default function PageClient({
 
   const [isActivityPanelOpen, setIsActivityPanelOpen] = useState(false);
   const [hasOpenedActivityPanel, setHasOpenedActivityPanel] = useState(false);
+  const { open: isDashboardAgentOpen, setOpen: setDashboardAgentOpen } =
+    useDashboardAgent();
   const [writeFocusNonce, setWriteFocusNonce] = useState(0);
   const [reviewPreviousMarkdown, setReviewPreviousMarkdown] = useState<
     string | null
@@ -228,6 +231,12 @@ export default function PageClient({
   if (isActivityPanelOpen && !hasOpenedActivityPanel) {
     setHasOpenedActivityPanel(true);
   }
+
+  useEffect(() => {
+    if (isDashboardAgentOpen) {
+      setIsActivityPanelOpen(false);
+    }
+  }, [isDashboardAgentOpen]);
   const saveToastIdRef = useRef<string | number | null>(null);
   const editorRef = useRef<EditorRefHandle | null>(null);
   const imageExportRef = useRef<HTMLDivElement | null>(null);
@@ -1423,7 +1432,10 @@ export default function PageClient({
                 render={
                   <Button
                     className="hidden lg:inline-flex"
-                    onClick={() => setIsActivityPanelOpen((open) => !open)}
+                    onClick={() => {
+                      setDashboardAgentOpen(false);
+                      setIsActivityPanelOpen((open) => !open);
+                    }}
                     size="icon-sm"
                     variant={isActivityPanelOpen ? "secondary" : "outline"}
                   />
