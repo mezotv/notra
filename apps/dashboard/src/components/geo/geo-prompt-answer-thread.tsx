@@ -22,6 +22,7 @@ import type {
   AnswerReplayProgress,
   GeoPromptAnswerThreadProps,
 } from "@/types/geo";
+import { answerReplayState } from "@/utils/geo-answer-replay";
 import { geoChatSkin } from "@/utils/geo-chat-skin";
 
 const ANSWER_MARKDOWN_CLASS =
@@ -130,25 +131,15 @@ function ThreadMessages({
   sources: PerplexitySearchSource[];
   progress: AnswerReplayProgress | null;
 }) {
-  const stage = progress?.stage ?? null;
-  const answerDone = progress === null;
-  const showThinking = stage === "thinking";
-  const showAnswer = answerDone || stage === "typing";
-  const showSearch =
-    Boolean(search) &&
-    (showAnswer ||
-      ((skin === "opencode" ||
-        skin === "claude-code" ||
-        skin === "codex") &&
-        showThinking));
-  const answerText = stage === "typing" ? (progress?.typed ?? "") : answer;
+  const { answerDone, showThinking, showAssistant, showSearch, answerText } =
+    answerReplayState(answer, progress, skin, Boolean(search));
 
   return (
     <>
       <GeoSkinMessage from="user" skin={skin}>
         {prompt}
       </GeoSkinMessage>
-      {(showThinking || showAnswer) && (
+      {showAssistant && (
         <GeoSkinMessage
           actions={
             answerDone ? assistantActions(answerText, sources) : undefined

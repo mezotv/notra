@@ -264,6 +264,7 @@ export async function askGeoOpenCodeConversation(
   try {
     for (const prompt of prompts) {
       results.push(
+        // react-doctor-disable-next-line react-doctor/async-await-in-loop -- each prompt depends on the previous turn in the same box conversation
         await runGeoOpenCodePrompt(box, prompt, agent, signal, deadlineAtMs)
       );
     }

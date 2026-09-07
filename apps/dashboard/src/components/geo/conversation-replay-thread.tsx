@@ -17,6 +17,10 @@ import type {
   AnswerReplayProgress,
   ConversationReplayThreadProps,
 } from "@/types/geo";
+import {
+  answerReplayState,
+  conversationReplaySearch,
+} from "@/utils/geo-answer-replay";
 import { geoChatSkin } from "@/utils/geo-chat-skin";
 
 function replaySources(turn: GeoSequenceTurnResult): PerplexitySearchSource[] {
@@ -90,38 +94,28 @@ function ReplayTurn({
   }
 
   const isCurrent = isReplaying && index === progress.index;
-  const stage = isCurrent ? progress.stage : null;
-  const answerDone = !isCurrent || stage === null;
-  const showThinking = stage === "thinking";
-  const showAnswer = answerDone || stage === "typing";
-  const answerText =
-    isCurrent && stage === "typing" ? progress.typed : turn.answer;
   const sources = replaySources(turn);
-  const hasRecordedSearch =
-    turn.searchQueries.length > 0 || turn.sources.length > 0;
-  const isTerminalSkin =
-    skin === "opencode" || skin === "claude-code" || skin === "codex";
-  const hasSearchChrome =
-    skin === "perplexity" || isTerminalSkin || hasRecordedSearch;
-  const showSearch =
-    hasSearchChrome && (showAnswer || (isTerminalSkin && showThinking));
-  let searchQueries: readonly string[] = turn.searchQueries;
-  if (searchQueries.length === 0 && (skin === "perplexity" || isTerminalSkin)) {
-    searchQueries = [turn.prompt];
-  }
+  const search = conversationReplaySearch(turn, skin);
+  const { answerDone, showThinking, showAssistant, showSearch, answerText } =
+    answerReplayState(
+      turn.answer,
+      isCurrent ? progress : null,
+      skin,
+      search.hasSearch
+    );
 
   return (
     <>
       <GeoSkinMessage from="user" skin={skin}>
         {turn.prompt}
       </GeoSkinMessage>
-      {(showThinking || showAnswer) && (
+      {showAssistant && (
         <GeoSkinMessage
           from="assistant"
           search={
             showSearch ? (
               <GeoAnswerSearch
-                queries={searchQueries}
+                queries={search.queries}
                 sequential={isCurrent}
                 skin={skin}
                 sources={sources}
