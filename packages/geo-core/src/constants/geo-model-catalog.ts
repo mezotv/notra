@@ -411,20 +411,21 @@ export const GEO_MODEL_CATALOG_STATIC: readonly GeoModelCatalogEntry[] = [
  * Environment variables that have to be set for a static engine to be
  * runnable. Static entries are hidden from the catalog while a key is missing.
  */
-const GEO_BOX_ENGINE_ENV = [
+const GEO_OPENCODE_ENGINE_ENV = [
   "UPSTASH_BOX_API_KEY",
   "OPENROUTER_API_KEY",
 ] as const;
+const GEO_NATIVE_BOX_ENGINE_ENV = ["UPSTASH_BOX_API_KEY"] as const;
 
 export const GEO_STATIC_ENGINE_ENV: Readonly<
   Record<string, readonly string[]>
 > = {
   "cursor/composer-2.5": ["CURSOR_API_KEY"],
-  "opencode/gpt-5.6-sol-medium": GEO_BOX_ENGINE_ENV,
-  "claude-code/claude-fable-5.1": GEO_BOX_ENGINE_ENV,
-  "claude-code/claude-opus-5": GEO_BOX_ENGINE_ENV,
-  "codex/gpt-6-astra": GEO_BOX_ENGINE_ENV,
-  "codex/gpt-5.6-sol-rei": GEO_BOX_ENGINE_ENV,
+  "opencode/gpt-5.6-sol-medium": GEO_OPENCODE_ENGINE_ENV,
+  "claude-code/claude-fable-5.1": GEO_NATIVE_BOX_ENGINE_ENV,
+  "claude-code/claude-opus-5": GEO_NATIVE_BOX_ENGINE_ENV,
+  "codex/gpt-6-astra": GEO_NATIVE_BOX_ENGINE_ENV,
+  "codex/gpt-5.6-sol-rei": GEO_NATIVE_BOX_ENGINE_ENV,
 };
 
 /** Engines scanned when a project has not picked its own set. */

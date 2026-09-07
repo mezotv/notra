@@ -156,7 +156,8 @@ export async function createGeoOpenCodeBox(
   modelApiKey: string,
   signal: AbortSignal,
   timeoutMs: number,
-  model = GEO_OPENCODE_BOX_MODEL_ID
+  model = GEO_OPENCODE_BOX_MODEL_ID,
+  agent: Agent = Agent.OpenCode
 ) {
   const headers = { "X-Box-Api-Key": apiKey };
   let boxId: string | undefined;
@@ -168,7 +169,7 @@ export async function createGeoOpenCodeBox(
       body: JSON.stringify({
         name,
         runtime: "node",
-        agent: Agent.OpenCode,
+        agent,
         model,
         agent_api_key: modelApiKey,
       }),
@@ -204,7 +205,7 @@ export async function createGeoOpenCodeBox(
       throw new BoxError("Box creation failed");
     }
 
-    return new Box<Agent.OpenCode>(data, {
+    return new Box(data, {
       baseUrl: GEO_OPENCODE_BOX_API_BASE_URL,
       headers,
       timeout: timeoutMs,

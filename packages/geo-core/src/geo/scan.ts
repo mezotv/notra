@@ -2,9 +2,9 @@ import {
   askGeoOpenCode,
   askGeoOpenCodeConversation,
 } from "@notra/ai/agents/geo-opencode";
-import { GEO_OPENCODE_BOX_MODEL_ID } from "@notra/ai/constants/geo-opencode";
 import { describeContentBillingDenial } from "@notra/ai/billing/content-billing";
 import { FEATURES } from "@notra/ai/billing/features";
+import { GEO_OPENCODE_BOX_MODEL_ID } from "@notra/ai/constants/geo-opencode";
 import { DEFAULT_LANGUAGE } from "@notra/ai/constants/languages";
 import { geoLog } from "@notra/ai/evlog";
 import { gateway, getRouteMetadata } from "@notra/ai/gateway";
@@ -82,7 +82,7 @@ import type {
   GeoZdrMode,
 } from "../types/geo";
 import {
-  geoBoxModelForEngine,
+  geoBoxAgentForEngine,
   isGeoBoxCodingAgent,
 } from "../utils/geo-coding-agents";
 import {
@@ -270,9 +270,7 @@ const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
   engine: string,
   promptText: string,
   zdr: GeoZdrMode,
-  gatewayPin:
-    | Exclude<GeoModelGateway, "cursor" | "box">
-    | undefined
+  gatewayPin: Exclude<GeoModelGateway, "cursor" | "box"> | undefined
 ) {
   const result = yield* Effect.tryPromise({
     try: (signal) =>
@@ -320,6 +318,7 @@ const askOpenCodeEngineEffect = Effect.fn("geo.askOpenCodeEngine")(function* (
   promptText: string
 ) {
   const deadlineAtMs = Date.now() + GEO_ANSWER_TIMEOUT_MS;
+  const boxAgent = geoBoxAgentForEngine(engine);
   let openCodePromise: ReturnType<typeof askGeoOpenCode> | null = null;
   const result = yield* Effect.tryPromise({
     try: (signal) => {
@@ -327,7 +326,8 @@ const askOpenCodeEngineEffect = Effect.fn("geo.askOpenCodeEngine")(function* (
         `${GEO_OPENCODE_ANSWER_SYSTEM_PROMPT}\n\nUser question:\n${promptText}`,
         signal,
         deadlineAtMs,
-        geoBoxModelForEngine(engine) ?? GEO_OPENCODE_BOX_MODEL_ID
+        boxAgent?.model ?? GEO_OPENCODE_BOX_MODEL_ID,
+        boxAgent?.harness
       );
       return openCodePromise;
     },
@@ -1705,8 +1705,8 @@ const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
     const rows: GeoCheckWrite[] = [];
     const steps = sequence.steps.slice(0, GEO_SEQUENCE_MAX_TURNS);
     const deadlineAtMs = Date.now() + GEO_SEQUENCE_PAIR_TIMEOUT_MS;
-    const boxModel =
-      geoBoxModelForEngine(engine) ?? GEO_OPENCODE_BOX_MODEL_ID;
+    const boxAgent = geoBoxAgentForEngine(engine);
+    const boxModel = boxAgent?.model ?? GEO_OPENCODE_BOX_MODEL_ID;
     const failureFields = sequenceFailureFields(
       context,
       sequence,
@@ -1725,7 +1725,8 @@ const runGeoOpenCodeSequenceCheck = Effect.fn("geo.runOpenCodeSequenceCheck")(
           ),
           signal,
           deadlineAtMs,
-          boxModel
+          boxModel,
+          boxAgent?.harness
         );
         return conversationPromise;
       },
@@ -2085,7 +2086,8 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
         usage,
         fallbackModelId:
           groundedEngines[0]?.grounded.model ??
-          (boxReplayEngines[0]?.engine ?? GEO_JUDGE_MODEL),
+          boxReplayEngines[0]?.engine ??
+          GEO_JUDGE_MODEL,
         properties: {
           source: "geo_sequence_run",
           run_id: runId,

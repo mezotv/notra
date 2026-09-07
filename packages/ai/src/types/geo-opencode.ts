@@ -1,3 +1,10 @@
+export type GeoBoxHarness = "claude-code" | "codex" | "opencode";
+
+export interface GeoBoxRunTarget {
+  harness: GeoBoxHarness;
+  model: string;
+}
+
 export interface GeoOpenCodeBoxRetryOptions {
   attempts?: number;
   retryNotFound?: boolean;
