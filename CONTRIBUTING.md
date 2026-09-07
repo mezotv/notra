@@ -64,6 +64,16 @@ git remote add upstream https://github.com/usenotra/notra.git
 bun install
 ```
 
+Run `bun install` in each new Git worktree as well. The `prepare` script installs
+Husky's generated hooks in that worktree's `.husky/_` directory; Git shares the
+hook-path setting between worktrees, but not that directory. If dependencies are
+already installed and only the hooks are missing, run `bunx --no-install husky`.
+
+The pre-commit hook runs `lint-staged` to format staged source files and include
+the fixes in the commit, followed by `knip`. Unstaged changes in partially staged
+files are hidden during formatting and restored afterward. Use `bun format` to
+format the entire repository manually.
+
 3. Set up environment variables:
 
 ```bash

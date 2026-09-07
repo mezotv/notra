@@ -1,2 +1,2 @@
-bun format
+bun run lint-staged
 bun knip
