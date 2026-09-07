@@ -232,11 +232,9 @@ export default function PageClient({
     setHasOpenedActivityPanel(true);
   }
 
-  useEffect(() => {
-    if (isDashboardAgentOpen) {
-      setIsActivityPanelOpen(false);
-    }
-  }, [isDashboardAgentOpen]);
+  if (isDashboardAgentOpen && isActivityPanelOpen) {
+    setIsActivityPanelOpen(false);
+  }
   const saveToastIdRef = useRef<string | number | null>(null);
   const editorRef = useRef<EditorRefHandle | null>(null);
   const imageExportRef = useRef<HTMLDivElement | null>(null);

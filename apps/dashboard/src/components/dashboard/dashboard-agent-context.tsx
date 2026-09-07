@@ -1,13 +1,8 @@
 "use client";
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
+import { createContext, useContext } from "react";
 
+import { useDashboardAgentState } from "@/lib/hooks/use-dashboard-agent-state";
 import type { DashboardAgentContextValue } from "@/types/dashboard/dashboard-agent";
 
 const DashboardAgentContext = createContext<DashboardAgentContextValue | null>(
@@ -19,20 +14,7 @@ export function DashboardAgentProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [open, setOpenState] = useState(false);
-  const [hasOpened, setHasOpened] = useState(false);
-
-  const setOpen = useCallback((next: boolean) => {
-    setOpenState(next);
-    if (next) {
-      setHasOpened(true);
-    }
-  }, []);
-
-  const value = useMemo(
-    () => ({ open, hasOpened, setOpen }),
-    [hasOpened, open, setOpen]
-  );
+  const value = useDashboardAgentState();
 
   return (
     <DashboardAgentContext.Provider value={value}>

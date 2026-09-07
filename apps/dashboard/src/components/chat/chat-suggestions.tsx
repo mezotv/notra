@@ -5,8 +5,14 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
 import { tween } from "@notra/ui/lib/motion";
 import { cn } from "@notra/ui/lib/utils";
-import { AnimatePresence, LazyMotion, m, useReducedMotion } from "motion/react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  LazyMotion,
+  m,
+  useIsPresent,
+  useReducedMotion,
+} from "motion/react";
+import { useEffect, useRef, useState } from "react";
 
 import {
   CHAT_SUGGESTION_ROTATE_MS,
@@ -53,10 +59,55 @@ function SuggestionCard({
   hidden,
   onSelect,
   layout,
-  slotIndex,
-  reduceMotion,
 }: SuggestionCardProps) {
   const isList = layout === "list";
+  const isPresent = useIsPresent();
+
+  return (
+    <button
+      className={cn(
+        "bg-muted/70 hover:bg-muted disabled:hover:bg-muted/70 duration-normal flex w-full cursor-pointer text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        isList
+          ? "relative h-9 overflow-hidden rounded-lg"
+          : "h-full flex-col items-start gap-2 rounded-xl px-3.5 py-3"
+      )}
+      disabled={disabled || hidden || !isPresent}
+      onClick={() => onSelect(suggestion.prompt)}
+      tabIndex={hidden || !isPresent ? -1 : undefined}
+      type="button"
+    >
+      {isList ? (
+        <span className="absolute inset-0 flex items-center gap-2.5 px-3">
+          <HugeiconsIcon
+            className="text-muted-foreground size-4 shrink-0"
+            icon={suggestion.icon}
+          />
+          <span className="text-foreground min-w-0 truncate text-sm font-medium tracking-tight">
+            {suggestion.title}
+          </span>
+        </span>
+      ) : (
+        <>
+          <HugeiconsIcon
+            className="text-muted-foreground size-4 shrink-0"
+            icon={suggestion.icon}
+          />
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-foreground text-sm font-medium tracking-tight">
+              {suggestion.title}
+            </span>
+            <span className="text-muted-foreground text-xs leading-snug">
+              {suggestion.description}
+            </span>
+          </span>
+        </>
+      )}
+    </button>
+  );
+}
+
+function SuggestionListItem(props: SuggestionCardProps) {
+  const { reduceMotion, slotIndex } = props;
   const swapTransition = {
     ...tween("slow", "emphasized"),
     delay: reduceMotion ? 0 : slotIndex * SWAP_STAGGER_S,
@@ -77,54 +128,16 @@ function SuggestionCard({
       };
 
   return (
-    <button
-      className={cn(
-        "bg-muted/70 hover:bg-muted disabled:hover:bg-muted/70 duration-normal flex w-full cursor-pointer text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-        isList
-          ? "relative h-9 overflow-hidden rounded-lg"
-          : "h-full flex-col items-start gap-2 rounded-xl px-3.5 py-3"
-      )}
-      disabled={disabled || hidden}
-      onClick={() => onSelect(suggestion.prompt)}
-      tabIndex={hidden ? -1 : undefined}
-      type="button"
+    <m.li
+      animate={rest}
+      className="min-w-0"
+      exit={toAbove}
+      initial={fromBelow}
+      style={{ gridArea: `${slotIndex + 1} / 1` }}
+      transition={swapTransition}
     >
-      <AnimatePresence initial={false}>
-        {isList ? (
-          <m.span
-            animate={rest}
-            className="absolute inset-0 flex items-center gap-2.5 px-3"
-            exit={toAbove}
-            initial={fromBelow}
-            key={suggestion.title}
-            transition={swapTransition}
-          >
-            <HugeiconsIcon
-              className="text-muted-foreground size-4 shrink-0"
-              icon={suggestion.icon}
-            />
-            <span className="text-foreground min-w-0 truncate text-sm font-medium tracking-tight">
-              {suggestion.title}
-            </span>
-          </m.span>
-        ) : (
-          <>
-            <HugeiconsIcon
-              className="text-muted-foreground size-4 shrink-0"
-              icon={suggestion.icon}
-            />
-            <span className="flex min-w-0 flex-col gap-0.5">
-              <span className="text-foreground text-sm font-medium tracking-tight">
-                {suggestion.title}
-              </span>
-              <span className="text-muted-foreground text-xs leading-snug">
-                {suggestion.description}
-              </span>
-            </span>
-          </>
-        )}
-      </AnimatePresence>
-    </button>
+      <SuggestionCard {...props} />
+    </m.li>
   );
 }
 
@@ -169,13 +182,9 @@ export function ChatSuggestions({
     };
   }, [rotateIntervalMs, shouldRotate]);
 
-  const displayedSuggestions = useMemo(
-    () =>
-      rotate
-        ? suggestionPageSlice(suggestions, page, visibleCount)
-        : suggestions,
-    [page, rotate, suggestions, visibleCount]
-  );
+  const displayedSuggestions = rotate
+    ? suggestionPageSlice(suggestions, page, visibleCount)
+    : suggestions;
 
   if (dismissed) {
     return null;
@@ -222,49 +231,59 @@ export function ChatSuggestions({
         </div>
         <ul
           className={cn(
-            isList
-              ? "flex flex-col gap-1"
-              : "grid grid-cols-1 gap-2 sm:grid-cols-3"
+            isList ? "grid gap-1" : "grid grid-cols-1 gap-2 sm:grid-cols-3"
           )}
         >
-          {displayedSuggestions.map((suggestion, index) => {
-            const card = (
-              <SuggestionCard
-                disabled={disabled}
-                hidden={hidden}
-                layout={layout}
-                onSelect={onSelect}
-                reduceMotion={Boolean(shouldReduceMotion)}
-                slotIndex={index}
-                suggestion={suggestion}
-              />
-            );
-
-            // List positions are stable animation slots; titles change inside them.
-            if (isList) {
-              return (
-                <li className="min-w-0" key={index}>
-                  {card}
-                </li>
+          <AnimatePresence initial={false}>
+            {displayedSuggestions.map((suggestion, index) => {
+              const card = (
+                <SuggestionCard
+                  disabled={disabled}
+                  hidden={hidden}
+                  layout={layout}
+                  onSelect={onSelect}
+                  reduceMotion={Boolean(shouldReduceMotion)}
+                  slotIndex={index}
+                  suggestion={suggestion}
+                />
               );
-            }
 
-            return (
-              <m.li
-                animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-                className="min-w-0"
-                initial={shouldReduceMotion ? undefined : { opacity: 0, y: 4 }}
-                key={suggestion.title}
-                transition={{
-                  duration: 0.35,
-                  delay: 0.05 + index * 0.05,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-              >
-                {card}
-              </m.li>
-            );
-          })}
+              if (isList) {
+                return (
+                  <SuggestionListItem
+                    key={suggestion.title}
+                    disabled={disabled}
+                    hidden={hidden}
+                    layout={layout}
+                    onSelect={onSelect}
+                    reduceMotion={Boolean(shouldReduceMotion)}
+                    slotIndex={index}
+                    suggestion={suggestion}
+                  />
+                );
+              }
+
+              return (
+                <m.li
+                  animate={
+                    shouldReduceMotion ? undefined : { opacity: 1, y: 0 }
+                  }
+                  className="min-w-0"
+                  initial={
+                    shouldReduceMotion ? undefined : { opacity: 0, y: 4 }
+                  }
+                  key={suggestion.title}
+                  transition={{
+                    duration: 0.35,
+                    delay: 0.05 + index * 0.05,
+                    ease: [0.22, 1, 0.36, 1],
+                  }}
+                >
+                  {card}
+                </m.li>
+              );
+            })}
+          </AnimatePresence>
         </ul>
       </m.section>
     </LazyMotion>

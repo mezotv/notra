@@ -168,10 +168,9 @@ function DashboardAgentChat({
         setActiveChatId(chatId);
       } catch {
         toast.error("Failed to load agent chat history. Try again.");
-      } finally {
-        setIsHydratingHistory(false);
-        isAgentBusyRef.current = false;
       }
+      setIsHydratingHistory(false);
+      isAgentBusyRef.current = false;
     },
     [activeChatId, organizationId, queryClient, setMessages]
   );
