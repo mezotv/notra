@@ -223,6 +223,7 @@ export function GeoAnswerSearch({
   if (skin === "opencode" || skin === "claude-code" || skin === "codex") {
     return (
       <OpencodeSources
+        darkSurface={skin !== "opencode"}
         queries={queries}
         reducedMotion={reducedMotion}
         sequential={sequential}

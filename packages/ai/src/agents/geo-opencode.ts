@@ -16,17 +16,16 @@ import {
   deleteGeoOpenCodeBox,
 } from "@notra/ai/utils/geo-opencode-box";
 import { extractHttpUrls } from "@notra/ai/utils/geo-opencode-sources";
+import { geoBoxTokenUsage } from "@notra/ai/utils/geo-opencode-usage";
 import { requireApiKey } from "@notra/utils/require-api-key";
 import type {
   Chunk,
   ClaudeCodeAgentOptions,
   CodexAgentOptions,
   OpenCodeAgentOptions,
-  RunCost,
   StreamRun,
 } from "@upstash/box";
 import { Agent, Box, BoxApiKey, BoxError } from "@upstash/box";
-import type { LanguageModelUsage } from "ai";
 
 function boxAgentFromHarness(harness: GeoBoxHarness | undefined): Agent {
   if (harness === "claude-code") {
@@ -64,26 +63,6 @@ function boxStreamOptions(agent: Agent) {
     textVerbosity: "medium",
   };
   return options;
-}
-
-function boxCostToLanguageModelUsage(
-  cost: Pick<RunCost, "cachedInputTokens" | "inputTokens" | "outputTokens">
-): LanguageModelUsage {
-  return {
-    inputTokens: cost.inputTokens,
-    inputTokenDetails: {
-      noCacheTokens: Math.max(0, cost.inputTokens - cost.cachedInputTokens),
-      cacheReadTokens: cost.cachedInputTokens,
-      cacheWriteTokens: undefined,
-    },
-    outputTokens: cost.outputTokens,
-    outputTokenDetails: {
-      textTokens: cost.outputTokens,
-      reasoningTokens: undefined,
-    },
-    totalTokens: cost.inputTokens + cost.outputTokens,
-    cachedInputTokens: cost.cachedInputTokens,
-  };
 }
 
 function abortReason(signal: AbortSignal) {
@@ -161,6 +140,7 @@ async function runGeoOpenCodePrompt(
   box: Box,
   prompt: string,
   agent: Agent,
+  model: string,
   signal?: AbortSignal,
   deadlineAtMs?: number
 ) {
@@ -207,7 +187,7 @@ async function runGeoOpenCodePrompt(
       text,
       sources: [...sourceUrls].map((url) => ({ url, title: null })),
       toolCalls,
-      usage: boxCostToLanguageModelUsage(stream.cost),
+      usage: geoBoxTokenUsage(stream.cost, model),
     };
   } catch (error) {
     if (operation.signal.aborted) {
@@ -265,7 +245,14 @@ export async function askGeoOpenCodeConversation(
     for (const prompt of prompts) {
       results.push(
         // react-doctor-disable-next-line react-doctor/async-await-in-loop -- each prompt depends on the previous turn in the same box conversation
-        await runGeoOpenCodePrompt(box, prompt, agent, signal, deadlineAtMs)
+        await runGeoOpenCodePrompt(
+          box,
+          prompt,
+          agent,
+          model,
+          signal,
+          deadlineAtMs
+        )
       );
     }
     if (signal?.aborted) {

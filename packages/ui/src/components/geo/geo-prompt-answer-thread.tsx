@@ -252,7 +252,7 @@ function ClaudeCodeAnswerThread({
       <ClaudeMessage from="user">{prompt}</ClaudeMessage>
       <div className="flex w-full flex-col items-start gap-3">
         {sources.length > 0 ? (
-          <OpencodeSources queries={[prompt]} sources={sources} />
+          <OpencodeSources darkSurface queries={[prompt]} sources={sources} />
         ) : null}
         <ClaudeMessage from="assistant">
           <AssistantBody
@@ -282,7 +282,7 @@ function CodexAnswerThread({
       <CodexMessage from="user">{prompt}</CodexMessage>
       <div className="flex w-full flex-col items-start gap-3">
         {sources.length > 0 ? (
-          <OpencodeSources queries={[prompt]} sources={sources} />
+          <OpencodeSources darkSurface queries={[prompt]} sources={sources} />
         ) : null}
         <CodexMessage from="assistant">
           <AssistantBody excerpt={excerpt} mentioned={mentioned} skin="codex" />

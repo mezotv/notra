@@ -11,12 +11,9 @@ import type {
   GeoCheckWrite,
 } from "@notra/db/types/geo-checks";
 import type { GeoContentBriefStatus } from "@notra/db/types/geo-writer";
-import type {
-  FinishReason,
-  LanguageModel,
-  LanguageModelUsage,
-  ToolSet,
-} from "ai";
+import type { FinishReason, LanguageModel, ToolSet } from "ai";
+
+import type { GeoModelTokenUsage } from "./token-usage";
 
 export interface GeoProject {
   id: string;
@@ -159,7 +156,7 @@ export interface GeoEngineAnswer {
   grounding: GeoCheckGrounding;
   sources: GeoCheckSourceItem[];
   finishReason: FinishReason | null;
-  usage?: LanguageModelUsage;
+  usage?: GeoModelTokenUsage;
   /** Whether the call ran with ZDR enforced; null when the route did not say. */
   zdrEnforced: boolean | null;
   /**
@@ -170,7 +167,7 @@ export interface GeoEngineAnswer {
 }
 
 export interface GeoGroundedAnswer extends GeoEngineAnswer {
-  usage: LanguageModelUsage;
+  usage: GeoModelTokenUsage;
 }
 
 export interface GeoCheckOutcome {
@@ -206,7 +203,7 @@ export interface GeoErrorFields {
   causeName?: string;
   causeMessage?: string;
   finishReason?: FinishReason | null;
-  usage?: LanguageModelUsage;
+  usage?: GeoModelTokenUsage;
 }
 
 export interface GeoSkipFields extends Record<string, unknown> {

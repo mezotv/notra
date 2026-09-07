@@ -114,6 +114,7 @@ import {
   isGeoScanRunning,
   summarizeGeoEngineAttempts,
 } from "../utils/geo-scan";
+import { addAgentTokenUsage as addTokenUsage } from "../utils/token-usage";
 import { fetchGoogleAiOverview } from "./ai-overview";
 import { askCursorEngine } from "./cursor";
 import { geoSkip } from "./effect";
@@ -293,7 +294,7 @@ const askGatewayEngine = Effect.fn("geo.askGatewayEngine")(function* (
     grounding: extractGrounding(result),
     sources: collectGroundedSources(result.sources),
     finishReason: result.finishReason,
-    usage: result.usage,
+    usage: { ...result.usage, modelId: engine },
     zdrEnforced: getRouteMetadata(result.providerMetadata)?.zdrEnforced ?? null,
   };
   return answer;
@@ -533,7 +534,7 @@ const askGroundedConversation = Effect.fn("geo.askGroundedConversation")(
         resultSources.length > 0
           ? resultSources
           : grounding.sources.map(({ title, url }) => ({ title, url })),
-      usage: result.usage,
+      usage: { ...result.usage, modelId: engine.model },
       zdrEnforced: GEO_DIRECT_GROUNDED_PROVIDERS.has(engine.provider)
         ? false
         : (getRouteMetadata(result.providerMetadata)?.zdrEnforced ?? null),
@@ -1675,23 +1676,6 @@ export const finalizeGeoScanProject = Effect.fn("geo.finalizeScanProject")(
   }
 );
 
-function addTokenUsage(
-  total: AgentTokenUsage,
-  usage: {
-    inputTokens?: number;
-    outputTokens?: number;
-    totalTokens?: number;
-  }
-): AgentTokenUsage {
-  return {
-    inputTokens: total.inputTokens + (usage.inputTokens ?? 0),
-    outputTokens: total.outputTokens + (usage.outputTokens ?? 0),
-    totalTokens: total.totalTokens + (usage.totalTokens ?? 0),
-    cacheReadTokens: total.cacheReadTokens,
-    cacheWriteTokens: total.cacheWriteTokens,
-  };
-}
-
 const EMPTY_TOKEN_USAGE: AgentTokenUsage = {
   inputTokens: 0,
   outputTokens: 0,
@@ -2197,7 +2181,7 @@ const runGeoSequenceNowProgram = Effect.fn("geo.runSequenceNow")(function* (
         usage,
         fallbackModelId:
           groundedEngines[0]?.grounded.model ??
-          boxReplayEngines[0]?.engine ??
+          geoBoxAgentForEngine(boxReplayEngines[0]?.engine ?? "")?.model ??
           GEO_JUDGE_MODEL,
         properties: {
           source: "geo_sequence_run",
