@@ -12,8 +12,7 @@
     "./utils/*": "./src/utils/*.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit",
-    "test": "bun test tests"
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@hono/zod-openapi": "^1.2.2",

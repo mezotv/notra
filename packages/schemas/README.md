@@ -40,6 +40,6 @@ and skill fields are shared, while API schedule validation additionally requires
 weekly/monthly selectors and a real calendar date. Form defaults and API query
 coercions remain at their respective boundaries.
 
-Run `bun run --filter=@notra/schemas test` and
+Run
 `bun run check-types --filter=@notra/schemas --filter=dashboard --filter=api`
 from the repository root.
