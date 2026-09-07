@@ -326,6 +326,7 @@ export interface GeoScanPayload {
    */
   scanId?: string;
   promptIds?: string[];
+  engines?: string[];
 }
 
 export interface GeoGenerateFromWebsiteInput {
@@ -578,12 +579,6 @@ export interface MentionProviderRowProps {
   trackEngine?: string;
   trackingDisabled: boolean;
   tracking: boolean;
-}
-
-export interface MentionMoreModelsHintProps {
-  count: number;
-  visible: boolean;
-  onClick: () => void;
 }
 
 export interface MentionRateCardProps extends EngineFamilyBrandScope {
@@ -983,7 +978,7 @@ export interface CompetitorPromptSummaryStripProps {
 export interface ScanPreflightDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: (engines?: string[]) => void;
   isPending: boolean;
   promptCount: number;
   engines: readonly string[];

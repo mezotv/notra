@@ -7,6 +7,11 @@ import {
 } from "@notra/geo-core/geo/agent-readiness";
 import { requireGeoProject } from "@notra/geo-core/geo/projects";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import {
+  agentReadinessResponseSchema,
+  agentReadinessScanResponseSchema,
+} from "@notra/schemas/api/geo-agent-readiness";
+import { projectParamsSchema } from "@notra/schemas/api/geo-params";
 import { Effect } from "effect";
 
 import { API_TRIGGER_SOURCE } from "../constants/analytics";
@@ -15,11 +20,6 @@ import {
   GEO_OPENAPI_TAG,
 } from "../constants/geo-openapi";
 import { geoCoreApiLayer } from "../lib/geo/configure";
-import {
-  agentReadinessResponseSchema,
-  agentReadinessScanResponseSchema,
-} from "../schemas/geo-agent-readiness";
-import { projectParamsSchema } from "../schemas/geo-params";
 import { trackApiEvent } from "../utils/analytics";
 import { geoErrorResponse } from "../utils/geo";
 import { runGeoEffect } from "../utils/geo-effect";

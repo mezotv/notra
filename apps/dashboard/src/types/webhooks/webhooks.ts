@@ -1,7 +1,6 @@
+import type { GitHubEventType } from "@notra/schemas/dashboard/github-webhook";
+import type { InputIntegrationType } from "@notra/schemas/dashboard/integrations";
 import type { NextRequest } from "next/server";
-
-import type { GitHubEventType } from "@/schemas/github-webhook";
-import type { InputIntegrationType } from "@/schemas/integrations";
 
 export interface WebhookContext {
   provider: InputIntegrationType;

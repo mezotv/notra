@@ -1,10 +1,9 @@
-import { getVercelOidcToken } from "@vercel/oidc";
-import type { ZodType } from "zod";
-
 import {
   internalWorkflowErrorResponseSchema,
   internalWorkflowStartResponseSchema,
-} from "../schemas/internal-workflow";
+} from "@notra/schemas/api/internal-workflow";
+import { getVercelOidcToken } from "@vercel/oidc";
+import type { ZodType } from "zod";
 
 interface InternalWorkflowEnv {
   WORKFLOW_BASE_URL?: string;

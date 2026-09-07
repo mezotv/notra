@@ -50,6 +50,11 @@ export interface GeoScopeInput {
   projectId?: string;
 }
 
+export interface GeoScanStartInput extends GeoScopeInput {
+  /** This-run subset of tracked engines. Omitted runs every tracked engine. */
+  engines?: readonly string[];
+}
+
 export interface GeoProjectUpdateInput {
   name?: string;
   brandSettingsId?: string;
@@ -157,6 +162,11 @@ export interface GeoEngineAnswer {
   usage?: LanguageModelUsage;
   /** Whether the call ran with ZDR enforced; null when the route did not say. */
   zdrEnforced: boolean | null;
+  /**
+   * Search engines set this when the SERP ran but produced no answer to judge
+   * (for example Google did not show an AI Overview for the query).
+   */
+  absent?: boolean;
 }
 
 export interface GeoGroundedAnswer extends GeoEngineAnswer {
@@ -187,7 +197,8 @@ export type GeoScanSkipReason =
   | "claim_lost"
   | "superseded"
   | "already_running"
-  | "scoped_prompts_missing";
+  | "scoped_prompts_missing"
+  | "scoped_engines_missing";
 
 export interface GeoErrorFields {
   errorName: string;
@@ -563,6 +574,8 @@ export interface GeoScanProgramOptions {
   /** Explicit project subset for a retry pass; overrides `projectId` scoping. */
   projectIds?: readonly string[];
   promptIds?: readonly string[];
+  /** This-run subset of tracked engines. Omitted runs every tracked engine. */
+  engines?: readonly string[];
 }
 
 export interface GeoProjectScanOutcome {
@@ -609,6 +622,7 @@ export interface GeoCheckContext {
   organizationId: string;
   projectId: string;
   scanId: string;
+  runId: string;
   capturedAt: Date;
   companyName: string;
   aliases: string[];
@@ -1113,10 +1127,16 @@ export type GeoModelProviderId =
 export type GeoModelZdr = "all" | "some" | "none";
 
 /**
- * Where a model is served. `cursor` runs through the Cursor SDK and `box`
- * through OpenCode in Upstash Box instead of the AI router.
+ * Where a model is served. `cursor` runs through the Cursor SDK, `box`
+ * through OpenCode in Upstash Box, and `serpapi` through SerpApi's Google
+ * AI Overview endpoint — none of those go through the AI router.
  */
-export type GeoModelGateway = "vercel" | "openrouter" | "cursor" | "box";
+export type GeoModelGateway =
+  | "vercel"
+  | "openrouter"
+  | "cursor"
+  | "box"
+  | "serpapi";
 
 export interface GeoModelProvider {
   id: GeoModelProviderId;

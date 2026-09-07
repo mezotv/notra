@@ -1,14 +1,5 @@
 import { createRoute } from "@hono/zod-openapi";
 import { skills } from "@notra/db/schema";
-import { and, asc, eq } from "drizzle-orm";
-import { nanoid } from "nanoid";
-
-import {
-  ORGANIZATION_SCOPED_API_KEY_ERROR,
-  SKILL_NOT_FOUND_ERROR,
-  SYSTEM_SKILL_DELETE_ERROR,
-  SYSTEM_SKILL_RENAME_ERROR,
-} from "../constants/skills";
 import {
   createSkillRequestSchema,
   createSkillResponseSchema,
@@ -18,7 +9,16 @@ import {
   patchSkillResponseSchema,
   skillParamsSchema,
   skillResponseSchema,
-} from "../schemas/skills";
+} from "@notra/schemas/api/skills";
+import { and, asc, eq } from "drizzle-orm";
+import { nanoid } from "nanoid";
+
+import {
+  ORGANIZATION_SCOPED_API_KEY_ERROR,
+  SKILL_NOT_FOUND_ERROR,
+  SYSTEM_SKILL_DELETE_ERROR,
+  SYSTEM_SKILL_RENAME_ERROR,
+} from "../constants/skills";
 import { createOpenApiApp } from "../utils/openapi-app";
 import { errorResponse } from "../utils/openapi-responses";
 import { isPgUniqueViolation } from "../utils/pg-errors";

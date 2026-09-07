@@ -1,8 +1,8 @@
 import { getContentBillingLimitLabel } from "@notra/ai/billing/content-billing";
+import { eventWorkflowPayloadSchema } from "@notra/schemas/dashboard/workflows";
 import { flattenError } from "zod";
 
 import { WORKFLOW_ANALYTICS_NAMES } from "@/constants/workflow-analytics";
-import { eventWorkflowPayloadSchema } from "@/schemas/workflows";
 import type { EventContentWorkflowResult } from "@/types/workflows/event-generation";
 import { resolveContentLimitPauseReason } from "@/utils/content-billing";
 

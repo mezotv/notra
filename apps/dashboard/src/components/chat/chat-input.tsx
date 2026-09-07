@@ -19,6 +19,12 @@ import type {
   ChatInputHandle,
   ContextItem,
 } from "@notra/ai/types/chat";
+import {
+  MAX_CHAT_ATTACHMENTS,
+  MAX_CHAT_FILE_SIZE,
+  MIME_DISPLAY_LABELS,
+  PASTE_TO_ATTACHMENT_THRESHOLD,
+} from "@notra/schemas/constants/dashboard/upload";
 import { Button } from "@notra/ui/components/ui/button";
 import {
   Command,
@@ -72,12 +78,6 @@ import { toast } from "sonner";
 
 import { Composer } from "@/components/composer/composer-shell";
 import { McpIcon } from "@/components/integrations/mcp-icon";
-import {
-  MAX_CHAT_ATTACHMENTS,
-  MAX_CHAT_FILE_SIZE,
-  MIME_DISPLAY_LABELS,
-  PASTE_TO_ATTACHMENT_THRESHOLD,
-} from "@/constants/upload";
 import { useAutumnRefreshListener } from "@/lib/hooks/use-autumn-refresh-listener";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import {

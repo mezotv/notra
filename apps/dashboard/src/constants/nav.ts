@@ -34,11 +34,11 @@ import {
   GEO_PROMPTS_NAV_LINK,
   GEO_WRITER_NAV_LINK,
 } from "@notra/geo-core/constants/geo";
+import type { PostStatus } from "@notra/schemas/dashboard/content";
 import { DURATION } from "@notra/ui/lib/motion";
 
 import { AGENT_FEEDBACK_NAV_LINK } from "@/constants/agent-feedback";
 import { IRIS_NAV_LINK } from "@/constants/iris";
-import type { PostStatus } from "@/schemas/content";
 import type {
   NavGroupKey,
   NavMainItem,
