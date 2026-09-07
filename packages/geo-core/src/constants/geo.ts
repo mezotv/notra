@@ -1024,9 +1024,9 @@ export const GEO_SCAN_SIZE_LABEL = "Estimated checks";
 export const GEO_SCAN_SIZE_WARN_THRESHOLD = 150;
 export const GEO_SCAN_SIZE_DANGER_THRESHOLD = 300;
 export const GEO_SCAN_SIZE_WARN =
-  "Large scan — takes longer and costs more. Consider fewer engines, prompts, or languages.";
+  "Large scan. It takes longer and costs more. Use fewer engines, prompts, or languages.";
 export const GEO_SCAN_SIZE_DANGER =
-  "Very large scan — likely to take a long time. Reduce engines, prompts, or languages.";
+  "Very large scan. It will likely take a long time. Use fewer engines, prompts, or languages.";
 export const GEO_RANGE_PRESETS = [
   { value: "today", label: "Today" },
   { value: "yesterday", label: "Yesterday" },

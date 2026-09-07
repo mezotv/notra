@@ -1,5 +1,7 @@
 "use client";
 
+import { Alert02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GEO_SCAN_PREFLIGHT_BODY,
   GEO_SCAN_PREFLIGHT_CANCEL,
@@ -101,18 +103,21 @@ export function ScanPreflightDialog({
           <dd>{formatScanPreflightLastScan(lastScanAt)}</dd>
         </dl>
         {scanSizeSeverity !== "ok" ? (
-          <p
+          <div
             className={
               scanSizeSeverity === "danger"
-                ? "text-destructive text-sm"
-                : "text-sm text-amber-600 dark:text-amber-500"
+                ? "text-destructive flex items-center gap-2"
+                : "text-warning flex items-center gap-2"
             }
             role="note"
           >
-            {scanSizeSeverity === "danger"
-              ? GEO_SCAN_SIZE_DANGER
-              : GEO_SCAN_SIZE_WARN}
-          </p>
+            <HugeiconsIcon className="shrink-0" icon={Alert02Icon} size={18} />
+            <p className="text-sm font-medium">
+              {scanSizeSeverity === "danger"
+                ? GEO_SCAN_SIZE_DANGER
+                : GEO_SCAN_SIZE_WARN}
+            </p>
+          </div>
         ) : null}
         <ResponsiveAlertDialogFooter>
           <ResponsiveAlertDialogCancel disabled={isPending}>

@@ -42,7 +42,7 @@ function scanSizeNoteClassName(severity: GeoScanSizeSeverity): string {
     return "text-destructive text-xs tabular-nums";
   }
   if (severity === "warn") {
-    return "text-xs text-amber-600 tabular-nums dark:text-amber-500";
+    return "text-warning text-xs tabular-nums";
   }
   return "text-muted-foreground text-xs tabular-nums";
 }
