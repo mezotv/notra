@@ -1,7 +1,5 @@
 "use client";
 
-import { Alert02Icon } from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
 import {
   GEO_SCAN_PREFLIGHT_BODY,
   GEO_SCAN_PREFLIGHT_CANCEL,
@@ -30,12 +28,17 @@ import {
   ResponsiveAlertDialogHeader,
   ResponsiveAlertDialogTitle,
 } from "@notra/ui/components/shared/responsive-alert-dialog";
-
-import type { ScanPreflightDialogProps } from "@/types/geo";
 import {
-  formatScanPreflightLastScan,
-  scanPreflightEngineNames,
-} from "@/utils/geo-scan-preflight";
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@notra/ui/components/ui/tooltip";
+
+import { EngineIcon } from "@/components/geo/engine-icon";
+import { useAnswersBalance } from "@/lib/hooks/use-answers-balance";
+import type { ScanPreflightDialogProps } from "@/types/geo";
+import { formatEngineFamily } from "@/utils/geo-charts";
+import { formatScanPreflightLastScan } from "@/utils/geo-scan-preflight";
 
 export function ScanPreflightDialog({
   open,
@@ -47,20 +50,61 @@ export function ScanPreflightDialog({
   languages,
   lastScanAt,
 }: ScanPreflightDialogProps) {
-  const engineNames = scanPreflightEngineNames(engines);
+  const { balance: answersBalance, isLoading: answersLoading } =
+    useAnswersBalance();
   const scanSize = calcGeoScanSize({
     promptCount,
     engineCount: engines.length,
     languageCount: languages.length,
   });
   const scanSizeSeverity = geoScanSizeSeverity(scanSize);
+  const sizeWarningMessage =
+    scanSizeSeverity === "danger" ? GEO_SCAN_SIZE_DANGER : GEO_SCAN_SIZE_WARN;
+  // Only warn when the scan costs more answers than remain. An unknown
+  // balance (loading or missing) keeps the warning visible.
+  const showSizeWarning =
+    scanSizeSeverity !== "ok" &&
+    (answersLoading || answersBalance === null || scanSize > answersBalance);
+
+  const engineFamilyEntries = new Map<string, string>();
+  for (const engine of engines) {
+    const label = formatEngineFamily(engine);
+    if (!engineFamilyEntries.has(label)) {
+      engineFamilyEntries.set(label, engine);
+    }
+  }
+  const engineFamilies = [...engineFamilyEntries].map(([label, id]) => ({
+    label,
+    id,
+  }));
 
   return (
     <ResponsiveAlertDialog onOpenChange={onOpenChange} open={open}>
       <ResponsiveAlertDialogContent>
         <ResponsiveAlertDialogHeader>
-          <ResponsiveAlertDialogTitle>
+          <ResponsiveAlertDialogTitle className="flex items-center gap-2">
             {GEO_SCAN_PREFLIGHT_TITLE}
+            {showSizeWarning ? (
+              <Tooltip>
+                <TooltipTrigger
+                  render={
+                    <span
+                      aria-label={sizeWarningMessage}
+                      className={
+                        scanSizeSeverity === "danger"
+                          ? "bg-destructive text-destructive-foreground inline-flex size-3.5 cursor-help items-center justify-center rounded-full text-[10px] leading-none font-bold"
+                          : "bg-warning text-warning-foreground inline-flex size-3.5 cursor-help items-center justify-center rounded-full text-[10px] leading-none font-bold"
+                      }
+                    />
+                  }
+                >
+                  !
+                </TooltipTrigger>
+                <TooltipContent className="max-w-xs">
+                  {sizeWarningMessage}
+                </TooltipContent>
+              </Tooltip>
+            ) : null}
           </ResponsiveAlertDialogTitle>
           <ResponsiveAlertDialogDescription>
             {GEO_SCAN_PREFLIGHT_BODY}
@@ -76,11 +120,27 @@ export function ScanPreflightDialog({
           </dt>
           <dd className="min-w-0">
             <span className="tabular-nums">{engines.length}</span>
-            {engineNames.length > 0 ? (
-              <span className="text-muted-foreground">
-                {" · "}
-                {engineNames.join(", ")}
-              </span>
+            {engineFamilies.length > 0 ? (
+              <>
+                <span className="text-muted-foreground">{" · "}</span>
+                <span className="inline-flex items-center gap-1.5 align-middle">
+                  {engineFamilies.map(({ id, label }) => (
+                    <Tooltip key={id}>
+                      <TooltipTrigger
+                        render={
+                          <span
+                            aria-label={label}
+                            className="inline-flex cursor-help"
+                          />
+                        }
+                      >
+                        <EngineIcon className="size-4" engine={id} />
+                      </TooltipTrigger>
+                      <TooltipContent>{label}</TooltipContent>
+                    </Tooltip>
+                  ))}
+                </span>
+              </>
             ) : null}
           </dd>
           <dt className="text-muted-foreground">
@@ -102,23 +162,6 @@ export function ScanPreflightDialog({
           </dt>
           <dd>{formatScanPreflightLastScan(lastScanAt)}</dd>
         </dl>
-        {scanSizeSeverity !== "ok" ? (
-          <div
-            className={
-              scanSizeSeverity === "danger"
-                ? "text-destructive flex items-center gap-2"
-                : "text-warning flex items-center gap-2"
-            }
-            role="note"
-          >
-            <HugeiconsIcon className="shrink-0" icon={Alert02Icon} size={18} />
-            <p className="text-sm font-medium">
-              {scanSizeSeverity === "danger"
-                ? GEO_SCAN_SIZE_DANGER
-                : GEO_SCAN_SIZE_WARN}
-            </p>
-          </div>
-        ) : null}
         <ResponsiveAlertDialogFooter>
           <ResponsiveAlertDialogCancel disabled={isPending}>
             {GEO_SCAN_PREFLIGHT_CANCEL}

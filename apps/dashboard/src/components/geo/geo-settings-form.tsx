@@ -33,6 +33,7 @@ import {
   GeoScanSchedule,
 } from "@/components/geo/geo-scan-schedule";
 import { GeoTagList } from "@/components/geo/geo-tag-list";
+import { useAnswersBalance } from "@/lib/hooks/use-answers-balance";
 import { useGeoSettingsUpsert } from "@/lib/hooks/use-geo";
 import { useHasZdrEntitlement } from "@/lib/hooks/use-plan";
 import type { GeoSettingsFormProps } from "@/types/geo";
@@ -204,8 +205,17 @@ export function GeoSettingsForm({
     languageCount: languages.length,
   });
   const scanSizeSeverity = geoScanSizeSeverity(scanSize);
-  const scanSizeNoteClass = scanSizeNoteClassName(scanSizeSeverity);
-  const scanSizeText = `About ${scanSize.toLocaleString()} checks per scan (${promptCount?.toLocaleString()} prompts × ${engines.length.toLocaleString()} engines × ${Math.max(1, languages.length).toLocaleString()} languages).${scanSizeWarningSuffix(scanSizeSeverity)}`;
+  const { balance: answersBalance, isLoading: answersLoading } =
+    useAnswersBalance();
+  // Only warn when the scan costs more answers than remain. An unknown
+  // balance (loading or missing) keeps the warning visible.
+  const showSizeWarning =
+    scanSizeSeverity !== "ok" &&
+    (answersLoading || answersBalance === null || scanSize > answersBalance);
+  const scanSizeNoteClass = showSizeWarning
+    ? scanSizeNoteClassName(scanSizeSeverity)
+    : "text-muted-foreground text-xs tabular-nums";
+  const scanSizeText = `About ${scanSize.toLocaleString()} checks per scan (${promptCount?.toLocaleString()} prompts × ${engines.length.toLocaleString()} engines × ${Math.max(1, languages.length).toLocaleString()} languages).${showSizeWarning ? scanSizeWarningSuffix(scanSizeSeverity) : ""}`;
   let saveStatus: string | null = null;
   if (nameMissing && savedAt) {
     saveStatus = "Add a company name to save";
