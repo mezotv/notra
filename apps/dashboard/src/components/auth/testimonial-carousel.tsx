@@ -60,7 +60,7 @@ export function TestimonialCarousel() {
               "duration-slower col-start-1 row-start-1 flex flex-col justify-between gap-5 transition-opacity ease-in-out motion-reduce:transition-none",
               index === activeIndex
                 ? "opacity-100"
-                : "pointer-events-none select-none opacity-0"
+                : "pointer-events-none opacity-0 select-none"
             )}
             key={testimonial.name}
           >
