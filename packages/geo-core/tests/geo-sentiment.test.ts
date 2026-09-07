@@ -140,9 +140,12 @@ test("keyset pagination preserves historical answers with tied timestamps", asyn
       promptId: `prompt-${i}`,
     });
   }
+  await testDb.insert(geoScans).values({ id: "newer-scan", ...scope });
   await check({
+    id: "newer-positive",
+    scanId: "newer-scan",
     promptId: "prompt-0",
-    engine: "anthropic",
+    engine: "openai",
     sentiment: "positive",
     capturedAt: new Date("2026-09-02T00:00:00Z"),
     answer: "New positive answer",
@@ -162,29 +165,56 @@ test("keyset pagination preserves historical answers with tied timestamps", asyn
     capturedAt: next.capturedAt.toISOString(),
   });
   const items = [...first, ...second, ...third];
+  expect([first.length, second.length, third.length]).toEqual([25, 25, 1]);
   expect(new Set(items.map((row) => row.id)).size).toBe(51);
+  expect(items.find((row) => row.id === "negative-00")).toMatchObject({
+    scanId: "scan",
+    promptId: "prompt-0",
+    engine: "openai",
+    capturedAt: window.from,
+    answer: "Stored historical answer",
+  });
+  expect(items.some((row) => row.id === "newer-positive")).toBe(false);
   expect(items.every((row) => row.answer === "Stored historical answer")).toBe(
     true
   );
 });
 
 test("cursor validation rejects malformed dates and changed scope", () => {
-  expect(
-    geoSentimentEvidenceInputSchema.safeParse({
-      ...scope,
-      cursor: { id: "a", capturedAt: "bad", scope: "wrong" },
-    }).success
-  ).toBe(false);
-  expect(
-    geoSentimentEvidenceInputSchema.safeParse({
-      ...scope,
-      cursor: {
-        id: "a",
-        capturedAt: window.from.toISOString(),
-        scope: "wrong",
-      },
-    }).success
-  ).toBe(false);
+  const baseline = {
+    ...scope,
+    cursor: {
+      id: "a",
+      projectId: scope.projectId,
+      capturedAt: window.from.toISOString(),
+      scope: JSON.stringify([
+        scope.organizationId,
+        scope.projectId,
+        null,
+        null,
+        null,
+      ]),
+    },
+  };
+  expect(geoSentimentEvidenceInputSchema.safeParse(baseline).success).toBe(
+    true
+  );
+  const invalidDate = geoSentimentEvidenceInputSchema.safeParse({
+    ...baseline,
+    cursor: { ...baseline.cursor, capturedAt: "bad" },
+  });
+  assert.ok(!invalidDate.success);
+  expect(invalidDate.error.issues.map((issue) => issue.path)).toEqual([
+    ["cursor", "capturedAt"],
+  ]);
+  const mismatchedScope = geoSentimentEvidenceInputSchema.safeParse({
+    ...baseline,
+    cursor: { ...baseline.cursor, scope: "wrong" },
+  });
+  assert.ok(!mismatchedScope.success);
+  expect(mismatchedScope.error.issues.map((issue) => issue.path)).toEqual([
+    ["cursor"],
+  ]);
 });
 
 test("missing calendar days are explicit null gaps", async () => {
