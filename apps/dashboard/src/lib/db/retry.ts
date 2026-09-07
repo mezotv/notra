@@ -53,9 +53,9 @@ function isTransientDbError(error: unknown): boolean {
   return false;
 }
 
-export const retryTransientDbEffect = Effect.fn("db.retryTransient")(function* <
-  T,
->(operation: () => Promise<T>) {
+const retryTransientDbEffect = Effect.fn("db.retryTransient")(function* <T>(
+  operation: () => Promise<T>
+) {
   return yield* Effect.tryPromise({
     try: operation,
     catch: (cause) => cause,
