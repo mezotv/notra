@@ -6,6 +6,9 @@ import {
 
 import type { ChatSuggestion } from "@/types/components/chat-suggestions";
 
+export const CHAT_SUGGESTION_ROTATE_MS = 4000;
+export const CHAT_SUGGESTION_VISIBLE_COUNT = 3;
+
 export const CHAT_SUGGESTIONS: ChatSuggestion[] = [
   {
     title: "Write a blog post",

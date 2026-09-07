@@ -3,41 +3,62 @@
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@notra/ui/components/ui/button";
-import { motion, useReducedMotion } from "motion/react";
-import { useEffect, useState } from "react";
+import { tween } from "@notra/ui/lib/motion";
+import { cn } from "@notra/ui/lib/utils";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { useEffect, useMemo, useState } from "react";
 
-import { CHAT_SUGGESTIONS } from "@/constants/chat-suggestions";
+import {
+  CHAT_SUGGESTION_ROTATE_MS,
+  CHAT_SUGGESTION_VISIBLE_COUNT,
+  CHAT_SUGGESTIONS,
+} from "@/constants/chat-suggestions";
 import { localStorageKeys } from "@/constants/storage";
 import type {
   ChatSuggestionsProps,
   SuggestionCardProps,
 } from "@/types/components/chat-suggestions";
 
-function readSuggestionsDismissed(): boolean {
+const SWAP_DISTANCE_PX = 6;
+const SWAP_BLUR_PX = 6;
+const SWAP_STAGGER_S = 0.04;
+
+function readSuggestionsDismissed(storageKey: string): boolean {
   if (typeof window === "undefined") {
     return false;
   }
 
   try {
-    return (
-      window.localStorage.getItem(localStorageKeys.chatSuggestionsDismissed) ===
-      "1"
-    );
+    return window.localStorage.getItem(storageKey) === "1";
   } catch {
     return false;
   }
 }
 
-function persistSuggestionsDismissed(): void {
+function persistSuggestionsDismissed(storageKey: string): void {
   if (typeof window === "undefined") {
     return;
   }
 
   try {
-    window.localStorage.setItem(localStorageKeys.chatSuggestionsDismissed, "1");
+    window.localStorage.setItem(storageKey, "1");
   } catch {
     // Ignore quota exceeded and other storage errors.
   }
+}
+
+function suggestionPageSlice<T>(
+  items: T[],
+  page: number,
+  visibleCount: number
+) {
+  if (items.length === 0 || visibleCount <= 0) {
+    return items;
+  }
+
+  const pageCount = Math.max(1, Math.ceil(items.length / visibleCount));
+  const start = (page % pageCount) * visibleCount;
+  return items.slice(start, start + visibleCount);
 }
 
 function SuggestionCard({
@@ -45,27 +66,83 @@ function SuggestionCard({
   disabled,
   hidden,
   onSelect,
+  layout,
+  slotIndex,
+  reduceMotion,
 }: SuggestionCardProps) {
+  const isList = layout === "list";
+  const swapTransition = {
+    ...tween("slow", "emphasized"),
+    delay: reduceMotion ? 0 : slotIndex * SWAP_STAGGER_S,
+  };
+  const rest = {
+    opacity: 1,
+    transform: "translateY(0px)",
+    filter: "blur(0px)",
+  };
+  const fromBelow = reduceMotion
+    ? { opacity: 0, transform: "translateY(0px)", filter: "blur(0px)" }
+    : {
+        opacity: 0,
+        transform: `translateY(${SWAP_DISTANCE_PX}px)`,
+        filter: `blur(${SWAP_BLUR_PX}px)`,
+      };
+  const toAbove = reduceMotion
+    ? { opacity: 0, transform: "translateY(0px)", filter: "blur(0px)" }
+    : {
+        opacity: 0,
+        transform: `translateY(-${SWAP_DISTANCE_PX}px)`,
+        filter: `blur(${SWAP_BLUR_PX}px)`,
+      };
+
   return (
     <button
-      className="bg-muted/70 hover:bg-muted disabled:hover:bg-muted/70 duration-normal flex h-full w-full cursor-pointer flex-col items-start gap-2 rounded-xl px-3.5 py-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+      className={cn(
+        "bg-muted/70 hover:bg-muted disabled:hover:bg-muted/70 duration-normal flex w-full cursor-pointer text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+        isList
+          ? "relative h-9 overflow-hidden rounded-lg"
+          : "h-full flex-col items-start gap-2 rounded-xl px-3.5 py-3"
+      )}
       disabled={disabled || hidden}
       onClick={() => onSelect(suggestion.prompt)}
       tabIndex={hidden ? -1 : undefined}
       type="button"
     >
-      <HugeiconsIcon
-        className="text-muted-foreground size-4"
-        icon={suggestion.icon}
-      />
-      <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="text-foreground text-sm font-medium tracking-tight">
-          {suggestion.title}
-        </span>
-        <span className="text-muted-foreground text-xs leading-snug">
-          {suggestion.description}
-        </span>
-      </span>
+      {isList ? (
+        <AnimatePresence initial={false}>
+          <motion.span
+            animate={rest}
+            className="absolute inset-0 flex items-center gap-2.5 px-3"
+            exit={toAbove}
+            initial={fromBelow}
+            key={suggestion.title}
+            transition={swapTransition}
+          >
+            <HugeiconsIcon
+              className="text-muted-foreground size-4 shrink-0"
+              icon={suggestion.icon}
+            />
+            <span className="text-foreground min-w-0 truncate text-sm font-medium tracking-tight">
+              {suggestion.title}
+            </span>
+          </motion.span>
+        </AnimatePresence>
+      ) : (
+        <>
+          <HugeiconsIcon
+            className="text-muted-foreground size-4 shrink-0"
+            icon={suggestion.icon}
+          />
+          <span className="flex min-w-0 flex-col gap-0.5">
+            <span className="text-foreground text-sm font-medium tracking-tight">
+              {suggestion.title}
+            </span>
+            <span className="text-muted-foreground text-xs leading-snug">
+              {suggestion.description}
+            </span>
+          </span>
+        </>
+      )}
     </button>
   );
 }
@@ -74,15 +151,54 @@ export function ChatSuggestions({
   onSelect,
   disabled,
   hidden = false,
+  suggestions = CHAT_SUGGESTIONS,
+  dismissStorageKey = localStorageKeys.chatSuggestionsDismissed,
+  layout = "grid",
+  rotate = false,
+  rotateIntervalMs = CHAT_SUGGESTION_ROTATE_MS,
+  visibleCount = CHAT_SUGGESTION_VISIBLE_COUNT,
 }: ChatSuggestionsProps) {
   const shouldReduceMotion = useReducedMotion();
   const [dismissed, setDismissed] = useState(false);
+  const [page, setPage] = useState(0);
+  const [isPointerInside, setIsPointerInside] = useState(false);
+  const isList = layout === "list";
+  const pageCount = Math.max(1, Math.ceil(suggestions.length / visibleCount));
+  const shouldRotate = rotate && pageCount > 1 && !hidden && !isPointerInside;
 
   useEffect(() => {
-    if (readSuggestionsDismissed()) {
+    if (readSuggestionsDismissed(dismissStorageKey)) {
       setDismissed(true);
     }
-  }, []);
+  }, [dismissStorageKey]);
+
+  useEffect(() => {
+    if (hidden) {
+      setIsPointerInside(false);
+    }
+  }, [hidden]);
+
+  useEffect(() => {
+    if (!shouldRotate) {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setPage((current) => current + 1);
+    }, rotateIntervalMs);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [rotateIntervalMs, shouldRotate]);
+
+  const displayedSuggestions = useMemo(
+    () =>
+      rotate
+        ? suggestionPageSlice(suggestions, page, visibleCount)
+        : suggestions,
+    [page, rotate, suggestions, visibleCount]
+  );
 
   if (dismissed) {
     return null;
@@ -97,8 +213,10 @@ export function ChatSuggestions({
       }
       aria-hidden={hidden}
       aria-label="Example prompts"
-      className="flex w-full flex-col gap-2"
+      className={cn("flex w-full flex-col", isList ? "gap-1.5" : "gap-2")}
       initial={false}
+      onPointerEnter={() => setIsPointerInside(true)}
+      onPointerLeave={() => setIsPointerInside(false)}
       style={{ pointerEvents: hidden ? "none" : undefined }}
       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
     >
@@ -110,7 +228,7 @@ export function ChatSuggestions({
           aria-label="Dismiss examples"
           disabled={disabled || hidden}
           onClick={() => {
-            persistSuggestionsDismissed();
+            persistSuggestionsDismissed(dismissStorageKey);
             setDismissed(true);
           }}
           size="icon-xs"
@@ -123,27 +241,50 @@ export function ChatSuggestions({
           />
         </Button>
       </div>
-      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        {CHAT_SUGGESTIONS.map((suggestion, index) => (
-          <motion.li
-            animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-            className="min-w-0"
-            initial={shouldReduceMotion ? undefined : { opacity: 0, y: 4 }}
-            key={suggestion.title}
-            transition={{
-              duration: 0.35,
-              delay: 0.05 + index * 0.05,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-          >
+      <ul
+        className={cn(
+          isList
+            ? "flex flex-col gap-1"
+            : "grid grid-cols-1 gap-2 sm:grid-cols-3"
+        )}
+      >
+        {displayedSuggestions.map((suggestion, index) => {
+          const card = (
             <SuggestionCard
               disabled={disabled}
               hidden={hidden}
+              layout={layout}
               onSelect={onSelect}
+              reduceMotion={Boolean(shouldReduceMotion)}
+              slotIndex={index}
               suggestion={suggestion}
             />
-          </motion.li>
-        ))}
+          );
+
+          if (isList) {
+            return (
+              <li className="min-w-0" key={index}>
+                {card}
+              </li>
+            );
+          }
+
+          return (
+            <motion.li
+              animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+              className="min-w-0"
+              initial={shouldReduceMotion ? undefined : { opacity: 0, y: 4 }}
+              key={suggestion.title}
+              transition={{
+                duration: 0.35,
+                delay: 0.05 + index * 0.05,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+            >
+              {card}
+            </motion.li>
+          );
+        })}
       </ul>
     </motion.section>
   );
