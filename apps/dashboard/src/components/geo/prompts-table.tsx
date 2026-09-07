@@ -1,25 +1,31 @@
 "use client";
 
 import {
+  Copy01Icon,
   Delete02Icon,
+  PauseIcon,
+  PlayIcon,
   SearchIcon,
   Tag01Icon,
+  ViewIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  GEO_PRESENCE_LABELS,
   GEO_PROMPT_AUTO_MANAGED_HINT,
   GEO_PROMPT_AUTO_MANAGED_LABEL,
-  GEO_PROMPT_INTENT_LABELS,
   GEO_PROMPT_TAGS_CUSTOM_ONLY_TOAST,
   PROMPTS_TABLE_HEIGHT,
   PROMPTS_TABLE_ROW_HEIGHT,
 } from "@notra/geo-core/constants/geo";
-import type { GeoPresenceStatus } from "@notra/geo-core/types/geo";
+import { geoPromptIntentLabel } from "@notra/geo-core/utils/geo-prompt-intent";
 import { collectPromptTags } from "@notra/geo-core/utils/geo-prompt-tags";
 import { geoScanEmptyMessage } from "@notra/geo-core/utils/geo-scan";
 import { TruncateWithTooltip } from "@notra/ui/components/shared/truncate-with-tooltip";
 import { Badge } from "@notra/ui/components/ui/badge";
+import {
+  ContextMenuItem,
+  ContextMenuSeparator,
+} from "@notra/ui/components/ui/context-menu";
 import { Input } from "@notra/ui/components/ui/input";
 import {
   Select,
@@ -35,11 +41,15 @@ import {
   TooltipTrigger,
 } from "@notra/ui/components/ui/tooltip";
 import { parseAsString, parseAsStringLiteral, useQueryState } from "nuqs";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/button";
 import { GeoRemoveDialog } from "@/components/geo/geo-remove-dialog";
+import {
+  PromptIntentBadge,
+  PromptPresenceBadge,
+} from "@/components/geo/prompt-badges";
 import { PromptDetailDialog } from "@/components/geo/prompt-detail-dialog";
 import { PromptSavedViewsMenu } from "@/components/geo/prompt-saved-views-menu";
 import { PromptTagsDialog } from "@/components/geo/prompt-tags-dialog";
@@ -68,6 +78,7 @@ import type {
   PromptTagsDialogTarget,
   PromptsTableProps,
 } from "@/types/geo";
+import { copyTextToClipboard } from "@/utils/copy-to-clipboard";
 import { promptFiltersActive } from "@/utils/geo-prompt-views";
 import {
   buildPromptTableRows,
@@ -75,27 +86,7 @@ import {
 } from "@/utils/geo-prompts";
 
 const PROMPT_NOUNS = { singular: "prompt", plural: "prompts" } as const;
-const PROMPT_ACTIONS_WIDTH = "13rem";
-const PRESENCE_TITLES: Record<GeoPresenceStatus, string> = {
-  "training-data": "Named in the model, not only in live search",
-  "retrieval-only": "Mentioned in Search only: found live, not in the model",
-  invisible: "No engine mentions you on this prompt yet",
-};
-
-function PromptPresenceCell({ status }: { status: GeoPresenceStatus | null }) {
-  if (!status) {
-    return <span className="text-muted-foreground">-</span>;
-  }
-  const label = GEO_PRESENCE_LABELS[status];
-  if (!label) {
-    return <span className="text-muted-foreground">-</span>;
-  }
-  return (
-    <span className="text-muted-foreground" title={PRESENCE_TITLES[status]}>
-      {label}
-    </span>
-  );
-}
+const PROMPT_ACTIONS_WIDTH = "16rem";
 
 function PromptTagChips({ tags }: PromptTagChipsProps) {
   if (tags.length === 0) {
@@ -144,20 +135,26 @@ function PromptRowActions({
   const stop = (event: { stopPropagation: () => void }) =>
     event.stopPropagation();
   const pauseSwitch = (
-    <Switch
-      aria-label={row.enabled ? `Pause ${row.prompt}` : `Enable ${row.prompt}`}
-      checked={row.enabled}
-      disabled={isPending}
-      onCheckedChange={onToggle}
-      onClick={stop}
-      onPointerDown={stop}
-      size="sm"
-    />
+    <div onClick={stop} onPointerDown={stop}>
+      <Switch
+        aria-label={
+          row.enabled ? `Pause ${row.prompt}` : `Enable ${row.prompt}`
+        }
+        checked={row.enabled}
+        disabled={isPending}
+        onCheckedChange={(enabled) => {
+          if (typeof enabled === "boolean") {
+            onToggle(enabled);
+          }
+        }}
+        size="sm"
+      />
+    </div>
   );
 
-  if (row.source === "auto") {
-    return (
-      <div className="flex items-center justify-end gap-2">
+  return (
+    <div className="flex items-center justify-end gap-1">
+      {row.source === "auto" ? (
         <Tooltip>
           <TooltipTrigger
             render={
@@ -175,25 +172,20 @@ function PromptRowActions({
             {GEO_PROMPT_AUTO_MANAGED_HINT}
           </TooltipContent>
         </Tooltip>
-        {pauseSwitch}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center justify-end gap-1">
-      <Button
-        aria-label={`${GEO_PROMPT_TAGS_COPY.edit}: ${row.prompt}`}
-        disabled={isPending}
-        onClick={(event) => {
-          event.stopPropagation();
-          onEditTags();
-        }}
-        size="icon"
-        variant="ghost"
-      >
-        <HugeiconsIcon icon={Tag01Icon} size={14} />
-      </Button>
+      ) : (
+        <Button
+          aria-label={`${GEO_PROMPT_TAGS_COPY.edit}: ${row.prompt}`}
+          disabled={isPending}
+          onClick={(event) => {
+            event.stopPropagation();
+            onEditTags();
+          }}
+          size="icon"
+          variant="ghost"
+        >
+          <HugeiconsIcon icon={Tag01Icon} size={14} />
+        </Button>
+      )}
       {pauseSwitch}
       <Button
         aria-label={`Remove ${row.prompt}`}
@@ -208,6 +200,61 @@ function PromptRowActions({
         <HugeiconsIcon icon={Delete02Icon} size={14} />
       </Button>
     </div>
+  );
+}
+
+function PromptTableContextMenu({
+  row,
+  isPending,
+  onOpenDetails,
+  onEditTags,
+  onToggle,
+  onDelete,
+}: {
+  row: GeoPromptTableRow;
+  isPending: boolean;
+  onOpenDetails: () => void;
+  onEditTags: () => void;
+  onToggle: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <>
+      <ContextMenuItem onClick={onOpenDetails}>
+        <HugeiconsIcon icon={ViewIcon} strokeWidth={2} />
+        Open details
+      </ContextMenuItem>
+      <ContextMenuItem
+        onClick={() => copyTextToClipboard(row.prompt, "Copied prompt")}
+      >
+        <HugeiconsIcon icon={Copy01Icon} strokeWidth={2} />
+        Copy prompt
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem
+        disabled={isPending || row.source === "auto"}
+        onClick={onEditTags}
+      >
+        <HugeiconsIcon icon={Tag01Icon} strokeWidth={2} />
+        Edit tags
+      </ContextMenuItem>
+      <ContextMenuItem disabled={isPending} onClick={onToggle}>
+        <HugeiconsIcon
+          icon={row.enabled ? PauseIcon : PlayIcon}
+          strokeWidth={2}
+        />
+        {row.enabled ? "Pause prompt" : "Enable prompt"}
+      </ContextMenuItem>
+      <ContextMenuSeparator />
+      <ContextMenuItem
+        disabled={isPending}
+        onClick={onDelete}
+        variant="destructive"
+      >
+        <HugeiconsIcon icon={Delete02Icon} strokeWidth={2} />
+        Remove prompt
+      </ContextMenuItem>
+    </>
   );
 }
 
@@ -278,18 +325,14 @@ export function PromptsTable({
 
   const selectedIdSet = new Set(selectedIds);
   const selectedRows = rows.filter((row) => selectedIdSet.has(row.id));
-  const selectedCustomRows = selectedRows.filter(
-    (row) => row.source === "custom"
-  );
 
-  const requestDelete = useCallback((targets: GeoPromptTableRow[]) => {
-    const custom = targets.filter((row) => row.source === "custom");
-    if (custom.length === 0) {
+  const requestDelete = (targets: GeoPromptTableRow[]) => {
+    if (targets.length === 0) {
       return;
     }
-    setPendingDelete(custom);
+    setPendingDelete(targets);
     setDeleteOpen(true);
-  }, []);
+  };
 
   const applyView = (view: GeoPromptSavedView) => {
     setSearch(view.query.q);
@@ -345,32 +388,19 @@ export function PromptsTable({
     {
       key: "intent",
       header: GEO_PROMPT_TAGS_COPY.intentColumn,
-      width: "7.5rem",
-      minWidth: "7.5rem",
+      width: "8.5rem",
+      minWidth: "8.5rem",
       sortable: true,
-      cell: (row) => (
-        <span className="text-muted-foreground">
-          {GEO_PROMPT_INTENT_LABELS[row.intent]}
-        </span>
-      ),
-      sortValue: (row) => GEO_PROMPT_INTENT_LABELS[row.intent],
-    },
-    {
-      key: "tags",
-      header: GEO_PROMPT_TAGS_COPY.column,
-      width: "8rem",
-      minWidth: "7rem",
-      sortable: true,
-      cell: (row) => <PromptTagChips tags={row.tags} />,
-      sortValue: (row) => row.tags.join(" "),
+      cell: (row) => <PromptIntentBadge intent={row.intent} />,
+      sortValue: (row) => geoPromptIntentLabel(row.intent),
     },
     {
       key: "presence",
       header: "Presence",
-      width: "7.5rem",
-      minWidth: "7.5rem",
+      width: "10rem",
+      minWidth: "10rem",
       sortable: true,
-      cell: (row) => <PromptPresenceCell status={row.presence} />,
+      cell: (row) => <PromptPresenceBadge status={row.presence} />,
       sortValue: (row) => promptPresenceSortValue(row.presence),
     },
     {
@@ -404,6 +434,15 @@ export function PromptsTable({
       sortValue: (row) => row.bestPosition ?? Number.MAX_SAFE_INTEGER,
     },
     {
+      key: "tags",
+      header: GEO_PROMPT_TAGS_COPY.column,
+      width: "8rem",
+      minWidth: "7rem",
+      sortable: true,
+      cell: (row) => <PromptTagChips tags={row.tags} />,
+      sortValue: (row) => row.tags.join(" "),
+    },
+    {
       key: "actions",
       header: "",
       width: PROMPT_ACTIONS_WIDTH,
@@ -426,8 +465,8 @@ export function PromptsTable({
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="relative min-w-0 flex-1 sm:max-w-72">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="relative w-full min-w-0 sm:w-72">
           <HugeiconsIcon
             className="text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2"
             icon={SearchIcon}
@@ -441,134 +480,138 @@ export function PromptsTable({
             value={search}
           />
         </div>
-        <Select
-          onValueChange={(value) => {
-            const next = GEO_PROMPT_INTENT_FILTER_VALUES.find(
-              (option) => option === value
-            );
-            setIntent(next ?? GEO_PROMPT_FILTER_ALL);
-          }}
-          value={intent}
-        >
-          <SelectTrigger
-            aria-label="Filter by intent"
-            className={GEO_PROMPT_FILTER_SELECT_CLASS}
-          >
-            <SelectValue>
-              {GEO_PROMPT_INTENT_FILTER_OPTIONS.find(
-                (option) => option.value === intent
-              )?.label ?? GEO_PROMPT_INTENT_FILTER_OPTIONS[0]?.label}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {GEO_PROMPT_INTENT_FILTER_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {tagOptions.length > 0 ? (
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Select
-            onValueChange={(value) => setTag(value ?? GEO_PROMPT_FILTER_ALL)}
-            value={tag}
+            onValueChange={(value) => {
+              const next = GEO_PROMPT_INTENT_FILTER_VALUES.find(
+                (option) => option === value
+              );
+              setIntent(next ?? GEO_PROMPT_FILTER_ALL);
+            }}
+            value={intent}
           >
             <SelectTrigger
-              aria-label="Filter by tag"
+              aria-label="Filter by intent"
               className={GEO_PROMPT_FILTER_SELECT_CLASS}
             >
               <SelectValue>
-                {tag === GEO_PROMPT_FILTER_ALL
-                  ? GEO_PROMPT_TAG_FILTER_ALL_LABEL
-                  : tag}
+                {GEO_PROMPT_INTENT_FILTER_OPTIONS.find(
+                  (option) => option.value === intent
+                )?.label ?? GEO_PROMPT_INTENT_FILTER_OPTIONS[0]?.label}
               </SelectValue>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value={GEO_PROMPT_FILTER_ALL}>
-                {GEO_PROMPT_TAG_FILTER_ALL_LABEL}
-              </SelectItem>
-              {tagOptions.map((option) => (
-                <SelectItem key={option} value={option}>
-                  {option}
+              {GEO_PROMPT_INTENT_FILTER_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-        ) : null}
-        <Select
-          onValueChange={(value) => {
-            const next = GEO_PROMPT_SOURCE_FILTER_VALUES.find(
-              (option) => option === value
-            );
-            setSource(next ?? GEO_PROMPT_FILTER_ALL);
-          }}
-          value={source}
-        >
-          <SelectTrigger
-            aria-label="Filter by source"
-            className={GEO_PROMPT_FILTER_SELECT_CLASS}
-          >
-            <SelectValue>
-              {GEO_PROMPT_SOURCE_FILTER_OPTIONS.find(
-                (option) => option.value === source
-              )?.label ?? GEO_PROMPT_SOURCE_FILTER_OPTIONS[0]?.label}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {GEO_PROMPT_SOURCE_FILTER_OPTIONS.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <PromptSavedViewsMenu
-          filters={filters}
-          onApply={applyView}
-          onRemove={(viewId) => {
-            removeView(viewId);
-            toast.success(GEO_PROMPT_VIEWS_COPY.removedToast);
-          }}
-          onSave={(name) => {
-            saveView(name, filters);
-            toast.success(GEO_PROMPT_VIEWS_COPY.savedToast);
-          }}
-          views={views}
-        />
-        {promptFiltersActive(filters) ? (
-          <Button
-            onClick={() => {
-              setSearch(GEO_PROMPT_DEFAULT_FILTERS.q);
-              setIntent(GEO_PROMPT_DEFAULT_FILTERS.intent);
-              setTag(GEO_PROMPT_DEFAULT_FILTERS.tag);
-              setSource(GEO_PROMPT_DEFAULT_FILTERS.source);
+          {tagOptions.length > 0 ? (
+            <Select
+              onValueChange={(value) => setTag(value ?? GEO_PROMPT_FILTER_ALL)}
+              value={tag}
+            >
+              <SelectTrigger
+                aria-label="Filter by tag"
+                className={GEO_PROMPT_FILTER_SELECT_CLASS}
+              >
+                <SelectValue>
+                  {tag === GEO_PROMPT_FILTER_ALL
+                    ? GEO_PROMPT_TAG_FILTER_ALL_LABEL
+                    : tag}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={GEO_PROMPT_FILTER_ALL}>
+                  {GEO_PROMPT_TAG_FILTER_ALL_LABEL}
+                </SelectItem>
+                {tagOptions.map((option) => (
+                  <SelectItem key={option} value={option}>
+                    {option}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : null}
+          <Select
+            onValueChange={(value) => {
+              const next = GEO_PROMPT_SOURCE_FILTER_VALUES.find(
+                (option) => option === value
+              );
+              setSource(next ?? GEO_PROMPT_FILTER_ALL);
             }}
-            size="sm"
-            variant="ghost"
+            value={source}
           >
-            Clear
-          </Button>
-        ) : null}
-        {selectedRows.length > 0 && (
-          <Button
-            onClick={() => setTagsTarget({ mode: "bulk", rows: selectedRows })}
-            size="sm"
-            variant="outline"
-          >
-            <HugeiconsIcon icon={Tag01Icon} size={14} />
-            {GEO_PROMPT_TAGS_COPY.bulk} ({selectedRows.length})
-          </Button>
-        )}
-        {selectedCustomRows.length > 0 && (
-          <Button
-            onClick={() => requestDelete(selectedCustomRows)}
-            size="sm"
-            variant="outline"
-          >
-            <HugeiconsIcon icon={Delete02Icon} size={14} />
-            Remove ({selectedCustomRows.length})
-          </Button>
-        )}
+            <SelectTrigger
+              aria-label="Filter by source"
+              className={GEO_PROMPT_FILTER_SELECT_CLASS}
+            >
+              <SelectValue>
+                {GEO_PROMPT_SOURCE_FILTER_OPTIONS.find(
+                  (option) => option.value === source
+                )?.label ?? GEO_PROMPT_SOURCE_FILTER_OPTIONS[0]?.label}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {GEO_PROMPT_SOURCE_FILTER_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <PromptSavedViewsMenu
+            filters={filters}
+            onApply={applyView}
+            onRemove={(viewId) => {
+              removeView(viewId);
+              toast.success(GEO_PROMPT_VIEWS_COPY.removedToast);
+            }}
+            onSave={(name) => {
+              saveView(name, filters);
+              toast.success(GEO_PROMPT_VIEWS_COPY.savedToast);
+            }}
+            views={views}
+          />
+          {promptFiltersActive(filters) ? (
+            <Button
+              onClick={() => {
+                setSearch(GEO_PROMPT_DEFAULT_FILTERS.q);
+                setIntent(GEO_PROMPT_DEFAULT_FILTERS.intent);
+                setTag(GEO_PROMPT_DEFAULT_FILTERS.tag);
+                setSource(GEO_PROMPT_DEFAULT_FILTERS.source);
+              }}
+              size="sm"
+              variant="ghost"
+            >
+              Clear
+            </Button>
+          ) : null}
+          {selectedRows.length > 0 && (
+            <Button
+              onClick={() =>
+                setTagsTarget({ mode: "bulk", rows: selectedRows })
+              }
+              size="sm"
+              variant="outline"
+            >
+              <HugeiconsIcon icon={Tag01Icon} size={14} />
+              {GEO_PROMPT_TAGS_COPY.bulk} ({selectedRows.length})
+            </Button>
+          )}
+          {selectedRows.length > 0 && (
+            <Button
+              onClick={() => requestDelete(selectedRows)}
+              size="sm"
+              variant="outline"
+            >
+              <HugeiconsIcon icon={Delete02Icon} size={14} />
+              Remove ({selectedRows.length})
+            </Button>
+          )}
+        </div>
       </div>
 
       <Table
@@ -587,6 +630,16 @@ export function PromptsTable({
         height={PROMPTS_TABLE_HEIGHT}
         onRowClick={setDetail}
         onSelectionChange={setSelectedIds}
+        renderRowContextMenu={(row) => (
+          <PromptTableContextMenu
+            isPending={pendingPromptIds.has(row.id)}
+            onDelete={() => requestDelete([row])}
+            onEditTags={() => setTagsTarget({ mode: "edit", rows: [row] })}
+            onOpenDetails={() => setDetail(row)}
+            onToggle={() => togglePrompt(row.id, !row.enabled)}
+            row={row}
+          />
+        )}
         resizable
         rowHeight={PROMPTS_TABLE_ROW_HEIGHT}
         selectable

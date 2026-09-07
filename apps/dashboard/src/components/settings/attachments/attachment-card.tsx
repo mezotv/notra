@@ -46,7 +46,7 @@ export function AttachmentCard({
   return (
     <div
       className={cn(
-        "border-border/80 bg-background relative overflow-hidden rounded-lg border shadow-2xs",
+        "border-border/80 bg-background relative overflow-hidden rounded-lg border",
         selected && "ring-ring ring-2"
       )}
     >

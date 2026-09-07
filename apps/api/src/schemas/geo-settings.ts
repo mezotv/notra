@@ -31,6 +31,7 @@ const settingsSchema = z
     enforceZdr: z.boolean(),
     nonZdrApprovedEngines: z.array(z.string()),
     pausedAutoPromptIds: z.array(z.string()),
+    removedAutoPromptIds: z.array(z.string()),
     enabled: z.boolean(),
     scanIntervalHours: z.number().int(),
     scanStartedAt: z.string().nullable(),
@@ -88,6 +89,14 @@ export const patchSettingsRequestSchema = z
       .openapi({
         description:
           "Ids of auto-generated prompts to skip in scans. Omit to keep the current list.",
+      }),
+    removedAutoPromptIds: z
+      .array(createGeoShortTextSchema())
+      .max(GEO_MAX_PROMPTS)
+      .optional()
+      .openapi({
+        description:
+          "Ids of auto-generated prompts removed from tracking. Omit to keep the current list.",
       }),
     enabled: z.boolean(),
     scanIntervalHours: z

@@ -471,6 +471,12 @@ export const GEO_SCAN_INTERVAL_FALLBACK_NOUN = "scan interval";
 export const GEO_SCAN_NO_RESULTS_RETRY_DELAY = "5m";
 export const GEO_SCAN_STALE_MS = 2 * 60 * 60 * 1000;
 export const GEO_SCAN_TASK_BATCH_SIZE = GEO_SCAN_CONCURRENCY;
+/**
+ * Batch steps a project scan runs side by side. Projects run sequentially, so
+ * multiplied by the batch size this also bounds one workflow's provider and
+ * judge traffic (currently eight concurrent checks).
+ */
+export const GEO_SCAN_BATCH_CONCURRENCY = 2;
 export const GEO_SCAN_CLAIM_RENEW_AFTER_MS = 30 * 60 * 1000;
 export const GEO_SCAN_SEQUENCE_BATCH_SIZE = 3;
 export const GEO_SEQUENCE_PAIR_TIMEOUT_MS = 7 * 60 * 1000;
@@ -968,9 +974,9 @@ export const AI_TRAFFIC_CONFIDENCE_LABELS: Record<string, string> = {
 };
 
 export const GEO_PRESENCE_LABELS: Record<string, string> = {
-  "training-data": "In model",
+  "training-data": "In knowledge",
   "retrieval-only": `${GEO_SEARCH_LABEL} only`,
-  invisible: "Invisible",
+  invisible: "Not mentioned",
 };
 
 export const GEO_SENTIMENT_LABELS: Record<string, string> = {
@@ -993,8 +999,7 @@ export const GEO_MENTION_TREND_ALL_PROVIDERS_LABEL = "All Models";
 export const GEO_MENTION_ACTIVITY_LABEL = "Mention activity";
 export const GEO_MENTION_SUMMARY_VISIBLE = 5;
 export const GEO_MENTION_ROW_HEIGHT_REM = 2.75;
-export const GEO_MENTION_HINT_HEIGHT_REM = 2;
-export const GEO_MENTION_HINT_BLEED_REM = 1;
+export const GEO_MENTION_FADE_HEIGHT_REM = 2;
 export const GEO_MENTION_UNTRACKED_HINT =
   "These mentions come from earlier scans. Add the model back in GEO settings to keep tracking it.";
 export const GEO_PROVIDER_COLUMN_LABEL = "Provider";
@@ -1010,7 +1015,7 @@ export const GEO_ENGINE_PERFORMANCE_HINT =
   "How often each engine mentioned your brand in this range. Manage engines in GEO settings.";
 export const GEO_PROMPT_AUTO_MANAGED_LABEL = "Managed automatically";
 export const GEO_PROMPT_AUTO_MANAGED_HINT =
-  "Generated from your site. Pause it to skip it in scans; it cannot be removed.";
+  "Generated from your site. Pause it to skip it in scans, or remove it if you do not want it tracked.";
 export const GEO_PROMPT_TAGS_CUSTOM_ONLY_TOAST =
   "Tags apply to custom prompts. Auto-generated prompts were skipped.";
 export const GEO_SCAN_PREFLIGHT_TITLE = "Run a scan now?";

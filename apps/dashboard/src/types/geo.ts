@@ -234,6 +234,14 @@ export interface PromptTagChipsProps {
   tags: string[];
 }
 
+export interface PromptIntentBadgeProps {
+  intent: GeoPromptIntent;
+}
+
+export interface PromptPresenceBadgeProps {
+  status: GeoPresenceStatus | null;
+}
+
 export interface PromptSavedViewsMenuProps {
   views: GeoPromptSavedView[];
   filters: GeoPromptTableFilters;
@@ -573,12 +581,6 @@ export interface MentionProviderRowProps {
   tracking: boolean;
 }
 
-export interface MentionMoreModelsHintProps {
-  count: number;
-  visible: boolean;
-  onClick: () => void;
-}
-
 export interface MentionRateCardProps extends EngineFamilyBrandScope {
   engines: GeoOverviewEngine[];
   settings?: GeoSettings;
@@ -592,20 +594,14 @@ export interface MentionRateCardProps extends EngineFamilyBrandScope {
 export interface PromptResultsPreviewProps {
   results: GeoPromptResult[];
   limit?: number;
-  action?: ReactNode;
   isScanning?: boolean;
-}
-
-export interface PromptUnseenListProps {
-  results: GeoPromptResult[];
-  isScanning?: boolean;
+  variant?: "all" | "unseen";
   gapsHref?: string;
 }
 
 export interface GeoPromptsPanelProps {
   results: GeoPromptResult[];
   isScanning?: boolean;
-  action?: ReactNode;
   gapsHref?: string;
 }
 
@@ -617,6 +613,8 @@ export interface EngineFamilyBrandScope {
   companyName?: string | null;
   aliases?: readonly string[];
   competitors?: readonly GeoCompetitor[];
+  /** Own brand website domain, used to resolve the own-brand logo. */
+  ownDomain?: string | null;
 }
 
 export interface EngineRateTableProps extends EngineFamilyBrandScope {

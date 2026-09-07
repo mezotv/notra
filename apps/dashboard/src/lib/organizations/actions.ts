@@ -390,7 +390,10 @@ export async function createOrganizationAction(
           () => cookies(),
           "Failed to access cookies"
         );
-        cookieStore.set(LAST_VISITED_ORGANIZATION_COOKIE, slug, { path: "/" });
+        cookieStore.set(LAST_VISITED_ORGANIZATION_COOKIE, slug, {
+          path: "/",
+          maxAge: LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
+        });
       }
 
       return organization;
@@ -470,6 +473,7 @@ export async function updateOrganizationAction(
         ) {
           cookieStore.set(LAST_VISITED_ORGANIZATION_COOKIE, organization.slug, {
             path: "/",
+            maxAge: LAST_VISITED_ORGANIZATION_COOKIE_MAX_AGE,
           });
         }
       }

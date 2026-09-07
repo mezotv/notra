@@ -50,7 +50,6 @@ import {
   GEO_OPENCODE_ENGINE_ID,
   GEO_PROVIDER_TIMEOUT_MS,
   GEO_SCAN_CONCURRENCY,
-  GEO_SCAN_CLAIM_RENEW_AFTER_MS,
   GEO_SEQUENCE_PAIR_TIMEOUT_MS,
   GEO_SEQUENCE_MAX_TURNS,
   GEO_TRANSLATION_MAX_TOKENS,
@@ -105,6 +104,7 @@ import {
   logGeoSkip,
 } from "../utils/geo-log";
 import {
+  interleaveGeoScanItemsByKey,
   isGeoScanRunning,
   summarizeGeoEngineAttempts,
 } from "../utils/geo-scan";
@@ -131,6 +131,7 @@ import { requireGeoProject } from "./projects";
 import {
   buildGeoPrompts,
   customPromptScanId,
+  isAutoPromptScanned,
   scopeGeoPrompts,
 } from "./prompts";
 import {
@@ -203,32 +204,6 @@ function droppedCheckOutcome(
       : EMPTY_TOKEN_USAGE,
   };
 }
-
-/**
- * Rotates the claim token only once it has aged past the renew threshold.
- * Batches call this on entry, and a workflow step can be retried with the
- * token its crashed predecessor already rotated away — renewing on every
- * batch would turn each such retry into a lost claim. Under the threshold the
- * incoming token is still comfortably inside `GEO_SCAN_STALE_MS`, so handing
- * it back unchanged is safe.
- */
-const renewGeoScanClaimIfDue = Effect.fn("geo.renewScanClaimIfDue")(function* (
-  projectId: string,
-  claimedAt: Date
-) {
-  if (Date.now() - claimedAt.getTime() < GEO_SCAN_CLAIM_RENEW_AFTER_MS) {
-    return claimedAt;
-  }
-  const renewed = yield* renewGeoScanRun(projectId, claimedAt);
-  if (!renewed) {
-    return yield* Effect.fail(
-      new GeoScanError({
-        message: `Lost the scan claim for project ${projectId}`,
-      })
-    );
-  }
-  return renewed.claimedAt;
-});
 
 function normalizePosition(position: number | null): number | null {
   if (position === null || !Number.isFinite(position)) {
@@ -1073,6 +1048,7 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
     });
 
     const pausedAutoPromptIds = new Set(settings.pausedAutoPromptIds);
+    const removedAutoPromptIds = new Set(settings.removedAutoPromptIds);
     const autoPrompts = buildGeoPrompts(
       settings,
       brand
@@ -1082,7 +1058,13 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
           }
         : null
     )
-      .filter((prompt) => !pausedAutoPromptIds.has(prompt.id))
+      .filter((prompt) =>
+        isAutoPromptScanned(
+          prompt.id,
+          pausedAutoPromptIds,
+          removedAutoPromptIds
+        )
+      )
       .slice(0, GEO_MAX_PROMPTS);
 
     const allPrompts: GeoPromptDefinition[] = [
@@ -1325,7 +1307,7 @@ const buildGeoScanProjectPlan = Effect.fn("geo.buildScanProjectPlan")(
         startedAtMs: Date.now(),
       },
       claimedAt: claimedAt.toISOString(),
-      tasks,
+      tasks: interleaveGeoScanItemsByKey(tasks, (task) => task.engine),
       sequences,
       promptCount: prompts.length,
       languages: settings.languages,
@@ -1362,11 +1344,8 @@ const buildGeoScanCheckContext = Effect.fn("geo.buildScanCheckContext")(
  */
 export const runGeoScanTaskBatch = Effect.fn("geo.runScanTaskBatch")(function* (
   context: GeoScanProjectContext,
-  plannedTasks: readonly GeoScanPlannedTask[],
-  claimToken: string
+  plannedTasks: readonly GeoScanPlannedTask[]
 ) {
-  const incoming = yield* parseGeoClaimToken(claimToken);
-  const claimedAt = yield* renewGeoScanClaimIfDue(context.projectId, incoming);
   const checkContext = yield* buildGeoScanCheckContext(context);
 
   const tasks: GeoCheckTask[] = [];
@@ -1465,7 +1444,6 @@ export const runGeoScanTaskBatch = Effect.fn("geo.runScanTaskBatch")(function* (
     mentions: rows.filter((row) => row.mentioned).length,
     dropped: plannedTasks.length - rows.length,
     usage,
-    claimedAt: claimedAt.toISOString(),
   };
   return outcome;
 });
@@ -1474,14 +1452,8 @@ export const runGeoScanTaskBatch = Effect.fn("geo.runScanTaskBatch")(function* (
 export const runGeoScanSequenceBatch = Effect.fn("geo.runScanSequenceBatch")(
   function* (
     context: GeoScanProjectContext,
-    plannedSequences: readonly GeoScanPlannedSequence[],
-    claimToken: string
+    plannedSequences: readonly GeoScanPlannedSequence[]
   ) {
-    const incoming = yield* parseGeoClaimToken(claimToken);
-    const claimedAt = yield* renewGeoScanClaimIfDue(
-      context.projectId,
-      incoming
-    );
     const checkContext = yield* buildGeoScanCheckContext(context);
 
     let checks = 0;
@@ -1571,7 +1543,6 @@ export const runGeoScanSequenceBatch = Effect.fn("geo.runScanSequenceBatch")(
       mentions,
       dropped,
       usage,
-      claimedAt: claimedAt.toISOString(),
     };
     return outcome;
   }

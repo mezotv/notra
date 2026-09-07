@@ -9,7 +9,7 @@ import {
   listContentChatSessions,
   replaceContentChatHistory,
 } from "@notra/ai/chat/history";
-import { useLogger, withEvlog } from "@notra/ai/evlog";
+import { useLogger as getLogger, withEvlog } from "@notra/ai/evlog";
 import {
   getGitHubIntegrationById,
   getGitHubToolRepositoryContextByIntegrationId,
@@ -68,7 +68,7 @@ export const POST = withEvlog(async function POST(
   { params }: RouteContext<{ organizationId: string; contentId: string }>
 ) {
   const requestId = nanoid(10);
-  const log = useLogger();
+  const log = getLogger();
 
   try {
     const { organizationId, contentId } = await params;

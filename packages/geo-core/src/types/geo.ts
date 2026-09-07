@@ -75,6 +75,7 @@ export interface GeoSettings {
   /** Models without a ZDR host the user approved to run anyway. */
   nonZdrApprovedEngines: string[];
   pausedAutoPromptIds: string[];
+  removedAutoPromptIds: string[];
   enabled: boolean;
   scanIntervalHours: number;
   scanStartedAt: string | null;
@@ -102,6 +103,7 @@ export interface GeoSettingsRow {
   enforceZdr: boolean;
   nonZdrApprovedEngines: string[];
   pausedAutoPromptIds: string[];
+  removedAutoPromptIds: string[];
   enabled: boolean;
   scanIntervalHours: number;
   nextScanAt: Date | null;
@@ -351,6 +353,7 @@ export interface GeoSettingsUpsertInput {
   enforceZdr: boolean;
   nonZdrApprovedEngines: string[];
   pausedAutoPromptIds?: string[];
+  removedAutoPromptIds?: string[];
   enabled: boolean;
   scanIntervalHours: number;
 }
@@ -537,7 +540,7 @@ export interface GeoScanProjectContext {
 
 export interface GeoScanProjectPlan {
   context: GeoScanProjectContext;
-  /** ISO stamp of the claim token the batches rotate as they renew it. */
+  /** ISO stamp of the claim token the workflow renews between batch waves. */
   claimedAt: string;
   tasks: GeoScanPlannedTask[];
   sequences: GeoScanPlannedSequence[];
@@ -555,8 +558,6 @@ export interface GeoScanBatchOutcome {
   mentions: number;
   dropped: number;
   usage: AgentTokenUsage;
-  /** Renewed claim token the next batch must use. */
-  claimedAt: string;
 }
 
 export interface GeoScanProjectTotals {

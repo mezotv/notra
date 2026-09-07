@@ -412,11 +412,11 @@ export function ChatInputAdvanced({
       if (!attachmentToRemove) {
         return;
       }
-      setAttachments((prev) => {
-        const next = prev.filter((attachment) => attachment.key !== key);
-        attachmentsRef.current = next;
-        return next;
-      });
+      const nextAttachments = attachmentsRef.current.filter(
+        (attachment) => attachment.key !== key
+      );
+      attachmentsRef.current = nextAttachments;
+      setAttachments(nextAttachments);
       cleanupChatUpload(attachmentToRemove.key).catch(() => undefined);
     },
     [cleanupChatUpload]
@@ -503,11 +503,12 @@ export function ChatInputAdvanced({
               return false;
             }
 
-            setAttachments((prev) => {
-              const next = [...prev, uploadedAttachment];
-              attachmentsRef.current = next;
-              return next;
-            });
+            const nextAttachments = [
+              ...attachmentsRef.current,
+              uploadedAttachment,
+            ];
+            attachmentsRef.current = nextAttachments;
+            setAttachments(nextAttachments);
             updatePendingUploads(
               pendingUploadsRef.current.filter(
                 (pending) => pending.id !== placeholder.id

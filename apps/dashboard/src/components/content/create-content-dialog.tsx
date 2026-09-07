@@ -774,23 +774,25 @@ export function CreateContentDialog({
     selectedLinearIds,
   ]);
 
-  submitHandlerRef.current = async (value: CreateContentFormValues) => {
-    const voiceIds =
-      value.brandVoiceIds.length > 0 ? value.brandVoiceIds : [""];
-    trackEvent(POSTHOG_EVENTS.CONTENT_CREATE_STEP_COMPLETED, {
-      step,
-      format_count: value.formats.length,
-      repo_count: value.repositoryIds.length,
-      lookback: value.lookbackWindow,
-      event_count: eventCounts.selected,
-      voice_count: value.brandVoiceIds.length,
-    });
-    await mutation.mutateAsync({
-      formats: value.formats,
-      voiceIds,
-      selectedItems: buildSelectedItems(),
-    });
-  };
+  useEffect(() => {
+    submitHandlerRef.current = async (value: CreateContentFormValues) => {
+      const voiceIds =
+        value.brandVoiceIds.length > 0 ? value.brandVoiceIds : [""];
+      trackEvent(POSTHOG_EVENTS.CONTENT_CREATE_STEP_COMPLETED, {
+        step,
+        format_count: value.formats.length,
+        repo_count: value.repositoryIds.length,
+        lookback: value.lookbackWindow,
+        event_count: eventCounts.selected,
+        voice_count: value.brandVoiceIds.length,
+      });
+      await mutation.mutateAsync({
+        formats: value.formats,
+        voiceIds,
+        selectedItems: buildSelectedItems(),
+      });
+    };
+  }, [buildSelectedItems, eventCounts.selected, mutation, step]);
 
   const handleCreate = useCallback(() => {
     setAttemptedAdvance(true);
