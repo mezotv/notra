@@ -167,6 +167,22 @@ function PromptAnswerBody({
   onSelectCheck,
   onBackToLatest,
 }: PromptAnswerBodyProps) {
+  if (selectedCheck) {
+    return (
+      <>
+        <HistoryAnswerBanner check={selectedCheck} onBack={onBackToLatest} />
+        <GeoPromptAnswerThread
+          prompt={prompt}
+          result={promptResultFromHistoryCheck(
+            selectedCheck,
+            scanPromptId,
+            prompt
+          )}
+        />
+      </>
+    );
+  }
+
   if (detailState.status !== "ready") {
     return <PromptDetailStatus onRetry={onRetry} status={detailState.status} />;
   }
@@ -184,21 +200,7 @@ function PromptAnswerBody({
     );
   }
 
-  return (
-    <>
-      {selectedCheck ? (
-        <HistoryAnswerBanner check={selectedCheck} onBack={onBackToLatest} />
-      ) : null}
-      <GeoPromptAnswerThread
-        prompt={prompt}
-        result={
-          selectedCheck
-            ? promptResultFromHistoryCheck(selectedCheck, scanPromptId, prompt)
-            : detailState.result
-        }
-      />
-    </>
-  );
+  return <GeoPromptAnswerThread prompt={prompt} result={detailState.result} />;
 }
 
 function PromptAnswerPage({
