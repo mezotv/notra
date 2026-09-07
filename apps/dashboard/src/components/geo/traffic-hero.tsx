@@ -71,9 +71,10 @@ function TrafficHeroMetric({ metric, settingsHref }: TrafficHeroMetricProps) {
         <div className="flex items-center gap-3 self-start">
           <span
             aria-hidden="true"
-            className="text-muted-foreground/40 text-4xl leading-none font-semibold tracking-tight tabular-nums"
+            className="text-muted-foreground text-4xl leading-none font-semibold tracking-tight"
+            title={GEO_TRAFFIC_CONVERSIONS_NOT_CONFIGURED_LABEL}
           >
-            0
+            —
           </span>
           <span className="sr-only">
             {GEO_TRAFFIC_CONVERSIONS_NOT_CONFIGURED_LABEL}
