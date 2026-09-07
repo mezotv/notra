@@ -178,6 +178,17 @@ import type {
   GscSyncResult,
 } from "@notra/geo-core/types/google-search-console";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { geoScanStartInputSchema } from "@notra/schemas/dashboard/geo-analytics";
+import {
+  geoShelfCreateInputSchema,
+  geoShelfListInputSchema,
+  geoShelfListResponseSchema,
+  geoShelfMembersResponseSchema,
+  geoShelfMutationResponseSchema,
+  geoShelfPreviewInputSchema,
+  geoShelfPreviewResponseSchema,
+  geoShelfUpdateInputSchema,
+} from "@notra/schemas/dashboard/geo-shelf";
 import { QstashError } from "@upstash/qstash";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import { Effect } from "effect";
@@ -231,17 +242,6 @@ import {
   tooManyRequests,
 } from "@/lib/orpc/utils/errors";
 import { toGeoOrpcError } from "@/lib/orpc/utils/geo-errors";
-import { geoScanStartInputSchema } from "@/schemas/geo-analytics";
-import {
-  geoShelfCreateInputSchema,
-  geoShelfListInputSchema,
-  geoShelfListResponseSchema,
-  geoShelfMembersResponseSchema,
-  geoShelfMutationResponseSchema,
-  geoShelfPreviewInputSchema,
-  geoShelfPreviewResponseSchema,
-  geoShelfUpdateInputSchema,
-} from "@/schemas/geo-shelf";
 import type { GeoHandlerTracker } from "@/types/analytics/geo-events";
 import type { AuthenticatedUser } from "@/types/auth/organization";
 import type {

@@ -70,6 +70,44 @@ import { createOctokit } from "@notra/ai/utils/octokit";
 import { db } from "@notra/db/drizzle";
 import { contentTriggers, repositoryOutputs } from "@notra/db/schema";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { organizationIdInputSchema } from "@notra/schemas/dashboard/auth/organization";
+import {
+  createGranolaIntegrationRequestSchema,
+  updateGranolaIntegrationBodySchema,
+} from "@notra/schemas/dashboard/granola";
+import {
+  addRepositoryRequestSchema,
+  beginMcpOAuthRequestSchema,
+  configureOutputBodySchema,
+  createGitHubIntegrationRequestSchema,
+  createMcpServerRequestSchema,
+  type IntegrationType,
+  integrationIdParamSchema,
+  integrationInputSchema,
+  listRepositoryDirectoriesInputSchema,
+  mcpServerIdParamSchema,
+  mcpServerInputSchema,
+  outputIdParamSchema,
+  outputInputSchema,
+  reauthorizeMcpOAuthRequestSchema,
+  repositoryContentDirectoryConfigSchema,
+  repositoryContentDirectoryInputSchema,
+  repositoryIdParamSchema,
+  repositoryInputSchema,
+  testMcpServerRequestSchema,
+  triggerTargetsSchema,
+  updateIntegrationBodySchema,
+  updateMcpServerBodySchema,
+  updateOutputBodySchema,
+  updateRepositoryBodySchema,
+  updateRepositoryContentDirectoryBodySchema,
+} from "@notra/schemas/dashboard/integrations";
+import { updateLinearIntegrationBodySchema } from "@notra/schemas/dashboard/linear";
+import {
+  slackChannelListResponseSchema,
+  slackListChannelsOptionsSchema,
+  updateSlackIntegrationBodySchema,
+} from "@notra/schemas/dashboard/slack-integration";
 import { PublicUrlValidationError } from "@notra/utils/url";
 import { and, eq } from "drizzle-orm";
 import { Effect } from "effect";
@@ -97,44 +135,6 @@ import {
 } from "@/lib/integrations/slack/channel-cache";
 import { baseProcedure } from "@/lib/orpc/base";
 import { getIntegrationsByOrganization } from "@/lib/services/integrations";
-import { organizationIdInputSchema } from "@/schemas/auth/organization";
-import {
-  createGranolaIntegrationRequestSchema,
-  updateGranolaIntegrationBodySchema,
-} from "@/schemas/granola";
-import {
-  addRepositoryRequestSchema,
-  beginMcpOAuthRequestSchema,
-  configureOutputBodySchema,
-  createGitHubIntegrationRequestSchema,
-  createMcpServerRequestSchema,
-  type IntegrationType,
-  integrationIdParamSchema,
-  integrationInputSchema,
-  listRepositoryDirectoriesInputSchema,
-  mcpServerIdParamSchema,
-  mcpServerInputSchema,
-  outputIdParamSchema,
-  outputInputSchema,
-  reauthorizeMcpOAuthRequestSchema,
-  repositoryContentDirectoryConfigSchema,
-  repositoryContentDirectoryInputSchema,
-  repositoryIdParamSchema,
-  repositoryInputSchema,
-  testMcpServerRequestSchema,
-  triggerTargetsSchema,
-  updateIntegrationBodySchema,
-  updateMcpServerBodySchema,
-  updateOutputBodySchema,
-  updateRepositoryBodySchema,
-  updateRepositoryContentDirectoryBodySchema,
-} from "@/schemas/integrations";
-import { updateLinearIntegrationBodySchema } from "@/schemas/linear";
-import {
-  slackChannelListResponseSchema,
-  slackListChannelsOptionsSchema,
-  updateSlackIntegrationBodySchema,
-} from "@/schemas/slack-integration";
 import type {
   GitHubIntegration,
   GitHubRepository,

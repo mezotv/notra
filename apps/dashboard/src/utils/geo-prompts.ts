@@ -8,8 +8,8 @@ import type {
 import { engineFamilyOf } from "@notra/geo-core/utils/geo-engine-family";
 import { summarizePromptResults } from "@notra/geo-core/utils/geo-presence";
 import { geoPromptIntent } from "@notra/geo-core/utils/geo-prompt-intent";
+import { GEO_PROMPT_FILTER_ALL } from "@notra/schemas/constants/dashboard/geo-prompts";
 
-import { GEO_PROMPT_FILTER_ALL } from "@/constants/geo-prompts";
 import type {
   EngineFamilyPromptHit,
   GeoPromptCoverage,

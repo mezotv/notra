@@ -1,7 +1,8 @@
 import type {
   IntegrationType,
   OutputContentType,
-} from "@/schemas/integrations";
+} from "@notra/schemas/dashboard/integrations";
+
 import type { RepositoryOutput } from "@/types/integrations";
 
 export type GitHubConnectionMethod = "github-app" | "personal-access-token";

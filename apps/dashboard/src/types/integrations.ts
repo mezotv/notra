@@ -1,6 +1,5 @@
+import type { IntegrationType } from "@notra/schemas/dashboard/integrations";
 import type React from "react";
-
-import type { IntegrationType } from "@/schemas/integrations";
 
 export interface RepositoryOutput {
   id: string;

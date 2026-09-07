@@ -2,6 +2,7 @@
 
 import { db } from "@notra/db/drizzle";
 import { members, organizations, projects } from "@notra/db/schema";
+import { organizationSlugParamSchema } from "@notra/schemas/dashboard/auth/organization";
 import { and, eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -11,7 +12,6 @@ import { LAST_VISITED_ORGANIZATION_COOKIE } from "@/constants/cookies";
 import { isSessionBanned } from "@/lib/auth/banned";
 import { getAuthSession } from "@/lib/auth/server";
 import { retryTransientDbError } from "@/lib/db/retry";
-import { organizationSlugParamSchema } from "@/schemas/auth/organization";
 import { getLastVisitedProject } from "@/utils/cookies";
 
 const getOrganizationAccess = cache(async (rawSlug: string) => {

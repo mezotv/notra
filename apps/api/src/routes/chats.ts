@@ -6,10 +6,6 @@ import {
   loadChatHistory,
 } from "@notra/ai/chat/history";
 import { useLogger, withEvlog } from "@notra/ai/evlog";
-import type { Context } from "hono";
-import { nanoid } from "nanoid";
-
-import { runChatMessage } from "../lib/chat/run";
 import {
   chatSessionSummarySchema,
   getChatByExternalQuerySchema,
@@ -18,7 +14,11 @@ import {
   getChatsResponseSchema,
   sendChatMessageRequestSchema,
   sendChatParamsSchema,
-} from "../schemas/chats";
+} from "@notra/schemas/api/chats";
+import type { Context } from "hono";
+import { nanoid } from "nanoid";
+
+import { runChatMessage } from "../lib/chat/run";
 import { getOrganizationId } from "../utils/auth";
 import { createOpenApiApp, formatValidationError } from "../utils/openapi-app";
 import { errorResponse, rateLimitResponse } from "../utils/openapi-responses";

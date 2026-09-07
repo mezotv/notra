@@ -2,6 +2,7 @@
 
 import { Link04Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { GEO_SHELF_PLACEMENT_STATUSES } from "@notra/schemas/constants/dashboard/geo-shelf";
 import {
   Select,
   SelectContent,
@@ -12,7 +13,6 @@ import {
 
 import { CompetitorLogo } from "@/components/geo/competitor-logo";
 import { ShelfPlacementMark } from "@/components/geo/shelf/shelf-placement-badge";
-import { GEO_SHELF_PLACEMENT_STATUSES } from "@/constants/geo-shelf";
 import { cn } from "@/lib/utils";
 import type {
   GeoShelfPlacementStatus,

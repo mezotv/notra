@@ -67,6 +67,7 @@
         "@notra/db": "workspace:*",
         "@notra/geo-core": "workspace:*",
         "@notra/posthog": "workspace:*",
+        "@notra/schemas": "workspace:*",
         "@notra/utils": "workspace:*",
         "@opentelemetry/api": "^1.9.1",
         "@opentelemetry/sdk-node": "^0.220.0",
@@ -127,6 +128,7 @@
         "@notra/geo-core": "workspace:*",
         "@notra/kiwi": "workspace:*",
         "@notra/posthog": "workspace:*",
+        "@notra/schemas": "workspace:*",
         "@notra/ui": "workspace:*",
         "@notra/utils": "workspace:*",
         "@orpc/client": "^1.13.9",
@@ -481,6 +483,25 @@
         "@notra/typescript-config": "workspace:*",
         "@types/node": "^22.15.3",
         "typescript": "5.9.2",
+      },
+    },
+    "packages/schemas": {
+      "name": "@notra/schemas",
+      "version": "0.0.1",
+      "dependencies": {
+        "@hono/zod-openapi": "^1.2.2",
+        "@notra/ai": "workspace:*",
+        "@notra/content-generation": "workspace:*",
+        "@notra/db": "workspace:*",
+        "@notra/geo-core": "workspace:*",
+        "@notra/utils": "workspace:*",
+        "effect": "4.0.0-beta.93",
+        "zod": "^4.5.0",
+      },
+      "devDependencies": {
+        "@notra/typescript-config": "workspace:*",
+        "@types/node": "24.13.2",
+        "typescript": "^5",
       },
     },
     "packages/tools": {
@@ -1313,6 +1334,8 @@
     "@notra/onboarding-agent": ["@notra/onboarding-agent@workspace:apps/onboarding-agent"],
 
     "@notra/posthog": ["@notra/posthog@workspace:packages/posthog"],
+
+    "@notra/schemas": ["@notra/schemas@workspace:packages/schemas"],
 
     "@notra/tools": ["@notra/tools@workspace:packages/tools"],
 

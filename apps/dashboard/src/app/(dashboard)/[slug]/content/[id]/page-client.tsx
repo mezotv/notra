@@ -28,6 +28,7 @@ import {
 } from "@notra/ai/utils/chat";
 import { geoBriefToMarkdown } from "@notra/geo-core/utils/geo-writer-brief-markdown";
 import { POSTHOG_EVENTS } from "@notra/posthog/events";
+import { sourceMetadataSchema } from "@notra/schemas/dashboard/content";
 import {
   Avatar,
   AvatarFallback,
@@ -104,7 +105,6 @@ import {
 } from "@/lib/hooks/use-geo-writer";
 import { dashboardOrpc } from "@/lib/orpc/query";
 import { cn } from "@/lib/utils";
-import { sourceMetadataSchema } from "@/schemas/content";
 import type { ContentChatMessageMetadata } from "@/types/content/chat";
 import type { ContentDetailPageClientProps } from "@/types/content/detail";
 import type { ImageExportTarget } from "@/types/content/image-export";
