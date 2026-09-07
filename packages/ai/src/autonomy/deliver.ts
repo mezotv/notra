@@ -103,15 +103,23 @@ const parsePayload = Effect.fn("iris.outbox.parsePayload")(function* (
 
 const updateOutboxRow = Effect.fn("iris.outbox.update")(function* (input: {
   outboxId: string;
+  attempts: number;
   operation: string;
   values: Partial<typeof autonomyOutbox.$inferInsert>;
 }) {
-  yield* Effect.tryPromise({
+  const rows = yield* Effect.tryPromise({
     try: () =>
       db
         .update(autonomyOutbox)
         .set({ ...input.values, updatedAt: new Date() })
-        .where(eq(autonomyOutbox.id, input.outboxId)),
+        .where(
+          and(
+            eq(autonomyOutbox.id, input.outboxId),
+            eq(autonomyOutbox.status, "attempting"),
+            eq(autonomyOutbox.attempts, input.attempts)
+          )
+        )
+        .returning({ id: autonomyOutbox.id }),
     catch: (cause) =>
       new IrisOutboxPersistenceError({
         outboxId: input.outboxId,
@@ -119,6 +127,7 @@ const updateOutboxRow = Effect.fn("iris.outbox.update")(function* (input: {
         cause,
       }),
   });
+  return rows.length > 0;
 });
 
 function computeBackoffSeconds(
@@ -163,8 +172,9 @@ const markFailed = Effect.fn("iris.outbox.markFailed")(function* (input: {
   attempts: number;
   lastError: string;
 }) {
-  yield* updateOutboxRow({
+  const updated = yield* updateOutboxRow({
     outboxId: input.row.id,
+    attempts: input.attempts,
     operation: "markFailed",
     values: {
       status: "failed",
@@ -173,6 +183,15 @@ const markFailed = Effect.fn("iris.outbox.markFailed")(function* (input: {
       nextAttemptAt: null,
     },
   });
+
+  if (!updated) {
+    return {
+      outboxId: input.row.id,
+      status: "skipped",
+      lastError: null,
+      nextAttemptAt: null,
+    } satisfies IrisDeliveryOutcome;
+  }
 
   yield* Effect.logWarning("Iris outbox delivery failed").pipe(
     Effect.annotateLogs({
@@ -203,8 +222,9 @@ const markRetrying = Effect.fn("iris.outbox.markRetrying")(function* (input: {
         MILLISECONDS_PER_SECOND
   );
 
-  yield* updateOutboxRow({
+  const updated = yield* updateOutboxRow({
     outboxId: input.row.id,
+    attempts: input.attempts,
     operation: "markRetrying",
     values: {
       status: "pending",
@@ -216,9 +236,9 @@ const markRetrying = Effect.fn("iris.outbox.markRetrying")(function* (input: {
 
   const outcome: IrisDeliveryOutcome = {
     outboxId: input.row.id,
-    status: "pending",
-    lastError: input.lastError,
-    nextAttemptAt,
+    status: updated ? "pending" : "skipped",
+    lastError: updated ? input.lastError : null,
+    nextAttemptAt: updated ? nextAttemptAt : null,
   };
   return outcome;
 });
@@ -331,7 +351,7 @@ export const deliverOutboxMessage = Effect.fn("iris.outbox.deliver")(function* (
             }
           : null,
     });
-    yield* Effect.tryPromise({
+    const updated = yield* Effect.tryPromise({
       try: () =>
         db
           .update(autonomyOutbox)
@@ -344,7 +364,14 @@ export const deliverOutboxMessage = Effect.fn("iris.outbox.deliver")(function* (
             payload: sql`${autonomyOutbox.payload} || ${payloadPatch}::jsonb`,
             updatedAt: new Date(),
           })
-          .where(eq(autonomyOutbox.id, row.id)),
+          .where(
+            and(
+              eq(autonomyOutbox.id, row.id),
+              eq(autonomyOutbox.status, "attempting"),
+              eq(autonomyOutbox.attempts, attempts)
+            )
+          )
+          .returning({ id: autonomyOutbox.id }),
       catch: (cause) =>
         new IrisOutboxPersistenceError({
           outboxId: row.id,
@@ -355,7 +382,7 @@ export const deliverOutboxMessage = Effect.fn("iris.outbox.deliver")(function* (
 
     const outcome: IrisDeliveryOutcome = {
       outboxId: row.id,
-      status: "delivered",
+      status: updated.length > 0 ? "delivered" : "skipped",
       lastError: null,
       nextAttemptAt: null,
     };
